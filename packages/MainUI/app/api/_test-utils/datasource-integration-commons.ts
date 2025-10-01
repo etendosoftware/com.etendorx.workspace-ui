@@ -72,7 +72,7 @@ export async function executeTestScenario(config: TestScenarioConfig) {
     jsonBody: payload,
   });
 
-  // Execute the POST route  
+  // Execute the POST route
   const params = Promise.resolve({ entity });
   const response = await POST(req, { params });
 
@@ -136,16 +136,17 @@ export class DatasourceTestAssertions {
  */
 export const DatasourceTestData = {
   /**
-   * Creates a standard ERP forward URL for a given entity and operation.
+   * Creates a standard ERP URL for a given entity and operation.
+   * Operations (add/update/remove) use direct URLs, queries use SWS forward.
    *
    * @param entity - Entity name (e.g., "Order", "Invoice")
    * @param windowId - Window ID for the operation
    * @param tabId - Tab ID for the operation
    * @param operationType - Type of operation (default: "add")
-   * @returns Formatted ERP forward URL
+   * @returns Formatted ERP URL with pagination parameters for operations
    */
   createErpForwardUrl: (entity: string, windowId = 10, tabId = 20, operationType = "add"): string => {
-    return `http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/${entity}?windowId=${windowId}&tabId=${tabId}&_operationType=${operationType}`;
+    return `http://erp.example/etendo/org.openbravo.service.datasource/${entity}?windowId=${windowId}&tabId=${tabId}&_operationType=${operationType}&_startRow=0&_endRow=75`;
   },
 
   /**

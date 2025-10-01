@@ -16,6 +16,14 @@
  */
 
 import type { NextRequest } from "next/server";
+import type {
+  GridProps,
+  Field,
+  Tab,
+  User,
+  EntityData,
+  FormInitializationResponse,
+} from "@workspaceui/api-client/src/api/types";
 
 interface MockRequestOptions {
   method?: string;
@@ -196,3 +204,376 @@ export const createSessionTestCase = (status: number, data: unknown, description
   data,
   description: description || `status ${status}`,
 });
+
+// Test helpers for useTableSelection hook tests
+
+/**
+ * Provides mock implementations for useTableSelection-related modules
+ * This function returns the mock implementations that should be used with jest.mock()
+ *
+ * Usage in test files:
+ * ```typescript
+ * // At the top level of your test file (before imports):
+ * const { mockImplementations } = getTableSelectionMocks();
+ *
+ * jest.mock("../useUserContext");
+ * jest.mock("../useSelected", () => ({
+ *   useSelected: jest.fn(),
+ * }));
+ * // ... other mocks
+ *
+ * // Then in your test setup:
+ * beforeEach(() => {
+ *   setupTableSelectionMockImplementations(mockImplementations);
+ * });
+ * ```
+ */
+export const getTableSelectionMocks = () => ({
+  mockImplementations: {
+    useSelected: () => ({
+      graph: {
+        getChildren: jest.fn(() => []),
+        setSelected: jest.fn(),
+        getSelected: jest.fn(() => null),
+        clearSelected: jest.fn(),
+        setSelectedMultiple: jest.fn(),
+        clearSelectedMultiple: jest.fn(),
+      },
+    }),
+
+    useMultiWindowURL: () => ({
+      activeWindow: { windowId: "test-window" },
+      clearSelectedRecord: jest.fn(),
+      setSelectedRecord: jest.fn(),
+      getSelectedRecord: jest.fn(),
+    }),
+
+    useStateReconciliation: () => ({
+      reconcileStates: jest.fn(),
+      handleSyncError: jest.fn(),
+    }),
+
+    debounce: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
+
+    mapBy: (items: unknown[], key: string) => {
+      const result: Record<string, unknown> = {};
+      for (const item of items) {
+        const keyValue = (item as Record<string, unknown>)[key];
+        result[String(keyValue)] = item;
+      }
+      return result;
+    },
+
+    compareArraysAlphabetically: () => false,
+  },
+});
+
+/**
+ * Sets up mock implementations for table selection-related hooks and utilities
+ * This should be called in beforeEach blocks after the modules have been mocked at the top level
+ */
+export const setupTableSelectionMockImplementations = (
+  mockImplementations = getTableSelectionMocks().mockImplementations
+) => {
+  // Note: The actual jest.mock() calls must be done at the module level in each test file
+  // This function only sets up the mock return values and implementations
+
+  // Import the modules dynamically to avoid hoisting issues
+  const useSelected = require("@/hooks/useSelected");
+  const useMultiWindowURL = require("@/hooks/navigation/useMultiWindowURL");
+  const useStateReconciliation = require("@/hooks/useStateReconciliation");
+  const debounce = require("@/utils/debounce");
+  const structures = require("@/utils/structures");
+  const commons = require("@/utils/commons");
+
+  // Set up mock implementations
+  if (useSelected?.useSelected) {
+    jest.mocked(useSelected.useSelected).mockReturnValue(mockImplementations.useSelected());
+  }
+
+  if (useMultiWindowURL?.useMultiWindowURL) {
+    jest.mocked(useMultiWindowURL.useMultiWindowURL).mockReturnValue(mockImplementations.useMultiWindowURL());
+  }
+
+  if (useStateReconciliation?.useStateReconciliation) {
+    jest
+      .mocked(useStateReconciliation.useStateReconciliation)
+      .mockReturnValue(mockImplementations.useStateReconciliation());
+  }
+
+  if (debounce?.debounce) {
+    jest.mocked(debounce.debounce).mockImplementation(mockImplementations.debounce);
+  }
+
+  if (structures?.mapBy) {
+    jest.mocked(structures.mapBy).mockImplementation(mockImplementations.mapBy);
+  }
+
+  if (commons?.compareArraysAlphabetically) {
+    jest
+      .mocked(commons.compareArraysAlphabetically)
+      .mockImplementation(mockImplementations.compareArraysAlphabetically);
+  }
+};
+
+// Test helpers for common mock data structures
+
+/**
+ * Creates a standardized mock GridProps object
+ */
+export const createMockGridProps = (overrides: Partial<GridProps> = {}): GridProps => ({
+  sort: 1,
+  autoExpand: false,
+  editorProps: {
+    displayField: "name",
+    valueField: "id",
+  },
+  displaylength: 20,
+  fkField: false,
+  selectOnClick: true,
+  canSort: true,
+  canFilter: true,
+  showHover: true,
+  filterEditorProperties: {
+    keyProperty: "id",
+  },
+  showIf: "",
+  ...overrides,
+});
+
+/**
+ * Creates a standardized mock Field object
+ */
+export const createMockField = (overrides: Partial<Field> = {}): Field => ({
+  hqlName: "testField",
+  inputName: "testInput",
+  columnName: "test_column",
+  process: "",
+  shownInStatusBar: false,
+  tab: "test-tab",
+  displayed: true,
+  startnewline: false,
+  showInGridView: true,
+  fieldGroup$_identifier: "test_field_group",
+  fieldGroup: "test_field_group",
+  isMandatory: false,
+  column: { keyColumn: "true" },
+  name: "Test Field",
+  id: "test-field-id",
+  module: "test_module",
+  hasDefaultValue: false,
+  refColumnName: "",
+  targetEntity: "",
+  referencedEntity: "",
+  referencedWindowId: "",
+  referencedTabId: "",
+  isReadOnly: false,
+  isDisplayed: true,
+  sequenceNumber: 1,
+  isUpdatable: true,
+  description: "Test Field Description",
+  helpComment: "Test Field Help",
+  gridProps: createMockGridProps(),
+  type: "string",
+  field: [],
+  refList: [],
+  ...overrides,
+});
+
+/**
+ * Creates a standardized mock Tab object
+ */
+export const createMockTab = (overrides: Partial<Tab> = {}): Tab => {
+  const mockField = createMockField();
+  return {
+    id: "test-tab",
+    name: "Test Tab",
+    title: "Test Tab Title",
+    window: "test-window",
+    tabLevel: 0,
+    parentTabId: undefined,
+    uIPattern: "STD",
+    table: "test_table",
+    entityName: "TestEntity",
+    fields: {
+      testField: mockField,
+    },
+    parentColumns: [],
+    _identifier: "test_identifier",
+    records: {},
+    hqlfilterclause: "",
+    hqlwhereclause: "",
+    sQLWhereClause: "",
+    module: "test_module",
+    ...overrides,
+  };
+};
+
+/**
+ * Creates a standardized mock User object
+ */
+export const createMockUser = (overrides: Partial<User> = {}) =>
+  ({
+    id: "test-user",
+    name: "Test User",
+    username: "testuser",
+    ...overrides,
+  }) as User;
+
+/**
+ * Creates a standardized mock UserContext return value
+ */
+export const createMockUserContext = (overrides: Partial<Record<string, unknown>> = {}) => ({
+  setSession: jest.fn(),
+  session: {},
+  user: createMockUser(),
+  login: jest.fn(),
+  changeProfile: jest.fn(),
+  token: "mock-token",
+  roles: [],
+  currentRole: undefined,
+  prevRole: undefined,
+  profile: {
+    name: "Test User",
+    email: "test@example.com",
+    image: "",
+  },
+  currentWarehouse: undefined,
+  currentClient: undefined,
+  currentOrganization: undefined,
+  setToken: jest.fn(),
+  clearUserData: jest.fn(),
+  setDefaultConfiguration: jest.fn(),
+  languages: [],
+  isSessionSyncLoading: false,
+  setSessionSyncLoading: jest.fn(),
+  ...overrides,
+});
+
+/**
+ * Creates mock EntityData records for testing
+ */
+export const createMockEntityRecords = (count = 2): EntityData[] =>
+  Array.from({ length: count }, (_, index) => ({
+    id: String(index + 1),
+    name: `Record ${index + 1}`,
+  }));
+
+/**
+ * Creates a mock FormInitializationResponse
+ */
+export const createMockFormInitializationResponse = (
+  auxiliaryInputValues: Record<string, { value: string; classicValue?: string }> = {},
+  sessionAttributes: Record<string, string> = {}
+): FormInitializationResponse => ({
+  columnValues: {},
+  auxiliaryInputValues,
+  sessionAttributes,
+  dynamicCols: [],
+  attachmentExists: false,
+});
+
+/**
+ * Sets up common form utility mocks for tests
+ */
+export const setupFormUtilsMocks = () => {
+  const mockBuildParams = jest.fn().mockReturnValue(new URLSearchParams());
+  const mockBuildPayload = jest.fn().mockReturnValue({});
+  const mockBuildSessionAttributes = jest.fn().mockReturnValue({});
+  const mockFetchFormInitialization = jest.fn().mockResolvedValue(createMockFormInitializationResponse());
+
+  return {
+    mockBuildParams,
+    mockBuildPayload,
+    mockBuildSessionAttributes,
+    mockFetchFormInitialization,
+  };
+};
+
+/**
+ * Common test setup for beforeEach blocks
+ */
+export const setupCommonTestMocks = () => {
+  jest.clearAllMocks();
+};
+
+/**
+ * Common patterns for useTableSelection tests to reduce code duplication
+ */
+export const createTableSelectionTestHelpers = () => {
+  /**
+   * Executes a renderHook call and waits for effects to complete
+   */
+  const renderHookAndWait = async (hookFn: () => void, waitTime = 100) => {
+    const { renderHook, act } = require("@testing-library/react");
+
+    const result = renderHook(hookFn);
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+    });
+
+    return result;
+  };
+
+  /**
+   * Common assertion pattern for session sync calls
+   */
+  const expectSessionSyncCall = (
+    mockSyncSpy: jest.SpyInstance,
+    tab: unknown,
+    records: unknown[],
+    setSession: jest.Mock,
+    parentId?: string
+  ) => {
+    expect(mockSyncSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tab,
+        selectedRecords: records,
+        setSession,
+        parentId: parentId || undefined,
+      })
+    );
+  };
+
+  /**
+   * Common pattern for creating session sync mock implementation with payload inspection
+   */
+  const createSessionSyncMockWithPayloadInspection = () => {
+    let capturedPayload: Record<string, unknown> | null = null;
+
+    const mockImplementation = async (params: {
+      tab: unknown;
+      selectedRecords: unknown[];
+      setSession: (updater: (prev: unknown) => unknown) => void;
+    }) => {
+      const { tab, selectedRecords, setSession } = params;
+      const tabFields = (tab as { fields: Record<string, { inputName?: string; column?: Record<string, string> }> })
+        .fields;
+      const entityKeyColumn = Object.values(tabFields).find((field) => field?.column?.keyColumn);
+
+      if (entityKeyColumn && selectedRecords.length > 0) {
+        const allSelectedIds = selectedRecords.map((record) => String((record as { id: string }).id));
+        const payload = {
+          inpKeyName: entityKeyColumn.inputName,
+          inpTabId: (tab as { id: string }).id,
+          ...(selectedRecords.length > 1 && { MULTIPLE_ROW_IDS: allSelectedIds }),
+        };
+
+        capturedPayload = payload;
+        setSession((prev: unknown) => ({ ...(prev as Record<string, unknown>), syncedIds: allSelectedIds.join(",") }));
+      }
+    };
+
+    return {
+      mockImplementation,
+      getCapturedPayload: () => capturedPayload,
+    };
+  };
+
+  return {
+    renderHookAndWait,
+    expectSessionSyncCall,
+    createSessionSyncMockWithPayloadInspection,
+  };
+};

@@ -15,14 +15,15 @@
  *************************************************************************
  */
 
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { useUserContext } from "../../hooks/useUserContext";
 import { logger } from "../../utils/logger";
 import Login from "../../components/Forms/Login/Login";
 
+const DEFAULT_LOGIN_ERROR_TEXT = "Login failed";
+
 export default function LoginScreen() {
-  const [error, setError] = useState("");
-  const { login } = useUserContext();
+  const { login, setLoginErrorText, setLoginErrorDescription } = useUserContext();
 
   const handleLogin = useCallback(
     async (username: string, password: string) => {
@@ -30,12 +31,12 @@ export default function LoginScreen() {
         await login(username, password);
       } catch (e) {
         logger.warn(e);
-
-        setError(e instanceof Error ? e.message : String(e));
+        setLoginErrorText(DEFAULT_LOGIN_ERROR_TEXT);
+        setLoginErrorDescription(e instanceof Error ? e.message : String(e));
       }
     },
     [login]
   );
 
-  return <Login title="Etendo" onSubmit={handleLogin} error={error} />;
+  return <Login title="Etendo" onSubmit={handleLogin} data-testid="Login__da518c" />;
 }

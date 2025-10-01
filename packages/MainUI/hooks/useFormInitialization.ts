@@ -17,85 +17,44 @@
 
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import { getFieldsToAdd } from "@/utils/form/entityConfig";
-import type { ClientOptions } from "@workspaceui/api-client/src/api/client";
-import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import {
   type FormInitializationParams,
   type FormInitializationResponse,
   FormMode,
   type Tab,
+  type Field,
 } from "@workspaceui/api-client/src/api/types";
-import { useCallback, useMemo, useReducer } from "react";
+import { useCallback, useMemo, useReducer, useEffect } from "react";
 import { FieldName } from "./types";
 import useFormParent from "./useFormParent";
 import { useUserContext } from "./useUserContext";
+import { useCurrentRecord } from "./useCurrentRecord";
+import {
+  buildFormInitializationPayload,
+  buildFormInitializationParams,
+  fetchFormInitialization,
+  buildSessionAttributes,
+} from "@/utils/hooks/useFormInitialization/utils";
+import type { RecordData, State, Action } from "@/utils/hooks/useFormInitialization/types";
 
-const getRowId = (mode: FormMode, recordId?: string | null): string => {
-  return mode === FormMode.EDIT ? (recordId ?? "null") : "null";
-};
-
-export const buildFormInitializationParams = ({
-  mode,
-  tab,
-  recordId,
-  parentId,
-}: {
-  tab: Tab;
-  mode: FormMode;
-  recordId?: string | null;
-  parentId?: string | null;
-}): URLSearchParams =>
-  new URLSearchParams({
-    MODE: mode,
-    PARENT_ID: parentId ?? "null",
-    TAB_ID: tab.id,
-    ROW_ID: getRowId(mode, recordId),
-    _action: "org.openbravo.client.application.window.FormInitializationComponent",
-  });
-
-const fetchFormInitialization = async (
-  params: URLSearchParams,
-  payload: ClientOptions["body"]
-): Promise<FormInitializationResponse> => {
-  try {
-    const { data } = await Metadata.kernelClient.post(`?${params}`, payload);
-
-    return data;
-  } catch (error) {
-    logger.warn("Error fetching initial form data:", error);
-    throw new Error("Failed to fetch initial data");
-  }
-};
-
-type State =
-  | {
-      loading: true;
-      error: null;
-      formInitialization: null;
-    }
-  | {
-      loading: false;
-      error: null;
-      formInitialization: FormInitializationResponse;
-    }
-  | {
-      loading: false;
-      error: Error;
-      formInitialization: FormInitializationResponse | null;
-    };
-
-type Action =
-  | { type: "FETCH_START" }
-  | { type: "FETCH_SUCCESS"; payload: FormInitializationResponse }
-  | { type: "FETCH_ERROR"; payload: Error };
-
+/**
+ * Initial state for the form initialization reducer
+ */
 const initialState: State = {
   loading: true,
   error: null,
   formInitialization: null,
 };
 
+/**
+ * Reducer function to manage form initialization state
+ * Handles loading, success, and error states during form initialization process
+ *
+ * @param state - Current state of the form initialization
+ * @param action - Action to be processed containing type and optional payload
+ * @returns Updated state based on the action type
+ *
+ */
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "FETCH_START":
@@ -113,59 +72,161 @@ export type useFormInitialization = State & {
   refetch: () => Promise<void>;
 };
 
+/**
+ * Custom hook for managing form initialization in Etendo ERP forms
+ *
+ * This hook handles the complete lifecycle of form initialization including:
+ * - Fetching form metadata and initial values
+ * - Managing loading and error states
+ * - Enriching data with audit fields
+ * - Updating session attributes
+ * - Providing refetch capability
+ *
+ * @param params - Form initialization parameters
+ * @param params.tab - Tab configuration containing fields, entity info, etc.
+ * @param params.mode - Form mode (NEW, EDIT, etc.)
+ * @param params.recordId - Optional record ID for editing existing records
+ *
+ * @returns Object containing:
+ * - `loading` - Boolean indicating if initialization is in progress
+ * - `error` - Error object if initialization failed, null otherwise
+ * - `formInitialization` - Initialized form data and configuration
+ * - `refetch` - Function to re-trigger form initialization
+ *
+ */
 export function useFormInitialization({ tab, mode, recordId }: FormInitializationParams): useFormInitialization {
-  const { setSession } = useUserContext();
+  const { setSession, setSessionSyncLoading } = useUserContext();
   const { parentRecord: parent } = useTabContext();
   const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
   const { error, formInitialization, loading } = state;
-  const parentData = useFormParent(FieldName.HQL_NAME);
+  const parentData = useFormParent(FieldName.INPUT_NAME);
   const parentId = parent?.id?.toString();
+
+  const { record } = useCurrentRecord({
+    tab: tab,
+    recordId: recordId,
+  });
+
   const params = useMemo(
     () => (tab ? buildFormInitializationParams({ tab, mode, recordId, parentId }) : null),
     [tab, mode, recordId, parentId]
   );
 
+  /**
+   * Main fetch function that orchestrates the form initialization process
+   *
+   * This function:
+   * 1. Validates required parameters and finds the entity key column
+   * 2. Builds the payload with form data and parent context
+   * 3. Fetches initialization data from the backend
+   * 4. Enriches the response with audit fields for existing records
+   * 5. Updates session attributes with the new data
+   * 6. Dispatches success or error actions to update component state
+   *
+   * @throws {Error} When entity key column is missing or fetch fails
+   */
   const fetch = useCallback(async () => {
     if (!params) return;
 
     try {
-      const entityKeyColumn = Object.values(tab.fields).find((field) => field.column.keyColumn);
-      if (!entityKeyColumn) {
-        throw new Error("Missing key column");
-      }
+      setSessionSyncLoading(true);
+      const entityKeyColumn = findEntityKeyColumn(tab.fields);
+      if (!entityKeyColumn) throw new Error("Missing key column");
 
-      const additionalFields = getFieldsToAdd(tab.entityName, mode);
+      const payload = buildFormInitializationPayload(tab, mode, parentData, entityKeyColumn);
 
-      const payload = {
-        ...parentData,
-        inpKeyName: entityKeyColumn.inputName,
-        inpTabId: tab.id,
-        inpTableId: tab.table,
-        inpkeyColumnId: entityKeyColumn.columnName,
-        keyColumnName: entityKeyColumn.columnName,
-        _entityName: tab.entityName,
-        inpwindowId: tab.window,
-        ...additionalFields,
-      };
+      const data: FormInitializationResponse = await fetchFormInitialization(params, payload);
 
-      const data = await fetchFormInitialization(params, payload);
-      const storedInSessionAttributes = Object.entries(data.auxiliaryInputValues).reduce(
-        (acc, [key, { value }]) => {
-          acc[key] = value || "";
+      const enrichedData = enrichWithAuditFields(data, record, mode);
+      const storedInSessionAttributes = buildSessionAttributes(enrichedData);
 
-          return acc;
-        },
-        {} as Record<string, string>
-      );
+      setSession((prev) => ({
+        ...prev,
+        ...storedInSessionAttributes,
+      }));
 
-      setSession((prev) => ({ ...prev, ...storedInSessionAttributes, ...data.sessionAttributes }));
-      dispatch({ type: "FETCH_SUCCESS", payload: data });
+      dispatch({ type: "FETCH_SUCCESS", payload: enrichedData });
     } catch (err) {
       logger.warn(err);
       dispatch({ type: "FETCH_ERROR", payload: err instanceof Error ? err : new Error("Unknown error") });
+    } finally {
+      setSessionSyncLoading(false);
     }
-  }, [params, parentData, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.window]);
+  }, [params, parentData, setSession, setSessionSyncLoading, tab, mode, record]);
 
+  /**
+   * Finds the primary key column field in the tab's field configuration
+   *
+   * The key column is essential for form operations as it identifies the primary
+   * key field used for record identification and database operations.
+   *
+   * @param fields - Object containing all field definitions for the current tab
+   * @returns The field that represents the entity's primary key, or undefined if not found
+   *
+   */
+  function findEntityKeyColumn(fields: Tab["fields"]): Field | undefined {
+    return Object.values(fields).find((field) => field?.column?.keyColumn);
+  }
+
+  /**
+   * Enriches form initialization data with audit trail information
+   *
+   * For existing records (non-NEW mode), this function adds audit fields
+   * such as creation date, created by, last updated, and updated by information.
+   * These fields are crucial for tracking record history and compliance.
+   *
+   * @param data - Original form initialization response from the backend
+   * @param record - Current record data containing audit information
+   * @param mode - Form mode to determine if audit fields should be added
+   * @returns Enhanced form initialization data with audit fields included
+   *
+   */
+  function enrichWithAuditFields(
+    data: FormInitializationResponse,
+    record: RecordData | null,
+    mode: FormMode
+  ): FormInitializationResponse {
+    if (!record || mode === FormMode.NEW) return data;
+
+    const auditFields = [
+      { fieldName: "creationDate", value: record.creationDate, inputName: "inpcreationDate" },
+      { fieldName: "createdBy$_identifier", value: record.createdBy$_identifier, inputName: "inpcreatedBy" },
+      { fieldName: "updated", value: record.updated, inputName: "inpupdated" },
+      { fieldName: "updatedBy$_identifier", value: record.updatedBy$_identifier, inputName: "inpupdatedBy" },
+    ].filter(({ value }) => Boolean(value));
+
+    for (const { fieldName, value } of auditFields) {
+      if (!data.auxiliaryInputValues[fieldName]) {
+        data.auxiliaryInputValues[fieldName] = { value: String(value) };
+      }
+      (data as unknown as Record<string, unknown>)[fieldName] = String(value);
+    }
+
+    return data;
+  }
+
+  /**
+   * useEffect: Automatically trigger initial form initialization when params change.
+   * This ensures form data is fetched when the component first mounts or when
+   * key parameters (tab, mode, recordId, parentId) change.
+   */
+  useEffect(() => {
+    if (params) {
+      dispatch({ type: "FETCH_START" });
+      fetch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
+
+  /**
+   * Refetch function to manually trigger form initialization
+   *
+   * Useful for refreshing form data after external changes or error recovery.
+   * Resets the state to loading and re-runs the complete initialization process.
+   *
+   * @returns Promise that resolves when refetch is complete
+   *
+   */
   const refetch = useCallback(async () => {
     if (!params) return;
     dispatch({ type: "FETCH_START" });

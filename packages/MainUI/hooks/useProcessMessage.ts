@@ -15,24 +15,22 @@
  *************************************************************************
  */
 
-import { ApiContext } from "@/contexts/api";
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
-import { useCallback, useContext } from "react";
+import { useCallback } from "react";
 import { useUserContext } from "./useUserContext";
+import { useApiContext } from "./useApiContext";
 
 export interface ProcessMessage {
-  message: string;
+  text: string;
   type: "error" | "success" | "info" | "warning";
   title: string;
 }
 
-const urlMessageParam = "/meta/message";
-
 export function useProcessMessage(tabId: string) {
-  const apiUrl = useContext(ApiContext);
-  const { token } = useUserContext();
   const { t } = useTranslation();
+  const { token } = useUserContext();
+  const API_BASE_URL = useApiContext();
 
   const normalizeMessageType = useCallback(
     (messageType: string, message: string): "success" | "error" | "warning" | "info" => {
@@ -84,14 +82,14 @@ export function useProcessMessage(tabId: string) {
         return null;
       }
 
-      if (data.message === "No message found") {
+      if (data.text === "No message found") {
         return null;
       }
 
-      const messageType = normalizeMessageType(data.type || "info", data.message || "");
+      const messageType = normalizeMessageType(data.type || "info", data.text || "");
 
       return {
-        message: data.message || "",
+        text: data.text || "",
         type: messageType,
         title: getMessageTitle(data.title, messageType),
       };
@@ -109,39 +107,28 @@ export function useProcessMessage(tabId: string) {
   }, []);
 
   const fetchProcessMessage = useCallback(async (): Promise<ProcessMessage | null> => {
-    if (!apiUrl) {
-      logger.warn(apiUrl, "API-URL Error");
-      return null;
-    }
-
     try {
-      const response = await fetch(`${apiUrl}${urlMessageParam}?tabId=${tabId}`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        logger.warn(response.status);
-        return null;
-      }
-
-      const txtResponse = await response.text();
-
-      try {
-        const data = JSON.parse(txtResponse);
-        return processResponseData(data);
-      } catch (error) {
-        logger.warn("Failed to parse JSON:", error);
-        return handleFetchError(error);
-      }
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      const response: Response & { data?: any } = await fetch(
+        `${API_BASE_URL}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?_action=org.openbravo.client.application.window.GetTabMessageActionHandler&language=en_US`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            tabId,
+          }),
+        }
+      );
+      const data = await response.json();
+      return processResponseData(data);
     } catch (error) {
       return handleFetchError(error);
     }
-  }, [apiUrl, tabId, token, processResponseData, handleFetchError]);
+  }, [API_BASE_URL, token, tabId, processResponseData, handleFetchError]);
 
   return { fetchProcessMessage };
 }

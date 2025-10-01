@@ -28,6 +28,33 @@ export interface TextInputProps
   field: Field;
   endAdornment?: React.ReactNode;
   errorText?: string;
+  showClearButton?: boolean;
+  onClear?: () => void;
+}
+
+export interface TextAreaInputProps {
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+  onLeftIconClick?: () => void;
+  onRightIconClick?: () => void;
+  label?: string;
+  setValue?: (value: string) => void;
+  field: Field;
+  endAdornment?: React.ReactNode;
+  errorText?: string;
+  showClearButton?: boolean;
+  onClear?: () => void;
+  rows?: number;
+  name?: string;
+  id?: string;
+  value?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  readOnly?: boolean;
+  onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onFocus?: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
+  className?: string;
 }
 
 export interface Option {

@@ -40,6 +40,11 @@ export const getFieldReference = (reference?: string): FieldType => {
       return FieldType.DATE;
     case FIELD_REFERENCE_CODES.BOOLEAN:
       return FieldType.BOOLEAN;
+    case FIELD_REFERENCE_CODES.INTEGER:
+    case FIELD_REFERENCE_CODES.NUMERIC:
+    case FIELD_REFERENCE_CODES.DECIMAL:
+      return FieldType.NUMBER;
+    case FIELD_REFERENCE_CODES.QUANTITY_22:
     case FIELD_REFERENCE_CODES.QUANTITY_29:
       return FieldType.QUANTITY;
     case FIELD_REFERENCE_CODES.LIST_17:
@@ -59,8 +64,26 @@ export const getFieldReference = (reference?: string): FieldType => {
 export const sanitizeValue = (value: unknown, field?: Field) => {
   const reference = getFieldReference(field?.column?.reference);
 
+  // Special handling for known numeric fields by name
+  if (field?.inputName === "consumptionDays" || field?.name === "consumptionDays") {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+    const numericValue = Number(value);
+    return Number.isNaN(numericValue) ? value : numericValue;
+  }
+
   if (reference === FieldType.DATE) {
     return value ? String(value).split("-").toReversed().join("-") : null;
+  }
+
+  if (reference === FieldType.QUANTITY || reference === FieldType.NUMBER) {
+    // For numeric fields, preserve numeric values
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+    const numericValue = Number(value);
+    return Number.isNaN(numericValue) ? value : numericValue;
   }
 
   const stringValue = String(value);
@@ -86,7 +109,17 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
       const field = fields?.[key];
       const newKey = field?.inputName ?? key;
 
-      acc[newKey] = sanitizeValue(value, field);
+      // Special handling for known numeric fields when field metadata is not available
+      if (!field && (key === "consumptionDays" || newKey === "consumptionDays")) {
+        if (value === null || value === undefined || value === "") {
+          acc[newKey] = null;
+        } else {
+          const numericValue = Number(value);
+          acc[newKey] = Number.isNaN(numericValue) ? value : numericValue;
+        }
+      } else {
+        acc[newKey] = sanitizeValue(value, field);
+      }
 
       return acc;
     },
@@ -156,29 +189,25 @@ export const buildFormPayload = ({
   oldValues?: EntityData;
   mode: FormMode;
   csrfToken: string;
-}) => ({
-  dataSource: "isc_OBViewDataSource_0",
-  operationType: mode === FormMode.NEW ? "add" : "update",
-  componentId: "isc_OBViewForm_0",
-  data: {
-    accountingDate: new Date(),
-    ...values,
-  },
-  oldValues,
-  csrfToken,
-});
+}) => {
+  const payload: any = {
+    dataSource: "isc_OBViewDataSource_0",
+    operationType: mode === FormMode.NEW ? "add" : "update",
+    componentId: "isc_OBViewForm_0",
+    data: {
+      accountingDate: new Date(),
+      ...values,
+    },
+    csrfToken,
+  };
 
-export const buildRequestOptions = (
-  values: EntityData,
-  initialState: EntityData,
-  mode: FormMode,
-  userId: string,
-  signal: AbortSignal
-) => ({
-  signal,
-  method: "POST",
-  body: buildFormPayload({ values, oldValues: initialState, mode, csrfToken: userId }),
-});
+  // Only include oldValues for update operations
+  if (mode !== FormMode.NEW && oldValues) {
+    payload.oldValues = oldValues;
+  }
+
+  return payload;
+};
 
 export const formatNumber = (value: number) => new Intl.NumberFormat(navigator.language).format(value);
 
@@ -269,5 +298,57 @@ export const buildProcessPayload = (
     ...userInput, // User input from form
   };
 };
+export const buildDeleteQueryString = ({
+  windowMetadata,
+  tab,
+  recordId,
+}: {
+  windowMetadata?: WindowMetadata;
+  tab: Tab;
+  recordId: string;
+}) =>
+  new URLSearchParams({
+    windowId: String(windowMetadata?.id || tab.window || ""),
+    tabId: String(tab.id),
+    moduleId: String(tab.module || "0"),
+    _operationType: "remove",
+    _noActiveFilter: "true",
+    sendOriginalIDBack: "true",
+    _extraProperties: "",
+    Constants_FIELDSEPARATOR: "$",
+    _className: "OBViewDataSource",
+    Constants_IDENTIFIER: "_identifier",
+    id: recordId,
+    _textMatchStyle: "substring",
+    _componentId: "isc_OBViewGrid_0",
+    _dataSource: "isc_OBViewDataSource_0",
+    isc_metaDataPrefix: "_",
+    isc_dataFormat: "json",
+  });
 
+export const buildDeletePayload = ({
+  recordId,
+  csrfToken,
+}: {
+  recordId: string;
+  csrfToken: string;
+}) => ({
+  dataSource: "isc_OBViewDataSource_0",
+  operationType: "remove",
+  componentId: "isc_OBViewGrid_0",
+  data: { id: recordId },
+  csrfToken,
+});
+
+export const buildRequestOptions = (
+  values: EntityData,
+  initialState: EntityData,
+  mode: FormMode,
+  userId: string,
+  signal: AbortSignal
+) => ({
+  signal,
+  method: "POST",
+  body: buildFormPayload({ values, oldValues: initialState, mode, csrfToken: userId }),
+});
 export { shouldShowTab, type TabWithParentInfo } from "./tabUtils";

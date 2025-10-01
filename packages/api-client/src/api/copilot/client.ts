@@ -28,6 +28,15 @@ export class CopilotUnauthorizedError extends Error {
   }
 }
 
+export class CopilotNotInstalledError extends Error {
+  public response: Response;
+
+  constructor(message: string, response: Response) {
+    super(`Copilot: ${message}`);
+    this.response = response;
+  }
+}
+
 export class CopilotClient {
   public static client = new Client();
   private static currentBaseUrl = "";
@@ -37,10 +46,10 @@ export class CopilotClient {
    * Initializes the CopilotClient with base URL
    * Uses Next.js proxy instead of direct ERP connection
    */
-  public static setBaseUrl(etendoUrl: string) {
-    // Instead of connecting directly to ERP, use Next.js API route
+  public static setBaseUrl() {
+    // Use existing ERP proxy route that handles all Classic forwarding
     const proxyUrl =
-      typeof window !== "undefined" ? `${window.location.origin}/api/copilot` : "http://localhost:3000/api/copilot";
+      typeof window !== "undefined" ? `${window.location.origin}/api/erp` : "http://localhost:3000/api/erp";
 
     CopilotClient.currentBaseUrl = proxyUrl;
     CopilotClient.client.setBaseUrl(proxyUrl);
@@ -51,12 +60,7 @@ export class CopilotClient {
    * Sets authentication token for all requests
    */
   public static setToken(token: string) {
-    if (!isProduction()) {
-      CopilotClient.client.setAuthHeader(btoa("admin:admin"), "Basic");
-    } else {
-      CopilotClient.client.setAuthHeader(token, "Bearer");
-    }
-
+    CopilotClient.client.setAuthHeader(token, "Bearer");
     return CopilotClient;
   }
 
@@ -75,9 +79,17 @@ export class CopilotClient {
         throw new CopilotUnauthorizedError("Unauthorized access to Copilot service", response);
       }
 
+      if (!response.ok && response.status === 404) {
+        throw new CopilotNotInstalledError("Copilot service not installed", response);
+      }
+
       return response;
     } catch (error) {
       if (error instanceof CopilotUnauthorizedError) {
+        throw error;
+      }
+      if (error instanceof CopilotNotInstalledError) {
+        console.error("Copilot service is not installed:", error);
         throw error;
       }
       console.error(`CopilotClient request failed for ${endpoint}:`, error);
@@ -292,20 +304,16 @@ export class CopilotClient {
 
   /**
    * Gets headers for SSE connections
-   * Handles environment-specific authentication
+   * Uses the configured authentication token
    */
   public static getSSEHeaders(): Record<string, string> {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      Accept: "text/event-stream",
+    };
 
-    if (!isProduction()) {
-      headers.Authorization = `Basic ${btoa("admin:admin")}`;
-      headers.Accept = "text/event-stream";
-    } else {
-      const authHeader = CopilotClient.client.getAuthHeader();
-      if (authHeader) {
-        headers.Authorization = authHeader;
-      }
-      headers.Accept = "text/event-stream";
+    const authHeader = CopilotClient.client.getAuthHeader();
+    if (authHeader) {
+      headers.Authorization = authHeader;
     }
 
     return headers;
@@ -358,7 +366,7 @@ export class CopilotClient {
     interceptor?: Interceptor;
   }) {
     if (config?.baseUrl) {
-      CopilotClient.setBaseUrl(config.baseUrl);
+      CopilotClient.setBaseUrl();
     }
 
     if (config?.token) {

@@ -1,4 +1,3 @@
-
 import { render, fireEvent, waitFor, type RenderResult } from "@testing-library/react";
 import ProcessDefinitionModal from "../ProcessDefinitionModal";
 import { executeProcess } from "@/app/actions/process";
@@ -66,7 +65,9 @@ jest.mock("react-hook-form", () => ({
     getValues: () => ({}),
     setValue: jest.fn(),
     watch: () => ({}),
+    control: {},
   }),
+  useFormState: (_: { control?: any } = {}) => ({ isValid: true, isSubmitting: false }),
 }));
 
 const mockExecuteProcess = executeProcess as jest.MockedFunction<typeof executeProcess>;

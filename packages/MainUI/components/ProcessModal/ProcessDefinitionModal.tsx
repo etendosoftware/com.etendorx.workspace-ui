@@ -42,9 +42,8 @@ import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useForm, useFormState } from "react-hook-form";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
 import Modal from "../Modal";
@@ -52,7 +51,9 @@ import Loading from "../loading";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
-import { PROCESS_DEFINITION_DATA } from "@/utils/processes/definition/constants";
+import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
+import type { Tab, ProcessParameter } from "@workspaceui/api-client/src/api/types";
+import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 
 /** Fallback object for record values when no record context exists */
 export const FALLBACK_RESULT = {};
@@ -60,6 +61,14 @@ export const FALLBACK_RESULT = {};
 /** Reference ID for window reference field types */
 const WINDOW_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW;
 
+export type GridSelectionStructure = {
+  [entityName: string]: {
+    _selection: unknown[];
+    _allRows: unknown[];
+  };
+};
+
+export type GridSelectionUpdater = GridSelectionStructure | ((prev: GridSelectionStructure) => GridSelectionStructure);
 /**
  * ProcessDefinitionModalContent - Core modal component for process execution
  *
@@ -89,14 +98,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
-  const [gridSelection, setGridSelection] = useState<unknown[]>([]);
+  const [gridSelection, setGridSelection] = useState<GridSelectionStructure>({});
 
   const selectedRecords = graph.getSelectedMultiple(tab);
 
-  const windowReferenceTab = parameters.grid?.window?.tabs?.[0] as Tab;
-  const entityName = windowReferenceTab?.entityName || "";
-  const windowId = tab?.window || "";
+  const firstWindowReferenceParam = useMemo(() => {
+    return Object.values(parameters).find((param) => param.reference === WINDOW_REFERENCE_ID);
+  }, [parameters]);
+
+  const windowReferenceTab = firstWindowReferenceParam?.window?.tabs?.[0] as Tab;
   const tabId = windowReferenceTab?.id || "";
+  const windowId = tab?.window || "";
 
   const recordValues: RecordValues | null = useMemo(() => {
     if (!record || !tab?.fields) return FALLBACK_RESULT;
@@ -160,20 +172,31 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     };
   }, [record, tab, initialState]);
 
-  // Important: use defaultValues to avoid re-initializing the form on every render
-  // Then rely on the reset effect below when defaults actually arrive
   const form = useForm({
     defaultValues: availableFormData,
     mode: "onChange",
   });
 
-  // Reset form values when defaults are loaded
   useEffect(() => {
     if (hasInitialData && Object.keys(availableFormData).length > 0) {
-      console.log("Resetting form with new values:", availableFormData);
       form.reset(availableFormData);
     }
-  }, [hasInitialData, availableFormData, form]);
+  }, [hasInitialData, availableFormData, form, initialState]);
+
+  // Reactive view into form state (validity / submitting)
+  const { isValid, isSubmitting } = useFormState({ control: form.control });
+
+  // Combine loading states: initialization and callouts (do not include internal param-loading)
+
+  // NOTE: globalCalloutManager.isCalloutRunning() not working correctly
+  // const isDataLoading = Boolean(
+  //   initializationLoading || !globalCalloutManager.arePendingCalloutsEmpty() // || globalCalloutManager.isCalloutRunning()
+  // );
+
+  // If initialization failed, keep the button disabled until user action
+  const initializationBlocksSubmit = Boolean(initializationError);
+  // Only enforce form validity when there are mandatory parameters in the process
+  const hasMandatoryParameters = Object.values(parameters).some((p) => Boolean(p.mandatory));
 
   const handleClose = useCallback(() => {
     if (isPending) return;
@@ -196,17 +219,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       try {
         const currentAttrs = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
         const currentRecordValue = recordValues?.[currentAttrs.inpPrimaryKeyColumnId];
-
         const payload = {
           [currentAttrs.inpColumnId]: currentRecordValue,
           [currentAttrs.inpPrimaryKeyColumnId]: currentRecordValue,
           _buttonValue: "DONE",
           _params: {
-            grid: {
-              _selection: gridSelection,
-            },
+            ...mapKeysWithDefaults({ ...form.getValues(), ...gridSelection }),
           },
-          _entityName: entityName,
           windowId: tab.window,
         };
 
@@ -225,7 +244,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
     });
-  }, [tab, processId, javaClassName, recordValues, gridSelection, entityName, onSuccess, startTransition, token]);
+  }, [tab, processId, recordValues, form, gridSelection, token, javaClassName, onSuccess]);
 
   /**
    * Executes processes directly via servlet using javaClassName
@@ -236,6 +255,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     if (!tab || !processId || !javaClassName) {
       return;
     }
+
+    const windowConfig = WINDOW_SPECIFIC_KEYS[windowId];
+    const extraKey = windowConfig ? { [windowConfig.key]: windowConfig.value(record) } : {};
+
     startTransition(async () => {
       try {
         const payload = {
@@ -243,6 +266,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           _buttonValue: "DONE",
           _params: {},
           _entityName: tab.entityName,
+          ...extraKey,
           ...recordValues,
           ...form.getValues(),
           windowId: tab.window,
@@ -256,14 +280,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           undefined,
           javaClassName
         );
+
         setResult(res);
         if (res.success) onSuccess?.();
       } catch (error) {
         logger.warn("Error executing direct Java process:", error);
-        setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
+        setResult({
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
       }
     });
-  }, [tab, processId, javaClassName, recordValues, form, onSuccess, startTransition, token, record?.id]);
+  }, [tab, processId, javaClassName, windowId, record, recordValues, form, token, onSuccess]);
 
   /**
    * Main process execution handler - routes to appropriate execution method
@@ -295,10 +323,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         record || {}, // Complete record data (fallback to empty object)
         tab, // Tab metadata
         initialState || {}, // Process defaults from server (handle null case)
-        form.getValues() // User input from form
+        (() => {
+          const formValues = form.getValues();
+          return formValues;
+        })() // User input from form
       );
       try {
         const stringFnResult = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
+          _buttonValue: "DONE",
           buttonValue: "DONE",
           windowId: tab.window,
           entityName: tab.entityName,
@@ -368,7 +400,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     if (open) {
       setResult(null);
       setParameters(button.processDefinition.parameters);
-      setGridSelection([]);
+      setGridSelection({});
     }
   }, [button.processDefinition.parameters, open]);
 
@@ -436,32 +468,51 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     );
   };
 
+  const getTabForParameter = useCallback((parameter: ProcessParameter) => {
+    if (parameter.reference !== WINDOW_REFERENCE_ID || !parameter.window?.tabs) {
+      return null;
+    }
+
+    return parameter.window.tabs[0] as Tab;
+  }, []);
+
   const renderParameters = () => {
     if (result?.success) return null;
-
     return Object.values(parameters).map((parameter) => {
       if (parameter.reference === WINDOW_REFERENCE_ID) {
+        const parameterTab = getTabForParameter(parameter);
+        const parameterEntityName = parameterTab?.entityName || "";
+        const parameterTabId = parameterTab?.id || "";
         return (
           <WindowReferenceGrid
             key={`window-ref-${parameter.id || parameter.name}`}
             parameter={parameter}
+            parameters={parameters}
             onSelectionChange={setGridSelection}
-            tabId={tabId}
-            entityName={entityName}
-            windowReferenceTab={windowReferenceTab}
-            processConfig={processConfig}
+            tabId={parameterTabId}
+            entityName={parameterEntityName}
+            windowReferenceTab={parameterTab || windowReferenceTab}
+            processConfig={{
+              processId: processConfig?.processId || "",
+              ...processConfig,
+              defaults: (processInitialization?.defaults || {}) as Record<
+                string,
+                { value: string; identifier: string }
+              >,
+            }}
             processConfigLoading={processConfigLoading}
             processConfigError={processConfigError}
             recordValues={recordValues}
+            data-testid="WindowReferenceGrid__761503"
           />
         );
       }
-      // Use new ProcessParameterSelector for enhanced field reference support
       return (
         <ProcessParameterSelector
           key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
           parameter={parameter}
-          logicFields={logicFields} // Pass logic fields from process defaults
+          logicFields={logicFields}
+          data-testid="ProcessParameterSelector__761503"
         />
       );
     });
@@ -475,7 +526,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     if (result?.success) {
       return (
         <span className="flex items-center gap-2">
-          <CheckIcon fill="white" />
+          <CheckIcon fill="white" data-testid="CheckIcon__761503" />
           {t("process.completedSuccessfully")}
         </span>
       );
@@ -483,17 +534,23 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
     return (
       <>
-        {CheckIcon && <CheckIcon fill="white" />}
+        {CheckIcon && <CheckIcon fill="white" data-testid="CheckIcon__761503" />}
         {t("common.execute")}
       </>
     );
   };
 
-  const isActionButtonDisabled = isPending || !!result?.success || (hasWindowReference && gridSelection.length === 0);
+  const isActionButtonDisabled =
+    isPending ||
+    initializationBlocksSubmit ||
+    (hasMandatoryParameters && !isValid) ||
+    isSubmitting ||
+    !!result?.success ||
+    (hasWindowReference && !gridSelection);
 
   return (
-    <Modal open={open} onClose={handleClose}>
-      <FormProvider {...form}>
+    <Modal open={open} onClose={handleClose} data-testid="Modal__761503">
+      <FormProvider {...form} data-testid="FormProvider__761503">
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-5xl max-h-full overflow-hidden flex flex-col">
             {/* Header */}
@@ -506,7 +563,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                 onClick={handleClose}
                 className="p-1 rounded-full hover:bg-(--color-baseline-10)"
                 disabled={isPending}>
-                <CloseIcon />
+                <CloseIcon data-testid="CloseIcon__761503" />
               </button>
             </div>
 
@@ -517,7 +574,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                   className={`absolute transition-opacity inset-0 flex items-center pointer-events-none justify-center bg-white ${
                     loading || initializationLoading ? "opacity-100" : "opacity-0"
                   }`}>
-                  <Loading />
+                  <Loading data-testid="Loading__761503" />
                 </div>
                 <div className={`transition-opacity ${loading || initializationLoading ? "opacity-0" : "opacity-100"}`}>
                   {renderResponse()}
@@ -562,8 +619,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
  * @param props.onSuccess - Success callback
  * @returns JSX.Element | null - Modal component or null if no button provided
  */
-export default function ProcessDefinitionModal({ button, onSuccess, ...props }: ProcessDefinitionModalProps) {
+export default function ProcessDefinitionModal({ button, ...props }: ProcessDefinitionModalProps) {
   if (!button) return null;
 
-  return <ProcessDefinitionModalContent {...props} button={button} onSuccess={onSuccess} />;
+  return (
+    <ProcessDefinitionModalContent {...props} button={button} data-testid="ProcessDefinitionModalContent__761503" />
+  );
 }

@@ -1,6 +1,6 @@
 {
   "name": "workspaceui",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "",
   "type": "module",
   "main": "packages/MainUI/server.js",
@@ -24,6 +24,8 @@
     "test:coverage:html": "jest --coverage --coverageReporters=html",
     "test:ci": "jest --ci --coverage --watchAll=false",
     "test:mainui": "jest --selectProjects MainUI",
+    "check:data-testid": "./scripts/check-add-data-testid.sh",
+    "apply:data-testid": "./scripts/apply-add-data-testid.sh",
     "test:api-client": "jest --selectProjects \"API Client\"",
     "test:component-library": "jest --selectProjects ComponentLibrary",
     "test:mainui:watch": "jest --selectProjects MainUI --watch",
@@ -53,6 +55,7 @@
     "prettier-eslint-cli": "^8.0.1",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
+    "turbo": "^2.5.6",
     "typescript": "^5.2.2"
   },
   "dependencies": {

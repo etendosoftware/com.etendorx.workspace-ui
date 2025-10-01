@@ -22,6 +22,7 @@ import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
+import { useUserContext } from "@/hooks/useUserContext";
 import { EMPTY_ARRAY } from "@/utils/defaults";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
@@ -44,12 +45,10 @@ import ProcessMenu from "./Menus/ProcessMenu";
 import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar/TopToolbar";
 import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
-import { createButtonByType, getButtonStyles, organizeButtonsBySection } from "@/utils/toolbar/utils";
+import { getToolbarSections } from "@/utils/toolbar/utils";
 import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
-
-const BaseSection = { display: "flex", alignItems: "center" };
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
@@ -71,6 +70,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { graph } = useSelected();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
+  const { isSessionSyncLoading, isCopilotInstalled } = useUserContext();
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -143,7 +143,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const handleProcessSuccess = useCallback(() => {
     refetchDatasource(tab.id);
     graph.clearSelected(tab);
-  }, [graph, refetchDatasource, tab]);
+    graph.setSelected(tab);
+    refetch();
+  }, [graph, refetch, refetchDatasource, tab]);
 
   const handleCloseProcess = useCallback(() => {
     setOpenIframeModal(false);
@@ -157,54 +159,43 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   }, []);
 
   const handleCompleteRefresh = useCallback(async () => {
-    graph.clearSelected(tab);
     refetchDatasource(tab.id);
-  }, [graph, refetchDatasource, tab]);
+  }, [refetchDatasource, tab]);
 
   const handleCloseSearch = useCallback(() => setSearchOpen(false), [setSearchOpen]);
 
   const handleCloseStatusModal = useCallback(() => setActiveModal(null), []);
 
   const toolbarConfig = useMemo(() => {
-    const organizedButtons = organizeButtonsBySection(buttons, isFormView, isTreeNodeView);
     const hasSelectedRecord = !!selectedRecord?.id;
     const hasParentRecordSelected = !hasParentTab || selectedParentItems.length === 1;
 
-    const createSectionButtons = (sectionButtons: ToolbarButtonMetadata[]) =>
-      sectionButtons.map((button) => {
-        const config = createButtonByType({
-          button,
-          onAction: handleAction,
-          isFormView,
-          hasFormChanges,
-          hasSelectedRecord,
-          hasParentRecordSelected,
-          saveButtonState,
-        });
-
-        const styles = getButtonStyles(button);
-        if (styles) {
-          config.className = config.className ? `${config.className} ${styles}` : styles;
-        }
-
-        return config;
-      });
+    const baseConfig = getToolbarSections({
+      buttons: buttons as ToolbarButtonMetadata[],
+      onAction: handleAction,
+      isFormView: isFormView,
+      isTreeNodeView: isTreeNodeView,
+      hasFormChanges: hasFormChanges,
+      hasSelectedRecord: hasSelectedRecord,
+      hasParentRecordSelected: hasParentRecordSelected,
+      isCopilotInstalled: isCopilotInstalled,
+      saveButtonState: saveButtonState,
+    });
 
     const config = {
-      leftSection: {
-        buttons: createSectionButtons(organizedButtons.left),
-        style: { ...BaseSection, gap: "0.25rem" },
-      },
-      centerSection: {
-        buttons: createSectionButtons(organizedButtons.center),
-        style: { ...BaseSection, gap: "0.25rem" },
-      },
-      rightSection: {
-        buttons: createSectionButtons(organizedButtons.right),
-        style: { ...BaseSection, gap: "0.25rem" },
-      },
-      processButton: createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, anchorEl),
+      ...baseConfig,
       isItemSelected: hasSelectedRecord,
+      processButton:
+        processButtons.length > 0
+          ? createProcessMenuButton(
+              processButtons.length,
+              hasSelectedRecord,
+              handleMenuToggle,
+              t,
+              anchorEl,
+              isSessionSyncLoading
+            )
+          : undefined,
     };
 
     return config;
@@ -222,15 +213,17 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     selectedParentItems,
     hasFormChanges,
     saveButtonState,
+    isSessionSyncLoading,
+    isCopilotInstalled,
   ]);
 
   if (loading) {
-    return <ToolbarSkeleton />;
+    return <ToolbarSkeleton data-testid="ToolbarSkeleton__a2dd07" />;
   }
 
   return (
     <>
-      <TopToolbar {...toolbarConfig} />
+      <TopToolbar {...toolbarConfig} data-testid="TopToolbar__a2dd07" />
       {activeModal && (
         <StatusModal
           open={activeModal.isOpen}
@@ -238,6 +231,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           statusType="info"
           saveLabel="Cerrar"
           onClose={handleCloseStatusModal}
+          data-testid="StatusModal__a2dd07"
         />
       )}
       {statusModal.open && (
@@ -249,6 +243,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           saveLabel={statusModal.saveLabel || t("common.close")}
           secondaryButtonLabel={statusModal.secondaryButtonLabel}
           onClose={hideStatusModal}
+          data-testid="StatusModal__a2dd07"
         />
       )}
       {confirmAction && (
@@ -259,6 +254,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           onCancel={handleCancelConfirm}
           saveLabel={confirmAction.saveLabel || t("common.confirm")}
           secondaryButtonLabel={confirmAction.secondaryButtonLabel || t("common.cancel")}
+          data-testid="ConfirmModal__a2dd07"
         />
       )}
       {processButtons.length > 0 && (
@@ -268,6 +264,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           processButtons={processButtons}
           onProcessClick={handleProcessMenuClick}
           selectedRecord={selectedRecord}
+          data-testid="ProcessMenu__a2dd07"
         />
       )}
       {searchOpen && !isFormView && (
@@ -278,6 +275,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           onClose={handleCloseSearch}
           placeholder={t("table.placeholders.search")}
           autoCompleteTexts={EMPTY_ARRAY}
+          data-testid="SearchPortal__a2dd07"
         />
       )}
       <ProcessIframeModal
@@ -287,6 +285,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         title={selectedProcessActionButton?.name}
         onProcessSuccess={handleProcessSuccess}
         tabId={tab.id}
+        data-testid="ProcessIframeModal__a2dd07"
       />
       <ProcessDefinitionModal
         open={showProcessDefinitionModal}
@@ -294,6 +293,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         button={selectedProcessDefinitionButton}
         onSuccess={handleCompleteRefresh}
         onError={handleCompleteRefresh}
+        data-testid="ProcessDefinitionModal__a2dd07"
       />
     </>
   );

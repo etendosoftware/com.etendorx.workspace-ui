@@ -36,14 +36,15 @@ export const createProcessMenuButton = (
   hasSelectedRecord: boolean,
   onMenuOpen: (event: React.MouseEvent<HTMLButtonElement>) => void,
   t: TranslateFunction,
-  anchorEl: HTMLElement | null
+  anchorEl: HTMLElement | null,
+  isLoading = false
 ): ProcessAvailableButton => ({
   key: "process-menu",
-  leftIcon: <ProcessIcon width="1rem" height="1rem" />,
-  rightIcon: <ChevronDownIcon width="1rem" height="1rem" />,
-  text: t("common.processes"),
+  leftIcon: <ProcessIcon width="1rem" height="1rem" data-testid="ProcessIcon__987e83" />,
+  rightIcon: <ChevronDownIcon width="1rem" height="1rem" data-testid="ChevronDownIcon__987e83" />,
+  text: isLoading ? t("common.loading") : t("common.processes"),
   anchorEl: anchorEl,
-  disabled: !hasSelectedRecord,
+  disabled: !hasSelectedRecord || isLoading,
   customContainerStyles: getProcessButtonStyles(anchorEl),
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
     if (hasSelectedRecord && event && processCount > 0) {

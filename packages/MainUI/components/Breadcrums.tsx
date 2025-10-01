@@ -30,6 +30,7 @@ import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
+import { useCurrentRecord } from "@/hooks/useCurrentRecord";
 
 interface BreadcrumbProps {
   allTabs: Tab[][];
@@ -48,6 +49,13 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     () => allTabsFormatted.find((tab) => tab.window === windowId),
     [allTabsFormatted, windowId]
   );
+  const tabFormState = windowId && currentTab ? getTabFormState(windowId, currentTab.id) : undefined;
+  const currentRecordId = tabFormState?.recordId || "";
+
+  const { record } = useCurrentRecord({
+    tab: currentTab,
+    recordId: currentRecordId,
+  });
 
   const isNewRecord = useCallback(() => pathname.includes("/NewRecord"), [pathname]);
 
@@ -91,13 +99,13 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
       if (currentRecordId && currentRecordId !== NEW_RECORD_ID) {
         items.push({
           id: currentRecordId.toString(),
-          label: currentRecordId.toString(),
+          label: record?._identifier?.toString() ?? currentRecordId?.toString(),
         });
       }
     }
 
     return items;
-  }, [windowId, window, currentTab, isNewRecord, t, handleWindowClick, getTabFormState]);
+  }, [windowId, window, isNewRecord, currentTab, t, handleWindowClick, getTabFormState, record?._identifier]);
 
   const handleHomeClick = useCallback(() => {
     navigateToHome();
@@ -105,7 +113,7 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
 
   return (
     <div className="w-full h-8">
-      <Breadcrumb onHomeClick={handleHomeClick} items={breadcrumbItems || []} />
+      <Breadcrumb onHomeClick={handleHomeClick} items={breadcrumbItems || []} data-testid="Breadcrumb__50ef19" />
     </div>
   );
 };

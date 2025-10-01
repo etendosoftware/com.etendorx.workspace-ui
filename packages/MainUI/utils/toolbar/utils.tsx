@@ -52,14 +52,14 @@ const BUTTON_STYLES = {
 export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
 
 export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }) => {
-  if (!iconKey) return <DefaultIcon />;
+  if (!iconKey) return <DefaultIcon data-testid="DefaultIcon__5aeccd" />;
 
   if (iconKey.startsWith("data:image/")) {
-    return <Base64Icon src={iconKey} />;
+    return <Base64Icon src={iconKey} data-testid="Base64Icon__5aeccd" />;
   }
 
   if (isBase64Image(iconKey)) {
-    return <Base64Icon src={`data:image/png;base64,${iconKey}`} />;
+    return <Base64Icon src={`data:image/png;base64,${iconKey}`} data-testid="Base64Icon__5aeccd" />;
   }
 
   return <span style={{ fontSize: "0.75rem", fontWeight: "bold" }}>{iconKey}</span>;
@@ -124,6 +124,7 @@ export const createButtonByType = ({
   hasFormChanges,
   hasSelectedRecord,
   hasParentRecordSelected,
+  isCopilotInstalled,
   saveButtonState,
 }: {
   button: ToolbarButtonMetadata;
@@ -132,13 +133,14 @@ export const createButtonByType = ({
   hasFormChanges: boolean;
   hasSelectedRecord: boolean;
   hasParentRecordSelected: boolean;
+  isCopilotInstalled?: boolean;
   saveButtonState?: SaveButtonState;
 }): ToolbarButton => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
   const baseConfig: ToolbarButton = {
     key: buttonKey,
-    icon: <IconComponent iconKey={button.icon} />,
+    icon: <IconComponent iconKey={button.icon} data-testid="IconComponent__5aeccd" />,
     tooltip: button.name,
     disabled: !button.active,
     height: IconSize,
@@ -177,7 +179,7 @@ export const createButtonByType = ({
     const actionHandlers = {
       [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: () => buildDisableConfig(!(isFormView || hasSelectedRecord)),
       [TOOLBAR_BUTTONS_ACTIONS.DELETE]: () => buildDisableConfig(!hasSelectedRecord),
-      [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () => buildDisableConfig(!hasSelectedRecord),
+      [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () => buildDisableConfig(!hasSelectedRecord || !isCopilotInstalled),
       [TOOLBAR_BUTTONS_ACTIONS.NEW]: () => buildDisableConfig(!hasParentRecordSelected),
       [TOOLBAR_BUTTONS_ACTIONS.REFRESH]: () => buildDisableConfig(!hasParentRecordSelected),
       [TOOLBAR_BUTTONS_ACTIONS.SAVE]: () => {
@@ -232,4 +234,105 @@ export const createButtonByType = ({
 
 export const getButtonStyles = (button: ToolbarButtonMetadata) => {
   return BUTTON_STYLES[button.action as keyof typeof BUTTON_STYLES];
+};
+
+/**
+ * Configuration object for button creation
+ */
+interface ButtonConfig {
+  isFormView: boolean;
+  hasFormChanges: boolean;
+  hasSelectedRecord: boolean;
+  hasParentRecordSelected: boolean;
+  saveButtonState?: SaveButtonState;
+  isCopilotInstalled?: boolean;
+}
+
+/**
+ * Creates toolbar buttons with configuration and styles applied
+ */
+const createSectionButtons = (
+  sectionButtons: ToolbarButtonMetadata[],
+  onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void,
+  config: ButtonConfig
+): ToolbarButton[] => {
+  return sectionButtons.map((button) => {
+    const toolbarButton = createButtonByType({
+      button,
+      onAction,
+      ...config,
+    });
+
+    // Apply button-specific styles if available
+    const styles = getButtonStyles(button);
+    if (styles) {
+      toolbarButton.className = toolbarButton.className ? `${toolbarButton.className} ${styles}` : styles;
+    }
+
+    return toolbarButton;
+  });
+};
+
+/**
+ * Base styles for toolbar sections - memoized to avoid object recreation
+ */
+const SECTION_BASE_STYLES: React.CSSProperties = { display: "flex", alignItems: "center" };
+const SECTION_STYLE: React.CSSProperties = { ...SECTION_BASE_STYLES, gap: "0.25rem" };
+
+/**
+ * Configuration object for getToolbarSections function
+ */
+interface ToolbarSectionsConfig {
+  buttons: ToolbarButtonMetadata[];
+  onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
+  isFormView: boolean;
+  isTreeNodeView?: boolean;
+  hasFormChanges?: boolean;
+  hasSelectedRecord?: boolean;
+  hasParentRecordSelected?: boolean;
+  isCopilotInstalled?: boolean;
+  saveButtonState?: SaveButtonState;
+}
+
+export const getToolbarSections = ({
+  buttons,
+  onAction,
+  isFormView,
+  isTreeNodeView,
+  hasFormChanges = false,
+  hasSelectedRecord = false,
+  hasParentRecordSelected = false,
+  isCopilotInstalled = false,
+  saveButtonState,
+}: ToolbarSectionsConfig): {
+  leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
+  centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
+  rightSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
+} => {
+  const organizedButtons = organizeButtonsBySection(buttons, isFormView, isTreeNodeView);
+
+  // Shared configuration object to avoid parameter repetition
+  const buttonConfig: ButtonConfig = {
+    isFormView,
+    hasFormChanges,
+    hasSelectedRecord,
+    hasParentRecordSelected,
+    saveButtonState,
+    isCopilotInstalled,
+  };
+
+  return {
+    leftSection: {
+      buttons: createSectionButtons(organizedButtons.left, onAction, buttonConfig),
+      style: SECTION_STYLE,
+    },
+    centerSection: {
+      buttons: createSectionButtons(organizedButtons.center, onAction, buttonConfig),
+      style: SECTION_STYLE,
+    },
+    rightSection: {
+      buttons: createSectionButtons(organizedButtons.right, onAction, buttonConfig),
+      style: SECTION_STYLE,
+    },
+  };
 };

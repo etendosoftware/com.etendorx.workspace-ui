@@ -21,3 +21,7 @@ export interface TabContent {
   children?: ReactNode;
   title: string;
 }
+export interface VersionProps {
+  title?: string;
+  customClassNameSpan?: string;
+}

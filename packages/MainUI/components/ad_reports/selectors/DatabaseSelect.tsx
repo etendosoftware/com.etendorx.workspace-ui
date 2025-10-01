@@ -41,7 +41,7 @@ const DBSelectSelector = memo(({ value, name, title, onChange, readOnly, entity 
 
   return (
     <Select
-      iconLeft={<SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />}
+      iconLeft={<SearchOutlined fill={theme.palette.baselineColor.neutral[90]} data-testid="SearchOutlined__e699bb" />}
       title={title}
       options={options}
       getOptionLabel={(option) => option.title}
@@ -49,6 +49,7 @@ const DBSelectSelector = memo(({ value, name, title, onChange, readOnly, entity 
       disabled={readOnly || loading}
       name={name}
       value={currentValue}
+      data-testid="Select__e699bb"
     />
   );
 });

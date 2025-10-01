@@ -40,6 +40,8 @@ const es = {
     noDataAvailable: "No hay información disponible",
     record: "registro",
     records: "registros",
+    version: "Versión: ",
+    about: "Acerca de",
   },
   forms: {
     sections: {
@@ -98,6 +100,9 @@ const es = {
     missingMetadata: {
       title: "Falta Metadata",
       description: "La Metadata requerida por la ventana no esta disponible",
+    },
+    authentication: {
+      message: "El token de autenticación no está disponible.",
     },
     formData: {
       title: "Error cargando el formulario",
@@ -217,6 +222,13 @@ const es = {
     buttons: {
       submit: "Acceso",
       google: "Continuar con Google",
+    },
+    errors: {
+      csrfToken: {
+        title: "Sesión expirada por inactividad",
+        description:
+          "Has sido desconectado automáticamente por razones de seguridad. Por favor, inicia sesión nuevamente para continuar.",
+      },
     },
     or: "O",
   },

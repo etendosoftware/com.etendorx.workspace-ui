@@ -16,12 +16,12 @@
  */
 
 export const COPILOT_ENDPOINTS = {
-  UPLOAD_FILE: "file",
-  GET_LABELS: "labels",
-  SEND_QUESTION: "question",
-  SEND_AQUESTION: "aquestion",
-  CACHE_QUESTION: "cacheQuestion",
-  GET_ASSISTANTS: "assistants",
+  UPLOAD_FILE: "copilot/file",
+  GET_LABELS: "copilot/labels",
+  SEND_QUESTION: "copilot/question",
+  SEND_AQUESTION: "copilot/aquestion",
+  CACHE_QUESTION: "copilot/cacheQuestion",
+  GET_ASSISTANTS: "copilot/assistants",
 } as const;
 
 export const COPILOT_METHODS = {

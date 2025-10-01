@@ -1,41 +1,82 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
-import { joinUrl } from "../../_utils/url";
 import { getErpAuthHeaders } from "../../_utils/forwardConfig";
+
+// Custom error class for ERP requests
+class ErpRequestError extends Error {
+  public readonly status: number;
+  public readonly statusText: string;
+  public readonly slug: string;
+  public readonly errorText: string;
+
+  constructor({
+    message,
+    status,
+    statusText,
+    slug,
+    errorText,
+  }: { message: string; status: number; statusText: string; slug?: string; errorText: string }) {
+    super(message);
+    this.name = "ErpRequestError";
+    this.status = status;
+    this.statusText = statusText;
+    this.slug = slug || "";
+    this.errorText = errorText;
+  }
+}
 
 // Cached function for generic ERP requests
 const getCachedErpData = unstable_cache(
   async (userToken: string, slug: string, method: string, body: string, contentType: string, queryParams = "") => {
-    let erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, slug);
+    let erpUrl: string;
+    if (slug.includes("copilot")) {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
+    } else {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
+    }
+
     if (method === "GET" && queryParams) {
       erpUrl += queryParams;
     }
 
     const headers: Record<string, string> = {
       Authorization: `Bearer ${userToken}`,
-      Accept: "application/json",
+      Accept: slug.includes("copilot") ? "text/event-stream" : "application/json",
     };
 
-    // Only add Content-Type for requests with body
     if (method !== "GET" && body) {
       headers["Content-Type"] = contentType;
     }
 
     const response = await fetch(erpUrl, {
-      method: method, // Use the actual method instead of hardcoded POST
+      method: method,
       headers,
       body: method === "GET" ? undefined : body,
     });
 
     if (!response.ok) {
+      // NOTE: Handle ERP request errors
+      // NOTE: use 404 for copilot to indicate not installed, otherwise use the actual response status
+      const defaultResponseStatus = slug.includes("copilot") ? 404 : response.status;
       const errorText = await response.text();
-      throw new Error(`ERP request failed for slug ${slug}: ${response.status} ${response.statusText}. ${errorText}`);
+      throw new ErpRequestError({
+        message: `ERP request failed for slug ${slug}: ${defaultResponseStatus} ${response.statusText}. ${errorText}`,
+        status: defaultResponseStatus,
+        statusText: response.statusText,
+        slug,
+        errorText,
+      });
+    }
+
+    const responseContentType = response.headers.get("content-type");
+    if (responseContentType?.includes("text/event-stream")) {
+      return { stream: response.body, headers: response.headers };
     }
 
     return response.json();
   },
-  ["erp_logic_v1"] // Base key for this function
+  ["erp_logic_v1"]
 );
 
 /**
@@ -62,11 +103,12 @@ function buildErpHeaders(
   request: Request,
   method: string,
   requestBody: string | undefined,
-  contentType: string
+  contentType: string,
+  slug?: string
 ): Record<string, string> {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${userToken}`,
-    Accept: "application/json",
+    Accept: slug?.includes("copilot") ? "text/event-stream" : "application/json",
   };
 
   if (method !== "GET" && requestBody) {
@@ -107,28 +149,64 @@ async function handleMutationRequest(
   });
 
   if (!response.ok) {
-    throw new Error(`ERP request failed: ${response.status} ${response.statusText}`);
+    const errorText = await response.text();
+    throw new ErpRequestError({
+      message: `ERP request failed: ${response.status} ${response.statusText}. ${errorText}`,
+      status: response.status,
+      statusText: response.statusText,
+      errorText,
+    });
   }
 
-  return response.json();
+  const responseContentType = response.headers.get("content-type");
+  if (responseContentType?.includes("text/event-stream")) {
+    return { stream: response.body, headers: response.headers };
+  }
+
+  const responseText = await response.text();
+
+  // Check if response is JavaScript error from Etendo
+  if (responseText.startsWith("OB.KernelUtilities.handleSystemException(")) {
+    // Extract error message from JavaScript
+    const match = responseText.match(/OB\.KernelUtilities\.handleSystemException\('(.+)'\);/);
+    const errorMessage = match ? match[1] : responseText;
+    throw new Error(`Backend error: ${errorMessage}`);
+  }
+
+  try {
+    return JSON.parse(responseText);
+  } catch {
+    throw new Error(`Invalid JSON response from backend: ${responseText.substring(0, 200)}...`);
+  }
 }
 
 async function handleERPRequest(request: Request, params: Promise<{ slug: string[] }>, method: string) {
   try {
     const resolvedParams = await params;
-    console.log(`API Route /api/erp/${resolvedParams.slug.join("/")} - Method: ${method}`);
+    const slug = resolvedParams.slug.join("/");
+    console.log(`API Route /api/erp/${slug} - Method: ${method}`);
 
-    // Extract user token for authentication with ERP
     const userToken = extractBearerToken(request);
     if (!userToken) {
       return NextResponse.json({ error: "Unauthorized - Missing Bearer token" }, { status: 401 });
     }
 
-    const slug = resolvedParams.slug.join("/");
+    let erpUrl: string;
+    if (slug.startsWith("sws/")) {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
+    } else {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
+    }
 
-    // Build ERP URL and always append query parameters if present
-    let erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, slug);
     const url = new URL(request.url);
+
+    // Generic kernel routing - route all kernel requests directly to the kernel
+    erpUrl = erpUrl.replace(
+      "sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel",
+      "org.openbravo.client.kernel"
+    );
+    erpUrl = erpUrl.replace("sws/com.etendoerp.metadata.meta/forward", "org.openbravo.client.kernel");
+
     if (url.search) {
       erpUrl += url.search;
     }
@@ -138,20 +216,30 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 
     let data: unknown;
     if (isMutationRoute(slug, method)) {
-      // Don't cache mutations or non-GET requests, make direct request
-      const headers = buildErpHeaders(userToken, request, method, requestBody, contentType);
+      const headers = buildErpHeaders(userToken, request, method, requestBody, contentType, slug);
       data = await handleMutationRequest(erpUrl, method, headers, requestBody);
     } else {
-      // Use cache for read operations (GET requests only)
       const queryParams = method === "GET" ? new URL(request.url).search : "";
       data = await getCachedErpData(userToken, slug, method, requestBody || "", contentType, queryParams);
     }
 
+    if (slug.includes("copilot") && data && typeof data === "object" && "stream" in data) {
+      const streamData = data as { stream: ReadableStream; headers: Headers };
+      return new Response(streamData.stream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      });
+    }
+
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (error: unknown) {
     const resolvedParams = await params;
     console.error(`API Route /api/erp/${resolvedParams.slug.join("/")} Error:`, error);
-    return NextResponse.json({ error: "Failed to fetch ERP data" }, { status: 500 });
+    const errorStatus = error instanceof ErpRequestError ? error.status : 500;
+    return NextResponse.json({ error: "Failed to fetch ERP data" }, { status: errorStatus });
   }
 }
 

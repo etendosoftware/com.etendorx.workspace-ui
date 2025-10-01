@@ -24,7 +24,6 @@ import {
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
 import { isDebugManualProcesses } from "@/utils/debug";
-import { API_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useParams } from "next/navigation";
 import { useCallback, useContext, useState } from "react";
@@ -34,6 +33,7 @@ import { useMetadataContext } from "../useMetadataContext";
 import type { ExecuteProcessDefinitionParams, ExecuteProcessParams } from "./types";
 import { getParams } from "@/utils/processes/manual/utils";
 import data from "@/utils/processes/manual/data.json";
+import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
@@ -124,7 +124,7 @@ export function useProcessExecution() {
           }
 
           const processAction = data[currentButtonId as keyof typeof data];
-          const baseUrl = `${API_BASE_URL}${API_FORWARD_PATH}${processAction.url}`;
+          const baseUrl = `${API_BASE_URL}${API_IFRAME_FORWARD_PATH}${processAction.url}`;
           const isPostedProcess = currentButtonId === "Posted";
 
           const params = getParams({
@@ -174,7 +174,7 @@ export function useProcessExecution() {
         }
       });
     },
-    [record, recordId, tab.id, tab.window, token, windowId, API_BASE_URL]
+    [record, recordId, tab.id, tab.window, tab.table, token, windowId, API_BASE_URL]
   );
 
   const executeProcess = useCallback(

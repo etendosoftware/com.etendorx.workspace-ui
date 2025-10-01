@@ -36,6 +36,7 @@ import { useDatasource } from "@/hooks/useDatasource";
 import { tableStyles } from "./styles";
 import type { WindowReferenceGridProps } from "./types";
 import { PROCESS_DEFINITION_DATA, CREATE_LINES_FROM_ORDER_PROCESS_ID } from "@/utils/processes/definition/constants";
+import type { GridSelectionStructure } from "./ProcessDefinitionModal";
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
@@ -46,6 +47,7 @@ const PAGE_SIZE = 100;
  */
 function WindowReferenceGrid({
   parameter,
+  parameters,
   onSelectionChange,
   tabId,
   entityName,
@@ -62,6 +64,45 @@ function WindowReferenceGrid({
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
 
+  const [isDataReady, setIsDataReady] = useState(false);
+
+  const lastDefaultsRef = useRef<string>("");
+  const lastFilterExpressionsRef = useRef<string>("");
+
+  const stableProcessDefaults = useMemo<Record<string, EntityValue>>(() => {
+    const defaults = (processConfig?.defaults as unknown as Record<string, EntityValue>) || {};
+    const defaultsString = JSON.stringify(defaults);
+
+    if (defaultsString !== lastDefaultsRef.current) {
+      lastDefaultsRef.current = defaultsString;
+      return defaults;
+    }
+
+    return lastDefaultsRef.current ? JSON.parse(lastDefaultsRef.current) : {};
+  }, [processConfig?.defaults]);
+
+  const stableFilterExpressions = useMemo(() => {
+    const filters = processConfig?.filterExpressions || {};
+    const filtersString = JSON.stringify(filters);
+
+    if (filtersString !== lastFilterExpressionsRef.current) {
+      lastFilterExpressionsRef.current = filtersString;
+      return filters;
+    }
+
+    return lastFilterExpressionsRef.current ? JSON.parse(lastFilterExpressionsRef.current) : {};
+  }, [processConfig?.filterExpressions]);
+
+  useEffect(() => {
+    if (!processConfigLoading && processConfig) {
+      const timer = setTimeout(() => {
+        setIsDataReady(true);
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [processConfigLoading, processConfig]);
+
   const datasourceOptions = useMemo(() => {
     const processId = processConfig?.processId;
     const currentOptionData = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
@@ -75,53 +116,93 @@ function WindowReferenceGrid({
       pageSize: PAGE_SIZE,
     };
 
-    if (processId === CREATE_LINES_FROM_ORDER_PROCESS_ID && dynamicKeys) {
+    const applyDynamicKeys = () => {
+      if (processId !== CREATE_LINES_FROM_ORDER_PROCESS_ID || !dynamicKeys) return;
+
       const { invoiceClient, invoiceBusinessPartner, invoicePriceList, invoiceCurrency } = dynamicKeys as Record<
         string,
         string
       >;
+
       options[invoiceClient] = recordValues?.inpadClientId || "";
       options[invoiceBusinessPartner] = recordValues?.inpcBpartnerId || "";
       options[invoicePriceList] = recordValues?.inpmPricelistId || "";
       options[invoiceCurrency] = recordValues?.inpcCurrencyId || "";
-    }
+    };
 
-    if (processConfig?.defaults) {
-      for (const [key, value] of Object.entries(processConfig.defaults)) {
-        options[key] = value.value;
+    const applyStableProcessDefaults = () => {
+      if (!stableProcessDefaults || Object.keys(stableProcessDefaults).length === 0) return;
+
+      for (const [key, value] of Object.entries(stableProcessDefaults)) {
+        const actualValue =
+          typeof value === "object" && value !== null && "value" in value
+            ? (value as { value: EntityValue }).value
+            : (value as EntityValue);
+
+        const matchingParameter = Object.values(parameters).find((param) => param.name === key);
+        const datasourceFieldName = matchingParameter?.dBColumnName || key;
+
+        options[datasourceFieldName] = actualValue;
 
         if (defaultKeys && key in defaultKeys) {
           const defaultKey = defaultKeys[key as keyof typeof defaultKeys];
-          options[defaultKey] = value.value;
+          options[defaultKey] = actualValue;
         }
       }
-    }
+    };
 
-    let criteria: Array<{ fieldName: string; operator: string; value: EntityValue }> = [];
+    const buildCriteria = (): Array<{ fieldName: string; operator: string; value: EntityValue }> => {
+      if (!stableFilterExpressions?.grid) return [];
 
-    if (processConfig?.filterExpressions?.grid) {
-      const filterCriteria = Object.entries(processConfig.filterExpressions.grid).map(([fieldName, value]) => ({
-        fieldName,
-        operator: "equals",
-        value: value === "true" ? true : value === "false" ? false : value,
-      }));
+      return Object.entries(stableFilterExpressions.grid).map(([fieldName, value]) => {
+        let parsedValue: EntityValue;
 
-      criteria = [...criteria, ...filterCriteria];
-    }
+        if (value === "true") {
+          parsedValue = true;
+        } else if (value === "false") {
+          parsedValue = false;
+        } else {
+          parsedValue = value as EntityValue;
+        }
+
+        return {
+          fieldName,
+          operator: "equals",
+          value: parsedValue,
+        };
+      });
+    };
+
+    applyDynamicKeys();
+    applyStableProcessDefaults();
+
+    const criteria = buildCriteria();
 
     if (criteria.length > 0) {
       options.orderBy = "documentNo desc";
+      options.criteria = criteria as unknown as EntityValue;
     }
 
     return options;
-  }, [tabId, parameter.tab, processConfig, recordValues]);
+  }, [
+    processConfig?.processId,
+    parameter.tab,
+    tabId,
+    stableProcessDefaults,
+    stableFilterExpressions,
+    recordValues?.inpadClientId,
+    recordValues?.inpcBpartnerId,
+    recordValues?.inpmPricelistId,
+    recordValues?.inpcCurrencyId,
+    parameters,
+  ]);
 
   const fields = useMemo(() => {
     if (windowReferenceTab?.fields) {
       return Object.values(windowReferenceTab.fields);
     }
     return [];
-  }, [windowReferenceTab]);
+  }, [windowReferenceTab?.fields]);
 
   const columns = useMemo(() => {
     if (fields.length > 0) {
@@ -129,6 +210,8 @@ function WindowReferenceGrid({
     }
     return [];
   }, [fields, t]);
+
+  const shouldSkipFetch = !isDataReady || processConfigLoading || !entityName;
 
   const {
     records,
@@ -141,12 +224,33 @@ function WindowReferenceGrid({
     entity: String(entityName),
     params: datasourceOptions,
     activeColumnFilters: columnFilters,
+    skip: shouldSkipFetch,
   });
 
   useEffect(() => {
+    if (!records) return;
+
+    onSelectionChange((prev: GridSelectionStructure) => ({
+      ...prev,
+      [parameter.dBColumnName]: {
+        _selection: [],
+        _allRows: [],
+      },
+    }));
+  }, [records, onSelectionChange, parameter.dBColumnName]);
+
+  // Reset selection on mount or when entity changes
+  useEffect(() => {
     setRowSelection({});
-    onSelectionChange([]);
-  }, [onSelectionChange]);
+    // Call onSelectionChange with the structure for this entityName
+    onSelectionChange((prev: GridSelectionStructure) => ({
+      ...prev,
+      [parameter.dBColumnName]: {
+        _selection: [],
+        _allRows: [],
+      },
+    }));
+  }, [onSelectionChange, entityName, parameter.dBColumnName]);
 
   const handleRowSelection = useCallback(
     (updaterOrValue: MRT_RowSelectionState | ((prev: MRT_RowSelectionState) => MRT_RowSelectionState)) => {
@@ -159,9 +263,16 @@ function WindowReferenceGrid({
         return newSelection[recordId];
       });
 
-      onSelectionChange(selectedItems);
+      // Update with the new structure
+      onSelectionChange((prev: GridSelectionStructure) => ({
+        ...prev,
+        [parameter.dBColumnName]: {
+          _selection: selectedItems,
+          _allRows: records,
+        },
+      }));
     },
-    [records, onSelectionChange, rowSelection]
+    [rowSelection, records, onSelectionChange, parameter.dBColumnName]
   );
 
   const handleColumnFiltersChange = useCallback(
@@ -174,8 +285,15 @@ function WindowReferenceGrid({
 
   const handleClearSelections = useCallback(() => {
     setRowSelection({});
-    onSelectionChange([]);
-  }, [onSelectionChange]);
+    // Clear selections for this entityName
+    onSelectionChange((prev: GridSelectionStructure) => ({
+      ...prev,
+      [parameter.dBColumnName]: {
+        _selection: [],
+        _allRows: records,
+      },
+    }));
+  }, [onSelectionChange, parameter.dBColumnName, records]);
 
   const handleRowClick = useCallback(
     (row: MRT_Row<EntityData>) => {
@@ -188,11 +306,19 @@ function WindowReferenceGrid({
           return newSelection[recordId];
         });
 
-        onSelectionChange(selectedItems);
+        // Update with the new structure
+        onSelectionChange((prev: GridSelectionStructure) => ({
+          ...prev,
+          [parameter.dBColumnName]: {
+            _selection: selectedItems,
+            _allRows: records,
+          },
+        }));
+
         return newSelection;
       });
     },
-    [records, onSelectionChange]
+    [records, onSelectionChange, parameter.dBColumnName]
   );
 
   const renderTopToolbar = useCallback(
@@ -276,10 +402,12 @@ function WindowReferenceGrid({
     data: records,
     getRowId: (row) => String(row.id),
     renderTopToolbar,
-    renderBottomToolbar: hasMoreRecords ? () => <LoadMoreButton fetchMore={fetchMore} /> : undefined,
+    renderBottomToolbar: hasMoreRecords
+      ? () => <LoadMoreButton fetchMore={fetchMore} data-testid="LoadMoreButton__ce8544" />
+      : undefined,
     renderEmptyRowsFallback: () => (
       <div className="flex justify-center items-center p-8 text-gray-500">
-        <EmptyState maxWidth={MAX_WIDTH} />
+        <EmptyState maxWidth={MAX_WIDTH} data-testid="EmptyState__ce8544" />
       </div>
     ),
     initialState: {
@@ -293,24 +421,34 @@ function WindowReferenceGrid({
     onRowSelectionChange: handleRowSelection,
     onColumnFiltersChange: handleColumnFiltersChange,
   };
+
   const table = useMaterialReactTable(tableOptions);
-  const isLoading = tabLoading || processConfigLoading || datasourceLoading;
+
+  const isLoading = tabLoading || processConfigLoading || datasourceLoading || !isDataReady;
   const error = tabError || processConfigError || datasourceError;
 
   if (isLoading) {
     return (
       <div className="p-4 flex justify-center">
-        <Loading />
+        <Loading data-testid="Loading__ce8544" />
       </div>
     );
   }
 
   if (error) {
-    return <ErrorDisplay title={t("errors.missingData")} description={error?.message} showRetry onRetry={refetch} />;
+    return (
+      <ErrorDisplay
+        title={t("errors.missingData")}
+        description={error?.message}
+        showRetry
+        onRetry={refetch}
+        data-testid="ErrorDisplay__ce8544"
+      />
+    );
   }
 
   if ((fields.length === 0 && !tabLoading) || !records || records.length === 0) {
-    return <EmptyState maxWidth={MAX_WIDTH} />;
+    return <EmptyState maxWidth={MAX_WIDTH} data-testid="EmptyState__ce8544" />;
   }
 
   return (
@@ -319,7 +457,7 @@ function WindowReferenceGrid({
         datasourceLoading ? "opacity-40 cursor-wait cursor-to-children" : "opacity-100"
       }`}
       ref={contentRef}>
-      <MaterialReactTable table={table} />
+      <MaterialReactTable table={table} data-testid="MaterialReactTable__ce8544" />
     </div>
   );
 }

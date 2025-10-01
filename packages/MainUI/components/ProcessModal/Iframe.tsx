@@ -25,6 +25,7 @@ import {
   type ProcessIframeModalOpenProps,
   isIframeModalOpen,
 } from "./types";
+import CustomModal from "@workspaceui/componentlibrary/src/components/Modal/CustomModal";
 
 const CLOSE_MODAL_ACTION = "closeModal";
 const PROCESS_ORDER_ACTION = "processOrder";
@@ -55,7 +56,7 @@ const ProcessIframeOpenModal = ({
   const handleReceivedMessage = useCallback(
     (message: ProcessMessage) => {
       if (message?.type === "info") return;
-      if (message.message?.toUpperCase().includes("ERROR")) {
+      if (message.text?.toUpperCase().includes("ERROR")) {
         setProcessMessage({
           ...message,
           type: "error",
@@ -77,7 +78,7 @@ const ProcessIframeOpenModal = ({
         setProcessMessage({
           type: "error",
           title: t("errors.internalServerError.title"),
-          message: String(error),
+          text: String(error),
         });
       }
     },
@@ -177,70 +178,47 @@ const ProcessIframeOpenModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-5000 flex items-center justify-center bg-black/50">
-      {/* NOTE: sizes inherited from the modal for manual processes from the previous UI */}
-      <div className="relative flex h-[625px] w-[900px] flex-col rounded-xl border-4 border-gray-300 bg-white">
-        <div className="flex items-center justify-between rounded-xl border-gray-200 border-b bg-[var(--color-baseline-10)] p-4">
-          <h2 className="font-semibold text-lg">{title || t("common.processes")}</h2>
-        </div>
-        <div className="relative flex-1 overflow-hidden">
-          {iframeLoading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-90">
-              <div className="text-center">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-etendo-main)] border-t-transparent" />
-                <p className="mt-2 font-medium">{t("common.loading")}</p>
+    <CustomModal
+      isOpen={isOpen}
+      title={title || t("common.processes")}
+      iframeLoading={iframeLoading}
+      customContent={
+        processMessage && (
+          <div
+            className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 z-50 w-4/5 max-w-md transform overflow-hidden rounded-lg border shadow-lg"
+            style={{
+              borderColor: messageStyles.borderColor,
+              backgroundColor: "white",
+            }}>
+            <div className="flex items-start gap-3 p-4" style={{ backgroundColor: messageStyles.bgColor }}>
+              <div className="flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="mb-1 font-semibold text-lg" style={{ color: messageStyles.textColor }}>
+                  {processMessage.title || t("common.processes")}
+                </h3>
+                {processMessage.text && <p className="text-gray-700">{processMessage.text}</p>}
               </div>
             </div>
-          )}
-          {processMessage && (
-            <div
-              className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 z-50 w-4/5 max-w-md transform overflow-hidden rounded-lg border shadow-lg"
-              style={{
-                borderColor: messageStyles.borderColor,
-                backgroundColor: "white",
-              }}>
-              <div className="flex items-start gap-3 p-4" style={{ backgroundColor: messageStyles.bgColor }}>
-                <div className="flex-shrink-0" />
-                <div className="flex-1">
-                  <h3 className="mb-1 font-semibold text-lg" style={{ color: messageStyles.textColor }}>
-                    {processMessage.title || t("common.processes")}
-                  </h3>
-                  {processMessage.message && <p className="text-gray-700">{processMessage.message}</p>}
-                </div>
-              </div>
-            </div>
-          )}
-          {!iframeLoading && !url && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-90">
-              <div className="text-center">
-                <p className="text-2xl font-medium">{t("common.noDataAvailable")}</p>
-              </div>
-            </div>
-          )}
-          <iframe
-            src={url}
-            onLoad={handleIframeLoad}
-            className="h-full w-full border-0"
-            title={t("common.processes")}
-          />
-        </div>
-        <div className="flex justify-end rounded-xl border-gray-200 border-t bg-[var(--color-baseline-10)] p-4">
-          <button
-            data-testid="close-button"
-            type="button"
-            onClick={handleClose}
-            className="mx-auto rounded bg-[var(--color-etendo-main)] px-4 py-2 font-medium text-white hover:bg-[var(--color-etendo-dark)] focus:outline-none">
-            {t("common.close")}
-          </button>
-        </div>
-      </div>
-    </div>
+          </div>
+        )
+      }
+      url={url || ""}
+      handleIframeLoad={handleIframeLoad}
+      handleClose={handleClose}
+      texts={{
+        loading: t("common.loading"),
+        iframeTitle: t("common.processes"),
+        noData: t("common.noDataAvailable"),
+        closeButton: t("common.close"),
+      }}
+      data-testid="CustomModal__f85edd"
+    />
   );
 };
 
 const ProcessIframeModal = (props: ProcessIframeModalOpenProps | ProcessIframeModalClosedProps) => {
   if (isIframeModalOpen(props)) {
-    return <ProcessIframeOpenModal {...props} />;
+    return <ProcessIframeOpenModal {...props} data-testid="ProcessIframeOpenModal__f85edd" />;
   }
 
   return null;

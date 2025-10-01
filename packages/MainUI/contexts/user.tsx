@@ -21,9 +21,10 @@ import { createContext, useCallback, useEffect, useMemo, useState } from "react"
 import { logger } from "../utils/logger";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
-import { login as doLogin } from "@workspaceui/api-client/src/api/authentication";
+import { login as doLogin, logout as doLogout } from "@workspaceui/api-client/src/api/authentication";
 import { changeProfile as doChangeProfile } from "@workspaceui/api-client/src/api/changeProfile";
 import { getSession } from "@workspaceui/api-client/src/api/getSession";
+import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
 import { HTTP_CODES } from "@workspaceui/api-client/src/api/constants";
 import type { DefaultConfiguration, IUserContext, Language, LanguageOption } from "./types";
 import type {
@@ -51,10 +52,17 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<IUserContext["user"]>({} as User);
   const [session, setSession] = useState<ISession>({});
+  const [isSessionSyncLoading, setSessionSyncLoading] = useState(false);
   const [currentOrganization, setCurrentOrganization] = useState<CurrentOrganization>();
   const [currentWarehouse, setCurrentWarehouse] = useState<CurrentWarehouse>();
   const [currentRole, setCurrentRole] = useState<CurrentRole>();
   const [currentClient, setCurrentClient] = useState<CurrentClient>();
+  const [isCopilotInstalled, setIsCopilotInstalled] = useState<boolean>(false);
+  const [isVerifyingSession, setIsVerifyingSession] = useState(false);
+
+  // Login error states
+  const [loginErrorText, setLoginErrorText] = useState<string>("");
+  const [loginErrorDescription, setLoginErrorDescription] = useState<string>("");
   const prevRole = usePrevious(currentRole);
 
   const [roles, setRoles] = useState<SessionResponse["roles"]>(() => {
@@ -155,22 +163,35 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
         localStorage.setItem("token", response.token);
         setToken(response.token);
+
+        Metadata.setToken(response.token);
+        datasource.setToken(response.token);
+        CopilotClient.setToken(response.token);
+
+        const sessionData = await getSession();
+        await updateSessionInfo(sessionData);
       } catch (error) {
         logger.warn("Error updating profile:", error);
         throw error;
       }
     },
-    [setToken, token]
+    [setToken, token, updateSessionInfo]
   );
 
   const login = useCallback(
     async (username: string, password: string) => {
       try {
+        // Clear any existing token and sessions before login to ensure clean state
+        Metadata.setToken("");
+        datasource.setToken("");
+        CopilotClient.setToken("");
+
         const loginResponse = await doLogin(username, password);
 
         localStorage.setItem("token", loginResponse.token);
         Metadata.setToken(loginResponse.token);
         datasource.setToken(loginResponse.token);
+        CopilotClient.setToken(loginResponse.token);
         setToken(loginResponse.token);
       } catch (e) {
         logger.warn("Login or session retrieval error:", e);
@@ -180,9 +201,23 @@ export default function UserProvider(props: React.PropsWithChildren) {
     [setToken]
   );
 
+  const logout = useCallback(async () => {
+    try {
+      clearUserData();
+      await doLogout();
+      Metadata.setToken("");
+      datasource.setToken("");
+      CopilotClient.setToken("");
+    } catch (error) {
+      logger.warn("Logout error:", error);
+      throw error;
+    }
+  }, [clearUserData]);
+
   const value = useMemo<IUserContext>(
     () => ({
       login,
+      logout,
       roles,
       currentRole,
       profile,
@@ -199,6 +234,14 @@ export default function UserProvider(props: React.PropsWithChildren) {
       setSession,
       user,
       prevRole,
+      isSessionSyncLoading,
+      setSessionSyncLoading,
+      isCopilotInstalled,
+      setIsCopilotInstalled,
+      loginErrorText,
+      setLoginErrorText,
+      loginErrorDescription,
+      setLoginErrorDescription,
     }),
     [
       login,
@@ -217,27 +260,38 @@ export default function UserProvider(props: React.PropsWithChildren) {
       session,
       user,
       prevRole,
+      isSessionSyncLoading,
+      isCopilotInstalled,
+      setIsCopilotInstalled,
+      loginErrorText,
+      setLoginErrorText,
+      loginErrorDescription,
+      setLoginErrorDescription,
     ]
   );
 
   useEffect(() => {
     const verifySession = async () => {
+      if (isVerifyingSession) return;
       try {
         if (token) {
+          setIsVerifyingSession(true);
           Metadata.setToken(token);
           datasource.setToken(token);
+          CopilotClient.setToken(token);
           const sessionData = await getSession();
           await updateSessionInfo(sessionData);
         }
       } catch (error) {
         console.error(error);
       } finally {
+        setIsVerifyingSession(false);
         setReady(true);
       }
     };
 
     verifySession().catch(logger.warn);
-  }, [clearUserData, token, updateSessionInfo]);
+  }, [token]);
 
   useEffect(() => {
     const interceptor = (response: Response) => {
@@ -251,10 +305,12 @@ export default function UserProvider(props: React.PropsWithChildren) {
     if (token) {
       const unregisterMetadataInterceptor = Metadata.registerInterceptor(interceptor);
       const unregisterDatasourceInterceptor = datasource.registerInterceptor(interceptor);
+      const unregisterCopilotInterceptor = CopilotClient.registerInterceptor(interceptor);
 
       return () => {
         unregisterMetadataInterceptor();
         unregisterDatasourceInterceptor();
+        unregisterCopilotInterceptor();
       };
     }
   }, [clearUserData, token]);
@@ -269,5 +325,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
     return null;
   }
 
-  return <UserContext.Provider value={value}>{token ? props.children : <LoginScreen />}</UserContext.Provider>;
+  return (
+    <UserContext.Provider value={value}>
+      {token ? props.children : <LoginScreen data-testid="LoginScreen__2e05d2" />}
+    </UserContext.Provider>
+  );
 }

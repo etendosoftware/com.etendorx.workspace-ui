@@ -50,7 +50,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   onSetDefaultConfiguration,
   logger,
   translations,
-  onSignOff,
   language,
   languages,
   onLanguageChange,
@@ -133,11 +132,39 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     }
   }, [language, languages]);
 
-  const handleRoleChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
-    setSelectedRole(value);
-    setSelectedOrg(DefaultOrg);
-    setSelectedWarehouse(null);
-  }, []);
+  const handleRoleChange = useCallback(
+    (_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
+      setSelectedRole(value);
+
+      if (value) {
+        const selectedRoleData = roles.find((role) => role.id === value.value);
+        const defaultOrganization = selectedRoleData?.organizations?.[0];
+        const defaultWarehouse = defaultOrganization?.warehouses?.[0];
+        if (defaultOrganization) {
+          setSelectedOrg({
+            title: defaultOrganization.name,
+            value: defaultOrganization.id,
+            id: defaultOrganization.id,
+          });
+        } else {
+          setSelectedOrg(DefaultOrg);
+        }
+        if (defaultWarehouse) {
+          setSelectedWarehouse({
+            title: defaultWarehouse.name,
+            value: defaultWarehouse.id,
+            id: defaultWarehouse.id,
+          });
+        } else {
+          setSelectedWarehouse(null);
+        }
+      } else {
+        setSelectedOrg(DefaultOrg);
+        setSelectedWarehouse(null);
+      }
+    },
+    [roles]
+  );
 
   const handleOrgChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
     setSelectedOrg(value ?? DefaultOrg);
@@ -271,13 +298,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   return (
     <div>
-      <IconButton onClick={handleClick} className="w-10 h-10">
+      <IconButton onClick={handleClick} className="w-10 h-10" data-testid="IconButton__75987a">
         {icon}
       </IconButton>
-      <Menu anchorEl={anchorEl} onClose={handleClose} className="w-[20.75rem]">
-        <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} onSignOff={onSignOff} />
+      <Menu anchorEl={anchorEl} onClose={handleClose} className="w-[20.75rem]" data-testid="Menu__75987a">
+        <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} data-testid="UserProfile__75987a" />
         <div style={styles.toggleSectionStyles}>
-          <ToggleSection sections={sections} currentSection={currentSection} onToggle={handleToggle} />
+          <ToggleSection
+            sections={sections}
+            currentSection={currentSection}
+            onToggle={handleToggle}
+            data-testid="ToggleSection__75987a"
+          />
         </div>
         <SelectorList
           section={currentSection}
@@ -296,17 +328,19 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           onSaveAsDefaultChange={onSaveAsDefaultChange}
           translations={translations}
           languagesFlags={languagesFlags}
+          data-testid="SelectorList__75987a"
         />
         <div style={styles.buttonContainerStyles}>
-          <Button className="flex-[1_0_0]" variant="outlined" onClick={handleClose}>
+          <Button className="flex-[1_0_0]" variant="outlined" onClick={handleClose} data-testid="Button__75987a">
             {t("common.cancel")}
           </Button>
           <Button
             className="flex-[1_0_0]"
             variant="filled"
-            startIcon={<CheckCircle fill={theme.palette.baselineColor.neutral[0]} />}
+            startIcon={<CheckCircle fill={theme.palette.baselineColor.neutral[0]} data-testid="CheckCircle__75987a" />}
             onClick={handleSave}
-            disabled={isSaveDisabled}>
+            disabled={isSaveDisabled}
+            data-testid="Button__75987a">
             {t("common.save")}
           </Button>
         </div>

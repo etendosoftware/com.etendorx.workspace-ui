@@ -11,6 +11,7 @@ jest.mock("next/server", () => ({
 import { POST } from "../route";
 import { createMockApiRequest, setupApiTestEnvironment } from "../../../_test-utils/api-test-utils";
 import { setErpSessionCookie } from "@/app/api/_utils/sessionStore";
+import { getExpectedDatasourceUrl } from "../../../_test-utils/endpoint-test-utils";
 
 describe("Save with special/Unicode fields", () => {
   // Configura entorno y fetch mock una vez para este archivo
@@ -48,9 +49,13 @@ describe("Save with special/Unicode fields", () => {
     expect(res.status).toBe(200);
 
     const [dest, init] = (global as any).fetch.mock.calls[0];
-    expect(String(dest)).toBe(
-      "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/OrderLine?windowId=143&tabId=187&_operationType=add&language=es_ES"
-    );
+    const expectedUrl = getExpectedDatasourceUrl("OrderLine", "add", {
+      windowId: "143",
+      tabId: "187",
+      _operationType: "add",
+      language: "es_ES",
+    });
+    expect(String(dest)).toBe(expectedUrl);
     expect(init.headers.Authorization).toBe("Bearer Bearer-Token-UNICODE");
     expect(init.headers["Content-Type"]).toBe("application/json; charset=utf-8");
     const decoded = decodeURIComponent(init.body as string);

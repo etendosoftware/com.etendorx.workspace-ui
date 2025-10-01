@@ -41,6 +41,8 @@ const en = {
     noDataAvailable: "No data available",
     record: "record",
     records: "records",
+    version: "Version: ",
+    about: "About",
   },
   forms: {
     sections: {
@@ -99,6 +101,9 @@ const en = {
     missingMetadata: {
       title: "Missing Metadata",
       description: "Required window metadata is not available",
+    },
+    authentication: {
+      message: "Authentication token is not available",
     },
     formData: {
       title: "Error Loading Form",
@@ -214,6 +219,12 @@ const en = {
     buttons: {
       submit: "Log In",
       google: "Continue with Google",
+    },
+    errors: {
+      csrfToken: {
+        title: "Session expired due to inactivity",
+        description: "You have been automatically logged out for security reasons. Please log in again to continue.",
+      },
     },
     or: "OR",
   },

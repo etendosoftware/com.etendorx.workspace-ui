@@ -8,9 +8,9 @@ jest.mock("@/contexts/user", () => {
 });
 import { UserContext } from "@/contexts/user";
 
-// Keep the forward path deterministic
+// Keep the iframe forward path deterministic
 jest.mock("@workspaceui/api-client/src/api/constants", () => ({
-  API_FORWARD_PATH: "/meta/forward",
+  API_IFRAME_FORWARD_PATH: "/meta/legacy",
 }));
 
 // Use real logger (console-backed); we'll spy on console.debug in tests
@@ -132,7 +132,7 @@ describe("useProcessExecution manual processes integration", () => {
     await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:3000/api"));
 
     const url = new URL(resultEl.textContent || "http://localhost");
-    expect(url.pathname).toContain("/meta/forward");
+    expect(url.pathname).toContain("/meta/legacy");
     expect(url.pathname).toContain("/SalesOrder/Header_Edition.html");
 
     const p = url.searchParams;

@@ -23,11 +23,11 @@ jest.mock("@/components/Form/FormView/selectors/DateSelector", () => ({
   DateSelector: ({ field }: any) => <input data-testid="date-selector" name={field.hqlName} type="date" />,
 }));
 
-jest.mock("@/components/Form/FormView/selectors/DatetimeSelector", () => ({
-  DatetimeSelector: ({ field }: any) => (
-    <input data-testid="datetime-selector" name={field.hqlName} type="datetime-local" />
-  ),
-}));
+jest.mock("@/components/Form/FormView/selectors/DatetimeSelector", () => {
+  return function DatetimeSelector({ field }: { field: { hqlName: string } }) {
+    return <input data-testid="datetime-selector" name={field.hqlName} type="datetime-local" />;
+  };
+});
 
 jest.mock("@/components/Form/FormView/selectors/SelectSelector", () => ({
   SelectSelector: ({ field }: any) => <select data-testid="select-selector" name={field.hqlName} />,
@@ -38,7 +38,7 @@ jest.mock("@/components/Form/FormView/selectors/TableDirSelector", () => ({
 }));
 
 jest.mock("@/components/Form/FormView/selectors/QuantitySelector", () => {
-  return function QuantitySelector({ field }: any) {
+  return function QuantitySelector({ field }: { field: { hqlName: string } }) {
     return <input data-testid="quantity-selector" name={field.hqlName} type="number" step="any" />;
   };
 });
@@ -53,11 +53,14 @@ jest.mock("../GenericSelector", () => {
   };
 });
 
-jest.mock("@/components/Label", () => {
-  return function Label({ name }: any) {
-    return <label data-testid="parameter-label">{name}</label>;
-  };
-});
+jest.mock("@/components/Label", () => ({
+  __esModule: true,
+  default: ({ name, htmlFor }: any) => (
+    <label data-testid="parameter-label" htmlFor={htmlFor}>
+      {name}
+    </label>
+  ),
+}));
 
 // Test wrapper component with form context
 const TestWrapper = ({ children }: { children: React.ReactNode }) => {
@@ -162,8 +165,7 @@ describe("ProcessParameterSelector", () => {
   });
 
   it("should handle parameters without reference type", () => {
-    const parameterWithoutReference = { ...baseParameter };
-    delete parameterWithoutReference.reference;
+    const { reference, ...parameterWithoutReference } = baseParameter;
 
     render(
       <TestWrapper>
@@ -173,7 +175,6 @@ describe("ProcessParameterSelector", () => {
 
     expect(screen.getByTestId("generic-selector")).toBeInTheDocument();
   });
-
   it("should render with description as title attribute", () => {
     const parameterWithDescription = {
       ...baseParameter,
