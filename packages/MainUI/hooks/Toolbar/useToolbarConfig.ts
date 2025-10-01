@@ -122,17 +122,20 @@ export const useToolbarConfig = ({
         },
       });
     },
-    onError: (error) => {
-      logger.warn("Error deleting record(s):", error);
+    onError: ({ errorMessage, needToRefresh = false }) => {
+      logger.warn("Error deleting record(s):", errorMessage);
 
       showErrorModal(t("status.deleteError"), {
-        errorMessage: error,
+        errorMessage: errorMessage,
         saveLabel: t("common.close"),
         secondaryButtonLabel: t("modal.secondaryButtonLabel"),
         onAfterClose: () => {
           setIsDeleting(false);
         },
       });
+      if (needToRefresh) {
+        onRefresh?.();
+      }
     },
   });
 
