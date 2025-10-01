@@ -34,6 +34,7 @@ import {
   type FormMode as URLFormMode,
   type TabMode,
 } from "@/utils/url/constants";
+import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 
 /**
  * Validates if a child tab can open FormView based on parent selection in URL
@@ -103,8 +104,9 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     getSelectedRecord,
     clearChildrenSelections,
   } = useMultiWindowURL();
-  const { registerActions } = useToolbarContext();
+  const { registerActions, onRefresh } = useToolbarContext();
   const { graph } = useSelected();
+  const { registerRefresh, unregisterRefresh } = useTabRefreshContext();
   const [toggle, setToggle] = useState(false);
   const lastParentSelectionRef = useRef<string | undefined>(undefined);
 
@@ -224,6 +226,16 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       setToggle((prev) => !prev);
     }
   }, [windowId]);
+
+  useEffect(() => {
+    // Register this tab's refresh callback
+    registerRefresh(tab.tabLevel, onRefresh);
+
+    return () => {
+      // Cleanup on unmount
+      unregisterRefresh(tab.tabLevel);
+    };
+  }, [tab.tabLevel, onRefresh, registerRefresh, unregisterRefresh]);
 
   useEffect(() => {
     const actions = {
