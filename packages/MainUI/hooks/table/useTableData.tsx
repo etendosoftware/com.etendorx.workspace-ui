@@ -159,15 +159,15 @@ export const useTableData = ({
       }
 
       if (ColumnFilterUtils.isTableDirColumn(column)) {
-        return loadTableDirFilterOptions(
+        return loadTableDirFilterOptions({
           column,
           columnId,
           searchQuery,
-          tab.id,
-          treeEntity,
+          tabId: tab.id,
+          entityName: treeEntity,
           fetchFilterOptions,
-          setFilterOptions
-        );
+          setFilterOptions,
+        });
       }
 
       return [];
@@ -195,17 +195,17 @@ export const useTableData = ({
       const pageSize = 20;
       const offset = currentPage * pageSize;
 
-      return loadTableDirFilterOptions(
+      return loadTableDirFilterOptions({
         column,
         columnId,
-        currentSearchQuery,
-        tab.id,
-        treeEntity,
+        searchQuery: currentSearchQuery,
+        tabId: tab.id,
+        entityName: treeEntity,
         fetchFilterOptions,
         setFilterOptions,
         offset,
-        pageSize
-      );
+        pageSize,
+      });
     },
     [rawColumns, fetchFilterOptions, setFilterOptions, loadMoreFilterOptions, tab.id, treeEntity, advancedColumnFilters]
   );

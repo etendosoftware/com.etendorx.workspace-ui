@@ -94,15 +94,15 @@ export const useGridColumnFilters = ({
       }
 
       if (ColumnFilterUtils.isTableDirColumn(column)) {
-        return loadTableDirFilterOptions(
+        return loadTableDirFilterOptions({
           column,
           columnId,
           searchQuery,
           tabId,
           entityName,
           fetchFilterOptions,
-          setFilterOptions
-        );
+          setFilterOptions,
+        });
       }
 
       return [];
@@ -130,17 +130,17 @@ export const useGridColumnFilters = ({
       const pageSize = 20;
       const offset = currentPage * pageSize;
 
-      return loadTableDirFilterOptions(
+      return loadTableDirFilterOptions({
         column,
         columnId,
-        currentSearchQuery,
+        searchQuery: currentSearchQuery,
         tabId,
         entityName,
         fetchFilterOptions,
         setFilterOptions,
         offset,
-        pageSize
-      );
+        pageSize,
+      });
     },
     [columns, fetchFilterOptions, setFilterOptions, loadMoreFilterOptions, tabId, entityName, advancedColumnFilters]
   );

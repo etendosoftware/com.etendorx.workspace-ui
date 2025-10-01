@@ -30,6 +30,18 @@ interface FetchFilterOptionsFunction {
   ): Promise<FilterOption[]>;
 }
 
+interface LoadTableDirFilterOptionsParams {
+  column: Column;
+  columnId: string;
+  searchQuery?: string;
+  tabId?: string;
+  entityName?: string;
+  fetchFilterOptions: FetchFilterOptionsFunction;
+  setFilterOptions: (columnId: string, options: FilterOption[], hasMore: boolean, append: boolean) => void;
+  offset?: number;
+  pageSize?: number;
+}
+
 /**
  * Loads filter options for SELECT columns
  */
@@ -51,17 +63,17 @@ export const loadSelectFilterOptions = (
 /**
  * Loads filter options for TABLEDIR columns
  */
-export const loadTableDirFilterOptions = async (
-  column: Column,
-  columnId: string,
-  searchQuery: string | undefined,
-  tabId: string | undefined,
-  entityName: string | undefined,
-  fetchFilterOptions: FetchFilterOptionsFunction,
-  setFilterOptions: (columnId: string, options: FilterOption[], hasMore: boolean, append: boolean) => void,
-  offset: number = 0,
-  pageSize: number = 20
-): Promise<FilterOption[]> => {
+export const loadTableDirFilterOptions = async ({
+  column,
+  columnId,
+  searchQuery,
+  tabId,
+  entityName,
+  fetchFilterOptions,
+  setFilterOptions,
+  offset = 0,
+  pageSize = 20,
+}: LoadTableDirFilterOptionsParams): Promise<FilterOption[]> => {
   try {
     let options: FilterOption[] = [];
 
