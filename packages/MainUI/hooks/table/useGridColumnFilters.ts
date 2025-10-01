@@ -25,6 +25,7 @@ import {
 } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useColumnFilters } from "@workspaceui/api-client/src/hooks/useColumnFilters";
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
+import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
 
 interface UseGridColumnFiltersParams {
   columns: Column[];
@@ -89,58 +90,19 @@ export const useGridColumnFilters = ({
       }
 
       if (ColumnFilterUtils.isSelectColumn(column)) {
-        const allOptions = ColumnFilterUtils.getSelectOptions(column);
-        const filteredOptions = searchQuery
-          ? allOptions.filter((option) => option.label.toLowerCase().includes(searchQuery.toLowerCase()))
-          : allOptions;
-
-        setFilterOptions(columnId, filteredOptions, false, false);
-        return filteredOptions;
+        return loadSelectFilterOptions(column, columnId, searchQuery, setFilterOptions);
       }
 
       if (ColumnFilterUtils.isTableDirColumn(column)) {
-        try {
-          let options: FilterOption[] = [];
-
-          if (ColumnFilterUtils.needsDistinctValues(column)) {
-            const currentDatasource = entityName;
-            const tabIdStr = tabId;
-            const distinctField = column.columnName;
-
-            options = await fetchFilterOptions(
-              String(currentDatasource),
-              undefined,
-              searchQuery,
-              20,
-              distinctField,
-              tabIdStr,
-              0
-            );
-          } else {
-            const selectorDefinitionId = column.selectorDefinitionId as string | undefined;
-            const datasourceId = column.datasourceId || column.referencedEntity;
-
-            if (datasourceId) {
-              options = await fetchFilterOptions(
-                String(datasourceId),
-                selectorDefinitionId,
-                searchQuery,
-                20,
-                undefined,
-                undefined,
-                0
-              );
-            }
-          }
-
-          const hasMore = options.length === 20;
-          setFilterOptions(columnId, options, hasMore, false);
-          return options;
-        } catch (error) {
-          console.error("Error loading filter options:", error);
-          setFilterOptions(columnId, [], false, false);
-          return [];
-        }
+        return loadTableDirFilterOptions(
+          column,
+          columnId,
+          searchQuery,
+          tabId,
+          entityName,
+          fetchFilterOptions,
+          setFilterOptions
+        );
       }
 
       return [];
@@ -165,50 +127,20 @@ export const useGridColumnFilters = ({
 
       loadMoreFilterOptions(columnId, currentSearchQuery);
 
-      try {
-        let options: FilterOption[] = [];
-        const pageSize = 20;
-        const offset = currentPage * pageSize;
+      const pageSize = 20;
+      const offset = currentPage * pageSize;
 
-        if (ColumnFilterUtils.needsDistinctValues(column)) {
-          const currentDatasource = entityName;
-          const tabIdStr = tabId;
-          const distinctField = column.columnName;
-
-          options = await fetchFilterOptions(
-            String(currentDatasource),
-            undefined,
-            currentSearchQuery,
-            pageSize,
-            distinctField,
-            tabIdStr,
-            offset
-          );
-        } else {
-          const selectorDefinitionId = column.selectorDefinitionId as string | undefined;
-          const datasourceId = column.datasourceId || column.referencedEntity;
-
-          if (datasourceId) {
-            options = await fetchFilterOptions(
-              String(datasourceId),
-              selectorDefinitionId,
-              currentSearchQuery,
-              pageSize,
-              undefined,
-              undefined,
-              offset
-            );
-          }
-        }
-
-        const hasMore = options.length === pageSize;
-        setFilterOptions(columnId, options, hasMore, true);
-        return options;
-      } catch (error) {
-        console.error("Error loading more filter options:", error);
-        setFilterOptions(columnId, [], false, true);
-        return [];
-      }
+      return loadTableDirFilterOptions(
+        column,
+        columnId,
+        currentSearchQuery,
+        tabId,
+        entityName,
+        fetchFilterOptions,
+        setFilterOptions,
+        offset,
+        pageSize
+      );
     },
     [columns, fetchFilterOptions, setFilterOptions, loadMoreFilterOptions, tabId, entityName, advancedColumnFilters]
   );

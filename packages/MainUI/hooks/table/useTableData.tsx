@@ -28,6 +28,7 @@ import { useDatasource } from "../useDatasource";
 import { useColumns } from "./useColumns";
 import { useColumnFilters } from "@workspaceui/api-client/src/hooks/useColumnFilters";
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
+import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -154,58 +155,19 @@ export const useTableData = ({
       }
 
       if (ColumnFilterUtils.isSelectColumn(column)) {
-        const allOptions = ColumnFilterUtils.getSelectOptions(column);
-        const filteredOptions = searchQuery
-          ? allOptions.filter((option) => option.label.toLowerCase().includes(searchQuery.toLowerCase()))
-          : allOptions;
-
-        setFilterOptions(columnId, filteredOptions, false, false);
-        return filteredOptions;
+        return loadSelectFilterOptions(column, columnId, searchQuery, setFilterOptions);
       }
 
       if (ColumnFilterUtils.isTableDirColumn(column)) {
-        try {
-          let options: FilterOption[] = [];
-
-          if (ColumnFilterUtils.needsDistinctValues(column)) {
-            const currentDatasource = treeEntity;
-            const tabIdStr = tab.id;
-            const distinctField = column.columnName;
-
-            options = await fetchFilterOptions(
-              currentDatasource,
-              undefined,
-              searchQuery,
-              20,
-              distinctField,
-              tabIdStr,
-              0
-            );
-          } else {
-            const selectorDefinitionId = column.selectorDefinitionId;
-            const datasourceId = column.datasourceId || column.referencedEntity;
-
-            if (datasourceId) {
-              options = await fetchFilterOptions(
-                datasourceId,
-                selectorDefinitionId,
-                searchQuery,
-                20,
-                undefined,
-                undefined,
-                0
-              );
-            }
-          }
-
-          const hasMore = options.length === 20;
-          setFilterOptions(columnId, options, hasMore, false);
-          return options;
-        } catch (error) {
-          console.error("Error loading filter options:", error);
-          setFilterOptions(columnId, [], false, false);
-          return [];
-        }
+        return loadTableDirFilterOptions(
+          column,
+          columnId,
+          searchQuery,
+          tab.id,
+          treeEntity,
+          fetchFilterOptions,
+          setFilterOptions
+        );
       }
 
       return [];
@@ -230,50 +192,20 @@ export const useTableData = ({
 
       loadMoreFilterOptions(columnId, currentSearchQuery);
 
-      try {
-        let options: FilterOption[] = [];
-        const pageSize = 20;
-        const offset = currentPage * pageSize;
+      const pageSize = 20;
+      const offset = currentPage * pageSize;
 
-        if (ColumnFilterUtils.needsDistinctValues(column)) {
-          const currentDatasource = treeEntity;
-          const tabIdStr = tab.id;
-          const distinctField = column.columnName;
-
-          options = await fetchFilterOptions(
-            currentDatasource,
-            undefined,
-            currentSearchQuery,
-            pageSize,
-            distinctField,
-            tabIdStr,
-            offset
-          );
-        } else {
-          const selectorDefinitionId = column.selectorDefinitionId;
-          const datasourceId = column.datasourceId || column.referencedEntity;
-
-          if (datasourceId) {
-            options = await fetchFilterOptions(
-              datasourceId,
-              selectorDefinitionId,
-              currentSearchQuery,
-              pageSize,
-              undefined,
-              undefined,
-              offset
-            );
-          }
-        }
-
-        const hasMore = options.length === pageSize;
-        setFilterOptions(columnId, options, hasMore, true);
-        return options;
-      } catch (error) {
-        console.error("Error loading more filter options:", error);
-        setFilterOptions(columnId, [], false, true);
-        return [];
-      }
+      return loadTableDirFilterOptions(
+        column,
+        columnId,
+        currentSearchQuery,
+        tab.id,
+        treeEntity,
+        fetchFilterOptions,
+        setFilterOptions,
+        offset,
+        pageSize
+      );
     },
     [rawColumns, fetchFilterOptions, setFilterOptions, loadMoreFilterOptions, tab.id, treeEntity, advancedColumnFilters]
   );
