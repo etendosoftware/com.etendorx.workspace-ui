@@ -29,7 +29,7 @@ interface TabRefreshContextType {
    * @param level - The tab level (0, 1, 2, ...)
    * @param refreshFn - The refresh function to call
    */
-  registerRefresh: (level: number, refreshFn: () => void) => void;
+  registerRefresh: (level: number, refreshFn: () => Promise<void>) => void;
 
   /**
    * Unregister a refresh callback for a specific tab level
@@ -55,9 +55,9 @@ export const useTabRefreshContext = () => useContext(TabRefreshContext);
 
 export const TabRefreshProvider = ({ children }: React.PropsWithChildren) => {
   // Use ref to maintain callbacks across renders without causing re-renders
-  const refreshCallbacksRef = useRef<Map<number, () => void>>(new Map());
+  const refreshCallbacksRef = useRef<Map<number, () => Promise<void>>>(new Map());
 
-  const registerRefresh = useCallback((level: number, refreshFn: () => void) => {
+  const registerRefresh = useCallback((level: number, refreshFn: () => Promise<void>) => {
     refreshCallbacksRef.current.set(level, refreshFn);
     logger.debug(`TabRefreshContext: Registered refresh for level ${level}`);
   }, []);
