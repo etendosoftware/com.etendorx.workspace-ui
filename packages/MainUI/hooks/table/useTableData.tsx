@@ -59,6 +59,9 @@ interface UseTableDataReturn {
   handleMRTColumnFiltersChange: (
     updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)
   ) => void;
+  handleColumnFilterChange: (columnId: string, selectedOptions: FilterOption[]) => Promise<void>;
+  handleLoadFilterOptions: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
+  handleLoadMoreFilterOptions: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   setColumnVisibility: React.Dispatch<React.SetStateAction<MRT_VisibilityState>>;
   setExpanded: React.Dispatch<React.SetStateAction<MRT_ExpandedState>>;
 
@@ -521,6 +524,9 @@ export const useTableData = ({
 
     // Handlers
     handleMRTColumnFiltersChange,
+    handleColumnFilterChange,
+    handleLoadFilterOptions,
+    handleLoadMoreFilterOptions,
     setColumnVisibility,
     setExpanded,
 
