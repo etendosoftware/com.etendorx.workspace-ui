@@ -128,7 +128,11 @@ describe("columnFilterHelpers", () => {
 
   describe("loadTableDirFilterOptions", () => {
     it("should load TABLEDIR options with datasourceId (uses distinct values path)", async () => {
-      const mockColumn = createTableDirColumn({ id: "organization", columnName: "organization", datasourceId: "Organization" });
+      const mockColumn = createTableDirColumn({
+        id: "organization",
+        columnName: "organization",
+        datasourceId: "Organization",
+      });
       const mockData = [
         { value: "org1", label: "Organization 1" },
         { value: "org2", label: "Organization 2" },
@@ -141,7 +145,15 @@ describe("columnFilterHelpers", () => {
       });
 
       expect(result).toEqual(mockData);
-      expect(mockFetchFilterOptions).toHaveBeenCalledWith("SalesOrder", undefined, undefined, 20, "organization", "tab123", 0);
+      expect(mockFetchFilterOptions).toHaveBeenCalledWith(
+        "SalesOrder",
+        undefined,
+        undefined,
+        20,
+        "organization",
+        "tab123",
+        0
+      );
       expect(mockSetFilterOptions).toHaveBeenCalledWith("organization", mockData, false, false);
     });
 
@@ -166,7 +178,15 @@ describe("columnFilterHelpers", () => {
       });
 
       expect(result).toEqual(mockData);
-      expect(mockFetchFilterOptions).toHaveBeenCalledWith("SalesOrder", undefined, undefined, 20, "businessPartner", "tab123", 0);
+      expect(mockFetchFilterOptions).toHaveBeenCalledWith(
+        "SalesOrder",
+        undefined,
+        undefined,
+        20,
+        "businessPartner",
+        "tab123",
+        0
+      );
     });
 
     it("should handle pagination with offset and pageSize", async () => {
@@ -184,7 +204,15 @@ describe("columnFilterHelpers", () => {
         pageSize: 10,
       });
 
-      expect(mockFetchFilterOptions).toHaveBeenCalledWith("SalesOrder", undefined, undefined, 10, "product", "tab123", 20);
+      expect(mockFetchFilterOptions).toHaveBeenCalledWith(
+        "SalesOrder",
+        undefined,
+        undefined,
+        10,
+        "product",
+        "tab123",
+        20
+      );
       expect(mockSetFilterOptions).toHaveBeenCalledWith("product", mockData, false, true);
     });
 
