@@ -28,6 +28,7 @@ import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { NEW_RECORD_ID, FORM_MODES, TAB_MODES } from "@/utils/url/constants";
+import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 
 export function Tab({ tab, collapsed }: TabLevelProps) {
   const { window } = useMetadataContext();
@@ -41,8 +42,9 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     getSelectedRecord,
     clearChildrenSelections,
   } = useMultiWindowURL();
-  const { registerActions } = useToolbarContext();
+  const { registerActions, onRefresh } = useToolbarContext();
   const { graph } = useSelected();
+  const { registerRefresh, unregisterRefresh } = useTabRefreshContext();
   const [toggle, setToggle] = useState(false);
 
   const windowId = activeWindow?.windowId;
@@ -127,6 +129,16 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       clearChildrenSelections(windowId, childIds);
     }
   }, [windowId, graph, tab, clearChildrenSelections]);
+
+  useEffect(() => {
+    // Register this tab's refresh callback
+    registerRefresh(tab.tabLevel, onRefresh);
+
+    return () => {
+      // Cleanup on unmount
+      unregisterRefresh(tab.tabLevel);
+    };
+  }, [tab.tabLevel, onRefresh, registerRefresh, unregisterRefresh]);
 
   useEffect(() => {
     const actions = {
