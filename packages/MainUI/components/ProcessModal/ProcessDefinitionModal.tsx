@@ -52,7 +52,6 @@ import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
-import { globalCalloutManager } from "@/services/callouts";
 import type { Tab, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 
@@ -188,9 +187,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const { isValid, isSubmitting } = useFormState({ control: form.control });
 
   // Combine loading states: initialization and callouts (do not include internal param-loading)
-  const isDataLoading = Boolean(
-    initializationLoading || !globalCalloutManager.arePendingCalloutsEmpty() || globalCalloutManager.isCalloutRunning()
-  );
+
+  // NOTE: globalCalloutManager.isCalloutRunning() not working correctly
+  // const isDataLoading = Boolean(
+  //   initializationLoading || !globalCalloutManager.arePendingCalloutsEmpty() // || globalCalloutManager.isCalloutRunning()
+  // );
 
   // If initialization failed, keep the button disabled until user action
   const initializationBlocksSubmit = Boolean(initializationError);
@@ -466,12 +467,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       </div>
     );
   };
-  console.log({
-    _params: {
-      ...gridSelection,
-      ...mapKeysWithDefaults(form.getValues()),
-    },
-  });
+
   const getTabForParameter = useCallback((parameter: ProcessParameter) => {
     if (parameter.reference !== WINDOW_REFERENCE_ID || !parameter.window?.tabs) {
       return null;
@@ -546,7 +542,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   const isActionButtonDisabled =
     isPending ||
-    isDataLoading ||
     initializationBlocksSubmit ||
     (hasMandatoryParameters && !isValid) ||
     isSubmitting ||
