@@ -136,6 +136,45 @@ export const useToolbarConfig = ({
     },
   });
 
+  const handleDeleteRecord = useCallback(async () => {
+    if (tab) {
+      if (selectedIds.length > 0) {
+        let recordsToDelete: EntityData[] | EntityData;
+
+        if (selectedMultiple.length > 0) {
+          recordsToDelete = selectedMultiple;
+        } else {
+          recordsToDelete = selectedIds.map((id) => ({ id }) as EntityData);
+        }
+        let confirmText: string;
+        if (selectedIds.length === 1) {
+          const recordToDelete = Array.isArray(recordsToDelete) ? recordsToDelete[0] : recordsToDelete;
+          const identifier = String(recordToDelete._identifier || recordToDelete.id);
+          confirmText = `${t("status.deleteConfirmation")} ${identifier}?`;
+        } else {
+          confirmText = `${t("status.multipleDeleteConfirmation")} ${selectedIds.length} ${t("common.records")}?`;
+        }
+
+        showConfirmModal({
+          confirmText,
+          onConfirm: async () => {
+            setIsDeleting(true);
+            await deleteRecord(
+              selectedIds.length === 1 && Array.isArray(recordsToDelete) ? recordsToDelete[0] : recordsToDelete
+            );
+          },
+          saveLabel: t("common.confirm"),
+          secondaryButtonLabel: t("common.cancel"),
+        });
+      } else {
+        showErrorModal(t("status.selectRecordError"), {
+          saveLabel: t("common.close"),
+          secondaryButtonLabel: t("modal.secondaryButtonLabel"),
+        });
+      }
+    }
+  }, [tab, selectedIds, selectedMultiple, showConfirmModal, t, deleteRecord, showErrorModal]);
+
   useEffect(() => {
     if (!statusModal.open && isDeleting) {
       setIsDeleting(false);
@@ -163,42 +202,7 @@ export const useToolbarConfig = ({
         onSave?.(true);
       },
       DELETE: () => {
-        if (tab) {
-          if (selectedIds.length > 0) {
-            let recordsToDelete: EntityData[] | EntityData;
-
-            if (selectedMultiple.length > 0) {
-              recordsToDelete = selectedMultiple;
-            } else {
-              recordsToDelete = selectedIds.map((id) => ({ id }) as EntityData);
-            }
-            let confirmText: string;
-            if (selectedIds.length === 1) {
-              const recordToDelete = Array.isArray(recordsToDelete) ? recordsToDelete[0] : recordsToDelete;
-              const identifier = String(recordToDelete._identifier || recordToDelete.id);
-              confirmText = `${t("status.deleteConfirmation")} ${identifier}?`;
-            } else {
-              confirmText = `${t("status.multipleDeleteConfirmation")} ${selectedIds.length} ${t("common.records")}?`;
-            }
-
-            showConfirmModal({
-              confirmText,
-              onConfirm: async () => {
-                setIsDeleting(true);
-                await deleteRecord(
-                  selectedIds.length === 1 && Array.isArray(recordsToDelete) ? recordsToDelete[0] : recordsToDelete
-                );
-              },
-              saveLabel: t("common.confirm"),
-              secondaryButtonLabel: t("common.cancel"),
-            });
-          } else {
-            showErrorModal(t("status.selectRecordError"), {
-              saveLabel: t("common.close"),
-              secondaryButtonLabel: t("modal.secondaryButtonLabel"),
-            });
-          }
-        }
+        handleDeleteRecord();
       },
       REFRESH: () => {
         onRefresh?.();
