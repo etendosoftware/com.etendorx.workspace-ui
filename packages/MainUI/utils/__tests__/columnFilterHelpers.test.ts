@@ -59,6 +59,33 @@ const COMMON_PARAMS = {
   entityName: "SalesOrder",
 } as const;
 
+// Helper to run loadTableDirFilterOptions test with common setup
+const runLoadTableDirTest = async (params: {
+  column: Column;
+  columnId: string;
+  mockData: FilterOption[];
+  offset?: number;
+  pageSize?: number;
+  searchQuery?: string;
+}) => {
+  const { column, columnId, mockData, offset = 0, pageSize = 20, searchQuery } = params;
+  const mockFetchFilterOptions = createMockFetchFilterOptions(mockData);
+  const mockSetFilterOptions = createMockSetFilterOptions();
+
+  const result = await loadTableDirFilterOptions({
+    column,
+    columnId,
+    searchQuery,
+    ...COMMON_PARAMS,
+    fetchFilterOptions: mockFetchFilterOptions,
+    setFilterOptions: mockSetFilterOptions,
+    offset,
+    pageSize,
+  });
+
+  return { result, mockFetchFilterOptions, mockSetFilterOptions };
+};
+
 describe("columnFilterHelpers", () => {
   describe("loadSelectFilterOptions", () => {
     it("should load and filter SELECT column options without search query", () => {
@@ -106,16 +133,11 @@ describe("columnFilterHelpers", () => {
         { value: "org1", label: "Organization 1" },
         { value: "org2", label: "Organization 2" },
       ];
-      const mockFetchFilterOptions = createMockFetchFilterOptions(mockData);
-      const mockSetFilterOptions = createMockSetFilterOptions();
 
-      const result = await loadTableDirFilterOptions({
+      const { result, mockFetchFilterOptions, mockSetFilterOptions } = await runLoadTableDirTest({
         column: mockColumn,
         columnId: "organization",
-        searchQuery: undefined,
-        ...COMMON_PARAMS,
-        fetchFilterOptions: mockFetchFilterOptions,
-        setFilterOptions: mockSetFilterOptions,
+        mockData,
       });
 
       expect(result).toEqual(mockData);
@@ -136,16 +158,11 @@ describe("columnFilterHelpers", () => {
         { value: "bp1", label: "Partner 1" },
         { value: "bp2", label: "Partner 2" },
       ];
-      const mockFetchFilterOptions = createMockFetchFilterOptions(mockData);
-      const mockSetFilterOptions = createMockSetFilterOptions();
 
-      const result = await loadTableDirFilterOptions({
+      const { result, mockFetchFilterOptions } = await runLoadTableDirTest({
         column: mockColumn,
         columnId: "businessPartner",
-        searchQuery: undefined,
-        ...COMMON_PARAMS,
-        fetchFilterOptions: mockFetchFilterOptions,
-        setFilterOptions: mockSetFilterOptions,
+        mockData,
       });
 
       expect(result).toEqual(mockData);
@@ -158,16 +175,11 @@ describe("columnFilterHelpers", () => {
         { value: "prod21", label: "Product 21" },
         { value: "prod22", label: "Product 22" },
       ];
-      const mockFetchFilterOptions = createMockFetchFilterOptions(mockData);
-      const mockSetFilterOptions = createMockSetFilterOptions();
 
-      await loadTableDirFilterOptions({
+      const { mockFetchFilterOptions, mockSetFilterOptions } = await runLoadTableDirTest({
         column: mockColumn,
         columnId: "product",
-        searchQuery: undefined,
-        ...COMMON_PARAMS,
-        fetchFilterOptions: mockFetchFilterOptions,
-        setFilterOptions: mockSetFilterOptions,
+        mockData,
         offset: 20,
         pageSize: 10,
       });
@@ -179,16 +191,11 @@ describe("columnFilterHelpers", () => {
     it("should detect hasMore when results equal pageSize", async () => {
       const mockColumn = createTableDirColumn();
       const mockResults = createFilterOptions(20, "prod");
-      const mockFetchFilterOptions = createMockFetchFilterOptions(mockResults);
-      const mockSetFilterOptions = createMockSetFilterOptions();
 
-      await loadTableDirFilterOptions({
+      const { mockSetFilterOptions } = await runLoadTableDirTest({
         column: mockColumn,
         columnId: "product",
-        searchQuery: undefined,
-        ...COMMON_PARAMS,
-        fetchFilterOptions: mockFetchFilterOptions,
-        setFilterOptions: mockSetFilterOptions,
+        mockData: mockResults,
       });
 
       expect(mockSetFilterOptions).toHaveBeenCalledWith("product", mockResults, true, false);
@@ -219,16 +226,11 @@ describe("columnFilterHelpers", () => {
     it("should set append to true when offset > 0", async () => {
       const mockColumn = createTableDirColumn();
       const mockData = [{ value: "prod1", label: "Product 1" }];
-      const mockFetchFilterOptions = createMockFetchFilterOptions(mockData);
-      const mockSetFilterOptions = createMockSetFilterOptions();
 
-      await loadTableDirFilterOptions({
+      const { mockSetFilterOptions } = await runLoadTableDirTest({
         column: mockColumn,
         columnId: "product",
-        searchQuery: undefined,
-        ...COMMON_PARAMS,
-        fetchFilterOptions: mockFetchFilterOptions,
-        setFilterOptions: mockSetFilterOptions,
+        mockData,
         offset: 20,
       });
 
