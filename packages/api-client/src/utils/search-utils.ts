@@ -454,7 +454,8 @@ export class LegacyColumnFilterUtils {
         continue;
       }
 
-      const fieldName = column.columnName;
+      // Use filterFieldName if available (for WindowReferenceGrid), otherwise use columnName
+      const fieldName = (column as any).filterFieldName || column.columnName;
       if (filter.value === undefined || filter.value === null) continue;
 
       let filterCriteria: BaseCriteria[] = [];

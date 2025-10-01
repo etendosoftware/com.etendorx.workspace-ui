@@ -17,8 +17,7 @@
 
 import { useTab } from "@/hooks/useTab";
 import { useTranslation } from "@/hooks/useTranslation";
-import { parseColumns } from "@/utils/tableColumns";
-import type { EntityData, EntityValue } from "@workspaceui/api-client/src/api/types";
+import type { EntityData, EntityValue, Column, Tab } from "@workspaceui/api-client/src/api/types";
 import {
   type MRT_ColumnFiltersState,
   type MRT_Row,
@@ -37,6 +36,10 @@ import { tableStyles } from "./styles";
 import type { WindowReferenceGridProps } from "./types";
 import { PROCESS_DEFINITION_DATA, CREATE_LINES_FROM_ORDER_PROCESS_ID } from "@/utils/processes/definition/constants";
 import type { GridSelectionStructure } from "./ProcessDefinitionModal";
+import { useColumnFilters } from "@workspaceui/api-client/src/hooks/useColumnFilters";
+import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
+import { ColumnFilterUtils, type FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import { useColumns } from "@/hooks/table/useColumns";
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
@@ -62,6 +65,7 @@ function WindowReferenceGrid({
   const { loading: tabLoading, error: tabError } = useTab(windowReferenceTab?.id);
 
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
+  const [appliedTableFilters, setAppliedTableFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
 
   const [isDataReady, setIsDataReady] = useState(false);
@@ -180,6 +184,7 @@ function WindowReferenceGrid({
 
     if (criteria.length > 0) {
       options.orderBy = "documentNo desc";
+      // Keep criteria as array of objects, cast to EntityValue for type compatibility
       options.criteria = criteria as unknown as EntityValue;
     }
 
@@ -204,12 +209,298 @@ function WindowReferenceGrid({
     return [];
   }, [windowReferenceTab?.fields]);
 
-  const columns = useMemo(() => {
+  // Parse raw columns with fix for WindowReferenceGrid
+  const rawColumns = useMemo(() => {
     if (fields.length > 0) {
-      return parseColumns(fields, t);
+      const { parseColumns } = require("@/utils/tableColumns");
+      const parsed = parseColumns(fields);
+
+      // Add filterFieldName to each column for backend filtering
+      // This is needed because some processes have hqlName as display names
+      const enriched = parsed.map((col: Column) => {
+        const matchingField = fields.find((f) => f.name === col.header);
+
+        // For filtering, we need to check if hqlName is a display name
+        const isDisplayName =
+          col.columnName.includes(" ") || col.columnName.includes(".") || /^[A-Z]/.test(col.columnName);
+
+        // If hqlName is a display name, use the key from fields (camelCase property name)
+        // Otherwise, use hqlName as-is
+        const filterFieldName = isDisplayName
+          ? matchingField?.column?._identifier ||
+            (Object.keys(fields) as Array<keyof typeof fields>).find((k) => fields[k] === matchingField) ||
+            col.columnName
+          : col.columnName;
+
+        return {
+          ...col,
+          filterFieldName, // This will be used for backend filtering
+        };
+      });
+
+      return enriched;
     }
     return [];
-  }, [fields, t]);
+  }, [fields]);
+
+  // Column filters hook - needs stable columns reference
+  const stableRawColumns = useMemo(() => rawColumns, [JSON.stringify(rawColumns.map((c: Column) => c.id))]);
+
+  const {
+    columnFilters: advancedColumnFilters,
+    setColumnFilter,
+    setFilterOptions,
+    loadMoreFilterOptions,
+  } = useColumnFilters({
+    columns: stableRawColumns,
+  });
+
+  const { fetchFilterOptions } = useColumnFilterData();
+
+  // Column filter handlers
+  const handleColumnFilterChange = useCallback(
+    async (columnId: string, selectedOptions: FilterOption[]) => {
+      setColumnFilter(columnId, selectedOptions);
+
+      const mrtFilter =
+        selectedOptions.length > 0
+          ? {
+              id: columnId,
+              value: selectedOptions.map((opt) => opt.value),
+            }
+          : null;
+
+      setAppliedTableFilters((prev) => {
+        const filtered = prev.filter((f) => f.id !== columnId);
+        const newFilters = mrtFilter ? [...filtered, mrtFilter] : filtered;
+        return newFilters;
+      });
+
+      setColumnFilters((prev) => {
+        const filtered = prev.filter((f) => f.id !== columnId);
+        return mrtFilter ? [...filtered, mrtFilter] : filtered;
+      });
+    },
+    [setColumnFilter]
+  );
+
+  const handleLoadFilterOptions = useCallback(
+    async (columnId: string, searchQuery?: string): Promise<FilterOption[]> => {
+      const column = rawColumns.find((col: Column) => col.id === columnId || col.columnName === columnId);
+      if (!column) {
+        return [];
+      }
+
+      if (ColumnFilterUtils.isSelectColumn(column)) {
+        const allOptions = ColumnFilterUtils.getSelectOptions(column);
+        const filteredOptions = searchQuery
+          ? allOptions.filter((option) => option.label.toLowerCase().includes(searchQuery.toLowerCase()))
+          : allOptions;
+
+        setFilterOptions(columnId, filteredOptions, false, false);
+        return filteredOptions;
+      }
+
+      if (ColumnFilterUtils.isTableDirColumn(column)) {
+        try {
+          let options: FilterOption[] = [];
+
+          if (ColumnFilterUtils.needsDistinctValues(column)) {
+            const currentDatasource = entityName;
+            const tabIdStr = tabId;
+            const distinctField = column.columnName;
+
+            options = await fetchFilterOptions(
+              String(currentDatasource),
+              undefined,
+              searchQuery,
+              20,
+              distinctField,
+              tabIdStr,
+              0
+            );
+          } else {
+            const selectorDefinitionId = column.selectorDefinitionId;
+            const datasourceId = column.datasourceId || column.referencedEntity;
+
+            if (datasourceId) {
+              options = await fetchFilterOptions(
+                datasourceId,
+                selectorDefinitionId,
+                searchQuery,
+                20,
+                undefined,
+                undefined,
+                0
+              );
+            }
+          }
+
+          const hasMore = options.length === 20;
+          setFilterOptions(columnId, options, hasMore, false);
+          return options;
+        } catch (error) {
+          console.error("Error loading filter options:", error);
+          setFilterOptions(columnId, [], false, false);
+          return [];
+        }
+      }
+
+      return [];
+    },
+    [rawColumns, fetchFilterOptions, setFilterOptions, tabId, entityName]
+  );
+
+  const handleLoadMoreFilterOptions = useCallback(
+    async (columnId: string, searchQuery?: string): Promise<FilterOption[]> => {
+      const column = rawColumns.find((col: Column) => col.id === columnId || col.columnName === columnId);
+      if (!column) {
+        return [];
+      }
+
+      if (!ColumnFilterUtils.isTableDirColumn(column)) {
+        return [];
+      }
+
+      const filterState = advancedColumnFilters.find((f) => f.id === columnId);
+      const currentPage = filterState?.currentPage || 0;
+      const currentSearchQuery = searchQuery || filterState?.searchQuery;
+
+      loadMoreFilterOptions(columnId, currentSearchQuery);
+
+      try {
+        let options: FilterOption[] = [];
+        const pageSize = 20;
+        const offset = currentPage * pageSize;
+
+        if (ColumnFilterUtils.needsDistinctValues(column)) {
+          const currentDatasource = entityName;
+          const tabIdStr = tabId;
+          const distinctField = column.columnName;
+
+          options = await fetchFilterOptions(
+            String(currentDatasource),
+            undefined,
+            currentSearchQuery,
+            pageSize,
+            distinctField,
+            tabIdStr,
+            offset
+          );
+        } else {
+          const selectorDefinitionId = column.selectorDefinitionId;
+          const datasourceId = column.datasourceId || column.referencedEntity;
+
+          if (datasourceId) {
+            options = await fetchFilterOptions(
+              datasourceId,
+              selectorDefinitionId,
+              currentSearchQuery,
+              pageSize,
+              undefined,
+              undefined,
+              offset
+            );
+          }
+        }
+
+        const hasMore = options.length === pageSize;
+        setFilterOptions(columnId, options, hasMore, true);
+        return options;
+      } catch (error) {
+        console.error("Error loading more filter options:", error);
+        setFilterOptions(columnId, [], false, true);
+        return [];
+      }
+    },
+    [rawColumns, fetchFilterOptions, setFilterOptions, loadMoreFilterOptions, tabId, entityName, advancedColumnFilters]
+  );
+
+  // Create a minimal tab object for useColumns with corrected field hqlNames
+  const mockTab = useMemo(() => {
+    if (!windowReferenceTab?.fields) {
+      return {
+        id: tabId,
+        fields: {},
+      } as Tab;
+    }
+
+    // Fix hqlName ONLY if it's a display name (contains spaces or starts with uppercase)
+    // Some processes have correct hqlName (camelCase like 'organization')
+    // Others have incorrect hqlName (display name like 'Organization' or 'Order No.')
+    const correctedFields = Object.fromEntries(
+      Object.entries(windowReferenceTab.fields).map(([key, field]) => {
+        // Check if hqlName looks like a display name (has spaces, starts with uppercase, etc)
+        const isDisplayName =
+          field.hqlName.includes(" ") || field.hqlName.includes(".") || /^[A-Z]/.test(field.hqlName);
+
+        // Only correct if it's a display name, otherwise keep original
+        const actualColumnName = isDisplayName ? field.column?._identifier || key || field.hqlName : field.hqlName;
+
+        return [
+          key,
+          {
+            ...field,
+            hqlName: actualColumnName,
+          },
+        ];
+      })
+    );
+
+    return {
+      ...windowReferenceTab,
+      id: windowReferenceTab.id || tabId,
+      fields: correctedFields,
+    } as Tab;
+  }, [windowReferenceTab, tabId]);
+
+  // Get columns with filter handlers using useColumns
+  // Pass options as stable reference to avoid re-creating columns unnecessarily
+  const columnOptions = useMemo(
+    () => ({
+      onColumnFilter: handleColumnFilterChange,
+      onLoadFilterOptions: handleLoadFilterOptions,
+      onLoadMoreFilterOptions: handleLoadMoreFilterOptions,
+      columnFilterStates: advancedColumnFilters,
+    }),
+    [handleColumnFilterChange, handleLoadFilterOptions, handleLoadMoreFilterOptions, advancedColumnFilters]
+  );
+
+  const columnsFromHook = useColumns(mockTab, columnOptions);
+
+  const columns = useMemo(() => {
+    const finalColumns = columnsFromHook.length > 0 ? columnsFromHook : rawColumns;
+
+    // DON'T change column IDs - they need to match the data keys from datasource
+    // The accessorFn in parseColumns already handles data mapping using hqlName
+
+    // Merge filterFieldName from rawColumns into finalColumns
+    const columnsWithFilterFieldName = finalColumns.map((col: Column) => {
+      const rawCol = rawColumns.find((r: Column) => r.header === col.header);
+      return {
+        ...col,
+        filterFieldName: (rawCol as any)?.filterFieldName || col.columnName,
+      };
+    });
+
+    // Ensure all columns have filtering enabled (either dropdown or text)
+    const columnsWithFilters = columnsWithFilterFieldName.map((col: Column) => {
+      // If column already has a Filter component (dropdown), keep it
+      if (col.Filter) {
+        return col;
+      }
+
+      // Otherwise, enable simple text filtering for this column
+      return {
+        ...col,
+        enableColumnFilter: true,
+        columnFilterModeOptions: ["contains", "startsWith", "endsWith"],
+        filterFn: "contains",
+      };
+    });
+
+    return columnsWithFilters;
+  }, [columnsFromHook, rawColumns, advancedColumnFilters]);
 
   const shouldSkipFetch = !isDataReady || processConfigLoading || !entityName;
 
@@ -223,7 +514,8 @@ function WindowReferenceGrid({
   } = useDatasource({
     entity: String(entityName),
     params: datasourceOptions,
-    activeColumnFilters: columnFilters,
+    columns: rawColumns,
+    activeColumnFilters: appliedTableFilters,
     skip: shouldSkipFetch,
   });
 
@@ -239,9 +531,11 @@ function WindowReferenceGrid({
     }));
   }, [records, onSelectionChange, parameter.dBColumnName]);
 
-  // Reset selection on mount or when entity changes
+  // Reset selection and filters on mount or when entity changes
   useEffect(() => {
     setRowSelection({});
+    setColumnFilters([]);
+    setAppliedTableFilters([]);
     // Call onSelectionChange with the structure for this entityName
     onSelectionChange((prev: GridSelectionStructure) => ({
       ...prev,
@@ -251,6 +545,15 @@ function WindowReferenceGrid({
       },
     }));
   }, [onSelectionChange, entityName, parameter.dBColumnName]);
+
+  const handleMRTColumnFiltersChange = useCallback(
+    (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
+      const newColumnFilters = typeof updaterOrValue === "function" ? updaterOrValue(columnFilters) : updaterOrValue;
+      setColumnFilters(newColumnFilters);
+      setAppliedTableFilters(newColumnFilters);
+    },
+    [columnFilters]
+  );
 
   const handleRowSelection = useCallback(
     (updaterOrValue: MRT_RowSelectionState | ((prev: MRT_RowSelectionState) => MRT_RowSelectionState)) => {
@@ -273,14 +576,6 @@ function WindowReferenceGrid({
       }));
     },
     [rowSelection, records, onSelectionChange, parameter.dBColumnName]
-  );
-
-  const handleColumnFiltersChange = useCallback(
-    (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
-      const newColumnFilters = typeof updaterOrValue === "function" ? updaterOrValue(columnFilters) : updaterOrValue;
-      setColumnFilters(newColumnFilters);
-    },
-    [columnFilters]
   );
 
   const handleClearSelections = useCallback(() => {
@@ -419,7 +714,7 @@ function WindowReferenceGrid({
       showColumnFilters: true,
     },
     onRowSelectionChange: handleRowSelection,
-    onColumnFiltersChange: handleColumnFiltersChange,
+    onColumnFiltersChange: handleMRTColumnFiltersChange,
   };
 
   const table = useMaterialReactTable(tableOptions);
