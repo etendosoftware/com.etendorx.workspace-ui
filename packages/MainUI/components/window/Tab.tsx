@@ -29,6 +29,7 @@ import { useSelected } from "@/hooks/useSelected";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { NEW_RECORD_ID, FORM_MODES, TAB_MODES } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { isFormView } from "@/utils/url/utils";
 
 export function Tab({ tab, collapsed }: TabLevelProps) {
   const { window } = useMetadataContext();
@@ -176,7 +177,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
   }, [currentRecordId, graph, tab]);
 
-  const shouldShowForm = currentMode === TAB_MODES.FORM && !!currentRecordId;
+  const shouldShowForm = isFormView({ currentMode, recordId: currentRecordId });
   const formMode = currentFormMode === FORM_MODES.NEW ? FormMode.NEW : FormMode.EDIT;
 
   return (
