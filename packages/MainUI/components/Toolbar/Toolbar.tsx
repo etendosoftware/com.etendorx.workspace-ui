@@ -206,15 +206,35 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     }
 
     const childTabs = graph.getChildren(tab);
-    if (childTabs && childTabs.length > 0) {
+
+    if (childTabs && childTabs.length > 0 && activeWindow?.windowId) {
       for (const childTab of childTabs) {
+        const childTabFormState = getTabFormState(activeWindow.windowId, childTab.id);
+        const isChildInFormView = childTabFormState?.mode === TAB_MODES.FORM && !!childTabFormState?.recordId;
+
+        if (isChildInFormView) {
+          clearTabRecord(childTab.id);
+          clearTabFormState(activeWindow.windowId, childTab.id);
+        }
+
         refetchDatasource(childTab.id);
       }
     }
 
     Metadata.clearToolbarCache();
     await refetch();
-  }, [formViewRefetch, graph, isFormView, refetch, refetchDatasource, tab]);
+  }, [
+    graph,
+    refetch,
+    refetchDatasource,
+    tab,
+    isFormView,
+    formViewRefetch,
+    clearTabRecord,
+    activeWindow,
+    clearTabFormState,
+    getTabFormState,
+  ]);
 
   const handleCloseSearch = useCallback(() => setSearchOpen(false), [setSearchOpen]);
 
