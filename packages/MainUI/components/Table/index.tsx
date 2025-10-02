@@ -65,7 +65,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
   const { activeWindow, getSelectedRecord } = useMultiWindowURL();
-  const { tab, parentTab, parentRecord } = useTabContext();
+  const { tab, parentTab, parentRecord, tableColumnFilters } = useTabContext();
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -76,7 +76,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     displayRecords,
     records,
     columns: baseColumns,
-    columnFilters,
     columnVisibility,
     expanded,
     loading,
@@ -547,7 +546,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       }
     },
     state: {
-      columnFilters,
+      columnFilters: tableColumnFilters,
       columnVisibility,
       expanded: shouldUseTreeMode ? expanded : {},
       showColumnFilters: true,

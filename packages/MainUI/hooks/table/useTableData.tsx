@@ -44,7 +44,6 @@ interface UseTableDataReturn {
   columns: Column[];
 
   // State
-  columnFilters: MRT_ColumnFiltersState;
   columnVisibility: MRT_VisibilityState;
   expanded: MRT_ExpandedState;
   loading: boolean;
@@ -85,14 +84,13 @@ export const useTableData = ({
   const [loadedNodes, setLoadedNodes] = useState<Set<string>>(new Set());
   const [childrenData, setChildrenData] = useState<Map<string, EntityData[]>>(new Map());
   const [flattenedRecords, setFlattenedRecords] = useState<EntityData[]>([]);
-  const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<MRT_VisibilityState>({});
   const [prevShouldUseTreeMode, setPrevShouldUseTreeMode] = useState<boolean | null>(null);
 
   // Contexts and hooks
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
-  const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
+  const { tab, parentTab, parentRecord, parentRecords, tableColumnFilters, setTableColumnFilters } = useTabContext();
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
   // Computed values
@@ -131,7 +129,7 @@ export const useTableData = ({
             }
           : null;
 
-      setColumnFilters((prev) => {
+      setTableColumnFilters((prev) => {
         const filtered = prev.filter((f) => f.id !== columnId);
         return mrtFilter ? [...filtered, mrtFilter] : filtered;
       });
@@ -288,7 +286,7 @@ export const useTableData = ({
       searchQuery,
       skip,
       treeOptions,
-      activeColumnFilters: columnFilters,
+      activeColumnFilters: tableColumnFilters,
     });
 
   // Load child nodes for tree mode
@@ -414,14 +412,14 @@ export const useTableData = ({
       let newColumnFilters: MRT_ColumnFiltersState;
 
       if (typeof updaterOrValue === "function") {
-        newColumnFilters = updaterOrValue(columnFilters);
+        newColumnFilters = updaterOrValue(tableColumnFilters);
       } else {
         newColumnFilters = updaterOrValue;
       }
 
-      setColumnFilters(newColumnFilters);
+      setTableColumnFilters(newColumnFilters);
     },
-    [columnFilters]
+    [tableColumnFilters, setTableColumnFilters]
   );
 
   // Display records (tree mode uses flattened, normal mode uses original records)
@@ -434,7 +432,6 @@ export const useTableData = ({
     columns: baseColumns,
 
     // State
-    columnFilters,
     columnVisibility,
     expanded,
     loading,
