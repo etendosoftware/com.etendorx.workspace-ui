@@ -314,7 +314,34 @@ export const buildProcessPayload = (
     ...userInput, // User input from form
   };
 };
-export const buildDeleteQueryString = ({
+
+/**
+ * Builds a query string for single record deletion operations in the Etendo ERP system.
+ * This function creates the necessary URL parameters required by the OBViewDataSource
+ * to perform a delete operation on a specific record within a tab context.
+ *
+ * @param {Object} params - The parameters object for building the delete query string
+ * @param {WindowMetadata} [params.windowMetadata] - Optional window metadata containing window information
+ * @param {Tab} params.tab - The tab object containing tab configuration and metadata
+ * @param {string} params.recordId - The unique identifier of the record to be deleted
+ * @returns {URLSearchParams} A URLSearchParams object containing all necessary parameters for the delete operation
+ *
+ * @example
+ * // Delete a business partner record
+ * const deleteParams = buildSingleDeleteQueryString({
+ *   windowMetadata: { id: '123' },
+ *   tab: { id: '456', module: '0', window: '123' },
+ *   recordId: 'C_BPartner_789'
+ * });
+ *
+ * @example
+ * // Delete without window metadata (uses tab.window fallback)
+ * const deleteParams = buildSingleDeleteQueryString({
+ *   tab: { id: '456', module: '0', window: '123' },
+ *   recordId: 'C_Invoice_ABC123'
+ * });
+ */
+export const buildSingleDeleteQueryString = ({
   windowMetadata,
   tab,
   recordId,
