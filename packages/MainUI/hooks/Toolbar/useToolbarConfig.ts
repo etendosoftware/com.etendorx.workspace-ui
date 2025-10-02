@@ -141,16 +141,19 @@ export const useToolbarConfig = ({
     isFormView,
   });
 
+  const getRecordsToDelete = useCallback((): EntityData[] | EntityData | [] => {
+    if (selectedMultiple.length > 0) {
+      return selectedMultiple;
+    }
+
+    return selectedIds.map((id) => ({ id }) as EntityData);
+  }, [selectedIds, selectedMultiple]);
+
   const handleDeleteRecord = useCallback(async () => {
     if (tab) {
       if (selectedIds.length > 0) {
-        let recordsToDelete: EntityData[] | EntityData;
+        const recordsToDelete: EntityData[] | EntityData = getRecordsToDelete();
 
-        if (selectedMultiple.length > 0) {
-          recordsToDelete = selectedMultiple;
-        } else {
-          recordsToDelete = selectedIds.map((id) => ({ id }) as EntityData);
-        }
         let confirmText: string;
         if (selectedIds.length === 1) {
           const recordToDelete = Array.isArray(recordsToDelete) ? recordsToDelete[0] : recordsToDelete;
