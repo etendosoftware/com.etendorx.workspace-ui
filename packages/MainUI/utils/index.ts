@@ -191,9 +191,8 @@ export const buildFormPayload = ({
   csrfToken: string;
 }) => {
   // Fields that should be excluded from the payload
-  const auditFields = ['creationDate', 'createdBy', 'updated', 'updatedBy'];
+  const auditFields = ["creationDate", "createdBy", "updated", "updatedBy"];
 
-  // Remove audit fields from values
   const filteredValues = Object.entries(values).reduce((acc, [key, value]) => {
     if (!auditFields.includes(key)) {
       acc[key] = value;
@@ -212,9 +211,7 @@ export const buildFormPayload = ({
     csrfToken,
   };
 
-  // Only include oldValues for update operations
   if (mode !== FormMode.NEW && oldValues) {
-    // Remove audit fields from oldValues too
     const filteredOldValues = Object.entries(oldValues).reduce((acc, [key, value]) => {
       if (!auditFields.includes(key)) {
         acc[key] = value;
