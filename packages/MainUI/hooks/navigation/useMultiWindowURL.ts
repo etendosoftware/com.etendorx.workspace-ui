@@ -467,8 +467,8 @@ export function useMultiWindowURL() {
 
   const clearChildrenSelections = useCallback(
     (windowId: string, childTabIds: string[]) => {
-      applyWindowUpdates((prev) =>
-        prev.map((w) => {
+      applyWindowUpdates((prev) => {
+        return prev.map((w) => {
           if (w.windowId !== windowId) return w;
           const newSelected = { ...w.selectedRecords };
           const newTabStates = { ...w.tabFormStates } as Record<
@@ -479,9 +479,38 @@ export function useMultiWindowURL() {
             delete newSelected[tabId];
             delete newTabStates[tabId];
           }
+
           return { ...w, selectedRecords: newSelected, tabFormStates: newTabStates };
-        })
-      );
+        });
+      });
+    },
+    [applyWindowUpdates]
+  );
+
+  /**
+   * Atomically updates parent tab selection and clears all children in a single navigation
+   */
+  const setSelectedRecordAndClearChildren = useCallback(
+    (windowId: string, parentTabId: string, recordId: string, childTabIds: string[]) => {
+      applyWindowUpdates((prev) => {
+        return prev.map((w) => {
+          if (w.windowId !== windowId) return w;
+
+          const newSelected = { ...w.selectedRecords, [parentTabId]: recordId };
+          const newTabStates = { ...w.tabFormStates } as Record<
+            string,
+            { recordId?: string; mode?: TabMode; formMode?: FormMode }
+          >;
+
+          // Clear all children
+          for (const tabId of childTabIds) {
+            delete newSelected[tabId];
+            delete newTabStates[tabId];
+          }
+
+          return { ...w, selectedRecords: newSelected, tabFormStates: newTabStates };
+        });
+      });
     },
     [applyWindowUpdates]
   );
@@ -608,6 +637,7 @@ export function useMultiWindowURL() {
     setSelectedRecord,
     clearSelectedRecord,
     getSelectedRecord,
+    setSelectedRecordAndClearChildren,
 
     setTabFormState,
     clearTabFormState,

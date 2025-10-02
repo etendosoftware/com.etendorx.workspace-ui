@@ -55,6 +55,15 @@ export const useStateReconciliation = ({ records, tab, windowId, currentWindowId
     (urlSelectedId: string | null, tableSelectionIds: string[]) => {
       if (!windowId || currentWindowId !== tab.window) return;
 
+      // For child tabs, check if parent has selection before allowing reconciliation
+      const parentTab = graph.getParent(tab);
+      if (parentTab) {
+        const parentSelected = graph.getSelected(parentTab);
+        if (!parentSelected || !parentSelected.id) {
+          return; // Don't reconcile if parent has no selection
+        }
+      }
+
       try {
         if (urlSelectedId && tableSelectionIds.length === 0) {
           // URL has selection, table doesn't - validate and potentially update table

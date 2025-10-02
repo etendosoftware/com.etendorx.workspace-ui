@@ -350,6 +350,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           const parent = graph.getParent(tab);
           const parentSelection = parent ? graph.getSelected(parent) : undefined;
 
+          // For child tabs, prevent opening form if parent has no selection
+          if (parent && (!parentSelection || !parentSelection.id)) {
+            return;
+          }
+
           // Set graph selection for consistency but avoid triggering URL updates
           graph.setSelected(tab, row.original);
           graph.setSelectedMultiple(tab, [row.original]);

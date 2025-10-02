@@ -106,6 +106,7 @@ const createMockWindowURL = (selectedRecord?: string) => ({
   clearSelectedRecord: jest.fn(),
   setSelectedRecord: jest.fn(),
   getSelectedRecord: jest.fn().mockReturnValue(selectedRecord),
+  clearChildrenSelections: jest.fn(),
 });
 
 // Mock state reconciliation
@@ -120,6 +121,7 @@ const createMockStateReconciliation = () => ({
 // Mock user context
 const createMockUserContext = () => ({
   setSession: jest.fn(),
+  setSessionSyncLoading: jest.fn(),
   session: {},
   user: null,
   isLoading: false,
@@ -389,7 +391,7 @@ describe("useTableSelection", () => {
 
       renderHook(() => useTableSelection(parentTab, records, rowSelection));
 
-      expect(mockWindowURL.clearSelectedRecord).toHaveBeenCalledWith("window1", "child");
+      expect(mockWindowURL.clearChildrenSelections).toHaveBeenCalledWith("window1", ["child"]);
     });
 
     it("should not clear children when they belong to different window", () => {
@@ -403,7 +405,7 @@ describe("useTableSelection", () => {
 
       renderHook(() => useTableSelection(parentTab, records, rowSelection));
 
-      expect(mockWindowURL.clearSelectedRecord).not.toHaveBeenCalledWith("window1", "child");
+      expect(mockWindowURL.clearChildrenSelections).not.toHaveBeenCalled();
     });
 
     it("should handle tabs with no children", () => {

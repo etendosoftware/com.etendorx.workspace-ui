@@ -293,11 +293,8 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     }
   }, [isFormInitializing, setIsSettingInitialValues]);
 
-  useEffect(() => {
-    return () => {
-      globalCalloutManager.clearPendingCallouts();
-    };
-  }, []);
+  // Cleanup is now handled automatically by the callout manager
+  // No need for manual cleanup on unmount
 
   if (isDisplayed) {
     const isTextLong = field.column.reference === FIELD_REFERENCE_CODES.TEXT_LONG;

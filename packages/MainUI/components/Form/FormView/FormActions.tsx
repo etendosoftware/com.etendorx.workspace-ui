@@ -38,7 +38,7 @@ interface FormActionsProps {
 export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal }: FormActionsProps) {
   const { formState } = useFormContext();
   const { graph } = useSelected();
-  const { activeWindow, clearTabFormState } = useMultiWindowURL();
+  const { activeWindow, clearTabFormState, clearChildrenSelections } = useMultiWindowURL();
   const { registerActions, setSaveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
 
@@ -116,11 +116,20 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
     const windowId = activeWindow?.windowId;
     if (windowId) {
       clearTabFormState(windowId, tab.id);
+
+      // Clear children tabs when going back from parent form
+      const children = graph.getChildren(tab);
+      if (children && children.length > 0) {
+        const childTabIds = children.filter((child) => child.window === tab.window).map((child) => child.id);
+        if (childTabIds.length > 0) {
+          clearChildrenSelections(windowId, childTabIds);
+        }
+      }
     }
     graph.clear(tab);
     graph.clearSelected(tab);
     resetFormChanges();
-  }, [activeWindow?.windowId, clearTabFormState, graph, tab, resetFormChanges]);
+  }, [activeWindow?.windowId, clearTabFormState, clearChildrenSelections, graph, tab, resetFormChanges]);
 
   const handleNew = useCallback(() => {
     setRecordId(NEW_RECORD_ID);
