@@ -17,7 +17,7 @@
 
 "use client";
 
-import { createContext, useContext, useCallback, useRef } from "react";
+import { createContext, useContext, useCallback, useRef, useMemo } from "react";
 import { logger } from "@/utils/logger";
 
 /**
@@ -96,11 +96,14 @@ export const TabRefreshProvider = ({ children }: React.PropsWithChildren) => {
     logger.debug(`TabRefreshContext: Completed parent refreshes for level ${currentLevel}`);
   }, []);
 
-  const value = {
-    registerRefresh,
-    unregisterRefresh,
-    triggerParentRefreshes,
-  };
+  const value = useMemo(
+    () => ({
+      registerRefresh,
+      unregisterRefresh,
+      triggerParentRefreshes,
+    }),
+    [registerRefresh, unregisterRefresh, triggerParentRefreshes]
+  );
 
   return <TabRefreshContext.Provider value={value}>{children}</TabRefreshContext.Provider>;
 };
