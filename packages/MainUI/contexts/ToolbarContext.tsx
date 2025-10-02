@@ -86,9 +86,10 @@ type ToolbarContextType = {
   onToggleTreeView: () => void;
   onColumnFilters: (buttonRef?: HTMLElement | null) => void;
   registerActions: (actions: Partial<ToolbarActions>) => void;
-  // Save button state management
   saveButtonState: SaveButtonState;
   setSaveButtonState: React.Dispatch<React.SetStateAction<SaveButtonState>>;
+  formViewRefetch?: () => Promise<void>;
+  registerFormViewRefetch?: (refetch: () => Promise<void>) => void;
 };
 
 const initialState: ToolbarActions = {
@@ -122,6 +123,12 @@ const ToolbarContext = createContext<ToolbarContextType>({
 export const useToolbarContext = () => useContext(ToolbarContext);
 
 export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
+  const [formViewRefetch, setFormViewRefetch] = useState<(() => Promise<void>) | undefined>();
+
+  const registerFormViewRefetch = useCallback((refetch: () => Promise<void>) => {
+    setFormViewRefetch(() => refetch);
+  }, []);
+
   const [
     {
       new: onNew,
@@ -186,8 +193,22 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       registerActions,
       saveButtonState,
       setSaveButtonState,
+      formViewRefetch,
+      registerFormViewRefetch,
     }),
-    [onSave, onRefresh, onNew, onBack, onFilter, onColumnFilters, onToggleTreeView, registerActions, saveButtonState]
+    [
+      onSave,
+      onRefresh,
+      onNew,
+      onBack,
+      onFilter,
+      onColumnFilters,
+      onToggleTreeView,
+      registerActions,
+      saveButtonState,
+      formViewRefetch,
+      registerFormViewRefetch,
+    ]
   );
 
   return <ToolbarContext.Provider value={value}>{children}</ToolbarContext.Provider>;

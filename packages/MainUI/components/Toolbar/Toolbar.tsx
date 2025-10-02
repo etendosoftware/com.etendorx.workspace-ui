@@ -49,6 +49,7 @@ import { getToolbarSections } from "@/utils/toolbar/utils";
 import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
@@ -140,12 +141,20 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     [handleSearch, setSearchValue]
   );
 
-  const handleProcessSuccess = useCallback(() => {
-    refetchDatasource(tab.id);
-    graph.clearSelected(tab);
-    graph.setSelected(tab);
-    refetch();
-  }, [graph, refetch, refetchDatasource, tab]);
+  const { formViewRefetch } = useToolbarContext();
+
+  const handleProcessSuccess = useCallback(async () => {
+    if (isFormView && formViewRefetch) {
+      await formViewRefetch();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    } else {
+      refetchDatasource(tab.id);
+      graph.clearSelected(tab);
+      graph.setSelected(tab);
+    }
+    Metadata.clearToolbarCache();
+    await refetch();
+  }, [graph, refetch, refetchDatasource, tab, isFormView, formViewRefetch]);
 
   const handleCloseProcess = useCallback(() => {
     setOpenIframeModal(false);
