@@ -65,7 +65,7 @@ interface UseTableDataReturn {
   // Actions
   toggleImplicitFilters: () => void;
   fetchMore: () => void;
-  refetch: () => void;
+  refetch: () => Promise<void>;
   removeRecordLocally: ((id: string) => void) | null;
   hasMoreRecords: boolean;
 }

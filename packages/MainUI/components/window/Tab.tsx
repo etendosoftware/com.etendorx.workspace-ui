@@ -28,6 +28,8 @@ import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { NEW_RECORD_ID, FORM_MODES, TAB_MODES } from "@/utils/url/constants";
+import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { isFormView } from "@/utils/url/utils";
 
 export function Tab({ tab, collapsed }: TabLevelProps) {
   const { window } = useMetadataContext();
@@ -41,8 +43,9 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     getSelectedRecord,
     clearChildrenSelections,
   } = useMultiWindowURL();
-  const { registerActions } = useToolbarContext();
+  const { registerActions, onRefresh } = useToolbarContext();
   const { graph } = useSelected();
+  const { registerRefresh, unregisterRefresh } = useTabRefreshContext();
   const [toggle, setToggle] = useState(false);
 
   const windowId = activeWindow?.windowId;
@@ -129,6 +132,16 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, [windowId, graph, tab, clearChildrenSelections]);
 
   useEffect(() => {
+    // Register this tab's refresh callback
+    registerRefresh(tab.tabLevel, onRefresh);
+
+    return () => {
+      // Cleanup on unmount
+      unregisterRefresh(tab.tabLevel);
+    };
+  }, [tab.tabLevel, onRefresh, registerRefresh, unregisterRefresh]);
+
+  useEffect(() => {
     const actions = {
       new: handleNew,
       back: handleBack,
@@ -164,7 +177,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
   }, [currentRecordId, graph, tab]);
 
-  const shouldShowForm = currentMode === TAB_MODES.FORM && !!currentRecordId;
+  const shouldShowForm = isFormView({ currentMode, recordId: currentRecordId });
   const formMode = currentFormMode === FORM_MODES.NEW ? FormMode.NEW : FormMode.EDIT;
 
   return (

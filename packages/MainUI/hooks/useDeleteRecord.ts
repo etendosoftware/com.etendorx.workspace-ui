@@ -20,43 +20,131 @@ import type { EntityData, Tab, WindowMetadata } from "@workspaceui/api-client/sr
 import { useUserContext } from "./useUserContext";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useTranslation } from "./useTranslation";
-import { buildDeleteQueryString } from "@/utils";
+import { buildSingleDeleteQueryString } from "@/utils";
 import { DEFAULT_CSRF_TOKEN_ERROR } from "@/utils/session/constants";
+import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { useToolbarContext } from "@/contexts/ToolbarContext";
 
 export interface UseDeleteRecordParams {
   windowMetadata?: WindowMetadata;
   tab: Tab;
   onSuccess?: (deletedCount: number) => void;
-  onError?: (error: string) => void;
+  onError?: ({ errorMessage, needToRefresh }: { errorMessage: string; needToRefresh?: boolean }) => void;
   showConfirmation?: boolean;
+  isFormView?: boolean;
 }
 
-export const useDeleteRecord = ({ windowMetadata, tab, onSuccess, onError }: UseDeleteRecordParams) => {
+interface DeleteRecordResponse {
+  success: boolean;
+  needToBack?: boolean;
+  errorMessage?: string;
+}
+
+const DEFAULT_MULTI_DELETE_RECORD_URL_ACTION = "org.openbravo.client.application.MultipleDeleteActionHandler";
+
+export const useDeleteRecord = ({
+  windowMetadata,
+  tab,
+  isFormView = false,
+  onSuccess,
+  onError,
+}: UseDeleteRecordParams) => {
   const [loading, setLoading] = useState(false);
   const controller = useRef<AbortController>(new AbortController());
   const { user, logout, setLoginErrorText, setLoginErrorDescription } = useUserContext();
+  const { triggerParentRefreshes } = useTabRefreshContext();
+  const { onBack } = useToolbarContext();
   const { t } = useTranslation();
 
   const userId = user?.id;
+
+  const validateDeleteRecords = useCallback(
+    (records: EntityData[]): boolean => {
+      if (records.length === 0) {
+        onError?.({ errorMessage: t("status.noRecordsError") });
+        return false;
+      }
+      if (!tab || !tab.entityName) {
+        onError?.({ errorMessage: t("status.noEntityError") });
+        return false;
+      }
+      if (!userId) {
+        onError?.({ errorMessage: t("errors.authentication.message") });
+        return false;
+      }
+      return true;
+    },
+    [onError, tab, t, userId]
+  );
+
+  const handleSingleDeleteRecord = useCallback(
+    async (record: EntityData): Promise<DeleteRecordResponse> => {
+      if (!record || !record.id) {
+        return { success: false, errorMessage: t("status.noIdError") };
+      }
+      const recordId = String(record.id);
+
+      const queryStringParams = buildSingleDeleteQueryString({
+        windowMetadata,
+        tab,
+        recordId: recordId,
+      });
+      const url = `${tab.entityName}?${queryStringParams}`;
+      const options = { signal: controller.current.signal, method: "DELETE" };
+
+      const { ok, data } = await Metadata.datasourceServletClient.request(url, options);
+      const errorMessage = data?.response?.error?.message;
+
+      if (ok && data?.response?.status === 0 && !errorMessage && !controller.current.signal.aborted) {
+        return { success: true };
+      }
+
+      return { success: false, errorMessage };
+    },
+    [windowMetadata, tab, t]
+  );
+
+  const handleMultiDeleteRecord = useCallback(
+    async (records: EntityData[]): Promise<DeleteRecordResponse> => {
+      const params = new URLSearchParams({
+        _action: DEFAULT_MULTI_DELETE_RECORD_URL_ACTION,
+      });
+      const options = { signal: controller.current.signal, method: "POST" };
+      const recordIds = records.map((record) => record.id);
+      const entityName = tab.entityName;
+      const payload = { entity: entityName, ids: recordIds };
+
+      const { ok, data } = await Metadata.kernelClient.post(`?${params}`, payload, options);
+
+      const errorMessage = data?.response?.error?.message;
+
+      if (ok && !errorMessage && !controller.current.signal.aborted) {
+        return { success: true };
+      }
+
+      return { success: false, errorMessage };
+    },
+    [tab]
+  );
+
+  const handleDeleteError = useCallback(
+    (errorMessage: string) => {
+      if (errorMessage === DEFAULT_CSRF_TOKEN_ERROR) {
+        logout();
+        setLoginErrorText(t("login.errors.csrfToken.title"));
+        setLoginErrorDescription(t("login.errors.csrfToken.description"));
+        return;
+      }
+      onError?.({ errorMessage });
+    },
+    [logout, setLoginErrorText, setLoginErrorDescription, t, onError]
+  );
 
   const deleteRecord = useCallback(
     async (recordOrRecords: EntityData | EntityData[]): Promise<void> => {
       const records = Array.isArray(recordOrRecords) ? recordOrRecords : [recordOrRecords];
 
-      if (records.length === 0) {
-        onError?.(t("status.noRecordsError"));
-        return;
-      }
-
-      if (!tab || !tab.entityName) {
-        onError?.(t("status.noEntityError"));
-        return;
-      }
-
-      if (!userId) {
-        onError?.(t("errors.authentication.message"));
-        return;
-      }
+      if (!validateDeleteRecords(records)) return;
 
       try {
         setLoading(true);
@@ -64,55 +152,47 @@ export const useDeleteRecord = ({ windowMetadata, tab, onSuccess, onError }: Use
         controller.current.abort();
         controller.current = new AbortController();
 
-        const deletePromises = records.map(async (record) => {
-          if (!record || !record.id) {
-            throw new Error(t("status.noIdError"));
-          }
+        const isSingleRecord = records.length === 1;
+        const response = isSingleRecord
+          ? await handleSingleDeleteRecord(records[0])
+          : await handleMultiDeleteRecord(records);
 
-          const queryStringParams = buildDeleteQueryString({
-            windowMetadata,
-            tab,
-            recordId: String(record.id),
-          });
-          const url = `${tab.entityName}?${queryStringParams}`;
-          const options = { signal: controller.current.signal, method: "DELETE" };
+        const { success: responseSuccess, errorMessage: responseErrorMessage } = response;
 
-          const { ok, data } = await Metadata.datasourceServletClient.request(url, options);
-
-          if (ok && data?.response?.status === 0 && !controller.current.signal.aborted) {
-            return;
-          }
-
-          throw new Error(data?.response?.error?.message || "Delete failed");
-        });
-
-        const responses = await Promise.allSettled(deletePromises);
-
-        const errors = responses.filter((response) => response.status === "rejected") as PromiseRejectedResult[];
-
-        if (errors.length > 0) {
-          const errorMessages = errors.map((err) =>
-            err.reason instanceof Error ? err.reason.message : String(err.reason)
-          );
-
-          throw new Error(errorMessages.join("; "));
+        if (!responseSuccess && responseErrorMessage) {
+          onError?.({ errorMessage: responseErrorMessage });
+          throw new Error(responseErrorMessage);
         }
 
-        setLoading(false);
         onSuccess?.(records.length);
+        // If save succeeded and this tab has parents, trigger parent refreshes
+        if (tab?.tabLevel && tab.tabLevel > 0) {
+          await triggerParentRefreshes(tab.tabLevel);
+        }
+        if (isFormView) {
+          onBack();
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
+        handleDeleteError(errorMessage);
+      } finally {
         setLoading(false);
-        if (errorMessage === DEFAULT_CSRF_TOKEN_ERROR) {
-          logout();
-          setLoginErrorText(t("login.errors.csrfToken.title"));
-          setLoginErrorDescription(t("login.errors.csrfToken.description"));
-          return;
-        }
-        onError?.(errorMessage);
       }
     },
-    [tab, windowMetadata, onError, t, onSuccess, userId, logout, t, setLoginErrorText, setLoginErrorDescription]
+    [
+      tab,
+      userId,
+      isFormView,
+      validateDeleteRecords,
+      onError,
+      onSuccess,
+      t,
+      onBack,
+      handleDeleteError,
+      handleSingleDeleteRecord,
+      handleMultiDeleteRecord,
+      triggerParentRefreshes,
+    ]
   );
 
   return { deleteRecord, loading };
