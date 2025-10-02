@@ -51,7 +51,15 @@ const TabRefreshContext = createContext<TabRefreshContextType>({
   triggerParentRefreshes: async () => {},
 });
 
-export const useTabRefreshContext = () => useContext(TabRefreshContext);
+export const useTabRefreshContext = () => {
+  const context = useContext(TabRefreshContext);
+
+  if (!context) {
+    throw new Error("useTabRefreshContext must be used within a TabRefreshProvider");
+  }
+
+  return context;
+};
 
 export const TabRefreshProvider = ({ children }: React.PropsWithChildren) => {
   // Use ref to maintain callbacks across renders without causing re-renders

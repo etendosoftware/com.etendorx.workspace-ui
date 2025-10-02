@@ -101,7 +101,7 @@ export const useDeleteRecord = ({
 
       return { success: false, errorMessage };
     },
-    [windowMetadata, tab]
+    [windowMetadata, tab, t]
   );
 
   const handleMultiDeleteRecord = useCallback(
@@ -183,6 +183,7 @@ export const useDeleteRecord = ({
       tab,
       userId,
       isFormView,
+      validateDeleteRecords,
       onError,
       onSuccess,
       t,
