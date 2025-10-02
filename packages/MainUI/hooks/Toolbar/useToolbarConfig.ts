@@ -34,11 +34,12 @@ import type { ToolbarButtonMetadata } from "./types";
 
 export const useToolbarConfig = ({
   tabId,
+  isFormView,
 }: {
+  tabId: string;
+  isFormView: boolean;
   windowId?: string;
-  tabId?: string;
   parentId?: string | null;
-  isFormView?: boolean;
 }) => {
   const { setSearchQuery } = useSearch();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -137,6 +138,7 @@ export const useToolbarConfig = ({
         onRefresh?.();
       }
     },
+    isFormView,
   });
 
   const handleDeleteRecord = useCallback(async () => {

@@ -23,6 +23,7 @@ import { useTranslation } from "./useTranslation";
 import { buildSingleDeleteQueryString } from "@/utils";
 import { DEFAULT_CSRF_TOKEN_ERROR } from "@/utils/session/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { useToolbarContext } from "@/contexts/ToolbarContext";
 
 export interface UseDeleteRecordParams {
   windowMetadata?: WindowMetadata;
@@ -30,23 +31,51 @@ export interface UseDeleteRecordParams {
   onSuccess?: (deletedCount: number) => void;
   onError?: ({ errorMessage, needToRefresh }: { errorMessage: string; needToRefresh?: boolean }) => void;
   showConfirmation?: boolean;
+  isFormView?: boolean;
 }
 
 interface DeleteRecordResponse {
   success: boolean;
+  needToBack?: boolean;
   errorMessage?: string;
 }
 
 const DEFAULT_MULTI_DELETE_RECORD_URL_ACTION = "org.openbravo.client.application.MultipleDeleteActionHandler";
 
-export const useDeleteRecord = ({ windowMetadata, tab, onSuccess, onError }: UseDeleteRecordParams) => {
+export const useDeleteRecord = ({
+  windowMetadata,
+  tab,
+  isFormView = false,
+  onSuccess,
+  onError,
+}: UseDeleteRecordParams) => {
   const [loading, setLoading] = useState(false);
   const controller = useRef<AbortController>(new AbortController());
   const { user, logout, setLoginErrorText, setLoginErrorDescription } = useUserContext();
   const { triggerParentRefreshes } = useTabRefreshContext();
+  const { onBack } = useToolbarContext();
   const { t } = useTranslation();
 
   const userId = user?.id;
+
+  const validateDeleteRecords = useCallback(
+    (records: EntityData[]): boolean => {
+      if (records.length === 0) {
+        onError?.({ errorMessage: t("status.noRecordsError") });
+        return false;
+      }
+      if (!tab || !tab.entityName) {
+        onError?.({ errorMessage: t("status.noEntityError") });
+        return false;
+      }
+      if (!userId) {
+        onError?.({ errorMessage: t("errors.authentication.message") });
+        return false;
+      }
+      return true;
+    },
+    [onError, tab, t, userId]
+  );
 
   const handleSingleDeleteRecord = useCallback(
     async (record: EntityData): Promise<DeleteRecordResponse> => {
@@ -98,24 +127,24 @@ export const useDeleteRecord = ({ windowMetadata, tab, onSuccess, onError }: Use
     [tab]
   );
 
+  const handleDeleteError = useCallback(
+    (errorMessage: string) => {
+      if (errorMessage === DEFAULT_CSRF_TOKEN_ERROR) {
+        logout();
+        setLoginErrorText(t("login.errors.csrfToken.title"));
+        setLoginErrorDescription(t("login.errors.csrfToken.description"));
+        return;
+      }
+      onError?.({ errorMessage });
+    },
+    [logout, setLoginErrorText, setLoginErrorDescription, t, onError]
+  );
+
   const deleteRecord = useCallback(
     async (recordOrRecords: EntityData | EntityData[]): Promise<void> => {
       const records = Array.isArray(recordOrRecords) ? recordOrRecords : [recordOrRecords];
 
-      if (records.length === 0) {
-        onError?.({ errorMessage: t("status.noRecordsError") });
-        return;
-      }
-
-      if (!tab || !tab.entityName) {
-        onError?.({ errorMessage: t("status.noEntityError") });
-        return;
-      }
-
-      if (!userId) {
-        onError?.({ errorMessage: t("errors.authentication.message") });
-        return;
-      }
+      if (!validateDeleteRecords(records)) return;
 
       try {
         setLoading(true);
@@ -140,21 +169,29 @@ export const useDeleteRecord = ({ windowMetadata, tab, onSuccess, onError }: Use
         if (tab?.tabLevel && tab.tabLevel > 0) {
           await triggerParentRefreshes(tab.tabLevel);
         }
-        // TODO: if on form view redirect to the grid view of the same tab
+        if (isFormView) {
+          onBack();
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
-        if (errorMessage === DEFAULT_CSRF_TOKEN_ERROR) {
-          logout();
-          setLoginErrorText(t("login.errors.csrfToken.title"));
-          setLoginErrorDescription(t("login.errors.csrfToken.description"));
-          return;
-        }
-        onError?.({ errorMessage });
+        handleDeleteError(errorMessage);
       } finally {
         setLoading(false);
       }
     },
-    [tab, windowMetadata, onError, t, onSuccess, userId, logout, t, setLoginErrorText, setLoginErrorDescription]
+    [
+      tab,
+      userId,
+      isFormView,
+      onError,
+      onSuccess,
+      t,
+      onBack,
+      handleDeleteError,
+      handleSingleDeleteRecord,
+      handleMultiDeleteRecord,
+      triggerParentRefreshes,
+    ]
   );
 
   return { deleteRecord, loading };
