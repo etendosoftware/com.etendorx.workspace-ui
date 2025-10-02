@@ -87,7 +87,6 @@ export const useTableData = ({
   const [flattenedRecords, setFlattenedRecords] = useState<EntityData[]>([]);
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<MRT_VisibilityState>({});
-  const [appliedTableFilters, setAppliedTableFilters] = useState<MRT_ColumnFiltersState>([]);
   const [prevShouldUseTreeMode, setPrevShouldUseTreeMode] = useState<boolean | null>(null);
 
   // Contexts and hooks
@@ -131,11 +130,6 @@ export const useTableData = ({
               value: selectedOptions.map((opt) => opt.value),
             }
           : null;
-
-      setAppliedTableFilters((prev) => {
-        const filtered = prev.filter((f) => f.id !== columnId);
-        return mrtFilter ? [...filtered, mrtFilter] : filtered;
-      });
 
       setColumnFilters((prev) => {
         const filtered = prev.filter((f) => f.id !== columnId);
@@ -294,7 +288,7 @@ export const useTableData = ({
       searchQuery,
       skip,
       treeOptions,
-      activeColumnFilters: appliedTableFilters,
+      activeColumnFilters: columnFilters,
     });
 
   // Load child nodes for tree mode
@@ -426,8 +420,6 @@ export const useTableData = ({
       }
 
       setColumnFilters(newColumnFilters);
-
-      setAppliedTableFilters(newColumnFilters);
     },
     [columnFilters]
   );
