@@ -181,7 +181,7 @@ export const useToolbarConfig = ({
         });
       }
     }
-  }, [tab, selectedIds, selectedMultiple, showConfirmModal, t, deleteRecord, showErrorModal]);
+  }, [tab, selectedIds, getRecordsToDelete, showConfirmModal, t, deleteRecord, showErrorModal]);
 
   useEffect(() => {
     if (!statusModal.open && isDeleting) {
