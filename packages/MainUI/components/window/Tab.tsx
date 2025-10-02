@@ -35,6 +35,7 @@ import {
   type TabMode,
 } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { isFormView } from "@/utils/url/utils";
 
 /**
  * Validates if a child tab can open FormView based on parent selection in URL
@@ -291,7 +292,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const parentSelectedRecordIdFromURL = parentTab && windowId ? getSelectedRecord(windowId, parentTab.id) : undefined;
   const parentHasSelectionInURL = !parentTab || !!parentSelectedRecordIdFromURL;
 
-  const shouldShowForm = currentMode === TAB_MODES.FORM && !!currentRecordId && parentHasSelectionInURL;
+  const shouldShowForm = isFormView({ currentMode, recordId: currentRecordId, parentHasSelectionInURL });
   const formMode = currentFormMode === FORM_MODES.NEW ? FormMode.NEW : FormMode.EDIT;
 
   return (
