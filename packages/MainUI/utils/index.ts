@@ -190,20 +190,36 @@ export const buildFormPayload = ({
   mode: FormMode;
   csrfToken: string;
 }) => {
+  // Fields that should be excluded from the payload
+  const auditFields = ["creationDate", "createdBy", "updated", "updatedBy"];
+
+  const filteredValues = Object.entries(values).reduce((acc, [key, value]) => {
+    if (!auditFields.includes(key)) {
+      acc[key] = value;
+    }
+    return acc;
+  }, {} as EntityData);
+
   const payload: any = {
     dataSource: "isc_OBViewDataSource_0",
     operationType: mode === FormMode.NEW ? "add" : "update",
     componentId: "isc_OBViewForm_0",
     data: {
       accountingDate: new Date(),
-      ...values,
+      ...filteredValues,
     },
     csrfToken,
   };
 
-  // Only include oldValues for update operations
   if (mode !== FormMode.NEW && oldValues) {
-    payload.oldValues = oldValues;
+    const filteredOldValues = Object.entries(oldValues).reduce((acc, [key, value]) => {
+      if (!auditFields.includes(key)) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as EntityData);
+
+    payload.oldValues = filteredOldValues;
   }
 
   return payload;
