@@ -545,7 +545,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, []);
 
   const renderParameters = () => {
-    if (result?.success) return null;
+    if (result) return null;
     return Object.values(parameters).map((parameter) => {
       if (parameter.reference === WINDOW_REFERENCE_ID) {
         const parameterTab = getTabForParameter(parameter);
