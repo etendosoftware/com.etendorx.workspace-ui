@@ -16,7 +16,12 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { MRT_ColumnFiltersState, MRT_ExpandedState, MRT_VisibilityState } from "material-react-table";
+import type {
+  MRT_ColumnFiltersState,
+  MRT_ExpandedState,
+  MRT_VisibilityState,
+  MRT_SortingState,
+} from "material-react-table";
 import type { DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
@@ -60,6 +65,7 @@ interface UseTableDataReturn {
   handleMRTColumnVisibilityChange: (
     updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)
   ) => void;
+  handleMRTSortingChange: (updaterOrValue: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)) => void;
   setExpanded: React.Dispatch<React.SetStateAction<MRT_ExpandedState>>;
 
   // Actions
@@ -95,6 +101,8 @@ export const useTableData = ({
     setTableColumnFilters,
     tableColumnVisibility,
     setTableColumnVisibility,
+    tableSorting,
+    setTableSorting,
   } = useTabContext();
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
@@ -506,6 +514,15 @@ export const useTableData = ({
     [tableColumnVisibility, setTableColumnVisibility]
   );
 
+  const handleMRTSortingChange = useCallback(
+    (updaterOrValue: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)) => {
+      const newSorting = typeof updaterOrValue === "function" ? updaterOrValue(tableSorting) : updaterOrValue;
+
+      setTableSorting(newSorting);
+    },
+    [tableSorting, setTableSorting]
+  );
+
   // Display records (tree mode uses flattened, normal mode uses original records)
   const displayRecords = shouldUseTreeMode ? flattenedRecords : records;
 
@@ -529,6 +546,7 @@ export const useTableData = ({
     // Handlers
     handleMRTColumnFiltersChange,
     handleMRTColumnVisibilityChange,
+    handleMRTSortingChange,
     setExpanded,
 
     // Actions
