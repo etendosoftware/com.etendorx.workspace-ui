@@ -57,7 +57,8 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
           label: typeof colDef.header === "string" ? colDef.header : column.id,
           isActive: shouldBeVisible,
         };
-      });
+      })
+      .sort((a, b) => a.label.localeCompare(b.label));
   }, [table]);
 
   const [items, setItems] = useState<ToggleableItem[]>(columnItems);

@@ -124,6 +124,7 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
           reference: column.column?.reference,
         },
         showInGridView: column.showInGridView,
+        enableHiding: column.displayed !== false, // If displayed is false, don't allow hiding/showing from menu
         name: column.name,
         type: fieldType, // Use the properly mapped field type
         referencedWindowId: column.referencedWindowId,
