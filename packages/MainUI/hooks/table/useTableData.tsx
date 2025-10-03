@@ -43,7 +43,6 @@ interface UseTableDataReturn {
   columns: Column[];
 
   // State
-  columnVisibility: MRT_VisibilityState;
   expanded: MRT_ExpandedState;
   loading: boolean;
   error: Error | null;
@@ -58,7 +57,9 @@ interface UseTableDataReturn {
   handleMRTColumnFiltersChange: (
     updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)
   ) => void;
-  setColumnVisibility: React.Dispatch<React.SetStateAction<MRT_VisibilityState>>;
+  handleMRTColumnVisibilityChange: (
+    updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)
+  ) => void;
   setExpanded: React.Dispatch<React.SetStateAction<MRT_ExpandedState>>;
 
   // Actions
@@ -80,13 +81,21 @@ export const useTableData = ({
   const [loadedNodes, setLoadedNodes] = useState<Set<string>>(new Set());
   const [childrenData, setChildrenData] = useState<Map<string, EntityData[]>>(new Map());
   const [flattenedRecords, setFlattenedRecords] = useState<EntityData[]>([]);
-  const [columnVisibility, setColumnVisibility] = useState<MRT_VisibilityState>({});
   const [prevShouldUseTreeMode, setPrevShouldUseTreeMode] = useState<boolean | null>(null);
 
   // Contexts and hooks
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
-  const { tab, parentTab, parentRecord, parentRecords, tableColumnFilters, setTableColumnFilters } = useTabContext();
+  const {
+    tab,
+    parentTab,
+    parentRecord,
+    parentRecords,
+    tableColumnFilters,
+    setTableColumnFilters,
+    tableColumnVisibility,
+    setTableColumnVisibility,
+  } = useTabContext();
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
   // Computed values
@@ -487,6 +496,16 @@ export const useTableData = ({
     [tableColumnFilters, setTableColumnFilters]
   );
 
+  const handleMRTColumnVisibilityChange = useCallback(
+    (updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)) => {
+      const newVisibility =
+        typeof updaterOrValue === "function" ? updaterOrValue(tableColumnVisibility) : updaterOrValue;
+
+      setTableColumnVisibility((prev) => ({ ...prev, ...newVisibility }));
+    },
+    [tableColumnVisibility, setTableColumnVisibility]
+  );
+
   // Display records (tree mode uses flattened, normal mode uses original records)
   const displayRecords = shouldUseTreeMode ? flattenedRecords : records;
 
@@ -497,7 +516,6 @@ export const useTableData = ({
     columns: baseColumns,
 
     // State
-    columnVisibility,
     expanded,
     loading,
     error: error || null,
@@ -510,7 +528,7 @@ export const useTableData = ({
 
     // Handlers
     handleMRTColumnFiltersChange,
-    setColumnVisibility,
+    handleMRTColumnVisibilityChange,
     setExpanded,
 
     // Actions
