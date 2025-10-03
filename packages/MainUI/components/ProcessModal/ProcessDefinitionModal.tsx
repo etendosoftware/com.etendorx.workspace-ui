@@ -247,10 +247,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     };
   }, []);
 
-  /**
-   * Parses process response to extract message and message type
-   * Common logic for both window reference and direct Java process execution
-   */
   const parseProcessResponse = useCallback(
     (res: ExecuteProcessResult) => {
       const viewMessage = extractMessageFromProcessView(res);
