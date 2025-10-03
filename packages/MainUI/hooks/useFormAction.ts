@@ -23,7 +23,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { UseFormHandleSubmit } from "react-hook-form";
 import { useUserContext } from "./useUserContext";
 import { normalizeDates } from "@/utils/form/normalizeDates";
-import { DEFAULT_CSRF_TOKEN_ERROR } from "@/utils/session/constants";
+import { DEFAULT_CSRF_TOKEN_ERROR, DEFAULT_ACCES_TABLE_NO_VIEW_ERROR } from "@/utils/session/constants";
 import { useTranslation } from "./useTranslation";
 
 export interface UseFormActionParams {
@@ -102,6 +102,12 @@ export const useFormAction = ({
           logout();
           setLoginErrorText(t("login.errors.csrfToken.title"));
           setLoginErrorDescription(t("login.errors.csrfToken.description"));
+          return;
+        }
+        if (errorMessage === DEFAULT_ACCES_TABLE_NO_VIEW_ERROR) {
+          logout();
+          setLoginErrorText(t("login.errors.noAccessTableNoView.title"));
+          setLoginErrorDescription(t("login.errors.noAccessTableNoView.description"));
           return;
         }
         onError?.(String(err));
