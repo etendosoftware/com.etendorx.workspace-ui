@@ -214,41 +214,56 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     onClose();
   }, [button.processDefinition.parameters, isPending, onClose, shouldTriggerSuccess, onSuccess]);
 
+  const extractMessageFromProcessView = useCallback((res: ExecuteProcessResult) => {
+    const msgView = res.data?.responseActions?.[0]?.showMsgInProcessView;
+    if (!msgView) return null;
+
+    return {
+      message: msgView.msgText,
+      messageType: msgView.msgType,
+    };
+  }, []);
+
+  const extractMessageFromData = useCallback((res: ExecuteProcessResult) => {
+    if (res.data && typeof res.data === "object" && "text" in res.data) {
+      return {
+        message: res.data.text,
+        messageType: res.data.severity || "success",
+      };
+    }
+
+    const potentialMessage = res.data?.message || res.data?.msgText || res.data?.responseMessage;
+
+    if (potentialMessage && typeof potentialMessage === "object" && "text" in potentialMessage) {
+      return {
+        message: potentialMessage.text,
+        messageType: potentialMessage.severity || "success",
+      };
+    }
+
+    return {
+      message: potentialMessage,
+      messageType: res.data?.msgType || res.data?.messageType || (res.success ? "success" : "error"),
+    };
+  }, []);
+
   /**
    * Parses process response to extract message and message type
    * Common logic for both window reference and direct Java process execution
    */
-  const parseProcessResponse = useCallback((res: ExecuteProcessResult) => {
-    let message: string | undefined;
-    let messageType: string;
+  const parseProcessResponse = useCallback(
+    (res: ExecuteProcessResult) => {
+      const viewMessage = extractMessageFromProcessView(res);
+      const { message, messageType } = viewMessage || extractMessageFromData(res);
 
-    if (res.data?.responseActions?.[0]?.showMsgInProcessView) {
-      const msgView = res.data.responseActions[0].showMsgInProcessView;
-      message = msgView.msgText;
-      messageType = msgView.msgType;
-    } else {
-      if (res.data && typeof res.data === "object" && "text" in res.data) {
-        message = res.data.text;
-        messageType = res.data.severity || "success";
-      } else {
-        const potentialMessage = res.data?.message || res.data?.msgText || res.data?.responseMessage;
-
-        if (potentialMessage && typeof potentialMessage === "object" && "text" in potentialMessage) {
-          message = potentialMessage.text;
-          messageType = potentialMessage.severity || "success";
-        } else {
-          message = potentialMessage;
-          messageType = res.data?.msgType || res.data?.messageType || (res.success ? "success" : "error");
-        }
-      }
-    }
-
-    return {
-      success: res.success && messageType === "success",
-      data: message,
-      error: messageType !== "success" ? message || res.error : undefined,
-    };
-  }, []);
+      return {
+        success: res.success && messageType === "success",
+        data: message,
+        error: messageType !== "success" ? message || res.error : undefined,
+      };
+    },
+    [extractMessageFromProcessView, extractMessageFromData]
+  );
 
   /**
    * Executes processes with window reference parameters
