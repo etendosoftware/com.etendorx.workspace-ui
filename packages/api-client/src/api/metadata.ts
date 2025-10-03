@@ -211,6 +211,10 @@ export class Metadata {
     Metadata.cache.delete(`window-${windowId}`);
   }
 
+  public static clearToolbarCache() {
+    Metadata.cache.delete("toolbar");
+  }
+
   public static forceWindowReload(windowId: string) {
     return Metadata._getWindow(windowId);
   }

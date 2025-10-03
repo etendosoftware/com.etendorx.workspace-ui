@@ -49,6 +49,9 @@ import { getToolbarSections } from "@/utils/toolbar/utils";
 import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { TAB_MODES } from "@/utils/url/constants";
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
@@ -67,7 +70,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
   const { saveButtonState } = useToolbarContext();
   const { buttons, processButtons, loading, refetch } = useToolbar(windowId, tab?.id);
-  const { graph } = useSelected();
+  const { graph, clearTabRecord } = useSelected();
+  const { activeWindow, clearTabFormState, getTabFormState } = useMultiWindowURL();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { isSessionSyncLoading, isCopilotInstalled } = useUserContext();
@@ -95,6 +99,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   } = useToolbarConfig({ windowId, tabId: tab?.id, parentId, isFormView });
 
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
+  const { formViewRefetch } = useToolbarContext();
 
   const handleMenuToggle = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -140,12 +145,45 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     [handleSearch, setSearchValue]
   );
 
-  const handleProcessSuccess = useCallback(() => {
-    refetchDatasource(tab.id);
-    graph.clearSelected(tab);
-    graph.setSelected(tab);
-    refetch();
-  }, [graph, refetch, refetchDatasource, tab]);
+  const handleProcessSuccess = useCallback(async () => {
+    if (isFormView && formViewRefetch) {
+      await formViewRefetch();
+    } else {
+      refetchDatasource(tab.id);
+      graph.clearSelected(tab);
+      graph.setSelected(tab);
+    }
+
+    const childTabs = graph.getChildren(tab);
+
+    if (childTabs && childTabs.length > 0 && activeWindow?.windowId) {
+      for (const childTab of childTabs) {
+        const childTabFormState = getTabFormState(activeWindow.windowId, childTab.id);
+        const isChildInFormView = childTabFormState?.mode === TAB_MODES.FORM && !!childTabFormState?.recordId;
+
+        if (isChildInFormView) {
+          clearTabRecord(childTab.id);
+          clearTabFormState(activeWindow.windowId, childTab.id);
+        }
+
+        refetchDatasource(childTab.id);
+      }
+    }
+
+    Metadata.clearToolbarCache();
+    await refetch();
+  }, [
+    graph,
+    refetch,
+    refetchDatasource,
+    tab,
+    isFormView,
+    formViewRefetch,
+    clearTabRecord,
+    activeWindow,
+    clearTabFormState,
+    getTabFormState,
+  ]);
 
   const handleCloseProcess = useCallback(() => {
     setOpenIframeModal(false);
@@ -159,8 +197,44 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   }, []);
 
   const handleCompleteRefresh = useCallback(async () => {
-    refetchDatasource(tab.id);
-  }, [refetchDatasource, tab]);
+    if (isFormView && formViewRefetch) {
+      await formViewRefetch();
+    } else {
+      refetchDatasource(tab.id);
+      graph.clearSelected(tab);
+      graph.setSelected(tab);
+    }
+
+    const childTabs = graph.getChildren(tab);
+
+    if (childTabs && childTabs.length > 0 && activeWindow?.windowId) {
+      for (const childTab of childTabs) {
+        const childTabFormState = getTabFormState(activeWindow.windowId, childTab.id);
+        const isChildInFormView = childTabFormState?.mode === TAB_MODES.FORM && !!childTabFormState?.recordId;
+
+        if (isChildInFormView) {
+          clearTabRecord(childTab.id);
+          clearTabFormState(activeWindow.windowId, childTab.id);
+        }
+
+        refetchDatasource(childTab.id);
+      }
+    }
+
+    Metadata.clearToolbarCache();
+    await refetch();
+  }, [
+    graph,
+    refetch,
+    refetchDatasource,
+    tab,
+    isFormView,
+    formViewRefetch,
+    clearTabRecord,
+    activeWindow,
+    clearTabFormState,
+    getTabFormState,
+  ]);
 
   const handleCloseSearch = useCallback(() => setSearchOpen(false), [setSearchOpen]);
 
