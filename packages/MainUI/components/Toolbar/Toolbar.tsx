@@ -71,7 +71,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { saveButtonState } = useToolbarContext();
   const { buttons, processButtons, loading, refetch } = useToolbar(windowId, tab?.id);
   const { graph, clearTabRecord } = useSelected();
-  const { activeWindow, clearTabFormState, getTabFormState } = useMultiWindowURL();
+  const { activeWindow, getTabFormState, clearChildrenSelections } = useMultiWindowURL();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { isSessionSyncLoading, isCopilotInstalled } = useUserContext();
@@ -157,15 +157,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   }, []);
 
   const handleCompleteRefresh = useCallback(async () => {
-    if (isFormView && formViewRefetch) {
-      await formViewRefetch();
-    } else {
-      refetchDatasource(tab.id);
-      graph.clearSelected(tab);
-      graph.setSelected(tab);
-    }
-
     const childTabs = graph.getChildren(tab);
+    const childTabIdsInFormView: string[] = [];
 
     if (childTabs && childTabs.length > 0 && activeWindow?.windowId) {
       for (const childTab of childTabs) {
@@ -173,16 +166,30 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         const isChildInFormView = childTabFormState?.mode === TAB_MODES.FORM && !!childTabFormState?.recordId;
 
         if (isChildInFormView) {
+          childTabIdsInFormView.push(childTab.id);
           clearTabRecord(childTab.id);
-          clearTabFormState(activeWindow.windowId, childTab.id);
         }
+      }
+    }
 
+    if (isFormView && formViewRefetch) {
+      await formViewRefetch();
+    } else {
+      refetchDatasource(tab.id);
+    }
+
+    if (childTabs && childTabs.length > 0) {
+      for (const childTab of childTabs) {
         refetchDatasource(childTab.id);
       }
     }
 
     Metadata.clearToolbarCache();
     await refetch();
+
+    if (childTabIdsInFormView.length > 0 && activeWindow?.windowId) {
+      clearChildrenSelections(activeWindow.windowId, childTabIdsInFormView);
+    }
   }, [
     graph,
     refetch,
@@ -192,8 +199,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     formViewRefetch,
     clearTabRecord,
     activeWindow,
-    clearTabFormState,
     getTabFormState,
+    clearChildrenSelections,
   ]);
 
   const handleCloseSearch = useCallback(() => setSearchOpen(false), [setSearchOpen]);
