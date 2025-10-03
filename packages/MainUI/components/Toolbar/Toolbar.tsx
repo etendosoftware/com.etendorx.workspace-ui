@@ -145,46 +145,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     [handleSearch, setSearchValue]
   );
 
-  const handleProcessSuccess = useCallback(async () => {
-    if (isFormView && formViewRefetch) {
-      await formViewRefetch();
-    } else {
-      refetchDatasource(tab.id);
-      graph.clearSelected(tab);
-      graph.setSelected(tab);
-    }
-
-    const childTabs = graph.getChildren(tab);
-
-    if (childTabs && childTabs.length > 0 && activeWindow?.windowId) {
-      for (const childTab of childTabs) {
-        const childTabFormState = getTabFormState(activeWindow.windowId, childTab.id);
-        const isChildInFormView = childTabFormState?.mode === TAB_MODES.FORM && !!childTabFormState?.recordId;
-
-        if (isChildInFormView) {
-          clearTabRecord(childTab.id);
-          clearTabFormState(activeWindow.windowId, childTab.id);
-        }
-
-        refetchDatasource(childTab.id);
-      }
-    }
-
-    Metadata.clearToolbarCache();
-    await refetch();
-  }, [
-    graph,
-    refetch,
-    refetchDatasource,
-    tab,
-    isFormView,
-    formViewRefetch,
-    clearTabRecord,
-    activeWindow,
-    clearTabFormState,
-    getTabFormState,
-  ]);
-
   const handleCloseProcess = useCallback(() => {
     setOpenIframeModal(false);
     setProcessResponse(null);
@@ -357,7 +317,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         onClose={handleCloseProcess}
         url={processResponse?.iframeUrl}
         title={selectedProcessActionButton?.name}
-        onProcessSuccess={handleProcessSuccess}
+        onProcessSuccess={handleCompleteRefresh}
         tabId={tab.id}
         data-testid="ProcessIframeModal__a2dd07"
       />
