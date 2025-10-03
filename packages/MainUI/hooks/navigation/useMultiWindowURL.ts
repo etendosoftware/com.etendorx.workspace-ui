@@ -546,14 +546,13 @@ export function useMultiWindowURL() {
             ...w,
             tabFormStates: newTabStates,
             // Explicitly preserve selectedRecords to ensure selection is not lost
-            selectedRecords: { ...w.selectedRecords }
+            selectedRecords: { ...w.selectedRecords },
           };
         });
       });
     },
     [applyWindowUpdates]
   );
-
 
   const openWindowAndSelect = useCallback(
     (

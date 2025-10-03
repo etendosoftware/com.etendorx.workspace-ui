@@ -417,6 +417,89 @@ describe("useTableSelection", () => {
       expect(mockWindowURL.clearSelectedRecord).not.toHaveBeenCalled();
     });
 
+    it("should cancel pending debounce when using atomic update", () => {
+      const parentTab = createMockTab({ id: "parent", tabLevel: 0 });
+      const childTab = createMockTab({ id: "child", tabLevel: 1, parentTabId: "parent" });
+
+      mockGraph.getChildren.mockReturnValue([childTab]);
+
+      const records = createMockRecords(3);
+      const rowSelection = createMockRowSelection(["1"]);
+
+      // Mock debounce to track cancel calls
+      const cancelMock = jest.fn();
+      mockDebounce.mockImplementation(<T extends (...args: any[]) => any>(fn: T) => {
+        const debouncedFn = ((...args: Parameters<T>) => {
+          mockDebouncedFunction(...args);
+          fn(...args);
+        }) as T & { cancel: () => void };
+        debouncedFn.cancel = cancelMock;
+        return debouncedFn;
+      });
+
+      renderHook(() => useTableSelection(parentTab, records, rowSelection));
+
+      // Should cancel debounce before atomic update
+      expect(cancelMock).toHaveBeenCalled();
+    });
+
+    it("should not clear children when selection stays the same", () => {
+      const parentTab = createMockTab({ id: "parent", tabLevel: 0 });
+      const childTab = createMockTab({ id: "child", tabLevel: 1, parentTabId: "parent" });
+
+      mockGraph.getChildren.mockReturnValue([childTab]);
+
+      const records = createMockRecords(3);
+      const rowSelection = createMockRowSelection(["1"]);
+
+      const { rerender } = renderHook(({ selection }) => useTableSelection(parentTab, records, selection), {
+        initialProps: { selection: rowSelection },
+      });
+
+      // Clear mock calls from initial render
+      jest.clearAllMocks();
+
+      // Re-render with same selection
+      rerender({ selection: rowSelection });
+
+      // Should NOT call setSelectedRecordAndClearChildren again
+      expect(mockWindowURL.setSelectedRecordAndClearChildren).not.toHaveBeenCalled();
+    });
+
+    it("should prevent child selection when parent has no selection", () => {
+      const parentTab = createMockTab({ id: "parent", tabLevel: 0 });
+      const childTab = createMockTab({ id: "child", tabLevel: 1, parentTabId: "parent" });
+
+      mockGraph.getParent.mockReturnValue(parentTab);
+      mockWindowURL.getSelectedRecord.mockReturnValue(undefined); // Parent has no selection
+
+      const records = createMockRecords(3);
+      const rowSelection = createMockRowSelection(["1"]);
+
+      renderHook(() => useTableSelection(childTab, records, rowSelection));
+
+      // Should not process child selection when parent has no selection
+      expect(mockGraph.setSelected).not.toHaveBeenCalled();
+      expect(mockWindowURL.setSelectedRecord).not.toHaveBeenCalled();
+    });
+
+    it("should allow child selection when parent has selection", () => {
+      const parentTab = createMockTab({ id: "parent", tabLevel: 0 });
+      const childTab = createMockTab({ id: "child", tabLevel: 1, parentTabId: "parent" });
+
+      mockGraph.getParent.mockReturnValue(parentTab);
+      mockWindowURL.getSelectedRecord.mockReturnValue("parent-record-1"); // Parent HAS selection
+
+      const records = createMockRecords(3);
+      const rowSelection = createMockRowSelection(["1"]);
+
+      renderHook(() => useTableSelection(childTab, records, rowSelection));
+
+      // Should process child selection when parent has selection
+      expect(mockGraph.setSelected).toHaveBeenCalled();
+      expect(mockDebouncedFunction).toHaveBeenCalled();
+    });
+
     it("should handle undefined children", () => {
       const tab = createMockTab();
       mockGraph.getChildren.mockReturnValue(undefined);
@@ -430,7 +513,6 @@ describe("useTableSelection", () => {
       expect(mockWindowURL.clearSelectedRecord).not.toHaveBeenCalled();
     });
   });
-
 
   describe("Debounced URL updates", () => {
     it("should create debounced function with correct delay", () => {
