@@ -16,7 +16,12 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { MRT_ColumnFiltersState, MRT_ExpandedState, MRT_VisibilityState } from "material-react-table";
+import type {
+  MRT_ColumnFiltersState,
+  MRT_ExpandedState,
+  MRT_VisibilityState,
+  MRT_SortingState,
+} from "material-react-table";
 import type { DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
@@ -44,7 +49,6 @@ interface UseTableDataReturn {
   columns: Column[];
 
   // State
-  columnVisibility: MRT_VisibilityState;
   expanded: MRT_ExpandedState;
   loading: boolean;
   error: Error | null;
@@ -59,6 +63,10 @@ interface UseTableDataReturn {
   handleMRTColumnFiltersChange: (
     updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)
   ) => void;
+  handleMRTColumnVisibilityChange: (
+    updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)
+  ) => void;
+  handleMRTSortingChange: (updaterOrValue: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)) => void;
   handleColumnFilterChange: (columnId: string, selectedOptions: FilterOption[]) => Promise<void>;
   handleLoadFilterOptions: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   handleLoadMoreFilterOptions: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
@@ -84,13 +92,23 @@ export const useTableData = ({
   const [loadedNodes, setLoadedNodes] = useState<Set<string>>(new Set());
   const [childrenData, setChildrenData] = useState<Map<string, EntityData[]>>(new Map());
   const [flattenedRecords, setFlattenedRecords] = useState<EntityData[]>([]);
-  const [columnVisibility, setColumnVisibility] = useState<MRT_VisibilityState>({});
   const [prevShouldUseTreeMode, setPrevShouldUseTreeMode] = useState<boolean | null>(null);
 
   // Contexts and hooks
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
-  const { tab, parentTab, parentRecord, parentRecords, tableColumnFilters, setTableColumnFilters } = useTabContext();
+  const {
+    tab,
+    parentTab,
+    parentRecord,
+    parentRecords,
+    tableColumnFilters,
+    setTableColumnFilters,
+    tableColumnVisibility,
+    setTableColumnVisibility,
+    tableSorting,
+    setTableSorting,
+  } = useTabContext();
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
   // Computed values
@@ -422,6 +440,25 @@ export const useTableData = ({
     [tableColumnFilters, setTableColumnFilters]
   );
 
+  const handleMRTColumnVisibilityChange = useCallback(
+    (updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)) => {
+      const newVisibility =
+        typeof updaterOrValue === "function" ? updaterOrValue(tableColumnVisibility) : updaterOrValue;
+
+      setTableColumnVisibility((prev) => ({ ...prev, ...newVisibility }));
+    },
+    [tableColumnVisibility, setTableColumnVisibility]
+  );
+
+  const handleMRTSortingChange = useCallback(
+    (updaterOrValue: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)) => {
+      const newSorting = typeof updaterOrValue === "function" ? updaterOrValue(tableSorting) : updaterOrValue;
+
+      setTableSorting(newSorting);
+    },
+    [tableSorting, setTableSorting]
+  );
+
   // Display records (tree mode uses flattened, normal mode uses original records)
   const displayRecords = shouldUseTreeMode ? flattenedRecords : records;
 
@@ -432,7 +469,6 @@ export const useTableData = ({
     columns: baseColumns,
 
     // State
-    columnVisibility,
     expanded,
     loading,
     error: error || null,
@@ -445,6 +481,8 @@ export const useTableData = ({
 
     // Handlers
     handleMRTColumnFiltersChange,
+    handleMRTColumnVisibilityChange,
+    handleMRTSortingChange,
     handleColumnFilterChange,
     handleLoadFilterOptions,
     handleLoadMoreFilterOptions,

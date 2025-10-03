@@ -22,6 +22,7 @@ import {
   type MRT_TableBodyRowProps,
   type MRT_TableInstance,
   type MRT_ExpandedState,
+  type MRT_VisibilityState,
 } from "material-react-table";
 import { useStyle } from "./styles";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
@@ -44,6 +45,7 @@ import ChevronUp from "../../../ComponentLibrary/src/assets/icons/chevron-up.svg
 import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check.svg";
 import { useTableData } from "@/hooks/table/useTableData";
+import { isEmptyObject } from "@/utils/commons";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -65,7 +67,14 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
   const { activeWindow, getSelectedRecord } = useMultiWindowURL();
-  const { tab, parentTab, parentRecord, tableColumnFilters } = useTabContext();
+  const {
+    tab,
+    parentTab,
+    parentRecord,
+    // Table related states
+    tableColumnFilters,
+    tableColumnVisibility,
+  } = useTabContext();
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -76,7 +85,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     displayRecords,
     records,
     columns: baseColumns,
-    columnVisibility,
     expanded,
     loading,
     error,
@@ -85,7 +93,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     setChildrenData,
     setLoadedNodes,
     handleMRTColumnFiltersChange,
-    setColumnVisibility,
+    handleMRTColumnVisibilityChange,
     setExpanded,
     toggleImplicitFilters,
     fetchMore,
@@ -97,6 +105,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   });
 
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<HTMLElement | null>(null);
+  const [hasInitialColumnVisibility, setHasInitialColumnVisibility] = useState<boolean>(false);
 
   const toggleColumnsDropdown = useCallback(
     (buttonRef?: HTMLElement | null) => {
@@ -112,7 +121,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const handleCloseColumnMenu = useCallback(() => {
     setColumnMenuAnchor(null);
   }, []);
-
   const renderFirstColumnCell = ({
     renderedCellValue,
     row,
@@ -547,13 +555,25 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     },
     state: {
       columnFilters: tableColumnFilters,
-      columnVisibility,
+      columnVisibility: tableColumnVisibility,
       expanded: shouldUseTreeMode ? expanded : {},
       showColumnFilters: true,
       showProgressBars: loading,
     },
     onColumnFiltersChange: handleMRTColumnFiltersChange,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: (
+      updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)
+    ) => {
+      // Manage initial visibility to avoid overwriting saved state on first render
+      if (!hasInitialColumnVisibility) {
+        setHasInitialColumnVisibility(true);
+        const isEmptyVisibility = isEmptyObject(tableColumnVisibility);
+        // If the current visibility is not empty, it means we have loaded a saved state, so we don't apply the initial state
+        if (!isEmptyVisibility) return;
+      }
+
+      handleMRTColumnVisibilityChange(updaterOrValue);
+    },
     getRowId,
     enableColumnFilters: true,
     enableSorting: true,
