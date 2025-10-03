@@ -38,124 +38,222 @@ interface CalloutState {
   isSuppressed: boolean;
 }
 
-class GlobalCalloutManager {
-  private isCalloutInProgress = false;
-  private pendingCallouts = new Map<string, () => Promise<void>>();
-  private calloutQueue: string[] = [];
-  private suppressCount = 0;
+/**
+ * Immutable callout state
+ */
+interface CalloutManagerState {
+  readonly isCalloutInProgress: boolean;
+  readonly pendingCallouts: ReadonlyMap<string, () => Promise<void>>;
+  readonly calloutQueue: readonly string[];
+  readonly suppressCount: number;
+  readonly eventListeners: ReadonlyMap<CalloutEventType, readonly CalloutEventListener[]>;
+}
 
-  // Event system implementation
-  private eventListeners = new Map<CalloutEventType, CalloutEventListener[]>();
+/**
+ * Configuration for automatic cache cleanup
+ */
+interface CleanupConfig {
+  maxQueueSize: number;
+  maxPendingSize: number;
+  cleanupOnIdle: boolean;
+  idleTimeoutMs: number;
+}
+
+const DEFAULT_CLEANUP_CONFIG: CleanupConfig = {
+  maxQueueSize: 50, // Clear queue if it exceeds this size
+  maxPendingSize: 100, // Clear pending if it exceeds this size
+  cleanupOnIdle: true, // Auto-cleanup after idle period
+  idleTimeoutMs: 5000, // 5 seconds idle timeout
+};
+
+/**
+ * Create initial state
+ */
+const createInitialState = (): CalloutManagerState => ({
+  isCalloutInProgress: false,
+  pendingCallouts: new Map(),
+  calloutQueue: [],
+  suppressCount: 0,
+  eventListeners: new Map(),
+});
+
+/**
+ * Pure function to add event listener
+ */
+const addEventListener = (
+  state: CalloutManagerState,
+  event: CalloutEventType,
+  listener: CalloutEventListener
+): CalloutManagerState => {
+  const currentListeners = state.eventListeners.get(event) || [];
+  const newListeners = new Map(state.eventListeners);
+  newListeners.set(event, [...currentListeners, listener]);
+
+  if (isDebugCallouts()) {
+    logger.debug(`[CalloutManager] Event listener added for '${event}', total: ${newListeners.get(event)?.length}`);
+  }
+
+  return { ...state, eventListeners: newListeners };
+};
+
+/**
+ * Pure function to remove event listener
+ */
+const removeEventListener = (
+  state: CalloutManagerState,
+  event: CalloutEventType,
+  listener: CalloutEventListener
+): CalloutManagerState => {
+  const currentListeners = state.eventListeners.get(event) || [];
+  const newListeners = new Map(state.eventListeners);
+  const filtered = currentListeners.filter((l) => l !== listener);
+  newListeners.set(event, filtered);
+
+  if (isDebugCallouts()) {
+    logger.debug(`[CalloutManager] Event listener removed for '${event}', remaining: ${filtered.length}`);
+  }
+
+  return { ...state, eventListeners: newListeners };
+};
+
+/**
+ * Pure function to emit events (has side effects in listeners)
+ */
+const emitEvent = (state: CalloutManagerState, event: CalloutEventType, data?: Record<string, unknown>): void => {
+  const listeners = state.eventListeners.get(event) || [];
+
+  if (isDebugCallouts() && listeners.length > 0) {
+    logger.debug(`[CalloutManager] Emitting '${event}' to ${listeners.length} listeners`, data);
+  }
+
+  for (const listener of listeners) {
+    try {
+      listener(data);
+    } catch (error) {
+      logger.error(`Error in callout event listener for ${event}:`, error);
+    }
+  }
+};
+
+/**
+ * Pure function to queue a callout
+ */
+const queueCallout = (
+  state: CalloutManagerState,
+  fieldName: string,
+  calloutFn: () => Promise<void>
+): CalloutManagerState => {
+  const newPendingCallouts = new Map(state.pendingCallouts);
+  newPendingCallouts.set(fieldName, calloutFn);
+
+  const newQueue = state.calloutQueue.includes(fieldName) ? state.calloutQueue : [...state.calloutQueue, fieldName];
+
+  return {
+    ...state,
+    pendingCallouts: newPendingCallouts,
+    calloutQueue: newQueue,
+  };
+};
+
+/**
+ * Pure function to check if cleanup is needed
+ */
+const shouldCleanup = (state: CalloutManagerState, config: CleanupConfig): boolean => {
+  return state.calloutQueue.length > config.maxQueueSize || state.pendingCallouts.size > config.maxPendingSize;
+};
+
+/**
+ * Pure function to clear pending callouts
+ */
+const clearPending = (state: CalloutManagerState): CalloutManagerState => {
+  const hadPending = state.pendingCallouts.size > 0 || state.calloutQueue.length > 0;
+
+  const newState = {
+    ...state,
+    pendingCallouts: new Map(),
+    calloutQueue: [],
+  };
+
+  if (hadPending) {
+    emitEvent(newState, "calloutEnd", { cleared: true });
+  }
+
+  return newState;
+};
+
+class GlobalCalloutManager {
+  private state: CalloutManagerState = createInitialState();
+  private cleanupConfig: CleanupConfig = DEFAULT_CLEANUP_CONFIG;
+  private idleTimer: NodeJS.Timeout | null = null;
 
   /**
    * Subscribe to callout events
-   * @param event - Event type to listen for
-   * @param listener - Callback function to execute when event occurs
    */
   on(event: CalloutEventType, listener: CalloutEventListener): void {
-    if (!this.eventListeners.has(event)) {
-      this.eventListeners.set(event, []);
-    }
-    this.eventListeners.get(event)?.push(listener);
-
-    if (isDebugCallouts()) {
-      logger.debug(
-        `[CalloutManager] Event listener added for '${event}', total: ${this.eventListeners.get(event)?.length}`
-      );
-    }
+    this.state = addEventListener(this.state, event, listener);
   }
 
   /**
    * Unsubscribe from callout events
-   * @param event - Event type to stop listening for
-   * @param listener - Specific callback function to remove
    */
   off(event: CalloutEventType, listener: CalloutEventListener): void {
-    const listeners = this.eventListeners.get(event);
-    if (listeners) {
-      const index = listeners.indexOf(listener);
-      if (index > -1) {
-        listeners.splice(index, 1);
-        if (isDebugCallouts()) {
-          logger.debug(`[CalloutManager] Event listener removed for '${event}', remaining: ${listeners.length}`);
-        }
-      }
-    }
-  }
-
-  /**
-   * Emit an event to all registered listeners
-   * @param event - Event type to emit
-   * @param data - Optional data to pass to listeners
-   */
-  private emit(event: CalloutEventType, data?: Record<string, unknown>): void {
-    const listeners = this.eventListeners.get(event) || [];
-
-    if (isDebugCallouts() && listeners.length > 0) {
-      logger.debug(`[CalloutManager] Emitting '${event}' to ${listeners.length} listeners`, data);
-    }
-
-    for (const listener of listeners) {
-      try {
-        listener(data);
-      } catch (error) {
-        logger.error(`Error in callout event listener for ${event}:`, error);
-      }
-    }
+    this.state = removeEventListener(this.state, event, listener);
   }
 
   /**
    * Get comprehensive state information
-   * @returns Current callout manager state
    */
   getState(): CalloutState {
     return {
-      isRunning: this.isCalloutInProgress,
-      queueLength: this.calloutQueue.length,
-      pendingCount: this.pendingCallouts.size,
-      isSuppressed: this.suppressCount > 0,
+      isRunning: this.state.isCalloutInProgress,
+      queueLength: this.state.calloutQueue.length,
+      pendingCount: this.state.pendingCallouts.size,
+      isSuppressed: this.state.suppressCount > 0,
     };
+  }
+
+  /**
+   * Configure cleanup behavior
+   */
+  configureCleanup(config: Partial<CleanupConfig>): void {
+    this.cleanupConfig = { ...this.cleanupConfig, ...config };
   }
 
   async executeCallout(fieldName: string, calloutFn: () => Promise<void>): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      const wrappedCallout = this.createWrappedCallout(calloutFn, resolve, reject);
-      this.queueCallout(fieldName, wrappedCallout);
+      const wrappedCallout = async () => {
+        try {
+          await calloutFn();
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      this.state = queueCallout(this.state, fieldName, wrappedCallout);
+
+      // Check if cleanup is needed
+      if (shouldCleanup(this.state, this.cleanupConfig)) {
+        logger.warn("[CalloutManager] Cache size exceeded limits, clearing old callouts", {
+          queueSize: this.state.calloutQueue.length,
+          pendingSize: this.state.pendingCallouts.size,
+        });
+        this.clearPendingCallouts();
+      }
+
       this.startProcessingIfNeeded();
+      this.resetIdleTimer();
     });
   }
 
-  private createWrappedCallout(
-    calloutFn: () => Promise<void>,
-    resolve: () => void,
-    reject: (error: unknown) => void
-  ): () => Promise<void> {
-    return async () => {
-      try {
-        await calloutFn();
-        resolve();
-      } catch (error) {
-        reject(error);
-      }
-    };
-  }
-
-  private queueCallout(fieldName: string, wrappedCallout: () => Promise<void>): void {
-    this.pendingCallouts.set(fieldName, wrappedCallout);
-
-    if (!this.calloutQueue.includes(fieldName)) {
-      this.calloutQueue.push(fieldName);
-    }
-  }
-
   private startProcessingIfNeeded(): void {
-    if (this.isCalloutInProgress) {
+    if (this.state.isCalloutInProgress) {
       return;
     }
 
     queueMicrotask(() => {
-      if (this.shouldStartProcessing()) {
-        this.emitCalloutStart();
+      if (!this.state.isCalloutInProgress && this.state.calloutQueue.length > 0) {
+        emitEvent(this.state, "calloutStart", { queueLength: this.state.calloutQueue.length });
         this.processQueue().catch((error) => {
           logger.error("Error processing callout queue:", error);
         });
@@ -163,46 +261,48 @@ class GlobalCalloutManager {
     });
   }
 
-  private shouldStartProcessing(): boolean {
-    return !this.isCalloutInProgress && this.calloutQueue.length > 0;
-  }
-
-  private emitCalloutStart(): void {
-    const queueLength = this.calloutQueue.length;
-    this.emit("calloutStart", { queueLength });
-  }
-
   private async processQueue(): Promise<void> {
-    if (this.isCalloutInProgress || this.calloutQueue.length === 0) {
+    if (this.state.isCalloutInProgress || this.state.calloutQueue.length === 0) {
       return;
     }
 
-    this.isCalloutInProgress = true;
+    this.state = { ...this.state, isCalloutInProgress: true };
 
-    await this.executeQueuedCallouts();
-  }
-
-  private async executeQueuedCallouts(): Promise<void> {
     try {
-      while (this.calloutQueue.length > 0) {
+      while (this.state.calloutQueue.length > 0) {
         await this.processNextCallout();
       }
     } catch (error) {
       this.handleExecutionError(error);
     } finally {
-      this.finalizeExecution();
+      this.state = { ...this.state, isCalloutInProgress: false };
+      emitEvent(this.state, "calloutEnd", { allCompleted: true });
     }
   }
 
   private async processNextCallout(): Promise<void> {
-    const fieldName = this.calloutQueue.shift();
+    const fieldName = this.state.calloutQueue[0];
     if (!fieldName) return;
 
-    const callout = this.pendingCallouts.get(fieldName);
+    // Remove from queue immutably
+    this.state = {
+      ...this.state,
+      calloutQueue: this.state.calloutQueue.slice(1),
+    };
+
+    const callout = this.state.pendingCallouts.get(fieldName);
     if (!callout) return;
 
     await this.executeCalloutWithLogging(fieldName, callout);
-    this.pendingCallouts.delete(fieldName);
+
+    // Remove from pending immutably
+    const newPendingCallouts = new Map(this.state.pendingCallouts);
+    newPendingCallouts.delete(fieldName);
+    this.state = {
+      ...this.state,
+      pendingCallouts: newPendingCallouts,
+    };
+
     await this.emitProgressIfNeeded(fieldName);
   }
 
@@ -218,77 +318,89 @@ class GlobalCalloutManager {
   }
 
   private async emitProgressIfNeeded(fieldName: string): Promise<void> {
-    if (this.calloutQueue.length > 0) {
-      this.emit("calloutProgress", {
+    if (this.state.calloutQueue.length > 0) {
+      emitEvent(this.state, "calloutProgress", {
         completed: fieldName,
-        remaining: this.calloutQueue.length,
+        remaining: this.state.calloutQueue.length,
       });
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 
   private handleExecutionError(error: unknown): void {
-    const fieldName = this.calloutQueue[0];
+    const fieldName = this.state.calloutQueue[0];
     logger.error(`Callout execution failed for field: ${fieldName}`, error);
 
     if (fieldName) {
-      this.pendingCallouts.delete(fieldName);
+      const newPendingCallouts = new Map(this.state.pendingCallouts);
+      newPendingCallouts.delete(fieldName);
+      this.state = {
+        ...this.state,
+        pendingCallouts: newPendingCallouts,
+      };
     }
   }
 
-  private finalizeExecution(): void {
-    this.isCalloutInProgress = false;
-    this.emit("calloutEnd", { allCompleted: true });
+  private resetIdleTimer(): void {
+    if (!this.cleanupConfig.cleanupOnIdle) return;
+
+    if (this.idleTimer) {
+      clearTimeout(this.idleTimer);
+    }
+
+    this.idleTimer = setTimeout(() => {
+      if (!this.state.isCalloutInProgress && this.state.calloutQueue.length > 0) {
+        logger.debug("[CalloutManager] Idle timeout reached, clearing pending callouts");
+        this.clearPendingCallouts();
+      }
+    }, this.cleanupConfig.idleTimeoutMs);
   }
 
   isCalloutRunning(): boolean {
-    return this.isCalloutInProgress;
+    return this.state.isCalloutInProgress;
   }
 
   clearPendingCallouts(): void {
-    const hadPendingCallouts = this.pendingCallouts.size > 0 || this.calloutQueue.length > 0;
-
-    this.pendingCallouts.clear();
-    this.calloutQueue.length = 0;
-
-    // Emit calloutEnd event if there were pending callouts
-    if (hadPendingCallouts) {
-      this.emit("calloutEnd", { cleared: true });
-    }
+    this.state = clearPending(this.state);
   }
 
   arePendingCalloutsEmpty(): boolean {
-    return this.calloutQueue.length === 0 && this.pendingCallouts.size === 0;
+    return this.state.calloutQueue.length === 0 && this.state.pendingCallouts.size === 0;
   }
 
-  // Globally suppress callouts (e.g., while applying server-driven values)
   suppress(): void {
-    this.suppressCount++;
-    if (isDebugCallouts()) logger.debug(`[Callout] Suppress on (depth=${this.suppressCount})`);
+    this.state = {
+      ...this.state,
+      suppressCount: this.state.suppressCount + 1,
+    };
+    if (isDebugCallouts()) logger.debug(`[Callout] Suppress on (depth=${this.state.suppressCount})`);
   }
 
   resume(): void {
-    this.suppressCount = Math.max(0, this.suppressCount - 1);
-    if (isDebugCallouts()) logger.debug(`[Callout] Resume (depth=${this.suppressCount})`);
+    this.state = {
+      ...this.state,
+      suppressCount: Math.max(0, this.state.suppressCount - 1),
+    };
+    if (isDebugCallouts()) logger.debug(`[Callout] Resume (depth=${this.state.suppressCount})`);
   }
 
   isSuppressed(): boolean {
-    return this.suppressCount > 0;
+    return this.state.suppressCount > 0;
   }
 
   canExecute(_hqlName: string): boolean {
-    return !this.isCalloutInProgress && !this.isSuppressed();
+    return !this.state.isCalloutInProgress && !this.isSuppressed();
   }
 
   /**
    * Reset the callout manager to initial state
    */
   reset(): void {
-    this.isCalloutInProgress = false;
-    this.pendingCallouts.clear();
-    this.calloutQueue.length = 0;
-    this.suppressCount = 0;
-    this.eventListeners.clear();
+    if (this.idleTimer) {
+      clearTimeout(this.idleTimer);
+      this.idleTimer = null;
+    }
+    this.state = createInitialState();
 
     if (isDebugCallouts()) {
       logger.debug("[CalloutManager] Reset to initial state");

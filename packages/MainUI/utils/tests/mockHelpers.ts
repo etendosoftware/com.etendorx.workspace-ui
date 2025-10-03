@@ -233,6 +233,7 @@ export const getTableSelectionMocks = () => ({
     useSelected: () => ({
       graph: {
         getChildren: jest.fn(() => []),
+        getParent: jest.fn(() => null),
         setSelected: jest.fn(),
         getSelected: jest.fn(() => null),
         clearSelected: jest.fn(),
@@ -245,7 +246,14 @@ export const getTableSelectionMocks = () => ({
       activeWindow: { windowId: "test-window" },
       clearSelectedRecord: jest.fn(),
       setSelectedRecord: jest.fn(),
-      getSelectedRecord: jest.fn(),
+      getSelectedRecord: jest.fn(() => undefined),
+      setSelectedRecordAndClearChildren: jest.fn(),
+      clearChildrenSelections: jest.fn(),
+      getTabFormState: jest.fn(() => undefined),
+      setTabFormState: jest.fn(),
+      clearTabFormState: jest.fn(),
+      clearTabFormStateAtomic: jest.fn(),
+      applyWindowUpdates: jest.fn((fn) => fn([])),
     }),
 
     useStateReconciliation: () => ({
@@ -253,7 +261,11 @@ export const getTableSelectionMocks = () => ({
       handleSyncError: jest.fn(),
     }),
 
-    debounce: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
+    debounce: jest.fn(<T extends (...args: unknown[]) => unknown>(fn: T) => {
+      const wrappedFn = ((...args: unknown[]) => fn(...args)) as T & { cancel: () => void };
+      wrappedFn.cancel = jest.fn();
+      return wrappedFn;
+    }),
 
     mapBy: (items: unknown[], key: string) => {
       const result: Record<string, unknown> = {};
