@@ -229,6 +229,11 @@ const es = {
         description:
           "Has sido desconectado automáticamente por razones de seguridad. Por favor, inicia sesión nuevamente para continuar.",
       },
+      noAccessTableNoView: {
+        title: "Sin acceso a la tabla",
+        description:
+          "Has sido desconectado automáticamente por razones de seguridad. Por favor, inicia sesión nuevamente para continuar.",
+      },
     },
     or: "O",
   },
