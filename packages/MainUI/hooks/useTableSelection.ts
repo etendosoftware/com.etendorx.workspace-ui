@@ -384,12 +384,6 @@ export default function useTableSelection(
       return;
     }
 
-    logger.debug(`[useTableSelection] Selection change detected in tab ${tab.id}`, {
-      previous: previousSelectionRef.current,
-      current: currentSelectionIds,
-      source: "rowSelection change",
-    });
-
     previousSelectionRef.current = currentSelectionIds;
 
     if (windowId) {
@@ -406,14 +400,9 @@ export default function useTableSelection(
       // But only if the selection actually changed (not just FormView -> Table with same record)
       if (selectedRecords.length === 1 && childTabIds.length > 0 && selectionChanged) {
         // Cancel any pending debounced URL updates to prevent stale updates
-        logger.debug(`[useTableSelection] Canceling pending debounce for tab ${tab.id} before atomic update`);
         debouncedURLUpdate.cancel();
 
         // Single selection with children AND selection changed: use atomic update
-        logger.debug(`[useTableSelection] Using atomic update for tab ${tab.id}:`, {
-          newSelection: String(selectedRecords[0].id),
-          childrenToClear: childTabIds
-        });
         setSelectedRecordAndClearChildren(windowId, tab.id, String(selectedRecords[0].id), childTabIds);
 
         // Clear graph state for children to keep graph in sync

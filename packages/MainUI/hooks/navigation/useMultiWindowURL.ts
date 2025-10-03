@@ -554,33 +554,6 @@ export function useMultiWindowURL() {
     [applyWindowUpdates]
   );
 
-  /**
-   * Atomically clears FormView state for a tab and all its children in a single navigation
-   */
-  const clearTabFormStateAndChildren = useCallback(
-    (windowId: string, tabId: string, childTabIds: string[]) => {
-      applyWindowUpdates((prev) => {
-        return prev.map((w) => {
-          if (w.windowId !== windowId) return w;
-
-          const newTabStates = { ...w.tabFormStates };
-          const newSelected = { ...w.selectedRecords };
-
-          // Clear the tab itself
-          delete newTabStates[tabId];
-
-          // Clear all children
-          for (const childId of childTabIds) {
-            delete newSelected[childId];
-            delete newTabStates[childId];
-          }
-
-          return { ...w, selectedRecords: newSelected, tabFormStates: newTabStates };
-        });
-      });
-    },
-    [applyWindowUpdates]
-  );
 
   const openWindowAndSelect = useCallback(
     (
@@ -711,7 +684,6 @@ export function useMultiWindowURL() {
     setTabFormState,
     clearTabFormState,
     clearTabFormStateAtomic,
-    clearTabFormStateAndChildren,
     getTabFormState,
 
     setRecord,

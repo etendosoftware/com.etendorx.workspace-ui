@@ -668,17 +668,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     }
 
     const currentSelection = table.getState().rowSelection;
-    const currentlySelectedIds = Object.keys(currentSelection).filter(id => currentSelection[id]);
-
-    logger.info(`[URLNavigation] Checking URL vs Table`, {
-      tabId: tab.id,
-      urlSelectedId,
-      currentlySelectedIds,
-      recordsLength: records.length
-    });
-
-    // Handle case where user navigates directly to a URL with selection
     const recordExists = records.some((record) => String(record.id) === urlSelectedId);
+
     if (recordExists) {
       const isCurrentlySelected = currentSelection[urlSelectedId];
 
@@ -687,14 +678,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         const timeoutId = setTimeout(() => {
           // Re-check if this is still the correct selection after the delay
           const latestUrlSelectedId = getSelectedRecord(windowId, tab.id);
-          logger.info(`[URLNavigation] After delay, checking if should apply`, {
-            tabId: tab.id,
-            urlSelectedIdBefore: urlSelectedId,
-            latestUrlSelectedId,
-            willApply: latestUrlSelectedId === urlSelectedId
-          });
           if (latestUrlSelectedId === urlSelectedId) {
-            logger.info(`[URLNavigation] Applying URL selection for direct navigation: ${urlSelectedId}`);
+            logger.debug(`[URLNavigation] Applying URL selection for direct navigation: ${urlSelectedId}`);
             table.setRowSelection({ [urlSelectedId]: true });
           }
         }, 100);

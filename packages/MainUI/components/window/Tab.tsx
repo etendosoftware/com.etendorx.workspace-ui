@@ -38,7 +38,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     setTabFormState,
     clearTabFormState,
     clearTabFormStateAtomic,
-    clearTabFormStateAndChildren,
     getTabFormState,
     getSelectedRecord,
     clearChildrenSelections,
@@ -153,17 +152,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       setToggle((prev) => !prev);
     }
   }, [windowId]);
-
-  const handleClearChildren = useCallback(() => {
-    if (!windowId) return;
-
-    const children = graph.getChildren(tab);
-    if (children && children.length > 0) {
-      const childIds = children.map((c) => c.id);
-      // Batch clear to avoid multiple navigations
-      clearChildrenSelections(windowId, childIds);
-    }
-  }, [windowId, graph, tab, clearChildrenSelections]);
 
   useEffect(() => {
     const actions = {
