@@ -348,14 +348,18 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           clickTimeoutsRef.current.clear();
 
           const parent = graph.getParent(tab);
-          const parentSelection = parent ? graph.getSelected(parent) : undefined;
 
-          // For child tabs, prevent opening form if parent has no selection
-          if (parent && (!parentSelection || !parentSelection.id)) {
-            return;
+          // For child tabs, prevent opening form if parent has no selection in URL
+          if (parent) {
+            const windowId = activeWindow?.windowId;
+            const parentSelectedInURL = windowId ? getSelectedRecord(windowId, parent.id) : undefined;
+            if (!parentSelectedInURL) {
+              return;
+            }
           }
 
-          // Set graph selection for consistency but avoid triggering URL updates
+          // Set graph selection for consistency
+          const parentSelection = parent ? graph.getSelected(parent) : undefined;
           graph.setSelected(tab, row.original);
           graph.setSelectedMultiple(tab, [row.original]);
 
@@ -608,9 +612,18 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, displayRecords, table]);
 
   // Ensure URL selection is maintained when table data changes
+  // Sync URL selection to table state
+  // NOTE: Disabled for tabs with children - their selection is handled atomically
   useEffect(() => {
     const windowId = activeWindow?.windowId;
     if (!windowId || windowId !== tab.window || !records) {
+      return;
+    }
+
+    // Skip for tabs with children to prevent race conditions
+    // Their selection is already handled atomically by useTableSelection
+    const children = graph.getChildren(tab);
+    if (children && children.length > 0) {
       return;
     }
 
@@ -631,12 +644,21 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       // Record no longer exists but is still selected - clear selection
       table.setRowSelection({});
     }
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table]);
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table, graph]);
 
   // Handle browser navigation and direct link access
+  // NOTE: Disabled for tabs with children - their selection is handled atomically
+  // by setSelectedRecordAndClearChildren in useTableSelection
   useEffect(() => {
     const windowId = activeWindow?.windowId;
     if (!windowId || windowId !== tab.window || !records) {
+      return;
+    }
+
+    // Skip URLNavigation for tabs with children to prevent race conditions
+    // Their selection is already handled atomically by useTableSelection
+    const children = graph.getChildren(tab);
+    if (children && children.length > 0) {
       return;
     }
 
@@ -645,18 +667,42 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       return;
     }
 
+    const currentSelection = table.getState().rowSelection;
+    const currentlySelectedIds = Object.keys(currentSelection).filter(id => currentSelection[id]);
+
+    logger.info(`[URLNavigation] Checking URL vs Table`, {
+      tabId: tab.id,
+      urlSelectedId,
+      currentlySelectedIds,
+      recordsLength: records.length
+    });
+
     // Handle case where user navigates directly to a URL with selection
     const recordExists = records.some((record) => String(record.id) === urlSelectedId);
     if (recordExists) {
-      const currentSelection = table.getState().rowSelection;
       const isCurrentlySelected = currentSelection[urlSelectedId];
 
       if (!isCurrentlySelected) {
-        logger.info(`[URLNavigation] Applying URL selection for direct navigation: ${urlSelectedId}`);
-        table.setRowSelection({ [urlSelectedId]: true });
+        // Add a small delay to avoid applying stale URL selections during transitions
+        const timeoutId = setTimeout(() => {
+          // Re-check if this is still the correct selection after the delay
+          const latestUrlSelectedId = getSelectedRecord(windowId, tab.id);
+          logger.info(`[URLNavigation] After delay, checking if should apply`, {
+            tabId: tab.id,
+            urlSelectedIdBefore: urlSelectedId,
+            latestUrlSelectedId,
+            willApply: latestUrlSelectedId === urlSelectedId
+          });
+          if (latestUrlSelectedId === urlSelectedId) {
+            logger.info(`[URLNavigation] Applying URL selection for direct navigation: ${urlSelectedId}`);
+            table.setRowSelection({ [urlSelectedId]: true });
+          }
+        }, 100);
+
+        return () => clearTimeout(timeoutId);
       }
     }
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table]);
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table, graph]);
 
   useEffect(() => {
     const handleGraphClear = (eventTab: typeof tab) => {

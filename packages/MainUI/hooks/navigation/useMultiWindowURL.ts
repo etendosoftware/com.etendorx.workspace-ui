@@ -349,103 +349,127 @@ export function useMultiWindowURL() {
     [windows, navigate]
   );
 
-  const setSelectedRecord = useCallback(
-    (windowId: string, tabId: string, recordId: string) => {
-      const updatedWindows = windows.map((w) => {
-        if (w.windowId === windowId) {
-          return {
-            ...w,
-            selectedRecords: {
-              ...w.selectedRecords,
-              [tabId]: recordId,
-            },
-          };
-        }
-        return w;
-      });
-
-      navigate(updatedWindows);
+  /**
+   * Applies multiple window updates atomically in a single navigation.
+   * This ensures that rapid successive updates don't create race conditions
+   * by always working with the most current state via the transform callback.
+   */
+  const applyWindowUpdates = useCallback(
+    (transform: (windows: WindowState[]) => WindowState[], preserveCurrentPath?: boolean) => {
+      const nextWindows = transform(windows);
+      navigate(nextWindows, preserveCurrentPath);
     },
     [windows, navigate]
+  );
+
+  const setSelectedRecord = useCallback(
+    (windowId: string, tabId: string, recordId: string) => {
+      applyWindowUpdates((prev) => {
+        return prev.map((w) => {
+          if (w.windowId === windowId) {
+            return {
+              ...w,
+              selectedRecords: {
+                ...w.selectedRecords,
+                [tabId]: recordId,
+              },
+            };
+          }
+          return w;
+        });
+      });
+    },
+    [applyWindowUpdates]
   );
 
   const clearSelectedRecord = useCallback(
     (windowId: string, tabId: string) => {
-      const updatedWindows = windows.map((w) => {
-        if (w.windowId === windowId) {
-          const newSelectedRecords = { ...w.selectedRecords };
-          delete newSelectedRecords[tabId];
+      applyWindowUpdates((prev) => {
+        return prev.map((w) => {
+          if (w.windowId === windowId) {
+            const newSelectedRecords = { ...w.selectedRecords };
+            delete newSelectedRecords[tabId];
 
-          return {
-            ...w,
-            selectedRecords: newSelectedRecords,
-          };
-        }
-        return w;
+            return {
+              ...w,
+              selectedRecords: newSelectedRecords,
+            };
+          }
+          return w;
+        });
       });
-
-      navigate(updatedWindows);
     },
-    [windows, navigate]
+    [applyWindowUpdates]
   );
 
   const getSelectedRecord = useCallback(
     (windowId: string, tabId: string): string | undefined => {
+      // Always read from current windows state, not searchParams
+      // searchParams can be stale during intermediate renders
       const window = windows.find((w) => w.windowId === windowId);
-      return window?.selectedRecords[tabId];
+      if (!window) return undefined;
+
+      // If tab is in FormView, get recordId from tabFormStates
+      // Otherwise get it from selectedRecords
+      const tabFormState = window.tabFormStates[tabId];
+      if (tabFormState?.mode === TAB_MODES.FORM && tabFormState.recordId) {
+        return tabFormState.recordId;
+      }
+
+      return window.selectedRecords[tabId];
     },
     [windows]
   );
 
   const setTabFormState = useCallback(
     (windowId: string, tabId: string, recordId: string, mode: TabMode = TAB_MODES.FORM, formMode?: FormMode) => {
-      const updatedWindows = windows.map((w) => {
-        if (w.windowId === windowId) {
-          const currentTabState = w.tabFormStates[tabId] || {};
+      applyWindowUpdates((prev) => {
+        return prev.map((w) => {
+          if (w.windowId === windowId) {
+            const currentTabState = w.tabFormStates[tabId] || {};
 
-          return {
-            ...w,
-            selectedRecords: {
-              ...w.selectedRecords,
-              [tabId]: recordId,
-            },
-            tabFormStates: {
-              ...w.tabFormStates,
-              [tabId]: {
-                ...currentTabState,
-                recordId,
-                mode,
-                formMode: formMode || (recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT),
+            return {
+              ...w,
+              selectedRecords: {
+                ...w.selectedRecords,
+                [tabId]: recordId,
               },
-            },
-          };
-        }
-        return w;
+              tabFormStates: {
+                ...w.tabFormStates,
+                [tabId]: {
+                  ...currentTabState,
+                  recordId,
+                  mode,
+                  formMode: formMode || (recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT),
+                },
+              },
+            };
+          }
+          return w;
+        });
       });
-
-      navigate(updatedWindows);
     },
-    [windows, navigate]
+    [applyWindowUpdates]
   );
 
   const clearTabFormState = useCallback(
     (windowId: string, tabId: string) => {
-      const updatedWindows = windows.map((w) => {
-        if (w.windowId === windowId) {
-          const newTabFormStates = { ...w.tabFormStates };
-          delete newTabFormStates[tabId];
+      applyWindowUpdates((prev) => {
+        return prev.map((w) => {
+          if (w.windowId === windowId) {
+            const newTabFormStates = { ...w.tabFormStates };
+            delete newTabFormStates[tabId];
 
-          return {
-            ...w,
-            tabFormStates: newTabFormStates,
-          };
-        }
-        return w;
+            return {
+              ...w,
+              tabFormStates: newTabFormStates,
+            };
+          }
+          return w;
+        });
       });
-
-      navigate(updatedWindows);
     },
-    [windows, navigate]
+    [applyWindowUpdates]
   );
 
   const getTabFormState = useCallback(
@@ -454,15 +478,6 @@ export function useMultiWindowURL() {
       return window?.tabFormStates[tabId];
     },
     [windows]
-  );
-
-  // Batch operations
-  const applyWindowUpdates = useCallback(
-    (transform: (windows: WindowState[]) => WindowState[], preserveCurrentPath?: boolean) => {
-      const nextWindows = transform(windows);
-      navigate(nextWindows, preserveCurrentPath);
-    },
-    [windows, navigate]
   );
 
   const clearChildrenSelections = useCallback(
@@ -506,6 +521,58 @@ export function useMultiWindowURL() {
           for (const tabId of childTabIds) {
             delete newSelected[tabId];
             delete newTabStates[tabId];
+          }
+
+          return { ...w, selectedRecords: newSelected, tabFormStates: newTabStates };
+        });
+      });
+    },
+    [applyWindowUpdates]
+  );
+
+  /**
+   * Atomically clears FormView state for a tab only (without touching children or selection)
+   */
+  const clearTabFormStateAtomic = useCallback(
+    (windowId: string, tabId: string) => {
+      applyWindowUpdates((prev) => {
+        return prev.map((w) => {
+          if (w.windowId !== windowId) return w;
+
+          const newTabStates = { ...w.tabFormStates };
+          delete newTabStates[tabId]; // Only delete FormView state, keep selection
+
+          return {
+            ...w,
+            tabFormStates: newTabStates,
+            // Explicitly preserve selectedRecords to ensure selection is not lost
+            selectedRecords: { ...w.selectedRecords }
+          };
+        });
+      });
+    },
+    [applyWindowUpdates]
+  );
+
+  /**
+   * Atomically clears FormView state for a tab and all its children in a single navigation
+   */
+  const clearTabFormStateAndChildren = useCallback(
+    (windowId: string, tabId: string, childTabIds: string[]) => {
+      applyWindowUpdates((prev) => {
+        return prev.map((w) => {
+          if (w.windowId !== windowId) return w;
+
+          const newTabStates = { ...w.tabFormStates };
+          const newSelected = { ...w.selectedRecords };
+
+          // Clear the tab itself
+          delete newTabStates[tabId];
+
+          // Clear all children
+          for (const childId of childTabIds) {
+            delete newSelected[childId];
+            delete newTabStates[childId];
           }
 
           return { ...w, selectedRecords: newSelected, tabFormStates: newTabStates };
@@ -574,20 +641,21 @@ export function useMultiWindowURL() {
         const formMode: FormMode = recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT;
         setTabFormState(windowId, tabId, recordId, TAB_MODES.FORM, formMode);
       } else {
-        const updatedWindows = windows.map((w) => {
-          if (w.windowId === windowId) {
-            return {
-              ...w,
-              formRecordId: recordId,
-              formMode: recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT,
-            };
-          }
-          return w;
+        applyWindowUpdates((prev) => {
+          return prev.map((w) => {
+            if (w.windowId === windowId) {
+              return {
+                ...w,
+                formRecordId: recordId,
+                formMode: recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT,
+              };
+            }
+            return w;
+          });
         });
-        navigate(updatedWindows);
       }
     },
-    [windows, navigate, setTabFormState]
+    [applyWindowUpdates, setTabFormState]
   );
 
   const clearRecord = useCallback(
@@ -595,17 +663,18 @@ export function useMultiWindowURL() {
       if (tabId) {
         clearTabFormState(windowId, tabId);
       } else {
-        const updatedWindows = windows.map((w) => {
-          if (w.windowId === windowId) {
-            const { formMode, formRecordId, ...rest } = w;
-            return rest;
-          }
-          return w;
+        applyWindowUpdates((prev) => {
+          return prev.map((w) => {
+            if (w.windowId === windowId) {
+              const { formMode, formRecordId, ...rest } = w;
+              return rest;
+            }
+            return w;
+          });
         });
-        navigate(updatedWindows);
       }
     },
-    [windows, navigate, clearTabFormState]
+    [applyWindowUpdates, clearTabFormState]
   );
 
   const reorderWindows = useCallback(
@@ -641,6 +710,8 @@ export function useMultiWindowURL() {
 
     setTabFormState,
     clearTabFormState,
+    clearTabFormStateAtomic,
+    clearTabFormStateAndChildren,
     getTabFormState,
 
     setRecord,
