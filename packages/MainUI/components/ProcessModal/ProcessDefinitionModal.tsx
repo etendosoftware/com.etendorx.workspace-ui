@@ -245,8 +245,38 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           undefined,
           javaClassName
         );
-        setResult(res);
-        if (res.success) setShouldTriggerSuccess(true);
+
+        let message: string | undefined;
+        let messageType: string;
+
+        if (res.data?.responseActions?.[0]?.showMsgInProcessView) {
+          const msgView = res.data.responseActions[0].showMsgInProcessView;
+          message = msgView.msgText;
+          messageType = msgView.msgType;
+        } else {
+          if (res.data && typeof res.data === "object" && "text" in res.data) {
+            message = res.data.text;
+            messageType = res.data.severity || "success";
+          } else {
+            const potentialMessage = res.data?.message || res.data?.msgText || res.data?.responseMessage;
+
+            if (potentialMessage && typeof potentialMessage === "object" && "text" in potentialMessage) {
+              message = potentialMessage.text;
+              messageType = potentialMessage.severity || "success";
+            } else {
+              message = potentialMessage;
+              messageType = res.data?.msgType || res.data?.messageType || (res.success ? "success" : "error");
+            }
+          }
+        }
+
+        setResult({
+          success: res.success && messageType === "success",
+          data: message,
+          error: messageType !== "success" ? message || res.error : undefined,
+        });
+
+        if (res.success && messageType === "success") setShouldTriggerSuccess(true);
       } catch (error) {
         logger.warn("Error executing process:", error);
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
@@ -289,8 +319,37 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           javaClassName
         );
 
-        setResult(res);
-        if (res.success) setShouldTriggerSuccess(true);
+        let message: string | undefined;
+        let messageType: string;
+
+        if (res.data?.responseActions?.[0]?.showMsgInProcessView) {
+          const msgView = res.data.responseActions[0].showMsgInProcessView;
+          message = msgView.msgText;
+          messageType = msgView.msgType;
+        } else {
+          if (res.data && typeof res.data === "object" && "text" in res.data) {
+            message = res.data.text;
+            messageType = res.data.severity || "success";
+          } else {
+            const potentialMessage = res.data?.message || res.data?.msgText || res.data?.responseMessage;
+
+            if (potentialMessage && typeof potentialMessage === "object" && "text" in potentialMessage) {
+              message = potentialMessage.text;
+              messageType = potentialMessage.severity || "success";
+            } else {
+              message = potentialMessage;
+              messageType = res.data?.msgType || res.data?.messageType || (res.success ? "success" : "error");
+            }
+          }
+        }
+
+        setResult({
+          success: res.success && messageType === "success",
+          data: message,
+          error: messageType !== "success" ? message || res.error : undefined,
+        });
+
+        if (res.success && messageType === "success") setShouldTriggerSuccess(true);
       } catch (error) {
         logger.warn("Error executing direct Java process:", error);
         setResult({
@@ -467,10 +526,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       isSuccessMessage ? "bg-green-50 border-(--color-success-main)" : "bg-gray-50 border-(--color-etendo-main)"
     }`;
 
+    const displayText = msgText.replace(/<br\s*\/?>/gi, "\n");
+
     return (
       <div className={messageClasses}>
         <h4 className="font-bold text-sm">{msgTitle}</h4>
-        <p className="text-sm">{msgText}</p>
+        <p className="text-sm whitespace-pre-line">{displayText}</p>
       </div>
     );
   };
@@ -579,11 +640,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
               <div className={`relative ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
                 <div
                   className={`absolute transition-opacity inset-0 flex items-center pointer-events-none justify-center bg-white ${
-                    loading || initializationLoading ? "opacity-100" : "opacity-0"
+                    (loading || initializationLoading) && !result ? "opacity-100" : "opacity-0"
                   }`}>
                   <Loading data-testid="Loading__761503" />
                 </div>
-                <div className={`transition-opacity ${loading || initializationLoading ? "opacity-0" : "opacity-100"}`}>
+                <div
+                  className={`transition-opacity ${(loading || initializationLoading) && !result ? "opacity-0" : "opacity-100"}`}>
                   {renderResponse()}
                   {renderParameters()}
                 </div>
@@ -592,21 +654,35 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
             {/* Footer */}
             <div className="flex gap-4 justify-center mx-4 mb-4">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="transition px-4 py-2 border border-(--color-baseline-60) text-(--color-baseline-90) rounded-full w-full
-                font-medium focus:outline-none hover:bg-(--color-transparent-neutral-10)"
-                disabled={isPending}>
-                {t("common.close")}
-              </button>
-              <button
-                type="button"
-                onClick={handleExecute}
-                className="transition px-4 py-2 text-white rounded-full w-full justify-center font-medium flex items-center gap-2 bg-(--color-baseline-100) hover:bg-(--color-etendo-main)"
-                disabled={isActionButtonDisabled}>
-                {renderActionButton()}
-              </button>
+              {!result && !isPending && (
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="transition px-4 py-2 border border-(--color-baseline-60) text-(--color-baseline-90) rounded-full w-full
+                  font-medium focus:outline-none hover:bg-(--color-transparent-neutral-10)">
+                  {t("common.close")}
+                </button>
+              )}
+
+              {!result && (
+                <button
+                  type="button"
+                  onClick={handleExecute}
+                  className="transition px-4 py-2 text-white rounded-full w-full justify-center font-medium flex items-center gap-2 bg-(--color-baseline-100) hover:bg-(--color-etendo-main)"
+                  disabled={isActionButtonDisabled}>
+                  {renderActionButton()}
+                </button>
+              )}
+
+              {result && (
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="transition px-4 py-2 border border-(--color-baseline-60) text-(--color-baseline-90) rounded-full w-full
+                  font-medium focus:outline-none hover:bg-(--color-transparent-neutral-10)">
+                  {t("common.close")}
+                </button>
+              )}
             </div>
           </div>
         </div>
