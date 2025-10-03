@@ -192,16 +192,32 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   const handleBack = useCallback(() => {
     if (windowId) {
-      console.log(`[Tab.handleBack] Clearing FormView for tab ${tab.id}, windowId ${windowId}`);
+      const currentFormState = getTabFormState(windowId, tab.id);
+      const isInFormView = currentFormState?.mode === TAB_MODES.FORM;
 
-      // Use atomic clear to avoid race conditions with async navigation
-      // This only clears this tab's FormView, doesn't touch children
-      clearTabFormStateAtomic(windowId, tab.id);
+      if (isInFormView) {
+        // In FormView: just close the form, keep selection
+        console.log(`[Tab.handleBack] Closing FormView for tab ${tab.id}`);
+        clearTabFormStateAtomic(windowId, tab.id);
+      } else {
+        // In Table mode: deselect and clear URL
+        console.log(`[Tab.handleBack] Deselecting in Table mode for tab ${tab.id}`);
+        clearSelectedRecord(windowId, tab.id);
 
-      // Don't clear graph selection - just close the FormView
-      // The record should stay selected in table mode
+        // Also clear children if this tab has any
+        const children = graph.getChildren(tab);
+        if (children && children.length > 0) {
+          const childIds = children.filter((c) => c.window === tab.window).map((c) => c.id);
+          if (childIds.length > 0) {
+            clearChildrenSelections(windowId, childIds);
+          }
+        }
+
+        // Clear graph selection
+        graph.clearSelected(tab);
+      }
     }
-  }, [windowId, clearTabFormStateAtomic, tab]);
+  }, [windowId, clearTabFormStateAtomic, tab, getTabFormState, clearSelectedRecord, clearChildrenSelections, graph]);
 
   const handleTreeView = useCallback(() => {
     if (windowId) {

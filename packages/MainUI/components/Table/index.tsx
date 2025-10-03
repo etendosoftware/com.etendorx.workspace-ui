@@ -689,6 +689,32 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     }
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table, graph]);
 
+  // Restore visual selection when returning from FormView
+  // This effect ensures the table shows the selection from URL when it becomes visible
+  const hasRestoredSelection = useRef(false);
+  useEffect(() => {
+    const windowId = activeWindow?.windowId;
+    if (!windowId || windowId !== tab.window || !records || hasRestoredSelection.current) {
+      return;
+    }
+
+    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    if (!urlSelectedId) {
+      return;
+    }
+
+    // Check if record exists and restore visual selection if needed
+    const recordExists = records.some((record) => String(record.id) === urlSelectedId);
+    const currentSelection = table.getState().rowSelection;
+    const isCurrentlySelected = currentSelection[urlSelectedId];
+
+    if (recordExists && !isCurrentlySelected) {
+      logger.debug(`[DynamicTable] Restoring selection on mount from URL: ${urlSelectedId}`);
+      table.setRowSelection({ [urlSelectedId]: true });
+      hasRestoredSelection.current = true;
+    }
+  }, [activeWindow, tab.window, records, table, getSelectedRecord, tab.id]);
+
   useEffect(() => {
     const handleGraphClear = (eventTab: typeof tab) => {
       if (eventTab.id === tabId) {
