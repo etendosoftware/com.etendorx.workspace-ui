@@ -25,6 +25,7 @@ import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import DragModalContent from "@workspaceui/componentlibrary/src/components/DragModal/DragModalContent";
 export interface CustomColumnDef<TData extends MRT_RowData = MRT_RowData> extends MRT_DefinedColumnDef<TData> {
   showInGridView?: boolean;
+  displayed?: boolean;
 }
 interface ColumnVisibilityMenuProps<T extends MRT_RowData = MRT_RowData> {
   anchorEl: HTMLElement | null;
@@ -43,19 +44,18 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
   const columnItems = useMemo<ToggleableItem[]>(() => {
     return table
       .getAllLeafColumns()
-      .filter((column) => column.columnDef.enableHiding !== false)
-      .map((column) => {
+      .filter((column) => {
         const colDef = column.columnDef as CustomColumnDef;
-        const shouldBeVisible = colDef.showInGridView ?? true;
-
-        if (column.getIsVisible() !== shouldBeVisible) {
-          column.toggleVisibility(shouldBeVisible);
-        }
+        // Filter out columns with displayed: false (like "Active")
+        return colDef.displayed !== false;
+      })
+      .map((column) => {
+        const isVisible = column.getIsVisible();
 
         return {
           id: column.id,
-          label: typeof colDef.header === "string" ? colDef.header : column.id,
-          isActive: shouldBeVisible,
+          label: typeof column.columnDef.header === "string" ? column.columnDef.header : column.id,
+          isActive: isVisible,
         };
       })
       .sort((a, b) => a.label.localeCompare(b.label));
