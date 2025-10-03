@@ -99,6 +99,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
   const [gridSelection, setGridSelection] = useState<GridSelectionStructure>({});
+  const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
 
   const selectedRecords = graph.getSelectedMultiple(tab);
 
@@ -200,11 +201,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   const handleClose = useCallback(() => {
     if (isPending) return;
+
+    // Trigger onSuccess only when closing the modal if process was successful
+    if (shouldTriggerSuccess) {
+      onSuccess?.();
+    }
+
     setResult(null);
     setLoading(true);
     setParameters(button.processDefinition.parameters);
+    setShouldTriggerSuccess(false);
     onClose();
-  }, [button.processDefinition.parameters, isPending, onClose]);
+  }, [button.processDefinition.parameters, isPending, onClose, shouldTriggerSuccess, onSuccess]);
 
   /**
    * Executes processes with window reference parameters
@@ -238,13 +246,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           javaClassName
         );
         setResult(res);
-        if (res.success) onSuccess?.();
+        if (res.success) setShouldTriggerSuccess(true);
       } catch (error) {
         logger.warn("Error executing process:", error);
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
     });
-  }, [tab, processId, recordValues, form, gridSelection, token, javaClassName, onSuccess]);
+  }, [tab, processId, recordValues, form, gridSelection, token, javaClassName]);
 
   /**
    * Executes processes directly via servlet using javaClassName
@@ -282,7 +290,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         );
 
         setResult(res);
-        if (res.success) onSuccess?.();
+        if (res.success) setShouldTriggerSuccess(true);
       } catch (error) {
         logger.warn("Error executing direct Java process:", error);
         setResult({
@@ -291,7 +299,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         });
       }
     });
-  }, [tab, processId, javaClassName, windowId, record, recordValues, form, token, onSuccess]);
+  }, [tab, processId, javaClassName, windowId, record, recordValues, form, token]);
 
   /**
    * Main process execution handler - routes to appropriate execution method
@@ -341,7 +349,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         const responseMessage = stringFnResult.responseActions[0].showMsgInProcessView;
         const success = responseMessage.msgType === "success";
         setResult({ success, data: responseMessage, error: success ? undefined : responseMessage.msgText });
-        if (success) onSuccess?.();
+        if (success) setShouldTriggerSuccess(true);
       } catch (error) {
         logger.warn("Error executing process:", error);
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
@@ -359,7 +367,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     button.processDefinition,
     selectedRecords,
     form,
-    onSuccess,
   ]);
 
   useEffect(() => {

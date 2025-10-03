@@ -23,6 +23,7 @@ import FileIcon from "@workspaceui/componentlibrary/src/assets/icons/file.svg";
 import FolderIcon from "@workspaceui/componentlibrary/src/assets/icons/folder.svg";
 import Info from "@workspaceui/componentlibrary/src/assets/icons/info.svg";
 import { FormMode, type EntityData, type EntityValue } from "@workspaceui/api-client/src/api/types";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import useFormFields from "@/hooks/useFormFields";
 import { useFormInitialState } from "@/hooks/useFormInitialState";
 import { useFormInitialization } from "@/hooks/useFormInitialization";
@@ -32,6 +33,7 @@ import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { FormInitializationProvider } from "@/contexts/FormInitializationContext";
 import { globalCalloutManager } from "@/services/callouts";
 import { useFormAction } from "@/hooks/useFormAction";
+import { logger } from "@/utils/logger";
 import type { FormViewProps } from "./types";
 import { FormViewContext, type FormViewContextValue } from "./contexts/FormViewContext";
 import { FormHeader } from "./FormHeader";
@@ -39,6 +41,7 @@ import { FormFields } from "./FormFieldsContent";
 import { FormActions } from "./FormActions";
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import { useTabContext } from "@/contexts/tab";
+import { useToolbarContext } from "@/contexts/ToolbarContext";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
@@ -80,6 +83,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const { activeWindow, getSelectedRecord, setSelectedRecord } = useMultiWindowURL();
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
   const { resetFormChanges } = useTabContext();
+  const { registerFormViewRefetch } = useToolbarContext();
 
   const {
     formInitialization,
@@ -91,6 +95,36 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     recordId,
   });
   const initialState = useFormInitialState(formInitialization) || undefined;
+
+  const refreshRecordAndSession = useCallback(async () => {
+    if (!recordId || recordId === NEW_RECORD_ID) return;
+
+    try {
+      const result = await datasource.get(tab.entityName, {
+        criteria: [{ fieldName: "id", operator: "equals", value: recordId }],
+        windowId: tab.window,
+        tabId: tab.id,
+        pageSize: 1,
+      });
+
+      const responseData = result.data.response?.data;
+      if (responseData?.length > 0) {
+        const updatedRecord = responseData[0];
+
+        graph.setSelected(tab, updatedRecord);
+        graph.setSelectedMultiple(tab, [updatedRecord]);
+      }
+      await refetch();
+    } catch (error) {
+      logger.warn("Error refreshing record and session:", error);
+    }
+  }, [recordId, tab, graph, refetch]);
+
+  useEffect(() => {
+    if (registerFormViewRefetch) {
+      registerFormViewRefetch(refreshRecordAndSession);
+    }
+  }, [registerFormViewRefetch, refreshRecordAndSession]);
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} data-testid="Info__1a0853" />,
