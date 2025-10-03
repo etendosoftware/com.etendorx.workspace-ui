@@ -231,6 +231,140 @@ const updateGraphSelection = (
 };
 
 /**
+ * Validates if a child tab can select records based on parent tab selection.
+ * Returns false if the child's parent has no selection, true otherwise.
+ *
+ * @param tab - The tab to validate
+ * @param graph - Selection graph for querying parent-child relationships
+ * @param windowId - Current window ID
+ * @param getSelectedRecord - Function to get selected record from URL
+ * @param rowSelection - Current row selection state
+ * @param previousSelectionRef - Reference to track previous selection
+ * @returns true if selection is allowed, false otherwise
+ */
+const validateParentSelection = (
+  tab: Tab,
+  graph: ReturnType<typeof useSelected>["graph"],
+  windowId: string,
+  getSelectedRecord: (windowId: string, tabId: string) => string | undefined,
+  rowSelection: MRT_RowSelectionState,
+  previousSelectionRef: React.MutableRefObject<string[]>
+): boolean => {
+  const parentTab = graph.getParent(tab);
+  if (!parentTab) {
+    return true; // No parent, selection is allowed
+  }
+
+  const parentSelectedInURL = getSelectedRecord(windowId, parentTab.id);
+  if (!parentSelectedInURL) {
+    logger.debug(
+      `[useTableSelection] Parent tab ${parentTab.id} has no selection, child tab ${tab.id} should not auto-select`
+    );
+    // Clear any selection in child if parent is not selected
+    if (Object.keys(rowSelection).length > 0) {
+      previousSelectionRef.current = [];
+    }
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * Determines if the actual selection value changed (not just FormView mode change).
+ * Compares previous and new selection IDs.
+ *
+ * @param selectedRecords - Currently selected records
+ * @param previousSingleSelectionRef - Reference to previous selection ID
+ * @returns Object containing new selection ID and whether it changed
+ */
+const checkSelectionChanged = (
+  selectedRecords: EntityData[],
+  previousSingleSelectionRef: React.MutableRefObject<string | undefined>
+): { newSelectionId: string | undefined; selectionChanged: boolean } => {
+  const newSelectionId = selectedRecords.length === 1 ? String(selectedRecords[0].id) : undefined;
+  const previousSelectionId = previousSingleSelectionRef.current;
+  const selectionChanged = previousSelectionId !== newSelectionId;
+
+  return { newSelectionId, selectionChanged };
+};
+
+/**
+ * Handles URL and graph updates for single selection with children using atomic operations.
+ * This prevents race conditions by batching parent selection update and children clearing.
+ *
+ * @param windowId - Current window ID
+ * @param tab - Current tab
+ * @param selectedRecords - Currently selected records
+ * @param childTabIds - IDs of child tabs to clear
+ * @param currentWindowId - Window ID of current tab
+ * @param children - Child tabs
+ * @param graph - Selection graph
+ * @param debouncedURLUpdate - Debounced URL update function
+ * @param setSelectedRecordAndClearChildren - Atomic update function
+ */
+const handleSingleSelectionWithChildren = (
+  windowId: string,
+  tab: Tab,
+  selectedRecords: EntityData[],
+  childTabIds: string[],
+  currentWindowId: string,
+  children: Tab[] | undefined,
+  graph: ReturnType<typeof useSelected>["graph"],
+  debouncedURLUpdate: { cancel: () => void },
+  setSelectedRecordAndClearChildren: (windowId: string, tabId: string, recordId: string, childTabIds: string[]) => void
+): void => {
+  // Cancel any pending debounced URL updates to prevent stale updates
+  debouncedURLUpdate.cancel();
+
+  // Single selection with children AND selection changed: use atomic update
+  setSelectedRecordAndClearChildren(windowId, tab.id, String(selectedRecords[0].id), childTabIds);
+
+  // Clear graph state for children to keep graph in sync
+  for (const child of children || []) {
+    if (child.window === currentWindowId) {
+      graph.clearSelected(child);
+      graph.clearSelectedMultiple(child);
+    }
+  }
+};
+
+/**
+ * Handles URL and graph updates for non-atomic selection scenarios.
+ * This includes cases without children, multiple selections, or unchanged selections.
+ *
+ * @param selectedRecords - Currently selected records
+ * @param selectionChanged - Whether selection value changed
+ * @param childTabIds - IDs of child tabs
+ * @param debouncedURLUpdate - Debounced URL update function
+ * @param windowId - Current window ID
+ * @param tab - Current tab
+ * @param graph - Selection graph
+ * @param currentWindowId - Window ID of current tab
+ * @param clearChildrenSelections - Function to clear children selections
+ */
+const handleNonAtomicSelection = (
+  selectedRecords: EntityData[],
+  selectionChanged: boolean,
+  childTabIds: string[],
+  debouncedURLUpdate: (records: EntityData[], windowId: string, tabId: string) => void,
+  windowId: string,
+  tab: Tab,
+  graph: ReturnType<typeof useSelected>["graph"],
+  currentWindowId: string,
+  clearChildrenSelections: (windowId: string, childTabIds: string[]) => void
+): void => {
+  if (selectedRecords.length === 1 && !selectionChanged && childTabIds.length > 0) {
+    // Selection didn't change, just update URL without clearing children
+    debouncedURLUpdate(selectedRecords, windowId, tab.id);
+  } else {
+    // Selection changed or no children: clear children and update URL
+    clearChildrenRecords(windowId, graph, tab, currentWindowId, clearChildrenSelections);
+    debouncedURLUpdate(selectedRecords, windowId, tab.id);
+  }
+};
+
+/**
  * Custom React hook for managing table row selection state with comprehensive synchronization capabilities.
  *
  * This hook provides a complete solution for handling table selection in Etendo WorkspaceUI's multi-window,
@@ -341,42 +475,33 @@ export default function useTableSelection(
    *
    * This effect is the core of the selection management system. It:
    * 1. Validates that the current tab belongs to the active window
-   * 2. Processes the current selection state into usable format
-   * 3. Detects actual changes using alphabetical comparison for performance
-   * 4. Updates URL parameters with debouncing for optimal performance
-   * 5. Clears child tab selections to maintain hierarchical consistency
-   * 6. Updates the global selection graph with new state
+   * 2. Validates parent-child selection rules
+   * 3. Processes the current selection state into usable format
+   * 4. Detects actual changes using alphabetical comparison for performance
+   * 5. Updates URL parameters with debouncing for optimal performance
+   * 6. Clears child tab selections to maintain hierarchical consistency
+   * 7. Updates the global selection graph with new state
    *
    * The effect only runs when selection actually changes (not just reorders),
    * preventing unnecessary updates and improving performance.
    */
   useEffect(() => {
+    // 1. Validate correct window
     const isCorrectWindow = windowId === currentWindowId;
-    if (!isCorrectWindow) {
+    if (!isCorrectWindow || !windowId) {
       return;
     }
 
-    // For child tabs, check if parent has a selected record
-    // If parent has no selection, child should not auto-select
-    // Use URL as source of truth instead of graph to avoid stale state
-    const parentTab = graph.getParent(tab);
-    if (parentTab && windowId) {
-      const parentSelectedInURL = getSelectedRecord(windowId, parentTab.id);
-      if (!parentSelectedInURL) {
-        logger.debug(
-          `[useTableSelection] Parent tab ${parentTab.id} has no selection, child tab ${tab.id} should not auto-select`
-        );
-        // Clear any selection in child if parent is not selected
-        if (Object.keys(rowSelection).length > 0) {
-          previousSelectionRef.current = [];
-        }
-        return;
-      }
+    // 2. Validate parent selection for child tabs
+    if (!validateParentSelection(tab, graph, windowId, getSelectedRecord, rowSelection, previousSelectionRef)) {
+      return;
     }
 
+    // 3. Process selected records
     const recordsMap = mapBy(records ?? [], "id");
     const { selectedRecords, lastSelected } = processSelectedRecords(rowSelection, recordsMap);
 
+    // 4. Detect changes (ignore order changes)
     const currentSelectionIds = selectedRecords.map((r) => String(r.id));
     const hasSelectionChanged = !compareArraysAlphabetically(currentSelectionIds, previousSelectionRef.current);
 
@@ -386,58 +511,51 @@ export default function useTableSelection(
 
     previousSelectionRef.current = currentSelectionIds;
 
-    if (windowId) {
-      const children = graph.getChildren(tab);
-      const childTabIds = children?.filter((child) => child.window === currentWindowId).map((child) => child.id) || [];
+    // 5-6. Handle URL updates and children clearing
+    const children = graph.getChildren(tab);
+    const childTabIds = children?.filter((child) => child.window === currentWindowId).map((child) => child.id) || [];
 
-      // Check if selection actually changed (not just mode change from FormView to Table)
-      // Use previousSingleSelectionRef instead of currentURLSelection to avoid race conditions
-      const newSelectionId = selectedRecords.length === 1 ? String(selectedRecords[0].id) : undefined;
-      const previousSelectionId = previousSingleSelectionRef.current;
-      const selectionChanged = previousSelectionId !== newSelectionId;
+    const { newSelectionId, selectionChanged } = checkSelectionChanged(selectedRecords, previousSingleSelectionRef);
 
-      // Atomically update parent selection and clear children in single navigation
-      // But only if the selection actually changed (not just FormView -> Table with same record)
-      if (selectedRecords.length === 1 && childTabIds.length > 0 && selectionChanged) {
-        // Cancel any pending debounced URL updates to prevent stale updates
-        debouncedURLUpdate.cancel();
-
-        // Single selection with children AND selection changed: use atomic update
-        setSelectedRecordAndClearChildren(windowId, tab.id, String(selectedRecords[0].id), childTabIds);
-
-        // Clear graph state for children to keep graph in sync
-        for (const child of children || []) {
-          if (child.window === currentWindowId) {
-            graph.clearSelected(child);
-            graph.clearSelectedMultiple(child);
-          }
-        }
-      } else {
-        // No children or multiple/no selection or selection didn't change: use separate calls
-        if (selectedRecords.length === 1 && !selectionChanged && childTabIds.length > 0) {
-          // Selection didn't change, just update URL without clearing children
-          debouncedURLUpdate(selectedRecords, windowId, tab.id);
-        } else {
-          // Selection changed or no children: clear children and update URL
-          clearChildrenRecords(windowId, graph, tab, currentWindowId, clearChildrenSelections);
-          debouncedURLUpdate(selectedRecords, windowId, tab.id);
-        }
-      }
-
-      // Update the ref with the new selection for next comparison
-      previousSingleSelectionRef.current = newSelectionId;
+    // Use atomic update for single selection with children when selection changed
+    if (selectedRecords.length === 1 && childTabIds.length > 0 && selectionChanged) {
+      handleSingleSelectionWithChildren(
+        windowId,
+        tab,
+        selectedRecords,
+        childTabIds,
+        currentWindowId,
+        children,
+        graph,
+        debouncedURLUpdate,
+        setSelectedRecordAndClearChildren
+      );
+    } else {
+      handleNonAtomicSelection(
+        selectedRecords,
+        selectionChanged,
+        childTabIds,
+        debouncedURLUpdate,
+        windowId,
+        tab,
+        graph,
+        currentWindowId,
+        clearChildrenSelections
+      );
     }
 
-    // Update graph state but DON'T call onSelectionChange since we already updated the URL above
-    // Calling onSelectionChange would trigger handleRecordSelection -> setSelectedRecord -> another URL update
-    // which creates an infinite loop
+    // Update the ref with the new selection for next comparison
+    previousSingleSelectionRef.current = newSelectionId;
+
+    // 7. Update graph state (DON'T call onSelectionChange to avoid infinite loop)
     updateGraphSelection(graph, tab, lastSelected, selectedRecords);
 
+    // Sync to session for backend state
     if (selectedRecords.length > 0) {
       syncSelectedRecordsToSession({
         tab,
         selectedRecords,
-        parentId: tab.parentTabId, // Use parent tab ID if available
+        parentId: tab.parentTabId,
         setSession,
         setSessionSyncLoading,
       });
@@ -453,6 +571,7 @@ export default function useTableSelection(
     setSelectedRecordAndClearChildren,
     currentWindowId,
     debouncedURLUpdate,
+    getSelectedRecord,
   ]);
 
   /**

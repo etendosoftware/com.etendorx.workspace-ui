@@ -85,7 +85,7 @@ export const TextInput = ({
   };
 
   const finalClassName = className ? `${inputBaseClassNames} ${className}` : inputBaseClassNames;
-  const currentValue = props.value ?? "";
+  const currentValue = normalizedValue;
   const showClear = showClearButton && !!currentValue && !isDisabled;
 
   return (

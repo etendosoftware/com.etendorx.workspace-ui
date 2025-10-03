@@ -29,6 +29,68 @@ interface StateReconciliationOptions {
 }
 
 /**
+ * Validates if parent tab has a selection (required for child tabs)
+ */
+const validateParentSelection = (tab: Tab, graph: ReturnType<typeof useSelected>["graph"]): boolean => {
+  const parentTab = graph.getParent(tab);
+  if (!parentTab) {
+    return true; // No parent, validation passes
+  }
+
+  const parentSelected = graph.getSelected(parentTab);
+  return !!parentSelected?.id;
+};
+
+/**
+ * Handles reconciliation when URL has selection but table doesn't
+ */
+const reconcileURLOnly = (
+  urlSelectedId: string,
+  recordsMap: Map<string, EntityData>,
+  windowId: string,
+  tabId: string,
+  clearSelectedRecord: (windowId: string, tabId: string) => void
+): void => {
+  const record = recordsMap.get(urlSelectedId);
+  if (record) {
+    logger.info(`[StateReconciliation] URL has valid selection (${urlSelectedId}), table will sync`);
+  } else {
+    logger.warn(`[StateReconciliation] URL selection (${urlSelectedId}) not found in current records, clearing URL`);
+    clearSelectedRecord(windowId, tabId);
+  }
+};
+
+/**
+ * Handles reconciliation when table has selection but URL doesn't
+ */
+const reconcileTableOnly = (
+  tableSelectionIds: string[],
+  recordsMap: Map<string, EntityData>,
+  windowId: string,
+  tabId: string,
+  setSelectedRecord: (windowId: string, tabId: string, recordId: string) => void
+): void => {
+  const lastSelected = tableSelectionIds[tableSelectionIds.length - 1];
+  const record = recordsMap.get(lastSelected);
+
+  if (record) {
+    logger.info(`[StateReconciliation] Table selection (${lastSelected}) not in URL, updating URL`);
+    setSelectedRecord(windowId, tabId, lastSelected);
+  }
+};
+
+/**
+ * Handles reconciliation when both URL and table have selections
+ */
+const reconcileBothSelections = (urlSelectedId: string, tableSelectionIds: string[]): void => {
+  const urlInTable = tableSelectionIds.includes(urlSelectedId);
+  if (!urlInTable) {
+    logger.info(`[StateReconciliation] URL selection (${urlSelectedId}) not in table, URL takes precedence`);
+    // The table component should handle updating its selection to match URL
+  }
+};
+
+/**
  * Hook for managing state reconciliation between URL parameters and table selection state.
  * Handles conflicts that may arise when URL and table selections become out of sync.
  */
@@ -53,48 +115,23 @@ export const useStateReconciliation = ({ records, tab, windowId, currentWindowId
    */
   const reconcileStates = useCallback(
     (urlSelectedId: string | null, tableSelectionIds: string[]) => {
-      if (!windowId || currentWindowId !== tab.window) return;
+      // Early returns for invalid states
+      if (!windowId || currentWindowId !== tab.window) {
+        return;
+      }
 
-      // For child tabs, check if parent has selection before allowing reconciliation
-      const parentTab = graph.getParent(tab);
-      if (parentTab) {
-        const parentSelected = graph.getSelected(parentTab);
-        if (!parentSelected || !parentSelected.id) {
-          return; // Don't reconcile if parent has no selection
-        }
+      if (!validateParentSelection(tab, graph)) {
+        return; // Don't reconcile if parent has no selection
       }
 
       try {
+        // Handle different reconciliation scenarios
         if (urlSelectedId && tableSelectionIds.length === 0) {
-          // URL has selection, table doesn't - validate and potentially update table
-          const record = recordsMap.get(urlSelectedId);
-          if (record) {
-            // Record exists in current dataset, sync table selection would be handled by table component
-            logger.info(`[StateReconciliation] URL has valid selection (${urlSelectedId}), table will sync`);
-          } else {
-            // Record not found in current dataset, clear URL
-            logger.warn(
-              `[StateReconciliation] URL selection (${urlSelectedId}) not found in current records, clearing URL`
-            );
-            clearSelectedRecord(windowId, tab.id);
-          }
+          reconcileURLOnly(urlSelectedId, recordsMap, windowId, tab.id, clearSelectedRecord);
         } else if (!urlSelectedId && tableSelectionIds.length > 0) {
-          // Table has selection, URL doesn't - update URL with last selected
-          const lastSelected = tableSelectionIds[tableSelectionIds.length - 1];
-          const record = recordsMap.get(lastSelected);
-
-          if (record) {
-            logger.info(`[StateReconciliation] Table selection (${lastSelected}) not in URL, updating URL`);
-            setSelectedRecord(windowId, tab.id, lastSelected);
-          }
+          reconcileTableOnly(tableSelectionIds, recordsMap, windowId, tab.id, setSelectedRecord);
         } else if (urlSelectedId && tableSelectionIds.length > 0) {
-          // Both have selections - check if they match
-          const urlInTable = tableSelectionIds.includes(urlSelectedId);
-          if (!urlInTable) {
-            // URL selection not in table selection - URL takes precedence
-            logger.info(`[StateReconciliation] URL selection (${urlSelectedId}) not in table, URL takes precedence`);
-            // The table component should handle updating its selection to match URL
-          }
+          reconcileBothSelections(urlSelectedId, tableSelectionIds);
         }
         // If both are empty, no reconciliation needed
       } catch (error) {

@@ -27,7 +27,68 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
-import { NEW_RECORD_ID, FORM_MODES, TAB_MODES } from "@/utils/url/constants";
+import {
+  NEW_RECORD_ID,
+  FORM_MODES,
+  TAB_MODES,
+  type FormMode as URLFormMode,
+  type TabMode,
+} from "@/utils/url/constants";
+
+/**
+ * Validates if a child tab can open FormView based on parent selection in URL
+ */
+const validateParentSelectionForFormView = (
+  tab: TabLevelProps["tab"],
+  graph: ReturnType<typeof useSelected>["graph"],
+  windowId: string,
+  getSelectedRecord: (windowId: string, tabId: string) => string | undefined
+): boolean => {
+  const parentTab = graph.getParent(tab);
+  if (!parentTab) {
+    return true; // No parent, validation passes
+  }
+
+  const parentSelectedInURL = getSelectedRecord(windowId, parentTab.id);
+  return !!parentSelectedInURL;
+};
+
+/**
+ * Handles setting tab form state for new record
+ */
+const handleNewRecordFormState = (
+  windowId: string,
+  tabId: string,
+  recordId: string,
+  setTabFormState: (windowId: string, tabId: string, recordId: string, mode?: TabMode, formMode?: URLFormMode) => void
+): void => {
+  setTabFormState(windowId, tabId, recordId, TAB_MODES.FORM, FORM_MODES.NEW);
+};
+
+/**
+ * Handles setting tab form state for editing existing record
+ */
+const handleEditRecordFormState = (
+  windowId: string,
+  tabId: string,
+  newValue: string,
+  selectedRecordId: string | undefined,
+  setSelectedRecord: (windowId: string, tabId: string, recordId: string) => void,
+  setTabFormState: (windowId: string, tabId: string, recordId: string, mode?: TabMode, formMode?: URLFormMode) => void
+): void => {
+  const formMode = FORM_MODES.EDIT;
+
+  if (selectedRecordId !== newValue) {
+    // Record selection changed - update selection first, then form state
+    setSelectedRecord(windowId, tabId, newValue);
+    setTimeout(() => {
+      setTabFormState(windowId, tabId, newValue, TAB_MODES.FORM, formMode);
+    }, 50);
+  } else {
+    // Same record - just open form
+    setTabFormState(windowId, tabId, newValue, TAB_MODES.FORM, formMode);
+  }
+};
 
 export function Tab({ tab, collapsed }: TabLevelProps) {
   const { window } = useMetadataContext();
@@ -60,40 +121,35 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     (value) => {
       const newValue = typeof value === "function" ? value(currentRecordId) : value;
 
-      if (newValue && windowId) {
-        // For child tabs, check if parent has selection in URL before allowing form view
-        const parentTab = graph.getParent(tab);
-        if (parentTab) {
-          const parentSelectedInURL = getSelectedRecord(windowId, parentTab.id);
-          if (!parentSelectedInURL) {
-            return; // Don't allow child to open form if parent has no selection
-          }
-        }
-
-        const formMode = newValue === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT;
-
-        if (newValue === NEW_RECORD_ID) {
-          setTabFormState(windowId, tab.id, newValue, TAB_MODES.FORM, formMode);
-        } else {
-          if (selectedRecordId !== newValue) {
-            setSelectedRecord(windowId, tab.id, newValue);
-            setTimeout(() => {
-              setTabFormState(windowId, tab.id, newValue, TAB_MODES.FORM, formMode);
-            }, 50);
-          } else {
-            setTabFormState(windowId, tab.id, newValue, TAB_MODES.FORM, formMode);
-          }
-        }
-      } else if (windowId) {
-        clearTabFormState(windowId, tab.id);
+      if (!windowId) {
+        return;
       }
+
+      // Handle clearing form state (empty value)
+      if (!newValue) {
+        clearTabFormState(windowId, tab.id);
+        return;
+      }
+
+      // Validate parent selection for child tabs
+      if (!validateParentSelectionForFormView(tab, graph, windowId, getSelectedRecord)) {
+        return; // Don't allow child to open form if parent has no selection
+      }
+
+      // Handle new record
+      if (newValue === NEW_RECORD_ID) {
+        handleNewRecordFormState(windowId, tab.id, newValue, setTabFormState);
+        return;
+      }
+
+      // Handle editing existing record
+      handleEditRecordFormState(windowId, tab.id, newValue, selectedRecordId, setSelectedRecord, setTabFormState);
     },
     [
       currentRecordId,
       windowId,
       setTabFormState,
       clearTabFormState,
-      tab.id,
       setSelectedRecord,
       selectedRecordId,
       getSelectedRecord,
