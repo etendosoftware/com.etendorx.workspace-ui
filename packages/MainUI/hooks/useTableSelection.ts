@@ -292,28 +292,28 @@ const checkSelectionChanged = (
 /**
  * Handles URL and graph updates for single selection with children using atomic operations.
  * This prevents race conditions by batching parent selection update and children clearing.
- *
- * @param windowId - Current window ID
- * @param tab - Current tab
- * @param selectedRecords - Currently selected records
- * @param childTabIds - IDs of child tabs to clear
- * @param currentWindowId - Window ID of current tab
- * @param children - Child tabs
- * @param graph - Selection graph
- * @param debouncedURLUpdate - Debounced URL update function
- * @param setSelectedRecordAndClearChildren - Atomic update function
  */
-const handleSingleSelectionWithChildren = (
-  windowId: string,
-  tab: Tab,
-  selectedRecords: EntityData[],
-  childTabIds: string[],
-  currentWindowId: string,
-  children: Tab[] | undefined,
-  graph: ReturnType<typeof useSelected>["graph"],
-  debouncedURLUpdate: { cancel: () => void },
-  setSelectedRecordAndClearChildren: (windowId: string, tabId: string, recordId: string, childTabIds: string[]) => void
-): void => {
+const handleSingleSelectionWithChildren = ({
+  windowId,
+  tab,
+  selectedRecords,
+  childTabIds,
+  currentWindowId,
+  children,
+  graph,
+  debouncedURLUpdate,
+  setSelectedRecordAndClearChildren,
+}: {
+  windowId: string;
+  tab: Tab;
+  selectedRecords: EntityData[];
+  childTabIds: string[];
+  currentWindowId: string;
+  children: Tab[] | undefined;
+  graph: ReturnType<typeof useSelected>["graph"];
+  debouncedURLUpdate: { cancel: () => void };
+  setSelectedRecordAndClearChildren: (windowId: string, tabId: string, recordId: string, childTabIds: string[]) => void;
+}): void => {
   // Cancel any pending debounced URL updates to prevent stale updates
   debouncedURLUpdate.cancel();
 
@@ -332,28 +332,28 @@ const handleSingleSelectionWithChildren = (
 /**
  * Handles URL and graph updates for non-atomic selection scenarios.
  * This includes cases without children, multiple selections, or unchanged selections.
- *
- * @param selectedRecords - Currently selected records
- * @param selectionChanged - Whether selection value changed
- * @param childTabIds - IDs of child tabs
- * @param debouncedURLUpdate - Debounced URL update function
- * @param windowId - Current window ID
- * @param tab - Current tab
- * @param graph - Selection graph
- * @param currentWindowId - Window ID of current tab
- * @param clearChildrenSelections - Function to clear children selections
  */
-const handleNonAtomicSelection = (
-  selectedRecords: EntityData[],
-  selectionChanged: boolean,
-  childTabIds: string[],
-  debouncedURLUpdate: (records: EntityData[], windowId: string, tabId: string) => void,
-  windowId: string,
-  tab: Tab,
-  graph: ReturnType<typeof useSelected>["graph"],
-  currentWindowId: string,
-  clearChildrenSelections: (windowId: string, childTabIds: string[]) => void
-): void => {
+const handleNonAtomicSelection = ({
+  selectedRecords,
+  selectionChanged,
+  childTabIds,
+  debouncedURLUpdate,
+  windowId,
+  tab,
+  graph,
+  currentWindowId,
+  clearChildrenSelections,
+}: {
+  selectedRecords: EntityData[];
+  selectionChanged: boolean;
+  childTabIds: string[];
+  debouncedURLUpdate: (records: EntityData[], windowId: string, tabId: string) => void;
+  windowId: string;
+  tab: Tab;
+  graph: ReturnType<typeof useSelected>["graph"];
+  currentWindowId: string;
+  clearChildrenSelections: (windowId: string, childTabIds: string[]) => void;
+}): void => {
   if (selectedRecords.length === 1 && !selectionChanged && childTabIds.length > 0) {
     // Selection didn't change, just update URL without clearing children
     debouncedURLUpdate(selectedRecords, windowId, tab.id);
@@ -519,7 +519,7 @@ export default function useTableSelection(
 
     // Use atomic update for single selection with children when selection changed
     if (selectedRecords.length === 1 && childTabIds.length > 0 && selectionChanged) {
-      handleSingleSelectionWithChildren(
+      handleSingleSelectionWithChildren({
         windowId,
         tab,
         selectedRecords,
@@ -528,10 +528,10 @@ export default function useTableSelection(
         children,
         graph,
         debouncedURLUpdate,
-        setSelectedRecordAndClearChildren
-      );
+        setSelectedRecordAndClearChildren,
+      });
     } else {
-      handleNonAtomicSelection(
+      handleNonAtomicSelection({
         selectedRecords,
         selectionChanged,
         childTabIds,
@@ -540,8 +540,8 @@ export default function useTableSelection(
         tab,
         graph,
         currentWindowId,
-        clearChildrenSelections
-      );
+        clearChildrenSelections,
+      });
     }
 
     // Update the ref with the new selection for next comparison
