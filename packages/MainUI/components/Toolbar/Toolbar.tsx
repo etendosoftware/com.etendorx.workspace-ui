@@ -156,21 +156,24 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     setSelectedProcessDefinitionButton(null);
   }, []);
 
-  const processChildTabsInFormView = useCallback((childTabs: typeof tab[], windowId: string) => {
-    const childTabIdsInFormView: string[] = [];
+  const processChildTabsInFormView = useCallback(
+    (childTabs: (typeof tab)[], windowId: string) => {
+      const childTabIdsInFormView: string[] = [];
 
-    for (const childTab of childTabs) {
-      const childTabFormState = getTabFormState(windowId, childTab.id);
-      const isChildInFormView = childTabFormState?.mode === TAB_MODES.FORM && !!childTabFormState?.recordId;
+      for (const childTab of childTabs) {
+        const childTabFormState = getTabFormState(windowId, childTab.id);
+        const isChildInFormView = childTabFormState?.mode === TAB_MODES.FORM && !!childTabFormState?.recordId;
 
-      if (isChildInFormView) {
-        childTabIdsInFormView.push(childTab.id);
-        clearTabRecord(childTab.id);
+        if (isChildInFormView) {
+          childTabIdsInFormView.push(childTab.id);
+          clearTabRecord(childTab.id);
+        }
       }
-    }
 
-    return childTabIdsInFormView;
-  }, [getTabFormState, clearTabRecord]);
+      return childTabIdsInFormView;
+    },
+    [getTabFormState, clearTabRecord]
+  );
 
   const handleCompleteRefresh = useCallback(async () => {
     const childTabs = graph.getChildren(tab);
