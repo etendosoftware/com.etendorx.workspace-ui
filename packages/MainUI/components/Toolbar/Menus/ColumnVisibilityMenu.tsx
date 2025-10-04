@@ -45,9 +45,20 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
     return table
       .getAllLeafColumns()
       .filter((column) => {
+        // Filter out Material React Table internal columns (like mrt-row-select)
+        if (column.id.startsWith('mrt-')) {
+          return false;
+        }
+
         const colDef = column.columnDef as CustomColumnDef;
-        // Filter out columns with displayed: false (like "Active")
-        return colDef.displayed !== false;
+        // Filter out columns with displayed: false UNLESS they are currently visible
+        // This allows columns like "Creation Date" and "Updated" to appear in the menu
+        // but excludes hidden system columns like "Active"
+        if (colDef.displayed === false && !column.getIsVisible()) {
+          return false;
+        }
+
+        return true;
       })
       .map((column) => {
         const isVisible = column.getIsVisible();
