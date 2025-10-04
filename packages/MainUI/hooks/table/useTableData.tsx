@@ -82,7 +82,6 @@ export const useTableData = ({
   const [childrenData, setChildrenData] = useState<Map<string, EntityData[]>>(new Map());
   const [flattenedRecords, setFlattenedRecords] = useState<EntityData[]>([]);
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<MRT_VisibilityState>({});
   const [appliedTableFilters, setAppliedTableFilters] = useState<MRT_ColumnFiltersState>([]);
   const [prevShouldUseTreeMode, setPrevShouldUseTreeMode] = useState<boolean | null>(null);
 
@@ -102,6 +101,20 @@ export const useTableData = ({
     const { parseColumns } = require("@/utils/tableColumns");
     return parseColumns(Object.values(tab.fields));
   }, [tab.fields]);
+
+  // Initialize column visibility based on showInGridView
+  const initialColumnVisibility = useMemo(() => {
+    const visibility: MRT_VisibilityState = {};
+    for (const column of rawColumns) {
+      // Hide columns with showInGridView: false by default
+      if (column.showInGridView === false) {
+        visibility[column.id] = false;
+      }
+    }
+    return visibility;
+  }, [rawColumns]);
+
+  const [columnVisibility, setColumnVisibility] = useState<MRT_VisibilityState>(initialColumnVisibility);
 
   // Column filters
   const {
