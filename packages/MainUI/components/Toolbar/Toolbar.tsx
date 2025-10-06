@@ -143,7 +143,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const handleProcessSuccess = useCallback(() => {
     refetchDatasource(tab.id);
     graph.clearSelected(tab);
-  }, [graph, refetchDatasource, tab]);
+    graph.setSelected(tab);
+    refetch();
+  }, [graph, refetch, refetchDatasource, tab]);
 
   const handleCloseProcess = useCallback(() => {
     setOpenIframeModal(false);

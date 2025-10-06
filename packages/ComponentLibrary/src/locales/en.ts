@@ -220,6 +220,12 @@ const en = {
       submit: "Log In",
       google: "Continue with Google",
     },
+    errors: {
+      csrfToken: {
+        title: "Session expired due to inactivity",
+        description: "You have been automatically logged out for security reasons. Please log in again to continue.",
+      },
+    },
     or: "OR",
   },
   grid: {

@@ -32,7 +32,16 @@ import {
   DEFAULT_BUSINESS_PARTNER_ID,
   DEFAULT_POSTED,
 } from "@/utils/processes/manual/constants";
-import type { GetParamsProps } from "@/utils/processes/manual/types";
+import type {
+  GetParamsProps,
+  KeyMapConfig,
+  NestedObject,
+  PrimitiveValue,
+  SelectionItem,
+  SourceObject,
+  TargetObject,
+  TransformableValue,
+} from "@/utils/processes/manual/types";
 import data from "@/utils/processes/manual/data.json";
 
 export const getDocumentStatus = (record: Record<string, unknown>) => {
@@ -110,3 +119,85 @@ export const getParams = ({
 
   return params;
 };
+
+export function mapKeysWithDefaults(source: SourceObject): TargetObject {
+  const keyMap: KeyMapConfig = {
+    inpdocumentno: { target: "payment_documentno", default: null },
+    inpporeference: { target: "reference_no", default: null },
+    inpcCurrencyId: { target: "c_currency_id", default: null },
+    inpcBpartnerId: { target: "received_from", default: null },
+    inpfinPaymentmethodId: { target: "fin_paymentmethod_id", default: null },
+    fin_payment_id: { target: "fin_payment_id", default: null },
+    inpgrandtotal: { target: "actual_payment", default: 0 },
+    inpdateacct: { target: "payment_date", default: null },
+    inptotallines: { target: "amount_inv_ords", default: 0 },
+    inpissotrx: { target: "issotrx", default: false },
+    inpcOrderId: { target: "c_order_id", default: null },
+    DOCBASETYPE: { target: "DOCBASETYPE", default: "ARR" },
+    inpadOrgId: { target: "ad_org_id", default: null },
+    converted_amount: { target: "conversion_rate", default: 0 },
+    "Action Regarding Document": { target: "document_action", default: null },
+    "Converted Amount": { target: "converted_amount", default: null },
+    "Deposit To": { target: "fin_financial_account_id", default: null },
+  };
+
+  const result: TargetObject = {};
+
+  for (const [key, value] of Object.entries(source)) {
+    let mappedValue: PrimitiveValue | NestedObject | SelectionItem[] =
+      value !== "" && value != null ? value : keyMap[key]?.default;
+    if (mappedValue === "Y") {
+      mappedValue = true;
+    } else if (mappedValue === "N") {
+      mappedValue = false;
+    }
+    if (keyMap[key]) {
+      result[keyMap[key].target] = mappedValue;
+    } else {
+      result[key] = mappedValue;
+    }
+  }
+
+  for (const { target, default: defaultValue } of Object.values(keyMap)) {
+    if (!(target in result)) {
+      result[target] = defaultValue;
+    }
+  }
+
+  function recursiveUpdateSelection(obj: NestedObject, parentActualPayment?: number): void {
+    if (!obj || typeof obj !== "object") return;
+
+    const currentActualPayment = obj.actual_payment ?? parentActualPayment;
+
+    for (const [key, value] of Object.entries(obj)) {
+      if (key === "_selection" && Array.isArray(value)) {
+        obj[key] = value.map((item: SelectionItem) => ({
+          ...item,
+          amount: currentActualPayment ?? 0,
+        }));
+      } else if (value && typeof value === "object" && !Array.isArray(value)) {
+        recursiveUpdateSelection(value as NestedObject, currentActualPayment);
+      }
+    }
+  }
+
+  recursiveUpdateSelection(result as NestedObject);
+
+  return transformDates(result) as TargetObject;
+}
+
+export function transformDates(obj: TransformableValue): TransformableValue {
+  if (typeof obj === "string") {
+    const dateRegex = /^(\d{2})-(\d{2})-(\d{4})$/;
+    return dateRegex.test(obj) ? obj.replace(dateRegex, "$3-$2-$1") : obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(transformDates) as SelectionItem[];
+  }
+  if (obj && typeof obj === "object") {
+    return Object.fromEntries(
+      Object.entries(obj).map(([key, value]) => [key, transformDates(value as TransformableValue)])
+    ) as NestedObject;
+  }
+  return obj;
+}

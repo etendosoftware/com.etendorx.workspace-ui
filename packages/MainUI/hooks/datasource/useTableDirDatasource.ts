@@ -97,11 +97,36 @@ export const useTableDirDatasource = ({ field, pageSize = 75, initialPageSize = 
     [tab.fields]
   );
 
+  interface BaseBody {
+    [key: string]: unknown;
+    inpfinPaymentmethodId?: string;
+    inpissotrx?: string;
+    windowId?: string;
+    "Deposit To"?: string;
+  }
+
+  function isAddPayment(baseBody: BaseBody): BaseBody {
+    if (!baseBody._selectorDefinitionId) {
+      return baseBody; // No hacer nada si no existe
+    }
+    const { inpfinPaymentmethodId, inpissotrx, windowId, ...rest } = baseBody;
+    const depositTo = baseBody["Deposit To"];
+
+    const result: BaseBody = {
+      ...rest,
+      ...(inpfinPaymentmethodId && { fin_paymentmethod_id: inpfinPaymentmethodId }),
+      ...(depositTo && { fin_financial_account_id: depositTo }),
+      ...(inpissotrx && { issotrx: inpissotrx === "Y" }),
+    };
+
+    return result;
+  }
+
   const buildRequestBody = useCallback(
     (startRow: number, endRow: number, currentValue: typeof value) => {
       const formValues = transformFormValues(getValues());
       const invoiceValue = transformFormValues(invoiceContext);
-      const baseBody = {
+      let baseBody: BaseBody = {
         _startRow: startRow.toString(),
         _endRow: endRow.toString(),
         _operationType: "fetch",
@@ -133,6 +158,7 @@ export const useTableDirDatasource = ({ field, pageSize = 75, initialPageSize = 
           ...formValues,
         });
       }
+      baseBody = isAddPayment(baseBody);
 
       return baseBody;
     },
@@ -253,7 +279,7 @@ export const useTableDirDatasource = ({ field, pageSize = 75, initialPageSize = 
         const endRow = reset ? initialPageSize : startRow + pageSize;
 
         const baseBody = buildRequestBody(startRow, endRow, _currentValue);
-        const body = new URLSearchParams(baseBody);
+        const body = new URLSearchParams(baseBody as Record<string, string>);
 
         if (search) {
           applySearchCriteria(body, search);

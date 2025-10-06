@@ -21,6 +21,81 @@ import Tag from "@workspaceui/componentlibrary/src/components/Tag";
 import { type Column, type Field, FieldType } from "@workspaceui/api-client/src/api/types";
 import { DEFAULT_STATUS_CONFIG, IDENTIFIER_KEY, statusConfig, yesNoConfig } from "./columnsConstants";
 
+// Utility function to format audit date fields only
+const formatAuditDateField = (value: unknown): string => {
+  if (!value || typeof value !== "string") return String(value || "");
+
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+
+    // Format as DD-MM-YYYY HH:mm:ss
+    const dateStr = new Intl.DateTimeFormat("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    })
+      .format(date)
+      .replace(/\//g, "-");
+
+    const timeStr = new Intl.DateTimeFormat("es-AR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).format(date);
+
+    return `${dateStr} ${timeStr}`;
+  } catch {
+    return String(value);
+  }
+};
+
+// Helper function to handle boolean field rendering
+const renderBooleanField = (value: Record<string, unknown>, column: Field, t?: TranslateFunction) => {
+  const yesText = t ? t("common.trueText") : "Yes";
+  const noText = t ? t("common.falseText") : "No";
+  const config = value[column.hqlName] ? yesNoConfig.Y : yesNoConfig.N;
+
+  return (
+    <Tag
+      type={config.type}
+      icon={config.icon}
+      label={value[column.hqlName] ? yesText : noText}
+      data-testid="Tag__2b5175"
+    />
+  );
+};
+
+// Helper function to handle list field rendering
+const renderListField = (value: Record<string, unknown>, column: Field) => {
+  const codeValue = value[column.hqlName];
+
+  if (codeValue === null || codeValue === undefined) {
+    return value[`${column.hqlName}$${IDENTIFIER_KEY}`] ?? "";
+  }
+
+  const refItem = column.refList?.find((item) => item.value === codeValue);
+  if (refItem) {
+    const config = statusConfig[refItem.value as string] || DEFAULT_STATUS_CONFIG;
+    return <Tag type={config.type} icon={config.icon} label={refItem.label} data-testid="Tag__2b5175" />;
+  }
+
+  return "";
+};
+
+// Helper function to get raw cell value
+const getRawCellValue = (value: Record<string, unknown>, column: Field) => {
+  const columnHqlName = column.hqlName;
+  const columnNameKey = column.columnName;
+  const columnIdentifier = `${columnHqlName}$${IDENTIFIER_KEY}`;
+  const columnHqlIdentifierValue = value[columnIdentifier];
+  const columnHqlNameValue = value[columnHqlName];
+  const columnNameValue = value[columnNameKey];
+
+  return columnHqlIdentifierValue ?? columnHqlNameValue ?? columnNameValue;
+};
+
 export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[] => {
   const result: Column[] = [];
 
@@ -61,45 +136,21 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
           const reference = getFieldReference(column.column?.reference);
 
           if (reference === FieldType.BOOLEAN) {
-            const yesText = t ? t("common.trueText") : "Yes";
-            const noText = t ? t("common.falseText") : "No";
-
-            const config = v[column.hqlName] ? yesNoConfig.Y : yesNoConfig.N;
-
-            return (
-              <Tag
-                type={config.type}
-                icon={config.icon}
-                label={v[column.hqlName] ? yesText : noText}
-                data-testid="Tag__2b5175"
-              />
-            );
+            return renderBooleanField(v, column, t);
           }
 
           if (reference === FieldType.LIST && column.refList && Array.isArray(column.refList)) {
-            const codeValue = v[column.hqlName];
-
-            if (codeValue === null || codeValue === undefined) {
-              return v[`${column.hqlName}$${IDENTIFIER_KEY}`] ?? "";
-            }
-
-            const refItem = column.refList.find((item) => item.value === codeValue);
-
-            if (refItem) {
-              const config = statusConfig[refItem.value as string] || DEFAULT_STATUS_CONFIG;
-
-              return <Tag type={config.type} icon={config.icon} label={refItem.label} data-testid="Tag__2b5175" />;
-            }
+            return renderListField(v, column);
           }
-          const columnHqlName = column.hqlName;
-          const columnNameKey = column.columnName;
-          const columnIdentifier = `${columnHqlName}$${IDENTIFIER_KEY}`;
-          const columnHqlIdentifierValue = v[columnIdentifier];
-          const columnHqlNameValue = v[columnHqlName];
-          const columnNameValue = v[columnNameKey];
 
-          const value = columnHqlIdentifierValue ?? columnHqlNameValue ?? columnNameValue;
-          return value;
+          const rawValue = getRawCellValue(v, column);
+
+          // Only format audit date fields specifically
+          if (column.hqlName === "creationDate" || column.hqlName === "updated") {
+            return formatAuditDateField(rawValue);
+          }
+
+          return rawValue;
         },
       });
     }

@@ -37,12 +37,6 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const { language, setLanguage, getFlag } = useLanguage();
 
-  const { clearUserData } = useContext(UserContext);
-
-  const handleSignOff = useCallback(() => {
-    clearUserData();
-  }, [clearUserData]);
-
   const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setSaveAsDefault(event.target.checked);
   }, []);
@@ -76,7 +70,6 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
       changeProfile={changeProfile}
       onSetDefaultConfiguration={setDefaultConfiguration}
       logger={logger}
-      onSignOff={handleSignOff}
       languages={languagesWithFlags}
       userName={profile.name}
       userEmail={profile.email}

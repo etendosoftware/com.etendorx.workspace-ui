@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import type { LoginProps } from "../types";
 import { useTranslation } from "../../../hooks/useTranslation";
 import "./Login.css";
@@ -9,11 +9,50 @@ import UserIcon from "../../../../ComponentLibrary/src/assets/icons/user.svg";
 import LockIcon from "../../../../ComponentLibrary/src/assets/icons/lock.svg";
 import GoogleIcon from "../../../../ComponentLibrary/src/assets/icons/ilustration/google.svg";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
+import { useUserContext } from "@/hooks/useUserContext";
 
-export default function Login({ title, onSubmit, error }: LoginProps) {
+export default function Login({ title, onSubmit }: LoginProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [progressWidth, setProgressWidth] = useState(0);
+  const [showErrorMessage, setShowErrorMessage] = useState(false);
   const { t } = useTranslation();
+
+  const { loginErrorText, setLoginErrorText, loginErrorDescription, setLoginErrorDescription } = useUserContext();
+
+  useEffect(() => {
+    if (loginErrorText) {
+      setShowErrorMessage(true);
+      setProgressWidth(100);
+
+      const totalDuration = 7000; // 7 seconds
+      const updateInterval = 50; // Update every 50ms
+      const decrementValue = (100 / totalDuration) * updateInterval;
+
+      const timer = setInterval(() => {
+        setProgressWidth((prevWidth) => {
+          const newWidth = prevWidth - decrementValue;
+
+          if (newWidth <= 0) {
+            clearInterval(timer);
+            setShowErrorMessage(false);
+            setLoginErrorText("");
+            setLoginErrorDescription("");
+            return 0;
+          }
+
+          return newWidth;
+        });
+      }, updateInterval);
+
+      return () => {
+        clearInterval(timer);
+        setShowErrorMessage(false);
+        setLoginErrorText("");
+        setLoginErrorDescription("");
+      };
+    }
+  }, [loginErrorText, setLoginErrorText, setLoginErrorDescription]);
 
   const handleUsernameChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.currentTarget.value),
@@ -107,7 +146,22 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
           data-testid="Version__602739"
         />
       </div>
-      {error && <div className="font-medium text-sm text-(--color-error-main) mt-4">{error}</div>}
+      {showErrorMessage && (
+        <div className="w-100 mt-4 p-4 bg-(--color-baseline-0) border border-(--color-error-main) rounded-lg max-w-md shadow-[0px_4px_10px_0px_var(--color-transparent-neutral-10)]">
+          <div className="font-inter font-semibold text-sm text-(--color-error-main) leading-5 mb-2">
+            {loginErrorText}
+          </div>
+          <div className="font-inter font-normal text-xs text-(--color-transparent-neutral-70) leading-4 mb-3">
+            {loginErrorDescription}
+          </div>
+          <div className="w-full bg-(--color-transparent-neutral-10) rounded-full h-1">
+            <div
+              className="bg-(--color-error-main) h-1 rounded-full transition-all duration-50 ease-linear"
+              style={{ width: `${progressWidth}%` }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
