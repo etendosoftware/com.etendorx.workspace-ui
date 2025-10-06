@@ -129,8 +129,18 @@ const Navigation: React.FC = () => {
 
   const flagString = getFlag(language);
 
-  const { messages, selectedAssistant, isLoading, handleSendMessage, handleSelectAssistant, handleResetConversation } =
-    useCopilot();
+  const {
+    messages,
+    selectedAssistant,
+    isLoading,
+    handleSendMessage,
+    handleSelectAssistant,
+    handleResetConversation,
+    conversations,
+    conversationsLoading,
+    loadConversations,
+    handleSelectConversation,
+  } = useCopilot();
 
   const handleCopilotSendMessage = useCallback(
     (message: string, _files?: File[]) => {
@@ -300,6 +310,10 @@ const Navigation: React.FC = () => {
         hasContextPending={!!pendingContextString}
         contextItems={pendingContextItems}
         onRemoveContext={handleRemoveContext}
+        conversations={conversations}
+        onSelectConversation={handleSelectConversation}
+        onLoadConversations={loadConversations}
+        conversationsLoading={conversationsLoading}
         translations={{
           copilotProfile: t("copilot.copilotProfile"),
           backToSelection: t("copilot.backToSelection"),
@@ -325,6 +339,15 @@ const Navigation: React.FC = () => {
             welcomeMessage: t("copilot.messageList.welcomeMessage"),
             typing: t("copilot.messageList.typing"),
           },
+          conversationList: {
+            newConversation: t("copilot.conversationList.newConversation"),
+            noConversations: t("copilot.conversationList.noConversations"),
+            startNewConversation: t("copilot.conversationList.startNewConversation"),
+            loading: t("copilot.conversationList.loading"),
+            untitledConversation: t("copilot.conversationList.untitledConversation"),
+          },
+          conversationsButton: t("copilot.conversationsButton"),
+          hideConversationsButton: t("copilot.hideConversationsButton"),
         }}
         data-testid="CopilotPopup__120cc9"
       />

@@ -256,6 +256,8 @@ const en = {
     maximize: "Maximize",
     close: "Close",
     contextText: "Context",
+    conversationsButton: "Show History",
+    hideConversationsButton: "Hide History",
     assistantSelector: {
       errorInvalidData: "Error: Invalid assistant data",
       errorNoAssistantsAvailable: "No assistants available",
@@ -275,6 +277,14 @@ const en = {
     },
     contextPreview: {
       selectedRegisters: " Attached register",
+    },
+    conversationList: {
+      newConversation: "New Conversation",
+      noConversations: "No previous conversations",
+      startNewConversation: "Start a new conversation to get started",
+      loading: "Loading conversations...",
+      untitledConversation: "Untitled Conversation",
+      closeSidebar: "Close sidebar",
     },
   },
   location: {

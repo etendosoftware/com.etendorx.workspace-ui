@@ -196,3 +196,21 @@ export interface CopilotClientConfig {
   enableFileUpload?: boolean;
   interceptor?: import("../client").Interceptor;
 }
+
+/**
+ * Conversation summary in the list
+ */
+export interface IConversationSummary {
+  id: string;
+  title?: string;
+}
+
+/**
+ * Full conversation with messages
+ */
+export interface IConversationDetail {
+  id: string;
+  title?: string;
+  messages: IMessage[];
+  app_id?: string;
+}

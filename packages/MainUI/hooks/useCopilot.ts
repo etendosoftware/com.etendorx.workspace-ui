@@ -17,7 +17,12 @@
 
 import { useCallback, useMemo, useReducer } from "react";
 import { useSSEConnection } from "./useSSEConnection";
-import type { IMessage, IAssistant, CopilotQuestionParams } from "@workspaceui/api-client/src/api/copilot";
+import type {
+  IMessage,
+  IAssistant,
+  CopilotQuestionParams,
+  IConversationSummary,
+} from "@workspaceui/api-client/src/api/copilot";
 import { formatTime, getMessageType } from "@/utils";
 import { useCopilotClient } from "./useCopilotClient";
 
@@ -30,6 +35,8 @@ interface CopilotState {
   fileIds: string[] | null;
   contextValue: Record<string, unknown> | null;
   contextTitle: string | null;
+  conversations: IConversationSummary[];
+  conversationsLoading: boolean;
 }
 
 type CopilotAction =
@@ -42,6 +49,8 @@ type CopilotAction =
   | { type: "SET_FILE_IDS"; fileIds: string[] | null }
   | { type: "SET_CONTEXT_VALUE"; contextValue: Record<string, unknown> | null }
   | { type: "SET_CONTEXT_TITLE"; contextTitle: string | null }
+  | { type: "SET_CONVERSATIONS"; conversations: IConversationSummary[] }
+  | { type: "SET_CONVERSATIONS_LOADING"; loading: boolean }
   | { type: "RESET_CONVERSATION" };
 
 const initialState: CopilotState = {
@@ -53,6 +62,8 @@ const initialState: CopilotState = {
   fileIds: null,
   contextValue: null,
   contextTitle: null,
+  conversations: [],
+  conversationsLoading: false,
 };
 
 function copilotReducer(state: CopilotState, action: CopilotAction): CopilotState {
@@ -80,10 +91,16 @@ function copilotReducer(state: CopilotState, action: CopilotAction): CopilotStat
       return { ...state, contextValue: action.contextValue };
     case "SET_CONTEXT_TITLE":
       return { ...state, contextTitle: action.contextTitle };
+    case "SET_CONVERSATIONS":
+      return { ...state, conversations: action.conversations };
+    case "SET_CONVERSATIONS_LOADING":
+      return { ...state, conversationsLoading: action.loading };
     case "RESET_CONVERSATION":
       return {
         ...initialState,
-        selectedAssistant: null,
+        selectedAssistant: state.selectedAssistant,
+        conversations: state.conversations,
+        conversationsLoading: state.conversationsLoading,
       };
     default:
       return state;
@@ -237,12 +254,113 @@ export const useCopilot = () => {
     dispatch({ type: "SET_CONTEXT_VALUE", contextValue: value });
   }, []);
 
+  const generateTitleForConversation = useCallback(
+    async (conversationId: string) => {
+      try {
+        const generatedTitle = await copilotClient.generateTitle(conversationId);
+        // Update the specific conversation with the generated title
+        dispatch({
+          type: "SET_CONVERSATIONS",
+          conversations: state.conversations.map((conv) =>
+            conv.id === conversationId ? { ...conv, title: generatedTitle } : conv
+          ),
+        });
+      } catch (err) {
+        console.error("❌ Error generating title for", conversationId, err);
+        // Set fallback title on error
+        dispatch({
+          type: "SET_CONVERSATIONS",
+          conversations: state.conversations.map((conv) =>
+            conv.id === conversationId ? { ...conv, title: "Untitled Conversation" } : conv
+          ),
+        });
+      }
+    },
+    [copilotClient, state.conversations]
+  );
+
+  const loadConversations = useCallback(async () => {
+    if (!state.selectedAssistant) return;
+
+    dispatch({ type: "SET_CONVERSATIONS_LOADING", loading: true });
+    try {
+      const conversations = await copilotClient.getConversations(state.selectedAssistant.app_id);
+      dispatch({ type: "SET_CONVERSATIONS", conversations });
+
+      // Find conversations without titles and generate them
+      const conversationsWithoutTitle = conversations.filter(
+        (conv) =>
+          !conv.title ||
+          conv.title.trim() === "" ||
+          conv.title === "Current conversation" ||
+          conv.title === "Conversación actual"
+      );
+
+      console.log(`🎯 Found ${conversationsWithoutTitle.length} conversations without title`);
+
+      if (conversationsWithoutTitle.length > 0) {
+        // Process in batches to avoid flooding the backend
+        const batchSize = 3;
+        const batchDelayMs = 2000;
+
+        for (let i = 0; i < conversationsWithoutTitle.length; i += batchSize) {
+          const batch = conversationsWithoutTitle.slice(i, i + batchSize);
+          console.log(`🎯 Processing batch ${Math.floor(i / batchSize) + 1} with ${batch.length} conversations`);
+
+          // Update UI to show 'Generating...' for batch items
+          const batchIds = new Set(batch.map((b) => b.id));
+          dispatch({
+            type: "SET_CONVERSATIONS",
+            conversations: conversations.map((conv) =>
+              batchIds.has(conv.id) ? { ...conv, title: "Generating..." } : conv
+            ),
+          });
+
+          // Generate titles in background for this batch (fire and forget)
+          batch.forEach((conversation) => {
+            generateTitleForConversation(conversation.id);
+          });
+
+          // Wait before starting the next batch
+          if (i + batchSize < conversationsWithoutTitle.length) {
+            console.log(`⏳ Waiting ${batchDelayMs}ms before next batch`);
+            await new Promise((resolve) => setTimeout(resolve, batchDelayMs));
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error loading conversations:", error);
+      dispatch({ type: "SET_CONVERSATIONS", conversations: [] });
+    } finally {
+      dispatch({ type: "SET_CONVERSATIONS_LOADING", loading: false });
+    }
+  }, [state.selectedAssistant, copilotClient, generateTitleForConversation]);
+
+  const handleSelectConversation = useCallback(
+    async (conversationId: string) => {
+      dispatch({ type: "SET_LOADING", isLoading: true });
+      try {
+        const conversationDetail = await copilotClient.getConversationMessages(conversationId);
+        dispatch({ type: "SET_CONVERSATION_ID", conversationId });
+        dispatch({ type: "SET_MESSAGES", messages: conversationDetail.messages || [] });
+      } catch (error) {
+        console.error("Error loading conversation messages:", error);
+        addMessage("error", "Error loading conversation");
+      } finally {
+        dispatch({ type: "SET_LOADING", isLoading: false });
+      }
+    },
+    [copilotClient, addMessage]
+  );
+
   return {
     messages: state.messages,
     selectedAssistant: state.selectedAssistant,
     isLoading: state.isLoading,
     files: state.files,
     contextTitle: state.contextTitle,
+    conversations: state.conversations,
+    conversationsLoading: state.conversationsLoading,
 
     setContextTitle,
     setContextValue,
@@ -252,5 +370,7 @@ export const useCopilot = () => {
     handleResetConversation,
     handleFileUpload,
     getMessageDisplayType,
+    loadConversations,
+    handleSelectConversation,
   };
 };
