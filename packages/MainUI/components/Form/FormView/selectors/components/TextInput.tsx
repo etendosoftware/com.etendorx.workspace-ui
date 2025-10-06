@@ -18,10 +18,14 @@ export const TextInput = ({
   showClearButton = true,
   onClear,
   setValue,
+  value,
   ...props
 }: TextInputProps) => {
   const [isFocused, setIsFocused] = useState(false);
   const isDisabled = disabled || readOnly;
+
+  // Normalize value: convert null/undefined to empty string for controlled input
+  const normalizedValue = value ?? "";
 
   const labelClassNames = useMemo(() => {
     const base = "flex items-center gap-1 font-medium text-sm leading-5 tracking-normal transition-colors";
@@ -81,7 +85,7 @@ export const TextInput = ({
   };
 
   const finalClassName = className ? `${inputBaseClassNames} ${className}` : inputBaseClassNames;
-  const currentValue = props.value ?? "";
+  const currentValue = normalizedValue;
   const showClear = showClearButton && !!currentValue && !isDisabled;
 
   return (
@@ -111,6 +115,7 @@ export const TextInput = ({
           onFocus={handleFocus}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
+          value={normalizedValue}
           {...props}
         />
 
