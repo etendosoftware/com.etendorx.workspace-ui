@@ -20,7 +20,6 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/MainUI/package.json ./packages/MainUI/
 COPY packages/ComponentLibrary/package.json ./packages/ComponentLibrary/
 COPY packages/api-client/package.json ./packages/api-client/
-COPY packages/storybook/package.json ./packages/storybook/
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
