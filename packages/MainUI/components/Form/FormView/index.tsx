@@ -42,6 +42,7 @@ import { FormActions } from "./FormActions";
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import { useTabContext } from "@/contexts/tab";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useDatasourceContext } from "@/contexts/datasourceContext";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
@@ -82,8 +83,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const { graph } = useSelected();
   const { activeWindow, getSelectedRecord, setSelectedRecord } = useMultiWindowURL();
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
-  const { resetFormChanges } = useTabContext();
+  const { resetFormChanges, parentTab } = useTabContext();
   const { registerFormViewRefetch } = useToolbarContext();
+  const { refetchDatasource, registerRefetchFunction } = useDatasourceContext();
 
   const {
     formInitialization,
@@ -124,7 +126,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     if (registerFormViewRefetch) {
       registerFormViewRefetch(refreshRecordAndSession);
     }
-  }, [registerFormViewRefetch, refreshRecordAndSession]);
+    // Register refetch function in DatasourceContext so parent tabs can trigger refresh
+    registerRefetchFunction(tab.id, refreshRecordAndSession);
+  }, [registerFormViewRefetch, refreshRecordAndSession, registerRefetchFunction, tab.id]);
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} data-testid="Info__1a0853" />,
@@ -337,6 +341,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * Handles successful form save operations.
    * Updates form state, graph selection, URL state, and shows success feedback.
    * Differentiates behavior between EDIT mode (reset form) and CREATE mode (redirect to new record).
+   * Also refreshes parent tab datasource if this is a child tab.
    *
    * @param data - Saved entity data returned from server
    * @param showModal - Whether to display success modal to user
@@ -363,6 +368,11 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       }
 
       resetFormChanges();
+
+      // Refresh parent tab datasource if this is a child tab
+      if (parentTab) {
+        refetchDatasource(parentTab.id);
+      }
     },
     [
       mode,
@@ -375,6 +385,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       setRecordId,
       setSelectedRecord,
       resetFormChanges,
+      parentTab,
+      refetchDatasource,
     ]
   );
 
