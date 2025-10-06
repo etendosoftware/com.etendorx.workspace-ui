@@ -124,6 +124,7 @@ describe("Tab - Refresh Registration", () => {
       graph: {
         clearSelected: jest.fn(),
         getChildren: jest.fn(() => []),
+        getParent: jest.fn(() => null),
         addListener: jest.fn(),
         removeListener: jest.fn(),
       },
