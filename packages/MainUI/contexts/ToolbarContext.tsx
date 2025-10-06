@@ -19,6 +19,8 @@
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { globalCalloutManager } from "@/services/callouts";
+import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { useTabContext } from "@/contexts/tab";
 
 /**
  * Save button state management interface
@@ -48,7 +50,7 @@ type ToolbarActions = {
    * Refresh the current view or data.
    * Typically reloads data from the server or resets the current state.
    */
-  refresh: () => void;
+  refresh: () => Promise<void>;
 
   /**
    * Create a new record or navigate to create mode.
@@ -79,7 +81,7 @@ type ToolbarActions = {
 
 type ToolbarContextType = {
   onSave: (showModal: boolean) => Promise<void>;
-  onRefresh: () => void;
+  onRefresh: () => Promise<void>;
   onNew: () => void;
   onBack: () => void;
   onFilter: () => void;
@@ -94,7 +96,7 @@ type ToolbarContextType = {
 
 const initialState: ToolbarActions = {
   save: async () => {},
-  refresh: () => {},
+  refresh: async () => {},
   new: () => {},
   back: () => {},
   filter: () => {},
@@ -104,7 +106,7 @@ const initialState: ToolbarActions = {
 
 const ToolbarContext = createContext<ToolbarContextType>({
   onSave: async () => {},
-  onRefresh: () => {},
+  onRefresh: async () => {},
   onNew: () => {},
   onBack: () => {},
   onFilter: () => {},
@@ -124,6 +126,12 @@ export const useToolbarContext = () => useContext(ToolbarContext);
 
 export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
   const [formViewRefetch, setFormViewRefetch] = useState<(() => Promise<void>) | undefined>();
+  const [saveButtonState, setSaveButtonState] = useState<SaveButtonState>({
+    isCalloutLoading: false,
+    hasValidationErrors: false,
+    isSaving: false,
+    validationErrors: [],
+  });
 
   const registerFormViewRefetch = useCallback((refetch: () => Promise<void>) => {
     setFormViewRefetch(() => refetch);
@@ -134,7 +142,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       new: onNew,
       refresh: onRefresh,
       treeView: onToggleTreeView,
-      save: onSave,
+      save: originalOnSave, // Original save function from registered actions
       back: onBack,
       filter: onFilter,
       columnFilters: onColumnFilters,
@@ -142,13 +150,23 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
     setActions,
   ] = useState<ToolbarActions>(initialState);
 
-  // Save button state management
-  const [saveButtonState, setSaveButtonState] = useState<SaveButtonState>({
-    isCalloutLoading: false,
-    hasValidationErrors: false,
-    isSaving: false,
-    validationErrors: [],
-  });
+  // Access tab context for level information and refresh context for parent coordination
+  const { tab } = useTabContext();
+  const { triggerParentRefreshes } = useTabRefreshContext();
+
+  // Wrapped onSave that includes parent refresh logic
+  const wrappedOnSave = useCallback(
+    async (showModal: boolean) => {
+      // Execute original save operation first
+      await originalOnSave(showModal);
+
+      // If save succeeded and this tab has parents, trigger parent refreshes
+      if (tab?.tabLevel && tab.tabLevel > 0) {
+        await triggerParentRefreshes(tab.tabLevel);
+      }
+    },
+    [originalOnSave, tab?.tabLevel, triggerParentRefreshes]
+  );
 
   // Event-based callout monitoring
   useEffect(() => {
@@ -183,7 +201,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
 
   const value = useMemo(
     () => ({
-      onSave,
+      onSave: wrappedOnSave, // Use wrapped version instead of originalOnSave
       onRefresh,
       onNew,
       onBack,
@@ -197,7 +215,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       registerFormViewRefetch,
     }),
     [
-      onSave,
+      wrappedOnSave,
       onRefresh,
       onNew,
       onBack,

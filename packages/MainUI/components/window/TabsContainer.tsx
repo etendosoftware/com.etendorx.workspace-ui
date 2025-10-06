@@ -26,6 +26,7 @@ import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
 import AppBreadcrumb from "@/components/Breadcrums";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
+import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
 
 export default function TabsContainer() {
   const { activeLevels, clearAllStates } = useSelected();
@@ -109,7 +110,7 @@ export default function TabsContainer() {
   );
 
   return (
-    <>
+    <TabRefreshProvider data-testid="TabRefreshProvider__895626">
       <AppBreadcrumb allTabs={filteredGroupedTabs} data-testid="AppBreadcrumb__895626" />
       <div className="flex flex-col flex-1 overflow-hidden w-full">
         {filteredGroupedTabs.map((tabs, index) => {
@@ -128,6 +129,6 @@ export default function TabsContainer() {
           );
         })}
       </div>
-    </>
+    </TabRefreshProvider>
   );
 }
