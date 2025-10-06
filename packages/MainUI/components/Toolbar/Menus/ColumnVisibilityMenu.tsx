@@ -70,14 +70,15 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
 
   // Apply initial column visibility based on showInGridView
   useEffect(() => {
-    table.getAllLeafColumns().forEach((column) => {
+    const columns = table.getAllLeafColumns();
+    for (const column of columns) {
       const colDef = column.columnDef as CustomColumnDef;
       const shouldBeVisible = colDef.showInGridView ?? true;
 
       if (column.getIsVisible() !== shouldBeVisible) {
         column.toggleVisibility(shouldBeVisible);
       }
-    });
+    }
   }, [table]);
 
   const [items, setItems] = useState<ToggleableItem[]>(columnItems);
