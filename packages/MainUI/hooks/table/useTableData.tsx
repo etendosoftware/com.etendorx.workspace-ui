@@ -70,7 +70,6 @@ interface UseTableDataReturn {
   handleColumnFilterChange: (columnId: string, selectedOptions: FilterOption[]) => Promise<void>;
   handleLoadFilterOptions: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   handleLoadMoreFilterOptions: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
-  setColumnVisibility: React.Dispatch<React.SetStateAction<MRT_VisibilityState>>;
   setExpanded: React.Dispatch<React.SetStateAction<MRT_ExpandedState>>;
 
   // Actions
@@ -486,7 +485,6 @@ export const useTableData = ({
     handleColumnFilterChange,
     handleLoadFilterOptions,
     handleLoadMoreFilterOptions,
-    setColumnVisibility,
     setExpanded,
 
     // Actions
