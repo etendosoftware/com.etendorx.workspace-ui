@@ -26,6 +26,7 @@ import DragModalContent from "@workspaceui/componentlibrary/src/components/DragM
 export interface CustomColumnDef<TData extends MRT_RowData = MRT_RowData> extends MRT_DefinedColumnDef<TData> {
   showInGridView?: boolean;
   displayed?: boolean;
+  type?: string;
 }
 interface ColumnVisibilityMenuProps<T extends MRT_RowData = MRT_RowData> {
   anchorEl: HTMLElement | null;
@@ -51,6 +52,11 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
 
         const colDef = column.columnDef as CustomColumnDef;
         if (colDef.displayed === false && !column.getIsVisible()) {
+          return false;
+        }
+
+        // Filter out button type columns (processes)
+        if (colDef.type === "button") {
           return false;
         }
 
