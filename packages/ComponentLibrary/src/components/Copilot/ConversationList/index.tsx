@@ -15,7 +15,6 @@
  *************************************************************************
  */
 
-import type { IConversationSummary } from "@workspaceui/api-client/src/api/copilot";
 import MessageSquareIcon from "../../../assets/icons/message-square.svg";
 import PlusIcon from "../../../assets/icons/plus.svg";
 import IconButton from "../../IconButton";

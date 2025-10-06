@@ -50,6 +50,25 @@ export class CopilotClient {
   private static isInitialized = false;
 
   /**
+   * Helper method to parse array responses from the API
+   * @param data - The response data to parse
+   * @param errorContext - Context string for error messages
+   * @returns Parsed array or empty array on error
+   */
+  private static parseArrayResponse<T>(data: unknown, errorContext: string): T[] {
+    if (typeof data === "string") {
+      try {
+        const parsed = JSON.parse(data);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (parseError) {
+        console.error(`Error parsing ${errorContext} response:`, parseError);
+        return [];
+      }
+    }
+    return Array.isArray(data) ? data : [];
+  }
+
+  /**
    * Initializes the CopilotClient with base URL
    * Uses Next.js proxy instead of direct ERP connection
    */
@@ -165,17 +184,7 @@ export class CopilotClient {
         throw new Error("Failed to fetch assistants");
       }
 
-      if (typeof data === "string") {
-        try {
-          const parsed = JSON.parse(data);
-          return Array.isArray(parsed) ? parsed : [];
-        } catch (parseError) {
-          console.error("Error parsing assistants response:", parseError);
-          return [];
-        }
-      }
-
-      return Array.isArray(data) ? data : [];
+      return this.parseArrayResponse<IAssistant>(data, "assistants");
     } catch (error) {
       console.error("Error fetching assistants:", error);
       throw error;
@@ -406,17 +415,7 @@ export class CopilotClient {
         throw new Error("Failed to fetch conversations");
       }
 
-      if (typeof data === "string") {
-        try {
-          const parsed = JSON.parse(data);
-          return Array.isArray(parsed) ? parsed : [];
-        } catch (parseError) {
-          console.error("Error parsing conversations response:", parseError);
-          return [];
-        }
-      }
-
-      return Array.isArray(data) ? data : [];
+      return this.parseArrayResponse<IConversationSummary>(data, "conversations");
     } catch (error) {
       console.error("Error fetching conversations:", error);
       throw error;

@@ -18,13 +18,63 @@
 import { useState } from "react";
 import AssistantSelector from "../AssistantSelector";
 import ConversationList from "../ConversationList";
-import type { IAssistant } from "@workspaceui/api-client/src/api/copilot";
+import type { IAssistant, IMessage } from "@workspaceui/api-client/src/api/copilot";
 import MessageList from "../MessageComponents/MessageList";
 import MessageInput from "../MessageComponents/MessageInput";
 import IconButton from "../../IconButton";
 import SidebarIcon from "../../../assets/icons/sidebar.svg";
 import MessageSquareIcon from "../../../assets/icons/message-square.svg";
-import type { ChatInterfaceProps } from "../types";
+import type { ChatInterfaceProps, ContextItem } from "../types";
+
+interface ChatContentProps {
+  messages: IMessage[];
+  labels: ChatInterfaceProps["labels"];
+  isExpanded: boolean;
+  isLoading: boolean;
+  onSendMessage: (message: string, files?: File[]) => void;
+  contextItems: ContextItem[];
+  onRemoveContext?: (id: string) => void;
+  translations: {
+    messageList: ChatInterfaceProps["translations"]["messageList"];
+    messageInput: ChatInterfaceProps["translations"]["messageInput"];
+    selectedRegisters: string;
+  };
+}
+
+const ChatContent: React.FC<ChatContentProps> = ({
+  messages,
+  labels,
+  isExpanded,
+  isLoading,
+  onSendMessage,
+  contextItems,
+  onRemoveContext,
+  translations,
+}) => (
+  <>
+    <div className="flex-1 overflow-hidden">
+      <MessageList
+        messages={messages}
+        labels={labels}
+        isExpanded={isExpanded}
+        isLoading={isLoading}
+        translations={translations.messageList}
+      />
+    </div>
+
+    <MessageInput
+      onSendMessage={onSendMessage}
+      placeholder={translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder}
+      disabled={isLoading}
+      contextItems={contextItems}
+      onRemoveContext={onRemoveContext}
+      translations={{
+        placeholder: translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder,
+        selectedRegisters: translations.selectedRegisters,
+      }}
+    />
+  </>
+);
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   assistants,
@@ -128,24 +178,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         )}
 
-        <div className="flex-1 overflow-hidden">
-          <MessageList
-            messages={messages}
-            labels={labels}
-            isExpanded={isExpanded}
-            isLoading={isLoading}
-            translations={translations.messageList}
-          />
-        </div>
-
-        <MessageInput
+        <ChatContent
+          messages={messages}
+          labels={labels}
+          isExpanded={isExpanded}
+          isLoading={isLoading}
           onSendMessage={onSendMessage}
-          placeholder={translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder}
-          disabled={isLoading}
           contextItems={contextItems}
           onRemoveContext={onRemoveContext}
           translations={{
-            placeholder: translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder,
+            messageList: translations.messageList,
+            messageInput: translations.messageInput,
             selectedRegisters: translations.selectedRegisters,
           }}
         />
@@ -195,24 +238,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Main Chat Area */}
       <div className="flex flex-col flex-1 min-w-0">
-        <div className="flex-1 overflow-hidden">
-          <MessageList
-            messages={messages}
-            labels={labels}
-            isExpanded={isExpanded}
-            isLoading={isLoading}
-            translations={translations.messageList}
-          />
-        </div>
-
-        <MessageInput
+        <ChatContent
+          messages={messages}
+          labels={labels}
+          isExpanded={isExpanded}
+          isLoading={isLoading}
           onSendMessage={onSendMessage}
-          placeholder={translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder}
-          disabled={isLoading}
           contextItems={contextItems}
           onRemoveContext={onRemoveContext}
           translations={{
-            placeholder: translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder,
+            messageList: translations.messageList,
+            messageInput: translations.messageInput,
             selectedRegisters: translations.selectedRegisters,
           }}
         />
