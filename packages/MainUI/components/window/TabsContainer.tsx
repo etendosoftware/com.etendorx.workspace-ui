@@ -110,7 +110,7 @@ export default function TabsContainer() {
   );
 
   return (
-    <TabRefreshProvider>
+    <TabRefreshProvider data-testid="TabRefreshProvider__895626">
       <AppBreadcrumb allTabs={filteredGroupedTabs} data-testid="AppBreadcrumb__895626" />
       <div className="flex flex-col flex-1 overflow-hidden w-full">
         {filteredGroupedTabs.map((tabs, index) => {
