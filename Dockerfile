@@ -29,8 +29,14 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS builder
 WORKDIR /app
 
-# Copy source code
-COPY . .
+# Copy only necessary configuration files
+COPY tsconfig.json turbo.json ./
+COPY biome.json ./
+
+# Copy source code for packages
+COPY packages/MainUI ./packages/MainUI
+COPY packages/ComponentLibrary ./packages/ComponentLibrary
+COPY packages/api-client ./packages/api-client
 
 # Build application (only MainUI)
 RUN cd packages/MainUI && pnpm build

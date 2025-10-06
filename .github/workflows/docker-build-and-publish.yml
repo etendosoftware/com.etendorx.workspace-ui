@@ -57,8 +57,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: etendo/etendo_ui:${{ env.BRANCH_NAME }}
-          cache-from: type=registry,ref=etendo/etendo_ui:buildcache
-          cache-to: type=registry,ref=etendo/etendo_ui:buildcache,mode=max
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
