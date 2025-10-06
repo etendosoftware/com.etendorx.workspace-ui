@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-export * from './navigation.mocks';
-export * from './configuration.mocks';
-export * from './widgets.mocks';
-export * from './types';
+export * from "./navigation.mocks";
+export * from "./configuration.mocks";
+export * from "./widgets.mocks";
+export * from "./types";

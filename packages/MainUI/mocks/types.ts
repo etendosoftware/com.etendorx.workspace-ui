@@ -15,8 +15,8 @@
  *************************************************************************
  */
 
-import type { Section } from '../components/Form/FormView/types';
-import type { BaseFieldDefinition, FieldDefinition } from '@workspaceui/api-client/src/api/types';
+import type { Section } from "../components/Form/FormView/types";
+import type { BaseFieldDefinition, FieldDefinition } from "@workspaceui/api-client/src/api/types";
 
 export type OrganizationField = FieldDefinition | Section;
 
@@ -49,7 +49,7 @@ export interface Widget extends React.PropsWithChildren {
   tooltip?: string;
   color?: string;
   bgcolor?: string;
-  size?: 'half' | 'full';
+  size?: "half" | "full";
   iconBgColor?: string;
   iconButtonColor?: string;
   iconButtonHoverColor?: string;

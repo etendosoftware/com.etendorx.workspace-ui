@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import SettingIcon from '@workspaceui/componentlibrary/src/assets/icons/settings.svg';
+import SettingIcon from "@workspaceui/componentlibrary/src/assets/icons/settings.svg";
 import {
   SECTION_THEME_ID,
   SECTION_TABLE_DENSITY_ID,
@@ -30,37 +30,37 @@ import {
 } from "@workspaceui/componentlibrary/src/components/ConfigurationModal/constants";
 
 export const modalConfig = {
-  icon: <SettingIcon />,
+  icon: <SettingIcon data-testid="SettingIcon__e5f973" />,
   title: {
-    icon: <SettingIcon fill='var(--color-dynamic-main)' />,
-    label: 'Quick Setup',
+    icon: <SettingIcon fill="var(--color-dynamic-main)" data-testid="SettingIcon__e5f973" />,
+    label: "Quick Setup",
   },
-  linkTitle: { label: 'View all settings', url: '/settings' },
+  linkTitle: { label: "View all settings", url: "/settings" },
   sections: [
     {
       id: SECTION_THEME_ID,
-      name: 'Theme',
+      name: "Theme",
       items: THEME_ITEMS,
       selectedItem: 0,
       isDisabled: true,
     },
     {
       id: SECTION_TABLE_DENSITY_ID,
-      name: 'Table Density',
+      name: "Table Density",
       items: TABLE_DENSITY_ITEMS,
       selectedItem: 0,
       isDisabled: true,
     },
     {
       id: SECTION_COMMON_TOOLBAR_BUTTONS_ID,
-      name: 'Common Toolbar Buttons',
+      name: "Common Toolbar Buttons",
       items: COMMON_TOOLBAR_BUTTONS_ITEMS,
       selectedItem: 0,
       isDisabled: true,
     },
     {
       id: SECTION_SPECIFIC_TOOLBAR_BUTTONS_ID,
-      name: 'Specific Toolbar Buttons',
+      name: "Specific Toolbar Buttons",
       items: SPECIFIC_TOOLBAR_BUTTONS_ITEMS,
       selectedItem: 0,
       isDisabled: true,
