@@ -90,6 +90,7 @@ storybook-jenkins-stage.txt
 **/*.spec.*
 **/__tests__/
 **/__mocks__/
+**/test-utils/
 
 # Jenkins and CI/CD
 Jenkinsfile

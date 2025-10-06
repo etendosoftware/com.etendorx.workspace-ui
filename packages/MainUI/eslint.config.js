@@ -41,6 +41,18 @@ export default [
     },
   },
   {
-    ignores: ["node_modules", "dist", ".next", "build"],
+    ignores: [
+      "node_modules",
+      "dist",
+      ".next",
+      "build",
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/*.spec.ts",
+      "**/*.spec.tsx",
+      "**/test-utils/**",
+      "**/__tests__/**",
+      "**/__mocks__/**",
+    ],
   },
 ];
