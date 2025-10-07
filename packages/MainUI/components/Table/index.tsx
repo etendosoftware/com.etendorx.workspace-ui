@@ -21,7 +21,6 @@ import {
   useMaterialReactTable,
   type MRT_TableBodyRowProps,
   type MRT_TableInstance,
-  type MRT_ExpandedState,
   type MRT_VisibilityState,
 } from "material-react-table";
 import { useStyle } from "./styles";
@@ -46,6 +45,7 @@ import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check.svg";
 import { useTableData } from "@/hooks/table/useTableData";
 import { isEmptyObject } from "@/utils/commons";
+import { getDisplayColumnDefOptions, getMUITableBodyCellProps, getCurrentRowCanExpand } from "@/utils/table/utils";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -90,13 +90,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     loading,
     error,
     shouldUseTreeMode,
-    loadChildNodes,
-    setChildrenData,
-    setLoadedNodes,
     handleMRTColumnFiltersChange,
     handleMRTColumnVisibilityChange,
     handleMRTSortingChange,
-    setExpanded,
+    handleMRTExpandChange,
     toggleImplicitFilters,
     fetchMore,
     refetch,
@@ -123,6 +120,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const handleCloseColumnMenu = useCallback(() => {
     setColumnMenuAnchor(null);
   }, []);
+
   const renderFirstColumnCell = ({
     renderedCellValue,
     row,
@@ -412,73 +410,24 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     },
     [fetchMore, hasMoreRecords, loading]
   );
-  const expandedRef = useRef<MRT_ExpandedState>({});
 
   const table = useMaterialReactTable<EntityData>({
     muiTablePaperProps: { sx: sx.tablePaper },
-
     muiTableHeadCellProps: {
       sx: {
         ...sx.tableHeadCell,
       },
     },
-
-    muiTableBodyCellProps: ({ row, column }) => ({
-      sx: {
-        ...sx.tableBodyCell,
-        ...(shouldUseTreeMode &&
-          column.id === columns[0]?.id && {
-            paddingLeft: `${12 + ((row.original.__level as number) || 0) * 16}px`,
-            position: "relative",
-          }),
-      },
+    muiTableBodyCellProps: (props) => ({
+      sx: getMUITableBodyCellProps({
+        shouldUseTreeMode,
+        sx,
+        columns,
+        column: props.column,
+        row: props.row,
+      }),
     }),
-
-    displayColumnDefOptions: shouldUseTreeMode
-      ? {
-          "mrt-row-expand": {
-            size: 60,
-            muiTableHeadCellProps: {
-              sx: {
-                display: "none",
-              },
-            },
-            muiTableBodyCellProps: {
-              sx: {
-                display: "none",
-              },
-            },
-          },
-          "mrt-row-select": {
-            size: 0,
-            muiTableHeadCellProps: {
-              sx: {
-                display: "none",
-              },
-            },
-            muiTableBodyCellProps: {
-              sx: {
-                display: "none",
-              },
-            },
-          },
-        }
-      : {
-          "mrt-row-expand": {
-            size: 0,
-            muiTableHeadCellProps: {
-              sx: {
-                display: "none",
-              },
-            },
-            muiTableBodyCellProps: {
-              sx: {
-                display: "none",
-              },
-            },
-          },
-        },
-
+    displayColumnDefOptions: getDisplayColumnDefOptions({ shouldUseTreeMode }),
     muiTableBodyProps: { sx: sx.tableBody },
     layoutMode: "semantic",
     enableGlobalFilter: false,
@@ -502,12 +451,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     enableExpanding: shouldUseTreeMode,
     paginateExpandedRows: false,
     getRowCanExpand: (row) => {
-      if (shouldUseTreeMode) {
-        return true;
-      }
-      const isParentNode = row.original.__isParent !== false;
-      const canExpand = row.original.showDropIcon === true && isParentNode;
-      return canExpand;
+      return getCurrentRowCanExpand({ row: row as MRT_Row<EntityData>, shouldUseTreeMode });
     },
     initialState: {
       density: "compact",
@@ -515,45 +459,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     },
     renderDetailPanel: undefined,
     onExpandedChange: (newExpanded) => {
-      const prevExpanded = expandedRef.current;
-      const newExpandedState = typeof newExpanded === "function" ? newExpanded(expanded) : newExpanded;
-
-      setExpanded(newExpandedState);
-      expandedRef.current = newExpandedState;
-
-      if (typeof newExpandedState === "object" && newExpandedState !== null && !Array.isArray(newExpandedState)) {
-        const prevExpandedObj =
-          typeof prevExpanded === "object" && prevExpanded !== null && !Array.isArray(prevExpanded) ? prevExpanded : {};
-
-        const prevKeys = Object.keys(prevExpandedObj).filter((k) => prevExpandedObj[k as keyof typeof prevExpandedObj]);
-        const newKeys = Object.keys(newExpandedState).filter(
-          (k) => newExpandedState[k as keyof typeof newExpandedState]
-        );
-
-        const expandedRowIds = newKeys.filter((k) => !prevKeys.includes(k));
-        const collapsedRowIds = prevKeys.filter((k) => !newKeys.includes(k));
-
-        for (const id of expandedRowIds) {
-          const rowData = displayRecords.find((record) => String(record.id) === id);
-
-          if (shouldUseTreeMode && rowData && rowData.__isParent !== false) {
-            loadChildNodes(String(rowData.id));
-          }
-        }
-
-        for (const id of collapsedRowIds) {
-          setChildrenData((prev) => {
-            const newMap = new Map(prev);
-            newMap.delete(id);
-            return newMap;
-          });
-          setLoadedNodes((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(id);
-            return newSet;
-          });
-        }
-      }
+      handleMRTExpandChange({ newExpanded });
     },
     state: {
       columnFilters: tableColumnFilters,

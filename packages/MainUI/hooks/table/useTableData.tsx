@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import type {
   MRT_ColumnFiltersState,
   MRT_ExpandedState,
@@ -34,6 +34,7 @@ import { useColumns } from "./useColumns";
 import { useColumnFilters } from "@workspaceui/api-client/src/hooks/useColumnFilters";
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
+import type { ExpandedState, Updater } from "@tanstack/react-table";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -55,9 +56,6 @@ interface UseTableDataReturn {
 
   // Tree mode
   shouldUseTreeMode: boolean;
-  loadChildNodes: (parentId: string) => Promise<void>;
-  setChildrenData: React.Dispatch<React.SetStateAction<Map<string, EntityData[]>>>;
-  setLoadedNodes: React.Dispatch<React.SetStateAction<Set<string>>>;
 
   // Handlers
   handleMRTColumnFiltersChange: (
@@ -70,7 +68,7 @@ interface UseTableDataReturn {
   handleColumnFilterChange: (columnId: string, selectedOptions: FilterOption[]) => Promise<void>;
   handleLoadFilterOptions: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   handleLoadMoreFilterOptions: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
-  setExpanded: React.Dispatch<React.SetStateAction<MRT_ExpandedState>>;
+  handleMRTExpandChange: ({ newExpanded }: { newExpanded: Updater<ExpandedState> }) => void;
 
   // Actions
   toggleImplicitFilters: () => void;
@@ -92,6 +90,8 @@ export const useTableData = ({
   const [childrenData, setChildrenData] = useState<Map<string, EntityData[]>>(new Map());
   const [flattenedRecords, setFlattenedRecords] = useState<EntityData[]>([]);
   const [prevShouldUseTreeMode, setPrevShouldUseTreeMode] = useState<boolean | null>(null);
+
+  const expandedRef = useRef<MRT_ExpandedState>({});
 
   // Contexts and hooks
   const { searchQuery } = useSearch();
@@ -306,6 +306,9 @@ export const useTableData = ({
       activeColumnFilters: tableColumnFilters,
     });
 
+  // Display records (tree mode uses flattened, normal mode uses original records)
+  const displayRecords = shouldUseTreeMode ? flattenedRecords : records;
+
   // Load child nodes for tree mode
   const loadChildNodes = useCallback(
     async (parentId: string) => {
@@ -398,31 +401,6 @@ export const useTableData = ({
     []
   );
 
-  // Handle tree mode changes
-  useEffect(() => {
-    // Skip the first render to avoid unnecessary refetch on mount
-    if (prevShouldUseTreeMode !== null && prevShouldUseTreeMode !== shouldUseTreeMode) {
-      if (!shouldUseTreeMode) {
-        setExpanded({});
-        setLoadedNodes(new Set());
-        setChildrenData(new Map());
-        setFlattenedRecords([]);
-      }
-      refetch();
-    }
-    setPrevShouldUseTreeMode(shouldUseTreeMode);
-  }, [shouldUseTreeMode, prevShouldUseTreeMode, refetch]);
-
-  // Update flattened records when tree data changes
-  useEffect(() => {
-    if (shouldUseTreeMode) {
-      const flattened = buildFlattenedRecords(records, expanded, childrenData);
-      setFlattenedRecords(flattened);
-    } else {
-      setFlattenedRecords(records);
-    }
-  }, [records, expanded, childrenData, shouldUseTreeMode, buildFlattenedRecords]);
-
   // Column filters change handler
   const handleMRTColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
@@ -458,8 +436,75 @@ export const useTableData = ({
     [tableSorting, setTableSorting]
   );
 
-  // Display records (tree mode uses flattened, normal mode uses original records)
-  const displayRecords = shouldUseTreeMode ? flattenedRecords : records;
+  const handleMRTExpandChange = useCallback(
+    ({ newExpanded }: { newExpanded: Updater<ExpandedState> }) => {
+      const prevExpanded = expandedRef.current;
+      const newExpandedState = typeof newExpanded === "function" ? newExpanded(expanded) : newExpanded;
+
+      setExpanded(newExpandedState);
+      expandedRef.current = newExpandedState;
+
+      if (typeof newExpandedState === "object" && newExpandedState !== null && !Array.isArray(newExpandedState)) {
+        const prevExpandedObj =
+          typeof prevExpanded === "object" && prevExpanded !== null && !Array.isArray(prevExpanded) ? prevExpanded : {};
+
+        const prevKeys = Object.keys(prevExpandedObj).filter((k) => prevExpandedObj[k as keyof typeof prevExpandedObj]);
+        const newKeys = Object.keys(newExpandedState).filter(
+          (k) => newExpandedState[k as keyof typeof newExpandedState]
+        );
+
+        const expandedRowIds = newKeys.filter((k) => !prevKeys.includes(k));
+        const collapsedRowIds = prevKeys.filter((k) => !newKeys.includes(k));
+
+        for (const id of expandedRowIds) {
+          const rowData = displayRecords.find((record) => String(record.id) === id);
+
+          if (shouldUseTreeMode && rowData && rowData.__isParent !== false) {
+            loadChildNodes(String(rowData.id));
+          }
+        }
+
+        for (const id of collapsedRowIds) {
+          setChildrenData((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(id);
+            return newMap;
+          });
+          setLoadedNodes((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(id);
+            return newSet;
+          });
+        }
+      }
+    },
+    [expanded, displayRecords, shouldUseTreeMode, loadChildNodes]
+  );
+
+  // Handle tree mode changes
+  useEffect(() => {
+    // Skip the first render to avoid unnecessary refetch on mount
+    if (prevShouldUseTreeMode !== null && prevShouldUseTreeMode !== shouldUseTreeMode) {
+      if (!shouldUseTreeMode) {
+        setExpanded({});
+        setLoadedNodes(new Set());
+        setChildrenData(new Map());
+        setFlattenedRecords([]);
+      }
+      refetch();
+    }
+    setPrevShouldUseTreeMode(shouldUseTreeMode);
+  }, [shouldUseTreeMode, prevShouldUseTreeMode, refetch]);
+
+  // Update flattened records when tree data changes
+  useEffect(() => {
+    if (shouldUseTreeMode) {
+      const flattened = buildFlattenedRecords(records, expanded, childrenData);
+      setFlattenedRecords(flattened);
+    } else {
+      setFlattenedRecords(records);
+    }
+  }, [records, expanded, childrenData, shouldUseTreeMode, buildFlattenedRecords]);
 
   return {
     // Data
@@ -474,9 +519,6 @@ export const useTableData = ({
 
     // Tree mode
     shouldUseTreeMode,
-    loadChildNodes,
-    setChildrenData,
-    setLoadedNodes,
 
     // Handlers
     handleMRTColumnFiltersChange,
@@ -485,7 +527,7 @@ export const useTableData = ({
     handleColumnFilterChange,
     handleLoadFilterOptions,
     handleLoadMoreFilterOptions,
-    setExpanded,
+    handleMRTExpandChange,
 
     // Actions
     toggleImplicitFilters,
