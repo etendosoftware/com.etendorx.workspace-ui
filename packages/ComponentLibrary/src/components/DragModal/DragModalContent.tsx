@@ -71,9 +71,12 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
   );
 
   const handleToggleAll = useCallback(() => {
-    const allActivated = currentItems.every((item) => item.isActive);
-    setCurrentItems((prev) => prev.map((item) => ({ ...item, isActive: !allActivated })));
-  }, [currentItems, setCurrentItems]);
+    setCurrentItems((prev) => {
+      const allActivated = prev.every((item) => item.isActive);
+      const newItems = prev.map((item) => ({ ...item, isActive: !allActivated }));
+      return newItems;
+    });
+  }, [setCurrentItems]);
 
   const handleToggle = useCallback(
     (id: UniqueIdentifier) => {
