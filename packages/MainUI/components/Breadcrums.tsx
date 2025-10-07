@@ -95,11 +95,12 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     if (currentTab) {
       const tabFormState = windowId ? getTabFormState(windowId, currentTab.id) : undefined;
       const currentRecordId = tabFormState?.recordId || "";
+      const currentLabel = record?._identifier?.toString();
 
-      if (currentRecordId && currentRecordId !== NEW_RECORD_ID) {
+      if (currentRecordId && currentLabel && currentRecordId !== NEW_RECORD_ID) {
         items.push({
           id: currentRecordId.toString(),
-          label: record?._identifier?.toString() ?? currentRecordId?.toString(),
+          label: currentLabel,
         });
       }
     }
