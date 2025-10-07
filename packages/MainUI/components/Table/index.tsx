@@ -75,6 +75,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     tableColumnFilters,
     tableColumnVisibility,
     tableColumnSorting,
+    tableColumnOrder,
   } = useTabContext();
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -93,6 +94,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     handleMRTColumnFiltersChange,
     handleMRTColumnVisibilityChange,
     handleMRTSortingChange,
+    handleMRTColumnOrderChange,
     handleMRTExpandChange,
     toggleImplicitFilters,
     fetchMore,
@@ -465,6 +467,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       columnFilters: tableColumnFilters,
       columnVisibility: tableColumnVisibility,
       sorting: tableColumnSorting,
+      columnOrder: tableColumnOrder,
       expanded: shouldUseTreeMode ? expanded : {},
       showColumnFilters: true,
       showProgressBars: loading,
@@ -484,12 +487,14 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       handleMRTColumnVisibilityChange(updaterOrValue);
     },
     onSortingChange: handleMRTSortingChange,
+    onColumnOrderChange: handleMRTColumnOrderChange,
     getRowId,
     enableColumnFilters: true,
     enableSorting: true,
     enableColumnResizing: true,
     enableColumnActions: true,
     manualFiltering: true,
+    enableColumnOrdering: true,
     renderEmptyRowsFallback,
   });
 

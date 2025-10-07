@@ -65,6 +65,7 @@ interface UseTableDataReturn {
     updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)
   ) => void;
   handleMRTSortingChange: (updaterOrValue: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)) => void;
+  handleMRTColumnOrderChange: (updaterOrValue: string[] | ((prev: string[]) => string[])) => void;
   handleColumnFilterChange: (columnId: string, selectedOptions: FilterOption[]) => Promise<void>;
   handleLoadFilterOptions: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   handleLoadMoreFilterOptions: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
@@ -107,6 +108,8 @@ export const useTableData = ({
     setTableColumnVisibility,
     tableColumnSorting,
     setTableColumnSorting,
+    tableColumnOrder,
+    setTableColumnOrder,
   } = useTabContext();
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
@@ -436,6 +439,15 @@ export const useTableData = ({
     [tableColumnSorting, setTableColumnSorting]
   );
 
+  const handleMRTColumnOrderChange = useCallback(
+    (updaterOrValue: string[] | ((prev: string[]) => string[])) => {
+      const newOrder = typeof updaterOrValue === "function" ? updaterOrValue(tableColumnOrder) : updaterOrValue;
+
+      setTableColumnOrder(newOrder);
+    },
+    [tableColumnOrder, setTableColumnOrder]
+  );
+
   const handleMRTExpandChange = useCallback(
     ({ newExpanded }: { newExpanded: Updater<ExpandedState> }) => {
       const prevExpanded = expandedRef.current;
@@ -527,6 +539,7 @@ export const useTableData = ({
     handleColumnFilterChange,
     handleLoadFilterOptions,
     handleLoadMoreFilterOptions,
+    handleMRTColumnOrderChange,
     handleMRTExpandChange,
 
     // Actions
