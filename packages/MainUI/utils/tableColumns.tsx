@@ -123,7 +123,10 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
           _identifier: columnType,
           reference: column.column?.reference,
         },
+        shownInStatusBar: column.shownInStatusBar,
         showInGridView: column.showInGridView,
+        enableHiding: true, // Allow all columns to be hidden/shown from menu
+        displayed: column.displayed,
         name: column.name,
         type: fieldType, // Use the properly mapped field type
         referencedWindowId: column.referencedWindowId,
