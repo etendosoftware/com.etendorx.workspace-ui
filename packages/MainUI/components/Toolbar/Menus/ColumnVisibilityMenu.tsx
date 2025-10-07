@@ -25,8 +25,10 @@ import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import DragModalContent from "@workspaceui/componentlibrary/src/components/DragModal/DragModalContent";
 export interface CustomColumnDef<TData extends MRT_RowData = MRT_RowData> extends MRT_DefinedColumnDef<TData> {
   showInGridView?: boolean;
+  shownInStatusBar?: boolean;
   displayed?: boolean;
   type?: string;
+  fieldId?: string;
 }
 interface ColumnVisibilityMenuProps<T extends MRT_RowData = MRT_RowData> {
   anchorEl: HTMLElement | null;
@@ -49,13 +51,19 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
         if (column.id.startsWith("mrt-")) {
           return false;
         }
-
         const colDef = column.columnDef as CustomColumnDef;
-        if (colDef.displayed === false && !column.getIsVisible()) {
+
+        if (colDef?.fieldId?.startsWith("audit_")) {
+          return true;
+        }
+
+        if (colDef.shownInStatusBar) {
+          return true;
+        }
+        if (colDef.displayed === false && !colDef.showInGridView) {
           return false;
         }
 
-        // Filter out button type columns (processes)
         if (colDef.type === "button") {
           return false;
         }
