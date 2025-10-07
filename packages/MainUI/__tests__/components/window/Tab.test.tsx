@@ -43,6 +43,15 @@ jest.mock("@/components/Toolbar/Toolbar", () => ({
   Toolbar: jest.fn(() => null),
 }));
 
+jest.mock("@/components/Table", () => ({
+  __esModule: true,
+  default: jest.fn(() => null),
+}));
+
+jest.mock("@/components/Form/FormView", () => ({
+  FormView: jest.fn(() => null),
+}));
+
 jest.mock("@/contexts/TabRefreshContext");
 jest.mock("@/contexts/ToolbarContext");
 jest.mock("@/hooks/useMetadataContext");
@@ -116,11 +125,11 @@ describe("Tab - Refresh Registration", () => {
     });
 
     // Mock other hooks with minimal required values
-    require("@/hooks/useMetadataContext").useMetadataContext.mockReturnValue({
+    require("@/hooks/useMetadataContext").useMetadataContext = jest.fn().mockReturnValue({
       window: { id: "test-window" },
     });
 
-    require("@/hooks/useSelected").useSelected.mockReturnValue({
+    require("@/hooks/useSelected").useSelected = jest.fn().mockReturnValue({
       graph: {
         clearSelected: jest.fn(),
         getChildren: jest.fn(() => []),
@@ -130,24 +139,25 @@ describe("Tab - Refresh Registration", () => {
       },
     });
 
-    require("@/hooks/navigation/useMultiWindowURL").useMultiWindowURL.mockReturnValue({
+    require("@/hooks/navigation/useMultiWindowURL").useMultiWindowURL = jest.fn().mockReturnValue({
       activeWindow: { windowId: "test-window" },
       getTabFormState: jest.fn(() => ({ mode: "table" })),
       getSelectedRecord: jest.fn(),
       setTabFormState: jest.fn(),
       clearTabFormState: jest.fn(),
+      clearTabFormStateAtomic: jest.fn(),
       setSelectedRecord: jest.fn(),
       clearSelectedRecord: jest.fn(),
       clearChildrenSelections: jest.fn(),
     });
 
     // Mock tab context
-    require("@/contexts/tab").useTabContext.mockReturnValue({
+    require("@/contexts/tab").useTabContext = jest.fn().mockReturnValue({
       tab: mockTab,
     });
 
     // Mock user context
-    require("@/hooks/useUserContext").useUserContext.mockReturnValue({
+    require("@/hooks/useUserContext").useUserContext = jest.fn().mockReturnValue({
       user: { id: "test-user", name: "Test User" },
       isAuthenticated: true,
     });
