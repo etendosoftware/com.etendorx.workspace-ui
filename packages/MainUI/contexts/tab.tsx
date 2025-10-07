@@ -39,8 +39,8 @@ interface TabContextI {
   setTableColumnFilters: React.Dispatch<React.SetStateAction<MRT_ColumnFiltersState>>;
   tableColumnVisibility: MRT_VisibilityState;
   setTableColumnVisibility: React.Dispatch<React.SetStateAction<MRT_VisibilityState>>;
-  tableSorting: MRT_SortingState;
-  setTableSorting: React.Dispatch<React.SetStateAction<MRT_SortingState>>;
+  tableColumnSorting: MRT_SortingState;
+  setTableColumnSorting: React.Dispatch<React.SetStateAction<MRT_SortingState>>;
 }
 
 const TabContext = createContext<TabContextI>({} as TabContextI);
@@ -51,7 +51,8 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
   // Table related states
   const [tableColumnFilters, setTableColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [tableColumnVisibility, setTableColumnVisibility] = useState<MRT_VisibilityState>({});
-  const [tableSorting, setTableSorting] = useState<MRT_SortingState>([]);
+  const [tableColumnSorting, setTableColumnSorting] = useState<MRT_SortingState>([]);
+
   const { graph } = useSelected();
   const record = useSelectedRecord(tab);
   const parentTab = graph.getParent(tab);
@@ -77,8 +78,8 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
       setTableColumnFilters,
       tableColumnVisibility,
       setTableColumnVisibility,
-      tableSorting,
-      setTableSorting,
+      tableColumnSorting,
+      setTableColumnSorting,
     }),
     [
       parentRecord,
@@ -93,8 +94,8 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
       setTableColumnFilters,
       tableColumnVisibility,
       setTableColumnVisibility,
-      tableSorting,
-      setTableSorting,
+      tableColumnSorting,
+      setTableColumnSorting,
     ]
   );
 

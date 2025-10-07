@@ -74,7 +74,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     // Table related states
     tableColumnFilters,
     tableColumnVisibility,
-    tableSorting,
+    tableColumnSorting,
   } = useTabContext();
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -464,7 +464,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     state: {
       columnFilters: tableColumnFilters,
       columnVisibility: tableColumnVisibility,
-      sorting: tableSorting,
+      sorting: tableColumnSorting,
       expanded: shouldUseTreeMode ? expanded : {},
       showColumnFilters: true,
       showProgressBars: loading,

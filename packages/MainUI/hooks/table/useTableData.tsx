@@ -105,8 +105,8 @@ export const useTableData = ({
     setTableColumnFilters,
     tableColumnVisibility,
     setTableColumnVisibility,
-    tableSorting,
-    setTableSorting,
+    tableColumnSorting,
+    setTableColumnSorting,
   } = useTabContext();
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
@@ -429,11 +429,11 @@ export const useTableData = ({
 
   const handleMRTSortingChange = useCallback(
     (updaterOrValue: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)) => {
-      const newSorting = typeof updaterOrValue === "function" ? updaterOrValue(tableSorting) : updaterOrValue;
+      const newSorting = typeof updaterOrValue === "function" ? updaterOrValue(tableColumnSorting) : updaterOrValue;
 
-      setTableSorting(newSorting);
+      setTableColumnSorting(newSorting);
     },
-    [tableSorting, setTableSorting]
+    [tableColumnSorting, setTableColumnSorting]
   );
 
   const handleMRTExpandChange = useCallback(
