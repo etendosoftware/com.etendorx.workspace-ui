@@ -120,6 +120,16 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const currentRecordId = tabFormState?.recordId || "";
   const currentFormMode = tabFormState?.formMode;
 
+  // For child tabs, verify parent has selection in URL before showing FormView
+  const parentTab = graph.getParent(tab);
+  const parentSelectedRecordIdFromURL = parentTab && windowId ? getSelectedRecord(windowId, parentTab.id) : undefined;
+  const parentHasSelectionInURL = !parentTab || !!parentSelectedRecordIdFromURL;
+
+  const hasFormViewState = !!tabFormState && tabFormState.mode === TAB_MODES.FORM;
+  const shouldShowForm =
+    hasFormViewState || isFormView({ currentMode, recordId: currentRecordId, parentHasSelectionInURL });
+  const formMode = currentFormMode === FORM_MODES.NEW ? FormMode.NEW : FormMode.EDIT;
+
   const handleSetRecordId = useCallback<React.Dispatch<React.SetStateAction<string>>>(
     (value) => {
       const newValue = typeof value === "function" ? value(currentRecordId) : value;
@@ -249,9 +259,15 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   // via setSelectedRecordAndClearChildren and clearChildrenRecords, which use
   // applyWindowUpdates to avoid stale state issues.
 
+  /**
+   * Clear selection when creating a new record
+   * This prevents issues when creating a new record from a selected record in the table
+   * which could lead to inconsistent state.
+   */
   useEffect(() => {
     if (currentRecordId === NEW_RECORD_ID) {
       graph.clearSelected(tab);
+      graph.clearSelectedMultiple(tab);
     }
   }, [currentRecordId, graph, tab]);
 
@@ -302,18 +318,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       graph.clearSelected(tab);
     }
   }, [windowId, graph, tab, getSelectedRecord, clearTabFormState, getTabFormState, currentMode, tabFormState?.mode]);
-
-  // For child tabs, verify parent has selection in URL before showing FormView
-  const parentTab = graph.getParent(tab);
-  const parentSelectedRecordIdFromURL = parentTab && windowId ? getSelectedRecord(windowId, parentTab.id) : undefined;
-  const parentHasSelectionInURL = !parentTab || !!parentSelectedRecordIdFromURL;
-
-  // If child already has a FormView state, show it regardless of parent selection
-  // This prevents closing FormView when parent temporarily loses selection during refresh
-  const hasFormViewState = !!tabFormState && tabFormState.mode === TAB_MODES.FORM;
-  const shouldShowForm =
-    hasFormViewState || isFormView({ currentMode, recordId: currentRecordId, parentHasSelectionInURL });
-  const formMode = currentFormMode === FORM_MODES.NEW ? FormMode.NEW : FormMode.EDIT;
 
   return (
     <div
