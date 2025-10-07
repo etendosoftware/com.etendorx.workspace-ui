@@ -636,17 +636,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   // Ensure URL selection is maintained when table data changes
   // Sync URL selection to table state
-  // NOTE: Disabled for tabs with children - their selection is handled atomically
   useEffect(() => {
     const windowId = activeWindow?.windowId;
     if (!windowId || windowId !== tab.window || !records) {
-      return;
-    }
-
-    // Skip for tabs with children to prevent race conditions
-    // Their selection is already handled atomically by useTableSelection
-    const children = graph.getChildren(tab);
-    if (children && children.length > 0) {
       return;
     }
 
@@ -661,10 +653,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     const isCurrentlySelected = currentSelection[urlSelectedId];
 
     if (recordExists && !isCurrentlySelected) {
-      // Record exists but is not selected - restore URL selection
+      // Record exists but is not selected - restore URL selection visually
+      console.log(`[Table] Restoring visual selection for tab ${tab.id}: ${urlSelectedId}`);
       table.setRowSelection({ [urlSelectedId]: true });
     } else if (!recordExists && isCurrentlySelected) {
       // Record no longer exists but is still selected - clear selection
+      console.log(`[Table] Clearing invalid visual selection for tab ${tab.id}: ${urlSelectedId}`);
       table.setRowSelection({});
     }
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table, graph]);
