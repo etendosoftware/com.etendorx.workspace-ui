@@ -46,6 +46,7 @@ import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check.svg";
 import { useTableData } from "@/hooks/table/useTableData";
 import { isEmptyObject } from "@/utils/commons";
 import { getDisplayColumnDefOptions, getMUITableBodyCellProps, getCurrentRowCanExpand } from "@/utils/table/utils";
+import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -67,16 +68,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
   const { activeWindow, getSelectedRecord } = useMultiWindowURL();
-  const {
-    tab,
-    parentTab,
-    parentRecord,
-    // Table related states
-    tableColumnFilters,
-    tableColumnVisibility,
-    tableColumnSorting,
-    tableColumnOrder,
-  } = useTabContext();
+  const { tab, parentTab, parentRecord } = useTabContext();
+
+  const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
+    useTableStatePersistenceTab(tab.window, tab.id);
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());

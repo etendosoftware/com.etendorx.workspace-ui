@@ -28,6 +28,7 @@ import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filt
 import { useSearch } from "../../contexts/searchContext";
 import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
+import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
 import { useDatasource } from "../useDatasource";
 import { useColumns } from "./useColumns";
@@ -97,20 +98,15 @@ export const useTableData = ({
   // Contexts and hooks
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
+  const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
+
   const {
-    tab,
-    parentTab,
-    parentRecord,
-    parentRecords,
     tableColumnFilters,
     setTableColumnFilters,
-    tableColumnVisibility,
     setTableColumnVisibility,
-    tableColumnSorting,
     setTableColumnSorting,
-    tableColumnOrder,
     setTableColumnOrder,
-  } = useTabContext();
+  } = useTableStatePersistenceTab(tab.window, tab.id);
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
   // Computed values
@@ -407,45 +403,31 @@ export const useTableData = ({
   // Column filters change handler
   const handleMRTColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
-      let newColumnFilters: MRT_ColumnFiltersState;
-
-      if (typeof updaterOrValue === "function") {
-        newColumnFilters = updaterOrValue(tableColumnFilters);
-      } else {
-        newColumnFilters = updaterOrValue;
-      }
-
-      setTableColumnFilters(newColumnFilters);
+      setTableColumnFilters(updaterOrValue);
     },
-    [tableColumnFilters, setTableColumnFilters]
+    [setTableColumnFilters]
   );
 
+  // NOTE: this can implies some extra config
   const handleMRTColumnVisibilityChange = useCallback(
     (updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)) => {
-      const newVisibility =
-        typeof updaterOrValue === "function" ? updaterOrValue(tableColumnVisibility) : updaterOrValue;
-
-      setTableColumnVisibility((prev) => ({ ...prev, ...newVisibility }));
+      setTableColumnVisibility(updaterOrValue);
     },
-    [tableColumnVisibility, setTableColumnVisibility]
+    [setTableColumnVisibility]
   );
 
   const handleMRTSortingChange = useCallback(
     (updaterOrValue: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)) => {
-      const newSorting = typeof updaterOrValue === "function" ? updaterOrValue(tableColumnSorting) : updaterOrValue;
-
-      setTableColumnSorting(newSorting);
+      setTableColumnSorting(updaterOrValue);
     },
-    [tableColumnSorting, setTableColumnSorting]
+    [setTableColumnSorting]
   );
 
   const handleMRTColumnOrderChange = useCallback(
     (updaterOrValue: string[] | ((prev: string[]) => string[])) => {
-      const newOrder = typeof updaterOrValue === "function" ? updaterOrValue(tableColumnOrder) : updaterOrValue;
-
-      setTableColumnOrder(newOrder);
+      setTableColumnOrder(updaterOrValue);
     },
-    [tableColumnOrder, setTableColumnOrder]
+    [setTableColumnOrder]
   );
 
   const handleMRTExpandChange = useCallback(
