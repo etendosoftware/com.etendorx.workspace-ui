@@ -317,9 +317,9 @@ export const useCopilot = () => {
           });
 
           // Generate titles in background for this batch (fire and forget)
-          batch.forEach((conversation) => {
+          for (const conversation of batch) {
             generateTitleForConversation(conversation.id);
-          });
+          }
 
           // Wait before starting the next batch
           if (i + batchSize < conversationsWithoutTitle.length) {
