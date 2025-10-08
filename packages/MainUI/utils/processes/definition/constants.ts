@@ -77,6 +77,7 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
       "@Invoice.priceList@": "inpmPricelistId",
       "@Invoice.businessPartner@": "inpcBpartnerId",
       "@Invoice.currency@": "inpcCurrencyId",
+      "@Invoice.salesTransaction@": "inpissotrx",
     },
     staticOptions: {},
     additionalPayloadFields: ["inpcInvoiceId"],
