@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import type {
   MRT_ColumnFiltersState,
   MRT_ExpandedState,
@@ -28,12 +28,15 @@ import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filt
 import { useSearch } from "../../contexts/searchContext";
 import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
+import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
 import { useDatasource } from "../useDatasource";
 import { useColumns } from "./useColumns";
 import { useColumnFilters } from "@workspaceui/api-client/src/hooks/useColumnFilters";
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
+import type { ExpandedState, Updater } from "@tanstack/react-table";
+import { isEmptyObject } from "@/utils/commons";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -55,9 +58,6 @@ interface UseTableDataReturn {
 
   // Tree mode
   shouldUseTreeMode: boolean;
-  loadChildNodes: (parentId: string) => Promise<void>;
-  setChildrenData: React.Dispatch<React.SetStateAction<Map<string, EntityData[]>>>;
-  setLoadedNodes: React.Dispatch<React.SetStateAction<Set<string>>>;
 
   // Handlers
   handleMRTColumnFiltersChange: (
@@ -67,10 +67,11 @@ interface UseTableDataReturn {
     updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)
   ) => void;
   handleMRTSortingChange: (updaterOrValue: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)) => void;
+  handleMRTColumnOrderChange: (updaterOrValue: string[] | ((prev: string[]) => string[])) => void;
   handleColumnFilterChange: (columnId: string, selectedOptions: FilterOption[]) => Promise<void>;
   handleLoadFilterOptions: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   handleLoadMoreFilterOptions: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
-  setExpanded: React.Dispatch<React.SetStateAction<MRT_ExpandedState>>;
+  handleMRTExpandChange: ({ newExpanded }: { newExpanded: Updater<ExpandedState> }) => void;
 
   // Actions
   toggleImplicitFilters: () => void;
@@ -93,21 +94,21 @@ export const useTableData = ({
   const [flattenedRecords, setFlattenedRecords] = useState<EntityData[]>([]);
   const [prevShouldUseTreeMode, setPrevShouldUseTreeMode] = useState<boolean | null>(null);
 
+  const expandedRef = useRef<MRT_ExpandedState>({});
+
   // Contexts and hooks
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
+  const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
+
   const {
-    tab,
-    parentTab,
-    parentRecord,
-    parentRecords,
     tableColumnFilters,
-    setTableColumnFilters,
     tableColumnVisibility,
+    setTableColumnFilters,
     setTableColumnVisibility,
-    tableSorting,
-    setTableSorting,
-  } = useTabContext();
+    setTableColumnSorting,
+    setTableColumnOrder,
+  } = useTableStatePersistenceTab(tab.window, tab.id);
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
   // Computed values
@@ -306,6 +307,9 @@ export const useTableData = ({
       activeColumnFilters: tableColumnFilters,
     });
 
+  // Display records (tree mode uses flattened, normal mode uses original records)
+  const displayRecords = shouldUseTreeMode ? flattenedRecords : records;
+
   // Load child nodes for tree mode
   const loadChildNodes = useCallback(
     async (parentId: string) => {
@@ -398,6 +402,81 @@ export const useTableData = ({
     []
   );
 
+  // Column filters change handler
+  const handleMRTColumnFiltersChange = useCallback(
+    (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
+      setTableColumnFilters(updaterOrValue);
+    },
+    [setTableColumnFilters]
+  );
+
+  // NOTE: this can implies some extra config
+  const handleMRTColumnVisibilityChange = useCallback(
+    (updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)) => {
+      setTableColumnVisibility(updaterOrValue);
+    },
+    [setTableColumnVisibility]
+  );
+
+  const handleMRTSortingChange = useCallback(
+    (updaterOrValue: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)) => {
+      setTableColumnSorting(updaterOrValue);
+    },
+    [setTableColumnSorting]
+  );
+
+  const handleMRTColumnOrderChange = useCallback(
+    (updaterOrValue: string[] | ((prev: string[]) => string[])) => {
+      setTableColumnOrder(updaterOrValue);
+    },
+    [setTableColumnOrder]
+  );
+
+  const handleMRTExpandChange = useCallback(
+    ({ newExpanded }: { newExpanded: Updater<ExpandedState> }) => {
+      const prevExpanded = expandedRef.current;
+      const newExpandedState = typeof newExpanded === "function" ? newExpanded(expanded) : newExpanded;
+
+      setExpanded(newExpandedState);
+      expandedRef.current = newExpandedState;
+
+      if (typeof newExpandedState === "object" && newExpandedState !== null && !Array.isArray(newExpandedState)) {
+        const prevExpandedObj =
+          typeof prevExpanded === "object" && prevExpanded !== null && !Array.isArray(prevExpanded) ? prevExpanded : {};
+
+        const prevKeys = Object.keys(prevExpandedObj).filter((k) => prevExpandedObj[k as keyof typeof prevExpandedObj]);
+        const newKeys = Object.keys(newExpandedState).filter(
+          (k) => newExpandedState[k as keyof typeof newExpandedState]
+        );
+
+        const expandedRowIds = newKeys.filter((k) => !prevKeys.includes(k));
+        const collapsedRowIds = prevKeys.filter((k) => !newKeys.includes(k));
+
+        for (const id of expandedRowIds) {
+          const rowData = displayRecords.find((record) => String(record.id) === id);
+
+          if (shouldUseTreeMode && rowData && rowData.__isParent !== false) {
+            loadChildNodes(String(rowData.id));
+          }
+        }
+
+        for (const id of collapsedRowIds) {
+          setChildrenData((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(id);
+            return newMap;
+          });
+          setLoadedNodes((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(id);
+            return newSet;
+          });
+        }
+      }
+    },
+    [expanded, displayRecords, shouldUseTreeMode, loadChildNodes]
+  );
+
   // Handle tree mode changes
   useEffect(() => {
     // Skip the first render to avoid unnecessary refetch on mount
@@ -423,43 +502,21 @@ export const useTableData = ({
     }
   }, [records, expanded, childrenData, shouldUseTreeMode, buildFlattenedRecords]);
 
-  // Column filters change handler
-  const handleMRTColumnFiltersChange = useCallback(
-    (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
-      let newColumnFilters: MRT_ColumnFiltersState;
+  // Initialize column visibility based on tab configuration
+  useEffect(() => {
+    if (!isEmptyObject(tableColumnVisibility)) return;
 
-      if (typeof updaterOrValue === "function") {
-        newColumnFilters = updaterOrValue(tableColumnFilters);
-      } else {
-        newColumnFilters = updaterOrValue;
+    const initialVisibility: MRT_VisibilityState = {};
+    if (tab.fields) {
+      for (const field of Object.values(tab.fields)) {
+        if (field.showInGridView !== undefined && field.name) {
+          initialVisibility[field.name] = field.showInGridView;
+        }
       }
+    }
 
-      setTableColumnFilters(newColumnFilters);
-    },
-    [tableColumnFilters, setTableColumnFilters]
-  );
-
-  const handleMRTColumnVisibilityChange = useCallback(
-    (updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)) => {
-      const newVisibility =
-        typeof updaterOrValue === "function" ? updaterOrValue(tableColumnVisibility) : updaterOrValue;
-
-      setTableColumnVisibility((prev) => ({ ...prev, ...newVisibility }));
-    },
-    [tableColumnVisibility, setTableColumnVisibility]
-  );
-
-  const handleMRTSortingChange = useCallback(
-    (updaterOrValue: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)) => {
-      const newSorting = typeof updaterOrValue === "function" ? updaterOrValue(tableSorting) : updaterOrValue;
-
-      setTableSorting(newSorting);
-    },
-    [tableSorting, setTableSorting]
-  );
-
-  // Display records (tree mode uses flattened, normal mode uses original records)
-  const displayRecords = shouldUseTreeMode ? flattenedRecords : records;
+    setTableColumnVisibility(initialVisibility);
+  }, [tab.fields, tableColumnVisibility, setTableColumnVisibility]);
 
   return {
     // Data
@@ -474,9 +531,6 @@ export const useTableData = ({
 
     // Tree mode
     shouldUseTreeMode,
-    loadChildNodes,
-    setChildrenData,
-    setLoadedNodes,
 
     // Handlers
     handleMRTColumnFiltersChange,
@@ -485,7 +539,8 @@ export const useTableData = ({
     handleColumnFilterChange,
     handleLoadFilterOptions,
     handleLoadMoreFilterOptions,
-    setExpanded,
+    handleMRTColumnOrderChange,
+    handleMRTExpandChange,
 
     // Actions
     toggleImplicitFilters,

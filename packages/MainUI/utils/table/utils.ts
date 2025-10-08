@@ -1,3 +1,7 @@
+import type { SxProps, Theme } from "@mui/material";
+import type { MRT_ColumnDef, MRT_Row, MRT_Column } from "material-react-table";
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
+
 /**
  * Determines if a value represents a valid CSS color.
  * Supports multiple formats: hexadecimal, RGB/RGBA, HSL/HSLA, and standard color names.
@@ -52,4 +56,97 @@ export const isColorString = (value: unknown): boolean => {
   if (namedColors.includes(value.toLowerCase())) return true;
 
   return false;
+};
+
+export const getDisplayColumnDefOptions = ({ shouldUseTreeMode }: { shouldUseTreeMode: boolean }) => {
+  if (shouldUseTreeMode) {
+    return {
+      "mrt-row-expand": {
+        size: 60,
+        muiTableHeadCellProps: {
+          sx: {
+            display: "none",
+          },
+        },
+        muiTableBodyCellProps: {
+          sx: {
+            display: "none",
+          },
+        },
+      },
+      "mrt-row-select": {
+        size: 0,
+        muiTableHeadCellProps: {
+          sx: {
+            display: "none",
+          },
+        },
+        muiTableBodyCellProps: {
+          sx: {
+            display: "none",
+          },
+        },
+      },
+    };
+  }
+  return {
+    "mrt-row-expand": {
+      size: 0,
+      muiTableHeadCellProps: {
+        sx: {
+          display: "none",
+        },
+      },
+      muiTableBodyCellProps: {
+        sx: {
+          display: "none",
+        },
+      },
+    },
+  };
+};
+
+export const getMUITableBodyCellProps = ({
+  shouldUseTreeMode,
+  sx,
+  columns,
+  column,
+  row,
+}: {
+  shouldUseTreeMode: boolean;
+  sx: Record<string, SxProps<Theme>>;
+  columns: MRT_ColumnDef<EntityData>[];
+  column: MRT_Column<EntityData>;
+  row: MRT_Row<EntityData>;
+}): SxProps<Theme> => {
+  const firstColumnId = columns[0]?.id;
+  const isFirstColumn = column.id === firstColumnId;
+  const paddingLeft = `${12 + ((row.original.__level as number) || 0) * 16}px`;
+
+  const baseStyle = sx.tableBodyCell || {};
+
+  if (shouldUseTreeMode && isFirstColumn) {
+    return {
+      ...baseStyle,
+      paddingLeft: paddingLeft,
+      position: "relative",
+    } as SxProps<Theme>;
+  }
+
+  return baseStyle;
+};
+
+export const getCurrentRowCanExpand = ({
+  shouldUseTreeMode,
+  row,
+}: {
+  shouldUseTreeMode: boolean;
+  row: MRT_Row<EntityData>;
+}): boolean => {
+  if (shouldUseTreeMode) {
+    return true;
+  }
+  const isParentNode = row.original.__isParent !== false;
+  const canExpand = row.original.showDropIcon === true && isParentNode;
+  return canExpand;
 };
