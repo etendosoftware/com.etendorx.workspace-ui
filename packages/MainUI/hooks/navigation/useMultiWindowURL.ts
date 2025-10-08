@@ -370,14 +370,14 @@ export function useMultiWindowURL() {
           const nextSelected = nextWin.selectedRecords;
 
           // Check for removed selections
-          Object.keys(prevSelected).forEach((tabId) => {
+          for (const tabId of Object.keys(prevSelected)) {
             if (prevSelected[tabId] && !nextSelected[tabId]) {
               console.log(
                 `[applyWindowUpdates] REMOVED selection for tab ${tabId}: ${prevSelected[tabId]} -> undefined`
               );
               console.log(`[applyWindowUpdates] Caller: ${caller}`);
             }
-          });
+          }
         }
       });
 
@@ -528,7 +528,7 @@ export function useMultiWindowURL() {
           });
 
           if (childrenToClean.length === 0) {
-            console.log(`[clearChildrenSelections] All children preserved, no changes`);
+            console.log("[clearChildrenSelections] All children preserved, no changes");
             return w; // No children to clean, return unchanged
           }
 
