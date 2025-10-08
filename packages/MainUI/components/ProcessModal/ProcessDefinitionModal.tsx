@@ -284,6 +284,15 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           windowId: tab.window,
         };
 
+        // Add additional payload fields from configuration
+        if (currentAttrs.additionalPayloadFields && recordValues) {
+          for (const fieldName of currentAttrs.additionalPayloadFields) {
+            if (recordValues[fieldName] !== undefined) {
+              payload[fieldName] = recordValues[fieldName];
+            }
+          }
+        }
+
         const res = await executeProcess(
           processId,
           payload,
@@ -462,14 +471,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
       // Initialize grid selection structure with empty arrays for all window reference parameters
       const initialGridSelection: GridSelectionStructure = {};
-      Object.values(button.processDefinition.parameters).forEach((param) => {
+      for (const param of Object.values(button.processDefinition.parameters)) {
         if (param.reference === WINDOW_REFERENCE_ID) {
           initialGridSelection[param.dBColumnName] = {
             _selection: [],
             _allRows: [],
           };
         }
-      });
+      }
 
       setGridSelection(initialGridSelection);
     }

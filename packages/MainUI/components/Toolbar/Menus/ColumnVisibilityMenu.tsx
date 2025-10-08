@@ -20,9 +20,13 @@
 import type { ToggleableItem } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
 import type { MRT_TableInstance, MRT_RowData, MRT_DefinedColumnDef, MRT_VisibilityState } from "material-react-table";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import DragModalContent from "@workspaceui/componentlibrary/src/components/DragModal/DragModalContent";
+import { useTabContext } from "@/contexts/tab";
+import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
+import { isEmptyObject } from "@/utils/commons";
+
 export interface CustomColumnDef<TData extends MRT_RowData = MRT_RowData> extends MRT_DefinedColumnDef<TData> {
   showInGridView?: boolean;
   shownInStatusBar?: boolean;
@@ -42,10 +46,19 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
   table,
 }: ColumnVisibilityMenuProps<T>) => {
   const { t } = useTranslation();
+  const { tab } = useTabContext();
+  const { tableColumnVisibility } = useTableStatePersistenceTab(tab.window, tab.id);
 
-  // Convert table columns to ToggleableItem format
-  const columnItems = useMemo<ToggleableItem[]>(() => {
-    return table
+  const [items, setItems] = useState<ToggleableItem[]>([]);
+
+  const handleBack = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  // Initialize items state based on table columns and visibility state
+  useEffect(() => {
+    if (isEmptyObject(tableColumnVisibility) || items.length > 0) return;
+    const visibleColumns = table
       .getAllLeafColumns()
       .filter((column) => {
         if (column.id.startsWith("mrt-")) {
@@ -80,26 +93,9 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
         };
       })
       .sort((a, b) => a.label.localeCompare(b.label));
-  }, [table]);
 
-  // Apply initial column visibility based on showInGridView
-  useEffect(() => {
-    const columns = table.getAllLeafColumns();
-    for (const column of columns) {
-      const colDef = column.columnDef as CustomColumnDef;
-      const shouldBeVisible = colDef.showInGridView ?? true;
-
-      if (column.getIsVisible() !== shouldBeVisible) {
-        column.toggleVisibility(shouldBeVisible);
-      }
-    }
-  }, [table]);
-
-  const [items, setItems] = useState<ToggleableItem[]>(columnItems);
-
-  const handleBack = useCallback(() => {
-    onClose();
-  }, [onClose]);
+    setItems(visibleColumns);
+  }, [items, table, tableColumnVisibility]);
 
   // Sync changes back to the table when items change
   useEffect(() => {

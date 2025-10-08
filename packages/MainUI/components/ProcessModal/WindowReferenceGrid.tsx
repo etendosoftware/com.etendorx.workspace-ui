@@ -34,7 +34,7 @@ import Loading from "../loading";
 import { useDatasource } from "@/hooks/useDatasource";
 import { tableStyles } from "./styles";
 import type { WindowReferenceGridProps } from "./types";
-import { PROCESS_DEFINITION_DATA, CREATE_LINES_FROM_ORDER_PROCESS_ID } from "@/utils/processes/definition/constants";
+import { PROCESS_DEFINITION_DATA } from "@/utils/processes/definition/constants";
 import type { GridSelectionStructure } from "./ProcessDefinitionModal";
 import { useColumns } from "@/hooks/table/useColumns";
 import { useGridColumnFilters } from "@/hooks/table/useGridColumnFilters";
@@ -126,18 +126,23 @@ function WindowReferenceGrid({
     };
 
     const applyDynamicKeys = () => {
-      if (processId !== CREATE_LINES_FROM_ORDER_PROCESS_ID || !dynamicKeys) return;
+      if (!dynamicKeys || !recordValues) return;
 
-      const { invoiceClient, invoiceBusinessPartner, invoicePriceList, invoiceCurrency } = dynamicKeys as Record<
-        string,
-        string
-      >;
+      for (const [key, value] of Object.entries(dynamicKeys)) {
+        if (typeof value === "string") {
+          const recordValue = recordValues[value];
 
-      options[invoiceClient] = recordValues?.inpadClientId || "";
-      options[invoiceBusinessPartner] = recordValues?.inpcBpartnerId || "";
-      options[invoicePriceList] = recordValues?.inpmPricelistId || "";
-      options[invoiceCurrency] = recordValues?.inpcCurrencyId || "";
-      options["@Invoice.salesTransaction@"] = recordValues?.inpissotrx === "Y" || "";
+          if (recordValue === "Y") {
+            options[key] = true;
+          } else if (recordValue === "N") {
+            options[key] = false;
+          } else {
+            options[key] = recordValue || "";
+          }
+        } else if (typeof value === "boolean") {
+          options[key] = value;
+        }
+      }
     };
 
     const applyStableProcessDefaults = () => {

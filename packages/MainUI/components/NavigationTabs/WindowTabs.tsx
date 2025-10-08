@@ -28,11 +28,13 @@ import WindowTab from "@/components/NavigationTabs/WindowTab";
 import MenuTabs from "@/components/NavigationTabs/MenuTabs";
 import { useTabs } from "@/contexts/tabs";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useWindowContext } from "@/contexts/window";
 
 export default function WindowTabs() {
   const { windows, isHomeRoute, setActiveWindow, closeWindow, navigateToHome } = useMultiWindowURL();
   const { getWindowTitle } = useMetadataContext();
   const { t } = useTranslation();
+  const { cleanupWindow } = useWindowContext();
 
   const {
     containerRef,
@@ -132,6 +134,8 @@ export default function WindowTabs() {
                 onClose={() => {
                   // Optimistic removal for instant feedback
                   setClosingWindowIds((prev) => new Set(prev).add(window.windowId));
+                  // Clean up table state for this window
+                  cleanupWindow(window.windowId);
                   closeWindow(window.windowId);
                 }}
                 canClose={canClose}

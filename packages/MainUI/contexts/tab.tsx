@@ -17,7 +17,6 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
-import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
 import { ToolbarProvider } from "./ToolbarContext";
 import { SearchProvider } from "./searchContext";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
@@ -33,14 +32,6 @@ interface TabContextI {
   hasFormChanges: boolean;
   markFormAsChanged: () => void;
   resetFormChanges: () => void;
-
-  // Table related states
-  tableColumnFilters: MRT_ColumnFiltersState;
-  setTableColumnFilters: React.Dispatch<React.SetStateAction<MRT_ColumnFiltersState>>;
-  tableColumnVisibility: MRT_VisibilityState;
-  setTableColumnVisibility: React.Dispatch<React.SetStateAction<MRT_VisibilityState>>;
-  tableSorting: MRT_SortingState;
-  setTableSorting: React.Dispatch<React.SetStateAction<MRT_SortingState>>;
 }
 
 const TabContext = createContext<TabContextI>({} as TabContextI);
@@ -48,10 +39,6 @@ const TabContext = createContext<TabContextI>({} as TabContextI);
 export default function TabContextProvider({ tab, children }: React.PropsWithChildren<{ tab: Tab }>) {
   const [hasFormChanges, setHasFormChanges] = useState(false);
 
-  // Table related states
-  const [tableColumnFilters, setTableColumnFilters] = useState<MRT_ColumnFiltersState>([]);
-  const [tableColumnVisibility, setTableColumnVisibility] = useState<MRT_VisibilityState>({});
-  const [tableSorting, setTableSorting] = useState<MRT_SortingState>([]);
   const { graph } = useSelected();
   const record = useSelectedRecord(tab);
   const parentTab = graph.getParent(tab);
@@ -71,31 +58,8 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
       hasFormChanges,
       markFormAsChanged,
       resetFormChanges,
-
-      // Table related states
-      tableColumnFilters,
-      setTableColumnFilters,
-      tableColumnVisibility,
-      setTableColumnVisibility,
-      tableSorting,
-      setTableSorting,
     }),
-    [
-      parentRecord,
-      parentTab,
-      parentRecords,
-      record,
-      tab,
-      hasFormChanges,
-      markFormAsChanged,
-      resetFormChanges,
-      tableColumnFilters,
-      setTableColumnFilters,
-      tableColumnVisibility,
-      setTableColumnVisibility,
-      tableSorting,
-      setTableSorting,
-    ]
+    [parentRecord, parentTab, parentRecords, record, tab, hasFormChanges, markFormAsChanged, resetFormChanges]
   );
 
   return (
