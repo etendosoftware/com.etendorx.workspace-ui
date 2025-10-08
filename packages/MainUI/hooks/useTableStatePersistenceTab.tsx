@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import type { MRT_ColumnFiltersState, MRT_VisibilityState, MRT_SortingState } from "material-react-table";
 import { useWindowContext } from "@/contexts/window";
 
@@ -37,7 +37,7 @@ export const useTableStatePersistenceTab = (windowId: string, tabId: string): Us
   const { getTableState, setTableFilters, setTableVisibility, setTableSorting, setTableOrder } = useWindowContext();
 
   // Get current state values
-  const currentState = getTableState(windowId, tabId);
+  const currentState = useMemo(() => getTableState(windowId, tabId), [windowId, tabId, getTableState]);
 
   // Create React-style setters that support both direct values and updater functions
   const setTableColumnFilters = useCallback(
