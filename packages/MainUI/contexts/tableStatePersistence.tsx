@@ -122,8 +122,8 @@ export default function TableStatePersistenceProvider({ children }: React.PropsW
           },
         };
       }
-
-      newState[windowId][tabId].table.visibility = visibility;
+      const currentVisibility = newState[windowId][tabId].table.visibility;
+      newState[windowId][tabId].table.visibility = { ...currentVisibility, ...visibility };
       return newState;
     });
   }, []);
