@@ -262,6 +262,217 @@ const { session } = useUserContext();
 const { t } = useTranslation();
 ```
 
+### Global State Persistence
+
+#### Table State Persistence Pattern
+
+For persisting table configurations across window switches:
+
+```typescript
+// Pattern: Use tab-specific persistence hook
+import { useTableStatePersistenceTab } from '@/hooks/useTableStatePersistenceTab';
+
+function TableComponent({ windowId, tabId }) {
+  const {
+    tableColumnFilters,
+    setTableColumnFilters,
+    tableColumnVisibility,
+    setTableColumnVisibility,
+    tableColumnSorting,
+    setTableColumnSorting,
+    tableColumnOrder,
+    setTableColumnOrder,
+  } = useTableStatePersistenceTab(windowId, tabId);
+
+  // Use exactly like useState - supports both direct values and updater functions
+  const handleFilterChange = useCallback((newFilters) => {
+    setTableColumnFilters(newFilters);
+  }, [setTableColumnFilters]);
+
+  const handleToggleVisibility = useCallback((columnId) => {
+    setTableColumnVisibility(prev => ({
+      ...prev,
+      [columnId]: !prev[columnId]
+    }));
+  }, [setTableColumnVisibility]);
+
+  return (
+    <MaterialReactTable
+      state={{
+        columnFilters: tableColumnFilters,
+        columnVisibility: tableColumnVisibility,
+        sorting: tableColumnSorting,
+        columnOrder: tableColumnOrder,
+      }}
+      onColumnFiltersChange={setTableColumnFilters}
+      onColumnVisibilityChange={setTableColumnVisibility}
+      onSortingChange={setTableColumnSorting}
+      onColumnOrderChange={setTableColumnOrder}
+    />
+  );
+}
+```
+
+#### Direct Context Access Pattern
+
+For advanced use cases like window management:
+
+```typescript
+// Pattern: Direct context access for system-level operations
+import { useTableStatePersistence } from '@/contexts/tableStatePersistence';
+
+function WindowManager() {
+  const { cleanupWindow, getAllState } = useTableStatePersistence();
+
+  const handleWindowClose = useCallback((windowId: string) => {
+    // Clean up all table state for the window before closing
+    cleanupWindow(windowId);
+    // Then proceed with normal window closing logic
+    closeWindow(windowId);
+  }, [cleanupWindow]);
+
+  const debugState = useCallback(() => {
+    const state = getAllState();
+    console.log('Current table states:', state);
+    console.log('Total windows with state:', Object.keys(state).length);
+  }, [getAllState]);
+
+  return (
+    <div>
+      <button onClick={() => handleWindowClose('window123')}>
+        Close Window
+      </button>
+      <button onClick={debugState}>
+        Debug State
+      </button>
+    </div>
+  );
+}
+```
+
+#### Integration with Existing Hooks Pattern
+
+```typescript
+// Pattern: Integration in existing data hooks
+export const useTableData = (tab: Tab) => {
+  // Replace local state with persistent state
+  const {
+    tableColumnFilters,
+    setTableColumnFilters,
+    tableColumnVisibility,
+    setTableColumnVisibility,
+    tableColumnSorting,
+    setTableColumnSorting,
+    tableColumnOrder,
+    setTableColumnOrder,
+  } = useTableStatePersistenceTab(tab.window, tab.id);
+
+  // All existing handlers work without modification
+  const handleMRTColumnVisibilityChange = useCallback(
+    (updater: MRT_VisibilityUpdater<EntityData>) => {
+      setTableColumnVisibility(updater);
+    },
+    [setTableColumnVisibility]
+  );
+
+  const handleMRTColumnFiltersChange = useCallback(
+    (updater: MRT_ColumnFiltersUpdater<EntityData>) => {
+      setTableColumnFilters(updater);
+    },
+    [setTableColumnFilters]
+  );
+
+  return {
+    // Return persistent state instead of local state
+    tableColumnFilters,
+    setTableColumnFilters,
+    tableColumnVisibility,
+    setTableColumnVisibility,
+    tableColumnSorting,
+    setTableColumnSorting,
+    tableColumnOrder,
+    setTableColumnOrder,
+    // ... other returns
+    handleMRTColumnVisibilityChange,
+    handleMRTColumnFiltersChange,
+  };
+};
+```
+
+#### Provider Setup Pattern
+
+```typescript
+// Pattern: Application root provider setup
+import TableStatePersistenceProvider from '@/contexts/tableStatePersistence';
+
+function App() {
+  return (
+    <TableStatePersistenceProvider>
+      {/* All other providers and components */}
+      <UserProvider>
+        <ThemeProvider>
+          <MainApplication />
+        </ThemeProvider>
+      </UserProvider>
+    </TableStatePersistenceProvider>
+  );
+}
+```
+
+### State Persistence Anti-Patterns
+
+❌ **Don't use multiple providers**:
+```typescript
+// WRONG: Multiple providers cause state isolation
+function ComponentA() {
+  return (
+    <TableStatePersistenceProvider>
+      <TableComponent />
+    </TableStatePersistenceProvider>
+  );
+}
+
+function ComponentB() {
+  return (
+    <TableStatePersistenceProvider> {/* ❌ Separate instance */}
+      <AnotherTableComponent />
+    </TableStatePersistenceProvider>
+  );
+}
+```
+
+✅ **Do use single provider at app root**:
+```typescript
+// CORRECT: Single provider at application root
+function App() {
+  return (
+    <TableStatePersistenceProvider>
+      <ComponentA />
+      <ComponentB />
+    </TableStatePersistenceProvider>
+  );
+}
+```
+
+❌ **Don't forget cleanup on window close**:
+```typescript
+// WRONG: Memory leaks from uncleaned state
+const handleWindowClose = (windowId) => {
+  closeWindow(windowId); // ❌ State persists in memory
+};
+```
+
+✅ **Do cleanup before closing windows**:
+```typescript
+// CORRECT: Clean up state before closing
+const { cleanupWindow } = useTableStatePersistence();
+
+const handleWindowClose = (windowId) => {
+  cleanupWindow(windowId); // ✅ Clean up first
+  closeWindow(windowId);   // Then close window
+};
+```
+
 ## Error Handling Patterns
 
 ### Async Error Handling
