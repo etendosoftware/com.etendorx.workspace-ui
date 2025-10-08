@@ -16,8 +16,8 @@
  */
 
 import { useCallback } from "react";
-import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
-import { useTableStatePersistence } from "@/contexts/tableStatePersistence";
+import type { MRT_ColumnFiltersState, MRT_VisibilityState, MRT_SortingState } from "material-react-table";
+import { useWindowContext } from "@/contexts/window";
 
 interface UseTableStatePersistenceTabReturn {
   // State getters
@@ -34,8 +34,7 @@ interface UseTableStatePersistenceTabReturn {
 }
 
 export const useTableStatePersistenceTab = (windowId: string, tabId: string): UseTableStatePersistenceTabReturn => {
-  const { getTableState, setTableFilters, setTableVisibility, setTableSorting, setTableOrder } =
-    useTableStatePersistence();
+  const { getTableState, setTableFilters, setTableVisibility, setTableSorting, setTableOrder } = useWindowContext();
 
   // Get current state values
   const currentState = getTableState(windowId, tabId);

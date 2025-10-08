@@ -16,13 +16,11 @@
  */
 
 import { act, renderHook } from "@testing-library/react";
-import TableStatePersistenceProvider from "../../contexts/tableStatePersistence";
+import WindowProvider from "../../contexts/window";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 
 describe("useTableStatePersistenceTab", () => {
-  const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <TableStatePersistenceProvider>{children}</TableStatePersistenceProvider>
-  );
+  const wrapper = ({ children }: { children: React.ReactNode }) => <WindowProvider>{children}</WindowProvider>;
 
   const windowId = "window1";
   const tabId = "tab1";

@@ -16,17 +16,15 @@
  */
 
 import { renderHook, act } from "@testing-library/react";
-import TableStatePersistenceProvider, { useTableStatePersistence } from "../../contexts/tableStatePersistence";
+import WindowProvider, { useWindowContext } from "../../contexts/window";
 import { useTableStatePersistenceTab } from "../../hooks/useTableStatePersistenceTab";
 
 describe("Table State Persistence - Performance Tests", () => {
-  const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <TableStatePersistenceProvider>{children}</TableStatePersistenceProvider>
-  );
+  const wrapper = ({ children }: { children: React.ReactNode }) => <WindowProvider>{children}</WindowProvider>;
 
   describe("Memory Usage", () => {
     it("should handle multiple windows efficiently", () => {
-      const { result: contextHook } = renderHook(() => useTableStatePersistence(), { wrapper });
+      const { result: contextHook } = renderHook(() => useWindowContext(), { wrapper });
 
       const startTime = performance.now();
 
@@ -87,7 +85,7 @@ describe("Table State Persistence - Performance Tests", () => {
     });
 
     it("should cleanup memory efficiently", () => {
-      const { result: contextHook } = renderHook(() => useTableStatePersistence(), { wrapper });
+      const { result: contextHook } = renderHook(() => useWindowContext(), { wrapper });
 
       // Create a lot of windows
       act(() => {
@@ -121,7 +119,7 @@ describe("Table State Persistence - Performance Tests", () => {
 
   describe("State Access Performance", () => {
     it("should retrieve state quickly even with many windows", () => {
-      const { result: contextHook } = renderHook(() => useTableStatePersistence(), { wrapper });
+      const { result: contextHook } = renderHook(() => useWindowContext(), { wrapper });
 
       // Create many windows
       act(() => {
@@ -255,7 +253,7 @@ describe("Table State Persistence - Performance Tests", () => {
 
   describe("Memory Leak Prevention", () => {
     it("should not retain references after cleanup", () => {
-      const { result: contextHook } = renderHook(() => useTableStatePersistence(), { wrapper });
+      const { result: contextHook } = renderHook(() => useWindowContext(), { wrapper });
 
       // Create state
       act(() => {

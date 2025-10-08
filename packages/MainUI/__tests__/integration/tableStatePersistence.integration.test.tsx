@@ -18,14 +18,12 @@
 import React from "react";
 import { renderHook, act } from "@testing-library/react";
 import { jest } from "@jest/globals";
-import TableStatePersistenceProvider, { useTableStatePersistence } from "../../contexts/tableStatePersistence";
+import WindowProvider, { useWindowContext } from "../../contexts/window";
 import { useTableStatePersistenceTab } from "../../hooks/useTableStatePersistenceTab";
 import type { MRT_ColumnFiltersState, MRT_VisibilityState, MRT_SortingState } from "material-react-table";
 
 describe("Table State Persistence - Integration Tests", () => {
-  const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <TableStatePersistenceProvider>{children}</TableStatePersistenceProvider>
-  );
+  const wrapper = ({ children }: { children: React.ReactNode }) => <WindowProvider>{children}</WindowProvider>;
 
   describe("Complete Window Switching Workflow", () => {
     it("should persist state correctly during window switching", () => {
@@ -105,7 +103,7 @@ describe("Table State Persistence - Integration Tests", () => {
 
   describe("Window Closing and Cleanup", () => {
     it("should clean up window state when window is closed", () => {
-      const { result: contextHook } = renderHook(() => useTableStatePersistence(), { wrapper });
+      const { result: contextHook } = renderHook(() => useWindowContext(), { wrapper });
 
       // Set some state using context hook directly
       act(() => {
@@ -125,7 +123,7 @@ describe("Table State Persistence - Integration Tests", () => {
     });
 
     it("should not affect other windows when cleaning up", () => {
-      const { result: contextHook } = renderHook(() => useTableStatePersistence(), { wrapper });
+      const { result: contextHook } = renderHook(() => useWindowContext(), { wrapper });
 
       // Set state in multiple windows
       act(() => {
@@ -286,7 +284,7 @@ describe("Table State Persistence - Integration Tests", () => {
     });
 
     it("should handle memory cleanup efficiently", () => {
-      const { result: contextHook } = renderHook(() => useTableStatePersistence(), { wrapper });
+      const { result: contextHook } = renderHook(() => useWindowContext(), { wrapper });
 
       // Create multiple windows with state
       const numberOfWindows = 50;
@@ -317,7 +315,7 @@ describe("Table State Persistence - Integration Tests", () => {
     it("should work correctly with React strict mode", () => {
       const StrictWrapper = ({ children }: { children: React.ReactNode }) => (
         <React.StrictMode>
-          <TableStatePersistenceProvider>{children}</TableStatePersistenceProvider>
+          <WindowProvider>{children}</WindowProvider>
         </React.StrictMode>
       );
 
@@ -346,16 +344,14 @@ describe("Table State Persistence - Integration Tests", () => {
       const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
 
       expect(() => {
-        renderHook(() => useTableStatePersistence());
-      }).toThrow("useTableStatePersistence must be used within a TableStatePersistenceProvider");
+        renderHook(() => useWindowContext());
+      }).toThrow("useWindowContext must be used within a WindowProvider");
 
       consoleError.mockRestore();
     });
 
     it("should handle provider re-mounting", () => {
-      const Wrapper1 = ({ children }: { children: React.ReactNode }) => (
-        <TableStatePersistenceProvider>{children}</TableStatePersistenceProvider>
-      );
+      const Wrapper1 = ({ children }: { children: React.ReactNode }) => <WindowProvider>{children}</WindowProvider>;
 
       // First render with first provider
       const { result: result1, unmount: unmount1 } = renderHook(() => useTableStatePersistenceTab("windowA", "tabX"), {
@@ -374,9 +370,7 @@ describe("Table State Persistence - Integration Tests", () => {
       unmount1();
 
       // Create new provider instance
-      const Wrapper2 = ({ children }: { children: React.ReactNode }) => (
-        <TableStatePersistenceProvider>{children}</TableStatePersistenceProvider>
-      );
+      const Wrapper2 = ({ children }: { children: React.ReactNode }) => <WindowProvider>{children}</WindowProvider>;
 
       // Render with new provider
       const { result: result2 } = renderHook(() => useTableStatePersistenceTab("windowA", "tabX"), {

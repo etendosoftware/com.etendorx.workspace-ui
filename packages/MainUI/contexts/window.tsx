@@ -34,11 +34,11 @@ interface WindowState {
   [tabId: string]: TabState;
 }
 
-interface TableStatePersistenceState {
+interface WindowContextState {
   [windowId: string]: WindowState;
 }
 
-interface TableStatePersistenceContextI {
+interface WindowContextI {
   // State getters
   getTableState: (windowId: string, tabId: string) => TableState;
 
@@ -52,15 +52,15 @@ interface TableStatePersistenceContextI {
   cleanupWindow: (windowId: string) => void;
 
   // Debug/utility
-  getAllState: () => TableStatePersistenceState;
+  getAllState: () => WindowContextState;
 }
 
 // Context creation
-const TableStatePersistenceContext = createContext<TableStatePersistenceContextI | undefined>(undefined);
+const WindowContext = createContext<WindowContextI | undefined>(undefined);
 
 // Provider component
-export default function TableStatePersistenceProvider({ children }: React.PropsWithChildren) {
-  const [state, setState] = useState<TableStatePersistenceState>({});
+export default function WindowProvider({ children }: React.PropsWithChildren) {
+  const [state, setState] = useState<WindowContextState>({});
 
   const getTableState = useCallback(
     (windowId: string, tabId: string): TableState => {
@@ -81,7 +81,7 @@ export default function TableStatePersistenceProvider({ children }: React.PropsW
   );
 
   const setTableFilters = useCallback((windowId: string, tabId: string, filters: MRT_ColumnFiltersState) => {
-    setState((prevState) => {
+    setState((prevState: WindowContextState) => {
       const newState = { ...prevState };
 
       if (!newState[windowId]) {
@@ -105,7 +105,7 @@ export default function TableStatePersistenceProvider({ children }: React.PropsW
   }, []);
 
   const setTableVisibility = useCallback((windowId: string, tabId: string, visibility: MRT_VisibilityState) => {
-    setState((prevState) => {
+    setState((prevState: WindowContextState) => {
       const newState = { ...prevState };
 
       if (!newState[windowId]) {
@@ -129,7 +129,7 @@ export default function TableStatePersistenceProvider({ children }: React.PropsW
   }, []);
 
   const setTableSorting = useCallback((windowId: string, tabId: string, sorting: MRT_SortingState) => {
-    setState((prevState) => {
+    setState((prevState: WindowContextState) => {
       const newState = { ...prevState };
 
       if (!newState[windowId]) {
@@ -153,7 +153,7 @@ export default function TableStatePersistenceProvider({ children }: React.PropsW
   }, []);
 
   const setTableOrder = useCallback((windowId: string, tabId: string, order: string[]) => {
-    setState((prevState) => {
+    setState((prevState: WindowContextState) => {
       const newState = { ...prevState };
 
       if (!newState[windowId]) {
@@ -177,7 +177,7 @@ export default function TableStatePersistenceProvider({ children }: React.PropsW
   }, []);
 
   const cleanupWindow = useCallback((windowId: string) => {
-    setState((prevState) => {
+    setState((prevState: WindowContextState) => {
       const newState = { ...prevState };
       delete newState[windowId];
       return newState;
@@ -201,15 +201,15 @@ export default function TableStatePersistenceProvider({ children }: React.PropsW
     [getTableState, setTableFilters, setTableVisibility, setTableSorting, setTableOrder, cleanupWindow, getAllState]
   );
 
-  return <TableStatePersistenceContext.Provider value={value}>{children}</TableStatePersistenceContext.Provider>;
+  return <WindowContext.Provider value={value}>{children}</WindowContext.Provider>;
 }
 
 // Hook
-export const useTableStatePersistence = () => {
-  const context = useContext(TableStatePersistenceContext);
+export const useWindowContext = () => {
+  const context = useContext(WindowContext);
 
   if (!context) {
-    throw new Error("useTableStatePersistence must be used within a TableStatePersistenceProvider");
+    throw new Error("useWindowContext must be used within a WindowProvider");
   }
 
   return context;

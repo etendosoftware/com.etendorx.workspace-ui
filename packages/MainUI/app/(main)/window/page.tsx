@@ -23,7 +23,7 @@ import { useQueryParams } from "@/hooks/useQueryParams";
 import Home from "@/screens/Home";
 import Window from "@/components/window/Window";
 import TabsProvider from "@/contexts/tabs";
-import TableStatePersistenceProvider from "@/contexts/tableStatePersistence";
+import WindowProvider from "@/contexts/window";
 
 export default function Page() {
   const { windows, activeWindow, isHomeRoute, openWindow } = useMultiWindowURL();
@@ -38,7 +38,7 @@ export default function Page() {
   const shouldShowTabs = windows.length > 0;
 
   return (
-    <TableStatePersistenceProvider>
+    <WindowProvider>
       <div className="flex flex-col gap-2 w-full h-full max-h-full p-1 pb-0">
         {shouldShowTabs && (
           <TabsProvider data-testid={`TabsProvider__${activeWindow?.windowId ?? windowId ?? "351d9c"}`}>
@@ -54,6 +54,6 @@ export default function Page() {
           />
         )}
       </div>
-    </TableStatePersistenceProvider>
+    </WindowProvider>
   );
 }

@@ -16,15 +16,13 @@
  */
 
 import { act, renderHook } from "@testing-library/react";
-import TableStatePersistenceProvider, { useTableStatePersistence } from "../tableStatePersistence";
+import WindowProvider, { useWindowContext } from "../window";
 
 describe("TableStatePersistenceContext", () => {
-  const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <TableStatePersistenceProvider>{children}</TableStatePersistenceProvider>
-  );
+  const wrapper = ({ children }: { children: React.ReactNode }) => <WindowProvider>{children}</WindowProvider>;
 
   it("should provide context values", () => {
-    const { result } = renderHook(() => useTableStatePersistence(), { wrapper });
+    const { result } = renderHook(() => useWindowContext(), { wrapper });
 
     expect(result.current.getTableState).toBeDefined();
     expect(result.current.setTableFilters).toBeDefined();
@@ -36,7 +34,7 @@ describe("TableStatePersistenceContext", () => {
   });
 
   it("should return default state for non-existent window/tab", () => {
-    const { result } = renderHook(() => useTableStatePersistence(), { wrapper });
+    const { result } = renderHook(() => useWindowContext(), { wrapper });
 
     const tableState = result.current.getTableState("window1", "tab1");
 
@@ -49,7 +47,7 @@ describe("TableStatePersistenceContext", () => {
   });
 
   it("should store and retrieve table filters", () => {
-    const { result } = renderHook(() => useTableStatePersistence(), { wrapper });
+    const { result } = renderHook(() => useWindowContext(), { wrapper });
 
     const testFilters = [{ id: "column1", value: "test" }];
 
@@ -62,7 +60,7 @@ describe("TableStatePersistenceContext", () => {
   });
 
   it("should store and retrieve table visibility", () => {
-    const { result } = renderHook(() => useTableStatePersistence(), { wrapper });
+    const { result } = renderHook(() => useWindowContext(), { wrapper });
 
     const testVisibility = { column1: false, column2: true };
 
@@ -75,7 +73,7 @@ describe("TableStatePersistenceContext", () => {
   });
 
   it("should store and retrieve table sorting", () => {
-    const { result } = renderHook(() => useTableStatePersistence(), { wrapper });
+    const { result } = renderHook(() => useWindowContext(), { wrapper });
 
     const testSorting = [{ id: "column1", desc: false }];
 
@@ -88,7 +86,7 @@ describe("TableStatePersistenceContext", () => {
   });
 
   it("should store and retrieve table order", () => {
-    const { result } = renderHook(() => useTableStatePersistence(), { wrapper });
+    const { result } = renderHook(() => useWindowContext(), { wrapper });
 
     const testOrder = ["column1", "column2", "column3"];
 
@@ -101,7 +99,7 @@ describe("TableStatePersistenceContext", () => {
   });
 
   it("should cleanup window data correctly", () => {
-    const { result } = renderHook(() => useTableStatePersistence(), { wrapper });
+    const { result } = renderHook(() => useWindowContext(), { wrapper });
 
     // Set up some data
     act(() => {
@@ -127,7 +125,7 @@ describe("TableStatePersistenceContext", () => {
   });
 
   it("should isolate state between different windows and tabs", () => {
-    const { result } = renderHook(() => useTableStatePersistence(), { wrapper });
+    const { result } = renderHook(() => useWindowContext(), { wrapper });
 
     const filters1 = [{ id: "column1", value: "window1-tab1" }];
     const filters2 = [{ id: "column2", value: "window1-tab2" }];
@@ -146,7 +144,7 @@ describe("TableStatePersistenceContext", () => {
 
   it("should throw error when used outside provider", () => {
     expect(() => {
-      renderHook(() => useTableStatePersistence());
-    }).toThrow("useTableStatePersistence must be used within a TableStatePersistenceProvider");
+      renderHook(() => useWindowContext());
+    }).toThrow("useWindowContext must be used within a WindowProvider");
   });
 });
