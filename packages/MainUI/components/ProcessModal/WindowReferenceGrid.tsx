@@ -137,6 +137,7 @@ function WindowReferenceGrid({
       options[invoiceBusinessPartner] = recordValues?.inpcBpartnerId || "";
       options[invoicePriceList] = recordValues?.inpmPricelistId || "";
       options[invoiceCurrency] = recordValues?.inpcCurrencyId || "";
+      options["@Invoice.salesTransaction@"] = recordValues?.inpissotrx === "Y" || "";
     };
 
     const applyStableProcessDefaults = () => {

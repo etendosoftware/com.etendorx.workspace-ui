@@ -23,7 +23,7 @@ type ProcessDefinition = {
   inpColumnId: string;
   inpPrimaryKeyColumnId: string;
   defaultKeys: Record<string, string>;
-  dynamicKeys: Record<string, string>;
+  dynamicKeys: Record<string, unknown>;
   staticOptions: Record<string, unknown>;
 };
 
@@ -51,10 +51,9 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
       invoiceBusinessPartner: "@Invoice.businessPartner@",
       invoicePriceList: "@Invoice.priceList@",
       invoiceCurrency: "@Invoice.currency@",
-    },
-    staticOptions: {
       "@Invoice.salesTransaction@": true,
     },
+    staticOptions: {},
   },
   [ADD_PAYMENT_ORDER_PROCESS_ID]: {
     inpColumnId: "C_Order_ID",

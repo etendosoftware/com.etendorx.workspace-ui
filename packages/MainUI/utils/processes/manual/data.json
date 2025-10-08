@@ -28,5 +28,11 @@
     "command": "FIND_PO",
     "inpkeyColumnId": "M_InOut_ID",
     "keyColumnName": "M_InOut_ID"
+  },
+  "3426": {
+    "url": "/PurchaseOrder/Header_Edition.html",
+    "command": "BUTTONDocAction104",
+    "inpkeyColumnId": "C_Order_ID",
+    "keyColumnName": "C_Order_ID"
   }
 }
