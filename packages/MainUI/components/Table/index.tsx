@@ -654,11 +654,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
     if (recordExists && !isCurrentlySelected) {
       // Record exists but is not selected - restore URL selection visually
-      console.log(`[Table] Restoring visual selection for tab ${tab.id}: ${urlSelectedId}`);
       table.setRowSelection({ [urlSelectedId]: true });
     } else if (!recordExists && isCurrentlySelected) {
       // Record no longer exists but is still selected - clear selection
-      console.log(`[Table] Clearing invalid visual selection for tab ${tab.id}: ${urlSelectedId}`);
       table.setRowSelection({});
     }
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table, graph]);

@@ -190,7 +190,6 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
   try {
     const resolvedParams = await params;
     const slug = resolvedParams.slug.join("/");
-    console.log(`API Route /api/erp/${slug} - Method: ${method}`);
 
     const userToken = extractBearerToken(request);
     if (!userToken) {
