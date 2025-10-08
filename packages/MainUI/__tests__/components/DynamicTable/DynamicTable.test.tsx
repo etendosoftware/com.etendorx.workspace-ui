@@ -194,6 +194,22 @@ jest.mock("@/contexts/tab", () => ({
   useTabContext: () => mockTabContext,
 }));
 
+// Mock the new table state persistence context
+const mockTableStatePersistenceTab = {
+  tableColumnFilters: [],
+  tableColumnVisibility: {},
+  tableColumnSorting: [],
+  tableColumnOrder: [],
+  setTableColumnFilters: jest.fn(),
+  setTableColumnVisibility: jest.fn(),
+  setTableColumnSorting: jest.fn(),
+  setTableColumnOrder: jest.fn(),
+};
+
+jest.mock("@/hooks/useTableStatePersistenceTab", () => ({
+  useTableStatePersistenceTab: () => mockTableStatePersistenceTab,
+}));
+
 jest.mock("@/hooks/useSelected", () => ({
   useSelected: () => mockSelectedContext,
 }));
@@ -442,6 +458,12 @@ describe("DynamicTable", () => {
     mockDatasourceHook.loading = false;
     mockDatasourceHook.error = null;
     resetTabContext(); // Reset tab context to default state
+
+    // Reset table state persistence mocks
+    mockTableStatePersistenceTab.tableColumnFilters = [];
+    mockTableStatePersistenceTab.tableColumnVisibility = {};
+    mockTableStatePersistenceTab.tableColumnSorting = [];
+    mockTableStatePersistenceTab.tableColumnOrder = [];
   });
 
   describe("Rendering", () => {
