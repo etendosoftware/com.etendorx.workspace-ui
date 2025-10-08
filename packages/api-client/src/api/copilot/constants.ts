@@ -22,6 +22,9 @@ export const COPILOT_ENDPOINTS = {
   SEND_AQUESTION: "copilot/aquestion",
   CACHE_QUESTION: "copilot/cacheQuestion",
   GET_ASSISTANTS: "copilot/assistants",
+  GET_CONVERSATIONS: "copilot/conversations",
+  GET_CONVERSATION_MESSAGES: "copilot/conversationMessages",
+  GENERATE_TITLE: "copilot/generateTitleConversation",
 } as const;
 
 export const COPILOT_METHODS = {

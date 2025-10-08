@@ -18,17 +18,15 @@
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import { ColumnFilterUtils, type FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
 
-interface FetchFilterOptionsFunction {
-  (
-    datasource: string,
-    selectorDefinitionId?: string,
-    searchQuery?: string,
-    pageSize?: number,
-    distinctField?: string,
-    tabId?: string,
-    offset?: number
-  ): Promise<FilterOption[]>;
-}
+type FetchFilterOptionsFunction = (
+  datasource: string,
+  selectorDefinitionId?: string,
+  searchQuery?: string,
+  pageSize?: number,
+  distinctField?: string,
+  tabId?: string,
+  offset?: number
+) => Promise<FilterOption[]>;
 
 interface LoadTableDirFilterOptionsParams {
   column: Column;

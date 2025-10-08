@@ -36,6 +36,7 @@ import { useColumnFilters } from "@workspaceui/api-client/src/hooks/useColumnFil
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
 import type { ExpandedState, Updater } from "@tanstack/react-table";
+import { isEmptyObject } from "@/utils/commons";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -102,6 +103,7 @@ export const useTableData = ({
 
   const {
     tableColumnFilters,
+    tableColumnVisibility,
     setTableColumnFilters,
     setTableColumnVisibility,
     setTableColumnSorting,
@@ -499,6 +501,22 @@ export const useTableData = ({
       setFlattenedRecords(records);
     }
   }, [records, expanded, childrenData, shouldUseTreeMode, buildFlattenedRecords]);
+
+  // Initialize column visibility based on tab configuration
+  useEffect(() => {
+    if (!isEmptyObject(tableColumnVisibility)) return;
+
+    const initialVisibility: MRT_VisibilityState = {};
+    if (tab.fields) {
+      for (const field of Object.values(tab.fields)) {
+        if (field.showInGridView !== undefined && field.name) {
+          initialVisibility[field.name] = field.showInGridView;
+        }
+      }
+    }
+
+    setTableColumnVisibility(initialVisibility);
+  }, [tab.fields, tableColumnVisibility, setTableColumnVisibility]);
 
   return {
     // Data
