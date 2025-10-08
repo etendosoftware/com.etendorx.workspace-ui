@@ -15,8 +15,7 @@
  *************************************************************************
  */
 
-import { act } from "@testing-library/react";
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import TableStatePersistenceProvider, { useTableStatePersistence } from "../tableStatePersistence";
 
 describe("TableStatePersistenceContext", () => {
