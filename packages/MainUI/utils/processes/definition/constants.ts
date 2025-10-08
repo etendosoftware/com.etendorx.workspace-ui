@@ -26,6 +26,7 @@ type ProcessDefinition = {
   defaultKeys: Record<string, string>;
   dynamicKeys: Record<string, unknown>;
   staticOptions: Record<string, unknown>;
+  additionalPayloadFields?: string[]; // Fields from recordValues to add to payload
 };
 
 type WindowDefinition = {
@@ -69,8 +70,8 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
     staticOptions: {},
   },
   [CREATE_LINES_FROM_RECEIPT_ID]: {
-    inpColumnId: "",
-    inpPrimaryKeyColumnId: "",
+    inpColumnId: "C_Order_ID",
+    inpPrimaryKeyColumnId: "inpcOrderId",
     defaultKeys: {},
     dynamicKeys: {
       "@Invoice.priceList@": "inpmPricelistId",
@@ -78,6 +79,7 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
       "@Invoice.currency@": "inpcCurrencyId",
     },
     staticOptions: {},
+    additionalPayloadFields: ["inpcInvoiceId"],
   },
 };
 

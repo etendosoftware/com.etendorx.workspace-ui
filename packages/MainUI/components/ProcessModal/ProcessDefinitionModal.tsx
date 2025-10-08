@@ -284,6 +284,15 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           windowId: tab.window,
         };
 
+        // Add additional payload fields from configuration
+        if (currentAttrs.additionalPayloadFields && recordValues) {
+          for (const fieldName of currentAttrs.additionalPayloadFields) {
+            if (recordValues[fieldName] !== undefined) {
+              payload[fieldName] = recordValues[fieldName];
+            }
+          }
+        }
+
         const res = await executeProcess(
           processId,
           payload,
