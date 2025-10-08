@@ -86,7 +86,13 @@ const getCachedErpData = unstable_cache(
  * @returns true if this is a mutation route that should not be cached
  */
 function isMutationRoute(slug: string, method: string): boolean {
-  return slug.includes("create") || slug.includes("update") || slug.includes("delete") || method !== "GET";
+  return (
+    slug.includes("create") ||
+    slug.includes("update") ||
+    slug.includes("delete") ||
+    slug.includes("copilot/") || // All copilot routes should bypass cache for real-time data
+    method !== "GET"
+  );
 }
 
 /**
@@ -184,7 +190,6 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
   try {
     const resolvedParams = await params;
     const slug = resolvedParams.slug.join("/");
-    console.log(`API Route /api/erp/${slug} - Method: ${method}`);
 
     const userToken = extractBearerToken(request);
     if (!userToken) {
@@ -194,6 +199,8 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
     let erpUrl: string;
     if (slug.startsWith("sws/")) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
+    } else if (slug.startsWith("copilot/")) {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
     } else {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
     }

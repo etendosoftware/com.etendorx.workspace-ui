@@ -114,16 +114,8 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
       newVisibilityState[item.id] = item.isActive;
     }
 
-    console.log("🔄 Syncing items to table:", {
-      itemsCount: items.length,
-      itemsInMenu: items.map((item) => item.id),
-      newVisibilityState,
-    });
-
     // Set the column visibility state for the entire table at once
     table.setColumnVisibility(newVisibilityState);
-
-    console.log("✅ Applied visibility state to table");
   }, [items, table]);
 
   return (

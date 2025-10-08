@@ -199,12 +199,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       const isInFormView = currentFormState?.mode === TAB_MODES.FORM;
 
       if (isInFormView) {
-        // In FormView: just close the form, keep selection
-        console.log(`[Tab.handleBack] Closing FormView for tab ${tab.id}`);
         clearTabFormStateAtomic(windowId, tab.id);
       } else {
-        // In Table mode: deselect and clear URL
-        console.log(`[Tab.handleBack] Deselecting in Table mode for tab ${tab.id}`);
         clearSelectedRecord(windowId, tab.id);
 
         // Also clear children if this tab has any
@@ -261,38 +257,62 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   // Auto-close child FormView when parent selection changes
   useEffect(() => {
-    if (!windowId) return;
+    if (!windowId) {
+      return;
+    }
 
     const parentTab = graph.getParent(tab);
-    if (!parentTab) return; // Only for child tabs
+    if (!parentTab) {
+      return; // Only for child tabs
+    }
 
     const parentSelectedId = getSelectedRecord(windowId, parentTab.id);
     const previousParentId = lastParentSelectionRef.current;
 
-    // Only trigger when parent selection ID actually changes
-    if (parentSelectedId !== previousParentId) {
-      lastParentSelectionRef.current = parentSelectedId;
-
-      // Close child FormView only if:
-      // 1. There was a previous parent selection (not initial render)
-      // 2. Parent selection changed to something else (different ID or undefined)
-      // 3. Parent is NOT currently in FormView (if parent is in FormView, child should stay open)
-      const parentTabState = windowId ? getTabFormState(windowId, parentTab.id) : undefined;
-      const parentIsInFormView = parentTabState?.mode === TAB_MODES.FORM;
-
-      if (previousParentId !== undefined && !parentIsInFormView) {
-        clearTabFormState(windowId, tab.id);
-        graph.clearSelected(tab);
-      }
+    // Only process if parent selection ID actually changed
+    if (parentSelectedId === previousParentId) {
+      return; // No change, skip processing
     }
-  }, [windowId, graph, tab, getSelectedRecord, clearTabFormState, getTabFormState]);
+
+    // Update ref BEFORE any early returns
+    lastParentSelectionRef.current = parentSelectedId;
+
+    // If child is currently in FormView, don't auto-close regardless of parent changes
+    // This prevents closing FormView while user is actively working on a child record
+    // Check both currentMode AND tabFormState directly to be extra safe
+    const isInFormView = currentMode === TAB_MODES.FORM || tabFormState?.mode === TAB_MODES.FORM;
+    if (isInFormView) {
+      return;
+    }
+
+    // Skip closing if this is a NEW -> real ID transition (save operation)
+    const isParentSaveTransition =
+      previousParentId === NEW_RECORD_ID && parentSelectedId && parentSelectedId !== NEW_RECORD_ID;
+
+    // Close child FormView only if:
+    // 1. There was a previous parent selection (not initial render)
+    // 2. Parent selection changed to something else (different ID or undefined)
+    // 3. This is NOT a save transition (NEW -> real ID)
+    // 4. Parent is NOT currently in FormView (if parent is in FormView, child should stay open)
+    const parentTabState = windowId ? getTabFormState(windowId, parentTab.id) : undefined;
+    const parentIsInFormView = parentTabState?.mode === TAB_MODES.FORM;
+
+    if (previousParentId !== undefined && !isParentSaveTransition && !parentIsInFormView) {
+      clearTabFormState(windowId, tab.id);
+      graph.clearSelected(tab);
+    }
+  }, [windowId, graph, tab, getSelectedRecord, clearTabFormState, getTabFormState, currentMode, tabFormState?.mode]);
 
   // For child tabs, verify parent has selection in URL before showing FormView
   const parentTab = graph.getParent(tab);
   const parentSelectedRecordIdFromURL = parentTab && windowId ? getSelectedRecord(windowId, parentTab.id) : undefined;
   const parentHasSelectionInURL = !parentTab || !!parentSelectedRecordIdFromURL;
 
-  const shouldShowForm = isFormView({ currentMode, recordId: currentRecordId, parentHasSelectionInURL });
+  // If child already has a FormView state, show it regardless of parent selection
+  // This prevents closing FormView when parent temporarily loses selection during refresh
+  const hasFormViewState = !!tabFormState && tabFormState.mode === TAB_MODES.FORM;
+  const shouldShowForm =
+    hasFormViewState || isFormView({ currentMode, recordId: currentRecordId, parentHasSelectionInURL });
   const formMode = currentFormMode === FORM_MODES.NEW ? FormMode.NEW : FormMode.EDIT;
 
   return (

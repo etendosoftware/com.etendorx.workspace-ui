@@ -43,10 +43,6 @@ spec:
       configMap:
         name: rsa-keys
         defaultMode: 384
-    - name: docker-sock
-      hostPath:
-        path: /var/run/docker.sock
-        type: ''
   containers:
     - name: compiler
       image: etendo/compiler_jenkins:1.0.7-jdk.17.0.13
@@ -59,16 +55,14 @@ spec:
           protocol: TCP
       resources:
         limits:
-          cpu: 3072m
-          memory: 4000Mi
+          cpu: 4096m
+          memory: 7000Mi
         requests:
-          cpu: 1048m
-          memory: 2000Mi
+          cpu: 2048m
+          memory: 5000Mi
       volumeMounts:
         - name: rsa-keys
           mountPath: /root/.ssh/
-        - name: docker-sock
-          mountPath: /var/run/docker.sock
       securityContext:
         readOnlyRootFilesystem: false
       terminationMessagePath: /dev/termination-log

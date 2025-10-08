@@ -15,11 +15,66 @@
  *************************************************************************
  */
 
+import { useState } from "react";
 import AssistantSelector from "../AssistantSelector";
-import type { IAssistant } from "@workspaceui/api-client/src/api/copilot";
+import ConversationList from "../ConversationList";
+import type { IAssistant, IMessage } from "@workspaceui/api-client/src/api/copilot";
 import MessageList from "../MessageComponents/MessageList";
 import MessageInput from "../MessageComponents/MessageInput";
-import type { ChatInterfaceProps } from "../types";
+import IconButton from "../../IconButton";
+import SidebarIcon from "../../../assets/icons/sidebar.svg";
+import MessageSquareIcon from "../../../assets/icons/message-square.svg";
+import type { ChatInterfaceProps, ContextItem } from "../types";
+
+interface ChatContentProps {
+  messages: IMessage[];
+  labels: ChatInterfaceProps["labels"];
+  isExpanded: boolean;
+  isLoading: boolean;
+  onSendMessage: (message: string, files?: File[]) => void;
+  contextItems: ContextItem[];
+  onRemoveContext?: (id: string) => void;
+  translations: {
+    messageList: ChatInterfaceProps["translations"]["messageList"];
+    messageInput: ChatInterfaceProps["translations"]["messageInput"];
+    selectedRegisters: string;
+  };
+}
+
+const ChatContent: React.FC<ChatContentProps> = ({
+  messages,
+  labels,
+  isExpanded,
+  isLoading,
+  onSendMessage,
+  contextItems,
+  onRemoveContext,
+  translations,
+}) => (
+  <>
+    <div className="flex-1 overflow-hidden">
+      <MessageList
+        messages={messages}
+        labels={labels}
+        isExpanded={isExpanded}
+        isLoading={isLoading}
+        translations={translations.messageList}
+      />
+    </div>
+
+    <MessageInput
+      onSendMessage={onSendMessage}
+      placeholder={translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder}
+      disabled={isLoading}
+      contextItems={contextItems}
+      onRemoveContext={onRemoveContext}
+      translations={{
+        placeholder: translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder,
+        selectedRegisters: translations.selectedRegisters,
+      }}
+    />
+  </>
+);
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   assistants,
@@ -30,11 +85,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   isLoading,
   onSelectAssistant,
   onSendMessage,
+  onResetConversation,
   showDescription = true,
+  isLoadingAssistants = false,
   contextItems = [],
   onRemoveContext,
+  conversations = [],
+  onSelectConversation,
+  onLoadConversations,
+  conversationsLoading = false,
   translations,
 }) => {
+  const [showConversations, setShowConversations] = useState(true);
   let parsedAssistants: IAssistant[] = [];
   if (typeof assistants === "string") {
     try {
@@ -50,6 +112,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleSelectAssistant = (assistant: IAssistant) => {
     onSelectAssistant(assistant);
+    setShowConversations(false);
+  };
+
+  const handleToggleConversations = () => {
+    const newShowState = !showConversations;
+    setShowConversations(newShowState);
+
+    if (newShowState && onLoadConversations) {
+      console.log("Loading conversations for assistant:", selectedAssistant);
+      onLoadConversations();
+    }
+  };
+
+  const handleSelectConversationInternal = (conversationId: string) => {
+    if (onSelectConversation) {
+      onSelectConversation(conversationId);
+      setShowConversations(false);
+    }
+  };
+
+  const handleNewConversation = () => {
+    onResetConversation();
+    setShowConversations(false);
   };
 
   if (showAssistantSelector) {
@@ -61,34 +146,115 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         labels={labels}
         isExpanded={isExpanded}
         showDescription={showDescription}
+        isLoading={isLoadingAssistants}
         translations={translations.assistantSelector}
       />
     );
   }
 
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-hidden">
-        <MessageList
+  // For compact view, show full-screen conversation list or chat
+  if (!isExpanded) {
+    if (showConversations && translations.conversationList) {
+      return (
+        <ConversationList
+          conversations={conversations}
+          onSelectConversation={handleSelectConversationInternal}
+          onNewConversation={handleNewConversation}
+          isLoading={conversationsLoading}
+          translations={translations.conversationList}
+        />
+      );
+    }
+
+    return (
+      <div className="flex flex-col h-full">
+        {onLoadConversations && selectedAssistant && (
+          <div className="px-4 py-2 border-b border-(--color-transparent-neutral-20)">
+            <button
+              type="button"
+              onClick={handleToggleConversations}
+              className="flex items-center gap-2 text-sm text-(--color-transparent-neutral-70) hover:text-(--color-dynamic-main) transition-colors">
+              <MessageSquareIcon className="w-4 h-4" fill="currentColor" />
+              <span>{translations.conversationsButton || "Previous Conversations"}</span>
+            </button>
+          </div>
+        )}
+
+        <ChatContent
           messages={messages}
           labels={labels}
           isExpanded={isExpanded}
           isLoading={isLoading}
-          translations={translations.messageList}
+          onSendMessage={onSendMessage}
+          contextItems={contextItems}
+          onRemoveContext={onRemoveContext}
+          translations={{
+            messageList: translations.messageList,
+            messageInput: translations.messageInput,
+            selectedRegisters: translations.selectedRegisters,
+          }}
         />
       </div>
+    );
+  }
 
-      <MessageInput
-        onSendMessage={onSendMessage}
-        placeholder={translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder}
-        disabled={isLoading}
-        contextItems={contextItems}
-        onRemoveContext={onRemoveContext}
-        translations={{
-          placeholder: translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder,
-          selectedRegisters: translations.selectedRegisters,
-        }}
-      />
+  // For expanded view, show sidebar with conversations
+  return (
+    <div className="flex h-full relative">
+      {/* Sidebar - Conversation List */}
+      {onLoadConversations && selectedAssistant && translations.conversationList && (
+        <div
+          className={`border-r border-(--color-transparent-neutral-20) bg-white transition-all duration-300 ${showConversations ? "w-80" : "w-0 overflow-hidden"}`}>
+          {showConversations && (
+            <ConversationList
+              conversations={conversations}
+              onSelectConversation={handleSelectConversationInternal}
+              onNewConversation={handleNewConversation}
+              onCloseSidebar={handleToggleConversations}
+              isLoading={conversationsLoading}
+              translations={translations.conversationList}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Vertical Toolbar - Only show when sidebar is hidden */}
+      {onLoadConversations && selectedAssistant && !showConversations && (
+        <div className="flex flex-col gap-2 p-2 border-r border-(--color-transparent-neutral-20)">
+          <IconButton
+            onClick={handleToggleConversations}
+            tooltip={translations.conversationsButton || "Show sidebar"}
+            tooltipPosition="right"
+            ariaLabel="Show sidebar">
+            <SidebarIcon />
+          </IconButton>
+          <IconButton
+            onClick={handleNewConversation}
+            tooltip={translations.conversationList?.newConversation || "New conversation"}
+            tooltipPosition="right"
+            ariaLabel="New conversation">
+            <MessageSquareIcon />
+          </IconButton>
+        </div>
+      )}
+
+      {/* Main Chat Area */}
+      <div className="flex flex-col flex-1 min-w-0">
+        <ChatContent
+          messages={messages}
+          labels={labels}
+          isExpanded={isExpanded}
+          isLoading={isLoading}
+          onSendMessage={onSendMessage}
+          contextItems={contextItems}
+          onRemoveContext={onRemoveContext}
+          translations={{
+            messageList: translations.messageList,
+            messageInput: translations.messageInput,
+            selectedRegisters: translations.selectedRegisters,
+          }}
+        />
+      </div>
     </div>
   );
 };
