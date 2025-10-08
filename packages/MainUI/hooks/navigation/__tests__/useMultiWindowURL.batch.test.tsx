@@ -12,19 +12,15 @@ jest.mock("next/navigation", () => {
     useRouter: () => ({ replace: replaceSpy, push: jest.fn() }),
     useSearchParams: () =>
       makeSearchParams(
-        // One active window with two child tabs selected/in form mode
+        // One active window with two child tabs selected (in table mode, not form mode)
         [
           "w_W123=active",
           "o_W123=1",
           "wi_W123=W123",
-          // child C1
+          // child C1 - in table mode (not form)
           "s_W123_C1=R1",
-          "tf_W123_C1=R1",
-          "tm_W123_C1=form",
-          // child C2
+          // child C2 - in table mode (not form)
           "s_W123_C2=R2",
-          "tf_W123_C2=R2",
-          "tm_W123_C2=form",
         ].join("&")
       ),
   };

@@ -22,10 +22,12 @@ import { useCopilotClient } from "./useCopilotClient";
 export const useAssistants = () => {
   const [selectedOption, setSelectedOption] = useState<IAssistant | null>(null);
   const [assistants, setAssistants] = useState<IAssistant[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const copilotClient = useCopilotClient();
 
   const getAssistants = useCallback(async () => {
+    setIsLoading(true);
     try {
       const data = await copilotClient.getAssistants();
 
@@ -40,6 +42,8 @@ export const useAssistants = () => {
       console.error("Error loading assistants:", error);
       setSelectedOption(null);
       setAssistants([]);
+    } finally {
+      setIsLoading(false);
     }
   }, [copilotClient]);
 
@@ -60,5 +64,6 @@ export const useAssistants = () => {
     handleOptionSelected,
     hasAssistants: assistants.length > 0,
     isReady: copilotClient.isReady,
+    isLoading,
   };
 };

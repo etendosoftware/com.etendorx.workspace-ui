@@ -102,12 +102,6 @@ export async function POST(request: NextRequest) {
     const userToken = extractBearerToken(request);
     let cookieHeader: string | null = null;
 
-    console.log("Login request debug:", {
-      hasAuthHeader: !!request.headers.get("Authorization"),
-      userToken: userToken ? `${userToken.substring(0, 10)}...` : null,
-      requestBody: body,
-    });
-
     if (userToken) {
       cookieHeader = "JSESSIONID=null";
     }
