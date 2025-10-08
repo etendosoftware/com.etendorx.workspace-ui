@@ -51,6 +51,7 @@ type CopilotAction =
   | { type: "SET_CONTEXT_TITLE"; contextTitle: string | null }
   | { type: "SET_CONVERSATIONS"; conversations: IConversationSummary[] }
   | { type: "SET_CONVERSATIONS_LOADING"; loading: boolean }
+  | { type: "UPDATE_CONVERSATION_TITLE"; conversationId: string; title: string }
   | { type: "RESET_CONVERSATION" };
 
 const initialState: CopilotState = {
@@ -95,6 +96,13 @@ function copilotReducer(state: CopilotState, action: CopilotAction): CopilotStat
       return { ...state, conversations: action.conversations };
     case "SET_CONVERSATIONS_LOADING":
       return { ...state, conversationsLoading: action.loading };
+    case "UPDATE_CONVERSATION_TITLE":
+      return {
+        ...state,
+        conversations: state.conversations.map((conv) =>
+          conv.id === action.conversationId ? { ...conv, title: action.title } : conv
+        ),
+      };
     case "RESET_CONVERSATION":
       return {
         ...initialState,
@@ -260,23 +268,21 @@ export const useCopilot = () => {
         const generatedTitle = await copilotClient.generateTitle(conversationId);
         // Update the specific conversation with the generated title
         dispatch({
-          type: "SET_CONVERSATIONS",
-          conversations: state.conversations.map((conv) =>
-            conv.id === conversationId ? { ...conv, title: generatedTitle } : conv
-          ),
+          type: "UPDATE_CONVERSATION_TITLE",
+          conversationId,
+          title: generatedTitle,
         });
       } catch (err) {
         console.error("❌ Error generating title for", conversationId, err);
         // Set fallback title on error
         dispatch({
-          type: "SET_CONVERSATIONS",
-          conversations: state.conversations.map((conv) =>
-            conv.id === conversationId ? { ...conv, title: "Untitled Conversation" } : conv
-          ),
+          type: "UPDATE_CONVERSATION_TITLE",
+          conversationId,
+          title: "Untitled Conversation",
         });
       }
     },
-    [copilotClient, state.conversations]
+    [copilotClient]
   );
 
   const loadConversations = useCallback(async () => {

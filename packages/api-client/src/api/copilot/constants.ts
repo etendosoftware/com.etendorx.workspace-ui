@@ -24,7 +24,7 @@ export const COPILOT_ENDPOINTS = {
   GET_ASSISTANTS: "copilot/assistants",
   GET_CONVERSATIONS: "copilot/conversations",
   GET_CONVERSATION_MESSAGES: "copilot/conversationMessages",
-  GENERATE_TITLE: "copilot/generateTitle",
+  GENERATE_TITLE: "copilot/generateTitleConversation",
 } as const;
 
 export const COPILOT_METHODS = {

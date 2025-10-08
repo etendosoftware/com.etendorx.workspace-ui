@@ -482,6 +482,9 @@ export class CopilotClient {
       const { data, ok } = await CopilotClient.request(endpoint, {
         method: COPILOT_METHODS.POST,
         body: JSON.stringify({ conversation_id: conversationId }),
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
 
       if (!ok) {
