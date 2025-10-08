@@ -50,7 +50,17 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
 
   // Table related states
   const [tableColumnFilters, setTableColumnFilters] = useState<MRT_ColumnFiltersState>([]);
-  const [tableColumnVisibility, setTableColumnVisibility] = useState<MRT_VisibilityState>({});
+  const [tableColumnVisibility, setTableColumnVisibility] = useState<MRT_VisibilityState>(() => {
+    const initialVisibility: MRT_VisibilityState = {};
+    if (tab.fields) {
+      for (const field of Object.values(tab.fields)) {
+        if (field.showInGridView !== undefined && field.name) {
+          initialVisibility[field.name] = field.showInGridView;
+        }
+      }
+    }
+    return initialVisibility;
+  });
   const [tableSorting, setTableSorting] = useState<MRT_SortingState>([]);
   const { graph } = useSelected();
   const record = useSelectedRecord(tab);

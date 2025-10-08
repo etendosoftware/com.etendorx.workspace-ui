@@ -82,19 +82,6 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [table]);
 
-  // Apply initial column visibility based on showInGridView
-  useEffect(() => {
-    const columns = table.getAllLeafColumns();
-    for (const column of columns) {
-      const colDef = column.columnDef as CustomColumnDef;
-      const shouldBeVisible = colDef.showInGridView ?? true;
-
-      if (column.getIsVisible() !== shouldBeVisible) {
-        column.toggleVisibility(shouldBeVisible);
-      }
-    }
-  }, [table]);
-
   const [items, setItems] = useState<ToggleableItem[]>(columnItems);
 
   const handleBack = useCallback(() => {
