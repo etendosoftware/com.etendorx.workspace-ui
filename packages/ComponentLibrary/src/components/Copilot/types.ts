@@ -24,6 +24,7 @@ export interface AssistantSelectorProps {
   labels: ILabels;
   isExpanded?: boolean;
   showDescription?: boolean;
+  isLoading?: boolean;
   translations: {
     errorInvalidData: string;
     errorNoAssistantsAvailable: string;
@@ -53,13 +54,21 @@ export interface ChatInterfaceProps {
   onSendMessage: (message: string, files?: File[]) => void;
   onResetConversation: () => void;
   showDescription?: boolean;
+  isLoadingAssistants?: boolean;
   contextItems?: ContextItem[];
   onRemoveContext?: (id: string) => void;
+  conversations?: import("@workspaceui/api-client/src/api/copilot").IConversationSummary[];
+  onSelectConversation?: (conversationId: string) => void;
+  onLoadConversations?: () => void;
+  conversationsLoading?: boolean;
   translations: {
     selectedRegisters: string;
     assistantSelector: AssistantSelectorProps["translations"];
     messageInput: MessageInputProps["translations"];
     messageList: MessageListProps["translations"];
+    conversationList?: ConversationListProps["translations"];
+    conversationsButton?: string;
+    hideConversationsButton?: string;
   };
 }
 
@@ -77,9 +86,14 @@ export interface CopilotPopupProps {
   onSendMessage: (message: string, files?: File[]) => void;
   onResetConversation: () => void;
   showDescription?: boolean;
+  isLoadingAssistants?: boolean;
   hasContextPending?: boolean;
   contextItems?: ContextItem[];
   onRemoveContext?: (id: string) => void;
+  conversations?: import("@workspaceui/api-client/src/api/copilot").IConversationSummary[];
+  onSelectConversation?: (conversationId: string) => void;
+  onLoadConversations?: () => void;
+  conversationsLoading?: boolean;
   translations: {
     copilotProfile: string;
     backToSelection: string;
@@ -91,6 +105,9 @@ export interface CopilotPopupProps {
     assistantSelector: AssistantSelectorProps["translations"];
     messageInput: MessageInputProps["translations"];
     messageList: MessageListProps["translations"];
+    conversationList?: ConversationListProps["translations"];
+    conversationsButton?: string;
+    hideConversationsButton?: string;
   };
 }
 
@@ -131,5 +148,21 @@ export interface ContextPreviewProps {
   showRemoveButton?: boolean;
   translations?: {
     selectedRegisters: string;
+  };
+}
+
+export interface ConversationListProps {
+  conversations: import("@workspaceui/api-client/src/api/copilot").IConversationSummary[];
+  onSelectConversation: (conversationId: string) => void;
+  onNewConversation: () => void;
+  onCloseSidebar?: () => void;
+  isLoading?: boolean;
+  translations: {
+    newConversation: string;
+    noConversations: string;
+    startNewConversation: string;
+    loading: string;
+    untitledConversation?: string;
+    closeSidebar?: string;
   };
 }
