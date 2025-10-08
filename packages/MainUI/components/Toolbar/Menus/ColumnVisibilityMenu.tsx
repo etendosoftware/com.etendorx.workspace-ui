@@ -18,13 +18,17 @@
 "use client";
 
 import type { ToggleableItem } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
-import type { MRT_TableInstance, MRT_RowData, MRT_DefinedColumnDef } from "material-react-table";
+import type { MRT_TableInstance, MRT_RowData, MRT_DefinedColumnDef, MRT_VisibilityState } from "material-react-table";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useMemo, useState, useCallback, useEffect } from "react";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import DragModalContent from "@workspaceui/componentlibrary/src/components/DragModal/DragModalContent";
 export interface CustomColumnDef<TData extends MRT_RowData = MRT_RowData> extends MRT_DefinedColumnDef<TData> {
   showInGridView?: boolean;
+  shownInStatusBar?: boolean;
+  displayed?: boolean;
+  type?: string;
+  fieldId?: string;
 }
 interface ColumnVisibilityMenuProps<T extends MRT_RowData = MRT_RowData> {
   anchorEl: HTMLElement | null;
@@ -43,37 +47,55 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
   const columnItems = useMemo<ToggleableItem[]>(() => {
     return table
       .getAllLeafColumns()
-      .filter((column) => column.columnDef.enableHiding !== false)
-      .map((column) => {
+      .filter((column) => {
+        if (column.id.startsWith("mrt-")) {
+          return false;
+        }
         const colDef = column.columnDef as CustomColumnDef;
-        const shouldBeVisible = colDef.showInGridView ?? true;
+
+        if (colDef?.fieldId?.startsWith("audit_")) {
+          return true;
+        }
+
+        if (colDef.shownInStatusBar) {
+          return true;
+        }
+        if (colDef.displayed === false && !colDef.showInGridView) {
+          return false;
+        }
+
+        if (colDef.type === "button") {
+          return false;
+        }
+
+        return true;
+      })
+      .map((column) => {
+        const isCurrentlyVisible = column.getIsVisible();
 
         return {
           id: column.id,
-          label: typeof colDef.header === "string" ? colDef.header : column.id,
-          isActive: shouldBeVisible,
+          label: typeof column.columnDef.header === "string" ? column.columnDef.header : column.id,
+          isActive: isCurrentlyVisible,
         };
-      });
+      })
+      .sort((a, b) => a.label.localeCompare(b.label));
   }, [table]);
 
   // Apply initial column visibility based on showInGridView
   useEffect(() => {
-    table.getAllLeafColumns().forEach((column) => {
+    const columns = table.getAllLeafColumns();
+    for (const column of columns) {
       const colDef = column.columnDef as CustomColumnDef;
       const shouldBeVisible = colDef.showInGridView ?? true;
 
       if (column.getIsVisible() !== shouldBeVisible) {
         column.toggleVisibility(shouldBeVisible);
       }
-    });
+    }
   }, [table]);
 
   const [items, setItems] = useState<ToggleableItem[]>(columnItems);
-
-  // Update items when columns change
-  useEffect(() => {
-    setItems(columnItems);
-  }, [columnItems]);
 
   const handleBack = useCallback(() => {
     onClose();
@@ -81,12 +103,27 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
 
   // Sync changes back to the table when items change
   useEffect(() => {
+    // Get the current visibility state from the table
+    const currentVisibilityState = table.getState().columnVisibility;
+
+    // Build a new visibility state object, preserving columns not in the menu
+    const newVisibilityState: MRT_VisibilityState = { ...currentVisibilityState };
+
+    // Update only the columns that are in the menu
     for (const item of items) {
-      const column = table.getAllLeafColumns().find((col) => col.id === item.id);
-      if (column && column.getIsVisible() !== item.isActive) {
-        column.toggleVisibility();
-      }
+      newVisibilityState[item.id] = item.isActive;
     }
+
+    console.log("🔄 Syncing items to table:", {
+      itemsCount: items.length,
+      itemsInMenu: items.map((item) => item.id),
+      newVisibilityState,
+    });
+
+    // Set the column visibility state for the entire table at once
+    table.setColumnVisibility(newVisibilityState);
+
+    console.log("✅ Applied visibility state to table");
   }, [items, table]);
 
   return (
