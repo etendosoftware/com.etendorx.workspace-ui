@@ -29,6 +29,12 @@
     "inpkeyColumnId": "M_InOut_ID",
     "keyColumnName": "M_InOut_ID"
   },
+  "8B41C09A6C60ECB1E040007F01007817": {
+    "url": "/org.openbravo.advpaymentmngt.ad_actionbutton/ProcessInvoice.html",
+    "command": "DEFAULT",
+    "inpkeyColumnId": "C_Invoice_ID",
+    "keyColumnName": "C_Invoice_ID"
+  },
   "3426": {
     "url": "/PurchaseOrder/Header_Edition.html",
     "command": "BUTTONDocAction104",
