@@ -87,6 +87,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onSendMessage,
   onResetConversation,
   showDescription = true,
+  isLoadingAssistants = false,
   contextItems = [],
   onRemoveContext,
   conversations = [],
@@ -95,7 +96,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   conversationsLoading = false,
   translations,
 }) => {
-  const [showConversations, setShowConversations] = useState(false);
+  const [showConversations, setShowConversations] = useState(true);
   let parsedAssistants: IAssistant[] = [];
   if (typeof assistants === "string") {
     try {
@@ -145,6 +146,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         labels={labels}
         isExpanded={isExpanded}
         showDescription={showDescription}
+        isLoading={isLoadingAssistants}
         translations={translations.assistantSelector}
       />
     );

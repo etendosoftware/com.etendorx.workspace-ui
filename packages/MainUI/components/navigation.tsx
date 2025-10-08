@@ -81,7 +81,7 @@ const Navigation: React.FC = () => {
   const { isOpen: aboutModalOpen, openModal: openAboutModal, closeModal: closeAboutModal } = useAboutModalOpen();
   const { aboutUrl } = useAboutModal();
 
-  const { assistants, getAssistants, invalidateCache, hasAssistants } = useAssistants();
+  const { assistants, getAssistants, invalidateCache, hasAssistants, isLoading: isLoadingAssistants } = useAssistants();
   const { labels, getLabels } = useCopilotLabels();
 
   const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -307,6 +307,7 @@ const Navigation: React.FC = () => {
         onSelectAssistant={handleSelectAssistant}
         onSendMessage={handleCopilotSendMessage}
         onResetConversation={handleResetConversation}
+        isLoadingAssistants={isLoadingAssistants}
         hasContextPending={!!pendingContextString}
         contextItems={pendingContextItems}
         onRemoveContext={handleRemoveContext}

@@ -184,7 +184,7 @@ export class CopilotClient {
         throw new Error("Failed to fetch assistants");
       }
 
-      return this.parseArrayResponse<IAssistant>(data, "assistants");
+      return CopilotClient.parseArrayResponse<IAssistant>(data, "assistants");
     } catch (error) {
       console.error("Error fetching assistants:", error);
       throw error;
@@ -415,7 +415,7 @@ export class CopilotClient {
         throw new Error("Failed to fetch conversations");
       }
 
-      return this.parseArrayResponse<IConversationSummary>(data, "conversations");
+      return CopilotClient.parseArrayResponse<IConversationSummary>(data, "conversations");
     } catch (error) {
       console.error("Error fetching conversations:", error);
       throw error;

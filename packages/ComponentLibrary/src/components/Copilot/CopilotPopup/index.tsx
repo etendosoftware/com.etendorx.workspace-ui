@@ -39,6 +39,7 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
   onSendMessage,
   onResetConversation,
   showDescription,
+  isLoadingAssistants = false,
   hasContextPending = false,
   contextItems = [],
   onRemoveContext,
@@ -142,6 +143,7 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
             onSendMessage={onSendMessage}
             onResetConversation={onResetConversation}
             showDescription={showDescription}
+            isLoadingAssistants={isLoadingAssistants}
             contextItems={contextItems}
             onRemoveContext={onRemoveContext}
             conversations={conversations}

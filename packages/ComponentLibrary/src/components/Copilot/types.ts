@@ -24,6 +24,7 @@ export interface AssistantSelectorProps {
   labels: ILabels;
   isExpanded?: boolean;
   showDescription?: boolean;
+  isLoading?: boolean;
   translations: {
     errorInvalidData: string;
     errorNoAssistantsAvailable: string;
@@ -53,6 +54,7 @@ export interface ChatInterfaceProps {
   onSendMessage: (message: string, files?: File[]) => void;
   onResetConversation: () => void;
   showDescription?: boolean;
+  isLoadingAssistants?: boolean;
   contextItems?: ContextItem[];
   onRemoveContext?: (id: string) => void;
   conversations?: import("@workspaceui/api-client/src/api/copilot").IConversationSummary[];
@@ -84,6 +86,7 @@ export interface CopilotPopupProps {
   onSendMessage: (message: string, files?: File[]) => void;
   onResetConversation: () => void;
   showDescription?: boolean;
+  isLoadingAssistants?: boolean;
   hasContextPending?: boolean;
   contextItems?: ContextItem[];
   onRemoveContext?: (id: string) => void;
