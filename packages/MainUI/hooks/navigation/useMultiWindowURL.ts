@@ -356,7 +356,31 @@ export function useMultiWindowURL() {
    */
   const applyWindowUpdates = useCallback(
     (transform: (windows: WindowState[]) => WindowState[], preserveCurrentPath?: boolean) => {
+      const stack = new Error().stack;
+      const caller = stack?.split("\n")[2]?.trim() || "unknown";
+
+      const prevWindows = windows;
       const nextWindows = transform(windows);
+
+      // Log changes in selectedRecords for debugging
+      prevWindows.forEach((prevWin, idx) => {
+        const nextWin = nextWindows[idx];
+        if (nextWin && prevWin.windowId === nextWin.windowId) {
+          const prevSelected = prevWin.selectedRecords;
+          const nextSelected = nextWin.selectedRecords;
+
+          // Check for removed selections
+          Object.keys(prevSelected).forEach((tabId) => {
+            if (prevSelected[tabId] && !nextSelected[tabId]) {
+              console.log(
+                `[applyWindowUpdates] REMOVED selection for tab ${tabId}: ${prevSelected[tabId]} -> undefined`
+              );
+              console.log(`[applyWindowUpdates] Caller: ${caller}`);
+            }
+          });
+        }
+      });
+
       navigate(nextWindows, preserveCurrentPath);
     },
     [windows, navigate]
@@ -482,19 +506,46 @@ export function useMultiWindowURL() {
 
   const clearChildrenSelections = useCallback(
     (windowId: string, childTabIds: string[]) => {
+      // Log who called this function with stack trace
+      const stack = new Error().stack;
+      const caller = stack?.split("\n")[2]?.trim() || "unknown";
+      console.log(`[clearChildrenSelections] Called with ${childTabIds.length} children: ${childTabIds.join(", ")}`);
+      console.log(`[clearChildrenSelections] Caller: ${caller}`);
+
       applyWindowUpdates((prev) => {
         return prev.map((w) => {
           if (w.windowId !== windowId) return w;
+
+          // Filter out children that are currently in FormView - don't clear them
+          const childrenToClean = childTabIds.filter((tabId) => {
+            const childState = w.tabFormStates[tabId];
+            const isInFormView = childState?.mode === "form";
+            if (isInFormView) {
+              console.log(`[clearChildrenSelections] Preserving child ${tabId} - currently in FormView`, childState);
+              return false; // Don't clear this child
+            }
+            return true; // Clear this child
+          });
+
+          if (childrenToClean.length === 0) {
+            console.log(`[clearChildrenSelections] All children preserved, no changes`);
+            return w; // No children to clean, return unchanged
+          }
+
           const newSelected = { ...w.selectedRecords };
           const newTabStates = { ...w.tabFormStates } as Record<
             string,
             { recordId?: string; mode?: TabMode; formMode?: FormMode }
           >;
-          for (const tabId of childTabIds) {
+
+          for (const tabId of childrenToClean) {
             delete newSelected[tabId];
             delete newTabStates[tabId];
           }
 
+          console.log(
+            `[clearChildrenSelections] Cleared ${childrenToClean.length} of ${childTabIds.length} children: ${childrenToClean.join(", ")}`
+          );
           return { ...w, selectedRecords: newSelected, tabFormStates: newTabStates };
         });
       });
@@ -504,6 +555,8 @@ export function useMultiWindowURL() {
 
   /**
    * Atomically updates parent tab selection and clears all children in a single navigation
+   * Children in FormView are preserved ONLY if the parent selection hasn't actually changed
+   * (i.e., during refresh/re-render). If user changes parent selection, children are cleared.
    */
   const setSelectedRecordAndClearChildren = useCallback(
     (windowId: string, parentTabId: string, recordId: string, childTabIds: string[]) => {
@@ -511,16 +564,49 @@ export function useMultiWindowURL() {
         return prev.map((w) => {
           if (w.windowId !== windowId) return w;
 
+          const previousParentSelection = w.selectedRecords[parentTabId];
+          const isParentSelectionChanging = previousParentSelection !== recordId;
+
           const newSelected = { ...w.selectedRecords, [parentTabId]: recordId };
           const newTabStates = { ...w.tabFormStates } as Record<
             string,
             { recordId?: string; mode?: TabMode; formMode?: FormMode }
           >;
 
-          // Clear all children
-          for (const tabId of childTabIds) {
+          // Only preserve children in FormView if parent selection is NOT changing
+          // If parent selection IS changing (user clicked a different record), clear all children
+          const childrenToClean = childTabIds.filter((tabId) => {
+            if (isParentSelectionChanging) {
+              // Parent changed to a different record - clear all children regardless of FormView
+              return true;
+            }
+
+            // Parent selection unchanged (refresh/re-render) - preserve children in FormView
+            const childState = w.tabFormStates[tabId];
+            const isInFormView = childState?.mode === "form";
+            if (isInFormView) {
+              console.log(
+                `[setSelectedRecordAndClearChildren] Preserving child ${tabId} - parent selection unchanged and child in FormView`
+              );
+              return false; // Don't clear this child
+            }
+            return true; // Clear this child
+          });
+
+          // Clear only children that should be cleared
+          for (const tabId of childrenToClean) {
             delete newSelected[tabId];
             delete newTabStates[tabId];
+          }
+
+          if (!isParentSelectionChanging && childrenToClean.length < childTabIds.length) {
+            console.log(
+              `[setSelectedRecordAndClearChildren] Parent unchanged - cleared ${childrenToClean.length} of ${childTabIds.length} children (${childTabIds.length - childrenToClean.length} preserved in FormView)`
+            );
+          } else if (isParentSelectionChanging) {
+            console.log(
+              `[setSelectedRecordAndClearChildren] Parent changed from ${previousParentSelection} to ${recordId} - cleared all ${childTabIds.length} children`
+            );
           }
 
           return { ...w, selectedRecords: newSelected, tabFormStates: newTabStates };

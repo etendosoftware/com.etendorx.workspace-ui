@@ -151,7 +151,11 @@ const clearChildrenRecords = (
   graph: ReturnType<typeof useSelected>["graph"],
   tab: Tab,
   currentWindowId: string,
-  clearChildrenSelections: (windowId: string, childTabIds: string[]) => void
+  clearChildrenSelections: (windowId: string, childTabIds: string[]) => void,
+  getTabFormState?: (
+    windowId: string,
+    tabId: string
+  ) => { recordId?: string; mode?: string; formMode?: string } | undefined
 ): void => {
   const children = graph.getChildren(tab);
 
@@ -161,21 +165,41 @@ const clearChildrenRecords = (
   }
 
   const childTabs = children.filter((child) => child.window === currentWindowId);
-  const childTabIds = childTabs.map((child) => child.id);
 
-  logger.debug(`[useTableSelection] Clearing ${childTabIds.length} children for tab ${tab.id}:`, {
-    windowId,
-    currentWindowId,
-    childTabIds,
-    allChildren: children.map((c) => ({ id: c.id, window: c.window })),
+  // Filter out children that are currently in FormView mode
+  const childrenToClean = childTabs.filter((child) => {
+    if (getTabFormState) {
+      const childState = getTabFormState(windowId, child.id);
+      const isInFormView = childState?.mode === "form";
+      if (isInFormView) {
+        logger.debug(`[useTableSelection] Preserving child ${child.id} - currently in FormView`);
+        return false; // Don't clear this child
+      }
+    }
+    return true; // Clear this child
   });
 
+  const childTabIds = childrenToClean.map((child) => child.id);
+  const totalChildren = childTabs.length;
+  const preservedCount = totalChildren - childTabIds.length;
+
+  logger.debug(
+    `[useTableSelection] Clearing ${childTabIds.length} children for tab ${tab.id} (${preservedCount} preserved in FormView):`,
+    {
+      windowId,
+      currentWindowId,
+      childTabIds,
+      preservedChildren: childTabs.filter((c) => !childTabIds.includes(c.id)).map((c) => c.id),
+      allChildren: children.map((c) => ({ id: c.id, window: c.window })),
+    }
+  );
+
   if (childTabIds.length > 0) {
-    // Clear URL state
+    // Clear URL state only for children not in FormView
     clearChildrenSelections(windowId, childTabIds);
 
-    // Also clear graph state for all children to prevent stale references
-    for (const childTab of childTabs) {
+    // Also clear graph state for children not in FormView to prevent stale references
+    for (const childTab of childrenToClean) {
       graph.clearSelected(childTab);
       graph.clearSelectedMultiple(childTab);
     }
@@ -343,6 +367,7 @@ const handleNonAtomicSelection = ({
   graph,
   currentWindowId,
   clearChildrenSelections,
+  getTabFormState,
 }: {
   selectedRecords: EntityData[];
   selectionChanged: boolean;
@@ -353,13 +378,17 @@ const handleNonAtomicSelection = ({
   graph: ReturnType<typeof useSelected>["graph"];
   currentWindowId: string;
   clearChildrenSelections: (windowId: string, childTabIds: string[]) => void;
+  getTabFormState?: (
+    windowId: string,
+    tabId: string
+  ) => { recordId?: string; mode?: string; formMode?: string } | undefined;
 }): void => {
   if (selectedRecords.length === 1 && !selectionChanged && childTabIds.length > 0) {
     // Selection didn't change, just update URL without clearing children
     debouncedURLUpdate(selectedRecords, windowId, tab.id);
   } else {
     // Selection changed or no children: clear children and update URL
-    clearChildrenRecords(windowId, graph, tab, currentWindowId, clearChildrenSelections);
+    clearChildrenRecords(windowId, graph, tab, currentWindowId, clearChildrenSelections, getTabFormState);
     debouncedURLUpdate(selectedRecords, windowId, tab.id);
   }
 };
@@ -412,6 +441,7 @@ export default function useTableSelection(
     getSelectedRecord,
     clearChildrenSelections,
     setSelectedRecordAndClearChildren,
+    getTabFormState,
   } = useMultiWindowURL();
   const { setSession, setSessionSyncLoading } = useUserContext();
   const previousSelectionRef = useRef<string[]>([]);
@@ -443,7 +473,7 @@ export default function useTableSelection(
    * allowing rapid selection changes without overwhelming the browser's navigation system.
    * The function handles different selection scenarios:
    * - Single selection: Updates URL with the selected record ID
-   * - No selection: Clears the record ID from URL
+   * - No selection: Clears the record ID from URL (unless children are in FormView)
    * - Multiple selections: URL shows the last selected record for navigation consistency
    *
    * Error handling ensures that URL sync failures don't break the selection functionality.
@@ -456,7 +486,21 @@ export default function useTableSelection(
             // Single selection: Update URL
             setSelectedRecord(windowId, tabId, String(selectedRecords[0].id));
           } else if (selectedRecords.length === 0) {
-            // No selection: Clear URL
+            // Before clearing, check if any child tabs are in FormView
+            // If so, preserve parent selection to keep child FormView open
+            const children = graph.getChildren(tab);
+            const hasChildInFormView = children?.some((child) => {
+              if (!getTabFormState) return false;
+              const childState = getTabFormState(windowId, child.id);
+              return childState?.mode === "form";
+            });
+
+            if (hasChildInFormView) {
+              logger.debug(`[useTableSelection] NOT clearing parent selection for tab ${tabId} - child is in FormView`);
+              return; // Don't clear parent selection if child is in FormView
+            }
+
+            // No selection and no children in FormView: Clear URL
             clearSelectedRecord(windowId, tabId);
           }
           // Multiple selections: URL shows last selected (handled by existing logic)
@@ -464,7 +508,7 @@ export default function useTableSelection(
           handleSyncError(error as Error, "URL update");
         }
       }, 150),
-    [setSelectedRecord, clearSelectedRecord, handleSyncError]
+    [setSelectedRecord, clearSelectedRecord, handleSyncError, graph, tab, getTabFormState]
   );
 
   // REMOVED: performBidirectionalSync - was causing race conditions
@@ -541,6 +585,7 @@ export default function useTableSelection(
         graph,
         currentWindowId,
         clearChildrenSelections,
+        getTabFormState,
       });
     }
 
