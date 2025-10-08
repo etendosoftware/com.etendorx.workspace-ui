@@ -26,22 +26,31 @@ import { useTranslation } from "@/hooks/useTranslation";
 import TabsContainer from "@/components/window/TabsContainer";
 
 export default function Window({ windowId }: { windowId: string }) {
-  const { getWindowMetadata, isWindowLoading, getWindowError, loadWindowData } = useMetadataContext();
+  const { error, loading, getWindowMetadata, loadWindowData } = useMetadataContext();
   const { t } = useTranslation();
 
   const windowData = getWindowMetadata(windowId);
-  const isLoading = isWindowLoading(windowId);
-  const error = getWindowError(windowId);
 
   useEffect(() => {
-    if (!windowData && !isLoading && !error) {
+    if (!windowData && !loading && !error) {
       loadWindowData(windowId);
     }
-  }, [windowId, windowData, isLoading, error, loadWindowData]);
+  }, [windowId, windowData, loading, error, loadWindowData]);
 
-  if (isLoading) return <Loading data-testid="Loading__56042a" />;
-  if (error) return <ErrorDisplay title={error.message} data-testid="ErrorDisplay__56042a" />;
-  if (!windowData)
+  if (loading) {
+    return <Loading data-testid="Loading__56042a" />;
+  }
+
+  if (error) {
+    return (
+      <ErrorDisplay
+        title={error?.message ?? t("errors.internalServerError.title")}
+        data-testid="ErrorDisplay__56042a"
+      />
+    );
+  }
+
+  if (!windowData) {
     return (
       <ErrorDisplay
         title={t("errors.windowNotFound.title")}
@@ -49,6 +58,7 @@ export default function Window({ windowId }: { windowId: string }) {
         data-testid="ErrorDisplay__56042a"
       />
     );
+  }
 
   return (
     <SelectedProvider tabs={windowData.tabs} windowId={windowId} data-testid="SelectedProvider__56042a">
