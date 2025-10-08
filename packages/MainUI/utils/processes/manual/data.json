@@ -40,5 +40,23 @@
     "command": "BUTTONDocAction104",
     "inpkeyColumnId": "C_Order_ID",
     "keyColumnName": "C_Order_ID"
+  },
+  "1004400026": {
+    "url": "/Requisition/Requisition_Edition.html",
+    "command": "BUTTONDocAction1004400003",
+    "inpkeyColumnId": "M_Requisition_ID",
+    "keyColumnName": "M_Requisition_ID"
+  },
+  "1004400045": {
+    "url": "/ManageRequisitions/Header_Edition.html",
+    "command": "BUTTONCreatepo1004400000",
+    "inpkeyColumnId": "M_Requisition_ID",
+    "keyColumnName": "M_Requisition_ID"
+  },
+  "1004400041": {
+    "url": "/ManageRequisitions/Header_Edition.html",
+    "command": "BUTTONDocAction1004400003",
+    "inpkeyColumnId": "M_Requisition_ID",
+    "keyColumnName": "M_Requisition_ID"
   }
 }
