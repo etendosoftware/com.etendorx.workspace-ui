@@ -107,7 +107,12 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
   return Object.entries(values).reduce(
     (acc, [key, value]) => {
       const field = fields?.[key];
-      const newKey = field?.inputName ?? key;
+      let newKey = field?.inputName ?? key;
+
+      // Transform documentAction to DocAction
+      if (key === "documentAction" || newKey === "documentAction") {
+        newKey = "DocAction";
+      }
 
       // Special handling for known numeric fields when field metadata is not available
       if (!field && (key === "consumptionDays" || newKey === "consumptionDays")) {
