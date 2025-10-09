@@ -21,7 +21,7 @@ import { useState, useMemo, useCallback } from "react";
 import { ensureString } from "@workspaceui/componentlibrary/src/helpers/ensureString";
 import translations from "@workspaceui/componentlibrary/src/locales";
 import { createContext } from "react";
-import type { Organization } from "../../storybook/src/stories/Components/Table/types";
+import type { Organization } from "../mocks/types";
 
 export interface RecordContextType {
   selectedRecord: Organization | null;

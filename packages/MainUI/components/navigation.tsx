@@ -39,7 +39,7 @@ import { useAboutModal } from "@/hooks/about/useAboutModal";
 import type { Item } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
 import Nav from "@workspaceui/componentlibrary/src/components/Nav/Nav";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { NOTIFICATIONS, menuItems, sections } from "../../storybook/src/mocks";
+import { NOTIFICATIONS, menuItems, sections } from "../mocks";
 import { useTranslation } from "../hooks/useTranslation";
 import ProfileModal from "./ProfileModal/ProfileModal";
 import { useAssistants } from "@/hooks/useAssistants";
