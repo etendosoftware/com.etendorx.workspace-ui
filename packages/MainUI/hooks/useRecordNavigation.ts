@@ -106,93 +106,93 @@ export function useRecordNavigation({
   }, [formState.isDirty, handleSave, showErrorModal]);
 
   /**
+   * Core navigation logic shared between next and previous
+   */
+  const performNavigation = useCallback(
+    async (direction: "next" | "previous", errorMessage: string) => {
+      if (isNavigating) {
+        return;
+      }
+
+      setIsNavigating(true);
+
+      try {
+        // Check if we need to autosave
+        const canProceed = await performAutosaveIfNeeded();
+        if (!canProceed) {
+          return; // Navigation blocked due to save error
+        }
+
+        const { currentIndex } = navigationState;
+
+        if (direction === "next") {
+          // If we're at the last record and there are more records to load
+          if (currentIndex === records.length - 1 && hasMoreRecords) {
+            if (fetchMore) {
+              fetchMore();
+              // Wait a bit for records to load
+              setTimeout(() => {
+                if (records.length > currentIndex + 1) {
+                  const nextRecord = records[currentIndex + 1];
+                  onNavigate(String(nextRecord.id));
+                }
+              }, 500);
+            }
+            return;
+          }
+
+          // Navigate to next record in current list
+          if (currentIndex < records.length - 1) {
+            const nextRecord = records[currentIndex + 1];
+            onNavigate(String(nextRecord.id));
+          }
+        } else {
+          // Navigate to previous record
+          if (currentIndex > 0) {
+            const previousRecord = records[currentIndex - 1];
+            onNavigate(String(previousRecord.id));
+          }
+        }
+      } catch (error) {
+        logger.error(`Error during ${direction} navigation:`, error);
+        showErrorModal(errorMessage);
+      } finally {
+        setIsNavigating(false);
+      }
+    },
+    [
+      isNavigating,
+      navigationState,
+      performAutosaveIfNeeded,
+      records,
+      hasMoreRecords,
+      fetchMore,
+      onNavigate,
+      showErrorModal,
+    ]
+  );
+
+  /**
    * Navigates to the next record in the list
    * Automatically saves changes before navigation if needed
    */
   const navigateToNext = useCallback(async () => {
-    if (isNavigating || !navigationState.canNavigateNext) {
+    if (!navigationState.canNavigateNext) {
       return;
     }
-
-    setIsNavigating(true);
-
-    try {
-      // Check if we need to autosave
-      const canProceed = await performAutosaveIfNeeded();
-      if (!canProceed) {
-        return; // Navigation blocked due to save error
-      }
-
-      const { currentIndex } = navigationState;
-
-      // If we're at the last record and there are more records to load
-      if (currentIndex === records.length - 1 && hasMoreRecords) {
-        if (fetchMore) {
-          fetchMore();
-          // Wait a bit for records to load
-          setTimeout(() => {
-            if (records.length > currentIndex + 1) {
-              const nextRecord = records[currentIndex + 1];
-              onNavigate(String(nextRecord.id));
-            }
-          }, 500);
-        }
-        return;
-      }
-
-      // Navigate to next record in current list
-      if (currentIndex < records.length - 1) {
-        const nextRecord = records[currentIndex + 1];
-        onNavigate(String(nextRecord.id));
-      }
-    } catch (error) {
-      logger.error("Error during next navigation:", error);
-      showErrorModal("An error occurred while navigating to the next record.");
-    } finally {
-      setIsNavigating(false);
-    }
-  }, [
-    isNavigating,
-    navigationState,
-    performAutosaveIfNeeded,
-    records,
-    hasMoreRecords,
-    fetchMore,
-    onNavigate,
-    showErrorModal,
-  ]);
+    await performNavigation("next", "An error occurred while navigating to the next record.");
+  }, [navigationState.canNavigateNext, performNavigation]);
 
   /**
    * Navigates to the previous record in the list
    * Automatically saves changes before navigation if needed
    */
   const navigateToPrevious = useCallback(async () => {
-    if (isNavigating || !navigationState.canNavigatePrevious) {
+    if (!navigationState.canNavigatePrevious) {
       return;
     }
-
-    setIsNavigating(true);
-
-    try {
-      // Check if we need to autosave
-      const canProceed = await performAutosaveIfNeeded();
-      if (!canProceed) {
-        return; // Navigation blocked due to save error
-      }
-
-      const { currentIndex } = navigationState;
-
-      if (currentIndex > 0) {
-        const previousRecord = records[currentIndex - 1];
-        onNavigate(String(previousRecord.id));
-      }
-    } catch (error) {
-      logger.error("Error during previous navigation:", error);
-      showErrorModal("An error occurred while navigating to the previous record.");
-    } finally {
-      setIsNavigating(false);
-    }
-  }, [isNavigating, navigationState, performAutosaveIfNeeded, records, onNavigate, showErrorModal]);
+    await performNavigation("previous", "An error occurred while navigating to the previous record.");
+  }, [navigationState.canNavigatePrevious, performNavigation]);
 
   return {
     navigationState,
