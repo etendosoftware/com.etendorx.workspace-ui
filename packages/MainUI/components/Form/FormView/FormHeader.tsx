@@ -25,15 +25,29 @@ import { useFormViewContext } from "./contexts/FormViewContext";
 import StatusBar from "./StatusBar";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import type { StatusModalState } from "@workspaceui/componentlibrary/src/components/StatusModal/types";
+import type { NavigationState } from "@/hooks/useRecordNavigation";
 
 interface FormHeaderProps {
   statusBarFields: Record<string, Field>;
   groups: Array<[string | null, { identifier: string; fields: Record<string, Field> }]>;
   statusModal: StatusModalState;
   hideStatusModal: () => void;
+  navigationState?: NavigationState;
+  onNavigateNext?: () => Promise<void>;
+  onNavigatePrevious?: () => Promise<void>;
+  isNavigating?: boolean;
 }
 
-export function FormHeader({ statusBarFields, groups, statusModal, hideStatusModal }: FormHeaderProps) {
+export function FormHeader({
+  statusBarFields,
+  groups,
+  statusModal,
+  hideStatusModal,
+  navigationState,
+  onNavigateNext,
+  onNavigatePrevious,
+  isNavigating,
+}: FormHeaderProps) {
   const theme = useTheme();
   const { selectedTab, handleTabChange, getIconForGroup } = useFormViewContext();
 
@@ -67,7 +81,14 @@ export function FormHeader({ statusBarFields, groups, statusModal, hideStatusMod
           data-testid="StatusModal__cb26f1"
         />
       )}
-      <StatusBar fields={statusBarFields} data-testid="StatusBar__cb26f1" />
+      <StatusBar
+        fields={statusBarFields}
+        navigationState={navigationState}
+        onNavigateNext={onNavigateNext}
+        onNavigatePrevious={onNavigatePrevious}
+        isNavigating={isNavigating}
+        data-testid="StatusBar__cb26f1"
+      />
       <PrimaryTabs
         tabs={tabs}
         onChange={handleTabChange}

@@ -43,6 +43,8 @@ import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import { useTabContext } from "@/contexts/tab";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
+import { useRecordNavigation } from "@/hooks/useRecordNavigation";
+import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
@@ -429,6 +431,34 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const isLoading = loading || loadingFormInitialization;
 
   /**
+   * Get navigation records from DatasourceContext
+   * Records are only available if user has viewed the table first
+   * This matches classic interface behavior and prevents infinite loops
+   */
+  const {
+    records: navigationRecords,
+    hasMoreRecords,
+    fetchMore,
+  } = useFormViewNavigation({
+    tab,
+  });
+
+  /**
+   * Record navigation integration
+   * Provides next/previous navigation with autosave functionality
+   */
+  const { navigationState, navigateToNext, navigateToPrevious, isNavigating } = useRecordNavigation({
+    currentRecordId: recordId,
+    records: navigationRecords,
+    onNavigate: setRecordId,
+    formState,
+    handleSave,
+    showErrorModal,
+    hasMoreRecords,
+    fetchMore,
+  });
+
+  /**
    * Context value object containing all form view state and handlers.
    * Provides centralized access to form view functionality for child components
    * through React Context API. Memoized to prevent unnecessary re-renders.
@@ -489,6 +519,10 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               groups={groups}
               statusModal={statusModal}
               hideStatusModal={hideStatusModal}
+              navigationState={navigationState}
+              onNavigateNext={navigateToNext}
+              onNavigatePrevious={navigateToPrevious}
+              isNavigating={isNavigating}
               data-testid="FormHeader__1a0853"
             />
 
