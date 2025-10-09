@@ -293,14 +293,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     // Update ref BEFORE any early returns
     lastParentSelectionRef.current = parentSelectedId;
 
-    // If child is currently in FormView, don't auto-close regardless of parent changes
-    // This prevents closing FormView while user is actively working on a child record
-    // Check both currentMode AND tabFormState directly to be extra safe
-    const isInFormView = currentMode === TAB_MODES.FORM || tabFormState?.mode === TAB_MODES.FORM;
-    if (isInFormView) {
-      return;
-    }
-
     // Skip closing if this is a NEW -> real ID transition (save operation)
     const isParentSaveTransition =
       previousParentId === NEW_RECORD_ID && parentSelectedId && parentSelectedId !== NEW_RECORD_ID;
@@ -309,11 +301,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     // 1. There was a previous parent selection (not initial render)
     // 2. Parent selection changed to something else (different ID or undefined)
     // 3. This is NOT a save transition (NEW -> real ID)
-    // 4. Parent is NOT currently in FormView (if parent is in FormView, child should stay open)
-    const parentTabState = windowId ? getTabFormState(windowId, parentTab.id) : undefined;
-    const parentIsInFormView = parentTabState?.mode === TAB_MODES.FORM;
-
-    if (previousParentId !== undefined && !isParentSaveTransition && !parentIsInFormView) {
+    // Note: We now close child FormView even if parent is in FormView (navigation between parent records should reset children)
+    if (previousParentId !== undefined && !isParentSaveTransition) {
       clearTabFormState(windowId, tab.id);
       graph.clearSelected(tab);
     }
