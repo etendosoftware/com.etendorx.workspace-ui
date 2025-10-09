@@ -23,8 +23,24 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useCallback, useEffect, useState } from "react";
 import { useTabContext } from "@/contexts/tab";
+import { RecordNavigationControls } from "./RecordNavigationControls";
+import type { NavigationState } from "@/hooks/useRecordNavigation";
 
-export default function StatusBar({ fields }: { fields: Record<string, Field> }) {
+interface StatusBarProps {
+  fields: Record<string, Field>;
+  navigationState?: NavigationState;
+  onNavigateNext?: () => Promise<void>;
+  onNavigatePrevious?: () => Promise<void>;
+  isNavigating?: boolean;
+}
+
+export default function StatusBar({
+  fields,
+  navigationState,
+  onNavigateNext,
+  onNavigatePrevious,
+  isNavigating = false,
+}: StatusBarProps) {
   const [isSaved, setIsSaved] = useState(false);
   const { t } = useTranslation();
   const { onBack, onSave } = useToolbarContext();
@@ -60,14 +76,28 @@ export default function StatusBar({ fields }: { fields: Record<string, Field> })
           <StatusBarField key={key} field={field} data-testid="StatusBarField__cfc328" />
         ))}
       </div>
-      <IconButton
-        data-testid="icon-button"
-        onClick={handleCloseRecord}
-        className="w-8 h-8"
-        tooltip={t("forms.statusBar.closeRecord")}
-        disabled={false}>
-        <CloseIcon data-testid="CloseIcon__cfc328" />
-      </IconButton>
+      <div className="flex items-center gap-2">
+        {onNavigateNext && onNavigatePrevious && (
+          <RecordNavigationControls
+            onNext={onNavigateNext}
+            onPrevious={onNavigatePrevious}
+            canNavigateNext={navigationState?.canNavigateNext ?? false}
+            canNavigatePrevious={navigationState?.canNavigatePrevious ?? false}
+            currentIndex={navigationState?.currentIndex ?? -1}
+            totalRecords={navigationState?.totalRecords ?? 0}
+            isNavigating={isNavigating}
+            data-testid="RecordNavigationControls__cfc328"
+          />
+        )}
+        <IconButton
+          data-testid="icon-button"
+          onClick={handleCloseRecord}
+          className="w-8 h-8"
+          tooltip={t("forms.statusBar.closeRecord")}
+          disabled={false}>
+          <CloseIcon data-testid="CloseIcon__cfc328" />
+        </IconButton>
+      </div>
     </div>
   );
 }

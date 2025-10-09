@@ -55,6 +55,14 @@ const mockDatasourceContext = {
   registerDatasource: jest.fn(),
   unregisterDatasource: jest.fn(),
   registerRefetchFunction: jest.fn(),
+  removeRecordFromDatasource: jest.fn(),
+  refetchDatasource: jest.fn(),
+  registerRecordsGetter: jest.fn(),
+  getRecords: jest.fn(() => []),
+  registerHasMoreRecordsGetter: jest.fn(),
+  getHasMoreRecords: jest.fn(() => false),
+  registerFetchMore: jest.fn(),
+  fetchMoreRecords: jest.fn(),
 };
 
 const mockToolbarContext = {

@@ -50,6 +50,8 @@ const es = {
     },
     statusBar: {
       closeRecord: "Cerrar registro",
+      nextRecord: "Siguiente registro",
+      previousRecord: "Registro anterior",
     },
   },
   audit: {

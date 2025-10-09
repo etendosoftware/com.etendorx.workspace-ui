@@ -609,7 +609,9 @@ export function useMultiWindowURL() {
             );
           }
 
-          return { ...w, selectedRecords: newSelected, tabFormStates: newTabStates };
+          const result = { ...w, selectedRecords: newSelected, tabFormStates: newTabStates };
+          console.log("[setSelectedRecordAndClearChildren] Result tabFormStates:", result.tabFormStates);
+          return result;
         });
       });
     },

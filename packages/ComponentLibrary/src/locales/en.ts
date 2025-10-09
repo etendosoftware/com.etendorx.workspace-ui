@@ -51,6 +51,8 @@ const en = {
     },
     statusBar: {
       closeRecord: "Close Record",
+      nextRecord: "Next Record",
+      previousRecord: "Previous Record",
     },
   },
   audit: {
