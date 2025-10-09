@@ -152,11 +152,28 @@ describe("useRecordNavigation", () => {
     });
   });
 
-  describe("navigateToNext", () => {
-    it("should navigate to next record without saving when form is not dirty", async () => {
+  describe.each([
+    {
+      direction: "next" as const,
+      navFn: "navigateToNext" as const,
+      startRecordId: "1",
+      expectedTargetId: "2",
+      boundaryRecordId: "3",
+      boundaryTestName: "should not navigate when already at last record and no more records",
+    },
+    {
+      direction: "previous" as const,
+      navFn: "navigateToPrevious" as const,
+      startRecordId: "2",
+      expectedTargetId: "1",
+      boundaryRecordId: "1",
+      boundaryTestName: "should not navigate when already at first record",
+    },
+  ])("navigate$direction", ({ navFn, startRecordId, expectedTargetId, boundaryRecordId, boundaryTestName }) => {
+    it(`should navigate to ${navFn === "navigateToNext" ? "next" : "previous"} record without saving when form is not dirty`, async () => {
       const { result } = renderHook(() =>
         useRecordNavigation({
-          currentRecordId: "1",
+          currentRecordId: startRecordId,
           records: mockRecords,
           onNavigate: mockOnNavigate,
           formState: mockFormState,
@@ -166,21 +183,20 @@ describe("useRecordNavigation", () => {
       );
 
       await act(async () => {
-        await result.current.navigateToNext();
+        await result.current[navFn]();
       });
 
       expect(mockHandleSave).not.toHaveBeenCalled();
-      expect(mockOnNavigate).toHaveBeenCalledWith("2");
+      expect(mockOnNavigate).toHaveBeenCalledWith(expectedTargetId);
     });
 
-    it("should autosave before navigating when form is dirty", async () => {
+    it(`should autosave before navigating to ${navFn === "navigateToNext" ? "next" : "previous"} when form is dirty`, async () => {
       const dirtyFormState = { isDirty: true } as FormState<EntityData>;
-
       mockHandleSave.mockResolvedValue(undefined);
 
       const { result } = renderHook(() =>
         useRecordNavigation({
-          currentRecordId: "1",
+          currentRecordId: startRecordId,
           records: mockRecords,
           onNavigate: mockOnNavigate,
           formState: dirtyFormState,
@@ -190,12 +206,12 @@ describe("useRecordNavigation", () => {
       );
 
       await act(async () => {
-        await result.current.navigateToNext();
+        await result.current[navFn]();
       });
 
       await waitFor(() => {
         expect(mockHandleSave).toHaveBeenCalledWith(true);
-        expect(mockOnNavigate).toHaveBeenCalledWith("2");
+        expect(mockOnNavigate).toHaveBeenCalledWith(expectedTargetId);
       });
     });
 
@@ -206,7 +222,7 @@ describe("useRecordNavigation", () => {
 
       const { result } = renderHook(() =>
         useRecordNavigation({
-          currentRecordId: "1",
+          currentRecordId: startRecordId,
           records: mockRecords,
           onNavigate: mockOnNavigate,
           formState: dirtyFormState,
@@ -216,7 +232,7 @@ describe("useRecordNavigation", () => {
       );
 
       await act(async () => {
-        await result.current.navigateToNext();
+        await result.current[navFn]();
       });
 
       await waitFor(() => {
@@ -226,87 +242,21 @@ describe("useRecordNavigation", () => {
       });
     });
 
-    it("should not navigate when already at last record and no more records", async () => {
+    it(boundaryTestName, async () => {
       const { result } = renderHook(() =>
         useRecordNavigation({
-          currentRecordId: "3",
+          currentRecordId: boundaryRecordId,
           records: mockRecords,
           onNavigate: mockOnNavigate,
           formState: mockFormState,
           handleSave: mockHandleSave,
           showErrorModal: mockShowErrorModal,
-          hasMoreRecords: false,
+          hasMoreRecords: navFn === "navigateToNext" ? false : undefined,
         })
       );
 
       await act(async () => {
-        await result.current.navigateToNext();
-      });
-
-      expect(mockOnNavigate).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("navigateToPrevious", () => {
-    it("should navigate to previous record without saving when form is not dirty", async () => {
-      const { result } = renderHook(() =>
-        useRecordNavigation({
-          currentRecordId: "2",
-          records: mockRecords,
-          onNavigate: mockOnNavigate,
-          formState: mockFormState,
-          handleSave: mockHandleSave,
-          showErrorModal: mockShowErrorModal,
-        })
-      );
-
-      await act(async () => {
-        await result.current.navigateToPrevious();
-      });
-
-      expect(mockHandleSave).not.toHaveBeenCalled();
-      expect(mockOnNavigate).toHaveBeenCalledWith("1");
-    });
-
-    it("should autosave before navigating to previous when form is dirty", async () => {
-      const dirtyFormState = { isDirty: true } as FormState<EntityData>;
-      mockHandleSave.mockResolvedValue(undefined);
-
-      const { result } = renderHook(() =>
-        useRecordNavigation({
-          currentRecordId: "2",
-          records: mockRecords,
-          onNavigate: mockOnNavigate,
-          formState: dirtyFormState,
-          handleSave: mockHandleSave,
-          showErrorModal: mockShowErrorModal,
-        })
-      );
-
-      await act(async () => {
-        await result.current.navigateToPrevious();
-      });
-
-      await waitFor(() => {
-        expect(mockHandleSave).toHaveBeenCalledWith(true);
-        expect(mockOnNavigate).toHaveBeenCalledWith("1");
-      });
-    });
-
-    it("should not navigate when already at first record", async () => {
-      const { result } = renderHook(() =>
-        useRecordNavigation({
-          currentRecordId: "1",
-          records: mockRecords,
-          onNavigate: mockOnNavigate,
-          formState: mockFormState,
-          handleSave: mockHandleSave,
-          showErrorModal: mockShowErrorModal,
-        })
-      );
-
-      await act(async () => {
-        await result.current.navigateToPrevious();
+        await result.current[navFn]();
       });
 
       expect(mockOnNavigate).not.toHaveBeenCalled();
