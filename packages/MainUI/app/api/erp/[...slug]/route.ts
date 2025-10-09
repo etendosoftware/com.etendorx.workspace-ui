@@ -155,10 +155,13 @@ async function handleMutationRequest(
   });
 
   if (!response.ok) {
+    // NOTE: Handle ERP request errors
+    // NOTE: use 404 for copilot to indicate not installed, otherwise use the actual response status
+    const defaultResponseStatus = erpUrl.includes("copilot") ? 404 : response.status;
     const errorText = await response.text();
     throw new ErpRequestError({
-      message: `ERP request failed: ${response.status} ${response.statusText}. ${errorText}`,
-      status: response.status,
+      message: `ERP request failed: ${defaultResponseStatus} ${response.statusText}. ${errorText}`,
+      status: defaultResponseStatus,
       statusText: response.statusText,
       errorText,
     });
