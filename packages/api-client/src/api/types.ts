@@ -754,7 +754,7 @@ export interface ProcessInfo {
   }>;
 }
 
-export type ListOption = { id: string; label: string; value: string };
+export type ListOption = { id: string; label: string; value: string; active?: boolean };
 
 export type ProcessParameter = {
   defaultValue: string;

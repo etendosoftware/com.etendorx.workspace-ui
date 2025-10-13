@@ -43,18 +43,22 @@ export interface ColumnFilterProps {
 
 export class ColumnFilterUtils {
   /**
-   * Check if a column supports dropdown filtering (select or tabledir)
+   * Check if a column supports dropdown filtering (select, list, or tabledir)
    */
   static supportsDropdownFilter(column: Column): boolean {
-    return column.type === FieldType.SELECT || column.type === FieldType.TABLEDIR;
+    return column.type === FieldType.SELECT || column.type === FieldType.TABLEDIR || column.type === FieldType.LIST;
   }
 
   /**
-   * Check if a column is a select type (uses refList)
-   * Only applies to SELECT columns without referencedEntity
+   * Check if a column is a select/list type (uses refList)
+   * Applies to SELECT and LIST columns without referencedEntity
    */
   static isSelectColumn(column: Column): boolean {
-    return column.type === FieldType.SELECT && Array.isArray(column.refList) && !column.referencedEntity;
+    return (
+      (column.type === FieldType.SELECT || column.type === FieldType.LIST) &&
+      Array.isArray(column.refList) &&
+      !column.referencedEntity
+    );
   }
 
   /**
@@ -74,19 +78,22 @@ export class ColumnFilterUtils {
 
   /**
    * Get filter options for a select column (from refList)
+   * Only returns active options (where active is undefined or true)
    */
   static getSelectOptions(column: Column): FilterOption[] {
     if (!ColumnFilterUtils.isSelectColumn(column) || !column.refList) {
       return [];
     }
 
-    return ((column.refList as { id: string; label: string; value: string }[]) || []).map(
-      (item: { id: string; label: string; value: string }) => ({
+    return (
+      (column.refList as { id: string; label: string; value: string; active?: boolean }[]) || []
+    )
+      .filter((item) => item.active === undefined || item.active === true)
+      .map((item: { id: string; label: string; value: string }) => ({
         id: item.id,
         label: item.label,
         value: item.value,
-      })
-    );
+      }));
   }
 
   /**
