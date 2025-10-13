@@ -20,6 +20,11 @@ import type { MRT_Row, MRT_Cell } from "material-react-table";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import { useTranslation } from "@/hooks/useTranslation";
 
+interface ExtendedColumnDef {
+  columnName?: string;
+  [key: string]: unknown;
+}
+
 interface CellContextMenuProps {
   anchorEl: HTMLElement | null;
   onClose: () => void;
@@ -39,10 +44,10 @@ export const CellContextMenu: React.FC<CellContextMenuProps> = ({ anchorEl, onCl
 
     // Get the actual column name (camelCase) from the column definition
     // Use columnName which contains the actual data key in camelCase format
-    const columnDataKey = (cell.column.columnDef as any)?.columnName || columnId;
+    const columnDataKey = (cell.column.columnDef as ExtendedColumnDef)?.columnName || columnId;
 
     // Try to get the value using the column name
-    let cellValue = rowData[columnDataKey];
+    const cellValue = rowData[columnDataKey];
 
     let filterValue: string | number;
     let filterLabel: string;
