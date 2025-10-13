@@ -761,6 +761,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         cell={contextMenu.cell}
         row={contextMenu.row}
         onFilterByValue={handleFilterByValue}
+        data-testid="CellContextMenu__8ca888"
       />
     </div>
   );

@@ -85,9 +85,7 @@ export class ColumnFilterUtils {
       return [];
     }
 
-    return (
-      (column.refList as { id: string; label: string; value: string; active?: boolean }[]) || []
-    )
+    return ((column.refList as { id: string; label: string; value: string; active?: boolean }[]) || [])
       .filter((item) => item.active === undefined || item.active === true)
       .map((item: { id: string; label: string; value: string }) => ({
         id: item.id,

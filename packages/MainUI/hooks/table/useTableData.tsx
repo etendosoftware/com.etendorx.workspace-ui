@@ -79,7 +79,12 @@ interface UseTableDataReturn {
   refetch: () => Promise<void>;
   removeRecordLocally: ((id: string) => void) | null;
   hasMoreRecords: boolean;
-  applyQuickFilter: (columnId: string, filterId: string, filterValue: string | number, filterLabel: string) => Promise<void>;
+  applyQuickFilter: (
+    columnId: string,
+    filterId: string,
+    filterValue: string | number,
+    filterLabel: string
+  ) => Promise<void>;
 }
 
 export const useTableData = ({

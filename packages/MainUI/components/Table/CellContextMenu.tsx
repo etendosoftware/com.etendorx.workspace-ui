@@ -28,13 +28,7 @@ interface CellContextMenuProps {
   onFilterByValue: (columnId: string, filterId: string, filterValue: string | number, filterLabel: string) => void;
 }
 
-export const CellContextMenu: React.FC<CellContextMenuProps> = ({
-  anchorEl,
-  onClose,
-  cell,
-  row,
-  onFilterByValue,
-}) => {
+export const CellContextMenu: React.FC<CellContextMenuProps> = ({ anchorEl, onClose, cell, row, onFilterByValue }) => {
   const { t } = useTranslation();
 
   const handleUseAsFilter = () => {
@@ -84,7 +78,7 @@ export const CellContextMenu: React.FC<CellContextMenuProps> = ({
 
       if (isDateTime) {
         // Extract only the date part (YYYY-MM-DD)
-        const dateOnly = cellValueStr.split('T')[0];
+        const dateOnly = cellValueStr.split("T")[0];
         filterId = dateOnly;
         filterValue = dateOnly;
         filterLabel = dateOnly;
@@ -100,7 +94,7 @@ export const CellContextMenu: React.FC<CellContextMenuProps> = ({
   };
 
   return (
-    <Menu anchorEl={anchorEl} onClose={onClose} className="rounded-xl">
+    <Menu anchorEl={anchorEl} onClose={onClose} className="rounded-xl" data-testid="Menu__704a8f">
       <div className="rounded-2xl px-2 py-4">
         <div
           onClick={handleUseAsFilter}
@@ -110,8 +104,7 @@ export const CellContextMenu: React.FC<CellContextMenuProps> = ({
               e.preventDefault();
               handleUseAsFilter();
             }
-          }}
-        >
+          }}>
           {t("table.useAsFilter")}
         </div>
       </div>
