@@ -158,6 +158,7 @@ const en = {
     content: {
       currentTitle: "Its revenue is expected to increase later this year. Congratulations",
     },
+    useAsFilter: "Use as filter",
   },
   navigation: {
     common: {

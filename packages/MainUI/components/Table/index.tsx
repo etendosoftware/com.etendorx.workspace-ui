@@ -22,6 +22,7 @@ import {
   type MRT_TableBodyRowProps,
   type MRT_TableInstance,
   type MRT_VisibilityState,
+  type MRT_Cell,
 } from "material-react-table";
 import { useStyle } from "./styles";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
@@ -47,6 +48,7 @@ import { useTableData } from "@/hooks/table/useTableData";
 import { isEmptyObject } from "@/utils/commons";
 import { getDisplayColumnDefOptions, getMUITableBodyCellProps, getCurrentRowCanExpand } from "@/utils/table/utils";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
+import { CellContextMenu } from "./CellContextMenu";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -96,12 +98,22 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     refetch,
     removeRecordLocally,
     hasMoreRecords,
+    applyQuickFilter,
   } = useTableData({
     isTreeMode,
   });
 
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<HTMLElement | null>(null);
   const [hasInitialColumnVisibility, setHasInitialColumnVisibility] = useState<boolean>(false);
+  const [contextMenu, setContextMenu] = useState<{
+    anchorEl: HTMLElement | null;
+    cell: MRT_Cell<EntityData> | null;
+    row: MRT_Row<EntityData> | null;
+  }>({
+    anchorEl: null,
+    cell: null,
+    row: null,
+  });
 
   const toggleColumnsDropdown = useCallback(
     (buttonRef?: HTMLElement | null) => {
@@ -117,6 +129,33 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const handleCloseColumnMenu = useCallback(() => {
     setColumnMenuAnchor(null);
   }, []);
+
+  const handleCellContextMenu = useCallback(
+    (event: React.MouseEvent<HTMLTableCellElement>, cell: MRT_Cell<EntityData>, row: MRT_Row<EntityData>) => {
+      event.preventDefault();
+      setContextMenu({
+        anchorEl: event.currentTarget,
+        cell,
+        row,
+      });
+    },
+    []
+  );
+
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenu({
+      anchorEl: null,
+      cell: null,
+      row: null,
+    });
+  }, []);
+
+  const handleFilterByValue = useCallback(
+    async (columnId: string, filterId: string, filterValue: string | number, filterLabel: string) => {
+      await applyQuickFilter(columnId, filterId, filterValue, filterLabel);
+    },
+    [applyQuickFilter]
+  );
 
   const renderFirstColumnCell = ({
     renderedCellValue,
@@ -423,6 +462,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         column: props.column,
         row: props.row,
       }),
+      onContextMenu: (event: React.MouseEvent<HTMLTableCellElement>) => {
+        handleCellContextMenu(event, props.cell, props.row);
+      },
     }),
     displayColumnDefOptions: getDisplayColumnDefOptions({ shouldUseTreeMode }),
     muiTableBodyProps: { sx: sx.tableBody },
@@ -712,6 +754,13 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         onClose={handleCloseColumnMenu}
         table={table}
         data-testid="ColumnVisibilityMenu__8ca888"
+      />
+      <CellContextMenu
+        anchorEl={contextMenu.anchorEl}
+        onClose={handleCloseContextMenu}
+        cell={contextMenu.cell}
+        row={contextMenu.row}
+        onFilterByValue={handleFilterByValue}
       />
     </div>
   );

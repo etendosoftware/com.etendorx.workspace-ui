@@ -79,6 +79,7 @@ interface UseTableDataReturn {
   refetch: () => Promise<void>;
   removeRecordLocally: ((id: string) => void) | null;
   hasMoreRecords: boolean;
+  applyQuickFilter: (columnId: string, filterId: string, filterValue: string | number, filterLabel: string) => Promise<void>;
 }
 
 export const useTableData = ({
@@ -154,7 +155,7 @@ export const useTableData = ({
 
       onColumnFilter?.(columnId, selectedOptions);
     },
-    [setColumnFilter, onColumnFilter]
+    [setColumnFilter, onColumnFilter, setTableColumnFilters]
   );
 
   const handleLoadFilterOptions = useCallback(
@@ -518,6 +519,41 @@ export const useTableData = ({
     setTableColumnVisibility(initialVisibility);
   }, [tab.fields, tableColumnVisibility, setTableColumnVisibility]);
 
+  // Apply quick filter from context menu
+  const applyQuickFilter = useCallback(
+    async (columnId: string, filterId: string, filterValue: string | number, filterLabel: string) => {
+      const column = baseColumns.find((col) => col.columnName === columnId || col.id === columnId);
+      if (!column) {
+        return;
+      }
+
+      // Create filter option with proper structure:
+      // - id: UUID of the record (for matching in availableOptions)
+      // - label: Display name (for UI)
+      // - value: Display name (for backend filtering with iEquals operator)
+      const filterOption: FilterOption = {
+        id: filterId,
+        label: filterLabel,
+        value: String(filterValue),
+      };
+
+      // For TableDir columns, we need to ensure the option is available in the dropdown
+      // Check if the option already exists in availableOptions
+      const existingFilter = advancedColumnFilters.find((f) => f.id === columnId);
+      const optionExists = existingFilter?.availableOptions.some((opt) => opt.id === filterOption.id);
+
+      if (ColumnFilterUtils.isTableDirColumn(column) && !optionExists) {
+        // Get existing options and add the new one
+        const existingOptions = existingFilter?.availableOptions || [];
+        setFilterOptions(columnId, [...existingOptions, filterOption], false, false);
+      }
+
+      // Apply the filter using existing handleColumnFilterChange
+      await handleColumnFilterChange(columnId, [filterOption]);
+    },
+    [baseColumns, handleColumnFilterChange, setFilterOptions, advancedColumnFilters]
+  );
+
   return {
     // Data
     displayRecords,
@@ -547,6 +583,7 @@ export const useTableData = ({
     fetchMore,
     refetch,
     removeRecordLocally,
+    applyQuickFilter,
     hasMoreRecords,
   };
 };
