@@ -65,7 +65,14 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { sx } = useStyle();
   const { t } = useTranslation();
   const { graph } = useSelected();
-  const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
+  const {
+    registerDatasource,
+    unregisterDatasource,
+    registerRefetchFunction,
+    registerRecordsGetter,
+    registerHasMoreRecordsGetter,
+    registerFetchMore,
+  } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
   const { activeWindow, getSelectedRecord } = useMultiWindowURL();
   const { tab, parentTab, parentRecord } = useTabContext();
@@ -664,10 +671,34 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
     registerRefetchFunction(tabId, refetch);
 
+    // Register records getter for navigation
+    registerRecordsGetter(tabId, () => records);
+
+    // Register hasMoreRecords getter
+    registerHasMoreRecordsGetter(tabId, () => hasMoreRecords);
+
+    // Register fetchMore function
+    if (fetchMore) {
+      registerFetchMore(tabId, fetchMore);
+    }
+
     return () => {
       unregisterDatasource(tabId);
     };
-  }, [tabId, removeRecordLocally, registerDatasource, unregisterDatasource, registerRefetchFunction, refetch]);
+  }, [
+    tabId,
+    removeRecordLocally,
+    registerDatasource,
+    unregisterDatasource,
+    registerRefetchFunction,
+    registerRecordsGetter,
+    registerHasMoreRecordsGetter,
+    registerFetchMore,
+    refetch,
+    records,
+    hasMoreRecords,
+    fetchMore,
+  ]);
 
   useEffect(() => {
     registerActions({
