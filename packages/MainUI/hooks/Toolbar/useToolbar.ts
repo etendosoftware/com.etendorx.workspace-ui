@@ -28,6 +28,17 @@ import type { ProcessButton } from "@/components/ProcessModal/types";
 
 const toolbarCache = new Map<string, ToolbarButtonMetadata[]>();
 
+/**
+ * List of process column names that should NOT allow multiple selections
+ * despite having isMultiRecord: true in metadata.
+ *
+ * These are processes that are incorrectly configured in the backend.
+ * TODO: These should be fixed in Etendo Classic metadata by setting isMultiRecord = false
+ */
+const SINGLE_RECORD_ONLY_PROCESSES = new Set([
+  "EM_APRM_AddPayment", // Add Payment - processes individual orders, not bulk
+]);
+
 export function useToolbar(windowId: string, tabId?: string) {
   const cacheKey = `${windowId}-${tabId || "default"}`;
   const [toolbar, setToolbar] = useState<ToolbarButtonMetadata[] | null>(() => toolbarCache.get(cacheKey) || null);
@@ -46,17 +57,27 @@ export function useToolbar(windowId: string, tabId?: string) {
     return buttons.filter((button) => {
       if (!button.displayed) return false;
       if (selectedItems?.length === 0) return false;
-      if (selectedItems?.length > 1 && !button?.processDefinition?.isMultiRecord) return false;
+
+      // Check if process allows multiple selections
+      // Trust isMultiRecord from backend, but check exceptions list for misconfigured processes
+      const isInExceptionList = SINGLE_RECORD_ONLY_PROCESSES.has(button.columnName);
+      const allowsMultipleSelections = button?.processDefinition?.isMultiRecord && !isInExceptionList;
+
+      if (selectedItems?.length > 1 && !allowsMultipleSelections) {
+        return false;
+      }
       if (!button.displayLogicExpression) return true;
 
       const compiledExpr = compileExpression(button.displayLogicExpression);
-
       try {
         const checkRecord = (record: Record<string, unknown>) => compiledExpr(session, record);
-        return button?.processDefinition?.isMultiRecord
-          ? selectedItems.every(checkRecord)
-          : selectedItems.some(checkRecord);
-      } catch {
+
+        // For multi-record processes: ALL selected records must satisfy the condition
+        // For single-record processes: AT LEAST ONE record must satisfy the condition
+        const result = allowsMultipleSelections ? selectedItems.every(checkRecord) : selectedItems.some(checkRecord);
+        return result;
+      } catch (error) {
+        console.error(`Error evaluating displayLogic for ${button.columnName}:`, error);
         return true;
       }
     }) as ProcessButton[];
