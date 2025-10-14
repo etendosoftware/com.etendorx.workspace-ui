@@ -225,6 +225,10 @@ const en = {
         title: "Session expired due to inactivity",
         description: "You have been automatically logged out for security reasons. Please log in again to continue.",
       },
+      noAccessTableNoView: {
+        title: "No Access to Table",
+        description: "You have been automatically logged out for security reasons. Please log in again to continue.",
+      },
     },
     or: "OR",
   },
