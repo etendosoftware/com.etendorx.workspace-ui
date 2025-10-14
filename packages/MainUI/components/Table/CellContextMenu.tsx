@@ -31,9 +31,17 @@ interface CellContextMenuProps {
   cell: MRT_Cell<EntityData> | null;
   row: MRT_Row<EntityData> | null;
   onFilterByValue: (columnId: string, filterId: string, filterValue: string | number, filterLabel: string) => void;
+  columns: any[]; // Array of column definitions with metadata
 }
 
-export const CellContextMenu: React.FC<CellContextMenuProps> = ({ anchorEl, onClose, cell, row, onFilterByValue }) => {
+export const CellContextMenu: React.FC<CellContextMenuProps> = ({
+  anchorEl,
+  onClose,
+  cell,
+  row,
+  onFilterByValue,
+  columns,
+}) => {
   const { t } = useTranslation();
 
   const handleUseAsFilter = () => {
@@ -49,18 +57,53 @@ export const CellContextMenu: React.FC<CellContextMenuProps> = ({ anchorEl, onCl
     // Try to get the value using the column name
     const cellValue = rowData[columnDataKey];
 
+    // Find the column metadata to check if it's a LIST or BOOLEAN type
+    const columnMetadata = columns.find((col) => col.id === columnId || col.columnName === columnDataKey);
+    const isBooleanColumn = columnMetadata?.type === "boolean";
+    const isYesNoColumn = columnMetadata?.column?._identifier === "YesNo";
+    const hasRefList = columnMetadata?.refList && Array.isArray(columnMetadata.refList);
+
     let filterValue: string | number;
     let filterLabel: string;
     let filterId: string;
 
-    // Check if this is a reference field with $<columnDataKey>$_identifier pattern
-    const identifierKey = `${columnDataKey}$_identifier`;
-    if (rowData[identifierKey]) {
+    // Check if this is a pure BOOLEAN field (not YesNo reference)
+    if (isBooleanColumn && !isYesNoColumn) {
+      // For pure boolean fields, use "true" or "false" as string for both id and value
+      const boolValue = String(cellValue).toLowerCase(); // Convert to "true" or "false"
+      filterId = boolValue;
+      filterValue = boolValue;
+      filterLabel = boolValue === "true" ? "Yes" : "No"; // This will be overridden by translation in the UI
+    } else if (isYesNoColumn || (columnMetadata?.refList && Array.isArray(columnMetadata.refList))) {
+      // For YesNo columns or LIST fields, find the matching option in refList by value
+      // Convert boolean values to lowercase string for matching (true -> "true", false -> "false")
+      const searchValue = typeof cellValue === "boolean" ? String(cellValue).toLowerCase() : String(cellValue);
+      const listOption = columnMetadata?.refList?.find((opt: any) => opt.value === searchValue);
+
+      if (listOption) {
+        filterId = listOption.id; // Use the list item ID for matching
+        filterValue = listOption.value; // Use the value for filtering
+        filterLabel = listOption.label; // Use the label for display
+      } else {
+        // Fallback if not found in refList - for YesNo fields without refList, use same logic as boolean
+        if (isYesNoColumn && typeof cellValue === "boolean") {
+          const boolValue = String(cellValue).toLowerCase();
+          filterId = boolValue;
+          filterValue = boolValue;
+          filterLabel = boolValue === "true" ? "Yes" : "No";
+        } else {
+          filterId = String(cellValue);
+          filterValue = cellValue as string | number;
+          filterLabel = String(cellValue);
+        }
+      }
+    } else if (rowData[`${columnDataKey}$_identifier`]) {
       // This is a reference field (TableDir/Search)
       // For reference fields:
       // - id: the UUID of the referenced record (used in availableOptions)
       // - value: the label/identifier (used for filtering in the backend)
       // - label: the label/identifier (displayed in the UI)
+      const identifierKey = `${columnDataKey}$_identifier`;
       const recordId = String(cellValue); // The UUID from businessPartner field
       const identifier = String(rowData[identifierKey]); // The display name
 

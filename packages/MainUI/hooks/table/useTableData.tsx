@@ -23,7 +23,7 @@ import type {
   MRT_SortingState,
 } from "material-react-table";
 import type { DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
-import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useSearch } from "../../contexts/searchContext";
 import { useLanguage } from "../../contexts/language";
@@ -132,6 +132,7 @@ export const useTableData = ({
   const {
     columnFilters: advancedColumnFilters,
     setColumnFilter,
+    setColumnFilters,
     setFilterOptions,
     loadMoreFilterOptions,
   } = useColumnFilters({
@@ -532,31 +533,63 @@ export const useTableData = ({
         return;
       }
 
-      // Create filter option with proper structure:
-      // - id: UUID of the record (for matching in availableOptions)
-      // - label: Display name (for UI)
-      // - value: Display name (for backend filtering with iEquals operator)
       const filterOption: FilterOption = {
         id: filterId,
         label: filterLabel,
         value: String(filterValue),
       };
 
-      // For TableDir columns, we need to ensure the option is available in the dropdown
-      // Check if the option already exists in availableOptions
       const existingFilter = advancedColumnFilters.find((f) => f.id === columnId);
       const optionExists = existingFilter?.availableOptions.some((opt) => opt.id === filterOption.id);
+      const isBooleanOrYesNo = column.type === "boolean" || column.column?._identifier === "YesNo";
 
+      // For boolean/YesNo columns, create the filter entry if it doesn't exist
+      if (isBooleanOrYesNo && !existingFilter) {
+        const booleanOptions: FilterOption[] = [
+          { id: "true", label: "Yes", value: "true" },
+          { id: "false", label: "No", value: "false" },
+        ];
+
+        const newFilter: ColumnFilterState = {
+          id: columnId,
+          selectedOptions: [filterOption],
+          isMultiSelect: true,
+          availableOptions: booleanOptions,
+          loading: false,
+        };
+
+        setColumnFilters((prev) => [...prev, newFilter]);
+
+        const mrtFilter = {
+          id: columnId,
+          value: [filterOption.value],
+        };
+        setTableColumnFilters((prev) => {
+          const filtered = prev.filter((f) => f.id !== columnId);
+          return [...filtered, mrtFilter];
+        });
+
+        onColumnFilter?.(columnId, [filterOption]);
+        return;
+      }
+
+      // For TableDir columns, ensure the option is available in the dropdown
       if (ColumnFilterUtils.isTableDirColumn(column) && !optionExists) {
-        // Get existing options and add the new one
         const existingOptions = existingFilter?.availableOptions || [];
         setFilterOptions(columnId, [...existingOptions, filterOption], false, false);
       }
 
-      // Apply the filter using existing handleColumnFilterChange
       await handleColumnFilterChange(columnId, [filterOption]);
     },
-    [baseColumns, handleColumnFilterChange, setFilterOptions, advancedColumnFilters]
+    [
+      baseColumns,
+      handleColumnFilterChange,
+      setFilterOptions,
+      advancedColumnFilters,
+      setColumnFilters,
+      setTableColumnFilters,
+      onColumnFilter,
+    ]
   );
 
   return {

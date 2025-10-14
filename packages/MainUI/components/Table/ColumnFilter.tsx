@@ -6,7 +6,6 @@ import {
   type FilterOption,
 } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { MultiSelect } from "../Form/FormView/selectors/components/MultiSelect";
-import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export interface ColumnFilterProps {
@@ -25,7 +24,6 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
   onLoadMoreOptions,
 }) => {
   const { t } = useTranslation();
-  const [localSelectedOptions, setLocalSelectedOptions] = useState<FilterOption[]>(filterState?.selectedOptions || []);
 
   const isBooleanColumn = column.type === "boolean" || column.column?._identifier === "YesNo";
 
@@ -46,17 +44,11 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
         value: option.value ?? option.id,
       }));
 
-  const selectedValues = isBooleanColumn
-    ? localSelectedOptions.map((opt) => opt.id)
-    : (filterState?.selectedOptions || []).map((option) => option.id);
+  // Treat boolean columns the same as LIST columns: use filterState?.selectedOptions directly
+  const selectedValues = (filterState?.selectedOptions || []).map((option) => option.id);
 
   const handleSelectionChange = (selectedIds: string[]) => {
     const selectedOptions = (availableOptions || []).filter((option) => selectedIds.includes(option.id));
-
-    if (isBooleanColumn) {
-      setLocalSelectedOptions(selectedOptions);
-    }
-
     onFilterChange(selectedOptions);
   };
 
