@@ -27,6 +27,7 @@ export interface UseColumnFiltersProps {
 export interface UseColumnFiltersReturn {
   columnFilters: ColumnFilterState[];
   setColumnFilter: (columnId: string, selectedOptions: FilterOption[]) => void;
+  setColumnFilters: React.Dispatch<React.SetStateAction<ColumnFilterState[]>>;
   clearColumnFilter: (columnId: string) => void;
   clearAllFilters: () => void;
   loadFilterOptions: (columnId: string, searchQuery?: string) => Promise<void>;
@@ -131,6 +132,7 @@ export function useColumnFilters({ columns, onFiltersChange }: UseColumnFiltersP
   return {
     columnFilters,
     setColumnFilter,
+    setColumnFilters,
     clearColumnFilter,
     clearAllFilters,
     loadFilterOptions,

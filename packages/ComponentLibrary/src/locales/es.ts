@@ -159,6 +159,7 @@ const es = {
     content: {
       currentTitle: "Se espera que sus ingresos aumenten a finales de este año. Felicitaciones",
     },
+    useAsFilter: "Usar como filtro",
   },
   navigation: {
     common: {
