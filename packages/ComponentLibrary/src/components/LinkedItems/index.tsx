@@ -159,19 +159,25 @@ export const LinkedItems = ({
     </div>
   );
 
-  const leftPanelContent = loadingCategories
-    ? loadingContent
-    : categories.length === 0
-      ? noCategoriesContent
-      : categoriesContent;
+  let leftPanelContent: JSX.Element;
+  if (loadingCategories) {
+    leftPanelContent = loadingContent;
+  } else if (categories.length === 0) {
+    leftPanelContent = noCategoriesContent;
+  } else {
+    leftPanelContent = categoriesContent;
+  }
 
-  const rightPanelContent = !selectedCategory
-    ? noSelectedCategoryContent
-    : loadingItems
-      ? loadingContent
-      : items.length === 0
-        ? noCategoriesContent
-        : itemsContent;
+  let rightPanelContent: JSX.Element;
+  if (!selectedCategory) {
+    rightPanelContent = noSelectedCategoryContent;
+  } else if (loadingItems) {
+    rightPanelContent = loadingContent;
+  } else if (items.length === 0) {
+    rightPanelContent = noCategoriesContent;
+  } else {
+    rightPanelContent = itemsContent;
+  }
 
   return (
     <div className="flex gap-4 h-[400px]">
