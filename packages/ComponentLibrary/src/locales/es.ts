@@ -48,6 +48,8 @@ const es = {
       main: "Sección Principal",
       audit: "Auditoría",
       linkedItems: "Artículos Asociados",
+      noCategories: "No hay categorias disponibles",
+      selectCategory: "Por favor selecciona una categoría",
     },
     statusBar: {
       closeRecord: "Cerrar registro",

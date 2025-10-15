@@ -49,6 +49,8 @@ const en = {
       main: "Main Section",
       audit: "Audit",
       linkedItems: "Linked Items",
+      noCategories: "No Categories Available",
+      selectCategory: "Please select a category",
     },
     statusBar: {
       closeRecord: "Close Record",

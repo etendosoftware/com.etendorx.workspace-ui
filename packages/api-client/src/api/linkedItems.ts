@@ -34,16 +34,20 @@ export async function fetchLinkedItemCategories(params: FetchCategoriesParams): 
   body.append("Command", "JSONCategory");
   body.append("windowId", params.windowId);
   body.append("entityName", params.entityName);
-  // Set session attribute: windowId|columnName = recordId
   body.append(`inpkey${params.windowId}`, params.recordId);
 
-  const response = await client.post("utility/UsedByLink.html", body, {
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-  });
+  let response: Response;
+  try {
+    response = await client.post("utility/UsedByLink.html", body, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
+  } catch (error) {
+    throw new Error(`Error fetching linked item categories: ${error instanceof Error ? error.message : String(error)}`);
+  }
 
-  const data = response.data as LinkedItemsResponse;
+  const data = (await response.json()) as LinkedItemsResponse;
   return (data?.usedByLinkData || []) as LinkedItemCategory[];
 }
 
@@ -61,12 +65,17 @@ export async function fetchLinkedItems(params: FetchLinkedItemsParams): Promise<
   body.append("tableName", params.tableName);
   body.append("columnName", params.columnName);
 
-  const response = await client.post("utility/UsedByLink.html", body, {
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-  });
+  let response: Response;
+  try {
+    response = await client.post("utility/UsedByLink.html", body, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
+  } catch (error) {
+    throw new Error(`Error fetching linked items: ${error instanceof Error ? error.message : String(error)}`);
+  }
 
-  const data = response.data as LinkedItemsResponse;
+  const data = (await response.json()) as LinkedItemsResponse;
   return (data?.usedByLinkData || []) as LinkedItem[];
 }
