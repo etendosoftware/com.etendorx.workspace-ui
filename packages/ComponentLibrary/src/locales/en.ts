@@ -48,6 +48,7 @@ const en = {
     sections: {
       main: "Main Section",
       audit: "Audit",
+      linkedItems: "Linked Items",
     },
     statusBar: {
       closeRecord: "Close Record",
