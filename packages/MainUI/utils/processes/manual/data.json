@@ -64,5 +64,17 @@
     "command": "BUTTONDocAction1004400003",
     "inpkeyColumnId": "M_Requisition_ID",
     "keyColumnName": "M_Requisition_ID"
+  },
+  "3DE09F050A624C9D9E5477D0A94491A1": {
+    "url": "/org.openbravo.erpCommon.ad_actionButton/ProcessGoods.html",
+    "command": "DEFAULT",
+    "inpkeyColumnId": "M_InOut_ID",
+    "keyColumnName": "M_InOut_ID"
+  },
+  "4248": {
+    "url": "/GoodsReceipt/Header_Edition.html",
+    "command": "BUTTONCreateFrom",
+    "inpkeyColumnId": "M_InOut_ID",
+    "keyColumnName": "M_InOut_ID"
   }
 }
