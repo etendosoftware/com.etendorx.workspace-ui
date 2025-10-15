@@ -53,22 +53,6 @@ export const LinkedItems = ({
   const [selectedCategory, setSelectedCategory] = useState<LinkedItemCategory | null>(null);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingItems, setLoadingItems] = useState(false);
-  const [initialized, setInitialized] = useState(false);
-
-  const loadCategories = useCallback(async () => {
-    if (initialized) return;
-
-    setLoadingCategories(true);
-    try {
-      const result = await onFetchCategories({ windowId, entityName, recordId });
-      setCategories(result);
-      setInitialized(true);
-    } catch (error) {
-      console.error("Error loading categories:", error);
-    } finally {
-      setLoadingCategories(false);
-    }
-  }, [windowId, entityName, recordId, onFetchCategories, initialized]);
 
   const handleCategoryClick = useCallback(
     async (category: LinkedItemCategory) => {
@@ -94,10 +78,38 @@ export const LinkedItems = ({
   );
 
   useEffect(() => {
-    if (!initialized && !loadingCategories) {
-      loadCategories();
-    }
-  }, [initialized, loadingCategories, loadCategories]);
+    let isMounted = true;
+
+    const fetchCategories = async () => {
+      // 1. Inicia la carga
+      setLoadingCategories(true);
+
+      try {
+        const result = await onFetchCategories({ windowId, entityName, recordId });
+
+        if (isMounted) {
+          // 2. Establece las categorías.
+          // (Esta actualización se procesa antes de salir del bloque try/finally)
+          setCategories(result);
+        }
+      } catch (error) {
+        console.error("Error loading categories:", error);
+        // Si hay un error, `categories` seguirá siendo `[]` y el contenido
+        // mostrará el mensaje de "no categories" cuando loadingCategories sea false.
+      } finally {
+        // 3. Desactiva la carga.
+        if (isMounted) {
+          setLoadingCategories(false);
+        }
+      }
+    };
+
+    fetchCategories();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [windowId, entityName, recordId, onFetchCategories]); // Dependencias correctas
 
   const loadingContent = (
     <div className="flex justify-center items-center h-full p-4">
@@ -185,7 +197,6 @@ export const LinkedItems = ({
     <div className="flex gap-4 h-[400px]">
       {/* Left Panel - Categories */}
       <div className="flex-1 border border-gray-300 rounded overflow-auto bg-white">{leftPanelContent}</div>
-
       {/* Right Panel - Items */}
       <div className="flex-1 border border-gray-300 rounded overflow-auto bg-white">{rightPanelContent}</div>
     </div>
