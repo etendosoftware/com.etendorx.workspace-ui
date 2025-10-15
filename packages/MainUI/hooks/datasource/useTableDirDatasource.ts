@@ -103,20 +103,27 @@ export const useTableDirDatasource = ({ field, pageSize = 75, initialPageSize = 
     inpissotrx?: string;
     windowId?: string;
     "Deposit To"?: string;
+    "Sales Transaction"?: string;
   }
 
   function isAddPayment(baseBody: BaseBody): BaseBody {
-    if (!baseBody._selectorDefinitionId) {
-      return baseBody; // No hacer nada si no existe
-    }
     const { inpfinPaymentmethodId, inpissotrx, windowId, ...rest } = baseBody;
     const depositTo = baseBody["Deposit To"];
+    const salesTransaction = baseBody["Sales Transaction"];
+
+    // Determine issotrx value from either inpissotrx or Sales Transaction
+    let issotrxValue: boolean | undefined;
+    if (inpissotrx !== undefined && inpissotrx !== null && inpissotrx !== "") {
+      issotrxValue = inpissotrx === "Y";
+    } else if (salesTransaction !== undefined && salesTransaction !== null && salesTransaction !== "") {
+      issotrxValue = salesTransaction === "Y";
+    }
 
     const result: BaseBody = {
       ...rest,
       ...(inpfinPaymentmethodId && { fin_paymentmethod_id: inpfinPaymentmethodId }),
       ...(depositTo && { fin_financial_account_id: depositTo }),
-      ...(inpissotrx && { issotrx: inpissotrx === "Y" }),
+      ...(issotrxValue !== undefined && { issotrx: issotrxValue }),
     };
 
     return result;
