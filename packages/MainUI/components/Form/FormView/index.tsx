@@ -567,7 +567,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               data-testid="FormHeader__1a0853"
             />
 
-            <FormFields tab={tab} mode={mode} groups={groups} loading={isLoading} data-testid="FormFields__1a0853" />
+            <FormFields tab={tab} mode={mode} groups={groups} loading={isLoading} recordId={recordId} data-testid="FormFields__1a0853" />
 
             <FormActions
               tab={tab}

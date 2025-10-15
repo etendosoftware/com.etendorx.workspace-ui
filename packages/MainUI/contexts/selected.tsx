@@ -48,23 +48,28 @@ export const SelectedProvider = ({
   children,
   tabs,
   windowId,
+  windowIdentifier,
 }: React.PropsWithChildren<{
   tabs: Tab[];
   windowId: string;
+  windowIdentifier?: string;
 }>) => {
   const [activeLevels, setActiveLevels] = useState<number[]>([0]);
   const [tabStates, setTabStates] = useState<TabStates>({});
 
+  // Use windowIdentifier for cache key to support multiple instances of same window
+  const cacheKey = windowIdentifier || windowId;
+
   const graph = useMemo(() => {
-    if (!windowGraphCache.has(windowId)) {
-      windowGraphCache.set(windowId, new Graph<Tab>(tabs));
+    if (!windowGraphCache.has(cacheKey)) {
+      windowGraphCache.set(cacheKey, new Graph<Tab>(tabs));
     }
-    const cachedGraph = windowGraphCache.get(windowId);
+    const cachedGraph = windowGraphCache.get(cacheKey);
     if (!cachedGraph) {
-      throw new Error(`Failed to retrieve graph for window id: ${windowId}`);
+      throw new Error(`Failed to retrieve graph for window identifier: ${cacheKey}`);
     }
     return cachedGraph;
-  }, [windowId, tabs]);
+  }, [cacheKey, tabs]);
 
   const clearAllStates = useCallback(() => {
     setTabStates({});

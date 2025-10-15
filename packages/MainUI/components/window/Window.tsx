@@ -25,7 +25,7 @@ import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import TabsContainer from "@/components/window/TabsContainer";
 
-export default function Window({ windowId }: { windowId: string }) {
+export default function Window({ windowId }: { windowId: string; windowIdentifier: string }) {
   const { error, loading, getWindowMetadata, loadWindowData } = useMetadataContext();
   const { t } = useTranslation();
 

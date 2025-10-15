@@ -813,3 +813,38 @@ export interface LocationErrorResponse {
   error: string;
   status: number;
 }
+
+export interface LinkedItemCategory {
+  adTabId: string;
+  adWindowId: string;
+  columnName: string;
+  fullElementName: string;
+  tableName: string;
+  total: string;
+}
+
+export interface LinkedItem {
+  adTabId: string;
+  adWindowId: string;
+  id: string;
+  name: string;
+}
+
+export interface LinkedItemsResponse {
+  usedByLinkData: LinkedItemCategory[] | LinkedItem[];
+}
+
+export interface FetchCategoriesParams {
+  windowId: string;
+  entityName: string;
+  recordId: string;
+}
+
+export interface FetchLinkedItemsParams {
+  windowId: string;
+  entityName: string;
+  recordId: string;
+  adTabId: string;
+  tableName: string;
+  columnName: string;
+}

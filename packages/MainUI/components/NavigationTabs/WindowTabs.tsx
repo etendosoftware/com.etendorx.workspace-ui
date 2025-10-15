@@ -73,14 +73,14 @@ export default function WindowTabs() {
     setClosingWindowIds((prev) => {
       const next = new Set<string>();
       for (const id of prev) {
-        if (windows.some((w) => w.windowId === id)) next.add(id);
+        if (windows.some((w) => w.window_identifier === id)) next.add(id);
       }
       return next;
     });
   }, [windows]);
 
   const visibleWindows = useMemo(
-    () => windows.filter((w) => !closingWindowIds.has(w.windowId)),
+    () => windows.filter((w) => !closingWindowIds.has(w.window_identifier)),
     [windows, closingWindowIds]
   );
 
@@ -119,24 +119,24 @@ export default function WindowTabs() {
 
           return (
             <div
-              key={window.windowId}
+              key={window.window_identifier}
               className="flex items-center h-9"
               ref={(el) => {
-                tabRefs.current[window.windowId] = el;
+                tabRefs.current[window.window_identifier] = el;
               }}>
               <WindowTab
-                windowId={window.windowId}
+                windowId={window.window_identifier}
                 title={title}
                 isActive={isActive}
                 onActivate={() => {
-                  handleSelectWindow(window.windowId);
+                  handleSelectWindow(window.window_identifier);
                 }}
                 onClose={() => {
                   // Optimistic removal for instant feedback
-                  setClosingWindowIds((prev) => new Set(prev).add(window.windowId));
+                  setClosingWindowIds((prev) => new Set(prev).add(window.window_identifier));
                   // Clean up table state for this window
                   cleanupWindow(window.windowId);
-                  closeWindow(window.windowId);
+                  closeWindow(window.window_identifier);
                 }}
                 canClose={canClose}
                 data-testid="WindowTab__c8117d"

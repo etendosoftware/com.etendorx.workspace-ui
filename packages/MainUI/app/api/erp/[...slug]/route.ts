@@ -32,6 +32,8 @@ const getCachedErpData = unstable_cache(
     let erpUrl: string;
     if (slug.includes("copilot")) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
+    } else if (slug.startsWith("utility/")) {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
     }
@@ -204,6 +206,8 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else if (slug.startsWith("copilot/")) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
+    } else if (slug.startsWith("utility/")) {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
     }
