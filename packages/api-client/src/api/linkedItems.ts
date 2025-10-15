@@ -36,19 +36,25 @@ export async function fetchLinkedItemCategories(params: FetchCategoriesParams): 
   body.append("entityName", params.entityName);
   body.append(`inpkey${params.windowId}`, params.recordId);
 
-  let response: Response;
+  let responseData: LinkedItemsResponse;
+
   try {
-    response = await client.post("utility/UsedByLink.html", body, {
+    const response = (await client.post("utility/UsedByLink.html", body, {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-    });
+    })) as { data: LinkedItemsResponse; ok: boolean; status: number };
+
+    responseData = response.data;
+
+    if (!response.ok) {
+      throw new Error(`API call failed with status ${response.status}`);
+    }
   } catch (error) {
     throw new Error(`Error fetching linked item categories: ${error instanceof Error ? error.message : String(error)}`);
   }
 
-  const data = (await response.json()) as LinkedItemsResponse;
-  return (data?.usedByLinkData || []) as LinkedItemCategory[];
+  return (responseData?.usedByLinkData || []) as LinkedItemCategory[];
 }
 
 /**
@@ -65,17 +71,23 @@ export async function fetchLinkedItems(params: FetchLinkedItemsParams): Promise<
   body.append("tableName", params.tableName);
   body.append("columnName", params.columnName);
 
-  let response: Response;
+  let responseData: LinkedItemsResponse;
+
   try {
-    response = await client.post("utility/UsedByLink.html", body, {
+    const response = (await client.post("utility/UsedByLink.html", body, {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-    });
+    })) as { data: LinkedItemsResponse; ok: boolean; status: number };
+
+    if (!response.ok) {
+      throw new Error(`API call failed with status ${response.status}`);
+    }
+
+    responseData = response.data;
   } catch (error) {
     throw new Error(`Error fetching linked items: ${error instanceof Error ? error.message : String(error)}`);
   }
 
-  const data = (await response.json()) as LinkedItemsResponse;
-  return (data?.usedByLinkData || []) as LinkedItem[];
+  return (responseData?.usedByLinkData || []) as LinkedItem[];
 }
