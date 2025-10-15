@@ -21,6 +21,7 @@ import { fetchLinkedItemCategories, fetchLinkedItems } from "@workspaceui/api-cl
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { FORM_MODES } from "@/utils/url/constants";
 import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface LinkedItemsSectionProps {
   windowId: string;
@@ -30,6 +31,7 @@ interface LinkedItemsSectionProps {
 
 export const LinkedItemsSection = ({ windowId, entityName, recordId }: LinkedItemsSectionProps) => {
   const { openWindowAndSelect } = useMultiWindowURL();
+  const { t } = useTranslation();
 
   const handleFetchCategories = useCallback(
     async (params: { windowId: string; entityName: string; recordId: string }) => {
@@ -74,6 +76,9 @@ export const LinkedItemsSection = ({ windowId, entityName, recordId }: LinkedIte
       onFetchCategories={handleFetchCategories}
       onFetchItems={handleFetchItems}
       onItemClick={handleItemClick}
+      loadingText={t("common.loading")}
+      noCategoriesText={t("forms.sections.noCategories")}
+      noSelectedCategoryText={t("forms.sections.selectCategory")}
       data-testid="LinkedItems__92af80"
     />
   );

@@ -32,6 +32,9 @@ export interface LinkedItemsProps {
     columnName: string;
   }) => Promise<LinkedItem[]>;
   onItemClick: (item: LinkedItem) => void;
+  loadingText: string;
+  noCategoriesText: string;
+  noSelectedCategoryText: string;
 }
 
 export const LinkedItems = ({
@@ -41,6 +44,9 @@ export const LinkedItems = ({
   onFetchCategories,
   onFetchItems,
   onItemClick,
+  loadingText,
+  noCategoriesText,
+  noSelectedCategoryText,
 }: LinkedItemsProps) => {
   const [categories, setCategories] = useState<LinkedItemCategory[]>([]);
   const [items, setItems] = useState<LinkedItem[]>([]);
@@ -94,18 +100,19 @@ export const LinkedItems = ({
   const loadingContent = (
     <div className="flex justify-center items-center h-full p-4">
       <div className="w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <p className="text-sm text-gray-500 ml-2">{loadingText}</p>
     </div>
   );
 
   const noCategoriesContent = (
     <div className="p-4">
-      <p className="text-sm text-gray-500">No linked items found</p>
+      <p className="text-sm text-gray-500">{noCategoriesText}</p>
     </div>
   );
 
-  const noSelectedCategory = (
+  const noSelectedCategoryContent = (
     <div className="flex justify-center items-center h-full p-4">
-      <p className="text-sm text-gray-500">Select a category to view items</p>
+      <p className="text-sm text-gray-500">{noSelectedCategoryText}</p>
     </div>
   );
 
@@ -152,23 +159,27 @@ export const LinkedItems = ({
     </div>
   );
 
+  const leftPanelContent = loadingCategories
+    ? loadingContent
+    : categories.length === 0
+      ? noCategoriesContent
+      : categoriesContent;
+
+  const rightPanelContent = !selectedCategory
+    ? noSelectedCategoryContent
+    : loadingItems
+      ? loadingContent
+      : items.length === 0
+        ? noCategoriesContent
+        : itemsContent;
+
   return (
     <div className="flex gap-4 h-[400px]">
       {/* Left Panel - Categories */}
-      <div className="flex-1 border border-gray-300 rounded overflow-auto bg-white">
-        {loadingCategories ? loadingContent : categories.length === 0 ? noCategoriesContent : categoriesContent}
-      </div>
+      <div className="flex-1 border border-gray-300 rounded overflow-auto bg-white">{leftPanelContent}</div>
 
       {/* Right Panel - Items */}
-      <div className="flex-1 border border-gray-300 rounded overflow-auto bg-white">
-        {!selectedCategory
-          ? noSelectedCategory
-          : loadingItems
-            ? loadingContent
-            : items.length === 0
-              ? noCategoriesContent
-              : itemsContent}
-      </div>
+      <div className="flex-1 border border-gray-300 rounded overflow-auto bg-white">{rightPanelContent}</div>
     </div>
   );
 };
