@@ -23,15 +23,18 @@ import Collapsible from "@/components/Form/Collapsible";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import { useFormViewContext } from "./contexts/FormViewContext";
 import { useRef, useEffect } from "react";
+import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
+import LinkedItemsSection from "./Sections/LinkedItemsSection";
 
 interface FormFieldsProps {
   tab: Tab;
   mode: FormMode;
   groups: Array<[string | null, { identifier: string; fields: Record<string, Field> }]>;
   loading: boolean;
+  recordId: string;
 }
 
-export function FormFields({ mode, groups, loading }: FormFieldsProps) {
+export function FormFields({ tab, mode, groups, loading, recordId }: FormFieldsProps) {
   const { watch } = useFormContext();
   const { session } = useUserContext();
   const { expandedSections, selectedTab, handleSectionRef, handleAccordionChange, isSectionExpanded, getIconForGroup } =
@@ -103,6 +106,19 @@ export function FormFields({ mode, groups, loading }: FormFieldsProps) {
           </div>
         );
       })}
+
+      {/* Linked Items Section */}
+      <div ref={handleSectionRef("linked-items")} data-section-id="linked-items">
+        <Collapsible
+          title="Linked Items"
+          isExpanded={isSectionExpanded("linked-items")}
+          sectionId="linked-items"
+          icon={<LinkIcon data-testid="LinkIcon__linkeditems" />}
+          onToggle={(isOpen: boolean) => handleAccordionChange("linked-items", isOpen)}
+          data-testid="Collapsible__linkeditems">
+          <LinkedItemsSection windowId={tab.window} entityName={tab.entityName} recordId={recordId} />
+        </Collapsible>
+      </div>
     </div>
   );
 }
