@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 export interface LinkedItemCategory {
   adTabId: string;
@@ -93,9 +93,11 @@ export const LinkedItems = ({
     [windowId, entityName, recordId, onFetchItems]
   );
 
-  if (!initialized && !loadingCategories) {
-    loadCategories();
-  }
+  useEffect(() => {
+    if (!initialized && !loadingCategories) {
+      loadCategories();
+    }
+  }, [initialized, loadingCategories, loadCategories]);
 
   const loadingContent = (
     <div className="flex justify-center items-center h-full p-4">
