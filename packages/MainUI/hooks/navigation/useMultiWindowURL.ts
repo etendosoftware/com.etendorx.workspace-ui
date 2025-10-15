@@ -663,9 +663,7 @@ export function useMultiWindowURL() {
         // Otherwise, fall back to windowId (old behavior)
         const identifierToFind = options?.window_identifier || windowId;
         const existingIndex = updated.findIndex((w) =>
-          options?.window_identifier
-            ? w.window_identifier === identifierToFind
-            : w.windowId === windowId
+          options?.window_identifier ? w.window_identifier === identifierToFind : w.windowId === windowId
         );
 
         let target: WindowState;

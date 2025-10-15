@@ -47,6 +47,7 @@ const es = {
     sections: {
       main: "Sección Principal",
       audit: "Auditoría",
+      linkedItems: "Artículos Asociados",
     },
     statusBar: {
       closeRecord: "Cerrar registro",

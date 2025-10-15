@@ -1,22 +1,4 @@
-/*
- *************************************************************************
- * The contents of this file are subject to the Etendo License
- * (the "License"), you may not use this file except in compliance with
- * the License.
- * You may obtain a copy of the License at
- * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
- * Software distributed under the License is distributed on an
- * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
- * implied. See the License for the specific language governing rights
- * and limitations under the License.
- * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
- * All Rights Reserved.
- * Contributor(s): Futit Services S.L.
- *************************************************************************
- */
-
 import { useState, useCallback } from "react";
-import { Box, Typography, CircularProgress } from "@mui/material";
 
 export interface LinkedItemCategory {
   adTabId: string;
@@ -38,7 +20,9 @@ export interface LinkedItemsProps {
   windowId: string;
   entityName: string;
   recordId: string;
-  onFetchCategories: (params: { windowId: string; entityName: string; recordId: string }) => Promise<LinkedItemCategory[]>;
+  onFetchCategories: (params: { windowId: string; entityName: string; recordId: string }) => Promise<
+    LinkedItemCategory[]
+  >;
   onFetchItems: (params: {
     windowId: string;
     entityName: string;
@@ -103,115 +87,89 @@ export const LinkedItems = ({
     [windowId, entityName, recordId, onFetchItems]
   );
 
-  // Load categories when component mounts
   if (!initialized && !loadingCategories) {
     loadCategories();
   }
 
+  const loadingContent = (
+    <div className="flex justify-center items-center h-full p-4">
+      <div className="w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
+  const noCategoriesContent = (
+    <div className="p-4">
+      <p className="text-sm text-gray-500">No linked items found</p>
+    </div>
+  );
+
+  const noSelectedCategory = (
+    <div className="flex justify-center items-center h-full p-4">
+      <p className="text-sm text-gray-500">Select a category to view items</p>
+    </div>
+  );
+
+  const categoriesContent = (
+    <div>
+      {categories.map((category) => (
+        <button
+          type="button"
+          key={`${category.adTabId}-${category.tableName}`}
+          onClick={() => handleCategoryClick(category)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              handleCategoryClick(category);
+            }
+          }}
+          tabIndex={0}
+          className={`p-4 cursor-pointer border-b border-gray-200 ${
+            selectedCategory?.adTabId === category.adTabId ? "bg-gray-100" : "bg-transparent"
+          } hover:bg-gray-50`}>
+          <p className="text-sm font-medium">{category.fullElementName}</p>
+          <p className="text-xs text-gray-500">
+            ({category.total} {Number.parseInt(category.total) === 1 ? "item" : "items"})
+          </p>
+        </button>
+      ))}
+    </div>
+  );
+
+  const itemsContent = (
+    <div>
+      {items.map((item) => (
+        <div
+          key={item.id}
+          onClick={() => onItemClick(item)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              onItemClick(item);
+            }
+          }}
+          className="p-4 cursor-pointer border-b border-gray-200 hover:bg-gray-50">
+          <p className="text-sm text-blue-600 hover:underline">{item.name}</p>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
-    <Box sx={{ display: "flex", gap: 2, height: "400px" }}>
+    <div className="flex gap-4 h-[400px]">
       {/* Left Panel - Categories */}
-      <Box
-        sx={{
-          flex: 1,
-          border: "1px solid #e0e0e0",
-          borderRadius: "4px",
-          overflow: "auto",
-          backgroundColor: "#fff",
-        }}>
-        {loadingCategories ? (
-          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", p: 2 }}>
-            <CircularProgress size={24} />
-          </Box>
-        ) : categories.length === 0 ? (
-          <Box sx={{ p: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              No linked items found
-            </Typography>
-          </Box>
-        ) : (
-          <Box>
-            {categories.map((category) => (
-              <Box
-                key={`${category.adTabId}-${category.tableName}`}
-                onClick={() => handleCategoryClick(category)}
-                sx={{
-                  p: 2,
-                  cursor: "pointer",
-                  borderBottom: "1px solid #f0f0f0",
-                  backgroundColor: selectedCategory?.adTabId === category.adTabId ? "#f5f5f5" : "transparent",
-                  "&:hover": {
-                    backgroundColor: "#fafafa",
-                  },
-                }}>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {category.fullElementName}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  ({category.total} {Number.parseInt(category.total) === 1 ? "item" : "items"})
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        )}
-      </Box>
+      <div className="flex-1 border border-gray-300 rounded overflow-auto bg-white">
+        {loadingCategories ? loadingContent : categories.length === 0 ? noCategoriesContent : categoriesContent}
+      </div>
 
       {/* Right Panel - Items */}
-      <Box
-        sx={{
-          flex: 1,
-          border: "1px solid #e0e0e0",
-          borderRadius: "4px",
-          overflow: "auto",
-          backgroundColor: "#fff",
-        }}>
-        {!selectedCategory ? (
-          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", p: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              Select a category to view items
-            </Typography>
-          </Box>
-        ) : loadingItems ? (
-          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", p: 2 }}>
-            <CircularProgress size={24} />
-          </Box>
-        ) : items.length === 0 ? (
-          <Box sx={{ p: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              No items found
-            </Typography>
-          </Box>
-        ) : (
-          <Box>
-            {items.map((item) => (
-              <Box
-                key={item.id}
-                onClick={() => onItemClick(item)}
-                sx={{
-                  p: 2,
-                  cursor: "pointer",
-                  borderBottom: "1px solid #f0f0f0",
-                  "&:hover": {
-                    backgroundColor: "#fafafa",
-                  },
-                }}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "primary.main",
-                    textDecoration: "none",
-                    "&:hover": {
-                      textDecoration: "underline",
-                    },
-                  }}>
-                  {item.name}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        )}
-      </Box>
-    </Box>
+      <div className="flex-1 border border-gray-300 rounded overflow-auto bg-white">
+        {!selectedCategory
+          ? noSelectedCategory
+          : loadingItems
+            ? loadingContent
+            : items.length === 0
+              ? noCategoriesContent
+              : itemsContent}
+      </div>
+    </div>
   );
 };
 

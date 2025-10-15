@@ -19,7 +19,6 @@ import { useCallback } from "react";
 import LinkedItems from "@workspaceui/componentlibrary/src/components/LinkedItems";
 import { fetchLinkedItemCategories, fetchLinkedItems } from "@workspaceui/api-client/src/api/linkedItems";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
-//import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { FORM_MODES } from "@/utils/url/constants";
 import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
 
@@ -31,7 +30,6 @@ interface LinkedItemsSectionProps {
 
 export const LinkedItemsSection = ({ windowId, entityName, recordId }: LinkedItemsSectionProps) => {
   const { openWindowAndSelect } = useMultiWindowURL();
-  //const { getWindowMetadata } = useMetadataContext();
 
   const handleFetchCategories = useCallback(
     async (params: { windowId: string; entityName: string; recordId: string }) => {
@@ -76,6 +74,7 @@ export const LinkedItemsSection = ({ windowId, entityName, recordId }: LinkedIte
       onFetchCategories={handleFetchCategories}
       onFetchItems={handleFetchItems}
       onItemClick={handleItemClick}
+      data-testid="LinkedItems__92af80"
     />
   );
 };
