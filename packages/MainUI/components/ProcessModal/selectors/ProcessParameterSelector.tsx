@@ -93,8 +93,7 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
     }
 
     // Check if parameter has readOnlyLogic (not readOnlyLogicExpression)
-    const paramWithReadOnly = parameter as ProcessParameter & { readOnlyLogic?: string };
-    const readOnlyExpression = parameter.readOnlyLogicExpression || paramWithReadOnly.readOnlyLogic;
+    const readOnlyExpression = parameter.readOnlyLogicExpression || parameter.readOnlyLogic;
 
     // Fallback to parameter's own readonly logic
     if (!readOnlyExpression) return false;
