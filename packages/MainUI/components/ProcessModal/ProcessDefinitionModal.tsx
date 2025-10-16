@@ -50,6 +50,7 @@ import Modal from "../Modal";
 import Loading from "../loading";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
+import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
 import type { Tab, ProcessParameter } from "@workspaceui/api-client/src/api/types";
@@ -184,8 +185,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     }
   }, [hasInitialData, availableFormData, form, initialState]);
 
-  // Reactive view into form state (validity / submitting)
-  const { isValid, isSubmitting } = useFormState({ control: form.control });
+  // Reactive view into form state (submitting)
+  const { isSubmitting } = useFormState({ control: form.control });
+
+  // Watch all form values to trigger re-validation when any field changes
+  const formValues = form.watch();
 
   // Combine loading states: initialization and callouts (do not include internal param-loading)
 
@@ -196,8 +200,75 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   // If initialization failed, keep the button disabled until user action
   const initializationBlocksSubmit = Boolean(initializationError);
-  // Only enforce form validity when there are mandatory parameters in the process
-  const hasMandatoryParameters = Object.values(parameters).some((p) => Boolean(p.mandatory));
+  // Check if there are mandatory parameters without value in the form
+  // Only validate after initial loading is complete
+
+  const hasMandatoryParametersWithoutValue = useMemo(() => {
+    if (loading || initializationLoading) {
+      return false;
+    }
+
+    // Use formValues from watch() to get reactive values
+
+    const results: Array<{ name: string; blocks: boolean; reason: string }> = [];
+
+    const willBlock = Object.values(parameters).some((p) => {
+      const result = {
+        name: p.name,
+        blocks: false,
+        reason: "",
+      };
+
+      if (!p.mandatory) {
+        result.reason = "✅ Not mandatory";
+        results.push(result);
+        return false;
+      }
+
+      // If parameter has a defaultValue, don't block - it should be auto-filled
+      if (p.defaultValue) {
+        result.reason = "✅ Has defaultValue (should auto-fill)";
+        results.push(result);
+        return false;
+      }
+
+      // Get the field value from form
+      // IMPORTANT: Fields are registered with parameter.name, not dBColumnName
+      const fieldValue = formValues[p.name as keyof typeof formValues] as unknown;
+
+      // If the field is registered in the form (not undefined in formValues object)
+      // then it means it was rendered and we should validate it
+      const fieldIsRegistered = p.name in formValues;
+
+      // Only validate fields that are actually registered in the form
+      // If not registered, it means ProcessParameterSelector didn't render it (displayLogic = false)
+      if (!fieldIsRegistered) {
+        result.reason = "✅ Not registered in form (hidden by displayLogic)";
+        results.push(result);
+        return false;
+      }
+
+      // Check if value is empty (null, undefined, empty string, empty array)
+      const isEmpty =
+        fieldValue === null ||
+        fieldValue === undefined ||
+        fieldValue === "" ||
+        (Array.isArray(fieldValue) && fieldValue.length === 0);
+
+      if (isEmpty) {
+        result.blocks = true;
+        result.reason = `❌ BLOCKS - Mandatory field is empty (value: ${JSON.stringify(fieldValue)})`;
+        results.push(result);
+        return true;
+      }
+
+      result.reason = `✅ Has value: ${JSON.stringify(fieldValue)}`;
+      results.push(result);
+      return false;
+    });
+
+    return willBlock;
+  }, [loading, initializationLoading, parameters, formValues]);
 
   const handleClose = useCallback(() => {
     if (isPending) return;
@@ -600,32 +671,31 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     });
   };
 
-  const renderActionButton = () => {
+  const getActionButtonContent = () => {
     if (isPending) {
-      return <span className="animate-pulse">{t("common.loading")}...</span>;
+      return {
+        icon: null,
+        text: <span className="animate-pulse">{t("common.loading")}...</span>,
+      };
     }
 
     if (result?.success) {
-      return (
-        <span className="flex items-center gap-2">
-          <CheckIcon fill="white" data-testid="CheckIcon__761503" />
-          {t("process.completedSuccessfully")}
-        </span>
-      );
+      return {
+        icon: <CheckIcon fill="white" data-testid="CheckIcon__761503" />,
+        text: t("process.completedSuccessfully"),
+      };
     }
 
-    return (
-      <>
-        {CheckIcon && <CheckIcon fill="white" data-testid="CheckIcon__761503" />}
-        {t("common.execute")}
-      </>
-    );
+    return {
+      icon: <CheckIcon fill="white" data-testid="CheckIcon__761503" />,
+      text: t("common.execute"),
+    };
   };
 
   const isActionButtonDisabled =
     isPending ||
     initializationBlocksSubmit ||
-    (hasMandatoryParameters && !isValid) ||
+    hasMandatoryParametersWithoutValue ||
     isSubmitting ||
     !!result?.success ||
     (hasWindowReference && !gridSelection);
@@ -669,33 +739,27 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             {/* Footer */}
             <div className="flex gap-4 justify-center mx-4 mb-4">
               {!result && !isPending && (
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="transition px-4 py-2 border border-(--color-baseline-60) text-(--color-baseline-90) rounded-full w-full
-                  font-medium focus:outline-none hover:bg-(--color-transparent-neutral-10)">
+                <Button variant="outlined" size="large" onClick={handleClose} data-testid="CloseButton__761503">
                   {t("common.close")}
-                </button>
+                </Button>
               )}
 
               {!result && (
-                <button
-                  type="button"
+                <Button
+                  variant="filled"
+                  size="large"
                   onClick={handleExecute}
-                  className="transition px-4 py-2 text-white rounded-full w-full justify-center font-medium flex items-center gap-2 bg-(--color-baseline-100) hover:bg-(--color-etendo-main)"
-                  disabled={isActionButtonDisabled}>
-                  {renderActionButton()}
-                </button>
+                  disabled={isActionButtonDisabled}
+                  startIcon={getActionButtonContent().icon}
+                  data-testid="ExecuteButton__761503">
+                  {getActionButtonContent().text}
+                </Button>
               )}
 
               {result && (
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="transition px-4 py-2 border border-(--color-baseline-60) text-(--color-baseline-90) rounded-full w-full
-                  font-medium focus:outline-none hover:bg-(--color-transparent-neutral-10)">
+                <Button variant="outlined" size="large" onClick={handleClose} data-testid="CloseResultButton__761503">
                   {t("common.close")}
-                </button>
+                </Button>
               )}
             </div>
           </div>
