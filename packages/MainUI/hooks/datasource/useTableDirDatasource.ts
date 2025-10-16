@@ -97,33 +97,41 @@ export const useTableDirDatasource = ({ field, pageSize = 75, initialPageSize = 
     [tab.fields]
   );
 
-  interface BaseBody {
-    [key: string]: unknown;
-    inpfinPaymentmethodId?: string;
-    inpissotrx?: string;
-    windowId?: string;
-    "Deposit To"?: string;
-  }
-
-  function isAddPayment(baseBody: BaseBody): BaseBody {
-    if (!baseBody._selectorDefinitionId) {
-      return baseBody; // No hacer nada si no existe
-    }
-    const { inpfinPaymentmethodId, inpissotrx, windowId, ...rest } = baseBody;
-    const depositTo = baseBody["Deposit To"];
-
-    const result: BaseBody = {
-      ...rest,
-      ...(inpfinPaymentmethodId && { fin_paymentmethod_id: inpfinPaymentmethodId }),
-      ...(depositTo && { fin_financial_account_id: depositTo }),
-      ...(inpissotrx && { issotrx: inpissotrx === "Y" }),
-    };
-
-    return result;
-  }
-
   const buildRequestBody = useCallback(
     (startRow: number, endRow: number, currentValue: typeof value) => {
+      interface BaseBody {
+        [key: string]: unknown;
+        inpfinPaymentmethodId?: string;
+        inpissotrx?: string;
+        windowId?: string;
+        "Deposit To"?: string;
+        "Sales Transaction"?: string;
+      }
+
+      const transformPayloadFields = (baseBody: BaseBody): BaseBody => {
+        // Remove fields that will be transformed to avoid duplicates
+        const { inpfinPaymentmethodId, inpissotrx, windowId, ...rest } = baseBody;
+        const depositTo = baseBody["Deposit To"];
+        const salesTransaction = baseBody["Sales Transaction"];
+
+        // Determine issotrx value from either inpissotrx or Sales Transaction
+        let issotrxValue: boolean | undefined;
+        if (inpissotrx !== undefined && inpissotrx !== null && inpissotrx !== "") {
+          issotrxValue = inpissotrx === "Y";
+        } else if (salesTransaction !== undefined && salesTransaction !== null && salesTransaction !== "") {
+          issotrxValue = salesTransaction === "Y";
+        }
+
+        const result: BaseBody = {
+          ...rest,
+          ...(inpfinPaymentmethodId && { fin_paymentmethod_id: inpfinPaymentmethodId }),
+          ...(depositTo && { fin_financial_account_id: depositTo }),
+          ...(issotrxValue !== undefined && { issotrx: issotrxValue }),
+        };
+
+        return result;
+      };
+
       const formValues = transformFormValues(getValues());
       const invoiceValue = transformFormValues(invoiceContext);
       let baseBody: BaseBody = {
@@ -158,7 +166,7 @@ export const useTableDirDatasource = ({ field, pageSize = 75, initialPageSize = 
           ...formValues,
         });
       }
-      baseBody = isAddPayment(baseBody);
+      baseBody = transformPayloadFields(baseBody);
 
       return baseBody;
     },

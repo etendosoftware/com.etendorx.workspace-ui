@@ -76,5 +76,17 @@
     "command": "BUTTONCreateFrom",
     "inpkeyColumnId": "M_InOut_ID",
     "keyColumnName": "M_InOut_ID"
+  },
+  "57A2B365BDC69F57E040007F010171B4": {
+    "url": "/ad_process/RescheduleProcess.html",
+    "command": "DEFAULT",
+    "inpkeyColumnId": "AD_Process_Request_ID",
+    "keyColumnName": "AD_Process_Request_ID"
+  },
+  "573FEC1BC12D5E8EE040007F01017CC8": {
+    "url": "/ad_process/UnscheduleProcess.html",
+    "command": "DEFAULT",
+    "inpkeyColumnId": "AD_Process_Request_ID",
+    "keyColumnName": "AD_Process_Request_ID"
   }
 }
