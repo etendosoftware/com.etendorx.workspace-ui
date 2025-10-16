@@ -86,14 +86,9 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
     // Check process defaults logic (takes precedence over parameter logic)
     // Try both parameter.name and dBColumnName formats
     const defaultsReadOnlyLogic =
-      logicFields?.[`${parameter.name}.readonly`] ??
-      logicFields?.[`${parameter.dBColumnName}.readonly`];
+      logicFields?.[`${parameter.name}.readonly`] ?? logicFields?.[`${parameter.dBColumnName}.readonly`];
 
     if (defaultsReadOnlyLogic !== undefined) {
-      console.log(`✅ Using logicFields for readonly: ${parameter.name}`, {
-        key: parameter.dBColumnName,
-        value: defaultsReadOnlyLogic,
-      });
       return defaultsReadOnlyLogic;
     }
 
@@ -107,25 +102,6 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
     try {
       const compiledExpr = compileExpression(readOnlyExpression);
       const result = compiledExpr(session, values);
-
-      // Check if expression references a field that doesn't exist
-      const referencedFields = readOnlyExpression.match(/@([a-zA-Z_]\w*)@/g);
-      const missingFields = referencedFields?.filter(field => {
-        const fieldName = field.replace(/@/g, '');
-        return !(fieldName in values);
-      });
-
-      console.log(`🔒 ReadOnly logic for ${parameter.name}:`, {
-        expression: readOnlyExpression,
-        result,
-        referencedFields,
-        missingFields,
-        availableKeys: Object.keys(values).filter(k => k.includes('readonly') || k.includes('from')),
-        // Show the actual value being checked
-        checkingValue: readOnlyExpression.includes('received_from_readonly_logic')
-          ? values['received_from_readonly_logic' as keyof typeof values]
-          : undefined,
-      });
       return result;
     } catch (error) {
       logger.warn("Error executing readonly logic expression:", readOnlyExpression, error);
@@ -141,10 +117,10 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
   // Don't render if display logic evaluates to false
   // EXCEPT for auxiliary logic fields (*_readonly_logic, *_display_logic) which need to be in the form
   const isAuxiliaryLogicField =
-    parameter.name.endsWith('_readonly_logic') ||
-    parameter.name.endsWith('_display_logic') ||
-    parameter.dBColumnName?.endsWith('_readonly_logic') ||
-    parameter.dBColumnName?.endsWith('_display_logic');
+    parameter.name.endsWith("_readonly_logic") ||
+    parameter.name.endsWith("_display_logic") ||
+    parameter.dBColumnName?.endsWith("_readonly_logic") ||
+    parameter.dBColumnName?.endsWith("_display_logic");
 
   if (!isDisplayed && !isAuxiliaryLogicField) {
     return null;
@@ -154,12 +130,6 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
   if (isAuxiliaryLogicField) {
     // Register with dBColumnName because readOnlyLogic expressions use that format
     const fieldName = parameter.dBColumnName || parameter.name;
-    console.log("🔧 Registering auxiliary field as hidden:", {
-      name: parameter.name,
-      dBColumnName: parameter.dBColumnName,
-      registeredAs: fieldName,
-      defaultValue: parameter.defaultValue,
-    });
     return <input type="hidden" {...register(fieldName)} />;
   }
 
