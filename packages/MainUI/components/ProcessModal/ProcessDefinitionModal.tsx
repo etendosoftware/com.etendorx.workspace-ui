@@ -209,26 +209,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     }
 
     // Use formValues from watch() to get reactive values
-
-    const results: Array<{ name: string; blocks: boolean; reason: string }> = [];
-
     const willBlock = Object.values(parameters).some((p) => {
-      const result = {
-        name: p.name,
-        blocks: false,
-        reason: "",
-      };
-
       if (!p.mandatory) {
-        result.reason = "✅ Not mandatory";
-        results.push(result);
         return false;
       }
 
       // If parameter has a defaultValue, don't block - it should be auto-filled
       if (p.defaultValue) {
-        result.reason = "✅ Has defaultValue (should auto-fill)";
-        results.push(result);
         return false;
       }
 
@@ -243,8 +230,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       // Only validate fields that are actually registered in the form
       // If not registered, it means ProcessParameterSelector didn't render it (displayLogic = false)
       if (!fieldIsRegistered) {
-        result.reason = "✅ Not registered in form (hidden by displayLogic)";
-        results.push(result);
         return false;
       }
 
@@ -255,16 +240,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         fieldValue === "" ||
         (Array.isArray(fieldValue) && fieldValue.length === 0);
 
-      if (isEmpty) {
-        result.blocks = true;
-        result.reason = `❌ BLOCKS - Mandatory field is empty (value: ${JSON.stringify(fieldValue)})`;
-        results.push(result);
-        return true;
-      }
-
-      result.reason = `✅ Has value: ${JSON.stringify(fieldValue)}`;
-      results.push(result);
-      return false;
+      // Block if mandatory field is empty
+      return isEmpty;
     });
 
     return willBlock;
