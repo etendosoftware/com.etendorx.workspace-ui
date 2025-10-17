@@ -34,12 +34,30 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
     }
   }, [isExpanded, onToggle, isAnimating]);
 
-  // Calcular altura del contenido
+  // Calcular altura del contenido y observar cambios
   useEffect(() => {
-    if (innerContentRef.current) {
-      const height = innerContentRef.current.scrollHeight;
-      setContentHeight(height);
-    }
+    if (!innerContentRef.current) return;
+
+    const updateHeight = () => {
+      if (innerContentRef.current) {
+        const height = innerContentRef.current.scrollHeight;
+        setContentHeight(height);
+      }
+    };
+
+    // Calcular altura inicial
+    updateHeight();
+
+    // Observar cambios en el tamaño del contenido
+    const resizeObserver = new ResizeObserver(() => {
+      updateHeight();
+    });
+
+    resizeObserver.observe(innerContentRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
   }, [children, isExpanded]);
 
   // Manejar animación

@@ -22,9 +22,10 @@ import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
 import Collapsible from "@/components/Form/Collapsible";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import { useFormViewContext } from "./contexts/FormViewContext";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import LinkedItemsSection from "./Sections/LinkedItemsSection";
+import NoteSection from "./Sections/noteSection";
 
 interface FormFieldsProps {
   tab: Tab;
@@ -32,15 +33,33 @@ interface FormFieldsProps {
   groups: Array<[string | null, { identifier: string; fields: Record<string, Field> }]>;
   loading: boolean;
   recordId: string;
+  initialNoteCount: number;
+  onNotesChange: () => void;
+  showErrorModal?: (message: string) => void;
 }
 
-export function FormFields({ tab, mode, groups, loading, recordId }: FormFieldsProps) {
+export function FormFields({
+  tab,
+  mode,
+  groups,
+  loading,
+  recordId,
+  initialNoteCount,
+  onNotesChange,
+  showErrorModal,
+}: FormFieldsProps) {
   const { watch } = useFormContext();
   const { session } = useUserContext();
+  const [noteCount, setNoteCount] = useState(initialNoteCount);
   const { expandedSections, selectedTab, handleSectionRef, handleAccordionChange, isSectionExpanded, getIconForGroup } =
     useFormViewContext();
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Update local noteCount when initialNoteCount changes
+  useEffect(() => {
+    setNoteCount(initialNoteCount);
+  }, [initialNoteCount]);
 
   useEffect(() => {
     if (selectedTab && containerRef.current) {
@@ -106,6 +125,32 @@ export function FormFields({ tab, mode, groups, loading, recordId }: FormFieldsP
           </div>
         );
       })}
+      {/* Notes Section */}
+      <div ref={handleSectionRef("notes_group")} data-section-id="notes_group">
+        <Collapsible
+          title={noteCount > 0 ? `Notes (${noteCount})` : "Notes"}
+          isExpanded={isSectionExpanded("notes_group")}
+          sectionId="notes_group"
+          icon={<LinkIcon data-testid="LinkIcon__linkeditems" />}
+          onToggle={(isOpen: boolean) => handleAccordionChange("notes_group", isOpen)}
+          data-testid="Collapsible__38e4a6">
+          <NoteSection
+            sectionId="notes_group"
+            addNoteButtonText={undefined}
+            modalTitleText={undefined}
+            modalDescriptionText={undefined}
+            noteInputPlaceholder={undefined}
+            addNoteSubmitText={undefined}
+            recordId={recordId}
+            tableId={tab.table}
+            initialNoteCount={noteCount}
+            isSectionExpanded={isSectionExpanded("notes_group")}
+            onNotesChange={onNotesChange}
+            showErrorModal={showErrorModal}
+            data-testid="NoteSection__38e4a6"
+          />
+        </Collapsible>
+      </div>
       {/* Linked Items Section */}
       <div ref={handleSectionRef("linked-items")} data-section-id="linked-items">
         <Collapsible
