@@ -152,6 +152,11 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     [defaultIcon]
   );
 
+  const initialNoteCount = useMemo(() => {
+    // Safely retrieve the noteCount, defaulting to 0 if not present
+    return formInitialization?.noteCount || 0;
+  }, [formInitialization]);
+
   /**
    * Computes the current record data from multiple sources with priority order:
    * 1. URL-based record selection (highest priority)
@@ -573,6 +578,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               groups={groups}
               loading={isLoading}
               recordId={recordId ? recordId : ""}
+              initialNoteCount={initialNoteCount}
+              onNotesChange={refreshRecordAndSession}
+              showErrorModal={showErrorModal}
               data-testid="FormFields__1a0853"
             />
 

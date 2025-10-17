@@ -209,7 +209,19 @@ export default function useFormFields(
           fields: {},
         },
       ] as UseFormFieldsReturn["groups"][number];
+
+      const notesGroup = [
+        "notes",
+        {
+          id: "notes_group",
+          identifier: t("forms.sections.linkedItems"),
+          sequenceNumber: 10000,
+          fields: {},
+        },
+      ] as UseFormFieldsReturn["groups"][number];
+
       groupsArray.push(linkedItemsGroup);
+      groupsArray.push(notesGroup);
     }
 
     return groupsArray;

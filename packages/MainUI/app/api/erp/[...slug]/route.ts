@@ -93,6 +93,7 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.includes("update") ||
     slug.includes("delete") ||
     slug.includes("copilot/") || // All copilot routes should bypass cache for real-time data
+    slug.startsWith("notes") || // Notes servlet needs session cookies
     method !== "GET"
   );
 }
@@ -228,7 +229,10 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 // Helper: Build ERP URL
 function buildErpUrl(slug: string, requestUrl: string): string {
   let erpUrl: string;
-  if (slug.startsWith("sws/")) {
+  if (slug.startsWith("notes")) {
+    // Notes servlet - simple direct path
+    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
+  } else if (slug.startsWith("sws/")) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (slug.startsWith("copilot/")) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;

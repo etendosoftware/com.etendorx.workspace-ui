@@ -730,6 +730,7 @@ export interface FormInitializationResponse {
   sessionAttributes: Record<string, string>;
   dynamicCols: string[];
   attachmentExists: boolean;
+  noteCount: number;
   _readOnly?: boolean;
 }
 
@@ -856,4 +857,38 @@ export interface FetchLinkedItemsParams {
   adTabId: string;
   tableName: string;
   columnName: string;
+}
+
+export interface Note {
+  id: string;
+  note: string;
+  createdBy: string;
+  createdBy$_identifier: string;
+  creationDate: string;
+}
+
+export interface FetchNoteCountParams {
+  windowId: string;
+  tabId: string;
+  recordId: string;
+}
+
+export interface FetchNotesParams {
+  tableId: string;
+  recordId: string;
+}
+
+export interface CreateNoteParams {
+  recordId: string;
+  tableId: string; // The AD_Table_ID string
+  content: string; // The text of the note
+}
+
+// Response structure for success/failure
+export interface DatasourceResponse {
+  response: {
+    data?: Note;
+    status: number;
+    error?: { message: string };
+  };
 }
