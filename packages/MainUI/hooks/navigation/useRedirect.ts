@@ -70,7 +70,10 @@ export const useRedirect = () => {
         return;
       }
 
-      const baseWindow = createBaseWindow(windowId, windowIdentifier);
+      const baseWindow = createBaseWindow(windowId, windowId); // Use windowId as identifier for URL params
+      if (windowIdentifier) {
+        baseWindow.title = windowIdentifier; // Use windowIdentifier as display title
+      }
       if (targetTabId) {
         baseWindow.selectedRecords = { [targetTabId]: selectedRecordId };
         if (isLinkedLabelOpenInForm()) {
