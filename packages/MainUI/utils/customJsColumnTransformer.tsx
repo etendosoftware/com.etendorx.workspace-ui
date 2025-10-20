@@ -21,7 +21,7 @@ import { CustomJsCell } from "@/components/Table/CustomJsCell";
 
 export const transformColumnsWithCustomJs = (originalColumns: Column[]): Column[] => {
   return originalColumns.map((column) => {
-    if (column?.customJs?.trim()) {
+    if (column.customJs?.trim()) {
       return transformColumnWithCustomJs(column);
     }
 
