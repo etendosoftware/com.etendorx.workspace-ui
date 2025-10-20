@@ -22,6 +22,8 @@ import InfoIcon from "@workspaceui/componentlibrary/src/assets/icons/file-text.s
 import FileIcon from "@workspaceui/componentlibrary/src/assets/icons/file.svg";
 import FolderIcon from "@workspaceui/componentlibrary/src/assets/icons/folder.svg";
 import Info from "@workspaceui/componentlibrary/src/assets/icons/info.svg";
+import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
+import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
 import { FormMode, type EntityData, type EntityValue } from "@workspaceui/api-client/src/api/types";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import useFormFields from "@/hooks/useFormFields";
@@ -50,6 +52,8 @@ const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
   "More Information": <InfoIcon data-testid="InfoIcon__1a0853" />,
   Dimensions: <FolderIcon data-testid="FolderIcon__1a0853" />,
+  "Linked Items": <LinkIcon data-testid="LinkIcon__1a0853" />,
+  Notes: <NoteIcon data-testid="NoteIcon__1a0853" />,
 };
 
 /**

@@ -24,6 +24,7 @@ import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import { useFormViewContext } from "./contexts/FormViewContext";
 import { useRef, useEffect, useState } from "react";
 import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
+import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
 import LinkedItemsSection from "./Sections/LinkedItemsSection";
 import NoteSection from "./Sections/noteSection";
 
@@ -131,7 +132,7 @@ export function FormFields({
           title={noteCount > 0 ? `Notes (${noteCount})` : "Notes"}
           isExpanded={isSectionExpanded("notes_group")}
           sectionId="notes_group"
-          icon={<LinkIcon data-testid="LinkIcon__linkeditems" />}
+          icon={<NoteIcon data-testid="NoteIcon__38e4a6" />}
           onToggle={(isOpen: boolean) => handleAccordionChange("notes_group", isOpen)}
           data-testid="Collapsible__38e4a6">
           <NoteSection

@@ -200,28 +200,28 @@ export default function useFormFields(
     });
 
     if (recordId && recordId !== NEW_RECORD_ID) {
-      const linkedItemsGroup = [
-        "linked_items",
-        {
-          id: "linked_items",
-          identifier: t("forms.sections.linkedItems"),
-          sequenceNumber: 10000,
-          fields: {},
-        },
-      ] as UseFormFieldsReturn["groups"][number];
-
       const notesGroup = [
-        "notes",
+        "notes_group",
         {
           id: "notes_group",
-          identifier: t("forms.sections.linkedItems"),
+          identifier: t("forms.sections.notes"),
           sequenceNumber: 10000,
           fields: {},
         },
       ] as UseFormFieldsReturn["groups"][number];
 
-      groupsArray.push(linkedItemsGroup);
+      const linkedItemsGroup = [
+        "linked-items",
+        {
+          id: "linked-items",
+          identifier: t("forms.sections.linkedItems"),
+          sequenceNumber: 10001,
+          fields: {},
+        },
+      ] as UseFormFieldsReturn["groups"][number];
+
       groupsArray.push(notesGroup);
+      groupsArray.push(linkedItemsGroup);
     }
 
     return groupsArray;
