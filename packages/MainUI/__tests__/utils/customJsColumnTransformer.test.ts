@@ -15,8 +15,8 @@
  *************************************************************************
  */
 
-import { transformColumnsWithCustomJs } from "@/utils/customJsColumnTransformer";
-import type { Column, Field } from "@workspaceui/api-client/src/api/types";
+import { transformColumnsWithCustomJs, transformColumnWithCustomJs } from "@/utils/customJsColumnTransformer";
+import type { Column } from "@workspaceui/api-client/src/api/types";
 
 // Mock the CustomJsCell component
 jest.mock("@/components/Table/CustomJsCell", () => ({
@@ -42,80 +42,100 @@ describe("transformColumnsWithCustomJs", () => {
       columnName: "amount",
       _identifier: "amount",
       fieldId: "amount-field-id", // Add fieldId to match with field
+      customJs: "return cell.getValue();", // Add customJs to test transformation
     },
   ];
 
-  const mockFields: Field[] = [
-    {
-      id: "name-field-id",
-      name: "name",
-      showInGridView: true,
-      etmetaCustomjs: null,
-    } as Field,
-    {
-      id: "amount-field-id",
-      name: "amount",
-      showInGridView: true,
-      etmetaCustomjs: "(record) => record.amount * 1.21",
-    } as Field,
-  ];
-
   it("should transform columns with custom JS", () => {
-    const result = transformColumnsWithCustomJs(mockColumns, mockFields);
+    const result = transformColumnsWithCustomJs(mockColumns);
 
     expect(result).toHaveLength(2);
 
     // First column should remain unchanged (no custom JS)
     expect(result[0]).toEqual(mockColumns[0]);
 
-    // Second column should have custom Cell component
+    // Second column should have custom Cell component and muiTableBodyCellProps
     expect(result[1]).toHaveProperty("Cell");
+    expect(result[1]).toHaveProperty("muiTableBodyCellProps");
+    expect(result[1].muiTableBodyCellProps).toEqual({
+      sx: {
+        padding: "0px",
+      },
+    });
     expect(result[1].id).toBe("amount");
     expect(result[1].header).toBe("Amount");
     expect(result[1].name).toBe("amount");
+    expect(result[1].customJs).toBe("return cell.getValue();");
   });
 
   it("should skip columns without custom JS", () => {
-    const fieldsWithoutCustomJs: Field[] = [
-      { id: "name-field-id", name: "name", showInGridView: true, etmetaCustomjs: null } as Field,
-      { id: "amount-field-id", name: "amount", showInGridView: true, etmetaCustomjs: "" } as Field,
+    const columnsWithoutCustomJs: Column[] = [
+      {
+        id: "name",
+        header: "Name",
+        name: "name",
+        accessorFn: (row: Record<string, unknown>) => row.name,
+        columnName: "name",
+        _identifier: "name",
+        fieldId: "name-field-id",
+      },
     ];
 
-    const result = transformColumnsWithCustomJs(mockColumns, fieldsWithoutCustomJs);
+    const result = transformColumnsWithCustomJs(columnsWithoutCustomJs);
 
-    expect(result).toEqual(mockColumns);
+    expect(result).toEqual(columnsWithoutCustomJs);
   });
 
   it("should handle empty custom JS strings", () => {
-    const fieldsWithEmptyJs: Field[] = [
-      { id: "name-field-id", name: "name", showInGridView: true, etmetaCustomjs: "   " } as Field, // whitespace only
-      { id: "amount-field-id", name: "amount", showInGridView: true, etmetaCustomjs: "" } as Field,
+    const columnsWithEmptyCustomJs: Column[] = [
+      {
+        id: "name",
+        header: "Name",
+        name: "name",
+        accessorFn: (row: Record<string, unknown>) => row.name,
+        columnName: "name",
+        _identifier: "name",
+        fieldId: "name-field-id",
+        customJs: "", // Empty string should not transform
+      },
+      {
+        id: "amount",
+        header: "Amount",
+        name: "amount",
+        accessorFn: (row: Record<string, unknown>) => row.amount,
+        columnName: "amount",
+        _identifier: "amount",
+        fieldId: "amount-field-id",
+        customJs: "   ", // Whitespace only should not transform
+      },
     ];
 
-    const result = transformColumnsWithCustomJs(mockColumns, fieldsWithEmptyJs);
+    const result = transformColumnsWithCustomJs(columnsWithEmptyCustomJs);
 
-    expect(result).toEqual(mockColumns);
+    expect(result).toEqual(columnsWithEmptyCustomJs);
   });
 
   it("should handle fields that do not match any column", () => {
-    const fieldsWithUnmatchedField: Field[] = [
-      { id: "name-field-id", name: "name", showInGridView: true, etmetaCustomjs: null } as Field,
+    const columnsWithoutCustomJs: Column[] = [
       {
-        id: "nonexistent-field-id",
-        name: "nonexistent",
-        showInGridView: true,
-        etmetaCustomjs: '(record) => "test"',
-      } as Field,
+        id: "name",
+        header: "Name",
+        name: "name",
+        accessorFn: (row: Record<string, unknown>) => row.name,
+        columnName: "name",
+        _identifier: "name",
+        fieldId: "name-field-id",
+      },
     ];
 
-    const result = transformColumnsWithCustomJs(mockColumns, fieldsWithUnmatchedField);
+    const result = transformColumnsWithCustomJs(columnsWithoutCustomJs);
 
-    // Should return original columns unchanged since no matching field was found
-    expect(result).toEqual(mockColumns);
+    // Should return original columns unchanged since no custom JS was found
+    expect(result).toEqual(columnsWithoutCustomJs);
   });
 
   it("should preserve original column properties when adding custom JS", () => {
-    const result = transformColumnsWithCustomJs(mockColumns, mockFields);
+    const result = transformColumnsWithCustomJs(mockColumns);
     const transformedColumn = result[1]; // amount column with custom JS
 
     // All original properties should be preserved
@@ -125,31 +145,158 @@ describe("transformColumnsWithCustomJs", () => {
     expect(transformedColumn.accessorFn).toBe(mockColumns[1].accessorFn);
     expect(transformedColumn.columnName).toBe(mockColumns[1].columnName);
     expect(transformedColumn._identifier).toBe(mockColumns[1]._identifier);
+    expect(transformedColumn.customJs).toBe(mockColumns[1].customJs);
 
-    // Plus the new Cell component
+    // Plus the new Cell component and muiTableBodyCellProps
     expect(transformedColumn).toHaveProperty("Cell");
+    expect(transformedColumn).toHaveProperty("muiTableBodyCellProps");
+    expect(transformedColumn.muiTableBodyCellProps).toEqual({
+      sx: {
+        padding: "0px",
+      },
+    });
   });
 
   it("should handle multiple columns with custom JS", () => {
-    const multipleCustomJsFields: Field[] = [
+    const columnsWithMultipleCustomJs: Column[] = [
       {
-        id: "name-field-id",
+        id: "name",
+        header: "Name",
         name: "name",
-        showInGridView: true,
-        etmetaCustomjs: "(record) => record.name.toUpperCase()",
-      } as Field,
+        accessorFn: (row: Record<string, unknown>) => row.name,
+        columnName: "name",
+        _identifier: "name",
+        fieldId: "name-field-id",
+        customJs: "return row.original.name.toUpperCase();",
+      },
       {
-        id: "amount-field-id",
+        id: "amount",
+        header: "Amount",
         name: "amount",
-        showInGridView: true,
-        etmetaCustomjs: "(record) => record.amount * 1.21",
-      } as Field,
+        accessorFn: (row: Record<string, unknown>) => row.amount,
+        columnName: "amount",
+        _identifier: "amount",
+        fieldId: "amount-field-id",
+        customJs: "return '$' + cell.getValue();",
+      },
     ];
 
-    const result = transformColumnsWithCustomJs(mockColumns, multipleCustomJsFields);
+    const result = transformColumnsWithCustomJs(columnsWithMultipleCustomJs);
 
     expect(result).toHaveLength(2);
     expect(result[0]).toHaveProperty("Cell"); // name column now has custom JS
     expect(result[1]).toHaveProperty("Cell"); // amount column has custom JS
+
+    // Both should have muiTableBodyCellProps
+    expect(result[0]).toHaveProperty("muiTableBodyCellProps");
+    expect(result[1]).toHaveProperty("muiTableBodyCellProps");
+  });
+});
+
+describe("transformColumnWithCustomJs", () => {
+  const mockColumn: Column = {
+    id: "amount",
+    header: "Amount",
+    name: "amount",
+    accessorFn: (row: Record<string, unknown>) => row.amount,
+    columnName: "amount",
+    _identifier: "amount",
+    fieldId: "amount-field-id",
+    customJs: "return '$' + cell.getValue();",
+  };
+
+  it("should add Cell component to column", () => {
+    const result = transformColumnWithCustomJs(mockColumn);
+
+    expect(result).toHaveProperty("Cell");
+    expect(typeof result.Cell).toBe("function");
+  });
+
+  it("should add muiTableBodyCellProps with correct styling", () => {
+    const result = transformColumnWithCustomJs(mockColumn);
+
+    expect(result).toHaveProperty("muiTableBodyCellProps");
+    expect(result.muiTableBodyCellProps).toEqual({
+      sx: {
+        padding: "0px",
+      },
+    });
+  });
+
+  it("should preserve all original column properties", () => {
+    const result = transformColumnWithCustomJs(mockColumn);
+
+    // Check that all original properties are preserved
+    expect(result.id).toBe(mockColumn.id);
+    expect(result.header).toBe(mockColumn.header);
+    expect(result.name).toBe(mockColumn.name);
+    expect(result.accessorFn).toBe(mockColumn.accessorFn);
+    expect(result.columnName).toBe(mockColumn.columnName);
+    expect(result._identifier).toBe(mockColumn._identifier);
+    expect(result.fieldId).toBe(mockColumn.fieldId);
+    expect(result.customJs).toBe(mockColumn.customJs);
+  });
+
+  it("should handle column with undefined customJs", () => {
+    const columnWithoutCustomJs: Column = {
+      ...mockColumn,
+      customJs: undefined,
+    };
+
+    const result = transformColumnWithCustomJs(columnWithoutCustomJs);
+
+    expect(result).toHaveProperty("Cell");
+    expect(result).toHaveProperty("muiTableBodyCellProps");
+    expect(result.customJs).toBeUndefined();
+  });
+
+  it("should handle column with empty customJs", () => {
+    const columnWithEmptyCustomJs: Column = {
+      ...mockColumn,
+      customJs: "",
+    };
+
+    const result = transformColumnWithCustomJs(columnWithEmptyCustomJs);
+
+    expect(result).toHaveProperty("Cell");
+    expect(result).toHaveProperty("muiTableBodyCellProps");
+    expect(result.customJs).toBe("");
+  });
+
+  it("should create Cell component that can be invoked", () => {
+    const result = transformColumnWithCustomJs(mockColumn);
+
+    // Test that the Cell component exists and is a function
+    expect(result.Cell).toBeDefined();
+    expect(typeof result.Cell).toBe("function");
+  });
+
+  it("should verify Cell component structure", () => {
+    const result = transformColumnWithCustomJs(mockColumn);
+
+    // This test verifies that the Cell component is structured correctly
+    // The actual rendering is tested in the CustomJsCell component tests
+    expect(result.Cell).toBeDefined();
+    expect(typeof result.Cell).toBe("function");
+  });
+
+  it("should handle column with complex customJs code", () => {
+    const complexColumn: Column = {
+      ...mockColumn,
+      customJs: `
+        const value = cell.getValue();
+        const formatted = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD'
+        }).format(value);
+        return formatted;
+      `,
+    };
+
+    const result = transformColumnWithCustomJs(complexColumn);
+
+    expect(result).toHaveProperty("Cell");
+    expect(result).toHaveProperty("muiTableBodyCellProps");
+    expect(result.customJs).toBe(complexColumn.customJs);
   });
 });
