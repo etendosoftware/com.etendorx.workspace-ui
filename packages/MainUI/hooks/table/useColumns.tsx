@@ -18,6 +18,7 @@ import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filt
 import { ColumnFilter } from "../../components/Table/ColumnFilter";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useTranslation } from "../useTranslation";
+import { transformColumnWithCustomJs } from "@/utils/customJsColumnTransformer";
 
 interface UseColumnsOptions {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
@@ -41,7 +42,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     const fieldsAsArray = Object.values(tab.fields);
     let originalColumns = parseColumns(fieldsAsArray);
 
-    // Marcar columnas booleanas y audit fields automáticamente
+    // Mark boolean columns and audit fields automatically
     originalColumns = originalColumns.map((col) => {
       if (BOOLEAN_COLUMNS.includes(col.columnName)) {
         return { ...col, type: "boolean" };
@@ -64,8 +65,9 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         AUDIT_DATE_COLUMNS.includes(column.columnName) ||
         getFieldReference(column.column?.reference) === FieldType.DATE;
       const supportsDropdownFilter = isBooleanColumn || ColumnFilterUtils.supportsDropdownFilter(column);
+      const isCustomJsColumn = Boolean(column.customJs && column.customJs.trim().length > 0);
 
-      // --- Inicializar filterState para booleanos si no existe ---
+      // --- Initialize filterState for booleans if it doesn't exist ---
       let filterState = columnFilterStates?.find((f) => f.id === column.id);
       if (isBooleanColumn && !filterState) {
         filterState = {
@@ -84,7 +86,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
       let columnConfig = { ...column };
 
-      // Columnas de referencia con navegación
+      // Reference columns with navigation
       if (isReference) {
         const windowId = column.referencedWindowId;
         const windowIdentifier = column._identifier;
@@ -117,7 +119,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         };
       }
 
-      // Filtros avanzados
+      // Advanced filters
       if (supportsDropdownFilter && onColumnFilter && onLoadFilterOptions) {
         columnConfig = {
           ...columnConfig,
@@ -147,6 +149,10 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
           columnFilterModeOptions: ["contains", "startsWith", "endsWith"],
           filterFn: "contains",
         };
+      }
+
+      if (isCustomJsColumn) {
+        columnConfig = transformColumnWithCustomJs(columnConfig);
       }
 
       return columnConfig;

@@ -15,37 +15,39 @@
  *************************************************************************
  */
 
-import type { Column, Field } from "@workspaceui/api-client/src/api/types";
+import type { Column } from "@workspaceui/api-client/src/api/types";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Cell, MRT_Row } from "material-react-table";
 import { CustomJsCell } from "@/components/Table/CustomJsCell";
 
-export const transformColumnsWithCustomJs = (originalColumns: Column[], fields: Field[]): Column[] => {
+export const transformColumnsWithCustomJs = (originalColumns: Column[]): Column[] => {
   return originalColumns.map((column) => {
-    const field = fields.find((f) => f.id === column.fieldId);
-
-    if (field?.etmetaCustomjs?.trim()) {
-      return {
-        ...column,
-        muiTableBodyCellProps: {
-          sx: {
-            padding: "0px",
-          },
-        },
-        Cell: ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: MRT_Row<EntityData> }) => {
-          return (
-            <CustomJsCell
-              cell={cell}
-              row={row}
-              customJsCode={field.etmetaCustomjs}
-              column={column}
-              data-testid="CustomJsCell__2fc819"
-            />
-          );
-        },
-      };
+    if (column?.customJs?.trim()) {
+      return transformColumnWithCustomJs(column);
     }
 
     return column;
   });
+};
+
+export const transformColumnWithCustomJs = (column: Column): Column => {
+  return {
+    ...column,
+    muiTableBodyCellProps: {
+      sx: {
+        padding: "0px",
+      },
+    },
+    Cell: ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: MRT_Row<EntityData> }) => {
+      return (
+        <CustomJsCell
+          cell={cell}
+          row={row}
+          customJsCode={column.customJs || ""}
+          column={column}
+          data-testid="CustomJsCell__2fc819"
+        />
+      );
+    },
+  };
 };

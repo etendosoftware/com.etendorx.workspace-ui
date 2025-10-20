@@ -170,6 +170,7 @@ export interface Column {
   referencedWindowId?: string;
   [key: string]: unknown;
   fieldId?: string;
+  customJs?: string | null;
 }
 
 export interface MappedField {
