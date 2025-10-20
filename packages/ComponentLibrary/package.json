@@ -6,7 +6,10 @@
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.js",
   "sideEffects": false,
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "build:cjs": "tsc --project tsconfig.cjs.json",
     "build:esm": "tsc --project tsconfig.esm.json",
@@ -33,7 +36,7 @@
     "@mui/x-date-pickers": "^7.1.1",
     "@workspaceui/api-client": "workspace:api-client",
     "react-hook-form": "^7.53.2",
-    "react-markdown": "^9.0.1"
+    "react-markdown": "^9.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.7.8",

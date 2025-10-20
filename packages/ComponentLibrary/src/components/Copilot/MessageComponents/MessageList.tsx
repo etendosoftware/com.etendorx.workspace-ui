@@ -19,6 +19,7 @@ import { useEffect, useRef, useMemo, useCallback } from "react";
 import ContextPreview from "../ContextPreview";
 import { MESSAGE_ROLES, CONTEXT_CONSTANTS } from "@workspaceui/api-client/src/api/copilot";
 import type { MessageListProps } from "../types";
+import MarkdownMessage from "./MarkdownMessage";
 
 const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading = false, translations }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -101,7 +102,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
                   />
                 </div>
               )}
-              <p className="text-sm mb-1">{displayMessage}</p>
+              <div className="mb-1">
+                <MarkdownMessage content={displayMessage} />
+              </div>
               <span className="text-xs opacity-70">{message.timestamp}</span>
             </div>
           </div>
