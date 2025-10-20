@@ -41,8 +41,10 @@ const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => {
     li: ({ children }) => <li className="text-sm mb-1">{children}</li>,
 
     // Code blocks
-    code: ({ inline, className, children }) => {
-      if (inline) {
+    code: ({ className, children }) => {
+      // Inline code doesn't have language- prefix in className
+      const isInline = !className?.includes("language-");
+      if (isInline) {
         return (
           <code className="px-1.5 py-0.5 rounded bg-(--color-transparent-neutral-10) text-(--color-baseline-90) font-mono text-xs">
             {children}
