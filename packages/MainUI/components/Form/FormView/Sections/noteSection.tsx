@@ -18,6 +18,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Box, Grid, Card, CardContent, Typography, Button, TextField, useTheme } from "@mui/material";
 import Modal from "@workspaceui/componentlibrary/src/components/BasicModal";
+import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
 import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus-circle.svg";
@@ -187,6 +188,8 @@ const NoteSection = ({
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
               placeholder={noteInputPlaceholder || t("forms.notes.noteInputPlaceholder")}
+              inputProps={{ maxLength: 2000 }}
+              helperText={`${newNote.length}/2000`}
               data-testid="TextField__a680f8_input"
             />
             <Button onClick={handleAddNote} variant="contained" sx={{ mt: 2 }} data-testid="Button__a680f8_submit">
@@ -223,28 +226,15 @@ const NoteSection = ({
             </Grid>
           ))}
       </Grid>
-      <Modal
+      <ConfirmModal
         open={!!showDeleteConfirmation}
-        onClose={() => setShowDeleteConfirmation(null)}
-        tittleHeader={t("forms.notes.confirmDelete")}
-        descriptionText={t("forms.notes.confirmDeleteMessage")}
-        data-testid="Modal__a680f8">
-        <Button
-          onClick={() => setShowDeleteConfirmation(null)}
-          color="secondary"
-          sx={{ mr: 2 }}
-          data-testid="Button__a680f8">
-          {t("forms.notes.cancelButton")}
-        </Button>
-        <Button
-          onClick={executeDeleteNote}
-          variant="contained"
-          color="error"
-          disabled={isLoading}
-          data-testid="Button__a680f8">
-          {t("forms.notes.deleteButton")}
-        </Button>
-      </Modal>
+        confirmText={t("forms.notes.confirmDeleteMessage")}
+        onConfirm={executeDeleteNote}
+        onCancel={() => setShowDeleteConfirmation(null)}
+        saveLabel={t("forms.notes.deleteButton")}
+        secondaryButtonLabel={t("forms.notes.cancelButton")}
+        data-testid="ConfirmModal__a680f8"
+      />
     </Box>
   );
 };
