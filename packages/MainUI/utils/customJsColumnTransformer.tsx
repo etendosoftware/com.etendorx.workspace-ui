@@ -15,8 +15,7 @@
  *************************************************************************
  */
 
-import type { Column } from "@workspaceui/api-client/src/api/types";
-import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import type { Column, EntityData } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Cell, MRT_Row } from "material-react-table";
 import { CustomJsCell } from "@/components/Table/CustomJsCell";
 
