@@ -23,4 +23,5 @@ export interface TagProps extends MuiChipProps {
   label: string;
   icon?: React.ReactElement;
   tagColor?: string;
+  textColor?: string;
 }

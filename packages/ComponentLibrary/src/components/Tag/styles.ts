@@ -20,22 +20,12 @@ import { type Theme, useTheme, type SxProps } from "@mui/material";
 
 type StylesType = {
   getColor: (customColor?: string) => string;
-  getTextColor: (customColor?: string) => string;
-  getColoredIcon: (icon: ReactElement, customColor?: string) => ReactElement;
-  getChipStyles: (customColor?: string) => CSSProperties;
+  getTextColor: (customColor?: string, customTextColor?: string) => string;
+  getColoredIcon: (icon: ReactElement, customColor?: string, customTextColor?: string) => ReactElement;
+  getChipStyles: (customColor?: string, customTextColor?: string) => CSSProperties;
   sx: {
     chipLabel: (icon?: ReactElement) => SxProps<Theme>;
   };
-};
-
-// Helper function to determine if a color is light or dark
-const isLightColor = (hexColor: string): boolean => {
-  const hex = hexColor.replace("#", "");
-  const r = Number.parseInt(hex.substr(0, 2), 16);
-  const g = Number.parseInt(hex.substr(2, 2), 16);
-  const b = Number.parseInt(hex.substr(4, 2), 16);
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-  return brightness > 155;
 };
 
 export const useStyle = (): StylesType => {
@@ -49,15 +39,16 @@ export const useStyle = (): StylesType => {
 
         return theme.palette.specificColor.draft.contrastText;
       },
-      getTextColor: (customColor?: string): string => {
-        if (customColor) {
-          return isLightColor(customColor) ? "#000000" : "#FFFFFF";
+      getTextColor: (customTextColor?: string): string => {
+        if (customTextColor) {
+          return customTextColor;
         }
+
         return theme.palette.baselineColor.neutral[100];
       },
-      getChipStyles: (customColor?: string): CSSProperties => ({
+      getChipStyles: (customColor?: string, customTextColor?: string): CSSProperties => ({
         backgroundColor: self.getColor(customColor),
-        color: self.getTextColor(customColor),
+        color: self.getTextColor(customTextColor),
         height: "1.5rem",
         fontWeight: 500,
         cursor: "default",
@@ -82,11 +73,11 @@ export const useStyle = (): StylesType => {
     [theme]
   );
 
-  const getColoredIcon = (icon: ReactElement, customColor?: string): ReactElement => {
+  const getColoredIcon = (icon: ReactElement, customTextColor?: string): ReactElement => {
     return React.cloneElement(icon, {
       style: {
         ...icon.props.style,
-        color: self.getTextColor(customColor),
+        color: self.getTextColor(customTextColor),
         width: "1rem",
         height: "1rem",
         margin: "0",
