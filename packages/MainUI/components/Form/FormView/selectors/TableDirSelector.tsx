@@ -20,8 +20,8 @@ import Select from "@/components/Form/FormView/selectors/components/Select";
 import { useTableDirDatasource } from "@/hooks/datasource/useTableDirDatasource";
 import { useSelectFieldOptions } from "@/hooks/useSelectFieldOptions";
 
-export const TableDirSelector = ({ field, isReadOnly }: { field: Field; isReadOnly: boolean }) => {
-  const { records, loading, refetch, loadMore, hasMore, search } = useTableDirDatasource({ field });
+export const TableDirSelector = ({ field, isReadOnly, isProcessModal }: { field: Field; isReadOnly: boolean; isProcessModal?: boolean }) => {
+  const { records, loading, refetch, loadMore, hasMore, search } = useTableDirDatasource({ field, isProcessModal });
   const options = useSelectFieldOptions(field, records);
 
   return (
