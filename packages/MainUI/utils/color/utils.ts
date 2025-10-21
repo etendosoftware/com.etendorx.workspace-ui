@@ -126,9 +126,9 @@ const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
 
   // Full hex format (#ffffff)
   return {
-    r: Number.parseInt(cleanHex.substr(0, 2), 16),
-    g: Number.parseInt(cleanHex.substr(2, 2), 16),
-    b: Number.parseInt(cleanHex.substr(4, 2), 16),
+    r: Number.parseInt(cleanHex.substring(0, 2), 16),
+    g: Number.parseInt(cleanHex.substring(2, 4), 16),
+    b: Number.parseInt(cleanHex.substring(4, 6), 16),
   };
 };
 
