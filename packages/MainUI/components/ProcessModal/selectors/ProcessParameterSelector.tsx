@@ -187,7 +187,12 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
         case "tabledir":
         case "product":
           return (
-            <TableDirSelector field={mappedField} isReadOnly={isReadOnly} isProcessModal={true} data-testid="TableDirSelector__dac06b" />
+            <TableDirSelector
+              field={mappedField}
+              isReadOnly={isReadOnly}
+              isProcessModal={true}
+              data-testid="TableDirSelector__dac06b"
+            />
           );
 
         case "quantity":
