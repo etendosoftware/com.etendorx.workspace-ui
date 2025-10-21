@@ -323,16 +323,25 @@ export const useTableData = ({
   }, [rawColumns]);
 
   // Use datasource hook
-  const { toggleImplicitFilters, fetchMore, records, removeRecordLocally, error, refetch, loading, hasMoreRecords } =
-    useDatasource({
-      entity: treeEntity,
-      params: query,
-      columns: stableDatasourceColumns,
-      searchQuery,
-      skip,
-      treeOptions,
-      activeColumnFilters: tableColumnFilters,
-    });
+  const {
+    toggleImplicitFilters,
+    isImplicitFilterApplied,
+    fetchMore,
+    records,
+    removeRecordLocally,
+    error,
+    refetch,
+    loading,
+    hasMoreRecords,
+  } = useDatasource({
+    entity: treeEntity,
+    params: query,
+    columns: stableDatasourceColumns,
+    searchQuery,
+    skip,
+    treeOptions,
+    activeColumnFilters: tableColumnFilters,
+  });
 
   // Display records (tree mode uses flattened, normal mode uses original records)
   const displayRecords = shouldUseTreeMode ? flattenedRecords : records;
@@ -504,6 +513,31 @@ export const useTableData = ({
     [expanded, displayRecords, shouldUseTreeMode, loadChildNodes]
   );
 
+  const handleToggleImplicitFilters = useCallback(() => {
+    if (!isImplicitFilterApplied) {
+      handleMRTColumnFiltersChange([]);
+      return;
+    }
+    toggleImplicitFilters();
+  }, [isImplicitFilterApplied, toggleImplicitFilters, handleMRTColumnFiltersChange]);
+
+  useEffect(() => {
+    // If tableColumnFilters is empty (cleared externally), clear advanced column filters as well
+    if (tableColumnFilters.length === 0) {
+      const hasActiveAdvancedFilters = advancedColumnFilters.some((filter) => filter.selectedOptions.length > 0);
+
+      if (hasActiveAdvancedFilters) {
+        // Clear all selected options in advanced filters to sync with MRT state
+        setColumnFilters((prev) =>
+          prev.map((filter) => ({
+            ...filter,
+            selectedOptions: [],
+          }))
+        );
+      }
+    }
+  }, [tableColumnFilters, advancedColumnFilters, setColumnFilters]);
+
   // Handle tree mode changes
   useEffect(() => {
     // Skip the first render to avoid unnecessary refetch on mount
@@ -637,7 +671,7 @@ export const useTableData = ({
     handleMRTExpandChange,
 
     // Actions
-    toggleImplicitFilters,
+    toggleImplicitFilters: handleToggleImplicitFilters,
     fetchMore,
     refetch,
     removeRecordLocally,

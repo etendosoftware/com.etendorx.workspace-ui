@@ -105,7 +105,6 @@ export function useDatasource({
   const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState(params.isImplicitFilterApplied ?? false);
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
   const [hasMoreRecords, setHasMoreRecords] = useState(true);
-
   const removeRecordLocally = useCallback((recordId: string) => {
     setRecords((prevRecords) => prevRecords.filter((record) => String(record.id) !== recordId));
   }, []);
@@ -119,7 +118,7 @@ export function useDatasource({
   }, []);
 
   const toggleImplicitFilters = useCallback(() => {
-    setIsImplicitFilterApplied((prev) => !prev);
+    setIsImplicitFilterApplied(false);
     setPage(1);
   }, []);
 
