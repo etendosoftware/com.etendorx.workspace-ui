@@ -28,6 +28,29 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Filter out tool messages that have been followed by another message
+  const filteredMessages = useMemo(() => {
+    const result = [];
+    for (let i = 0; i < messages.length; i++) {
+      const currentMessage = messages[i];
+      const nextMessage = messages[i + 1];
+
+      // Skip tool messages if there's a next message (meaning the tool execution finished)
+      if (currentMessage.role === "tool" && nextMessage) {
+        continue;
+      }
+
+      result.push(currentMessage);
+    }
+    return result;
+  }, [messages]);
+
+  // Check if the last message is a tool message (showing a loading state)
+  const hasActiveToolMessage = useMemo(() => {
+    const lastMessage = messages[messages.length - 1];
+    return lastMessage?.role === "tool";
+  }, [messages]);
+
   const hasContextInMessage = useCallback((text: string) => {
     return text.startsWith(CONTEXT_CONSTANTS.TAG_START);
   }, []);
@@ -67,7 +90,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
 
   return (
     <div className="p-4 h-full overflow-y-auto flex flex-col gap-4">
-      {messages.map((message, _index) => {
+      {filteredMessages.map((message, _index) => {
         const messageHasContext = message.sender === MESSAGE_ROLES.USER && hasContextInMessage(message.text);
         const displayMessage = messageHasContext ? getMessageWithoutContext(message.text) : message.text;
         const contextCount = messageHasContext ? getContextCountFromMessage(message.text) : 0;
@@ -111,11 +134,15 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
         );
       })}
 
-      {isLoading && (
+      {(isLoading || hasActiveToolMessage) && (
         <div className="flex justify-start mb-2">
           <div className="flex items-center gap-2 p-4 rounded-lg bg-(--color-baseline-0)">
             <div className="spinner-gradient" />
-            <span className="text-sm">{translations?.typing}</span>
+            <span className="text-sm">
+              {hasActiveToolMessage && messages[messages.length - 1]?.text
+                ? messages[messages.length - 1].text
+                : translations?.typing}
+            </span>
           </div>
         </div>
       )}
