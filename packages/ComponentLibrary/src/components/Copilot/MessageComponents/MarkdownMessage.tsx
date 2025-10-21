@@ -139,9 +139,29 @@ const components: Components = {
   td: TableCell,
 };
 
+/**
+ * MarkdownMessage Component
+ *
+ * This component safely renders markdown content from the Copilot assistant.
+ *
+ * Security: XSS Protection
+ * - react-markdown DOES NOT render HTML by default (it escapes HTML tags)
+ * - Raw HTML is treated as text and displayed as-is, not executed
+ * - Only markdown syntax is converted to React components
+ * - All custom components use React's built-in XSS protection
+ *
+ * To render HTML, one would need to explicitly use rehypeRaw plugin (which we DON'T use)
+ *
+ * @see https://github.com/remarkjs/react-markdown#security
+ */
 const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => {
   return (
-    <ReactMarkdown components={components} remarkPlugins={[remarkGfm]}>
+    <ReactMarkdown
+      components={components}
+      remarkPlugins={[remarkGfm]}
+      // skipHtml is true by default - HTML is NOT rendered, only escaped
+      // We explicitly document this for security auditing purposes
+    >
       {content}
     </ReactMarkdown>
   );
