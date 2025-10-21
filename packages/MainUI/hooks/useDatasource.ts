@@ -86,6 +86,8 @@ export type UseDatasourceOptions = {
     parentId?: string | number;
   };
   activeColumnFilters?: MRT_ColumnFiltersState;
+  isImplicitFilterApplied?: boolean;
+  setIsImplicitFilterApplied?: (value: boolean) => void;
 };
 
 export function useDatasource({
@@ -96,13 +98,14 @@ export function useDatasource({
   skip,
   treeOptions,
   activeColumnFilters = [],
+  isImplicitFilterApplied = false,
+  setIsImplicitFilterApplied,
 }: UseDatasourceOptions) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [records, setRecords] = useState<EntityData[]>([]);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [page, setPage] = useState(1);
-  const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState(params.isImplicitFilterApplied ?? false);
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
   const [hasMoreRecords, setHasMoreRecords] = useState(true);
   const removeRecordLocally = useCallback((recordId: string) => {
@@ -115,11 +118,6 @@ export function useDatasource({
 
   const changePageSize = useCallback((size: number) => {
     setPageSize(size);
-  }, []);
-
-  const toggleImplicitFilters = useCallback(() => {
-    setIsImplicitFilterApplied(false);
-    setPage(1);
   }, []);
 
   const reinit = useCallback(() => {
@@ -176,7 +174,7 @@ export function useDatasource({
         if (!isImplicitFilterApplied) {
           setError(e as Error);
         } else {
-          setIsImplicitFilterApplied(false);
+          setIsImplicitFilterApplied?.(false);
         }
       } finally {
         setLoading(false);
@@ -219,8 +217,6 @@ export function useDatasource({
     changePageSize,
     records,
     loaded,
-    isImplicitFilterApplied,
-    toggleImplicitFilters,
     activeColumnFilters,
     removeRecordLocally,
     refetch,
