@@ -237,10 +237,23 @@ export const useTableData = ({
 
   // Build query
   const query: DatasourceOptions = useMemo(() => {
-    const fieldName =
-      Array.isArray(tab?.parentColumns) && tab.parentColumns.length > 0
-        ? (tab.parentColumns[tab.tabLevel] ?? tab.parentColumns[tab.parentColumns.length - 1] ?? "id")
-        : "id";
+    // Find the correct parent column by matching referencedEntity with parentTab.entityName
+    let fieldName = "id";
+
+    if (Array.isArray(tab?.parentColumns) && tab.parentColumns.length > 0) {
+      if (parentTab) {
+        // Try to find the field that references the parent tab's entity
+        const matchingField = tab.parentColumns.find((colName) => {
+          const field = tab.fields[colName];
+          return field?.referencedEntity === parentTab.entityName;
+        });
+
+        fieldName = matchingField || tab.parentColumns[0] || "id";
+      } else {
+        // No parent tab, use first column as fallback
+        fieldName = tab.parentColumns[0] || "id";
+      }
+    }
 
     const value = parentId;
     const operator = "equals";
@@ -273,7 +286,14 @@ export const useTableData = ({
     tab.id,
     tab.hqlfilterclause?.length,
     tab.sQLWhereClause?.length,
+    tab.name,
+    tab.tabLevel,
+    tab.parentTabId,
+    tab.entityName,
+    tab.fields,
     parentId,
+    parentRecord?.id,
+    parentTab,
     language,
   ]);
 
