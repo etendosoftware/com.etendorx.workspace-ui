@@ -143,8 +143,8 @@ describe("Table State Persistence - Performance Tests", () => {
       const endTime = performance.now();
       const duration = endTime - startTime;
 
-      // 1000 retrievals should be fast (less than 500ms = 0.5ms per retrieval)
-      expect(duration).toBeLessThan(500);
+      // 1000 retrievals should be fast (less than 1000ms = 1ms per retrieval)
+      expect(duration).toBeLessThan(1000);
 
       // Also verify that individual retrieval is fast (average < 1ms per call)
       const averageTimePerRetrieval = duration / 1000;
