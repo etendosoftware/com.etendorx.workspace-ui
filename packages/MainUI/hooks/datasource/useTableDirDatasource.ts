@@ -33,7 +33,12 @@ import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 const FALLBACK_RESULT: Record<string, EntityValue> = {} as Record<string, EntityValue>;
 
-export const useTableDirDatasource = ({ field, pageSize = 75, initialPageSize = 75 }: UseTableDirDatasourceParams) => {
+export const useTableDirDatasource = ({
+  field,
+  pageSize = 75,
+  initialPageSize = 75,
+  isProcessModal = false,
+}: UseTableDirDatasourceParams) => {
   const { getValues, watch } = useFormContext();
   const { tab, parentRecord } = useTabContext();
   const windowId = tab.window;
@@ -97,17 +102,17 @@ export const useTableDirDatasource = ({ field, pageSize = 75, initialPageSize = 
     [tab.fields]
   );
 
+  interface BaseBody {
+    [key: string]: unknown;
+    inpfinPaymentmethodId?: string;
+    inpissotrx?: string;
+    windowId?: string;
+    "Deposit To"?: string;
+    "Sales Transaction"?: string;
+  }
+
   const buildRequestBody = useCallback(
     (startRow: number, endRow: number, currentValue: typeof value) => {
-      interface BaseBody {
-        [key: string]: unknown;
-        inpfinPaymentmethodId?: string;
-        inpissotrx?: string;
-        windowId?: string;
-        "Deposit To"?: string;
-        "Sales Transaction"?: string;
-      }
-
       const transformPayloadFields = (baseBody: BaseBody): BaseBody => {
         // Remove fields that will be transformed to avoid duplicates
         const { inpfinPaymentmethodId, inpissotrx, windowId, ...rest } = baseBody;
@@ -166,11 +171,29 @@ export const useTableDirDatasource = ({ field, pageSize = 75, initialPageSize = 
           ...formValues,
         });
       }
-      baseBody = transformPayloadFields(baseBody);
+
+      // Only apply field transformation when inside process modal
+      if (isProcessModal) {
+        baseBody = transformPayloadFields(baseBody);
+      }
 
       return baseBody;
     },
-    [field, windowId, selectorId, isProductField, parentData, invoiceContext, transformFormValues, getValues]
+    [
+      transformFormValues,
+      getValues,
+      invoiceContext,
+      field.selector,
+      field.module,
+      field.tab,
+      field.column.table,
+      field.hqlName,
+      windowId,
+      isProductField,
+      isProcessModal,
+      selectorId,
+      parentData,
+    ]
   );
 
   const buildSearchCriteria = useCallback(
