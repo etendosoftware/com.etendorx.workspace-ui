@@ -35,7 +35,8 @@ interface ProcessParameterSelectorProps {
  */
 export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessParameterSelectorProps) => {
   const { session } = useUserContext();
-  const { getValues } = useFormContext();
+  const { watch, register } = useFormContext();
+  const values = watch(); // Watch all form values for reactive logic evaluation
 
   // Map ProcessParameter to Field interface for FormView selector compatibility
   const mappedField = useMemo(() => {
@@ -60,40 +61,52 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
     }
 
     // WAIT for form data to be available before evaluating expressions
-    const currentValues = getValues();
-    if (!currentValues || Object.keys(currentValues).length === 0) {
+    if (!values || Object.keys(values).length === 0) {
       // Form data not loaded yet, default to visible to avoid errors
       return true;
     }
 
     try {
       const compiledExpr = compileExpression(parameter.displayLogic);
-      return compiledExpr(session, currentValues);
+      return compiledExpr(session, values);
     } catch (error) {
       logger.warn("Error executing display logic expression:", parameter.displayLogic, error);
       return true; // Default to visible on error
     }
-  }, [parameter.displayLogic, parameter.name, logicFields, session, getValues]);
+  }, [parameter.displayLogic, parameter.name, logicFields, session, values]);
 
-  // Evaluate readonly logic expression (combine parameter logic with process defaults logic)
+  // Evaluate readonly logic expression (EXACT same logic as BaseSelector lines 83-95)
   const isReadOnly = useMemo(() => {
-    // Check process defaults logic first (takes precedence)
-    const defaultsReadOnlyLogic = logicFields?.[`${parameter.name}.readonly`];
+    // Check mapped field properties first (isReadOnly from field metadata)
+    if (mappedField.isReadOnly) return true;
+
+    // Check if field is updatable (Process parameters don't have formMode, so skip this check)
+    // if (!mappedField.isUpdatable) return FormMode.NEW !== formMode;
+
+    // Check process defaults logic (takes precedence over parameter logic)
+    // Try both parameter.name and dBColumnName formats
+    const defaultsReadOnlyLogic =
+      logicFields?.[`${parameter.name}.readonly`] ?? logicFields?.[`${parameter.dBColumnName}.readonly`];
+
     if (defaultsReadOnlyLogic !== undefined) {
       return defaultsReadOnlyLogic;
     }
 
+    // Check if parameter has readOnlyLogic (not readOnlyLogicExpression)
+    const readOnlyExpression = parameter.readOnlyLogicExpression || parameter.readOnlyLogic;
+
     // Fallback to parameter's own readonly logic
-    if (!parameter.readOnlyLogicExpression) return false;
+    if (!readOnlyExpression) return false;
 
     try {
-      const compiledExpr = compileExpression(parameter.readOnlyLogicExpression);
-      return compiledExpr(session, getValues());
+      const compiledExpr = compileExpression(readOnlyExpression);
+      const result = compiledExpr(session, values);
+      return result;
     } catch (error) {
-      logger.warn("Error executing readonly logic expression:", parameter.readOnlyLogicExpression, error);
+      logger.warn("Error executing readonly logic expression:", readOnlyExpression, error);
       return false; // Default to editable on error
     }
-  }, [parameter.readOnlyLogicExpression, parameter.name, logicFields, session, getValues]);
+  }, [mappedField, parameter, logicFields, session, values]);
 
   // Get field type for selector routing
   const fieldType = useMemo(() => {
@@ -101,8 +114,22 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
   }, [parameter]);
 
   // Don't render if display logic evaluates to false
-  if (!isDisplayed) {
+  // EXCEPT for auxiliary logic fields (*_readonly_logic, *_display_logic) which need to be in the form
+  const isAuxiliaryLogicField =
+    parameter.name.endsWith("_readonly_logic") ||
+    parameter.name.endsWith("_display_logic") ||
+    parameter.dBColumnName?.endsWith("_readonly_logic") ||
+    parameter.dBColumnName?.endsWith("_display_logic");
+
+  if (!isDisplayed && !isAuxiliaryLogicField) {
     return null;
+  }
+
+  // Render auxiliary logic fields as hidden inputs
+  if (isAuxiliaryLogicField) {
+    // Register with dBColumnName because readOnlyLogic expressions use that format
+    const fieldName = parameter.dBColumnName || parameter.name;
+    return <input type="hidden" {...register(fieldName)} />;
   }
 
   // Render the appropriate selector based on field type
