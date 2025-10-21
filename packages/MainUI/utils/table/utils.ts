@@ -50,8 +50,6 @@ export const isColorString = (value: unknown): boolean => {
     "gray",
     "grey",
     "transparent",
-    "inherit",
-    "initial",
   ];
   if (namedColors.includes(value.toLowerCase())) return true;
 

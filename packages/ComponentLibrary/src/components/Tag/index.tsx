@@ -20,9 +20,9 @@ import { Chip as MuiChip } from "@mui/material";
 import { useStyle } from "./styles";
 import type { TagProps } from "./types";
 
-const Tag: React.FC<TagProps> = ({ type, label, icon, onClick }) => {
+const Tag: React.FC<TagProps> = ({ label, icon, tagColor, onClick }) => {
   const styles = useStyle();
-  const coloredIcon = icon && styles.getColoredIcon(icon, type);
+  const coloredIcon = icon && styles.getColoredIcon(icon, tagColor);
 
   return (
     <MuiChip
@@ -30,7 +30,7 @@ const Tag: React.FC<TagProps> = ({ type, label, icon, onClick }) => {
       label={label}
       onClick={onClick}
       variant="outlined"
-      style={styles.getChipStyles(type)}
+      style={styles.getChipStyles(tagColor)}
       sx={styles.sx.chipLabel(icon)}
     />
   );

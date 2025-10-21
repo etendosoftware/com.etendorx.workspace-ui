@@ -102,6 +102,14 @@ export interface ReadOnlyState {
   readOnlyLogicExpr?: string;
   readOnlyReason?: "FIELD_READONLY" | "READONLY_LOGIC" | "ACCESS_LEVEL";
 }
+
+export interface RefListField {
+  id: string;
+  label: string;
+  value: string;
+  color?: string;
+}
+
 export interface Field {
   hqlName: string;
   inputName: string;
@@ -127,7 +135,7 @@ export interface Field {
   type: string;
   field: unknown[];
   selector?: Record<string, string>;
-  refList: { id: string; label: string; value: string }[];
+  refList: RefListField[];
   referencedEntity: string;
   referencedWindowId: string;
   referencedTabId: string;

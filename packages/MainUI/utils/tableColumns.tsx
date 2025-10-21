@@ -57,14 +57,7 @@ const renderBooleanField = (value: Record<string, unknown>, column: Field, t?: T
   const noText = t ? t("common.falseText") : "No";
   const config = value[column.hqlName] ? yesNoConfig.Y : yesNoConfig.N;
 
-  return (
-    <Tag
-      type={config.type}
-      icon={config.icon}
-      label={value[column.hqlName] ? yesText : noText}
-      data-testid="Tag__2b5175"
-    />
-  );
+  return <Tag icon={config.icon} label={value[column.hqlName] ? yesText : noText} data-testid="Tag__2b5175" />;
 };
 
 // Helper function to handle list field rendering
@@ -77,8 +70,10 @@ const renderListField = (value: Record<string, unknown>, column: Field) => {
 
   const refItem = column.refList?.find((item) => item.value === codeValue);
   if (refItem) {
-    const config = statusConfig[refItem.value as string] || DEFAULT_STATUS_CONFIG;
-    return <Tag type={config.type} icon={config.icon} label={refItem.label} data-testid="Tag__2b5175" />;
+    const { value, label, color } = refItem;
+    const config = statusConfig[value] || DEFAULT_STATUS_CONFIG;
+
+    return <Tag icon={config.icon} label={label} tagColor={color} data-testid="Tag__2b5175" />;
   }
 
   return "";
