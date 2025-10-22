@@ -135,6 +135,7 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         // Include selector information for TABLEDIR filters
         selectorDefinitionId: column.selector?.id,
         datasourceId: column.targetEntity || column.referencedEntity, // Use targetEntity if available
+        customJs: column.etmetaCustomjs,
         accessorFn: (v: Record<string, unknown>) => {
           const reference = getFieldReference(column.column?.reference);
 
