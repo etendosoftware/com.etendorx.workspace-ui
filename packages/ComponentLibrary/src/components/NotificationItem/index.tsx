@@ -27,7 +27,6 @@ import IconButton from "../IconButton";
 const NotificationItem: React.FC<NotificationItemProps> = ({
   description,
   priority,
-  tagType,
   date,
   icon: IconComponent,
   ctaButtons,
@@ -49,7 +48,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         </div>
         <div style={styles.textContainerStyles} className="textContainer">
           <ReactMarkdown components={markdownComponents}>{description}</ReactMarkdown>
-          {priority && tagType && <Tag type={tagType} label={priority} />}
+          {priority && <Tag label={priority} />}
           {ctaButtons && (
             <div style={styles.ctaButtonContainer}>
               {ctaButtons.map((button) => (

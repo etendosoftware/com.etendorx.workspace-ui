@@ -16,7 +16,6 @@
  */
 
 import type { SxProps, Theme } from "@mui/material";
-import type { TagType } from "../Tag/types";
 
 export interface CtaButton {
   key: string;
@@ -29,7 +28,6 @@ export interface CtaButton {
 export interface NotificationItemProps {
   description: string;
   priority?: string;
-  tagType?: TagType;
   date: string;
   icon: React.ComponentType;
   ctaButtons?: CtaButton[];

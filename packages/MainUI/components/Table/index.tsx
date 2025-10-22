@@ -86,6 +86,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const hasScrolledToSelection = useRef<boolean>(false);
 
+  // Restore visual selection when returning from FormView
+  // This effect ensures the table shows the selection from URL when it becomes visible
+  const hasRestoredSelection = useRef(false);
+
   // Use the table data hook
   const {
     displayRecords,
@@ -660,9 +664,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     }
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table, graph]);
 
-  // Restore visual selection when returning from FormView
-  // This effect ensures the table shows the selection from URL when it becomes visible
-  const hasRestoredSelection = useRef(false);
   useEffect(() => {
     const windowId = activeWindow?.windowId;
     if (!windowId || windowId !== tab.window || !records || hasRestoredSelection.current) {

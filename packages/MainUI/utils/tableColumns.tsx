@@ -20,6 +20,7 @@ import { getFieldReference } from "@/utils";
 import Tag from "@workspaceui/componentlibrary/src/components/Tag";
 import { type Column, type Field, FieldType } from "@workspaceui/api-client/src/api/types";
 import { DEFAULT_STATUS_CONFIG, IDENTIFIER_KEY, statusConfig, yesNoConfig } from "./columnsConstants";
+import { isColorString, getContrastTextColor } from "@/utils/color/utils";
 
 // Utility function to format audit date fields only
 const formatAuditDateField = (value: unknown): string => {
@@ -57,14 +58,26 @@ const renderBooleanField = (value: Record<string, unknown>, column: Field, t?: T
   const noText = t ? t("common.falseText") : "No";
   const config = value[column.hqlName] ? yesNoConfig.Y : yesNoConfig.N;
 
-  return (
-    <Tag
-      type={config.type}
-      icon={config.icon}
-      label={value[column.hqlName] ? yesText : noText}
-      data-testid="Tag__2b5175"
-    />
-  );
+  return <Tag icon={config.icon} label={value[column.hqlName] ? yesText : noText} data-testid="Tag__2b5175" />;
+};
+
+// Helper function to process and validate tag colors
+const processTagColors = (color?: string) => {
+  if (!color) {
+    return { tagColor: undefined, textColor: undefined };
+  }
+
+  const normalizedColor = color.trim().toLowerCase();
+  const isValidColor = isColorString(normalizedColor);
+
+  if (!isValidColor) {
+    return { tagColor: undefined, textColor: undefined };
+  }
+
+  return {
+    tagColor: normalizedColor,
+    textColor: getContrastTextColor(normalizedColor),
+  };
 };
 
 // Helper function to handle list field rendering
@@ -76,12 +89,15 @@ const renderListField = (value: Record<string, unknown>, column: Field) => {
   }
 
   const refItem = column.refList?.find((item) => item.value === codeValue);
-  if (refItem) {
-    const config = statusConfig[refItem.value as string] || DEFAULT_STATUS_CONFIG;
-    return <Tag type={config.type} icon={config.icon} label={refItem.label} data-testid="Tag__2b5175" />;
+  if (!refItem) {
+    return "";
   }
 
-  return "";
+  const { value: itemValue, label, color } = refItem;
+  const config = statusConfig[itemValue] || DEFAULT_STATUS_CONFIG;
+  const { tagColor, textColor } = processTagColors(color);
+
+  return <Tag icon={config.icon} label={label} tagColor={tagColor} textColor={textColor} data-testid="Tag__2b5175" />;
 };
 
 // Helper function to get raw cell value
