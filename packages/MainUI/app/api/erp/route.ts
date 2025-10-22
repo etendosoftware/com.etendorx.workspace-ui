@@ -48,28 +48,19 @@ function normalizeBaseUrl(url: string | undefined): string {
  * @returns true if should use direct kernel servlet
  */
 function shouldUseDirectKernelServlet(action: string): boolean {
-  // Action handlers (processes that modify data) need direct kernel servlet access
-
-  if (action.toLowerCase().includes("actionhandler")) {
-    return true;
-  }
-
-  // Default handlers and initialization components use secure web services
+  // Default handlers and initialization components use secure web services (exceptions)
   if (action.includes("DefaultsProcessActionHandler") || action.includes("FormInitializationComponent")) {
     return false;
   }
 
-  // ExecuteProcessActionHandler also needs direct access for process execution
-  if (action.includes("ExecuteProcessActionHandler")) {
+  // All other processes from org.openbravo packages need direct kernel servlet access
+  // This includes: costing processes, action handlers, process handlers, custom processes, etc.
+  if (action.startsWith("org.openbravo.")) {
     return true;
   }
 
-  // Custom processes (like SyncAssistant, etc.) need direct kernel servlet access
-  if (action.includes("process.")) {
-    return true;
-  }
-
-  if (action.includes("_action")) {
+  // Custom processes (like SyncAssistant, process., etc.) need direct kernel servlet access
+  if (action.includes("process.") || action.includes("_action")) {
     return true;
   }
 
