@@ -880,11 +880,10 @@ export interface FetchNotesParams {
 
 export interface CreateNoteParams {
   recordId: string;
-  tableId: string; // The AD_Table_ID string
-  content: string; // The text of the note
+  tableId: string;
+  content: string;
 }
 
-// Response structure for success/failure
 export interface DatasourceResponse {
   response: {
     data?: Note;
