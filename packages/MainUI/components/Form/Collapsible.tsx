@@ -34,7 +34,7 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
     }
   }, [isExpanded, onToggle, isAnimating]);
 
-  // Calcular altura del contenido y observar cambios
+  // Calculate content height and observe changes
   useEffect(() => {
     if (!innerContentRef.current) return;
 
@@ -45,10 +45,10 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
       }
     };
 
-    // Calcular altura inicial
+    // Calculate initial height
     updateHeight();
 
-    // Observar cambios en el tamaño del contenido
+    // Observe changes in content size
     const resizeObserver = new ResizeObserver(() => {
       updateHeight();
     });
@@ -60,7 +60,7 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
     };
   }, [children, isExpanded]);
 
-  // Manejar animación
+  // Handle animation
   useEffect(() => {
     if (!contentRef.current) return;
 
@@ -68,12 +68,12 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
 
     const timeoutId = setTimeout(() => {
       setIsAnimating(false);
-    }, 300); // Duración de la transición
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [isExpanded]);
 
-  // Manejar accesibilidad de elementos focuseables
+  // Manage focusability of inner elements based on expansion state
   useEffect(() => {
     if (!innerContentRef.current) return;
 
@@ -85,13 +85,13 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
       const element = el as HTMLElement;
 
       if (isExpanded) {
-        // Restaurar tabindex original
+        // Restore original tabindex
         if (element.dataset.originalTabIndex) {
           element.setAttribute("tabindex", element.dataset.originalTabIndex);
           delete element.dataset.originalTabIndex;
         }
       } else {
-        // Guardar tabindex original y deshabilitarlo
+        // Save original tabindex and disable it
         if (!element.dataset.originalTabIndex) {
           element.dataset.originalTabIndex = element.getAttribute("tabindex") || "0";
         }

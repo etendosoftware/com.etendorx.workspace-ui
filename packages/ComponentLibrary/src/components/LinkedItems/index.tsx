@@ -191,25 +191,15 @@ export const LinkedItems = memo(
     );
 
     const leftPanelContent = useMemo(() => {
-      if (loadingCategories) {
-        return loadingContent;
-      }
-      if (categories.length === 0) {
-        return noCategoriesContent;
-      }
+      if (loadingCategories) return loadingContent;
+      if (categories.length === 0) return noCategoriesContent;
       return categoriesContent;
     }, [loadingCategories, categories.length, loadingContent, noCategoriesContent, categoriesContent]);
 
     const rightPanelContent = useMemo(() => {
-      if (!selectedCategory) {
-        return noSelectedCategoryContent;
-      }
-      if (loadingItems) {
-        return loadingContent;
-      }
-      if (items.length === 0) {
-        return noCategoriesContent;
-      }
+      if (!selectedCategory) return noSelectedCategoryContent;
+      if (loadingItems) return loadingContent;
+      if (items.length === 0) return noCategoriesContent;
       return itemsContent;
     }, [
       selectedCategory,

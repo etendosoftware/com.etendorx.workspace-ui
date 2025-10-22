@@ -482,7 +482,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         setSelectedRecordAndClearChildren(activeWindow.windowId, tab.id, newRecordId, childIds);
 
         // Also clear the graph selection for all children to ensure they reset completely
-        for (const child of children ? children : []) {
+        for (const child of children ?? []) {
           graph.clearSelected(child);
         }
       }
@@ -581,7 +581,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               mode={mode}
               groups={groups}
               loading={isLoading}
-              recordId={recordId ? recordId : ""}
+              recordId={recordId ?? ""}
               initialNoteCount={initialNoteCount}
               onNotesChange={refreshRecordAndSession}
               showErrorModal={showErrorModal}

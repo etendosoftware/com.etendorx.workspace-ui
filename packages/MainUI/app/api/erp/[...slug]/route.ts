@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
 import { getErpAuthHeaders } from "../../_utils/forwardConfig";
+import { SLUGS_CATEGORIES, SLUGS_METHODS } from "@/app/api/_utils/slug/constants";
 
 // Custom error class for ERP requests
 class ErpRequestError extends Error {
@@ -30,9 +31,10 @@ class ErpRequestError extends Error {
 const getCachedErpData = unstable_cache(
   async (userToken: string, slug: string, method: string, body: string, contentType: string, queryParams = "") => {
     let erpUrl: string;
-    if (slug.includes("copilot")) {
+    const slugContainsCopilot = slug.includes(SLUGS_CATEGORIES.COPILOT);
+    if (slugContainsCopilot) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
-    } else if (slug.startsWith("utility/")) {
+    } else if (slug.startsWith(SLUGS_CATEGORIES.UTILITY)) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
@@ -44,7 +46,7 @@ const getCachedErpData = unstable_cache(
 
     const headers: Record<string, string> = {
       Authorization: `Bearer ${userToken}`,
-      Accept: slug.includes("copilot") ? "text/event-stream" : "application/json",
+      Accept: slugContainsCopilot ? "text/event-stream" : "application/json",
     };
 
     if (method !== "GET" && body) {
@@ -60,7 +62,7 @@ const getCachedErpData = unstable_cache(
     if (!response.ok) {
       // NOTE: Handle ERP request errors
       // NOTE: use 404 for copilot to indicate not installed, otherwise use the actual response status
-      const defaultResponseStatus = slug.includes("copilot") ? 404 : response.status;
+      const defaultResponseStatus = slugContainsCopilot ? 404 : response.status;
       const errorText = await response.text();
       throw new ErpRequestError({
         message: `ERP request failed for slug ${slug}: ${defaultResponseStatus} ${response.statusText}. ${errorText}`,
@@ -89,11 +91,11 @@ const getCachedErpData = unstable_cache(
  */
 function isMutationRoute(slug: string, method: string): boolean {
   return (
-    slug.includes("create") ||
-    slug.includes("update") ||
-    slug.includes("delete") ||
-    slug.includes("copilot/") || // All copilot routes should bypass cache for real-time data
-    slug.startsWith("notes") || // Notes servlet needs session cookies
+    slug.includes(SLUGS_METHODS.CREATE) ||
+    slug.includes(SLUGS_METHODS.UPDATE) ||
+    slug.includes(SLUGS_METHODS.DELETE) ||
+    slug.includes(SLUGS_CATEGORIES.COPILOT) || // All copilot routes should bypass cache for real-time data
+    slug.startsWith(SLUGS_CATEGORIES.NOTES) || // Notes servlet needs session cookies
     method !== "GET"
   );
 }
@@ -229,14 +231,14 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 // Helper: Build ERP URL
 function buildErpUrl(slug: string, requestUrl: string): string {
   let erpUrl: string;
-  if (slug.startsWith("notes")) {
+  if (slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
     // Notes servlet - simple direct path
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
-  } else if (slug.startsWith("sws/")) {
+  } else if (slug.startsWith(SLUGS_CATEGORIES.SWS)) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
-  } else if (slug.startsWith("copilot/")) {
+  } else if (slug.startsWith(SLUGS_CATEGORIES.COPILOT)) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
-  } else if (slug.startsWith("utility/")) {
+  } else if (slug.startsWith(SLUGS_CATEGORIES.UTILITY)) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
@@ -294,7 +296,7 @@ async function fetchErpData({
 
 // Helper: Check if response is a Copilot stream
 function isCopilotStream(slug: string, data: unknown): boolean {
-  return slug.includes("copilot") && typeof data === "object" && data !== null && "stream" in data;
+  return slug.includes(SLUGS_CATEGORIES.COPILOT) && typeof data === "object" && data !== null && "stream" in data;
 }
 
 // Helper: Handle stream response
