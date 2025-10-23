@@ -483,6 +483,7 @@ export const createMockFormInitializationResponse = (
   sessionAttributes,
   dynamicCols: [],
   attachmentExists: false,
+  noteCount: 0,
 });
 
 /**
