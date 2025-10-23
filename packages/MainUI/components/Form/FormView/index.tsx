@@ -484,7 +484,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         // Also clear the graph selection for all children to ensure they reset completely
         for (const child of children ?? []) {
           graph.clearSelected(child);
-        }
       }
 
       setRecordId(newRecordId);

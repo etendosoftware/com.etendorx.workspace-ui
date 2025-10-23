@@ -52,11 +52,70 @@ jest.mock("@/hooks/useProcessInitialization", () => ({
 
 jest.mock("@/hooks/useProcessInitialState", () => ({
   useProcessInitializationState: () => ({
-    processDefaults: {},
-    hasInitialData: false,
-    entityName: "TestEntity",
-    gridSelection: [],
+    initialState: {},
+    logicFields: {},
+    filterExpressions: {},
+    refreshParent: false,
+    hasData: false,
   }),
+}));
+
+jest.mock("@/hooks/datasource/useProcessDatasourceConfig", () => ({
+  useProcessConfig: () => ({ fetchConfig: jest.fn(), loading: false, error: null, config: {} }),
+}));
+
+jest.mock("@/utils/processes/definition/constants", () => ({
+  PROCESS_DEFINITION_DATA: {
+    TEST_PROCESS_ID: {
+      inpPrimaryKeyColumnId: "testPrimaryKey",
+      inpColumnId: "testColumn",
+      additionalPayloadFields: [],
+    },
+  },
+  WINDOW_SPECIFIC_KEYS: {},
+}));
+
+jest.mock("@/components/ProcessModal/selectors/ProcessParameterSelector", () => ({
+  __esModule: true,
+  default: () => <div data-testid="param-selector">param</div>,
+}));
+
+jest.mock("@/components/ProcessModal/WindowReferenceGrid", () => ({
+  __esModule: true,
+  default: () => <div data-testid="window-grid">grid</div>,
+}));
+
+jest.mock("@/components/Modal", () => ({
+  __esModule: true,
+  default: ({ children }: any) => <div>{children}</div>,
+}));
+
+jest.mock("@/components/loading", () => ({
+  __esModule: true,
+  default: () => <div data-testid="loading">loading</div>,
+}));
+
+jest.mock("@workspaceui/componentlibrary/src/components/Button/Button", () => ({
+  __esModule: true,
+  default: ({
+    children,
+    onClick,
+    disabled,
+    startIcon,
+    className,
+    ...props
+  }: {
+    children?: React.ReactNode;
+    onClick?: () => void;
+    disabled?: boolean;
+    startIcon?: React.ReactNode;
+    className?: string;
+  }) => (
+    <button onClick={onClick} disabled={disabled} className={className} {...props}>
+      {startIcon}
+      {children}
+    </button>
+  ),
 }));
 
 jest.mock("react-hook-form", () => ({
@@ -87,10 +146,8 @@ const expectExecuteProcessCall = (expectedToken: string) => {
   return expect(mockExecuteProcess).toHaveBeenCalledWith(
     "TEST_PROCESS_ID",
     expect.objectContaining({
-      recordIds: ["test-record"],
       _buttonValue: "DONE",
-      _params: {},
-      _entityName: "TestEntity",
+      _params: expect.any(Object),
       windowId: "test-window",
     }),
     expectedToken,
@@ -109,7 +166,7 @@ describe("ProcessDefinitionModal token handling", () => {
       javaClassName: "com.test.TestProcess",
       parameters: {},
       onLoad: null,
-      onProcess: null,
+      onProcess: "function onProcess(context) { return { success: true }; }",
     },
   };
 

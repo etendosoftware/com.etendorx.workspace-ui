@@ -17,6 +17,7 @@ export default {
     "^@workspaceui/mainui(.*)$": "<rootDir>/packages/MainUI$1",
     "^@/(.*)$": "<rootDir>/packages/MainUI/$1",
     "^react-markdown$": "<rootDir>/__mocks__/react-markdown.js",
+    "^remark-gfm$": "<rootDir>/__mocks__/remark-gfm.js",
     "\\.svg\\?url$": "<rootDir>/__mocks__/fileMock.js",
   },
 

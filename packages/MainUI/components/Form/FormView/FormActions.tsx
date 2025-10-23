@@ -19,7 +19,6 @@ import { useCallback, useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useFormValidation } from "@/hooks/useFormValidation";
-import { useSelected } from "@/hooks/useSelected";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { useTabContext } from "@/contexts/tab";
@@ -37,7 +36,6 @@ interface FormActionsProps {
 
 export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal }: FormActionsProps) {
   const { formState } = useFormContext();
-  const { graph } = useSelected();
   const { activeWindow, clearTabFormStateAtomic } = useMultiWindowURL();
   const { registerActions, setSaveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();

@@ -110,10 +110,12 @@ export const useTableData = ({
   const {
     tableColumnFilters,
     tableColumnVisibility,
+    isImplicitFilterApplied,
     setTableColumnFilters,
     setTableColumnVisibility,
     setTableColumnSorting,
     setTableColumnOrder,
+    setIsImplicitFilterApplied,
   } = useTableStatePersistenceTab(tab.window, tab.id);
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
@@ -127,6 +129,10 @@ export const useTableData = ({
     const { parseColumns } = require("@/utils/tableColumns");
     return parseColumns(Object.values(tab.fields));
   }, [tab.fields]);
+
+  const initialIsFilterApplied = useMemo(() => {
+    return tab.hqlfilterclause?.length > 0 || tab.sQLWhereClause?.length > 0;
+  }, [tab.hqlfilterclause, tab.sQLWhereClause]);
 
   // Column filters
   const {
@@ -261,7 +267,7 @@ export const useTableData = ({
     const options: DatasourceOptions = {
       windowId: tab.window,
       tabId: tab.id,
-      isImplicitFilterApplied: tab.hqlfilterclause?.length > 0 || tab.sQLWhereClause?.length > 0,
+      isImplicitFilterApplied: initialIsFilterApplied,
       pageSize: 100,
     };
 
@@ -284,8 +290,7 @@ export const useTableData = ({
     tab.parentColumns,
     tab.window,
     tab.id,
-    tab.hqlfilterclause?.length,
-    tab.sQLWhereClause?.length,
+    initialIsFilterApplied,
     tab.name,
     tab.tabLevel,
     tab.parentTabId,
@@ -323,16 +328,17 @@ export const useTableData = ({
   }, [rawColumns]);
 
   // Use datasource hook
-  const { toggleImplicitFilters, fetchMore, records, removeRecordLocally, error, refetch, loading, hasMoreRecords } =
-    useDatasource({
-      entity: treeEntity,
-      params: query,
-      columns: stableDatasourceColumns,
-      searchQuery,
-      skip,
-      treeOptions,
-      activeColumnFilters: tableColumnFilters,
-    });
+  const { fetchMore, records, removeRecordLocally, error, refetch, loading, hasMoreRecords } = useDatasource({
+    entity: treeEntity,
+    params: query,
+    columns: stableDatasourceColumns,
+    searchQuery,
+    skip,
+    treeOptions,
+    activeColumnFilters: tableColumnFilters,
+    isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
+    setIsImplicitFilterApplied,
+  });
 
   // Display records (tree mode uses flattened, normal mode uses original records)
   const displayRecords = shouldUseTreeMode ? flattenedRecords : records;
@@ -504,6 +510,39 @@ export const useTableData = ({
     [expanded, displayRecords, shouldUseTreeMode, loadChildNodes]
   );
 
+  const handleToggleImplicitFilters = useCallback(() => {
+    if (!isImplicitFilterApplied) {
+      handleMRTColumnFiltersChange([]);
+      return;
+    }
+    setIsImplicitFilterApplied(false);
+  }, [isImplicitFilterApplied, setIsImplicitFilterApplied, handleMRTColumnFiltersChange]);
+
+  /** Initialize implicit filter state */
+  useEffect(() => {
+    if (isImplicitFilterApplied === undefined) {
+      setIsImplicitFilterApplied(initialIsFilterApplied);
+    }
+  }, [initialIsFilterApplied, isImplicitFilterApplied, setIsImplicitFilterApplied]);
+
+  /** Clear advanced column filters when table filters are cleared */
+  useEffect(() => {
+    // If tableColumnFilters is empty (cleared externally), clear advanced column filters as well
+    if (tableColumnFilters.length === 0) {
+      const hasActiveAdvancedFilters = advancedColumnFilters.some((filter) => filter.selectedOptions.length > 0);
+
+      if (hasActiveAdvancedFilters) {
+        // Clear all selected options in advanced filters to sync with MRT state
+        setColumnFilters((prev) =>
+          prev.map((filter) => ({
+            ...filter,
+            selectedOptions: [],
+          }))
+        );
+      }
+    }
+  }, [tableColumnFilters, advancedColumnFilters, setColumnFilters]);
+
   // Handle tree mode changes
   useEffect(() => {
     // Skip the first render to avoid unnecessary refetch on mount
@@ -637,7 +676,7 @@ export const useTableData = ({
     handleMRTExpandChange,
 
     // Actions
-    toggleImplicitFilters,
+    toggleImplicitFilters: handleToggleImplicitFilters,
     fetchMore,
     refetch,
     removeRecordLocally,
