@@ -789,7 +789,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                       variant="filled"
                       size="large"
                       onClick={handleExecute}
-                      disabled={isActionButtonDisabled}
+                      disabled={Boolean(isActionButtonDisabled)}
                       startIcon={getActionButtonContent().icon}
                       className="w-49"
                       data-testid="ExecuteButton__761503">
