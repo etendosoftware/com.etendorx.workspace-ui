@@ -103,7 +103,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
 
   const selectedRecords = graph.getSelectedMultiple(tab);
-  console.log({ button });
   const firstWindowReferenceParam = useMemo(() => {
     return Object.values(parameters).find((param) => param.reference === WINDOW_REFERENCE_ID);
   }, [parameters]);
@@ -727,7 +726,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                   size="large"
                   onClick={handleExecute}
                   disabled={isActionButtonDisabled}
-                  startIcon={getActionButtonContent().icon}
+                  startIcon={getActionButtonContent().icon || undefined}
                   data-testid="ExecuteButton__761503">
                   {getActionButtonContent().text}
                 </Button>
