@@ -19,7 +19,8 @@
 
 import Graph from "@/data/graph";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
-import { createContext, useCallback, useMemo, useState } from "react";
+import { createContext, useCallback, useEffect, useMemo, useState } from "react";
+import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 
 interface SelectedContext {
   graph: Graph<Tab>;
@@ -43,6 +44,9 @@ export const SelectedProvider = ({
   windowIdentifier?: string;
 }>) => {
   const [activeLevels, setActiveLevels] = useState<number[]>([0]);
+  const [activeLevelsLoaded, setActiveLevelsLoaded] = useState<boolean>(false);
+
+  const { activeWindow } = useMultiWindowURL();
 
   // Use windowIdentifier for cache key to support multiple instances of same window
   const cacheKey = windowIdentifier || windowId;
@@ -90,6 +94,16 @@ export const SelectedProvider = ({
     },
     [tabs]
   );
+
+  useEffect(() => {
+    if (activeLevelsLoaded || !setActiveLevel) return;
+    const { tabFormStates } = activeWindow || {};
+    const loadedLevelsLength = tabFormStates ? Object.values(tabFormStates).length : 0;
+    if (loadedLevelsLength > 0) {
+      setActiveLevel(loadedLevelsLength, true);
+    }
+    setActiveLevelsLoaded(true);
+  }, [activeWindow, activeLevelsLoaded, setActiveLevel]);
 
   const value = useMemo<SelectedContext>(
     () => ({
