@@ -23,7 +23,7 @@ if (!g[globalKey]) {
  * Generates a cryptographically secure CSRF token
  * @returns A random CSRF token string
  */
-export function generateCsrfToken(): string {
+function generateCsrfToken(): string {
   // Use crypto.randomUUID() if available (Node.js 14.17.0+), otherwise fallback
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID().replace(/-/g, "").toUpperCase();
@@ -56,10 +56,11 @@ export function setErpSessionCookie(
   const existing = store.get(key) ?? {};
   const merged = { ...existing, cookieHeader } as SessionValue;
 
-  // Only set csrfToken if it's provided - do NOT generate a random one
-  // The CSRF token must come from Etendo's session, not be generated here
+  // If csrfToken is provided and not empty, use it; otherwise generate a new one
   if (csrfToken?.trim()) {
     merged.csrfToken = csrfToken;
+  } else {
+    merged.csrfToken = generateCsrfToken();
   }
 
   store.set(key, merged);
