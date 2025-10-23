@@ -41,6 +41,7 @@ export default {
     "^@workspaceui/componentlibrary/src/(.*)$": "<rootDir>/../ComponentLibrary/src/$1",
     "^@workspaceui/componentlibrary(.*)$": "<rootDir>/../ComponentLibrary/src$1",
     "^react-markdown$": "<rootDir>/__mocks__/react-markdown.js",
+    "^remark-gfm$": "<rootDir>/__mocks__/remark-gfm.js",
     "\\.svg\\?url$": "<rootDir>/__mocks__/svgUrlMock.js",
     "\\.svg$": "<rootDir>/__mocks__/svgMock.js",
     "\\.(css|less|scss|sass)$": "<rootDir>/__mocks__/cssMock.js",

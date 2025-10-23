@@ -119,11 +119,12 @@ export const useCopilot = () => {
   const [state, dispatch] = useReducer(copilotReducer, initialState);
   const copilotClient = useCopilotClient();
 
-  const addMessage = useCallback((sender: string, text: string) => {
+  const addMessage = useCallback((sender: string, text: string, role?: string) => {
     const newMessage: IMessage = {
       text,
       sender,
       timestamp: formatTime(new Date()),
+      role,
     };
 
     dispatch({ type: "ADD_MESSAGE", message: newMessage });
@@ -138,7 +139,7 @@ export const useCopilot = () => {
 
       if (answer?.response) {
         if (answer.role !== "debug") {
-          addMessage("bot", answer.response);
+          addMessage("bot", answer.response, answer.role);
         }
       }
     },
