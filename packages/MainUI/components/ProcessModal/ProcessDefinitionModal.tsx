@@ -338,6 +338,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           _params: {
             ...mapKeysWithDefaults({ ...form.getValues(), ...gridSelection }),
           },
+          _entityName: tab.entityName,
           windowId: tab.window,
         };
 
