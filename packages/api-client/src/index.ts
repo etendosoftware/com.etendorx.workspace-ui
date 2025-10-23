@@ -19,6 +19,7 @@ export * from "./api/metadata";
 export * from "./api/client";
 export * from "./api/copilot/index";
 export * from "./api/types";
+export * from "./api/linkedItems";
 
 // Export column filter utilities and hooks
 export * from "./utils/column-filter-utils";

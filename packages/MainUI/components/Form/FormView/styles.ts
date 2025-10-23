@@ -219,7 +219,8 @@ export const useStyle = (): StylesType => {
         },
         noteContentBox: {
           flex: 1,
-          overflow: "hidden",
+          overflow: "auto",
+          maxHeight: "4.5rem",
         },
         noteContentText: {
           overflow: "hidden",
