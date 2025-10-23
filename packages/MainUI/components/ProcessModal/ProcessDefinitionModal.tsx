@@ -160,7 +160,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     processInitialization,
     memoizedParameters // Use memoized version to prevent infinite loops
   );
-
+  console.log({ button });
   // Combined form data: record values + process defaults (similar to FormView pattern)
   const availableFormData = useMemo(() => {
     if (!record || !tab) return {};
@@ -608,12 +608,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   const renderParameters = () => {
     if (result) return null;
-    return Object.values(parameters).map((parameter) => {
+
+    const parametersList = Object.values(parameters);
+    const windowReferences: JSX.Element[] = [];
+    const selectors: JSX.Element[] = [];
+
+    // Separate window references from selectors
+    for (const parameter of parametersList) {
       if (parameter.reference === WINDOW_REFERENCE_ID) {
         const parameterTab = getTabForParameter(parameter);
         const parameterEntityName = parameterTab?.entityName || "";
         const parameterTabId = parameterTab?.id || "";
-        return (
+        windowReferences.push(
           <WindowReferenceGrid
             key={`window-ref-${parameter.id || parameter.name}`}
             parameter={parameter}
@@ -636,16 +642,29 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             data-testid="WindowReferenceGrid__761503"
           />
         );
+      } else {
+        selectors.push(
+          <ProcessParameterSelector
+            key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
+            parameter={parameter}
+            logicFields={logicFields}
+            data-testid="ProcessParameterSelector__761503"
+          />
+        );
       }
-      return (
-        <ProcessParameterSelector
-          key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
-          parameter={parameter}
-          logicFields={logicFields}
-          data-testid="ProcessParameterSelector__761503"
-        />
-      );
-    });
+    }
+
+    return (
+      <>
+        {/* Selectors in 3 column grid - matching FormView style */}
+        {selectors.length > 0 && (
+          <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2 mb-4">{selectors}</div>
+        )}
+
+        {/* Window references full width with spacing between tables */}
+        {windowReferences.length > 0 && <div className="w-full flex flex-col gap-4">{windowReferences}</div>}
+      </>
+    );
   };
 
   const getActionButtonContent = () => {
@@ -681,11 +700,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     <Modal open={open} onClose={handleClose} data-testid="Modal__761503">
       <FormProvider {...form} data-testid="FormProvider__761503">
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-5xl max-h-full overflow-hidden flex flex-col">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-1">
                 <h3 className="text-lg font-bold">{button.name}</h3>
+                {button.processDefinition.description && (
+                  <p className="text-sm text-gray-600">{button.processDefinition.description}</p>
+                )}
               </div>
               <button
                 type="button"
@@ -714,9 +736,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             </div>
 
             {/* Footer */}
-            <div className="flex gap-4 justify-center mx-4 mb-4">
+            <div className="flex gap-3 justify-end mx-3 my-3">
               {!result && !isPending && (
-                <Button variant="outlined" size="large" onClick={handleClose} data-testid="CloseButton__761503">
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={handleClose}
+                  className="w-49"
+                  data-testid="CloseButton__761503">
                   {t("common.close")}
                 </Button>
               )}
@@ -728,13 +755,19 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                   onClick={handleExecute}
                   disabled={isActionButtonDisabled}
                   startIcon={getActionButtonContent().icon}
+                  className="w-49"
                   data-testid="ExecuteButton__761503">
                   {getActionButtonContent().text}
                 </Button>
               )}
 
               {result && (
-                <Button variant="outlined" size="large" onClick={handleClose} data-testid="CloseResultButton__761503">
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={handleClose}
+                  className="w-49"
+                  data-testid="CloseResultButton__761503">
                   {t("common.close")}
                 </Button>
               )}
