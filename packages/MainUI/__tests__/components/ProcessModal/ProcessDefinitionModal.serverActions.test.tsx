@@ -25,7 +25,7 @@ jest.mock("@/contexts/tab", () => ({
       window: "W123",
       entityName: "EntityX",
       fields: {},
-      id: "T1"
+      id: "T1",
     },
     record: { id: "R1" },
   }),
