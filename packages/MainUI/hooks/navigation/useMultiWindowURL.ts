@@ -38,6 +38,7 @@ import {
   type FormMode,
   type TabMode,
 } from "@/utils/url/constants";
+import { getNewWindowIdentifier } from "@/utils/url/utils";
 
 export interface WindowState {
   windowId: string;
@@ -273,11 +274,11 @@ export function useMultiWindowURL() {
   }, [windows, buildURL, router]);
 
   const openWindow = useCallback(
-    (windowId: string, title?: string, window_identifier?: string) => {
+    (windowId: string, title?: string) => {
       const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
 
       // Generate unique identifier if not provided
-      const uniqueIdentifier = window_identifier || `${windowId}_${Date.now()}`;
+      const uniqueIdentifier = getNewWindowIdentifier(windowId);
 
       // Search by window_identifier instead of windowId to support multiple instances
       const existingIndex = updatedWindows.findIndex((w) => w.window_identifier === uniqueIdentifier);

@@ -32,6 +32,7 @@ import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
+import { getNewWindowIdentifier } from "@/utils/url/utils";
 
 /**
  * Version component that displays the current application version in the sidebar footer.
@@ -115,9 +116,10 @@ export default function Sidebar() {
         openWindow(windowId, item.name);
       } else {
         // Coming from home route - create new window and navigate
+        const newWindowIdentifier = getNewWindowIdentifier(windowId);
         const newWindow = {
           windowId,
-          window_identifier: item.name,
+          window_identifier: newWindowIdentifier,
           isActive: true,
           order: getNextOrder(windows),
           title: item.name,
