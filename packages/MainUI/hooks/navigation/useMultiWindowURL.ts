@@ -230,23 +230,19 @@ export function useMultiWindowURL() {
     };
   }, [searchParams]);
 
-  const buildURL = useCallback((newWindows: WindowState[], preserveCurrentPath?: boolean) => {
+  const buildURL = useCallback((newWindows: WindowState[]) => {
     const params = new URLSearchParams();
 
     for (const window of newWindows) {
       setWindowParameters(params, window);
     }
 
-    if (preserveCurrentPath && window.location.pathname === "/") {
-      return `/?${params.toString()}`;
-    }
-
     return `/window?${params.toString()}`;
   }, []);
 
   const navigate = useCallback(
-    (newWindows: WindowState[], preserveCurrentPath?: boolean) => {
-      const url = buildURL(newWindows, preserveCurrentPath);
+    (newWindows: WindowState[]) => {
+      const url = buildURL(newWindows);
       try {
         const current = searchParams?.toString?.() ?? "";
         const next = url.split("?")[1] || "";
@@ -361,7 +357,7 @@ export function useMultiWindowURL() {
    * by always working with the most current state via the transform callback.
    */
   const applyWindowUpdates = useCallback(
-    (transform: (windows: WindowState[]) => WindowState[], preserveCurrentPath?: boolean) => {
+    (transform: (windows: WindowState[]) => WindowState[]) => {
       const stack = new Error().stack;
       const caller = stack?.split("\n")[2]?.trim() || "unknown";
 
@@ -387,7 +383,7 @@ export function useMultiWindowURL() {
         }
       });
 
-      navigate(nextWindows, preserveCurrentPath);
+      navigate(nextWindows);
     },
     [windows, navigate]
   );
