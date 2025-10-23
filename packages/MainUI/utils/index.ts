@@ -198,8 +198,11 @@ export const buildFormPayload = ({
   // Fields that should be excluded from the payload
   const auditFields = ["creationDate", "createdBy", "updated", "updatedBy"];
 
+  // When creating a new record (add operation), exclude the id field as well
+  const excludedFields = mode === FormMode.NEW ? [...auditFields, "id"] : auditFields;
+
   const filteredValues = Object.entries(values).reduce((acc, [key, value]) => {
-    if (!auditFields.includes(key)) {
+    if (!excludedFields.includes(key)) {
       acc[key] = value;
     }
     return acc;
