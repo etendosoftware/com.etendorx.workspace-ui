@@ -159,7 +159,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     processInitialization,
     memoizedParameters // Use memoized version to prevent infinite loops
   );
-  console.log({ button });
+
   // Combined form data: record values + process defaults (similar to FormView pattern)
   const availableFormData = useMemo(() => {
     if (!record || !tab) return {};
@@ -249,7 +249,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const handleClose = useCallback(() => {
     if (isPending) return;
 
-    // Trigger onSuccess only when closing the modal if process was successful
+    setResult(null);
+    setLoading(true);
+    setParameters(button.processDefinition.parameters);
+    setShouldTriggerSuccess(false);
+    onClose();
+  }, [button.processDefinition.parameters, isPending, onClose]);
+
+  const handleSuccessClose = useCallback(() => {
+    if (isPending) return;
+
+    // Trigger refresh when closing success modal
     if (shouldTriggerSuccess) {
       onSuccess?.();
     }
@@ -352,7 +362,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         const parsedResult = parseProcessResponse(res);
         setResult(parsedResult);
 
-        if (parsedResult.success) setShouldTriggerSuccess(true);
+        if (parsedResult.success) {
+          setShouldTriggerSuccess(true);
+        }
       } catch (error) {
         logger.warn("Error executing process:", error);
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
@@ -398,7 +410,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         const parsedResult = parseProcessResponse(res);
         setResult(parsedResult);
 
-        if (parsedResult.success) setShouldTriggerSuccess(true);
+        if (parsedResult.success) {
+          setShouldTriggerSuccess(true);
+        }
       } catch (error) {
         logger.warn("Error executing direct Java process:", error);
         setResult({
@@ -457,7 +471,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         const responseMessage = stringFnResult.responseActions[0].showMsgInProcessView;
         const success = responseMessage.msgType === "success";
         setResult({ success, data: responseMessage, error: success ? undefined : responseMessage.msgText });
-        if (success) setShouldTriggerSuccess(true);
+        if (success) {
+          setShouldTriggerSuccess(true);
+        }
       } catch (error) {
         logger.warn("Error executing process:", error);
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
@@ -805,7 +821,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             style={{ background: "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)" }}>
             <button
               type="button"
-              onClick={handleClose}
+              onClick={handleSuccessClose}
               className="absolute top-4 right-4 p-1 rounded-full hover:bg-white/50 transition-colors"
               aria-label="Close">
               <CloseIcon className="w-5 h-5" data-testid="SuccessCloseIcon__761503" />
@@ -829,7 +845,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
               <Button
                 variant="filled"
                 size="large"
-                onClick={handleClose}
+                onClick={handleSuccessClose}
                 className="w-49"
                 data-testid="SuccessCloseButton__761503">
                 {t("common.close")}
