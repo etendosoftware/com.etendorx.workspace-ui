@@ -148,6 +148,7 @@ const expectExecuteProcessCall = (expectedToken: string) => {
     expect.objectContaining({
       _buttonValue: "DONE",
       _params: expect.any(Object),
+      _entityName: "TestEntity",
       windowId: "test-window",
     }),
     expectedToken,

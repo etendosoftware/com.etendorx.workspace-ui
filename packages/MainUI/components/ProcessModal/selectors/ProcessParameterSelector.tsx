@@ -219,16 +219,17 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
   };
 
   return (
-    <div className="flex flex-col gap-4 items-start justify-start" title={parameter.description}>
-      <div className="relative pr-2">
+    <div className="h-12 flex items-center" title={parameter.description}>
+      <div className="w-1/3 flex items-center gap-2 pr-2">
+        <Label htmlFor={parameter.name} name={parameter.name} data-testid="Label__dac06b" />
         {parameter.mandatory && (
-          <span className="absolute -top-1 right-0 text-[#DC143C] font-bold" aria-required>
+          <span className="text-[#DC143C] font-bold min-w-[12px]" aria-required>
             *
           </span>
         )}
-        <Label htmlFor={parameter.name} name={parameter.name} data-testid="Label__dac06b" />
+        <div className="flex-1 self-center h-[2px] bg-[length:4px_2px] bg-repeat-x bg-[radial-gradient(circle,var(--color-transparent-neutral-20)_1px,transparent_1px)]" />
       </div>
-      <div className="w-full pb-8">{renderSelector()}</div>
+      <div className="w-2/3">{renderSelector()}</div>
     </div>
   );
 };

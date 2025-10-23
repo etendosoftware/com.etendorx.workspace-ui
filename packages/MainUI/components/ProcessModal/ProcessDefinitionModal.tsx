@@ -249,7 +249,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const handleClose = useCallback(() => {
     if (isPending) return;
 
-    // Trigger onSuccess only when closing the modal if process was successful
+    setResult(null);
+    setLoading(true);
+    setParameters(button.processDefinition.parameters);
+    setShouldTriggerSuccess(false);
+    onClose();
+  }, [button.processDefinition.parameters, isPending, onClose]);
+
+  const handleSuccessClose = useCallback(() => {
+    if (isPending) return;
+
+    // Trigger refresh when closing success modal
     if (shouldTriggerSuccess) {
       onSuccess?.();
     }
@@ -328,6 +338,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           _params: {
             ...mapKeysWithDefaults({ ...form.getValues(), ...gridSelection }),
           },
+          _entityName: tab.entityName,
           windowId: tab.window,
         };
 
@@ -352,7 +363,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         const parsedResult = parseProcessResponse(res);
         setResult(parsedResult);
 
-        if (parsedResult.success) setShouldTriggerSuccess(true);
+        if (parsedResult.success) {
+          setShouldTriggerSuccess(true);
+        }
       } catch (error) {
         logger.warn("Error executing process:", error);
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
@@ -398,7 +411,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         const parsedResult = parseProcessResponse(res);
         setResult(parsedResult);
 
-        if (parsedResult.success) setShouldTriggerSuccess(true);
+        if (parsedResult.success) {
+          setShouldTriggerSuccess(true);
+        }
       } catch (error) {
         logger.warn("Error executing direct Java process:", error);
         setResult({
@@ -457,7 +472,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         const responseMessage = stringFnResult.responseActions[0].showMsgInProcessView;
         const success = responseMessage.msgType === "success";
         setResult({ success, data: responseMessage, error: success ? undefined : responseMessage.msgText });
-        if (success) setShouldTriggerSuccess(true);
+        if (success) {
+          setShouldTriggerSuccess(true);
+        }
       } catch (error) {
         logger.warn("Error executing process:", error);
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
@@ -583,14 +600,32 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       msgText = result.error || t("errors.internalServerError.title");
     }
 
-    const messageClasses = `p-3 rounded mb-4 border-l-4 ${
-      isSuccessMessage ? "bg-green-50 border-(--color-success-main)" : "bg-gray-50 border-(--color-etendo-main)"
-    }`;
-
     const displayText = msgText.replace(/<br\s*\/?>/gi, "\n");
 
+    // Success message styled like the reference image
+    if (isSuccessMessage) {
+      return (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div
+            className="rounded-2xl p-8 shadow-xl max-w-sm w-full mx-4"
+            style={{ background: "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)" }}>
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md">
+                <CheckIcon className="w-10 h-10 fill-green-600" data-testid="SuccessCheckIcon__761503" />
+              </div>
+              <h4 className="font-bold text-xl text-center text-green-800">{msgTitle}</h4>
+              {displayText && displayText !== msgTitle && (
+                <p className="text-sm text-center text-gray-700 whitespace-pre-line">{displayText}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Error message - keep the simple style
     return (
-      <div className={messageClasses}>
+      <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-etendo-main)">
         <h4 className="font-bold text-sm">{msgTitle}</h4>
         <p className="text-sm whitespace-pre-line">{displayText}</p>
       </div>
@@ -607,12 +642,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   const renderParameters = () => {
     if (result) return null;
-    return Object.values(parameters).map((parameter) => {
+
+    const parametersList = Object.values(parameters);
+    const windowReferences: JSX.Element[] = [];
+    const selectors: JSX.Element[] = [];
+
+    // Separate window references from selectors
+    for (const parameter of parametersList) {
       if (parameter.reference === WINDOW_REFERENCE_ID) {
         const parameterTab = getTabForParameter(parameter);
         const parameterEntityName = parameterTab?.entityName || "";
         const parameterTabId = parameterTab?.id || "";
-        return (
+        windowReferences.push(
           <WindowReferenceGrid
             key={`window-ref-${parameter.id || parameter.name}`}
             parameter={parameter}
@@ -635,16 +676,29 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             data-testid="WindowReferenceGrid__761503"
           />
         );
+      } else {
+        selectors.push(
+          <ProcessParameterSelector
+            key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
+            parameter={parameter}
+            logicFields={logicFields}
+            data-testid="ProcessParameterSelector__761503"
+          />
+        );
       }
-      return (
-        <ProcessParameterSelector
-          key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
-          parameter={parameter}
-          logicFields={logicFields}
-          data-testid="ProcessParameterSelector__761503"
-        />
-      );
-    });
+    }
+
+    return (
+      <>
+        {/* Selectors in 3 column grid - matching FormView style */}
+        {selectors.length > 0 && (
+          <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2 mb-4">{selectors}</div>
+        )}
+
+        {/* Window references full width with spacing between tables */}
+        {windowReferences.length > 0 && <div className="w-full flex flex-col gap-4">{windowReferences}</div>}
+      </>
+    );
   };
 
   const getActionButtonContent = () => {
@@ -677,71 +731,130 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     (hasWindowReference && !gridSelection);
 
   return (
-    <Modal open={open} onClose={handleClose} data-testid="Modal__761503">
-      <FormProvider {...form} data-testid="FormProvider__761503">
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-5xl max-h-full overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold">{button.name}</h3>
-              </div>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="p-1 rounded-full hover:bg-(--color-baseline-10)"
-                disabled={isPending}>
-                <CloseIcon data-testid="CloseIcon__761503" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-auto p-4">
-              <div className={`relative ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
-                <div
-                  className={`absolute transition-opacity inset-0 flex items-center pointer-events-none justify-center bg-white ${
-                    (loading || initializationLoading) && !result ? "opacity-100" : "opacity-0"
-                  }`}>
-                  <Loading data-testid="Loading__761503" />
+    <>
+      {/* Main Process Modal */}
+      {open && !result?.success && (
+        <Modal open={open && !result?.success} onClose={handleClose} data-testid="Modal__761503">
+          <FormProvider {...form} data-testid="FormProvider__761503">
+            <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
+              <div className="bg-white rounded-lg shadow-lg w-full max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                  <div className="flex flex-col gap-1">
+                    <h3 className="text-lg font-bold">{button.name}</h3>
+                    {button.processDefinition.description && (
+                      <p className="text-sm text-gray-600">{String(button.processDefinition.description)}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    className="p-1 rounded-full hover:bg-(--color-baseline-10)"
+                    disabled={isPending}>
+                    <CloseIcon data-testid="CloseIcon__761503" />
+                  </button>
                 </div>
-                <div
-                  className={`transition-opacity ${(loading || initializationLoading) && !result ? "opacity-0" : "opacity-100"}`}>
-                  {renderResponse()}
-                  {renderParameters()}
+
+                {/* Content */}
+                <div className="flex-1 overflow-auto p-4">
+                  <div className={`relative ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
+                    <div
+                      className={`absolute inset-0 flex items-center pointer-events-none justify-center bg-white ${
+                        (loading || initializationLoading) && !result ? "opacity-100" : "opacity-0"
+                      }`}>
+                      <Loading data-testid="Loading__761503" />
+                    </div>
+                    <div className={(loading || initializationLoading) && !result ? "opacity-0" : "opacity-100"}>
+                      {result && !result.success && renderResponse()}
+                      {renderParameters()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex gap-3 justify-end mx-3 my-3">
+                  {!result && !isPending && (
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      onClick={handleClose}
+                      className="w-49"
+                      data-testid="CloseButton__761503">
+                      {t("common.close")}
+                    </Button>
+                  )}
+
+                  {!result && (
+                    <Button
+                      variant="filled"
+                      size="large"
+                      onClick={handleExecute}
+                      disabled={isActionButtonDisabled}
+                      startIcon={getActionButtonContent().icon}
+                      className="w-49"
+                      data-testid="ExecuteButton__761503">
+                      {getActionButtonContent().text}
+                    </Button>
+                  )}
+
+                  {result && !result.success && (
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      onClick={handleClose}
+                      className="w-49"
+                      data-testid="CloseResultButton__761503">
+                      {t("common.close")}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
-
-            {/* Footer */}
-            <div className="flex gap-4 justify-center mx-4 mb-4">
-              {!result && !isPending && (
-                <Button variant="outlined" size="large" onClick={handleClose} data-testid="CloseButton__761503">
-                  {t("common.close")}
-                </Button>
-              )}
-
-              {!result && (
-                <Button
-                  variant="filled"
-                  size="large"
-                  onClick={handleExecute}
-                  disabled={isActionButtonDisabled}
-                  startIcon={getActionButtonContent().icon || undefined}
-                  data-testid="ExecuteButton__761503">
-                  {getActionButtonContent().text}
-                </Button>
-              )}
-
-              {result && (
-                <Button variant="outlined" size="large" onClick={handleClose} data-testid="CloseResultButton__761503">
-                  {t("common.close")}
-                </Button>
-              )}
+          </FormProvider>
+        </Modal>
+      )}
+      {/* Success Modal - Separate overlay */}
+      {open && result?.success && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60] p-4">
+          <div
+            className="rounded-2xl p-6 shadow-xl max-w-sm w-full relative"
+            style={{ background: "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)" }}>
+            <button
+              type="button"
+              onClick={handleSuccessClose}
+              className="absolute top-4 right-4 p-1 rounded-full hover:bg-white/50 transition-colors"
+              aria-label="Close">
+              <CloseIcon className="w-5 h-5" data-testid="SuccessCloseIcon__761503" />
+            </button>
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center justify-center">
+                <CheckIcon className="w-6 h-6 fill-(--color-success-main)" data-testid="SuccessCheckIcon__761503" />
+              </div>
+              <div>
+                <h4 className="font-medium text-xl text-center text-(--color-success-main)">
+                  {t("process.completedSuccessfully")}
+                </h4>
+                {result?.data &&
+                  typeof result.data === "string" &&
+                  result.data !== t("process.completedSuccessfully") && (
+                    <p className="text-sm text-center text-(--color-transparent-neutral-80) whitespace-pre-line">
+                      {result.data.replace(/<br\s*\/?>/gi, "\n")}
+                    </p>
+                  )}
+              </div>
+              <Button
+                variant="filled"
+                size="large"
+                onClick={handleSuccessClose}
+                className="w-49"
+                data-testid="SuccessCloseButton__761503">
+                {t("common.close")}
+              </Button>
             </div>
           </div>
         </div>
-      </FormProvider>
-    </Modal>
+      )}
+    </>
   );
 }
 
