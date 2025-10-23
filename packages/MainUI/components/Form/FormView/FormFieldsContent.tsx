@@ -23,9 +23,7 @@ import Collapsible from "@/components/Form/Collapsible";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import { useFormViewContext } from "./contexts/FormViewContext";
 import { useRef, useEffect, useState } from "react";
-// import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
-// import LinkedItemsSection from "./Sections/LinkedItemsSection";
 import NoteSection from "./Sections/noteSection";
 
 interface FormFieldsProps {
