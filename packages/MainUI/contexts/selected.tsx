@@ -28,6 +28,7 @@ import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
  * Provides access to:
  * - Graph structure representing tab hierarchy
  * - Active navigation levels for multi-level tab navigation
+ * - Active tab tracking by level for precise navigation control
  * - Functions to control tab level activation and state management
  */
 interface SelectedContext {
@@ -35,6 +36,10 @@ interface SelectedContext {
   graph: Graph<Tab>;
   /** Array of currently active tab levels (maximum 2 levels for optimal UX) */
   activeLevels: number[];
+  /** Map tracking which specific tab is active at each level (level -> tabId) */
+  activeTabsByLevel: Map<number, string>;
+  /** Function to update the active tabs by level mapping */
+  setActiveTabsByLevel: (value: Map<number, string> | ((prev: Map<number, string>) => Map<number, string>)) => void;
   /** Function to set the active tab level with optional expand mode */
   setActiveLevel: (level: number, expand?: boolean) => void;
   /** Function to clear all selection states and reset to initial state */
@@ -95,6 +100,19 @@ export const SelectedProvider = ({
    * Prevents overwriting user navigation after session restoration.
    */
   const [activeLevelsLoaded, setActiveLevelsLoaded] = useState<boolean>(false);
+
+  /**
+   * State mapping each navigation level to its currently active tab ID.
+   *
+   * This Map maintains the relationship between tab levels (0, 1, 2, etc.) and
+   * the specific tab that is currently active at each level. This enables:
+   * - Precise navigation control across hierarchical tab structures
+   * - Restoration of specific tab selections during session recovery
+   * - Level-specific tab state management
+   *
+   * Example: Map { 0 => "mainTabId", 1 => "subTabId", 2 => "detailTabId" }
+   */
+  const [activeTabsByLevel, setActiveTabsByLevel] = useState<Map<number, string>>(new Map());
 
   /** Hook providing access to multi-window URL state management */
   const { activeWindow } = useMultiWindowURL();
@@ -189,18 +207,25 @@ export const SelectedProvider = ({
   );
 
   /**
-   * Session restoration effect for active tab levels.
+   * Session restoration effect for active tab levels and tab selections.
    *
    * This effect runs once during component initialization to restore navigation state
    * from URL parameters or saved session data. It coordinates with useMultiWindowURL
    * to determine the appropriate tab levels to activate based on previously saved form states.
    *
-   * Process:
+   * Enhanced Process:
    * 1. Checks if initial loading has already completed (prevents multiple executions)
-   * 2. Retrieves tabFormStates from the active window URL state
-   * 3. Calculates the deepest level based on the number of active form states
-   * 4. Uses expand mode to set levels directly without navigation logic
-   * 5. Marks loading as complete to prevent interference with user navigation
+   * 2. Retrieves tabFormStates and selectedRecords from the active window URL state
+   * 3. Extracts tab IDs from form states and selected records
+   * 4. Calculates navigation depth based on the position of the last form state in selected records
+   * 5. Uses expand mode to set levels directly without navigation logic
+   * 6. Resets tab-by-level mapping for clean state or restores based on calculated depth
+   * 7. Marks loading as complete to prevent interference with user navigation
+   *
+   * Key improvements:
+   * - Uses selectedRecords order to determine proper navigation level
+   * - Maintains activeTabsByLevel state consistency during restoration
+   * - Handles edge cases where form states and selected records may be misaligned
    *
    * This ensures users return to their previous navigation context when:
    * - Refreshing the page
@@ -208,32 +233,54 @@ export const SelectedProvider = ({
    * - Restoring from bookmarked URLs
    */
   useEffect(() => {
+    // Early return: Skip if already loaded or function not available
     if (activeLevelsLoaded || !setActiveLevel) return;
-    const { tabFormStates } = activeWindow || {};
-    const loadedLevelsLength = tabFormStates ? Object.values(tabFormStates).length : 0;
-    if (loadedLevelsLength > 0) {
-      setActiveLevel(loadedLevelsLength, true);
+
+    // Extract window state data including both form states and selected records
+    const { tabFormStates, selectedRecords, windowId } = activeWindow || {};
+    const formStatesIds = tabFormStates ? Object.keys(tabFormStates) : [];
+
+    // Handle window with no saved form states - reset to clean state
+    if (windowId && formStatesIds.length === 0) {
+      clearAllStates();
+      setActiveTabsByLevel(new Map());
     }
+
+    // Calculate navigation depth based on form state position in selected records
+    const lastFormStateId = formStatesIds.length > 0 ? formStatesIds[formStatesIds.length - 1] : null;
+    const selectedRecordsIds = selectedRecords ? Object.keys(selectedRecords) : [];
+    const lastFormStateIndex = lastFormStateId ? selectedRecordsIds.indexOf(lastFormStateId) : -1;
+
+    // Handle window with saved form states - restore navigation depth
+    if (lastFormStateIndex > 0) {
+      setActiveLevel(lastFormStateIndex, true); // Use expand mode for direct restoration
+    }
+
+    // Mark as loaded to prevent subsequent executions
     setActiveLevelsLoaded(true);
-  }, [activeWindow, activeLevelsLoaded, setActiveLevel]);
+  }, [activeWindow, activeLevelsLoaded, setActiveLevel, clearAllStates]);
 
   /**
    * Memoized context value to prevent unnecessary re-renders of consuming components.
    *
    * The context provides access to:
    * - graph: The hierarchical tab structure and selection management
-   * - activeLevels: Current navigation state
-   * - setActiveLevel: Navigation control function
-   * - clearAllStates: State reset function
+   * - activeLevels: Current navigation state (array of active levels)
+   * - activeTabsByLevel: Map of level -> tabId for precise tab tracking
+   * - setActiveTabsByLevel: Function to update the level-to-tab mapping
+   * - setActiveLevel: Navigation control function for level management
+   * - clearAllStates: State reset function for complete context cleanup
    */
   const value = useMemo<SelectedContext>(
     () => ({
       graph,
       activeLevels,
+      activeTabsByLevel,
       setActiveLevel,
+      setActiveTabsByLevel,
       clearAllStates,
     }),
-    [graph, activeLevels, setActiveLevel, clearAllStates]
+    [graph, activeLevels, activeTabsByLevel, setActiveLevel, setActiveTabsByLevel, clearAllStates]
   );
 
   return <SelectContext.Provider value={value}>{children}</SelectContext.Provider>;
