@@ -19,12 +19,36 @@ import { useEffect, useRef, useMemo, useCallback } from "react";
 import ContextPreview from "../ContextPreview";
 import { MESSAGE_ROLES, CONTEXT_CONSTANTS } from "@workspaceui/api-client/src/api/copilot";
 import type { MessageListProps } from "../types";
+import MarkdownMessage from "./MarkdownMessage";
 
 const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading = false, translations }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Filter out tool messages that have been followed by another message
+  const filteredMessages = useMemo(() => {
+    const result = [];
+    for (let i = 0; i < messages.length; i++) {
+      const currentMessage = messages[i];
+      const nextMessage = messages[i + 1];
+
+      // Skip tool messages if there's a next message (meaning the tool execution finished)
+      if (currentMessage.role === "tool" && nextMessage) {
+        continue;
+      }
+
+      result.push(currentMessage);
+    }
+    return result;
+  }, [messages]);
+
+  // Check if the last message is a tool message (showing a loading state)
+  const hasActiveToolMessage = useMemo(() => {
+    const lastMessage = messages[messages.length - 1];
+    return lastMessage?.role === "tool";
   }, [messages]);
 
   const hasContextInMessage = useCallback((text: string) => {
@@ -66,14 +90,14 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
 
   return (
     <div className="p-4 h-full overflow-y-auto flex flex-col gap-4">
-      {messages.map((message, _index) => {
+      {filteredMessages.map((message, index) => {
         const messageHasContext = message.sender === MESSAGE_ROLES.USER && hasContextInMessage(message.text);
         const displayMessage = messageHasContext ? getMessageWithoutContext(message.text) : message.text;
         const contextCount = messageHasContext ? getContextCountFromMessage(message.text) : 0;
 
         return (
           <div
-            key={message.message_id || `${message.sender}-${message.timestamp}`}
+            key={message.message_id || `${message.sender}-${message.timestamp}-${index}`}
             className={`flex mb-2 ${message.sender === MESSAGE_ROLES.USER ? "justify-end" : "justify-start"}`}>
             <div
               className={`max-w-[70%] p-4 rounded-xl ${
@@ -101,18 +125,24 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
                   />
                 </div>
               )}
-              <p className="text-sm mb-1">{displayMessage}</p>
+              <div className="mb-1">
+                <MarkdownMessage content={displayMessage} />
+              </div>
               <span className="text-xs opacity-70">{message.timestamp}</span>
             </div>
           </div>
         );
       })}
 
-      {isLoading && (
+      {(isLoading || hasActiveToolMessage) && (
         <div className="flex justify-start mb-2">
           <div className="flex items-center gap-2 p-4 rounded-lg bg-(--color-baseline-0)">
             <div className="spinner-gradient" />
-            <span className="text-sm">{translations?.typing}</span>
+            <span className="text-sm">
+              {hasActiveToolMessage && messages[messages.length - 1]?.text
+                ? messages[messages.length - 1].text
+                : translations?.typing}
+            </span>
           </div>
         </div>
       )}

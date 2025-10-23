@@ -103,7 +103,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
 
   const selectedRecords = graph.getSelectedMultiple(tab);
-
   const firstWindowReferenceParam = useMemo(() => {
     return Object.values(parameters).find((param) => param.reference === WINDOW_REFERENCE_ID);
   }, [parameters]);
@@ -118,8 +117,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [record, tab?.fields]);
 
   const hasWindowReference = useMemo(() => {
-    return Object.values(parameters).some((param) => param.reference === WINDOW_REFERENCE_ID);
-  }, [parameters]);
+    return Object.values(parameters).some((param) => param.reference === WINDOW_REFERENCE_ID) || javaClassName;
+  }, [javaClassName, parameters]);
 
   const {
     fetchConfig,

@@ -25,16 +25,25 @@ interface UseTableStatePersistenceTabReturn {
   tableColumnVisibility: MRT_VisibilityState;
   tableColumnSorting: MRT_SortingState;
   tableColumnOrder: string[];
+  isImplicitFilterApplied: boolean | undefined;
 
   // State setters
   setTableColumnFilters: React.Dispatch<React.SetStateAction<MRT_ColumnFiltersState>>;
   setTableColumnVisibility: React.Dispatch<React.SetStateAction<MRT_VisibilityState>>;
   setTableColumnSorting: React.Dispatch<React.SetStateAction<MRT_SortingState>>;
   setTableColumnOrder: React.Dispatch<React.SetStateAction<string[]>>;
+  setIsImplicitFilterApplied: (value: boolean) => void;
 }
 
 export const useTableStatePersistenceTab = (windowId: string, tabId: string): UseTableStatePersistenceTabReturn => {
-  const { getTableState, setTableFilters, setTableVisibility, setTableSorting, setTableOrder } = useWindowContext();
+  const {
+    getTableState,
+    setTableFilters,
+    setTableVisibility,
+    setTableSorting,
+    setTableOrder,
+    setTableImplicitFilterApplied,
+  } = useWindowContext();
 
   // Get current state values
   const currentState = useMemo(() => getTableState(windowId, tabId), [windowId, tabId, getTableState]);
@@ -76,17 +85,26 @@ export const useTableStatePersistenceTab = (windowId: string, tabId: string): Us
     [windowId, tabId, getTableState, setTableOrder]
   );
 
+  const setIsImplicitFilterApplied = useCallback(
+    (value: boolean) => {
+      setTableImplicitFilterApplied(windowId, tabId, value);
+    },
+    [windowId, tabId, setTableImplicitFilterApplied]
+  );
+
   return {
     // State getters - current values
     tableColumnFilters: currentState.filters,
     tableColumnVisibility: currentState.visibility,
     tableColumnSorting: currentState.sorting,
     tableColumnOrder: currentState.order,
+    isImplicitFilterApplied: currentState.isImplicitFilterApplied,
 
     // State setters - React-style setters
     setTableColumnFilters,
     setTableColumnVisibility,
     setTableColumnSorting,
     setTableColumnOrder,
+    setIsImplicitFilterApplied,
   };
 };

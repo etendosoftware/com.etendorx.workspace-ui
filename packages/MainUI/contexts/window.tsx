@@ -24,6 +24,7 @@ interface TableState {
   visibility: MRT_VisibilityState;
   sorting: MRT_SortingState;
   order: string[];
+  isImplicitFilterApplied: boolean | undefined;
 }
 
 interface TabState {
@@ -47,6 +48,7 @@ interface WindowContextI {
   setTableVisibility: (windowId: string, tabId: string, visibility: MRT_VisibilityState) => void;
   setTableSorting: (windowId: string, tabId: string, sorting: MRT_SortingState) => void;
   setTableOrder: (windowId: string, tabId: string, order: string[]) => void;
+  setTableImplicitFilterApplied: (windowId: string, tabId: string, isApplied: boolean) => void;
 
   // Window management
   cleanupWindow: (windowId: string) => void;
@@ -69,6 +71,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
         visibility: {},
         sorting: [],
         order: [],
+        isImplicitFilterApplied: undefined,
       };
 
       if (!state[windowId] || !state[windowId][tabId]) {
@@ -95,6 +98,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
             visibility: {},
             sorting: [],
             order: [],
+            isImplicitFilterApplied: false,
           },
         };
       }
@@ -119,6 +123,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
             visibility: {},
             sorting: [],
             order: [],
+            isImplicitFilterApplied: false,
           },
         };
       }
@@ -143,6 +148,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
             visibility: {},
             sorting: [],
             order: [],
+            isImplicitFilterApplied: false,
           },
         };
       }
@@ -167,11 +173,37 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
             visibility: {},
             sorting: [],
             order: [],
+            isImplicitFilterApplied: false,
           },
         };
       }
 
       newState[windowId][tabId].table.order = order;
+      return newState;
+    });
+  }, []);
+
+  const setTableImplicitFilterApplied = useCallback((windowId: string, tabId: string, isApplied: boolean) => {
+    setState((prevState: WindowContextState) => {
+      const newState = { ...prevState };
+
+      if (!newState[windowId]) {
+        newState[windowId] = {};
+      }
+
+      if (!newState[windowId][tabId]) {
+        newState[windowId][tabId] = {
+          table: {
+            filters: [],
+            visibility: {},
+            sorting: [],
+            order: [],
+            isImplicitFilterApplied: false,
+          },
+        };
+      }
+
+      newState[windowId][tabId].table.isImplicitFilterApplied = isApplied;
       return newState;
     });
   }, []);
@@ -195,10 +227,20 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setTableVisibility,
       setTableSorting,
       setTableOrder,
+      setTableImplicitFilterApplied,
       cleanupWindow,
       getAllState,
     }),
-    [getTableState, setTableFilters, setTableVisibility, setTableSorting, setTableOrder, cleanupWindow, getAllState]
+    [
+      getTableState,
+      setTableFilters,
+      setTableVisibility,
+      setTableSorting,
+      setTableOrder,
+      setTableImplicitFilterApplied,
+      cleanupWindow,
+      getAllState,
+    ]
   );
 
   return <WindowContext.Provider value={value}>{children}</WindowContext.Provider>;
