@@ -813,7 +813,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           </FormProvider>
         </Modal>
       )}
-
       {/* Success Modal - Separate overlay */}
       {open && result?.success && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60] p-4">
