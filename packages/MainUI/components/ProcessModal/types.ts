@@ -131,6 +131,7 @@ export type ProcessParameters = Record<string, ProcessParameter>;
 export interface ProcessDefinition extends Record<string, unknown> {
   id: string;
   name: string;
+  description?: string;
   javaClassName: string;
   parameters: ProcessParameters;
   onLoad: string;
