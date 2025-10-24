@@ -21,6 +21,7 @@ import Base64Icon from "@workspaceui/componentlibrary/src/components/Base64Icon"
 import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
 import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
 import type { SaveButtonState } from "@/contexts/ToolbarContext";
+import type { ISession } from "@workspaceui/api-client/src/api/types";
 
 const isBase64Image = (str: string): boolean => {
   try {
@@ -47,6 +48,7 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: "toolbar-button-copilot",
   [TOOLBAR_BUTTONS_ACTIONS.COLUMN_FILTERS]: "toolbar-button-column-filters",
   [TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW]: "toolbar-button-toggle-tree-view",
+  [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: "toolbar-button-attachment",
 } as const;
 
 export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
@@ -246,6 +248,7 @@ interface ButtonConfig {
   hasParentRecordSelected: boolean;
   saveButtonState?: SaveButtonState;
   isCopilotInstalled?: boolean;
+  session?: ISession;
 }
 
 /**
@@ -267,6 +270,14 @@ const createSectionButtons = (
     const styles = getButtonStyles(button);
     if (styles) {
       toolbarButton.className = toolbarButton.className ? `${toolbarButton.className} ${styles}` : styles;
+    }
+
+    // Add badge for ATTACHMENT button
+    if (button.action === TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT && config.session) {
+      const attachmentCount = config.session._attachmentCount;
+      if (attachmentCount && Number.parseInt(String(attachmentCount)) > 0) {
+        toolbarButton.badgeContent = String(attachmentCount);
+      }
     }
 
     return toolbarButton;
@@ -292,6 +303,7 @@ interface ToolbarSectionsConfig {
   hasParentRecordSelected?: boolean;
   isCopilotInstalled?: boolean;
   saveButtonState?: SaveButtonState;
+  session?: ISession;
 }
 
 export const getToolbarSections = ({
@@ -304,6 +316,7 @@ export const getToolbarSections = ({
   hasParentRecordSelected = false,
   isCopilotInstalled = false,
   saveButtonState,
+  session = {},
 }: ToolbarSectionsConfig): {
   leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
@@ -319,6 +332,7 @@ export const getToolbarSections = ({
     hasParentRecordSelected,
     saveButtonState,
     isCopilotInstalled,
+    session,
   };
 
   return {

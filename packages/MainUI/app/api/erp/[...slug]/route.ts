@@ -36,6 +36,8 @@ const getCachedErpData = unstable_cache(
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
     } else if (slug.startsWith(SLUGS_CATEGORIES.UTILITY)) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
+    } else if (slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
     }
@@ -96,6 +98,7 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.includes(SLUGS_METHODS.DELETE) ||
     slug.includes(SLUGS_CATEGORIES.COPILOT) || // All copilot routes should bypass cache for real-time data
     slug.startsWith(SLUGS_CATEGORIES.NOTES) || // Notes servlet needs session cookies
+    slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || // Attachments servlet needs session cookies and multipart/form-data
     method !== "GET"
   );
 }
@@ -177,6 +180,20 @@ async function handleMutationRequest(
     return { stream: response.body, headers: response.headers };
   }
 
+  // Check if response is a binary file (for downloads)
+  if (
+    responseContentType &&
+    (responseContentType.includes("application/octet-stream") ||
+      responseContentType.includes("application/zip") ||
+      responseContentType.includes("image/") ||
+      responseContentType.includes("video/") ||
+      responseContentType.includes("audio/") ||
+      responseContentType.includes("application/pdf"))
+  ) {
+    // Return the response directly for binary files
+    return { binaryFile: response };
+  }
+
   const responseText = await response.text();
 
   // Check if response is JavaScript error from Etendo
@@ -222,6 +239,10 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
       return handleStreamResponse(data as { stream: ReadableStream; headers: Headers });
     }
 
+    if (isBinaryFile(data)) {
+      return handleBinaryFileResponse(data as { binaryFile: Response });
+    }
+
     return NextResponse.json(data);
   } catch (error: unknown) {
     return handleError(error, params);
@@ -231,8 +252,8 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 // Helper: Build ERP URL
 function buildErpUrl(slug: string, requestUrl: string): string {
   let erpUrl: string;
-  if (slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
-    // Notes servlet - simple direct path
+  if (slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
+    // Attachments servlet uses direct mapping (e.g., /attachments)
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.SWS)) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
@@ -299,6 +320,11 @@ function isCopilotStream(slug: string, data: unknown): boolean {
   return slug.includes(SLUGS_CATEGORIES.COPILOT) && typeof data === "object" && data !== null && "stream" in data;
 }
 
+// Helper: Check if response is a binary file
+function isBinaryFile(data: unknown): boolean {
+  return typeof data === "object" && data !== null && "binaryFile" in data;
+}
+
 // Helper: Handle stream response
 function handleStreamResponse(data: { stream: ReadableStream; headers: Headers }): Response {
   return new Response(data.stream, {
@@ -306,6 +332,17 @@ function handleStreamResponse(data: { stream: ReadableStream; headers: Headers }
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
+    },
+  });
+}
+
+// Helper: Handle binary file response
+function handleBinaryFileResponse(data: { binaryFile: Response }): Response {
+  const { binaryFile } = data;
+  return new Response(binaryFile.body, {
+    headers: {
+      "Content-Type": binaryFile.headers.get("content-type") || "application/octet-stream",
+      "Content-Disposition": binaryFile.headers.get("content-disposition") || "attachment",
     },
   });
 }

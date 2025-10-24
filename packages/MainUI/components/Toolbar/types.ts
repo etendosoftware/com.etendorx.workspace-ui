@@ -93,6 +93,7 @@ export interface ToolbarButton extends BasicToolbarButton {
   sx?: SxProps<Theme>;
   className?: string;
   anchorEl?: HTMLElement | null;
+  badgeContent?: number | string;
 }
 
 export interface ProcessAvailableButton extends BasicToolbarButton {
