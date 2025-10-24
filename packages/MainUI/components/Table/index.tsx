@@ -80,7 +80,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { tab, parentTab, parentRecord } = useTabContext();
 
   const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
-    useTableStatePersistenceTab(tab.window, tab.id);
+    useTableStatePersistenceTab(activeWindow?.window_identifier || "", tab.id);
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -99,6 +99,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     loading,
     error,
     shouldUseTreeMode,
+    hasMoreRecords,
     handleMRTColumnFiltersChange,
     handleMRTColumnVisibilityChange,
     handleMRTSortingChange,
@@ -108,7 +109,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     fetchMore,
     refetch,
     removeRecordLocally,
-    hasMoreRecords,
     applyQuickFilter,
   } = useTableData({
     isTreeMode,
@@ -296,7 +296,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     }
 
     // Get the selected record from URL for this specific tab
-    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    const urlSelectedId = getSelectedRecord(activeWindow.window_identifier, tab.id);
     if (!urlSelectedId) {
       return {};
     }
@@ -315,11 +315,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   useEffect(() => {
     const windowId = activeWindow?.windowId;
-    if (!windowId || windowId !== tab.window) {
+    const windowIdentifier = activeWindow?.window_identifier;
+    if (!windowId || windowId !== tab.window || !windowIdentifier) {
       return;
     }
 
-    const currentURLSelection = getSelectedRecord(windowId, tab.id);
+    const currentURLSelection = getSelectedRecord(windowIdentifier, tab.id);
 
     // Detect URL-driven navigation (direct links, browser back/forward)
     if (currentURLSelection !== previousURLSelection.current && currentURLSelection) {
@@ -406,8 +407,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
           // For child tabs, prevent opening form if parent has no selection in URL
           if (parent) {
-            const windowId = activeWindow?.windowId;
-            const parentSelectedInURL = windowId ? getSelectedRecord(windowId, parent.id) : undefined;
+            const windowIdentifier = activeWindow?.window_identifier;
+            const parentSelectedInURL = windowIdentifier ? getSelectedRecord(windowIdentifier, parent.id) : undefined;
             if (!parentSelectedInURL) {
               return;
             }
@@ -552,11 +553,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   // Handle auto-scroll to selected record with virtualization support
   useLayoutEffect(() => {
     const windowId = activeWindow?.windowId;
-    if (!windowId || windowId !== tab.window || !displayRecords) {
+    const windowIdentifier = activeWindow?.window_identifier;
+    if (!windowId || windowId !== tab.window || !displayRecords || !windowIdentifier) {
       return;
     }
 
-    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
     if (!urlSelectedId) {
       return;
     }
@@ -598,11 +600,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   // Sync URL selection to table state
   useEffect(() => {
     const windowId = activeWindow?.windowId;
-    if (!windowId || windowId !== tab.window || !records) {
+    const windowIdentifier = activeWindow?.window_identifier;
+    if (!windowId || windowId !== tab.window || !records || !windowIdentifier) {
       return;
     }
 
-    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
     if (!urlSelectedId) {
       return;
     }
@@ -626,7 +629,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   // by setSelectedRecordAndClearChildren in useTableSelection
   useEffect(() => {
     const windowId = activeWindow?.windowId;
-    if (!windowId || windowId !== tab.window || !records) {
+    const windowIdentifier = activeWindow?.window_identifier;
+    if (!windowId || windowId !== tab.window || !records || !windowIdentifier) {
       return;
     }
 
@@ -637,7 +641,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       return;
     }
 
-    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
     if (!urlSelectedId) {
       return;
     }
@@ -652,7 +656,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         // Add a small delay to avoid applying stale URL selections during transitions
         const timeoutId = setTimeout(() => {
           // Re-check if this is still the correct selection after the delay
-          const latestUrlSelectedId = getSelectedRecord(windowId, tab.id);
+          const latestUrlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
           if (latestUrlSelectedId === urlSelectedId) {
             logger.debug(`[URLNavigation] Applying URL selection for direct navigation: ${urlSelectedId}`);
             table.setRowSelection({ [urlSelectedId]: true });
@@ -666,11 +670,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   useEffect(() => {
     const windowId = activeWindow?.windowId;
-    if (!windowId || windowId !== tab.window || !records || hasRestoredSelection.current) {
+    const windowIdentifier = activeWindow?.window_identifier;
+    if (!windowId || windowId !== tab.window || !records || hasRestoredSelection.current || !windowIdentifier) {
       return;
     }
 
-    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
     if (!urlSelectedId) {
       return;
     }

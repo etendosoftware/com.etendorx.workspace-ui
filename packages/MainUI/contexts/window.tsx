@@ -36,22 +36,22 @@ interface WindowState {
 }
 
 interface WindowContextState {
-  [windowId: string]: WindowState;
+  [windowIdentifier: string]: WindowState;
 }
 
 interface WindowContextI {
   // State getters
-  getTableState: (windowId: string, tabId: string) => TableState;
+  getTableState: (windowIdentifier: string, tabId: string) => TableState;
 
   // State setters
-  setTableFilters: (windowId: string, tabId: string, filters: MRT_ColumnFiltersState) => void;
-  setTableVisibility: (windowId: string, tabId: string, visibility: MRT_VisibilityState) => void;
-  setTableSorting: (windowId: string, tabId: string, sorting: MRT_SortingState) => void;
-  setTableOrder: (windowId: string, tabId: string, order: string[]) => void;
-  setTableImplicitFilterApplied: (windowId: string, tabId: string, isApplied: boolean) => void;
+  setTableFilters: (windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState) => void;
+  setTableVisibility: (windowIdentifier: string, tabId: string, visibility: MRT_VisibilityState) => void;
+  setTableSorting: (windowIdentifier: string, tabId: string, sorting: MRT_SortingState) => void;
+  setTableOrder: (windowIdentifier: string, tabId: string, order: string[]) => void;
+  setTableImplicitFilterApplied: (windowIdentifier: string, tabId: string, isApplied: boolean) => void;
 
   // Window management
-  cleanupWindow: (windowId: string) => void;
+  cleanupWindow: (windowIdentifier: string) => void;
 
   // Debug/utility
   getAllState: () => WindowContextState;
@@ -65,7 +65,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   const [state, setState] = useState<WindowContextState>({});
 
   const getTableState = useCallback(
-    (windowId: string, tabId: string): TableState => {
+    (windowIdentifier: string, tabId: string): TableState => {
       const defaultState: TableState = {
         filters: [],
         visibility: {},
@@ -74,25 +74,25 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
         isImplicitFilterApplied: undefined,
       };
 
-      if (!state[windowId] || !state[windowId][tabId]) {
+      if (!state[windowIdentifier] || !state[windowIdentifier][tabId]) {
         return defaultState;
       }
 
-      return state[windowId][tabId].table || defaultState;
+      return state[windowIdentifier][tabId].table || defaultState;
     },
     [state]
   );
 
-  const setTableFilters = useCallback((windowId: string, tabId: string, filters: MRT_ColumnFiltersState) => {
+  const setTableFilters = useCallback((windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState) => {
     setState((prevState: WindowContextState) => {
       const newState = { ...prevState };
 
-      if (!newState[windowId]) {
-        newState[windowId] = {};
+      if (!newState[windowIdentifier]) {
+        newState[windowIdentifier] = {};
       }
 
-      if (!newState[windowId][tabId]) {
-        newState[windowId][tabId] = {
+      if (!newState[windowIdentifier][tabId]) {
+        newState[windowIdentifier][tabId] = {
           table: {
             filters: [],
             visibility: {},
@@ -103,21 +103,21 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
         };
       }
 
-      newState[windowId][tabId].table.filters = filters;
+      newState[windowIdentifier][tabId].table.filters = filters;
       return newState;
     });
   }, []);
 
-  const setTableVisibility = useCallback((windowId: string, tabId: string, visibility: MRT_VisibilityState) => {
+  const setTableVisibility = useCallback((windowIdentifier: string, tabId: string, visibility: MRT_VisibilityState) => {
     setState((prevState: WindowContextState) => {
       const newState = { ...prevState };
 
-      if (!newState[windowId]) {
-        newState[windowId] = {};
+      if (!newState[windowIdentifier]) {
+        newState[windowIdentifier] = {};
       }
 
-      if (!newState[windowId][tabId]) {
-        newState[windowId][tabId] = {
+      if (!newState[windowIdentifier][tabId]) {
+        newState[windowIdentifier][tabId] = {
           table: {
             filters: [],
             visibility: {},
@@ -127,47 +127,22 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
           },
         };
       }
-      const currentVisibility = newState[windowId][tabId].table.visibility;
-      newState[windowId][tabId].table.visibility = { ...currentVisibility, ...visibility };
+      const currentVisibility = newState[windowIdentifier][tabId].table.visibility;
+      newState[windowIdentifier][tabId].table.visibility = { ...currentVisibility, ...visibility };
       return newState;
     });
   }, []);
 
-  const setTableSorting = useCallback((windowId: string, tabId: string, sorting: MRT_SortingState) => {
+  const setTableSorting = useCallback((windowIdentifier: string, tabId: string, sorting: MRT_SortingState) => {
     setState((prevState: WindowContextState) => {
       const newState = { ...prevState };
 
-      if (!newState[windowId]) {
-        newState[windowId] = {};
+      if (!newState[windowIdentifier]) {
+        newState[windowIdentifier] = {};
       }
 
-      if (!newState[windowId][tabId]) {
-        newState[windowId][tabId] = {
-          table: {
-            filters: [],
-            visibility: {},
-            sorting: [],
-            order: [],
-            isImplicitFilterApplied: false,
-          },
-        };
-      }
-
-      newState[windowId][tabId].table.sorting = sorting;
-      return newState;
-    });
-  }, []);
-
-  const setTableOrder = useCallback((windowId: string, tabId: string, order: string[]) => {
-    setState((prevState: WindowContextState) => {
-      const newState = { ...prevState };
-
-      if (!newState[windowId]) {
-        newState[windowId] = {};
-      }
-
-      if (!newState[windowId][tabId]) {
-        newState[windowId][tabId] = {
+      if (!newState[windowIdentifier][tabId]) {
+        newState[windowIdentifier][tabId] = {
           table: {
             filters: [],
             visibility: {},
@@ -178,21 +153,21 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
         };
       }
 
-      newState[windowId][tabId].table.order = order;
+      newState[windowIdentifier][tabId].table.sorting = sorting;
       return newState;
     });
   }, []);
 
-  const setTableImplicitFilterApplied = useCallback((windowId: string, tabId: string, isApplied: boolean) => {
+  const setTableOrder = useCallback((windowIdentifier: string, tabId: string, order: string[]) => {
     setState((prevState: WindowContextState) => {
       const newState = { ...prevState };
 
-      if (!newState[windowId]) {
-        newState[windowId] = {};
+      if (!newState[windowIdentifier]) {
+        newState[windowIdentifier] = {};
       }
 
-      if (!newState[windowId][tabId]) {
-        newState[windowId][tabId] = {
+      if (!newState[windowIdentifier][tabId]) {
+        newState[windowIdentifier][tabId] = {
           table: {
             filters: [],
             visibility: {},
@@ -203,15 +178,40 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
         };
       }
 
-      newState[windowId][tabId].table.isImplicitFilterApplied = isApplied;
+      newState[windowIdentifier][tabId].table.order = order;
       return newState;
     });
   }, []);
 
-  const cleanupWindow = useCallback((windowId: string) => {
+  const setTableImplicitFilterApplied = useCallback((windowIdentifier: string, tabId: string, isApplied: boolean) => {
     setState((prevState: WindowContextState) => {
       const newState = { ...prevState };
-      delete newState[windowId];
+
+      if (!newState[windowIdentifier]) {
+        newState[windowIdentifier] = {};
+      }
+
+      if (!newState[windowIdentifier][tabId]) {
+        newState[windowIdentifier][tabId] = {
+          table: {
+            filters: [],
+            visibility: {},
+            sorting: [],
+            order: [],
+            isImplicitFilterApplied: false,
+          },
+        };
+      }
+
+      newState[windowIdentifier][tabId].table.isImplicitFilterApplied = isApplied;
+      return newState;
+    });
+  }, []);
+
+  const cleanupWindow = useCallback((windowIdentifier: string) => {
+    setState((prevState: WindowContextState) => {
+      const newState = { ...prevState };
+      delete newState[windowIdentifier];
       return newState;
     });
   }, []);

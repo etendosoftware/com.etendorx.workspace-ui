@@ -28,6 +28,7 @@ import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filt
 import { useSearch } from "../../contexts/searchContext";
 import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
+import { useMultiWindowURL } from "../navigation/useMultiWindowURL";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
 import { useDatasource } from "../useDatasource";
@@ -106,6 +107,7 @@ export const useTableData = ({
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
+  const { activeWindow } = useMultiWindowURL();
 
   const {
     tableColumnFilters,
@@ -116,7 +118,7 @@ export const useTableData = ({
     setTableColumnSorting,
     setTableColumnOrder,
     setIsImplicitFilterApplied,
-  } = useTableStatePersistenceTab(tab.window, tab.id);
+  } = useTableStatePersistenceTab(activeWindow?.window_identifier || "", tab.id);
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
   // Computed values

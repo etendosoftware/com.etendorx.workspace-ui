@@ -35,7 +35,10 @@ interface UseTableStatePersistenceTabReturn {
   setIsImplicitFilterApplied: (value: boolean) => void;
 }
 
-export const useTableStatePersistenceTab = (windowId: string, tabId: string): UseTableStatePersistenceTabReturn => {
+export const useTableStatePersistenceTab = (
+  windowIdentifier: string,
+  tabId: string
+): UseTableStatePersistenceTabReturn => {
   const {
     getTableState,
     setTableFilters,
@@ -46,50 +49,50 @@ export const useTableStatePersistenceTab = (windowId: string, tabId: string): Us
   } = useWindowContext();
 
   // Get current state values
-  const currentState = useMemo(() => getTableState(windowId, tabId), [windowId, tabId, getTableState]);
+  const currentState = useMemo(() => getTableState(windowIdentifier, tabId), [windowIdentifier, tabId, getTableState]);
 
   // Create React-style setters that support both direct values and updater functions
   const setTableColumnFilters = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
-      const currentFilters = getTableState(windowId, tabId).filters;
+      const currentFilters = getTableState(windowIdentifier, tabId).filters;
       const newFilters = typeof updaterOrValue === "function" ? updaterOrValue(currentFilters) : updaterOrValue;
-      setTableFilters(windowId, tabId, newFilters);
+      setTableFilters(windowIdentifier, tabId, newFilters);
     },
-    [windowId, tabId, getTableState, setTableFilters]
+    [windowIdentifier, tabId, getTableState, setTableFilters]
   );
 
   const setTableColumnVisibility = useCallback(
     (updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)) => {
-      const currentVisibility = getTableState(windowId, tabId).visibility;
+      const currentVisibility = getTableState(windowIdentifier, tabId).visibility;
       const newVisibility = typeof updaterOrValue === "function" ? updaterOrValue(currentVisibility) : updaterOrValue;
-      setTableVisibility(windowId, tabId, newVisibility);
+      setTableVisibility(windowIdentifier, tabId, newVisibility);
     },
-    [windowId, tabId, getTableState, setTableVisibility]
+    [windowIdentifier, tabId, getTableState, setTableVisibility]
   );
 
   const setTableColumnSorting = useCallback(
     (updaterOrValue: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)) => {
-      const currentSorting = getTableState(windowId, tabId).sorting;
+      const currentSorting = getTableState(windowIdentifier, tabId).sorting;
       const newSorting = typeof updaterOrValue === "function" ? updaterOrValue(currentSorting) : updaterOrValue;
-      setTableSorting(windowId, tabId, newSorting);
+      setTableSorting(windowIdentifier, tabId, newSorting);
     },
-    [windowId, tabId, getTableState, setTableSorting]
+    [windowIdentifier, tabId, getTableState, setTableSorting]
   );
 
   const setTableColumnOrder = useCallback(
     (updaterOrValue: string[] | ((prev: string[]) => string[])) => {
-      const currentOrder = getTableState(windowId, tabId).order;
+      const currentOrder = getTableState(windowIdentifier, tabId).order;
       const newOrder = typeof updaterOrValue === "function" ? updaterOrValue(currentOrder) : updaterOrValue;
-      setTableOrder(windowId, tabId, newOrder);
+      setTableOrder(windowIdentifier, tabId, newOrder);
     },
-    [windowId, tabId, getTableState, setTableOrder]
+    [windowIdentifier, tabId, getTableState, setTableOrder]
   );
 
   const setIsImplicitFilterApplied = useCallback(
     (value: boolean) => {
-      setTableImplicitFilterApplied(windowId, tabId, value);
+      setTableImplicitFilterApplied(windowIdentifier, tabId, value);
     },
-    [windowId, tabId, setTableImplicitFilterApplied]
+    [windowIdentifier, tabId, setTableImplicitFilterApplied]
   );
 
   return {
