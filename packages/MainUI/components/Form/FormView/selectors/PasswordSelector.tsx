@@ -17,15 +17,24 @@
 
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { TextInput } from "./components/TextInput";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, type FieldValues } from "react-hook-form";
 
 export const PasswordSelector = (props: { field: Field } & React.ComponentProps<typeof TextInput>) => {
-  const { register } = useFormContext();
+  const { register, watch, setValue } = useFormContext<FieldValues>();
+  const fieldName = props.field.hqlName;
+
+  const currentValue = watch(fieldName);
+  const handleSetValue = (value: string) => {
+    setValue(fieldName, value, { shouldValidate: true });
+  };
 
   return (
     <TextInput
-      {...props}
-      {...register(props.field.hqlName)}
+      {...register(fieldName)}
+      field={props.field}
+      setValue={handleSetValue}
+      showClearButton={true}
+      value={currentValue}
       type="password"
       maxLength={Number(props.field.column.length)}
       autoComplete="new-password"
