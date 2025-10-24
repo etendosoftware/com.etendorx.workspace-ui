@@ -81,12 +81,13 @@ const windowGraphCache = new Map<string, Graph<Tab>>();
 export const SelectedProvider = ({
   children,
   tabs,
+  // biome-ignore lint/correctness/noUnusedVariables: Keep windowId for potential metadata operations
   windowId,
   windowIdentifier,
 }: React.PropsWithChildren<{
   tabs: Tab[];
   windowId: string;
-  windowIdentifier?: string;
+  windowIdentifier: string;
 }>) => {
   /**
    * State tracking currently active tab levels.
@@ -121,7 +122,7 @@ export const SelectedProvider = ({
    * Cache key generation: Uses windowIdentifier if provided, otherwise falls back to windowId.
    * This supports multiple instances of the same window type while maintaining separate graph states.
    */
-  const cacheKey = windowIdentifier || windowId;
+  const cacheKey = windowIdentifier;
 
   /**
    * Memoized graph instance with caching strategy.

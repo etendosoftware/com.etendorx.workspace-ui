@@ -18,7 +18,6 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { useQueryParams } from "@/hooks/useQueryParams";
 import Breadcrumb from "@workspaceui/componentlibrary/src/components/Breadcrums";
 import type { BreadcrumbItem } from "@workspaceui/componentlibrary/src/components/Breadcrums/types";
 import { usePathname } from "next/navigation";
@@ -39,8 +38,7 @@ interface BreadcrumbProps {
 const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { t } = useTranslation();
   const pathname = usePathname();
-  const { window } = useMetadataContext();
-  const { windowId } = useQueryParams<{ windowId: string }>();
+  const { window, windowId, windowIdentifier } = useMetadataContext();
   const { navigateToHome, clearTabFormState, getTabFormState } = useMultiWindowURL();
   const { graph } = useSelected();
 
@@ -49,7 +47,7 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     () => allTabsFormatted.find((tab) => tab.window === windowId),
     [allTabsFormatted, windowId]
   );
-  const tabFormState = windowId && currentTab ? getTabFormState(windowId, currentTab.id) : undefined;
+  const tabFormState = windowIdentifier && currentTab ? getTabFormState(windowIdentifier, currentTab.id) : undefined;
   const currentRecordId = tabFormState?.recordId || "";
 
   const { record } = useCurrentRecord({
@@ -60,28 +58,28 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const isNewRecord = useCallback(() => pathname.includes("/NewRecord"), [pathname]);
 
   const handleWindowClick = useCallback(
-    (windowId: string) => {
+    (windowIdentifier: string) => {
       const allTabsFormatted = allTabs.flat();
       const currentTab = allTabsFormatted.find((tab) => tab.window === windowId);
-      if (windowId && currentTab && currentTab.id) {
-        clearTabFormState(windowId, currentTab.id);
+      if (windowIdentifier && currentTab && currentTab.id) {
+        clearTabFormState(windowIdentifier, currentTab.id);
       }
       if (currentTab && graph) {
         graph.clear(currentTab);
         graph.clearSelected(currentTab);
       }
     },
-    [clearTabFormState, allTabs, graph]
+    [clearTabFormState, allTabs, graph, windowId]
   );
 
   const breadcrumbItems = useMemo(() => {
     const items: BreadcrumbItem[] = [];
 
-    if (windowId && window) {
+    if (windowId && window && windowIdentifier) {
       items.push({
         id: windowId,
         label: String(window.window$_identifier || window.name || t("common.loading")),
-        onClick: () => handleWindowClick(windowId),
+        onClick: () => handleWindowClick(windowIdentifier),
       });
     }
 
@@ -93,7 +91,7 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     }
 
     if (currentTab) {
-      const tabFormState = windowId ? getTabFormState(windowId, currentTab.id) : undefined;
+      const tabFormState = windowIdentifier ? getTabFormState(windowIdentifier, currentTab.id) : undefined;
       const currentRecordId = tabFormState?.recordId || "";
       const currentLabel = record?._identifier?.toString();
 
@@ -106,7 +104,18 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     }
 
     return items;
-  }, [windowId, window, isNewRecord, currentTab, t, handleWindowClick, getTabFormState, record?._identifier]);
+  }, [
+    windowId,
+    windowIdentifier,
+    window?.window$_identifier,
+    window?.name,
+    currentTab,
+    record?._identifier,
+    isNewRecord,
+    t,
+    handleWindowClick,
+    getTabFormState,
+  ]);
 
   const handleHomeClick = useCallback(() => {
     navigateToHome();

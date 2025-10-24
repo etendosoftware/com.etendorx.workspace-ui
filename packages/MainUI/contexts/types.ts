@@ -96,6 +96,7 @@ export interface IUserContext {
 
 export interface IMetadataContext {
   windowId?: string;
+  windowIdentifier?: string;
   window?: Etendo.WindowMetadata;
   loading: boolean;
   error?: Error;

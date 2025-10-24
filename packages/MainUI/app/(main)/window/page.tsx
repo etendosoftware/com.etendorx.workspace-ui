@@ -43,6 +43,7 @@ export default function Page() {
         ) : (
           <Window
             windowId={activeWindow.windowId}
+            windowIdentifier={activeWindow.window_identifier}
             data-testid={`Window__${activeWindow?.windowId ?? windowId ?? "351d9c"}`}
           />
         )}

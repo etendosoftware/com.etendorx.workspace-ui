@@ -700,10 +700,15 @@ export function useMultiWindowURL() {
    * ```
    */
   const setSelectedRecord = useCallback(
-    (windowId: string, tabId: string, recordId: string) => {
+    (windowIdOrIdentifier: string, tabId: string, recordId: string) => {
       applyWindowUpdates((prev) => {
         return prev.map((w) => {
-          if (w.windowId === windowId) {
+          // Check if parameter is windowId or window_identifier
+          // For windowId, only update the active window to avoid affecting multiple instances
+          const shouldUpdate =
+            w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive);
+
+          if (shouldUpdate) {
             return {
               ...w,
               selectedRecords: {
@@ -736,10 +741,15 @@ export function useMultiWindowURL() {
    * ```
    */
   const clearSelectedRecord = useCallback(
-    (windowId: string, tabId: string) => {
+    (windowIdOrIdentifier: string, tabId: string) => {
       applyWindowUpdates((prev) => {
         return prev.map((w) => {
-          if (w.windowId === windowId) {
+          // Check if parameter is windowId or window_identifier
+          // For windowId, only update the active window to avoid affecting multiple instances
+          const shouldUpdate =
+            w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive);
+
+          if (shouldUpdate) {
             const newSelectedRecords = { ...w.selectedRecords };
             delete newSelectedRecords[tabId];
 
@@ -778,10 +788,14 @@ export function useMultiWindowURL() {
    * ```
    */
   const getSelectedRecord = useCallback(
-    (windowId: string, tabId: string): string | undefined => {
+    (windowIdOrIdentifier: string, tabId: string): string | undefined => {
       // Always read from current windows state, not searchParams
       // searchParams can be stale during intermediate renders
-      const window = windows.find((w) => w.windowId === windowId);
+
+      // Try to find by window_identifier first, then by windowId (active window only)
+      const window = windows.find(
+        (w) => w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive)
+      );
       if (!window) return undefined;
 
       // If tab is in FormView, get recordId from tabFormStates
@@ -822,10 +836,21 @@ export function useMultiWindowURL() {
    * ```
    */
   const setTabFormState = useCallback(
-    (windowId: string, tabId: string, recordId: string, mode: TabMode = TAB_MODES.FORM, formMode?: FormMode) => {
+    (
+      windowIdOrIdentifier: string,
+      tabId: string,
+      recordId: string,
+      mode: TabMode = TAB_MODES.FORM,
+      formMode?: FormMode
+    ) => {
       applyWindowUpdates((prev) => {
         return prev.map((w) => {
-          if (w.windowId === windowId) {
+          // Check if parameter is windowId or window_identifier
+          // For windowId, only update the active window to avoid affecting multiple instances
+          const shouldUpdate =
+            w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive);
+
+          if (shouldUpdate) {
             const currentTabState = w.tabFormStates[tabId] || {};
 
             return {
@@ -873,10 +898,15 @@ export function useMultiWindowURL() {
    * ```
    */
   const clearTabFormState = useCallback(
-    (windowId: string, tabId: string) => {
+    (windowIdOrIdentifier: string, tabId: string) => {
       applyWindowUpdates((prev) => {
         return prev.map((w) => {
-          if (w.windowId === windowId) {
+          // Check if parameter is windowId or window_identifier
+          // For windowId, only update the active window to avoid affecting multiple instances
+          const shouldUpdate =
+            w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive);
+
+          if (shouldUpdate) {
             const newTabFormStates = { ...w.tabFormStates };
             delete newTabFormStates[tabId];
 
@@ -915,8 +945,11 @@ export function useMultiWindowURL() {
    * ```
    */
   const getTabFormState = useCallback(
-    (windowId: string, tabId: string) => {
-      const window = windows.find((w) => w.windowId === windowId);
+    (windowIdOrIdentifier: string, tabId: string) => {
+      // Try to find by window_identifier first, then by windowId (active window only)
+      const window = windows.find(
+        (w) => w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive)
+      );
       return window?.tabFormStates[tabId];
     },
     [windows]
@@ -1038,10 +1071,15 @@ export function useMultiWindowURL() {
    * ```
    */
   const setSelectedRecordAndClearChildren = useCallback(
-    (windowId: string, parentTabId: string, recordId: string, childTabIds: string[]) => {
+    (windowIdOrIdentifier: string, parentTabId: string, recordId: string, childTabIds: string[]) => {
       applyWindowUpdates((prev) => {
         return prev.map((w) => {
-          if (w.windowId !== windowId) return w;
+          // Check if parameter is windowId or window_identifier
+          // For windowId, only update the active window to avoid affecting multiple instances
+          const shouldUpdate =
+            w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive);
+
+          if (!shouldUpdate) return w;
 
           const previousParentSelection = w.selectedRecords[parentTabId];
           const isParentSelectionChanging = previousParentSelection !== recordId;

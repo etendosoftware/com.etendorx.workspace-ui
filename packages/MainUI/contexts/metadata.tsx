@@ -37,6 +37,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const { removeRecordFromDatasource } = useDatasourceContext();
 
   const currentWindowId = activeWindow?.windowId;
+  const currentWindowIdentifier = activeWindow?.window_identifier;
   const currentWindow = currentWindowId ? windowsData[currentWindowId] : undefined;
   const currentLoading = currentWindowId ? loadingWindows[currentWindowId] || false : false;
   const currentError = currentWindowId ? errors[currentWindowId] : undefined;
@@ -152,6 +153,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const value = useMemo<IMetadataContext>(
     () => ({
       windowId: currentWindowId,
+      windowIdentifier: currentWindowIdentifier,
       window: currentWindow,
       loading: currentLoading,
       error: currentError,
@@ -172,6 +174,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     }),
     [
       currentWindowId,
+      currentWindowIdentifier,
       currentWindow,
       currentLoading,
       currentError,
