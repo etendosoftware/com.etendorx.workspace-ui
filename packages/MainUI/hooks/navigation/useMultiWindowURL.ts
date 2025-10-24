@@ -484,8 +484,6 @@ export function useMultiWindowURL() {
    * // Activates existing window and updates title
    * ```
    */
-  // TODO: is this function capable of opening a open window?
-  // It's generate a new window_identifier each time
   const openWindow = useCallback(
     (windowId: string, title?: string) => {
       const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
@@ -495,7 +493,7 @@ export function useMultiWindowURL() {
 
       const nextOrder = getNextOrder(updatedWindows);
 
-      updatedWindows.push({
+      const newWindow: WindowState = {
         windowId,
         isActive: true,
         order: nextOrder,
@@ -503,7 +501,9 @@ export function useMultiWindowURL() {
         title,
         selectedRecords: {},
         tabFormStates: {},
-      });
+      };
+
+      updatedWindows.push(newWindow);
 
       navigate(updatedWindows);
     },
