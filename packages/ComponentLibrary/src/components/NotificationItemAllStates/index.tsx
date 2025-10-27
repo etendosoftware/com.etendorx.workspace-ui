@@ -30,7 +30,6 @@ const NotificationItemStates: React.FC<NotificationItemStatesProps> = ({ notific
           priority={notification.data.priority}
           date={notification.data.date}
           icon={notification.data.icon}
-          tagType={notification.data.tagType}
           ctaButtons={notification.data.ctaButtons}
         />
       ))}

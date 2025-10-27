@@ -80,7 +80,6 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
                 description={notification.description}
                 priority={notification.priority}
                 date={notification.date}
-                tagType={notification.tagType}
                 ctaButtons={notification.ctaButtons}
                 icon={notification.icon}
               />

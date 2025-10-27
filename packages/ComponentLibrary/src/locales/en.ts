@@ -48,9 +48,32 @@ const en = {
     sections: {
       main: "Main Section",
       audit: "Audit",
+      linkedItems: "Linked Items",
+      notes: "Notes",
+      noCategories: "No Categories Available",
+      selectCategory: "Please select a category",
+    },
+    notes: {
+      title: "Notes",
+      addNote: "Add Note",
+      addNoteModalTitle: "Add New Note",
+      addNoteModalDescription: "Enter your note below",
+      noteInputPlaceholder: "Write your note here...",
+      addNoteSubmit: "Add Note",
+      loadingNotes: "Loading notes...",
+      createdBy: "By",
+      confirmDelete: "Confirm Deletion",
+      confirmDeleteMessage: "Are you sure you want to permanently delete this note?",
+      deleteButton: "Delete",
+      cancelButton: "Cancel",
+      errorAddingNote: "Failed to add note. Please try again.",
+      errorDeletingNote: "Failed to delete note. Please try again.",
+      errorLoadingNotes: "Failed to load notes. Please try again.",
     },
     statusBar: {
       closeRecord: "Close Record",
+      nextRecord: "Next Record",
+      previousRecord: "Previous Record",
     },
   },
   audit: {
@@ -158,6 +181,7 @@ const en = {
     content: {
       currentTitle: "Its revenue is expected to increase later this year. Congratulations",
     },
+    useAsFilter: "Use as filter",
   },
   navigation: {
     common: {
@@ -260,6 +284,8 @@ const en = {
     maximize: "Maximize",
     close: "Close",
     contextText: "Context",
+    conversationsButton: "Show History",
+    hideConversationsButton: "Hide History",
     assistantSelector: {
       errorInvalidData: "Error: Invalid assistant data",
       errorNoAssistantsAvailable: "No assistants available",
@@ -279,6 +305,14 @@ const en = {
     },
     contextPreview: {
       selectedRegisters: " Attached register",
+    },
+    conversationList: {
+      newConversation: "New Conversation",
+      noConversations: "No previous conversations",
+      startNewConversation: "Start a new conversation to get started",
+      loading: "Loading conversations...",
+      untitledConversation: "Untitled Conversation",
+      closeSidebar: "Close sidebar",
     },
   },
   location: {

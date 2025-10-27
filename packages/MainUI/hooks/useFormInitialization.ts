@@ -102,7 +102,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   const parentData = useFormParent(FieldName.INPUT_NAME);
   const parentId = parent?.id?.toString();
 
-  const { record } = useCurrentRecord({
+  const { record, loading: recordLoading } = useCurrentRecord({
     tab: tab,
     recordId: recordId,
   });
@@ -209,14 +209,20 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
    * useEffect: Automatically trigger initial form initialization when params change.
    * This ensures form data is fetched when the component first mounts or when
    * key parameters (tab, mode, recordId, parentId) change.
+   *
+   * IMPORTANT: Wait for useCurrentRecord to finish loading before fetching form initialization.
+   * This prevents a race condition where audit fields would be missing on first load because
+   * the record data wasn't available yet to enrich the form initialization response.
    */
   useEffect(() => {
-    if (params) {
+    // Wait for record to finish loading before initializing form
+    // This ensures audit fields are available when enrichWithAuditFields is called
+    if (params && !recordLoading) {
       dispatch({ type: "FETCH_START" });
       fetch();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params]);
+  }, [params, recordLoading]);
 
   /**
    * Refetch function to manually trigger form initialization

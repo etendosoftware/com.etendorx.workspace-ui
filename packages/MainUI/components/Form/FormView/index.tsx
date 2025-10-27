@@ -22,7 +22,10 @@ import InfoIcon from "@workspaceui/componentlibrary/src/assets/icons/file-text.s
 import FileIcon from "@workspaceui/componentlibrary/src/assets/icons/file.svg";
 import FolderIcon from "@workspaceui/componentlibrary/src/assets/icons/folder.svg";
 import Info from "@workspaceui/componentlibrary/src/assets/icons/info.svg";
+import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
+import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
 import { FormMode, type EntityData, type EntityValue } from "@workspaceui/api-client/src/api/types";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import useFormFields from "@/hooks/useFormFields";
 import { useFormInitialState } from "@/hooks/useFormInitialState";
 import { useFormInitialization } from "@/hooks/useFormInitialization";
@@ -32,6 +35,7 @@ import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { FormInitializationProvider } from "@/contexts/FormInitializationContext";
 import { globalCalloutManager } from "@/services/callouts";
 import { useFormAction } from "@/hooks/useFormAction";
+import { logger } from "@/utils/logger";
 import type { FormViewProps } from "./types";
 import { FormViewContext, type FormViewContextValue } from "./contexts/FormViewContext";
 import { FormHeader } from "./FormHeader";
@@ -39,11 +43,17 @@ import { FormFields } from "./FormFieldsContent";
 import { FormActions } from "./FormActions";
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import { useTabContext } from "@/contexts/tab";
+import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useDatasourceContext } from "@/contexts/datasourceContext";
+import { useRecordNavigation } from "@/hooks/useRecordNavigation";
+import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
   "More Information": <InfoIcon data-testid="InfoIcon__1a0853" />,
   Dimensions: <FolderIcon data-testid="FolderIcon__1a0853" />,
+  "Linked Items": <LinkIcon data-testid="LinkIcon__1a0853" />,
+  Notes: <NoteIcon data-testid="NoteIcon__1a0853" />,
 };
 
 /**
@@ -77,9 +87,11 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   const { graph } = useSelected();
-  const { activeWindow, getSelectedRecord, setSelectedRecord } = useMultiWindowURL();
+  const { activeWindow, getSelectedRecord, setSelectedRecord, setSelectedRecordAndClearChildren } = useMultiWindowURL();
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
-  const { resetFormChanges } = useTabContext();
+  const { resetFormChanges, parentTab } = useTabContext();
+  const { registerFormViewRefetch } = useToolbarContext();
+  const { refetchDatasource, registerRefetchFunction } = useDatasourceContext();
 
   const {
     formInitialization,
@@ -91,6 +103,38 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     recordId,
   });
   const initialState = useFormInitialState(formInitialization) || undefined;
+
+  const refreshRecordAndSession = useCallback(async () => {
+    if (!recordId || recordId === NEW_RECORD_ID) return;
+
+    try {
+      const result = await datasource.get(tab.entityName, {
+        criteria: [{ fieldName: "id", operator: "equals", value: recordId }],
+        windowId: tab.window,
+        tabId: tab.id,
+        pageSize: 1,
+      });
+
+      const responseData = result.data.response?.data;
+      if (responseData?.length > 0) {
+        const updatedRecord = responseData[0];
+
+        graph.setSelected(tab, updatedRecord);
+        graph.setSelectedMultiple(tab, [updatedRecord]);
+      }
+      await refetch();
+    } catch (error) {
+      logger.warn("Error refreshing record and session:", error);
+    }
+  }, [recordId, tab, graph, refetch]);
+
+  useEffect(() => {
+    if (registerFormViewRefetch) {
+      registerFormViewRefetch(refreshRecordAndSession);
+    }
+    // Register refetch function in DatasourceContext so parent tabs can trigger refresh
+    registerRefetchFunction(tab.id, refreshRecordAndSession);
+  }, [registerFormViewRefetch, refreshRecordAndSession, registerRefetchFunction, tab.id]);
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} data-testid="Info__1a0853" />,
@@ -111,6 +155,11 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     },
     [defaultIcon]
   );
+
+  const initialNoteCount = useMemo(() => {
+    // Safely retrieve the noteCount, defaulting to 0 if not present
+    return formInitialization?.noteCount || 0;
+  }, [formInitialization]);
 
   /**
    * Computes the current record data from multiple sources with priority order:
@@ -211,6 +260,18 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   }, [availableFormData, tab.id, stableReset]);
 
   /**
+   * Update graph selection when navigating to a different record
+   * This ensures child tabs know about the parent record change
+   */
+  useEffect(() => {
+    if (!recordId || recordId === NEW_RECORD_ID || !availableFormData) return;
+
+    // Update graph with current record data so child tabs can see the parent selection
+    graph.setSelected(tab, availableFormData);
+    graph.setSelectedMultiple(tab, [availableFormData]);
+  }, [recordId, tab, availableFormData, graph]);
+
+  /**
    * Enhanced setValue function with controlled dirty state management.
    * Wraps react-hook-form's setValue to provide consistent behavior
    * for form field updates with proper dirty state tracking.
@@ -303,6 +364,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * Handles successful form save operations.
    * Updates form state, graph selection, URL state, and shows success feedback.
    * Differentiates behavior between EDIT mode (reset form) and CREATE mode (redirect to new record).
+   * Also refreshes parent tab datasource if this is a child tab.
    *
    * @param data - Saved entity data returned from server
    * @param showModal - Whether to display success modal to user
@@ -329,6 +391,11 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       }
 
       resetFormChanges();
+
+      // Refresh parent tab datasource if this is a child tab
+      if (parentTab) {
+        refetchDatasource(parentTab.id);
+      }
     },
     [
       mode,
@@ -341,6 +408,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       setRecordId,
       setSelectedRecord,
       resetFormChanges,
+      parentTab,
+      refetchDatasource,
     ]
   );
 
@@ -381,6 +450,61 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   );
 
   const isLoading = loading || loadingFormInitialization;
+
+  /**
+   * Get navigation records from DatasourceContext
+   * Records are only available if user has viewed the table first
+   * This matches classic interface behavior and prevents infinite loops
+   */
+  const {
+    records: navigationRecords,
+    hasMoreRecords,
+    fetchMore,
+  } = useFormViewNavigation({
+    tab,
+  });
+
+  /**
+   * Handles navigation to a new record
+   * Uses setSelectedRecordAndClearChildren to atomically update parent selection and clear all children
+   * This ensures child tabs (including those in FormView) return to table view
+   */
+  const handleNavigateToRecord = useCallback(
+    (newRecordId: string) => {
+      // Get child tabs that need to be cleared
+      const children = graph.getChildren(tab);
+      const childIds =
+        children && children.length > 0 ? children.filter((c) => c.window === tab.window).map((c) => c.id) : [];
+
+      // Use atomic update to change parent selection and clear all children in one operation
+      // This forces children to return to table view even if they were in FormView
+      if (activeWindow?.windowId && childIds.length > 0) {
+        setSelectedRecordAndClearChildren(activeWindow.windowId, tab.id, newRecordId, childIds);
+
+        // Also clear the graph selection for all children to ensure they reset completely
+        for (const child of children ?? []) {
+          graph.clearSelected(child);
+        }
+      }
+      setRecordId(newRecordId);
+    },
+    [setRecordId, graph, tab, activeWindow, setSelectedRecordAndClearChildren]
+  );
+
+  /**
+   * Record navigation integration
+   * Provides next/previous navigation with autosave functionality
+   */
+  const { navigationState, navigateToNext, navigateToPrevious, isNavigating } = useRecordNavigation({
+    currentRecordId: recordId,
+    records: navigationRecords,
+    onNavigate: handleNavigateToRecord,
+    formState,
+    handleSave,
+    showErrorModal,
+    hasMoreRecords,
+    fetchMore,
+  });
 
   /**
    * Context value object containing all form view state and handlers.
@@ -435,6 +559,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
           {...form}
           data-testid="FormProvider__1a0853">
           <form
+            key={`form-${tab.id}-${recordId}`}
             className={`flex h-full max-h-full w-full flex-col gap-2 overflow-hidden transition duration-300 ${
               loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
             }`}>
@@ -443,10 +568,24 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               groups={groups}
               statusModal={statusModal}
               hideStatusModal={hideStatusModal}
+              navigationState={navigationState}
+              onNavigateNext={navigateToNext}
+              onNavigatePrevious={navigateToPrevious}
+              isNavigating={isNavigating}
               data-testid="FormHeader__1a0853"
             />
 
-            <FormFields tab={tab} mode={mode} groups={groups} loading={isLoading} data-testid="FormFields__1a0853" />
+            <FormFields
+              tab={tab}
+              mode={mode}
+              groups={groups}
+              loading={isLoading}
+              recordId={recordId ?? ""}
+              initialNoteCount={initialNoteCount}
+              onNotesChange={refreshRecordAndSession}
+              showErrorModal={showErrorModal}
+              data-testid="FormFields__1a0853"
+            />
 
             <FormActions
               tab={tab}

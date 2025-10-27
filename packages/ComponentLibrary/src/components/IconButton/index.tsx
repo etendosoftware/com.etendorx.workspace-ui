@@ -69,6 +69,7 @@ const IconButton = ({
     duration-400
     disabled:bg-transparent
     disabled:text-(--color-transparent-neutral-30)
+    disabled:cursor-not-allowed
     rounded-full
     text-(--color-baseline-80)
     bg-(--color-baseline-0)
@@ -92,6 +93,7 @@ const IconButton = ({
         aria-label={ariaLabel}
         disabled={disabled}
         className={cleanDefaultClasses(DEFAULT_BUTTON_CLASSES, className)}
+        style={disabled ? { cursor: "not-allowed" } : undefined}
         {...rest}>
         {children}
         {iconText && <span>{iconText}</span>}

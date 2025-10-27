@@ -21,7 +21,8 @@ import {
   useMaterialReactTable,
   type MRT_TableBodyRowProps,
   type MRT_TableInstance,
-  type MRT_ExpandedState,
+  type MRT_VisibilityState,
+  type MRT_Cell,
 } from "material-react-table";
 import { useStyle } from "./styles";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
@@ -44,6 +45,10 @@ import ChevronUp from "../../../ComponentLibrary/src/assets/icons/chevron-up.svg
 import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check.svg";
 import { useTableData } from "@/hooks/table/useTableData";
+import { isEmptyObject } from "@/utils/commons";
+import { getDisplayColumnDefOptions, getMUITableBodyCellProps, getCurrentRowCanExpand } from "@/utils/table/utils";
+import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
+import { CellContextMenu } from "./CellContextMenu";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -62,42 +67,64 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { sx } = useStyle();
   const { t } = useTranslation();
   const { graph } = useSelected();
-  const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
+  const {
+    registerDatasource,
+    unregisterDatasource,
+    registerRefetchFunction,
+    registerRecordsGetter,
+    registerHasMoreRecordsGetter,
+    registerFetchMore,
+  } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
   const { activeWindow, getSelectedRecord } = useMultiWindowURL();
   const { tab, parentTab, parentRecord } = useTabContext();
+
+  const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
+    useTableStatePersistenceTab(tab.window, tab.id);
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const hasScrolledToSelection = useRef<boolean>(false);
+
+  // Restore visual selection when returning from FormView
+  // This effect ensures the table shows the selection from URL when it becomes visible
+  const hasRestoredSelection = useRef(false);
 
   // Use the table data hook
   const {
     displayRecords,
     records,
     columns: baseColumns,
-    columnFilters,
-    columnVisibility,
     expanded,
     loading,
     error,
     shouldUseTreeMode,
-    loadChildNodes,
-    setChildrenData,
-    setLoadedNodes,
     handleMRTColumnFiltersChange,
-    setColumnVisibility,
-    setExpanded,
+    handleMRTColumnVisibilityChange,
+    handleMRTSortingChange,
+    handleMRTColumnOrderChange,
+    handleMRTExpandChange,
     toggleImplicitFilters,
     fetchMore,
     refetch,
     removeRecordLocally,
     hasMoreRecords,
+    applyQuickFilter,
   } = useTableData({
     isTreeMode,
   });
 
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<HTMLElement | null>(null);
+  const [hasInitialColumnVisibility, setHasInitialColumnVisibility] = useState<boolean>(false);
+  const [contextMenu, setContextMenu] = useState<{
+    anchorEl: HTMLElement | null;
+    cell: MRT_Cell<EntityData> | null;
+    row: MRT_Row<EntityData> | null;
+  }>({
+    anchorEl: null,
+    cell: null,
+    row: null,
+  });
 
   const toggleColumnsDropdown = useCallback(
     (buttonRef?: HTMLElement | null) => {
@@ -113,6 +140,34 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const handleCloseColumnMenu = useCallback(() => {
     setColumnMenuAnchor(null);
   }, []);
+
+  const handleCellContextMenu = useCallback(
+    (event: React.MouseEvent<HTMLTableCellElement>, cell: MRT_Cell<EntityData>, row: MRT_Row<EntityData>) => {
+      event.preventDefault();
+      setContextMenu({
+        anchorEl: event.currentTarget,
+        cell,
+        row,
+      });
+    },
+    []
+  );
+
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenu({
+      anchorEl: null,
+      cell: null,
+      row: null,
+    });
+  }, []);
+
+  const handleFilterByValue = useCallback(
+    async (columnId: string, filterId: string, filterValue: string | number, filterLabel: string) => {
+      console.log("handleFilterByValue called with:", { columnId, filterId, filterValue, filterLabel });
+      await applyQuickFilter(columnId, filterId, filterValue, filterLabel);
+    },
+    [applyQuickFilter]
+  );
 
   const renderFirstColumnCell = ({
     renderedCellValue,
@@ -348,9 +403,18 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           clickTimeoutsRef.current.clear();
 
           const parent = graph.getParent(tab);
-          const parentSelection = parent ? graph.getSelected(parent) : undefined;
 
-          // Set graph selection for consistency but avoid triggering URL updates
+          // For child tabs, prevent opening form if parent has no selection in URL
+          if (parent) {
+            const windowId = activeWindow?.windowId;
+            const parentSelectedInURL = windowId ? getSelectedRecord(windowId, parent.id) : undefined;
+            if (!parentSelectedInURL) {
+              return;
+            }
+          }
+
+          // Set graph selection for consistency
+          const parentSelection = parent ? graph.getSelected(parent) : undefined;
           graph.setSelected(tab, row.original);
           graph.setSelectedMultiple(tab, [row.original]);
 
@@ -394,73 +458,27 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     },
     [fetchMore, hasMoreRecords, loading]
   );
-  const expandedRef = useRef<MRT_ExpandedState>({});
 
   const table = useMaterialReactTable<EntityData>({
     muiTablePaperProps: { sx: sx.tablePaper },
-
     muiTableHeadCellProps: {
       sx: {
         ...sx.tableHeadCell,
       },
     },
-
-    muiTableBodyCellProps: ({ row, column }) => ({
-      sx: {
-        ...sx.tableBodyCell,
-        ...(shouldUseTreeMode &&
-          column.id === columns[0]?.id && {
-            paddingLeft: `${12 + ((row.original.__level as number) || 0) * 16}px`,
-            position: "relative",
-          }),
+    muiTableBodyCellProps: (props) => ({
+      sx: getMUITableBodyCellProps({
+        shouldUseTreeMode,
+        sx,
+        columns,
+        column: props.column,
+        row: props.row,
+      }),
+      onContextMenu: (event: React.MouseEvent<HTMLTableCellElement>) => {
+        handleCellContextMenu(event, props.cell, props.row);
       },
     }),
-
-    displayColumnDefOptions: shouldUseTreeMode
-      ? {
-          "mrt-row-expand": {
-            size: 60,
-            muiTableHeadCellProps: {
-              sx: {
-                display: "none",
-              },
-            },
-            muiTableBodyCellProps: {
-              sx: {
-                display: "none",
-              },
-            },
-          },
-          "mrt-row-select": {
-            size: 0,
-            muiTableHeadCellProps: {
-              sx: {
-                display: "none",
-              },
-            },
-            muiTableBodyCellProps: {
-              sx: {
-                display: "none",
-              },
-            },
-          },
-        }
-      : {
-          "mrt-row-expand": {
-            size: 0,
-            muiTableHeadCellProps: {
-              sx: {
-                display: "none",
-              },
-            },
-            muiTableBodyCellProps: {
-              sx: {
-                display: "none",
-              },
-            },
-          },
-        },
-
+    displayColumnDefOptions: getDisplayColumnDefOptions({ shouldUseTreeMode }),
     muiTableBodyProps: { sx: sx.tableBody },
     layoutMode: "semantic",
     enableGlobalFilter: false,
@@ -484,12 +502,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     enableExpanding: shouldUseTreeMode,
     paginateExpandedRows: false,
     getRowCanExpand: (row) => {
-      if (shouldUseTreeMode) {
-        return true;
-      }
-      const isParentNode = row.original.__isParent !== false;
-      const canExpand = row.original.showDropIcon === true && isParentNode;
-      return canExpand;
+      return getCurrentRowCanExpand({ row: row as MRT_Row<EntityData>, shouldUseTreeMode });
     },
     initialState: {
       density: "compact",
@@ -497,61 +510,40 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     },
     renderDetailPanel: undefined,
     onExpandedChange: (newExpanded) => {
-      const prevExpanded = expandedRef.current;
-      const newExpandedState = typeof newExpanded === "function" ? newExpanded(expanded) : newExpanded;
-
-      setExpanded(newExpandedState);
-      expandedRef.current = newExpandedState;
-
-      if (typeof newExpandedState === "object" && newExpandedState !== null && !Array.isArray(newExpandedState)) {
-        const prevExpandedObj =
-          typeof prevExpanded === "object" && prevExpanded !== null && !Array.isArray(prevExpanded) ? prevExpanded : {};
-
-        const prevKeys = Object.keys(prevExpandedObj).filter((k) => prevExpandedObj[k as keyof typeof prevExpandedObj]);
-        const newKeys = Object.keys(newExpandedState).filter(
-          (k) => newExpandedState[k as keyof typeof newExpandedState]
-        );
-
-        const expandedRowIds = newKeys.filter((k) => !prevKeys.includes(k));
-        const collapsedRowIds = prevKeys.filter((k) => !newKeys.includes(k));
-
-        for (const id of expandedRowIds) {
-          const rowData = displayRecords.find((record) => String(record.id) === id);
-
-          if (shouldUseTreeMode && rowData && rowData.__isParent !== false) {
-            loadChildNodes(String(rowData.id));
-          }
-        }
-
-        for (const id of collapsedRowIds) {
-          setChildrenData((prev) => {
-            const newMap = new Map(prev);
-            newMap.delete(id);
-            return newMap;
-          });
-          setLoadedNodes((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(id);
-            return newSet;
-          });
-        }
-      }
+      handleMRTExpandChange({ newExpanded });
     },
     state: {
-      columnFilters,
-      columnVisibility,
+      columnFilters: tableColumnFilters,
+      columnVisibility: tableColumnVisibility,
+      sorting: tableColumnSorting,
+      columnOrder: tableColumnOrder,
       expanded: shouldUseTreeMode ? expanded : {},
       showColumnFilters: true,
       showProgressBars: loading,
     },
     onColumnFiltersChange: handleMRTColumnFiltersChange,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: (
+      updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)
+    ) => {
+      // Manage initial visibility to avoid overwriting saved state on first render
+      if (!hasInitialColumnVisibility) {
+        setHasInitialColumnVisibility(true);
+        const isEmptyVisibility = isEmptyObject(tableColumnVisibility);
+        // If the current visibility is not empty, it means we have loaded a saved state, so we don't apply the initial state
+        if (!isEmptyVisibility) return;
+      }
+
+      handleMRTColumnVisibilityChange(updaterOrValue);
+    },
+    onSortingChange: handleMRTSortingChange,
+    onColumnOrderChange: handleMRTColumnOrderChange,
     getRowId,
     enableColumnFilters: true,
     enableSorting: true,
     enableColumnResizing: true,
     enableColumnActions: true,
     manualFiltering: true,
+    enableColumnOrdering: true,
     renderEmptyRowsFallback,
   });
 
@@ -603,6 +595,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, displayRecords, table]);
 
   // Ensure URL selection is maintained when table data changes
+  // Sync URL selection to table state
   useEffect(() => {
     const windowId = activeWindow?.windowId;
     if (!windowId || windowId !== tab.window || !records) {
@@ -620,18 +613,27 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     const isCurrentlySelected = currentSelection[urlSelectedId];
 
     if (recordExists && !isCurrentlySelected) {
-      // Record exists but is not selected - restore URL selection
+      // Record exists but is not selected - restore URL selection visually
       table.setRowSelection({ [urlSelectedId]: true });
     } else if (!recordExists && isCurrentlySelected) {
       // Record no longer exists but is still selected - clear selection
       table.setRowSelection({});
     }
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table]);
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table, graph]);
 
   // Handle browser navigation and direct link access
+  // NOTE: Disabled for tabs with children - their selection is handled atomically
+  // by setSelectedRecordAndClearChildren in useTableSelection
   useEffect(() => {
     const windowId = activeWindow?.windowId;
     if (!windowId || windowId !== tab.window || !records) {
+      return;
+    }
+
+    // Skip URLNavigation for tabs with children to prevent race conditions
+    // Their selection is already handled atomically by useTableSelection
+    const children = graph.getChildren(tab);
+    if (children && children.length > 0) {
       return;
     }
 
@@ -640,18 +642,50 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       return;
     }
 
-    // Handle case where user navigates directly to a URL with selection
+    const currentSelection = table.getState().rowSelection;
     const recordExists = records.some((record) => String(record.id) === urlSelectedId);
+
     if (recordExists) {
-      const currentSelection = table.getState().rowSelection;
       const isCurrentlySelected = currentSelection[urlSelectedId];
 
       if (!isCurrentlySelected) {
-        logger.info(`[URLNavigation] Applying URL selection for direct navigation: ${urlSelectedId}`);
-        table.setRowSelection({ [urlSelectedId]: true });
+        // Add a small delay to avoid applying stale URL selections during transitions
+        const timeoutId = setTimeout(() => {
+          // Re-check if this is still the correct selection after the delay
+          const latestUrlSelectedId = getSelectedRecord(windowId, tab.id);
+          if (latestUrlSelectedId === urlSelectedId) {
+            logger.debug(`[URLNavigation] Applying URL selection for direct navigation: ${urlSelectedId}`);
+            table.setRowSelection({ [urlSelectedId]: true });
+          }
+        }, 100);
+
+        return () => clearTimeout(timeoutId);
       }
     }
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table]);
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table, graph]);
+
+  useEffect(() => {
+    const windowId = activeWindow?.windowId;
+    if (!windowId || windowId !== tab.window || !records || hasRestoredSelection.current) {
+      return;
+    }
+
+    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    if (!urlSelectedId) {
+      return;
+    }
+
+    // Check if record exists and restore visual selection if needed
+    const recordExists = records.some((record) => String(record.id) === urlSelectedId);
+    const currentSelection = table.getState().rowSelection;
+    const isCurrentlySelected = currentSelection[urlSelectedId];
+
+    if (recordExists && !isCurrentlySelected) {
+      logger.debug(`[DynamicTable] Restoring selection on mount from URL: ${urlSelectedId}`);
+      table.setRowSelection({ [urlSelectedId]: true });
+      hasRestoredSelection.current = true;
+    }
+  }, [activeWindow, tab.window, records, table, getSelectedRecord, tab.id]);
 
   useEffect(() => {
     const handleGraphClear = (eventTab: typeof tab) => {
@@ -681,10 +715,34 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
     registerRefetchFunction(tabId, refetch);
 
+    // Register records getter for navigation
+    registerRecordsGetter(tabId, () => records);
+
+    // Register hasMoreRecords getter
+    registerHasMoreRecordsGetter(tabId, () => hasMoreRecords);
+
+    // Register fetchMore function
+    if (fetchMore) {
+      registerFetchMore(tabId, fetchMore);
+    }
+
     return () => {
       unregisterDatasource(tabId);
     };
-  }, [tabId, removeRecordLocally, registerDatasource, unregisterDatasource, registerRefetchFunction, refetch]);
+  }, [
+    tabId,
+    removeRecordLocally,
+    registerDatasource,
+    unregisterDatasource,
+    registerRefetchFunction,
+    registerRecordsGetter,
+    registerHasMoreRecordsGetter,
+    registerFetchMore,
+    refetch,
+    records,
+    hasMoreRecords,
+    fetchMore,
+  ]);
 
   useEffect(() => {
     registerActions({
@@ -729,6 +787,15 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         onClose={handleCloseColumnMenu}
         table={table}
         data-testid="ColumnVisibilityMenu__8ca888"
+      />
+      <CellContextMenu
+        anchorEl={contextMenu.anchorEl}
+        onClose={handleCloseContextMenu}
+        cell={contextMenu.cell}
+        row={contextMenu.row}
+        onFilterByValue={handleFilterByValue}
+        columns={baseColumns}
+        data-testid="CellContextMenu__8ca888"
       />
     </div>
   );

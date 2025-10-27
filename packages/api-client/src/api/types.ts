@@ -102,6 +102,14 @@ export interface ReadOnlyState {
   readOnlyLogicExpr?: string;
   readOnlyReason?: "FIELD_READONLY" | "READONLY_LOGIC" | "ACCESS_LEVEL";
 }
+
+export interface RefListField {
+  id: string;
+  label: string;
+  value: string;
+  color?: string;
+}
+
 export interface Field {
   hqlName: string;
   inputName: string;
@@ -127,7 +135,7 @@ export interface Field {
   type: string;
   field: unknown[];
   selector?: Record<string, string>;
-  refList: { id: string; label: string; value: string }[];
+  refList: RefListField[];
   referencedEntity: string;
   referencedWindowId: string;
   referencedTabId: string;
@@ -170,6 +178,7 @@ export interface Column {
   referencedWindowId?: string;
   [key: string]: unknown;
   fieldId?: string;
+  customJs?: string | null;
 }
 
 export interface MappedField {
@@ -721,6 +730,7 @@ export interface FormInitializationResponse {
   sessionAttributes: Record<string, string>;
   dynamicCols: string[];
   attachmentExists: boolean;
+  noteCount: number;
   _readOnly?: boolean;
 }
 
@@ -754,7 +764,7 @@ export interface ProcessInfo {
   }>;
 }
 
-export type ListOption = { id: string; label: string; value: string };
+export type ListOption = { id: string; label: string; value: string; active?: boolean };
 
 export type ProcessParameter = {
   defaultValue: string;
@@ -812,4 +822,72 @@ export interface LocationErrorResponse {
   success: false;
   error: string;
   status: number;
+}
+
+export interface LinkedItemCategory {
+  adTabId: string;
+  adWindowId: string;
+  columnName: string;
+  fullElementName: string;
+  tableName: string;
+  total: string;
+}
+
+export interface LinkedItem {
+  adTabId: string;
+  adWindowId: string;
+  id: string;
+  name: string;
+}
+
+export interface LinkedItemsResponse {
+  usedByLinkData: LinkedItemCategory[] | LinkedItem[];
+}
+
+export interface FetchCategoriesParams {
+  windowId: string;
+  entityName: string;
+  recordId: string;
+}
+
+export interface FetchLinkedItemsParams {
+  windowId: string;
+  entityName: string;
+  recordId: string;
+  adTabId: string;
+  tableName: string;
+  columnName: string;
+}
+
+export interface Note {
+  id: string;
+  note: string;
+  createdBy: string;
+  createdBy$_identifier: string;
+  creationDate: string;
+}
+
+export interface FetchNoteCountParams {
+  windowId: string;
+  tabId: string;
+  recordId: string;
+}
+
+export interface FetchNotesParams {
+  tableId: string;
+  recordId: string;
+}
+
+export interface CreateNoteParams {
+  recordId: string;
+  tableId: string;
+  content: string;
+}
+
+export interface DatasourceResponse {
+  response: {
+    data?: Note;
+    status: number;
+    error?: { message: string };
+  };
 }

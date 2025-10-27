@@ -59,13 +59,14 @@ export interface WindowState {
 }
 
 const extractWindowIds = (searchParams: URLSearchParams): Set<string> => {
-  const windowIds = new Set<string>();
+  const windowIdentifiers = new Set<string>();
   for (const [key] of searchParams.entries()) {
     if (key.startsWith(WINDOW_PREFIX)) {
-      windowIds.add(key.slice(2));
+      // Extract window_identifier (everything after w_)
+      windowIdentifiers.add(key.slice(2));
     }
   }
-  return windowIds;
+  return windowIdentifiers;
 };
 
 const processTabParameters = (
@@ -108,21 +109,21 @@ const processTabParameters = (
   return { selectedRecords, tabFormStates };
 };
 
-const createWindowState = (windowId: string, searchParams: URLSearchParams): WindowState => {
-  const isActive = searchParams.get(`${WINDOW_PREFIX}${windowId}`) === TAB_ACTIVE;
-  const formRecordId = searchParams.get(`${FORM_RECORD_ID_PREFIX}${windowId}`) || undefined;
-  const formMode = (searchParams.get(`${FORM_MODE_PREFIX}${windowId}`) as FormMode) || undefined;
-  const order = Number.parseInt(searchParams.get(`${ORDER_PREFIX}${windowId}`) || "1", 10);
-  const window_identifier = searchParams.get(`${WINDOW_IDENTIFIER_PREFIX}${windowId}`) || windowId;
-  const title = searchParams.get(`${TITLE_PREFIX}${windowId}`) || undefined;
+const createWindowState = (windowIdentifier: string, searchParams: URLSearchParams): WindowState => {
+  const isActive = searchParams.get(`${WINDOW_PREFIX}${windowIdentifier}`) === TAB_ACTIVE;
+  const formRecordId = searchParams.get(`${FORM_RECORD_ID_PREFIX}${windowIdentifier}`) || undefined;
+  const formMode = (searchParams.get(`${FORM_MODE_PREFIX}${windowIdentifier}`) as FormMode) || undefined;
+  const order = Number.parseInt(searchParams.get(`${ORDER_PREFIX}${windowIdentifier}`) || "1", 10);
+  const windowId = searchParams.get(`${WINDOW_IDENTIFIER_PREFIX}${windowIdentifier}`) || windowIdentifier;
+  const title = searchParams.get(`${TITLE_PREFIX}${windowIdentifier}`) || undefined;
 
-  const { selectedRecords, tabFormStates } = processTabParameters(searchParams, windowId);
+  const { selectedRecords, tabFormStates } = processTabParameters(searchParams, windowIdentifier);
 
   return {
     windowId,
     isActive,
     order,
-    window_identifier,
+    window_identifier: windowIdentifier,
     formRecordId,
     formMode,
     selectedRecords,
@@ -144,35 +145,38 @@ const setWindowParameters = (params: URLSearchParams, window: WindowState): void
     title,
   } = window;
 
-  params.set(`${WINDOW_PREFIX}${windowId}`, isActive ? TAB_ACTIVE : TAB_INACTIVE);
-  params.set(`${ORDER_PREFIX}${windowId}`, (order ?? 1).toString());
-  params.set(`${WINDOW_IDENTIFIER_PREFIX}${windowId}`, window_identifier);
+  // Use window_identifier as the URL key instead of windowId
+  const urlKey = window_identifier;
+
+  params.set(`${WINDOW_PREFIX}${urlKey}`, isActive ? TAB_ACTIVE : TAB_INACTIVE);
+  params.set(`${ORDER_PREFIX}${urlKey}`, (order ?? 1).toString());
+  params.set(`${WINDOW_IDENTIFIER_PREFIX}${urlKey}`, windowId);
 
   if (formRecordId) {
-    params.set(`${FORM_RECORD_ID_PREFIX}${windowId}`, formRecordId);
+    params.set(`${FORM_RECORD_ID_PREFIX}${urlKey}`, formRecordId);
   }
   if (formMode) {
-    params.set(`${FORM_MODE_PREFIX}${windowId}`, formMode);
+    params.set(`${FORM_MODE_PREFIX}${urlKey}`, formMode);
   }
   if (title) {
-    params.set(`${TITLE_PREFIX}${windowId}`, title);
+    params.set(`${TITLE_PREFIX}${urlKey}`, title);
   }
 
   for (const [tabId, selectedRecordId] of Object.entries(selectedRecords)) {
     if (selectedRecordId) {
-      params.set(`${SELECTED_RECORD_PREFIX}${windowId}_${tabId}`, selectedRecordId);
+      params.set(`${SELECTED_RECORD_PREFIX}${urlKey}_${tabId}`, selectedRecordId);
     }
   }
 
   for (const [tabId, tabState] of Object.entries(tabFormStates)) {
     if (tabState.recordId) {
-      params.set(`${TAB_FORM_RECORD_ID_PREFIX}${windowId}_${tabId}`, tabState.recordId);
+      params.set(`${TAB_FORM_RECORD_ID_PREFIX}${urlKey}_${tabId}`, tabState.recordId);
     }
     if (tabState.mode && tabState.mode !== TAB_MODES.TABLE) {
-      params.set(`${TAB_MODE_PREFIX}${windowId}_${tabId}`, tabState.mode);
+      params.set(`${TAB_MODE_PREFIX}${urlKey}_${tabId}`, tabState.mode);
     }
     if (tabState.formMode) {
-      params.set(`${TAB_FORM_MODE_PREFIX}${windowId}_${tabId}`, tabState.formMode);
+      params.set(`${TAB_FORM_MODE_PREFIX}${urlKey}_${tabId}`, tabState.formMode);
     }
   }
 };
@@ -272,15 +276,16 @@ export function useMultiWindowURL() {
     (windowId: string, title?: string, window_identifier?: string) => {
       const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
 
-      const existingIndex = updatedWindows.findIndex((w) => w.windowId === windowId);
+      // Generate unique identifier if not provided
+      const uniqueIdentifier = window_identifier || `${windowId}_${Date.now()}`;
+
+      // Search by window_identifier instead of windowId to support multiple instances
+      const existingIndex = updatedWindows.findIndex((w) => w.window_identifier === uniqueIdentifier);
 
       if (existingIndex >= 0) {
         updatedWindows[existingIndex].isActive = true;
         if (title) {
           updatedWindows[existingIndex].title = title;
-        }
-        if (window_identifier) {
-          updatedWindows[existingIndex].window_identifier = window_identifier;
         }
       } else {
         const nextOrder = getNextOrder(updatedWindows);
@@ -288,7 +293,7 @@ export function useMultiWindowURL() {
           windowId,
           isActive: true,
           order: nextOrder,
-          window_identifier: window_identifier || windowId,
+          window_identifier: uniqueIdentifier,
           title,
           selectedRecords: {},
           tabFormStates: {},
@@ -301,10 +306,10 @@ export function useMultiWindowURL() {
   );
 
   const closeWindow = useCallback(
-    (windowId: string) => {
-      const updatedWindows = windows.filter((w) => w.windowId !== windowId);
+    (windowIdentifier: string) => {
+      const updatedWindows = windows.filter((w) => w.window_identifier !== windowIdentifier);
 
-      const wasActive = windows.find((w) => w.windowId === windowId)?.isActive;
+      const wasActive = windows.find((w) => w.window_identifier === windowIdentifier)?.isActive;
       if (wasActive && updatedWindows.length > 0) {
         updatedWindows[0].isActive = true;
       }
@@ -321,10 +326,10 @@ export function useMultiWindowURL() {
   );
 
   const setActiveWindow = useCallback(
-    (windowId: string) => {
+    (windowIdentifier: string) => {
       const updatedWindows = windows.map((w) => ({
         ...w,
-        isActive: w.windowId === windowId,
+        isActive: w.window_identifier === windowIdentifier,
       }));
 
       navigate(updatedWindows);
@@ -349,103 +354,151 @@ export function useMultiWindowURL() {
     [windows, navigate]
   );
 
-  const setSelectedRecord = useCallback(
-    (windowId: string, tabId: string, recordId: string) => {
-      const updatedWindows = windows.map((w) => {
-        if (w.windowId === windowId) {
-          return {
-            ...w,
-            selectedRecords: {
-              ...w.selectedRecords,
-              [tabId]: recordId,
-            },
-          };
+  /**
+   * Applies multiple window updates atomically in a single navigation.
+   * This ensures that rapid successive updates don't create race conditions
+   * by always working with the most current state via the transform callback.
+   */
+  const applyWindowUpdates = useCallback(
+    (transform: (windows: WindowState[]) => WindowState[], preserveCurrentPath?: boolean) => {
+      const stack = new Error().stack;
+      const caller = stack?.split("\n")[2]?.trim() || "unknown";
+
+      const prevWindows = windows;
+      const nextWindows = transform(windows);
+
+      // Log changes in selectedRecords for debugging
+      prevWindows.forEach((prevWin, idx) => {
+        const nextWin = nextWindows[idx];
+        if (nextWin && prevWin.windowId === nextWin.windowId) {
+          const prevSelected = prevWin.selectedRecords;
+          const nextSelected = nextWin.selectedRecords;
+
+          // Check for removed selections
+          for (const tabId of Object.keys(prevSelected)) {
+            if (prevSelected[tabId] && !nextSelected[tabId]) {
+              console.log(
+                `[applyWindowUpdates] REMOVED selection for tab ${tabId}: ${prevSelected[tabId]} -> undefined`
+              );
+              console.log(`[applyWindowUpdates] Caller: ${caller}`);
+            }
+          }
         }
-        return w;
       });
 
-      navigate(updatedWindows);
+      navigate(nextWindows, preserveCurrentPath);
     },
     [windows, navigate]
+  );
+
+  const setSelectedRecord = useCallback(
+    (windowId: string, tabId: string, recordId: string) => {
+      applyWindowUpdates((prev) => {
+        return prev.map((w) => {
+          if (w.windowId === windowId) {
+            return {
+              ...w,
+              selectedRecords: {
+                ...w.selectedRecords,
+                [tabId]: recordId,
+              },
+            };
+          }
+          return w;
+        });
+      });
+    },
+    [applyWindowUpdates]
   );
 
   const clearSelectedRecord = useCallback(
     (windowId: string, tabId: string) => {
-      const updatedWindows = windows.map((w) => {
-        if (w.windowId === windowId) {
-          const newSelectedRecords = { ...w.selectedRecords };
-          delete newSelectedRecords[tabId];
+      applyWindowUpdates((prev) => {
+        return prev.map((w) => {
+          if (w.windowId === windowId) {
+            const newSelectedRecords = { ...w.selectedRecords };
+            delete newSelectedRecords[tabId];
 
-          return {
-            ...w,
-            selectedRecords: newSelectedRecords,
-          };
-        }
-        return w;
+            return {
+              ...w,
+              selectedRecords: newSelectedRecords,
+            };
+          }
+          return w;
+        });
       });
-
-      navigate(updatedWindows);
     },
-    [windows, navigate]
+    [applyWindowUpdates]
   );
 
   const getSelectedRecord = useCallback(
     (windowId: string, tabId: string): string | undefined => {
+      // Always read from current windows state, not searchParams
+      // searchParams can be stale during intermediate renders
       const window = windows.find((w) => w.windowId === windowId);
-      return window?.selectedRecords[tabId];
+      if (!window) return undefined;
+
+      // If tab is in FormView, get recordId from tabFormStates
+      // Otherwise get it from selectedRecords
+      const tabFormState = window.tabFormStates[tabId];
+      if (tabFormState?.mode === TAB_MODES.FORM && tabFormState.recordId) {
+        return tabFormState.recordId;
+      }
+
+      return window.selectedRecords[tabId];
     },
     [windows]
   );
 
   const setTabFormState = useCallback(
     (windowId: string, tabId: string, recordId: string, mode: TabMode = TAB_MODES.FORM, formMode?: FormMode) => {
-      const updatedWindows = windows.map((w) => {
-        if (w.windowId === windowId) {
-          const currentTabState = w.tabFormStates[tabId] || {};
+      applyWindowUpdates((prev) => {
+        return prev.map((w) => {
+          if (w.windowId === windowId) {
+            const currentTabState = w.tabFormStates[tabId] || {};
 
-          return {
-            ...w,
-            selectedRecords: {
-              ...w.selectedRecords,
-              [tabId]: recordId,
-            },
-            tabFormStates: {
-              ...w.tabFormStates,
-              [tabId]: {
-                ...currentTabState,
-                recordId,
-                mode,
-                formMode: formMode || (recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT),
+            return {
+              ...w,
+              selectedRecords: {
+                ...w.selectedRecords,
+                [tabId]: recordId,
               },
-            },
-          };
-        }
-        return w;
+              tabFormStates: {
+                ...w.tabFormStates,
+                [tabId]: {
+                  ...currentTabState,
+                  recordId,
+                  mode,
+                  formMode: formMode || (recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT),
+                },
+              },
+            };
+          }
+          return w;
+        });
       });
-
-      navigate(updatedWindows);
     },
-    [windows, navigate]
+    [applyWindowUpdates]
   );
 
   const clearTabFormState = useCallback(
     (windowId: string, tabId: string) => {
-      const updatedWindows = windows.map((w) => {
-        if (w.windowId === windowId) {
-          const newTabFormStates = { ...w.tabFormStates };
-          delete newTabFormStates[tabId];
+      applyWindowUpdates((prev) => {
+        return prev.map((w) => {
+          if (w.windowId === windowId) {
+            const newTabFormStates = { ...w.tabFormStates };
+            delete newTabFormStates[tabId];
 
-          return {
-            ...w,
-            tabFormStates: newTabFormStates,
-          };
-        }
-        return w;
+            return {
+              ...w,
+              tabFormStates: newTabFormStates,
+            };
+          }
+          return w;
+        });
       });
-
-      navigate(updatedWindows);
     },
-    [windows, navigate]
+    [applyWindowUpdates]
   );
 
   const getTabFormState = useCallback(
@@ -456,32 +509,140 @@ export function useMultiWindowURL() {
     [windows]
   );
 
-  // Batch operations
-  const applyWindowUpdates = useCallback(
-    (transform: (windows: WindowState[]) => WindowState[], preserveCurrentPath?: boolean) => {
-      const nextWindows = transform(windows);
-      navigate(nextWindows, preserveCurrentPath);
-    },
-    [windows, navigate]
-  );
-
   const clearChildrenSelections = useCallback(
     (windowId: string, childTabIds: string[]) => {
-      applyWindowUpdates((prev) =>
-        prev.map((w) => {
+      // Log who called this function with stack trace
+      const stack = new Error().stack;
+      const caller = stack?.split("\n")[2]?.trim() || "unknown";
+      console.log(`[clearChildrenSelections] Called with ${childTabIds.length} children: ${childTabIds.join(", ")}`);
+      console.log(`[clearChildrenSelections] Caller: ${caller}`);
+
+      applyWindowUpdates((prev) => {
+        return prev.map((w) => {
           if (w.windowId !== windowId) return w;
+
+          // Filter out children that are currently in FormView - don't clear them
+          const childrenToClean = childTabIds.filter((tabId) => {
+            const childState = w.tabFormStates[tabId];
+            const isInFormView = childState?.mode === "form";
+            if (isInFormView) {
+              console.log(`[clearChildrenSelections] Preserving child ${tabId} - currently in FormView`, childState);
+              return false; // Don't clear this child
+            }
+            return true; // Clear this child
+          });
+
+          if (childrenToClean.length === 0) {
+            console.log("[clearChildrenSelections] All children preserved, no changes");
+            return w; // No children to clean, return unchanged
+          }
+
           const newSelected = { ...w.selectedRecords };
           const newTabStates = { ...w.tabFormStates } as Record<
             string,
             { recordId?: string; mode?: TabMode; formMode?: FormMode }
           >;
-          for (const tabId of childTabIds) {
+
+          for (const tabId of childrenToClean) {
             delete newSelected[tabId];
             delete newTabStates[tabId];
           }
+
+          console.log(
+            `[clearChildrenSelections] Cleared ${childrenToClean.length} of ${childTabIds.length} children: ${childrenToClean.join(", ")}`
+          );
           return { ...w, selectedRecords: newSelected, tabFormStates: newTabStates };
-        })
-      );
+        });
+      });
+    },
+    [applyWindowUpdates]
+  );
+
+  /**
+   * Atomically updates parent tab selection and clears all children in a single navigation
+   * Children in FormView are preserved ONLY if the parent selection hasn't actually changed
+   * (i.e., during refresh/re-render). If user changes parent selection, children are cleared.
+   */
+  const setSelectedRecordAndClearChildren = useCallback(
+    (windowId: string, parentTabId: string, recordId: string, childTabIds: string[]) => {
+      applyWindowUpdates((prev) => {
+        return prev.map((w) => {
+          if (w.windowId !== windowId) return w;
+
+          const previousParentSelection = w.selectedRecords[parentTabId];
+          const isParentSelectionChanging = previousParentSelection !== recordId;
+
+          const newSelected = { ...w.selectedRecords, [parentTabId]: recordId };
+          const newTabStates = { ...w.tabFormStates } as Record<
+            string,
+            { recordId?: string; mode?: TabMode; formMode?: FormMode }
+          >;
+
+          // Only preserve children in FormView if parent selection is NOT changing
+          // If parent selection IS changing (user clicked a different record), clear all children
+          const childrenToClean = childTabIds.filter((tabId) => {
+            if (isParentSelectionChanging) {
+              // Parent changed to a different record - clear all children regardless of FormView
+              return true;
+            }
+
+            // Parent selection unchanged (refresh/re-render) - preserve children in FormView
+            const childState = w.tabFormStates[tabId];
+            const isInFormView = childState?.mode === "form";
+            if (isInFormView) {
+              console.log(
+                `[setSelectedRecordAndClearChildren] Preserving child ${tabId} - parent selection unchanged and child in FormView`
+              );
+              return false; // Don't clear this child
+            }
+            return true; // Clear this child
+          });
+
+          // Clear only children that should be cleared
+          for (const tabId of childrenToClean) {
+            delete newSelected[tabId];
+            delete newTabStates[tabId];
+          }
+
+          if (!isParentSelectionChanging && childrenToClean.length < childTabIds.length) {
+            console.log(
+              `[setSelectedRecordAndClearChildren] Parent unchanged - cleared ${childrenToClean.length} of ${childTabIds.length} children (${childTabIds.length - childrenToClean.length} preserved in FormView)`
+            );
+          } else if (isParentSelectionChanging) {
+            console.log(
+              `[setSelectedRecordAndClearChildren] Parent changed from ${previousParentSelection} to ${recordId} - cleared all ${childTabIds.length} children`
+            );
+          }
+
+          const result = { ...w, selectedRecords: newSelected, tabFormStates: newTabStates };
+          console.log("[setSelectedRecordAndClearChildren] Result tabFormStates:", result.tabFormStates);
+          return result;
+        });
+      });
+    },
+    [applyWindowUpdates]
+  );
+
+  /**
+   * Atomically clears FormView state for a tab only (without touching children or selection)
+   */
+  const clearTabFormStateAtomic = useCallback(
+    (windowId: string, tabId: string) => {
+      applyWindowUpdates((prev) => {
+        return prev.map((w) => {
+          if (w.windowId !== windowId) return w;
+
+          const newTabStates = { ...w.tabFormStates };
+          delete newTabStates[tabId]; // Only delete FormView state, keep selection
+
+          return {
+            ...w,
+            tabFormStates: newTabStates,
+            // Explicitly preserve selectedRecords to ensure selection is not lost
+            selectedRecords: { ...w.selectedRecords },
+          };
+        });
+      });
     },
     [applyWindowUpdates]
   );
@@ -497,7 +658,13 @@ export function useMultiWindowURL() {
     ) => {
       applyWindowUpdates((prev) => {
         const updated = prev.map((w) => ({ ...w, isActive: false }));
-        const existingIndex = updated.findIndex((w) => w.windowId === windowId);
+
+        // If window_identifier is provided, use it to find existing window
+        // Otherwise, fall back to windowId (old behavior)
+        const identifierToFind = options?.window_identifier || windowId;
+        const existingIndex = updated.findIndex((w) =>
+          options?.window_identifier ? w.window_identifier === identifierToFind : w.windowId === windowId
+        );
 
         let target: WindowState;
         if (existingIndex >= 0) {
@@ -545,20 +712,21 @@ export function useMultiWindowURL() {
         const formMode: FormMode = recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT;
         setTabFormState(windowId, tabId, recordId, TAB_MODES.FORM, formMode);
       } else {
-        const updatedWindows = windows.map((w) => {
-          if (w.windowId === windowId) {
-            return {
-              ...w,
-              formRecordId: recordId,
-              formMode: recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT,
-            };
-          }
-          return w;
+        applyWindowUpdates((prev) => {
+          return prev.map((w) => {
+            if (w.windowId === windowId) {
+              return {
+                ...w,
+                formRecordId: recordId,
+                formMode: recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT,
+              };
+            }
+            return w;
+          });
         });
-        navigate(updatedWindows);
       }
     },
-    [windows, navigate, setTabFormState]
+    [applyWindowUpdates, setTabFormState]
   );
 
   const clearRecord = useCallback(
@@ -566,17 +734,18 @@ export function useMultiWindowURL() {
       if (tabId) {
         clearTabFormState(windowId, tabId);
       } else {
-        const updatedWindows = windows.map((w) => {
-          if (w.windowId === windowId) {
-            const { formMode, formRecordId, ...rest } = w;
-            return rest;
-          }
-          return w;
+        applyWindowUpdates((prev) => {
+          return prev.map((w) => {
+            if (w.windowId === windowId) {
+              const { formMode, formRecordId, ...rest } = w;
+              return rest;
+            }
+            return w;
+          });
         });
-        navigate(updatedWindows);
       }
     },
-    [windows, navigate, clearTabFormState]
+    [applyWindowUpdates, clearTabFormState]
   );
 
   const reorderWindows = useCallback(
@@ -608,9 +777,11 @@ export function useMultiWindowURL() {
     setSelectedRecord,
     clearSelectedRecord,
     getSelectedRecord,
+    setSelectedRecordAndClearChildren,
 
     setTabFormState,
     clearTabFormState,
+    clearTabFormStateAtomic,
     getTabFormState,
 
     setRecord,

@@ -27,9 +27,18 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({
   onSelectAssistant,
   isExpanded = false,
   showDescription,
+  isLoading = false,
   translations,
 }) => {
   const [filterText, setFilterText] = useState("");
+
+  if (isLoading) {
+    return (
+      <div className="p-6 text-center">
+        <h6 className="text-lg font-medium text-gray-600">Loading assistants...</h6>
+      </div>
+    );
+  }
 
   if (!assistants || !Array.isArray(assistants) || assistants.length === 0) {
     console.error("AssistantSelector: Invalid assistants data:", assistants);

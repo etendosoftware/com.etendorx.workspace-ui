@@ -32,8 +32,8 @@ export default {
     "^@workspaceui/mainui(.*)$": "<rootDir>/../MainUI$1",
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",
     "\\.(gif|ttf|eot|svg|png|jpg|jpeg)$": "<rootDir>/__mocks__/fileMock.js",
-    "^react-markdown$": "<rootDir>/__mocks__/react-markdown.js",
-    'react-markdown': '<rootDir>/node_modules/react-markdown/react-markdown.min.js',
+    "^remark-gfm$": "<rootDir>/__mocks__/remark-gfm.js",
+    "^react-markdown$": "<rootDir>/__mocks__/ReactMarkdownMock.tsx",
     '\\.svg\\?url$': '<rootDir>/__mocks__/fileMock.js',
   },
 

@@ -38,6 +38,7 @@ const TabContext = createContext<TabContextI>({} as TabContextI);
 
 export default function TabContextProvider({ tab, children }: React.PropsWithChildren<{ tab: Tab }>) {
   const [hasFormChanges, setHasFormChanges] = useState(false);
+
   const { graph } = useSelected();
   const record = useSelectedRecord(tab);
   const parentTab = graph.getParent(tab);

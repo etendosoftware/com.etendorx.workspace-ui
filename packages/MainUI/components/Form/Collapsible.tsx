@@ -34,15 +34,33 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
     }
   }, [isExpanded, onToggle, isAnimating]);
 
-  // Calcular altura del contenido
+  // Calculate content height and observe changes
   useEffect(() => {
-    if (innerContentRef.current) {
-      const height = innerContentRef.current.scrollHeight;
-      setContentHeight(height);
-    }
+    if (!innerContentRef.current) return;
+
+    const updateHeight = () => {
+      if (innerContentRef.current) {
+        const height = innerContentRef.current.scrollHeight;
+        setContentHeight(height);
+      }
+    };
+
+    // Calculate initial height
+    updateHeight();
+
+    // Observe changes in content size
+    const resizeObserver = new ResizeObserver(() => {
+      updateHeight();
+    });
+
+    resizeObserver.observe(innerContentRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
   }, [children, isExpanded]);
 
-  // Manejar animación
+  // Handle animation
   useEffect(() => {
     if (!contentRef.current) return;
 
@@ -50,12 +68,12 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
 
     const timeoutId = setTimeout(() => {
       setIsAnimating(false);
-    }, 300); // Duración de la transición
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [isExpanded]);
 
-  // Manejar accesibilidad de elementos focuseables
+  // Manage focusability of inner elements based on expansion state
   useEffect(() => {
     if (!innerContentRef.current) return;
 
@@ -67,13 +85,13 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
       const element = el as HTMLElement;
 
       if (isExpanded) {
-        // Restaurar tabindex original
+        // Restore original tabindex
         if (element.dataset.originalTabIndex) {
           element.setAttribute("tabindex", element.dataset.originalTabIndex);
           delete element.dataset.originalTabIndex;
         }
       } else {
-        // Guardar tabindex original y deshabilitarlo
+        // Save original tabindex and disable it
         if (!element.dataset.originalTabIndex) {
           element.dataset.originalTabIndex = element.getAttribute("tabindex") || "0";
         }

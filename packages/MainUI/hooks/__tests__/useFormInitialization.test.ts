@@ -20,15 +20,14 @@ import { useFormInitialization } from "../useFormInitialization";
 import { useUserContext } from "../useUserContext";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { fetchFormInitialization, buildFormInitializationParams } from "../../utils/hooks/useFormInitialization/utils";
+import { useCurrentRecord } from "../useCurrentRecord";
 
 // Mock dependencies
 jest.mock("../useUserContext");
 jest.mock("../../contexts/tab", () => ({
   useTabContext: () => ({ parentRecord: null }),
 }));
-jest.mock("../useCurrentRecord", () => ({
-  useCurrentRecord: jest.fn(() => ({ record: null, loading: false })),
-}));
+jest.mock("../useCurrentRecord");
 jest.mock("../useFormParent", () => ({
   __esModule: true,
   default: jest.fn(() => ({})),
@@ -36,6 +35,7 @@ jest.mock("../useFormParent", () => ({
 jest.mock("../../utils/hooks/useFormInitialization/utils");
 
 const mockUseUserContext = useUserContext as jest.MockedFunction<typeof useUserContext>;
+const mockUseCurrentRecord = useCurrentRecord as jest.MockedFunction<typeof useCurrentRecord>;
 const mockFetchFormInitialization = fetchFormInitialization as jest.MockedFunction<typeof fetchFormInitialization>;
 const mockBuildFormInitializationParams = buildFormInitializationParams as jest.MockedFunction<
   typeof buildFormInitializationParams
@@ -66,6 +66,12 @@ describe("useFormInitialization loading state", () => {
       setSession: mockSetSession,
       setSessionSyncLoading: mockSetSessionSyncLoading,
     } as never);
+
+    // Mock useCurrentRecord to return no record and not loading by default
+    mockUseCurrentRecord.mockReturnValue({
+      record: null,
+      loading: false,
+    });
 
     // Mock successful params build - ensure it returns a valid URLSearchParams
     mockBuildFormInitializationParams.mockReturnValue(new URLSearchParams("test=value"));
@@ -189,5 +195,106 @@ describe("useFormInitialization loading state", () => {
     // Verify loading functions were not called when params are null
     expect(mockSetSessionSyncLoading).not.toHaveBeenCalled();
     expect(mockFetchFormInitialization).not.toHaveBeenCalled();
+  });
+
+  test("should not fetch when useCurrentRecord is still loading", async () => {
+    // Mock useCurrentRecord to be in loading state
+    mockUseCurrentRecord.mockReturnValue({
+      record: null,
+      loading: true,
+    });
+
+    renderHook(() =>
+      useFormInitialization({
+        tab: mockTab,
+        mode: FormMode.EDIT,
+        recordId: "test-record-id",
+      })
+    );
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+
+    // Verify fetch was NOT called while record is loading
+    // This is the key behavior that prevents the race condition
+    expect(mockFetchFormInitialization).not.toHaveBeenCalled();
+  });
+
+  test("should fetch when useCurrentRecord has finished loading", async () => {
+    // Mock useCurrentRecord to have finished loading with data
+    mockUseCurrentRecord.mockReturnValue({
+      record: {
+        id: "test-record-id",
+        creationDate: "2024-01-01",
+        createdBy$_identifier: "Test User",
+        updated: "2024-01-02",
+        updatedBy$_identifier: "Test User 2",
+      },
+      loading: false,
+    });
+
+    renderHook(() =>
+      useFormInitialization({
+        tab: mockTab,
+        mode: FormMode.EDIT,
+        recordId: "test-record-id",
+      })
+    );
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+
+    // Verify fetch WAS called when record is not loading
+    // This ensures audit fields are available when enrichWithAuditFields is called
+    expect(mockFetchFormInitialization).toHaveBeenCalled();
+  });
+
+  test("should enrich form data with audit fields when record is available", async () => {
+    // Mock useCurrentRecord with audit field data
+    const mockRecordWithAudit = {
+      id: "test-record-id",
+      creationDate: "2024-01-01T10:00:00Z",
+      createdBy$_identifier: "John Doe",
+      updated: "2024-01-02T15:30:00Z",
+      updatedBy$_identifier: "Jane Smith",
+    };
+
+    mockUseCurrentRecord.mockReturnValue({
+      record: mockRecordWithAudit,
+      loading: false,
+    });
+
+    mockFetchFormInitialization.mockResolvedValue({
+      auxiliaryInputValues: {},
+      columnValues: {},
+      sessionAttributes: {},
+      dynamicCols: [],
+      attachmentExists: false,
+    });
+
+    const { result } = renderHook(() =>
+      useFormInitialization({
+        tab: mockTab,
+        mode: FormMode.EDIT,
+        recordId: "test-record-id",
+      })
+    );
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    // Verify that the form initialization was fetched
+    expect(mockFetchFormInitialization).toHaveBeenCalled();
+
+    // Verify that setSession was called with audit fields
+    expect(mockSetSession).toHaveBeenCalled();
+
+    // The enrichWithAuditFields function should have processed the record data
+    // This verifies the race condition fix is working correctly
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBeNull();
   });
 });

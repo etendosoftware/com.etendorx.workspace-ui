@@ -293,12 +293,6 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     }
   }, [isFormInitializing, setIsSettingInitialValues]);
 
-  useEffect(() => {
-    return () => {
-      globalCalloutManager.clearPendingCallouts();
-    };
-  }, []);
-
   if (isDisplayed) {
     const isTextLong = field.column.reference === FIELD_REFERENCE_CODES.TEXT_LONG;
     const containerClasses = isTextLong ? "row-span-3 flex items-start pt-2" : "h-12 flex items-center";

@@ -39,9 +39,14 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
   onSendMessage,
   onResetConversation,
   showDescription,
+  isLoadingAssistants = false,
   hasContextPending = false,
   contextItems = [],
   onRemoveContext,
+  conversations = [],
+  onSelectConversation,
+  onLoadConversations,
+  conversationsLoading = false,
   translations,
 }) => {
   if (!open) return null;
@@ -138,13 +143,21 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
             onSendMessage={onSendMessage}
             onResetConversation={onResetConversation}
             showDescription={showDescription}
+            isLoadingAssistants={isLoadingAssistants}
             contextItems={contextItems}
             onRemoveContext={onRemoveContext}
+            conversations={conversations}
+            onSelectConversation={onSelectConversation}
+            onLoadConversations={onLoadConversations}
+            conversationsLoading={conversationsLoading}
             translations={{
               selectedRegisters: translations.selectedRegisters,
               assistantSelector: translations.assistantSelector,
               messageInput: translations.messageInput,
               messageList: translations.messageList,
+              conversationList: translations.conversationList,
+              conversationsButton: translations.conversationsButton,
+              hideConversationsButton: translations.hideConversationsButton,
             }}
           />
         </div>

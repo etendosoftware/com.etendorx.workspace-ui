@@ -70,18 +70,24 @@ export interface FieldLabelProps {
 
 export interface Note {
   id: string;
-  content: string;
-  createdAt: string;
-  color: string;
+  note: string;
+  createdBy: { id: string; identifier: string };
+  creationDate: string;
 }
 
 export interface NoteSectionProps {
+  recordId: string;
+  tableId: string;
+  initialNoteCount: number; // Passed from FormInitializationComponent response
+  isSectionExpanded: boolean; // State controlled by the parent/accordion component
+  onNotesChange: () => void;
   sectionId: string;
   addNoteButtonText: string | undefined;
   modalTitleText: string | undefined;
   modalDescriptionText: string | undefined;
   noteInputPlaceholder: string | undefined;
   addNoteSubmitText: string | undefined;
+  showErrorModal?: (message: string) => void;
 }
 
 // TableDir Selector
