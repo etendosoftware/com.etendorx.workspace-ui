@@ -182,6 +182,7 @@ export const createButtonByType = ({
       [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: () => buildDisableConfig(!(isFormView || hasSelectedRecord)),
       [TOOLBAR_BUTTONS_ACTIONS.DELETE]: () => buildDisableConfig(!hasSelectedRecord),
       [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () => buildDisableConfig(!hasSelectedRecord || !isCopilotInstalled),
+      [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: () => buildDisableConfig(!hasSelectedRecord),
       [TOOLBAR_BUTTONS_ACTIONS.NEW]: () => buildDisableConfig(!hasParentRecordSelected),
       [TOOLBAR_BUTTONS_ACTIONS.REFRESH]: () => buildDisableConfig(!hasParentRecordSelected),
       [TOOLBAR_BUTTONS_ACTIONS.SAVE]: () => {
@@ -272,8 +273,8 @@ const createSectionButtons = (
       toolbarButton.className = toolbarButton.className ? `${toolbarButton.className} ${styles}` : styles;
     }
 
-    // Add badge for ATTACHMENT button
-    if (button.action === TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT && config.session) {
+    // Add badge for ATTACHMENT button only when a record is selected
+    if (button.action === TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT && config.session && config.hasSelectedRecord) {
       const attachmentCount = config.session._attachmentCount;
       if (attachmentCount && Number.parseInt(String(attachmentCount)) > 0) {
         toolbarButton.badgeContent = String(attachmentCount);

@@ -64,7 +64,7 @@ const AttachmentSection = ({
 }: AttachmentSectionProps) => {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { session, user } = useUserContext();
+  const { session, currentOrganization } = useUserContext();
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -131,16 +131,19 @@ const AttachmentSection = ({
     setIsLoading(true);
     try {
       // Get organization ID from session or user context
-      const orgId = session["#AD_Org_ID"] || session.adOrgId || user?.defaultOrganization;
+      // Priority: session["#AD_Org_ID"] (current role org) > session.adOrgId > currentOrganization.id
+      // Note: "#AD_Org_ID" is set by the backend and represents the current role's organization
+      const orgId = session["#AD_Org_ID"] || session.adOrgId || currentOrganization?.id;
 
       if (!orgId) {
-        const errorMessage = t("forms.attachments.missingOrganization") || "Organization ID is required";
-        if (showErrorModal) {
-          showErrorModal(errorMessage);
-        }
-        setIsLoading(false);
-        return;
+        throw new Error("Organization ID not found in session or user context");
       }
+
+      console.debug("AttachmentSection: Creating attachment with organization:", orgId, {
+        sessionOrgId: session["#AD_Org_ID"],
+        adOrgId: session.adOrgId,
+        currentOrganizationId: currentOrganization?.id,
+      });
 
       // Build params object
       const params: {
