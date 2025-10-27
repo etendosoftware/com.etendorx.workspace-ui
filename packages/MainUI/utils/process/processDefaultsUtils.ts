@@ -17,6 +17,36 @@ interface ProcessedDefaultValue {
 }
 
 /**
+ * Converts various date formats to ISO format (YYYY-MM-DD) for HTML date inputs
+ * Supports:
+ * - DD-MM-YYYY (27-10-2025)
+ * - DD/MM/YYYY (27/10/2025)
+ * - YYYY-MM-DD (already correct)
+ * - ISO datetime (2025-10-27T00:00:00Z)
+ */
+export function convertToISODateFormat(dateString: string): string {
+  // Already in ISO format (YYYY-MM-DD)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return dateString;
+  }
+
+  // ISO datetime format (2025-10-27T00:00:00Z) - extract date part
+  if (/^\d{4}-\d{2}-\d{2}T/.test(dateString)) {
+    return dateString.split("T")[0];
+  }
+
+  // DD-MM-YYYY or DD/MM/YYYY format
+  const ddmmyyyyMatch = dateString.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
+  if (ddmmyyyyMatch) {
+    const [, day, month, year] = ddmmyyyyMatch;
+    const isoDate = `${year}-${month}-${day}`;
+    return isoDate;
+  }
+
+  return dateString;
+}
+
+/**
  * Creates a parameter mapping for efficient lookups
  */
 export function createParameterMap(
@@ -93,11 +123,18 @@ export function processDefaultValue(
     }
 
     if (isSimpleValue(value)) {
-      const processedValue = typeof value === "boolean" ? value : String(value);
-      logger.debug(`Mapped simple field ${fieldName} to ${formFieldName}:`, {
-        value: String(value),
-        type: typeof value,
-      });
+      let processedValue: string | number | boolean;
+
+      // Convert date fields to ISO format
+      if (
+        parameter?.reference &&
+        (parameter.reference.toLowerCase().includes("date") || parameter.reference.toLowerCase().includes("time"))
+      ) {
+        processedValue = typeof value === "string" ? convertToISODateFormat(value) : String(value);
+      } else {
+        processedValue = typeof value === "boolean" ? value : String(value);
+      }
+
       return {
         fieldName: formFieldName,
         fieldValue: processedValue,

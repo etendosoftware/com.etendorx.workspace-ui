@@ -41,6 +41,25 @@ import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
 import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+
+// Date field reference codes for conversion
+const DATE_REFERENCE_CODES = [
+  FIELD_REFERENCE_CODES.DATE, // "15"
+  FIELD_REFERENCE_CODES.DATETIME, // "16"
+  FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME, // UUID
+];
+
+/**
+ * Checks if a parameter reference is a date/time field
+ */
+const isDateReference = (reference: string): boolean => {
+  return (
+    DATE_REFERENCE_CODES.includes(reference as (typeof DATE_REFERENCE_CODES)[number]) ||
+    reference.toLowerCase().includes("date") ||
+    reference.toLowerCase().includes("time")
+  );
+};
+import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { FormProvider, useForm, useFormState } from "react-hook-form";
@@ -167,11 +186,46 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     // Build base payload with system context fields
     const basePayload = buildProcessPayload(record, tab, {}, {});
 
-    return {
+    const combined = {
       ...basePayload,
       ...initialState,
     };
-  }, [record, tab, initialState]);
+
+    // Convert date fields to ISO format for all parameters
+    // This ensures date inputs display values correctly regardless of source (record or defaults)
+    const parametersList = Object.values(parameters);
+
+    for (const param of parametersList) {
+      // Check if parameter is a date field by reference code OR by name containing "date"/"time"
+      const isDateField = param.reference && isDateReference(param.reference);
+
+      if (isDateField) {
+        // Check by parameter name
+        if (combined[param.name] && typeof combined[param.name] === "string") {
+          const originalValue = String(combined[param.name]);
+          const convertedValue = convertToISODateFormat(originalValue);
+          if (convertedValue !== originalValue) {
+            combined[param.name] = convertedValue;
+          }
+        }
+        // Also check by dBColumnName if different
+        if (
+          param.dBColumnName &&
+          param.dBColumnName !== param.name &&
+          combined[param.dBColumnName] &&
+          typeof combined[param.dBColumnName] === "string"
+        ) {
+          const originalValue = String(combined[param.dBColumnName]);
+          const convertedValue = convertToISODateFormat(originalValue);
+          if (convertedValue !== originalValue) {
+            combined[param.dBColumnName] = convertedValue;
+          }
+        }
+      }
+    }
+
+    return combined;
+  }, [record, tab, initialState, parameters]);
 
   const form = useForm({
     defaultValues: availableFormData,
@@ -459,15 +513,23 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           return formValues;
         })() // User input from form
       );
+
+      const stringFunctionPayload = {
+        _buttonValue: "DONE",
+        buttonValue: "DONE",
+        windowId: tab.window,
+        entityName: tab.entityName,
+        recordIds: selectedRecords?.map((r) => r.id),
+        ...completePayload, // Use complete payload instead of just form values
+      };
+
       try {
-        const stringFnResult = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
-          _buttonValue: "DONE",
-          buttonValue: "DONE",
-          windowId: tab.window,
-          entityName: tab.entityName,
-          recordIds: selectedRecords?.map((r) => r.id),
-          ...completePayload, // Use complete payload instead of just form values
-        });
+        const stringFnResult = await executeStringFunction(
+          onProcess,
+          { Metadata },
+          button.processDefinition,
+          stringFunctionPayload
+        );
 
         const responseMessage = stringFnResult.responseActions[0].showMsgInProcessView;
         const success = responseMessage.msgType === "success";
