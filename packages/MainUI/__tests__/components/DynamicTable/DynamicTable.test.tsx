@@ -157,14 +157,14 @@ const mockSelectedContext = {
 };
 
 const mockMultiWindowURL = {
-  activeWindow: { 
+  activeWindow: {
     windowId: "test-window-id",
     window_identifier: "test-window-id_123456789",
     isActive: true,
     order: 1,
     selectedRecords: {},
     tabFormStates: {},
-    title: "Test Window"
+    title: "Test Window",
   },
   getSelectedRecord: jest.fn(),
   setSelectedRecord: jest.fn(),
@@ -933,14 +933,14 @@ describe("DynamicTable", () => {
 
     it("should handle missing window ID gracefully", () => {
       const originalActiveWindow = mockMultiWindowURL.activeWindow;
-      mockMultiWindowURL.activeWindow = { 
+      mockMultiWindowURL.activeWindow = {
         windowId: "",
         window_identifier: "",
         isActive: true,
         order: 1,
         selectedRecords: {},
         tabFormStates: {},
-        title: "Empty Window"
+        title: "Empty Window",
       }; // Empty window ID
 
       render(<DynamicTable {...defaultProps} />);

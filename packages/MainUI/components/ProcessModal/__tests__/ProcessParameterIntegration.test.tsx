@@ -74,7 +74,7 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => {
 };
 
 describe("ProcessParameterSelector Integration", () => {
-  describe("Phase 1 Field Types (Foundation)", () => {
+  describe("Basic Field Types (Foundation)", () => {
     it("should render Password field correctly", () => {
       const passwordParameter = {
         id: "pwd-1",
@@ -257,8 +257,8 @@ describe("ProcessParameterSelector Integration", () => {
   });
 
   describe("Progress Tracking", () => {
-    it("should support 11 out of 11 field reference types (100% Phase 3 target)", () => {
-      // Phase 1 + Phase 2 + Phase 3 supported types: All field types now supported
+    it("should support 11 out of 11 field reference types (100% completion target)", () => {
+      // Basic + Advanced + Complete supported types: All field types now supported
       const supportedTypes = [
         "Password",
         "Yes/No",
