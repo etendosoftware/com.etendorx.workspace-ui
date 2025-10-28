@@ -18,7 +18,7 @@
 "use client";
 
 import { Box, Grid, Typography, Container } from "@mui/material";
-import { createWidgets } from "../../../storybook/src/stories/Components/Table/mockWidget";
+import { createWidgets } from "../../mocks";
 import { useTranslation } from "@/hooks/useTranslation";
 import useStyles from "./styles";
 

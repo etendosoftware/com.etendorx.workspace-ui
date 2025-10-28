@@ -1,4 +1,4 @@
-# Dependencies
+# Dependencies (installed in container)
 node_modules
 npm-debug.log*
 yarn-debug.log*
@@ -9,8 +9,11 @@ pnpm-debug.log*
 coverage
 *.lcov
 __tests__/__snapshots__
+jest.config.*
+jest.setup.*
+.nyc_output
 
-# Next.js
+# Next.js build outputs
 .next/
 out/
 
@@ -18,16 +21,14 @@ out/
 dist/
 build/
 
-# Environment variables
+# Environment variables (use build args instead)
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
 
 # IDE and editor files
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 *~
@@ -44,9 +45,11 @@ Thumbs.db
 # Git
 .git
 .gitignore
+.gitattributes
 
 # Documentation and project files
 *.md
+!package.json
 README*
 CHANGELOG*
 LICENSE*
@@ -62,16 +65,13 @@ app.log
 tmp/
 temp/
 *.tmp
+*.diff
+diff.txt
+context.md
+response.json
 
-# Development and testing files
-.nyc_output
-jest.config.*
-jest.setup.*
-tsconfig.json
-biome.json
-.eslintrc*
-.prettierrc*
-sonar-project.properties
+# Development only packages (not needed for build)
+packages/storybook
 
 # Scripts and utilities
 scripts/
@@ -83,22 +83,27 @@ commit.sh
 storybook-static/
 .storybook/
 
-# Misc development files
-*.diff
-diff.txt
-context.md
-response.json
+# Test files
 test.py
 storybook-jenkins-stage.txt
+**/*.test.*
+**/*.spec.*
+**/__tests__/
+**/__mocks__/
+**/test-utils/
 
 # Jenkins and CI/CD
 Jenkinsfile
 .github/
 .gitlab-ci.yml
 
-# Mock files for testing
-__mocks__/
+# Development config files
+.eslintrc*
+.prettierrc*
+sonar-project.properties
+.turbo/
 
 # Project management files
 CLAUDE.md
 TESTING.md
+DOCUMENTO_TECNICO_*
