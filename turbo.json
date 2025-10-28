@@ -1,19 +1,26 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
+    "dev": {
+      "dependsOn": [],
+      "cache": false,
+      "persistent": true,
+      "outputs": []
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "build/**", ".next/**", "storybook-static/**"]
     },
-    "dev": {
-      "dependsOn": ["^build"],
-      "cache": false,
-      "persistent": true
+    "lint": {
+      "outputs": []
     },
-    "lint": {},
     "test": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["build"],
       "outputs": ["coverage/**"]
+    },
+    "storybook": {
+      "dependsOn": ["build"],
+      "outputs": ["storybook-static/**"]
     }
   }
 }
