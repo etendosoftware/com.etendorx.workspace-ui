@@ -45,12 +45,34 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { graph } = useSelected();
 
   const allTabsFormatted = useMemo(() => allTabs.flat(), [allTabs]);
-  const currentTab = useMemo(
-    () => allTabsFormatted.find((tab) => tab.window === windowId),
-    [allTabsFormatted, windowId]
-  );
-  const tabFormState = windowId && currentTab ? getTabFormState(windowId, currentTab.id) : undefined;
-  const currentRecordId = tabFormState?.recordId || "";
+  const currentTab = useMemo(() => {
+    if (!windowId || allTabsFormatted.length === 0) return undefined;
+
+    const normalizedWindowId = windowId.split("_")[0];
+
+    let tab = allTabsFormatted.find((tab) => tab.window === normalizedWindowId);
+
+    if (!tab && window && window.window$_identifier === normalizedWindowId) {
+      tab = allTabsFormatted[0];
+    }
+
+    if (!tab) {
+      tab = allTabsFormatted.find((t) => t.window$_identifier === normalizedWindowId);
+    }
+
+    return tab;
+  }, [allTabsFormatted, windowId, window]);
+
+  let tabFormState = undefined;
+
+  if (currentTab) {
+    tabFormState =
+      getTabFormState(currentTab.window, currentTab.id) ||
+      getTabFormState(windowId, currentTab.id) ||
+      getTabFormState(currentTab.window$_identifier || currentTab.window, currentTab.id);
+  }
+
+  const currentRecordId = tabFormState?.recordId || (graph?.getSelected?.(currentTab)?.[0] as string) || "";
 
   const { record } = useCurrentRecord({
     tab: currentTab,
@@ -93,8 +115,6 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     }
 
     if (currentTab) {
-      const tabFormState = windowId ? getTabFormState(windowId, currentTab.id) : undefined;
-      const currentRecordId = tabFormState?.recordId || "";
       const currentLabel = record?._identifier?.toString();
 
       if (currentRecordId && currentLabel && currentRecordId !== NEW_RECORD_ID) {
@@ -106,7 +126,7 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     }
 
     return items;
-  }, [windowId, window, isNewRecord, currentTab, t, handleWindowClick, getTabFormState, record?._identifier]);
+  }, [windowId, window, isNewRecord, currentTab, t, handleWindowClick, currentRecordId, record]);
 
   const handleHomeClick = useCallback(() => {
     navigateToHome();

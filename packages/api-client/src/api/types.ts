@@ -260,6 +260,7 @@ export interface Tab {
   module: string;
   parentTabId?: string;
   table$_identifier?: string;
+  window$_identifier?: string;
   tableTree?: boolean;
 }
 
