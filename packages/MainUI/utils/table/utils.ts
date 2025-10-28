@@ -94,3 +94,21 @@ export const getCurrentRowCanExpand = ({
   const canExpand = row.original.showDropIcon === true && isParentNode;
   return canExpand;
 };
+
+export const getNewActiveLevels = (currentLevels: number[], level: number, expand?: boolean) => {
+  if (expand) return [level];
+
+  const maxLevel = currentLevels[currentLevels.length - 1];
+
+  if (level === 0) return [0];
+  if (maxLevel === level) return currentLevels;
+  if (maxLevel > level) return [level - 1, level];
+
+  return [maxLevel, level];
+};
+
+export const getNewActiveTabsByLevel = (currentMap: Map<number, string>, level: number, tabId: string) => {
+  const newMap = new Map(currentMap);
+  newMap.set(level, tabId);
+  return newMap;
+};

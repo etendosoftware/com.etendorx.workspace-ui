@@ -24,9 +24,10 @@ import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
 import { SubTabsSwitch } from "@/components/window/SubTabsSwitch";
 import { Tab } from "@/components/window/Tab";
-import { useSelected } from "@/hooks/useSelected";
+import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import TabContextProvider from "@/contexts/tab";
 import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHandle";
+import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 
 interface ExtendedTabsProps extends TabsProps {
   isTopGroup?: boolean;
@@ -34,7 +35,12 @@ interface ExtendedTabsProps extends TabsProps {
 }
 
 export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }: ExtendedTabsProps) {
-  const { activeLevels, setActiveLevel } = useSelected();
+  const { activeWindow } = useMultiWindowURL();
+  const { activeLevels, setActiveLevel } = useTableStatePersistenceTab({
+    windowIdentifier: activeWindow?.window_identifier || "",
+    tabId: "",
+  });
+
   const [current, setCurrent] = useState(tabs[0]);
   // Visual active tab id updates immediately for instant feedback
   const [activeTabId, setActiveTabId] = useState(tabs[0].id);

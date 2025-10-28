@@ -21,17 +21,21 @@ import { useMemo, useCallback } from "react";
 import Tabs from "@/components/window/Tabs";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
-import { useSelected } from "@/hooks/useSelected";
 import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
 import AppBreadcrumb from "@/components/Breadcrums";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
 import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
+import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 
 export default function TabsContainer() {
-  const { activeLevels, activeTabsByLevel, setActiveTabsByLevel } = useSelected();
   const { activeWindow } = useMultiWindowURL();
   const { getWindowMetadata } = useMetadataContext();
+
+  const { activeLevels, activeTabsByLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
+    windowIdentifier: activeWindow?.window_identifier || "",
+    tabId: "",
+  });
 
   const windowData = useMemo(() => {
     return activeWindow ? getWindowMetadata(activeWindow.windowId) : undefined;
@@ -42,11 +46,7 @@ export default function TabsContainer() {
   }, [windowData]);
 
   const handleTabChange = useCallback((tab: Tab) => {
-    setActiveTabsByLevel((prev) => {
-      const newMap = new Map(prev);
-      newMap.set(tab.tabLevel, tab.id);
-      return newMap;
-    });
+    setActiveTabsByLevel(tab);
   }, []);
 
   const getActiveTabForLevel = useCallback(

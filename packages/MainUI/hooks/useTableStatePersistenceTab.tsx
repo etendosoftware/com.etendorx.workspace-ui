@@ -18,6 +18,8 @@
 import { useCallback, useMemo } from "react";
 import type { MRT_ColumnFiltersState, MRT_VisibilityState, MRT_SortingState } from "material-react-table";
 import { useWindowContext } from "@/contexts/window";
+import { getNewActiveLevels, getNewActiveTabsByLevel } from "@/utils/table/utils";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 
 interface UseTableStatePersistenceTabReturn {
   // State getters
@@ -26,6 +28,8 @@ interface UseTableStatePersistenceTabReturn {
   tableColumnSorting: MRT_SortingState;
   tableColumnOrder: string[];
   isImplicitFilterApplied: boolean | undefined;
+  activeLevels: number[];
+  activeTabsByLevel: Map<number, string>;
 
   // State setters
   setTableColumnFilters: React.Dispatch<React.SetStateAction<MRT_ColumnFiltersState>>;
@@ -33,23 +37,39 @@ interface UseTableStatePersistenceTabReturn {
   setTableColumnSorting: React.Dispatch<React.SetStateAction<MRT_SortingState>>;
   setTableColumnOrder: React.Dispatch<React.SetStateAction<string[]>>;
   setIsImplicitFilterApplied: (value: boolean) => void;
+  setActiveLevel: (level: number, expand?: boolean) => void;
+  setActiveTabsByLevel: (tab: Tab) => void;
 }
 
-export const useTableStatePersistenceTab = (
-  windowIdentifier: string,
-  tabId: string
-): UseTableStatePersistenceTabReturn => {
+export const useTableStatePersistenceTab = ({
+  windowIdentifier,
+  tabId,
+}: {
+  windowIdentifier: string;
+  tabId: string;
+}): UseTableStatePersistenceTabReturn => {
   const {
     getTableState,
+    getNavigationState,
     setTableFilters,
     setTableVisibility,
     setTableSorting,
     setTableOrder,
     setTableImplicitFilterApplied,
+    setNavigationActiveLevels,
+    setNavigationActiveTabsByLevel,
   } = useWindowContext();
 
   // Get current state values
-  const currentState = useMemo(() => getTableState(windowIdentifier, tabId), [windowIdentifier, tabId, getTableState]);
+  const currentTableState = useMemo(
+    () => getTableState(windowIdentifier, tabId),
+    [windowIdentifier, tabId, getTableState]
+  );
+
+  const currentNavigationState = useMemo(
+    () => getNavigationState(windowIdentifier),
+    [windowIdentifier, getNavigationState]
+  );
 
   // Create React-style setters that support both direct values and updater functions
   const setTableColumnFilters = useCallback(
@@ -95,13 +115,37 @@ export const useTableStatePersistenceTab = (
     [windowIdentifier, tabId, setTableImplicitFilterApplied]
   );
 
+  const setActiveLevel = useCallback(
+    (level: number, expand?: boolean) => {
+      const currentActiveLevels = getNavigationState(windowIdentifier).activeLevels;
+      const newActiveLevels = getNewActiveLevels(currentActiveLevels, level, expand);
+      setNavigationActiveLevels(windowIdentifier, newActiveLevels);
+    },
+    [windowIdentifier, getNavigationState, setNavigationActiveLevels]
+  );
+
+  const setActiveTabsByLevel = useCallback(
+    (tab: Tab) => {
+      if (!tab) {
+        setNavigationActiveTabsByLevel(windowIdentifier, new Map());
+        return;
+      }
+      const currentActiveTabsByLevel = getNavigationState(windowIdentifier).activeTabsByLevel;
+      const newActiveTabs = getNewActiveTabsByLevel(currentActiveTabsByLevel, tab.tabLevel, tabId);
+      setNavigationActiveTabsByLevel(windowIdentifier, newActiveTabs);
+    },
+    [windowIdentifier, setNavigationActiveTabsByLevel]
+  );
+
   return {
     // State getters - current values
-    tableColumnFilters: currentState.filters,
-    tableColumnVisibility: currentState.visibility,
-    tableColumnSorting: currentState.sorting,
-    tableColumnOrder: currentState.order,
-    isImplicitFilterApplied: currentState.isImplicitFilterApplied,
+    tableColumnFilters: currentTableState.filters,
+    tableColumnVisibility: currentTableState.visibility,
+    tableColumnSorting: currentTableState.sorting,
+    tableColumnOrder: currentTableState.order,
+    isImplicitFilterApplied: currentTableState.isImplicitFilterApplied,
+    activeLevels: currentNavigationState.activeLevels,
+    activeTabsByLevel: currentNavigationState.activeTabsByLevel,
 
     // State setters - React-style setters
     setTableColumnFilters,
@@ -109,5 +153,7 @@ export const useTableStatePersistenceTab = (
     setTableColumnSorting,
     setTableColumnOrder,
     setIsImplicitFilterApplied,
+    setActiveLevel,
+    setActiveTabsByLevel,
   };
 };

@@ -26,9 +26,14 @@ interface TableState {
   order: string[];
   isImplicitFilterApplied: boolean | undefined;
 }
+interface NavigationState {
+  activeLevels: number[];
+  activeTabsByLevel: Map<number, string>;
+}
 
 interface TabState {
   table: TableState;
+  navigation: NavigationState;
 }
 
 interface WindowState {
@@ -42,6 +47,7 @@ interface WindowContextState {
 interface WindowContextI {
   // State getters
   getTableState: (windowIdentifier: string, tabId: string) => TableState;
+  getNavigationState: (windowIdentifier: string) => NavigationState;
 
   // State setters
   setTableFilters: (windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState) => void;
@@ -49,6 +55,8 @@ interface WindowContextI {
   setTableSorting: (windowIdentifier: string, tabId: string, sorting: MRT_SortingState) => void;
   setTableOrder: (windowIdentifier: string, tabId: string, order: string[]) => void;
   setTableImplicitFilterApplied: (windowIdentifier: string, tabId: string, isApplied: boolean) => void;
+  setNavigationActiveLevels: (windowIdentifier: string, activeLevels: number[]) => void;
+  setNavigationActiveTabsByLevel: (windowIdentifier: string, activeTabsByLevel: Map<number, string>) => void;
 
   // Window management
   cleanupWindow: (windowIdentifier: string) => void;
@@ -66,7 +74,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
   const getTableState = useCallback(
     (windowIdentifier: string, tabId: string): TableState => {
-      const defaultState: TableState = {
+      const defaultTableState: TableState = {
         filters: [],
         visibility: {},
         sorting: [],
@@ -75,10 +83,34 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       };
 
       if (!state[windowIdentifier] || !state[windowIdentifier][tabId]) {
-        return defaultState;
+        return defaultTableState;
       }
 
-      return state[windowIdentifier][tabId].table || defaultState;
+      return state[windowIdentifier][tabId].table || defaultTableState;
+    },
+    [state]
+  );
+
+  const getNavigationState = useCallback(
+    (windowIdentifier: string): NavigationState => {
+      const defaultNavigationState: NavigationState = {
+        activeLevels: [0],
+        activeTabsByLevel: new Map(),
+      };
+
+      if (!state[windowIdentifier]) {
+        return defaultNavigationState;
+      }
+
+      const tabsId = Object.keys(state[windowIdentifier]);
+      const isTabIdsEmpty = tabsId.length === 0;
+
+      if (isTabIdsEmpty) {
+        return defaultNavigationState;
+      }
+
+      const currentTabId = tabsId[0];
+      return state[windowIdentifier][currentTabId].navigation;
     },
     [state]
   );
@@ -99,6 +131,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
             sorting: [],
             order: [],
             isImplicitFilterApplied: false,
+          },
+          navigation: {
+            activeLevels: [0],
+            activeTabsByLevel: new Map(),
           },
         };
       }
@@ -125,6 +161,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
             order: [],
             isImplicitFilterApplied: false,
           },
+          navigation: {
+            activeLevels: [0],
+            activeTabsByLevel: new Map(),
+          },
         };
       }
       const currentVisibility = newState[windowIdentifier][tabId].table.visibility;
@@ -149,6 +189,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
             sorting: [],
             order: [],
             isImplicitFilterApplied: false,
+          },
+          navigation: {
+            activeLevels: [0],
+            activeTabsByLevel: new Map(),
           },
         };
       }
@@ -175,6 +219,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
             order: [],
             isImplicitFilterApplied: false,
           },
+          navigation: {
+            activeLevels: [0],
+            activeTabsByLevel: new Map(),
+          },
         };
       }
 
@@ -200,6 +248,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
             order: [],
             isImplicitFilterApplied: false,
           },
+          navigation: {
+            activeLevels: [0],
+            activeTabsByLevel: new Map(),
+          },
         };
       }
 
@@ -207,6 +259,55 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       return newState;
     });
   }, []);
+
+  const setNavigationActiveLevels = useCallback((windowIdentifier: string, activeLevels: number[]) => {
+    setState((prevState: WindowContextState) => {
+      const newState = { ...prevState };
+
+      if (!newState[windowIdentifier]) {
+        newState[windowIdentifier] = {};
+      }
+
+      // Update navigation state for all tabs in the window
+      const tabIds = Object.keys(newState[windowIdentifier]);
+      const isTabIdsEmpty = tabIds.length === 0;
+
+      if (isTabIdsEmpty) {
+        newState[windowIdentifier] = {};
+      }
+
+      const currentTabId = tabIds[0];
+      newState[windowIdentifier][currentTabId].navigation.activeLevels = activeLevels;
+
+      return newState;
+    });
+  }, []);
+
+  const setNavigationActiveTabsByLevel = useCallback(
+    (windowIdentifier: string, activeTabsByLevel: Map<number, string>) => {
+      setState((prevState: WindowContextState) => {
+        const newState = { ...prevState };
+
+        if (!newState[windowIdentifier]) {
+          newState[windowIdentifier] = {};
+        }
+
+        // Update navigation state for all tabs in the window
+        const tabIds = Object.keys(newState[windowIdentifier]);
+        const isTabIdsEmpty = tabIds.length === 0;
+
+        if (isTabIdsEmpty) {
+          newState[windowIdentifier] = {};
+        }
+
+        const currentTabId = tabIds[0];
+        newState[windowIdentifier][currentTabId].navigation.activeTabsByLevel = activeTabsByLevel;
+
+        return newState;
+      });
+    },
+    []
+  );
 
   const cleanupWindow = useCallback((windowIdentifier: string) => {
     setState((prevState: WindowContextState) => {
@@ -223,21 +324,27 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   const value = useMemo(
     () => ({
       getTableState,
+      getNavigationState,
       setTableFilters,
       setTableVisibility,
       setTableSorting,
       setTableOrder,
       setTableImplicitFilterApplied,
+      setNavigationActiveLevels,
+      setNavigationActiveTabsByLevel,
       cleanupWindow,
       getAllState,
     }),
     [
       getTableState,
+      getNavigationState,
       setTableFilters,
       setTableVisibility,
       setTableSorting,
       setTableOrder,
       setTableImplicitFilterApplied,
+      setNavigationActiveLevels,
+      setNavigationActiveTabsByLevel,
       cleanupWindow,
       getAllState,
     ]
@@ -246,7 +353,6 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   return <WindowContext.Provider value={value}>{children}</WindowContext.Provider>;
 }
 
-// Hook
 export const useWindowContext = () => {
   const context = useContext(WindowContext);
 

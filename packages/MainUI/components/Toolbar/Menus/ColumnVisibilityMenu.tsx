@@ -49,7 +49,10 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
   const { t } = useTranslation();
   const { tab } = useTabContext();
   const { activeWindow } = useMultiWindowURL();
-  const { tableColumnVisibility } = useTableStatePersistenceTab(activeWindow?.window_identifier || "", tab.id);
+  const { tableColumnVisibility } = useTableStatePersistenceTab({
+    windowIdentifier: activeWindow?.window_identifier || "",
+    tabId: tab.id,
+  });
 
   const [items, setItems] = useState<ToggleableItem[]>([]);
 
