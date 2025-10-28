@@ -157,11 +157,11 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   }, []);
 
   const processChildTabsInFormView = useCallback(
-    (childTabs: (typeof tab)[], windowId: string) => {
+    (childTabs: (typeof tab)[], windowIdentifier: string) => {
       const childTabIdsInFormView: string[] = [];
 
       for (const childTab of childTabs) {
-        const childTabFormState = getTabFormState(windowId, childTab.id);
+        const childTabFormState = getTabFormState(windowIdentifier, childTab.id);
         const isChildInFormView = childTabFormState?.mode === TAB_MODES.FORM && !!childTabFormState?.recordId;
 
         if (isChildInFormView) {
@@ -179,10 +179,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     const childTabIdsInFormView: string[] = [];
 
     const hasChildTabs = childTabs && childTabs.length > 0;
-    const windowId = activeWindow?.windowId;
+    const windowIdentifier = activeWindow?.window_identifier;
 
-    if (hasChildTabs && windowId) {
-      childTabIdsInFormView.push(...processChildTabsInFormView(childTabs, windowId));
+    if (hasChildTabs && windowIdentifier) {
+      childTabIdsInFormView.push(...processChildTabsInFormView(childTabs, windowIdentifier));
     }
 
     if (isFormView && formViewRefetch) {
@@ -200,8 +200,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     Metadata.clearToolbarCache();
     await refetch();
 
-    if (childTabIdsInFormView.length > 0 && windowId) {
-      clearChildrenSelections(windowId, childTabIdsInFormView);
+    if (childTabIdsInFormView.length > 0 && windowIdentifier) {
+      clearChildrenSelections(windowIdentifier, childTabIdsInFormView);
     }
   }, [
     graph,

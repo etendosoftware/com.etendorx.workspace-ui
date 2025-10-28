@@ -160,7 +160,7 @@ const extractWindowIds = (searchParams: URLSearchParams): Set<string> => {
  */
 const processTabParameters = (
   searchParams: URLSearchParams,
-  windowId: string
+  windowIdentifier: string
 ): {
   selectedRecords: Record<string, string>;
   tabFormStates: Record<string, { recordId?: string; mode?: TabMode; formMode?: FormMode }>;
@@ -178,19 +178,19 @@ const processTabParameters = (
       }
     };
 
-    processTabParameter(`${SELECTED_RECORD_PREFIX}${windowId}_`, (tabId, value) => {
+    processTabParameter(`${SELECTED_RECORD_PREFIX}${windowIdentifier}_`, (tabId, value) => {
       selectedRecords[tabId] = value;
     });
 
-    processTabParameter(`${TAB_FORM_RECORD_ID_PREFIX}${windowId}_`, (tabId, value) => {
+    processTabParameter(`${TAB_FORM_RECORD_ID_PREFIX}${windowIdentifier}_`, (tabId, value) => {
       tabFormStates[tabId] = { ...tabFormStates[tabId], recordId: value };
     });
 
-    processTabParameter(`${TAB_MODE_PREFIX}${windowId}_`, (tabId, value) => {
+    processTabParameter(`${TAB_MODE_PREFIX}${windowIdentifier}_`, (tabId, value) => {
       tabFormStates[tabId] = { ...tabFormStates[tabId], mode: value as TabMode };
     });
 
-    processTabParameter(`${TAB_FORM_MODE_PREFIX}${windowId}_`, (tabId, value) => {
+    processTabParameter(`${TAB_FORM_MODE_PREFIX}${windowIdentifier}_`, (tabId, value) => {
       tabFormStates[tabId] = { ...tabFormStates[tabId], formMode: value as FormMode };
     });
   }
@@ -356,10 +356,10 @@ export function useMultiWindowURL() {
     );
     const isHome = !hasWindowActiveParams;
 
-    const windowIds = extractWindowIds(searchParams);
+    const windowIdentifiers = extractWindowIds(searchParams);
 
-    for (const windowId of windowIds) {
-      const windowState = createWindowState(windowId, searchParams);
+    for (const windowIdentifier of windowIdentifiers) {
+      const windowState = createWindowState(windowIdentifier, searchParams);
       windowStates.push(windowState);
 
       if (windowState.isActive) {
@@ -965,7 +965,7 @@ export function useMultiWindowURL() {
    * - Child tabs in table view are cleared (normal cleanup)
    * - Detailed logging shows what actions were taken
    *
-   * @param windowId - The business entity ID of the window
+   * @param windowIdentifier - The window identifier of the parent window
    * @param childTabIds - Array of child tab identifiers to potentially clear
    *
    * @example
@@ -985,7 +985,7 @@ export function useMultiWindowURL() {
    * ```
    */
   const clearChildrenSelections = useCallback(
-    (windowId: string, childTabIds: string[]) => {
+    (windowIdentifier: string, childTabIds: string[]) => {
       // Log who called this function with stack trace
       const stack = new Error().stack;
       const caller = stack?.split("\n")[2]?.trim() || "unknown";
@@ -994,7 +994,7 @@ export function useMultiWindowURL() {
 
       applyWindowUpdates((prev) => {
         return prev.map((w) => {
-          if (w.windowId !== windowId) return w;
+          if (w.window_identifier !== windowIdentifier) return w;
 
           // Filter out children that are currently in FormView - don't clear them
           const childrenToClean = childTabIds.filter((tabId) => {

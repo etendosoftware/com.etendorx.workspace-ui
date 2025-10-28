@@ -146,7 +146,7 @@ const clearChildrenRecords = (
   graph: ReturnType<typeof useSelected>["graph"],
   tab: Tab,
   currentWindowId: string,
-  clearChildrenSelections: (windowIdentifier: string, childTabIds: string[]) => void,
+  clearChildrenSelections: (windowId: string, childTabIds: string[]) => void,
   getTabFormState?: (
     windowIdentifier: string,
     tabId: string
@@ -191,7 +191,7 @@ const clearChildrenRecords = (
 
   if (childTabIds.length > 0) {
     // Clear URL state only for children not in FormView
-    clearChildrenSelections(currentWindowId, childTabIds);
+    clearChildrenSelections(windowIdentifier, childTabIds);
 
     // Also clear graph state for children not in FormView to prevent stale references
     for (const childTab of childrenToClean) {
