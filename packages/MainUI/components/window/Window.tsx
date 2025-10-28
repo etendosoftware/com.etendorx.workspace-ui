@@ -72,7 +72,7 @@ export default function Window({
       windowId={windowId}
       windowIdentifier={windowIdentifier}
       data-testid="SelectedProvider__56042a">
-      <TabsContainer data-testid="TabsContainer__56042a" />
+      <TabsContainer windowData={windowData} data-testid="TabsContainer__56042a" />
     </SelectedProvider>
   );
 }

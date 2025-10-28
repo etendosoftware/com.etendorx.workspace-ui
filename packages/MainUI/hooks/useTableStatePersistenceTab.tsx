@@ -38,7 +38,7 @@ interface UseTableStatePersistenceTabReturn {
   setTableColumnOrder: React.Dispatch<React.SetStateAction<string[]>>;
   setIsImplicitFilterApplied: (value: boolean) => void;
   setActiveLevel: (level: number, expand?: boolean) => void;
-  setActiveTabsByLevel: (tab: Tab) => void;
+  setActiveTabsByLevel: (tab?: Tab) => void;
 }
 
 export const useTableStatePersistenceTab = ({
@@ -125,7 +125,7 @@ export const useTableStatePersistenceTab = ({
   );
 
   const setActiveTabsByLevel = useCallback(
-    (tab: Tab) => {
+    (tab?: Tab) => {
       if (!tab) {
         setNavigationActiveTabsByLevel(windowIdentifier, new Map());
         return;
