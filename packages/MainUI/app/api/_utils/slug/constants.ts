@@ -4,6 +4,7 @@ export const SLUGS_CATEGORIES = {
   NOTES: "notes",
   ATTACHMENTS: "attachments",
   SWS: "sws",
+  LEGACY: "meta/legacy",
 };
 
 export const SLUGS_METHODS = {

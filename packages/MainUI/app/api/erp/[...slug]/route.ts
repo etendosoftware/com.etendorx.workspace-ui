@@ -99,6 +99,7 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.includes(SLUGS_CATEGORIES.COPILOT) || // All copilot routes should bypass cache for real-time data
     slug.startsWith(SLUGS_CATEGORIES.NOTES) || // Notes servlet needs session cookies
     slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || // Attachments servlet needs session cookies and multipart/form-data
+    slug.startsWith(SLUGS_CATEGORIES.LEGACY) || // Legacy servlets need session cookies
     method !== "GET"
   );
 }
@@ -120,9 +121,17 @@ function buildErpHeaders(
   contentType: string,
   slug?: string
 ): Record<string, string> {
+  // Determine Accept header based on slug
+  let acceptHeader = "application/json";
+  if (slug?.includes("copilot")) {
+    acceptHeader = "text/event-stream";
+  } else if (slug?.startsWith(SLUGS_CATEGORIES.LEGACY)) {
+    acceptHeader = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
+  }
+
   const headers: Record<string, string> = {
     Authorization: `Bearer ${userToken}`,
-    Accept: slug?.includes("copilot") ? "text/event-stream" : "application/json",
+    Accept: acceptHeader,
   };
 
   if (method !== "GET" && requestBody) {
@@ -142,6 +151,53 @@ function buildErpHeaders(
   return headers;
 }
 
+// Helper: Detect charset from Content-Type header
+function detectCharset(contentType: string | null): string {
+  if (!contentType) {
+    return "iso-8859-1"; // Default for Tomcat legacy servlets
+  }
+  const charsetMatch = contentType.match(/charset=([^\s;]+)/i);
+  return charsetMatch ? charsetMatch[1].toLowerCase() : "iso-8859-1";
+}
+
+// Helper: Check if response is binary file
+function isBinaryContentType(contentType: string): boolean {
+  return (
+    contentType.includes("application/octet-stream") ||
+    contentType.includes("application/zip") ||
+    contentType.includes("image/") ||
+    contentType.includes("video/") ||
+    contentType.includes("audio/") ||
+    contentType.includes("application/pdf")
+  );
+}
+
+// Helper: Rewrite HTML resource URLs to point to Tomcat
+function rewriteHtmlResourceUrls(html: string): string {
+  let rewritten = html;
+  // Rewrite absolute paths that reference Etendo resources
+  rewritten = rewritten.replace(/(href|src)="(\.\.\/)*web\//gi, `$1="${process.env.ETENDO_CLASSIC_URL}/web/`);
+  // Rewrite paths like href="../../org.openbravo.client.kernel/..."
+  rewritten = rewritten.replace(
+    /(href|src)="(\.\.\/)*org\.openbravo\./gi,
+    `$1="${process.env.ETENDO_CLASSIC_URL}/org.openbravo.`
+  );
+  return rewritten;
+}
+
+// Helper: Create HTML response with proper headers
+function createHtmlResponse(html: string, originalResponse: Response): Response {
+  const htmlHeaders = new Headers(originalResponse.headers);
+  if (!htmlHeaders.has("content-type")) {
+    htmlHeaders.set("Content-Type", "text/html");
+  }
+  return new Response(html, {
+    status: originalResponse.status,
+    statusText: originalResponse.statusText,
+    headers: htmlHeaders,
+  });
+}
+
 /**
  * Handles mutation requests (non-cached) to the ERP system
  * @param erpUrl - Target ERP URL
@@ -156,17 +212,22 @@ async function handleMutationRequest(
   headers: Record<string, string>,
   requestBody: string | ReadableStream<Uint8Array> | undefined
 ): Promise<unknown> {
-  const response = await fetch(erpUrl, {
+  const fetchOptions: RequestInit = {
     method,
     headers,
     body: requestBody,
+  };
+
+  // Add duplex option only for ReadableStream bodies
+  // Check for ReadableStream in a way that works in both Node.js and browser
+  if (typeof ReadableStream !== "undefined" && requestBody instanceof ReadableStream) {
     // @ts-expect-error - duplex is required for streaming but not in types yet
-    duplex: requestBody instanceof ReadableStream ? "half" : undefined,
-  });
+    fetchOptions.duplex = "half";
+  }
+
+  const response = await fetch(erpUrl, fetchOptions);
 
   if (!response.ok) {
-    // NOTE: Handle ERP request errors
-    // NOTE: use 404 for copilot to indicate not installed, otherwise use the actual response status
     const defaultResponseStatus = erpUrl.includes("copilot") ? 404 : response.status;
     const errorText = await response.text();
     throw new ErpRequestError({
@@ -178,29 +239,39 @@ async function handleMutationRequest(
   }
 
   const responseContentType = response.headers.get("content-type");
+
+  // Check if response is a stream
   if (responseContentType?.includes("text/event-stream")) {
     return { stream: response.body, headers: response.headers };
   }
 
+  // Check if response is HTML (for iframes like About modal)
+  if (responseContentType?.toLowerCase().includes("text/html")) {
+    return { htmlContent: response };
+  }
+
   // Check if response is a binary file (for downloads)
-  if (
-    responseContentType &&
-    (responseContentType.includes("application/octet-stream") ||
-      responseContentType.includes("application/zip") ||
-      responseContentType.includes("image/") ||
-      responseContentType.includes("video/") ||
-      responseContentType.includes("audio/") ||
-      responseContentType.includes("application/pdf"))
-  ) {
-    // Return the response directly for binary files
+  if (responseContentType && isBinaryContentType(responseContentType)) {
     return { binaryFile: response };
   }
 
-  const responseText = await response.text();
+  // Read response with proper encoding detection
+  const responseBuffer = await response.arrayBuffer();
+  const encoding = detectCharset(responseContentType);
+  const responseText = new TextDecoder(encoding).decode(responseBuffer);
+
+  // Fallback: Check if response body looks like HTML (when Content-Type is missing)
+  if (
+    responseText.trim().toLowerCase().startsWith("<html") ||
+    responseText.trim().toLowerCase().startsWith("<!doctype html")
+  ) {
+    const rewrittenHtml = rewriteHtmlResourceUrls(responseText);
+    const htmlResponse = createHtmlResponse(rewrittenHtml, response);
+    return { htmlContent: htmlResponse };
+  }
 
   // Check if response is JavaScript error from Etendo
   if (responseText.startsWith("OB.KernelUtilities.handleSystemException(")) {
-    // Extract error message from JavaScript
     const match = responseText.match(/OB\.KernelUtilities\.handleSystemException\('(.+)'\);/);
     const errorMessage = match ? match[1] : responseText;
     throw new Error(`Backend error: ${errorMessage}`);
@@ -245,6 +316,10 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
       return handleBinaryFileResponse(data as { binaryFile: Response });
     }
 
+    if (isHtmlContent(data)) {
+      return handleHtmlContentResponse(data as { htmlContent: Response });
+    }
+
     return NextResponse.json(data);
   } catch (error: unknown) {
     return handleError(error, params);
@@ -256,6 +331,9 @@ function buildErpUrl(slug: string, requestUrl: string): string {
   let erpUrl: string;
   if (slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
     // Attachments servlet uses direct mapping (e.g., /attachments)
+    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
+  } else if (slug.startsWith(SLUGS_CATEGORIES.LEGACY)) {
+    // Legacy servlets use direct mapping (e.g., /meta/legacy/ad_forms/about.html)
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.SWS)) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
@@ -344,6 +422,11 @@ function isBinaryFile(data: unknown): boolean {
   return typeof data === "object" && data !== null && "binaryFile" in data;
 }
 
+// Helper: Check if response is HTML content
+function isHtmlContent(data: unknown): boolean {
+  return typeof data === "object" && data !== null && "htmlContent" in data;
+}
+
 // Helper: Handle stream response
 function handleStreamResponse(data: { stream: ReadableStream; headers: Headers }): Response {
   return new Response(data.stream, {
@@ -363,6 +446,24 @@ function handleBinaryFileResponse(data: { binaryFile: Response }): Response {
       "Content-Type": binaryFile.headers.get("content-type") || "application/octet-stream",
       "Content-Disposition": binaryFile.headers.get("content-disposition") || "attachment",
     },
+  });
+}
+
+// Helper: Handle HTML content response (ensure UTF-8 charset)
+function handleHtmlContentResponse(data: { htmlContent: Response }): Response {
+  const { htmlContent } = data;
+  const headers = new Headers(htmlContent.headers);
+
+  // Ensure UTF-8 charset is explicitly set for HTML responses
+  const contentType = headers.get("content-type") || "text/html";
+  if (!contentType.includes("charset")) {
+    headers.set("Content-Type", `${contentType}; charset=UTF-8`);
+  }
+
+  return new Response(htmlContent.body, {
+    status: htmlContent.status,
+    statusText: htmlContent.statusText,
+    headers,
   });
 }
 
