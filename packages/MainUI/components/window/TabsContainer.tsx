@@ -103,7 +103,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    */
   const handleTabChange = useCallback((tab: Tab) => {
     setActiveTabsByLevel(tab);
-  }, []);
+  }, [setActiveTabsByLevel]);
 
   /**
    * Determines which tab should be active for a given hierarchical level.
@@ -252,7 +252,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
 
     // Mark as loaded to prevent subsequent executions
     setActiveLevelsLoaded(true);
-  }, [activeWindow, activeLevelsLoaded, windowData?.tabs, graph, setActiveLevel]);
+  }, [activeWindow, activeLevelsLoaded, windowData?.tabs, graph, setActiveLevel, setActiveTabsByLevel]);
 
   // Loading state: Show skeleton UI while window metadata is being fetched
   if (!windowData) {
