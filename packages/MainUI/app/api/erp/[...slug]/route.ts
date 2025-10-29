@@ -219,7 +219,8 @@ async function handleMutationRequest(
   };
 
   // Add duplex option only for ReadableStream bodies
-  if (requestBody instanceof ReadableStream) {
+  // Check for ReadableStream in a way that works in both Node.js and browser
+  if (typeof ReadableStream !== "undefined" && requestBody instanceof ReadableStream) {
     // @ts-expect-error - duplex is required for streaming but not in types yet
     fetchOptions.duplex = "half";
   }

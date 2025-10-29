@@ -245,12 +245,14 @@ export function assertDatasourceCall(
  */
 export function mockFetchFactory(spec: { status?: number; json?: unknown; text?: string; contentType?: string } = {}) {
   const { status = 200, json = {}, text, contentType = "application/json" } = spec;
+  const textContent = typeof text !== "undefined" ? text : JSON.stringify(json);
   return jest.fn().mockResolvedValue({
     ok: status >= 200 && status < 300,
     status,
     headers: { get: () => contentType },
-    text: async () => (typeof text !== "undefined" ? text : JSON.stringify(json)),
+    text: async () => textContent,
     json: async () => json,
+    arrayBuffer: async () => new TextEncoder().encode(textContent).buffer,
   });
 }
 
