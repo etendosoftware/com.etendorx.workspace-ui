@@ -12,9 +12,7 @@ describe("useAboutModal", () => {
   it("should return about URL with token from user context", () => {
     const { result } = renderHook(() => useAboutModal());
 
-    expect(result.current.aboutUrl).toBe(
-      "/api/erp/meta/legacy/ad_forms/about.html?IsPopUpCall=1&token=test-token-123"
-    );
+    expect(result.current.aboutUrl).toBe("/api/erp/meta/legacy/ad_forms/about.html?IsPopUpCall=1&token=test-token-123");
   });
 
   it("should construct correct URL path for legacy servlet", () => {
