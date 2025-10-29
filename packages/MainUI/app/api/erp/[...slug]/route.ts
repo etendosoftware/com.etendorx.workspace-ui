@@ -151,6 +151,53 @@ function buildErpHeaders(
   return headers;
 }
 
+// Helper: Detect charset from Content-Type header
+function detectCharset(contentType: string | null): string {
+  if (!contentType) {
+    return "iso-8859-1"; // Default for Tomcat legacy servlets
+  }
+  const charsetMatch = contentType.match(/charset=([^\s;]+)/i);
+  return charsetMatch ? charsetMatch[1].toLowerCase() : "iso-8859-1";
+}
+
+// Helper: Check if response is binary file
+function isBinaryContentType(contentType: string): boolean {
+  return (
+    contentType.includes("application/octet-stream") ||
+    contentType.includes("application/zip") ||
+    contentType.includes("image/") ||
+    contentType.includes("video/") ||
+    contentType.includes("audio/") ||
+    contentType.includes("application/pdf")
+  );
+}
+
+// Helper: Rewrite HTML resource URLs to point to Tomcat
+function rewriteHtmlResourceUrls(html: string): string {
+  let rewritten = html;
+  // Rewrite absolute paths that reference Etendo resources
+  rewritten = rewritten.replace(/(href|src)="(\.\.\/)*web\//gi, `$1="${process.env.ETENDO_CLASSIC_URL}/web/`);
+  // Rewrite paths like href="../../org.openbravo.client.kernel/..."
+  rewritten = rewritten.replace(
+    /(href|src)="(\.\.\/)*org\.openbravo\./gi,
+    `$1="${process.env.ETENDO_CLASSIC_URL}/org.openbravo.`
+  );
+  return rewritten;
+}
+
+// Helper: Create HTML response with proper headers
+function createHtmlResponse(html: string, originalResponse: Response): Response {
+  const htmlHeaders = new Headers(originalResponse.headers);
+  if (!htmlHeaders.has("content-type")) {
+    htmlHeaders.set("Content-Type", "text/html");
+  }
+  return new Response(html, {
+    status: originalResponse.status,
+    statusText: originalResponse.statusText,
+    headers: htmlHeaders,
+  });
+}
+
 /**
  * Handles mutation requests (non-cached) to the ERP system
  * @param erpUrl - Target ERP URL
@@ -180,8 +227,6 @@ async function handleMutationRequest(
   const response = await fetch(erpUrl, fetchOptions);
 
   if (!response.ok) {
-    // NOTE: Handle ERP request errors
-    // NOTE: use 404 for copilot to indicate not installed, otherwise use the actual response status
     const defaultResponseStatus = erpUrl.includes("copilot") ? 404 : response.status;
     const errorText = await response.text();
     throw new ErpRequestError({
@@ -200,39 +245,18 @@ async function handleMutationRequest(
   }
 
   // Check if response is HTML (for iframes like About modal)
-  // Must check BEFORE reading the body as text
   if (responseContentType?.toLowerCase().includes("text/html")) {
     return { htmlContent: response };
   }
 
   // Check if response is a binary file (for downloads)
-  if (
-    responseContentType &&
-    (responseContentType.includes("application/octet-stream") ||
-      responseContentType.includes("application/zip") ||
-      responseContentType.includes("image/") ||
-      responseContentType.includes("video/") ||
-      responseContentType.includes("audio/") ||
-      responseContentType.includes("application/pdf"))
-  ) {
-    // Return the response directly for binary files
+  if (responseContentType && isBinaryContentType(responseContentType)) {
     return { binaryFile: response };
   }
 
   // Read response with proper encoding detection
-  // Tomcat may send HTML in ISO-8859-1 even if the HTML declares UTF-8
   const responseBuffer = await response.arrayBuffer();
-
-  // Try to detect encoding from Content-Type header or use ISO-8859-1 as fallback
-  // (Tomcat often uses ISO-8859-1 for legacy servlets)
-  let encoding = "iso-8859-1"; // Default for Tomcat legacy servlets
-  if (responseContentType) {
-    const charsetMatch = responseContentType.match(/charset=([^\s;]+)/i);
-    if (charsetMatch) {
-      encoding = charsetMatch[1].toLowerCase();
-    }
-  }
-
+  const encoding = detectCharset(responseContentType);
   const responseText = new TextDecoder(encoding).decode(responseBuffer);
 
   // Fallback: Check if response body looks like HTML (when Content-Type is missing)
@@ -240,37 +264,13 @@ async function handleMutationRequest(
     responseText.trim().toLowerCase().startsWith("<html") ||
     responseText.trim().toLowerCase().startsWith("<!doctype html")
   ) {
-    // Rewrite resource URLs in HTML to go through Next.js proxy
-    // This ensures CSS, JS, and images load correctly
-    let rewrittenHtml = responseText;
-
-    // Rewrite absolute paths that reference Etendo resources
-    // Examples: href="../../../web/..." or src="../../../web/..."
-    rewrittenHtml = rewrittenHtml.replace(/(href|src)="(\.\.\/)*web\//gi, `$1="${process.env.ETENDO_CLASSIC_URL}/web/`);
-
-    // Rewrite paths like href="../../org.openbravo.client.kernel/..."
-    rewrittenHtml = rewrittenHtml.replace(
-      /(href|src)="(\.\.\/)*org\.openbravo\./gi,
-      `$1="${process.env.ETENDO_CLASSIC_URL}/org.openbravo.`
-    );
-
-    // Create a new Response with the rewritten HTML and proper Content-Type
-    const htmlHeaders = new Headers(response.headers);
-    // Ensure Content-Type is set (Tomcat may not send it)
-    if (!htmlHeaders.has("content-type")) {
-      htmlHeaders.set("Content-Type", "text/html");
-    }
-    const htmlResponse = new Response(rewrittenHtml, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: htmlHeaders,
-    });
+    const rewrittenHtml = rewriteHtmlResourceUrls(responseText);
+    const htmlResponse = createHtmlResponse(rewrittenHtml, response);
     return { htmlContent: htmlResponse };
   }
 
   // Check if response is JavaScript error from Etendo
   if (responseText.startsWith("OB.KernelUtilities.handleSystemException(")) {
-    // Extract error message from JavaScript
     const match = responseText.match(/OB\.KernelUtilities\.handleSystemException\('(.+)'\);/);
     const errorMessage = match ? match[1] : responseText;
     throw new Error(`Backend error: ${errorMessage}`);
