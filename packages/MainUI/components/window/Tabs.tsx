@@ -35,25 +35,22 @@ interface ExtendedTabsProps extends TabsProps {
 }
 
 export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }: ExtendedTabsProps) {
+  const [current, setCurrent] = useState(tabs[0]);
+  // Visual active tab id updates immediately for instant feedback
+  const [activeTabId, setActiveTabId] = useState(tabs[0].id);
+  const [expand, setExpanded] = useState(false);
+  const [customHeight, setCustomHeight] = useState(50);
+  const [isPending, startTransition] = useTransition();
+  
   const { activeWindow } = useMultiWindowURL();
   const { activeLevels, setActiveLevel } = useTableStatePersistenceTab({
     windowIdentifier: activeWindow?.window_identifier || "",
     tabId: "",
   });
-
-  const [current, setCurrent] = useState(tabs[0]);
-  // Visual active tab id updates immediately for instant feedback
-  const [activeTabId, setActiveTabId] = useState(tabs[0].id);
+  
   const collapsed = !activeLevels.includes(current.tabLevel);
-  const [expand, setExpanded] = useState(false);
-  const [customHeight, setCustomHeight] = useState(50);
-  const [isPending, startTransition] = useTransition();
-
-  useEffect(() => {
-    if (onTabChange && current) {
-      onTabChange(current);
-    }
-  }, [current, onTabChange]);
+  const isTopExpanded = !collapsed && isTopGroup;
+  const showResizeHandle = !isTopExpanded && !collapsed;
 
   const handleClick = useCallback(
     (tab: TabType) => {
@@ -91,9 +88,6 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
     setActiveLevel(current.tabLevel - 1);
   }, [current.tabLevel, setActiveLevel]);
 
-  const isTopExpanded = !collapsed && isTopGroup;
-  const showResizeHandle = !isTopExpanded && !collapsed;
-
   const renderTabContent = () => {
     if (current.tabLevel === 0) {
       return null;
@@ -127,6 +121,12 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
 
     return subTabsSwitch;
   };
+
+    useEffect(() => {
+    if (onTabChange && current) {
+      onTabChange(current);
+    }
+  }, [current, onTabChange]);
 
   return (
     <TabContainer
