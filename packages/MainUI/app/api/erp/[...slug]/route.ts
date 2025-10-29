@@ -116,7 +116,7 @@ function buildErpHeaders(
   userToken: string,
   request: Request,
   method: string,
-  requestBody: string | undefined,
+  requestBody: string | ReadableStream<Uint8Array> | undefined,
   contentType: string,
   slug?: string
 ): Record<string, string> {
@@ -147,19 +147,21 @@ function buildErpHeaders(
  * @param erpUrl - Target ERP URL
  * @param method - HTTP method
  * @param headers - Request headers
- * @param requestBody - Request body
+ * @param requestBody - Request body (string or stream for multipart)
  * @returns Response data from ERP
  */
 async function handleMutationRequest(
   erpUrl: string,
   method: string,
   headers: Record<string, string>,
-  requestBody: string | undefined
+  requestBody: string | ReadableStream<Uint8Array> | undefined
 ): Promise<unknown> {
   const response = await fetch(erpUrl, {
     method,
     headers,
     body: requestBody,
+    // @ts-expect-error - duplex is required for streaming but not in types yet
+    duplex: requestBody instanceof ReadableStream ? "half" : undefined,
   });
 
   if (!response.ok) {
@@ -279,9 +281,24 @@ function buildErpUrl(slug: string, requestUrl: string): string {
   return erpUrl;
 }
 
-// Helper: Get request body
-async function getRequestBody(request: Request, method: string): Promise<string | undefined> {
-  return method === "GET" ? undefined : await request.text();
+// Helper: Get request body (preserves binary data for multipart/form-data)
+async function getRequestBody(
+  request: Request,
+  method: string
+): Promise<string | ReadableStream<Uint8Array> | undefined> {
+  if (method === "GET") {
+    return undefined;
+  }
+
+  const contentType = request.headers.get("Content-Type") || "";
+
+  // For multipart/form-data (file uploads), preserve the binary stream
+  if (contentType.includes("multipart/form-data")) {
+    return request.body || undefined;
+  }
+
+  // For other content types, read as text
+  return await request.text();
 }
 
 // Helper: Get content type
@@ -304,7 +321,7 @@ async function fetchErpData({
   userToken: string;
   erpUrl: string;
   request: Request;
-  requestBody: string | undefined;
+  requestBody: string | ReadableStream<Uint8Array> | undefined;
   contentType: string;
 }): Promise<unknown> {
   if (isMutationRoute(slug, method)) {
@@ -312,7 +329,9 @@ async function fetchErpData({
     return handleMutationRequest(erpUrl, method, headers, requestBody);
   }
   const queryParams = method === "GET" ? new URL(request.url).search : "";
-  return getCachedErpData(userToken, slug, method, requestBody || "", contentType, queryParams);
+  // Cached requests only handle string bodies (not streams)
+  const bodyString = typeof requestBody === "string" ? requestBody : "";
+  return getCachedErpData(userToken, slug, method, bodyString, contentType, queryParams);
 }
 
 // Helper: Check if response is a Copilot stream
