@@ -47,9 +47,32 @@ const es = {
     sections: {
       main: "Sección Principal",
       audit: "Auditoría",
+      linkedItems: "Artículos Asociados",
+      notes: "Notas",
+      noCategories: "No hay categorias disponibles",
+      selectCategory: "Por favor selecciona una categoría",
+    },
+    notes: {
+      title: "Notas",
+      addNote: "Agregar Nota",
+      addNoteModalTitle: "Agregar Nueva Nota",
+      addNoteModalDescription: "Ingresa tu nota a continuación",
+      noteInputPlaceholder: "Escribe tu nota aquí...",
+      addNoteSubmit: "Agregar Nota",
+      loadingNotes: "Cargando notas...",
+      createdBy: "Por",
+      confirmDelete: "Confirmar Eliminación",
+      confirmDeleteMessage: "¿Estás seguro de que quieres eliminar esta nota de forma permanente?",
+      deleteButton: "Eliminar",
+      cancelButton: "Cancelar",
+      errorAddingNote: "Error al agregar la nota. Por favor intenta de nuevo.",
+      errorDeletingNote: "Error al eliminar la nota. Por favor intenta de nuevo.",
+      errorLoadingNotes: "Error al cargar las notas. Por favor intenta de nuevo.",
     },
     statusBar: {
       closeRecord: "Cerrar registro",
+      nextRecord: "Siguiente registro",
+      previousRecord: "Registro anterior",
     },
   },
   audit: {
@@ -157,6 +180,7 @@ const es = {
     content: {
       currentTitle: "Se espera que sus ingresos aumenten a finales de este año. Felicitaciones",
     },
+    useAsFilter: "Usar como filtro",
   },
   navigation: {
     common: {
@@ -265,6 +289,8 @@ const es = {
     maximize: "Maximizar",
     close: "Cerrar",
     contextText: "Contexto",
+    conversationsButton: "Mostrar Historial",
+    hideConversationsButton: "Ocultar Historial",
     assistantSelector: {
       errorInvalidData: "Error: Datos de asistentes inválidos",
       errorNoAssistantsAvailable: "No hay asistentes disponibles",
@@ -284,6 +310,14 @@ const es = {
     },
     contextPreview: {
       selectedRegisters: " Registros adjuntados",
+    },
+    conversationList: {
+      newConversation: "Nueva Conversación",
+      noConversations: "No hay conversaciones previas",
+      startNewConversation: "Inicia una nueva conversación para comenzar",
+      loading: "Cargando conversaciones...",
+      untitledConversation: "Conversación Sin Título",
+      closeSidebar: "Cerrar sidebar",
     },
   },
   location: {

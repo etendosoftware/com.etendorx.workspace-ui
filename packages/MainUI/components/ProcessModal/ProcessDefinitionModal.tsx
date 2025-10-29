@@ -50,6 +50,7 @@ import Modal from "../Modal";
 import Loading from "../loading";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
+import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
 import type { Tab, ProcessParameter } from "@workspaceui/api-client/src/api/types";
@@ -99,9 +100,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
   const [gridSelection, setGridSelection] = useState<GridSelectionStructure>({});
+  const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
 
   const selectedRecords = graph.getSelectedMultiple(tab);
-
   const firstWindowReferenceParam = useMemo(() => {
     return Object.values(parameters).find((param) => param.reference === WINDOW_REFERENCE_ID);
   }, [parameters]);
@@ -116,8 +117,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [record, tab?.fields]);
 
   const hasWindowReference = useMemo(() => {
-    return Object.values(parameters).some((param) => param.reference === WINDOW_REFERENCE_ID);
-  }, [parameters]);
+    return Object.values(parameters).some((param) => param.reference === WINDOW_REFERENCE_ID) || javaClassName;
+  }, [javaClassName, parameters]);
 
   const {
     fetchConfig,
@@ -183,8 +184,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     }
   }, [hasInitialData, availableFormData, form, initialState]);
 
-  // Reactive view into form state (validity / submitting)
-  const { isValid, isSubmitting } = useFormState({ control: form.control });
+  // Reactive view into form state (submitting)
+  const { isSubmitting } = useFormState({ control: form.control });
+
+  // Watch all form values to trigger re-validation when any field changes
+  const formValues = form.watch();
 
   // Combine loading states: initialization and callouts (do not include internal param-loading)
 
@@ -195,16 +199,124 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   // If initialization failed, keep the button disabled until user action
   const initializationBlocksSubmit = Boolean(initializationError);
-  // Only enforce form validity when there are mandatory parameters in the process
-  const hasMandatoryParameters = Object.values(parameters).some((p) => Boolean(p.mandatory));
+  // Check if there are mandatory parameters without value in the form
+  // Only validate after initial loading is complete
+
+  const hasMandatoryParametersWithoutValue = useMemo(() => {
+    if (loading || initializationLoading) {
+      return false;
+    }
+
+    // Use formValues from watch() to get reactive values
+    const willBlock = Object.values(parameters).some((p) => {
+      if (!p.mandatory) {
+        return false;
+      }
+
+      // If parameter has a defaultValue, don't block - it should be auto-filled
+      if (p.defaultValue) {
+        return false;
+      }
+
+      // Get the field value from form
+      // IMPORTANT: Fields are registered with parameter.name, not dBColumnName
+      const fieldValue = formValues[p.name as keyof typeof formValues] as unknown;
+
+      // If the field is registered in the form (not undefined in formValues object)
+      // then it means it was rendered and we should validate it
+      const fieldIsRegistered = p.name in formValues;
+
+      // Only validate fields that are actually registered in the form
+      // If not registered, it means ProcessParameterSelector didn't render it (displayLogic = false)
+      if (!fieldIsRegistered) {
+        return false;
+      }
+
+      // Check if value is empty (null, undefined, empty string, empty array)
+      const isEmpty =
+        fieldValue === null ||
+        fieldValue === undefined ||
+        fieldValue === "" ||
+        (Array.isArray(fieldValue) && fieldValue.length === 0);
+
+      // Block if mandatory field is empty
+      return isEmpty;
+    });
+
+    return willBlock;
+  }, [loading, initializationLoading, parameters, formValues]);
 
   const handleClose = useCallback(() => {
     if (isPending) return;
+
     setResult(null);
     setLoading(true);
     setParameters(button.processDefinition.parameters);
+    setShouldTriggerSuccess(false);
     onClose();
   }, [button.processDefinition.parameters, isPending, onClose]);
+
+  const handleSuccessClose = useCallback(() => {
+    if (isPending) return;
+
+    // Trigger refresh when closing success modal
+    if (shouldTriggerSuccess) {
+      onSuccess?.();
+    }
+
+    setResult(null);
+    setLoading(true);
+    setParameters(button.processDefinition.parameters);
+    setShouldTriggerSuccess(false);
+    onClose();
+  }, [button.processDefinition.parameters, isPending, onClose, shouldTriggerSuccess, onSuccess]);
+
+  const extractMessageFromProcessView = useCallback((res: ExecuteProcessResult) => {
+    const msgView = res.data?.responseActions?.[0]?.showMsgInProcessView;
+    if (!msgView) return null;
+
+    return {
+      message: msgView.msgText,
+      messageType: msgView.msgType,
+    };
+  }, []);
+
+  const extractMessageFromData = useCallback((res: ExecuteProcessResult) => {
+    if (res.data && typeof res.data === "object" && "text" in res.data) {
+      return {
+        message: res.data.text,
+        messageType: res.data.severity || "success",
+      };
+    }
+
+    const potentialMessage = res.data?.message || res.data?.msgText || res.data?.responseMessage;
+
+    if (potentialMessage && typeof potentialMessage === "object" && "text" in potentialMessage) {
+      return {
+        message: potentialMessage.text,
+        messageType: potentialMessage.severity || "success",
+      };
+    }
+
+    return {
+      message: potentialMessage,
+      messageType: res.data?.msgType || res.data?.messageType || (res.success ? "success" : "error"),
+    };
+  }, []);
+
+  const parseProcessResponse = useCallback(
+    (res: ExecuteProcessResult) => {
+      const viewMessage = extractMessageFromProcessView(res);
+      const { message, messageType } = viewMessage || extractMessageFromData(res);
+
+      return {
+        success: res.success && messageType === "success",
+        data: message,
+        error: messageType !== "success" ? message || res.error : undefined,
+      };
+    },
+    [extractMessageFromProcessView, extractMessageFromData]
+  );
 
   /**
    * Executes processes with window reference parameters
@@ -226,8 +338,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           _params: {
             ...mapKeysWithDefaults({ ...form.getValues(), ...gridSelection }),
           },
+          _entityName: tab.entityName,
           windowId: tab.window,
         };
+
+        // Add additional payload fields from configuration
+        if (currentAttrs.additionalPayloadFields && recordValues) {
+          for (const fieldName of currentAttrs.additionalPayloadFields) {
+            if (recordValues[fieldName] !== undefined) {
+              payload[fieldName] = recordValues[fieldName];
+            }
+          }
+        }
 
         const res = await executeProcess(
           processId,
@@ -237,14 +359,19 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           undefined,
           javaClassName
         );
-        setResult(res);
-        if (res.success) onSuccess?.();
+
+        const parsedResult = parseProcessResponse(res);
+        setResult(parsedResult);
+
+        if (parsedResult.success) {
+          setShouldTriggerSuccess(true);
+        }
       } catch (error) {
         logger.warn("Error executing process:", error);
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
     });
-  }, [tab, processId, recordValues, form, gridSelection, token, javaClassName, onSuccess]);
+  }, [tab, processId, recordValues, form, gridSelection, token, javaClassName, parseProcessResponse]);
 
   /**
    * Executes processes directly via servlet using javaClassName
@@ -281,8 +408,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           javaClassName
         );
 
-        setResult(res);
-        if (res.success) onSuccess?.();
+        const parsedResult = parseProcessResponse(res);
+        setResult(parsedResult);
+
+        if (parsedResult.success) {
+          setShouldTriggerSuccess(true);
+        }
       } catch (error) {
         logger.warn("Error executing direct Java process:", error);
         setResult({
@@ -291,7 +422,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         });
       }
     });
-  }, [tab, processId, javaClassName, windowId, record, recordValues, form, token, onSuccess]);
+  }, [tab, processId, javaClassName, windowId, record, recordValues, form, token, parseProcessResponse]);
 
   /**
    * Main process execution handler - routes to appropriate execution method
@@ -341,7 +472,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         const responseMessage = stringFnResult.responseActions[0].showMsgInProcessView;
         const success = responseMessage.msgType === "success";
         setResult({ success, data: responseMessage, error: success ? undefined : responseMessage.msgText });
-        if (success) onSuccess?.();
+        if (success) {
+          setShouldTriggerSuccess(true);
+        }
       } catch (error) {
         logger.warn("Error executing process:", error);
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
@@ -359,7 +492,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     button.processDefinition,
     selectedRecords,
     form,
-    onSuccess,
   ]);
 
   useEffect(() => {
@@ -400,7 +532,19 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     if (open) {
       setResult(null);
       setParameters(button.processDefinition.parameters);
-      setGridSelection({});
+
+      // Initialize grid selection structure with empty arrays for all window reference parameters
+      const initialGridSelection: GridSelectionStructure = {};
+      for (const param of Object.values(button.processDefinition.parameters)) {
+        if (param.reference === WINDOW_REFERENCE_ID) {
+          initialGridSelection[param.dBColumnName] = {
+            _selection: [],
+            _allRows: [],
+          };
+        }
+      }
+
+      setGridSelection(initialGridSelection);
     }
   }, [button.processDefinition.parameters, open]);
 
@@ -456,14 +600,34 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       msgText = result.error || t("errors.internalServerError.title");
     }
 
-    const messageClasses = `p-3 rounded mb-4 border-l-4 ${
-      isSuccessMessage ? "bg-green-50 border-(--color-success-main)" : "bg-gray-50 border-(--color-etendo-main)"
-    }`;
+    const displayText = msgText.replace(/<br\s*\/?>/gi, "\n");
 
+    // Success message styled like the reference image
+    if (isSuccessMessage) {
+      return (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div
+            className="rounded-2xl p-8 shadow-xl max-w-sm w-full mx-4"
+            style={{ background: "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)" }}>
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md">
+                <CheckIcon className="w-10 h-10 fill-green-600" data-testid="SuccessCheckIcon__761503" />
+              </div>
+              <h4 className="font-bold text-xl text-center text-green-800">{msgTitle}</h4>
+              {displayText && displayText !== msgTitle && (
+                <p className="text-sm text-center text-gray-700 whitespace-pre-line">{displayText}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Error message - keep the simple style
     return (
-      <div className={messageClasses}>
+      <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-etendo-main)">
         <h4 className="font-bold text-sm">{msgTitle}</h4>
-        <p className="text-sm">{msgText}</p>
+        <p className="text-sm whitespace-pre-line">{displayText}</p>
       </div>
     );
   };
@@ -477,13 +641,19 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, []);
 
   const renderParameters = () => {
-    if (result?.success) return null;
-    return Object.values(parameters).map((parameter) => {
+    if (result) return null;
+
+    const parametersList = Object.values(parameters);
+    const windowReferences: JSX.Element[] = [];
+    const selectors: JSX.Element[] = [];
+
+    // Separate window references from selectors
+    for (const parameter of parametersList) {
       if (parameter.reference === WINDOW_REFERENCE_ID) {
         const parameterTab = getTabForParameter(parameter);
         const parameterEntityName = parameterTab?.entityName || "";
         const parameterTabId = parameterTab?.id || "";
-        return (
+        windowReferences.push(
           <WindowReferenceGrid
             key={`window-ref-${parameter.id || parameter.name}`}
             parameter={parameter}
@@ -506,105 +676,185 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             data-testid="WindowReferenceGrid__761503"
           />
         );
+      } else {
+        selectors.push(
+          <ProcessParameterSelector
+            key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
+            parameter={parameter}
+            logicFields={logicFields}
+            data-testid="ProcessParameterSelector__761503"
+          />
+        );
       }
-      return (
-        <ProcessParameterSelector
-          key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
-          parameter={parameter}
-          logicFields={logicFields}
-          data-testid="ProcessParameterSelector__761503"
-        />
-      );
-    });
-  };
-
-  const renderActionButton = () => {
-    if (isPending) {
-      return <span className="animate-pulse">{t("common.loading")}...</span>;
-    }
-
-    if (result?.success) {
-      return (
-        <span className="flex items-center gap-2">
-          <CheckIcon fill="white" data-testid="CheckIcon__761503" />
-          {t("process.completedSuccessfully")}
-        </span>
-      );
     }
 
     return (
       <>
-        {CheckIcon && <CheckIcon fill="white" data-testid="CheckIcon__761503" />}
-        {t("common.execute")}
+        {/* Selectors in 3 column grid - matching FormView style */}
+        {selectors.length > 0 && (
+          <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2 mb-4">{selectors}</div>
+        )}
+
+        {/* Window references full width with spacing between tables */}
+        {windowReferences.length > 0 && <div className="w-full flex flex-col gap-4">{windowReferences}</div>}
       </>
     );
+  };
+
+  const getActionButtonContent = () => {
+    if (isPending) {
+      return {
+        icon: null,
+        text: <span className="animate-pulse">{t("common.loading")}...</span>,
+      };
+    }
+
+    if (result?.success) {
+      return {
+        icon: <CheckIcon fill="white" data-testid="CheckIcon__761503" />,
+        text: t("process.completedSuccessfully"),
+      };
+    }
+
+    return {
+      icon: <CheckIcon fill="white" data-testid="CheckIcon__761503" />,
+      text: t("common.execute"),
+    };
   };
 
   const isActionButtonDisabled =
     isPending ||
     initializationBlocksSubmit ||
-    (hasMandatoryParameters && !isValid) ||
+    hasMandatoryParametersWithoutValue ||
     isSubmitting ||
     !!result?.success ||
     (hasWindowReference && !gridSelection);
 
   return (
-    <Modal open={open} onClose={handleClose} data-testid="Modal__761503">
-      <FormProvider {...form} data-testid="FormProvider__761503">
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-5xl max-h-full overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold">{button.name}</h3>
-              </div>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="p-1 rounded-full hover:bg-(--color-baseline-10)"
-                disabled={isPending}>
-                <CloseIcon data-testid="CloseIcon__761503" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-auto p-4">
-              <div className={`relative ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
-                <div
-                  className={`absolute transition-opacity inset-0 flex items-center pointer-events-none justify-center bg-white ${
-                    loading || initializationLoading ? "opacity-100" : "opacity-0"
-                  }`}>
-                  <Loading data-testid="Loading__761503" />
+    <>
+      {/* Main Process Modal */}
+      {open && !result?.success && (
+        <Modal open={open && !result?.success} onClose={handleClose} data-testid="Modal__761503">
+          <FormProvider {...form} data-testid="FormProvider__761503">
+            <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
+              <div className="bg-white rounded-lg shadow-lg w-full max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                  <div className="flex flex-col gap-1">
+                    <h3 className="text-lg font-bold">{button.name}</h3>
+                    {button.processDefinition.description && (
+                      <p className="text-sm text-gray-600">{String(button.processDefinition.description)}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    className="p-1 rounded-full hover:bg-(--color-baseline-10)"
+                    disabled={isPending}>
+                    <CloseIcon data-testid="CloseIcon__761503" />
+                  </button>
                 </div>
-                <div className={`transition-opacity ${loading || initializationLoading ? "opacity-0" : "opacity-100"}`}>
-                  {renderResponse()}
-                  {renderParameters()}
+
+                {/* Content */}
+                <div className="flex-1 overflow-auto p-4">
+                  <div className={`relative ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
+                    <div
+                      className={`absolute inset-0 flex items-center pointer-events-none justify-center bg-white ${
+                        (loading || initializationLoading) && !result ? "opacity-100" : "opacity-0"
+                      }`}>
+                      <Loading data-testid="Loading__761503" />
+                    </div>
+                    <div className={(loading || initializationLoading) && !result ? "opacity-0" : "opacity-100"}>
+                      {result && !result.success && renderResponse()}
+                      {renderParameters()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex gap-3 justify-end mx-3 my-3">
+                  {!result && !isPending && (
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      onClick={handleClose}
+                      className="w-49"
+                      data-testid="CloseButton__761503">
+                      {t("common.close")}
+                    </Button>
+                  )}
+
+                  {!result && (
+                    <Button
+                      variant="filled"
+                      size="large"
+                      onClick={handleExecute}
+                      disabled={Boolean(isActionButtonDisabled)}
+                      startIcon={getActionButtonContent().icon}
+                      className="w-49"
+                      data-testid="ExecuteButton__761503">
+                      {getActionButtonContent().text}
+                    </Button>
+                  )}
+
+                  {result && !result.success && (
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      onClick={handleClose}
+                      className="w-49"
+                      data-testid="CloseResultButton__761503">
+                      {t("common.close")}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
-
-            {/* Footer */}
-            <div className="flex gap-4 justify-center mx-4 mb-4">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="transition px-4 py-2 border border-(--color-baseline-60) text-(--color-baseline-90) rounded-full w-full
-                font-medium focus:outline-none hover:bg-(--color-transparent-neutral-10)"
-                disabled={isPending}>
+          </FormProvider>
+        </Modal>
+      )}
+      {/* Success Modal - Separate overlay */}
+      {open && result?.success && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60] p-4">
+          <div
+            className="rounded-2xl p-6 shadow-xl max-w-sm w-full relative"
+            style={{ background: "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)" }}>
+            <button
+              type="button"
+              onClick={handleSuccessClose}
+              className="absolute top-4 right-4 p-1 rounded-full hover:bg-white/50 transition-colors"
+              aria-label="Close">
+              <CloseIcon className="w-5 h-5" data-testid="SuccessCloseIcon__761503" />
+            </button>
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center justify-center">
+                <CheckIcon className="w-6 h-6 fill-(--color-success-main)" data-testid="SuccessCheckIcon__761503" />
+              </div>
+              <div>
+                <h4 className="font-medium text-xl text-center text-(--color-success-main)">
+                  {t("process.completedSuccessfully")}
+                </h4>
+                {result?.data &&
+                  typeof result.data === "string" &&
+                  result.data !== t("process.completedSuccessfully") && (
+                    <p className="text-sm text-center text-(--color-transparent-neutral-80) whitespace-pre-line">
+                      {result.data.replace(/<br\s*\/?>/gi, "\n")}
+                    </p>
+                  )}
+              </div>
+              <Button
+                variant="filled"
+                size="large"
+                onClick={handleSuccessClose}
+                className="w-49"
+                data-testid="SuccessCloseButton__761503">
                 {t("common.close")}
-              </button>
-              <button
-                type="button"
-                onClick={handleExecute}
-                className="transition px-4 py-2 text-white rounded-full w-full justify-center font-medium flex items-center gap-2 bg-(--color-baseline-100) hover:bg-(--color-etendo-main)"
-                disabled={isActionButtonDisabled}>
-                {renderActionButton()}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
-      </FormProvider>
-    </Modal>
+      )}
+    </>
   );
 }
 

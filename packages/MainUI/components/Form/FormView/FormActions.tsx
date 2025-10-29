@@ -19,7 +19,6 @@ import { useCallback, useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useFormValidation } from "@/hooks/useFormValidation";
-import { useSelected } from "@/hooks/useSelected";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { useTabContext } from "@/contexts/tab";
@@ -37,8 +36,7 @@ interface FormActionsProps {
 
 export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal }: FormActionsProps) {
   const { formState } = useFormContext();
-  const { graph } = useSelected();
-  const { activeWindow, clearTabFormState } = useMultiWindowURL();
+  const { activeWindow, clearTabFormStateAtomic } = useMultiWindowURL();
   const { registerActions, setSaveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
 
@@ -115,12 +113,12 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
   const handleBack = useCallback(() => {
     const windowId = activeWindow?.windowId;
     if (windowId) {
-      clearTabFormState(windowId, tab.id);
+      // Use atomic clear to avoid race conditions
+      // Only clears FormView, preserves selection and doesn't touch children
+      clearTabFormStateAtomic(windowId, tab.id);
     }
-    graph.clear(tab);
-    graph.clearSelected(tab);
     resetFormChanges();
-  }, [activeWindow?.windowId, clearTabFormState, graph, tab, resetFormChanges]);
+  }, [activeWindow?.windowId, clearTabFormStateAtomic, tab, resetFormChanges]);
 
   const handleNew = useCallback(() => {
     setRecordId(NEW_RECORD_ID);

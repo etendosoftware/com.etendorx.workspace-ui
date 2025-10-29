@@ -223,7 +223,9 @@ export const useProcessDefaults = ({
           key.startsWith(`${processId}:${windowId}:`)
         );
 
-        keysToDelete.forEach((key) => cacheRef.current.delete(key));
+        for (const key of keysToDelete) {
+          cacheRef.current.delete(key);
+        }
       }
 
       logger.debug(`Cache cleared for process ${processId}`, { clearAll });

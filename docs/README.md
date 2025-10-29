@@ -19,14 +19,19 @@ docs/
 │   │   └── window-references.md
 │   ├── form-rendering/               # Feature: Form rendering
 │   │   └── README.md
-│   └── data-grids/                   # Feature: Data grids
-│       └── README.md
+│   ├── data-grids/                   # Feature: Data grids
+│   │   └── README.md
+│   └── table-state-persistence/      # Feature: Table state persistence
+│       └── README.md                # Multi-window table state management
 ├── api/                              # API documentation
 │   ├── metadata-client.md
 │   ├── kernel-servlet.md
 │   └── datasource-servlet.md
+├── contexts/                         # Context documentation
+│   ├── user-context.md             # User authentication and session
+│   └── table-state-persistence.md  # Table state persistence context
 ├── patterns/                         # Patterns and conventions
-│   ├── react-patterns.md
+│   ├── react-patterns.md           # React patterns including state persistence
 │   ├── state-management.md
 │   └── error-handling.md
 └── troubleshooting/                  # Troubleshooting guides

@@ -19,12 +19,16 @@ export const COPY_FROM_ORDER_PROCESS_ID = "8B81D80B06364566B87853FEECAB5DE0";
 export const CREATE_LINES_FROM_ORDER_PROCESS_ID = "AB2EFCAABB7B4EC0A9B30CFB82963FB6";
 export const SERVERS_WINDOW_ID = "97A1BDAE0C074F2EB76B195ACA03E9AF";
 export const ADD_PAYMENT_ORDER_PROCESS_ID = "9BED7889E1034FE68BD85D5D16857320";
+export const CREATE_LINES_FROM_RECEIPT_ID = "7737CA7330FD49FBA7EBC225E85F2BC9";
+export const LANDED_COST_PROCESS = "96FE01F2F12F45FC8ED4A1978EBD034C";
+export const REACTIVATE_LANDED_COST_PROCESS = "C600DAD457664EFDA6B1AA76931552BA";
 type ProcessDefinition = {
   inpColumnId: string;
   inpPrimaryKeyColumnId: string;
   defaultKeys: Record<string, string>;
-  dynamicKeys: Record<string, string>;
+  dynamicKeys: Record<string, unknown>;
   staticOptions: Record<string, unknown>;
+  additionalPayloadFields?: string[]; // Fields from recordValues to add to payload
 };
 
 type WindowDefinition = {
@@ -51,10 +55,14 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
       invoiceBusinessPartner: "@Invoice.businessPartner@",
       invoicePriceList: "@Invoice.priceList@",
       invoiceCurrency: "@Invoice.currency@",
+      "@Invoice.salesTransaction@": "inpissotrx",
+      "@Invoice.priceList@": "inpmPricelistId",
+      "@Invoice.documentType@": "inpcDoctypeId",
+      "@Invoice.businessPartner@": "inpcBpartnerId",
+      "@Invoice.currency@": "inpcCurrencyId",
+      "@Invoice.paymentComplete@": "inpposted",
     },
-    staticOptions: {
-      "@Invoice.salesTransaction@": true,
-    },
+    staticOptions: {},
   },
   [ADD_PAYMENT_ORDER_PROCESS_ID]: {
     inpColumnId: "C_Order_ID",
@@ -62,6 +70,35 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
     defaultKeys: {},
     dynamicKeys: {},
     staticOptions: {},
+  },
+  [CREATE_LINES_FROM_RECEIPT_ID]: {
+    inpColumnId: "C_Order_ID",
+    inpPrimaryKeyColumnId: "inpcOrderId",
+    defaultKeys: {},
+    dynamicKeys: {
+      "@Invoice.priceList@": "inpmPricelistId",
+      "@Invoice.businessPartner@": "inpcBpartnerId",
+      "@Invoice.currency@": "inpcCurrencyId",
+      "@Invoice.salesTransaction@": "inpissotrx",
+    },
+    staticOptions: {},
+    additionalPayloadFields: ["inpcInvoiceId"],
+  },
+  [LANDED_COST_PROCESS]: {
+    inpColumnId: "M_Landedcost_ID",
+    inpPrimaryKeyColumnId: "inpmLandedcostId",
+    defaultKeys: {},
+    dynamicKeys: {},
+    staticOptions: {},
+    additionalPayloadFields: [],
+  },
+  [REACTIVATE_LANDED_COST_PROCESS]: {
+    inpColumnId: "M_Landedcost_ID",
+    inpPrimaryKeyColumnId: "inpmLandedcostId",
+    defaultKeys: {},
+    dynamicKeys: {},
+    staticOptions: {},
+    additionalPayloadFields: [],
   },
 };
 

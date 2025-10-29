@@ -37,6 +37,7 @@ export interface UseTableDirDatasourceParams {
   tab?: Tab;
   pageSize?: number;
   initialPageSize?: number;
+  isProcessModal?: boolean;
 }
 
 export interface ContextItem {

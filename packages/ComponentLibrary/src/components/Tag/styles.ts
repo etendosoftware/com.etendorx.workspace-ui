@@ -17,13 +17,12 @@
 
 import React, { type CSSProperties, type ReactElement, useMemo } from "react";
 import { type Theme, useTheme, type SxProps } from "@mui/material";
-import type { TagType } from "./types";
 
 type StylesType = {
-  getColor: (type: TagType) => string;
-  getTextColor: (type: TagType) => string;
-  getColoredIcon: (icon: ReactElement, type: TagType) => ReactElement;
-  getChipStyles: (type: TagType) => CSSProperties;
+  getColor: (customColor?: string) => string;
+  getTextColor: (customColor?: string, customTextColor?: string) => string;
+  getColoredIcon: (icon: ReactElement, customColor?: string, customTextColor?: string) => ReactElement;
+  getChipStyles: (customColor?: string, customTextColor?: string) => CSSProperties;
   sx: {
     chipLabel: (icon?: ReactElement) => SxProps<Theme>;
   };
@@ -33,38 +32,23 @@ export const useStyle = (): StylesType => {
   const theme = useTheme();
   const self = useMemo(
     () => ({
-      getColor: (type: TagType): string => {
-        switch (type) {
-          case "primary":
-            return theme.palette.dynamicColor.main;
-          case "success":
-            return theme.palette.specificColor.success.main;
-          case "warning":
-            return theme.palette.specificColor.warning.main;
-          case "error":
-            return theme.palette.specificColor.error.main;
-          case "draft":
-            return theme.palette.specificColor.draft.contrastText;
-          default:
-            return theme.palette.dynamicColor.main;
+      getColor: (customColor?: string): string => {
+        if (customColor) {
+          return customColor;
         }
+
+        return theme.palette.specificColor.draft.contrastText;
       },
-      getTextColor: (type: TagType): string => {
-        switch (type) {
-          case "primary":
-          case "success":
-          case "error":
-            return theme.palette.dynamicColor.contrastText;
-          case "warning":
-          case "draft":
-            return theme.palette.baselineColor.neutral[100];
-          default:
-            return theme.palette.dynamicColor.contrastText;
+      getTextColor: (customTextColor?: string): string => {
+        if (customTextColor) {
+          return customTextColor;
         }
+
+        return theme.palette.baselineColor.neutral[100];
       },
-      getChipStyles: (type: TagType): CSSProperties => ({
-        backgroundColor: self.getColor(type),
-        color: self.getTextColor(type),
+      getChipStyles: (customColor?: string, customTextColor?: string): CSSProperties => ({
+        backgroundColor: self.getColor(customColor),
+        color: self.getTextColor(customTextColor),
         height: "1.5rem",
         fontWeight: 500,
         cursor: "default",
@@ -89,11 +73,11 @@ export const useStyle = (): StylesType => {
     [theme]
   );
 
-  const getColoredIcon = (icon: ReactElement, type: TagType): ReactElement => {
+  const getColoredIcon = (icon: ReactElement, customTextColor?: string): ReactElement => {
     return React.cloneElement(icon, {
       style: {
         ...icon.props.style,
-        color: self.getTextColor(type),
+        color: self.getTextColor(customTextColor),
         width: "1rem",
         height: "1rem",
         margin: "0",

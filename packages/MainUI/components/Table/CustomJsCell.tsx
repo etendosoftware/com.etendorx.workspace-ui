@@ -20,7 +20,7 @@ import type { Column } from "@workspaceui/api-client/src/api/types";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Cell, MRT_Row } from "material-react-table";
 import { evaluateCustomJs } from "@/utils/customJsEvaluator";
-import { isColorString } from "@/utils/table/utils";
+import { isColorString } from "@/utils/color/utils";
 import ColorCell from "@/components/Table/Cells/ColorCell";
 import { logger } from "@/utils/logger";
 import { CircularProgress } from "@mui/material";

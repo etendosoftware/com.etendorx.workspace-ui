@@ -43,6 +43,7 @@ const ProcessIframeOpenModal = ({
   const [processMessage, setProcessMessage] = useState<ProcessMessage | null>(null);
   const { fetchProcessMessage } = useProcessMessage(tabId);
   const [processWasSuccessful, setProcessWasSuccessful] = useState(false);
+  const [progressWidth, setProgressWidth] = useState(100);
 
   const handleClose = useCallback(() => {
     if (processWasSuccessful && onProcessSuccess) {
@@ -65,7 +66,11 @@ const ProcessIframeOpenModal = ({
         setProcessWasSuccessful(false);
       } else {
         setProcessMessage(message);
-        setProcessWasSuccessful(message.type === "success");
+        const isSuccess = message.type === "success";
+        setProcessWasSuccessful(isSuccess);
+        if (isSuccess) {
+          setProgressWidth(100);
+        }
       }
     },
     [t]
@@ -146,6 +151,32 @@ const ProcessIframeOpenModal = ({
   }, [url]);
 
   useEffect(() => {
+    if (processMessage?.type === "success") {
+      const totalDuration = 3000; // 3 seconds
+      const updateInterval = 50; // Update every 50ms
+      const decrementValue = (100 / totalDuration) * updateInterval;
+
+      const timer = setInterval(() => {
+        setProgressWidth((prevWidth) => {
+          const newWidth = prevWidth - decrementValue;
+
+          if (newWidth <= 0) {
+            clearInterval(timer);
+            setProcessMessage(null);
+            return 0;
+          }
+
+          return newWidth;
+        });
+      }, updateInterval);
+
+      return () => {
+        clearInterval(timer);
+      };
+    }
+  }, [processMessage]);
+
+  useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
       if (event.data?.action === CLOSE_MODAL_ACTION) {
         handleClose();
@@ -199,6 +230,17 @@ const ProcessIframeOpenModal = ({
                 {processMessage.text && <p className="text-gray-700">{processMessage.text}</p>}
               </div>
             </div>
+            {processMessage.type === "success" && (
+              <div className="w-full bg-(--color-transparent-neutral-10) h-1">
+                <div
+                  className="h-1 transition-all duration-50 ease-linear"
+                  style={{
+                    width: `${progressWidth}%`,
+                    backgroundColor: messageStyles.borderColor,
+                  }}
+                />
+              </div>
+            )}
           </div>
         )
       }

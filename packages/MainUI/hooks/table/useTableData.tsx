@@ -15,19 +15,28 @@
  *************************************************************************
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { MRT_ColumnFiltersState, MRT_ExpandedState, MRT_VisibilityState } from "material-react-table";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import type {
+  MRT_ColumnFiltersState,
+  MRT_ExpandedState,
+  MRT_VisibilityState,
+  MRT_SortingState,
+} from "material-react-table";
 import type { DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
-import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useSearch } from "../../contexts/searchContext";
 import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
+import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
 import { useDatasource } from "../useDatasource";
 import { useColumns } from "./useColumns";
 import { useColumnFilters } from "@workspaceui/api-client/src/hooks/useColumnFilters";
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
+import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
+import type { ExpandedState, Updater } from "@tanstack/react-table";
+import { isEmptyObject } from "@/utils/commons";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -43,31 +52,39 @@ interface UseTableDataReturn {
   columns: Column[];
 
   // State
-  columnFilters: MRT_ColumnFiltersState;
-  columnVisibility: MRT_VisibilityState;
   expanded: MRT_ExpandedState;
   loading: boolean;
   error: Error | null;
 
   // Tree mode
   shouldUseTreeMode: boolean;
-  loadChildNodes: (parentId: string) => Promise<void>;
-  setChildrenData: React.Dispatch<React.SetStateAction<Map<string, EntityData[]>>>;
-  setLoadedNodes: React.Dispatch<React.SetStateAction<Set<string>>>;
 
   // Handlers
   handleMRTColumnFiltersChange: (
     updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)
   ) => void;
-  setColumnVisibility: React.Dispatch<React.SetStateAction<MRT_VisibilityState>>;
-  setExpanded: React.Dispatch<React.SetStateAction<MRT_ExpandedState>>;
+  handleMRTColumnVisibilityChange: (
+    updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)
+  ) => void;
+  handleMRTSortingChange: (updaterOrValue: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)) => void;
+  handleMRTColumnOrderChange: (updaterOrValue: string[] | ((prev: string[]) => string[])) => void;
+  handleColumnFilterChange: (columnId: string, selectedOptions: FilterOption[]) => Promise<void>;
+  handleLoadFilterOptions: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
+  handleLoadMoreFilterOptions: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
+  handleMRTExpandChange: ({ newExpanded }: { newExpanded: Updater<ExpandedState> }) => void;
 
   // Actions
   toggleImplicitFilters: () => void;
   fetchMore: () => void;
-  refetch: () => void;
+  refetch: () => Promise<void>;
   removeRecordLocally: ((id: string) => void) | null;
   hasMoreRecords: boolean;
+  applyQuickFilter: (
+    columnId: string,
+    filterId: string,
+    filterValue: string | number,
+    filterLabel: string
+  ) => Promise<void>;
 }
 
 export const useTableData = ({
@@ -81,15 +98,25 @@ export const useTableData = ({
   const [loadedNodes, setLoadedNodes] = useState<Set<string>>(new Set());
   const [childrenData, setChildrenData] = useState<Map<string, EntityData[]>>(new Map());
   const [flattenedRecords, setFlattenedRecords] = useState<EntityData[]>([]);
-  const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<MRT_VisibilityState>({});
-  const [appliedTableFilters, setAppliedTableFilters] = useState<MRT_ColumnFiltersState>([]);
   const [prevShouldUseTreeMode, setPrevShouldUseTreeMode] = useState<boolean | null>(null);
+
+  const expandedRef = useRef<MRT_ExpandedState>({});
 
   // Contexts and hooks
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
+
+  const {
+    tableColumnFilters,
+    tableColumnVisibility,
+    isImplicitFilterApplied,
+    setTableColumnFilters,
+    setTableColumnVisibility,
+    setTableColumnSorting,
+    setTableColumnOrder,
+    setIsImplicitFilterApplied,
+  } = useTableStatePersistenceTab(tab.window, tab.id);
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
   // Computed values
@@ -103,10 +130,15 @@ export const useTableData = ({
     return parseColumns(Object.values(tab.fields));
   }, [tab.fields]);
 
+  const initialIsFilterApplied = useMemo(() => {
+    return tab.hqlfilterclause?.length > 0 || tab.sQLWhereClause?.length > 0;
+  }, [tab.hqlfilterclause, tab.sQLWhereClause]);
+
   // Column filters
   const {
     columnFilters: advancedColumnFilters,
     setColumnFilter,
+    setColumnFilters,
     setFilterOptions,
     loadMoreFilterOptions,
   } = useColumnFilters({
@@ -128,19 +160,14 @@ export const useTableData = ({
             }
           : null;
 
-      setAppliedTableFilters((prev) => {
-        const filtered = prev.filter((f) => f.id !== columnId);
-        return mrtFilter ? [...filtered, mrtFilter] : filtered;
-      });
-
-      setColumnFilters((prev) => {
+      setTableColumnFilters((prev) => {
         const filtered = prev.filter((f) => f.id !== columnId);
         return mrtFilter ? [...filtered, mrtFilter] : filtered;
       });
 
       onColumnFilter?.(columnId, selectedOptions);
     },
-    [setColumnFilter, onColumnFilter]
+    [setColumnFilter, onColumnFilter, setTableColumnFilters]
   );
 
   const handleLoadFilterOptions = useCallback(
@@ -151,58 +178,19 @@ export const useTableData = ({
       }
 
       if (ColumnFilterUtils.isSelectColumn(column)) {
-        const allOptions = ColumnFilterUtils.getSelectOptions(column);
-        const filteredOptions = searchQuery
-          ? allOptions.filter((option) => option.label.toLowerCase().includes(searchQuery.toLowerCase()))
-          : allOptions;
-
-        setFilterOptions(columnId, filteredOptions, false, false);
-        return filteredOptions;
+        return loadSelectFilterOptions(column, columnId, searchQuery, setFilterOptions);
       }
 
       if (ColumnFilterUtils.isTableDirColumn(column)) {
-        try {
-          let options: FilterOption[] = [];
-
-          if (ColumnFilterUtils.needsDistinctValues(column)) {
-            const currentDatasource = treeEntity;
-            const tabIdStr = tab.id;
-            const distinctField = column.columnName;
-
-            options = await fetchFilterOptions(
-              currentDatasource,
-              undefined,
-              searchQuery,
-              20,
-              distinctField,
-              tabIdStr,
-              0
-            );
-          } else {
-            const selectorDefinitionId = column.selectorDefinitionId;
-            const datasourceId = column.datasourceId || column.referencedEntity;
-
-            if (datasourceId) {
-              options = await fetchFilterOptions(
-                datasourceId,
-                selectorDefinitionId,
-                searchQuery,
-                20,
-                undefined,
-                undefined,
-                0
-              );
-            }
-          }
-
-          const hasMore = options.length === 20;
-          setFilterOptions(columnId, options, hasMore, false);
-          return options;
-        } catch (error) {
-          console.error("Error loading filter options:", error);
-          setFilterOptions(columnId, [], false, false);
-          return [];
-        }
+        return loadTableDirFilterOptions({
+          column,
+          columnId,
+          searchQuery,
+          tabId: tab.id,
+          entityName: treeEntity,
+          fetchFilterOptions,
+          setFilterOptions,
+        });
       }
 
       return [];
@@ -227,50 +215,20 @@ export const useTableData = ({
 
       loadMoreFilterOptions(columnId, currentSearchQuery);
 
-      try {
-        let options: FilterOption[] = [];
-        const pageSize = 20;
-        const offset = currentPage * pageSize;
+      const pageSize = 20;
+      const offset = currentPage * pageSize;
 
-        if (ColumnFilterUtils.needsDistinctValues(column)) {
-          const currentDatasource = treeEntity;
-          const tabIdStr = tab.id;
-          const distinctField = column.columnName;
-
-          options = await fetchFilterOptions(
-            currentDatasource,
-            undefined,
-            currentSearchQuery,
-            pageSize,
-            distinctField,
-            tabIdStr,
-            offset
-          );
-        } else {
-          const selectorDefinitionId = column.selectorDefinitionId;
-          const datasourceId = column.datasourceId || column.referencedEntity;
-
-          if (datasourceId) {
-            options = await fetchFilterOptions(
-              datasourceId,
-              selectorDefinitionId,
-              currentSearchQuery,
-              pageSize,
-              undefined,
-              undefined,
-              offset
-            );
-          }
-        }
-
-        const hasMore = options.length === pageSize;
-        setFilterOptions(columnId, options, hasMore, true);
-        return options;
-      } catch (error) {
-        console.error("Error loading more filter options:", error);
-        setFilterOptions(columnId, [], false, true);
-        return [];
-      }
+      return loadTableDirFilterOptions({
+        column,
+        columnId,
+        searchQuery: currentSearchQuery,
+        tabId: tab.id,
+        entityName: treeEntity,
+        fetchFilterOptions,
+        setFilterOptions,
+        offset,
+        pageSize,
+      });
     },
     [rawColumns, fetchFilterOptions, setFilterOptions, loadMoreFilterOptions, tab.id, treeEntity, advancedColumnFilters]
   );
@@ -285,10 +243,23 @@ export const useTableData = ({
 
   // Build query
   const query: DatasourceOptions = useMemo(() => {
-    const fieldName =
-      Array.isArray(tab?.parentColumns) && tab.parentColumns.length > 0
-        ? (tab.parentColumns[tab.tabLevel] ?? tab.parentColumns[tab.parentColumns.length - 1] ?? "id")
-        : "id";
+    // Find the correct parent column by matching referencedEntity with parentTab.entityName
+    let fieldName = "id";
+
+    if (Array.isArray(tab?.parentColumns) && tab.parentColumns.length > 0) {
+      if (parentTab) {
+        // Try to find the field that references the parent tab's entity
+        const matchingField = tab.parentColumns.find((colName) => {
+          const field = tab.fields[colName];
+          return field?.referencedEntity === parentTab.entityName;
+        });
+
+        fieldName = matchingField || tab.parentColumns[0] || "id";
+      } else {
+        // No parent tab, use first column as fallback
+        fieldName = tab.parentColumns[0] || "id";
+      }
+    }
 
     const value = parentId;
     const operator = "equals";
@@ -296,7 +267,7 @@ export const useTableData = ({
     const options: DatasourceOptions = {
       windowId: tab.window,
       tabId: tab.id,
-      isImplicitFilterApplied: tab.hqlfilterclause?.length > 0 || tab.sQLWhereClause?.length > 0,
+      isImplicitFilterApplied: initialIsFilterApplied,
       pageSize: 100,
     };
 
@@ -319,9 +290,15 @@ export const useTableData = ({
     tab.parentColumns,
     tab.window,
     tab.id,
-    tab.hqlfilterclause?.length,
-    tab.sQLWhereClause?.length,
+    initialIsFilterApplied,
+    tab.name,
+    tab.tabLevel,
+    tab.parentTabId,
+    tab.entityName,
+    tab.fields,
     parentId,
+    parentRecord?.id,
+    parentTab,
     language,
   ]);
 
@@ -351,16 +328,20 @@ export const useTableData = ({
   }, [rawColumns]);
 
   // Use datasource hook
-  const { toggleImplicitFilters, fetchMore, records, removeRecordLocally, error, refetch, loading, hasMoreRecords } =
-    useDatasource({
-      entity: treeEntity,
-      params: query,
-      columns: stableDatasourceColumns,
-      searchQuery,
-      skip,
-      treeOptions,
-      activeColumnFilters: appliedTableFilters,
-    });
+  const { fetchMore, records, removeRecordLocally, error, refetch, loading, hasMoreRecords } = useDatasource({
+    entity: treeEntity,
+    params: query,
+    columns: stableDatasourceColumns,
+    searchQuery,
+    skip,
+    treeOptions,
+    activeColumnFilters: tableColumnFilters,
+    isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
+    setIsImplicitFilterApplied,
+  });
+
+  // Display records (tree mode uses flattened, normal mode uses original records)
+  const displayRecords = shouldUseTreeMode ? flattenedRecords : records;
 
   // Load child nodes for tree mode
   const loadChildNodes = useCallback(
@@ -454,6 +435,114 @@ export const useTableData = ({
     []
   );
 
+  // Column filters change handler
+  const handleMRTColumnFiltersChange = useCallback(
+    (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
+      setTableColumnFilters(updaterOrValue);
+    },
+    [setTableColumnFilters]
+  );
+
+  // NOTE: this can implies some extra config
+  const handleMRTColumnVisibilityChange = useCallback(
+    (updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)) => {
+      setTableColumnVisibility(updaterOrValue);
+    },
+    [setTableColumnVisibility]
+  );
+
+  const handleMRTSortingChange = useCallback(
+    (updaterOrValue: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)) => {
+      setTableColumnSorting(updaterOrValue);
+    },
+    [setTableColumnSorting]
+  );
+
+  const handleMRTColumnOrderChange = useCallback(
+    (updaterOrValue: string[] | ((prev: string[]) => string[])) => {
+      setTableColumnOrder(updaterOrValue);
+    },
+    [setTableColumnOrder]
+  );
+
+  const handleMRTExpandChange = useCallback(
+    ({ newExpanded }: { newExpanded: Updater<ExpandedState> }) => {
+      const prevExpanded = expandedRef.current;
+      const newExpandedState = typeof newExpanded === "function" ? newExpanded(expanded) : newExpanded;
+
+      setExpanded(newExpandedState);
+      expandedRef.current = newExpandedState;
+
+      if (typeof newExpandedState === "object" && newExpandedState !== null && !Array.isArray(newExpandedState)) {
+        const prevExpandedObj =
+          typeof prevExpanded === "object" && prevExpanded !== null && !Array.isArray(prevExpanded) ? prevExpanded : {};
+
+        const prevKeys = Object.keys(prevExpandedObj).filter((k) => prevExpandedObj[k as keyof typeof prevExpandedObj]);
+        const newKeys = Object.keys(newExpandedState).filter(
+          (k) => newExpandedState[k as keyof typeof newExpandedState]
+        );
+
+        const expandedRowIds = newKeys.filter((k) => !prevKeys.includes(k));
+        const collapsedRowIds = prevKeys.filter((k) => !newKeys.includes(k));
+
+        for (const id of expandedRowIds) {
+          const rowData = displayRecords.find((record) => String(record.id) === id);
+
+          if (shouldUseTreeMode && rowData && rowData.__isParent !== false) {
+            loadChildNodes(String(rowData.id));
+          }
+        }
+
+        for (const id of collapsedRowIds) {
+          setChildrenData((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(id);
+            return newMap;
+          });
+          setLoadedNodes((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(id);
+            return newSet;
+          });
+        }
+      }
+    },
+    [expanded, displayRecords, shouldUseTreeMode, loadChildNodes]
+  );
+
+  const handleToggleImplicitFilters = useCallback(() => {
+    if (!isImplicitFilterApplied) {
+      handleMRTColumnFiltersChange([]);
+      return;
+    }
+    setIsImplicitFilterApplied(false);
+  }, [isImplicitFilterApplied, setIsImplicitFilterApplied, handleMRTColumnFiltersChange]);
+
+  /** Initialize implicit filter state */
+  useEffect(() => {
+    if (isImplicitFilterApplied === undefined) {
+      setIsImplicitFilterApplied(initialIsFilterApplied);
+    }
+  }, [initialIsFilterApplied, isImplicitFilterApplied, setIsImplicitFilterApplied]);
+
+  /** Clear advanced column filters when table filters are cleared */
+  useEffect(() => {
+    // If tableColumnFilters is empty (cleared externally), clear advanced column filters as well
+    if (tableColumnFilters.length === 0) {
+      const hasActiveAdvancedFilters = advancedColumnFilters.some((filter) => filter.selectedOptions.length > 0);
+
+      if (hasActiveAdvancedFilters) {
+        // Clear all selected options in advanced filters to sync with MRT state
+        setColumnFilters((prev) =>
+          prev.map((filter) => ({
+            ...filter,
+            selectedOptions: [],
+          }))
+        );
+      }
+    }
+  }, [tableColumnFilters, advancedColumnFilters, setColumnFilters]);
+
   // Handle tree mode changes
   useEffect(() => {
     // Skip the first render to avoid unnecessary refetch on mount
@@ -479,26 +568,88 @@ export const useTableData = ({
     }
   }, [records, expanded, childrenData, shouldUseTreeMode, buildFlattenedRecords]);
 
-  // Column filters change handler
-  const handleMRTColumnFiltersChange = useCallback(
-    (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
-      let newColumnFilters: MRT_ColumnFiltersState;
+  // Initialize column visibility based on tab configuration
+  useEffect(() => {
+    if (!isEmptyObject(tableColumnVisibility)) return;
 
-      if (typeof updaterOrValue === "function") {
-        newColumnFilters = updaterOrValue(columnFilters);
-      } else {
-        newColumnFilters = updaterOrValue;
+    const initialVisibility: MRT_VisibilityState = {};
+    if (tab.fields) {
+      for (const field of Object.values(tab.fields)) {
+        if (field.showInGridView !== undefined && field.name) {
+          initialVisibility[field.name] = field.showInGridView;
+        }
+      }
+    }
+
+    setTableColumnVisibility(initialVisibility);
+  }, [tab.fields, tableColumnVisibility, setTableColumnVisibility]);
+
+  // Apply quick filter from context menu
+  const applyQuickFilter = useCallback(
+    async (columnId: string, filterId: string, filterValue: string | number, filterLabel: string) => {
+      const column = baseColumns.find((col) => col.columnName === columnId || col.id === columnId);
+      if (!column) {
+        return;
       }
 
-      setColumnFilters(newColumnFilters);
+      const filterOption: FilterOption = {
+        id: filterId,
+        label: filterLabel,
+        value: String(filterValue),
+      };
 
-      setAppliedTableFilters(newColumnFilters);
+      const existingFilter = advancedColumnFilters.find((f) => f.id === columnId);
+      const optionExists = existingFilter?.availableOptions.some((opt) => opt.id === filterOption.id);
+      const isBooleanOrYesNo = column.type === "boolean" || column.column?._identifier === "YesNo";
+
+      // For boolean/YesNo columns, create the filter entry if it doesn't exist
+      if (isBooleanOrYesNo && !existingFilter) {
+        const booleanOptions: FilterOption[] = [
+          { id: "true", label: "Yes", value: "true" },
+          { id: "false", label: "No", value: "false" },
+        ];
+
+        const newFilter: ColumnFilterState = {
+          id: columnId,
+          selectedOptions: [filterOption],
+          isMultiSelect: true,
+          availableOptions: booleanOptions,
+          loading: false,
+        };
+
+        setColumnFilters((prev) => [...prev, newFilter]);
+
+        const mrtFilter = {
+          id: columnId,
+          value: [filterOption.value],
+        };
+        setTableColumnFilters((prev) => {
+          const filtered = prev.filter((f) => f.id !== columnId);
+          return [...filtered, mrtFilter];
+        });
+
+        onColumnFilter?.(columnId, [filterOption]);
+        return;
+      }
+
+      // For TableDir columns, ensure the option is available in the dropdown
+      if (ColumnFilterUtils.isTableDirColumn(column) && !optionExists) {
+        const existingOptions = existingFilter?.availableOptions || [];
+        setFilterOptions(columnId, [...existingOptions, filterOption], false, false);
+      }
+
+      await handleColumnFilterChange(columnId, [filterOption]);
     },
-    [columnFilters]
+    [
+      baseColumns,
+      handleColumnFilterChange,
+      setFilterOptions,
+      advancedColumnFilters,
+      setColumnFilters,
+      setTableColumnFilters,
+      onColumnFilter,
+    ]
   );
-
-  // Display records (tree mode uses flattened, normal mode uses original records)
-  const displayRecords = shouldUseTreeMode ? flattenedRecords : records;
 
   return {
     // Data
@@ -507,28 +658,29 @@ export const useTableData = ({
     columns: baseColumns,
 
     // State
-    columnFilters,
-    columnVisibility,
     expanded,
     loading,
     error: error || null,
 
     // Tree mode
     shouldUseTreeMode,
-    loadChildNodes,
-    setChildrenData,
-    setLoadedNodes,
 
     // Handlers
     handleMRTColumnFiltersChange,
-    setColumnVisibility,
-    setExpanded,
+    handleMRTColumnVisibilityChange,
+    handleMRTSortingChange,
+    handleColumnFilterChange,
+    handleLoadFilterOptions,
+    handleLoadMoreFilterOptions,
+    handleMRTColumnOrderChange,
+    handleMRTExpandChange,
 
     // Actions
-    toggleImplicitFilters,
+    toggleImplicitFilters: handleToggleImplicitFilters,
     fetchMore,
     refetch,
     removeRecordLocally,
+    applyQuickFilter,
     hasMoreRecords,
   };
 };

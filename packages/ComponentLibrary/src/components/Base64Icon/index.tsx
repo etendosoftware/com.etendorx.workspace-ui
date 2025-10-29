@@ -15,8 +15,6 @@
  *************************************************************************
  */
 
-import Image from "next/image";
-
 export interface Base64IconProps {
   src: string;
   alt?: string;
@@ -44,7 +42,7 @@ const Base64Icon: React.FC<Base64IconProps> = ({
   const combinedClasses = `${CSS_CLASSES.base} ${className}`.trim();
 
   return (
-    <Image
+    <img
       src={src}
       alt={alt}
       width={size}

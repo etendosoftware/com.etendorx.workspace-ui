@@ -39,7 +39,7 @@ import { useAboutModal } from "@/hooks/about/useAboutModal";
 import type { Item } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
 import Nav from "@workspaceui/componentlibrary/src/components/Nav/Nav";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { NOTIFICATIONS, menuItems, sections } from "../../storybook/src/mocks";
+import { NOTIFICATIONS, menuItems, sections } from "../mocks";
 import { useTranslation } from "../hooks/useTranslation";
 import ProfileModal from "./ProfileModal/ProfileModal";
 import { useAssistants } from "@/hooks/useAssistants";
@@ -81,7 +81,7 @@ const Navigation: React.FC = () => {
   const { isOpen: aboutModalOpen, openModal: openAboutModal, closeModal: closeAboutModal } = useAboutModalOpen();
   const { aboutUrl } = useAboutModal();
 
-  const { assistants, getAssistants, invalidateCache, hasAssistants } = useAssistants();
+  const { assistants, getAssistants, invalidateCache, hasAssistants, isLoading: isLoadingAssistants } = useAssistants();
   const { labels, getLabels } = useCopilotLabels();
 
   const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,8 +129,18 @@ const Navigation: React.FC = () => {
 
   const flagString = getFlag(language);
 
-  const { messages, selectedAssistant, isLoading, handleSendMessage, handleSelectAssistant, handleResetConversation } =
-    useCopilot();
+  const {
+    messages,
+    selectedAssistant,
+    isLoading,
+    handleSendMessage,
+    handleSelectAssistant,
+    handleResetConversation,
+    conversations,
+    conversationsLoading,
+    loadConversations,
+    handleSelectConversation,
+  } = useCopilot();
 
   const handleCopilotSendMessage = useCallback(
     (message: string, _files?: File[]) => {
@@ -297,9 +307,14 @@ const Navigation: React.FC = () => {
         onSelectAssistant={handleSelectAssistant}
         onSendMessage={handleCopilotSendMessage}
         onResetConversation={handleResetConversation}
+        isLoadingAssistants={isLoadingAssistants}
         hasContextPending={!!pendingContextString}
         contextItems={pendingContextItems}
         onRemoveContext={handleRemoveContext}
+        conversations={conversations}
+        onSelectConversation={handleSelectConversation}
+        onLoadConversations={loadConversations}
+        conversationsLoading={conversationsLoading}
         translations={{
           copilotProfile: t("copilot.copilotProfile"),
           backToSelection: t("copilot.backToSelection"),
@@ -325,6 +340,15 @@ const Navigation: React.FC = () => {
             welcomeMessage: t("copilot.messageList.welcomeMessage"),
             typing: t("copilot.messageList.typing"),
           },
+          conversationList: {
+            newConversation: t("copilot.conversationList.newConversation"),
+            noConversations: t("copilot.conversationList.noConversations"),
+            startNewConversation: t("copilot.conversationList.startNewConversation"),
+            loading: t("copilot.conversationList.loading"),
+            untitledConversation: t("copilot.conversationList.untitledConversation"),
+          },
+          conversationsButton: t("copilot.conversationsButton"),
+          hideConversationsButton: t("copilot.hideConversationsButton"),
         }}
         data-testid="CopilotPopup__120cc9"
       />

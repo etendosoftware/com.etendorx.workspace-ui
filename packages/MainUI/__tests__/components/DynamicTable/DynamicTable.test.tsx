@@ -55,6 +55,14 @@ const mockDatasourceContext = {
   registerDatasource: jest.fn(),
   unregisterDatasource: jest.fn(),
   registerRefetchFunction: jest.fn(),
+  removeRecordFromDatasource: jest.fn(),
+  refetchDatasource: jest.fn(),
+  registerRecordsGetter: jest.fn(),
+  getRecords: jest.fn(() => []),
+  registerHasMoreRecordsGetter: jest.fn(),
+  getHasMoreRecords: jest.fn(() => false),
+  registerFetchMore: jest.fn(),
+  fetchMoreRecords: jest.fn(),
 };
 
 const mockToolbarContext = {
@@ -194,6 +202,24 @@ jest.mock("@/contexts/tab", () => ({
   useTabContext: () => mockTabContext,
 }));
 
+// Mock the new table state persistence context
+const mockTableStatePersistenceTab = {
+  tableColumnFilters: [],
+  tableColumnVisibility: {},
+  tableColumnSorting: [],
+  tableColumnOrder: [],
+  isImplicitFilterApplied: false,
+  setTableColumnFilters: jest.fn(),
+  setTableColumnVisibility: jest.fn(),
+  setTableColumnSorting: jest.fn(),
+  setTableColumnOrder: jest.fn(),
+  setIsImplicitFilterApplied: jest.fn(),
+};
+
+jest.mock("@/hooks/useTableStatePersistenceTab", () => ({
+  useTableStatePersistenceTab: () => mockTableStatePersistenceTab,
+}));
+
 jest.mock("@/hooks/useSelected", () => ({
   useSelected: () => mockSelectedContext,
 }));
@@ -242,7 +268,6 @@ jest.mock("@/hooks/table/useColumns", () => ({
 }));
 
 const mockDatasourceHook: {
-  toggleImplicitFilters: jest.Mock;
   fetchMore: jest.Mock;
   records: EntityData[];
   removeRecordLocally: jest.Mock;
@@ -251,7 +276,6 @@ const mockDatasourceHook: {
   loading: boolean;
   hasMoreRecords: boolean;
 } = {
-  toggleImplicitFilters: jest.fn(),
   fetchMore: jest.fn(),
   records: [],
   removeRecordLocally: jest.fn(),
@@ -442,6 +466,13 @@ describe("DynamicTable", () => {
     mockDatasourceHook.loading = false;
     mockDatasourceHook.error = null;
     resetTabContext(); // Reset tab context to default state
+
+    // Reset table state persistence mocks
+    mockTableStatePersistenceTab.tableColumnFilters = [];
+    mockTableStatePersistenceTab.tableColumnVisibility = {};
+    mockTableStatePersistenceTab.tableColumnSorting = [];
+    mockTableStatePersistenceTab.tableColumnOrder = [];
+    mockTableStatePersistenceTab.isImplicitFilterApplied = false;
   });
 
   describe("Rendering", () => {
@@ -595,7 +626,8 @@ describe("DynamicTable", () => {
     it("toggles implicit filters", () => {
       render(<DynamicTable {...defaultProps} />);
 
-      expect(mockDatasourceHook.toggleImplicitFilters).toBeDefined();
+      // toggleImplicitFilters is now handled internally by useTableData
+      expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
   });
 

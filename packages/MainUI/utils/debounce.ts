@@ -15,19 +15,24 @@
  *************************************************************************
  */
 
+export interface DebouncedFunction<T extends (...args: any[]) => any> {
+  (...args: Parameters<T>): void;
+  cancel: () => void;
+}
+
 /**
  * Creates a debounced function that delays invoking the provided function
  * until after the specified delay has elapsed since the last time it was invoked.
  *
  * @param func - The function to debounce
  * @param delay - The number of milliseconds to delay
- * @returns A debounced version of the function
+ * @returns A debounced version of the function with a cancel method
  */
 // biome-ignore lint/suspicious/noExplicitAny: Generic function parameters require any type
-export function debounce<T extends (...args: any[]) => any>(func: T, delay: number): (...args: Parameters<T>) => void {
+export function debounce<T extends (...args: any[]) => any>(func: T, delay: number): DebouncedFunction<T> {
   let timeoutId: NodeJS.Timeout | null = null;
 
-  return (...args: Parameters<T>) => {
+  const debounced = (...args: Parameters<T>) => {
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
@@ -36,6 +41,15 @@ export function debounce<T extends (...args: any[]) => any>(func: T, delay: numb
       func(...args);
     }, delay);
   };
+
+  debounced.cancel = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  };
+
+  return debounced;
 }
 
 export default debounce;
