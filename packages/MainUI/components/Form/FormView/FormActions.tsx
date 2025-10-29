@@ -95,27 +95,11 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
     }
 
     // Form is completely loaded, validate if save button should be enabled
-    // Check if all required fields are filled (if so, enable save even without changes)
     const timer = setTimeout(() => {
-      const validationResult = validateRequiredFields();
-      const allRequiredFieldsFilled = validationResult.isValid;
-
-      logger.debug("[FormActions] Initial load validation:", {
-        isDirty,
-        allRequiredFieldsFilled,
-        missingFieldsCount: validationResult.missingFields.length,
-        missingFields: validationResult.missingFields.map((f) => f.fieldLabel),
-      });
-
-      const shouldEnableSave = isDirty || allRequiredFieldsFilled;
-
-      if (shouldEnableSave) {
-        markFormAsChanged();
-      } else {
-        resetFormChanges();
-      }
+      const shouldEnableSave = isDirty || validateRequiredFields().isValid;
+      shouldEnableSave ? markFormAsChanged() : resetFormChanges();
       setHasValidatedInitialLoad(true);
-    }, 150); // Small delay to ensure all async operations have settled
+    }, 150);
 
     return () => clearTimeout(timer);
   }, [
