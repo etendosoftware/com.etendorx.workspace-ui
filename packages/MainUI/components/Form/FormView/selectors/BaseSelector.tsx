@@ -100,16 +100,16 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         const targetField = fieldsByColumnName[column];
         const hqlName = targetField?.hqlName ?? column;
 
-        setValue(hqlName, value, { shouldDirty: false, shouldTouch: false });
+        setValue(hqlName, value, { shouldDirty: false });
 
         if (targetField && identifier) {
-          setValue(`${hqlName}$_identifier`, identifier, { shouldDirty: false, shouldTouch: false });
+          setValue(`${hqlName}$_identifier`, identifier, { shouldDirty: false });
 
           if (value && String(value) !== identifier) {
             logger.debug(`Field ${hqlName}: value=${value}, identifier=${identifier}`);
           }
         } else if (targetField && !identifier && value) {
-          setValue(`${hqlName}$_identifier`, "", { shouldDirty: false, shouldTouch: false });
+          setValue(`${hqlName}$_identifier`, "", { shouldDirty: false });
         }
 
         // If the callout returned restricted entries for this field, expose them to selectors
@@ -120,7 +120,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
           setValue(
             `${hqlName}$_entries`,
             withEntries.map((e) => ({ id: e.id, label: e._identifier })),
-            { shouldDirty: false, shouldTouch: false }
+            { shouldDirty: false }
           );
         }
       }
@@ -132,7 +132,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     (auxiliaryInputValues: FormInitializationResponse["auxiliaryInputValues"]) => {
       for (const [column, { value }] of Object.entries(auxiliaryInputValues ?? {})) {
         const targetField = fieldsByColumnName[column];
-        setValue(targetField?.hqlName || column, value, { shouldDirty: false, shouldTouch: false });
+        setValue(targetField?.hqlName || column, value, { shouldDirty: false });
       }
     },
     [fieldsByColumnName, setValue]
