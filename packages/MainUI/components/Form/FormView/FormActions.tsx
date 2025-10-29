@@ -37,9 +37,7 @@ interface FormActionsProps {
 
 export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal }: FormActionsProps) {
   const formContext = useFormContext();
-  // IMPORTANT: Access formState properties directly to ensure subscription
-  // This is required for react-hook-form Proxy to work correctly
-  const { isDirty, touchedFields, dirtyFields } = formContext.formState;
+  const { isDirty } = formContext.formState;
 
   const { activeWindow, clearTabFormStateAtomic } = useMultiWindowURL();
   const { registerActions, setSaveButtonState } = useToolbarContext();
@@ -68,25 +66,15 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
     };
   }, [validateRequiredFields, setSaveButtonState]);
 
-  // Validate save button state during form changes
-  // Form has changes if it's dirty (values changed from defaults)
   useEffect(() => {
-    // Debug logging to track form state
-    logger.debug("[FormActions] Form state changed:", {
-      isDirty,
-      dirtyFields,
-    });
-
     if (isDirty) {
       markFormAsChanged();
     } else {
       resetFormChanges();
     }
-  }, [isDirty, dirtyFields, markFormAsChanged, resetFormChanges]);
+  }, [isDirty, markFormAsChanged, resetFormChanges]);
 
-  // Validate save button state after form is completely loaded (including callouts)
   useEffect(() => {
-    // Wait for form initialization to complete
     if (isFormInitializing) {
       return;
     }
@@ -119,9 +107,6 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
         missingFields: validationResult.missingFields.map((f) => f.fieldLabel),
       });
 
-      // Enable save if:
-      // 1. Form has changes (isDirty), OR
-      // 2. All required fields are filled (ready to save even without changes)
       const shouldEnableSave = isDirty || allRequiredFieldsFilled;
 
       if (shouldEnableSave) {
@@ -136,7 +121,6 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
   }, [
     isFormInitializing,
     isDirty,
-    touchedFields,
     markFormAsChanged,
     resetFormChanges,
     hasValidatedInitialLoad,
@@ -192,8 +176,6 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
   const handleBack = useCallback(() => {
     const windowId = activeWindow?.windowId;
     if (windowId) {
-      // Use atomic clear to avoid race conditions
-      // Only clears FormView, preserves selection and doesn't touch children
       clearTabFormStateAtomic(windowId, tab.id);
     }
     resetFormChanges();
