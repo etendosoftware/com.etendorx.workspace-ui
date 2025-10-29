@@ -162,7 +162,7 @@ export function FormFields({
           onToggle={(isOpen: boolean) => handleAccordionChange("linked-items", isOpen)}
           data-testid="Collapsible__linkeditems">
           <LinkedItemsSection
-            windowId={tab.window}
+            tabId={tab.id}
             entityName={tab.entityName}
             recordId={recordId}
             data-testid="LinkedItemsSection__38e4a6"

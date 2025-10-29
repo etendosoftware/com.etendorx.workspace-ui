@@ -37,8 +37,15 @@ import {
   TAB_INACTIVE,
   type FormMode,
   type TabMode,
+  type TabFormState,
+  type SelectedRecord,
 } from "@/utils/url/constants";
-import { getNewWindowIdentifier } from "@/utils/url/utils";
+import {
+  getNewWindowIdentifier,
+  generateSelectedRecords,
+  generateTabFormStates,
+} from "@/utils/url/utils";
+import { isEmptyArray } from '@/utils/commons';
 
 /**
  * Represents the complete state of a window in the multi-window navigation system.
@@ -101,14 +108,7 @@ export interface WindowState {
    *   - formMode: Form interaction mode (NEW, EDIT, VIEW)
    * Only tabs currently in form view will have entries in this map.
    */
-  tabFormStates: Record<
-    string,
-    {
-      recordId?: string;
-      mode?: TabMode;
-      formMode?: FormMode;
-    }
-  >;
+  tabFormStates: Record<string, TabFormState>;
 
   /**
    * Display title for the window tab.
@@ -466,18 +466,40 @@ export function useMultiWindowURL() {
   }, [windows, buildURL, router]);
 
   /**
-   * Opens a new window or activates an existing one with the specified window ID and title.
+   * Opens a new window or activates an existing one with the specified window ID, title, and optional initial state.
    * If a window with a matching window_identifier already exists, it will be activated and optionally retitled.
    * If no matching window exists, creates a new window with a unique identifier and adds it to the state.
+   * Supports setting initial selected records and tab form states for immediate navigation to specific records.
    *
    * @param windowId - The business entity ID for the window (e.g., "ProductWindow", "CustomerWindow")
    * @param title - Optional display title for the window tab
+   * @param selectedRecords - Optional array of initial selected records for tabs in the window
+   * @param tabFormStates - Optional array of initial form states for tabs that should open in form view
    *
    * @example
    * ```typescript
-   * // Open a new product window
+   * // Open a simple window
    * openWindow("ProductWindow", "Product Management");
    * // Creates window with unique identifier like "ProductWindow_1698234567890"
+   *
+   * // Open window with initial selected records
+   * openWindow("ProductWindow", "Product Details", [
+   *   { tabId: "mainTab", recordId: "product_12345" },
+   *   { tabId: "categoryTab", recordId: "category_67890" }
+   * ]);
+   *
+   * // Open window with records in form view
+   * openWindow("ProductWindow", "Edit Product", 
+   *   [{ tabId: "mainTab", recordId: "product_12345" }],
+   *   [{ 
+   *     tabId: "mainTab", 
+   *     tabFormState: { 
+   *       recordId: "product_12345", 
+   *       mode: "form", 
+   *       formMode: "edit" 
+   *     }
+   *   }]
+   * );
    *
    * // If the same window is opened again:
    * openWindow("ProductWindow", "Updated Title");
@@ -485,7 +507,7 @@ export function useMultiWindowURL() {
    * ```
    */
   const openWindow = useCallback(
-    (windowId: string, title?: string) => {
+    (windowId: string, title?: string, selectedRecords?: SelectedRecord[], tabFormStates?: { tabId: string, tabFormState: TabFormState }[]) => {
       const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
 
       // Generate unique identifier if not provided
@@ -493,14 +515,17 @@ export function useMultiWindowURL() {
 
       const nextOrder = getNextOrder(updatedWindows);
 
+      const selectedRecordsRes = isEmptyArray(selectedRecords) ? {} : generateSelectedRecords(selectedRecords);
+      const tabFormStatesRes = isEmptyArray(tabFormStates) ? {} : generateTabFormStates(tabFormStates);
+
       const newWindow: WindowState = {
         windowId,
         isActive: true,
         order: nextOrder,
         window_identifier: uniqueIdentifier,
         title,
-        selectedRecords: {},
-        tabFormStates: {},
+        selectedRecords: selectedRecordsRes,
+        tabFormStates: tabFormStatesRes,
       };
 
       updatedWindows.push(newWindow);

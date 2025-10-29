@@ -47,3 +47,14 @@ export const TAB_MODES = {
 
 export type FormMode = (typeof FORM_MODES)[keyof typeof FORM_MODES];
 export type TabMode = (typeof TAB_MODES)[keyof typeof TAB_MODES];
+
+export interface SelectedRecord {
+  recordId: string;
+  tabId: string;
+}
+
+export interface TabFormState {
+  recordId?: string;
+  mode?: TabMode;
+  formMode?: FormMode;
+}

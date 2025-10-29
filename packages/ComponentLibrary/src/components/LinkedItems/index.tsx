@@ -12,6 +12,7 @@ export interface LinkedItemCategory {
 export interface LinkedItem {
   adTabId: string;
   adWindowId: string;
+  adMenuName: string;
   id: string;
   name: string;
 }
@@ -155,9 +156,8 @@ export const LinkedItems = memo(
                 }
               }}
               tabIndex={0}
-              className={`p-4 cursor-pointer border-b border-gray-200 ${
-                selectedCategory?.adTabId === category.adTabId ? "bg-gray-100" : "bg-transparent"
-              } hover:bg-gray-50`}>
+              className={`p-4 cursor-pointer border-b border-gray-200 ${selectedCategory?.adTabId === category.adTabId ? "bg-gray-100" : "bg-transparent"
+                } hover:bg-gray-50`}>
               <p className="text-sm font-medium">{category.fullElementName}</p>
               <p className="text-xs text-gray-500">
                 ({category.total} {Number.parseInt(category.total) === 1 ? "item" : "items"})
