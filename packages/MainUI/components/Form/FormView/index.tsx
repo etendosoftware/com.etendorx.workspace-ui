@@ -22,6 +22,8 @@ import InfoIcon from "@workspaceui/componentlibrary/src/assets/icons/file-text.s
 import FileIcon from "@workspaceui/componentlibrary/src/assets/icons/file.svg";
 import FolderIcon from "@workspaceui/componentlibrary/src/assets/icons/folder.svg";
 import Info from "@workspaceui/componentlibrary/src/assets/icons/info.svg";
+import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
+import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
 import { FormMode, type EntityData, type EntityValue } from "@workspaceui/api-client/src/api/types";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import useFormFields from "@/hooks/useFormFields";
@@ -50,6 +52,8 @@ const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
   "More Information": <InfoIcon data-testid="InfoIcon__1a0853" />,
   Dimensions: <FolderIcon data-testid="FolderIcon__1a0853" />,
+  "Linked Items": <LinkIcon data-testid="LinkIcon__1a0853" />,
+  Notes: <NoteIcon data-testid="NoteIcon__1a0853" />,
 };
 
 /**
@@ -151,6 +155,11 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     },
     [defaultIcon]
   );
+
+  const initialNoteCount = useMemo(() => {
+    // Safely retrieve the noteCount, defaulting to 0 if not present
+    return formInitialization?.noteCount || 0;
+  }, [formInitialization]);
 
   /**
    * Computes the current record data from multiple sources with priority order:
@@ -473,13 +482,10 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         setSelectedRecordAndClearChildren(activeWindow.windowId, tab.id, newRecordId, childIds);
 
         // Also clear the graph selection for all children to ensure they reset completely
-        if (children) {
-          for (const child of children) {
-            graph.clearSelected(child);
-          }
+        for (const child of children ?? []) {
+          graph.clearSelected(child);
         }
       }
-
       setRecordId(newRecordId);
     },
     [setRecordId, graph, tab, activeWindow, setSelectedRecordAndClearChildren]
@@ -569,7 +575,17 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               data-testid="FormHeader__1a0853"
             />
 
-            <FormFields tab={tab} mode={mode} groups={groups} loading={isLoading} data-testid="FormFields__1a0853" />
+            <FormFields
+              tab={tab}
+              mode={mode}
+              groups={groups}
+              loading={isLoading}
+              recordId={recordId ?? ""}
+              initialNoteCount={initialNoteCount}
+              onNotesChange={refreshRecordAndSession}
+              showErrorModal={showErrorModal}
+              data-testid="FormFields__1a0853"
+            />
 
             <FormActions
               tab={tab}

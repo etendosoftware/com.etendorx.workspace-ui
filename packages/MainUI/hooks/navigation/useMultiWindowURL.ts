@@ -59,13 +59,14 @@ export interface WindowState {
 }
 
 const extractWindowIds = (searchParams: URLSearchParams): Set<string> => {
-  const windowIds = new Set<string>();
+  const windowIdentifiers = new Set<string>();
   for (const [key] of searchParams.entries()) {
     if (key.startsWith(WINDOW_PREFIX)) {
-      windowIds.add(key.slice(2));
+      // Extract window_identifier (everything after w_)
+      windowIdentifiers.add(key.slice(2));
     }
   }
-  return windowIds;
+  return windowIdentifiers;
 };
 
 const processTabParameters = (
@@ -108,21 +109,21 @@ const processTabParameters = (
   return { selectedRecords, tabFormStates };
 };
 
-const createWindowState = (windowId: string, searchParams: URLSearchParams): WindowState => {
-  const isActive = searchParams.get(`${WINDOW_PREFIX}${windowId}`) === TAB_ACTIVE;
-  const formRecordId = searchParams.get(`${FORM_RECORD_ID_PREFIX}${windowId}`) || undefined;
-  const formMode = (searchParams.get(`${FORM_MODE_PREFIX}${windowId}`) as FormMode) || undefined;
-  const order = Number.parseInt(searchParams.get(`${ORDER_PREFIX}${windowId}`) || "1", 10);
-  const window_identifier = searchParams.get(`${WINDOW_IDENTIFIER_PREFIX}${windowId}`) || windowId;
-  const title = searchParams.get(`${TITLE_PREFIX}${windowId}`) || undefined;
+const createWindowState = (windowIdentifier: string, searchParams: URLSearchParams): WindowState => {
+  const isActive = searchParams.get(`${WINDOW_PREFIX}${windowIdentifier}`) === TAB_ACTIVE;
+  const formRecordId = searchParams.get(`${FORM_RECORD_ID_PREFIX}${windowIdentifier}`) || undefined;
+  const formMode = (searchParams.get(`${FORM_MODE_PREFIX}${windowIdentifier}`) as FormMode) || undefined;
+  const order = Number.parseInt(searchParams.get(`${ORDER_PREFIX}${windowIdentifier}`) || "1", 10);
+  const windowId = searchParams.get(`${WINDOW_IDENTIFIER_PREFIX}${windowIdentifier}`) || windowIdentifier;
+  const title = searchParams.get(`${TITLE_PREFIX}${windowIdentifier}`) || undefined;
 
-  const { selectedRecords, tabFormStates } = processTabParameters(searchParams, windowId);
+  const { selectedRecords, tabFormStates } = processTabParameters(searchParams, windowIdentifier);
 
   return {
     windowId,
     isActive,
     order,
-    window_identifier,
+    window_identifier: windowIdentifier,
     formRecordId,
     formMode,
     selectedRecords,
@@ -144,35 +145,38 @@ const setWindowParameters = (params: URLSearchParams, window: WindowState): void
     title,
   } = window;
 
-  params.set(`${WINDOW_PREFIX}${windowId}`, isActive ? TAB_ACTIVE : TAB_INACTIVE);
-  params.set(`${ORDER_PREFIX}${windowId}`, (order ?? 1).toString());
-  params.set(`${WINDOW_IDENTIFIER_PREFIX}${windowId}`, window_identifier);
+  // Use window_identifier as the URL key instead of windowId
+  const urlKey = window_identifier;
+
+  params.set(`${WINDOW_PREFIX}${urlKey}`, isActive ? TAB_ACTIVE : TAB_INACTIVE);
+  params.set(`${ORDER_PREFIX}${urlKey}`, (order ?? 1).toString());
+  params.set(`${WINDOW_IDENTIFIER_PREFIX}${urlKey}`, windowId);
 
   if (formRecordId) {
-    params.set(`${FORM_RECORD_ID_PREFIX}${windowId}`, formRecordId);
+    params.set(`${FORM_RECORD_ID_PREFIX}${urlKey}`, formRecordId);
   }
   if (formMode) {
-    params.set(`${FORM_MODE_PREFIX}${windowId}`, formMode);
+    params.set(`${FORM_MODE_PREFIX}${urlKey}`, formMode);
   }
   if (title) {
-    params.set(`${TITLE_PREFIX}${windowId}`, title);
+    params.set(`${TITLE_PREFIX}${urlKey}`, title);
   }
 
   for (const [tabId, selectedRecordId] of Object.entries(selectedRecords)) {
     if (selectedRecordId) {
-      params.set(`${SELECTED_RECORD_PREFIX}${windowId}_${tabId}`, selectedRecordId);
+      params.set(`${SELECTED_RECORD_PREFIX}${urlKey}_${tabId}`, selectedRecordId);
     }
   }
 
   for (const [tabId, tabState] of Object.entries(tabFormStates)) {
     if (tabState.recordId) {
-      params.set(`${TAB_FORM_RECORD_ID_PREFIX}${windowId}_${tabId}`, tabState.recordId);
+      params.set(`${TAB_FORM_RECORD_ID_PREFIX}${urlKey}_${tabId}`, tabState.recordId);
     }
     if (tabState.mode && tabState.mode !== TAB_MODES.TABLE) {
-      params.set(`${TAB_MODE_PREFIX}${windowId}_${tabId}`, tabState.mode);
+      params.set(`${TAB_MODE_PREFIX}${urlKey}_${tabId}`, tabState.mode);
     }
     if (tabState.formMode) {
-      params.set(`${TAB_FORM_MODE_PREFIX}${windowId}_${tabId}`, tabState.formMode);
+      params.set(`${TAB_FORM_MODE_PREFIX}${urlKey}_${tabId}`, tabState.formMode);
     }
   }
 };
@@ -272,15 +276,16 @@ export function useMultiWindowURL() {
     (windowId: string, title?: string, window_identifier?: string) => {
       const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
 
-      const existingIndex = updatedWindows.findIndex((w) => w.windowId === windowId);
+      // Generate unique identifier if not provided
+      const uniqueIdentifier = window_identifier || `${windowId}_${Date.now()}`;
+
+      // Search by window_identifier instead of windowId to support multiple instances
+      const existingIndex = updatedWindows.findIndex((w) => w.window_identifier === uniqueIdentifier);
 
       if (existingIndex >= 0) {
         updatedWindows[existingIndex].isActive = true;
         if (title) {
           updatedWindows[existingIndex].title = title;
-        }
-        if (window_identifier) {
-          updatedWindows[existingIndex].window_identifier = window_identifier;
         }
       } else {
         const nextOrder = getNextOrder(updatedWindows);
@@ -288,7 +293,7 @@ export function useMultiWindowURL() {
           windowId,
           isActive: true,
           order: nextOrder,
-          window_identifier: window_identifier || windowId,
+          window_identifier: uniqueIdentifier,
           title,
           selectedRecords: {},
           tabFormStates: {},
@@ -301,10 +306,10 @@ export function useMultiWindowURL() {
   );
 
   const closeWindow = useCallback(
-    (windowId: string) => {
-      const updatedWindows = windows.filter((w) => w.windowId !== windowId);
+    (windowIdentifier: string) => {
+      const updatedWindows = windows.filter((w) => w.window_identifier !== windowIdentifier);
 
-      const wasActive = windows.find((w) => w.windowId === windowId)?.isActive;
+      const wasActive = windows.find((w) => w.window_identifier === windowIdentifier)?.isActive;
       if (wasActive && updatedWindows.length > 0) {
         updatedWindows[0].isActive = true;
       }
@@ -321,10 +326,10 @@ export function useMultiWindowURL() {
   );
 
   const setActiveWindow = useCallback(
-    (windowId: string) => {
+    (windowIdentifier: string) => {
       const updatedWindows = windows.map((w) => ({
         ...w,
-        isActive: w.windowId === windowId,
+        isActive: w.window_identifier === windowIdentifier,
       }));
 
       navigate(updatedWindows);
@@ -653,7 +658,13 @@ export function useMultiWindowURL() {
     ) => {
       applyWindowUpdates((prev) => {
         const updated = prev.map((w) => ({ ...w, isActive: false }));
-        const existingIndex = updated.findIndex((w) => w.windowId === windowId);
+
+        // If window_identifier is provided, use it to find existing window
+        // Otherwise, fall back to windowId (old behavior)
+        const identifierToFind = options?.window_identifier || windowId;
+        const existingIndex = updated.findIndex((w) =>
+          options?.window_identifier ? w.window_identifier === identifierToFind : w.windowId === windowId
+        );
 
         let target: WindowState;
         if (existingIndex >= 0) {

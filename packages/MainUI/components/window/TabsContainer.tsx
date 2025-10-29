@@ -17,7 +17,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useMemo, useCallback } from "react";
 import Tabs from "@/components/window/Tabs";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
@@ -29,23 +29,13 @@ import { shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
 import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
 
 export default function TabsContainer() {
-  const { activeLevels, clearAllStates } = useSelected();
+  const { activeLevels, activeTabsByLevel, setActiveTabsByLevel } = useSelected();
   const { activeWindow } = useMultiWindowURL();
   const { getWindowMetadata } = useMetadataContext();
-  // Translation not used here
-
-  const [activeTabsByLevel, setActiveTabsByLevel] = useState<Map<number, string>>(new Map());
 
   const windowData = useMemo(() => {
     return activeWindow ? getWindowMetadata(activeWindow.windowId) : undefined;
   }, [activeWindow, getWindowMetadata]);
-
-  useEffect(() => {
-    if (activeWindow?.windowId) {
-      clearAllStates();
-      setActiveTabsByLevel(new Map());
-    }
-  }, [activeWindow?.windowId, clearAllStates]);
 
   const groupedTabs = useMemo(() => {
     return windowData ? groupTabsByLevel(windowData) : [];
@@ -95,6 +85,10 @@ export default function TabsContainer() {
     });
   }, [groupedTabs, getActiveTabForLevel]);
 
+  const firstExpandedIndex = filteredGroupedTabs.findIndex(
+    (tabs) => tabs.length > 0 && activeLevels.includes(tabs[0].tabLevel)
+  );
+
   if (!windowData) {
     return (
       <div className="p-4 animate-pulse flex-1 flex flex-col gap-4">
@@ -104,10 +98,6 @@ export default function TabsContainer() {
       </div>
     );
   }
-
-  const firstExpandedIndex = filteredGroupedTabs.findIndex(
-    (tabs) => tabs.length > 0 && activeLevels.includes(tabs[0].tabLevel)
-  );
 
   return (
     <TabRefreshProvider data-testid="TabRefreshProvider__895626">

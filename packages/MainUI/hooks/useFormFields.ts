@@ -20,6 +20,7 @@ import { type EntityValue, type Field, FieldType, FormMode, type Tab } from "@wo
 import { useMemo } from "react";
 import { useTranslation } from "./useTranslation";
 import { useCurrentRecord } from "./useCurrentRecord";
+import { NEW_RECORD_ID } from "@/utils/url/constants";
 
 const createAuditField = (fieldName: string, label: string, columnName: string, reference: string): Field =>
   ({
@@ -192,12 +193,39 @@ export default function useFormFields(
   }, [fields.formFields, t]);
 
   const groups = useMemo(() => {
-    const sortedGroups = Object.entries(fieldGroups).toSorted(([, a], [, b]) => {
+    const groupsArray = Object.entries(fieldGroups);
+
+    groupsArray.sort(([, a], [, b]) => {
       return a.sequenceNumber - b.sequenceNumber;
     });
 
-    return sortedGroups;
-  }, [fieldGroups]);
+    if (recordId && recordId !== NEW_RECORD_ID) {
+      const notesGroup = [
+        "notes_group",
+        {
+          id: "notes_group",
+          identifier: t("forms.sections.notes"),
+          sequenceNumber: 10000,
+          fields: {},
+        },
+      ] as UseFormFieldsReturn["groups"][number];
+
+      const linkedItemsGroup = [
+        "linked-items",
+        {
+          id: "linked-items",
+          identifier: t("forms.sections.linkedItems"),
+          sequenceNumber: 10001,
+          fields: {},
+        },
+      ] as UseFormFieldsReturn["groups"][number];
+
+      groupsArray.push(notesGroup);
+      groupsArray.push(linkedItemsGroup);
+    }
+
+    return groupsArray;
+  }, [fieldGroups, recordId, t]);
 
   return { fields, groups };
 }

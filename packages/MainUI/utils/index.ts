@@ -204,6 +204,10 @@ export const buildFormPayload = ({
   const filteredValues = Object.entries(values).reduce((acc, [key, value]) => {
     if (!excludedFields.includes(key)) {
       acc[key] = value;
+      // If this is a password field, also add password_cleartext
+      if (key === "password" && value) {
+        acc.password_cleartext = value;
+      }
     }
     return acc;
   }, {} as EntityData);

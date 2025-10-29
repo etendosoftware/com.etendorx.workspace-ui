@@ -70,7 +70,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
   const { saveButtonState } = useToolbarContext();
   const { buttons, processButtons, loading, refetch } = useToolbar(windowId, tab?.id);
-  const { graph, clearTabRecord } = useSelected();
+  const { graph } = useSelected();
   const { activeWindow, getTabFormState, clearChildrenSelections } = useMultiWindowURL();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
@@ -166,13 +166,12 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
         if (isChildInFormView) {
           childTabIdsInFormView.push(childTab.id);
-          clearTabRecord(childTab.id);
         }
       }
 
       return childTabIdsInFormView;
     },
-    [getTabFormState, clearTabRecord]
+    [getTabFormState]
   );
 
   const handleCompleteRefresh = useCallback(async () => {

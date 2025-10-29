@@ -260,6 +260,7 @@ export interface Tab {
   module: string;
   parentTabId?: string;
   table$_identifier?: string;
+  window$_identifier?: string;
   tableTree?: boolean;
 }
 
@@ -730,6 +731,7 @@ export interface FormInitializationResponse {
   sessionAttributes: Record<string, string>;
   dynamicCols: string[];
   attachmentExists: boolean;
+  noteCount: number;
   _readOnly?: boolean;
 }
 
@@ -821,4 +823,72 @@ export interface LocationErrorResponse {
   success: false;
   error: string;
   status: number;
+}
+
+export interface LinkedItemCategory {
+  adTabId: string;
+  adWindowId: string;
+  columnName: string;
+  fullElementName: string;
+  tableName: string;
+  total: string;
+}
+
+export interface LinkedItem {
+  adTabId: string;
+  adWindowId: string;
+  id: string;
+  name: string;
+}
+
+export interface LinkedItemsResponse {
+  usedByLinkData: LinkedItemCategory[] | LinkedItem[];
+}
+
+export interface FetchCategoriesParams {
+  windowId: string;
+  entityName: string;
+  recordId: string;
+}
+
+export interface FetchLinkedItemsParams {
+  windowId: string;
+  entityName: string;
+  recordId: string;
+  adTabId: string;
+  tableName: string;
+  columnName: string;
+}
+
+export interface Note {
+  id: string;
+  note: string;
+  createdBy: string;
+  createdBy$_identifier: string;
+  creationDate: string;
+}
+
+export interface FetchNoteCountParams {
+  windowId: string;
+  tabId: string;
+  recordId: string;
+}
+
+export interface FetchNotesParams {
+  tableId: string;
+  recordId: string;
+}
+
+export interface CreateNoteParams {
+  recordId: string;
+  tableId: string;
+  content: string;
+}
+
+export interface DatasourceResponse {
+  response: {
+    data?: Note;
+    status: number;
+    error?: { message: string };
+  };
 }
