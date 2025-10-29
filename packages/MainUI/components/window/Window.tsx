@@ -32,16 +32,10 @@ export default function Window({
   windowId: string;
   windowIdentifier: string;
 }) {
-  const { error, loading, getWindowMetadata, loadWindowData } = useMetadataContext();
+  const { error, loading, getWindowMetadata } = useMetadataContext();
   const { t } = useTranslation();
 
   const windowData = getWindowMetadata(windowId);
-
-  useEffect(() => {
-    if (!windowData && !loading && !error) {
-      loadWindowData(windowId);
-    }
-  }, [windowId, windowData, loading, error, loadWindowData]);
 
   if (loading) {
     return <Loading data-testid="Loading__56042a" />;

@@ -110,14 +110,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [errors]
   );
 
-  useEffect(() => {
-    if (activeWindow?.windowId && !windowsData[activeWindow.windowId] && !loadingWindows[activeWindow.windowId]) {
-      loadWindowData(activeWindow.windowId).catch(() => {
-        // Error handled in load
-      });
-    }
-  }, [activeWindow?.windowId, windowsData, loadingWindows, loadWindowData]);
-
   const removeRecord = useCallback(
     (tabId: string, recordId: string) => {
       removeRecordFromDatasource(tabId, recordId);
@@ -149,6 +141,14 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     }
     return Promise.resolve({} as Etendo.WindowMetadata);
   }, [currentWindowId, loadWindowData]);
+
+  useEffect(() => {
+    if (activeWindow?.windowId && !windowsData[activeWindow.windowId] && !loadingWindows[activeWindow.windowId]) {
+      loadWindowData(activeWindow.windowId).catch(() => {
+        // Error handled in load
+      });
+    }
+  }, [activeWindow?.windowId, windowsData, loadingWindows, loadWindowData]);
 
   const value = useMemo<IMetadataContext>(
     () => ({

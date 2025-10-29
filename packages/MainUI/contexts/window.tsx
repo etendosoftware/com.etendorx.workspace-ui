@@ -277,6 +277,23 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       }
 
       const currentTabId = tabIds[0];
+
+      if (!newState[windowIdentifier][currentTabId]) {
+          newState[windowIdentifier][currentTabId] = {
+            table: {
+              filters: [],
+              visibility: {},
+              sorting: [],
+              order: [],
+              isImplicitFilterApplied: false,
+            },
+            navigation: {
+              activeLevels: [0],
+              activeTabsByLevel: new Map(),
+            },
+          };
+        }
+
       newState[windowIdentifier][currentTabId].navigation.activeLevels = activeLevels;
 
       return newState;
@@ -301,6 +318,23 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
         }
 
         const currentTabId = tabIds[0];
+
+        if (!newState[windowIdentifier][currentTabId]) {
+          newState[windowIdentifier][currentTabId] = {
+            table: {
+              filters: [],
+              visibility: {},
+              sorting: [],
+              order: [],
+              isImplicitFilterApplied: false,
+            },
+            navigation: {
+              activeLevels: [0],
+              activeTabsByLevel: new Map(),
+            },
+          };
+        }
+
         newState[windowIdentifier][currentTabId].navigation.activeTabsByLevel = activeTabsByLevel;
 
         return newState;
