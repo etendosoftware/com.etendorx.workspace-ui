@@ -276,16 +276,25 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * Wraps react-hook-form's setValue to provide consistent behavior
    * for form field updates with proper dirty state tracking.
    *
+   * When shouldTouch is not explicitly provided:
+   * - During form initialization: shouldTouch = false (to avoid false touches)
+   * - After form is ready: shouldTouch = true (user interactions should mark as touched)
+   *
    * @param name - Field name to update
    * @param value - New field value
-   * @param options - Additional options including shouldDirty flag (defaults to true)
+   * @param options - Additional options including shouldDirty and shouldTouch flags
    */
   const handleSetValue = useCallback(
     (name: string, value: EntityValue, options?: SetValueConfig) => {
-      const { shouldDirty = true, ...rest } = options || {};
-      setValue(name, value, { shouldDirty, ...rest });
+      const { shouldDirty = true, shouldTouch, ...rest } = options || {};
+
+      // If shouldTouch is explicitly provided, use it
+      // Otherwise, only touch if form is not initializing (meaning it's a user interaction)
+      const shouldTouchField = shouldTouch !== undefined ? shouldTouch : !isFormInitializing;
+
+      setValue(name, value, { shouldDirty, shouldTouch: shouldTouchField, ...rest });
     },
-    [setValue]
+    [setValue, isFormInitializing]
   );
 
   /**

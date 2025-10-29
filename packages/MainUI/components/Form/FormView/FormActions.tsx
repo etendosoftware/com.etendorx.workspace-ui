@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useFormValidation } from "@/hooks/useFormValidation";
@@ -25,6 +25,7 @@ import { useTabContext } from "@/contexts/tab";
 import { globalCalloutManager } from "@/services/callouts";
 import { logger } from "@/utils/logger";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
+import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 
 interface FormActionsProps {
   tab: Tab;
@@ -35,12 +36,18 @@ interface FormActionsProps {
 }
 
 export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal }: FormActionsProps) {
-  const { formState } = useFormContext();
+  const formContext = useFormContext();
+  // IMPORTANT: Access formState properties directly to ensure subscription
+  // This is required for react-hook-form Proxy to work correctly
+  const { isDirty, touchedFields, dirtyFields } = formContext.formState;
+
   const { activeWindow, clearTabFormStateAtomic } = useMultiWindowURL();
   const { registerActions, setSaveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
+  const { isFormInitializing } = useFormInitializationContext();
 
   const { validateRequiredFields } = useFormValidation(tab);
+  const [hasValidatedInitialLoad, setHasValidatedInitialLoad] = useState(false);
 
   // Update validation state when form data changes
   useEffect(() => {
@@ -61,15 +68,87 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
     };
   }, [validateRequiredFields, setSaveButtonState]);
 
+  // Validate save button state during form changes
+  // Form has changes if it's dirty (values changed from defaults)
   useEffect(() => {
-    if (formState.isDirty) {
+    // Debug logging to track form state
+    logger.debug("[FormActions] Form state changed:", {
+      isDirty,
+      dirtyFields,
+    });
+
+    if (isDirty) {
       markFormAsChanged();
+    } else {
+      resetFormChanges();
+    }
+  }, [isDirty, dirtyFields, markFormAsChanged, resetFormChanges]);
+
+  // Validate save button state after form is completely loaded (including callouts)
+  useEffect(() => {
+    // Wait for form initialization to complete
+    if (isFormInitializing) {
+      return;
     }
 
-    return () => {
-      resetFormChanges();
-    };
-  }, [formState.isDirty, markFormAsChanged, resetFormChanges]);
+    // Wait for all callouts to finish
+    const calloutState = globalCalloutManager.getState();
+    if (calloutState.isRunning || calloutState.queueLength > 0 || calloutState.pendingCount > 0) {
+      // If callouts are running, mark that we haven't validated yet
+      if (hasValidatedInitialLoad) {
+        setHasValidatedInitialLoad(false);
+      }
+      return;
+    }
+
+    // If we already validated and callouts are done, don't validate again
+    if (hasValidatedInitialLoad) {
+      return;
+    }
+
+    // Form is completely loaded, validate if save button should be enabled
+    // Check if all required fields are filled (if so, enable save even without changes)
+    const timer = setTimeout(() => {
+      const validationResult = validateRequiredFields();
+      const allRequiredFieldsFilled = validationResult.isValid;
+
+      logger.debug("[FormActions] Initial load validation:", {
+        isDirty,
+        allRequiredFieldsFilled,
+        missingFieldsCount: validationResult.missingFields.length,
+        missingFields: validationResult.missingFields.map((f) => f.fieldLabel),
+      });
+
+      // Enable save if:
+      // 1. Form has changes (isDirty), OR
+      // 2. All required fields are filled (ready to save even without changes)
+      const shouldEnableSave = isDirty || allRequiredFieldsFilled;
+
+      if (shouldEnableSave) {
+        markFormAsChanged();
+      } else {
+        resetFormChanges();
+      }
+      setHasValidatedInitialLoad(true);
+    }, 150); // Small delay to ensure all async operations have settled
+
+    return () => clearTimeout(timer);
+  }, [
+    isFormInitializing,
+    isDirty,
+    touchedFields,
+    markFormAsChanged,
+    resetFormChanges,
+    hasValidatedInitialLoad,
+    validateRequiredFields,
+  ]);
+
+  // Reset validation flag when form is re-initialized (e.g., navigating to a different record)
+  useEffect(() => {
+    if (isFormInitializing) {
+      setHasValidatedInitialLoad(false);
+    }
+  }, [isFormInitializing]);
 
   const handleSave = useCallback(
     async (showModal: boolean) => {

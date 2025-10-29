@@ -21,6 +21,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { useLanguage } from "@/contexts/language";
 import { TextInput } from "./components/TextInput";
+import { logger } from "@/utils/logger";
 
 type NumericType = "integer" | "decimal";
 
@@ -161,12 +162,25 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
     [props]
   );
 
+  const registerProps = register(field.hqlName);
+
   const handleBlur = useCallback(
     (event: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(false);
 
       const parsedValue = parseValue(localValue);
-      setValue(field.hqlName, parsedValue);
+
+      // Debug logging
+      logger.debug("[NumericSelector] handleBlur:", {
+        fieldName: field.hqlName,
+        localValue,
+        parsedValue,
+        willMarkAsTouched: true,
+        hasRegisterPropsOnBlur: !!registerProps.onBlur,
+      });
+
+      // Update the value
+      setValue(field.hqlName, parsedValue, { shouldTouch: true, shouldDirty: true });
 
       if (parsedValue === null) {
         setLocalValue("");
@@ -174,14 +188,22 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
         setLocalValue(formatDisplayValue(parsedValue));
       }
 
+      // IMPORTANT: Call the original onBlur from react-hook-form to mark field as touched
+      if (registerProps.onBlur) {
+        logger.debug("[NumericSelector] Calling registerProps.onBlur for", field.hqlName);
+        registerProps.onBlur(event);
+        logger.debug("[NumericSelector] registerProps.onBlur called successfully");
+      } else {
+        logger.warn("[NumericSelector] registerProps.onBlur is not defined for", field.hqlName);
+      }
+
+      // Call custom onBlur if provided
       if (props.onBlur) {
         props.onBlur(event);
       }
     },
-    [localValue, parseValue, field.hqlName, setValue, props, formatDisplayValue]
+    [localValue, parseValue, field.hqlName, setValue, props, formatDisplayValue, registerProps]
   );
-
-  const registerProps = register(field.hqlName);
 
   return (
     <TextInput
