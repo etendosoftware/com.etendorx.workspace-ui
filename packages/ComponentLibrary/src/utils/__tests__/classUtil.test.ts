@@ -38,11 +38,15 @@ describe("cleanDefaultClasses", () => {
   });
 
   it("overrides multiple classes", () => {
-    expect(cleanDefaultClasses("text-blue-500 bg-white w-full", "text-red-500 bg-black")).toBe("w-full text-red-500 bg-black");
+    expect(cleanDefaultClasses("text-blue-500 bg-white w-full", "text-red-500 bg-black")).toBe(
+      "w-full text-red-500 bg-black"
+    );
   });
 
   it("preserves non-tracked utilities", () => {
-    expect(cleanDefaultClasses("text-blue-500 flex items-center", "text-red-500")).toBe("flex items-center text-red-500");
+    expect(cleanDefaultClasses("text-blue-500 flex items-center", "text-red-500")).toBe(
+      "flex items-center text-red-500"
+    );
   });
 
   it("does not override text with arbitrary values", () => {
@@ -50,7 +54,8 @@ describe("cleanDefaultClasses", () => {
   });
 
   it("handles complex multi-override scenarios", () => {
-    expect(cleanDefaultClasses("text-sm text-gray-700 bg-white rounded-md w-full h-10", "text-lg bg-blue-500 rounded-full"))
-      .toBe("w-full h-10 text-lg bg-blue-500 rounded-full");
+    expect(
+      cleanDefaultClasses("text-sm text-gray-700 bg-white rounded-md w-full h-10", "text-lg bg-blue-500 rounded-full")
+    ).toBe("w-full h-10 text-lg bg-blue-500 rounded-full");
   });
 });

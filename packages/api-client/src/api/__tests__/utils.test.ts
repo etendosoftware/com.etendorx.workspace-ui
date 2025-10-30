@@ -32,10 +32,11 @@ describe("api/utils", () => {
   });
 
   describe("getDecodedJsonResponse", () => {
-    const mockResponse = (body: string, contentType: string): Response => ({
-      arrayBuffer: async () => new TextEncoder().encode(body).buffer,
-      headers: { get: (name: string) => (name === "content-type" ? contentType : null) },
-    } as Response);
+    const mockResponse = (body: string, contentType: string): Response =>
+      ({
+        arrayBuffer: async () => new TextEncoder().encode(body).buffer,
+        headers: { get: (name: string) => (name === "content-type" ? contentType : null) },
+      }) as Response;
 
     it.each([
       ["application/json; charset=utf-8", '{"success": true}', { success: true }],
