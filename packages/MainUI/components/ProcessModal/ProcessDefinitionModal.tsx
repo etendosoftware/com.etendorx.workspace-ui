@@ -73,7 +73,7 @@ export type GridSelectionUpdater = GridSelectionStructure | ((prev: GridSelectio
 type AutoSelectLogic = {
   field?: string;
   operator?: string; // '=', '!=', '>', '<', 'in'
-  value?: any;
+  value?: string | number | boolean | string[] | number[] | symbol | null;
   valueFromContext?: string;
   ids?: string[]; // alternative to logic by field
 };
@@ -696,7 +696,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     // If logic contains explicit ids => select by ids directly
     if (Array.isArray(logic.ids) && logic.ids.length > 0) {
       const idsSet = new Set(logic.ids.map((id) => String(id)));
-      const matched = target._allRows.filter((row: any) => idsSet.has(String(row?.id ?? row?.ID ?? row?.Id ?? row)));
+      const matched = target._allRows.filter((row: unknown) => {
+        const record = row as Record<string, unknown>;
+        return idsSet.has(String(record?.id ?? record?.ID ?? record?.Id ?? row));
+      });
       if (matched.length > 0) {
         setGridSelection((prev) => ({
           ...prev,
@@ -712,8 +715,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     }
 
     // Otherwise, apply operator-based selection using field comparison
-    const matchedRows = target._allRows.filter((row: any) => {
-      const rowValue = row?.[logic.field as string];
+    const matchedRows = target._allRows.filter((row: unknown) => {
+      const record = row as Record<string, unknown>;
+      const rowValue = record?.[logic.field as string];
+
       switch (logic.operator) {
         case "=":
         case "==":
@@ -722,11 +727,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         case "<>":
           return rowValue !== valueToCompare;
         case ">":
-          return rowValue > valueToCompare;
+          return typeof rowValue === "number" && typeof valueToCompare === "number" && rowValue > valueToCompare;
         case "<":
-          return rowValue < valueToCompare;
-        case "in":
-          return Array.isArray(valueToCompare) ? valueToCompare.includes(rowValue) : false;
+          return typeof rowValue === "number" && typeof valueToCompare === "number" && rowValue < valueToCompare;
+        case "in": {
+          if (!Array.isArray(valueToCompare)) return false;
+          const typedArray = valueToCompare as (string | number | boolean)[];
+          return typedArray.some((val) => val === rowValue);
+        }
         default:
           // default to strict equality if operator missing
           return rowValue === valueToCompare;
