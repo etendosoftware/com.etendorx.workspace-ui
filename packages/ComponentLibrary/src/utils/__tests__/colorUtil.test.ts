@@ -17,32 +17,30 @@
 
 import { rgbaToHex } from "../colorUtil";
 
-describe("colorUtil", () => {
-  describe("rgbaToHex", () => {
-    it("should return hex color when input is already hex", () => {
-      expect(rgbaToHex("#ff5733")).toBe("#FF5733");
-      expect(rgbaToHex("#abc")).toBe("#ABC");
-    });
+describe("rgbaToHex", () => {
+  it.each([
+    ["#ff5733", "#FF5733"],
+    ["#abc", "#ABC"],
+  ])("returns hex as-is: %s → %s", (input, expected) => {
+    expect(rgbaToHex(input)).toBe(expected);
+  });
 
-    it("should convert rgba to hex without alpha", () => {
-      expect(rgbaToHex("rgba(255, 87, 51, 1)")).toBe("#FF5733");
-      expect(rgbaToHex("rgba(0, 0, 0, 1)")).toBe("#000000");
-      expect(rgbaToHex("rgba(255, 255, 255, 1)")).toBe("#FFFFFF");
-    });
+  it.each([
+    ["rgba(255, 87, 51, 1)", "#FF5733"],
+    ["rgba(0, 0, 0, 1)", "#000000"],
+    ["rgba(255, 255, 255, 1)", "#FFFFFF"],
+    ["rgb(255, 87, 51)", "#FF5733"],
+    ["rgb(100, 150, 200)", "#6496C8"],
+  ])("converts rgba/rgb to hex: %s → %s", (input, expected) => {
+    expect(rgbaToHex(input)).toBe(expected);
+  });
 
-    it("should convert rgba to hex with alpha", () => {
-      expect(rgbaToHex("rgba(255, 87, 51, 0.5)")).toBe("#FF573380");
-      expect(rgbaToHex("rgba(0, 0, 0, 0)")).toBe("#00000000");
-      expect(rgbaToHex("rgba(255, 255, 255, 0.75)")).toBe("#FFFFFFBF");
-    });
-
-    it("should handle rgb without alpha parameter", () => {
-      expect(rgbaToHex("rgb(255, 87, 51)")).toBe("#FF5733");
-      expect(rgbaToHex("rgb(100, 150, 200)")).toBe("#6496C8");
-    });
-
-    it("should handle single digit alpha values", () => {
-      expect(rgbaToHex("rgba(255, 87, 51, 0.02)")).toBe("#FF573305");
-    });
+  it.each([
+    ["rgba(255, 87, 51, 0.5)", "#FF573380"],
+    ["rgba(0, 0, 0, 0)", "#00000000"],
+    ["rgba(255, 255, 255, 0.75)", "#FFFFFFBF"],
+    ["rgba(255, 87, 51, 0.02)", "#FF573305"],
+  ])("converts rgba with alpha: %s → %s", (input, expected) => {
+    expect(rgbaToHex(input)).toBe(expected);
   });
 });

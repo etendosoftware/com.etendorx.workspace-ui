@@ -19,95 +19,45 @@ import { getDecodedJsonResponse, joinUrl } from "../utils";
 
 describe("api/utils", () => {
   describe("joinUrl", () => {
-    it("should join base URL with path correctly", () => {
-      expect(joinUrl("https://example.com", "/api/data")).toBe("https://example.com/api/data");
-    });
-
-    it("should handle base URL with trailing slash", () => {
-      expect(joinUrl("https://example.com/", "/api/data")).toBe("https://example.com/api/data");
-    });
-
-    it("should handle path without leading slash", () => {
-      expect(joinUrl("https://example.com", "api/data")).toBe("https://example.com/api/data");
-    });
-
-    it("should handle both base with trailing slash and path without leading slash", () => {
-      expect(joinUrl("https://example.com/", "api/data")).toBe("https://example.com/api/data");
-    });
-
-    it("should return path when base URL is undefined", () => {
-      expect(joinUrl(undefined, "/api/data")).toBe("/api/data");
-    });
-
-    it("should return path when base URL is empty string", () => {
-      expect(joinUrl("", "/api/data")).toBe("/api/data");
+    it.each([
+      ["https://example.com", "/api/data", "https://example.com/api/data"],
+      ["https://example.com/", "/api/data", "https://example.com/api/data"],
+      ["https://example.com", "api/data", "https://example.com/api/data"],
+      ["https://example.com/", "api/data", "https://example.com/api/data"],
+      [undefined, "/api/data", "/api/data"],
+      ["", "/api/data", "/api/data"],
+    ])("joins URLs: %s + %s = %s", (base, path, expected) => {
+      expect(joinUrl(base, path)).toBe(expected);
     });
   });
 
   describe("getDecodedJsonResponse", () => {
-    const createMockResponse = (body: string, contentType: string): Response => {
-      const encoder = new TextEncoder();
-      const buffer = encoder.encode(body);
+    const mockResponse = (body: string, contentType: string): Response => ({
+      arrayBuffer: async () => new TextEncoder().encode(body).buffer,
+      headers: { get: (name: string) => (name === "content-type" ? contentType : null) },
+    } as Response);
 
-      return {
-        arrayBuffer: async () => buffer.buffer,
-        headers: {
-          get: (name: string) => (name === "content-type" ? contentType : null),
-        },
-      } as Response;
-    };
+    it.each([
+      ["application/json; charset=utf-8", '{"success": true}', { success: true }],
+      ["application/json", '{"success": true}', { success: true }],
+      ["text/html", '{"success": true}', { success: true }],
+      ["application/json; charset=iso-8859-1", '{"success": true}', { success: true }],
+      ["application/json; charset=utf-8; boundary=something", '{"data": "test"}', { data: "test" }],
+    ])("decodes JSON with content-type %s", async (contentType, body, expected) => {
+      expect(await getDecodedJsonResponse(mockResponse(body, contentType))).toEqual(expected);
+    });
 
-    it("should decode JSON response with UTF-8 charset", async () => {
-      const mockResponse = createMockResponse('{"success": true}', "application/json; charset=utf-8");
-      const result = await getDecodedJsonResponse(mockResponse);
+    it("falls back to utf-8 on invalid charset", async () => {
+      const spy = jest.spyOn(console, "warn").mockImplementation();
+      const result = await getDecodedJsonResponse(mockResponse('{"success": true}', "charset=invalid-charset"));
+
       expect(result).toEqual({ success: true });
+      expect(spy).toHaveBeenCalledWith(expect.stringContaining("Failed to decode"));
+      spy.mockRestore();
     });
 
-    it("should decode JSON response without explicit charset", async () => {
-      const mockResponse = createMockResponse('{"success": true}', "application/json");
-      const result = await getDecodedJsonResponse(mockResponse);
-      expect(result).toEqual({ success: true });
-    });
-
-    it("should use default charset for non-JSON content type", async () => {
-      const mockResponse = createMockResponse('{"success": true}', "text/html");
-      const result = await getDecodedJsonResponse(mockResponse);
-      expect(result).toEqual({ success: true });
-    });
-
-    it("should extract charset from content-type header", async () => {
-      const mockResponse = createMockResponse('{"success": true}', "application/json; charset=iso-8859-1");
-      const result = await getDecodedJsonResponse(mockResponse);
-      expect(result).toEqual({ success: true });
-    });
-
-    it("should handle content-type with multiple parameters", async () => {
-      const mockResponse = createMockResponse(
-        '{"data": "test"}',
-        "application/json; charset=utf-8; boundary=something"
-      );
-      const result = await getDecodedJsonResponse(mockResponse);
-      expect(result).toEqual({ data: "test" });
-    });
-
-    it("should fallback to utf-8 if decoding with specified charset fails", async () => {
-      const mockResponse = createMockResponse('{"success": true}', "application/json; charset=invalid-charset");
-
-      const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation();
-
-      const result = await getDecodedJsonResponse(mockResponse);
-      expect(result).toEqual({ success: true });
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Failed to decode with charset invalid-charset")
-      );
-
-      consoleWarnSpy.mockRestore();
-    });
-
-    it("should throw error if both primary and fallback decoding fail", async () => {
-      const mockResponse = createMockResponse("invalid json", "application/json; charset=utf-8");
-
-      await expect(getDecodedJsonResponse(mockResponse)).rejects.toThrow();
+    it("throws on invalid JSON", async () => {
+      await expect(getDecodedJsonResponse(mockResponse("invalid", "application/json"))).rejects.toThrow();
     });
   });
 });

@@ -16,137 +16,64 @@
  */
 
 import { LocationClient } from "../location";
-import type { CreateLocationRequest, LocationResponse, LocationApiResponse } from "../types";
+import type { CreateLocationRequest, LocationApiResponse } from "../types";
 
 describe("LocationClient", () => {
-  let locationClient: LocationClient;
+  let client: LocationClient;
+  const mockData: CreateLocationRequest = { address1: "123 Main St", city: "New York", countryId: "USA" };
 
   beforeEach(() => {
-    locationClient = new LocationClient();
+    client = new LocationClient();
   });
 
   describe("createLocation", () => {
-    it("should create a location successfully", async () => {
-      const mockLocationData: CreateLocationRequest = {
-        address1: "123 Main St",
-        city: "New York",
-        countryId: "USA",
-      };
-
-      const mockResponse: LocationApiResponse = {
-        success: true,
-        data: {
-          id: "location-123",
-          _identifier: "LOC-123",
-          address1: "123 Main St",
-          city: "New York",
-          countryId: "USA",
-        },
-      };
-
-      const mockFetchResponse = {
-        data: mockResponse,
+    it("creates location successfully", async () => {
+      const mockResponse = {
+        data: { success: true, data: { id: "loc-123", _identifier: "LOC-123", ...mockData } },
       } as Response & { data: LocationApiResponse };
 
-      jest.spyOn(locationClient, "post").mockResolvedValue(mockFetchResponse);
+      jest.spyOn(client, "post").mockResolvedValue(mockResponse);
 
-      const result = await locationClient.createLocation(mockLocationData);
+      const result = await client.createLocation(mockData);
 
-      expect(locationClient.post).toHaveBeenCalledWith("location/create", mockLocationData);
-      expect(result).toEqual(mockResponse.data);
+      expect(client.post).toHaveBeenCalledWith("location/create", mockData);
+      expect(result).toEqual(mockResponse.data.data);
     });
 
-    it("should throw error when location creation fails", async () => {
-      const mockLocationData: CreateLocationRequest = {
-        address1: "123 Main St",
-        city: "New York",
-        countryId: "USA",
-      };
+    it.each([
+      [{ success: false, error: "Invalid address" }, "Invalid address"],
+      [{ success: false }, "Error creating location"],
+    ])("throws error on failure: %o", async (errorResponse, expectedMessage) => {
+      const spy = jest.spyOn(console, "error").mockImplementation();
+      jest.spyOn(client, "post").mockResolvedValue({ data: errorResponse } as any);
 
-      const mockErrorResponse = {
-        success: false,
-        error: "Invalid address",
-      };
-
-      const mockFetchResponse = {
-        data: mockErrorResponse,
-      } as Response & { data: typeof mockErrorResponse };
-
-      jest.spyOn(locationClient, "post").mockResolvedValue(mockFetchResponse);
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
-
-      await expect(locationClient.createLocation(mockLocationData)).rejects.toThrow("Invalid address");
-
-      consoleErrorSpy.mockRestore();
+      await expect(client.createLocation(mockData)).rejects.toThrow(expectedMessage);
+      spy.mockRestore();
     });
 
-    it("should throw default error message when no error message provided", async () => {
-      const mockLocationData: CreateLocationRequest = {
-        address1: "123 Main St",
-        city: "New York",
-        countryId: "USA",
-      };
+    it("handles network errors", async () => {
+      const spy = jest.spyOn(console, "error").mockImplementation();
+      jest.spyOn(client, "post").mockRejectedValue(new Error("Network error"));
 
-      const mockErrorResponse = {
-        success: false,
-      };
-
-      const mockFetchResponse = {
-        data: mockErrorResponse,
-      } as Response & { data: typeof mockErrorResponse };
-
-      jest.spyOn(locationClient, "post").mockResolvedValue(mockFetchResponse);
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
-
-      await expect(locationClient.createLocation(mockLocationData)).rejects.toThrow("Error creating location");
-
-      consoleErrorSpy.mockRestore();
-    });
-
-    it("should handle network errors", async () => {
-      const mockLocationData: CreateLocationRequest = {
-        address1: "123 Main St",
-        city: "New York",
-        countryId: "USA",
-      };
-
-      jest.spyOn(locationClient, "post").mockRejectedValue(new Error("Network error"));
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
-
-      await expect(locationClient.createLocation(mockLocationData)).rejects.toThrow("Network error");
-
-      consoleErrorSpy.mockRestore();
+      await expect(client.createLocation(mockData)).rejects.toThrow("Network error");
+      spy.mockRestore();
     });
   });
 
   describe("getLocationIdentifier", () => {
-    it("should get location identifier successfully", async () => {
-      const locationId = "location-123";
-      const mockResponse = {
-        identifier: "LOC-001",
-      };
+    it("gets identifier successfully", async () => {
+      jest.spyOn(client, "post").mockResolvedValue({ data: { identifier: "LOC-001" } } as any);
 
-      const mockFetchResponse = {
-        data: mockResponse,
-      } as Response & { data: typeof mockResponse };
-
-      jest.spyOn(locationClient, "post").mockResolvedValue(mockFetchResponse);
-
-      const result = await locationClient.getLocationIdentifier(locationId);
-
-      expect(locationClient.post).toHaveBeenCalledWith("location/identifier", { locationId });
-      expect(result).toBe("LOC-001");
+      expect(await client.getLocationIdentifier("loc-123")).toBe("LOC-001");
+      expect(client.post).toHaveBeenCalledWith("location/identifier", { locationId: "loc-123" });
     });
 
-    it("should handle errors when getting location identifier", async () => {
-      const locationId = "location-123";
+    it("handles errors", async () => {
+      const spy = jest.spyOn(console, "error").mockImplementation();
+      jest.spyOn(client, "post").mockRejectedValue(new Error("Not found"));
 
-      jest.spyOn(locationClient, "post").mockRejectedValue(new Error("Location not found"));
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
-
-      await expect(locationClient.getLocationIdentifier(locationId)).rejects.toThrow("Location not found");
-
-      consoleErrorSpy.mockRestore();
+      await expect(client.getLocationIdentifier("loc-123")).rejects.toThrow("Not found");
+      spy.mockRestore();
     });
   });
 });

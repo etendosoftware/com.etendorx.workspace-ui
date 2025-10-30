@@ -17,76 +17,40 @@
 
 import { cleanDefaultClasses } from "../classUtil";
 
-describe("classUtil", () => {
-  describe("cleanDefaultClasses", () => {
-    it("should return default classes when no user classes provided", () => {
-      expect(cleanDefaultClasses("text-blue-500 bg-white")).toBe("text-blue-500 bg-white");
-    });
+describe("cleanDefaultClasses", () => {
+  it.each([
+    ["text-blue-500 bg-white", undefined, "text-blue-500 bg-white"],
+    ["text-blue-500 bg-white", "", "text-blue-500 bg-white"],
+    ["text-blue-500 bg-white", "   ", "text-blue-500 bg-white"],
+  ])("returns defaults when user classes empty: %s + %s = %s", (defaults, user, expected) => {
+    expect(cleanDefaultClasses(defaults, user)).toBe(expected);
+  });
 
-    it("should return default classes when user classes is empty string", () => {
-      expect(cleanDefaultClasses("text-blue-500 bg-white", "")).toBe("text-blue-500 bg-white");
-    });
+  it.each([
+    ["text-blue-500 bg-white", "text-red-500", "bg-white text-red-500", "text override"],
+    ["text-blue-500 bg-white", "bg-black", "text-blue-500 bg-black", "bg override"],
+    ["w-full h-screen", "w-1/2", "h-screen w-1/2", "width override"],
+    ["w-full h-screen", "h-96", "w-full h-96", "height override"],
+    ["rounded-lg bg-white", "rounded-full", "bg-white rounded-full", "rounded override"],
+    ["text-blue-500 hover:text-blue-700", "hover:text-red-700", "text-blue-500 hover:text-red-700", "variant prefix"],
+  ])("handles single overrides: %s", (defaults, user, expected) => {
+    expect(cleanDefaultClasses(defaults, user)).toBe(expected);
+  });
 
-    it("should return default classes when user classes is whitespace", () => {
-      expect(cleanDefaultClasses("text-blue-500 bg-white", "   ")).toBe("text-blue-500 bg-white");
-    });
+  it("overrides multiple classes", () => {
+    expect(cleanDefaultClasses("text-blue-500 bg-white w-full", "text-red-500 bg-black")).toBe("w-full text-red-500 bg-black");
+  });
 
-    it("should override default text color with user text color", () => {
-      const result = cleanDefaultClasses("text-blue-500 bg-white", "text-red-500");
-      expect(result).toBe("bg-white text-red-500");
-    });
+  it("preserves non-tracked utilities", () => {
+    expect(cleanDefaultClasses("text-blue-500 flex items-center", "text-red-500")).toBe("flex items-center text-red-500");
+  });
 
-    it("should override default background with user background", () => {
-      const result = cleanDefaultClasses("text-blue-500 bg-white", "bg-black");
-      expect(result).toBe("text-blue-500 bg-black");
-    });
+  it("does not override text with arbitrary values", () => {
+    expect(cleanDefaultClasses("text-blue-500", "text-[#custom]")).toBe("text-blue-500 text-[#custom]");
+  });
 
-    it("should override multiple default classes with user classes", () => {
-      const result = cleanDefaultClasses("text-blue-500 bg-white w-full", "text-red-500 bg-black");
-      expect(result).toBe("w-full text-red-500 bg-black");
-    });
-
-    it("should handle width classes", () => {
-      const result = cleanDefaultClasses("w-full h-screen", "w-1/2");
-      expect(result).toBe("h-screen w-1/2");
-    });
-
-    it("should handle height classes", () => {
-      const result = cleanDefaultClasses("w-full h-screen", "h-96");
-      expect(result).toBe("w-full h-96");
-    });
-
-    it("should handle rounded classes", () => {
-      const result = cleanDefaultClasses("rounded-lg bg-white", "rounded-full");
-      expect(result).toBe("bg-white rounded-full");
-    });
-
-    it("should handle variant prefixes like hover:", () => {
-      const result = cleanDefaultClasses("text-blue-500 hover:text-blue-700", "hover:text-red-700");
-      expect(result).toBe("text-blue-500 hover:text-red-700");
-    });
-
-    it("should preserve classes that don't match tracked utilities", () => {
-      const result = cleanDefaultClasses("text-blue-500 flex items-center", "text-red-500");
-      expect(result).toBe("flex items-center text-red-500");
-    });
-
-    it("should not override text classes with arbitrary values", () => {
-      const result = cleanDefaultClasses("text-blue-500", "text-[#custom]");
-      expect(result).toBe("text-blue-500 text-[#custom]");
-    });
-
-    it("should handle multiple user classes with variants", () => {
-      const result = cleanDefaultClasses("text-blue-500 bg-white hover:bg-gray-100", "text-red-500 hover:bg-red-100");
-      expect(result).toBe("bg-white text-red-500 hover:bg-red-100");
-    });
-
-    it("should handle complex scenarios with multiple overrides", () => {
-      const result = cleanDefaultClasses(
-        "text-sm text-gray-700 bg-white rounded-md w-full h-10",
-        "text-lg bg-blue-500 rounded-full"
-      );
-      expect(result).toBe("w-full h-10 text-lg bg-blue-500 rounded-full");
-    });
+  it("handles complex multi-override scenarios", () => {
+    expect(cleanDefaultClasses("text-sm text-gray-700 bg-white rounded-md w-full h-10", "text-lg bg-blue-500 rounded-full"))
+      .toBe("w-full h-10 text-lg bg-blue-500 rounded-full");
   });
 });
