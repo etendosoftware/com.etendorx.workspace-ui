@@ -21,7 +21,7 @@ import { findActive } from "../drawerUtils";
 describe("drawerUtils", () => {
   describe("findActive", () => {
     it("should return false when items is undefined", () => {
-      expect(findActive("window1", undefined)).toBe(false);
+      expect(findActive("window1")).toBe(false);
     });
 
     it("should return false when windowId is undefined", () => {
