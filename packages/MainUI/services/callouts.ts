@@ -181,7 +181,7 @@ const clearPending = (state: CalloutManagerState): CalloutManagerState => {
   return newState;
 };
 
-class GlobalCalloutManager {
+export class GlobalCalloutManager {
   private state: CalloutManagerState = createInitialState();
   private cleanupConfig: CleanupConfig = DEFAULT_CLEANUP_CONFIG;
   private idleTimer: NodeJS.Timeout | null = null;
