@@ -59,6 +59,7 @@ describe("ERP slug: query append for mutations", () => {
       method,
       headers,
       url,
+      body: null, // Not a stream for these tests
       text: async () => body,
       json: async () => (body ? JSON.parse(body) : {}),
     } as NextRequest;

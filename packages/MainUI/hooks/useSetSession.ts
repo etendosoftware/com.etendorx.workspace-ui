@@ -21,6 +21,7 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { EntityData, FormInitializationResponse, Tab } from "@workspaceui/api-client/src/api/types";
 import { useCallback } from "react";
 import { useUserContext } from "./useUserContext";
+import { buildSessionAttributes } from "@/utils/hooks/useFormInitialization/utils";
 
 const ACTION = "org.openbravo.client.application.window.FormInitializationComponent";
 const MODE = "SETSESSION";
@@ -49,16 +50,12 @@ export const useSetSession = () => {
         }
 
         const data = response.data as FormInitializationResponse;
+        const sessionAttributes = buildSessionAttributes(data);
 
-        setSession((prev) => {
-          const result = { ...prev, ...data.sessionAttributes };
-
-          for (const [inputName, { value }] of Object.entries(data.auxiliaryInputValues)) {
-            result[inputName] = value || "";
-          }
-
-          return result;
-        });
+        setSession((prev) => ({
+          ...prev,
+          ...sessionAttributes,
+        }));
       } catch (error) {
         logger.warn(error);
       }

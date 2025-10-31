@@ -92,6 +92,10 @@ type ToolbarContextType = {
   setSaveButtonState: React.Dispatch<React.SetStateAction<SaveButtonState>>;
   formViewRefetch?: () => Promise<void>;
   registerFormViewRefetch?: (refetch: () => Promise<void>) => void;
+  attachmentAction?: () => void;
+  registerAttachmentAction?: (action: () => void) => void;
+  shouldOpenAttachmentModal: boolean;
+  setShouldOpenAttachmentModal: (open: boolean) => void;
 };
 
 const initialState: ToolbarActions = {
@@ -120,12 +124,16 @@ const ToolbarContext = createContext<ToolbarContextType>({
     validationErrors: [],
   },
   setSaveButtonState: () => {},
+  shouldOpenAttachmentModal: false,
+  setShouldOpenAttachmentModal: () => {},
 } as ToolbarContextType);
 
 export const useToolbarContext = () => useContext(ToolbarContext);
 
 export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
   const [formViewRefetch, setFormViewRefetch] = useState<(() => Promise<void>) | undefined>();
+  const [attachmentAction, setAttachmentAction] = useState<(() => void) | undefined>();
+  const [shouldOpenAttachmentModal, setShouldOpenAttachmentModal] = useState(false);
   const [saveButtonState, setSaveButtonState] = useState<SaveButtonState>({
     isCalloutLoading: false,
     hasValidationErrors: false,
@@ -135,6 +143,10 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
 
   const registerFormViewRefetch = useCallback((refetch: () => Promise<void>) => {
     setFormViewRefetch(() => refetch);
+  }, []);
+
+  const registerAttachmentAction = useCallback((action: () => void) => {
+    setAttachmentAction(() => action);
   }, []);
 
   const [
@@ -213,6 +225,10 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       setSaveButtonState,
       formViewRefetch,
       registerFormViewRefetch,
+      attachmentAction,
+      registerAttachmentAction,
+      shouldOpenAttachmentModal,
+      setShouldOpenAttachmentModal,
     }),
     [
       wrappedOnSave,
@@ -226,6 +242,9 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       saveButtonState,
       formViewRefetch,
       registerFormViewRefetch,
+      attachmentAction,
+      registerAttachmentAction,
+      shouldOpenAttachmentModal,
     ]
   );
 
