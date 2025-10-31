@@ -4,6 +4,8 @@ import { extractBearerToken } from "@/lib/auth";
 import { getErpAuthHeaders } from "../../_utils/forwardConfig";
 import { SLUGS_CATEGORIES, SLUGS_METHODS } from "@/app/api/_utils/slug/constants";
 
+type requestBody = string | ReadableStream<Uint8Array> | undefined;
+
 // Custom error class for ERP requests
 class ErpRequestError extends Error {
   public readonly status: number;
@@ -117,7 +119,7 @@ function buildErpHeaders(
   userToken: string,
   request: Request,
   method: string,
-  requestBody: string | ReadableStream<Uint8Array> | undefined,
+  requestBody: requestBody,
   contentType: string,
   slug?: string
 ): Record<string, string> {
