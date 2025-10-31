@@ -212,7 +212,7 @@ async function handleMutationRequest(
   erpUrl: string,
   method: string,
   headers: Record<string, string>,
-  requestBody: string | ReadableStream<Uint8Array> | undefined
+  requestBody: requestBody
 ): Promise<unknown> {
   const fetchOptions: RequestInit = {
     method,
