@@ -35,11 +35,12 @@ export async function fetchLinkedItemCategories(params: FetchCategoriesParams): 
   body.append("windowId", params.windowId);
   body.append("entityName", params.entityName);
   body.append(`inpkey${params.windowId}`, params.recordId);
+  body.append("recordId", params.recordId);
 
   let responseData: LinkedItemsResponse;
 
   try {
-    const response = (await client.post("utility/UsedByLink.html", body, {
+    const response = (await client.post("meta/utility/UsedByLink.html", body, {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
@@ -70,11 +71,12 @@ export async function fetchLinkedItems(params: FetchLinkedItemsParams): Promise<
   body.append("adTabId", params.adTabId);
   body.append("tableName", params.tableName);
   body.append("columnName", params.columnName);
+  body.append("recordId", params.recordId);
 
   let responseData: LinkedItemsResponse;
 
   try {
-    const response = (await client.post("utility/UsedByLink.html", body, {
+    const response = (await client.post("meta/utility/UsedByLink.html", body, {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
