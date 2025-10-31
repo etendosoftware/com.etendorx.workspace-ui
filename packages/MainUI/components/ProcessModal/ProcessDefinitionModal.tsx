@@ -330,10 +330,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     startTransition(async () => {
       try {
         const currentAttrs = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
-        const currentRecordValue = recordValues?.[currentAttrs.inpPrimaryKeyColumnId];
-        const payload = {
-          [currentAttrs.inpColumnId]: currentRecordValue,
-          [currentAttrs.inpPrimaryKeyColumnId]: currentRecordValue,
+        const windowSpecificKey = tab.window ? WINDOW_SPECIFIC_KEYS[tab.window] : undefined;
+
+        // Build base payload
+        const payload: Record<string, unknown> = {
           _buttonValue: "DONE",
           _params: {
             ...mapKeysWithDefaults({ ...form.getValues(), ...gridSelection }),
@@ -342,13 +342,26 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           windowId: tab.window,
         };
 
-        // Add additional payload fields from configuration
-        if (currentAttrs.additionalPayloadFields && recordValues) {
-          for (const fieldName of currentAttrs.additionalPayloadFields) {
-            if (recordValues[fieldName] !== undefined) {
-              payload[fieldName] = recordValues[fieldName];
+        // Add process-specific fields if configured
+        if (currentAttrs) {
+          const currentRecordValue = recordValues?.[currentAttrs.inpPrimaryKeyColumnId];
+          payload[currentAttrs.inpColumnId] = currentRecordValue;
+          payload[currentAttrs.inpPrimaryKeyColumnId] = currentRecordValue;
+
+          // Add additional payload fields from process configuration
+          if (currentAttrs.additionalPayloadFields && recordValues) {
+            for (const fieldName of currentAttrs.additionalPayloadFields) {
+              if (recordValues[fieldName] !== undefined) {
+                payload[fieldName] = recordValues[fieldName];
+              }
             }
           }
+        }
+
+        // Add window-specific fields if configured
+        if (windowSpecificKey) {
+          const windowSpecificValue = windowSpecificKey.value(record);
+          payload[windowSpecificKey.key] = windowSpecificValue;
         }
 
         const res = await executeProcess(
@@ -371,7 +384,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
     });
-  }, [tab, processId, recordValues, form, gridSelection, token, javaClassName, parseProcessResponse]);
+  }, [tab, processId, recordValues, form, gridSelection, token, javaClassName, parseProcessResponse, record]);
 
   /**
    * Executes processes directly via servlet using javaClassName
