@@ -42,9 +42,7 @@ describe("CustomModal", () => {
     });
 
     it("should apply custom content class", () => {
-      const { container } = render(
-        <CustomModal {...defaultProps} customContentClass="custom-class" />
-      );
+      const { container } = render(<CustomModal {...defaultProps} customContentClass="custom-class" />);
 
       const modalContent = container.querySelector(".custom-class");
       expect(modalContent).toBeInTheDocument();
