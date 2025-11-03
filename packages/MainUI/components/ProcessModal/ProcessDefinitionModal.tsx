@@ -74,6 +74,7 @@ import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, R
 import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
 import type { Tab, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
+import { useProcessCallouts } from "./callouts/useProcessCallouts";
 
 /** Fallback object for record values when no record context exists */
 export const FALLBACK_RESULT = {};
@@ -243,6 +244,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   // Watch all form values to trigger re-validation when any field changes
   const formValues = form.watch();
+
+  // Process callouts - execute when form values change
+  useProcessCallouts({
+    processId: processId || "",
+    form,
+    gridSelection,
+    enabled: open && !loading && !initializationLoading,
+  });
 
   // Combine loading states: initialization and callouts (do not include internal param-loading)
 
@@ -627,11 +636,20 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             const newParameters = { ...prev };
 
             for (const [parameterName, values] of Object.entries(result)) {
+              // Skip if parameter doesn't exist in the parameters list
+              if (!newParameters[parameterName]) {
+                continue;
+              }
+
               const newOptions = values as string[];
               newParameters[parameterName] = { ...newParameters[parameterName] };
-              newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
-                newOptions.includes(option.value)
-              );
+
+              // Only filter refList if it exists
+              if (newParameters[parameterName].refList) {
+                newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
+                  newOptions.includes(option.value)
+                );
+              }
             }
 
             return newParameters;
