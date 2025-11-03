@@ -8,11 +8,16 @@ import { isReferenceValue, isSimpleValue } from "@/components/ProcessModal/types
 import { logger } from "@/utils/logger";
 
 /**
+ * Type alias for field value types
+ */
+type FieldValue = string | number | boolean;
+
+/**
  * Interface for processed default value result
  */
 interface ProcessedDefaultValue {
   fieldName: string;
-  fieldValue: string | number | boolean;
+  fieldValue: FieldValue;
   identifier?: string;
 }
 
@@ -104,10 +109,7 @@ function isDateField(parameter: ProcessParameter | undefined): boolean {
 /**
  * Processes a simple value (string, number, boolean)
  */
-function processSimpleValue(
-  value: string | number | boolean,
-  parameter: ProcessParameter | undefined
-): string | number | boolean {
+function processSimpleValue(value: FieldValue, parameter: ProcessParameter | undefined): FieldValue {
   if (isDateField(parameter)) {
     return typeof value === "string" ? convertToISODateFormat(value) : String(value);
   }
