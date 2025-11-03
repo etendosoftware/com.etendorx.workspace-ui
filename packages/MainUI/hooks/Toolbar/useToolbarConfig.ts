@@ -56,7 +56,8 @@ export const useToolbarConfig = ({
     hideStatusModal,
   } = useStatusModal();
   const { t } = useTranslation();
-  const { onRefresh, onSave, onNew, onBack, onFilter, onColumnFilters, onToggleTreeView } = useToolbarContext();
+  const { onRefresh, onSave, onNew, onBack, onFilter, onColumnFilters, onToggleTreeView, attachmentAction } =
+    useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -232,6 +233,13 @@ export const useToolbarConfig = ({
       TOGGLE_TREE_VIEW: () => {
         onToggleTreeView?.();
       },
+      ATTACHMENT: () => {
+        if (attachmentAction) {
+          attachmentAction();
+        } else {
+          logger.info("Attachment button clicked - no action registered");
+        }
+      },
     }),
     [
       onBack,
@@ -251,6 +259,8 @@ export const useToolbarConfig = ({
       contextItems,
       onColumnFilters,
       onToggleTreeView,
+      handleDeleteRecord,
+      attachmentAction,
     ]
   );
 

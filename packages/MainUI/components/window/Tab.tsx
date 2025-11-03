@@ -22,6 +22,7 @@ import DynamicTable from "../Table";
 import { useMetadataContext } from "../../hooks/useMetadataContext";
 import { FormView } from "@/components/Form/FormView";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
+import { AttachmentProvider } from "@/contexts/AttachmentContext";
 import type { TabLevelProps } from "@/components/window/types";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
@@ -329,12 +330,14 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
           data-testid="FormView__5893c8"
         />
       ) : (
-        <DynamicTable
-          isTreeMode={toggle}
-          setRecordId={handleSetRecordId}
-          onRecordSelection={handleRecordSelection}
-          data-testid="DynamicTable__5893c8"
-        />
+        <AttachmentProvider data-testid="AttachmentProvider__5893c8">
+          <DynamicTable
+            isTreeMode={toggle}
+            setRecordId={handleSetRecordId}
+            onRecordSelection={handleRecordSelection}
+            data-testid="DynamicTable__5893c8"
+          />
+        </AttachmentProvider>
       )}
     </div>
   );

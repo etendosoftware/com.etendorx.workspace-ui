@@ -23,6 +23,12 @@ import { useFormContext } from "react-hook-form";
 
 const RadioSelector = ({ parameter }: { parameter: ProcessParameter }) => {
   const { register, setValue, watch } = useFormContext();
+
+  // Don't render if parameter doesn't have a dBColumnName
+  if (!parameter.dBColumnName) {
+    return null;
+  }
+
   const selectedOption = watch(parameter.dBColumnName);
 
   useEffect(() => {

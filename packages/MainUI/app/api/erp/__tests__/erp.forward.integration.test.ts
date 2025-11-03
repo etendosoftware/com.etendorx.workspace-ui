@@ -51,6 +51,7 @@ suite.describe(() => {
       headers: { get: () => "application/json" },
       text: async () => JSON.stringify(responseBody),
       json: async () => responseBody,
+      arrayBuffer: async () => new TextEncoder().encode(JSON.stringify(responseBody)).buffer,
     });
 
     const payload = { data: "value" };

@@ -41,6 +41,25 @@ import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
 import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+
+// Date field reference codes for conversion
+const DATE_REFERENCE_CODES = [
+  FIELD_REFERENCE_CODES.DATE, // "15"
+  FIELD_REFERENCE_CODES.DATETIME, // "16"
+  FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME, // UUID
+];
+
+/**
+ * Checks if a parameter reference is a date/time field
+ */
+const isDateReference = (reference: string): boolean => {
+  return (
+    DATE_REFERENCE_CODES.includes(reference as (typeof DATE_REFERENCE_CODES)[number]) ||
+    reference.toLowerCase().includes("date") ||
+    reference.toLowerCase().includes("time")
+  );
+};
+import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { FormProvider, useForm, useFormState } from "react-hook-form";
@@ -55,6 +74,7 @@ import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, R
 import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
 import type { Tab, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
+import { useProcessCallouts } from "./callouts/useProcessCallouts";
 
 /** Fallback object for record values when no record context exists */
 export const FALLBACK_RESULT = {};
@@ -70,6 +90,39 @@ export type GridSelectionStructure = {
 };
 
 export type GridSelectionUpdater = GridSelectionStructure | ((prev: GridSelectionStructure) => GridSelectionStructure);
+
+/**
+ * Converts a date field value to ISO format if needed
+ * @param fieldValue - The field value to convert
+ * @returns The converted value or original if no conversion needed
+ */
+const convertDateFieldValue = (fieldValue: unknown): unknown => {
+  if (!fieldValue || typeof fieldValue !== "string") {
+    return fieldValue;
+  }
+
+  const originalValue = String(fieldValue);
+  const convertedValue = convertToISODateFormat(originalValue);
+
+  return convertedValue !== originalValue ? convertedValue : fieldValue;
+};
+
+/**
+ * Converts date fields in combined data for a single parameter
+ * @param combined - The combined data object
+ * @param param - The parameter to process
+ */
+const convertParameterDateFields = (combined: Record<string, unknown>, param: ProcessParameter): void => {
+  // Convert by parameter name
+  if (combined[param.name]) {
+    combined[param.name] = convertDateFieldValue(combined[param.name]);
+  }
+
+  // Convert by dBColumnName if different from name
+  if (param.dBColumnName && param.dBColumnName !== param.name && combined[param.dBColumnName]) {
+    combined[param.dBColumnName] = convertDateFieldValue(combined[param.dBColumnName]);
+  }
+};
 /**
  * ProcessDefinitionModalContent - Core modal component for process execution
  *
@@ -167,11 +220,26 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     // Build base payload with system context fields
     const basePayload = buildProcessPayload(record, tab, {}, {});
 
-    return {
+    const combined = {
       ...basePayload,
       ...initialState,
     };
-  }, [record, tab, initialState]);
+
+    // Convert date fields to ISO format for all parameters
+    // This ensures date inputs display values correctly regardless of source (record or defaults)
+    const parametersList = Object.values(parameters);
+
+    for (const param of parametersList) {
+      // Check if parameter is a date field by reference code OR by name containing "date"/"time"
+      const isDateField = param.reference && isDateReference(param.reference);
+
+      if (isDateField) {
+        convertParameterDateFields(combined, param);
+      }
+    }
+
+    return combined;
+  }, [record, tab, initialState, parameters]);
 
   const form = useForm({
     defaultValues: availableFormData,
@@ -189,6 +257,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   // Watch all form values to trigger re-validation when any field changes
   const formValues = form.watch();
+
+  // Process callouts - execute when form values change
+  useProcessCallouts({
+    processId: processId || "",
+    form,
+    gridSelection,
+    enabled: open && !loading && !initializationLoading,
+  });
 
   // Combine loading states: initialization and callouts (do not include internal param-loading)
 
@@ -319,6 +395,53 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   );
 
   /**
+   * Builds process-specific payload fields based on process configuration
+   */
+  const buildProcessSpecificFields = useCallback(
+    (processId: string): Record<string, unknown> => {
+      const currentAttrs = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+      if (!currentAttrs || !recordValues) {
+        return {};
+      }
+
+      const currentRecordValue = recordValues[currentAttrs.inpPrimaryKeyColumnId];
+      const fields: Record<string, unknown> = {
+        [currentAttrs.inpColumnId]: currentRecordValue,
+        [currentAttrs.inpPrimaryKeyColumnId]: currentRecordValue,
+      };
+
+      // Add additional payload fields from process configuration
+      if (currentAttrs.additionalPayloadFields) {
+        for (const fieldName of currentAttrs.additionalPayloadFields) {
+          if (recordValues[fieldName] !== undefined) {
+            fields[fieldName] = recordValues[fieldName];
+          }
+        }
+      }
+
+      return fields;
+    },
+    [recordValues]
+  );
+
+  /**
+   * Builds window-specific payload fields based on window configuration
+   */
+  const buildWindowSpecificFields = useCallback(
+    (windowId: string): Record<string, unknown> => {
+      const windowSpecificKey = WINDOW_SPECIFIC_KEYS[windowId];
+      if (!windowSpecificKey) {
+        return {};
+      }
+
+      return {
+        [windowSpecificKey.key]: windowSpecificKey.value(record),
+      };
+    },
+    [record]
+  );
+
+  /**
    * Executes processes with window reference parameters
    * Used for processes that require grid record selection
    * Calls servlet with selected grid records and process-specific data
@@ -329,27 +452,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     }
     startTransition(async () => {
       try {
-        const currentAttrs = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
-        const currentRecordValue = recordValues?.[currentAttrs.inpPrimaryKeyColumnId];
-        const payload = {
-          [currentAttrs.inpColumnId]: currentRecordValue,
-          [currentAttrs.inpPrimaryKeyColumnId]: currentRecordValue,
+        // Build base payload
+        const payload: Record<string, unknown> = {
+          recordIds: record?.id ? [record.id] : [],
           _buttonValue: "DONE",
           _params: {
             ...mapKeysWithDefaults({ ...form.getValues(), ...gridSelection }),
           },
           _entityName: tab.entityName,
           windowId: tab.window,
+          ...buildProcessSpecificFields(processId),
+          ...(tab.window ? buildWindowSpecificFields(tab.window) : {}),
         };
-
-        // Add additional payload fields from configuration
-        if (currentAttrs.additionalPayloadFields && recordValues) {
-          for (const fieldName of currentAttrs.additionalPayloadFields) {
-            if (recordValues[fieldName] !== undefined) {
-              payload[fieldName] = recordValues[fieldName];
-            }
-          }
-        }
 
         const res = await executeProcess(
           processId,
@@ -371,7 +485,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
     });
-  }, [tab, processId, recordValues, form, gridSelection, token, javaClassName, parseProcessResponse]);
+  }, [
+    tab,
+    processId,
+    form,
+    gridSelection,
+    token,
+    javaClassName,
+    parseProcessResponse,
+    record,
+    buildProcessSpecificFields,
+    buildWindowSpecificFields,
+  ]);
 
   /**
    * Executes processes directly via servlet using javaClassName
@@ -459,15 +584,23 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           return formValues;
         })() // User input from form
       );
+
+      const stringFunctionPayload = {
+        _buttonValue: "DONE",
+        buttonValue: "DONE",
+        windowId: tab.window,
+        entityName: tab.entityName,
+        recordIds: selectedRecords?.map((r) => r.id),
+        ...completePayload, // Use complete payload instead of just form values
+      };
+
       try {
-        const stringFnResult = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
-          _buttonValue: "DONE",
-          buttonValue: "DONE",
-          windowId: tab.window,
-          entityName: tab.entityName,
-          recordIds: selectedRecords?.map((r) => r.id),
-          ...completePayload, // Use complete payload instead of just form values
-        });
+        const stringFnResult = await executeStringFunction(
+          onProcess,
+          { Metadata },
+          button.processDefinition,
+          stringFunctionPayload
+        );
 
         const responseMessage = stringFnResult.responseActions[0].showMsgInProcessView;
         const success = responseMessage.msgType === "success";
@@ -565,11 +698,20 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             const newParameters = { ...prev };
 
             for (const [parameterName, values] of Object.entries(result)) {
+              // Skip if parameter doesn't exist in the parameters list
+              if (!newParameters[parameterName]) {
+                continue;
+              }
+
               const newOptions = values as string[];
               newParameters[parameterName] = { ...newParameters[parameterName] };
-              newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
-                newOptions.includes(option.value)
-              );
+
+              // Only filter refList if it exists
+              if (newParameters[parameterName].refList) {
+                newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
+                  newOptions.includes(option.value)
+                );
+              }
             }
 
             return newParameters;
