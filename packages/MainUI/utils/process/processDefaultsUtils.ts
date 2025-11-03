@@ -93,6 +93,63 @@ export function createParameterNameMap(
 }
 
 /**
+ * Checks if a parameter is a date field
+ */
+function isDateField(parameter: ProcessParameter | undefined): boolean {
+  if (!parameter?.reference) return false;
+  const ref = parameter.reference.toLowerCase();
+  return ref.includes("date") || ref.includes("time");
+}
+
+/**
+ * Processes a simple value (string, number, boolean)
+ */
+function processSimpleValue(
+  value: string | number | boolean,
+  parameter: ProcessParameter | undefined
+): string | number | boolean {
+  if (isDateField(parameter)) {
+    return typeof value === "string" ? convertToISODateFormat(value) : String(value);
+  }
+  return typeof value === "boolean" ? value : String(value);
+}
+
+/**
+ * Processes a reference value
+ */
+function processReferenceValue(
+  fieldName: string,
+  formFieldName: string,
+  value: { value: string; identifier: string }
+): ProcessedDefaultValue {
+  logger.debug(`Mapped reference field ${fieldName} to ${formFieldName}:`, {
+    value: value.value,
+    identifier: value.identifier,
+  });
+  return {
+    fieldName: formFieldName,
+    fieldValue: value.value,
+    identifier: value.identifier,
+  };
+}
+
+/**
+ * Processes a fallback value for unexpected types
+ */
+function processFallbackValue(
+  fieldName: string,
+  formFieldName: string,
+  value: ProcessDefaultValue
+): ProcessedDefaultValue {
+  logger.warn(`Unexpected value type for field ${fieldName}:`, value);
+  const fallbackValue = typeof value === "object" && value !== null ? JSON.stringify(value) : String(value || "");
+  return {
+    fieldName: formFieldName,
+    fieldValue: fallbackValue,
+  };
+}
+
+/**
  * Processes a single default value into a form-compatible format
  */
 export function processDefaultValue(
@@ -111,44 +168,18 @@ export function processDefaultValue(
     const formFieldName = parameter?.name || fieldName;
 
     if (isReferenceValue(value)) {
-      logger.debug(`Mapped reference field ${fieldName} to ${formFieldName}:`, {
-        value: value.value,
-        identifier: value.identifier,
-      });
-      return {
-        fieldName: formFieldName,
-        fieldValue: value.value,
-        identifier: value.identifier,
-      };
+      return processReferenceValue(fieldName, formFieldName, value);
     }
 
     if (isSimpleValue(value)) {
-      let processedValue: string | number | boolean;
-
-      // Convert date fields to ISO format
-      if (
-        parameter?.reference &&
-        (parameter.reference.toLowerCase().includes("date") || parameter.reference.toLowerCase().includes("time"))
-      ) {
-        processedValue = typeof value === "string" ? convertToISODateFormat(value) : String(value);
-      } else {
-        processedValue = typeof value === "boolean" ? value : String(value);
-      }
-
       return {
         fieldName: formFieldName,
-        fieldValue: processedValue,
+        fieldValue: processSimpleValue(value, parameter),
       };
     }
 
     // Fallback for unexpected value types
-    logger.warn(`Unexpected value type for field ${fieldName}:`, value);
-    const fallbackValue = typeof value === "object" && value !== null ? JSON.stringify(value) : String(value || "");
-
-    return {
-      fieldName: formFieldName,
-      fieldValue: fallbackValue,
-    };
+    return processFallbackValue(fieldName, formFieldName, value);
   } catch (error) {
     logger.error(`Error processing default value for field ${fieldName}:`, error);
     const parameter = parameterMap.get(fieldName);
