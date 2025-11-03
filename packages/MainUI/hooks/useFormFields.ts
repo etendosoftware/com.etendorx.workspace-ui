@@ -220,19 +220,8 @@ export default function useFormFields(
         },
       ] as UseFormFieldsReturn["groups"][number];
 
-      const linkedItemsGroup = [
-        "linked-items",
-        {
-          id: "linked-items",
-          identifier: t("forms.sections.linkedItems"),
-          sequenceNumber: 10002,
-          fields: {},
-        },
-      ] as UseFormFieldsReturn["groups"][number];
-
       groupsArray.push(notesGroup);
       groupsArray.push(attachmentsGroup);
-      groupsArray.push(linkedItemsGroup);
     }
 
     return groupsArray;
