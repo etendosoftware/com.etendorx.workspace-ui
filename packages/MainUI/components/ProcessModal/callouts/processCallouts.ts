@@ -79,15 +79,9 @@ export const PROCESS_CALLOUTS: ProcessCalloutsConfig = {
   "9BED7889E1034FE68BD85D5D16857320": [
     {
       triggerField: "_internalGridSelectionTrigger",
-      execute: async (formValues, _form, gridSelection) => {
-        // Log all available form fields to identify the correct field name
-        console.log("Available form fields:", Object.keys(formValues));
-        console.log("Current form values:", formValues);
-
+      execute: async (_formValues, _form, gridSelection) => {
         // Get all selected records from aprm_orderinvoice grid
         const selectedRecords = Object.values(gridSelection || {}).flatMap((selection) => selection._selection);
-
-        console.log("Selected records:", selectedRecords);
 
         if (selectedRecords.length === 0) {
           return {
@@ -105,7 +99,6 @@ export const PROCESS_CALLOUTS: ProcessCalloutsConfig = {
         }, 0);
 
         const totalStr = total.toFixed(2);
-        console.log("Calculated total:", totalStr);
 
         // Try multiple possible field name variations
         return {
