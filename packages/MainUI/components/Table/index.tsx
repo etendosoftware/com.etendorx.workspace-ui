@@ -24,7 +24,6 @@ import {
   type MRT_VisibilityState,
   type MRT_Cell,
 } from "material-react-table";
-import { Tooltip } from "@mui/material";
 import { useStyle } from "./styles";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
