@@ -49,6 +49,7 @@ import { isEmptyObject } from "@/utils/commons";
 import { getDisplayColumnDefOptions, getMUITableBodyCellProps, getCurrentRowCanExpand } from "@/utils/table/utils";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
+import { RecordCounterBar } from "@workspaceui/componentlibrary/src/components";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -799,12 +800,36 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     );
   }
 
+  // Calculate counter values
+  const selectedRecords = Object.keys(table.getState().rowSelection).filter((id) => table.getState().rowSelection[id]);
+  const selectedCount = selectedRecords.length;
+  const loadedRecords = displayRecords.length;
+  const totalRecords = hasMoreRecords ? loadedRecords + 1 : loadedRecords; // Approximate total when more records available
+
+  // Prepare labels for RecordCounterBar with translations
+  const counterLabels = {
+    showingRecords: t("table.counter.showingRecords"),
+    showingPartialRecords: t("table.counter.showingPartialRecords"),
+    selectedRecords: t("table.counter.selectedRecords"),
+    recordsLoaded: t("table.counter.recordsLoaded"),
+  };
+
   return (
     <div
-      className={`h-full overflow-hidden rounded-3xl transition-opacity ${
+      className={`h-full overflow-hidden rounded-3xl transition-opacity flex flex-col ${
         loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
       }`}>
-      <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
+      <RecordCounterBar
+        totalRecords={totalRecords}
+        loadedRecords={loadedRecords}
+        selectedCount={selectedCount}
+        isLoading={loading}
+        labels={counterLabels}
+        data-testid="RecordCounterBar__8ca888"
+      />
+      <div className="flex-1 min-h-0">
+        <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
+      </div>
       <ColumnVisibilityMenu
         anchorEl={columnMenuAnchor}
         onClose={handleCloseColumnMenu}

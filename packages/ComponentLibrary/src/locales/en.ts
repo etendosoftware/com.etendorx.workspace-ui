@@ -211,6 +211,12 @@ const en = {
     content: {
       currentTitle: "Its revenue is expected to increase later this year. Congratulations",
     },
+    counter: {
+      showingRecords: "Showing {count} records",
+      showingPartialRecords: "Showing {loaded} of {total} records",
+      selectedRecords: "{count} selected",
+      recordsLoaded: "Records loaded",
+    },
     useAsFilter: "Use as filter",
   },
   navigation: {
