@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useFormValidation } from "@/hooks/useFormValidation";
@@ -25,6 +25,7 @@ import { useTabContext } from "@/contexts/tab";
 import { globalCalloutManager } from "@/services/callouts";
 import { logger } from "@/utils/logger";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
+import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 
 interface FormActionsProps {
   tab: Tab;
@@ -35,12 +36,16 @@ interface FormActionsProps {
 }
 
 export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal }: FormActionsProps) {
-  const { formState } = useFormContext();
+  const formContext = useFormContext();
+  const { isDirty } = formContext.formState;
+
   const { activeWindow, clearTabFormStateAtomic } = useMultiWindowURL();
   const { registerActions, setSaveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
+  const { isFormInitializing } = useFormInitializationContext();
 
   const { validateRequiredFields } = useFormValidation(tab);
+  const [hasValidatedInitialLoad, setHasValidatedInitialLoad] = useState(false);
 
   // Update validation state when form data changes
   useEffect(() => {
@@ -62,14 +67,56 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
   }, [validateRequiredFields, setSaveButtonState]);
 
   useEffect(() => {
-    if (formState.isDirty) {
+    if (isDirty) {
       markFormAsChanged();
+    } else {
+      resetFormChanges();
+    }
+  }, [isDirty, markFormAsChanged, resetFormChanges]);
+
+  useEffect(() => {
+    if (isFormInitializing) {
+      return;
     }
 
-    return () => {
-      resetFormChanges();
-    };
-  }, [formState.isDirty, markFormAsChanged, resetFormChanges]);
+    // Wait for all callouts to finish
+    const calloutState = globalCalloutManager.getState();
+    if (calloutState.isRunning || calloutState.queueLength > 0 || calloutState.pendingCount > 0) {
+      // If callouts are running, mark that we haven't validated yet
+      if (hasValidatedInitialLoad) {
+        setHasValidatedInitialLoad(false);
+      }
+      return;
+    }
+
+    // If we already validated and callouts are done, don't validate again
+    if (hasValidatedInitialLoad) {
+      return;
+    }
+
+    // Form is completely loaded, validate if save button should be enabled
+    const timer = setTimeout(() => {
+      const shouldEnableSave = isDirty || validateRequiredFields().isValid;
+      shouldEnableSave ? markFormAsChanged() : resetFormChanges();
+      setHasValidatedInitialLoad(true);
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [
+    isFormInitializing,
+    isDirty,
+    markFormAsChanged,
+    resetFormChanges,
+    hasValidatedInitialLoad,
+    validateRequiredFields,
+  ]);
+
+  // Reset validation flag when form is re-initialized (e.g., navigating to a different record)
+  useEffect(() => {
+    if (isFormInitializing) {
+      setHasValidatedInitialLoad(false);
+    }
+  }, [isFormInitializing]);
 
   const handleSave = useCallback(
     async (showModal: boolean) => {
@@ -113,8 +160,6 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
   const handleBack = useCallback(() => {
     const windowId = activeWindow?.windowId;
     if (windowId) {
-      // Use atomic clear to avoid race conditions
-      // Only clears FormView, preserves selection and doesn't touch children
       clearTabFormStateAtomic(windowId, tab.id);
     }
     resetFormChanges();
