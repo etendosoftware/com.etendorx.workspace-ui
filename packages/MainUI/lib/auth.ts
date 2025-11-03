@@ -82,14 +82,28 @@ export function validateUserContext(userContext: Partial<UserContext>): userCont
 }
 
 /**
- * Extracts Bearer token from Authorization header
+ * Extracts Bearer token from Authorization header or query parameter
+ * Checks Authorization header first, then falls back to ?token= query param
  */
 export function extractBearerToken(request: Request | NextRequest): string | null {
+  // First try Authorization header
   const authHeader = request.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return null;
+  if (authHeader?.startsWith("Bearer ")) {
+    return authHeader.split(" ")[1];
   }
-  return authHeader.split(" ")[1];
+
+  // Fallback to query parameter (for iframe requests like About modal)
+  try {
+    const url = new URL(request.url);
+    const tokenParam = url.searchParams.get("token");
+    if (tokenParam) {
+      return tokenParam;
+    }
+  } catch {
+    // Invalid URL, return null
+  }
+
+  return null;
 }
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {

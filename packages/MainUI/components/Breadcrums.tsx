@@ -43,12 +43,37 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { graph } = useSelected();
 
   const allTabsFormatted = useMemo(() => allTabs.flat(), [allTabs]);
-  const currentTab = useMemo(
-    () => allTabsFormatted.find((tab) => tab.window === windowId),
-    [allTabsFormatted, windowId]
-  );
-  const tabFormState = windowIdentifier && currentTab ? getTabFormState(windowIdentifier, currentTab.id) : undefined;
-  const currentRecordId = tabFormState?.recordId || "";
+  const currentTab = useMemo(() => {
+    if (!windowId || allTabsFormatted.length === 0) return undefined;
+
+    const normalizedWindowId = windowId.split("_")[0];
+
+    let tab = allTabsFormatted.find((tab) => tab.window === normalizedWindowId);
+
+    if (!tab && window && window.window$_identifier === normalizedWindowId) {
+      tab = allTabsFormatted[0];
+    }
+
+    if (!tab) {
+      tab = allTabsFormatted.find((t) => t.window$_identifier === normalizedWindowId);
+    }
+
+    return tab;
+  }, [allTabsFormatted, windowId, window]);
+
+  const tabFormState = useMemo(() => {
+    if (!currentTab) return undefined;
+
+    return (
+      getTabFormState(currentTab.window, currentTab.id) ||
+      getTabFormState(windowId || "", currentTab.id) ||
+      getTabFormState(currentTab.window$_identifier || currentTab.window, currentTab.id)
+    );
+  }, [currentTab, windowId, getTabFormState]);
+
+  const currentRecordId = useMemo(() => {
+    return tabFormState?.recordId || (graph?.getSelected?.(currentTab)?.[0] as string) || "";
+  }, [tabFormState, graph, currentTab]);
 
   const { record } = useCurrentRecord({
     tab: currentTab,
@@ -107,8 +132,7 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   }, [
     windowId,
     windowIdentifier,
-    window?.window$_identifier,
-    window?.name,
+    window,
     currentTab,
     record?._identifier,
     isNewRecord,

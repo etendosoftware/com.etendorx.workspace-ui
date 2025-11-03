@@ -15,24 +15,25 @@
  *************************************************************************
  */
 
-export const TOOLBAR_BUTTONS_ACTIONS = {
-  NEW: "NEW",
-  SAVE: "SAVE",
-  REFRESH: "REFRESH",
-  CANCEL: "CANCEL",
-  DELETE: "DELETE",
-  FIND: "FIND",
-  FILTER: "FILTER",
-  COPILOT: "COPILOT",
-  COLUMN_FILTERS: "COLUMN_FILTERS",
-  TOGGLE_TREE_VIEW: "TOGGLE_TREE_VIEW",
-  ATTACHMENT: "ATTACHMENT",
-};
+import translations, { DEFAULT_LANGUAGE } from "../index";
 
-export const TOOLBAR_BUTTONS_TYPES = {
-  ACTION: "ACTION",
-  DROPDOWN: "DROPDOWN",
-  MODAL: "MODAL",
-  TOGGLE: "TOGGLE",
-  CUSTOM: "CUSTOM",
-};
+describe("locales/index", () => {
+  it("should export DEFAULT_LANGUAGE as en_US", () => {
+    expect(DEFAULT_LANGUAGE).toBe("en_US");
+  });
+
+  it("should export translations object with es_ES and en_US", () => {
+    expect(translations).toHaveProperty("es_ES");
+    expect(translations).toHaveProperty("en_US");
+  });
+
+  it("should have es_ES translations", () => {
+    expect(translations.es_ES).toBeDefined();
+    expect(typeof translations.es_ES).toBe("object");
+  });
+
+  it("should have en_US translations", () => {
+    expect(translations.en_US).toBeDefined();
+    expect(typeof translations.en_US).toBe("object");
+  });
+});
