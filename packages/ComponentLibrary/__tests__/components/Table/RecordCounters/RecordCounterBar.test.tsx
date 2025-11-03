@@ -66,7 +66,7 @@ describe("RecordCounterBar Component", () => {
     expect(container).toBeInTheDocument();
 
     // Check that it has the expected Tailwind classes
-    expect(container).toHaveClass("flex", "justify-between", "items-center");
+    expect(container).toHaveClass("flex", "justify-start", "gap-4", "items-center", "px-4", "py-2", "min-h-8", "bg-white", "border-b", "border-gray-200", "flex-shrink-0", "flex-col", "sm:flex-row");
   });
 
   it("should handle large numbers correctly", () => {
