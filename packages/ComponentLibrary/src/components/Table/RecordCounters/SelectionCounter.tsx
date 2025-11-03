@@ -16,7 +16,6 @@
  */
 
 import React from "react";
-import { Typography } from "@mui/material";
 import type { SelectionCounterProps } from "./types";
 
 /**
@@ -32,17 +31,9 @@ const SelectionCounter: React.FC<SelectionCounterProps> = ({ selectedCount, sele
   }
 
   return (
-    <Typography
-      variant="body2"
-      color="primary"
-      data-testid="SelectionCounter"
-      sx={{
-        fontSize: "0.875rem",
-        fontWeight: 600,
-        color: "primary.main",
-      }}>
+    <span data-testid="SelectionCounter" className="text-sm font-semibold text-[var(--color-etendo-main)]">
       {selectedLabel.replace("{count}", selectedCount.toString())}
-    </Typography>
+    </span>
   );
 };
 

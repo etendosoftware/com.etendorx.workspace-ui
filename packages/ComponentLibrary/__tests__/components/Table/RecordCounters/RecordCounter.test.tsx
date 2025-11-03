@@ -17,59 +17,52 @@
 
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import { ThemeProvider, createTheme } from "@mui/material/styles";
 import RecordCounter from "../../../../src/components/Table/RecordCounters/RecordCounter";
-
-const theme = createTheme();
-
-const renderWithTheme = (component: React.ReactElement) => {
-  return render(<ThemeProvider theme={theme}>{component}</ThemeProvider>);
-};
 
 describe("RecordCounter Component", () => {
   it("should display simple format when totalRecords equals loadedRecords", () => {
-    renderWithTheme(<RecordCounter totalRecords={50} loadedRecords={50} />);
+    render(<RecordCounter totalRecords={50} loadedRecords={50} />);
 
     expect(screen.getByTestId("RecordCounter-simple")).toBeInTheDocument();
     expect(screen.getByText("Showing 50 records")).toBeInTheDocument();
   });
 
   it("should display detailed format when totalRecords is greater than loadedRecords", () => {
-    renderWithTheme(<RecordCounter totalRecords={100} loadedRecords={25} />);
+    render(<RecordCounter totalRecords={100} loadedRecords={25} />);
 
     expect(screen.getByTestId("RecordCounter-detailed")).toBeInTheDocument();
     expect(screen.getByText("Showing 25 of 100 records")).toBeInTheDocument();
   });
 
   it("should display loading skeleton when isLoading is true", () => {
-    renderWithTheme(<RecordCounter totalRecords={100} loadedRecords={25} isLoading={true} />);
+    render(<RecordCounter totalRecords={100} loadedRecords={25} isLoading={true} />);
 
     expect(screen.getByTestId("RecordCounter-loading")).toBeInTheDocument();
   });
 
   it("should display fallback message for negative totalRecords", () => {
-    renderWithTheme(<RecordCounter totalRecords={-1} loadedRecords={25} />);
+    render(<RecordCounter totalRecords={-1} loadedRecords={25} />);
 
     expect(screen.getByTestId("RecordCounter-fallback")).toBeInTheDocument();
     expect(screen.getByText("Records loaded")).toBeInTheDocument();
   });
 
   it("should display fallback message for negative loadedRecords", () => {
-    renderWithTheme(<RecordCounter totalRecords={100} loadedRecords={-1} />);
+    render(<RecordCounter totalRecords={100} loadedRecords={-1} />);
 
     expect(screen.getByTestId("RecordCounter-fallback")).toBeInTheDocument();
     expect(screen.getByText("Records loaded")).toBeInTheDocument();
   });
 
   it("should handle zero records correctly", () => {
-    renderWithTheme(<RecordCounter totalRecords={0} loadedRecords={0} />);
+    render(<RecordCounter totalRecords={0} loadedRecords={0} />);
 
     expect(screen.getByTestId("RecordCounter-simple")).toBeInTheDocument();
     expect(screen.getByText("Showing 0 records")).toBeInTheDocument();
   });
 
   it("should handle large numbers correctly", () => {
-    renderWithTheme(<RecordCounter totalRecords={10000} loadedRecords={1000} />);
+    render(<RecordCounter totalRecords={10000} loadedRecords={1000} />);
 
     expect(screen.getByTestId("RecordCounter-detailed")).toBeInTheDocument();
     expect(screen.getByText("Showing 1000 of 10000 records")).toBeInTheDocument();
@@ -82,7 +75,7 @@ describe("RecordCounter Component", () => {
       recordsLoaded: "Elementos cargados",
     };
 
-    renderWithTheme(<RecordCounter totalRecords={50} loadedRecords={50} labels={customLabels} />);
+    render(<RecordCounter totalRecords={50} loadedRecords={50} labels={customLabels} />);
 
     expect(screen.getByTestId("RecordCounter-simple")).toBeInTheDocument();
     expect(screen.getByText("Mostrando 50 elementos")).toBeInTheDocument();

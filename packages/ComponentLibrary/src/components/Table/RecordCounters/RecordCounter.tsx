@@ -16,7 +16,7 @@
  */
 
 import React from "react";
-import { Typography, Skeleton } from "@mui/material";
+import LoadingSkeleton from "./LoadingSkeleton";
 import type { RecordCounterProps } from "./types";
 
 /**
@@ -41,54 +41,34 @@ const RecordCounter: React.FC<RecordCounterProps> = ({
 
   // Handle loading state
   if (isLoading) {
-    return (
-      <Skeleton
-        variant="text"
-        width={120}
-        height={20}
-        data-testid="RecordCounter-loading"
-        sx={{ fontSize: "0.875rem" }}
-      />
-    );
+    return <LoadingSkeleton width={120} height={20} data-testid="RecordCounter-loading" className="text-sm" />;
   }
 
   // Handle edge cases
   if (totalRecords < 0 || loadedRecords < 0) {
     return (
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        data-testid="RecordCounter-fallback"
-        sx={{ fontSize: "0.875rem", fontWeight: 500 }}>
+      <span data-testid="RecordCounter-fallback" className="text-sm font-medium text-gray-600">
         {finalLabels.recordsLoaded}
-      </Typography>
+      </span>
     );
   }
 
   // When totalRecords equals loadedRecords, show simplified format
   if (totalRecords === loadedRecords) {
     return (
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        data-testid="RecordCounter-simple"
-        sx={{ fontSize: "0.875rem", fontWeight: 500 }}>
+      <span data-testid="RecordCounter-simple" className="text-sm font-medium text-gray-600">
         {finalLabels.showingRecords.replace("{count}", loadedRecords.toString())}
-      </Typography>
+      </span>
     );
   }
 
   // When totalRecords > loadedRecords, show "X of Y" format
   return (
-    <Typography
-      variant="body2"
-      color="text.secondary"
-      data-testid="RecordCounter-detailed"
-      sx={{ fontSize: "0.875rem", fontWeight: 500 }}>
+    <span data-testid="RecordCounter-detailed" className="text-sm font-medium text-gray-600">
       {finalLabels.showingPartialRecords
         .replace("{loaded}", loadedRecords.toString())
         .replace("{total}", totalRecords.toString())}
-    </Typography>
+    </span>
   );
 };
 

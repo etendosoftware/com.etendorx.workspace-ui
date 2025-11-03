@@ -16,7 +16,6 @@
  */
 
 import React from "react";
-import { Box } from "@mui/material";
 import RecordCounter from "./RecordCounter";
 import SelectionCounter from "./SelectionCounter";
 import type { RecordCounterBarProps } from "./types";
@@ -35,37 +34,24 @@ const RecordCounterBar: React.FC<RecordCounterBarProps> = ({
   labels = {},
 }) => {
   return (
-    <Box
+    <div
       data-testid="RecordCounterBar"
-      sx={{
-        display: "flex",
-        justifyContent: "flex-start",
-        alignItems: "center",
-        padding: "8px 16px",
-        minHeight: "32px",
-        backgroundColor: "background.paper",
-        borderBottom: "1px solid",
-        borderColor: "divider",
-        flexShrink: 0,
-        // Responsive design
-        flexDirection: { xs: "column", sm: "row" },
-        gap: "1rem",
-      }}>
+      className="flex justify-between items-center px-4 py-2 min-h-8 bg-white border-b border-gray-200 flex-shrink-0 flex-col sm:flex-row gap-4 sm:gap-0">
       {/* Record counter on the left */}
-      <Box sx={{ display: "flex", alignItems: "center" }}>
+      <div className="flex items-center">
         <RecordCounter
           totalRecords={totalRecords}
           loadedRecords={loadedRecords}
           isLoading={isLoading}
           labels={labels}
         />
-      </Box>
+      </div>
 
       {/* Selection counter on the right */}
-      <Box sx={{ display: "flex", alignItems: "center" }}>
+      <div className="flex items-center">
         <SelectionCounter selectedCount={selectedCount} selectedLabel={labels.selectedRecords} />
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };
 
