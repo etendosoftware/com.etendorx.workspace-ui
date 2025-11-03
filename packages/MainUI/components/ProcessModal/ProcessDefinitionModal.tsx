@@ -395,6 +395,53 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   );
 
   /**
+   * Builds process-specific payload fields based on process configuration
+   */
+  const buildProcessSpecificFields = useCallback(
+    (processId: string): Record<string, unknown> => {
+      const currentAttrs = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+      if (!currentAttrs || !recordValues) {
+        return {};
+      }
+
+      const currentRecordValue = recordValues[currentAttrs.inpPrimaryKeyColumnId];
+      const fields: Record<string, unknown> = {
+        [currentAttrs.inpColumnId]: currentRecordValue,
+        [currentAttrs.inpPrimaryKeyColumnId]: currentRecordValue,
+      };
+
+      // Add additional payload fields from process configuration
+      if (currentAttrs.additionalPayloadFields) {
+        for (const fieldName of currentAttrs.additionalPayloadFields) {
+          if (recordValues[fieldName] !== undefined) {
+            fields[fieldName] = recordValues[fieldName];
+          }
+        }
+      }
+
+      return fields;
+    },
+    [recordValues]
+  );
+
+  /**
+   * Builds window-specific payload fields based on window configuration
+   */
+  const buildWindowSpecificFields = useCallback(
+    (windowId: string): Record<string, unknown> => {
+      const windowSpecificKey = WINDOW_SPECIFIC_KEYS[windowId];
+      if (!windowSpecificKey) {
+        return {};
+      }
+
+      return {
+        [windowSpecificKey.key]: windowSpecificKey.value(record),
+      };
+    },
+    [record]
+  );
+
+  /**
    * Executes processes with window reference parameters
    * Used for processes that require grid record selection
    * Calls servlet with selected grid records and process-specific data
@@ -405,27 +452,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     }
     startTransition(async () => {
       try {
-        const currentAttrs = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
-        const currentRecordValue = recordValues?.[currentAttrs.inpPrimaryKeyColumnId];
-        const payload = {
-          [currentAttrs.inpColumnId]: currentRecordValue,
-          [currentAttrs.inpPrimaryKeyColumnId]: currentRecordValue,
+        // Build base payload
+        const payload: Record<string, unknown> = {
+          recordIds: record?.id ? [record.id] : [],
           _buttonValue: "DONE",
           _params: {
             ...mapKeysWithDefaults({ ...form.getValues(), ...gridSelection }),
           },
           _entityName: tab.entityName,
           windowId: tab.window,
+          ...buildProcessSpecificFields(processId),
+          ...(tab.window ? buildWindowSpecificFields(tab.window) : {}),
         };
-
-        // Add additional payload fields from configuration
-        if (currentAttrs.additionalPayloadFields && recordValues) {
-          for (const fieldName of currentAttrs.additionalPayloadFields) {
-            if (recordValues[fieldName] !== undefined) {
-              payload[fieldName] = recordValues[fieldName];
-            }
-          }
-        }
 
         const res = await executeProcess(
           processId,
@@ -447,7 +485,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
     });
-  }, [tab, processId, recordValues, form, gridSelection, token, javaClassName, parseProcessResponse]);
+  }, [
+    tab,
+    processId,
+    form,
+    gridSelection,
+    token,
+    javaClassName,
+    parseProcessResponse,
+    record,
+    buildProcessSpecificFields,
+    buildWindowSpecificFields,
+  ]);
 
   /**
    * Executes processes directly via servlet using javaClassName
