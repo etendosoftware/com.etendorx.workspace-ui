@@ -36,7 +36,7 @@ const RecordCounterBar: React.FC<RecordCounterBarProps> = ({
   return (
     <div
       data-testid="RecordCounterBar"
-      className="flex justify-between items-center px-4 py-2 min-h-8 bg-white border-b border-gray-200 flex-shrink-0 flex-col sm:flex-row gap-4 sm:gap-0">
+      className="flex justify-start gap-4 items-center px-4 py-2 min-h-8 bg-white border-b border-gray-200 flex-shrink-0 flex-col sm:flex-row">
       {/* Record counter on the left */}
       <div className="flex items-center">
         <RecordCounter

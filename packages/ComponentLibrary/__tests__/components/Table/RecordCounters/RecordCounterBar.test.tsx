@@ -24,7 +24,7 @@ describe("RecordCounterBar Component", () => {
     render(<RecordCounterBar totalRecords={100} loadedRecords={50} selectedCount={5} />);
 
     expect(screen.getByTestId("RecordCounterBar")).toBeInTheDocument();
-    expect(screen.getByText("Showing 50 of 100 records")).toBeInTheDocument();
+    expect(screen.getByText("Showing 50 records")).toBeInTheDocument();
     expect(screen.getByText("5 selected")).toBeInTheDocument();
   });
 
@@ -32,7 +32,7 @@ describe("RecordCounterBar Component", () => {
     render(<RecordCounterBar totalRecords={100} loadedRecords={50} selectedCount={0} />);
 
     expect(screen.getByTestId("RecordCounterBar")).toBeInTheDocument();
-    expect(screen.getByText("Showing 50 of 100 records")).toBeInTheDocument();
+    expect(screen.getByText("Showing 50 records")).toBeInTheDocument();
     expect(screen.queryByTestId("SelectionCounter")).not.toBeInTheDocument();
   });
 
@@ -73,7 +73,7 @@ describe("RecordCounterBar Component", () => {
     render(<RecordCounterBar totalRecords={10000} loadedRecords={1000} selectedCount={500} />);
 
     expect(screen.getByTestId("RecordCounterBar")).toBeInTheDocument();
-    expect(screen.getByText("Showing 1000 of 10000 records")).toBeInTheDocument();
+    expect(screen.getByText("Showing 1000 records")).toBeInTheDocument();
     expect(screen.getByText("500 selected")).toBeInTheDocument();
   });
 
@@ -88,7 +88,7 @@ describe("RecordCounterBar Component", () => {
     render(<RecordCounterBar totalRecords={100} loadedRecords={50} selectedCount={5} labels={customLabels} />);
 
     expect(screen.getByTestId("RecordCounterBar")).toBeInTheDocument();
-    expect(screen.getByText("Mostrando 50 de 100 elementos")).toBeInTheDocument();
+    expect(screen.getByText("Mostrando 50 elementos")).toBeInTheDocument();
     expect(screen.getByText("5 elementos seleccionados")).toBeInTheDocument();
   });
 });

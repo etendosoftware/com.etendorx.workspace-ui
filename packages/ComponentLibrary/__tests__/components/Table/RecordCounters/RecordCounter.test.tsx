@@ -27,11 +27,11 @@ describe("RecordCounter Component", () => {
     expect(screen.getByText("Showing 50 records")).toBeInTheDocument();
   });
 
-  it("should display detailed format when totalRecords is greater than loadedRecords", () => {
+  it("should display simple format when totalRecords is greater than loadedRecords", () => {
     render(<RecordCounter totalRecords={100} loadedRecords={25} />);
 
-    expect(screen.getByTestId("RecordCounter-detailed")).toBeInTheDocument();
-    expect(screen.getByText("Showing 25 of 100 records")).toBeInTheDocument();
+    expect(screen.getByTestId("RecordCounter-simple")).toBeInTheDocument();
+    expect(screen.getByText("Showing 25 records")).toBeInTheDocument();
   });
 
   it("should display loading skeleton when isLoading is true", () => {
@@ -64,8 +64,8 @@ describe("RecordCounter Component", () => {
   it("should handle large numbers correctly", () => {
     render(<RecordCounter totalRecords={10000} loadedRecords={1000} />);
 
-    expect(screen.getByTestId("RecordCounter-detailed")).toBeInTheDocument();
-    expect(screen.getByText("Showing 1000 of 10000 records")).toBeInTheDocument();
+    expect(screen.getByTestId("RecordCounter-simple")).toBeInTheDocument();
+    expect(screen.getByText("Showing 1000 records")).toBeInTheDocument();
   });
 
   it("should use custom labels when provided", () => {

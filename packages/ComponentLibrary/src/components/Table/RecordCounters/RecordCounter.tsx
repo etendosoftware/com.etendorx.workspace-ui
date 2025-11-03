@@ -53,21 +53,10 @@ const RecordCounter: React.FC<RecordCounterProps> = ({
     );
   }
 
-  // When totalRecords equals loadedRecords, show simplified format
-  if (totalRecords === loadedRecords) {
-    return (
-      <span data-testid="RecordCounter-simple" className="text-sm font-medium text-gray-600">
-        {finalLabels.showingRecords.replace("{count}", loadedRecords.toString())}
-      </span>
-    );
-  }
-
-  // When totalRecords > loadedRecords, show "X of Y" format
+  // Always show simple format: "Showing X records"
   return (
-    <span data-testid="RecordCounter-detailed" className="text-sm font-medium text-gray-600">
-      {finalLabels.showingPartialRecords
-        .replace("{loaded}", loadedRecords.toString())
-        .replace("{total}", totalRecords.toString())}
+    <span data-testid="RecordCounter-simple" className="text-sm font-medium text-gray-600">
+      {finalLabels.showingRecords.replace("{count}", loadedRecords.toString())}
     </span>
   );
 };
