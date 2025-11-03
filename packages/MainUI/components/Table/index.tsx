@@ -802,9 +802,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   }
 
   // Calculate counter values
-  const selectedRecords = Object.keys(table.getState().rowSelection).filter(
-    (id) => table.getState().rowSelection[id]
-  );
+  const selectedRecords = Object.keys(table.getState().rowSelection).filter((id) => table.getState().rowSelection[id]);
   const selectedCount = selectedRecords.length;
   const loadedRecords = displayRecords.length;
   const totalRecords = hasMoreRecords ? loadedRecords + 1 : loadedRecords; // Approximate total when more records available
@@ -814,7 +812,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     showingRecords: t("table.counter.showingRecords"),
     showingPartialRecords: t("table.counter.showingPartialRecords"),
     selectedRecords: t("table.counter.selectedRecords"),
-    recordsLoaded: t("table.counter.recordsLoaded")
+    recordsLoaded: t("table.counter.recordsLoaded"),
   };
 
   return (
@@ -828,6 +826,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         selectedCount={selectedCount}
         isLoading={loading}
         labels={counterLabels}
+        data-testid="RecordCounterBar__8ca888"
       />
       <div className="flex-1 min-h-0">
         <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />

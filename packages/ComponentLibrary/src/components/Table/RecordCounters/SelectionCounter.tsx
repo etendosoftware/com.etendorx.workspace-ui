@@ -25,10 +25,7 @@ import type { SelectionCounterProps } from "./types";
  * Follows the EARS requirements for selection count visibility
  * Now supports internationalization through selectedLabel prop
  */
-const SelectionCounter: React.FC<SelectionCounterProps> = ({ 
-  selectedCount, 
-  selectedLabel = "{count} selected" 
-}) => {
+const SelectionCounter: React.FC<SelectionCounterProps> = ({ selectedCount, selectedLabel = "{count} selected" }) => {
   // Don't render when no records are selected
   if (selectedCount <= 0) {
     return null;
@@ -39,12 +36,11 @@ const SelectionCounter: React.FC<SelectionCounterProps> = ({
       variant="body2"
       color="primary"
       data-testid="SelectionCounter"
-      sx={{ 
-        fontSize: "0.875rem", 
+      sx={{
+        fontSize: "0.875rem",
         fontWeight: 600,
-        color: "primary.main"
-      }}
-    >
+        color: "primary.main",
+      }}>
       {selectedLabel.replace("{count}", selectedCount.toString())}
     </Typography>
   );

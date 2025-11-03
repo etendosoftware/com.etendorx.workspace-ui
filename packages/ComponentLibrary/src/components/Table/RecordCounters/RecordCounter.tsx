@@ -24,17 +24,17 @@ import type { RecordCounterProps } from "./types";
  * Follows the EARS requirements for displaying record count information
  * Now supports internationalization through label props
  */
-const RecordCounter: React.FC<RecordCounterProps> = ({ 
-  totalRecords, 
-  loadedRecords, 
+const RecordCounter: React.FC<RecordCounterProps> = ({
+  totalRecords,
+  loadedRecords,
   isLoading = false,
-  labels = {}
+  labels = {},
 }) => {
   // Default labels (fallback for English)
   const defaultLabels = {
     showingRecords: "Showing {count} records",
     showingPartialRecords: "Showing {loaded} of {total} records",
-    recordsLoaded: "Records loaded"
+    recordsLoaded: "Records loaded",
   };
 
   const finalLabels = { ...defaultLabels, ...labels };
@@ -59,8 +59,7 @@ const RecordCounter: React.FC<RecordCounterProps> = ({
         variant="body2"
         color="text.secondary"
         data-testid="RecordCounter-fallback"
-        sx={{ fontSize: "0.875rem", fontWeight: 500 }}
-      >
+        sx={{ fontSize: "0.875rem", fontWeight: 500 }}>
         {finalLabels.recordsLoaded}
       </Typography>
     );
@@ -73,8 +72,7 @@ const RecordCounter: React.FC<RecordCounterProps> = ({
         variant="body2"
         color="text.secondary"
         data-testid="RecordCounter-simple"
-        sx={{ fontSize: "0.875rem", fontWeight: 500 }}
-      >
+        sx={{ fontSize: "0.875rem", fontWeight: 500 }}>
         {finalLabels.showingRecords.replace("{count}", loadedRecords.toString())}
       </Typography>
     );
@@ -86,8 +84,7 @@ const RecordCounter: React.FC<RecordCounterProps> = ({
       variant="body2"
       color="text.secondary"
       data-testid="RecordCounter-detailed"
-      sx={{ fontSize: "0.875rem", fontWeight: 500 }}
-    >
+      sx={{ fontSize: "0.875rem", fontWeight: 500 }}>
       {finalLabels.showingPartialRecords
         .replace("{loaded}", loadedRecords.toString())
         .replace("{total}", totalRecords.toString())}

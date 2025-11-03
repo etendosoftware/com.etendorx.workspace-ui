@@ -32,7 +32,7 @@ const RecordCounterBar: React.FC<RecordCounterBarProps> = ({
   loadedRecords,
   selectedCount,
   isLoading = false,
-  labels = {}
+  labels = {},
 }) => {
   return (
     <Box
@@ -50,8 +50,7 @@ const RecordCounterBar: React.FC<RecordCounterBarProps> = ({
         // Responsive design
         flexDirection: { xs: "column", sm: "row" },
         gap: { xs: 1, sm: 0 },
-      }}
-    >
+      }}>
       {/* Record counter on the left */}
       <Box sx={{ display: "flex", alignItems: "center" }}>
         <RecordCounter
@@ -64,10 +63,7 @@ const RecordCounterBar: React.FC<RecordCounterBarProps> = ({
 
       {/* Selection counter on the right */}
       <Box sx={{ display: "flex", alignItems: "center" }}>
-        <SelectionCounter 
-          selectedCount={selectedCount} 
-          selectedLabel={labels.selectedRecords}
-        />
+        <SelectionCounter selectedCount={selectedCount} selectedLabel={labels.selectedRecords} />
       </Box>
     </Box>
   );
