@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import LinkedItems from "@workspaceui/componentlibrary/src/components/LinkedItems";
 import { fetchLinkedItemCategories, fetchLinkedItems } from "@workspaceui/api-client/src/api/linkedItems";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";

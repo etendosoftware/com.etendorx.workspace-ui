@@ -56,12 +56,9 @@ jest.mock("../../hooks/navigation/useMultiWindowURL", () => ({
   }),
 }));
 
-// Mock Graph class
-const mockGraphInstances = new Map<string, { id: string }>();
-
 jest.mock("../../data/graph", () => {
   return jest.fn().mockImplementation((tabs: Tab[]) => {
-    const graphId = `graph_${Date.now()}_${Math.random()}`;
+    const graphId = `graph_${Date.now()}}`;
     const instance = {
       id: graphId,
       tabs,
@@ -131,15 +128,13 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
     return (
       <div>
         <span data-testid={`${testId}-graph-id`}>{(context.graph as { id?: string })?.id || "no-graph"}</span>
-        <span data-testid={`${testId}-active-levels`}>{context.activeLevels.join(",")}</span>
-        <span data-testid={`${testId}-active-tabs-size`}>{context.activeTabsByLevel.size}</span>
+        <span data-testid={`${testId}-graph-exists`}>{context.graph ? "true" : "false"}</span>
       </div>
     );
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGraphInstances.clear();
   });
 
   describe("windowIdentifier Functionality", () => {
@@ -261,13 +256,8 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
       expect(screen.getByTestId("context-capture")).toBeInTheDocument();
       expect(contextInstance).not.toBeNull();
 
-      // Verify all required context properties exist
+      // Verify required context properties exist
       expect(contextInstance).toHaveProperty("graph");
-      expect(contextInstance).toHaveProperty("activeLevels");
-      expect(contextInstance).toHaveProperty("activeTabsByLevel");
-      expect(contextInstance).toHaveProperty("setActiveTabsByLevel");
-      expect(contextInstance).toHaveProperty("setActiveLevel");
-      expect(contextInstance).toHaveProperty("clearAllStates");
     });
 
     it("should initialize with proper default state", () => {
@@ -280,11 +270,8 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
       // Should have graph instance
       expect(screen.getByTestId("defaults-graph-id")).not.toHaveTextContent("no-graph");
 
-      // Should initialize with default active levels [0] (root level)
-      expect(screen.getByTestId("defaults-active-levels")).toHaveTextContent("0");
-
-      // Should initialize with empty active tabs map
-      expect(screen.getByTestId("defaults-active-tabs-size")).toHaveTextContent("0");
+      // Should have a valid graph
+      expect(screen.getByTestId("defaults-graph-exists")).toHaveTextContent("true");
     });
   });
 

@@ -70,12 +70,6 @@ export default function Window({
     }
   }, [windowIdentifier]);
 
-  const isLoading = loading || !windowData || isTransitioning;
-
-  useEffect(() => {
-    console.log("isLoading: ", isLoading);
-  }, [isLoading]);
-
   if (loading || !windowData || isTransitioning) {
     return <Loading data-testid="Loading__56042a" />;
   }

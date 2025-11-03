@@ -231,8 +231,8 @@ export default function useFormFields(
       ] as UseFormFieldsReturn["groups"][number];
 
       groupsArray.push(notesGroup);
-      //groupsArray.push(linkedItemsGroup);
       groupsArray.push(attachmentsGroup);
+      groupsArray.push(linkedItemsGroup);
     }
 
     return groupsArray;

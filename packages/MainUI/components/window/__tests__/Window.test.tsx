@@ -238,11 +238,16 @@ describe("Window Component Multi-Window Instance Support", () => {
     it("should handle error state correctly", () => {
       const testError = new Error("Test error message");
 
-      // Set error state
+      // Set error state - but keep windowData available so !windowData doesn't trigger loading
       Object.assign(mockMetadataContext, {
         error: testError,
         loading: false,
-        getWindowMetadata: jest.fn().mockReturnValue(undefined),
+        getWindowMetadata: jest.fn().mockReturnValue({
+          id: "TestWindow",
+          name: "Test Window",
+          window$_identifier: "TestWindow",
+          tabs: [],
+        } as unknown as Etendo.WindowMetadata),
         loadWindowData: jest.fn().mockResolvedValue({}),
       });
 
