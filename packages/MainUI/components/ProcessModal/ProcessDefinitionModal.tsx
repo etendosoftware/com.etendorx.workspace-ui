@@ -90,6 +90,39 @@ export type GridSelectionStructure = {
 };
 
 export type GridSelectionUpdater = GridSelectionStructure | ((prev: GridSelectionStructure) => GridSelectionStructure);
+
+/**
+ * Converts a date field value to ISO format if needed
+ * @param fieldValue - The field value to convert
+ * @returns The converted value or original if no conversion needed
+ */
+const convertDateFieldValue = (fieldValue: unknown): unknown => {
+  if (!fieldValue || typeof fieldValue !== "string") {
+    return fieldValue;
+  }
+
+  const originalValue = String(fieldValue);
+  const convertedValue = convertToISODateFormat(originalValue);
+
+  return convertedValue !== originalValue ? convertedValue : fieldValue;
+};
+
+/**
+ * Converts date fields in combined data for a single parameter
+ * @param combined - The combined data object
+ * @param param - The parameter to process
+ */
+const convertParameterDateFields = (combined: Record<string, unknown>, param: ProcessParameter): void => {
+  // Convert by parameter name
+  if (combined[param.name]) {
+    combined[param.name] = convertDateFieldValue(combined[param.name]);
+  }
+
+  // Convert by dBColumnName if different from name
+  if (param.dBColumnName && param.dBColumnName !== param.name && combined[param.dBColumnName]) {
+    combined[param.dBColumnName] = convertDateFieldValue(combined[param.dBColumnName]);
+  }
+};
 /**
  * ProcessDefinitionModalContent - Core modal component for process execution
  *
@@ -201,27 +234,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       const isDateField = param.reference && isDateReference(param.reference);
 
       if (isDateField) {
-        // Check by parameter name
-        if (combined[param.name] && typeof combined[param.name] === "string") {
-          const originalValue = String(combined[param.name]);
-          const convertedValue = convertToISODateFormat(originalValue);
-          if (convertedValue !== originalValue) {
-            combined[param.name] = convertedValue;
-          }
-        }
-        // Also check by dBColumnName if different
-        if (
-          param.dBColumnName &&
-          param.dBColumnName !== param.name &&
-          combined[param.dBColumnName] &&
-          typeof combined[param.dBColumnName] === "string"
-        ) {
-          const originalValue = String(combined[param.dBColumnName]);
-          const convertedValue = convertToISODateFormat(originalValue);
-          if (convertedValue !== originalValue) {
-            combined[param.dBColumnName] = convertedValue;
-          }
-        }
+        convertParameterDateFields(combined, param);
       }
     }
 
