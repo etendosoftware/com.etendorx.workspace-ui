@@ -16,14 +16,14 @@
  */
 
 "use client";
-
-import { useEffect } from "react";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import Loading from "@/components/loading";
 import { SelectedProvider } from "@/contexts/selected";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import TabsContainer from "@/components/window/TabsContainer";
+import { useState, useEffect, useMemo, useRef } from "react";
+import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 
 export default function Window({
   windowId,
@@ -35,9 +35,48 @@ export default function Window({
   const { error, loading, getWindowMetadata } = useMetadataContext();
   const { t } = useTranslation();
 
-  const windowData = getWindowMetadata(windowId);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const previousWindowIdentifier = useRef(windowIdentifier);
 
-  if (loading) {
+  /**
+   * Calculate window metadata based on windowId.
+   * This is memoized to avoid unnecessary recalculations.
+   */
+  const windowData = useMemo(() => {
+    try {
+      return getWindowMetadata(windowId) ?? null;
+    } catch (error) {
+      return {} as Etendo.WindowMetadata;
+    }
+  }, [windowId, getWindowMetadata]);
+
+  /**
+   * Handle windowIdentifier changes to show loading state during transitions.
+   * 
+   * When windowIdentifier changes, it indicates a new window session or navigation state
+   * that requires showing a loading state even if the windowId remains the same.
+   */
+  useEffect(() => {
+    if (previousWindowIdentifier.current !== windowIdentifier) {
+      setIsTransitioning(true);
+      previousWindowIdentifier.current = windowIdentifier;
+      
+      // Reset transition state after a brief moment to show loading
+      const timer = setTimeout(() => {
+        setIsTransitioning(false);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [windowIdentifier]);
+
+  const isLoading = loading || !windowData || isTransitioning;
+
+  useEffect(() => {
+    console.log("isLoading: ", isLoading);
+  }, [isLoading]);
+
+  if (loading || !windowData || isTransitioning) {
     return <Loading data-testid="Loading__56042a" />;
   }
 
@@ -50,7 +89,7 @@ export default function Window({
     );
   }
 
-  if (!windowData) {
+  if (windowData === {} as Etendo.WindowMetadata) {
     return (
       <ErrorDisplay
         title={t("errors.windowNotFound.title")}

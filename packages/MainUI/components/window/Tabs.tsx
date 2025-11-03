@@ -122,7 +122,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
     return subTabsSwitch;
   };
 
-    useEffect(() => {
+  useEffect(() => {
     if (onTabChange && current) {
       onTabChange(current);
     }
