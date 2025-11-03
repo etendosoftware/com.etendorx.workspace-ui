@@ -210,18 +210,29 @@ export default function useFormFields(
         },
       ] as UseFormFieldsReturn["groups"][number];
 
-      const linkedItemsGroup = [
-        "linked-items",
+      const attachmentsGroup = [
+        "attachments_group",
         {
-          id: "linked-items",
-          identifier: t("forms.sections.linkedItems"),
+          id: "attachments_group",
+          identifier: t("forms.attachments.title"),
           sequenceNumber: 10001,
           fields: {},
         },
       ] as UseFormFieldsReturn["groups"][number];
 
+      const linkedItemsGroup = [
+        "linked-items",
+        {
+          id: "linked-items",
+          identifier: t("forms.sections.linkedItems"),
+          sequenceNumber: 10002,
+          fields: {},
+        },
+      ] as UseFormFieldsReturn["groups"][number];
+
       groupsArray.push(notesGroup);
-      groupsArray.push(linkedItemsGroup);
+      //groupsArray.push(linkedItemsGroup);
+      groupsArray.push(attachmentsGroup);
     }
 
     return groupsArray;

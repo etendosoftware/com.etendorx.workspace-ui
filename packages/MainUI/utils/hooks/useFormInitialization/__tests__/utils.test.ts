@@ -211,6 +211,7 @@ describe("FormInitialization Utils - SessionMode Support", () => {
         field2: "value2",
         attr1: "attrValue1",
         attr2: "attrValue2",
+        _attachmentExists: "false",
       });
     });
 
@@ -231,6 +232,7 @@ describe("FormInitialization Utils - SessionMode Support", () => {
       expect(result).toEqual({
         attr1: "attrValue1",
         attr2: "attrValue2",
+        _attachmentExists: "false",
       });
     });
 
@@ -251,6 +253,7 @@ describe("FormInitialization Utils - SessionMode Support", () => {
       expect(result).toEqual({
         field1: "value1",
         field2: "value2",
+        _attachmentExists: "false",
       });
     });
 
@@ -265,7 +268,9 @@ describe("FormInitialization Utils - SessionMode Support", () => {
 
       const result = buildSessionAttributes(response);
 
-      expect(result).toEqual({});
+      expect(result).toEqual({
+        _attachmentExists: "false",
+      });
     });
 
     it("should prioritize sessionAttributes over auxiliaryInputValues with same key", () => {
@@ -285,6 +290,7 @@ describe("FormInitialization Utils - SessionMode Support", () => {
 
       expect(result).toEqual({
         conflictKey: "sessionValue", // sessionAttributes should win
+        _attachmentExists: "false",
       });
     });
 
@@ -308,7 +314,50 @@ describe("FormInitialization Utils - SessionMode Support", () => {
         field1: "value1",
         field2: "value2",
         field4: "", // Empty string is still a valid value
+        _attachmentExists: "false",
       });
+    });
+
+    it("should include attachment information when present", () => {
+      const response: FormInitializationResponse = {
+        columnValues: {},
+        auxiliaryInputValues: {
+          field1: { value: "value1" },
+        },
+        sessionAttributes: {
+          attr1: "attrValue1",
+        },
+        dynamicCols: [],
+        attachmentExists: true,
+        attachmentCount: 5,
+      };
+
+      const result = buildSessionAttributes(response);
+
+      expect(result).toEqual({
+        field1: "value1",
+        attr1: "attrValue1",
+        _attachmentExists: "true",
+        _attachmentCount: "5",
+      });
+    });
+
+    it("should not include attachment count if undefined", () => {
+      const response: FormInitializationResponse = {
+        columnValues: {},
+        auxiliaryInputValues: {},
+        sessionAttributes: {},
+        dynamicCols: [],
+        attachmentExists: true,
+        // attachmentCount is undefined
+      };
+
+      const result = buildSessionAttributes(response);
+
+      expect(result).toEqual({
+        _attachmentExists: "true",
+      });
+      expect(result._attachmentCount).toBeUndefined();
     });
   });
 

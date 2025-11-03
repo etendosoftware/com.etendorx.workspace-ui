@@ -75,7 +75,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     registerHasMoreRecordsGetter,
     registerFetchMore,
   } = useDatasourceContext();
-  const { registerActions } = useToolbarContext();
+  const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal } = useToolbarContext();
   const { activeWindow, getSelectedRecord } = useMultiWindowURL();
   const { tab, parentTab, parentRecord } = useTabContext();
 
@@ -752,6 +752,30 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       columnFilters: toggleColumnsDropdown,
     });
   }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown]);
+
+  // Register attachment action to navigate to FormView
+  useEffect(() => {
+    if (registerAttachmentAction && activeWindow?.windowId && tab) {
+      registerAttachmentAction(() => {
+        const selectedRecordId = getSelectedRecord(activeWindow.windowId, tab.id);
+        if (selectedRecordId) {
+          // Set flag to open attachment modal
+          setShouldOpenAttachmentModal(true);
+          // Navigate to FormView
+          setRecordId(selectedRecordId);
+        } else {
+          logger.warn("No record selected for attachment action");
+        }
+      });
+    }
+  }, [
+    registerAttachmentAction,
+    activeWindow?.windowId,
+    tab,
+    getSelectedRecord,
+    setRecordId,
+    setShouldOpenAttachmentModal,
+  ]);
 
   if (error) {
     return (

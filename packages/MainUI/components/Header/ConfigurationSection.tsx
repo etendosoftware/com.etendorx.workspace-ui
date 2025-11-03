@@ -18,7 +18,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { ConfigurationModal } from "@workspaceui/componentlibrary/src/components";
-import { modalConfig } from "../../../storybook/src/mocks";
+import { modalConfig } from "../../mocks";
 import { useTranslation } from "../../hooks/useTranslation";
 import type {
   OptionSelectedProps,

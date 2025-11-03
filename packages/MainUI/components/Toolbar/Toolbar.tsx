@@ -74,7 +74,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { activeWindow, getTabFormState, clearChildrenSelections } = useMultiWindowURL();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
-  const { isSessionSyncLoading, isCopilotInstalled } = useUserContext();
+  const { isSessionSyncLoading, isCopilotInstalled, session } = useUserContext();
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -233,6 +233,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       hasParentRecordSelected: hasParentRecordSelected,
       isCopilotInstalled: isCopilotInstalled,
       saveButtonState: saveButtonState,
+      session: session,
     });
 
     const config = {
@@ -268,6 +269,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     saveButtonState,
     isSessionSyncLoading,
     isCopilotInstalled,
+    session,
   ]);
 
   if (loading) {
