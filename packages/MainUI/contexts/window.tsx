@@ -126,7 +126,7 @@ const updateNavigationProperty = <T extends keyof NavigationState>(
 
   if (isTabIdsEmpty) {
     newState[windowIdentifier] = {};
-    const defaultTabId = 'default';
+    const defaultTabId = "default";
     newState[windowIdentifier][defaultTabId] = createDefaultTabState();
     newState[windowIdentifier][defaultTabId].navigation[property] = value;
     return newState;
@@ -187,8 +187,8 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   );
 
   const setTableFilters = useCallback((windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState) => {
-    setState((prevState: WindowContextState) => 
-      updateTableProperty(prevState, windowIdentifier, tabId, 'filters', filters)
+    setState((prevState: WindowContextState) =>
+      updateTableProperty(prevState, windowIdentifier, tabId, "filters", filters)
     );
   }, []);
 
@@ -202,33 +202,33 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   }, []);
 
   const setTableSorting = useCallback((windowIdentifier: string, tabId: string, sorting: MRT_SortingState) => {
-    setState((prevState: WindowContextState) => 
-      updateTableProperty(prevState, windowIdentifier, tabId, 'sorting', sorting)
+    setState((prevState: WindowContextState) =>
+      updateTableProperty(prevState, windowIdentifier, tabId, "sorting", sorting)
     );
   }, []);
 
   const setTableOrder = useCallback((windowIdentifier: string, tabId: string, order: string[]) => {
-    setState((prevState: WindowContextState) => 
-      updateTableProperty(prevState, windowIdentifier, tabId, 'order', order)
+    setState((prevState: WindowContextState) =>
+      updateTableProperty(prevState, windowIdentifier, tabId, "order", order)
     );
   }, []);
 
   const setTableImplicitFilterApplied = useCallback((windowIdentifier: string, tabId: string, isApplied: boolean) => {
-    setState((prevState: WindowContextState) => 
-      updateTableProperty(prevState, windowIdentifier, tabId, 'isImplicitFilterApplied', isApplied)
+    setState((prevState: WindowContextState) =>
+      updateTableProperty(prevState, windowIdentifier, tabId, "isImplicitFilterApplied", isApplied)
     );
   }, []);
 
   const setNavigationActiveLevels = useCallback((windowIdentifier: string, activeLevels: number[]) => {
-    setState((prevState: WindowContextState) => 
-      updateNavigationProperty(prevState, windowIdentifier, 'activeLevels', activeLevels)
+    setState((prevState: WindowContextState) =>
+      updateNavigationProperty(prevState, windowIdentifier, "activeLevels", activeLevels)
     );
   }, []);
 
   const setNavigationActiveTabsByLevel = useCallback(
     (windowIdentifier: string, activeTabsByLevel: Map<number, string>) => {
-      setState((prevState: WindowContextState) => 
-        updateNavigationProperty(prevState, windowIdentifier, 'activeTabsByLevel', activeTabsByLevel)
+      setState((prevState: WindowContextState) =>
+        updateNavigationProperty(prevState, windowIdentifier, "activeTabsByLevel", activeTabsByLevel)
       );
     },
     []

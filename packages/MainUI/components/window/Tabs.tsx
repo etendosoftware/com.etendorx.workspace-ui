@@ -41,13 +41,13 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
   const [expand, setExpanded] = useState(false);
   const [customHeight, setCustomHeight] = useState(50);
   const [isPending, startTransition] = useTransition();
-  
+
   const { activeWindow } = useMultiWindowURL();
   const { activeLevels, setActiveLevel } = useTableStatePersistenceTab({
     windowIdentifier: activeWindow?.window_identifier || "",
     tabId: "",
   });
-  
+
   const collapsed = !activeLevels.includes(current.tabLevel);
   const isTopExpanded = !collapsed && isTopGroup;
   const showResizeHandle = !isTopExpanded && !collapsed;

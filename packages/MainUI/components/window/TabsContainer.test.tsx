@@ -2,13 +2,13 @@ import { render } from "@testing-library/react";
 
 // Mocks for hooks used by TabsContainer so we can hit the skeleton branch
 jest.mock("@/hooks/useSelected", () => ({
-  useSelected: () => ({ 
-    activeLevels: [], 
+  useSelected: () => ({
+    activeLevels: [],
     clearAllStates: jest.fn(),
     graph: {
       clearSelected: jest.fn(),
       clearSelectedMultiple: jest.fn(),
-    }
+    },
   }),
 }));
 

@@ -52,9 +52,9 @@ export const getNewWindowIdentifier = (windowId: string) => {
 export const generateSelectedRecord = ({ recordId, tabId }: SelectedRecord): Record<string, string> | undefined => {
   if (!tabId || !recordId) return;
   return {
-    [tabId]: recordId
+    [tabId]: recordId,
   };
-}
+};
 
 /**
  * Converts an array of SelectedRecord objects into a unified Record mapping.
@@ -84,7 +84,10 @@ export const generateSelectedRecords = (records: SelectedRecord[]): Record<strin
  *   - tabFormState: The form state configuration (recordId, mode, formMode)
  * @returns Record mapping tabId to TabFormState, or empty object if inputs are invalid
  */
-export const generateTabFormState = ({ tabId, tabFormState }: { tabId: string, tabFormState: TabFormState }): Record<string, TabFormState> => {
+export const generateTabFormState = ({
+  tabId,
+  tabFormState,
+}: { tabId: string; tabFormState: TabFormState }): Record<string, TabFormState> => {
   const { recordId, mode, formMode } = tabFormState;
   if (!tabId || !recordId) return {};
   const defaultMode = mode ?? TAB_MODES.FORM;
@@ -93,10 +96,10 @@ export const generateTabFormState = ({ tabId, tabFormState }: { tabId: string, t
     [tabId]: {
       recordId,
       mode: defaultMode as TabMode,
-      formMode: defaultFormMode as FormMode
-    }
-  }
-}
+      formMode: defaultFormMode as FormMode,
+    },
+  };
+};
 
 /**
  * Converts an array of tab form state configurations into a unified Record mapping.
@@ -107,7 +110,9 @@ export const generateTabFormState = ({ tabId, tabFormState }: { tabId: string, t
  * @param tabFormStates - Array of objects containing tabId and tabFormState configurations
  * @returns Record object mapping tab IDs to TabFormState objects for all valid configurations
  */
-export const generateTabFormStates = (tabFormStates: { tabId: string; tabFormState: TabFormState }[]): Record<string, TabFormState> => {
+export const generateTabFormStates = (
+  tabFormStates: { tabId: string; tabFormState: TabFormState }[]
+): Record<string, TabFormState> => {
   const result: Record<string, TabFormState> = {};
 
   for (const { tabId, tabFormState } of tabFormStates) {

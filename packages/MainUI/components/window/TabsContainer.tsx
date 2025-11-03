@@ -101,9 +101,12 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * Purpose: Updates the activeTabsByLevel mapping when user selects different tab
    * Triggers: Navigation state persistence and potential child tab filtering updates
    */
-  const handleTabChange = useCallback((tab: Tab) => {
-    setActiveTabsByLevel(tab);
-  }, [setActiveTabsByLevel]);
+  const handleTabChange = useCallback(
+    (tab: Tab) => {
+      setActiveTabsByLevel(tab);
+    },
+    [setActiveTabsByLevel]
+  );
 
   /**
    * Determines which tab should be active for a given hierarchical level.

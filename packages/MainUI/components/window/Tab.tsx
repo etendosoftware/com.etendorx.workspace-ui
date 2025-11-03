@@ -123,7 +123,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   // For child tabs, verify parent has selection in URL before showing FormView
   const parentTab = graph.getParent(tab);
-  const parentSelectedRecordIdFromURL = parentTab && windowIdentifier ? getSelectedRecord(windowIdentifier, parentTab.id) : undefined;
+  const parentSelectedRecordIdFromURL =
+    parentTab && windowIdentifier ? getSelectedRecord(windowIdentifier, parentTab.id) : undefined;
   const parentHasSelectionInURL = !parentTab || !!parentSelectedRecordIdFromURL;
 
   const hasFormViewState = !!tabFormState && tabFormState.mode === TAB_MODES.FORM;
@@ -157,7 +158,14 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       }
 
       // Handle editing existing record
-      handleEditRecordFormState(windowIdentifier, tab.id, newValue, selectedRecordId, setSelectedRecord, setTabFormState);
+      handleEditRecordFormState(
+        windowIdentifier,
+        tab.id,
+        newValue,
+        selectedRecordId,
+        setSelectedRecord,
+        setTabFormState
+      );
     },
     [
       currentRecordId,
@@ -227,7 +235,15 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         graph.clearSelected(tab);
       }
     }
-  }, [windowIdentifier, clearTabFormStateAtomic, tab, getTabFormState, clearSelectedRecord, clearChildrenSelections, graph]);
+  }, [
+    windowIdentifier,
+    clearTabFormStateAtomic,
+    tab,
+    getTabFormState,
+    clearSelectedRecord,
+    clearChildrenSelections,
+    graph,
+  ]);
 
   const handleTreeView = useCallback(() => {
     if (windowIdentifier) {
@@ -307,7 +323,16 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       clearTabFormState(windowIdentifier, tab.id);
       graph.clearSelected(tab);
     }
-  }, [windowIdentifier, graph, tab, getSelectedRecord, clearTabFormState, getTabFormState, currentMode, tabFormState?.mode]);
+  }, [
+    windowIdentifier,
+    graph,
+    tab,
+    getSelectedRecord,
+    clearTabFormState,
+    getTabFormState,
+    currentMode,
+    tabFormState?.mode,
+  ]);
 
   return (
     <div

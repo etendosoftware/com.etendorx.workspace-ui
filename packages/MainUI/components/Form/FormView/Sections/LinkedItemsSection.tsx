@@ -63,18 +63,15 @@ export const LinkedItemsSection = ({ tabId, entityName, recordId }: LinkedItemsS
       const newRecord = {
         tabId: item.adTabId,
         recordId: item.id,
-      }
-      const selectedRecords = [
-        currentRecord,
-        newRecord
-      ];
+      };
+      const selectedRecords = [currentRecord, newRecord];
       const tabFormStates = [
         {
           tabId: newRecord.tabId,
-          tabFormState: { recordId: newRecord.recordId }
-        }
-      ]
-      openWindow(item.adWindowId, item.adMenuName, selectedRecords, tabFormStates)
+          tabFormState: { recordId: newRecord.recordId },
+        },
+      ];
+      openWindow(item.adWindowId, item.adMenuName, selectedRecords, tabFormStates);
     },
     [tabId, recordId, openWindow]
   );

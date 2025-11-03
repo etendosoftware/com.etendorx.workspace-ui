@@ -52,7 +52,7 @@ export default function Window({
 
   /**
    * Handle windowIdentifier changes to show loading state during transitions.
-   * 
+   *
    * When windowIdentifier changes, it indicates a new window session or navigation state
    * that requires showing a loading state even if the windowId remains the same.
    */
@@ -60,12 +60,12 @@ export default function Window({
     if (previousWindowIdentifier.current !== windowIdentifier) {
       setIsTransitioning(true);
       previousWindowIdentifier.current = windowIdentifier;
-      
+
       // Reset transition state after a brief moment to show loading
       const timer = setTimeout(() => {
         setIsTransitioning(false);
       }, 100);
-      
+
       return () => clearTimeout(timer);
     }
   }, [windowIdentifier]);
@@ -83,7 +83,7 @@ export default function Window({
     );
   }
 
-  if (windowData === {} as Etendo.WindowMetadata) {
+  if (windowData === ({} as Etendo.WindowMetadata)) {
     return (
       <ErrorDisplay
         title={t("errors.windowNotFound.title")}

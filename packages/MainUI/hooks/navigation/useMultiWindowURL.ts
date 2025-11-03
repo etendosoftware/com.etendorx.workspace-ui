@@ -40,12 +40,8 @@ import {
   type TabFormState,
   type SelectedRecord,
 } from "@/utils/url/constants";
-import {
-  getNewWindowIdentifier,
-  generateSelectedRecords,
-  generateTabFormStates,
-} from "@/utils/url/utils";
-import { isEmptyArray } from '@/utils/commons';
+import { getNewWindowIdentifier, generateSelectedRecords, generateTabFormStates } from "@/utils/url/utils";
+import { isEmptyArray } from "@/utils/commons";
 
 /**
  * Represents the complete state of a window in the multi-window navigation system.
@@ -489,14 +485,14 @@ export function useMultiWindowURL() {
    * ]);
    *
    * // Open window with records in form view
-   * openWindow("ProductWindow", "Edit Product", 
+   * openWindow("ProductWindow", "Edit Product",
    *   [{ tabId: "mainTab", recordId: "product_12345" }],
-   *   [{ 
-   *     tabId: "mainTab", 
-   *     tabFormState: { 
-   *       recordId: "product_12345", 
-   *       mode: "form", 
-   *       formMode: "edit" 
+   *   [{
+   *     tabId: "mainTab",
+   *     tabFormState: {
+   *       recordId: "product_12345",
+   *       mode: "form",
+   *       formMode: "edit"
    *     }
    *   }]
    * );
@@ -507,7 +503,12 @@ export function useMultiWindowURL() {
    * ```
    */
   const openWindow = useCallback(
-    (windowId: string, title?: string, selectedRecords?: SelectedRecord[], tabFormStates?: { tabId: string, tabFormState: TabFormState }[]) => {
+    (
+      windowId: string,
+      title?: string,
+      selectedRecords?: SelectedRecord[],
+      tabFormStates?: { tabId: string; tabFormState: TabFormState }[]
+    ) => {
       const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
 
       // Generate unique identifier if not provided
