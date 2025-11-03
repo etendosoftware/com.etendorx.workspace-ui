@@ -163,7 +163,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   const handleFilterByValue = useCallback(
     async (columnId: string, filterId: string, filterValue: string | number, filterLabel: string) => {
-      console.log("handleFilterByValue called with:", { columnId, filterId, filterValue, filterLabel });
       await applyQuickFilter(columnId, filterId, filterValue, filterLabel);
     },
     [applyQuickFilter]
