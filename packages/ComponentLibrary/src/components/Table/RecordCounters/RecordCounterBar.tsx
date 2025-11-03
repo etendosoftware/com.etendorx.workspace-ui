@@ -39,7 +39,7 @@ const RecordCounterBar: React.FC<RecordCounterBarProps> = ({
       data-testid="RecordCounterBar"
       sx={{
         display: "flex",
-        justifyContent: "space-between",
+        justifyContent: "flex-start",
         alignItems: "center",
         padding: "8px 16px",
         minHeight: "32px",
@@ -49,7 +49,7 @@ const RecordCounterBar: React.FC<RecordCounterBarProps> = ({
         flexShrink: 0,
         // Responsive design
         flexDirection: { xs: "column", sm: "row" },
-        gap: { xs: 1, sm: 0 },
+        gap: "1rem",
       }}>
       {/* Record counter on the left */}
       <Box sx={{ display: "flex", alignItems: "center" }}>
