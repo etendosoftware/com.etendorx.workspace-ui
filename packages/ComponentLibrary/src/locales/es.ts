@@ -210,6 +210,12 @@ const es = {
     content: {
       currentTitle: "Se espera que sus ingresos aumenten a finales de este año. Felicitaciones",
     },
+    counter: {
+      showingRecords: "Mostrando {count} registros",
+      showingPartialRecords: "Mostrando {loaded} de {total} registros",
+      selectedRecords: "{count} seleccionados",
+      recordsLoaded: "Registros cargados",
+    },
     useAsFilter: "Usar como filtro",
   },
   navigation: {
