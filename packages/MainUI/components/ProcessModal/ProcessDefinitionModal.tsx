@@ -334,6 +334,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
         // Build base payload
         const payload: Record<string, unknown> = {
+          recordIds: record?.id ? [record.id] : [],
           _buttonValue: "DONE",
           _params: {
             ...mapKeysWithDefaults({ ...form.getValues(), ...gridSelection }),
