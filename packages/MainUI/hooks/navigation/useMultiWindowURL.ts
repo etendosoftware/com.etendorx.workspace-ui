@@ -20,11 +20,9 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import {
-  WINDOW_PREFIX,
   NEW_RECORD_ID,
   FORM_MODES,
   TAB_MODES,
-  TAB_ACTIVE,
   type FormMode,
   type TabMode,
   type TabFormState,
@@ -32,7 +30,6 @@ import {
   type WindowState,
 } from "@/utils/url/constants";
 import {
-  getNewWindowIdentifier,
   generateSelectedRecords,
   generateTabFormStates,
   extractWindowIds,
@@ -42,39 +39,47 @@ import {
   normalizeWindowOrders
 } from "@/utils/url/utils";
 import { isEmptyArray } from "@/utils/commons";
+import { useWindowContext } from "@/contexts/window";
 
 export function useMultiWindowURL() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  // TODO: delete this on the future and move all to the context
+  const { getActiveWindow } = useWindowContext();
 
   const { windows, activeWindow, isHomeRoute } = useMemo(() => {
     const windowStates: WindowState[] = [];
     let active: WindowState | undefined;
 
-    const hasWindowActiveParams = Array.from(searchParams.entries()).some(
-      ([key, value]) => key.startsWith(WINDOW_PREFIX) && value === TAB_ACTIVE
-    );
-    const isHome = !hasWindowActiveParams;
-
     const windowIdentifiers = extractWindowIds(searchParams);
+    const activeWindowIdentifier = getActiveWindow();
 
     for (const windowIdentifier of windowIdentifiers) {
       const windowState = createWindowState(windowIdentifier, searchParams);
-      windowStates.push(windowState);
 
-      if (windowState.isActive) {
+      if (windowIdentifier === activeWindowIdentifier) {
         active = windowState;
+        windowState.isActive = true;
+      } else {
+        windowState.isActive = false;
       }
+
+      windowStates.push(windowState);
     }
 
+    // TODO: use ORDER_PREFIX to order
+    // NOTE: in the new login we assume that the order is given by the order of appearance in the URL
     const orderedStates = [...windowStates].sort((a, b) => a.order - b.order);
+
+    const hasActiveWindow = windowStates.some(window => window.isActive);
+    const isHome = !hasActiveWindow;
 
     return {
       windows: orderedStates,
       activeWindow: active,
       isHomeRoute: isHome,
     };
-  }, [searchParams]);
+  }, [searchParams, getActiveWindow]);
 
   /**
    * Builds a complete URL with all window states encoded as URL parameters.
@@ -209,14 +214,12 @@ export function useMultiWindowURL() {
   const openWindow = useCallback(
     (
       windowId: string,
+      windowIdentifier: string,
       title?: string,
       selectedRecords?: SelectedRecord[],
       tabFormStates?: { tabId: string; tabFormState: TabFormState }[]
     ) => {
       const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
-
-      // Generate unique identifier if not provided
-      const uniqueIdentifier = getNewWindowIdentifier(windowId);
 
       const nextOrder = getNextOrder(updatedWindows);
 
@@ -227,7 +230,7 @@ export function useMultiWindowURL() {
         windowId,
         isActive: true,
         order: nextOrder,
-        window_identifier: uniqueIdentifier,
+        window_identifier: windowIdentifier,
         title,
         selectedRecords: selectedRecordsRes,
         tabFormStates: tabFormStatesRes,

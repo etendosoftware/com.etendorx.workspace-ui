@@ -26,6 +26,7 @@ import LoadingProvider from "@/contexts/loading";
 import UserProvider from "@/contexts/user";
 import { DatasourceProvider } from "@/contexts/datasourceContext";
 import MetadataProvider from "@/contexts/metadata";
+import WindowProvider from "@/contexts/window";
 import Layout from "@/components/layout";
 import { DENSITY_KEY } from "@/utils/accessibility/constants";
 
@@ -81,11 +82,13 @@ export default async function RootLayout({
             <LanguageProvider data-testid="LanguageProvider__ba7569">
               <UserProvider data-testid="UserProvider__ba7569">
                 <DatasourceProvider data-testid="DatasourceProvider__ba7569">
-                  <MetadataProvider data-testid="MetadataProvider__ba7569">
-                    <LoadingProvider data-testid="LoadingProvider__ba7569">
-                      <Layout data-testid="Layout__ba7569">{children}</Layout>
-                    </LoadingProvider>
-                  </MetadataProvider>
+                  <WindowProvider>
+                    <MetadataProvider data-testid="MetadataProvider__ba7569">
+                      <LoadingProvider data-testid="LoadingProvider__ba7569">
+                        <Layout data-testid="Layout__ba7569">{children}</Layout>
+                      </LoadingProvider>
+                    </MetadataProvider>
+                  </WindowProvider>
                 </DatasourceProvider>
               </UserProvider>
             </LanguageProvider>

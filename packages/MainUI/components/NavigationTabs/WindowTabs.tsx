@@ -34,7 +34,7 @@ export default function WindowTabs() {
   const { windows, isHomeRoute, setActiveWindow, closeWindow, navigateToHome } = useMultiWindowURL();
   const { getWindowTitle } = useMetadataContext();
   const { t } = useTranslation();
-  const { cleanupWindow } = useWindowContext();
+  const { cleanupWindow, setWindowActive } = useWindowContext();
 
   const {
     containerRef,
@@ -60,8 +60,10 @@ export default function WindowTabs() {
   const handleSelectWindow = useCallback(
     (windowIdentifier: string) => {
       setActiveWindow(windowIdentifier);
+      // TODO: delete this code when multi-window is fully stable
+      setWindowActive(windowIdentifier);
     },
-    [setActiveWindow]
+    [setActiveWindow, setWindowActive]
   );
 
   const handleGoHome = () => {

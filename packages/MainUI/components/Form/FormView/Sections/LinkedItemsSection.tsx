@@ -21,6 +21,7 @@ import { fetchLinkedItemCategories, fetchLinkedItems } from "@workspaceui/api-cl
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
 import { useTranslation } from "@/hooks/useTranslation";
+import { getNewWindowIdentifier } from "@/utils/url/utils";
 
 interface LinkedItemsSectionProps {
   tabId: string;
@@ -71,7 +72,9 @@ export const LinkedItemsSection = ({ tabId, entityName, recordId }: LinkedItemsS
           tabFormState: { recordId: newRecord.recordId },
         },
       ];
-      openWindow(item.adWindowId, item.adMenuName, selectedRecords, tabFormStates);
+
+      const newWindowIdentifier = getNewWindowIdentifier(item.adWindowId);
+      openWindow(item.adWindowId, newWindowIdentifier, item.adMenuName, selectedRecords, tabFormStates);
     },
     [tabId, recordId, openWindow]
   );

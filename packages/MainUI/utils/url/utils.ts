@@ -11,8 +11,6 @@ import {
   TAB_FORM_MODE_PREFIX,
   FORM_MODES,
   TAB_MODES,
-  TAB_ACTIVE,
-  TAB_INACTIVE,
   type FormMode,
   type TabMode,
   type TabFormState,
@@ -238,7 +236,6 @@ export const processTabParameters = (
  * // }
  */
 export const createWindowState = (windowIdentifier: string, searchParams: URLSearchParams): WindowState => {
-  const isActive = searchParams.get(`${WINDOW_PREFIX}${windowIdentifier}`) === TAB_ACTIVE;
   const formRecordId = searchParams.get(`${FORM_RECORD_ID_PREFIX}${windowIdentifier}`) || undefined;
   const formMode = (searchParams.get(`${FORM_MODE_PREFIX}${windowIdentifier}`) as FormMode) || undefined;
   const order = Number.parseInt(searchParams.get(`${ORDER_PREFIX}${windowIdentifier}`) || "1", 10);
@@ -249,7 +246,8 @@ export const createWindowState = (windowIdentifier: string, searchParams: URLSea
 
   return {
     windowId,
-    isActive,
+    // TODO: the isActive is resolved outside this function
+    isActive: false,
     order,
     window_identifier: windowIdentifier,
     formRecordId,
@@ -289,7 +287,6 @@ export const setWindowParameters = (params: URLSearchParams, window: WindowState
   // Use window_identifier as the URL key instead of windowId
   const urlKey = window_identifier;
 
-  params.set(`${WINDOW_PREFIX}${urlKey}`, isActive ? TAB_ACTIVE : TAB_INACTIVE);
   params.set(`${ORDER_PREFIX}${urlKey}`, (order ?? 1).toString());
   params.set(`${WINDOW_IDENTIFIER_PREFIX}${urlKey}`, windowId);
 

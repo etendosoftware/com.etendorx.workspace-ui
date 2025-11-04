@@ -33,6 +33,7 @@ import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/url/utils";
+import { useWindowContext } from "@/contexts/window";
 
 /**
  * Version component that displays the current application version in the sidebar footer.
@@ -72,6 +73,7 @@ export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const { activeWindow, openWindow, buildURL, getNextOrder, windows } = useMultiWindowURL();
+  const { setWindowActive } = useWindowContext();
 
   const [searchValue, setSearchValue] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -111,12 +113,15 @@ export default function Sidebar() {
         setPendingWindowId(windowId);
       }
 
+      const newWindowIdentifier = getNewWindowIdentifier(windowId);
+      setWindowActive(newWindowIdentifier);
+
+      // TODO: delete this code when multi-window is fully stable
       if (isInWindowRoute) {
         // Already in window context - use multi-window system
-        openWindow(windowId, item.name);
+        openWindow(windowId, newWindowIdentifier, item.name);
       } else {
         // Coming from home route - create new window and navigate
-        const newWindowIdentifier = getNewWindowIdentifier(windowId);
         const newWindow = {
           windowId,
           window_identifier: newWindowIdentifier,
@@ -131,7 +136,7 @@ export default function Sidebar() {
         router.push(targetURL);
       }
     },
-    [pathname, router, windows, openWindow, buildURL, getNextOrder]
+    [pathname, router, windows, openWindow, buildURL, getNextOrder, setWindowActive]
   );
 
   /**

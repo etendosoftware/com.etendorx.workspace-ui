@@ -14,6 +14,7 @@
  * Contributor(s): Futit Services S.L.
  *************************************************************************
  */
+"use client";
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
@@ -37,7 +38,10 @@ interface TabState {
 }
 
 interface WindowState {
-  [tabId: string]: TabState;
+  isActive: boolean;
+  tabs: {
+    [tabId: string]: TabState;
+  };
 }
 
 interface WindowContextState {
@@ -48,6 +52,7 @@ interface WindowContextI {
   // State getters
   getTableState: (windowIdentifier: string, tabId: string) => TableState;
   getNavigationState: (windowIdentifier: string) => NavigationState;
+  getActiveWindow: () => string | null;
 
   // State setters
   setTableFilters: (windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState) => void;
@@ -57,6 +62,8 @@ interface WindowContextI {
   setTableImplicitFilterApplied: (windowIdentifier: string, tabId: string, isApplied: boolean) => void;
   setNavigationActiveLevels: (windowIdentifier: string, activeLevels: number[]) => void;
   setNavigationActiveTabsByLevel: (windowIdentifier: string, activeTabsByLevel: Map<number, string>) => void;
+  setWindowActive: (windowIdentifier: string) => void;
+  setWindowInactive: (windowIdentifier: string) => void;
 
   // Window management
   cleanupWindow: (windowIdentifier: string) => void;
@@ -87,11 +94,14 @@ const ensureTabExists = (state: WindowContextState, windowIdentifier: string, ta
   const newState = { ...state };
 
   if (!newState[windowIdentifier]) {
-    newState[windowIdentifier] = {};
+    newState[windowIdentifier] = {
+      isActive: false,
+      tabs: {},
+    };
   }
 
-  if (!newState[windowIdentifier][tabId]) {
-    newState[windowIdentifier][tabId] = createDefaultTabState();
+  if (!newState[windowIdentifier].tabs[tabId]) {
+    newState[windowIdentifier].tabs[tabId] = createDefaultTabState();
   }
 
   return newState;
@@ -105,7 +115,7 @@ const updateTableProperty = <T extends keyof TableState>(
   value: TableState[T]
 ): WindowContextState => {
   const newState = ensureTabExists(prevState, windowIdentifier, tabId);
-  newState[windowIdentifier][tabId].table[property] = value;
+  newState[windowIdentifier].tabs[tabId].table[property] = value;
   return newState;
 };
 
@@ -118,26 +128,28 @@ const updateNavigationProperty = <T extends keyof NavigationState>(
   const newState = { ...prevState };
 
   if (!newState[windowIdentifier]) {
-    newState[windowIdentifier] = {};
+    newState[windowIdentifier] = {
+      isActive: false,
+      tabs: {},
+    };
   }
 
-  const tabIds = Object.keys(newState[windowIdentifier]);
+  const tabIds = Object.keys(newState[windowIdentifier].tabs);
   const isTabIdsEmpty = tabIds.length === 0;
 
   if (isTabIdsEmpty) {
-    newState[windowIdentifier] = {};
     const defaultTabId = "default";
-    newState[windowIdentifier][defaultTabId] = createDefaultTabState();
-    newState[windowIdentifier][defaultTabId].navigation[property] = value;
+    newState[windowIdentifier].tabs[defaultTabId] = createDefaultTabState();
+    newState[windowIdentifier].tabs[defaultTabId].navigation[property] = value;
     return newState;
   }
 
   const currentTabId = tabIds[0];
-  if (!newState[windowIdentifier][currentTabId]) {
-    newState[windowIdentifier][currentTabId] = createDefaultTabState();
+  if (!newState[windowIdentifier].tabs[currentTabId]) {
+    newState[windowIdentifier].tabs[currentTabId] = createDefaultTabState();
   }
 
-  newState[windowIdentifier][currentTabId].navigation[property] = value;
+  newState[windowIdentifier].tabs[currentTabId].navigation[property] = value;
   return newState;
 };
 
@@ -155,11 +167,11 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
         isImplicitFilterApplied: undefined,
       };
 
-      if (!state[windowIdentifier] || !state[windowIdentifier][tabId]) {
+      if (!state[windowIdentifier] || !state[windowIdentifier].tabs[tabId]) {
         return defaultTableState;
       }
 
-      return state[windowIdentifier][tabId].table || defaultTableState;
+      return state[windowIdentifier].tabs[tabId].table || defaultTableState;
     },
     [state]
   );
@@ -175,16 +187,26 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
         return defaultNavigationState;
       }
 
-      const tabIds = Object.keys(state[windowIdentifier]);
+      const tabIds = Object.keys(state[windowIdentifier].tabs);
       if (tabIds.length === 0) {
         return defaultNavigationState;
       }
 
       const currentTabId = tabIds[0];
-      return state[windowIdentifier][currentTabId].navigation || defaultNavigationState;
+      return state[windowIdentifier].tabs[currentTabId].navigation || defaultNavigationState;
     },
     [state]
   );
+
+  const getActiveWindow = useCallback((): string | null => {
+    const allWindows = Object.entries(state);
+    for (const [windowIdentifier, windowState] of allWindows) {
+      if (windowState.isActive) {
+        return windowIdentifier;
+      }
+    }
+    return null;
+  }, [state]);
 
   const setTableFilters = useCallback((windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState) => {
     setState((prevState: WindowContextState) =>
@@ -195,8 +217,8 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   const setTableVisibility = useCallback((windowIdentifier: string, tabId: string, visibility: MRT_VisibilityState) => {
     setState((prevState: WindowContextState) => {
       const newState = ensureTabExists(prevState, windowIdentifier, tabId);
-      const currentVisibility = newState[windowIdentifier][tabId].table.visibility;
-      newState[windowIdentifier][tabId].table.visibility = { ...currentVisibility, ...visibility };
+      const currentVisibility = newState[windowIdentifier].tabs[tabId].table.visibility;
+      newState[windowIdentifier].tabs[tabId].table.visibility = { ...currentVisibility, ...visibility };
       return newState;
     });
   }, []);
@@ -234,6 +256,46 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     []
   );
 
+  // NOTE: on the transtiton to active a new window, the activeWindow is null then show a empty window
+  // TODO: show a loading state instead of an empty window
+  const setWindowActive = useCallback((windowIdentifier: string) => {
+    setState((prevState: WindowContextState) => {
+      const newState = { ...prevState };
+
+      // Deactivate all windows
+      for (const winId of Object.keys(newState)) {
+        if (newState[winId]) {
+          newState[winId] = { ...newState[winId], isActive: false };
+        }
+      }
+
+      // Activate the specified window
+      if (newState[windowIdentifier]) {
+        newState[windowIdentifier] = { ...newState[windowIdentifier], isActive: true };
+      } else {
+        // Create window if it doesn't exist
+        newState[windowIdentifier] = {
+          isActive: true,
+          tabs: {},
+        };
+      }
+
+      return newState;
+    });
+  }, []);
+
+  const setWindowInactive = useCallback((windowIdentifier: string) => {
+    setState((prevState: WindowContextState) => {
+      const newState = { ...prevState };
+
+      if (newState[windowIdentifier]) {
+        newState[windowIdentifier] = { ...newState[windowIdentifier], isActive: false };
+      }
+
+      return newState;
+    });
+  }, []);
+
   const cleanupWindow = useCallback((windowIdentifier: string) => {
     setState((prevState: WindowContextState) => {
       const newState = { ...prevState };
@@ -250,6 +312,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     () => ({
       getTableState,
       getNavigationState,
+      getActiveWindow,
       setTableFilters,
       setTableVisibility,
       setTableSorting,
@@ -257,12 +320,15 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setTableImplicitFilterApplied,
       setNavigationActiveLevels,
       setNavigationActiveTabsByLevel,
+      setWindowActive,
+      setWindowInactive,
       cleanupWindow,
       getAllState,
     }),
     [
       getTableState,
       getNavigationState,
+      getActiveWindow,
       setTableFilters,
       setTableVisibility,
       setTableSorting,
@@ -270,6 +336,8 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setTableImplicitFilterApplied,
       setNavigationActiveLevels,
       setNavigationActiveTabsByLevel,
+      setWindowActive,
+      setWindowInactive,
       cleanupWindow,
       getAllState,
     ]

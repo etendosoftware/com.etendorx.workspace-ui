@@ -20,6 +20,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { isLinkedLabelOpenInForm } from "@/utils/prefs";
+import { getNewWindowIdentifier } from "@/utils/url/utils";
 
 export const useRedirect = () => {
   const router = useRouter();
@@ -65,7 +66,8 @@ export const useRedirect = () => {
             },
           });
         } else {
-          openWindow(windowId);
+          const newWindowIdentifier = getNewWindowIdentifier(windowId);
+          openWindow(windowId, newWindowIdentifier);
         }
         return;
       }
@@ -109,7 +111,8 @@ export const useRedirect = () => {
 
       // Default behavior (no preselection)
       if (isInWindowRoute) {
-        openWindow(windowId);
+        const newWindowIdentifier = getNewWindowIdentifier(windowId);
+        openWindow(windowId, newWindowIdentifier);
         return;
       }
 
