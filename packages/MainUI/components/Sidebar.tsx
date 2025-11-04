@@ -71,6 +71,38 @@ const buildProcessDefinitionUrl = (processDefId: string, token: string | null): 
   return `${ETENDO_BASE_URL}${processPath}?${params.toString()}`;
 };
 
+interface ManualProcessResult {
+  url: string;
+  size: "default" | "large";
+}
+
+const getManualProcessConfig = (
+  item: ExtendedMenu,
+  token: string | null
+): ManualProcessResult | null => {
+  if (item.type === "Process" && item.processId) {
+    return {
+      url: buildProcessUrl(item.processId, token),
+      size: "default",
+    };
+  }
+
+  if (item.type === "Form" && item.formId) {
+    const url = buildFormUrl(item.formId, token);
+    if (!url) return null;
+    return { url, size: "large" };
+  }
+
+  if (item.type === "ProcessDefinition" && item.processDefinitionId) {
+    return {
+      url: buildProcessDefinitionUrl(item.processDefinitionId, token),
+      size: "default",
+    };
+  }
+
+  return null;
+};
+
 /**
  * Version component that displays the current application version in the sidebar footer.
  * Renders the version information with internationalization support.
@@ -138,34 +170,16 @@ export default function Sidebar() {
       const extendedItem = item as ExtendedMenu;
 
       // Handle manual processes (Form / ProcessDefinition / Process)
-      if (
-        (extendedItem.type === "ProcessDefinition" && extendedItem.processDefinitionId) ||
-        (extendedItem.type === "Form" && extendedItem.formId) ||
-        extendedItem.type === "Process"
-      ) {
-        let processUrl: string | null = null;
-
-        if (extendedItem.type === "Process" && extendedItem.processId) {
-          processUrl = buildProcessUrl(extendedItem.processId, token);
-        } else if (extendedItem.type === "Form" && extendedItem.formId) {
-          processUrl = buildFormUrl(extendedItem.formId, token);
-        } else if (extendedItem.type === "ProcessDefinition" && extendedItem.processDefinitionId) {
-          processUrl = buildProcessDefinitionUrl(extendedItem.processDefinitionId, token);
-        }
-
-        if (!processUrl) {
-          return;
-        }
-
+      const processConfig = getManualProcessConfig(extendedItem, token);
+      if (processConfig) {
         setProcessIframeModal({
           isOpen: true,
-          url: processUrl,
+          url: processConfig.url,
           title: extendedItem.name,
           tabId: "",
-          size: extendedItem.type === "Form" ? "large" : "default",
+          size: processConfig.size,
           onClose: () => setProcessIframeModal({ isOpen: false }),
         });
-
         return;
       }
 
