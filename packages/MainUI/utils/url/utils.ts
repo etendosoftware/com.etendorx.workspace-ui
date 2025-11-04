@@ -134,29 +134,6 @@ export const generateTabFormStates = (
 };
 
 /**
- * Extracts all window identifiers from URL search parameters.
- * Scans through all URL parameters looking for those that start with the window prefix.
- *
- * @param searchParams - The URLSearchParams object containing current URL parameters
- * @returns A Set of window identifiers found in the URL parameters
- *
- * @example
- * // URL: /window?w_abc123=active&w_def456=inactive
- * const windowIds = extractWindowIds(searchParams);
- * // Returns: Set { "abc123", "def456" }
- */
-export const extractWindowIds = (searchParams: URLSearchParams): Set<string> => {
-  const windowIdentifiers = new Set<string>();
-  for (const [key] of searchParams.entries()) {
-    if (key.startsWith(WINDOW_PREFIX)) {
-      // Extract window_identifier (everything after w_)
-      windowIdentifiers.add(key.slice(2));
-    }
-  }
-  return windowIdentifiers;
-};
-
-/**
  * Processes tab-related URL parameters for a specific window to extract selections and form states.
  * Parses URL parameters that contain tab selections, form record IDs, modes, and form modes.
  *

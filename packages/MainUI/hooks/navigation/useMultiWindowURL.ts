@@ -32,7 +32,6 @@ import {
 import {
   generateSelectedRecords,
   generateTabFormStates,
-  extractWindowIds,
   createWindowState,
   setWindowParameters,
   getNextOrder,
@@ -45,14 +44,14 @@ export function useMultiWindowURL() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // TODO: delete this on the future and move all to the context
-  const { getActiveWindow } = useWindowContext();
+  const { getActiveWindowIdentifier, getAllWindowsIdentifiers } = useWindowContext();
 
   const { windows, activeWindow, isHomeRoute } = useMemo(() => {
     const windowStates: WindowState[] = [];
     let active: WindowState | undefined;
 
-    const windowIdentifiers = extractWindowIds(searchParams);
-    const activeWindowIdentifier = getActiveWindow();
+    const windowIdentifiers = getAllWindowsIdentifiers();
+    const activeWindowIdentifier = getActiveWindowIdentifier();
 
     for (const windowIdentifier of windowIdentifiers) {
       const windowState = createWindowState(windowIdentifier, searchParams);
@@ -79,7 +78,7 @@ export function useMultiWindowURL() {
       activeWindow: active,
       isHomeRoute: isHome,
     };
-  }, [searchParams, getActiveWindow]);
+  }, [searchParams, getActiveWindowIdentifier, getAllWindowsIdentifiers]);
 
   /**
    * Builds a complete URL with all window states encoded as URL parameters.

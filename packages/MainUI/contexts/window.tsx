@@ -52,7 +52,8 @@ interface WindowContextI {
   // State getters
   getTableState: (windowIdentifier: string, tabId: string) => TableState;
   getNavigationState: (windowIdentifier: string) => NavigationState;
-  getActiveWindow: () => string | null;
+  getActiveWindowIdentifier: () => string | null;
+  getAllWindowsIdentifiers: () => string[];
 
   // State setters
   setTableFilters: (windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState) => void;
@@ -198,7 +199,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     [state]
   );
 
-  const getActiveWindow = useCallback((): string | null => {
+  const getActiveWindowIdentifier = useCallback((): string | null => {
     const allWindows = Object.entries(state);
     for (const [windowIdentifier, windowState] of allWindows) {
       if (windowState.isActive) {
@@ -206,6 +207,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       }
     }
     return null;
+  }, [state]);
+
+  const getAllWindowsIdentifiers = useCallback((): string[] => {
+    return Object.keys(state);
   }, [state]);
 
   const setTableFilters = useCallback((windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState) => {
@@ -312,7 +317,8 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     () => ({
       getTableState,
       getNavigationState,
-      getActiveWindow,
+      getActiveWindowIdentifier,
+      getAllWindowsIdentifiers,
       setTableFilters,
       setTableVisibility,
       setTableSorting,
@@ -328,7 +334,8 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     [
       getTableState,
       getNavigationState,
-      getActiveWindow,
+      getActiveWindowIdentifier,
+      getAllWindowsIdentifiers,
       setTableFilters,
       setTableVisibility,
       setTableSorting,
