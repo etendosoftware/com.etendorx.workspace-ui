@@ -32,6 +32,45 @@ interface FormData {
   command: string;
 }
 
+const ETENDO_BASE_URL = process.env.NEXT_PUBLIC_ETENDO_URL || "http://localhost:8080/etendo";
+
+const buildProcessUrl = (processId: string, token: string | null): string => {
+  const params = new URLSearchParams({
+    Command: `BUTTON${processId}`,
+    IsPopUpCall: "1",
+  });
+  if (token) {
+    params.append("token", token);
+  }
+  return `${ETENDO_BASE_URL}/ad_actionButton/ActionButton_Responser.html?${params.toString()}`;
+};
+
+const buildFormUrl = (formId: string, token: string | null): string | null => {
+  const formData = (formsData as Record<string, FormData>)[formId];
+  if (!formData) {
+    return null;
+  }
+  const params = new URLSearchParams({
+    noprefs: "true",
+    hideMenu: "true",
+    Command: formData.command,
+  });
+  if (token) {
+    params.append("token", token);
+  }
+  return `${ETENDO_BASE_URL}${formData.url}?${params.toString()}`;
+};
+
+const buildProcessDefinitionUrl = (processDefId: string, token: string | null): string => {
+  const viewId = `processDefinition_${processDefId}`;
+  const params = new URLSearchParams({ viewId });
+  if (token) {
+    params.append("token", token);
+  }
+  const processPath = "/org.openbravo.client.kernel/OBUIAPP_MainLayout/View";
+  return `${ETENDO_BASE_URL}${processPath}?${params.toString()}`;
+};
+
 /**
  * Version component that displays the current application version in the sidebar footer.
  * Renders the version information with internationalization support.
@@ -104,54 +143,18 @@ export default function Sidebar() {
         (extendedItem.type === "Form" && extendedItem.formId) ||
         extendedItem.type === "Process"
       ) {
-        const id = extendedItem.processDefinitionId || extendedItem.formId || extendedItem.processId;
+        let processUrl: string | null = null;
 
-        const ETENDO_BASE_URL = process.env.NEXT_PUBLIC_ETENDO_URL || "http://localhost:8080/etendo";
-        let processUrl: string;
-
-        // Handle different process types
         if (extendedItem.type === "Process" && extendedItem.processId) {
-          // Process type: uses ActionButton_Responser
-          const params = new URLSearchParams({
-            Command: `BUTTON${extendedItem.processId}`,
-            IsPopUpCall: "1",
-          });
+          processUrl = buildProcessUrl(extendedItem.processId, token);
+        } else if (extendedItem.type === "Form" && extendedItem.formId) {
+          processUrl = buildFormUrl(extendedItem.formId, token);
+        } else if (extendedItem.type === "ProcessDefinition" && extendedItem.processDefinitionId) {
+          processUrl = buildProcessDefinitionUrl(extendedItem.processDefinitionId, token);
+        }
 
-          if (token) {
-            params.append("token", token);
-          }
-
-          processUrl = `${ETENDO_BASE_URL}/ad_actionButton/ActionButton_Responser.html?${params.toString()}`;
-        } else if (extendedItem.type === "Form") {
-          // Look up form data from mapping file
-          const formData = (formsData as Record<string, FormData>)[id || ""];
-
-          if (!formData) {
-            return;
-          }
-
-          const params = new URLSearchParams({
-            noprefs: "true",
-            hideMenu: "true",
-            Command: formData.command,
-          });
-
-          if (token) {
-            params.append("token", token);
-          }
-
-          processUrl = `${ETENDO_BASE_URL}${formData.url}?${params.toString()}`;
-        } else {
-          // ProcessDefinition: use the View endpoint
-          const viewId = `processDefinition_${id}`;
-          const params = new URLSearchParams({ viewId });
-
-          if (token) {
-            params.append("token", token);
-          }
-
-          const processPath = "/org.openbravo.client.kernel/OBUIAPP_MainLayout/View";
-          processUrl = `${ETENDO_BASE_URL}${processPath}?${params.toString()}`;
+        if (!processUrl) {
+          return;
         }
 
         setProcessIframeModal({
