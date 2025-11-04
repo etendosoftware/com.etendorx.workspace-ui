@@ -83,6 +83,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
   const [selectedTab, setSelectedTab] = useState<string>("");
   const [isFormInitializing, setIsFormInitializing] = useState(false);
+  const [openAttachmentModal, setOpenAttachmentModal] = useState(false);
 
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
@@ -90,7 +91,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const { activeWindow, getSelectedRecord, setSelectedRecord, setSelectedRecordAndClearChildren } = useMultiWindowURL();
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
   const { resetFormChanges, parentTab } = useTabContext();
-  const { registerFormViewRefetch } = useToolbarContext();
+  const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
+    useToolbarContext();
   const { refetchDatasource, registerRefetchFunction } = useDatasourceContext();
 
   const {
@@ -136,6 +138,22 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     registerRefetchFunction(tab.id, refreshRecordAndSession);
   }, [registerFormViewRefetch, refreshRecordAndSession, registerRefetchFunction, tab.id]);
 
+  // Register attachment action for toolbar button
+  useEffect(() => {
+    if (registerAttachmentAction) {
+      registerAttachmentAction(() => setOpenAttachmentModal(true));
+    }
+  }, [registerAttachmentAction]);
+
+  // Open attachment modal when flag is set (from table navigation)
+  useEffect(() => {
+    if (shouldOpenAttachmentModal) {
+      setOpenAttachmentModal(true);
+      // Reset flag after using it
+      setShouldOpenAttachmentModal(false);
+    }
+  }, [shouldOpenAttachmentModal, setShouldOpenAttachmentModal]);
+
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} data-testid="Info__1a0853" />,
     [theme.palette.baselineColor.neutral]
@@ -159,6 +177,11 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const initialNoteCount = useMemo(() => {
     // Safely retrieve the noteCount, defaulting to 0 if not present
     return formInitialization?.noteCount || 0;
+  }, [formInitialization]);
+
+  const initialAttachmentCount = useMemo(() => {
+    // Safely retrieve the attachmentCount, defaulting to 0 if not present
+    return formInitialization?.attachmentCount || 0;
   }, [formInitialization]);
 
   /**
@@ -591,8 +614,12 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               loading={isLoading}
               recordId={recordId ?? ""}
               initialNoteCount={initialNoteCount}
+              initialAttachmentCount={initialAttachmentCount}
               onNotesChange={refreshRecordAndSession}
+              onAttachmentsChange={refreshRecordAndSession}
               showErrorModal={showErrorModal}
+              openAttachmentModal={openAttachmentModal}
+              onAttachmentModalClose={() => setOpenAttachmentModal(false)}
               data-testid="FormFields__1a0853"
             />
 

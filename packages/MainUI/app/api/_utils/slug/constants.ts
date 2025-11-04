@@ -2,7 +2,9 @@ export const SLUGS_CATEGORIES = {
   COPILOT: "copilot",
   UTILITY: "utility",
   NOTES: "notes",
+  ATTACHMENTS: "attachments",
   SWS: "sws",
+  LEGACY: "meta/legacy",
 };
 
 export const SLUGS_METHODS = {
