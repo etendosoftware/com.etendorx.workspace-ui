@@ -14,7 +14,114 @@ import {
   type TabFormState,
   type SelectedRecord,
   type WindowState,
+  type TabProcessingResults,
+  type TabParameterConfig,
 } from "@/utils/url/constants";
+
+
+/**
+ * Extracts tab ID from a parameter key given a prefix.
+ * 
+ * @param key - The parameter key
+ * @param prefix - The prefix to remove
+ * @returns The tab ID or null if the key doesn't start with the prefix
+ */
+const extractTabId = (key: string, prefix: string): string | null => {
+  if (!key.startsWith(prefix)) return null;
+  return key.slice(prefix.length);
+};
+
+/**
+ * Ensures a tab form state exists in the results object.
+ * 
+ * @param tabId - The tab identifier
+ * @param results - The processing results object
+ */
+const ensureTabFormState = (tabId: string, results: TabProcessingResults): void => {
+  if (!results.tabFormStates[tabId]) {
+    results.tabFormStates[tabId] = {};
+  }
+};
+
+/**
+ * Processes a selected record parameter.
+ */
+const processSelectedRecord = (tabId: string, value: string, results: TabProcessingResults): void => {
+  results.selectedRecords[tabId] = value;
+};
+
+/**
+ * Processes a tab form record ID parameter.
+ */
+const processTabFormRecordId = (tabId: string, value: string, results: TabProcessingResults): void => {
+  ensureTabFormState(tabId, results);
+  results.tabFormStates[tabId].recordId = value;
+};
+
+/**
+ * Processes a tab mode parameter.
+ */
+const processTabMode = (tabId: string, value: string, results: TabProcessingResults): void => {
+  ensureTabFormState(tabId, results);
+  results.tabFormStates[tabId].mode = value as TabMode;
+};
+
+/**
+ * Processes a tab form mode parameter.
+ */
+const processTabFormMode = (tabId: string, value: string, results: TabProcessingResults): void => {
+  ensureTabFormState(tabId, results);
+  results.tabFormStates[tabId].formMode = value as FormMode;
+};
+
+/**
+ * Creates tab parameter processing configuration.
+ * 
+ * @param windowIdentifier - The window identifier to create prefixes for
+ * @returns Array of tab parameter configurations
+ */
+const createTabParameterConfigs = (windowIdentifier: string): TabParameterConfig[] => [
+  {
+    prefix: `${SELECTED_RECORD_PREFIX}${windowIdentifier}_`,
+    processor: processSelectedRecord,
+  },
+  {
+    prefix: `${TAB_FORM_RECORD_ID_PREFIX}${windowIdentifier}_`,
+    processor: processTabFormRecordId,
+  },
+  {
+    prefix: `${TAB_MODE_PREFIX}${windowIdentifier}_`,
+    processor: processTabMode,
+  },
+  {
+    prefix: `${TAB_FORM_MODE_PREFIX}${windowIdentifier}_`,
+    processor: processTabFormMode,
+  },
+];
+
+/**
+ * Processes a single URL parameter for tab-related data.
+ * 
+ * @param key - The parameter key
+ * @param value - The parameter value
+ * @param configs - Array of processing configurations
+ * @param results - The results object to populate
+ */
+const processUrlParameter = (
+  key: string,
+  value: string,
+  configs: TabParameterConfig[],
+  results: TabProcessingResults
+): void => {
+  for (const config of configs) {
+    const tabId = extractTabId(key, config.prefix);
+    if (tabId) {
+      config.processor(tabId, value, results);
+      break; // Found matching prefix, no need to check others
+    }
+  }
+};
+
 
 /**
  * Determines if a tab should be displayed in form view mode based on its state and parent context.
@@ -136,7 +243,7 @@ export const generateTabFormStates = (
  * Parses URL parameters that contain tab selections, form record IDs, modes, and form modes.
  *
  * @param searchParams - The URLSearchParams object containing current URL parameters
- * @param windowId - The window identifier to process tab parameters for
+ * @param windowIdentifier - The window identifier to process tab parameters for
  * @returns Object containing:
  *   - selectedRecords: Map of tabId to selected recordId
  *   - tabFormStates: Map of tabId to form state information (recordId, mode, formMode)
@@ -156,37 +263,19 @@ export const processTabParameters = (
   selectedRecords: Record<string, string>;
   tabFormStates: Record<string, { recordId?: string; mode?: TabMode; formMode?: FormMode }>;
 } => {
-  const selectedRecords: Record<string, string> = {};
-  const tabFormStates: Record<string, { recordId?: string; mode?: TabMode; formMode?: FormMode }> = {};
+  const results: TabProcessingResults = {
+    selectedRecords: {},
+    tabFormStates: {},
+  };
+
+  const configs = createTabParameterConfigs(windowIdentifier);
 
   for (const [key, value] of searchParams.entries()) {
     if (!value) continue;
-
-    const processTabParameter = (prefix: string, processor: (tabId: string, value: string) => void) => {
-      if (key.startsWith(prefix)) {
-        const tabId = key.slice(prefix.length);
-        processor(tabId, value);
-      }
-    };
-
-    processTabParameter(`${SELECTED_RECORD_PREFIX}${windowIdentifier}_`, (tabId, value) => {
-      selectedRecords[tabId] = value;
-    });
-
-    processTabParameter(`${TAB_FORM_RECORD_ID_PREFIX}${windowIdentifier}_`, (tabId, value) => {
-      tabFormStates[tabId] = { ...tabFormStates[tabId], recordId: value };
-    });
-
-    processTabParameter(`${TAB_MODE_PREFIX}${windowIdentifier}_`, (tabId, value) => {
-      tabFormStates[tabId] = { ...tabFormStates[tabId], mode: value as TabMode };
-    });
-
-    processTabParameter(`${TAB_FORM_MODE_PREFIX}${windowIdentifier}_`, (tabId, value) => {
-      tabFormStates[tabId] = { ...tabFormStates[tabId], formMode: value as FormMode };
-    });
+    processUrlParameter(key, value, configs, results);
   }
 
-  return { selectedRecords, tabFormStates };
+  return results;
 };
 
 /**
