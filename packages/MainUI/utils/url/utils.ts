@@ -1,10 +1,23 @@
 import {
+  WINDOW_PREFIX,
+  ORDER_PREFIX,
+  WINDOW_IDENTIFIER_PREFIX,
+  FORM_RECORD_ID_PREFIX,
+  FORM_MODE_PREFIX,
+  TITLE_PREFIX,
+  SELECTED_RECORD_PREFIX,
+  TAB_FORM_RECORD_ID_PREFIX,
+  TAB_MODE_PREFIX,
+  TAB_FORM_MODE_PREFIX,
   FORM_MODES,
   TAB_MODES,
+  TAB_ACTIVE,
+  TAB_INACTIVE,
   type FormMode,
   type TabMode,
   type TabFormState,
   type SelectedRecord,
+  type WindowState,
 } from "@/utils/url/constants";
 
 /**
@@ -120,4 +133,230 @@ export const generateTabFormStates = (
   }
 
   return result;
+};
+
+/**
+ * Extracts all window identifiers from URL search parameters.
+ * Scans through all URL parameters looking for those that start with the window prefix.
+ *
+ * @param searchParams - The URLSearchParams object containing current URL parameters
+ * @returns A Set of window identifiers found in the URL parameters
+ *
+ * @example
+ * // URL: /window?w_abc123=active&w_def456=inactive
+ * const windowIds = extractWindowIds(searchParams);
+ * // Returns: Set { "abc123", "def456" }
+ */
+export const extractWindowIds = (searchParams: URLSearchParams): Set<string> => {
+  const windowIdentifiers = new Set<string>();
+  for (const [key] of searchParams.entries()) {
+    if (key.startsWith(WINDOW_PREFIX)) {
+      // Extract window_identifier (everything after w_)
+      windowIdentifiers.add(key.slice(2));
+    }
+  }
+  return windowIdentifiers;
+};
+
+/**
+ * Processes tab-related URL parameters for a specific window to extract selections and form states.
+ * Parses URL parameters that contain tab selections, form record IDs, modes, and form modes.
+ *
+ * @param searchParams - The URLSearchParams object containing current URL parameters
+ * @param windowId - The window identifier to process tab parameters for
+ * @returns Object containing:
+ *   - selectedRecords: Map of tabId to selected recordId
+ *   - tabFormStates: Map of tabId to form state information (recordId, mode, formMode)
+ *
+ * @example
+ * // URL contains: sr_win1_tab1=rec123&tfr_win1_tab1=rec123&tm_win1_tab1=form
+ * const { selectedRecords, tabFormStates } = processTabParameters(searchParams, "win1");
+ * // Returns: {
+ * //   selectedRecords: { "tab1": "rec123" },
+ * //   tabFormStates: { "tab1": { recordId: "rec123", mode: "form" } }
+ * // }
+ */
+export const processTabParameters = (
+  searchParams: URLSearchParams,
+  windowIdentifier: string
+): {
+  selectedRecords: Record<string, string>;
+  tabFormStates: Record<string, { recordId?: string; mode?: TabMode; formMode?: FormMode }>;
+} => {
+  const selectedRecords: Record<string, string> = {};
+  const tabFormStates: Record<string, { recordId?: string; mode?: TabMode; formMode?: FormMode }> = {};
+
+  for (const [key, value] of searchParams.entries()) {
+    if (!value) continue;
+
+    const processTabParameter = (prefix: string, processor: (tabId: string, value: string) => void) => {
+      if (key.startsWith(prefix)) {
+        const tabId = key.slice(prefix.length);
+        processor(tabId, value);
+      }
+    };
+
+    processTabParameter(`${SELECTED_RECORD_PREFIX}${windowIdentifier}_`, (tabId, value) => {
+      selectedRecords[tabId] = value;
+    });
+
+    processTabParameter(`${TAB_FORM_RECORD_ID_PREFIX}${windowIdentifier}_`, (tabId, value) => {
+      tabFormStates[tabId] = { ...tabFormStates[tabId], recordId: value };
+    });
+
+    processTabParameter(`${TAB_MODE_PREFIX}${windowIdentifier}_`, (tabId, value) => {
+      tabFormStates[tabId] = { ...tabFormStates[tabId], mode: value as TabMode };
+    });
+
+    processTabParameter(`${TAB_FORM_MODE_PREFIX}${windowIdentifier}_`, (tabId, value) => {
+      tabFormStates[tabId] = { ...tabFormStates[tabId], formMode: value as FormMode };
+    });
+  }
+
+  return { selectedRecords, tabFormStates };
+};
+
+/**
+ * Creates a WindowState object from URL parameters for a given window identifier.
+ * Reconstructs the complete window state by parsing all relevant URL parameters.
+ *
+ * @param windowIdentifier - The window identifier to create state for
+ * @param searchParams - The URLSearchParams object containing current URL parameters
+ * @returns Complete WindowState object with all properties populated from URL parameters
+ *
+ * @example
+ * // URL: w_abc123=active&o_abc123=1&wi_abc123=MainWindow&fr_abc123=rec456
+ * const windowState = createWindowState("abc123", searchParams);
+ * // Returns: {
+ * //   windowId: "MainWindow",
+ * //   isActive: true,
+ * //   order: 1,
+ * //   window_identifier: "abc123",
+ * //   formRecordId: "rec456",
+ * //   selectedRecords: {},
+ * //   tabFormStates: {}
+ * // }
+ */
+export const createWindowState = (windowIdentifier: string, searchParams: URLSearchParams): WindowState => {
+  const isActive = searchParams.get(`${WINDOW_PREFIX}${windowIdentifier}`) === TAB_ACTIVE;
+  const formRecordId = searchParams.get(`${FORM_RECORD_ID_PREFIX}${windowIdentifier}`) || undefined;
+  const formMode = (searchParams.get(`${FORM_MODE_PREFIX}${windowIdentifier}`) as FormMode) || undefined;
+  const order = Number.parseInt(searchParams.get(`${ORDER_PREFIX}${windowIdentifier}`) || "1", 10);
+  const windowId = searchParams.get(`${WINDOW_IDENTIFIER_PREFIX}${windowIdentifier}`) || windowIdentifier;
+  const title = searchParams.get(`${TITLE_PREFIX}${windowIdentifier}`) || undefined;
+
+  const { selectedRecords, tabFormStates } = processTabParameters(searchParams, windowIdentifier);
+
+  return {
+    windowId,
+    isActive,
+    order,
+    window_identifier: windowIdentifier,
+    formRecordId,
+    formMode,
+    selectedRecords,
+    tabFormStates,
+    title,
+  };
+};
+
+/**
+ * Sets all URL parameters for a window based on its WindowState.
+ * Encodes the complete window state into URL parameters using the established parameter naming conventions.
+ *
+ * @param params - The URLSearchParams object to modify
+ * @param window - The WindowState object containing the state to encode
+ *
+ * @example
+ * const params = new URLSearchParams();
+ * const windowState = { windowId: "MainWindow", isActive: true, order: 1, ... };
+ * setWindowParameters(params, windowState);
+ * // params now contains: w_abc123=active&o_abc123=1&wi_abc123=MainWindow&...
+ */
+export const setWindowParameters = (params: URLSearchParams, window: WindowState): void => {
+  const {
+    windowId,
+    isActive,
+    order,
+    window_identifier,
+    formRecordId,
+    formMode,
+    selectedRecords,
+    tabFormStates,
+    title,
+  } = window;
+
+  // Use window_identifier as the URL key instead of windowId
+  const urlKey = window_identifier;
+
+  params.set(`${WINDOW_PREFIX}${urlKey}`, isActive ? TAB_ACTIVE : TAB_INACTIVE);
+  params.set(`${ORDER_PREFIX}${urlKey}`, (order ?? 1).toString());
+  params.set(`${WINDOW_IDENTIFIER_PREFIX}${urlKey}`, windowId);
+
+  if (formRecordId) {
+    params.set(`${FORM_RECORD_ID_PREFIX}${urlKey}`, formRecordId);
+  }
+  if (formMode) {
+    params.set(`${FORM_MODE_PREFIX}${urlKey}`, formMode);
+  }
+  if (title) {
+    params.set(`${TITLE_PREFIX}${urlKey}`, title);
+  }
+
+  for (const [tabId, selectedRecordId] of Object.entries(selectedRecords)) {
+    if (selectedRecordId) {
+      params.set(`${SELECTED_RECORD_PREFIX}${urlKey}_${tabId}`, selectedRecordId);
+    }
+  }
+
+  for (const [tabId, tabState] of Object.entries(tabFormStates)) {
+    if (tabState.recordId) {
+      params.set(`${TAB_FORM_RECORD_ID_PREFIX}${urlKey}_${tabId}`, tabState.recordId);
+    }
+    if (tabState.mode && tabState.mode !== TAB_MODES.TABLE) {
+      params.set(`${TAB_MODE_PREFIX}${urlKey}_${tabId}`, tabState.mode);
+    }
+    if (tabState.formMode) {
+      params.set(`${TAB_FORM_MODE_PREFIX}${urlKey}_${tabId}`, tabState.formMode);
+    }
+  }
+};
+
+/**
+ * Calculates the next order number for a new window.
+ * Finds the highest existing order number and returns the next sequential number.
+ *
+ * @param windows - Array of existing WindowState objects
+ * @returns The next available order number (starts at 1 if no windows exist)
+ *
+ * @example
+ * const windows = [{ order: 1 }, { order: 3 }, { order: 2 }];
+ * const nextOrder = getNextOrder(windows); // Returns: 4
+ */
+export const getNextOrder = (windows: WindowState[]): number => {
+  if (windows.length === 0) return 1;
+  const orders = windows.map((w) => w.order || 1);
+  return Math.max(...orders) + 1;
+};
+
+/**
+ * Normalizes window order numbers to be sequential starting from 1.
+ * Sorts windows by their current order and reassigns order numbers 1, 2, 3, etc.
+ * This prevents gaps in order numbers and ensures consistent ordering.
+ *
+ * @param windows - Array of WindowState objects to normalize
+ * @returns New array with normalized order numbers, sorted by original order
+ *
+ * @example
+ * const windows = [{ order: 3 }, { order: 1 }, { order: 7 }];
+ * const normalized = normalizeWindowOrders(windows);
+ * // Returns: [{ order: 1 }, { order: 2 }, { order: 3 }] (sorted and renumbered)
+ */
+export const normalizeWindowOrders = (windows: WindowState[]): WindowState[] => {
+  return [...windows]
+    .sort((a, b) => (a.order || 1) - (b.order || 1))
+    .map((window, index) => ({
+      ...window,
+      order: index + 1,
+    }));
 };
