@@ -487,6 +487,23 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     data: displayRecords,
     enableRowSelection: true,
     enableMultiRowSelection: true,
+    // Disable "Select All" when there are more records to load
+    muiSelectAllCheckboxProps: hasMoreRecords
+      ? {
+          disabled: true,
+          // Wrap disabled checkbox in a span to enable tooltip
+          sx: {
+            "&.Mui-disabled": {
+              pointerEvents: "auto", // Allow hover on disabled element
+              cursor: "not-allowed",
+            },
+          },
+          title: t("table.selectAll.disabledTooltip"),
+        }
+      : {
+          disabled: false,
+          title: t("table.selectAll.enabledTooltip"),
+        },
     positionToolbarAlertBanner: "none",
     muiTableBodyRowProps: rowProps,
     muiTableContainerProps: {
