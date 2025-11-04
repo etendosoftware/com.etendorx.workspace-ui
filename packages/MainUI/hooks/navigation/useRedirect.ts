@@ -25,7 +25,7 @@ import { getNewWindowIdentifier } from "@/utils/url/utils";
 export const useRedirect = () => {
   const router = useRouter();
   const pathname = usePathname();
-  const { openWindow, buildURL, getNextOrder, windows, openWindowAndSelect } = useMultiWindowURL();
+  const { openWindow, buildURL, openWindowAndSelect } = useMultiWindowURL();
   const { getWindowMetadata, loadWindowData } = useMetadataContext();
 
   const createBaseWindow = useCallback(
@@ -33,12 +33,11 @@ export const useRedirect = () => {
       windowId,
       window_identifier: windowIdentifier || windowId,
       isActive: true,
-      order: getNextOrder(windows),
       title: windowIdentifier || windowId,
       selectedRecords: {},
       tabFormStates: {},
     }),
-    [getNextOrder, windows]
+    []
   );
 
   const handleRecordSelection = useCallback(

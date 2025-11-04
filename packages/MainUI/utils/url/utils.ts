@@ -1,5 +1,4 @@
 import {
-  WINDOW_PREFIX,
   ORDER_PREFIX,
   WINDOW_IDENTIFIER_PREFIX,
   FORM_RECORD_ID_PREFIX,
@@ -205,7 +204,6 @@ export const processTabParameters = (
  * // Returns: {
  * //   windowId: "MainWindow",
  * //   isActive: true,
- * //   order: 1,
  * //   window_identifier: "abc123",
  * //   formRecordId: "rec456",
  * //   selectedRecords: {},
@@ -215,7 +213,6 @@ export const processTabParameters = (
 export const createWindowState = (windowIdentifier: string, searchParams: URLSearchParams): WindowState => {
   const formRecordId = searchParams.get(`${FORM_RECORD_ID_PREFIX}${windowIdentifier}`) || undefined;
   const formMode = (searchParams.get(`${FORM_MODE_PREFIX}${windowIdentifier}`) as FormMode) || undefined;
-  const order = Number.parseInt(searchParams.get(`${ORDER_PREFIX}${windowIdentifier}`) || "1", 10);
   const windowId = searchParams.get(`${WINDOW_IDENTIFIER_PREFIX}${windowIdentifier}`) || windowIdentifier;
   const title = searchParams.get(`${TITLE_PREFIX}${windowIdentifier}`) || undefined;
 
@@ -225,7 +222,6 @@ export const createWindowState = (windowIdentifier: string, searchParams: URLSea
     windowId,
     // TODO: the isActive is resolved outside this function
     isActive: false,
-    order,
     window_identifier: windowIdentifier,
     formRecordId,
     formMode,
@@ -244,15 +240,13 @@ export const createWindowState = (windowIdentifier: string, searchParams: URLSea
  *
  * @example
  * const params = new URLSearchParams();
- * const windowState = { windowId: "MainWindow", isActive: true, order: 1, ... };
+ * const windowState = { windowId: "MainWindow", isActive: true, ... };
  * setWindowParameters(params, windowState);
  * // params now contains: w_abc123=active&o_abc123=1&wi_abc123=MainWindow&...
  */
 export const setWindowParameters = (params: URLSearchParams, window: WindowState): void => {
   const {
     windowId,
-    isActive,
-    order,
     window_identifier,
     formRecordId,
     formMode,
@@ -264,7 +258,6 @@ export const setWindowParameters = (params: URLSearchParams, window: WindowState
   // Use window_identifier as the URL key instead of windowId
   const urlKey = window_identifier;
 
-  params.set(`${ORDER_PREFIX}${urlKey}`, (order ?? 1).toString());
   params.set(`${WINDOW_IDENTIFIER_PREFIX}${urlKey}`, windowId);
 
   if (formRecordId) {
@@ -294,43 +287,4 @@ export const setWindowParameters = (params: URLSearchParams, window: WindowState
       params.set(`${TAB_FORM_MODE_PREFIX}${urlKey}_${tabId}`, tabState.formMode);
     }
   }
-};
-
-/**
- * Calculates the next order number for a new window.
- * Finds the highest existing order number and returns the next sequential number.
- *
- * @param windows - Array of existing WindowState objects
- * @returns The next available order number (starts at 1 if no windows exist)
- *
- * @example
- * const windows = [{ order: 1 }, { order: 3 }, { order: 2 }];
- * const nextOrder = getNextOrder(windows); // Returns: 4
- */
-export const getNextOrder = (windows: WindowState[]): number => {
-  if (windows.length === 0) return 1;
-  const orders = windows.map((w) => w.order || 1);
-  return Math.max(...orders) + 1;
-};
-
-/**
- * Normalizes window order numbers to be sequential starting from 1.
- * Sorts windows by their current order and reassigns order numbers 1, 2, 3, etc.
- * This prevents gaps in order numbers and ensures consistent ordering.
- *
- * @param windows - Array of WindowState objects to normalize
- * @returns New array with normalized order numbers, sorted by original order
- *
- * @example
- * const windows = [{ order: 3 }, { order: 1 }, { order: 7 }];
- * const normalized = normalizeWindowOrders(windows);
- * // Returns: [{ order: 1 }, { order: 2 }, { order: 3 }] (sorted and renumbered)
- */
-export const normalizeWindowOrders = (windows: WindowState[]): WindowState[] => {
-  return [...windows]
-    .sort((a, b) => (a.order || 1) - (b.order || 1))
-    .map((window, index) => ({
-      ...window,
-      order: index + 1,
-    }));
 };

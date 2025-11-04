@@ -72,7 +72,7 @@ export default function Sidebar() {
   const menu = useMenu(token, currentRole || undefined, language);
   const router = useRouter();
   const pathname = usePathname();
-  const { activeWindow, openWindow, buildURL, getNextOrder, windows } = useMultiWindowURL();
+  const { activeWindow, openWindow, buildURL } = useMultiWindowURL();
   const { setWindowActive } = useWindowContext();
 
   const [searchValue, setSearchValue] = useState("");
@@ -126,7 +126,6 @@ export default function Sidebar() {
           windowId,
           window_identifier: newWindowIdentifier,
           isActive: true,
-          order: getNextOrder(windows),
           title: item.name,
           selectedRecords: {},
           tabFormStates: {},
@@ -136,7 +135,7 @@ export default function Sidebar() {
         router.push(targetURL);
       }
     },
-    [pathname, router, windows, openWindow, buildURL, getNextOrder, setWindowActive]
+    [pathname, router, openWindow, buildURL, setWindowActive]
   );
 
   /**

@@ -75,12 +75,6 @@ export interface WindowState {
   isActive: boolean;
 
   /**
-   * Display order of the window in the tab bar.
-   * Used for determining tab sequence and reordering operations.
-   */
-  order: number;
-
-  /**
    * URL-safe identifier used in URL parameters to represent this window instance.
    * Allows multiple instances of the same windowId to exist simultaneously.
    * Format: typically `${windowId}_${timestamp}` or similar unique suffix.

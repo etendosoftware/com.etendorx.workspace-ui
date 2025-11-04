@@ -34,8 +34,6 @@ import {
   generateTabFormStates,
   createWindowState,
   setWindowParameters,
-  getNextOrder,
-  normalizeWindowOrders
 } from "@/utils/url/utils";
 import { isEmptyArray } from "@/utils/commons";
 import { useWindowContext } from "@/contexts/window";
@@ -66,15 +64,11 @@ export function useMultiWindowURL() {
       windowStates.push(windowState);
     }
 
-    // TODO: use ORDER_PREFIX to order
-    // NOTE: in the new login we assume that the order is given by the order of appearance in the URL
-    const orderedStates = [...windowStates].sort((a, b) => a.order - b.order);
-
     const hasActiveWindow = windowStates.some(window => window.isActive);
     const isHome = !hasActiveWindow;
 
     return {
-      windows: orderedStates,
+      windows: windowStates,
       activeWindow: active,
       isHomeRoute: isHome,
     };
@@ -90,8 +84,8 @@ export function useMultiWindowURL() {
    * @example
    * ```typescript
    * const windows = [
-   *   { windowId: "ProductWindow", isActive: true, order: 1, window_identifier: "prod_123", ... },
-   *   { windowId: "CustomerWindow", isActive: false, order: 2, window_identifier: "cust_456", ... }
+   *   { windowId: "ProductWindow", isActive: true, window_identifier: "prod_123", ... },
+   *   { windowId: "CustomerWindow", isActive: false, window_identifier: "cust_456", ... }
    * ];
    * const url = buildURL(windows);
    * // Returns: "/window?w_prod_123=active&o_prod_123=1&wi_prod_123=ProductWindow&w_cust_456=inactive&o_cust_456=2&wi_cust_456=CustomerWindow"
@@ -118,7 +112,7 @@ export function useMultiWindowURL() {
    * ```typescript
    * // Navigate to a state with one active window
    * const newState = [
-   *   { windowId: "ProductWindow", isActive: true, order: 1, window_identifier: "prod_123", ... }
+   *   { windowId: "ProductWindow", isActive: true, window_identifier: "prod_123", ... }
    * ];
    * navigate(newState);
    * // Browser URL changes to: /window?w_prod_123=active&o_prod_123=1&wi_prod_123=ProductWindow&...
@@ -220,15 +214,12 @@ export function useMultiWindowURL() {
     ) => {
       const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
 
-      const nextOrder = getNextOrder(updatedWindows);
-
       const selectedRecordsRes = isEmptyArray(selectedRecords) ? {} : generateSelectedRecords(selectedRecords);
       const tabFormStatesRes = isEmptyArray(tabFormStates) ? {} : generateTabFormStates(tabFormStates);
 
       const newWindow: WindowState = {
         windowId,
         isActive: true,
-        order: nextOrder,
         window_identifier: windowIdentifier,
         title,
         selectedRecords: selectedRecordsRes,
@@ -245,7 +236,7 @@ export function useMultiWindowURL() {
   /**
    * Closes a window by removing it from the state and handling activation transfer.
    * If the closed window was active, automatically activates the first remaining window.
-   * Normalizes window order numbers after removal. If no windows remain, navigates to home.
+   * If no windows remain, navigates to home.
    *
    * @param windowIdentifier - The unique window_identifier of the window to close
    *
@@ -272,12 +263,10 @@ export function useMultiWindowURL() {
         updatedWindows[0].isActive = true;
       }
 
-      const normalizedWindows = normalizeWindowOrders(updatedWindows);
-
-      if (normalizedWindows.length === 0) {
+      if (updatedWindows.length === 0) {
         router.replace("/");
       } else {
-        navigate(normalizedWindows);
+        navigate(updatedWindows);
       }
     },
     [windows, navigate, router]
@@ -984,11 +973,9 @@ export function useMultiWindowURL() {
           };
           updated[existingIndex] = target;
         } else {
-          const nextOrder = getNextOrder(updated);
           target = {
             windowId,
             isActive: true,
-            order: nextOrder,
             window_identifier: options?.window_identifier || windowId,
             title: options?.title,
             selectedRecords: {},
@@ -1098,43 +1085,6 @@ export function useMultiWindowURL() {
     [applyWindowUpdates, clearTabFormState]
   );
 
-  /**
-   * Changes the display order of a specific window in the tab bar.
-   * Updates the window's order number and automatically normalizes all window orders
-   * to ensure sequential numbering (1, 2, 3, etc.) without gaps.
-   *
-   * @param windowId - The business entity ID of the window to reorder
-   * @param newOrder - The new order position for the window
-   *
-   * @example
-   * ```typescript
-   * // Move ProductWindow to position 3
-   * reorderWindows("ProductWindow", 3);
-   *
-   * // Before: [CustomerWindow(1), ProductWindow(2), OrderWindow(3)]
-   * // After:  [CustomerWindow(1), OrderWindow(2), ProductWindow(3)]
-   * // Note: Orders are normalized to maintain sequential numbering
-   *
-   * // Move window to first position
-   * reorderWindows("OrderWindow", 1);
-   * // Result: OrderWindow becomes first, others shift right
-   * ```
-   */
-  const reorderWindows = useCallback(
-    (windowId: string, newOrder: number) => {
-      const updatedWindows = windows.map((w) => {
-        if (w.windowId === windowId) {
-          return { ...w, order: newOrder };
-        }
-        return w;
-      });
-
-      const normalizedWindows = normalizeWindowOrders(updatedWindows);
-      navigate(normalizedWindows);
-    },
-    [windows, navigate]
-  );
-
   return {
     windows,
     activeWindow,
@@ -1158,9 +1108,6 @@ export function useMultiWindowURL() {
 
     setRecord,
     clearRecord,
-
-    reorderWindows,
-    getNextOrder,
 
     // batching helpers
     applyWindowUpdates,
