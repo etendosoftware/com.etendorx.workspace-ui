@@ -107,7 +107,6 @@ export interface IMetadataContext {
   emptyWindowDataName: () => void;
   loadWindowData: (windowId: string) => Promise<Etendo.WindowMetadata>;
   getWindowMetadata: (windowId: string) => Etendo.WindowMetadata | undefined;
-  getWindowTitle: (windowId: string) => string;
   isWindowLoading: (windowId: string) => boolean;
   getWindowError: (windowId: string) => Error | undefined;
   windowsData: Record<string, Etendo.WindowMetadata>;

@@ -88,14 +88,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [windowsData]
   );
 
-  const getWindowTitle = useCallback(
-    (windowId: string) => {
-      const windowData = windowsData[windowId];
-      return windowData?.name || windowData?.window$_identifier || `Window ${windowId}`;
-    },
-    [windowsData]
-  );
-
   const isWindowLoading = useCallback(
     (windowId: string) => {
       return loadingWindows[windowId] || false;
@@ -165,7 +157,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
 
       loadWindowData,
       getWindowMetadata,
-      getWindowTitle,
       isWindowLoading,
       getWindowError,
       windowsData,
@@ -185,7 +176,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       emptyWindowDataName,
       loadWindowData,
       getWindowMetadata,
-      getWindowTitle,
       isWindowLoading,
       getWindowError,
       windowsData,

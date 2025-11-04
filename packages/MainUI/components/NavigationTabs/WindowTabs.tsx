@@ -17,7 +17,6 @@
 
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import HomeIcon from "@workspaceui/componentlibrary/src/assets/icons/home.svg";
@@ -32,7 +31,6 @@ import { useWindowContext } from "@/contexts/window";
 
 export default function WindowTabs() {
   const { windows, isHomeRoute, setActiveWindow, closeWindow, navigateToHome } = useMultiWindowURL();
-  const { getWindowTitle } = useMetadataContext();
   const { t } = useTranslation();
   const { cleanupWindow, setWindowActive } = useWindowContext();
 
@@ -112,7 +110,9 @@ export default function WindowTabs() {
         className="w-full flex items-center px-2 overflow-x-auto overflow-y-hidden scroll-smooth hide-scrollbar h-9"
         ref={windowsContainerRef}>
         {visibleWindows.map((window, index) => {
-          const title = window.title || getWindowTitle?.(window.windowId);
+          // TODO: improve loading display
+          // TODO: if the window.title dosen't finish loading, get the title from metadata
+          const title = window.title || "Loading...";
           const isActive = window.isActive;
           const canClose = visibleWindows.length > 1;
 
@@ -127,7 +127,6 @@ export default function WindowTabs() {
                 tabRefs.current[window.window_identifier] = el;
               }}>
               <WindowTab
-                windowId={window.window_identifier}
                 title={title}
                 isActive={isActive}
                 onActivate={() => {

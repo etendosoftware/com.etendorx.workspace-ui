@@ -21,7 +21,6 @@ import { useTranslation } from "@/hooks/useTranslation";
 import Tooltip from "@workspaceui/componentlibrary/src/components/Tooltip";
 
 interface WindowTabProps {
-  windowId: string;
   title: string;
   isActive: boolean;
   onActivate: () => void;
@@ -39,11 +38,10 @@ export default function WindowTab({ title, isActive, onActivate, onClose, canClo
         className={`
          h-9 flex gap-2 items-center justify-center p-2 cursor-pointer max-w-[220px] 
          relative group transition-all duration-200 text-(--color-baseline-90) 
-         ${
-           isActive
-             ? "bg-(--color-baseline-0) border-b-2 border-(--color-dynamic-main)"
-             : "hover:bg-(--color-baseline-0)"
-         }
+         ${isActive
+            ? "bg-(--color-baseline-0) border-b-2 border-(--color-dynamic-main)"
+            : "hover:bg-(--color-baseline-0)"
+          }
        `}
         style={{
           borderTopLeftRadius: "12px",
