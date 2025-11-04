@@ -112,10 +112,10 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const [toggle, setToggle] = useState(false);
   const lastParentSelectionRef = useRef<string | undefined>(undefined);
 
-  const windowId = activeWindow?.windowId;
+  const windowIdentifier = activeWindow?.window_identifier;
 
-  const tabFormState = windowId ? getTabFormState(windowId, tab.id) : undefined;
-  const selectedRecordId = windowId ? getSelectedRecord(windowId, tab.id) : undefined;
+  const tabFormState = windowIdentifier ? getTabFormState(windowIdentifier, tab.id) : undefined;
+  const selectedRecordId = windowIdentifier ? getSelectedRecord(windowIdentifier, tab.id) : undefined;
 
   const currentMode = tabFormState?.mode || TAB_MODES.TABLE;
   const currentRecordId = tabFormState?.recordId || "";
@@ -123,7 +123,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   // For child tabs, verify parent has selection in URL before showing FormView
   const parentTab = graph.getParent(tab);
-  const parentSelectedRecordIdFromURL = parentTab && windowId ? getSelectedRecord(windowId, parentTab.id) : undefined;
+  const parentSelectedRecordIdFromURL =
+    parentTab && windowIdentifier ? getSelectedRecord(windowIdentifier, parentTab.id) : undefined;
   const parentHasSelectionInURL = !parentTab || !!parentSelectedRecordIdFromURL;
 
   const hasFormViewState = !!tabFormState && tabFormState.mode === TAB_MODES.FORM;
@@ -135,33 +136,40 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     (value) => {
       const newValue = typeof value === "function" ? value(currentRecordId) : value;
 
-      if (!windowId) {
+      if (!windowIdentifier) {
         return;
       }
 
       // Handle clearing form state (empty value)
       if (!newValue) {
-        clearTabFormState(windowId, tab.id);
+        clearTabFormState(windowIdentifier, tab.id);
         return;
       }
 
       // Validate parent selection for child tabs
-      if (!validateParentSelectionForFormView(tab, graph, windowId, getSelectedRecord)) {
+      if (!validateParentSelectionForFormView(tab, graph, windowIdentifier, getSelectedRecord)) {
         return; // Don't allow child to open form if parent has no selection
       }
 
       // Handle new record
       if (newValue === NEW_RECORD_ID) {
-        handleNewRecordFormState(windowId, tab.id, newValue, setTabFormState);
+        handleNewRecordFormState(windowIdentifier, tab.id, newValue, setTabFormState);
         return;
       }
 
       // Handle editing existing record
-      handleEditRecordFormState(windowId, tab.id, newValue, selectedRecordId, setSelectedRecord, setTabFormState);
+      handleEditRecordFormState(
+        windowIdentifier,
+        tab.id,
+        newValue,
+        selectedRecordId,
+        setSelectedRecord,
+        setTabFormState
+      );
     },
     [
       currentRecordId,
-      windowId,
+      windowIdentifier,
       setTabFormState,
       clearTabFormState,
       setSelectedRecord,
@@ -174,18 +182,18 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   const handleRecordSelection = useCallback(
     (recordId: string) => {
-      if (windowId) {
+      if (windowIdentifier) {
         if (recordId) {
-          setSelectedRecord(windowId, tab.id, recordId);
+          setSelectedRecord(windowIdentifier, tab.id, recordId);
         } else {
-          clearSelectedRecord(windowId, tab.id);
+          clearSelectedRecord(windowIdentifier, tab.id);
 
           // Clear children tabs when deselecting parent record
           const children = graph.getChildren(tab);
           if (children && children.length > 0) {
             const childIds = children.filter((c) => c.window === tab.window).map((c) => c.id);
             if (childIds.length > 0) {
-              clearChildrenSelections(windowId, childIds);
+              clearChildrenSelections(windowIdentifier, childIds);
             }
           }
 
@@ -195,31 +203,31 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         }
       }
     },
-    [windowId, tab, setSelectedRecord, clearSelectedRecord, clearChildrenSelections, graph]
+    [windowIdentifier, tab, setSelectedRecord, clearSelectedRecord, clearChildrenSelections, graph]
   );
 
   const handleNew = useCallback(() => {
-    if (windowId) {
-      setTabFormState(windowId, tab.id, NEW_RECORD_ID, TAB_MODES.FORM, FORM_MODES.NEW);
+    if (windowIdentifier) {
+      setTabFormState(windowIdentifier, tab.id, NEW_RECORD_ID, TAB_MODES.FORM, FORM_MODES.NEW);
     }
-  }, [windowId, tab, setTabFormState]);
+  }, [windowIdentifier, tab, setTabFormState]);
 
   const handleBack = useCallback(() => {
-    if (windowId) {
-      const currentFormState = getTabFormState(windowId, tab.id);
+    if (windowIdentifier) {
+      const currentFormState = getTabFormState(windowIdentifier, tab.id);
       const isInFormView = currentFormState?.mode === TAB_MODES.FORM;
 
       if (isInFormView) {
-        clearTabFormStateAtomic(windowId, tab.id);
+        clearTabFormStateAtomic(windowIdentifier, tab.id);
       } else {
-        clearSelectedRecord(windowId, tab.id);
+        clearSelectedRecord(windowIdentifier, tab.id);
 
         // Also clear children if this tab has any
         const children = graph.getChildren(tab);
         if (children && children.length > 0) {
           const childIds = children.filter((c) => c.window === tab.window).map((c) => c.id);
           if (childIds.length > 0) {
-            clearChildrenSelections(windowId, childIds);
+            clearChildrenSelections(windowIdentifier, childIds);
           }
         }
 
@@ -227,13 +235,21 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         graph.clearSelected(tab);
       }
     }
-  }, [windowId, clearTabFormStateAtomic, tab, getTabFormState, clearSelectedRecord, clearChildrenSelections, graph]);
+  }, [
+    windowIdentifier,
+    clearTabFormStateAtomic,
+    tab,
+    getTabFormState,
+    clearSelectedRecord,
+    clearChildrenSelections,
+    graph,
+  ]);
 
   const handleTreeView = useCallback(() => {
-    if (windowId) {
+    if (windowIdentifier) {
       setToggle((prev) => !prev);
     }
-  }, [windowId]);
+  }, [windowIdentifier]);
 
   useEffect(() => {
     // Register this tab's refresh callback
@@ -274,7 +290,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   // Auto-close child FormView when parent selection changes
   useEffect(() => {
-    if (!windowId) {
+    if (!windowIdentifier) {
       return;
     }
 
@@ -283,7 +299,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       return; // Only for child tabs
     }
 
-    const parentSelectedId = getSelectedRecord(windowId, parentTab.id);
+    const parentSelectedId = getSelectedRecord(windowIdentifier, parentTab.id);
     const previousParentId = lastParentSelectionRef.current;
 
     // Only process if parent selection ID actually changed
@@ -304,10 +320,19 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     // 3. This is NOT a save transition (NEW -> real ID)
     // Note: We now close child FormView even if parent is in FormView (navigation between parent records should reset children)
     if (previousParentId !== undefined && !isParentSaveTransition) {
-      clearTabFormState(windowId, tab.id);
+      clearTabFormState(windowIdentifier, tab.id);
       graph.clearSelected(tab);
     }
-  }, [windowId, graph, tab, getSelectedRecord, clearTabFormState, getTabFormState, currentMode, tabFormState?.mode]);
+  }, [
+    windowIdentifier,
+    graph,
+    tab,
+    getSelectedRecord,
+    clearTabFormState,
+    getTabFormState,
+    currentMode,
+    tabFormState?.mode,
+  ]);
 
   return (
     <div
@@ -315,7 +340,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         collapsed ? "hidden" : "flex-1 h-full"
       }`}>
       <Toolbar
-        windowId={window?.id || tab.window}
+        windowId={windowIdentifier || tab.window}
         tabId={tab.id}
         isFormView={shouldShowForm}
         data-testid="Toolbar__5893c8"

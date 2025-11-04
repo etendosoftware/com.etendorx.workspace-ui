@@ -219,23 +219,6 @@ export function FormFields({
           />
         </Collapsible>
       </div>
-      {/* Linked Items Section */}
-      {/* <div ref={handleSectionRef("linked-items")} data-section-id="linked-items">
-        <Collapsible
-          title="Linked Items"
-          isExpanded={isSectionExpanded("linked-items")}
-          sectionId="linked-items"
-          icon={<LinkIcon data-testid="LinkIcon__linkeditems" />}
-          onToggle={(isOpen: boolean) => handleAccordionChange("linked-items", isOpen)}
-          data-testid="Collapsible__linkeditems">
-          <LinkedItemsSection
-            windowId={tab.window}
-            entityName={tab.entityName}
-            recordId={recordId}
-            data-testid="LinkedItemsSection__38e4a6"
-          />
-        </Collapsible>
-      </div> */}
     </div>
   );
 }

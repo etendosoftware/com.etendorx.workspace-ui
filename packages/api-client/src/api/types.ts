@@ -836,6 +836,7 @@ export interface LinkedItemCategory {
 }
 
 export interface LinkedItem {
+  adMenuName: string;
   adTabId: string;
   adWindowId: string;
   id: string;

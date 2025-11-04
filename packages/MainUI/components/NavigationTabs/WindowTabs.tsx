@@ -58,8 +58,8 @@ export default function WindowTabs() {
   }, []);
 
   const handleSelectWindow = useCallback(
-    (windowId: string) => {
-      setActiveWindow(windowId);
+    (windowIdentifier: string) => {
+      setActiveWindow(windowIdentifier);
     },
     [setActiveWindow]
   );

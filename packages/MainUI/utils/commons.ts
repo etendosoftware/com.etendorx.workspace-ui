@@ -22,10 +22,11 @@
 
 /**
  * Checks if an object is empty (has no own enumerable properties).
+ * Returns `true` for `undefined` or `null` values as well.
  *
  * @template T - A generic type that extends Record<string, unknown> to ensure type safety with object literals
- * @param {T} obj - The object to check
- * @returns {boolean} True if the object has no own enumerable properties, false otherwise
+ * @param {T | null | undefined} obj - The object to check
+ * @returns {boolean} True if the object is null, undefined, or has no own enumerable properties; false otherwise
  *
  * @example
  * // Returns true
@@ -34,9 +35,46 @@
  * @example
  * // Returns false
  * isEmptyObject({ key: 'value' });
+ *
+ * @example
+ * // Returns true
+ * isEmptyObject(undefined);
+ *
+ * @example
+ * // Returns true
+ * isEmptyObject(null);
  */
-export const isEmptyObject = <T extends Record<string, unknown>>(obj: T): boolean => {
+export const isEmptyObject = <T extends Record<string, unknown> | null | undefined>(obj: T): boolean => {
+  if (obj === null || obj === undefined) return true;
   return Object.keys(obj).length === 0;
+};
+
+/**
+ * Checks if an array is empty.
+ * Returns `true` for `undefined` or `null` values as well.
+ *
+ * @template T - The type of elements contained in the array
+ * @param {T[] | null | undefined} arr - The array to check
+ * @returns {boolean} True if the array is null, undefined, or has no elements; false otherwise
+ *
+ * @example
+ * // Returns true
+ * isEmptyArray([]);
+ *
+ * @example
+ * // Returns false
+ * isEmptyArray([1, 2, 3]);
+ *
+ * @example
+ * // Returns true
+ * isEmptyArray(undefined);
+ *
+ * @example
+ * // Returns true
+ * isEmptyArray(null);
+ */
+export const isEmptyArray = <T>(arr: T[] | null | undefined): arr is undefined | null | [] => {
+  return arr === null || arr === undefined || arr.length === 0;
 };
 
 /**

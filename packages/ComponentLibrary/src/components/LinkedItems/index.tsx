@@ -12,6 +12,7 @@ export interface LinkedItemCategory {
 export interface LinkedItem {
   adTabId: string;
   adWindowId: string;
+  adMenuName: string;
   id: string;
   name: string;
 }

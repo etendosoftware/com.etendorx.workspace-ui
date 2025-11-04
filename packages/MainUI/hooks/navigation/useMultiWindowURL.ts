@@ -37,27 +37,94 @@ import {
   TAB_INACTIVE,
   type FormMode,
   type TabMode,
+  type TabFormState,
+  type SelectedRecord,
 } from "@/utils/url/constants";
+import { getNewWindowIdentifier, generateSelectedRecords, generateTabFormStates } from "@/utils/url/utils";
+import { isEmptyArray } from "@/utils/commons";
 
+/**
+ * Represents the complete state of a window in the multi-window navigation system.
+ * This interface defines all the data needed to restore and manage a window's state through URL parameters.
+ *
+ * @interface WindowState
+ */
 export interface WindowState {
+  /**
+   * Unique identifier for the window, typically corresponds to the window entity ID from the API.
+   * Used for business logic operations and state management.
+   */
   windowId: string;
+
+  /**
+   * Indicates whether this window is currently active/focused.
+   * Only one window can be active at a time in the multi-window system.
+   */
   isActive: boolean;
+
+  /**
+   * Display order of the window in the tab bar.
+   * Used for determining tab sequence and reordering operations.
+   */
   order: number;
+
+  /**
+   * URL-safe identifier used in URL parameters to represent this window instance.
+   * Allows multiple instances of the same windowId to exist simultaneously.
+   * Format: typically `${windowId}_${timestamp}` or similar unique suffix.
+   */
   window_identifier: string;
+
+  /**
+   * Record ID when the main window is in form view mode.
+   * Represents the primary record being edited or viewed at the window level.
+   */
   formRecordId?: string;
+
+  /**
+   * Form mode for the main window form (NEW, EDIT, VIEW).
+   * Determines the behavior and permissions for the main window form.
+   */
   formMode?: FormMode;
-  selectedRecords: Record<string, string>; // tabId -> recordId
-  tabFormStates: Record<
-    string,
-    {
-      recordId?: string;
-      mode?: TabMode;
-      formMode?: FormMode;
-    }
-  >;
+
+  /**
+   * Map of selected records for each tab in the window.
+   * Key: tabId (string) - The identifier of the tab
+   * Value: recordId (string) - The ID of the currently selected record in that tab
+   * Used for maintaining selections across navigation and managing parent-child relationships.
+   */
+  selectedRecords: Record<string, string>;
+
+  /**
+   * Map of form states for tabs that are in form view mode.
+   * Key: tabId (string) - The identifier of the tab
+   * Value: Object containing form state information:
+   *   - recordId: The record being edited/viewed in form mode
+   *   - mode: Tab display mode (TABLE, FORM)
+   *   - formMode: Form interaction mode (NEW, EDIT, VIEW)
+   * Only tabs currently in form view will have entries in this map.
+   */
+  tabFormStates: Record<string, TabFormState>;
+
+  /**
+   * Display title for the window tab.
+   * Shown in the tab bar and used for user identification of windows.
+   */
   title?: string;
 }
 
+/**
+ * Extracts all window identifiers from URL search parameters.
+ * Scans through all URL parameters looking for those that start with the window prefix.
+ *
+ * @param searchParams - The URLSearchParams object containing current URL parameters
+ * @returns A Set of window identifiers found in the URL parameters
+ *
+ * @example
+ * // URL: /window?w_abc123=active&w_def456=inactive
+ * const windowIds = extractWindowIds(searchParams);
+ * // Returns: Set { "abc123", "def456" }
+ */
 const extractWindowIds = (searchParams: URLSearchParams): Set<string> => {
   const windowIdentifiers = new Set<string>();
   for (const [key] of searchParams.entries()) {
@@ -69,9 +136,27 @@ const extractWindowIds = (searchParams: URLSearchParams): Set<string> => {
   return windowIdentifiers;
 };
 
+/**
+ * Processes tab-related URL parameters for a specific window to extract selections and form states.
+ * Parses URL parameters that contain tab selections, form record IDs, modes, and form modes.
+ *
+ * @param searchParams - The URLSearchParams object containing current URL parameters
+ * @param windowId - The window identifier to process tab parameters for
+ * @returns Object containing:
+ *   - selectedRecords: Map of tabId to selected recordId
+ *   - tabFormStates: Map of tabId to form state information (recordId, mode, formMode)
+ *
+ * @example
+ * // URL contains: sr_win1_tab1=rec123&tfr_win1_tab1=rec123&tm_win1_tab1=form
+ * const { selectedRecords, tabFormStates } = processTabParameters(searchParams, "win1");
+ * // Returns: {
+ * //   selectedRecords: { "tab1": "rec123" },
+ * //   tabFormStates: { "tab1": { recordId: "rec123", mode: "form" } }
+ * // }
+ */
 const processTabParameters = (
   searchParams: URLSearchParams,
-  windowId: string
+  windowIdentifier: string
 ): {
   selectedRecords: Record<string, string>;
   tabFormStates: Record<string, { recordId?: string; mode?: TabMode; formMode?: FormMode }>;
@@ -89,19 +174,19 @@ const processTabParameters = (
       }
     };
 
-    processTabParameter(`${SELECTED_RECORD_PREFIX}${windowId}_`, (tabId, value) => {
+    processTabParameter(`${SELECTED_RECORD_PREFIX}${windowIdentifier}_`, (tabId, value) => {
       selectedRecords[tabId] = value;
     });
 
-    processTabParameter(`${TAB_FORM_RECORD_ID_PREFIX}${windowId}_`, (tabId, value) => {
+    processTabParameter(`${TAB_FORM_RECORD_ID_PREFIX}${windowIdentifier}_`, (tabId, value) => {
       tabFormStates[tabId] = { ...tabFormStates[tabId], recordId: value };
     });
 
-    processTabParameter(`${TAB_MODE_PREFIX}${windowId}_`, (tabId, value) => {
+    processTabParameter(`${TAB_MODE_PREFIX}${windowIdentifier}_`, (tabId, value) => {
       tabFormStates[tabId] = { ...tabFormStates[tabId], mode: value as TabMode };
     });
 
-    processTabParameter(`${TAB_FORM_MODE_PREFIX}${windowId}_`, (tabId, value) => {
+    processTabParameter(`${TAB_FORM_MODE_PREFIX}${windowIdentifier}_`, (tabId, value) => {
       tabFormStates[tabId] = { ...tabFormStates[tabId], formMode: value as FormMode };
     });
   }
@@ -109,6 +194,27 @@ const processTabParameters = (
   return { selectedRecords, tabFormStates };
 };
 
+/**
+ * Creates a WindowState object from URL parameters for a given window identifier.
+ * Reconstructs the complete window state by parsing all relevant URL parameters.
+ *
+ * @param windowIdentifier - The window identifier to create state for
+ * @param searchParams - The URLSearchParams object containing current URL parameters
+ * @returns Complete WindowState object with all properties populated from URL parameters
+ *
+ * @example
+ * // URL: w_abc123=active&o_abc123=1&wi_abc123=MainWindow&fr_abc123=rec456
+ * const windowState = createWindowState("abc123", searchParams);
+ * // Returns: {
+ * //   windowId: "MainWindow",
+ * //   isActive: true,
+ * //   order: 1,
+ * //   window_identifier: "abc123",
+ * //   formRecordId: "rec456",
+ * //   selectedRecords: {},
+ * //   tabFormStates: {}
+ * // }
+ */
 const createWindowState = (windowIdentifier: string, searchParams: URLSearchParams): WindowState => {
   const isActive = searchParams.get(`${WINDOW_PREFIX}${windowIdentifier}`) === TAB_ACTIVE;
   const formRecordId = searchParams.get(`${FORM_RECORD_ID_PREFIX}${windowIdentifier}`) || undefined;
@@ -132,6 +238,19 @@ const createWindowState = (windowIdentifier: string, searchParams: URLSearchPara
   };
 };
 
+/**
+ * Sets all URL parameters for a window based on its WindowState.
+ * Encodes the complete window state into URL parameters using the established parameter naming conventions.
+ *
+ * @param params - The URLSearchParams object to modify
+ * @param window - The WindowState object containing the state to encode
+ *
+ * @example
+ * const params = new URLSearchParams();
+ * const windowState = { windowId: "MainWindow", isActive: true, order: 1, ... };
+ * setWindowParameters(params, windowState);
+ * // params now contains: w_abc123=active&o_abc123=1&wi_abc123=MainWindow&...
+ */
 const setWindowParameters = (params: URLSearchParams, window: WindowState): void => {
   const {
     windowId,
@@ -181,12 +300,36 @@ const setWindowParameters = (params: URLSearchParams, window: WindowState): void
   }
 };
 
+/**
+ * Calculates the next order number for a new window.
+ * Finds the highest existing order number and returns the next sequential number.
+ *
+ * @param windows - Array of existing WindowState objects
+ * @returns The next available order number (starts at 1 if no windows exist)
+ *
+ * @example
+ * const windows = [{ order: 1 }, { order: 3 }, { order: 2 }];
+ * const nextOrder = getNextOrder(windows); // Returns: 4
+ */
 const getNextOrder = (windows: WindowState[]): number => {
   if (windows.length === 0) return 1;
   const orders = windows.map((w) => w.order || 1);
   return Math.max(...orders) + 1;
 };
 
+/**
+ * Normalizes window order numbers to be sequential starting from 1.
+ * Sorts windows by their current order and reassigns order numbers 1, 2, 3, etc.
+ * This prevents gaps in order numbers and ensures consistent ordering.
+ *
+ * @param windows - Array of WindowState objects to normalize
+ * @returns New array with normalized order numbers, sorted by original order
+ *
+ * @example
+ * const windows = [{ order: 3 }, { order: 1 }, { order: 7 }];
+ * const normalized = normalizeWindowOrders(windows);
+ * // Returns: [{ order: 1 }, { order: 2 }, { order: 3 }] (sorted and renumbered)
+ */
 const normalizeWindowOrders = (windows: WindowState[]): WindowState[] => {
   return [...windows]
     .sort((a, b) => (a.order || 1) - (b.order || 1))
@@ -209,10 +352,10 @@ export function useMultiWindowURL() {
     );
     const isHome = !hasWindowActiveParams;
 
-    const windowIds = extractWindowIds(searchParams);
+    const windowIdentifiers = extractWindowIds(searchParams);
 
-    for (const windowId of windowIds) {
-      const windowState = createWindowState(windowId, searchParams);
+    for (const windowIdentifier of windowIdentifiers) {
+      const windowState = createWindowState(windowIdentifier, searchParams);
       windowStates.push(windowState);
 
       if (windowState.isActive) {
@@ -229,23 +372,53 @@ export function useMultiWindowURL() {
     };
   }, [searchParams]);
 
-  const buildURL = useCallback((newWindows: WindowState[], preserveCurrentPath?: boolean) => {
+  /**
+   * Builds a complete URL with all window states encoded as URL parameters.
+   * Constructs the target URL path with query parameters representing the current state of all windows.
+   *
+   * @param newWindows - Array of WindowState objects to encode into the URL
+   * @returns Complete URL string with path and encoded query parameters
+   *
+   * @example
+   * ```typescript
+   * const windows = [
+   *   { windowId: "ProductWindow", isActive: true, order: 1, window_identifier: "prod_123", ... },
+   *   { windowId: "CustomerWindow", isActive: false, order: 2, window_identifier: "cust_456", ... }
+   * ];
+   * const url = buildURL(windows);
+   * // Returns: "/window?w_prod_123=active&o_prod_123=1&wi_prod_123=ProductWindow&w_cust_456=inactive&o_cust_456=2&wi_cust_456=CustomerWindow"
+   * ```
+   */
+  const buildURL = useCallback((newWindows: WindowState[]) => {
     const params = new URLSearchParams();
 
     for (const window of newWindows) {
       setWindowParameters(params, window);
     }
 
-    if (preserveCurrentPath && window.location.pathname === "/") {
-      return `/?${params.toString()}`;
-    }
-
     return `/window?${params.toString()}`;
   }, []);
 
+  /**
+   * Navigates to a new URL state with the provided windows configuration.
+   * Updates the browser URL using Next.js router with optimized redundancy checking.
+   * Avoids unnecessary navigation when the target URL parameters are identical to current ones.
+   *
+   * @param newWindows - Array of WindowState objects representing the target state
+   *
+   * @example
+   * ```typescript
+   * // Navigate to a state with one active window
+   * const newState = [
+   *   { windowId: "ProductWindow", isActive: true, order: 1, window_identifier: "prod_123", ... }
+   * ];
+   * navigate(newState);
+   * // Browser URL changes to: /window?w_prod_123=active&o_prod_123=1&wi_prod_123=ProductWindow&...
+   * ```
+   */
   const navigate = useCallback(
-    (newWindows: WindowState[], preserveCurrentPath?: boolean) => {
-      const url = buildURL(newWindows, preserveCurrentPath);
+    (newWindows: WindowState[]) => {
+      const url = buildURL(newWindows);
       try {
         const current = searchParams?.toString?.() ?? "";
         const next = url.split("?")[1] || "";
@@ -261,6 +434,22 @@ export function useMultiWindowURL() {
     [router, buildURL, searchParams]
   );
 
+  /**
+   * Navigates to the home route while preserving window state in URL parameters.
+   * Deactivates all windows and redirects to the root path with window state preserved as query parameters.
+   * If no windows exist, navigates to a clean home route.
+   *
+   * @example
+   * ```typescript
+   * // Current: /window?w_prod_123=active&w_cust_456=inactive
+   * navigateToHome();
+   * // Result: /?w_prod_123=inactive&w_cust_456=inactive (all windows deactivated but preserved)
+   *
+   * // If no windows exist:
+   * navigateToHome();
+   * // Result: / (clean home route)
+   * ```
+   */
   const navigateToHome = useCallback(() => {
     const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
 
@@ -272,39 +461,102 @@ export function useMultiWindowURL() {
     }
   }, [windows, buildURL, router]);
 
+  /**
+   * Opens a new window or activates an existing one with the specified window ID, title, and optional initial state.
+   * If a window with a matching window_identifier already exists, it will be activated and optionally retitled.
+   * If no matching window exists, creates a new window with a unique identifier and adds it to the state.
+   * Supports setting initial selected records and tab form states for immediate navigation to specific records.
+   *
+   * @param windowId - The business entity ID for the window (e.g., "ProductWindow", "CustomerWindow")
+   * @param title - Optional display title for the window tab
+   * @param selectedRecords - Optional array of initial selected records for tabs in the window
+   * @param tabFormStates - Optional array of initial form states for tabs that should open in form view
+   *
+   * @example
+   * ```typescript
+   * // Open a simple window
+   * openWindow("ProductWindow", "Product Management");
+   * // Creates window with unique identifier like "ProductWindow_1698234567890"
+   *
+   * // Open window with initial selected records
+   * openWindow("ProductWindow", "Product Details", [
+   *   { tabId: "mainTab", recordId: "product_12345" },
+   *   { tabId: "categoryTab", recordId: "category_67890" }
+   * ]);
+   *
+   * // Open window with records in form view
+   * openWindow("ProductWindow", "Edit Product",
+   *   [{ tabId: "mainTab", recordId: "product_12345" }],
+   *   [{
+   *     tabId: "mainTab",
+   *     tabFormState: {
+   *       recordId: "product_12345",
+   *       mode: "form",
+   *       formMode: "edit"
+   *     }
+   *   }]
+   * );
+   *
+   * // If the same window is opened again:
+   * openWindow("ProductWindow", "Updated Title");
+   * // Activates existing window and updates title
+   * ```
+   */
   const openWindow = useCallback(
-    (windowId: string, title?: string, window_identifier?: string) => {
+    (
+      windowId: string,
+      title?: string,
+      selectedRecords?: SelectedRecord[],
+      tabFormStates?: { tabId: string; tabFormState: TabFormState }[]
+    ) => {
       const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
 
       // Generate unique identifier if not provided
-      const uniqueIdentifier = window_identifier || `${windowId}_${Date.now()}`;
+      const uniqueIdentifier = getNewWindowIdentifier(windowId);
 
-      // Search by window_identifier instead of windowId to support multiple instances
-      const existingIndex = updatedWindows.findIndex((w) => w.window_identifier === uniqueIdentifier);
+      const nextOrder = getNextOrder(updatedWindows);
 
-      if (existingIndex >= 0) {
-        updatedWindows[existingIndex].isActive = true;
-        if (title) {
-          updatedWindows[existingIndex].title = title;
-        }
-      } else {
-        const nextOrder = getNextOrder(updatedWindows);
-        updatedWindows.push({
-          windowId,
-          isActive: true,
-          order: nextOrder,
-          window_identifier: uniqueIdentifier,
-          title,
-          selectedRecords: {},
-          tabFormStates: {},
-        });
-      }
+      const selectedRecordsRes = isEmptyArray(selectedRecords) ? {} : generateSelectedRecords(selectedRecords);
+      const tabFormStatesRes = isEmptyArray(tabFormStates) ? {} : generateTabFormStates(tabFormStates);
+
+      const newWindow: WindowState = {
+        windowId,
+        isActive: true,
+        order: nextOrder,
+        window_identifier: uniqueIdentifier,
+        title,
+        selectedRecords: selectedRecordsRes,
+        tabFormStates: tabFormStatesRes,
+      };
+
+      updatedWindows.push(newWindow);
 
       navigate(updatedWindows);
     },
     [windows, navigate]
   );
 
+  /**
+   * Closes a window by removing it from the state and handling activation transfer.
+   * If the closed window was active, automatically activates the first remaining window.
+   * Normalizes window order numbers after removal. If no windows remain, navigates to home.
+   *
+   * @param windowIdentifier - The unique window_identifier of the window to close
+   *
+   * @example
+   * ```typescript
+   * // Close a specific window
+   * closeWindow("ProductWindow_1698234567890");
+   *
+   * // If closing the active window with others remaining:
+   * // - Window is removed from state
+   * // - First remaining window becomes active
+   * // - Window orders are normalized (1, 2, 3, ...)
+   *
+   * // If closing the last window:
+   * // - Navigates to home route "/"
+   * ```
+   */
   const closeWindow = useCallback(
     (windowIdentifier: string) => {
       const updatedWindows = windows.filter((w) => w.window_identifier !== windowIdentifier);
@@ -325,6 +577,21 @@ export function useMultiWindowURL() {
     [windows, navigate, router]
   );
 
+  /**
+   * Sets the specified window as active and deactivates all others.
+   * Only one window can be active at a time in the multi-window system.
+   *
+   * @param windowIdentifier - The unique window_identifier of the window to activate
+   *
+   * @example
+   * ```typescript
+   * // Activate a specific window
+   * setActiveWindow("ProductWindow_1698234567890");
+   *
+   * // Before: w_prod_123=active&w_cust_456=inactive
+   * // After:  w_prod_123=inactive&w_cust_456=active (if setting cust_456 as active)
+   * ```
+   */
   const setActiveWindow = useCallback(
     (windowIdentifier: string) => {
       const updatedWindows = windows.map((w) => ({
@@ -337,6 +604,21 @@ export function useMultiWindowURL() {
     [windows, navigate]
   );
 
+  /**
+   * Updates the display title of a specific window.
+   * The title is used in the tab bar and for user identification of windows.
+   *
+   * @param windowId - The business entity ID of the window to update
+   * @param title - The new display title for the window
+   *
+   * @example
+   * ```typescript
+   * // Update window title
+   * updateWindowTitle("ProductWindow", "Product Management - Updated");
+   *
+   * // URL parameter t_windowIdentifier will be updated with the new title
+   * ```
+   */
   const updateWindowTitle = useCallback(
     (windowId: string, title: string) => {
       const updatedWindows = windows.map((w) => {
@@ -355,12 +637,46 @@ export function useMultiWindowURL() {
   );
 
   /**
-   * Applies multiple window updates atomically in a single navigation.
-   * This ensures that rapid successive updates don't create race conditions
-   * by always working with the most current state via the transform callback.
+   * Applies multiple window state updates atomically in a single navigation operation.
+   * This is the core batching mechanism that prevents race conditions by ensuring all updates
+   * are applied together using the most current state via a transform callback.
+   *
+   * **Key Benefits:**
+   * - **Atomic Updates**: Multiple state changes happen in a single URL update
+   * - **Race Condition Prevention**: Transform callback receives the latest state
+   * - **Debug Logging**: Automatically logs selection changes with caller information
+   * - **Performance**: Reduces URL updates and component re-renders
+   *
+   * @param transform - Function that receives current windows array and returns modified array
+   *
+   * @example
+   * ```typescript
+   * // Atomically update multiple windows
+   * applyWindowUpdates((currentWindows) => {
+   *   return currentWindows.map(window => {
+   *     if (window.windowId === "ProductWindow") {
+   *       return { ...window, title: "Updated Products" };
+   *     }
+   *     if (window.windowId === "CustomerWindow") {
+   *       return { ...window, isActive: false };
+   *     }
+   *     return window;
+   *   });
+   * });
+   *
+   * // Complex state update with multiple changes
+   * applyWindowUpdates((prev) => {
+   *   const updated = [...prev];
+   *   // Clear child selections
+   *   updated[0].selectedRecords = { mainTab: "newRecord" };
+   *   // Update form states
+   *   updated[0].tabFormStates = { childTab: undefined };
+   *   return updated;
+   * });
+   * ```
    */
   const applyWindowUpdates = useCallback(
-    (transform: (windows: WindowState[]) => WindowState[], preserveCurrentPath?: boolean) => {
+    (transform: (windows: WindowState[]) => WindowState[]) => {
       const stack = new Error().stack;
       const caller = stack?.split("\n")[2]?.trim() || "unknown";
 
@@ -386,16 +702,39 @@ export function useMultiWindowURL() {
         }
       });
 
-      navigate(nextWindows, preserveCurrentPath);
+      navigate(nextWindows);
     },
     [windows, navigate]
   );
 
+  /**
+   * Sets the selected record for a specific tab within a window.
+   * Updates the selectedRecords map for the specified window and tab combination.
+   * This represents the currently highlighted/selected record in a table view.
+   *
+   * @param windowId - The business entity ID of the window
+   * @param tabId - The identifier of the tab within the window
+   * @param recordId - The ID of the record to select
+   *
+   * @example
+   * ```typescript
+   * // Select a product record in the main tab of ProductWindow
+   * setSelectedRecord("ProductWindow", "mainTab", "product_12345");
+   *
+   * // This updates the URL parameter: sr_windowIdentifier_mainTab=product_12345
+   * // and the window state: { selectedRecords: { "mainTab": "product_12345" } }
+   * ```
+   */
   const setSelectedRecord = useCallback(
-    (windowId: string, tabId: string, recordId: string) => {
+    (windowIdOrIdentifier: string, tabId: string, recordId: string) => {
       applyWindowUpdates((prev) => {
         return prev.map((w) => {
-          if (w.windowId === windowId) {
+          // Check if parameter is windowId or window_identifier
+          // For windowId, only update the active window to avoid affecting multiple instances
+          const shouldUpdate =
+            w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive);
+
+          if (shouldUpdate) {
             return {
               ...w,
               selectedRecords: {
@@ -411,11 +750,32 @@ export function useMultiWindowURL() {
     [applyWindowUpdates]
   );
 
+  /**
+   * Clears the selected record for a specific tab within a window.
+   * Removes the selection entry from the selectedRecords map, effectively deselecting any record in that tab.
+   *
+   * @param windowId - The business entity ID of the window
+   * @param tabId - The identifier of the tab within the window
+   *
+   * @example
+   * ```typescript
+   * // Clear selection in the main tab of ProductWindow
+   * clearSelectedRecord("ProductWindow", "mainTab");
+   *
+   * // Removes URL parameter: sr_windowIdentifier_mainTab
+   * // Updates window state: { selectedRecords: {} } (removes mainTab entry)
+   * ```
+   */
   const clearSelectedRecord = useCallback(
-    (windowId: string, tabId: string) => {
+    (windowIdOrIdentifier: string, tabId: string) => {
       applyWindowUpdates((prev) => {
         return prev.map((w) => {
-          if (w.windowId === windowId) {
+          // Check if parameter is windowId or window_identifier
+          // For windowId, only update the active window to avoid affecting multiple instances
+          const shouldUpdate =
+            w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive);
+
+          if (shouldUpdate) {
             const newSelectedRecords = { ...w.selectedRecords };
             delete newSelectedRecords[tabId];
 
@@ -431,11 +791,37 @@ export function useMultiWindowURL() {
     [applyWindowUpdates]
   );
 
+  /**
+   * Retrieves the currently selected record ID for a specific tab within a window.
+   * Intelligently handles both table view selections and form view states:
+   * - If tab is in form view mode, returns the form record ID
+   * - Otherwise returns the selected record from table view
+   *
+   * @param windowId - The business entity ID of the window
+   * @param tabId - The identifier of the tab within the window
+   * @returns The ID of the currently selected/active record, or undefined if none
+   *
+   * @example
+   * ```typescript
+   * // Get selected record from table view
+   * const selectedId = getSelectedRecord("ProductWindow", "mainTab");
+   * // Returns: "product_12345" or undefined
+   *
+   * // When tab is in form view, returns the form record
+   * setTabFormState("ProductWindow", "mainTab", "product_67890", TAB_MODES.FORM);
+   * const formRecordId = getSelectedRecord("ProductWindow", "mainTab");
+   * // Returns: "product_67890" (from form state, not table selection)
+   * ```
+   */
   const getSelectedRecord = useCallback(
-    (windowId: string, tabId: string): string | undefined => {
+    (windowIdOrIdentifier: string, tabId: string): string | undefined => {
       // Always read from current windows state, not searchParams
       // searchParams can be stale during intermediate renders
-      const window = windows.find((w) => w.windowId === windowId);
+
+      // Try to find by window_identifier first, then by windowId (active window only)
+      const window = windows.find(
+        (w) => w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive)
+      );
       if (!window) return undefined;
 
       // If tab is in FormView, get recordId from tabFormStates
@@ -450,11 +836,47 @@ export function useMultiWindowURL() {
     [windows]
   );
 
+  /**
+   * Sets the form state for a specific tab, including display mode and form interaction mode.
+   * Transitions a tab from table view to form view and configures the form behavior.
+   * Automatically determines form mode based on record ID if not specified.
+   *
+   * @param windowId - The business entity ID of the window
+   * @param tabId - The identifier of the tab within the window
+   * @param recordId - The ID of the record to display in form view
+   * @param mode - The tab display mode (defaults to TAB_MODES.FORM)
+   * @param formMode - The form interaction mode (NEW, EDIT, VIEW). Auto-determined if not provided
+   *
+   * @example
+   * ```typescript
+   * // Open existing record in edit form
+   * setTabFormState("ProductWindow", "mainTab", "product_12345", TAB_MODES.FORM, FORM_MODES.EDIT);
+   *
+   * // Create new record (auto-detects NEW mode)
+   * setTabFormState("ProductWindow", "mainTab", NEW_RECORD_ID, TAB_MODES.FORM);
+   * // Form mode automatically set to FORM_MODES.NEW
+   *
+   * // Edit existing record (auto-detects EDIT mode)
+   * setTabFormState("ProductWindow", "mainTab", "product_67890");
+   * // Mode defaults to TAB_MODES.FORM, formMode auto-set to FORM_MODES.EDIT
+   * ```
+   */
   const setTabFormState = useCallback(
-    (windowId: string, tabId: string, recordId: string, mode: TabMode = TAB_MODES.FORM, formMode?: FormMode) => {
+    (
+      windowIdOrIdentifier: string,
+      tabId: string,
+      recordId: string,
+      mode: TabMode = TAB_MODES.FORM,
+      formMode?: FormMode
+    ) => {
       applyWindowUpdates((prev) => {
         return prev.map((w) => {
-          if (w.windowId === windowId) {
+          // Check if parameter is windowId or window_identifier
+          // For windowId, only update the active window to avoid affecting multiple instances
+          const shouldUpdate =
+            w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive);
+
+          if (shouldUpdate) {
             const currentTabState = w.tabFormStates[tabId] || {};
 
             return {
@@ -481,11 +903,36 @@ export function useMultiWindowURL() {
     [applyWindowUpdates]
   );
 
+  /**
+   * Clears the form state for a specific tab, transitioning it back to table view.
+   * Removes the tab from the tabFormStates map, effectively closing any open form.
+   * The tab's selected record remains preserved in selectedRecords.
+   *
+   * @param windowId - The business entity ID of the window
+   * @param tabId - The identifier of the tab within the window
+   *
+   * @example
+   * ```typescript
+   * // Close form view and return to table view
+   * clearTabFormState("ProductWindow", "mainTab");
+   *
+   * // Before: Tab shows form for product_12345
+   * // After:  Tab shows table view, product_12345 remains selected in table
+   *
+   * // URL parameters removed: tfr_windowId_tabId, tm_windowId_tabId, tfm_windowId_tabId
+   * // URL parameters kept: sr_windowId_tabId (selected record)
+   * ```
+   */
   const clearTabFormState = useCallback(
-    (windowId: string, tabId: string) => {
+    (windowIdOrIdentifier: string, tabId: string) => {
       applyWindowUpdates((prev) => {
         return prev.map((w) => {
-          if (w.windowId === windowId) {
+          // Check if parameter is windowId or window_identifier
+          // For windowId, only update the active window to avoid affecting multiple instances
+          const shouldUpdate =
+            w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive);
+
+          if (shouldUpdate) {
             const newTabFormStates = { ...w.tabFormStates };
             delete newTabFormStates[tabId];
 
@@ -501,16 +948,70 @@ export function useMultiWindowURL() {
     [applyWindowUpdates]
   );
 
+  /**
+   * Retrieves the current form state information for a specific tab.
+   * Returns the complete form state object including record ID, display mode, and form mode.
+   *
+   * @param windowId - The business entity ID of the window
+   * @param tabId - The identifier of the tab within the window
+   * @returns Form state object with recordId, mode, and formMode properties, or undefined if tab is not in form view
+   *
+   * @example
+   * ```typescript
+   * // Get form state for a tab
+   * const formState = getTabFormState("ProductWindow", "mainTab");
+   *
+   * // Returns:
+   * // { recordId: "product_12345", mode: "form", formMode: "edit" }
+   * // or undefined if tab is in table view
+   *
+   * // Check if tab is in form mode
+   * const isInForm = formState?.mode === TAB_MODES.FORM;
+   * const isNewRecord = formState?.recordId === NEW_RECORD_ID;
+   * ```
+   */
   const getTabFormState = useCallback(
-    (windowId: string, tabId: string) => {
-      const window = windows.find((w) => w.windowId === windowId);
+    (windowIdOrIdentifier: string, tabId: string) => {
+      // Try to find by window_identifier first, then by windowId (active window only)
+      const window = windows.find(
+        (w) => w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive)
+      );
       return window?.tabFormStates[tabId];
     },
     [windows]
   );
 
+  /**
+   * Clears selections and form states for child tabs with intelligent form preservation.
+   * Implements smart cleanup logic that preserves child tabs currently in form view to prevent data loss.
+   * Provides detailed debug logging to track which children are cleared vs. preserved.
+   *
+   * **Preservation Logic:**
+   * - Child tabs in form view mode are preserved (no data loss)
+   * - Child tabs in table view are cleared (normal cleanup)
+   * - Detailed logging shows what actions were taken
+   *
+   * @param windowIdentifier - The window identifier of the parent window
+   * @param childTabIds - Array of child tab identifiers to potentially clear
+   *
+   * @example
+   * ```typescript
+   * // Clear child tabs after parent selection change
+   * clearChildrenSelections("CustomerWindow", ["ordersTab", "paymentsTab", "contactsTab"]);
+   *
+   * // Scenario 1: All children in table view
+   * // Result: All children cleared
+   *
+   * // Scenario 2: ordersTab has open form, others in table view
+   * // Result: ordersTab preserved (form open), paymentsTab & contactsTab cleared
+   *
+   * // Debug output shows:
+   * // "[clearChildrenSelections] Preserving child ordersTab - currently in FormView"
+   * // "[clearChildrenSelections] Cleared 2 of 3 children: paymentsTab, contactsTab"
+   * ```
+   */
   const clearChildrenSelections = useCallback(
-    (windowId: string, childTabIds: string[]) => {
+    (windowIdentifier: string, childTabIds: string[]) => {
       // Log who called this function with stack trace
       const stack = new Error().stack;
       const caller = stack?.split("\n")[2]?.trim() || "unknown";
@@ -519,7 +1020,7 @@ export function useMultiWindowURL() {
 
       applyWindowUpdates((prev) => {
         return prev.map((w) => {
-          if (w.windowId !== windowId) return w;
+          if (w.window_identifier !== windowIdentifier) return w;
 
           // Filter out children that are currently in FormView - don't clear them
           const childrenToClean = childTabIds.filter((tabId) => {
@@ -559,15 +1060,52 @@ export function useMultiWindowURL() {
   );
 
   /**
-   * Atomically updates parent tab selection and clears all children in a single navigation
-   * Children in FormView are preserved ONLY if the parent selection hasn't actually changed
-   * (i.e., during refresh/re-render). If user changes parent selection, children are cleared.
+   * Atomically updates parent tab selection and clears child tab selections in a single navigation.
+   * Implements intelligent child preservation logic for form views to prevent data loss during re-renders.
+   *
+   * **Child Clearing Logic:**
+   * - If parent selection changes (user selects different record): Clear ALL children regardless of form state
+   * - If parent selection unchanged (re-render/refresh): Preserve children that are in form view mode
+   *
+   * This prevents accidental data loss when forms are open in child tabs during parent re-renders,
+   * while ensuring proper cleanup when the user intentionally changes the parent selection.
+   *
+   * @param windowId - The business entity ID of the window
+   * @param parentTabId - The identifier of the parent tab whose selection is changing
+   * @param recordId - The ID of the record to select in the parent tab
+   * @param childTabIds - Array of child tab identifiers to potentially clear
+   *
+   * @example
+   * ```typescript
+   * // User selects a different customer record
+   * setSelectedRecordAndClearChildren(
+   *   "CustomerWindow",
+   *   "customerTab",
+   *   "customer_789",
+   *   ["ordersTab", "paymentsTab"]
+   * );
+   * // Result: Customer tab shows customer_789, all child tabs are cleared
+   *
+   * // Re-render with same customer (no actual change)
+   * setSelectedRecordAndClearChildren(
+   *   "CustomerWindow",
+   *   "customerTab",
+   *   "customer_789",  // Same ID as before
+   *   ["ordersTab", "paymentsTab"]
+   * );
+   * // Result: Child tabs in form view are preserved, others are cleared
+   * ```
    */
   const setSelectedRecordAndClearChildren = useCallback(
-    (windowId: string, parentTabId: string, recordId: string, childTabIds: string[]) => {
+    (windowIdOrIdentifier: string, parentTabId: string, recordId: string, childTabIds: string[]) => {
       applyWindowUpdates((prev) => {
         return prev.map((w) => {
-          if (w.windowId !== windowId) return w;
+          // Check if parameter is windowId or window_identifier
+          // For windowId, only update the active window to avoid affecting multiple instances
+          const shouldUpdate =
+            w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive);
+
+          if (!shouldUpdate) return w;
 
           const previousParentSelection = w.selectedRecords[parentTabId];
           const isParentSelectionChanging = previousParentSelection !== recordId;
@@ -624,7 +1162,23 @@ export function useMultiWindowURL() {
   );
 
   /**
-   * Atomically clears FormView state for a tab only (without touching children or selection)
+   * Atomically clears form state for a tab without affecting its selection or child relationships.
+   * This is a specialized version of clearTabFormState that explicitly preserves the selected record
+   * and doesn't trigger any child tab cleanup logic. Used when transitioning from form view to table view
+   * while maintaining the current selection state.
+   *
+   * @param windowId - The business entity ID of the window
+   * @param tabId - The identifier of the tab within the window
+   *
+   * @example
+   * ```typescript
+   * // Close form view but keep record selected in table
+   * clearTabFormStateAtomic("ProductWindow", "mainTab");
+   *
+   * // Before: Tab in form view editing product_12345
+   * // After:  Tab in table view with product_12345 still selected
+   * // No child tabs are affected by this operation
+   * ```
    */
   const clearTabFormStateAtomic = useCallback(
     (windowId: string, tabId: string) => {
@@ -647,6 +1201,53 @@ export function useMultiWindowURL() {
     [applyWindowUpdates]
   );
 
+  /**
+   * Opens a window with optional initial selection and form state in a single atomic operation.
+   * Combines window opening with record selection and optional form opening for efficient navigation.
+   * Supports both creating new windows and updating existing ones with enhanced identifier handling.
+   *
+   * @param windowId - The business entity ID for the window
+   * @param options - Configuration object with optional properties:
+   *   - title: Display title for the window tab
+   *   - window_identifier: Specific identifier for the window instance (allows multiple instances)
+   *   - selection: Object containing:
+   *     - tabId: The tab to select a record in
+   *     - recordId: The record to select
+   *     - openForm: Whether to open the record in form view
+   *     - formMode: Form interaction mode (NEW, EDIT, VIEW)
+   *
+   * @example
+   * ```typescript
+   * // Simple window opening
+   * openWindowAndSelect("ProductWindow", { title: "Product Management" });
+   *
+   * // Open window with record selection
+   * openWindowAndSelect("ProductWindow", {
+   *   title: "Product Details",
+   *   selection: {
+   *     tabId: "mainTab",
+   *     recordId: "product_12345"
+   *   }
+   * });
+   *
+   * // Open window with record in form view
+   * openWindowAndSelect("ProductWindow", {
+   *   title: "Edit Product",
+   *   selection: {
+   *     tabId: "mainTab",
+   *     recordId: "product_12345",
+   *     openForm: true,
+   *     formMode: FORM_MODES.EDIT
+   *   }
+   * });
+   *
+   * // Open specific window instance
+   * openWindowAndSelect("ProductWindow", {
+   *   window_identifier: "ProductWindow_specialized",
+   *   title: "Specialized Product View"
+   * });
+   * ```
+   */
   const openWindowAndSelect = useCallback(
     (
       windowId: string,
@@ -706,6 +1307,30 @@ export function useMultiWindowURL() {
     [applyWindowUpdates]
   );
 
+  /**
+   * Sets a record for editing at either the window level or a specific tab level.
+   * Provides a unified interface for setting form records regardless of the target scope.
+   * Automatically determines the appropriate form mode based on the record ID.
+   *
+   * @param windowId - The business entity ID of the window
+   * @param recordId - The ID of the record to set for editing
+   * @param tabId - Optional tab identifier. If provided, sets record at tab level; otherwise at window level
+   *
+   * @example
+   * ```typescript
+   * // Set record at window level (main window form)
+   * setRecord("ProductWindow", "product_12345");
+   * // Sets: formRecordId and formMode at window level
+   *
+   * // Set record at tab level (tab form)
+   * setRecord("ProductWindow", "product_67890", "mainTab");
+   * // Delegates to: setTabFormState(windowId, tabId, recordId, FORM, EDIT)
+   *
+   * // Create new record
+   * setRecord("ProductWindow", NEW_RECORD_ID, "mainTab");
+   * // Automatically sets formMode to FORM_MODES.NEW
+   * ```
+   */
   const setRecord = useCallback(
     (windowId: string, recordId: string, tabId?: string) => {
       if (tabId) {
@@ -729,6 +1354,25 @@ export function useMultiWindowURL() {
     [applyWindowUpdates, setTabFormState]
   );
 
+  /**
+   * Clears a record from either the window level or a specific tab level.
+   * Provides a unified interface for clearing form records regardless of the target scope.
+   *
+   * @param windowId - The business entity ID of the window
+   * @param tabId - Optional tab identifier. If provided, clears record at tab level; otherwise at window level
+   *
+   * @example
+   * ```typescript
+   * // Clear record at window level (close main window form)
+   * clearRecord("ProductWindow");
+   * // Removes: formRecordId and formMode from window state
+   *
+   * // Clear record at tab level (close tab form)
+   * clearRecord("ProductWindow", "mainTab");
+   * // Delegates to: clearTabFormState(windowId, tabId)
+   * // Tab returns to table view, selected record preserved
+   * ```
+   */
   const clearRecord = useCallback(
     (windowId: string, tabId?: string) => {
       if (tabId) {
@@ -748,6 +1392,28 @@ export function useMultiWindowURL() {
     [applyWindowUpdates, clearTabFormState]
   );
 
+  /**
+   * Changes the display order of a specific window in the tab bar.
+   * Updates the window's order number and automatically normalizes all window orders
+   * to ensure sequential numbering (1, 2, 3, etc.) without gaps.
+   *
+   * @param windowId - The business entity ID of the window to reorder
+   * @param newOrder - The new order position for the window
+   *
+   * @example
+   * ```typescript
+   * // Move ProductWindow to position 3
+   * reorderWindows("ProductWindow", 3);
+   *
+   * // Before: [CustomerWindow(1), ProductWindow(2), OrderWindow(3)]
+   * // After:  [CustomerWindow(1), OrderWindow(2), ProductWindow(3)]
+   * // Note: Orders are normalized to maintain sequential numbering
+   *
+   * // Move window to first position
+   * reorderWindows("OrderWindow", 1);
+   * // Result: OrderWindow becomes first, others shift right
+   * ```
+   */
   const reorderWindows = useCallback(
     (windowId: string, newOrder: number) => {
       const updatedWindows = windows.map((w) => {

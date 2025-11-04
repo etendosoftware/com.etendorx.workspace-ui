@@ -197,12 +197,12 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * @returns EntityData object representing current record or null if no record
    */
   const record = useMemo(() => {
-    const windowId = activeWindow?.windowId;
-    if (!windowId) return null;
+    const windowIdentifier = activeWindow?.window_identifier;
+    if (!windowIdentifier) return null;
 
     if (recordId === NEW_RECORD_ID) return null;
 
-    const selectedRecordId = getSelectedRecord(windowId, tab.id);
+    const selectedRecordId = getSelectedRecord(windowIdentifier, tab.id);
     if (selectedRecordId && selectedRecordId === recordId) {
       const graphRecord = graph.getSelected(tab);
       if (graphRecord && String(graphRecord.id) === recordId) {
@@ -217,7 +217,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     }
 
     return null;
-  }, [activeWindow?.windowId, getSelectedRecord, tab, recordId, graph]);
+  }, [activeWindow?.window_identifier, getSelectedRecord, tab, recordId, graph]);
 
   /**
    * Merges record data with form initialization data to create complete form state.
@@ -414,9 +414,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       graph.setSelected(tab, data);
       graph.setSelectedMultiple(tab, [data]);
 
-      const windowId = activeWindow?.windowId;
-      if (windowId) {
-        setSelectedRecord(windowId, tab.id, String(data.id));
+      const windowIdentifier = activeWindow?.window_identifier;
+      if (windowIdentifier) {
+        setSelectedRecord(windowIdentifier, tab.id, String(data.id));
       }
       if (showModal) {
         showSuccessModal("Saved");
@@ -433,7 +433,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       mode,
       graph,
       tab,
-      activeWindow?.windowId,
+      activeWindow?.window_identifier,
       showSuccessModal,
       reset,
       initialState,
@@ -510,8 +510,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
       // Use atomic update to change parent selection and clear all children in one operation
       // This forces children to return to table view even if they were in FormView
-      if (activeWindow?.windowId && childIds.length > 0) {
-        setSelectedRecordAndClearChildren(activeWindow.windowId, tab.id, newRecordId, childIds);
+      if (activeWindow?.window_identifier && childIds.length > 0) {
+        setSelectedRecordAndClearChildren(activeWindow.window_identifier, tab.id, newRecordId, childIds);
 
         // Also clear the graph selection for all children to ensure they reset completely
         for (const child of children ?? []) {

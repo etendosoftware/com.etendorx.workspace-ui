@@ -37,6 +37,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const { removeRecordFromDatasource } = useDatasourceContext();
 
   const currentWindowId = activeWindow?.windowId;
+  const currentWindowIdentifier = activeWindow?.window_identifier;
   const currentWindow = currentWindowId ? windowsData[currentWindowId] : undefined;
   const currentLoading = currentWindowId ? loadingWindows[currentWindowId] || false : false;
   const currentError = currentWindowId ? errors[currentWindowId] : undefined;
@@ -109,14 +110,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [errors]
   );
 
-  useEffect(() => {
-    if (activeWindow?.windowId && !windowsData[activeWindow.windowId] && !loadingWindows[activeWindow.windowId]) {
-      loadWindowData(activeWindow.windowId).catch(() => {
-        // Error handled in load
-      });
-    }
-  }, [activeWindow?.windowId, windowsData, loadingWindows, loadWindowData]);
-
   const removeRecord = useCallback(
     (tabId: string, recordId: string) => {
       removeRecordFromDatasource(tabId, recordId);
@@ -149,9 +142,18 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     return Promise.resolve({} as Etendo.WindowMetadata);
   }, [currentWindowId, loadWindowData]);
 
+  useEffect(() => {
+    if (activeWindow?.windowId && !windowsData[activeWindow.windowId] && !loadingWindows[activeWindow.windowId]) {
+      loadWindowData(activeWindow.windowId).catch(() => {
+        // Error handled in load
+      });
+    }
+  }, [activeWindow?.windowId, windowsData, loadingWindows, loadWindowData]);
+
   const value = useMemo<IMetadataContext>(
     () => ({
       windowId: currentWindowId,
+      windowIdentifier: currentWindowIdentifier,
       window: currentWindow,
       loading: currentLoading,
       error: currentError,
@@ -172,6 +174,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     }),
     [
       currentWindowId,
+      currentWindowIdentifier,
       currentWindow,
       currentLoading,
       currentError,
