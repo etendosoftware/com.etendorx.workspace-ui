@@ -16,7 +16,6 @@
  */
 
 export const WINDOW_PREFIX = "w_";
-export const ORDER_PREFIX = "o_";
 export const WINDOW_IDENTIFIER_PREFIX = "wi_";
 export const FORM_RECORD_ID_PREFIX = "r_";
 export const FORM_MODE_PREFIX = "fm_";
