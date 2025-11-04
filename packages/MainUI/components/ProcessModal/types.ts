@@ -82,6 +82,7 @@ export interface ProcessIframeModalOpenProps {
   tabId: string;
   onProcessSuccess?: () => void;
   onClose: () => void;
+  size?: "default" | "large";
 }
 
 export type ProcessIframeModalProps = ProcessIframeModalClosedProps | ProcessIframeModalOpenProps;
