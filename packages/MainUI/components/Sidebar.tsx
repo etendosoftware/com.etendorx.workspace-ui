@@ -1,20 +1,3 @@
-/*
- *************************************************************************
- * The contents of this file are subject to the Etendo License
- * (the "License"), you may not use this file except in compliance with
- * the License.
- * You may obtain a copy of the License at
- * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
- * Software distributed under the License is distributed on an
- * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
- * implied. See the License for the specific language governing rights
- * and limitations under the License.
- * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
- * All Rights Reserved.
- * Contributor(s): Futit Services S.L.
- *************************************************************************
- */
-
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -33,6 +16,89 @@ import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/url/utils";
+import ProcessIframeModal from "./ProcessModal/Iframe";
+import type { ProcessIframeModalProps } from "./ProcessModal/types";
+import formsData from "../utils/processes/forms/data.json";
+
+interface ExtendedMenu extends Menu {
+  processDefinitionId?: string;
+  formId?: string;
+  processId?: string;
+  description?: string;
+}
+
+interface FormData {
+  url: string;
+  command: string;
+}
+
+const ETENDO_BASE_URL = process.env.NEXT_PUBLIC_ETENDO_URL || "http://localhost:8080/etendo";
+
+const buildProcessUrl = (processId: string, token: string | null): string => {
+  const params = new URLSearchParams({
+    Command: `BUTTON${processId}`,
+    IsPopUpCall: "1",
+  });
+  if (token) {
+    params.append("token", token);
+  }
+  return `${ETENDO_BASE_URL}/ad_actionButton/ActionButton_Responser.html?${params.toString()}`;
+};
+
+const buildFormUrl = (formId: string, token: string | null): string | null => {
+  const formData = (formsData as Record<string, FormData>)[formId];
+  if (!formData) {
+    return null;
+  }
+  const params = new URLSearchParams({
+    noprefs: "true",
+    hideMenu: "true",
+    Command: formData.command,
+  });
+  if (token) {
+    params.append("token", token);
+  }
+  return `${ETENDO_BASE_URL}${formData.url}?${params.toString()}`;
+};
+
+const buildProcessDefinitionUrl = (processDefId: string, token: string | null): string => {
+  const viewId = `processDefinition_${processDefId}`;
+  const params = new URLSearchParams({ viewId });
+  if (token) {
+    params.append("token", token);
+  }
+  const processPath = "/org.openbravo.client.kernel/OBUIAPP_MainLayout/View";
+  return `${ETENDO_BASE_URL}${processPath}?${params.toString()}`;
+};
+
+interface ManualProcessResult {
+  url: string;
+  size: "default" | "large";
+}
+
+const getManualProcessConfig = (item: ExtendedMenu, token: string | null): ManualProcessResult | null => {
+  if (item.type === "Process" && item.processId) {
+    return {
+      url: buildProcessUrl(item.processId, token),
+      size: "default",
+    };
+  }
+
+  if (item.type === "Form" && item.formId) {
+    const url = buildFormUrl(item.formId, token);
+    if (!url) return null;
+    return { url, size: "large" };
+  }
+
+  if (item.type === "ProcessDefinition" && item.processDefinitionId) {
+    return {
+      url: buildProcessDefinitionUrl(item.processDefinitionId, token),
+      size: "default",
+    };
+  }
+
+  return null;
+};
 
 /**
  * Version component that displays the current application version in the sidebar footer.
@@ -76,6 +142,7 @@ export default function Sidebar() {
   const [searchValue, setSearchValue] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [pendingWindowId, setPendingWindowId] = useState<string | undefined>(undefined);
+  const [processIframeModal, setProcessIframeModal] = useState<ProcessIframeModalProps>({ isOpen: false });
 
   const searchIndex = useMemo(() => createSearchIndex(menu), [menu]);
   const { filteredItems, searchExpandedItems } = useMemo(() => {
@@ -97,16 +164,30 @@ export default function Sidebar() {
    */
   const handleClick = useCallback(
     (item: Menu) => {
+      const extendedItem = item as ExtendedMenu;
+
+      // Handle manual processes (Form / ProcessDefinition / Process)
+      const processConfig = getManualProcessConfig(extendedItem, token);
+      if (processConfig) {
+        setProcessIframeModal({
+          isOpen: true,
+          url: processConfig.url,
+          title: extendedItem.name,
+          tabId: "",
+          size: processConfig.size,
+          onClose: () => setProcessIframeModal({ isOpen: false }),
+        });
+        return;
+      }
+
       const windowId = item.windowId ?? "";
 
       if (!windowId) {
-        console.warn("Menu item without windowId:", item);
         return;
       }
 
       const isInWindowRoute = pathname.includes("window");
 
-      // Immediate feedback: set optimistic selected until activeWindow updates
       if (windowId) {
         setPendingWindowId(windowId);
       }
@@ -131,7 +212,7 @@ export default function Sidebar() {
         router.push(targetURL);
       }
     },
-    [pathname, router, windows, openWindow, buildURL, getNextOrder]
+    [pathname, router, windows, openWindow, buildURL, getNextOrder, token]
   );
 
   /**
@@ -185,34 +266,29 @@ export default function Sidebar() {
 
   const currentWindowId = activeWindow?.windowId;
 
-  /**
-   * Effect to clear optimistic UI state when navigation completes.
-   *
-   * Clears the pendingWindowId when the activeWindow state matches
-   * the pending selection, indicating that the navigation has completed
-   * and the optimistic state is no longer needed.
-   */
   useEffect(() => {
     if (pendingWindowId && currentWindowId === pendingWindowId) {
       setPendingWindowId(undefined);
     }
   }, [currentWindowId, pendingWindowId]);
-
   return (
-    <Drawer
-      windowId={currentWindowId}
-      pendingWindowId={pendingWindowId}
-      logo={EtendoLogotype.src}
-      title={t("common.etendo")}
-      items={menu}
-      onClick={handleClick}
-      onReportClick={handleClick}
-      onProcessClick={handleClick}
-      getTranslatedName={getTranslatedName}
-      RecentlyViewedComponent={RecentlyViewed}
-      VersionComponent={VersionComponent}
-      searchContext={searchContext}
-      data-testid="Drawer__6c6035"
-    />
+    <>
+      <Drawer
+        windowId={currentWindowId}
+        pendingWindowId={pendingWindowId}
+        logo={EtendoLogotype.src}
+        title={t("common.etendo")}
+        items={menu}
+        onClick={handleClick}
+        onReportClick={handleClick}
+        onProcessClick={handleClick}
+        getTranslatedName={getTranslatedName}
+        RecentlyViewedComponent={RecentlyViewed}
+        VersionComponent={VersionComponent}
+        searchContext={searchContext}
+        data-testid="Drawer__6c6035"
+      />
+      <ProcessIframeModal {...processIframeModal} data-testid="ProcessIframeModal__sidebar" />
+    </>
   );
 }
