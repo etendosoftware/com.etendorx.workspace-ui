@@ -1,7 +1,5 @@
 import {
   WINDOW_IDENTIFIER_PREFIX,
-  FORM_RECORD_ID_PREFIX,
-  FORM_MODE_PREFIX,
   TITLE_PREFIX,
   SELECTED_RECORD_PREFIX,
   TAB_FORM_RECORD_ID_PREFIX,
@@ -299,8 +297,6 @@ export const processTabParameters = (
  * // }
  */
 export const createWindowState = (windowIdentifier: string, searchParams: URLSearchParams): WindowState => {
-  const formRecordId = searchParams.get(`${FORM_RECORD_ID_PREFIX}${windowIdentifier}`) || undefined;
-  const formMode = (searchParams.get(`${FORM_MODE_PREFIX}${windowIdentifier}`) as FormMode) || undefined;
   const windowId = searchParams.get(`${WINDOW_IDENTIFIER_PREFIX}${windowIdentifier}`) || windowIdentifier;
   const title = searchParams.get(`${TITLE_PREFIX}${windowIdentifier}`) || undefined;
 
@@ -311,8 +307,6 @@ export const createWindowState = (windowIdentifier: string, searchParams: URLSea
     // TODO: the isActive is resolved outside this function
     isActive: false,
     window_identifier: windowIdentifier,
-    formRecordId,
-    formMode,
     selectedRecords,
     tabFormStates,
     title,
@@ -336,8 +330,6 @@ export const setWindowParameters = (params: URLSearchParams, window: WindowState
   const {
     windowId,
     window_identifier,
-    formRecordId,
-    formMode,
     selectedRecords,
     tabFormStates,
     title,
@@ -348,12 +340,6 @@ export const setWindowParameters = (params: URLSearchParams, window: WindowState
 
   params.set(`${WINDOW_IDENTIFIER_PREFIX}${urlKey}`, windowId);
 
-  if (formRecordId) {
-    params.set(`${FORM_RECORD_ID_PREFIX}${urlKey}`, formRecordId);
-  }
-  if (formMode) {
-    params.set(`${FORM_MODE_PREFIX}${urlKey}`, formMode);
-  }
   if (title) {
     params.set(`${TITLE_PREFIX}${urlKey}`, title);
   }

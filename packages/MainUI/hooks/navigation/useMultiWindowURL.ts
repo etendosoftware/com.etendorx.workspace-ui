@@ -521,6 +521,8 @@ export function useMultiWindowURL() {
 
       // If tab is in FormView, get recordId from tabFormStates
       // Otherwise get it from selectedRecords
+      // TODO: use selectedRecords for both cases
+      // Otherwise, delete this hook and use state instead of this hook method
       const tabFormState = window.tabFormStates[tabId];
       if (tabFormState?.mode === TAB_MODES.FORM && tabFormState.recordId) {
         return tabFormState.recordId;
@@ -532,6 +534,7 @@ export function useMultiWindowURL() {
   );
 
   /**
+   * TODO: delete this function
    * Sets the form state for a specific tab, including display mode and form interaction mode.
    * Transitions a tab from table view to form view and configures the form behavior.
    * Automatically determines form mode based on record ID if not specified.
@@ -599,6 +602,7 @@ export function useMultiWindowURL() {
   );
 
   /**
+   * TODO: delete this function
    * Clears the form state for a specific tab, transitioning it back to table view.
    * Removes the tab from the tabFormStates map, effectively closing any open form.
    * The tab's selected record remains preserved in selectedRecords.
@@ -644,6 +648,7 @@ export function useMultiWindowURL() {
   );
 
   /**
+   * TODO: delete this function
    * Retrieves the current form state information for a specific tab.
    * Returns the complete form state object including record ID, display mode, and form mode.
    *
@@ -677,6 +682,7 @@ export function useMultiWindowURL() {
   );
 
   /**
+   * TODO: delete this function or replace with improved version(without tabFormStates)
    * Clears selections and form states for child tabs with intelligent form preservation.
    * Implements smart cleanup logic that preserves child tabs currently in form view to prevent data loss.
    * Provides detailed debug logging to track which children are cleared vs. preserved.
@@ -755,6 +761,7 @@ export function useMultiWindowURL() {
   );
 
   /**
+   * TODO: delete this function or replace with improved version(without tabFormStates)
    * Atomically updates parent tab selection and clears child tab selections in a single navigation.
    * Implements intelligent child preservation logic for form views to prevent data loss during re-renders.
    *
@@ -857,6 +864,7 @@ export function useMultiWindowURL() {
   );
 
   /**
+   * TODO: delete this function or replace with improved version(without tabFormStates)
    * Atomically clears form state for a tab without affecting its selection or child relationships.
    * This is a specialized version of clearTabFormState that explicitly preserves the selected record
    * and doesn't trigger any child tab cleanup logic. Used when transitioning from form view to table view
@@ -897,6 +905,7 @@ export function useMultiWindowURL() {
   );
 
   /**
+   * TODO: delete the tabFormStates logic and replace it if needed
    * Opens a window with optional initial selection and form state in a single atomic operation.
    * Combines window opening with record selection and optional form opening for efficient navigation.
    * Supports both creating new windows and updating existing ones with enhanced identifier handling.
@@ -1000,91 +1009,6 @@ export function useMultiWindowURL() {
     [applyWindowUpdates]
   );
 
-  /**
-   * Sets a record for editing at either the window level or a specific tab level.
-   * Provides a unified interface for setting form records regardless of the target scope.
-   * Automatically determines the appropriate form mode based on the record ID.
-   *
-   * @param windowId - The business entity ID of the window
-   * @param recordId - The ID of the record to set for editing
-   * @param tabId - Optional tab identifier. If provided, sets record at tab level; otherwise at window level
-   *
-   * @example
-   * ```typescript
-   * // Set record at window level (main window form)
-   * setRecord("ProductWindow", "product_12345");
-   * // Sets: formRecordId and formMode at window level
-   *
-   * // Set record at tab level (tab form)
-   * setRecord("ProductWindow", "product_67890", "mainTab");
-   * // Delegates to: setTabFormState(windowId, tabId, recordId, FORM, EDIT)
-   *
-   * // Create new record
-   * setRecord("ProductWindow", NEW_RECORD_ID, "mainTab");
-   * // Automatically sets formMode to FORM_MODES.NEW
-   * ```
-   */
-  const setRecord = useCallback(
-    (windowId: string, recordId: string, tabId?: string) => {
-      if (tabId) {
-        const formMode: FormMode = recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT;
-        setTabFormState(windowId, tabId, recordId, TAB_MODES.FORM, formMode);
-      } else {
-        applyWindowUpdates((prev) => {
-          return prev.map((w) => {
-            if (w.windowId === windowId) {
-              return {
-                ...w,
-                formRecordId: recordId,
-                formMode: recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT,
-              };
-            }
-            return w;
-          });
-        });
-      }
-    },
-    [applyWindowUpdates, setTabFormState]
-  );
-
-  /**
-   * Clears a record from either the window level or a specific tab level.
-   * Provides a unified interface for clearing form records regardless of the target scope.
-   *
-   * @param windowId - The business entity ID of the window
-   * @param tabId - Optional tab identifier. If provided, clears record at tab level; otherwise at window level
-   *
-   * @example
-   * ```typescript
-   * // Clear record at window level (close main window form)
-   * clearRecord("ProductWindow");
-   * // Removes: formRecordId and formMode from window state
-   *
-   * // Clear record at tab level (close tab form)
-   * clearRecord("ProductWindow", "mainTab");
-   * // Delegates to: clearTabFormState(windowId, tabId)
-   * // Tab returns to table view, selected record preserved
-   * ```
-   */
-  const clearRecord = useCallback(
-    (windowId: string, tabId?: string) => {
-      if (tabId) {
-        clearTabFormState(windowId, tabId);
-      } else {
-        applyWindowUpdates((prev) => {
-          return prev.map((w) => {
-            if (w.windowId === windowId) {
-              const { formMode, formRecordId, ...rest } = w;
-              return rest;
-            }
-            return w;
-          });
-        });
-      }
-    },
-    [applyWindowUpdates, clearTabFormState]
-  );
-
   return {
     windows,
     activeWindow,
@@ -1105,9 +1029,6 @@ export function useMultiWindowURL() {
     clearTabFormState,
     clearTabFormStateAtomic,
     getTabFormState,
-
-    setRecord,
-    clearRecord,
 
     // batching helpers
     applyWindowUpdates,

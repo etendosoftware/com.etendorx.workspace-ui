@@ -17,8 +17,6 @@
 
 export const WINDOW_PREFIX = "w_";
 export const WINDOW_IDENTIFIER_PREFIX = "wi_";
-export const FORM_RECORD_ID_PREFIX = "r_";
-export const FORM_MODE_PREFIX = "fm_";
 export const TITLE_PREFIX = "t_";
 export const SELECTED_RECORD_PREFIX = "s_";
 
@@ -79,18 +77,6 @@ export interface WindowState {
    * Format: typically `${windowId}_${timestamp}` or similar unique suffix.
    */
   window_identifier: string;
-
-  /**
-   * Record ID when the main window is in form view mode.
-   * Represents the primary record being edited or viewed at the window level.
-   */
-  formRecordId?: string;
-
-  /**
-   * Form mode for the main window form (NEW, EDIT, VIEW).
-   * Determines the behavior and permissions for the main window form.
-   */
-  formMode?: FormMode;
 
   /**
    * Map of selected records for each tab in the window.
