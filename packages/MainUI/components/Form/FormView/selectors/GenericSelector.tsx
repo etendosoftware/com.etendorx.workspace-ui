@@ -55,6 +55,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
     case FIELD_REFERENCE_CODES.QUANTITY_22:
       return (
         <QuantitySelector
+          allowNegative={true}
           field={field}
           min={field.column.minValue}
           max={field.column.maxValue}
