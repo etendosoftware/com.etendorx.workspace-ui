@@ -17,8 +17,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import type { UseFormReturn } from "react-hook-form";
-import { getProcessCallouts } from "./processCallouts";
-import type { GridSelectionStructure } from "../ProcessDefinitionModal";
+import { getProcessCallouts, type GridSelectionStructure } from "./processCallouts";
 import { logger } from "@/utils/logger";
 
 interface UseProcessCalloutsOptions {

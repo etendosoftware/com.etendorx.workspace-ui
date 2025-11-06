@@ -72,7 +72,7 @@ import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
-import type { Tab, ProcessParameter } from "@workspaceui/api-client/src/api/types";
+import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
 
@@ -84,8 +84,8 @@ const WINDOW_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW;
 
 export type GridSelectionStructure = {
   [entityName: string]: {
-    _selection: unknown[];
-    _allRows: unknown[];
+    _selection: EntityData[];
+    _allRows: EntityData[];
   };
 };
 
@@ -901,9 +901,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                 <div className="flex-1 overflow-auto p-4">
                   <div className={`relative ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
                     <div
-                      className={`absolute inset-0 flex items-center pointer-events-none justify-center bg-white ${
-                        (loading || initializationLoading) && !result ? "opacity-100" : "opacity-0"
-                      }`}>
+                      className={`absolute inset-0 flex items-center pointer-events-none justify-center bg-white ${(loading || initializationLoading) && !result ? "opacity-100" : "opacity-0"
+                        }`}>
                       <Loading data-testid="Loading__761503" />
                     </div>
                     <div className={(loading || initializationLoading) && !result ? "opacity-0" : "opacity-100"}>
