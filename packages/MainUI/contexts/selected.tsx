@@ -80,6 +80,7 @@ export const SelectedProvider = ({
   children,
   tabs,
   windowId,
+  windowIdentifier,
 }: React.PropsWithChildren<{
   tabs: Tab[];
   windowId: string;
@@ -100,22 +101,25 @@ export const SelectedProvider = ({
   /**
    * Memoized graph instance with caching strategy.
    *
-   * Creates or retrieves a Graph instance from the global cache based on windowId.
+   * Creates or retrieves a Graph instance from the global cache based on windowIdentifier.
+   * Uses windowIdentifier as the cache key to support multiple instances of the same window.
+   * Falls back to windowId if windowIdentifier is not provided.
    * The graph represents the hierarchical relationship between tabs and manages selection state.
    *
    * Dependency on `tabs` ensures graph is recreated when tab structure changes,
    * which is necessary for maintaining consistency with the current tab configuration.
    */
   const graph = useMemo(() => {
-    if (!windowGraphCache.has(windowId)) {
-      windowGraphCache.set(windowId, new Graph<Tab>(tabs));
+    const cacheKey = windowIdentifier || windowId;
+    if (!windowGraphCache.has(cacheKey)) {
+      windowGraphCache.set(cacheKey, new Graph<Tab>(tabs));
     }
-    const cachedGraph = windowGraphCache.get(windowId);
+    const cachedGraph = windowGraphCache.get(cacheKey);
     if (!cachedGraph) {
-      throw new Error(`Failed to retrieve graph for window id: ${windowId}`);
+      throw new Error(`Failed to retrieve graph for cache key: ${cacheKey}`);
     }
     return cachedGraph;
-  }, [windowId, tabs]);
+  }, [windowId, windowIdentifier, tabs]);
 
   /**
    * Updates active navigation levels based on user interaction.
