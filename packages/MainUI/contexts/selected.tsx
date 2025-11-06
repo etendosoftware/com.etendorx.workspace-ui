@@ -125,27 +125,21 @@ export const SelectedProvider = ({
    * 2. Otherwise, calculate new levels based on current maxLevel and new level
    * 3. Keep two consecutive levels visible (e.g., [0,1] or [1,2])
    */
-  const setActiveLevel = useCallback(
-    (level: number, expand?: boolean) => {
-      setActiveLevels((prev) => getNewActiveLevels(prev, level, expand));
-    },
-    []
-  );
+  const setActiveLevel = useCallback((level: number, expand?: boolean) => {
+    setActiveLevels((prev) => getNewActiveLevels(prev, level, expand));
+  }, []);
 
   /**
    * Updates active tab by level.
    * Stores which tab is selected at each hierarchy level.
    */
-  const setActiveTabsByLevel = useCallback(
-    (tab?: Tab) => {
-      if (!tab) {
-        setActiveTabsByLevelState(new Map());
-        return;
-      }
-      setActiveTabsByLevelState((prev) => getNewActiveTabsByLevel(prev, tab.tabLevel, tab.id));
-    },
-    []
-  );
+  const setActiveTabsByLevel = useCallback((tab?: Tab) => {
+    if (!tab) {
+      setActiveTabsByLevelState(new Map());
+      return;
+    }
+    setActiveTabsByLevelState((prev) => getNewActiveTabsByLevel(prev, tab.tabLevel, tab.id));
+  }, []);
 
   /**
    * Memoized context value to prevent unnecessary re-renders of consuming components.
