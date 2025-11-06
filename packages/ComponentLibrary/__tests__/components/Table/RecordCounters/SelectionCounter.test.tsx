@@ -1,4 +1,3 @@
-
 import { render, screen } from "@testing-library/react";
 import SelectionCounter from "../../../../src/components/Table/RecordCounters/SelectionCounter";
 
