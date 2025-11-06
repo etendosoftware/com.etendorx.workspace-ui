@@ -123,12 +123,12 @@ const MultiSelect = memo(function MultiSelectCmp({
   const handleClick = useCallback(() => {
     setIsOpen((prev) => {
       if (!prev) {
-        if (internalOptions.length === 0) setIsFetchingInitial(true);
+        setIsFetchingInitial(true);
         onFocus?.();
       }
       return !prev;
     });
-  }, [onFocus, internalOptions.length]);
+  }, [onFocus]);
 
   const handleKeyDown = useKeyboardNavigation(
     filteredOptions,
@@ -157,10 +157,10 @@ const MultiSelect = memo(function MultiSelectCmp({
   // Actualizar opciones cuando llegan props
   useEffect(() => {
     setInternalOptions(options);
-    if (options.length > 0 || !loading) setIsFetchingInitial(false);
+    if (options.length > 0 && !loading) setIsFetchingInitial(false);
   }, [options, loading]);
 
-  const showSkeleton = isFetchingInitial && internalOptions.length === 0;
+  const showSkeleton = isFetchingInitial && loading;
 
   const renderedOptions = useMemo(() => {
     if (showSkeleton) {
