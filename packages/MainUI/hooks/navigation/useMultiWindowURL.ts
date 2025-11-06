@@ -43,30 +43,33 @@ export function useMultiWindowURL() {
   // TODO: delete this on the future and move all to the context
   const {
     getActiveWindowIdentifier,
-    getAllWindowsIdentifiers,
+    getAllWindows,
     getTabFormState: getContextTabFormState,
     setTabFormState: setContextTabFormState,
     clearTabFormState: clearContextTabFormState
   } = useWindowContext();
 
+  // TODO: in the future this can be on the context and move all callers to use the context directly
   const { windows, activeWindow, isHomeRoute } = useMemo(() => {
     const windowStates: WindowState[] = [];
     let active: WindowState | undefined;
 
-    const windowIdentifiers = getAllWindowsIdentifiers();
+    const allWindows = getAllWindows();
     const activeWindowIdentifier = getActiveWindowIdentifier();
 
-    for (const windowIdentifier of windowIdentifiers) {
-      const windowState = createWindowState(windowIdentifier, searchParams);
+    // TODO: in the future the createWindowState maybe it should be not necessary
+    // TODO: define the types here
+    for (const [windowIdentifier, windowState] of Object.entries(allWindows)) {
+      const urlWindowState = createWindowState(windowIdentifier, searchParams);
 
-      if (windowIdentifier === activeWindowIdentifier) {
-        active = windowState;
-        windowState.isActive = true;
-      } else {
-        windowState.isActive = false;
+      const isActive = windowIdentifier === activeWindowIdentifier;
+      const formattedWindow = { ...urlWindowState, isActive: isActive, title: windowState.title };
+
+      if (isActive) {
+        active = formattedWindow;
       }
 
-      windowStates.push(windowState);
+      windowStates.push(formattedWindow);
     }
 
     const hasActiveWindow = windowStates.some(window => window.isActive);
@@ -77,7 +80,7 @@ export function useMultiWindowURL() {
       activeWindow: active,
       isHomeRoute: isHome,
     };
-  }, [searchParams, getActiveWindowIdentifier, getAllWindowsIdentifiers]);
+  }, [searchParams, getActiveWindowIdentifier, getAllWindows]);
 
   /**
    * Builds a complete URL with all window states encoded as URL parameters.
@@ -234,7 +237,7 @@ export function useMultiWindowURL() {
         windowId,
         isActive: true,
         window_identifier: windowIdentifier,
-        title,
+        title: title || "",
         selectedRecords: selectedRecordsRes,
       };
 
@@ -934,7 +937,7 @@ export function useMultiWindowURL() {
             windowId,
             isActive: true,
             window_identifier: options?.window_identifier || windowId,
-            title: options?.title,
+            title: options?.title || "",
             selectedRecords: {},
           };
           updated.push(target);

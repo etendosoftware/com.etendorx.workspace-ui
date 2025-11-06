@@ -20,6 +20,16 @@ import { createContext, useCallback, useContext, useMemo, useState } from "react
 import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
 import type { TabFormState } from "@/utils/url/constants";
 
+// Constants for window property names
+export const WINDOW_PROPERTY_NAMES = {
+  TITLE: "title",
+  IS_ACTIVE: "isActive",
+  WINDOW_IDENTIFIER: "windowIdentifier",
+  TABS: "tabs",
+} as const;
+
+export type WindowPropertyName = typeof WINDOW_PROPERTY_NAMES[keyof typeof WINDOW_PROPERTY_NAMES];
+
 // Type Definitions
 interface TableState {
   filters: MRT_ColumnFiltersState;
@@ -40,6 +50,7 @@ interface TabState {
 }
 
 interface WindowState {
+  title: string;
   isActive: boolean;
   tabs: {
     [tabId: string]: TabState;
@@ -55,7 +66,9 @@ interface WindowContextI {
   getTableState: (windowIdentifier: string, tabId: string) => TableState;
   getNavigationState: (windowIdentifier: string) => NavigationState;
   getActiveWindowIdentifier: () => string | null;
+  getActiveWindowProperty: (propertyName: string) => string | boolean | object | null;
   getAllWindowsIdentifiers: () => string[];
+  getAllWindows: () => WindowContextState;
 
   // State setters
   setTableFilters: (windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState) => void;
@@ -65,7 +78,7 @@ interface WindowContextI {
   setTableImplicitFilterApplied: (windowIdentifier: string, tabId: string, isApplied: boolean) => void;
   setNavigationActiveLevels: (windowIdentifier: string, activeLevels: number[]) => void;
   setNavigationActiveTabsByLevel: (windowIdentifier: string, activeTabsByLevel: Map<number, string>) => void;
-  setWindowActive: (windowIdentifier: string) => void;
+  setWindowActive: ({ windowIdentifier, windowData }: { windowIdentifier: string, windowData?: Partial<WindowState> }) => void;
   setWindowInactive: (windowIdentifier: string) => void;
 
   // Form state management
@@ -75,9 +88,6 @@ interface WindowContextI {
 
   // Window management
   cleanupWindow: (windowIdentifier: string) => void;
-
-  // Debug/utility
-  getAllState: () => WindowContextState;
 }
 
 // Context creation
@@ -104,6 +114,7 @@ const ensureTabExists = (state: WindowContextState, windowIdentifier: string, ta
   if (!newState[windowIdentifier]) {
     newState[windowIdentifier] = {
       isActive: false,
+      title: "",
       tabs: {},
     };
   }
@@ -138,6 +149,7 @@ const updateNavigationProperty = <T extends keyof NavigationState>(
   if (!newState[windowIdentifier]) {
     newState[windowIdentifier] = {
       isActive: false,
+      title: "",
       tabs: {},
     };
   }
@@ -216,8 +228,50 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     return null;
   }, [state]);
 
+  const getActiveWindowProperty = useCallback((propertyName: string): string | boolean | object | null => {
+    // Validate that propertyName is not empty
+    if (!propertyName || propertyName.trim() === "") {
+      return null;
+    }
+
+    // Validate that propertyName is valid
+    const validProperties = Object.values(WINDOW_PROPERTY_NAMES);
+    if (!validProperties.includes(propertyName as WindowPropertyName)) {
+      return null;
+    }
+
+    // Get the active window identifier
+    const activeWindowIdentifier = getActiveWindowIdentifier();
+    if (!activeWindowIdentifier) {
+      return null;
+    }
+
+    const activeWindow = state[activeWindowIdentifier];
+    if (!activeWindow) {
+      return null;
+    }
+
+    // Return the requested property
+    switch (propertyName) {
+      case WINDOW_PROPERTY_NAMES.TITLE:
+        return activeWindow.title;
+      case WINDOW_PROPERTY_NAMES.IS_ACTIVE:
+        return activeWindow.isActive;
+      case WINDOW_PROPERTY_NAMES.WINDOW_IDENTIFIER:
+        return activeWindowIdentifier;
+      case WINDOW_PROPERTY_NAMES.TABS:
+        return activeWindow.tabs;
+      default:
+        return null;
+    }
+  }, [state, getActiveWindowIdentifier]);
+
   const getAllWindowsIdentifiers = useCallback((): string[] => {
     return Object.keys(state);
+  }, [state]);
+
+  const getAllWindows = useCallback((): WindowContextState => {
+    return state;
   }, [state]);
 
   const setTableFilters = useCallback((windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState) => {
@@ -270,7 +324,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
   // NOTE: on the transtiton to active a new window, the activeWindow is null then show a empty window
   // TODO: show a loading state instead of an empty window
-  const setWindowActive = useCallback((windowIdentifier: string) => {
+  const setWindowActive = useCallback(({ windowIdentifier, windowData }: { windowIdentifier: string, windowData?: Partial<WindowState> }) => {
     setState((prevState: WindowContextState) => {
       const newState = { ...prevState };
 
@@ -283,12 +337,13 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
       // Activate the specified window
       if (newState[windowIdentifier]) {
-        newState[windowIdentifier] = { ...newState[windowIdentifier], isActive: true };
+        newState[windowIdentifier] = { ...newState[windowIdentifier], isActive: true, ...windowData };
       } else {
         // Create window if it doesn't exist
         newState[windowIdentifier] = {
           isActive: true,
-          tabs: {},
+          title: windowData?.title || "",
+          tabs: windowData?.tabs || {},
         };
       }
 
@@ -307,18 +362,6 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       return newState;
     });
   }, []);
-
-  const cleanupWindow = useCallback((windowIdentifier: string) => {
-    setState((prevState: WindowContextState) => {
-      const newState = { ...prevState };
-      delete newState[windowIdentifier];
-      return newState;
-    });
-  }, []);
-
-  const getAllState = useCallback(() => {
-    return state;
-  }, [state]);
 
   const getTabFormState = useCallback(
     (windowIdentifier: string, tabId: string): TabFormState | undefined => {
@@ -351,12 +394,23 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     });
   }, []);
 
+  const cleanupWindow = useCallback((windowIdentifier: string) => {
+    setState((prevState: WindowContextState) => {
+      const newState = { ...prevState };
+      delete newState[windowIdentifier];
+      return newState;
+    });
+  }, []);
+
   const value = useMemo(
     () => ({
       getTableState,
       getNavigationState,
       getActiveWindowIdentifier,
+      getActiveWindowProperty,
       getAllWindowsIdentifiers,
+      getAllWindows,
+
       setTableFilters,
       setTableVisibility,
       setTableSorting,
@@ -366,17 +420,19 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setNavigationActiveTabsByLevel,
       setWindowActive,
       setWindowInactive,
-      cleanupWindow,
-      getAllState,
       getTabFormState,
       setTabFormState,
       clearTabFormState,
+
+      cleanupWindow,
     }),
     [
       getTableState,
       getNavigationState,
       getActiveWindowIdentifier,
+      getActiveWindowProperty,
       getAllWindowsIdentifiers,
+      getAllWindows,
       setTableFilters,
       setTableVisibility,
       setTableSorting,
@@ -386,11 +442,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setNavigationActiveTabsByLevel,
       setWindowActive,
       setWindowInactive,
-      cleanupWindow,
-      getAllState,
       getTabFormState,
       setTabFormState,
       clearTabFormState,
+      cleanupWindow,
     ]
   );
 

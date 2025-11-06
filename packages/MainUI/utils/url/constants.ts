@@ -17,7 +17,6 @@
 
 export const WINDOW_PREFIX = "w_";
 export const WINDOW_IDENTIFIER_PREFIX = "wi_";
-export const TITLE_PREFIX = "t_";
 export const SELECTED_RECORD_PREFIX = "s_";
 
 export const NEW_RECORD_ID = "new";
@@ -85,7 +84,7 @@ export interface WindowState {
    * Display title for the window tab.
    * Shown in the tab bar and used for user identification of windows.
    */
-  title?: string;
+  title: string;
 }
 
 

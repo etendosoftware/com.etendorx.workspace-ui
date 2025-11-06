@@ -114,7 +114,7 @@ export default function Sidebar() {
       }
 
       const newWindowIdentifier = getNewWindowIdentifier(windowId);
-      setWindowActive(newWindowIdentifier);
+      setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: item.name } });
 
       // TODO: delete this code when multi-window is fully stable
       if (isInWindowRoute) {

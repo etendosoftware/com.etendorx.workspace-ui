@@ -1,12 +1,7 @@
 import {
   WINDOW_IDENTIFIER_PREFIX,
-  TITLE_PREFIX,
   SELECTED_RECORD_PREFIX,
-  FORM_MODES,
   TAB_MODES,
-  type FormMode,
-  type TabMode,
-  type TabFormState,
   type SelectedRecord,
   type WindowState,
   type TabProcessingResults,
@@ -194,7 +189,6 @@ export const processTabParameters = (
  */
 export const createWindowState = (windowIdentifier: string, searchParams: URLSearchParams): WindowState => {
   const windowId = searchParams.get(`${WINDOW_IDENTIFIER_PREFIX}${windowIdentifier}`) || windowIdentifier;
-  const title = searchParams.get(`${TITLE_PREFIX}${windowIdentifier}`) || undefined;
 
   const { selectedRecords } = processTabParameters(searchParams, windowIdentifier);
 
@@ -202,9 +196,10 @@ export const createWindowState = (windowIdentifier: string, searchParams: URLSea
     windowId,
     // TODO: the isActive is resolved outside this function
     isActive: false,
+    // TODO: the title is resolved outside this function
+    title: "",
     window_identifier: windowIdentifier,
     selectedRecords,
-    title,
   };
 };
 
@@ -226,17 +221,12 @@ export const setWindowParameters = (params: URLSearchParams, window: WindowState
     windowId,
     window_identifier,
     selectedRecords,
-    title,
   } = window;
 
   // Use window_identifier as the URL key instead of windowId
   const urlKey = window_identifier;
 
   params.set(`${WINDOW_IDENTIFIER_PREFIX}${urlKey}`, windowId);
-
-  if (title) {
-    params.set(`${TITLE_PREFIX}${urlKey}`, title);
-  }
 
   for (const [tabId, selectedRecordId] of Object.entries(selectedRecords)) {
     if (selectedRecordId) {

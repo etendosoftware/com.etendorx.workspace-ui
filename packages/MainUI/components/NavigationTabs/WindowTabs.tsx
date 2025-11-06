@@ -59,7 +59,7 @@ export default function WindowTabs() {
     (windowIdentifier: string) => {
       setActiveWindow(windowIdentifier);
       // TODO: delete this code when multi-window is fully stable
-      setWindowActive(windowIdentifier);
+      setWindowActive({ windowIdentifier });
     },
     [setActiveWindow, setWindowActive]
   );
