@@ -73,7 +73,14 @@ const OptionItem = memo(
         ${isSelected ? "bg-baseline-10 font-medium" : ""} hover:bg-baseline-10`}>
       <span className={`truncate mr-2 ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>{label}</span>
       {isSelected && (
-        <Image src={checkIconUrl} alt="Selected Item" className="fade-in-left flex-shrink-0" height={16} width={16} />
+        <Image
+          src={checkIconUrl}
+          alt="Selected Item"
+          className="fade-in-left flex-shrink-0"
+          height={16}
+          width={16}
+          data-testid="Image__cb81f7"
+        />
       )}
     </li>
   )
@@ -202,6 +209,7 @@ const MultiSelect = memo(function MultiSelectCmp({
           isSelected={selectedValues.includes(option.id)}
           isHighlighted={highlightedIndex === index}
           onSelect={handleSelect}
+          data-testid="OptionItem__cb81f7"
         />
       ));
     }
@@ -230,12 +238,13 @@ const MultiSelect = memo(function MultiSelectCmp({
         <div className="flex items-center flex-shrink-0 ml-2">
           {selectedLabels.length > 0 && isOpen && (
             <button type="button" onClick={handleClear} className={`mr-1 ${TEXT_MUTED} ${HOVER_TEXT_COLOR} rounded`}>
-              <Image src={closeIconUrl} alt="Clear" height={16} width={16} />
+              <Image src={closeIconUrl} alt="Clear" height={16} width={16} data-testid="Image__cb81f7" />
             </button>
           )}
           <ChevronDown
             fill="currentColor"
             className={`${ICON_SIZE} ${TEXT_MUTED} transition-transform ${isOpen ? "rotate-180" : ""}`}
+            data-testid="ChevronDown__cb81f7"
           />
         </div>
       </div>
