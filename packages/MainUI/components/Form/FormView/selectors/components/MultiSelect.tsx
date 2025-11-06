@@ -162,10 +162,12 @@ const MultiSelect = memo(function MultiSelectCmp({
 
   const showSkeleton = isFetchingInitial && loading;
 
+  const SKELETON_IDS = ["skeleton-item-1", "skeleton-item-2", "skeleton-item-3"];
+
   const renderedOptions = useMemo(() => {
     if (showSkeleton) {
-      return [...Array(3)].map((_, index) => (
-        <li key={`skeleton-${index}`} className={`${LIST_ITEM_BASE} pointer-events-none`}>
+      return SKELETON_IDS.map((id, index) => (
+        <li key={id} className={`${LIST_ITEM_BASE} pointer-events-none`}>
           <div className="flex items-center gap-3 py-1">
             <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
             <div className="h-4 bg-gray-200 rounded animate-pulse" style={{ width: `${60 + index * 10}%` }} />
