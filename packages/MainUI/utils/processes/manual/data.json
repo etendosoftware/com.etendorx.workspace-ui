@@ -88,5 +88,11 @@
     "command": "DEFAULT",
     "inpkeyColumnId": "AD_Process_Request_ID",
     "keyColumnName": "AD_Process_Request_ID"
+  },
+  "573FEC1BC12C5E8EE040007F01017CC8": {
+    "url": "/ad_process/ScheduleProcess.html",
+    "command": "DEFAULT",
+    "inpkeyColumnId": "AD_Process_Request_ID",
+    "keyColumnName": "AD_Process_Request_ID"
   }
 }

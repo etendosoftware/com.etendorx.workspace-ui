@@ -21,7 +21,6 @@ import { useMemo, useCallback, useEffect, useState } from "react";
 import Tabs from "@/components/window/Tabs";
 import AppBreadcrumb from "@/components/Breadcrums";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
-import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { useSelected } from "@/hooks/useSelected";
 import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
 import { shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
@@ -59,25 +58,16 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
   const { activeWindow } = useMultiWindowURL();
 
   /**
-   * Graph-based tab hierarchy management system.
-   */
-  const { graph } = useSelected();
-
-  /**
-   * Navigation state persistence hook for the current window.
+   * Graph-based tab hierarchy management system with navigation state.
    *
    * Manages:
    * - activeLevels: Array of currently visible tab levels [0,1] or [1,2] etc.
    * - activeTabsByLevel: Map of level -> tabId for tracking active tab per level
    * - setActiveLevel: Function to change visible navigation levels
    * - setActiveTabsByLevel: Function to update active tab selection per level
-   *
-   * Persistence: State survives window switches and page refreshes
+   * - graph: Hierarchical tab structure
    */
-  const { activeLevels, activeTabsByLevel, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.window_identifier || "",
-    tabId: "",
-  });
+  const { graph, activeLevels, activeTabsByLevel, setActiveLevel, setActiveTabsByLevel } = useSelected();
 
   /**
    * Memoized tab grouping by hierarchical levels.
