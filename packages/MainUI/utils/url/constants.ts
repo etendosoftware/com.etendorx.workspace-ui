@@ -15,7 +15,6 @@
  *************************************************************************
  */
 
-export const WINDOW_PREFIX = "w_";
 export const WINDOW_IDENTIFIER_PREFIX = "wi_";
 export const SELECTED_RECORD_PREFIX = "s_";
 
