@@ -20,11 +20,6 @@ export const WINDOW_IDENTIFIER_PREFIX = "wi_";
 export const TITLE_PREFIX = "t_";
 export const SELECTED_RECORD_PREFIX = "s_";
 
-// Tab parameters
-export const TAB_FORM_RECORD_ID_PREFIX = "tf_";
-export const TAB_MODE_PREFIX = "tm_";
-export const TAB_FORM_MODE_PREFIX = "tfm_";
-
 export const NEW_RECORD_ID = "new";
 
 export const FORM_MODES = {
@@ -87,17 +82,6 @@ export interface WindowState {
   selectedRecords: Record<string, string>;
 
   /**
-   * Map of form states for tabs that are in form view mode.
-   * Key: tabId (string) - The identifier of the tab
-   * Value: Object containing form state information:
-   *   - recordId: The record being edited/viewed in form mode
-   *   - mode: Tab display mode (TABLE, FORM)
-   *   - formMode: Form interaction mode (NEW, EDIT, VIEW)
-   * Only tabs currently in form view will have entries in this map.
-   */
-  tabFormStates: Record<string, TabFormState>;
-
-  /**
    * Display title for the window tab.
    * Shown in the tab bar and used for user identification of windows.
    */
@@ -110,7 +94,6 @@ export interface WindowState {
  */
 export interface TabProcessingResults {
   selectedRecords: Record<string, string>;
-  tabFormStates: Record<string, { recordId?: string; mode?: TabMode; formMode?: FormMode }>;
 }
 
 /**

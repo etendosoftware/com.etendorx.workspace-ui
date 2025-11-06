@@ -125,11 +125,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const parentTab = graph.getParent(tab);
   const parentSelectedRecordIdFromURL =
     parentTab && windowIdentifier ? getSelectedRecord(windowIdentifier, parentTab.id) : undefined;
-  const parentHasSelectionInURL = !parentTab || !!parentSelectedRecordIdFromURL;
+  const parentHasSelection = !parentTab || !!parentSelectedRecordIdFromURL;
 
   const hasFormViewState = !!tabFormState && tabFormState.mode === TAB_MODES.FORM;
   const shouldShowForm =
-    hasFormViewState || isFormView({ currentMode, recordId: currentRecordId, parentHasSelectionInURL });
+    hasFormViewState || isFormView({ currentMode, recordId: currentRecordId, hasParentSelection: parentHasSelection });
   const formMode = currentFormMode === FORM_MODES.NEW ? FormMode.NEW : FormMode.EDIT;
 
   const handleSetRecordId = useCallback<React.Dispatch<React.SetStateAction<string>>>(

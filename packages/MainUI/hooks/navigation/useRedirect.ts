@@ -35,7 +35,6 @@ export const useRedirect = () => {
       isActive: true,
       title: windowIdentifier || windowId,
       selectedRecords: {},
-      tabFormStates: {},
     }),
     []
   );
@@ -77,15 +76,10 @@ export const useRedirect = () => {
       }
       if (targetTabId) {
         baseWindow.selectedRecords = { [targetTabId]: selectedRecordId };
-        if (isLinkedLabelOpenInForm()) {
-          baseWindow.tabFormStates = {
-            [targetTabId]: {
-              recordId: selectedRecordId,
-              mode: "form",
-              formMode: "edit",
-            },
-          };
-        }
+
+        // UPDATE: Remove direct tabFormStates assignment
+        // Form state initialization will be handled by openWindowAndSelect function
+        // which now uses context internally
       }
 
       const targetURL = buildURL([baseWindow]);

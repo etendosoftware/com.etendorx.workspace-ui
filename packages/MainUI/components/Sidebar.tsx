@@ -128,7 +128,6 @@ export default function Sidebar() {
           isActive: true,
           title: item.name,
           selectedRecords: {},
-          tabFormStates: {},
         };
 
         const targetURL = buildURL([newWindow]);

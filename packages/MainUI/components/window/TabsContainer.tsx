@@ -28,6 +28,7 @@ import { shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
+import { useWindowContext } from "@/contexts/window";
 
 /**
  * TabsContainer Component
@@ -57,6 +58,11 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * Multi-window navigation hook providing access to current window state.
    */
   const { activeWindow } = useMultiWindowURL();
+
+  /**
+   * Window context providing form state management functions.
+   */
+  const windowContext = useWindowContext();
 
   /**
    * Graph-based tab hierarchy management system.
@@ -193,13 +199,13 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * Session restoration effect for active tab levels and tab selections.
    *
    * This effect runs once during component initialization to restore navigation state
-   * from URL parameters or saved session data. It coordinates with useMultiWindowURL
+   * from context-stored form states and URL parameters. It coordinates with useMultiWindowURL
    * to determine the appropriate tab levels to activate based on previously saved form states.
    *
    * Enhanced Process:
    * 1. Checks if initial loading has already completed (prevents multiple executions)
-   * 2. Retrieves tabFormStates and selectedRecords from the active window URL state
-   * 3. Extracts tab IDs from form states and selected records
+   * 2. Retrieves selectedRecords from the active window URL state
+   * 3. Gets form states from window context for all available tabs
    * 4. Calculates navigation depth based on the position of the last form state in selected records
    * 5. Uses expand mode to set levels directly without navigation logic
    * 6. Resets tab-by-level mapping for clean state or restores based on calculated depth
@@ -209,6 +215,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * - Uses selectedRecords order to determine proper navigation level
    * - Maintains activeTabsByLevel state consistency during restoration
    * - Handles edge cases where form states and selected records may be misaligned
+   * - Uses context-based form state management instead of URL parameters
    *
    * This ensures users return to their previous navigation context when:
    * - Refreshing the page
@@ -216,7 +223,8 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * - Restoring from bookmarked URLs
    *
    * Dependencies:
-   * - activeWindow: Contains tabFormStates and selectedRecords from URL
+   * - activeWindow: Contains selectedRecords from URL
+   * - windowContext: Provides form state management via context
    * - activeLevelsLoaded: Prevents multiple restoration attempts
    * - windowData?.tabs: Available tabs for clearing selections
    * - graph: Tab hierarchy for clearing dependent selections
@@ -224,17 +232,21 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    */
   useEffect(() => {
     // Early return: Skip if already loaded or function not available
-    if (activeLevelsLoaded || !setActiveLevel) return;
+    if (activeLevelsLoaded || !setActiveLevel || !windowContext) return;
 
-    // Extract window state data including both form states and selected records
-    const { tabFormStates, selectedRecords, windowId } = activeWindow || {};
-    const formStatesIds = tabFormStates ? Object.keys(tabFormStates) : [];
+    // Extract window state data including selected records
+    const { selectedRecords, windowId } = activeWindow || {};
+
+    // Get form states from context for all available tabs
+    const tabs = windowData?.tabs || [];
+    const formStateTabIds = windowId ? tabs
+      .map(tab => tab.id)
+      .filter(tabId => windowContext.getTabFormState(windowId, tabId) !== undefined) : [];
 
     // Handle window with no saved form states - reset to clean state
-    if (windowId && formStatesIds.length === 0) {
+    if (windowId && formStateTabIds.length === 0) {
       setActiveLevel(0);
       setActiveTabsByLevel();
-      const tabs = windowData?.tabs || [];
       for (const tab of tabs) {
         graph.clearSelected(tab);
         graph.clearSelectedMultiple(tab);
@@ -244,9 +256,9 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
     }
 
     // Calculate navigation depth based on form state position in selected records
-    const lastFormStateId = formStatesIds.length > 0 ? formStatesIds[formStatesIds.length - 1] : null;
     const selectedRecordsIds = selectedRecords ? Object.keys(selectedRecords) : [];
-    const lastFormStateIndex = lastFormStateId ? selectedRecordsIds.indexOf(lastFormStateId) : -1;
+    const lastFormStateTabId = formStateTabIds.length > 0 ? formStateTabIds[formStateTabIds.length - 1] : null;
+    const lastFormStateIndex = lastFormStateTabId ? selectedRecordsIds.indexOf(lastFormStateTabId) : -1;
 
     // Handle window with saved form states - restore navigation depth
     if (lastFormStateIndex > 0) {
@@ -255,7 +267,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
 
     // Mark as loaded to prevent subsequent executions
     setActiveLevelsLoaded(true);
-  }, [activeWindow, activeLevelsLoaded, windowData?.tabs, graph, setActiveLevel, setActiveTabsByLevel]);
+  }, [activeWindow, activeLevelsLoaded, windowData?.tabs, graph, setActiveLevel, setActiveTabsByLevel, windowContext]);
 
   // Loading state: Show skeleton UI while window metadata is being fetched
   if (!windowData) {

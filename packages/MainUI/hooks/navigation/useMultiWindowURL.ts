@@ -31,7 +31,6 @@ import {
 } from "@/utils/url/constants";
 import {
   generateSelectedRecords,
-  generateTabFormStates,
   createWindowState,
   setWindowParameters,
 } from "@/utils/url/utils";
@@ -42,7 +41,13 @@ export function useMultiWindowURL() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // TODO: delete this on the future and move all to the context
-  const { getActiveWindowIdentifier, getAllWindowsIdentifiers } = useWindowContext();
+  const {
+    getActiveWindowIdentifier,
+    getAllWindowsIdentifiers,
+    getTabFormState: getContextTabFormState,
+    setTabFormState: setContextTabFormState,
+    clearTabFormState: clearContextTabFormState
+  } = useWindowContext();
 
   const { windows, activeWindow, isHomeRoute } = useMemo(() => {
     const windowStates: WindowState[] = [];
@@ -168,11 +173,12 @@ export function useMultiWindowURL() {
    * If a window with a matching window_identifier already exists, it will be activated and optionally retitled.
    * If no matching window exists, creates a new window with a unique identifier and adds it to the state.
    * Supports setting initial selected records and tab form states for immediate navigation to specific records.
+   * Form states are now managed via React context for better performance and state isolation.
    *
    * @param windowId - The business entity ID for the window (e.g., "ProductWindow", "CustomerWindow")
    * @param title - Optional display title for the window tab
    * @param selectedRecords - Optional array of initial selected records for tabs in the window
-   * @param tabFormStates - Optional array of initial form states for tabs that should open in form view
+   * @param tabFormStates - Optional array of initial form states for tabs that should open in form view (stored in context)
    *
    * @example
    * ```typescript
@@ -215,7 +221,14 @@ export function useMultiWindowURL() {
       const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
 
       const selectedRecordsRes = isEmptyArray(selectedRecords) ? {} : generateSelectedRecords(selectedRecords);
-      const tabFormStatesRes = isEmptyArray(tabFormStates) ? {} : generateTabFormStates(tabFormStates);
+
+      // UPDATE: Initialize form states in context instead of window state
+      if (!isEmptyArray(tabFormStates)) {
+        tabFormStates.forEach((item) => {
+          const { tabId, tabFormState } = item;
+          setContextTabFormState(windowIdentifier, tabId, tabFormState);
+        });
+      }
 
       const newWindow: WindowState = {
         windowId,
@@ -223,14 +236,13 @@ export function useMultiWindowURL() {
         window_identifier: windowIdentifier,
         title,
         selectedRecords: selectedRecordsRes,
-        tabFormStates: tabFormStatesRes,
       };
 
       updatedWindows.push(newWindow);
 
       navigate(updatedWindows);
     },
-    [windows, navigate]
+    [windows, navigate, setContextTabFormState]
   );
 
   /**
@@ -519,18 +531,15 @@ export function useMultiWindowURL() {
       );
       if (!window) return undefined;
 
-      // If tab is in FormView, get recordId from tabFormStates
-      // Otherwise get it from selectedRecords
-      // TODO: use selectedRecords for both cases
-      // Otherwise, delete this hook and use state instead of this hook method
-      const tabFormState = window.tabFormStates[tabId];
-      if (tabFormState?.mode === TAB_MODES.FORM && tabFormState.recordId) {
-        return tabFormState.recordId;
+      // UPDATE: Check context form state instead of window.tabFormStates
+      const contextFormState = getContextTabFormState(windowIdOrIdentifier, tabId);
+      if (contextFormState?.mode === TAB_MODES.FORM && contextFormState.recordId) {
+        return contextFormState.recordId;
       }
 
       return window.selectedRecords[tabId];
     },
-    [windows]
+    [windows, getContextTabFormState]
   );
 
   /**
@@ -567,30 +576,27 @@ export function useMultiWindowURL() {
       mode: TabMode = TAB_MODES.FORM,
       formMode?: FormMode
     ) => {
+      const determinedFormMode = formMode || (recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT);
+
+      const formState: TabFormState = {
+        recordId,
+        mode,
+        formMode: determinedFormMode,
+      };
+
+      setContextTabFormState(windowIdOrIdentifier, tabId, formState);
+
+      // Also update selected records in URL state for consistency
       applyWindowUpdates((prev) => {
         return prev.map((w) => {
-          // Check if parameter is windowId or window_identifier
-          // For windowId, only update the active window to avoid affecting multiple instances
-          const shouldUpdate =
-            w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive);
-
+          const shouldUpdate = w.window_identifier === windowIdOrIdentifier ||
+            (w.windowId === windowIdOrIdentifier && w.isActive);
           if (shouldUpdate) {
-            const currentTabState = w.tabFormStates[tabId] || {};
-
             return {
               ...w,
               selectedRecords: {
                 ...w.selectedRecords,
                 [tabId]: recordId,
-              },
-              tabFormStates: {
-                ...w.tabFormStates,
-                [tabId]: {
-                  ...currentTabState,
-                  recordId,
-                  mode,
-                  formMode: formMode || (recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT),
-                },
               },
             };
           }
@@ -598,13 +604,13 @@ export function useMultiWindowURL() {
         });
       });
     },
-    [applyWindowUpdates]
+    [setContextTabFormState, applyWindowUpdates] // UPDATE dependencies
   );
 
   /**
    * TODO: delete this function
    * Clears the form state for a specific tab, transitioning it back to table view.
-   * Removes the tab from the tabFormStates map, effectively closing any open form.
+   * Removes the tab from the form state context, effectively closing any open form.
    * The tab's selected record remains preserved in selectedRecords.
    *
    * @param windowId - The business entity ID of the window
@@ -618,33 +624,15 @@ export function useMultiWindowURL() {
    * // Before: Tab shows form for product_12345
    * // After:  Tab shows table view, product_12345 remains selected in table
    *
-   * // URL parameters removed: tfr_windowId_tabId, tm_windowId_tabId, tfm_windowId_tabId
+   * // Form state is now managed in React context instead of URL parameters
    * // URL parameters kept: sr_windowId_tabId (selected record)
    * ```
    */
   const clearTabFormState = useCallback(
     (windowIdOrIdentifier: string, tabId: string) => {
-      applyWindowUpdates((prev) => {
-        return prev.map((w) => {
-          // Check if parameter is windowId or window_identifier
-          // For windowId, only update the active window to avoid affecting multiple instances
-          const shouldUpdate =
-            w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive);
-
-          if (shouldUpdate) {
-            const newTabFormStates = { ...w.tabFormStates };
-            delete newTabFormStates[tabId];
-
-            return {
-              ...w,
-              tabFormStates: newTabFormStates,
-            };
-          }
-          return w;
-        });
-      });
+      clearContextTabFormState(windowIdOrIdentifier, tabId);
     },
-    [applyWindowUpdates]
+    [clearContextTabFormState]
   );
 
   /**
@@ -672,17 +660,13 @@ export function useMultiWindowURL() {
    */
   const getTabFormState = useCallback(
     (windowIdOrIdentifier: string, tabId: string) => {
-      // Try to find by window_identifier first, then by windowId (active window only)
-      const window = windows.find(
-        (w) => w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive)
-      );
-      return window?.tabFormStates[tabId];
+      return getContextTabFormState(windowIdOrIdentifier, tabId);
     },
-    [windows]
+    [getContextTabFormState] // UPDATE dependencies
   );
 
   /**
-   * TODO: delete this function or replace with improved version(without tabFormStates)
+   * TODO: Consider optimizing this function with improved context-based form state management
    * Clears selections and form states for child tabs with intelligent form preservation.
    * Implements smart cleanup logic that preserves child tabs currently in form view to prevent data loss.
    * Provides detailed debug logging to track which children are cleared vs. preserved.
@@ -694,6 +678,7 @@ export function useMultiWindowURL() {
    *
    * @param windowIdentifier - The window identifier of the parent window
    * @param childTabIds - Array of child tab identifiers to potentially clear
+   * @param isParentSelectionChanging - Whether parent selection is changing
    *
    * @example
    * ```typescript
@@ -712,56 +697,48 @@ export function useMultiWindowURL() {
    * ```
    */
   const clearChildrenSelections = useCallback(
-    (windowIdentifier: string, childTabIds: string[]) => {
-      // Log who called this function with stack trace
-      const stack = new Error().stack;
-      const caller = stack?.split("\n")[2]?.trim() || "unknown";
-      console.log(`[clearChildrenSelections] Called with ${childTabIds.length} children: ${childTabIds.join(", ")}`);
-      console.log(`[clearChildrenSelections] Caller: ${caller}`);
-
+    (windowIdentifier: string, childTabIds: string[], isParentSelectionChanging = false) => {
       applyWindowUpdates((prev) => {
         return prev.map((w) => {
           if (w.window_identifier !== windowIdentifier) return w;
 
-          // Filter out children that are currently in FormView - don't clear them
           const childrenToClean = childTabIds.filter((tabId) => {
-            const childState = w.tabFormStates[tabId];
+            if (isParentSelectionChanging) {
+              return true;
+            }
+
+            // UPDATE: Use context instead of w.tabFormStates[tabId]
+            const childState = getContextTabFormState(windowIdentifier, tabId);
             const isInFormView = childState?.mode === "form";
             if (isInFormView) {
               console.log(`[clearChildrenSelections] Preserving child ${tabId} - currently in FormView`, childState);
-              return false; // Don't clear this child
+              return false;
             }
-            return true; // Clear this child
+            return true;
           });
 
-          if (childrenToClean.length === 0) {
-            console.log("[clearChildrenSelections] All children preserved, no changes");
-            return w; // No children to clean, return unchanged
-          }
-
           const newSelected = { ...w.selectedRecords };
-          const newTabStates = { ...w.tabFormStates } as Record<
-            string,
-            { recordId?: string; mode?: TabMode; formMode?: FormMode }
-          >;
+          const childrenCleaned: string[] = [];
 
-          for (const tabId of childrenToClean) {
-            delete newSelected[tabId];
-            delete newTabStates[tabId];
-          }
+          childrenToClean.forEach((tabId) => {
+            if (newSelected[tabId]) {
+              delete newSelected[tabId];
+              childrenCleaned.push(tabId);
+              // UPDATE: Clear context form state instead of tabFormStates
+              clearContextTabFormState(windowIdentifier, tabId);
+            }
+          });
 
-          console.log(
-            `[clearChildrenSelections] Cleared ${childrenToClean.length} of ${childTabIds.length} children: ${childrenToClean.join(", ")}`
-          );
-          return { ...w, selectedRecords: newSelected, tabFormStates: newTabStates };
+          console.log(`[clearChildrenSelections] Cleared children: [${childrenCleaned.join(", ")}]`);
+          return { ...w, selectedRecords: newSelected };
         });
       });
     },
-    [applyWindowUpdates]
+    [applyWindowUpdates, getContextTabFormState, clearContextTabFormState] // UPDATE dependencies
   );
 
   /**
-   * TODO: delete this function or replace with improved version(without tabFormStates)
+   * TODO: Consider optimizing this function with improved context-based form state management
    * Atomically updates parent tab selection and clears child tab selections in a single navigation.
    * Implements intelligent child preservation logic for form views to prevent data loss during re-renders.
    *
@@ -799,72 +776,46 @@ export function useMultiWindowURL() {
    * ```
    */
   const setSelectedRecordAndClearChildren = useCallback(
-    (windowIdOrIdentifier: string, parentTabId: string, recordId: string, childTabIds: string[]) => {
+    (windowIdOrIdentifier: string, tabId: string, recordId: string, childTabIds: string[]) => {
       applyWindowUpdates((prev) => {
         return prev.map((w) => {
-          // Check if parameter is windowId or window_identifier
-          // For windowId, only update the active window to avoid affecting multiple instances
-          const shouldUpdate =
-            w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive);
+          if (w.window_identifier !== windowIdOrIdentifier) return w;
 
-          if (!shouldUpdate) return w;
+          const previousRecordId = w.selectedRecords[tabId];
+          const isParentSelectionChanging = previousRecordId !== recordId;
 
-          const previousParentSelection = w.selectedRecords[parentTabId];
-          const isParentSelectionChanging = previousParentSelection !== recordId;
-
-          const newSelected = { ...w.selectedRecords, [parentTabId]: recordId };
-          const newTabStates = { ...w.tabFormStates } as Record<
-            string,
-            { recordId?: string; mode?: TabMode; formMode?: FormMode }
-          >;
-
-          // Only preserve children in FormView if parent selection is NOT changing
-          // If parent selection IS changing (user clicked a different record), clear all children
-          const childrenToClean = childTabIds.filter((tabId) => {
+          const childrenToClean = childTabIds.filter((childTabId) => {
             if (isParentSelectionChanging) {
-              // Parent changed to a different record - clear all children regardless of FormView
               return true;
             }
 
-            // Parent selection unchanged (refresh/re-render) - preserve children in FormView
-            const childState = w.tabFormStates[tabId];
+            // UPDATE: Use context instead of w.tabFormStates[tabId]
+            const childState = getContextTabFormState(w.window_identifier, childTabId);
             const isInFormView = childState?.mode === "form";
             if (isInFormView) {
-              console.log(
-                `[setSelectedRecordAndClearChildren] Preserving child ${tabId} - parent selection unchanged and child in FormView`
-              );
-              return false; // Don't clear this child
+              console.log(`[setSelectedRecordAndClearChildren] Preserving child ${childTabId} - parent selection unchanged and child in FormView`);
+              return false;
             }
-            return true; // Clear this child
+            return true;
           });
 
-          // Clear only children that should be cleared
-          for (const tabId of childrenToClean) {
-            delete newSelected[tabId];
-            delete newTabStates[tabId];
-          }
+          const newSelected = { ...w.selectedRecords, [tabId]: recordId };
 
-          if (!isParentSelectionChanging && childrenToClean.length < childTabIds.length) {
-            console.log(
-              `[setSelectedRecordAndClearChildren] Parent unchanged - cleared ${childrenToClean.length} of ${childTabIds.length} children (${childTabIds.length - childrenToClean.length} preserved in FormView)`
-            );
-          } else if (isParentSelectionChanging) {
-            console.log(
-              `[setSelectedRecordAndClearChildren] Parent changed from ${previousParentSelection} to ${recordId} - cleared all ${childTabIds.length} children`
-            );
-          }
+          childrenToClean.forEach((childTabId) => {
+            delete newSelected[childTabId];
+            // UPDATE: Clear context form state instead of tabFormStates
+            clearContextTabFormState(w.window_identifier, childTabId);
+          });
 
-          const result = { ...w, selectedRecords: newSelected, tabFormStates: newTabStates };
-          console.log("[setSelectedRecordAndClearChildren] Result tabFormStates:", result.tabFormStates);
-          return result;
+          return { ...w, selectedRecords: newSelected };
         });
       });
     },
-    [applyWindowUpdates]
+    [applyWindowUpdates, getContextTabFormState, clearContextTabFormState] // UPDATE dependencies
   );
 
   /**
-   * TODO: delete this function or replace with improved version(without tabFormStates)
+   * TODO: Consider optimizing this function with improved context-based form state management
    * Atomically clears form state for a tab without affecting its selection or child relationships.
    * This is a specialized version of clearTabFormState that explicitly preserves the selected record
    * and doesn't trigger any child tab cleanup logic. Used when transitioning from form view to table view
@@ -883,29 +834,26 @@ export function useMultiWindowURL() {
    * // No child tabs are affected by this operation
    * ```
    */
+  /**
+   * Clears the form state for a specific tab while preserving other window state
+   * UPDATE: Now uses context instead of windowState.formStates
+   */
   const clearTabFormStateAtomic = useCallback(
     (windowId: string, tabId: string) => {
+      // Use applyWindowUpdates to access current state and find window_identifier
       applyWindowUpdates((prev) => {
-        return prev.map((w) => {
-          if (w.windowId !== windowId) return w;
-
-          const newTabStates = { ...w.tabFormStates };
-          delete newTabStates[tabId]; // Only delete FormView state, keep selection
-
-          return {
-            ...w,
-            tabFormStates: newTabStates,
-            // Explicitly preserve selectedRecords to ensure selection is not lost
-            selectedRecords: { ...w.selectedRecords },
-          };
-        });
+        const targetWindow = prev.find(w => w.windowId === windowId);
+        if (targetWindow) {
+          clearContextTabFormState(targetWindow.window_identifier, tabId);
+        }
+        return prev; // No state change needed
       });
     },
-    [applyWindowUpdates]
+    [clearContextTabFormState, applyWindowUpdates]
   );
 
   /**
-   * TODO: delete the tabFormStates logic and replace it if needed
+   * TODO: Consider removing the form state logic and replace it if needed
    * Opens a window with optional initial selection and form state in a single atomic operation.
    * Combines window opening with record selection and optional form opening for efficient navigation.
    * Supports both creating new windows and updating existing ones with enhanced identifier handling.
@@ -988,7 +936,6 @@ export function useMultiWindowURL() {
             window_identifier: options?.window_identifier || windowId,
             title: options?.title,
             selectedRecords: {},
-            tabFormStates: {},
           };
           updated.push(target);
         }
@@ -997,16 +944,18 @@ export function useMultiWindowURL() {
           const { tabId, recordId, openForm, formMode } = options.selection;
           target.selectedRecords = { ...target.selectedRecords, [tabId]: recordId };
           if (openForm) {
-            target.tabFormStates = {
-              ...target.tabFormStates,
-              [tabId]: { recordId, mode: TAB_MODES.FORM, formMode: formMode || FORM_MODES.EDIT },
-            };
+            // UPDATE: Use context instead of target.tabFormStates
+            setContextTabFormState(target.window_identifier, tabId, {
+              recordId,
+              mode: TAB_MODES.FORM,
+              formMode: formMode || FORM_MODES.EDIT
+            });
           }
         }
         return updated;
       });
     },
-    [applyWindowUpdates]
+    [applyWindowUpdates, setContextTabFormState]
   );
 
   return {

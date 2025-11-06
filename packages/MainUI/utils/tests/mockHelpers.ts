@@ -249,7 +249,6 @@ export const getTableSelectionMocks = () => ({
         isActive: true,
         order: 1,
         selectedRecords: {},
-        tabFormStates: {},
         title: "Test Window",
       },
       clearSelectedRecord: jest.fn(),
@@ -598,3 +597,19 @@ export const createTableSelectionTestHelpers = () => {
     createSessionSyncMockWithPayloadInspection,
   };
 };
+
+/**
+ * Creates a standardized mock WindowContext return value
+ */
+export const createMockWindowContext = (overrides: Partial<Record<string, unknown>> = {}) => ({
+  getTabFormState: jest.fn(() => undefined),
+  setTabFormState: jest.fn(),
+  clearTabFormState: jest.fn(),
+  getSelectedRecord: jest.fn(() => undefined),
+  setSelectedRecord: jest.fn(),
+  clearSelectedRecord: jest.fn(),
+  setSelectedRecordAndClearChildren: jest.fn(),
+  clearChildrenSelections: jest.fn(),
+  applyWindowUpdates: jest.fn((fn) => fn([])),
+  ...overrides,
+});

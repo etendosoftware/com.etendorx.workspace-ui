@@ -18,6 +18,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
+import type { TabFormState } from "@/utils/url/constants";
 
 // Type Definitions
 interface TableState {
@@ -35,6 +36,7 @@ interface NavigationState {
 interface TabState {
   table: TableState;
   navigation: NavigationState;
+  form?: TabFormState; // Add this line
 }
 
 interface WindowState {
@@ -65,6 +67,11 @@ interface WindowContextI {
   setNavigationActiveTabsByLevel: (windowIdentifier: string, activeTabsByLevel: Map<number, string>) => void;
   setWindowActive: (windowIdentifier: string) => void;
   setWindowInactive: (windowIdentifier: string) => void;
+
+  // Form state management
+  getTabFormState: (windowIdentifier: string, tabId: string) => TabFormState | undefined;
+  setTabFormState: (windowIdentifier: string, tabId: string, formState: TabFormState) => void;
+  clearTabFormState: (windowIdentifier: string, tabId: string) => void;
 
   // Window management
   cleanupWindow: (windowIdentifier: string) => void;
@@ -313,6 +320,37 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     return state;
   }, [state]);
 
+  const getTabFormState = useCallback(
+    (windowIdentifier: string, tabId: string): TabFormState | undefined => {
+      if (!state[windowIdentifier] || !state[windowIdentifier].tabs[tabId]) {
+        return undefined;
+      }
+      return state[windowIdentifier].tabs[tabId].form;
+    },
+    [state]
+  );
+
+  const setTabFormState = useCallback((windowIdentifier: string, tabId: string, formState: TabFormState) => {
+    setState((prevState: WindowContextState) => {
+      const newState = ensureTabExists(prevState, windowIdentifier, tabId);
+      newState[windowIdentifier].tabs[tabId].form = formState;
+      return newState;
+    });
+  }, []);
+
+  const clearTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
+    setState((prevState: WindowContextState) => {
+      const newState = { ...prevState };
+      if (newState[windowIdentifier] && newState[windowIdentifier].tabs[tabId]) {
+        newState[windowIdentifier].tabs[tabId] = {
+          ...newState[windowIdentifier].tabs[tabId],
+          form: undefined,
+        };
+      }
+      return newState;
+    });
+  }, []);
+
   const value = useMemo(
     () => ({
       getTableState,
@@ -330,6 +368,9 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setWindowInactive,
       cleanupWindow,
       getAllState,
+      getTabFormState,
+      setTabFormState,
+      clearTabFormState,
     }),
     [
       getTableState,
@@ -347,6 +388,9 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setWindowInactive,
       cleanupWindow,
       getAllState,
+      getTabFormState,
+      setTabFormState,
+      clearTabFormState,
     ]
   );
 
