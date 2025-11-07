@@ -76,19 +76,3 @@ export interface WindowState {
    */
   title: string;
 }
-
-
-/**
- * Results object for tab parameter processing.
- */
-export interface TabProcessingResults {
-}
-
-/**
- * Configuration for tab parameter processing.
- * Maps parameter types to their prefixes and processors.
- */
-export interface TabParameterConfig {
-  prefix: string;
-  processor: (tabId: string, value: string, results: TabProcessingResults) => void;
-}

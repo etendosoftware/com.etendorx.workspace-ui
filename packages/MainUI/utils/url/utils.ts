@@ -2,55 +2,7 @@ import {
   WINDOW_IDENTIFIER_PREFIX,
   TAB_MODES,
   type WindowState,
-  type TabProcessingResults,
-  type TabParameterConfig,
 } from "@/utils/url/constants";
-
-
-/**
- * Extracts tab ID from a parameter key given a prefix.
- * 
- * @param key - The parameter key
- * @param prefix - The prefix to remove
- * @returns The tab ID or null if the key doesn't start with the prefix
- */
-const extractTabId = (key: string, prefix: string): string | null => {
-  if (!key.startsWith(prefix)) return null;
-  return key.slice(prefix.length);
-};
-
-/**
- * Creates tab parameter processing configuration.
- * 
- * @param windowIdentifier - The window identifier to create prefixes for
- * @returns Array of tab parameter configurations
- */
-const createTabParameterConfigs = (windowIdentifier: string): TabParameterConfig[] => [
-];
-
-/**
- * Processes a single URL parameter for tab-related data.
- * 
- * @param key - The parameter key
- * @param value - The parameter value
- * @param configs - Array of processing configurations
- * @param results - The results object to populate
- */
-const processUrlParameter = (
-  key: string,
-  value: string,
-  configs: TabParameterConfig[],
-  results: TabProcessingResults
-): void => {
-  for (const config of configs) {
-    const tabId = extractTabId(key, config.prefix);
-    if (tabId) {
-      config.processor(tabId, value, results);
-      break; // Found matching prefix, no need to check others
-    }
-  }
-};
-
 
 /**
  * Determines if a tab should be displayed in form view mode based on its state and parent context.
@@ -84,38 +36,6 @@ export const isFormView = ({
  */
 export const getNewWindowIdentifier = (windowId: string) => {
   return `${windowId}_${Date.now()}`;
-};
-
-/**
- * Processes tab-related URL parameters for a specific window to extract selections.
- * Parses URL parameters that contain tab selections.
- *
- * @param searchParams - The URLSearchParams object containing current URL parameters
- * @param windowIdentifier - The window identifier to process tab parameters for
- * @returns Empty object (post-migration)
- *
- * @example
- * // URL contains: s_win1_tab1=rec123
- * const result = processTabParameters(searchParams, "win1");
- * // Returns: {} (selectedRecords no longer processed)
- */
-export const processTabParameters = (
-  searchParams: URLSearchParams,
-  windowIdentifier: string
-): {
-  } => {
-  const results: TabProcessingResults = {
-  };
-
-  const configs = createTabParameterConfigs(windowIdentifier);
-
-  for (const [key, value] of searchParams.entries()) {
-    if (!value) continue;
-    processUrlParameter(key, value, configs, results);
-  }
-
-  return {
-  };
 };
 
 /**
