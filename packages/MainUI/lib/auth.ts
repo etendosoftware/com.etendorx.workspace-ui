@@ -103,6 +103,21 @@ export function extractBearerToken(request: Request | NextRequest): string | nul
     // Invalid URL, return null
   }
 
+  // Last fallback: extract token from Referer header (for iframe resource requests)
+  // When an iframe loads resources, they don't have ?token but the referer does
+  try {
+    const referer = request.headers.get("referer") || request.headers.get("Referer");
+    if (referer) {
+      const refererUrl = new URL(referer);
+      const refererToken = refererUrl.searchParams.get("token");
+      if (refererToken) {
+        return refererToken;
+      }
+    }
+  } catch {
+    // Invalid referer URL, continue
+  }
+
   return null;
 }
 

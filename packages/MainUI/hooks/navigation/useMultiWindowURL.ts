@@ -696,7 +696,6 @@ export function useMultiWindowURL() {
               console.log(
                 `[applyWindowUpdates] REMOVED selection for tab ${tabId}: ${prevSelected[tabId]} -> undefined`
               );
-              console.log(`[applyWindowUpdates] Caller: ${caller}`);
             }
           }
         }

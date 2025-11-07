@@ -22,7 +22,9 @@ import ApiProvider from ".";
 export default async function ApiProviderWrapper({ children }: React.PropsWithChildren) {
   await connection();
 
-  const url = process.env.ETENDO_CLASSIC_URL || FALLBACK_URL;
+  // Use relative path for client-side API calls to go through Next.js proxy
+  // This ensures all requests go through localhost:3000/api/erp instead of directly to backend
+  const url = "/api/erp";
 
   return (
     <ApiProvider url={url} data-testid="ApiProvider__b68bdd">

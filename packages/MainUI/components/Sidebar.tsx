@@ -32,7 +32,8 @@ interface FormData {
   command: string;
 }
 
-const ETENDO_BASE_URL = process.env.NEXT_PUBLIC_ETENDO_URL || "http://localhost:8080/etendo";
+// Use /api/erp proxy instead of direct backend URL to work in Docker environments
+const ETENDO_BASE_URL = "/api/erp";
 
 const buildProcessUrl = (processId: string, token: string | null): string => {
   const params = new URLSearchParams({

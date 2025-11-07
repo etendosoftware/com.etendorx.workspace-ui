@@ -67,7 +67,7 @@ export function useTreeModeMetadata(tab: Tab) {
           };
         }
       } catch (metadataError) {
-        console.log("⚠️ Could not fetch extended tab metadata:", metadataError);
+        logger.error("⚠️ Could not fetch extended tab metadata:", metadataError);
       }
 
       if (!treeMetadata.supportsTreeMode) {
@@ -331,6 +331,5 @@ function getEntityIdFromTab(entityName: string, tabId?: string): string {
     return "90034CAE96E847D78FBEF6D38CB1930D";
   }
 
-  console.log("⚡ Using menu fallback for unknown entity:", entityName);
   return "90034CAE96E847D78FBEF6D38CB1930D";
 }

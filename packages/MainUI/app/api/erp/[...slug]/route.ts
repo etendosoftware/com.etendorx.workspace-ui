@@ -100,6 +100,14 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.startsWith(SLUGS_CATEGORIES.NOTES) || // Notes servlet needs session cookies
     slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || // Attachments servlet needs session cookies and multipart/form-data
     slug.startsWith(SLUGS_CATEGORIES.LEGACY) || // Legacy servlets need session cookies
+    slug.startsWith("web/") || // Public resources need session cookies from browser
+    slug.startsWith("org.openbravo.userinterface.") || // UI resources need session cookies
+    slug.startsWith("org.openbravo.client.kernel/") || // Kernel resources need session cookies
+    slug.startsWith("ad_reports/") || // Reports need session cookies
+    slug.startsWith("ad_actionButton/") || // Action buttons need session cookies
+    slug.startsWith("ad_forms/") || // Forms need session cookies
+    slug.startsWith("ad_process/") || // Process servlets need session cookies
+    slug.startsWith("utility/") || // Utility resources need session cookies
     method !== "GET"
   );
 }
@@ -130,16 +138,21 @@ function buildErpHeaders(
   }
 
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${userToken}`,
     Accept: acceptHeader,
   };
+
+  // Only add Authorization header if token is provided (skip for public resources)
+  if (userToken) {
+    headers.Authorization = `Bearer ${userToken}`;
+  }
 
   if (method !== "GET" && requestBody) {
     headers["Content-Type"] = contentType;
   }
 
   // Use the combined ERP auth headers (cookie + CSRF token)
-  const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
+  // For public resources without token, still try to get cookies from request (for iframe resources)
+  const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken || null);
 
   if (cookieHeader) {
     headers.Cookie = cookieHeader;
@@ -172,16 +185,44 @@ function isBinaryContentType(contentType: string): boolean {
   );
 }
 
-// Helper: Rewrite HTML resource URLs to point to Tomcat
+// Helper: Check if response is static resource (CSS, JS, etc.)
+function isStaticResourceContentType(contentType: string): boolean {
+  return (
+    contentType.includes("text/css") ||
+    contentType.includes("text/javascript") ||
+    contentType.includes("application/javascript") ||
+    contentType.includes("application/x-javascript") ||
+    contentType.includes("text/plain") ||
+    contentType.includes("font/") ||
+    contentType.includes("application/font")
+  );
+}
+
+// Helper: Rewrite HTML resource URLs to point through Next.js proxy
 function rewriteHtmlResourceUrls(html: string): string {
   let rewritten = html;
-  // Rewrite absolute paths that reference Etendo resources
-  rewritten = rewritten.replace(/(href|src)="(\.\.\/)*web\//gi, `$1="${process.env.ETENDO_CLASSIC_URL}/web/`);
-  // Rewrite paths like href="../../org.openbravo.client.kernel/..."
-  rewritten = rewritten.replace(
-    /(href|src)="(\.\.\/)*org\.openbravo\./gi,
-    `$1="${process.env.ETENDO_CLASSIC_URL}/org.openbravo.`
-  );
+
+  const backendUrl = process.env.ETENDO_CLASSIC_URL || "";
+
+  // Rewrite absolute URLs that point to the backend
+  // This covers URLs in href, src, action, window.location, fetch, etc.
+  if (backendUrl) {
+    // Escape special regex characters in the URL
+    const escapedBackendUrl = backendUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    // Replace backend URL with /api/erp in various contexts
+    // Matches: "http://localhost:8080/etendo/path" or "http://host.docker.internal:8080/etendo/path"
+    const backendUrlRegex = new RegExp(escapedBackendUrl, "gi");
+    rewritten = rewritten.replace(backendUrlRegex, "/api/erp");
+  }
+
+  // Rewrite relative paths that reference Etendo resources to go through /api/erp proxy
+  // This ensures resources work in both local and Docker environments
+  rewritten = rewritten.replace(/(href|src)="(\.\.\/)*web\//gi, `$1="/api/erp/web/`);
+
+  // Rewrite paths like href="../../org.openbravo.client.kernel/..." to go through proxy
+  rewritten = rewritten.replace(/(href|src)="(\.\.\/)*org\.openbravo\./gi, `$1="/api/erp/org.openbravo.`);
+
   return rewritten;
 }
 
@@ -228,6 +269,12 @@ async function handleMutationRequest(
   const response = await fetch(erpUrl, fetchOptions);
 
   if (!response.ok) {
+    // Source map files (*.css.map, *.js.map) are optional - browsers request them but they often don't exist
+    // Return empty 404 response without throwing to avoid console noise
+    if (response.status === 404 && erpUrl.endsWith(".map")) {
+      return new Response("", { status: 404 });
+    }
+
     const defaultResponseStatus = erpUrl.includes("copilot") ? 404 : response.status;
     const errorText = await response.text();
     throw new ErpRequestError({
@@ -253,6 +300,22 @@ async function handleMutationRequest(
   // Check if response is a binary file (for downloads)
   if (responseContentType && isBinaryContentType(responseContentType)) {
     return { binaryFile: response };
+  }
+
+  // Check if response is static resource (CSS, JS, images, etc.)
+  if (responseContentType && isStaticResourceContentType(responseContentType)) {
+    // For JavaScript files, we need to rewrite backend URLs to proxy URLs
+    if (responseContentType.includes("javascript")) {
+      const jsText = await response.text();
+      const rewrittenJs = rewriteHtmlResourceUrls(jsText); // Reuse same URL rewriting logic
+      const jsResponse = new Response(rewrittenJs, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: rewriteSetCookieHeaders(response.headers),
+      });
+      return { staticResource: jsResponse };
+    }
+    return { staticResource: response };
   }
 
   // Read response with proper encoding detection
@@ -289,8 +352,20 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
     const resolvedParams = await params;
     const slug = resolvedParams.slug.join("/");
 
+    // Allow public static resources without authentication token (they use session cookies)
+    const isPublicResource =
+      slug.startsWith("web/") ||
+      slug.startsWith("org.openbravo.userinterface.") ||
+      slug.startsWith("org.openbravo.client.kernel/") ||
+      slug.startsWith("utility/");
+
+    // Allow legacy servlets to use session cookies instead of token
+    const isLegacyServlet = slug.startsWith(SLUGS_CATEGORIES.LEGACY);
+
     const userToken = extractBearerToken(request);
-    if (!userToken) {
+
+    // Require token for non-public, non-legacy resources
+    if (!userToken && !isPublicResource && !isLegacyServlet) {
       return unauthorizedResponse();
     }
 
@@ -301,7 +376,7 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
     const data = await fetchErpData({
       slug,
       method,
-      userToken,
+      userToken: userToken || "", // Empty string for public resources
       erpUrl,
       request,
       requestBody,
@@ -318,6 +393,10 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 
     if (isHtmlContent(data)) {
       return handleHtmlContentResponse(data as { htmlContent: Response });
+    }
+
+    if (isStaticResource(data)) {
+      return handleStaticResourceResponse(data as { staticResource: Response });
     }
 
     return NextResponse.json(data);
@@ -339,6 +418,17 @@ function buildErpUrl(slug: string, requestUrl: string): string {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.COPILOT)) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
+  } else if (
+    slug.startsWith("web/") ||
+    slug.startsWith("org.openbravo.") ||
+    slug.startsWith("ad_reports/") ||
+    slug.startsWith("ad_actionButton/") ||
+    slug.startsWith("ad_forms/") ||
+    slug.startsWith("ad_process/") ||
+    slug.startsWith("utility/")
+  ) {
+    // Static resources (CSS, JS, images) and legacy servlets use direct mapping
+    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
   }
@@ -425,6 +515,11 @@ function isHtmlContent(data: unknown): boolean {
   return typeof data === "object" && data !== null && "htmlContent" in data;
 }
 
+// Helper: Check if response is static resource
+function isStaticResource(data: unknown): boolean {
+  return typeof data === "object" && data !== null && "staticResource" in data;
+}
+
 // Helper: Handle stream response
 function handleStreamResponse(data: { stream: ReadableStream; headers: Headers }): Response {
   return new Response(data.stream, {
@@ -447,10 +542,47 @@ function handleBinaryFileResponse(data: { binaryFile: Response }): Response {
   });
 }
 
-// Helper: Handle HTML content response (ensure UTF-8 charset)
+// Helper: Rewrite Set-Cookie header to remove Domain and make it work across ports
+function rewriteSetCookieHeaders(originalHeaders: Headers): Headers {
+  const newHeaders = new Headers();
+
+  // Copy all headers except Set-Cookie
+  for (const [key, value] of originalHeaders.entries()) {
+    if (key.toLowerCase() !== "set-cookie") {
+      newHeaders.set(key, value);
+    }
+  }
+
+  // Manually handle Set-Cookie headers (there can be multiple)
+  // We need to get them directly from the original response as Headers.get() only returns the first one
+  const setCookieHeaders = originalHeaders.getSetCookie?.() || [];
+
+  for (const cookie of setCookieHeaders) {
+    // Remove Domain attribute to let browser use current domain (localhost:3000)
+    // Remove Secure attribute if present (since we're on http in dev)
+    // Add SameSite=None to allow cookies in iframe context (or use Lax for same-site)
+    let rewrittenCookie = cookie
+      .replace(/;\s*Domain=[^;]+/gi, "")
+      .replace(/;\s*Secure\s*(?=;|$)/gi, "")
+      .replace(/;\s*SameSite=[^;]+/gi, "");
+
+    // Add SameSite=Lax for same-origin iframe requests
+    if (!rewrittenCookie.includes("SameSite")) {
+      rewrittenCookie += "; SameSite=Lax";
+    }
+
+    newHeaders.append("Set-Cookie", rewrittenCookie);
+  }
+
+  return newHeaders;
+}
+
+// Helper: Handle HTML content response (ensure UTF-8 charset and forward cookies)
 function handleHtmlContentResponse(data: { htmlContent: Response }): Response {
   const { htmlContent } = data;
-  const headers = new Headers(htmlContent.headers);
+
+  // Rewrite Set-Cookie headers to work with Next.js proxy (different port/domain)
+  const headers = rewriteSetCookieHeaders(htmlContent.headers);
 
   // Ensure UTF-8 charset is explicitly set for HTML responses
   const contentType = headers.get("content-type") || "text/html";
@@ -462,6 +594,16 @@ function handleHtmlContentResponse(data: { htmlContent: Response }): Response {
     status: htmlContent.status,
     statusText: htmlContent.statusText,
     headers,
+  });
+}
+
+// Helper: Handle static resource response (CSS, JS, fonts, etc.)
+function handleStaticResourceResponse(data: { staticResource: Response }): Response {
+  const { staticResource } = data;
+  return new Response(staticResource.body, {
+    status: staticResource.status,
+    statusText: staticResource.statusText,
+    headers: staticResource.headers,
   });
 }
 
