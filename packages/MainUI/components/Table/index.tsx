@@ -50,6 +50,7 @@ import { getDisplayColumnDefOptions, getMUITableBodyCellProps, getCurrentRowCanE
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
 import { RecordCounterBar } from "@workspaceui/componentlibrary/src/components";
+import { useWindowContext } from "@/contexts/window";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -77,7 +78,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     registerFetchMore,
   } = useDatasourceContext();
   const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal } = useToolbarContext();
-  const { activeWindow, getSelectedRecord } = useMultiWindowURL();
+  const { activeWindow } = useMultiWindowURL();
+  const { getSelectedRecord } = useWindowContext();
   const { tab, parentTab, parentRecord } = useTabContext();
 
   const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =

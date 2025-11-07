@@ -57,12 +57,12 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
   /**
    * Multi-window navigation hook providing access to current window state.
    */
-  const { activeWindow, getSelectedRecord } = useMultiWindowURL();
+  const { activeWindow } = useMultiWindowURL();
 
   /**
    * Window context providing form state management functions.
    */
-  const windowContext = useWindowContext();
+  const { getTabFormState, getSelectedRecord } = useWindowContext();
 
   /**
    * Graph-based tab hierarchy management system.
@@ -224,7 +224,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    *
    * Dependencies:
    * - activeWindow: Contains windowId and window_identifier for context access
-   * - windowContext: Provides form state management via context
+   * - getTabFormState: Provides form state management via context
    * - getSelectedRecord: Retrieves selected records from context
    * - activeLevelsLoaded: Prevents multiple restoration attempts
    * - windowData?.tabs: Available tabs for clearing selections
@@ -233,7 +233,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    */
   useEffect(() => {
     // Early return: Skip if already loaded or function not available
-    if (activeLevelsLoaded || !setActiveLevel || !windowContext) return;
+    if (activeLevelsLoaded || !setActiveLevel || !getTabFormState) return;
 
     // Extract window identifiers from activeWindow
     const windowId = activeWindow?.windowId;
@@ -245,7 +245,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
     const tabs = windowData?.tabs || [];
     const formStateTabIds = tabs
       .map(tab => tab.id)
-      .filter(tabId => windowContext.getTabFormState(windowIdentifier, tabId) !== undefined);
+      .filter(tabId => getTabFormState(windowIdentifier, tabId) !== undefined);
 
     // Handle window with no saved form states - reset to clean state
     if (formStateTabIds.length === 0) {
@@ -275,7 +275,16 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
 
     // Mark as loaded to prevent subsequent executions
     setActiveLevelsLoaded(true);
-  }, [activeWindow, activeLevelsLoaded, windowData?.tabs, graph, setActiveLevel, setActiveTabsByLevel, windowContext, getSelectedRecord]);
+  }, [
+    activeWindow,
+    activeLevelsLoaded,
+    windowData?.tabs,
+    graph,
+    setActiveLevel,
+    setActiveTabsByLevel,
+    getTabFormState,
+    getSelectedRecord
+  ]);
 
   // Loading state: Show skeleton UI while window metadata is being fetched
   if (!windowData) {

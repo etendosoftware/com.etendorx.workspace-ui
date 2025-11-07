@@ -30,7 +30,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useWindowContext } from "@/contexts/window";
 
 export default function WindowTabs() {
-  const { windows, isHomeRoute, setActiveWindow, closeWindow, navigateToHome } = useMultiWindowURL();
+  const { windows, isHomeRoute, navigateToHome } = useMultiWindowURL();
   const { t } = useTranslation();
   const { cleanupWindow, setWindowActive } = useWindowContext();
 
@@ -57,11 +57,11 @@ export default function WindowTabs() {
 
   const handleSelectWindow = useCallback(
     (windowIdentifier: string) => {
-      setActiveWindow(windowIdentifier);
       // TODO: delete this code when multi-window is fully stable
+      // NOTE: deleted, but it's necesarry check if everything works fine
       setWindowActive({ windowIdentifier });
     },
-    [setActiveWindow, setWindowActive]
+    [setWindowActive]
   );
 
   const handleGoHome = () => {
@@ -137,7 +137,7 @@ export default function WindowTabs() {
                   setClosingWindowIds((prev) => new Set(prev).add(window.window_identifier));
                   // Clean up table state for this window
                   cleanupWindow(window.windowId);
-                  closeWindow(window.window_identifier);
+                  // TODO: test what happend if close a active window
                 }}
                 canClose={canClose}
                 data-testid="WindowTab__c8117d"

@@ -32,11 +32,13 @@ import {
   NEW_RECORD_ID,
   FORM_MODES,
   TAB_MODES,
+  TabFormState,
   type FormMode as URLFormMode,
   type TabMode,
 } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
-import { isFormView } from "@/utils/url/utils";
+import { isFormView, getNewTabFormState } from "@/utils/url/utils";
+import { useWindowContext } from '@/contexts/window';
 
 /**
  * Validates if a child tab can open FormView based on parent selection in context
@@ -63,9 +65,10 @@ const handleNewRecordFormState = (
   windowId: string,
   tabId: string,
   recordId: string,
-  setTabFormState: (windowId: string, tabId: string, recordId: string, mode?: TabMode, formMode?: URLFormMode) => void
+  setTabFormState: (windowId: string, tabId: string, formState: TabFormState) => void
 ): void => {
-  setTabFormState(windowId, tabId, recordId, TAB_MODES.FORM, FORM_MODES.NEW);
+  const newTabFormState = getNewTabFormState(recordId, TAB_MODES.FORM, FORM_MODES.NEW);
+  setTabFormState(windowId, tabId, newTabFormState);
 };
 
 /**
@@ -77,19 +80,21 @@ const handleEditRecordFormState = (
   newValue: string,
   selectedRecordId: string | undefined,
   setSelectedRecord: (windowId: string, tabId: string, recordId: string) => void,
-  setTabFormState: (windowId: string, tabId: string, recordId: string, mode?: TabMode, formMode?: URLFormMode) => void
+  setTabFormState: (windowId: string, tabId: string, formState: TabFormState) => void
 ): void => {
   const formMode = FORM_MODES.EDIT;
+  const newTabFormState = getNewTabFormState(newValue, TAB_MODES.FORM, formMode);
+
 
   if (selectedRecordId !== newValue) {
     // Record selection changed - update selection first, then form state
     setSelectedRecord(windowId, tabId, newValue);
     setTimeout(() => {
-      setTabFormState(windowId, tabId, newValue, TAB_MODES.FORM, formMode);
+      setTabFormState(windowId, tabId, newTabFormState);
     }, 50);
   } else {
     // Same record - just open form
-    setTabFormState(windowId, tabId, newValue, TAB_MODES.FORM, formMode);
+    setTabFormState(windowId, tabId, newTabFormState);
   }
 };
 
@@ -97,15 +102,17 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const { window } = useMetadataContext();
   const {
     activeWindow,
-    setSelectedRecord,
-    clearSelectedRecord,
-    setTabFormState,
-    clearTabFormState,
     clearTabFormStateAtomic,
-    getTabFormState,
-    getSelectedRecord,
     clearChildrenSelections,
   } = useMultiWindowURL();
+  const {
+    clearSelectedRecord,
+    getTabFormState,
+    setSelectedRecord,
+    getSelectedRecord,
+    clearTabFormState,
+    setTabFormState
+  } = useWindowContext();
   const { registerActions, onRefresh } = useToolbarContext();
   const { graph } = useSelected();
   const { registerRefresh, unregisterRefresh } = useTabRefreshContext();
@@ -208,7 +215,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   const handleNew = useCallback(() => {
     if (windowIdentifier) {
-      setTabFormState(windowIdentifier, tab.id, NEW_RECORD_ID, TAB_MODES.FORM, FORM_MODES.NEW);
+      const newTabFormState = getNewTabFormState(NEW_RECORD_ID, TAB_MODES.FORM, FORM_MODES.NEW);
+      setTabFormState(windowIdentifier, tab.id, newTabFormState);
     }
   }, [windowIdentifier, tab, setTabFormState]);
 

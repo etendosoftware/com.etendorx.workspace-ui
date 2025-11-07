@@ -47,6 +47,7 @@ import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useRecordNavigation } from "@/hooks/useRecordNavigation";
 import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
+import { useWindowContext } from "@/contexts/window";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
@@ -88,7 +89,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   const { graph } = useSelected();
-  const { activeWindow, getSelectedRecord, setSelectedRecord, setSelectedRecordAndClearChildren } = useMultiWindowURL();
+  const { activeWindow, setSelectedRecordAndClearChildren } = useMultiWindowURL();
+  const { setSelectedRecord, getSelectedRecord } = useWindowContext();
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
   const { resetFormChanges, parentTab } = useTabContext();
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
@@ -592,9 +594,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
           data-testid="FormProvider__1a0853">
           <form
             key={`form-${tab.id}-${recordId}`}
-            className={`flex h-full max-h-full w-full flex-col gap-2 overflow-hidden transition duration-300 ${
-              loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
-            }`}>
+            className={`flex h-full max-h-full w-full flex-col gap-2 overflow-hidden transition duration-300 ${loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
+              }`}>
             <FormHeader
               statusBarFields={fields.statusBarFields}
               groups={groups}

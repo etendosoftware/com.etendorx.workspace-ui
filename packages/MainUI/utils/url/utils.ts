@@ -1,6 +1,11 @@
 import {
   WINDOW_IDENTIFIER_PREFIX,
   TAB_MODES,
+  TabFormState,
+  FORM_MODES,
+  NEW_RECORD_ID,
+  FormMode,
+  TabMode,
   type WindowState,
 } from "@/utils/url/constants";
 
@@ -91,4 +96,18 @@ export const setWindowParameters = (params: URLSearchParams, window: WindowState
   const urlKey = window_identifier;
 
   params.set(`${WINDOW_IDENTIFIER_PREFIX}${urlKey}`, windowId);
+};
+
+export const getNewTabFormState = (
+  recordId: string,
+  mode: TabMode = TAB_MODES.FORM,
+  formMode?: FormMode
+): TabFormState => {
+  const determinedFormMode = formMode || (recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT);
+
+  return {
+    recordId,
+    mode,
+    formMode: determinedFormMode,
+  };
 };

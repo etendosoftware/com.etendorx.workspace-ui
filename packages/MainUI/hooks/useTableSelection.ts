@@ -45,6 +45,7 @@ import { debounce } from "@/utils/debounce";
 import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/sessionSync";
 import { useUserContext } from "@/hooks/useUserContext";
 import { logger } from "@/utils/logger";
+import { useWindowContext } from "@/contexts/window";
 
 /**
  * Compares two arrays of strings alphabetically to detect content changes while ignoring order.
@@ -436,13 +437,15 @@ export default function useTableSelection(
   const { graph } = useSelected();
   const {
     activeWindow,
-    setSelectedRecord,
-    clearSelectedRecord,
-    getSelectedRecord,
     clearChildrenSelections,
     setSelectedRecordAndClearChildren,
-    getTabFormState,
   } = useMultiWindowURL();
+  const {
+    clearSelectedRecord,
+    getTabFormState,
+    setSelectedRecord,
+    getSelectedRecord
+  } = useWindowContext();
   const { setSession, setSessionSyncLoading } = useUserContext();
   const previousSelectionRef = useRef<string[]>([]);
   const previousSingleSelectionRef = useRef<string | undefined>(undefined);
@@ -616,6 +619,7 @@ export default function useTableSelection(
     currentWindowId,
     debouncedURLUpdate,
     getSelectedRecord,
+    getTabFormState,
   ]);
 
   /**

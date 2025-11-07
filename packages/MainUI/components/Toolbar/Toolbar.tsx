@@ -52,6 +52,7 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { TAB_MODES } from "@/utils/url/constants";
+import { useWindowContext } from "@/contexts/window";
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
@@ -71,7 +72,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { saveButtonState } = useToolbarContext();
   const { buttons, processButtons, loading, refetch } = useToolbar(windowId, tab?.id);
   const { graph } = useSelected();
-  const { activeWindow, getTabFormState, clearChildrenSelections } = useMultiWindowURL();
+  const { activeWindow, clearChildrenSelections } = useMultiWindowURL();
+  const { getTabFormState } = useWindowContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { isSessionSyncLoading, isCopilotInstalled, session } = useUserContext();
@@ -242,13 +244,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       processButton:
         processButtons.length > 0
           ? createProcessMenuButton(
-              processButtons.length,
-              hasSelectedRecord,
-              handleMenuToggle,
-              t,
-              anchorEl,
-              isSessionSyncLoading
-            )
+            processButtons.length,
+            hasSelectedRecord,
+            handleMenuToggle,
+            t,
+            anchorEl,
+            isSessionSyncLoading
+          )
           : undefined,
     };
 

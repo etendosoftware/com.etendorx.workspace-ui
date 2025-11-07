@@ -30,6 +30,7 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { useCurrentRecord } from "@/hooks/useCurrentRecord";
+import { useWindowContext } from "@/contexts/window";
 
 interface BreadcrumbProps {
   allTabs: Tab[][];
@@ -39,7 +40,8 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { t } = useTranslation();
   const pathname = usePathname();
   const { window, windowId, windowIdentifier } = useMetadataContext();
-  const { navigateToHome, clearTabFormState, getTabFormState } = useMultiWindowURL();
+  const { navigateToHome } = useMultiWindowURL();
+  const { getTabFormState, clearTabFormState } = useWindowContext();
   const { graph } = useSelected();
 
   const allTabsFormatted = useMemo(() => allTabs.flat(), [allTabs]);

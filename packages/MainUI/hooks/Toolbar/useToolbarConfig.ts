@@ -31,6 +31,7 @@ import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useRecordContext } from "@/hooks/useRecordContext";
 import type { ToolbarButtonMetadata } from "./types";
+import { useWindowContext } from "@/contexts/window";
 
 export const useToolbarConfig = ({
   tabId,
@@ -62,7 +63,8 @@ export const useToolbarConfig = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { tab } = useTabContext();
-  const { activeWindow, getSelectedRecord, clearSelectedRecord } = useMultiWindowURL();
+  const { activeWindow } = useMultiWindowURL();
+  const { clearSelectedRecord, getSelectedRecord } = useWindowContext();
   const { graph } = useSelected();
 
   const selectedMultiple = useSelectedRecords(tab);
