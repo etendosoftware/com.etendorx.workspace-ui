@@ -239,88 +239,44 @@ function createHtmlResponse(html: string, originalResponse: Response): Response 
   });
 }
 
-/**
- * Handles mutation requests (non-cached) to the ERP system
- * @param erpUrl - Target ERP URL
- * @param method - HTTP method
- * @param headers - Request headers
- * @param requestBody - Request body (string or stream for multipart)
- * @returns Response data from ERP
- */
-async function handleMutationRequest(
-  erpUrl: string,
-  method: string,
-  headers: Record<string, string>,
-  requestBody: requestBody
-): Promise<unknown> {
-  const fetchOptions: RequestInit = {
-    method,
-    headers,
-    body: requestBody,
-  };
-
-  // Add duplex option only for ReadableStream bodies
-  // Check for ReadableStream in a way that works in both Node.js and browser
-  if (typeof ReadableStream !== "undefined" && requestBody instanceof ReadableStream) {
-    // @ts-expect-error - duplex is required for streaming but not in types yet
-    fetchOptions.duplex = "half";
+// Helper: Handle error responses from ERP
+async function handleErrorResponse(response: Response, erpUrl: string): Promise<never | Response> {
+  // Source map files (*.css.map, *.js.map) are optional - browsers request them but they often don't exist
+  // Return empty 404 response without throwing to avoid console noise
+  if (response.status === 404 && erpUrl.endsWith(".map")) {
+    return new Response("", { status: 404 });
   }
 
-  const response = await fetch(erpUrl, fetchOptions);
+  const defaultResponseStatus = erpUrl.includes("copilot") ? 404 : response.status;
+  const errorText = await response.text();
+  throw new ErpRequestError({
+    message: `ERP request failed: ${defaultResponseStatus} ${response.statusText}. ${errorText}`,
+    status: defaultResponseStatus,
+    statusText: response.statusText,
+    errorText,
+  });
+}
 
-  if (!response.ok) {
-    // Source map files (*.css.map, *.js.map) are optional - browsers request them but they often don't exist
-    // Return empty 404 response without throwing to avoid console noise
-    if (response.status === 404 && erpUrl.endsWith(".map")) {
-      return new Response("", { status: 404 });
-    }
-
-    const defaultResponseStatus = erpUrl.includes("copilot") ? 404 : response.status;
-    const errorText = await response.text();
-    throw new ErpRequestError({
-      message: `ERP request failed: ${defaultResponseStatus} ${response.statusText}. ${errorText}`,
-      status: defaultResponseStatus,
+// Helper: Handle static resource responses (CSS, JS, etc.)
+async function handleStaticResourceResponse(response: Response, contentType: string): Promise<{ staticResource: Response }> {
+  // For JavaScript files, we need to rewrite backend URLs to proxy URLs
+  if (contentType.includes("javascript")) {
+    const jsText = await response.text();
+    const rewrittenJs = rewriteHtmlResourceUrls(jsText); // Reuse same URL rewriting logic
+    const jsResponse = new Response(rewrittenJs, {
+      status: response.status,
       statusText: response.statusText,
-      errorText,
+      headers: rewriteSetCookieHeaders(response.headers),
     });
+    return { staticResource: jsResponse };
   }
+  return { staticResource: response };
+}
 
-  const responseContentType = response.headers.get("content-type");
-
-  // Check if response is a stream
-  if (responseContentType?.includes("text/event-stream")) {
-    return { stream: response.body, headers: response.headers };
-  }
-
-  // Check if response is HTML (for iframes like About modal)
-  if (responseContentType?.toLowerCase().includes("text/html")) {
-    return { htmlContent: response };
-  }
-
-  // Check if response is a binary file (for downloads)
-  if (responseContentType && isBinaryContentType(responseContentType)) {
-    return { binaryFile: response };
-  }
-
-  // Check if response is static resource (CSS, JS, images, etc.)
-  if (responseContentType && isStaticResourceContentType(responseContentType)) {
-    // For JavaScript files, we need to rewrite backend URLs to proxy URLs
-    if (responseContentType.includes("javascript")) {
-      const jsText = await response.text();
-      const rewrittenJs = rewriteHtmlResourceUrls(jsText); // Reuse same URL rewriting logic
-      const jsResponse = new Response(rewrittenJs, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: rewriteSetCookieHeaders(response.headers),
-      });
-      return { staticResource: jsResponse };
-    }
-    return { staticResource: response };
-  }
-
-  // Read response with proper encoding detection
+// Helper: Handle text responses (JSON or HTML fallback)
+async function handleTextResponse(response: Response, contentType: string | null): Promise<unknown> {
   const responseBuffer = await response.arrayBuffer();
-  const encoding = detectCharset(responseContentType);
+  const encoding = detectCharset(contentType);
   const responseText = new TextDecoder(encoding).decode(responseBuffer);
 
   // Fallback: Check if response body looks like HTML (when Content-Type is missing)
@@ -345,6 +301,64 @@ async function handleMutationRequest(
   } catch {
     throw new Error(`Invalid JSON response from backend: ${responseText.substring(0, 200)}...`);
   }
+}
+
+/**
+ * Handles mutation requests (non-cached) to the ERP system
+ * @param erpUrl - Target ERP URL
+ * @param method - HTTP method
+ * @param headers - Request headers
+ * @param requestBody - Request body (string or stream for multipart)
+ * @returns Response data from ERP
+ */
+async function handleMutationRequest(
+  erpUrl: string,
+  method: string,
+  headers: Record<string, string>,
+  requestBody: requestBody
+): Promise<unknown> {
+  const fetchOptions: RequestInit = {
+    method,
+    headers,
+    body: requestBody,
+  };
+
+  // Add duplex option only for ReadableStream bodies
+  if (typeof ReadableStream !== "undefined" && requestBody instanceof ReadableStream) {
+    // @ts-expect-error - duplex is required for streaming but not in types yet
+    fetchOptions.duplex = "half";
+  }
+
+  const response = await fetch(erpUrl, fetchOptions);
+
+  if (!response.ok) {
+    return handleErrorResponse(response, erpUrl);
+  }
+
+  const responseContentType = response.headers.get("content-type");
+
+  // Check if response is a stream
+  if (responseContentType?.includes("text/event-stream")) {
+    return { stream: response.body, headers: response.headers };
+  }
+
+  // Check if response is HTML (for iframes like About modal)
+  if (responseContentType?.toLowerCase().includes("text/html")) {
+    return { htmlContent: response };
+  }
+
+  // Check if response is a binary file (for downloads)
+  if (responseContentType && isBinaryContentType(responseContentType)) {
+    return { binaryFile: response };
+  }
+
+  // Check if response is static resource (CSS, JS, images, etc.)
+  if (responseContentType && isStaticResourceContentType(responseContentType)) {
+    return handleStaticResourceResponse(response, responseContentType);
+  }
+
+  // Handle text responses (JSON or HTML fallback)
+  return handleTextResponse(response, responseContentType);
 }
 
 async function handleERPRequest(request: Request, params: Promise<{ slug: string[] }>, method: string) {
