@@ -30,7 +30,6 @@ import {
   type WindowState,
 } from "@/utils/url/constants";
 import {
-  generateSelectedRecords,
   createWindowState,
   setWindowParameters,
 } from "@/utils/url/utils";
@@ -40,13 +39,15 @@ import { useWindowContext } from "@/contexts/window";
 export function useMultiWindowURL() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // TODO: delete this on the future and move all to the context
   const {
     getActiveWindowIdentifier,
     getAllWindows,
     getTabFormState: getContextTabFormState,
     setTabFormState: setContextTabFormState,
-    clearTabFormState: clearContextTabFormState
+    clearTabFormState: clearContextTabFormState,
+    getSelectedRecord: getContextSelectedRecord,
+    setSelectedRecord: setContextSelectedRecord,
+    clearSelectedRecord: clearContextSelectedRecord,
   } = useWindowContext();
 
   // TODO: in the future this can be on the context and move all callers to use the context directly
@@ -223,7 +224,12 @@ export function useMultiWindowURL() {
     ) => {
       const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
 
-      const selectedRecordsRes = isEmptyArray(selectedRecords) ? {} : generateSelectedRecords(selectedRecords);
+      // UPDATE: Initialize selected records in context instead of window state
+      if (!isEmptyArray(selectedRecords)) {
+        selectedRecords.forEach((record) => {
+          setContextSelectedRecord(windowIdentifier, record.tabId, record.recordId);
+        });
+      }
 
       // UPDATE: Initialize form states in context instead of window state
       if (!isEmptyArray(tabFormStates)) {
@@ -238,14 +244,13 @@ export function useMultiWindowURL() {
         isActive: true,
         window_identifier: windowIdentifier,
         title: title || "",
-        selectedRecords: selectedRecordsRes,
       };
 
       updatedWindows.push(newWindow);
 
       navigate(updatedWindows);
     },
-    [windows, navigate, setContextTabFormState]
+    [windows, navigate, setContextSelectedRecord, setContextTabFormState]
   );
 
   /**
@@ -387,30 +392,8 @@ export function useMultiWindowURL() {
    */
   const applyWindowUpdates = useCallback(
     (transform: (windows: WindowState[]) => WindowState[]) => {
-      const stack = new Error().stack;
-      const caller = stack?.split("\n")[2]?.trim() || "unknown";
-
       const prevWindows = windows;
       const nextWindows = transform(windows);
-
-      // Log changes in selectedRecords for debugging
-      prevWindows.forEach((prevWin, idx) => {
-        const nextWin = nextWindows[idx];
-        if (nextWin && prevWin.windowId === nextWin.windowId) {
-          const prevSelected = prevWin.selectedRecords;
-          const nextSelected = nextWin.selectedRecords;
-
-          // Check for removed selections
-          for (const tabId of Object.keys(prevSelected)) {
-            if (prevSelected[tabId] && !nextSelected[tabId]) {
-              console.log(
-                `[applyWindowUpdates] REMOVED selection for tab ${tabId}: ${prevSelected[tabId]} -> undefined`
-              );
-              console.log(`[applyWindowUpdates] Caller: ${caller}`);
-            }
-          }
-        }
-      });
 
       navigate(nextWindows);
     },
@@ -437,27 +420,15 @@ export function useMultiWindowURL() {
    */
   const setSelectedRecord = useCallback(
     (windowIdOrIdentifier: string, tabId: string, recordId: string) => {
-      applyWindowUpdates((prev) => {
-        return prev.map((w) => {
-          // Check if parameter is windowId or window_identifier
-          // For windowId, only update the active window to avoid affecting multiple instances
-          const shouldUpdate =
-            w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive);
+      const window = windows.find(
+        (w) => w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive)
+      );
+      if (!window) return;
 
-          if (shouldUpdate) {
-            return {
-              ...w,
-              selectedRecords: {
-                ...w.selectedRecords,
-                [tabId]: recordId,
-              },
-            };
-          }
-          return w;
-        });
-      });
+      const windowIdentifier = window.window_identifier;
+      setContextSelectedRecord(windowIdentifier, tabId, recordId);
     },
-    [applyWindowUpdates]
+    [windows, setContextSelectedRecord]
   );
 
   /**
@@ -478,27 +449,15 @@ export function useMultiWindowURL() {
    */
   const clearSelectedRecord = useCallback(
     (windowIdOrIdentifier: string, tabId: string) => {
-      applyWindowUpdates((prev) => {
-        return prev.map((w) => {
-          // Check if parameter is windowId or window_identifier
-          // For windowId, only update the active window to avoid affecting multiple instances
-          const shouldUpdate =
-            w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive);
+      const window = windows.find(
+        (w) => w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive)
+      );
+      if (!window) return;
 
-          if (shouldUpdate) {
-            const newSelectedRecords = { ...w.selectedRecords };
-            delete newSelectedRecords[tabId];
-
-            return {
-              ...w,
-              selectedRecords: newSelectedRecords,
-            };
-          }
-          return w;
-        });
-      });
+      const windowIdentifier = window.window_identifier;
+      clearContextSelectedRecord(windowIdentifier, tabId);
     },
-    [applyWindowUpdates]
+    [windows, clearContextSelectedRecord]
   );
 
   /**
@@ -525,24 +484,23 @@ export function useMultiWindowURL() {
    */
   const getSelectedRecord = useCallback(
     (windowIdOrIdentifier: string, tabId: string): string | undefined => {
-      // Always read from current windows state, not searchParams
-      // searchParams can be stale during intermediate renders
-
       // Try to find by window_identifier first, then by windowId (active window only)
       const window = windows.find(
         (w) => w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive)
       );
       if (!window) return undefined;
 
+      const windowIdentifier = window.window_identifier;
+
       // UPDATE: Check context form state instead of window.tabFormStates
-      const contextFormState = getContextTabFormState(windowIdOrIdentifier, tabId);
+      const contextFormState = getContextTabFormState(windowIdentifier, tabId);
       if (contextFormState?.mode === TAB_MODES.FORM && contextFormState.recordId) {
         return contextFormState.recordId;
       }
 
-      return window.selectedRecords[tabId];
+      return getContextSelectedRecord(windowIdentifier, tabId);
     },
-    [windows, getContextTabFormState]
+    [windows, getContextTabFormState, getContextSelectedRecord]
   );
 
   /**
@@ -588,26 +546,8 @@ export function useMultiWindowURL() {
       };
 
       setContextTabFormState(windowIdOrIdentifier, tabId, formState);
-
-      // Also update selected records in URL state for consistency
-      applyWindowUpdates((prev) => {
-        return prev.map((w) => {
-          const shouldUpdate = w.window_identifier === windowIdOrIdentifier ||
-            (w.windowId === windowIdOrIdentifier && w.isActive);
-          if (shouldUpdate) {
-            return {
-              ...w,
-              selectedRecords: {
-                ...w.selectedRecords,
-                [tabId]: recordId,
-              },
-            };
-          }
-          return w;
-        });
-      });
     },
-    [setContextTabFormState, applyWindowUpdates] // UPDATE dependencies
+    [setContextTabFormState]
   );
 
   /**
@@ -701,43 +641,36 @@ export function useMultiWindowURL() {
    */
   const clearChildrenSelections = useCallback(
     (windowIdentifier: string, childTabIds: string[], isParentSelectionChanging = false) => {
-      applyWindowUpdates((prev) => {
-        return prev.map((w) => {
-          if (w.window_identifier !== windowIdentifier) return w;
+      const childrenToClean = childTabIds.filter((tabId) => {
+        if (isParentSelectionChanging) {
+          return true;
+        }
 
-          const childrenToClean = childTabIds.filter((tabId) => {
-            if (isParentSelectionChanging) {
-              return true;
-            }
-
-            // UPDATE: Use context instead of w.tabFormStates[tabId]
-            const childState = getContextTabFormState(windowIdentifier, tabId);
-            const isInFormView = childState?.mode === "form";
-            if (isInFormView) {
-              console.log(`[clearChildrenSelections] Preserving child ${tabId} - currently in FormView`, childState);
-              return false;
-            }
-            return true;
-          });
-
-          const newSelected = { ...w.selectedRecords };
-          const childrenCleaned: string[] = [];
-
-          childrenToClean.forEach((tabId) => {
-            if (newSelected[tabId]) {
-              delete newSelected[tabId];
-              childrenCleaned.push(tabId);
-              // UPDATE: Clear context form state instead of tabFormStates
-              clearContextTabFormState(windowIdentifier, tabId);
-            }
-          });
-
-          console.log(`[clearChildrenSelections] Cleared children: [${childrenCleaned.join(", ")}]`);
-          return { ...w, selectedRecords: newSelected };
-        });
+        // UPDATE: Use context instead of w.tabFormStates[tabId]
+        const childState = getContextTabFormState(windowIdentifier, tabId);
+        const isInFormView = childState?.mode === "form";
+        if (isInFormView) {
+          console.log(`[clearChildrenSelections] Preserving child ${tabId} - currently in FormView`, childState);
+          return false;
+        }
+        return true;
       });
+
+      const childrenCleaned: string[] = [];
+
+      childrenToClean.forEach((tabId) => {
+        const selectedRecord = getContextSelectedRecord(windowIdentifier, tabId);
+        if (selectedRecord) {
+          clearContextSelectedRecord(windowIdentifier, tabId);
+          childrenCleaned.push(tabId);
+        }
+        // UPDATE: Clear context form state instead of tabFormStates
+        clearContextTabFormState(windowIdentifier, tabId);
+      });
+
+      console.log(`[clearChildrenSelections] Cleared children: [${childrenCleaned.join(", ")}]`);
     },
-    [applyWindowUpdates, getContextTabFormState, clearContextTabFormState] // UPDATE dependencies
+    [getContextTabFormState, clearContextTabFormState, getContextSelectedRecord, clearContextSelectedRecord]
   );
 
   /**
@@ -780,41 +713,20 @@ export function useMultiWindowURL() {
    */
   const setSelectedRecordAndClearChildren = useCallback(
     (windowIdOrIdentifier: string, tabId: string, recordId: string, childTabIds: string[]) => {
-      applyWindowUpdates((prev) => {
-        return prev.map((w) => {
-          if (w.window_identifier !== windowIdOrIdentifier) return w;
+      const window = windows.find(
+        (w) => w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive)
+      );
+      if (!window) return;
 
-          const previousRecordId = w.selectedRecords[tabId];
-          const isParentSelectionChanging = previousRecordId !== recordId;
+      const windowIdentifier = window.window_identifier;
+      const previousRecordId = getContextSelectedRecord(windowIdentifier, tabId);
+      const isParentSelectionChanging = previousRecordId !== recordId;
 
-          const childrenToClean = childTabIds.filter((childTabId) => {
-            if (isParentSelectionChanging) {
-              return true;
-            }
-
-            // UPDATE: Use context instead of w.tabFormStates[tabId]
-            const childState = getContextTabFormState(w.window_identifier, childTabId);
-            const isInFormView = childState?.mode === "form";
-            if (isInFormView) {
-              console.log(`[setSelectedRecordAndClearChildren] Preserving child ${childTabId} - parent selection unchanged and child in FormView`);
-              return false;
-            }
-            return true;
-          });
-
-          const newSelected = { ...w.selectedRecords, [tabId]: recordId };
-
-          childrenToClean.forEach((childTabId) => {
-            delete newSelected[childTabId];
-            // UPDATE: Clear context form state instead of tabFormStates
-            clearContextTabFormState(w.window_identifier, childTabId);
-          });
-
-          return { ...w, selectedRecords: newSelected };
-        });
-      });
+      // Set the selected record using context
+      setContextSelectedRecord(windowIdentifier, tabId, recordId);
+      clearChildrenSelections(windowIdentifier, childTabIds, isParentSelectionChanging);
     },
-    [applyWindowUpdates, getContextTabFormState, clearContextTabFormState] // UPDATE dependencies
+    [windows, getContextSelectedRecord, setContextSelectedRecord, clearChildrenSelections]
   );
 
   /**
@@ -912,53 +824,52 @@ export function useMultiWindowURL() {
         selection?: { tabId: string; recordId: string; openForm?: boolean; formMode?: FormMode };
       }
     ) => {
-      applyWindowUpdates((prev) => {
-        const updated = prev.map((w) => ({ ...w, isActive: false }));
+      const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
 
-        // If window_identifier is provided, use it to find existing window
-        // Otherwise, fall back to windowId (old behavior)
-        const identifierToFind = options?.window_identifier || windowId;
-        const existingIndex = updated.findIndex((w) =>
-          options?.window_identifier ? w.window_identifier === identifierToFind : w.windowId === windowId
-        );
+      // If window_identifier is provided, use it to find existing window
+      // Otherwise, fall back to windowId (old behavior)
+      const identifierToFind = options?.window_identifier || windowId;
+      const existingIndex = updatedWindows.findIndex((w) =>
+        options?.window_identifier ? w.window_identifier === identifierToFind : w.windowId === windowId
+      );
 
-        let target: WindowState;
-        if (existingIndex >= 0) {
-          const current = updated[existingIndex];
-          target = {
-            ...current,
-            isActive: true,
-            title: options?.title ?? current.title,
-            window_identifier: options?.window_identifier ?? current.window_identifier,
-          };
-          updated[existingIndex] = target;
-        } else {
-          target = {
-            windowId,
-            isActive: true,
-            window_identifier: options?.window_identifier || windowId,
-            title: options?.title || "",
-            selectedRecords: {},
-          };
-          updated.push(target);
+      let target: WindowState;
+      if (existingIndex >= 0) {
+        const current = updatedWindows[existingIndex];
+        target = {
+          ...current,
+          isActive: true,
+          title: options?.title ?? current.title,
+          window_identifier: options?.window_identifier ?? current.window_identifier,
+        };
+        updatedWindows[existingIndex] = target;
+      } else {
+        target = {
+          windowId,
+          isActive: true,
+          window_identifier: options?.window_identifier || windowId,
+          title: options?.title || "",
+        };
+        updatedWindows.push(target);
+      }
+
+      if (options?.selection) {
+        const { tabId, recordId, openForm, formMode } = options.selection;
+        // UPDATE: Use context instead of selectedRecords property
+        setContextSelectedRecord(target.window_identifier, tabId, recordId);
+        if (openForm) {
+          // UPDATE: Use context instead of target.tabFormStates
+          setContextTabFormState(target.window_identifier, tabId, {
+            recordId,
+            mode: TAB_MODES.FORM,
+            formMode: formMode || FORM_MODES.EDIT
+          });
         }
+      }
 
-        if (options?.selection) {
-          const { tabId, recordId, openForm, formMode } = options.selection;
-          target.selectedRecords = { ...target.selectedRecords, [tabId]: recordId };
-          if (openForm) {
-            // UPDATE: Use context instead of target.tabFormStates
-            setContextTabFormState(target.window_identifier, tabId, {
-              recordId,
-              mode: TAB_MODES.FORM,
-              formMode: formMode || FORM_MODES.EDIT
-            });
-          }
-        }
-        return updated;
-      });
+      navigate(updatedWindows);
     },
-    [applyWindowUpdates, setContextTabFormState]
+    [windows, navigate, setContextSelectedRecord, setContextTabFormState]
   );
 
   return {

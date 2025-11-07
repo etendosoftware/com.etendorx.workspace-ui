@@ -39,7 +39,7 @@ import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { isFormView } from "@/utils/url/utils";
 
 /**
- * Validates if a child tab can open FormView based on parent selection in URL
+ * Validates if a child tab can open FormView based on parent selection in context
  */
 const validateParentSelectionForFormView = (
   tab: TabLevelProps["tab"],
@@ -52,8 +52,8 @@ const validateParentSelectionForFormView = (
     return true; // No parent, validation passes
   }
 
-  const parentSelectedInURL = getSelectedRecord(windowId, parentTab.id);
-  return !!parentSelectedInURL;
+  const parentSelectedInContext = getSelectedRecord(windowId, parentTab.id);
+  return !!parentSelectedInContext;
 };
 
 /**
@@ -121,11 +121,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const currentRecordId = tabFormState?.recordId || "";
   const currentFormMode = tabFormState?.formMode;
 
-  // For child tabs, verify parent has selection in URL before showing FormView
+  // For child tabs, verify parent has selection before showing FormView
   const parentTab = graph.getParent(tab);
-  const parentSelectedRecordIdFromURL =
+  const parentSelectedRecordId =
     parentTab && windowIdentifier ? getSelectedRecord(windowIdentifier, parentTab.id) : undefined;
-  const parentHasSelection = !parentTab || !!parentSelectedRecordIdFromURL;
+  const parentHasSelection = !parentTab || !!parentSelectedRecordId;
 
   const hasFormViewState = !!tabFormState && tabFormState.mode === TAB_MODES.FORM;
   const shouldShowForm =
@@ -336,9 +336,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   return (
     <div
-      className={`bg-(linear-gradient(180deg, #C6CFFF 0%, #FCFCFD 55.65%)) flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${
-        collapsed ? "hidden" : "flex-1 h-full"
-      }`}>
+      className={`bg-(linear-gradient(180deg, #C6CFFF 0%, #FCFCFD 55.65%)) flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${collapsed ? "hidden" : "flex-1 h-full"
+        }`}>
       <Toolbar
         windowId={windowIdentifier || tab.window}
         tabId={tab.id}

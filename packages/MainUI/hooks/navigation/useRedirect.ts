@@ -18,6 +18,7 @@
 import { useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { useWindowContext } from "@/contexts/window";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { isLinkedLabelOpenInForm } from "@/utils/prefs";
 import { getNewWindowIdentifier } from "@/utils/url/utils";
@@ -26,6 +27,9 @@ export const useRedirect = () => {
   const router = useRouter();
   const pathname = usePathname();
   const { openWindow, buildURL, openWindowAndSelect } = useMultiWindowURL();
+  const {
+    setSelectedRecord: setContextSelectedRecord,
+  } = useWindowContext();
   const { getWindowMetadata, loadWindowData } = useMetadataContext();
 
   const createBaseWindow = useCallback(
@@ -34,7 +38,6 @@ export const useRedirect = () => {
       window_identifier: windowIdentifier || windowId,
       isActive: true,
       title: windowIdentifier || windowId,
-      selectedRecords: {},
     }),
     []
   );
@@ -74,18 +77,20 @@ export const useRedirect = () => {
       if (windowIdentifier) {
         baseWindow.title = windowIdentifier; // Use windowIdentifier as display title
       }
-      if (targetTabId) {
-        baseWindow.selectedRecords = { [targetTabId]: selectedRecordId };
-
-        // UPDATE: Remove direct tabFormStates assignment
-        // Form state initialization will be handled by openWindowAndSelect function
-        // which now uses context internally
-      }
 
       const targetURL = buildURL([baseWindow]);
       router.push(targetURL);
+
+      // Set the selected record using context after navigation
+      if (targetTabId) {
+        // Use a small delay to ensure the window is created before setting the selected record
+        // TODO: check this
+        setTimeout(() => {
+          setContextSelectedRecord(windowId, targetTabId, selectedRecordId);
+        }, 100);
+      }
     },
-    [getWindowMetadata, loadWindowData, openWindowAndSelect, openWindow, createBaseWindow, buildURL, router]
+    [getWindowMetadata, loadWindowData, openWindowAndSelect, openWindow, createBaseWindow, buildURL, router, setContextSelectedRecord]
   );
 
   const handleAction = useCallback(

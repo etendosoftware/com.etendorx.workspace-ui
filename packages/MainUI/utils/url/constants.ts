@@ -16,7 +16,6 @@
  */
 
 export const WINDOW_IDENTIFIER_PREFIX = "wi_";
-export const SELECTED_RECORD_PREFIX = "s_";
 
 export const NEW_RECORD_ID = "new";
 
@@ -72,14 +71,6 @@ export interface WindowState {
   window_identifier: string;
 
   /**
-   * Map of selected records for each tab in the window.
-   * Key: tabId (string) - The identifier of the tab
-   * Value: recordId (string) - The ID of the currently selected record in that tab
-   * Used for maintaining selections across navigation and managing parent-child relationships.
-   */
-  selectedRecords: Record<string, string>;
-
-  /**
    * Display title for the window tab.
    * Shown in the tab bar and used for user identification of windows.
    */
@@ -91,7 +82,6 @@ export interface WindowState {
  * Results object for tab parameter processing.
  */
 export interface TabProcessingResults {
-  selectedRecords: Record<string, string>;
 }
 
 /**

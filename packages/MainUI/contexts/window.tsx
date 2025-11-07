@@ -46,7 +46,8 @@ interface NavigationState {
 interface TabState {
   table: TableState;
   navigation: NavigationState;
-  form?: TabFormState; // Add this line
+  form?: TabFormState;
+  selectedRecord?: string;
 }
 
 interface WindowState {
@@ -85,6 +86,11 @@ interface WindowContextI {
   getTabFormState: (windowIdentifier: string, tabId: string) => TabFormState | undefined;
   setTabFormState: (windowIdentifier: string, tabId: string, formState: TabFormState) => void;
   clearTabFormState: (windowIdentifier: string, tabId: string) => void;
+
+  // Selected record management
+  getSelectedRecord: (windowIdentifier: string, tabId: string) => string | undefined;
+  setSelectedRecord: (windowIdentifier: string, tabId: string, recordId: string) => void;
+  clearSelectedRecord: (windowIdentifier: string, tabId: string) => void;
 
   // Window management
   cleanupWindow: (windowIdentifier: string) => void;
@@ -394,6 +400,37 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     });
   }, []);
 
+  const getSelectedRecord = useCallback(
+    (windowIdentifier: string, tabId: string): string | undefined => {
+      if (!state[windowIdentifier] || !state[windowIdentifier].tabs[tabId]) {
+        return undefined;
+      }
+      return state[windowIdentifier].tabs[tabId].selectedRecord;
+    },
+    [state]
+  );
+
+  const setSelectedRecord = useCallback((windowIdentifier: string, tabId: string, recordId: string) => {
+    setState((prevState: WindowContextState) => {
+      const newState = ensureTabExists(prevState, windowIdentifier, tabId);
+      newState[windowIdentifier].tabs[tabId].selectedRecord = recordId;
+      return newState;
+    });
+  }, []);
+
+  const clearSelectedRecord = useCallback((windowIdentifier: string, tabId: string) => {
+    setState((prevState: WindowContextState) => {
+      const newState = { ...prevState };
+      if (newState[windowIdentifier] && newState[windowIdentifier].tabs[tabId]) {
+        newState[windowIdentifier].tabs[tabId] = {
+          ...newState[windowIdentifier].tabs[tabId],
+          selectedRecord: undefined,
+        };
+      }
+      return newState;
+    });
+  }, []);
+
   const cleanupWindow = useCallback((windowIdentifier: string) => {
     setState((prevState: WindowContextState) => {
       const newState = { ...prevState };
@@ -424,6 +461,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setTabFormState,
       clearTabFormState,
 
+      getSelectedRecord,
+      setSelectedRecord,
+      clearSelectedRecord,
+
       cleanupWindow,
     }),
     [
@@ -445,6 +486,9 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       getTabFormState,
       setTabFormState,
       clearTabFormState,
+      getSelectedRecord,
+      setSelectedRecord,
+      clearSelectedRecord,
       cleanupWindow,
     ]
   );

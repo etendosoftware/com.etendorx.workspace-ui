@@ -753,7 +753,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     registerActions({
       refresh: refetch,
       filter: toggleImplicitFilters,
-      save: async () => {},
+      save: async () => { },
       columnFilters: toggleColumnsDropdown,
     });
   }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown]);
@@ -821,9 +821,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   return (
     <div
-      className={`h-full overflow-hidden rounded-3xl transition-opacity flex flex-col ${
-        loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
-      }`}>
+      className={`h-full overflow-hidden rounded-3xl transition-opacity flex flex-col ${loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
+        }`}>
       <RecordCounterBar
         totalRecords={totalRecords}
         loadedRecords={loadedRecords}
