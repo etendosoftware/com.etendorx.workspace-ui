@@ -42,8 +42,7 @@ export interface NavigationState {
 
 export interface TabState {
   table: TableState;
-  navigation: NavigationState;
-  form?: TabFormState;
+  form: TabFormState;
   selectedRecord?: string;
 }
 
@@ -52,6 +51,7 @@ export interface WindowState {
   windowIdentifier: string;
   title: string;
   isActive: boolean;
+  navigation: NavigationState;
   tabs: {
     [tabId: string]: TabState;
   };

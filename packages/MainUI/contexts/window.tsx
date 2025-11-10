@@ -16,7 +16,7 @@
  */
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
 import type { TabFormState } from "@/utils/url/constants";
 import {
@@ -108,13 +108,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
         return defaultNavigationState;
       }
 
-      const tabIds = Object.keys(state[windowIdentifier].tabs);
-      if (tabIds.length === 0) {
-        return defaultNavigationState;
-      }
-
-      const currentTabId = tabIds[0];
-      return state[windowIdentifier].tabs[currentTabId].navigation || defaultNavigationState;
+      return state[windowIdentifier].navigation || defaultNavigationState;
     },
     [state]
   );
@@ -257,6 +251,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
           windowIdentifier,
           isActive: true,
           title: windowData?.title || "",
+          navigation: windowData?.navigation || {
+            activeLevels: [0],
+            activeTabsByLevel: new Map(),
+          },
           tabs: windowData?.tabs || {},
         };
       }
@@ -301,7 +299,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       if (newState[windowIdentifier] && newState[windowIdentifier].tabs[tabId]) {
         newState[windowIdentifier].tabs[tabId] = {
           ...newState[windowIdentifier].tabs[tabId],
-          form: undefined,
+          form: {},
         };
       }
       return newState;

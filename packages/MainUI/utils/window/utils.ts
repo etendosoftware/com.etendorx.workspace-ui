@@ -66,10 +66,11 @@ export const getNewWindowIdentifier = (windowId: string) => {
 };
 
 /**
- * Creates a default tab state with initial values for table and navigation properties.
+ * Creates a default tab state with initial values for table properties.
  * Used as the foundation when creating new tabs in the window context state.
+ * Navigation is now handled at window level, not tab level.
  *
- * @returns A new TabState object with default table and navigation configurations
+ * @returns A new TabState object with default table configuration
  */
 export const createDefaultTabState = (): TabState => ({
   table: {
@@ -79,10 +80,7 @@ export const createDefaultTabState = (): TabState => ({
     order: [],
     isImplicitFilterApplied: false,
   },
-  navigation: {
-    activeLevels: [0],
-    activeTabsByLevel: new Map(),
-  },
+  form: {},
 });
 
 /**
@@ -111,6 +109,10 @@ export const ensureTabExists = (state: WindowContextState, windowIdentifier: str
       windowIdentifier,
       isActive: false,
       title: "",
+      navigation: {
+        activeLevels: [0],
+        activeTabsByLevel: new Map(),
+      },
       tabs: {},
     };
   }
@@ -153,9 +155,8 @@ export const updateTableProperty = <T extends keyof TableState>(
 
 /**
  * Updates a specific property of the navigation state for a given window.
- * Creates the window if it doesn't exist and handles the case where no tabs exist yet
- * by creating a default tab. Navigation state is shared across all tabs in a window,
- * so it updates the navigation property of the first available tab or creates a default one.
+ * Creates the window if it doesn't exist. Navigation state is now managed
+ * at window level, not tab level.
  *
  * @template T - The type of the navigation property being updated
  * @param prevState - The current window context state
@@ -183,25 +184,14 @@ export const updateNavigationProperty = <T extends keyof NavigationState>(
       windowIdentifier,
       isActive: false,
       title: "",
+      navigation: {
+        activeLevels: [0],
+        activeTabsByLevel: new Map(),
+      },
       tabs: {},
     };
   }
 
-  const tabIds = Object.keys(newState[windowIdentifier].tabs);
-  const isTabIdsEmpty = tabIds.length === 0;
-
-  if (isTabIdsEmpty) {
-    const defaultTabId = "default";
-    newState[windowIdentifier].tabs[defaultTabId] = createDefaultTabState();
-    newState[windowIdentifier].tabs[defaultTabId].navigation[property] = value;
-    return newState;
-  }
-
-  const currentTabId = tabIds[0];
-  if (!newState[windowIdentifier].tabs[currentTabId]) {
-    newState[windowIdentifier].tabs[currentTabId] = createDefaultTabState();
-  }
-
-  newState[windowIdentifier].tabs[currentTabId].navigation[property] = value;
+  newState[windowIdentifier].navigation[property] = value;
   return newState;
 };
