@@ -18,7 +18,7 @@
 // @data-testid-ignore
 "use client";
 
-import { useCallback, useState, useEffect, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
@@ -31,10 +31,9 @@ import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab
 
 interface ExtendedTabsProps extends TabsProps {
   isTopGroup?: boolean;
-  onTabChange?: (tab: TabType) => void;
 }
 
-export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }: ExtendedTabsProps) {
+export default function TabsComponent({ tabs, isTopGroup = false }: ExtendedTabsProps) {
   const [current, setCurrent] = useState(tabs[0]);
   // Visual active tab id updates immediately for instant feedback
   const [activeTabId, setActiveTabId] = useState(tabs[0].id);
@@ -121,12 +120,6 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
 
     return subTabsSwitch;
   };
-
-  useEffect(() => {
-    if (onTabChange && current) {
-      onTabChange(current);
-    }
-  }, [current, onTabChange]);
 
   return (
     <TabContainer

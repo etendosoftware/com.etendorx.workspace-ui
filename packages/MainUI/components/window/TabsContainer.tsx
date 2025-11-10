@@ -101,19 +101,6 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
   }, [windowData]);
 
   /**
-   * Callback to handle tab selection changes within a level.
-   *
-   * Purpose: Updates the activeTabsByLevel mapping when user selects different tab
-   * Triggers: Navigation state persistence and potential child tab filtering updates
-   */
-  const handleTabChange = useCallback(
-    (tab: Tab) => {
-      setActiveTabsByLevel(tab);
-    },
-    [setActiveTabsByLevel]
-  );
-
-  /**
    * Determines which tab should be active for a given hierarchical level.
    *
    * Algorithm:
@@ -195,6 +182,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
   );
 
   /**
+   * TODO: move to a more central location
    * Session restoration effect for active tab levels and tab selections.
    *
    * This effect runs once during component initialization to restore navigation state
@@ -248,6 +236,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
 
     // Handle window with no saved form states - reset to clean state
     if (formStateTabIds.length === 0) {
+      console.log("TabsContainer: No form states found, resetting navigation state.");
       setActiveLevel(0);
       setActiveTabsByLevel();
       for (const tab of tabs) {
@@ -269,6 +258,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
 
     // Handle window with saved form states - restore navigation depth
     if (lastFormStateIndex > 0) {
+      console.log("TabsContainer: Restoring navigation state to level", lastFormStateIndex);
       setActiveLevel(lastFormStateIndex, true); // Use expand mode for direct restoration
     }
 
@@ -310,7 +300,6 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
               key={tabs[0].id}
               tabs={tabs}
               isTopGroup={isTopGroup}
-              onTabChange={handleTabChange}
               data-testid="Tabs__895626"
             />
           );
