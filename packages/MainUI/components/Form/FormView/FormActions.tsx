@@ -26,6 +26,7 @@ import { globalCalloutManager } from "@/services/callouts";
 import { logger } from "@/utils/logger";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
+import { useWindowContext } from "@/contexts/window";
 
 interface FormActionsProps {
   tab: Tab;
@@ -39,7 +40,8 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
   const formContext = useFormContext();
   const { isDirty } = formContext.formState;
 
-  const { activeWindow, clearTabFormStateAtomic } = useMultiWindowURL();
+  const { clearTabFormStateAtomic } = useMultiWindowURL();
+  const { activeWindow } = useWindowContext();
   const { registerActions, setSaveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
   const { isFormInitializing } = useFormInitializationContext();

@@ -25,7 +25,6 @@ import { useDeleteRecord } from "../useDeleteRecord";
 import { useMetadataContext } from "../useMetadataContext";
 import { useTranslation } from "../useTranslation";
 import { useStatusModal } from "./useStatusModal";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
@@ -63,8 +62,7 @@ export const useToolbarConfig = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { tab } = useTabContext();
-  const { activeWindow } = useMultiWindowURL();
-  const { clearSelectedRecord, getSelectedRecord } = useWindowContext();
+  const { activeWindow, clearSelectedRecord, getSelectedRecord } = useWindowContext();
   const { graph } = useSelected();
 
   const selectedMultiple = useSelectedRecords(tab);

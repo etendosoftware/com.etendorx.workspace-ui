@@ -436,11 +436,11 @@ export default function useTableSelection(
 ) {
   const { graph } = useSelected();
   const {
-    activeWindow,
     clearChildrenSelections,
     setSelectedRecordAndClearChildren,
   } = useMultiWindowURL();
   const {
+    activeWindow,
     clearSelectedRecord,
     getTabFormState,
     setSelectedRecord,

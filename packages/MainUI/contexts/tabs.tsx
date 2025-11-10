@@ -18,7 +18,7 @@
 "use client";
 
 import { createContext, useContext, useMemo, useRef, useState, useCallback, useEffect } from "react";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { useWindowContext } from "@/contexts/window";
 
 type TabsContextType = {
   containerRef: React.RefObject<HTMLDivElement>;
@@ -50,7 +50,7 @@ export default function TabsProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { activeWindow } = useMultiWindowURL();
+  const { activeWindow } = useWindowContext();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const windowsContainerRef = useRef<HTMLDivElement>(null);

@@ -26,19 +26,7 @@ export const isFormView = ({
 };
 
 /**
- * Generates a unique window identifier by appending a timestamp to the window ID.
- * This allows multiple instances of the same window type to exist simultaneously
- * in the multi-window navigation system. The timestamp ensures uniqueness across
- * browser sessions and prevents identifier collisions.
- *
- * @param windowId - The base window ID (business entity identifier)
- * @returns A unique window identifier in the format "windowId_timestamp"
- */
-export const getNewWindowIdentifier = (windowId: string) => {
-  return `${windowId}_${Date.now()}`;
-};
-
-/**
+ * TODO: this func will be usefull to reconstruct the window state from URL params
  * Creates a WindowState object from URL parameters for a given window identifier.
  * Reconstructs the complete window state by parsing all relevant URL parameters.
  *
@@ -70,6 +58,7 @@ export const createWindowState = (windowIdentifier: string, searchParams: URLSea
 };
 
 /**
+ * TODO: this func will be usefull to set all window params in URL
  * Sets all URL parameters for a window based on its WindowState.
  * Encodes the complete window state into URL parameters using the established parameter naming conventions.
  *

@@ -23,7 +23,7 @@ import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
 import type { IMetadataContext } from "./types";
 import { useDatasourceContext } from "./datasourceContext";
 import { mapBy } from "@/utils/structures";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { useWindowContext } from "@/contexts/window";
 import { logger } from "@/utils/logger";
 
 export const MetadataContext = createContext({} as IMetadataContext);
@@ -33,7 +33,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const [loadingWindows, setLoadingWindows] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, Error | undefined>>({});
 
-  const { activeWindow } = useMultiWindowURL();
+  const { activeWindow } = useWindowContext();
   const { removeRecordFromDatasource } = useDatasourceContext();
 
   const currentWindowId = activeWindow?.windowId;

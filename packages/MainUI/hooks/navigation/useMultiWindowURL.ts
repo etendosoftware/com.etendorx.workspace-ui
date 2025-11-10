@@ -18,7 +18,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import {
   FORM_MODES,
   TAB_MODES,
@@ -28,7 +28,6 @@ import {
 } from "@/utils/url/constants";
 import { WindowState } from "@/utils/window/constants";
 import {
-  createWindowState,
   setWindowParameters,
 } from "@/utils/url/utils";
 import { isEmptyArray } from "@/utils/commons";
@@ -38,8 +37,7 @@ export function useMultiWindowURL() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const {
-    getActiveWindowIdentifier,
-    getAllWindows,
+    windows,
     getTabFormState,
     setTabFormState,
     clearTabFormState,
@@ -47,45 +45,6 @@ export function useMultiWindowURL() {
     setSelectedRecord,
     clearSelectedRecord,
   } = useWindowContext();
-
-  // TODO: in the future this can be on the context and move all callers to use the context directly
-  const { windows, activeWindow, isHomeRoute } = useMemo(() => {
-    const windowStates: WindowState[] = [];
-    let active: WindowState | undefined;
-
-    const allWindows = getAllWindows();
-    const activeWindowIdentifier = getActiveWindowIdentifier();
-
-    // TODO: in the future the createWindowState maybe it should be not necessary
-    // TODO: define the types here
-    for (const [windowIdentifier, windowState] of Object.entries(allWindows)) {
-      const urlWindowState = createWindowState(windowIdentifier, searchParams);
-
-      const isActive = windowIdentifier === activeWindowIdentifier;
-      const formattedWindow: WindowState = {
-        ...urlWindowState,
-        isActive: isActive,
-        title: windowState.title,
-        windowIdentifier: windowIdentifier,
-        tabs: windowState.tabs || {}
-      };
-
-      if (isActive) {
-        active = formattedWindow;
-      }
-
-      windowStates.push(formattedWindow);
-    }
-
-    const hasActiveWindow = windowStates.some(window => window.isActive);
-    const isHome = !hasActiveWindow;
-
-    return {
-      windows: windowStates,
-      activeWindow: active,
-      isHomeRoute: isHome,
-    };
-  }, [searchParams, getActiveWindowIdentifier, getAllWindows]);
 
   /**
    * Builds a complete URL with all window states encoded as URL parameters.
@@ -572,9 +531,6 @@ export function useMultiWindowURL() {
   );
 
   return {
-    windows,
-    activeWindow,
-    isHomeRoute,
     openWindow,
     navigateToHome,
     buildURL,

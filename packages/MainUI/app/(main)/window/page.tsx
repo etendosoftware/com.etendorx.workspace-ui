@@ -17,13 +17,13 @@
 // @data-testid-ignore
 "use client";
 import WindowTabs from "@/components/NavigationTabs/WindowTabs";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { useWindowContext } from "@/contexts/window";
 import Home from "@/screens/Home";
 import Window from "@/components/window/Window";
 import TabsProvider from "@/contexts/tabs";
 
 export default function Page() {
-  const { windows, activeWindow, isHomeRoute } = useMultiWindowURL();
+  const { windows, activeWindow, isHomeRoute } = useWindowContext();
 
   const shouldShowTabs = windows.length > 0;
 

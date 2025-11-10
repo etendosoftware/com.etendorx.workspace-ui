@@ -30,9 +30,9 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useWindowContext } from "@/contexts/window";
 
 export default function WindowTabs() {
-  const { windows, isHomeRoute, navigateToHome } = useMultiWindowURL();
+  const { navigateToHome } = useMultiWindowURL();
   const { t } = useTranslation();
-  const { cleanupWindow, setWindowActive } = useWindowContext();
+  const { windows, isHomeRoute, cleanupWindow, setWindowActive } = useWindowContext();
 
   const {
     containerRef,

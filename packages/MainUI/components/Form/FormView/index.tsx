@@ -89,8 +89,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   const { graph } = useSelected();
-  const { activeWindow, setSelectedRecordAndClearChildren } = useMultiWindowURL();
-  const { setSelectedRecord, getSelectedRecord } = useWindowContext();
+  const { setSelectedRecordAndClearChildren } = useMultiWindowURL();
+  const { activeWindow, setSelectedRecord, getSelectedRecord } = useWindowContext();
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
   const { resetFormChanges, parentTab } = useTabContext();
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =

@@ -19,9 +19,10 @@ import { useCallback } from "react";
 import LinkedItems from "@workspaceui/componentlibrary/src/components/LinkedItems";
 import { fetchLinkedItemCategories, fetchLinkedItems } from "@workspaceui/api-client/src/api/linkedItems";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { useWindowContext } from "@/contexts/window";
 import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
 import { useTranslation } from "@/hooks/useTranslation";
-import { getNewWindowIdentifier } from "@/utils/url/utils";
+import { getNewWindowIdentifier } from "@/utils/window/utils";
 
 interface LinkedItemsSectionProps {
   tabId: string;
@@ -32,7 +33,7 @@ interface LinkedItemsSectionProps {
 export const LinkedItemsSection = ({ tabId, entityName, recordId }: LinkedItemsSectionProps) => {
   const { openWindow } = useMultiWindowURL();
   const { t } = useTranslation();
-  const { activeWindow } = useMultiWindowURL();
+  const { activeWindow } = useWindowContext();
 
   const handleFetchCategories = useCallback(
     async (params: { windowId: string; entityName: string; recordId: string }) => {

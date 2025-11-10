@@ -36,7 +36,7 @@ import { ErrorDisplay } from "../ErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
 import { useSelected } from "@/hooks/useSelected";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { useWindowContext } from "@/contexts/window";
 import { logger } from "@/utils/logger";
 import PlusFolderFilledIcon from "../../../ComponentLibrary/src/assets/icons/folder-plus-filled.svg";
 import MinusFolderIcon from "../../../ComponentLibrary/src/assets/icons/folder-minus.svg";
@@ -50,7 +50,6 @@ import { getDisplayColumnDefOptions, getMUITableBodyCellProps, getCurrentRowCanE
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
 import { RecordCounterBar } from "@workspaceui/componentlibrary/src/components";
-import { useWindowContext } from "@/contexts/window";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -78,7 +77,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     registerFetchMore,
   } = useDatasourceContext();
   const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal } = useToolbarContext();
-  const { activeWindow } = useMultiWindowURL();
+  const { activeWindow } = useWindowContext();
   const { getSelectedRecord } = useWindowContext();
   const { tab, parentTab, parentRecord } = useTabContext();
 

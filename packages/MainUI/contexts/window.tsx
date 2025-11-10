@@ -37,7 +37,14 @@ interface WindowContextI {
   getActiveWindowIdentifier: () => string | null;
   getActiveWindowProperty: (propertyName: string) => string | boolean | object | null;
   getAllWindowsIdentifiers: () => string[];
-  getAllWindows: () => WindowContextState;
+  getAllWindows: () => WindowState[];
+  getActiveWindow: () => WindowState | null;
+  getAllState: () => WindowContextState;
+
+  // Direct access to computed values
+  windows: WindowState[];
+  activeWindow: WindowState | null;
+  isHomeRoute: boolean;
 
   // State setters
   setTableFilters: (windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState) => void;
@@ -157,6 +164,7 @@ const updateNavigationProperty = <T extends keyof NavigationState>(
 export default function WindowProvider({ children }: React.PropsWithChildren) {
   const [state, setState] = useState<WindowContextState>({});
 
+  // Getters
   const getTableState = useCallback(
     (windowIdentifier: string, tabId: string): TableState => {
       const defaultTableState: TableState = {
@@ -250,10 +258,20 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     return Object.keys(state);
   }, [state]);
 
-  const getAllWindows = useCallback((): WindowContextState => {
+  const getAllState = useCallback((): WindowContextState => {
     return state;
   }, [state]);
 
+  const getAllWindows = useCallback((): WindowState[] => {
+    return Object.values(state);
+  }, [state]);
+
+  const getActiveWindow = useCallback((): WindowState | null => {
+    const activeWindowIdentifier = getActiveWindowIdentifier();
+    return activeWindowIdentifier ? state[activeWindowIdentifier] : null;
+  }, [state, getActiveWindowIdentifier]);
+
+  // Setters
   const setTableFilters = useCallback((windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState) => {
     setState((prevState: WindowContextState) =>
       updateTableProperty(prevState, windowIdentifier, tabId, "filters", filters)
@@ -416,14 +434,33 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     });
   }, []);
 
+  // Computed values using existing helper functions
+  const windows = useMemo((): WindowState[] => {
+    return getAllWindows();
+  }, [getAllWindows]);
+
+  const activeWindow = useMemo((): WindowState | null => {
+    return getActiveWindow();
+  }, [getActiveWindow]);
+
+  const isHomeRoute = useMemo((): boolean => {
+    return !activeWindow;
+  }, [activeWindow]);
+
   const value = useMemo(
     () => ({
+      windows,
+      activeWindow,
+      isHomeRoute,
+
       getTableState,
       getNavigationState,
       getActiveWindowIdentifier,
       getActiveWindowProperty,
       getAllWindowsIdentifiers,
       getAllWindows,
+      getActiveWindow,
+      getAllState,
 
       setTableFilters,
       setTableVisibility,
@@ -445,12 +482,19 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       cleanupWindow,
     }),
     [
+      windows,
+      activeWindow,
+      isHomeRoute,
+
       getTableState,
       getNavigationState,
       getActiveWindowIdentifier,
       getActiveWindowProperty,
       getAllWindowsIdentifiers,
       getAllWindows,
+      getActiveWindow,
+      getAllState,
+
       setTableFilters,
       setTableVisibility,
       setTableSorting,

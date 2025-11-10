@@ -72,8 +72,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { saveButtonState } = useToolbarContext();
   const { buttons, processButtons, loading, refetch } = useToolbar(windowId, tab?.id);
   const { graph } = useSelected();
-  const { activeWindow, clearChildrenSelections } = useMultiWindowURL();
-  const { getTabFormState } = useWindowContext();
+  const { clearChildrenSelections } = useMultiWindowURL();
+  const { activeWindow, getTabFormState } = useWindowContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { isSessionSyncLoading, isCopilotInstalled, session } = useUserContext();

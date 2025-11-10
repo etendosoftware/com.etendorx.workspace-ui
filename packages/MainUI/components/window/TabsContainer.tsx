@@ -20,7 +20,6 @@
 import { useMemo, useCallback, useEffect, useState } from "react";
 import Tabs from "@/components/window/Tabs";
 import AppBreadcrumb from "@/components/Breadcrums";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { useSelected } from "@/hooks/useSelected";
 import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
@@ -57,7 +56,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
   /**
    * Multi-window navigation hook providing access to current window state.
    */
-  const { activeWindow } = useMultiWindowURL();
+  const { activeWindow } = useWindowContext();
 
   /**
    * Window context providing form state management functions.

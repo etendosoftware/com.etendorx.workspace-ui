@@ -21,7 +21,7 @@ import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useWindowContext } from "@/contexts/window";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { isLinkedLabelOpenInForm } from "@/utils/prefs";
-import { getNewWindowIdentifier } from "@/utils/url/utils";
+import { getNewWindowIdentifier } from "@/utils/window/utils";
 
 export const useRedirect = () => {
   const router = useRouter();

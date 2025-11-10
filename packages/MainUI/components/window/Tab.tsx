@@ -100,11 +100,11 @@ const handleEditRecordFormState = (
 export function Tab({ tab, collapsed }: TabLevelProps) {
   const { window } = useMetadataContext();
   const {
-    activeWindow,
     clearTabFormStateAtomic,
     clearChildrenSelections,
   } = useMultiWindowURL();
   const {
+    activeWindow,
     clearSelectedRecord,
     getTabFormState,
     setSelectedRecord,

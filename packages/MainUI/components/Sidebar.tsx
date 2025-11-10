@@ -32,7 +32,7 @@ import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
-import { getNewWindowIdentifier } from "@/utils/url/utils";
+import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { useWindowContext } from "@/contexts/window";
 
 /**
@@ -72,8 +72,8 @@ export default function Sidebar() {
   const menu = useMenu(token, currentRole || undefined, language);
   const router = useRouter();
   const pathname = usePathname();
-  const { activeWindow, openWindow, buildURL } = useMultiWindowURL();
-  const { setWindowActive } = useWindowContext();
+  const { openWindow, buildURL } = useMultiWindowURL();
+  const { activeWindow, setWindowActive } = useWindowContext();
 
   const [searchValue, setSearchValue] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());

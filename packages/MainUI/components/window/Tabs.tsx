@@ -24,7 +24,7 @@ import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
 import { SubTabsSwitch } from "@/components/window/SubTabsSwitch";
 import { Tab } from "@/components/window/Tab";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { useWindowContext } from "@/contexts/window";
 import TabContextProvider from "@/contexts/tab";
 import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHandle";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
@@ -42,7 +42,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
   const [customHeight, setCustomHeight] = useState(50);
   const [isPending, startTransition] = useTransition();
 
-  const { activeWindow } = useMultiWindowURL();
+  const { activeWindow } = useWindowContext();
   const { activeLevels, setActiveLevel } = useTableStatePersistenceTab({
     windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: "",

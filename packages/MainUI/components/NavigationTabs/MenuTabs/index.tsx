@@ -17,7 +17,7 @@
 
 // @data-testid-ignore
 "use client";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { useWindowContext } from "@/contexts/window";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import MenuItem from "@/components/NavigationTabs/MenuTabs/MenuItem";
 
@@ -28,7 +28,7 @@ interface MenuTabsProps {
 }
 
 export default function MenuTabs({ anchorEl, onClose, onSelect }: MenuTabsProps) {
-  const { windows } = useMultiWindowURL();
+  const { windows } = useWindowContext();
 
   return (
     <Menu anchorEl={anchorEl} onClose={onClose} data-testid={`Menu__${windows[0]?.windowId ?? "8b7d80"}`}>
