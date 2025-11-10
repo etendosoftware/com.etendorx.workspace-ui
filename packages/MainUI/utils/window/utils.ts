@@ -6,6 +6,12 @@ import {
   FormMode,
   TabMode,
 } from "@/utils/url/constants";
+import {
+  TableState,
+  NavigationState,
+  WindowContextState,
+  TabState
+} from "@/utils/window/constants";
 
 /**
  * Generates a new tab form state for a specific record and mode.
@@ -57,4 +63,145 @@ export const getWindowIdFromIdentifier = (windowIdentifier: string): string => {
  */
 export const getNewWindowIdentifier = (windowId: string) => {
   return `${windowId}_${Date.now()}`;
+};
+
+/**
+ * Creates a default tab state with initial values for table and navigation properties.
+ * Used as the foundation when creating new tabs in the window context state.
+ *
+ * @returns A new TabState object with default table and navigation configurations
+ */
+export const createDefaultTabState = (): TabState => ({
+  table: {
+    filters: [],
+    visibility: {},
+    sorting: [],
+    order: [],
+    isImplicitFilterApplied: false,
+  },
+  navigation: {
+    activeLevels: [0],
+    activeTabsByLevel: new Map(),
+  },
+});
+
+/**
+ * Ensures that a window and tab exist in the window context state.
+ * Creates the window and/or tab with default values if they don't exist.
+ * This function guarantees that subsequent operations on the window/tab will not fail
+ * due to missing state structure.
+ *
+ * @param state - The current window context state
+ * @param windowIdentifier - The unique identifier of the window
+ * @param tabId - The ID of the tab within the window
+ * @returns A new state object with the window and tab guaranteed to exist
+ * 
+ * @example
+ * // Used in window context to ensure state structure before updates
+ * const newState = ensureTabExists(prevState, "window_123", "tab1");
+ * // Now safely access: newState["window_123"].tabs["tab1"]
+ */
+export const ensureTabExists = (state: WindowContextState, windowIdentifier: string, tabId: string): WindowContextState => {
+  const newState = { ...state };
+
+  if (!newState[windowIdentifier]) {
+    const windowId = getWindowIdFromIdentifier(windowIdentifier);
+    newState[windowIdentifier] = {
+      windowId,
+      windowIdentifier,
+      isActive: false,
+      title: "",
+      tabs: {},
+    };
+  }
+
+  if (!newState[windowIdentifier].tabs[tabId]) {
+    newState[windowIdentifier].tabs[tabId] = createDefaultTabState();
+  }
+
+  return newState;
+};
+
+/**
+ * Updates a specific property of the table state for a given window and tab.
+ * Ensures the window and tab exist before performing the update.
+ * Used by table-related setters in the window context.
+ *
+ * @template T - The type of the table property being updated
+ * @param prevState - The current window context state
+ * @param windowIdentifier - The unique identifier of the window
+ * @param tabId - The ID of the tab within the window
+ * @param property - The table property to update (filters, visibility, sorting, order, etc.)
+ * @param value - The new value for the table property
+ * @returns A new state object with the updated table property
+ * 
+ * @example
+ * // Used in setTableFilters:
+ * updateTableProperty(prevState, "window_123", "tab1", "filters", newFilters);
+ */
+export const updateTableProperty = <T extends keyof TableState>(
+  prevState: WindowContextState,
+  windowIdentifier: string,
+  tabId: string,
+  property: T,
+  value: TableState[T]
+): WindowContextState => {
+  const newState = ensureTabExists(prevState, windowIdentifier, tabId);
+  newState[windowIdentifier].tabs[tabId].table[property] = value;
+  return newState;
+};
+
+/**
+ * Updates a specific property of the navigation state for a given window.
+ * Creates the window if it doesn't exist and handles the case where no tabs exist yet
+ * by creating a default tab. Navigation state is shared across all tabs in a window,
+ * so it updates the navigation property of the first available tab or creates a default one.
+ *
+ * @template T - The type of the navigation property being updated
+ * @param prevState - The current window context state
+ * @param windowIdentifier - The unique identifier of the window
+ * @param property - The navigation property to update (activeLevels, activeTabsByLevel)
+ * @param value - The new value for the navigation property
+ * @returns A new state object with the updated navigation property
+ * 
+ * @example
+ * // Used in setNavigationActiveLevels:
+ * updateNavigationProperty(prevState, "window_123", "activeLevels", [0, 1, 2]);
+ */
+export const updateNavigationProperty = <T extends keyof NavigationState>(
+  prevState: WindowContextState,
+  windowIdentifier: string,
+  property: T,
+  value: NavigationState[T]
+): WindowContextState => {
+  const newState = { ...prevState };
+
+  if (!newState[windowIdentifier]) {
+    const windowId = getWindowIdFromIdentifier(windowIdentifier);
+    newState[windowIdentifier] = {
+      windowId,
+      windowIdentifier,
+      isActive: false,
+      title: "",
+      tabs: {},
+    };
+  }
+
+  const tabIds = Object.keys(newState[windowIdentifier].tabs);
+  const isTabIdsEmpty = tabIds.length === 0;
+
+  if (isTabIdsEmpty) {
+    const defaultTabId = "default";
+    newState[windowIdentifier].tabs[defaultTabId] = createDefaultTabState();
+    newState[windowIdentifier].tabs[defaultTabId].navigation[property] = value;
+    return newState;
+  }
+
+  const currentTabId = tabIds[0];
+  if (!newState[windowIdentifier].tabs[currentTabId]) {
+    newState[windowIdentifier].tabs[currentTabId] = createDefaultTabState();
+  }
+
+  newState[windowIdentifier].tabs[currentTabId].navigation[property] = value;
+  return newState;
 };

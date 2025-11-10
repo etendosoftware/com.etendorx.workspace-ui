@@ -24,11 +24,10 @@ import {
   TableState,
   NavigationState,
   WindowContextState,
-  TabState,
   WINDOW_PROPERTY_NAMES,
   WindowPropertyName
 } from "@/utils/window/constants";
-import { getWindowIdFromIdentifier } from '@/utils/window/utils';
+import { getWindowIdFromIdentifier, ensureTabExists, updateTableProperty, updateNavigationProperty } from '@/utils/window/utils';
 
 interface WindowContextI {
   // State getters
@@ -73,92 +72,6 @@ interface WindowContextI {
 
 // Context creation
 const WindowContext = createContext<WindowContextI | undefined>(undefined);
-
-// Helper functions to reduce code duplication
-const createDefaultTabState = (): TabState => ({
-  table: {
-    filters: [],
-    visibility: {},
-    sorting: [],
-    order: [],
-    isImplicitFilterApplied: false,
-  },
-  navigation: {
-    activeLevels: [0],
-    activeTabsByLevel: new Map(),
-  },
-});
-
-const ensureTabExists = (state: WindowContextState, windowIdentifier: string, tabId: string): WindowContextState => {
-  const newState = { ...state };
-
-  if (!newState[windowIdentifier]) {
-    const windowId = getWindowIdFromIdentifier(windowIdentifier);
-    newState[windowIdentifier] = {
-      windowId,
-      windowIdentifier,
-      isActive: false,
-      title: "",
-      tabs: {},
-    };
-  }
-
-  if (!newState[windowIdentifier].tabs[tabId]) {
-    newState[windowIdentifier].tabs[tabId] = createDefaultTabState();
-  }
-
-  return newState;
-};
-
-const updateTableProperty = <T extends keyof TableState>(
-  prevState: WindowContextState,
-  windowIdentifier: string,
-  tabId: string,
-  property: T,
-  value: TableState[T]
-): WindowContextState => {
-  const newState = ensureTabExists(prevState, windowIdentifier, tabId);
-  newState[windowIdentifier].tabs[tabId].table[property] = value;
-  return newState;
-};
-
-const updateNavigationProperty = <T extends keyof NavigationState>(
-  prevState: WindowContextState,
-  windowIdentifier: string,
-  property: T,
-  value: NavigationState[T]
-): WindowContextState => {
-  const newState = { ...prevState };
-
-  if (!newState[windowIdentifier]) {
-    const windowId = getWindowIdFromIdentifier(windowIdentifier);
-    newState[windowIdentifier] = {
-      windowId,
-      windowIdentifier,
-      isActive: false,
-      title: "",
-      tabs: {},
-    };
-  }
-
-  const tabIds = Object.keys(newState[windowIdentifier].tabs);
-  const isTabIdsEmpty = tabIds.length === 0;
-
-  if (isTabIdsEmpty) {
-    const defaultTabId = "default";
-    newState[windowIdentifier].tabs[defaultTabId] = createDefaultTabState();
-    newState[windowIdentifier].tabs[defaultTabId].navigation[property] = value;
-    return newState;
-  }
-
-  const currentTabId = tabIds[0];
-  if (!newState[windowIdentifier].tabs[currentTabId]) {
-    newState[windowIdentifier].tabs[currentTabId] = createDefaultTabState();
-  }
-
-  newState[windowIdentifier].tabs[currentTabId].navigation[property] = value;
-  return newState;
-};
 
 // Provider component
 export default function WindowProvider({ children }: React.PropsWithChildren) {
