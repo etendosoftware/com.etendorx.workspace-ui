@@ -451,7 +451,7 @@ export default function useTableSelection(
   const previousSingleSelectionRef = useRef<string | undefined>(undefined);
 
   const windowId = activeWindow?.windowId;
-  const windowIdentifier = activeWindow?.window_identifier;
+  const windowIdentifier = activeWindow?.windowIdentifier;
   const currentWindowId = tab.window;
 
   // Initialize previousSingleSelectionRef from URL on mount/remount

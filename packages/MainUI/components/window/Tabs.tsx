@@ -44,7 +44,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
 
   const { activeWindow } = useMultiWindowURL();
   const { activeLevels, setActiveLevel } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.window_identifier || "",
+    windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: "",
   });
 

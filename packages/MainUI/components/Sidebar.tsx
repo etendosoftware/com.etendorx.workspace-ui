@@ -124,10 +124,10 @@ export default function Sidebar() {
         // Coming from home route - create new window and navigate
         const newWindow = {
           windowId,
-          window_identifier: newWindowIdentifier,
+          windowIdentifier: newWindowIdentifier,
           isActive: true,
           title: item.name,
-          selectedRecords: {},
+          tabs: {},
         };
 
         const targetURL = buildURL([newWindow]);

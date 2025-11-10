@@ -25,8 +25,8 @@ import {
   type FormMode,
   type TabFormState,
   type SelectedRecord,
-  type WindowState,
 } from "@/utils/url/constants";
+import { WindowState } from "@/utils/window/constants";
 import {
   createWindowState,
   setWindowParameters,
@@ -62,7 +62,13 @@ export function useMultiWindowURL() {
       const urlWindowState = createWindowState(windowIdentifier, searchParams);
 
       const isActive = windowIdentifier === activeWindowIdentifier;
-      const formattedWindow = { ...urlWindowState, isActive: isActive, title: windowState.title };
+      const formattedWindow: WindowState = {
+        ...urlWindowState,
+        isActive: isActive,
+        title: windowState.title,
+        windowIdentifier: windowIdentifier,
+        tabs: windowState.tabs || {}
+      };
 
       if (isActive) {
         active = formattedWindow;
@@ -91,8 +97,8 @@ export function useMultiWindowURL() {
    * @example
    * ```typescript
    * const windows = [
-   *   { windowId: "ProductWindow", isActive: true, window_identifier: "prod_123", ... },
-   *   { windowId: "CustomerWindow", isActive: false, window_identifier: "cust_456", ... }
+   *   { windowId: "ProductWindow", isActive: true, windowIdentifier: "prod_123", ... },
+   *   { windowId: "CustomerWindow", isActive: false, windowIdentifier: "cust_456", ... }
    * ];
    * const url = buildURL(windows);
    * // Returns: "/window?w_prod_123=active&o_prod_123=1&wi_prod_123=ProductWindow&w_cust_456=inactive&o_cust_456=2&wi_cust_456=CustomerWindow"
@@ -119,7 +125,7 @@ export function useMultiWindowURL() {
    * ```typescript
    * // Navigate to a state with one active window
    * const newState = [
-   *   { windowId: "ProductWindow", isActive: true, window_identifier: "prod_123", ... }
+   *   { windowId: "ProductWindow", isActive: true, windowIdentifier: "prod_123", ... }
    * ];
    * navigate(newState);
    * // Browser URL changes to: /window?w_prod_123=active&o_prod_123=1&wi_prod_123=ProductWindow&...
@@ -172,7 +178,7 @@ export function useMultiWindowURL() {
 
   /**
    * Opens a new window or activates an existing one with the specified window ID, title, and optional initial state.
-   * If a window with a matching window_identifier already exists, it will be activated and optionally retitled.
+   * If a window with a matching windowIdentifier already exists, it will be activated and optionally retitled.
    * If no matching window exists, creates a new window with a unique identifier and adds it to the state.
    * Supports setting initial selected records and tab form states for immediate navigation to specific records.
    * Form states are now managed via React context for better performance and state isolation.
@@ -240,8 +246,9 @@ export function useMultiWindowURL() {
       const newWindow: WindowState = {
         windowId,
         isActive: true,
-        window_identifier: windowIdentifier,
+        windowIdentifier: windowIdentifier,
         title: title || "",
+        tabs: {}
       };
 
       updatedWindows.push(newWindow);
@@ -405,11 +412,11 @@ export function useMultiWindowURL() {
   const setSelectedRecordAndClearChildren = useCallback(
     (windowIdOrIdentifier: string, tabId: string, recordId: string, childTabIds: string[]) => {
       const window = windows.find(
-        (w) => w.window_identifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive)
+        (w) => w.windowIdentifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive)
       );
       if (!window) return;
 
-      const windowIdentifier = window.window_identifier;
+      const windowIdentifier = window.windowIdentifier;
       const previousRecordId = getSelectedRecord(windowIdentifier, tabId);
       const isParentSelectionChanging = previousRecordId !== recordId;
 
@@ -446,11 +453,11 @@ export function useMultiWindowURL() {
    */
   const clearTabFormStateAtomic = useCallback(
     (windowId: string, tabId: string) => {
-      // Use applyWindowUpdates to access current state and find window_identifier
+      // Use applyWindowUpdates to access current state and find windowIdentifier
       applyWindowUpdates((prev) => {
         const targetWindow = prev.find(w => w.windowId === windowId);
         if (targetWindow) {
-          clearTabFormState(targetWindow.window_identifier, tabId);
+          clearTabFormState(targetWindow.windowIdentifier, tabId);
         }
         return prev; // No state change needed
       });
@@ -521,7 +528,7 @@ export function useMultiWindowURL() {
       // Otherwise, fall back to windowId (old behavior)
       const identifierToFind = options?.window_identifier || windowId;
       const existingIndex = updatedWindows.findIndex((w) =>
-        options?.window_identifier ? w.window_identifier === identifierToFind : w.windowId === windowId
+        options?.window_identifier ? w.windowIdentifier === identifierToFind : w.windowId === windowId
       );
 
       let target: WindowState;
@@ -531,15 +538,16 @@ export function useMultiWindowURL() {
           ...current,
           isActive: true,
           title: options?.title ?? current.title,
-          window_identifier: options?.window_identifier ?? current.window_identifier,
+          windowIdentifier: options?.window_identifier ?? current.windowIdentifier,
         };
         updatedWindows[existingIndex] = target;
       } else {
         target = {
           windowId,
           isActive: true,
-          window_identifier: options?.window_identifier || windowId,
+          windowIdentifier: options?.window_identifier || windowId,
           title: options?.title || "",
+          tabs: {}
         };
         updatedWindows.push(target);
       }
@@ -547,10 +555,10 @@ export function useMultiWindowURL() {
       if (options?.selection) {
         const { tabId, recordId, openForm, formMode } = options.selection;
         // UPDATE: Use context instead of selectedRecords property
-        setSelectedRecord(target.window_identifier, tabId, recordId);
+        setSelectedRecord(target.windowIdentifier, tabId, recordId);
         if (openForm) {
           // UPDATE: Use context instead of target.tabFormStates
-          setTabFormState(target.window_identifier, tabId, {
+          setTabFormState(target.windowIdentifier, tabId, {
             recordId,
             mode: TAB_MODES.FORM,
             formMode: formMode || FORM_MODES.EDIT

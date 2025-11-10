@@ -81,7 +81,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * Persistence: State survives window switches and page refreshes
    */
   const { activeLevels, activeTabsByLevel, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.window_identifier || "",
+    windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: "",
   });
 
@@ -223,7 +223,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * - Restoring from bookmarked URLs
    *
    * Dependencies:
-   * - activeWindow: Contains windowId and window_identifier for context access
+   * - activeWindow: Contains windowId and windowIdentifier for context access
    * - getTabFormState: Provides form state management via context
    * - getSelectedRecord: Retrieves selected records from context
    * - activeLevelsLoaded: Prevents multiple restoration attempts
@@ -237,7 +237,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
 
     // Extract window identifiers from activeWindow
     const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.window_identifier;
+    const windowIdentifier = activeWindow?.windowIdentifier;
 
     if (!windowId || !windowIdentifier) return;
 

@@ -245,7 +245,7 @@ export const getTableSelectionMocks = () => ({
     useMultiWindowURL: () => ({
       activeWindow: {
         windowId: "test-window",
-        window_identifier: "test-window_123456789",
+        windowIdentifier: "test-window_123456789",
         isActive: true,
         order: 1,
         selectedRecords: {},

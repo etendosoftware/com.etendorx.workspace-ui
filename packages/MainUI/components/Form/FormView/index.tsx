@@ -199,7 +199,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * @returns EntityData object representing current record or null if no record
    */
   const record = useMemo(() => {
-    const windowIdentifier = activeWindow?.window_identifier;
+    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowIdentifier) return null;
 
     if (recordId === NEW_RECORD_ID) return null;
@@ -219,7 +219,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     }
 
     return null;
-  }, [activeWindow?.window_identifier, getSelectedRecord, tab, recordId, graph]);
+  }, [activeWindow?.windowIdentifier, getSelectedRecord, tab, recordId, graph]);
 
   /**
    * Merges record data with form initialization data to create complete form state.
@@ -416,7 +416,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       graph.setSelected(tab, data);
       graph.setSelectedMultiple(tab, [data]);
 
-      const windowIdentifier = activeWindow?.window_identifier;
+      const windowIdentifier = activeWindow?.windowIdentifier;
       if (windowIdentifier) {
         setSelectedRecord(windowIdentifier, tab.id, String(data.id));
       }
@@ -435,7 +435,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       mode,
       graph,
       tab,
-      activeWindow?.window_identifier,
+      activeWindow?.windowIdentifier,
       showSuccessModal,
       reset,
       initialState,
@@ -512,8 +512,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
       // Use atomic update to change parent selection and clear all children in one operation
       // This forces children to return to table view even if they were in FormView
-      if (activeWindow?.window_identifier && childIds.length > 0) {
-        setSelectedRecordAndClearChildren(activeWindow.window_identifier, tab.id, newRecordId, childIds);
+      if (activeWindow?.windowIdentifier && childIds.length > 0) {
+        setSelectedRecordAndClearChildren(activeWindow.windowIdentifier, tab.id, newRecordId, childIds);
 
         // Also clear the graph selection for all children to ensure they reset completely
         for (const child of children ?? []) {

@@ -118,7 +118,7 @@ export const useTableData = ({
     setTableColumnSorting,
     setTableColumnOrder,
     setIsImplicitFilterApplied,
-  } = useTableStatePersistenceTab({ windowIdentifier: activeWindow?.window_identifier || "", tabId: tab.id });
+  } = useTableStatePersistenceTab({ windowIdentifier: activeWindow?.windowIdentifier || "", tabId: tab.id });
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
   // Computed values
@@ -157,9 +157,9 @@ export const useTableData = ({
       const mrtFilter =
         selectedOptions.length > 0
           ? {
-              id: columnId,
-              value: selectedOptions.map((opt) => opt.value),
-            }
+            id: columnId,
+            value: selectedOptions.map((opt) => opt.value),
+          }
           : null;
 
       setTableColumnFilters((prev) => {
@@ -309,12 +309,12 @@ export const useTableData = ({
     () =>
       shouldUseTreeMode
         ? {
-            isTreeMode: true,
-            windowId: tab.window,
-            tabId: tab.id,
-            referencedTableId: treeMetadata.referencedTableId || "155",
-            parentId: -1,
-          }
+          isTreeMode: true,
+          windowId: tab.window,
+          tabId: tab.id,
+          referencedTableId: treeMetadata.referencedTableId || "155",
+          parentId: -1,
+        }
         : undefined,
     [shouldUseTreeMode, tab.id, tab.window, treeMetadata.referencedTableId]
   );

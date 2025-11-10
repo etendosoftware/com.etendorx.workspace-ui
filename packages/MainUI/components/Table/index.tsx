@@ -83,7 +83,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { tab, parentTab, parentRecord } = useTabContext();
 
   const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
-    useTableStatePersistenceTab({ windowIdentifier: activeWindow?.window_identifier || "", tabId: tab.id });
+    useTableStatePersistenceTab({ windowIdentifier: activeWindow?.windowIdentifier || "", tabId: tab.id });
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -298,7 +298,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     }
 
     // Get the selected record from URL for this specific tab
-    const urlSelectedId = getSelectedRecord(activeWindow.window_identifier, tab.id);
+    const urlSelectedId = getSelectedRecord(activeWindow.windowIdentifier, tab.id);
     if (!urlSelectedId) {
       return {};
     }
@@ -317,7 +317,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   useEffect(() => {
     const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.window_identifier;
+    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !windowIdentifier) {
       return;
     }
@@ -409,7 +409,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
           // For child tabs, prevent opening form if parent has no selection in URL
           if (parent) {
-            const windowIdentifier = activeWindow?.window_identifier;
+            const windowIdentifier = activeWindow?.windowIdentifier;
             const parentSelectedInURL = windowIdentifier ? getSelectedRecord(windowIdentifier, parent.id) : undefined;
             if (!parentSelectedInURL) {
               return;
@@ -555,7 +555,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   // Handle auto-scroll to selected record with virtualization support
   useLayoutEffect(() => {
     const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.window_identifier;
+    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !displayRecords || !windowIdentifier) {
       return;
     }
@@ -602,7 +602,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   // Sync URL selection to table state
   useEffect(() => {
     const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.window_identifier;
+    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !records || !windowIdentifier) {
       return;
     }
@@ -631,7 +631,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   // by setSelectedRecordAndClearChildren in useTableSelection
   useEffect(() => {
     const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.window_identifier;
+    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !records || !windowIdentifier) {
       return;
     }
@@ -672,7 +672,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   useEffect(() => {
     const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.window_identifier;
+    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !records || hasRestoredSelection.current || !windowIdentifier) {
       return;
     }

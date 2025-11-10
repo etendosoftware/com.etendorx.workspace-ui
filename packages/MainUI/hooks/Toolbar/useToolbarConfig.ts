@@ -72,9 +72,9 @@ export const useToolbarConfig = ({
   const { contextString, hasSelectedRecords, contextItems } = useRecordContext();
 
   const selectedRecordId = useMemo(() => {
-    if (!activeWindow?.window_identifier || !tab) return null;
-    return getSelectedRecord(activeWindow.window_identifier, tab.id);
-  }, [activeWindow?.window_identifier, tab, getSelectedRecord]);
+    if (!activeWindow?.windowIdentifier || !tab) return null;
+    return getSelectedRecord(activeWindow.windowIdentifier, tab.id);
+  }, [activeWindow?.windowIdentifier, tab, getSelectedRecord]);
 
   const selectedIds = useMemo(() => {
     if (selectedMultiple.length > 0) {
@@ -118,8 +118,8 @@ export const useToolbarConfig = ({
         onAfterClose: () => {
           setIsDeleting(false);
 
-          if (activeWindow?.window_identifier && tab) {
-            clearSelectedRecord(activeWindow.window_identifier, tab.id);
+          if (activeWindow?.windowIdentifier && tab) {
+            clearSelectedRecord(activeWindow.windowIdentifier, tab.id);
             graph.clearSelected(tab);
             graph.clearSelectedMultiple(tab);
           }

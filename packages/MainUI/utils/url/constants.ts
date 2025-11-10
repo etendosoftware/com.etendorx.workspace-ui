@@ -16,7 +16,6 @@
  */
 
 export const WINDOW_IDENTIFIER_PREFIX = "wi_";
-
 export const NEW_RECORD_ID = "new";
 
 export const FORM_MODES = {
@@ -42,37 +41,4 @@ export interface TabFormState {
   recordId?: string;
   mode?: TabMode;
   formMode?: FormMode;
-}
-
-/**
- * Represents the complete state of a window in the multi-window navigation system.
- * This interface defines all the data needed to restore and manage a window's state through URL parameters.
- *
- * @interface WindowState
- */
-export interface WindowState {
-  /**
-   * Unique identifier for the window, typically corresponds to the window entity ID from the API.
-   * Used for business logic operations and state management.
-   */
-  windowId: string;
-
-  /**
-   * Indicates whether this window is currently active/focused.
-   * Only one window can be active at a time in the multi-window system.
-   */
-  isActive: boolean;
-
-  /**
-   * URL-safe identifier used in URL parameters to represent this window instance.
-   * Allows multiple instances of the same windowId to exist simultaneously.
-   * Format: typically `${windowId}_${timestamp}` or similar unique suffix.
-   */
-  window_identifier: string;
-
-  /**
-   * Display title for the window tab.
-   * Shown in the tab bar and used for user identification of windows.
-   */
-  title: string;
 }

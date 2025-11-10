@@ -73,14 +73,14 @@ export default function WindowTabs() {
     setClosingWindowIds((prev) => {
       const next = new Set<string>();
       for (const id of prev) {
-        if (windows.some((w) => w.window_identifier === id)) next.add(id);
+        if (windows.some((w) => w.windowIdentifier === id)) next.add(id);
       }
       return next;
     });
   }, [windows]);
 
   const visibleWindows = useMemo(
-    () => windows.filter((w) => !closingWindowIds.has(w.window_identifier)),
+    () => windows.filter((w) => !closingWindowIds.has(w.windowIdentifier)),
     [windows, closingWindowIds]
   );
 
@@ -121,20 +121,20 @@ export default function WindowTabs() {
 
           return (
             <div
-              key={window.window_identifier}
+              key={window.windowIdentifier}
               className="flex items-center h-9"
               ref={(el) => {
-                tabRefs.current[window.window_identifier] = el;
+                tabRefs.current[window.windowIdentifier] = el;
               }}>
               <WindowTab
                 title={title}
                 isActive={isActive}
                 onActivate={() => {
-                  handleSelectWindow(window.window_identifier);
+                  handleSelectWindow(window.windowIdentifier);
                 }}
                 onClose={() => {
                   // Optimistic removal for instant feedback
-                  setClosingWindowIds((prev) => new Set(prev).add(window.window_identifier));
+                  setClosingWindowIds((prev) => new Set(prev).add(window.windowIdentifier));
                   // Clean up table state for this window
                   cleanupWindow(window.windowId);
                   // TODO: test what happend if close a active window

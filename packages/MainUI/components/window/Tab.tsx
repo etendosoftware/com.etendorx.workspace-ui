@@ -33,11 +33,10 @@ import {
   FORM_MODES,
   TAB_MODES,
   TabFormState,
-  type FormMode as URLFormMode,
-  type TabMode,
 } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
-import { isFormView, getNewTabFormState } from "@/utils/url/utils";
+import { isFormView } from "@/utils/url/utils";
+import { getNewTabFormState } from "@/utils/window/utils";
 import { useWindowContext } from '@/contexts/window';
 
 /**
@@ -119,7 +118,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const [toggle, setToggle] = useState(false);
   const lastParentSelectionRef = useRef<string | undefined>(undefined);
 
-  const windowIdentifier = activeWindow?.window_identifier;
+  const windowIdentifier = activeWindow?.windowIdentifier;
 
   const tabFormState = windowIdentifier ? getTabFormState(windowIdentifier, tab.id) : undefined;
   const selectedRecordId = windowIdentifier ? getSelectedRecord(windowIdentifier, tab.id) : undefined;

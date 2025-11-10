@@ -37,7 +37,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const { removeRecordFromDatasource } = useDatasourceContext();
 
   const currentWindowId = activeWindow?.windowId;
-  const currentWindowIdentifier = activeWindow?.window_identifier;
+  const currentWindowIdentifier = activeWindow?.windowIdentifier;
   const currentWindow = currentWindowId ? windowsData[currentWindowId] : undefined;
   const currentLoading = currentWindowId ? loadingWindows[currentWindowId] || false : false;
   const currentError = currentWindowId ? errors[currentWindowId] : undefined;

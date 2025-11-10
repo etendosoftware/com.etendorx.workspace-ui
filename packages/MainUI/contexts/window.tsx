@@ -19,48 +19,16 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
 import type { TabFormState } from "@/utils/url/constants";
-
-// Constants for window property names
-export const WINDOW_PROPERTY_NAMES = {
-  TITLE: "title",
-  IS_ACTIVE: "isActive",
-  WINDOW_IDENTIFIER: "windowIdentifier",
-  TABS: "tabs",
-} as const;
-
-export type WindowPropertyName = typeof WINDOW_PROPERTY_NAMES[keyof typeof WINDOW_PROPERTY_NAMES];
-
-// Type Definitions
-interface TableState {
-  filters: MRT_ColumnFiltersState;
-  visibility: MRT_VisibilityState;
-  sorting: MRT_SortingState;
-  order: string[];
-  isImplicitFilterApplied: boolean | undefined;
-}
-interface NavigationState {
-  activeLevels: number[];
-  activeTabsByLevel: Map<number, string>;
-}
-
-interface TabState {
-  table: TableState;
-  navigation: NavigationState;
-  form?: TabFormState;
-  selectedRecord?: string;
-}
-
-interface WindowState {
-  title: string;
-  isActive: boolean;
-  tabs: {
-    [tabId: string]: TabState;
-  };
-}
-
-interface WindowContextState {
-  [windowIdentifier: string]: WindowState;
-}
+import {
+  WindowState,
+  TableState,
+  NavigationState,
+  WindowContextState,
+  TabState,
+  WINDOW_PROPERTY_NAMES,
+  WindowPropertyName
+} from "@/utils/window/constants";
+import { getWindowIdFromIdentifier } from '@/utils/window/utils';
 
 interface WindowContextI {
   // State getters
@@ -118,7 +86,10 @@ const ensureTabExists = (state: WindowContextState, windowIdentifier: string, ta
   const newState = { ...state };
 
   if (!newState[windowIdentifier]) {
+    const windowId = getWindowIdFromIdentifier(windowIdentifier);
     newState[windowIdentifier] = {
+      windowId,
+      windowIdentifier,
       isActive: false,
       title: "",
       tabs: {},
@@ -153,7 +124,10 @@ const updateNavigationProperty = <T extends keyof NavigationState>(
   const newState = { ...prevState };
 
   if (!newState[windowIdentifier]) {
+    const windowId = getWindowIdFromIdentifier(windowIdentifier);
     newState[windowIdentifier] = {
+      windowId,
+      windowIdentifier,
       isActive: false,
       title: "",
       tabs: {},
@@ -345,8 +319,11 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       if (newState[windowIdentifier]) {
         newState[windowIdentifier] = { ...newState[windowIdentifier], isActive: true, ...windowData };
       } else {
+        const windowId = getWindowIdFromIdentifier(windowIdentifier);
         // Create window if it doesn't exist
         newState[windowIdentifier] = {
+          windowId,
+          windowIdentifier,
           isActive: true,
           title: windowData?.title || "",
           tabs: windowData?.tabs || {},

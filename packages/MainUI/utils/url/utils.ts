@@ -1,13 +1,8 @@
 import {
   WINDOW_IDENTIFIER_PREFIX,
   TAB_MODES,
-  TabFormState,
-  FORM_MODES,
-  NEW_RECORD_ID,
-  FormMode,
-  TabMode,
-  type WindowState,
 } from "@/utils/url/constants";
+import { WindowState } from "@/utils/window/constants";
 
 /**
  * Determines if a tab should be displayed in form view mode based on its state and parent context.
@@ -57,7 +52,7 @@ export const getNewWindowIdentifier = (windowId: string) => {
  * // Returns: {
  * //   windowId: "MainWindow",
  * //   isActive: true,
- * //   window_identifier: "abc123"
+ * //   windowIdentifier: "abc123"
  * // }
  */
 export const createWindowState = (windowIdentifier: string, searchParams: URLSearchParams): WindowState => {
@@ -65,11 +60,12 @@ export const createWindowState = (windowIdentifier: string, searchParams: URLSea
 
   return {
     windowId,
+    windowIdentifier: windowIdentifier,
     // TODO: the isActive is resolved outside this function
     isActive: false,
     // TODO: the title is resolved outside this function
     title: "",
-    window_identifier: windowIdentifier,
+    tabs: {}
   };
 };
 
@@ -89,25 +85,11 @@ export const createWindowState = (windowIdentifier: string, searchParams: URLSea
 export const setWindowParameters = (params: URLSearchParams, window: WindowState): void => {
   const {
     windowId,
-    window_identifier,
+    windowIdentifier,
   } = window;
 
-  // Use window_identifier as the URL key instead of windowId
-  const urlKey = window_identifier;
+  // Use windowIdentifier as the URL key instead of windowId
+  const urlKey = windowIdentifier;
 
   params.set(`${WINDOW_IDENTIFIER_PREFIX}${urlKey}`, windowId);
-};
-
-export const getNewTabFormState = (
-  recordId: string,
-  mode: TabMode = TAB_MODES.FORM,
-  formMode?: FormMode
-): TabFormState => {
-  const determinedFormMode = formMode || (recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT);
-
-  return {
-    recordId,
-    mode,
-    formMode: determinedFormMode,
-  };
 };

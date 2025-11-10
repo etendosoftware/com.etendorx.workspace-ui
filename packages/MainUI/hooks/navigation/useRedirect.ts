@@ -35,9 +35,10 @@ export const useRedirect = () => {
   const createBaseWindow = useCallback(
     (windowId: string, windowIdentifier?: string) => ({
       windowId,
-      window_identifier: windowIdentifier || windowId,
+      windowIdentifier: windowIdentifier || windowId,
       isActive: true,
       title: windowIdentifier || windowId,
+      tabs: {}
     }),
     []
   );

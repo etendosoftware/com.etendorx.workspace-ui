@@ -181,7 +181,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     const childTabIdsInFormView: string[] = [];
 
     const hasChildTabs = childTabs && childTabs.length > 0;
-    const windowIdentifier = activeWindow?.window_identifier;
+    const windowIdentifier = activeWindow?.windowIdentifier;
 
     if (hasChildTabs && windowIdentifier) {
       childTabIdsInFormView.push(...processChildTabsInFormView(childTabs, windowIdentifier));

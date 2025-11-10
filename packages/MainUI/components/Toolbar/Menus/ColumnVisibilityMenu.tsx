@@ -50,7 +50,7 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
   const { tab } = useTabContext();
   const { activeWindow } = useMultiWindowURL();
   const { tableColumnVisibility } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.window_identifier || "",
+    windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: tab.id,
   });
 
