@@ -3,6 +3,7 @@ export const SLUGS_CATEGORIES = {
   UTILITY: "utility",
   NOTES: "notes",
   SWS: "sws",
+  LEGACY: "meta/legacy",
 };
 
 export const SLUGS_METHODS = {

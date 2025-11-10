@@ -40,6 +40,9 @@ export function useProcessExecution() {
   const [error, setError] = useState<Error | null>(null);
   const [iframeUrl, setIframeUrl] = useState("");
   const API_BASE_URL = useApiContext();
+  // Use public host for client-side URLs (accessible from browser)
+  // Falls back to API_BASE_URL if not set (backward compatibility)
+  const publicHost = process.env.NEXT_PUBLIC_ETENDO_CLASSIC_HOST || API_BASE_URL;
 
   const { token } = useContext(UserContext);
   const { windowId } = useMetadataContext();
@@ -124,7 +127,7 @@ export function useProcessExecution() {
           }
 
           const processAction = data[currentButtonId as keyof typeof data];
-          const baseUrl = `${API_BASE_URL}${API_IFRAME_FORWARD_PATH}${processAction.url}`;
+          const baseUrl = `${publicHost}${API_IFRAME_FORWARD_PATH}${processAction.url}`;
           const isPostedProcess = currentButtonId === "Posted";
 
           const params = getParams({
@@ -174,7 +177,7 @@ export function useProcessExecution() {
         }
       });
     },
-    [record, recordId, tab.id, tab.window, tab.table, token, windowId, API_BASE_URL]
+    [record, recordId, tab.id, tab.window, tab.table, token, windowId, publicHost]
   );
 
   const executeProcess = useCallback(
