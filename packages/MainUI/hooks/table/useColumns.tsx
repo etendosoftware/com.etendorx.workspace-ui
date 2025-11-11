@@ -100,7 +100,6 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
       // Reference columns with navigation
       if (isReference) {
         const windowId = column.referencedWindowId || "";
-        const windowIdentifier = column._identifier;
         const columnTitle = column.name;
         const referencedTabId = column.referencedTabId || "";
         columnConfig = {
@@ -128,7 +127,6 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                   handleClickRedirect({
                     e,
                     windowId,
-                    windowIdentifier,
                     windowTitle: columnTitle,
                     referencedTabId,
                     selectedRecordId: String(selectedRecordId ?? "")
@@ -137,7 +135,6 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                 onKeyDown={(e) => handleKeyDownRedirect({
                   e,
                   windowId,
-                  windowIdentifier,
                   windowTitle: columnTitle,
                   referencedTabId,
                   selectedRecordId: String(selectedRecordId ?? "")

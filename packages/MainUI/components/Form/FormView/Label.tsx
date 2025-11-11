@@ -36,12 +36,16 @@ function LabelCmp({ field }: { field: Field }) {
     isReference &&
     field.column.referenceSearchKey$_identifier !== CUSTOM_SELECTORS_IDENTIFIERS.LOCATION
   ) {
+    const windowId = field.referencedWindowId || "";
+    const windowTitle = field.name;
+    const referencedTabId = field.referencedTabId || "";
+    const selectedRecordId = String(value);
     return (
       <BaseLabel
         name={`${field.name}`}
         htmlFor={field.hqlName}
-        onClick={(e) => handleClickRedirect(e, field.referencedWindowId, field.name, String(value))}
-        onKeyDown={(e) => handleKeyDownRedirect(e, field.referencedWindowId, field.name, String(value))}
+        onClick={(e) => handleClickRedirect({ e, windowId, windowTitle, referencedTabId, selectedRecordId })}
+        onKeyDown={(e) => handleKeyDownRedirect({ e, windowId, windowTitle, referencedTabId, selectedRecordId })}
         link
         data-testid="BaseLabel__40c6fe"
       />

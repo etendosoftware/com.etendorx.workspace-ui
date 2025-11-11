@@ -152,6 +152,7 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         selectorDefinitionId: column.selector?.id,
         datasourceId: column.targetEntity || column.referencedEntity, // Use targetEntity if available
         customJs: column.etmetaCustomjs,
+        referencedTabId: column.referencedTabId,
         accessorFn: (v: Record<string, unknown>) => {
           const reference = getFieldReference(column.column?.reference);
 

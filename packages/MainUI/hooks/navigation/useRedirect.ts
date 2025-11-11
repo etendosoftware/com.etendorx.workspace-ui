@@ -25,7 +25,6 @@ import { TabState } from "@/utils/window/constants";
 
 interface HandleActionProps {
   windowId: string,
-  windowIdentifier: string,
   windowTitle: string,
   referencedTabId: string,
   selectedRecordId?: string
@@ -34,7 +33,6 @@ interface HandleActionProps {
 interface HandleClickRedirectProps {
   e: React.MouseEvent;
   windowId: string;
-  windowIdentifier: string;
   windowTitle: string;
   referencedTabId: string,
   selectedRecordId?: string;
@@ -43,7 +41,6 @@ interface HandleClickRedirectProps {
 interface HandleKeyDownRedirectProps {
   e: React.KeyboardEvent;
   windowId: string;
-  windowIdentifier: string;
   windowTitle: string;
   referencedTabId: string,
   selectedRecordId?: string;
@@ -72,7 +69,7 @@ export const useRedirect = () => {
   );
 
   const handleAction = useCallback(
-    async ({ windowId, windowIdentifier, windowTitle, referencedTabId, selectedRecordId }: HandleActionProps) => {
+    async ({ windowId, windowTitle, referencedTabId, selectedRecordId }: HandleActionProps) => {
       if (!windowId) {
         console.warn("No windowId found");
         return;
@@ -101,7 +98,7 @@ export const useRedirect = () => {
         return;
       }
 
-      const newWindow = createBaseWindow(windowId, windowIdentifier);
+      const newWindow = createBaseWindow(windowId, newWindowIdentifier);
       const targetURL = buildURL([newWindow]);
       router.push(targetURL);
     },
@@ -109,20 +106,20 @@ export const useRedirect = () => {
   );
 
   const handleClickRedirect = useCallback(
-    ({ e, windowId, windowIdentifier, windowTitle, referencedTabId, selectedRecordId }: HandleClickRedirectProps) => {
+    ({ e, windowId, windowTitle, referencedTabId, selectedRecordId }: HandleClickRedirectProps) => {
       e.stopPropagation();
       e.preventDefault();
-      handleAction({ windowId, windowIdentifier, windowTitle, referencedTabId, selectedRecordId });
+      handleAction({ windowId, windowTitle, referencedTabId, selectedRecordId });
     },
     [handleAction]
   );
 
   const handleKeyDownRedirect = useCallback(
-    ({ e, windowId, windowIdentifier, windowTitle, referencedTabId, selectedRecordId }: HandleKeyDownRedirectProps) => {
+    ({ e, windowId, windowTitle, referencedTabId, selectedRecordId }: HandleKeyDownRedirectProps) => {
       e.stopPropagation();
       e.preventDefault();
       if (e.key === "Enter" || e.key === " ") {
-        handleAction({ windowId, windowIdentifier, windowTitle, referencedTabId, selectedRecordId });
+        handleAction({ windowId, windowTitle, referencedTabId, selectedRecordId });
       }
     },
     [handleAction]
