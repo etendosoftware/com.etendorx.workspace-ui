@@ -99,8 +99,10 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
       // Reference columns with navigation
       if (isReference) {
-        const windowId = column.referencedWindowId;
+        const windowId = column.referencedWindowId || "";
         const windowIdentifier = column._identifier;
+        const columnTitle = column.name;
+        const referencedTabId = column.referencedTabId || "";
         columnConfig = {
           ...columnConfig,
           Cell: ({ row, cell }: { row: { original: EntityData }; cell: MRT_Cell<EntityData, unknown> }) => {
@@ -115,14 +117,31 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                   recordData?.[column.columnName as keyof EntityData] ||
                   ""
                 );
+
             return (
               <button
                 type="button"
                 tabIndex={0}
                 aria-label="Navigate to referenced window"
                 className="bg-transparent border-none p-0 text-(--color-dynamic-main) hover:underline text-left"
-                onClick={(e) => handleClickRedirect(e, windowId, windowIdentifier, String(selectedRecordId ?? ""))}
-                onKeyDown={(e) => handleKeyDownRedirect(e, windowId, windowIdentifier, String(selectedRecordId ?? ""))}>
+                onClick={(e) => {
+                  handleClickRedirect({
+                    e,
+                    windowId,
+                    windowIdentifier,
+                    windowTitle: columnTitle,
+                    referencedTabId,
+                    selectedRecordId: String(selectedRecordId ?? "")
+                  });
+                }}
+                onKeyDown={(e) => handleKeyDownRedirect({
+                  e,
+                  windowId,
+                  windowIdentifier,
+                  windowTitle: columnTitle,
+                  referencedTabId,
+                  selectedRecordId: String(selectedRecordId ?? "")
+                })}>
                 {displayValue}
               </button>
             );

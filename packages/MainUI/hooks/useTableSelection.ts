@@ -472,6 +472,7 @@ export default function useTableSelection(
   }, []);
 
   /**
+   * TODO: move to a more central location
    * Creates a debounced function for URL updates to prevent excessive navigation events.
    *
    * The debounce delay of 150ms provides a balance between responsiveness and performance,
@@ -517,6 +518,7 @@ export default function useTableSelection(
   );
 
   /**
+   * TODO: move to a more central location
    * Main effect for handling table selection changes and synchronization.
    *
    * This effect is the core of the selection management system. It:
@@ -621,14 +623,4 @@ export default function useTableSelection(
     getSelectedRecord,
     getTabFormState,
   ]);
-
-  /**
-   * Effect for performing bidirectional synchronization on mount and dependency changes.
-   *
-   * This effect ensures that URL and table selection states are properly synchronized
-   * when the component mounts or when key dependencies change. It's essential for
-   * handling direct navigation to URLs with selection parameters and maintaining
-   * consistency across page refreshes.
-   */
-  // REMOVED: Bidirectional sync effect - no longer needed
 }

@@ -20,9 +20,6 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 import {
-  FORM_MODES,
-  TAB_MODES,
-  type FormMode,
   type TabFormState,
   type SelectedRecord,
 } from "@/utils/url/constants";
@@ -429,117 +426,6 @@ export function useMultiWindowURL() {
     [clearTabFormState, applyWindowUpdates]
   );
 
-  /**
-   * TODO: Consider removing the form state logic and replace it if needed
-   * Opens a window with optional initial selection and form state in a single atomic operation.
-   * Combines window opening with record selection and optional form opening for efficient navigation.
-   * Supports both creating new windows and updating existing ones with enhanced identifier handling.
-   *
-   * @param windowId - The business entity ID for the window
-   * @param options - Configuration object with optional properties:
-   *   - title: Display title for the window tab
-   *   - window_identifier: Specific identifier for the window instance (allows multiple instances)
-   *   - selection: Object containing:
-   *     - tabId: The tab to select a record in
-   *     - recordId: The record to select
-   *     - openForm: Whether to open the record in form view
-   *     - formMode: Form interaction mode (NEW, EDIT, VIEW)
-   *
-   * @example
-   * ```typescript
-   * // Simple window opening
-   * openWindowAndSelect("ProductWindow", { title: "Product Management" });
-   *
-   * // Open window with record selection
-   * openWindowAndSelect("ProductWindow", {
-   *   title: "Product Details",
-   *   selection: {
-   *     tabId: "mainTab",
-   *     recordId: "product_12345"
-   *   }
-   * });
-   *
-   * // Open window with record in form view
-   * openWindowAndSelect("ProductWindow", {
-   *   title: "Edit Product",
-   *   selection: {
-   *     tabId: "mainTab",
-   *     recordId: "product_12345",
-   *     openForm: true,
-   *     formMode: FORM_MODES.EDIT
-   *   }
-   * });
-   *
-   * // Open specific window instance
-   * openWindowAndSelect("ProductWindow", {
-   *   window_identifier: "ProductWindow_specialized",
-   *   title: "Specialized Product View"
-   * });
-   * ```
-   */
-  const openWindowAndSelect = useCallback(
-    (
-      windowId: string,
-      options?: {
-        title?: string;
-        window_identifier?: string;
-        selection?: { tabId: string; recordId: string; openForm?: boolean; formMode?: FormMode };
-      }
-    ) => {
-      const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
-
-      // If window_identifier is provided, use it to find existing window
-      // Otherwise, fall back to windowId (old behavior)
-      const identifierToFind = options?.window_identifier || windowId;
-      const existingIndex = updatedWindows.findIndex((w) =>
-        options?.window_identifier ? w.windowIdentifier === identifierToFind : w.windowId === windowId
-      );
-
-      let target: WindowState;
-      if (existingIndex >= 0) {
-        const current = updatedWindows[existingIndex];
-        target = {
-          ...current,
-          isActive: true,
-          title: options?.title ?? current.title,
-          windowIdentifier: options?.window_identifier ?? current.windowIdentifier,
-        };
-        updatedWindows[existingIndex] = target;
-      } else {
-        target = {
-          windowId,
-          isActive: true,
-          windowIdentifier: options?.window_identifier || windowId,
-          title: options?.title || "",
-          navigation: {
-            activeLevels: [],
-            activeTabsByLevel: new Map<number, string>(),
-            initialized: false,
-          },
-          tabs: {}
-        };
-        updatedWindows.push(target);
-      }
-
-      if (options?.selection) {
-        const { tabId, recordId, openForm, formMode } = options.selection;
-        // UPDATE: Use context instead of selectedRecords property
-        setSelectedRecord(target.windowIdentifier, tabId, recordId);
-        if (openForm) {
-          // UPDATE: Use context instead of target.tabFormStates
-          setTabFormState(target.windowIdentifier, tabId, {
-            recordId,
-            mode: TAB_MODES.FORM,
-            formMode: formMode || FORM_MODES.EDIT
-          });
-        }
-      }
-
-      navigate(updatedWindows);
-    },
-    [windows, navigate, setSelectedRecord, setTabFormState]
-  );
-
   return {
     openWindow,
     navigateToHome,
@@ -551,6 +437,5 @@ export function useMultiWindowURL() {
     // batching helpers
     applyWindowUpdates,
     clearChildrenSelections,
-    openWindowAndSelect,
   };
 }
