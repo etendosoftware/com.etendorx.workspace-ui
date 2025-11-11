@@ -16,7 +16,7 @@
  */
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
 import type { TabFormState } from "@/utils/url/constants";
 import {
@@ -346,7 +346,40 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   const cleanupWindow = useCallback((windowIdentifier: string) => {
     setState((prevState: WindowContextState) => {
       const newState = { ...prevState };
+
+      // Check if the window being deleted is the active one
+      const windowToDelete: WindowState = newState[windowIdentifier];
+      const wasActive = windowToDelete.isActive;
+
+      // Get all window identifiers in order (implicit order from state)
+      const allWindowIdentifiers = Object.keys(newState);
+
+      // Delete the window
       delete newState[windowIdentifier];
+
+      // If the deleted window was active and there are remaining windows, activate another one
+      if (wasActive && allWindowIdentifiers.length > 1) {
+        const deletedWindowIndex = allWindowIdentifiers.indexOf(windowIdentifier);
+        let windowToActivate: string | null = null;
+
+        // Try to activate the previous window first
+        if (deletedWindowIndex > 0) {
+          windowToActivate = allWindowIdentifiers[deletedWindowIndex - 1];
+        }
+        // If no previous window, activate the next one
+        else if (deletedWindowIndex < allWindowIdentifiers.length - 1) {
+          windowToActivate = allWindowIdentifiers[deletedWindowIndex + 1];
+        }
+
+        // Activate the selected window
+        if (windowToActivate && newState[windowToActivate]) {
+          newState[windowToActivate] = {
+            ...newState[windowToActivate],
+            isActive: true
+          };
+        }
+      }
+
       return newState;
     });
   }, []);

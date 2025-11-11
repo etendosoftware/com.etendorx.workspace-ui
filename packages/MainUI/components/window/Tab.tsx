@@ -100,7 +100,6 @@ const handleEditRecordFormState = (
 export function Tab({ tab, collapsed }: TabLevelProps) {
   const { window } = useMetadataContext();
   const {
-    clearTabFormStateAtomic,
     clearChildrenSelections,
   } = useMultiWindowURL();
   const {
@@ -225,7 +224,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       const isInFormView = currentFormState?.mode === TAB_MODES.FORM;
 
       if (isInFormView) {
-        clearTabFormStateAtomic(windowIdentifier, tab.id);
+        clearTabFormState(windowIdentifier, tab.id);
       } else {
         clearSelectedRecord(windowIdentifier, tab.id);
 
@@ -244,7 +243,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
   }, [
     windowIdentifier,
-    clearTabFormStateAtomic,
+    clearTabFormState,
     tab,
     getTabFormState,
     clearSelectedRecord,
@@ -278,12 +277,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     registerActions(actions);
   }, [registerActions, handleNew, handleBack, handleTreeView, tab.id]);
 
-  // NOTE: The "unselected" listener was removed because it caused race conditions
-  // with stale closures. Children clearing is now handled directly in useTableSelection
-  // via setSelectedRecordAndClearChildren and clearChildrenRecords, which use
-  // applyWindowUpdates to avoid stale state issues.
-
   /**
+   * TODO: move to a more central location
    * Clear selection when creating a new record
    * This prevents issues when creating a new record from a selected record in the table
    * which could lead to inconsistent state.
@@ -296,6 +291,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, [currentRecordId, graph, tab]);
 
   // Auto-close child FormView when parent selection changes
+  // TODO: move to a more central location
   useEffect(() => {
     if (!windowIdentifier) {
       return;

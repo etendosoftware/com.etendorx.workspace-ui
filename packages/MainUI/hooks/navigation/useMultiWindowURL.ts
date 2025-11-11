@@ -220,54 +220,6 @@ export function useMultiWindowURL() {
   );
 
   /**
-   * Applies multiple window state updates atomically in a single navigation operation.
-   * This is the core batching mechanism that prevents race conditions by ensuring all updates
-   * are applied together using the most current state via a transform callback.
-   *
-   * **Key Benefits:**
-   * - **Atomic Updates**: Multiple state changes happen in a single URL update
-   * - **Race Condition Prevention**: Transform callback receives the latest state
-   * - **Debug Logging**: Automatically logs selection changes with caller information
-   * - **Performance**: Reduces URL updates and component re-renders
-   *
-   * @param transform - Function that receives current windows array and returns modified array
-   *
-   * @example
-   * ```typescript
-   * // Atomically update multiple windows
-   * applyWindowUpdates((currentWindows) => {
-   *   return currentWindows.map(window => {
-   *     if (window.windowId === "ProductWindow") {
-   *       return { ...window, title: "Updated Products" };
-   *     }
-   *     if (window.windowId === "CustomerWindow") {
-   *       return { ...window, isActive: false };
-   *     }
-   *     return window;
-   *   });
-   * });
-   *
-   * // Complex state update with multiple changes
-   * applyWindowUpdates((prev) => {
-   *   const updated = [...prev];
-   *   // Clear child selections
-   *   updated[0].selectedRecords = { mainTab: "newRecord" };
-   *   // Update form states
-   *   updated[0].tabFormStates = { childTab: undefined };
-   *   return updated;
-   * });
-   * ```
-   */
-  const applyWindowUpdates = useCallback(
-    (transform: (windows: WindowState[]) => WindowState[]) => {
-      const nextWindows = transform(windows);
-
-      navigate(nextWindows);
-    },
-    [windows, navigate]
-  );
-
-  /**
    * TODO: Consider optimizing this function with improved context-based form state management
    * Clears selections and form states for child tabs with intelligent form preservation.
    * Implements smart cleanup logic that preserves child tabs currently in form view to prevent data loss.
@@ -388,54 +340,14 @@ export function useMultiWindowURL() {
     [windows, getSelectedRecord, setSelectedRecord, clearChildrenSelections]
   );
 
-  /**
-   * TODO: Consider optimizing this function with improved context-based form state management
-   * Atomically clears form state for a tab without affecting its selection or child relationships.
-   * This is a specialized version of clearTabFormState that explicitly preserves the selected record
-   * and doesn't trigger any child tab cleanup logic. Used when transitioning from form view to table view
-   * while maintaining the current selection state.
-   *
-   * @param windowId - The business entity ID of the window
-   * @param tabId - The identifier of the tab within the window
-   *
-   * @example
-   * ```typescript
-   * // Close form view but keep record selected in table
-   * clearTabFormStateAtomic("ProductWindow", "mainTab");
-   *
-   * // Before: Tab in form view editing product_12345
-   * // After:  Tab in table view with product_12345 still selected
-   * // No child tabs are affected by this operation
-   * ```
-   */
-  /**
-   * Clears the form state for a specific tab while preserving other window state
-   * UPDATE: Now uses context instead of windowState.formStates
-   */
-  const clearTabFormStateAtomic = useCallback(
-    (windowId: string, tabId: string) => {
-      // Use applyWindowUpdates to access current state and find windowIdentifier
-      applyWindowUpdates((prev) => {
-        const targetWindow = prev.find(w => w.windowId === windowId);
-        if (targetWindow) {
-          clearTabFormState(targetWindow.windowIdentifier, tabId);
-        }
-        return prev; // No state change needed
-      });
-    },
-    [clearTabFormState, applyWindowUpdates]
-  );
-
   return {
     openWindow,
     navigateToHome,
     buildURL,
 
     setSelectedRecordAndClearChildren,
-    clearTabFormStateAtomic,
 
     // batching helpers
-    applyWindowUpdates,
     clearChildrenSelections,
   };
 }

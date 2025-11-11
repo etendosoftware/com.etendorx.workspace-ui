@@ -28,6 +28,7 @@ import MenuTabs from "@/components/NavigationTabs/MenuTabs";
 import { useTabs } from "@/contexts/tabs";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useWindowContext } from "@/contexts/window";
+import { WindowState } from "@/utils/window/constants";
 
 export default function WindowTabs() {
   const { navigateToHome } = useMultiWindowURL();
@@ -57,16 +58,25 @@ export default function WindowTabs() {
 
   const handleSelectWindow = useCallback(
     (windowIdentifier: string) => {
-      // TODO: delete this code when multi-window is fully stable
-      // NOTE: deleted, but it's necesarry check if everything works fine
       setWindowActive({ windowIdentifier });
     },
     [setWindowActive]
   );
 
-  const handleGoHome = () => {
-    navigateToHome();
-  };
+  const handleCloseWindow = useCallback(
+    (window: WindowState) => {
+      // Optimistic removal for instant feedback
+      setClosingWindowIds((prev) => new Set(prev).add(window.windowIdentifier));
+      // Clean up table state for this window
+      cleanupWindow(window.windowIdentifier);
+    },
+    [cleanupWindow]
+  );
+
+  const visibleWindows = useMemo(
+    () => windows.filter((w) => !closingWindowIds.has(w.windowIdentifier)),
+    [windows, closingWindowIds]
+  );
 
   // Clear any optimistic closing ids that no longer exist in windows
   useEffect(() => {
@@ -79,18 +89,13 @@ export default function WindowTabs() {
     });
   }, [windows]);
 
-  const visibleWindows = useMemo(
-    () => windows.filter((w) => !closingWindowIds.has(w.windowIdentifier)),
-    [windows, closingWindowIds]
-  );
-
   return (
     <div
       className="flex items-center bg-(--color-transparent-neutral-5) rounded-full overflow-hidden p-0 px-0.5 h-9 min-h-9"
       ref={containerRef}>
       <div className="flex items-center h-8">
         <IconButton
-          onClick={handleGoHome}
+          onClick={navigateToHome}
           className={`w-8 h-8 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-etendo-main) hover:text-(--color-etendo-contrast-text) ${isHomeRoute ? "bg-(--color-etendo-main) text-(--color-etendo-contrast-text)" : ""}`}
           tooltip={t("primaryTabs.dashboard")}
           aria-label={t("primaryTabs.dashboard")}
@@ -133,11 +138,7 @@ export default function WindowTabs() {
                   handleSelectWindow(window.windowIdentifier);
                 }}
                 onClose={() => {
-                  // Optimistic removal for instant feedback
-                  setClosingWindowIds((prev) => new Set(prev).add(window.windowIdentifier));
-                  // Clean up table state for this window
-                  cleanupWindow(window.windowId);
-                  // TODO: test what happend if close a active window
+                  handleCloseWindow(window);
                 }}
                 canClose={canClose}
                 data-testid="WindowTab__c8117d"

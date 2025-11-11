@@ -19,7 +19,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useFormValidation } from "@/hooks/useFormValidation";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { useTabContext } from "@/contexts/tab";
 import { globalCalloutManager } from "@/services/callouts";
@@ -40,8 +39,7 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
   const formContext = useFormContext();
   const { isDirty } = formContext.formState;
 
-  const { clearTabFormStateAtomic } = useMultiWindowURL();
-  const { activeWindow } = useWindowContext();
+  const { activeWindow, clearTabFormState } = useWindowContext();
   const { registerActions, setSaveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
   const { isFormInitializing } = useFormInitializationContext();
@@ -160,12 +158,12 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
   }, [refetch, resetFormChanges]);
 
   const handleBack = useCallback(() => {
-    const windowId = activeWindow?.windowId;
-    if (windowId) {
-      clearTabFormStateAtomic(windowId, tab.id);
+    const windowIdentifier = activeWindow?.windowIdentifier;
+    if (windowIdentifier) {
+      clearTabFormState(windowIdentifier, tab.id);
     }
     resetFormChanges();
-  }, [activeWindow?.windowId, clearTabFormStateAtomic, tab, resetFormChanges]);
+  }, [activeWindow?.windowIdentifier, clearTabFormState, tab, resetFormChanges]);
 
   const handleNew = useCallback(() => {
     setRecordId(NEW_RECORD_ID);
