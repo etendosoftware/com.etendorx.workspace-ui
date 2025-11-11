@@ -106,33 +106,6 @@ export function useMultiWindowURL() {
   );
 
   /**
-   * Navigates to the home route while preserving window state in URL parameters.
-   * Deactivates all windows and redirects to the root path with window state preserved as query parameters.
-   * If no windows exist, navigates to a clean home route.
-   *
-   * @example
-   * ```typescript
-   * // Current: /window?w_prod_123=active&w_cust_456=inactive
-   * navigateToHome();
-   * // Result: /?w_prod_123=inactive&w_cust_456=inactive (all windows deactivated but preserved)
-   *
-   * // If no windows exist:
-   * navigateToHome();
-   * // Result: / (clean home route)
-   * ```
-   */
-  const navigateToHome = useCallback(() => {
-    const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
-
-    if (updatedWindows.length === 0) {
-      router.push("/");
-    } else {
-      const url = `/?${buildURL(updatedWindows).split("?")[1]}`;
-      router.push(url);
-    }
-  }, [windows, buildURL, router]);
-
-  /**
    * Opens a new window or activates an existing one with the specified window ID, title, and optional initial state.
    * If a window with a matching windowIdentifier already exists, it will be activated and optionally retitled.
    * If no matching window exists, creates a new window with a unique identifier and adds it to the state.
@@ -342,7 +315,6 @@ export function useMultiWindowURL() {
 
   return {
     openWindow,
-    navigateToHome,
     buildURL,
 
     setSelectedRecordAndClearChildren,

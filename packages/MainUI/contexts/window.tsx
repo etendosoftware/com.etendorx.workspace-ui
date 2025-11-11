@@ -55,6 +55,7 @@ interface WindowContextI {
   setNavigationActiveTabsByLevel: (windowIdentifier: string, activeTabsByLevel: Map<number, string>) => void;
   setWindowActive: ({ windowIdentifier, windowData }: { windowIdentifier: string, windowData?: Partial<WindowState> }) => void;
   setWindowInactive: (windowIdentifier: string) => void;
+  setAllWindowsInactive: () => void;
 
   // Form state management
   getTabFormState: (windowIdentifier: string, tabId: string) => TabFormState | undefined;
@@ -281,6 +282,17 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     });
   }, []);
 
+  const setAllWindowsInactive = useCallback(() => {
+    setState((prevState: WindowContextState) => {
+      return Object.fromEntries(
+        Object.entries(prevState).map(([winId, window]) => [
+          winId,
+          window?.isActive ? { ...window, isActive: false } : window
+        ])
+      );
+    });
+  }, []);
+
   const getTabFormState = useCallback(
     (windowIdentifier: string, tabId: string): TabFormState | undefined => {
       if (!state[windowIdentifier] || !state[windowIdentifier].tabs[tabId]) {
@@ -437,6 +449,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setNavigationActiveTabsByLevel,
       setWindowActive,
       setWindowInactive,
+      setAllWindowsInactive,
       getTabFormState,
       setTabFormState,
       clearTabFormState,
@@ -473,14 +486,18 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setNavigationActiveTabsByLevel,
       setWindowActive,
       setWindowInactive,
+      setAllWindowsInactive,
       getTabFormState,
       setTabFormState,
       clearTabFormState,
+
       getSelectedRecord,
       setSelectedRecord,
       clearSelectedRecord,
+
       getNavigationInitialized,
       setNavigationInitialized,
+
       cleanupWindow,
     ]
   );

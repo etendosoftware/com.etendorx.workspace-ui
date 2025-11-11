@@ -17,7 +17,6 @@
 
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import HomeIcon from "@workspaceui/componentlibrary/src/assets/icons/home.svg";
 import ChevronRightIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-right.svg";
@@ -31,9 +30,8 @@ import { useWindowContext } from "@/contexts/window";
 import { WindowState } from "@/utils/window/constants";
 
 export default function WindowTabs() {
-  const { navigateToHome } = useMultiWindowURL();
   const { t } = useTranslation();
-  const { windows, isHomeRoute, cleanupWindow, setWindowActive } = useWindowContext();
+  const { windows, isHomeRoute, cleanupWindow, setWindowActive, setAllWindowsInactive } = useWindowContext();
 
   const {
     containerRef,
@@ -95,7 +93,7 @@ export default function WindowTabs() {
       ref={containerRef}>
       <div className="flex items-center h-8">
         <IconButton
-          onClick={navigateToHome}
+          onClick={setAllWindowsInactive}
           className={`w-8 h-8 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-etendo-main) hover:text-(--color-etendo-contrast-text) ${isHomeRoute ? "bg-(--color-etendo-main) text-(--color-etendo-contrast-text)" : ""}`}
           tooltip={t("primaryTabs.dashboard")}
           aria-label={t("primaryTabs.dashboard")}
