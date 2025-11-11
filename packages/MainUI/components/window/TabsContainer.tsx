@@ -17,11 +17,10 @@
 
 "use client";
 
-import { useMemo, useCallback, useEffect, useState } from "react";
+import { useMemo, useCallback } from "react";
 import Tabs from "@/components/window/Tabs";
 import AppBreadcrumb from "@/components/Breadcrums";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
-import { useSelected } from "@/hooks/useSelected";
 import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
 import { shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
@@ -49,24 +48,9 @@ import { useWindowContext } from "@/contexts/window";
  */
 export default function TabsContainer({ windowData }: { windowData: Etendo.WindowMetadata }) {
   /**
-   * Flag to track if initial level loading from URL state has completed.
-   */
-  const [activeLevelsLoaded, setActiveLevelsLoaded] = useState<boolean>(false);
-
-  /**
    * Multi-window navigation hook providing access to current window state.
    */
   const { activeWindow } = useWindowContext();
-
-  /**
-   * Window context providing form state management functions.
-   */
-  const { getTabFormState, getSelectedRecord } = useWindowContext();
-
-  /**
-   * Graph-based tab hierarchy management system.
-   */
-  const { graph } = useSelected();
 
   /**
    * Navigation state persistence hook for the current window.
@@ -79,7 +63,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    *
    * Persistence: State survives window switches and page refreshes
    */
-  const { activeLevels, activeTabsByLevel, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
+  const { activeLevels, activeTabsByLevel } = useTableStatePersistenceTab({
     windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: "",
   });
@@ -180,100 +164,6 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
   const firstExpandedIndex = filteredGroupedTabs.findIndex(
     (tabs) => tabs.length > 0 && activeLevels.includes(tabs[0].tabLevel)
   );
-
-  /**
-   * TODO: move to a more central location
-   * Session restoration effect for active tab levels and tab selections.
-   *
-   * This effect runs once during component initialization to restore navigation state
-   * from context-stored form states and selected records. It coordinates with useMultiWindowURL
-   * to determine the appropriate tab levels to activate based on previously saved form states.
-   *
-   * Enhanced Process:
-   * 1. Checks if initial loading has already completed (prevents multiple executions)
-   * 2. Retrieves selected records from context for the current window
-   * 3. Gets form states from window context for all available tabs
-   * 4. Calculates navigation depth based on the position of the last form state in selected records
-   * 5. Uses expand mode to set levels directly without navigation logic
-   * 6. Resets tab-by-level mapping for clean state or restores based on calculated depth
-   * 7. Marks loading as complete to prevent interference with user navigation
-   *
-   * Key improvements:
-   * - Uses context-based selected records instead of URL parameters
-   * - Maintains activeTabsByLevel state consistency during restoration
-   * - Handles edge cases where form states and selected records may be misaligned
-   * - Uses context-based form state management
-   *
-   * This ensures users return to their previous navigation context when:
-   * - Refreshing the page
-   * - Navigating back to a previously opened window
-   * - Restoring from bookmarked URLs
-   *
-   * Dependencies:
-   * - activeWindow: Contains windowId and windowIdentifier for context access
-   * - getTabFormState: Provides form state management via context
-   * - getSelectedRecord: Retrieves selected records from context
-   * - activeLevelsLoaded: Prevents multiple restoration attempts
-   * - windowData?.tabs: Available tabs for clearing selections
-   * - graph: Tab hierarchy for clearing dependent selections
-   * - setActiveLevel: Navigation state control function
-   */
-  useEffect(() => {
-    // Early return: Skip if already loaded or function not available
-    if (activeLevelsLoaded || !setActiveLevel || !getTabFormState) return;
-
-    // Extract window identifiers from activeWindow
-    const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.windowIdentifier;
-
-    if (!windowId || !windowIdentifier) return;
-
-    // Get form states from context for all available tabs
-    const tabs = windowData?.tabs || [];
-    const formStateTabIds = tabs
-      .map(tab => tab.id)
-      .filter(tabId => getTabFormState(windowIdentifier, tabId) !== undefined);
-
-    // Handle window with no saved form states - reset to clean state
-    if (formStateTabIds.length === 0) {
-      console.log("TabsContainer: No form states found, resetting navigation state.");
-      setActiveLevel(0);
-      setActiveTabsByLevel();
-      for (const tab of tabs) {
-        graph.clearSelected(tab);
-        graph.clearSelectedMultiple(tab);
-      }
-      setActiveLevelsLoaded(true);
-      return;
-    }
-
-    // Get selected records from context for all tabs to determine navigation depth
-    const selectedRecordTabIds = tabs
-      .map(tab => tab.id)
-      .filter(tabId => getSelectedRecord(windowIdentifier, tabId) !== undefined);
-
-    // Calculate navigation depth based on form state position in selected records
-    const lastFormStateTabId = formStateTabIds.length > 0 ? formStateTabIds[formStateTabIds.length - 1] : null;
-    const lastFormStateIndex = lastFormStateTabId ? selectedRecordTabIds.indexOf(lastFormStateTabId) : -1;
-
-    // Handle window with saved form states - restore navigation depth
-    if (lastFormStateIndex > 0) {
-      console.log("TabsContainer: Restoring navigation state to level", lastFormStateIndex);
-      setActiveLevel(lastFormStateIndex, true); // Use expand mode for direct restoration
-    }
-
-    // Mark as loaded to prevent subsequent executions
-    setActiveLevelsLoaded(true);
-  }, [
-    activeWindow,
-    activeLevelsLoaded,
-    windowData?.tabs,
-    graph,
-    setActiveLevel,
-    setActiveTabsByLevel,
-    getTabFormState,
-    getSelectedRecord
-  ]);
 
   // Loading state: Show skeleton UI while window metadata is being fetched
   if (!windowData) {

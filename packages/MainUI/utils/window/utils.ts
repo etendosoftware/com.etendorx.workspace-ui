@@ -112,6 +112,7 @@ export const ensureTabExists = (state: WindowContextState, windowIdentifier: str
       navigation: {
         activeLevels: [0],
         activeTabsByLevel: new Map(),
+        initialized: false,
       },
       tabs: {},
     };
@@ -187,6 +188,7 @@ export const updateNavigationProperty = <T extends keyof NavigationState>(
       navigation: {
         activeLevels: [0],
         activeTabsByLevel: new Map(),
+        initialized: false,
       },
       tabs: {},
     };

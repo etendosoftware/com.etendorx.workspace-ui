@@ -134,7 +134,7 @@ export const useTableStatePersistenceTab = ({
       const newActiveTabs = getNewActiveTabsByLevel(currentActiveTabsByLevel, tab.tabLevel, tabId);
       setNavigationActiveTabsByLevel(windowIdentifier, newActiveTabs);
     },
-    [windowIdentifier, setNavigationActiveTabsByLevel]
+    [windowIdentifier, tabId, getNavigationState, setNavigationActiveTabsByLevel]
   );
 
   return {

@@ -66,6 +66,10 @@ interface WindowContextI {
   setSelectedRecord: (windowIdentifier: string, tabId: string, recordId: string) => void;
   clearSelectedRecord: (windowIdentifier: string, tabId: string) => void;
 
+  // Navigation initialization management
+  getNavigationInitialized: (windowIdentifier: string) => boolean;
+  setNavigationInitialized: (windowIdentifier: string, initialized: boolean) => void;
+
   // Window management
   cleanupWindow: (windowIdentifier: string) => void;
 }
@@ -102,6 +106,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       const defaultNavigationState: NavigationState = {
         activeLevels: [0],
         activeTabsByLevel: new Map(),
+        initialized: false,
       };
 
       if (!state[windowIdentifier]) {
@@ -254,6 +259,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
           navigation: windowData?.navigation || {
             activeLevels: [0],
             activeTabsByLevel: new Map(),
+            initialized: false,
           },
           tabs: windowData?.tabs || {},
         };
@@ -345,6 +351,22 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     });
   }, []);
 
+  const getNavigationInitialized = useCallback(
+    (windowIdentifier: string): boolean => {
+      if (!state[windowIdentifier]) {
+        return false;
+      }
+      return state[windowIdentifier].navigation?.initialized || false;
+    },
+    [state]
+  );
+
+  const setNavigationInitialized = useCallback((windowIdentifier: string, initialized: boolean) => {
+    setState((prevState: WindowContextState) =>
+      updateNavigationProperty(prevState, windowIdentifier, "initialized", initialized)
+    );
+  }, []);
+
   // Computed values using existing helper functions
   const windows = useMemo((): WindowState[] => {
     return getAllWindows();
@@ -390,6 +412,9 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setSelectedRecord,
       clearSelectedRecord,
 
+      getNavigationInitialized,
+      setNavigationInitialized,
+
       cleanupWindow,
     }),
     [
@@ -421,6 +446,8 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       getSelectedRecord,
       setSelectedRecord,
       clearSelectedRecord,
+      getNavigationInitialized,
+      setNavigationInitialized,
       cleanupWindow,
     ]
   );

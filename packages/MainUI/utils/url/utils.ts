@@ -53,6 +53,11 @@ export const createWindowState = (windowIdentifier: string, searchParams: URLSea
     isActive: false,
     // TODO: the title is resolved outside this function
     title: "",
+    navigation: {
+      activeLevels: [],
+      activeTabsByLevel: new Map<number, string>(),
+      initialized: false,
+    },
     tabs: {}
   };
 };

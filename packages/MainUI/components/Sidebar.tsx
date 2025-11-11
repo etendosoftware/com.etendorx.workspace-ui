@@ -34,6 +34,7 @@ import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { useWindowContext } from "@/contexts/window";
+import { WindowState } from "@/utils/window/constants";
 
 /**
  * Version component that displays the current application version in the sidebar footer.
@@ -122,11 +123,16 @@ export default function Sidebar() {
         openWindow(windowId, newWindowIdentifier, item.name);
       } else {
         // Coming from home route - create new window and navigate
-        const newWindow = {
+        const newWindow: WindowState = {
           windowId,
           windowIdentifier: newWindowIdentifier,
           isActive: true,
           title: item.name,
+          navigation: {
+            activeLevels: [],
+            activeTabsByLevel: new Map<number, string>(),
+            initialized: false,
+          },
           tabs: {},
         };
 

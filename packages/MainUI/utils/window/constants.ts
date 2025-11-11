@@ -38,6 +38,7 @@ export interface TableState {
 export interface NavigationState {
   activeLevels: number[];
   activeTabsByLevel: Map<number, string>;
+  initialized: boolean;
 }
 
 export interface TabState {

@@ -38,6 +38,11 @@ export const useRedirect = () => {
       windowIdentifier: windowIdentifier || windowId,
       isActive: true,
       title: windowIdentifier || windowId,
+      navigation: {
+        activeLevels: [],
+        activeTabsByLevel: new Map<number, string>(),
+        initialized: false,
+      },
       tabs: {}
     }),
     []

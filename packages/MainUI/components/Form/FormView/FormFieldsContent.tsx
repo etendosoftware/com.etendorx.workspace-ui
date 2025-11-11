@@ -107,6 +107,7 @@ export function FormFields({
     }
   }, [openAttachmentModal, handleAccordionChange, isSectionExpanded]);
 
+  /** Scroll to selected tab */
   useEffect(() => {
     if (selectedTab && containerRef.current) {
       const sectionRefs = containerRef.current.querySelectorAll("[data-section-id]");

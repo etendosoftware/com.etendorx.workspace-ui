@@ -207,6 +207,11 @@ export function useMultiWindowURL() {
         isActive: true,
         windowIdentifier: windowIdentifier,
         title: title || "",
+        navigation: {
+          activeLevels: [],
+          activeTabsByLevel: new Map<number, string>(),
+          initialized: false,
+        },
         tabs: {}
       };
 
@@ -506,6 +511,11 @@ export function useMultiWindowURL() {
           isActive: true,
           windowIdentifier: options?.window_identifier || windowId,
           title: options?.title || "",
+          navigation: {
+            activeLevels: [],
+            activeTabsByLevel: new Map<number, string>(),
+            initialized: false,
+          },
           tabs: {}
         };
         updatedWindows.push(target);

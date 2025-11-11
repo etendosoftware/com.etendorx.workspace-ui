@@ -19,7 +19,9 @@
 
 import Graph from "@/data/graph";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
-import { createContext, useMemo } from "react";
+import { createContext, useEffect, useMemo } from "react";
+import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
+import { useWindowContext } from "@/contexts/window";
 
 /**
  * Context interface for managing tab selection and navigation state.
@@ -79,6 +81,25 @@ export const SelectedProvider = ({
   windowIdentifier: string;
 }>) => {
   /**
+   * Window context providing form state management and navigation initialization.
+   */
+  const { getTabFormState, getSelectedRecord, getNavigationInitialized, setNavigationInitialized } = useWindowContext();
+
+  /**
+   * Navigation state persistence hook for the current window.
+   *
+   * Manages:
+   * - setActiveLevel: Function to change visible navigation levels
+   * - setActiveTabsByLevel: Function to update active tab selection per level
+   *
+   * Persistence: State survives window switches and page refreshes
+   */
+  const { setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
+    windowIdentifier: windowIdentifier,
+    tabId: "",
+  });
+
+  /**
    * Cache key generation: Uses windowIdentifier if provided, otherwise falls back to windowId.
    * This supports multiple instances of the same window type while maintaining separate graph states.
    */
@@ -103,6 +124,79 @@ export const SelectedProvider = ({
     }
     return cachedGraph;
   }, [cacheKey, tabs]);
+
+  /**
+   * Session restoration effect for active tab levels and tab selections.
+   *
+   * This effect runs once during component initialization to restore navigation state
+   * from context-stored form states and selected records. It coordinates with useMultiWindowURL
+   * to determine the appropriate tab levels to activate based on previously saved form states.
+   *
+   * Enhanced Process:
+   * 1. Checks if initial loading has already completed (prevents multiple executions)
+   * 2. Retrieves selected records from context for the current window
+   * 3. Gets form states from window context for all available tabs
+   * 4. Calculates navigation depth based on the position of the last form state in selected records
+   * 5. Uses expand mode to set levels directly without navigation logic
+   * 6. Resets tab-by-level mapping for clean state or restores based on calculated depth
+   * 7. Marks loading as complete to prevent interference with user navigation
+   *
+   * This ensures users return to their previous navigation context when:
+   * - Refreshing the page
+   * - Navigating back to a previously opened window
+   * - Restoring from bookmarked URLs
+   *
+   */
+  useEffect(() => {
+    // Early return: Skip if already loaded or function not available
+    if (getNavigationInitialized(windowIdentifier) || !setActiveLevel || !getTabFormState) return;
+
+    if (!windowIdentifier) return;
+
+    // Get form states from context for all available tabs
+    const formStateTabIds = tabs
+      .map(tab => tab.id)
+      .filter(tabId => getTabFormState(windowIdentifier, tabId) !== undefined);
+
+    // Handle window with no saved form states - reset to clean state
+    if (formStateTabIds.length === 0) {
+      setActiveLevel(0);
+      setActiveTabsByLevel();
+      for (const tab of tabs) {
+        graph.clearSelected(tab);
+        graph.clearSelectedMultiple(tab);
+      }
+      setNavigationInitialized(windowIdentifier, true);
+      return;
+    }
+
+    // Get selected records from context for all tabs to determine navigation depth
+    const selectedRecordTabIds = tabs
+      .map(tab => tab.id)
+      .filter(tabId => getSelectedRecord(windowIdentifier, tabId) !== undefined);
+
+    // Calculate navigation depth based on form state position in selected records
+    const lastFormStateTabId = formStateTabIds.length > 0 ? formStateTabIds[formStateTabIds.length - 1] : null;
+    const lastFormStateIndex = lastFormStateTabId ? selectedRecordTabIds.indexOf(lastFormStateTabId) : -1;
+
+    // Handle window with saved form states - restore navigation depth
+    if (lastFormStateIndex > 0) {
+      setActiveLevel(lastFormStateIndex, true); // Use expand mode for direct restoration
+    }
+
+    // Mark as loaded to prevent subsequent executions
+    setNavigationInitialized(windowIdentifier, true);
+  }, [
+    windowIdentifier,
+    tabs,
+    graph,
+    setActiveLevel,
+    setActiveTabsByLevel,
+    getTabFormState,
+    getSelectedRecord,
+    getNavigationInitialized,
+    setNavigationInitialized
+  ]);
 
   /**
    * Memoized context value to prevent unnecessary re-renders of consuming components.
