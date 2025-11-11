@@ -87,6 +87,7 @@ export const useRedirect = () => {
             mode: TAB_MODES.FORM,
             formMode: FORM_MODES.EDIT,
           },
+          selectedRecord: selectedRecordId,
         } as TabState
       }
       const windowData = { title: windowTitle, tabs };
