@@ -96,7 +96,6 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.includes(SLUGS_METHODS.DELETE) ||
     slug.includes(SLUGS_CATEGORIES.COPILOT) || // All copilot routes should bypass cache for real-time data
     slug.startsWith(SLUGS_CATEGORIES.NOTES) || // Notes servlet needs session cookies
-    slug.startsWith(SLUGS_CATEGORIES.LEGACY) || // Legacy servlets return HTML and need session cookies
     method !== "GET"
   );
 }
@@ -140,85 +139,6 @@ function buildErpHeaders(
   return headers;
 }
 
-// Helper: Detect charset from Content-Type header
-function detectCharset(contentType: string | null): string {
-  if (!contentType) {
-    return "iso-8859-1"; // Default for Tomcat legacy servlets
-  }
-  const charsetMatch = contentType.match(/charset=([^\s;]+)/i);
-  return charsetMatch ? charsetMatch[1].toLowerCase() : "iso-8859-1";
-}
-
-// Helper: Check if response is binary file
-function isBinaryContentType(contentType: string): boolean {
-  return (
-    contentType.includes("application/octet-stream") ||
-    contentType.includes("application/zip") ||
-    contentType.includes("image/") ||
-    contentType.includes("video/") ||
-    contentType.includes("audio/") ||
-    contentType.includes("application/pdf")
-  );
-}
-
-// Helper: Rewrite HTML resource URLs to point to Tomcat
-function rewriteHtmlResourceUrls(html: string): string {
-  let rewritten = html;
-
-  const backendUrl = process.env.ETENDO_CLASSIC_URL || "";
-  // Use public host for client-side URLs (accessible from browser)
-  // Falls back to ETENDO_CLASSIC_URL if not set (backward compatibility)
-  const publicBackendHost = process.env.NEXT_PUBLIC_ETENDO_CLASSIC_HOST || backendUrl;
-
-  // Rewrite absolute URLs that point to the backend server URL (server-side URL like host.docker.internal)
-  // Replace with the public host URL that the browser can access
-  // This handles the Docker scenario where server uses host.docker.internal but browser needs localhost
-  if (backendUrl && publicBackendHost && backendUrl !== publicBackendHost) {
-    // Escape special regex characters in the URL
-    const escapedBackendUrl = backendUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-    // Replace server backend URL with public host URL
-    // Matches: "http://host.docker.internal:8080/etendo/path" -> "http://localhost:8080/etendo/path"
-    const backendUrlRegex = new RegExp(escapedBackendUrl, "gi");
-    rewritten = rewritten.replace(backendUrlRegex, publicBackendHost);
-  }
-
-  // Rewrite relative paths that reference Etendo resources to use public host
-  rewritten = rewritten.replace(/(href|src|action)="(\.\.\/)*web\//gi, `$1="${publicBackendHost}/web/`);
-
-  // Rewrite paths like href="../../org.openbravo.client.kernel/..." to use public host
-  rewritten = rewritten.replace(
-    /(href|src|action)="(\.\.\/)*org\.openbravo\./gi,
-    `$1="${publicBackendHost}/org.openbravo.`
-  );
-
-  // Rewrite JavaScript variable baseDirectory to use public host
-  // Matches patterns like: var baseDirectory = "../web/"; or baseDirectory = "../../web/";
-  rewritten = rewritten.replace(
-    /baseDirectory\s*=\s*["'](\.\.\/)*web\/["']/gi,
-    `baseDirectory = "${publicBackendHost}/web/"`
-  );
-
-  // Rewrite relative paths in JavaScript strings (action URLs, etc.)
-  // Matches patterns like: "../../../web/" in JavaScript context
-  rewritten = rewritten.replace(/["'](\.\.\/){2,}web\//g, `"${publicBackendHost}/web/`);
-
-  return rewritten;
-}
-
-// Helper: Create HTML response with proper headers
-function createHtmlResponse(html: string, originalResponse: Response): Response {
-  const htmlHeaders = new Headers(originalResponse.headers);
-  if (!htmlHeaders.has("content-type")) {
-    htmlHeaders.set("Content-Type", "text/html");
-  }
-  return new Response(html, {
-    status: originalResponse.status,
-    statusText: originalResponse.statusText,
-    headers: htmlHeaders,
-  });
-}
-
 /**
  * Handles mutation requests (non-cached) to the ERP system
  * @param erpUrl - Target ERP URL
@@ -253,45 +173,11 @@ async function handleMutationRequest(
   }
 
   const responseContentType = response.headers.get("content-type");
-
-  // Check if response is a stream
   if (responseContentType?.includes("text/event-stream")) {
     return { stream: response.body, headers: response.headers };
   }
 
-  // Check if response is HTML (for iframes like About modal, legacy servlets, etc.)
-  if (responseContentType?.toLowerCase().includes("text/html")) {
-    // Read HTML content with proper encoding detection
-    const htmlBuffer = await response.arrayBuffer();
-    const encoding = detectCharset(responseContentType);
-    const htmlText = new TextDecoder(encoding).decode(htmlBuffer);
-
-    // Rewrite URLs to point through proxy
-    const rewrittenHtml = rewriteHtmlResourceUrls(htmlText);
-    const htmlResponse = createHtmlResponse(rewrittenHtml, response);
-
-    return { htmlContent: htmlResponse };
-  }
-
-  // Check if response is a binary file (for downloads)
-  if (responseContentType && isBinaryContentType(responseContentType)) {
-    return { binaryFile: response };
-  }
-
-  // Read response with proper encoding detection
-  const responseBuffer = await response.arrayBuffer();
-  const encoding = detectCharset(responseContentType);
-  const responseText = new TextDecoder(encoding).decode(responseBuffer);
-
-  // Fallback: Check if response body looks like HTML (when Content-Type is missing)
-  if (
-    responseText.trim().toLowerCase().startsWith("<html") ||
-    responseText.trim().toLowerCase().startsWith("<!doctype html")
-  ) {
-    const rewrittenHtml = rewriteHtmlResourceUrls(responseText);
-    const htmlResponse = createHtmlResponse(rewrittenHtml, response);
-    return { htmlContent: htmlResponse };
-  }
+  const responseText = await response.text();
 
   // Check if response is JavaScript error from Etendo
   if (responseText.startsWith("OB.KernelUtilities.handleSystemException(")) {
@@ -313,15 +199,7 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
     const resolvedParams = await params;
     const slug = resolvedParams.slug.join("/");
 
-    // Extract token from header or query parameter (for legacy routes)
-    let userToken = extractBearerToken(request);
-
-    // For legacy routes, also check query parameter
-    if (!userToken && slug.startsWith(SLUGS_CATEGORIES.LEGACY)) {
-      const url = new URL(request.url);
-      userToken = url.searchParams.get("token");
-    }
-
+    const userToken = extractBearerToken(request);
     if (!userToken) {
       return unauthorizedResponse();
     }
@@ -344,14 +222,6 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
       return handleStreamResponse(data as { stream: ReadableStream; headers: Headers });
     }
 
-    if (isBinaryFile(data)) {
-      return handleBinaryFileResponse(data as { binaryFile: Response });
-    }
-
-    if (isHtmlContent(data)) {
-      return handleHtmlContentResponse(data as { htmlContent: Response });
-    }
-
     return NextResponse.json(data);
   } catch (error: unknown) {
     return handleError(error, params);
@@ -364,8 +234,6 @@ function buildErpUrl(slug: string, requestUrl: string): string {
   if (slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
     // Notes servlet - simple direct path
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
-  } else if (slug.startsWith(SLUGS_CATEGORIES.LEGACY)) {
-    erpUrl = `${process.env.NEXT_PUBLIC_ETENDO_CLASSIC_HOST}/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.SWS)) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.COPILOT)) {
@@ -439,45 +307,6 @@ function handleStreamResponse(data: { stream: ReadableStream; headers: Headers }
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
     },
-  });
-}
-
-// Helper: Check if response is a binary file
-function isBinaryFile(data: unknown): boolean {
-  return typeof data === "object" && data !== null && "binaryFile" in data;
-}
-
-// Helper: Check if response is HTML content
-function isHtmlContent(data: unknown): boolean {
-  return typeof data === "object" && data !== null && "htmlContent" in data;
-}
-
-// Helper: Handle binary file response
-function handleBinaryFileResponse(data: { binaryFile: Response }): Response {
-  const { binaryFile } = data;
-  return new Response(binaryFile.body, {
-    headers: {
-      "Content-Type": binaryFile.headers.get("content-type") || "application/octet-stream",
-      "Content-Disposition": binaryFile.headers.get("content-disposition") || "attachment",
-    },
-  });
-}
-
-// Helper: Handle HTML content response (ensure UTF-8 charset)
-function handleHtmlContentResponse(data: { htmlContent: Response }): Response {
-  const { htmlContent } = data;
-  const headers = new Headers(htmlContent.headers);
-
-  // Ensure UTF-8 charset is explicitly set for HTML responses
-  const contentType = headers.get("content-type") || "text/html";
-  if (!contentType.includes("charset")) {
-    headers.set("Content-Type", `${contentType}; charset=UTF-8`);
-  }
-
-  return new Response(htmlContent.body, {
-    status: htmlContent.status,
-    statusText: htmlContent.statusText,
-    headers,
   });
 }
 

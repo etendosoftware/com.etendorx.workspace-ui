@@ -28,7 +28,7 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useParams } from "next/navigation";
 import { useCallback, useContext, useState } from "react";
 import { UserContext } from "../../contexts/user";
-import { useApiContext } from "../useApiContext";
+import { useRuntimeConfig } from "../useRuntimeConfig";
 import { useMetadataContext } from "../useMetadataContext";
 import type { ExecuteProcessDefinitionParams, ExecuteProcessParams } from "./types";
 import { getParams } from "@/utils/processes/manual/utils";
@@ -39,10 +39,12 @@ export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [iframeUrl, setIframeUrl] = useState("");
-  const API_BASE_URL = useApiContext();
-  // Use public host for client-side URLs (accessible from browser)
-  // Falls back to API_BASE_URL if not set (backward compatibility)
-  const publicHost = process.env.NEXT_PUBLIC_ETENDO_CLASSIC_HOST || API_BASE_URL;
+  const { config, loading: configLoading } = useRuntimeConfig();
+
+  // Use ETENDO_CLASSIC_HOST for direct browser access to Tomcat
+  // This is necessary in Docker hybrid mode where the browser needs to access
+  // Tomcat directly (e.g., localhost:8080) instead of through the Next.js proxy
+  const publicHost = config?.etendoClassicHost || "";
 
   const { token } = useContext(UserContext);
   const { windowId } = useMetadataContext();
@@ -202,7 +204,7 @@ export function useProcessExecution() {
 
   return {
     executeProcess,
-    loading,
+    loading: loading || configLoading,
     error,
     iframeUrl,
     resetIframeUrl,

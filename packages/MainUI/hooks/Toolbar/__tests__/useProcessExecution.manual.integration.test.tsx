@@ -28,8 +28,15 @@ jest.mock("@/hooks/useApiContext", () => ({
   useApiContext: () => "http://localhost:3000/api",
 }));
 
-// Mock NEXT_PUBLIC_ETENDO_CLASSIC_HOST for client-side URLs
-process.env.NEXT_PUBLIC_ETENDO_CLASSIC_HOST = "http://localhost:8080/etendo";
+// Mock useRuntimeConfig to return ETENDO_CLASSIC_HOST
+jest.mock("@/hooks/useRuntimeConfig", () => ({
+  useRuntimeConfig: () => ({
+    config: {
+      etendoClassicHost: "http://localhost:8080/etendo",
+    },
+    loading: false,
+  }),
+}));
 
 // Provide windowId via metadata context
 jest.mock("@/hooks/useMetadataContext", () => ({
