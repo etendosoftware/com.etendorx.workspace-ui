@@ -80,6 +80,7 @@ export const SelectedProvider = ({
   children,
   tabs,
   windowId,
+  windowIdentifier,
 }: React.PropsWithChildren<{
   tabs: Tab[];
   windowId: string;
@@ -100,22 +101,25 @@ export const SelectedProvider = ({
   /**
    * Memoized graph instance with caching strategy.
    *
-   * Creates or retrieves a Graph instance from the global cache based on windowId.
+   * Creates or retrieves a Graph instance from the global cache based on windowIdentifier.
+   * Uses windowIdentifier as the cache key to support multiple instances of the same window.
+   * Falls back to windowId if windowIdentifier is not provided.
    * The graph represents the hierarchical relationship between tabs and manages selection state.
    *
    * Dependency on `tabs` ensures graph is recreated when tab structure changes,
    * which is necessary for maintaining consistency with the current tab configuration.
    */
   const graph = useMemo(() => {
-    if (!windowGraphCache.has(windowId)) {
-      windowGraphCache.set(windowId, new Graph<Tab>(tabs));
+    const cacheKey = windowIdentifier || windowId;
+    if (!windowGraphCache.has(cacheKey)) {
+      windowGraphCache.set(cacheKey, new Graph<Tab>(tabs));
     }
-    const cachedGraph = windowGraphCache.get(windowId);
+    const cachedGraph = windowGraphCache.get(cacheKey);
     if (!cachedGraph) {
-      throw new Error(`Failed to retrieve graph for window id: ${windowId}`);
+      throw new Error(`Failed to retrieve graph for cache key: ${cacheKey}`);
     }
     return cachedGraph;
-  }, [windowId, tabs]);
+  }, [windowId, windowIdentifier, tabs]);
 
   /**
    * Updates active navigation levels based on user interaction.
@@ -125,27 +129,21 @@ export const SelectedProvider = ({
    * 2. Otherwise, calculate new levels based on current maxLevel and new level
    * 3. Keep two consecutive levels visible (e.g., [0,1] or [1,2])
    */
-  const setActiveLevel = useCallback(
-    (level: number, expand?: boolean) => {
-      setActiveLevels((prev) => getNewActiveLevels(prev, level, expand));
-    },
-    []
-  );
+  const setActiveLevel = useCallback((level: number, expand?: boolean) => {
+    setActiveLevels((prev) => getNewActiveLevels(prev, level, expand));
+  }, []);
 
   /**
    * Updates active tab by level.
    * Stores which tab is selected at each hierarchy level.
    */
-  const setActiveTabsByLevel = useCallback(
-    (tab?: Tab) => {
-      if (!tab) {
-        setActiveTabsByLevelState(new Map());
-        return;
-      }
-      setActiveTabsByLevelState((prev) => getNewActiveTabsByLevel(prev, tab.tabLevel, tab.id));
-    },
-    []
-  );
+  const setActiveTabsByLevel = useCallback((tab?: Tab) => {
+    if (!tab) {
+      setActiveTabsByLevelState(new Map());
+      return;
+    }
+    setActiveTabsByLevelState((prev) => getNewActiveTabsByLevel(prev, tab.tabLevel, tab.id));
+  }, []);
 
   /**
    * Memoized context value to prevent unnecessary re-renders of consuming components.
