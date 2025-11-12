@@ -30,7 +30,6 @@ import useFormFields from "@/hooks/useFormFields";
 import { useFormInitialState } from "@/hooks/useFormInitialState";
 import { useFormInitialization } from "@/hooks/useFormInitialization";
 import { useSelected } from "@/hooks/useSelected";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { FormInitializationProvider } from "@/contexts/FormInitializationContext";
 import { globalCalloutManager } from "@/services/callouts";
@@ -89,8 +88,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   const { graph } = useSelected();
-  const { setSelectedRecordAndClearChildren } = useMultiWindowURL();
-  const { activeWindow, setSelectedRecord, getSelectedRecord } = useWindowContext();
+  const { activeWindow, setSelectedRecord, getSelectedRecord, setSelectedRecordAndClearChildren } = useWindowContext();
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
   const { resetFormChanges, parentTab } = useTabContext();
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =

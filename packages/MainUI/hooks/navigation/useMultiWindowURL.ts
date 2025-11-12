@@ -37,7 +37,6 @@ export function useMultiWindowURL() {
     windows,
     setTabFormState,
     setSelectedRecord,
-    setSelectedRecordAndClearChildren,
   } = useWindowContext();
 
   /**
@@ -192,7 +191,5 @@ export function useMultiWindowURL() {
   return {
     openWindow,
     buildURL,
-
-    setSelectedRecordAndClearChildren,
   };
 }
