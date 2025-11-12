@@ -34,8 +34,7 @@ import {
   TabFormState,
 } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
-import { isFormView } from "@/utils/url/utils";
-import { getNewTabFormState } from "@/utils/window/utils";
+import { getNewTabFormState, isFormView } from "@/utils/window/utils";
 import { useWindowContext } from '@/contexts/window';
 
 /**

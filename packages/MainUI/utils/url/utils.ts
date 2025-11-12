@@ -1,29 +1,7 @@
 import {
   WINDOW_IDENTIFIER_PREFIX,
-  TAB_MODES,
 } from "@/utils/url/constants";
 import { WindowState } from "@/utils/window/constants";
-
-/**
- * Determines if a tab should be displayed in form view mode based on its state and parent context.
- * A tab is considered to be in form view when all three conditions are met:
- * - Current mode is explicitly set to FORM
- * - A valid record ID is present
- * - Parent tab has a selection (establishing context)
- *
- * @param params - Configuration object containing:
- *   - currentMode: The current display mode of the tab
- *   - recordId: The ID of the record being displayed
- *   - hasParentSelection: Whether the parent tab has a selection
- * @returns True if the tab should be displayed in form view, false otherwise
- */
-export const isFormView = ({
-  currentMode,
-  recordId,
-  hasParentSelection,
-}: { currentMode: string; recordId: string; hasParentSelection: boolean }) => {
-  return currentMode === TAB_MODES.FORM && !!recordId && hasParentSelection;
-};
 
 /**
  * TODO: this func will be usefull to reconstruct the window state from URL params
