@@ -87,9 +87,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const hasScrolledToSelection = useRef<boolean>(false);
-
-  // Restore visual selection when returning from FormView
-  // This effect ensures the table shows the selection from URL when it becomes visible
+  const previousURLSelection = useRef<string | null>(null);
   const hasRestoredSelection = useRef(false);
 
   // Use the table data hook
@@ -311,9 +309,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     return {};
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, records]);
 
-  // Track URL selection changes to detect direct navigation
-  const previousURLSelection = useRef<string | null>(null);
-
+  /** Track URL selection changes to detect direct navigation */
   useEffect(() => {
     const windowId = activeWindow?.windowId;
     const windowIdentifier = activeWindow?.windowIdentifier;
@@ -669,6 +665,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     }
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table, graph]);
 
+  /** Restore selection from URL on mount */
   useEffect(() => {
     const windowId = activeWindow?.windowId;
     const windowIdentifier = activeWindow?.windowIdentifier;
