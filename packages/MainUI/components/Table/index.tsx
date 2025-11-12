@@ -25,8 +25,8 @@ import {
   type MRT_Cell,
 } from "material-react-table";
 import { useStyle } from "./styles";
-import type { EntityData } from "@workspaceui/api-client/src/api/types";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { EntityData, GridProps } from "@workspaceui/api-client/src/api/types";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import EmptyState from "./EmptyState";
@@ -55,6 +55,36 @@ import {
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
 import { RecordCounterBar } from "@workspaceui/componentlibrary/src/components";
+import type { EditingRowsState, InlineEditingContextMenu } from "./types/inlineEditing";
+import { createEditingRowStateUtils } from "./utils/editingRowUtils";
+import { ActionsColumn } from "./ActionsColumn";
+import { validateFieldRealTime } from "./utils/validationUtils";
+import { FieldType } from "@workspaceui/api-client/src/api/types";
+import type { Column, Field } from "@workspaceui/api-client/src/api/types";
+import { getFieldReference, parseDynamicExpression } from "@/utils";
+import { useUserContext } from "@/hooks/useUserContext";
+import { useConfirmationDialog } from "./hooks/useConfirmationDialog";
+import { useInlineTableDirOptions } from "./hooks/useInlineTableDirOptions";
+import { ConfirmationDialog } from "./components/ConfirmationDialog";
+import { useInlineEditInitialization } from "./hooks/useInlineEditInitialization";
+import {
+  canSortWithEditingRows,
+  canFilterWithEditingRows,
+  mergeOptimisticRecordsWithSort,
+  canUseVirtualScrollingWithEditing,
+} from "./utils/tableFeatureCompatibility";
+import { createKeyboardNavigationManager, type KeyboardNavigationManager } from "./utils/keyboardNavigation";
+import {
+  useDebouncedCallback,
+  useThrottledCallback,
+  usePerformanceMonitor,
+  useMemoryManager,
+} from "./utils/performanceOptimizations";
+import { useScreenReaderAnnouncer, generateAriaAttributes, useFocusManagement } from "./utils/accessibilityUtils";
+import "./styles/inlineEditing.css";
+
+// Lazy load CellEditorFactory once at module level to avoid recreating on every render
+const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -63,6 +93,166 @@ type RowProps = (props: {
 }) => Omit<MRT_TableBodyRowProps<EntityData>, "staticRowIndex">;
 
 const getRowId = (row: EntityData) => String(row.id);
+
+// Helper function to convert Column to FieldType using existing utilities
+// Simple cache implementation with size limit
+const fieldTypeCache = new Map<string, FieldType>();
+const MAX_CACHE_SIZE = 100;
+
+// Helper function to compile readOnlyLogic expressions
+const compileExpression = (expression: string) => {
+  try {
+    return new Function("context", "currentValues", `return ${parseDynamicExpression(expression)};`);
+  } catch (error) {
+    logger.error("Error compiling expression:", expression, error);
+    return () => true;
+  }
+};
+
+// Helper function to determine if a field should be readonly in inline editing
+const isFieldReadOnly = (
+  field: Field,
+  isNewRow = false,
+  rowValues?: Record<string, unknown>,
+  session?: Record<string, unknown>
+): boolean => {
+  // Field explicitly marked as readonly
+  if (field.isReadOnly) return true;
+
+  // Field not updatable (readonly except for new rows)
+  if (!field.isUpdatable && !isNewRow) return true;
+
+  // Evaluate readOnlyLogicExpression if present
+  if (field.readOnlyLogicExpression && rowValues) {
+    try {
+      const compiledExpr = compileExpression(field.readOnlyLogicExpression);
+      const result = compiledExpr(session || {}, rowValues);
+      return Boolean(result);
+    } catch (error) {
+      logger.warn(`Error evaluating readOnlyLogicExpression for field ${field.name}:`, error);
+      // On error, default to readonly for safety
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const getFieldTypeFromColumn = (column: Column): FieldType => {
+  // Create a cache key based on column properties that affect field type
+  const cacheKey = `${column.name}-${column.type}-${column.column?.reference}-${column.displayType}`;
+
+  if (fieldTypeCache.has(cacheKey)) {
+    return fieldTypeCache.get(cacheKey)!;
+  }
+
+  let fieldType: FieldType;
+
+  // First, check if this is a TABLEDIR field based on referencedEntity
+  // Fields with referencedEntity should be TABLEDIR, not SELECT
+  if (column.referencedEntity || (column as any).column?.referencedEntity) {
+    fieldType = FieldType.TABLEDIR;
+  } else if (column.type && Object.values(FieldType).includes(column.type as FieldType)) {
+    fieldType = column.type as FieldType;
+  } else {
+    // Fallback to reference mapping if type is not set or invalid
+    fieldType = getFieldReference(column.column?.reference);
+  }
+
+  // Note: Special case corrections are now handled in parseColumns
+
+  // Field type detection completed - special cases handled in parseColumns
+
+  // Limit cache size to prevent memory leaks
+  if (fieldTypeCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = fieldTypeCache.keys().next().value;
+    if (firstKey) {
+      fieldTypeCache.delete(firstKey);
+    }
+  }
+
+  fieldTypeCache.set(cacheKey, fieldType);
+  return fieldType;
+};
+
+// Helper function to convert Column to Field for cell editors
+// Simple cache implementation with size limit
+const fieldCache = new Map<string, Field>();
+
+const columnToFieldForEditor = (column: Column): Field => {
+  // Create a cache key based on column properties that affect the Field conversion
+  const cacheKey = `${column.name}-${column.fieldId}-${column.isMandatory}-${column.type}`;
+
+  if (fieldCache.has(cacheKey)) {
+    return fieldCache.get(cacheKey)!;
+  }
+
+  // Use the refList and referencedEntity from the column (set by parseColumns)
+  const refList = Array.isArray(column.refList) ? column.refList : [];
+
+  // Get the corrected field type using the same logic as getFieldTypeFromColumn
+  const correctedFieldType = getFieldTypeFromColumn(column);
+
+  // Extract readOnlyLogicExpression from column metadata
+  // The expression can be in column.readOnlyLogicExpression or column.column?.readOnlyLogicExpression
+  const readOnlyLogicExpression =
+    (column as any).readOnlyLogicExpression ||
+    column.column?.readOnlyLogicExpression;
+
+  // Create a minimal Field object with the data we need for cell editors
+  const field: Field = {
+    name: column.name,
+    hqlName: column.name,
+    inputName: column.name,
+    columnName: column.columnName || column.name,
+    process: "",
+    shownInStatusBar: Boolean(column.shownInStatusBar),
+    tab: "",
+    displayed: column.displayed !== false,
+    startnewline: false,
+    showInGridView: column.showInGridView !== false,
+    fieldGroup$_identifier: "",
+    fieldGroup: "",
+    isMandatory: column.isMandatory || false,
+    column: column.column || {},
+    id: column.fieldId || column.id,
+    module: "",
+    hasDefaultValue: false,
+    refColumnName: column.column?.reference || "",
+    targetEntity: String(column.referencedEntity || column.datasourceId || ""),
+    gridProps: {} as GridProps,
+    type: String(correctedFieldType),
+    field: [],
+    selector: column.selector,
+    refList: refList,
+    referencedEntity: String(column.referencedEntity || ""),
+    referencedWindowId: column.referencedWindowId || "",
+    referencedTabId: "",
+    displayLogicExpression: undefined,
+    readOnlyLogicExpression: readOnlyLogicExpression,
+    isReadOnly: Boolean(column.isReadOnly),
+    isDisplayed: column.displayed !== false,
+    sequenceNumber: Number(column.sequenceNumber || 0),
+    isUpdatable: Boolean(column.isUpdatable !== false),
+    description: column.header,
+    helpComment: "",
+    processDefinition: undefined,
+    processAction: undefined,
+    etmetaCustomjs: column.customJs || null,
+  } as Field;
+
+  // Limit cache size to prevent memory leaks
+  if (fieldCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = fieldCache.keys().next().value;
+    if (firstKey) {
+      fieldCache.delete(firstKey);
+    }
+  }
+
+  fieldCache.set(cacheKey, field);
+  return field;
+};
+
 interface DynamicTableProps {
   setRecordId: React.Dispatch<React.SetStateAction<string>>;
   onRecordSelection?: (recordId: string) => void;
@@ -73,6 +263,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { sx } = useStyle();
   const { t } = useTranslation();
   const { graph } = useSelected();
+  const { user, session } = useUserContext();
+
+  // Confirmation dialog hook for user confirmations
+  const { dialogState, confirmDiscardChanges, confirmSaveWithErrors, confirmRetryAfterError, showSuccessMessage } =
+    useConfirmationDialog();
+
   const {
     registerDatasource,
     unregisterDatasource,
@@ -85,10 +281,26 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { activeWindow, getSelectedRecord } = useMultiWindowURL();
   const { tab, parentTab, parentRecord } = useTabContext();
 
+  // Hook for fetching form initialization data when entering edit mode
+  const { fetchInitialData } = useInlineEditInitialization({ tab });
+
+  // Hook for loading TABLEDIR options for inline editing
+  const { loadOptions: loadTableDirOptions, isLoading: isLoadingTableDirOptions } = useInlineTableDirOptions({
+    tabId: tab.id,
+    windowId: tab.window,
+  });
+
   const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
     useTableStatePersistenceTab({ windowIdentifier: activeWindow?.window_identifier || "", tabId: tab.id });
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  // Debug: Compare baseColumns with rawColumns from parseColumns
+  const rawColumns = useMemo(() => {
+    const { parseColumns } = require("@/utils/tableColumns");
+    return parseColumns(Object.values(tab.fields));
+  }, [tab.fields]);
+
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const hasScrolledToSelection = useRef<boolean>(false);
 
@@ -132,6 +344,109 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     row: null,
   });
 
+  // Inline editing state management
+  // This state tracks which rows are currently being edited, their original and modified data,
+  // validation errors, and save status. The editingRowUtils provide helper functions to manage this state.
+  const [editingRows, setEditingRows] = useState<EditingRowsState>({});
+  const editingRowsRef = useRef<EditingRowsState>({});
+  editingRowsRef.current = editingRows; // Keep ref in sync with state
+
+  // Focus management for inline editing - tracks which cell should receive initial focus
+  const [initialFocusCell, setInitialFocusCell] = useState<{ rowId: string; columnName: string } | null>(null);
+
+  // Debug comparison completed - issue identified and resolved
+
+  const [inlineEditingContextMenu, setInlineEditingContextMenu] = useState<InlineEditingContextMenu>({
+    anchorEl: null,
+    cell: null,
+    row: null,
+    showInlineOptions: false,
+  });
+
+  // Create editing row state utilities - memoize with stable ref to prevent recreating functions
+  // Use ref instead of state in dependencies to avoid recreation on every state change
+  const editingRowUtils = useMemo(
+    () => createEditingRowStateUtils(editingRowsRef, setEditingRows),
+    [] // Empty deps - only create once, functions use ref for current value
+  );
+
+  // Optimistic updates state - tracks pending updates for immediate UI feedback
+  const [optimisticRecords, setOptimisticRecords] = useState<EntityData[]>([]);
+
+  // Keyboard navigation manager for inline editing
+  const [keyboardNavigationManager, setKeyboardNavigationManager] = useState<KeyboardNavigationManager | null>(null);
+
+  // Performance optimization utilities
+  const performanceMonitor = usePerformanceMonitor();
+  const memoryManager = useMemoryManager();
+
+  // Accessibility utilities
+  const screenReaderAnnouncer = useScreenReaderAnnouncer();
+  const { setFocusedElement, getFocusedElement, restoreFocus } = useFocusManagement();
+
+  // Memoize field conversions for all columns to avoid recalculation on every render
+  const columnFieldMappings = useMemo(() => {
+    const mappings = new Map<string, { fieldType: FieldType; field: Field }>();
+
+    baseColumns.forEach((col) => {
+      if (col.name !== "actions") {
+        mappings.set(col.name, {
+          fieldType: getFieldTypeFromColumn(col),
+          field: columnToFieldForEditor(col),
+        });
+      }
+    });
+
+    return mappings;
+  }, [baseColumns, getFieldTypeFromColumn, columnToFieldForEditor]);
+
+  // Create debounced validation function for real-time feedback with performance monitoring
+  const debouncedValidateField = useDebouncedCallback((rowId: string, fieldName: string, value: unknown) => {
+    performanceMonitor.measure(`validate-field-${fieldName}`, () => {
+      // Use memoized field mapping to avoid column lookup
+      const fieldMapping = columnFieldMappings.get(fieldName);
+      if (!fieldMapping) return;
+
+      // Use real-time validation with lenient settings for typing
+      const validationResult = validateFieldRealTime(fieldMapping.field, value, {
+        allowEmpty: true,
+        showTypingErrors: false,
+      });
+
+      // Update validation errors in state
+      const currentErrors = editingRows[rowId]?.validationErrors || {};
+      editingRowUtils.setRowValidationErrors(rowId, {
+        ...currentErrors,
+        [fieldName]: validationResult.error,
+      });
+    });
+  }, 300);
+
+  // Immediate validation function for blur events with performance monitoring
+  const validateFieldOnBlur = useCallback(
+    (rowId: string, fieldName: string, value: unknown) => {
+      performanceMonitor.measure(`validate-field-blur-${fieldName}`, () => {
+        // Use memoized field mapping to avoid column lookup
+        const fieldMapping = columnFieldMappings.get(fieldName);
+        if (!fieldMapping) return;
+
+        // Use strict validation on blur
+        const validationResult = validateFieldRealTime(fieldMapping.field, value, {
+          allowEmpty: false,
+          showTypingErrors: true,
+        });
+
+        // Update validation errors in state
+        const currentErrors = editingRows[rowId]?.validationErrors || {};
+        editingRowUtils.setRowValidationErrors(rowId, {
+          ...currentErrors,
+          [fieldName]: validationResult.error,
+        });
+      });
+    },
+    [columnFieldMappings, editingRowUtils, editingRows, performanceMonitor]
+  );
+
   const toggleColumnsDropdown = useCallback(
     (buttonRef?: HTMLElement | null) => {
       if (columnMenuAnchor) {
@@ -150,6 +465,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const handleCellContextMenu = useCallback(
     (event: React.MouseEvent<HTMLTableCellElement>, cell: MRT_Cell<EntityData>, row: MRT_Row<EntityData>) => {
       event.preventDefault();
+
       setContextMenu({
         anchorEl: event.currentTarget,
         cell,
@@ -173,6 +489,471 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     },
     [applyQuickFilter]
   );
+
+  // Inline editing action handlers
+  const handleEditRow = useCallback(
+    async (row: MRT_Row<EntityData>) => {
+      const rowId = String(row.original.id);
+
+      logger.info(`[InlineEditing] Started editing row: ${rowId}`);
+
+      // Add the row to editing state with original data immediately
+      // This ensures the inputs show up right away
+      editingRowUtils.addEditingRow(rowId, row.original, false);
+
+      // Set focus to the first editable column (skip 'id' and 'actions')
+      const firstEditableColumn = baseColumns.find(
+        (col) => col.name !== "id" && col.name !== "actions" && col.displayed !== false
+      );
+
+      if (firstEditableColumn) {
+        setInitialFocusCell({ rowId, columnName: firstEditableColumn.name });
+      }
+
+      // Announce editing state change to screen readers
+      if (screenReaderAnnouncer) {
+        const columnCount = baseColumns.filter((col) => col.name !== "actions").length;
+        screenReaderAnnouncer.announceEditingStateChange(rowId, true, columnCount);
+      }
+
+      // Fetch initialized data in background to get proper values for selectors and other fields
+      try {
+        logger.info(`[InlineEditing] Column names in table for debugging`, {
+          columnNames: baseColumns.map((col) => ({ name: col.name, columnName: col.columnName })).slice(0, 10),
+        });
+
+        const initializedData = await fetchInitialData(rowId, false);
+        if (initializedData) {
+          // Check if user hasn't made any modifications yet
+          const editingData = editingRowUtils.getEditingRowData(rowId);
+          if (editingData && Object.keys(editingData.modifiedData).length === 0) {
+            // Merge initialized data with original data, prioritizing initialized values
+            // This ensures selectors show correct values and identifiers
+            const mergedData = {
+              ...row.original,
+              ...initializedData,
+              // Always keep the original ID
+              id: row.original.id,
+            };
+
+            // Check which column names match with initialized data
+            const columnNames = baseColumns.map((col) => col.name);
+            const initializedFieldNames = Object.keys(initializedData);
+            const matchingFields = columnNames.filter((colName) => initializedFieldNames.includes(colName));
+            const missingFields = columnNames.filter((colName) => !initializedFieldNames.includes(colName));
+
+            logger.info(`[InlineEditing] Merged initialized data for row ${rowId}`, {
+              originalFields: Object.keys(row.original).length,
+              initializedFields: Object.keys(initializedData).length,
+              mergedFields: Object.keys(mergedData).length,
+              matchingFields: matchingFields.length,
+              missingFields: missingFields.slice(0, 5), // Show first 5 missing fields
+              matchingFieldsSample: matchingFields.slice(0, 5), // Show first 5 matching fields
+              originalSample: Object.fromEntries(Object.entries(row.original).slice(0, 3)),
+              initializedSample: Object.fromEntries(Object.entries(initializedData).slice(0, 3)),
+              mergedSample: Object.fromEntries(Object.entries(mergedData).slice(0, 3)),
+            });
+
+            // Update the editing row with enriched data
+            editingRowUtils.addEditingRow(rowId, mergedData, false);
+          } else {
+            logger.debug(`[InlineEditing] Skipping data merge for row ${rowId} - user has already made modifications`);
+          }
+        }
+      } catch (error) {
+        logger.warn(`[InlineEditing] Failed to fetch initialized data for row ${rowId}:`, error);
+        // Continue with original data if initialization fails
+      }
+    },
+    [editingRowUtils, screenReaderAnnouncer, baseColumns]
+  );
+
+  const handleInsertRow = useCallback(async () => {
+    // Import utility functions for new row creation
+    const { generateNewRowId, createEmptyRowData, insertNewRowAtTop } = await import("./utils/editingRowUtils");
+
+    // Generate a unique ID for the new row
+    const newRowId = generateNewRowId();
+
+    // Create empty row data with proper default values based on column metadata
+    const emptyRowData = createEmptyRowData(newRowId, baseColumns);
+
+    logger.info(`[InlineEditing] Creating new row: ${newRowId}`, { emptyRowData });
+
+    // Fetch initialized data for new row to get default values and proper field setup
+    let finalRowData = emptyRowData;
+    try {
+      const initializedData = await fetchInitialData(newRowId, true);
+      if (initializedData) {
+        // Merge empty row data with initialized data, prioritizing initialized values
+        finalRowData = {
+          ...emptyRowData,
+          ...initializedData,
+          // Always keep the generated ID for new rows
+          id: newRowId,
+        };
+
+        logger.info(`[InlineEditing] Merged initialized data for new row ${newRowId}`, {
+          emptyFields: Object.keys(emptyRowData).length,
+          initializedFields: Object.keys(initializedData).length,
+          finalFields: Object.keys(finalRowData).length,
+        });
+      }
+    } catch (error) {
+      logger.warn(`[InlineEditing] Failed to fetch initialized data for new row ${newRowId}:`, error);
+      // Continue with empty data if initialization fails
+    }
+
+    logger.info(`[InlineEditing] New row data prepared with default values`);
+
+    // Add the new row to editing state first - this automatically sets it to editing mode
+    editingRowUtils.addEditingRow(newRowId, finalRowData, true);
+
+    // Set focus to the first editable column for the new row
+    const firstEditableColumn = baseColumns.find(
+      (col) => col.name !== "id" && col.name !== "actions" && col.displayed !== false
+    );
+
+    if (firstEditableColumn) {
+      setInitialFocusCell({ rowId: newRowId, columnName: firstEditableColumn.name });
+    }
+
+    // Add the new row to optimistic records at the top of the grid for immediate visual feedback
+    const currentRecords = optimisticRecords.length > 0 ? optimisticRecords : displayRecords;
+    const updatedRecords = insertNewRowAtTop(currentRecords, finalRowData);
+    setOptimisticRecords(updatedRecords);
+
+    logger.info(`[InlineEditing] Successfully created new row at top of grid: ${newRowId}`, {
+      totalRecords: updatedRecords.length,
+      isAtTop: updatedRecords[0].id === newRowId,
+      isInEditingState: editingRowUtils.isRowEditing(newRowId),
+    });
+
+    // Announce row insertion to screen readers
+    if (screenReaderAnnouncer) {
+      screenReaderAnnouncer.announceRowInsertion(newRowId);
+    }
+  }, [editingRowUtils, optimisticRecords, displayRecords, baseColumns, screenReaderAnnouncer]);
+
+  // Validate an entire row before saving
+  const validateRow = useCallback(
+    async (rowId: string): Promise<boolean> => {
+      const editingRowData = editingRowUtils.getEditingRowData(rowId);
+      if (!editingRowData) return false;
+
+      // Import validation utilities
+      const { validateNewRowForSave, validateExistingRowForSave, validationErrorsToRecord } = await import(
+        "./utils/validationUtils"
+      );
+
+      // Get the current merged data for validation
+      const currentData: EntityData = {
+        ...editingRowData.originalData,
+        ...editingRowData.modifiedData,
+      } as EntityData;
+
+      let validationResult;
+
+      if (editingRowData.isNew) {
+        // Use stricter validation for new rows
+        validationResult = validateNewRowForSave(baseColumns, currentData);
+        logger.debug(`[InlineEditing] New row validation for ${rowId}:`, {
+          isValid: validationResult.isValid,
+          errors: validationResult.errors,
+        });
+      } else {
+        // Use less strict validation for existing rows
+        validationResult = validateExistingRowForSave(
+          baseColumns,
+          currentData,
+          editingRowData.originalData as EntityData
+        );
+        logger.debug(`[InlineEditing] Existing row validation for ${rowId}:`, {
+          isValid: validationResult.isValid,
+          errors: validationResult.errors,
+        });
+      }
+
+      // Convert validation errors to record format and update state
+      const validationErrors = validationErrorsToRecord(validationResult.errors);
+      editingRowUtils.setRowValidationErrors(rowId, validationErrors);
+
+      logger.debug(`[InlineEditing] Row validation for ${rowId}:`, {
+        isValid: validationResult.isValid,
+        validationErrors,
+        isNew: editingRowData.isNew,
+      });
+
+      return validationResult.isValid;
+    },
+    [editingRowUtils, baseColumns]
+  );
+
+  const handleSaveRow = useCallback(
+    async (rowId: string) => {
+      const editingRowData = editingRowUtils.getEditingRowData(rowId);
+      if (!editingRowData) return;
+
+      // Validate the row before saving
+      const isValid = await validateRow(rowId);
+      if (!isValid) {
+        logger.warn(`[InlineEditing] Cannot save row ${rowId} due to validation errors`);
+
+        // Show validation errors to user
+        const validationErrors = editingRowData.validationErrors;
+        const errorMessages = Object.entries(validationErrors)
+          .filter(([_, message]) => message)
+          .map(([field, message]) => {
+            if (field === "_general") return message!;
+            return `${field}: ${message!}`;
+          });
+
+        if (errorMessages.length > 0) {
+          confirmSaveWithErrors(errorMessages, () => {
+            // User acknowledged the errors, focus on first error field
+            logger.debug(`[InlineEditing] User acknowledged validation errors for row ${rowId}`);
+          });
+        }
+        return;
+      }
+
+      try {
+        editingRowUtils.setRowSaving(rowId, true);
+        logger.info(`[InlineEditing] Saving row: ${rowId}`);
+
+        // Import save operations and optimistic updates dynamically
+        const {
+          saveRecord,
+          saveRecordWithRetry,
+          createNewRecord,
+          updateExistingRecord,
+          createSaveOperation,
+          processSaveErrors,
+          getGeneralErrorMessage,
+          validateRecordBeforeSave,
+        } = await import("./utils/saveOperations");
+        const { createOptimisticUpdateManager } = await import("./utils/optimisticUpdates");
+
+        // Create optimistic update manager
+        const optimisticManager = createOptimisticUpdateManager();
+
+        // Create save operation from editing data
+        const saveOperation = createSaveOperation(rowId, editingRowData);
+
+        // Perform final validation before save to prevent invalid data submission
+        const validationResult = validateRecordBeforeSave(saveOperation, baseColumns);
+        if (!validationResult.canSave) {
+          logger.warn(`[InlineEditing] Final validation failed for row ${rowId}:`, validationResult.errors);
+
+          // Update validation errors in state
+          const fieldErrors = processSaveErrors(validationResult.errors);
+          editingRowUtils.setRowValidationErrors(rowId, {
+            ...editingRowData.validationErrors,
+            ...fieldErrors,
+          });
+
+          editingRowUtils.setRowSaving(rowId, false);
+          return;
+        }
+
+        // Apply optimistic update immediately for better UX
+        const optimisticUpdate = editingRowData.isNew
+          ? optimisticManager.createOptimisticCreate(rowId, editingRowData)
+          : optimisticManager.createOptimisticUpdate(rowId, editingRowData);
+
+        // Apply optimistic update to current records
+        const currentRecords = optimisticRecords.length > 0 ? optimisticRecords : displayRecords;
+        const updatedRecords = optimisticManager.applyOptimisticUpdate(currentRecords, optimisticUpdate);
+        setOptimisticRecords(updatedRecords);
+
+        // Get required metadata for save operation
+        const windowMetadata = undefined; // TODO: Get from context if needed
+        const userId = user?.id || "";
+
+        // Perform the save operation with retry mechanism for better reliability
+        const saveResult = await saveRecordWithRetry({
+          saveOperation,
+          tab,
+          windowMetadata,
+          userId,
+          maxRetries: 2,
+        });
+
+        if (saveResult.success && saveResult.data) {
+          // Confirm the optimistic update with server data
+          const finalRecords = updatedRecords.map((record) => {
+            if (String(record.id) === rowId || (editingRowData.isNew && record.id === rowId)) {
+              return saveResult.data!;
+            }
+            return record;
+          });
+          setOptimisticRecords(finalRecords);
+
+          // Remove from editing state after successful save
+          editingRowUtils.removeEditingRow(rowId);
+          logger.info(`[InlineEditing] Successfully saved row: ${rowId}`, {
+            isNew: editingRowData.isNew,
+            serverId: saveResult.data.id,
+          });
+
+          // Show success feedback to user
+          const successMessage = editingRowData.isNew ? "Record created successfully" : "Record updated successfully";
+          showSuccessMessage(successMessage);
+
+          // Announce save success to screen readers
+          if (screenReaderAnnouncer) {
+            screenReaderAnnouncer.announceSaveOperation(rowId, true, editingRowData.isNew);
+          }
+        } else if (saveResult.errors) {
+          // Rollback optimistic update on failure
+          if (editingRowData.isNew) {
+            // For new records, remove from optimistic records
+            const rolledBackRecords = updatedRecords.filter((record) => String(record.id) !== rowId);
+            setOptimisticRecords(rolledBackRecords);
+          } else {
+            // For existing records, restore original data
+            const rolledBackRecords = updatedRecords.map((record) =>
+              String(record.id) === rowId ? editingRowData.originalData : record
+            );
+            setOptimisticRecords(rolledBackRecords);
+          }
+
+          // Handle server validation errors
+          const fieldErrors = processSaveErrors(saveResult.errors);
+          const generalError = getGeneralErrorMessage(saveResult.errors);
+
+          // Update validation errors in state
+          editingRowUtils.setRowValidationErrors(rowId, fieldErrors);
+
+          if (generalError) {
+            logger.error(`[InlineEditing] Save failed with general error: ${generalError}`);
+            // TODO: Show toast notification for general errors
+          }
+
+          editingRowUtils.setRowSaving(rowId, false);
+          logger.warn(`[InlineEditing] Save failed for row ${rowId} due to server validation errors`);
+
+          // Announce save failure to screen readers
+          if (screenReaderAnnouncer) {
+            screenReaderAnnouncer.announceSaveOperation(rowId, false, editingRowData.isNew);
+          }
+        }
+      } catch (error) {
+        // Rollback optimistic update on error
+        const currentRecords = optimisticRecords.length > 0 ? optimisticRecords : displayRecords;
+        if (editingRowData.isNew) {
+          // For new records, remove from optimistic records
+          const rolledBackRecords = currentRecords.filter((record) => String(record.id) !== rowId);
+          setOptimisticRecords(rolledBackRecords);
+        } else {
+          // For existing records, restore original data
+          const rolledBackRecords = currentRecords.map((record) =>
+            String(record.id) === rowId ? editingRowData.originalData : record
+          );
+          setOptimisticRecords(rolledBackRecords);
+        }
+
+        logger.error(`[InlineEditing] Failed to save row ${rowId}:`, error);
+        editingRowUtils.setRowSaving(rowId, false);
+
+        // Set a general error message
+        editingRowUtils.setRowValidationErrors(rowId, {
+          _general: error instanceof Error ? error.message : "An unexpected error occurred",
+        });
+
+        // Announce save failure to screen readers
+        if (screenReaderAnnouncer) {
+          screenReaderAnnouncer.announceSaveOperation(rowId, false, editingRowData?.isNew || false);
+        }
+      }
+    },
+    [editingRowUtils, validateRow, tab, user?.id]
+  );
+
+  const handleCancelRow = useCallback(
+    async (rowId: string) => {
+      const editingRowData = editingRowUtils.getEditingRowData(rowId);
+      if (!editingRowData) return;
+
+      // Check if there are unsaved changes
+      const hasUnsavedChanges = editingRowData.hasUnsavedChanges;
+
+      const performCancel = async () => {
+        try {
+          // Import cancel operations and utility functions dynamically
+          const { handleCancelOperation } = await import("./utils/cancelOperations");
+          const { removeNewRowFromRecords } = await import("./utils/editingRowUtils");
+
+          await handleCancelOperation({
+            rowId,
+            editingRowData,
+            removeEditingRow: editingRowUtils.removeEditingRow,
+            showConfirmation: false, // We handle confirmation ourselves
+            onConfirm: () => {
+              // Remove from optimistic records when canceling
+              const currentRecords = optimisticRecords.length > 0 ? optimisticRecords : displayRecords;
+              if (editingRowData.isNew) {
+                // For new rows, remove from optimistic records using utility function
+                const updatedRecords = removeNewRowFromRecords(currentRecords, rowId);
+                setOptimisticRecords(updatedRecords);
+                logger.info(`[InlineEditing] Removed new row from optimistic records: ${rowId}`);
+              } else {
+                // For existing rows, restore original data if it was modified
+                const hasOptimisticChanges = currentRecords.some(
+                  (record) => String(record.id) === rowId && record !== editingRowData.originalData
+                );
+
+                if (hasOptimisticChanges) {
+                  const updatedRecords = currentRecords.map((record) =>
+                    String(record.id) === rowId ? editingRowData.originalData : record
+                  );
+                  setOptimisticRecords(updatedRecords);
+                  logger.info(`[InlineEditing] Restored original data for cancelled row: ${rowId}`);
+                }
+              }
+            },
+          });
+        } catch (error) {
+          // Error occurred during cancel operation
+          logger.error(`[InlineEditing] Error during cancel operation for row ${rowId}:`, error);
+        }
+      };
+
+      // Show confirmation dialog if there are unsaved changes
+      confirmDiscardChanges(
+        performCancel,
+        () => {
+          // User chose to keep editing
+          logger.debug(`[InlineEditing] User chose to keep editing row ${rowId}`);
+        },
+        hasUnsavedChanges
+      );
+    },
+    [editingRowUtils, optimisticRecords, displayRecords, confirmDiscardChanges]
+  );
+
+  // Throttled cell value change handler to prevent excessive updates
+  const handleCellValueChange = useThrottledCallback((rowId: string, fieldName: string, value: unknown) => {
+    performanceMonitor.measure(`cell-value-change-${fieldName}`, () => {
+      // Update the cell value immediately
+      editingRowUtils.updateCellValue(rowId, fieldName, value);
+      logger.debug(`[InlineEditing] Updated cell ${fieldName} in row ${rowId}:`, value);
+
+      // Trigger debounced validation for real-time feedback
+      debouncedValidateField(rowId, fieldName, value);
+    });
+  }, 50); // Throttle to max 20 updates per second
+
+  // Context menu action handlers
+  const handleContextMenuEditRow = useCallback(() => {
+    if (contextMenu.row) {
+      handleEditRow(contextMenu.row);
+    }
+  }, [contextMenu.row, handleEditRow]);
+
+  const handleContextMenuInsertRow = useCallback(() => {
+    handleInsertRow();
+  }, [handleInsertRow]);
 
   const renderFirstColumnCell = ({
     renderedCellValue,
@@ -266,14 +1047,122 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     );
   };
 
+  // Use optimistic records if available, otherwise use display records
+  // Merge optimistic updates with base records while preserving sort order and table features
+  const effectiveRecords = useMemo(() => {
+    if (optimisticRecords.length === 0) {
+      return displayRecords;
+    }
+
+    // Use compatibility utility to merge records properly
+    return mergeOptimisticRecordsWithSort(displayRecords, optimisticRecords, editingRows);
+  }, [optimisticRecords, displayRecords, editingRows]);
+
   const columns = useMemo(() => {
     if (!baseColumns.length) {
       return baseColumns;
     }
 
-    const modifiedColumns = baseColumns.map((col) => ({ ...col }));
+    const modifiedColumns = baseColumns.map((col) => {
+      const column = { ...col };
+      const originalCell = column.Cell;
+
+      // Override cell rendering to support inline editing while preserving existing formatting
+      column.Cell = ({
+        renderedCellValue,
+        row,
+        table,
+      }: {
+        renderedCellValue: React.ReactNode;
+        row: MRT_Row<EntityData>;
+        table: MRT_TableInstance<EntityData>;
+      }) => {
+        const rowId = String(row.original.id);
+        const isEditing = editingRowUtils.isRowEditing(rowId);
+        const editingData = editingRowUtils.getEditingRowData(rowId);
+
+        // If this row is being edited, render the appropriate cell editor
+        if (isEditing && editingData && col.name !== "actions") {
+          // Use columnName (hqlName) instead of name (display name) to get values
+          // because processed data is indexed by hqlName
+          const fieldKey = col.columnName || col.name;
+          const currentValue =
+            fieldKey in editingData.modifiedData
+              ? editingData.modifiedData[fieldKey]
+              : editingData.originalData[fieldKey];
+
+          const hasError = Boolean(editingData.validationErrors[col.name]);
+
+          // Get memoized field mappings to avoid recalculation
+          const fieldMapping = columnFieldMappings.get(col.name);
+          if (!fieldMapping) {
+            // Fallback for actions column or unmapped columns
+            return renderedCellValue;
+          }
+
+          // Determine if this cell should receive initial focus
+          const shouldAutoFocus = initialFocusCell?.rowId === rowId && initialFocusCell?.columnName === col.name;
+
+          // Determine if this field should be readonly
+          const isNewRow = editingData.isNew || false;
+          // Combine original and modified data for evaluation context
+          const rowValues = { ...editingData.originalData, ...editingData.modifiedData };
+          const shouldBeReadOnly = isFieldReadOnly(fieldMapping.field, isNewRow, rowValues, session);
+
+          return (
+            <div className="inline-edit-cell-container">
+              <React.Suspense
+                fallback={
+                  <div className="inline-edit-loading">
+                    <span className="text-gray-500 text-sm">Loading...</span>
+                  </div>
+                }>
+                <CellEditorFactory
+                  fieldType={fieldMapping.fieldType}
+                  value={currentValue}
+                  onChange={(value) => handleCellValueChange(rowId, fieldKey, value)}
+                  onBlur={() => {
+                    // Trigger immediate validation on blur with strict settings
+                    validateFieldOnBlur(rowId, fieldKey, currentValue);
+
+                    // Clear initial focus after first blur to prevent re-focusing
+                    if (shouldAutoFocus) {
+                      setInitialFocusCell(null);
+                    }
+                  }}
+                  field={fieldMapping.field}
+                  hasError={hasError}
+                  disabled={editingData.isSaving || shouldBeReadOnly}
+                  rowId={rowId}
+                  columnId={fieldKey}
+                  keyboardNavigationManager={keyboardNavigationManager}
+                  shouldAutoFocus={shouldAutoFocus}
+                  loadOptions={async (field, searchQuery) => {
+                    // Use the field that has all selector information
+                    return await loadTableDirOptions(fieldMapping.field, searchQuery);
+                  }}
+                  isLoadingOptions={(fieldName) => isLoadingTableDirOptions(fieldName)}
+                />
+              </React.Suspense>
+            </div>
+          );
+        }
+
+        // For non-editing cells, preserve original rendering logic and formatting
+        // This ensures existing cell formatting, display logic, and custom renderers are maintained
+        if (originalCell && typeof originalCell === "function") {
+          return originalCell({ renderedCellValue, row, table });
+        }
+
+        // Fallback to the default rendered cell value with preserved formatting
+        return <div className="table-cell-content">{renderedCellValue}</div>;
+      };
+
+      return column;
+    });
+
     const firstColumn = { ...modifiedColumns[0] };
-    const originalCell = firstColumn.Cell;
+    const originalFirstCell = firstColumn.Cell;
 
     if (shouldUseTreeMode) {
       firstColumn.size = 300;
@@ -286,11 +1175,83 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       row,
       table,
     }: { renderedCellValue: React.ReactNode; row: MRT_Row<EntityData>; table: MRT_TableInstance<EntityData> }) =>
-      renderFirstColumnCell({ renderedCellValue, row, table, originalCell, shouldUseTreeMode });
+      renderFirstColumnCell({ renderedCellValue, row, table, originalCell: originalFirstCell, shouldUseTreeMode });
 
     modifiedColumns[0] = firstColumn;
+
+    // Add actions column as the last column
+    const actionsColumn = {
+      id: "actions",
+      header: "Actions",
+      accessorFn: () => "", // Actions column doesn't need data
+      columnName: "actions",
+      name: "actions",
+      _identifier: "actions",
+      size: 100,
+      minSize: 80,
+      maxSize: 120,
+      enableSorting: false,
+      enableColumnFilter: false,
+      enableGlobalFilter: false,
+      enableColumnActions: false,
+      enableResizing: true,
+      Cell: ({ row }: { row: MRT_Row<EntityData> }) => {
+        const rowId = String(row.original.id);
+        const editingData = editingRowUtils.getEditingRowData(rowId);
+        const isEditing = editingRowUtils.isRowEditing(rowId);
+        const isSaving = editingData?.isSaving || false;
+        const hasErrors = editingData ? Object.values(editingData.validationErrors).some((error) => error) : false;
+
+        return (
+          <ActionsColumn
+            row={row}
+            isEditing={isEditing}
+            isSaving={isSaving}
+            hasErrors={hasErrors}
+            validationErrors={editingData?.validationErrors}
+            onEdit={() => handleEditRow(row)}
+            onSave={() => handleSaveRow(rowId)}
+            onCancel={() => handleCancelRow(rowId)}
+            onOpenForm={() => {
+              // Navigate to form view - this will handle the URL update properly
+              setRecordId(String(row.original.id));
+            }}
+          />
+        );
+      },
+    };
+
+    modifiedColumns.push(actionsColumn);
     return modifiedColumns;
-  }, [baseColumns, shouldUseTreeMode]);
+  }, [
+    baseColumns,
+    shouldUseTreeMode,
+    editingRowUtils,
+    handleEditRow,
+    handleSaveRow,
+    handleCancelRow,
+    setRecordId,
+    t,
+    columnFieldMappings,
+    initialFocusCell,
+    setInitialFocusCell,
+  ]);
+
+  // Helper function to check if a row is being edited
+  const isRowBeingEdited = useCallback(
+    (rowId: string) => {
+      return editingRowUtils.isRowEditing(rowId);
+    },
+    [editingRowUtils]
+  );
+
+  // Get editing data for a specific row
+  const getRowEditingData = useCallback(
+    (rowId: string) => {
+      return editingRowUtils.getEditingRowData(rowId);
+    },
+    [editingRowUtils]
+  );
 
   // Initialize row selection from URL parameters with proper validation and logging
   const urlBasedRowSelection = useMemo(() => {
@@ -364,11 +1325,38 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       const record = row.original as Record<string, never>;
       const isSelected = row.getIsSelected();
       const rowId = String(record.id);
+      const editingData = editingRowUtils.getEditingRowData(rowId);
+      const isEditing = editingRowUtils.isRowEditing(rowId);
+      const hasErrors = editingData ? Object.values(editingData.validationErrors).some((error) => error) : false;
+      const isSaving = editingData?.isSaving || false;
+
+      // Determine row CSS classes for visual feedback
+      let rowClassName = "";
+      if (isEditing) {
+        if (isSaving) {
+          rowClassName = "table-row-saving";
+        } else if (hasErrors) {
+          rowClassName = "table-row-error";
+        } else {
+          rowClassName = "table-row-editing";
+        }
+      }
 
       return {
         onClick: (event) => {
           const target = event.target as HTMLElement;
-          if (target.tagName === "INPUT" || target.tagName === "BUTTON" || target.closest("button")) {
+          // Prevent row selection when clicking on input elements or buttons
+          if (
+            target.tagName === "INPUT" ||
+            target.tagName === "BUTTON" ||
+            target.closest("button") ||
+            target.closest(".inline-edit-cell-container")
+          ) {
+            return;
+          }
+
+          // Don't allow row selection changes while editing (to prevent accidental data loss)
+          if (isEditing) {
             return;
           }
 
@@ -395,7 +1383,18 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
         onDoubleClick: (event) => {
           const target = event.target as HTMLElement;
-          if (target.tagName === "INPUT" || target.tagName === "BUTTON" || target.closest("button")) {
+          // Prevent form navigation when double-clicking on input elements or buttons
+          if (
+            target.tagName === "INPUT" ||
+            target.tagName === "BUTTON" ||
+            target.closest("button") ||
+            target.closest(".inline-edit-cell-container")
+          ) {
+            return;
+          }
+
+          // Don't allow form navigation while editing (to prevent data loss)
+          if (isEditing) {
             return;
           }
 
@@ -437,11 +1436,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
             ...sx.rowSelected,
           }),
         },
+        className: rowClassName,
         row,
         table,
       };
     },
-    [graph, setRecordId, sx.rowSelected, tab]
+    [graph, setRecordId, sx.rowSelected, tab, editingRowUtils]
   );
 
   const renderEmptyRowsFallback = useCallback(
@@ -465,14 +1465,140 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     [fetchMore, hasMoreRecords, loading]
   );
 
-  const table = useMaterialReactTable<EntityData>({
-    muiTablePaperProps: { sx: sx.tablePaper },
-    muiTableHeadCellProps: {
+  // Generate ARIA attributes for the table container
+  const editingRowsCount = Object.keys(editingRows).length;
+  const tableAriaAttributes = useMemo(
+    () => generateAriaAttributes.tableContainer(effectiveRecords.length, editingRowsCount),
+    [effectiveRecords.length, editingRowsCount]
+  );
+
+  const muiTablePaperProps = useMemo(
+    () => ({
+      sx: sx.tablePaper,
+      ...tableAriaAttributes,
+    }),
+    [sx.tablePaper, tableAriaAttributes]
+  );
+
+  const muiTableHeadCellProps = useMemo(
+    () => ({
       sx: {
         ...sx.tableHeadCell,
       },
+    }),
+    [sx.tableHeadCell]
+  );
+
+  const muiTableContainerProps = useMemo(
+    () => ({
+      ref: tableContainerRef,
+      sx: { flex: 1, height: "100%", maxHeight: "100%" },
+      onScroll: fetchMoreOnBottomReached,
+    }),
+    [fetchMoreOnBottomReached]
+  );
+
+  const muiSelectAllCheckboxProps = useMemo(() => {
+    if (hasMoreRecords || editingRowsCount > 0) {
+      return {
+        disabled: true,
+        sx: {
+          "&.Mui-disabled": {
+            pointerEvents: "auto",
+            cursor: "not-allowed",
+          },
+        },
+        title: editingRowsCount > 0 ? "Select All disabled during editing" : t("table.selectAll.disabledTooltip"),
+      };
+    }
+    return {
+      disabled: false,
+      title: t("table.selectAll.enabledTooltip"),
+    };
+  }, [hasMoreRecords, editingRowsCount, t]);
+
+  const handleColumnFiltersChange = useCallback(
+    (updaterOrValue) => {
+      // Check if filtering is safe with current editing state - use ref to avoid dependency
+      if (!canFilterWithEditingRows(editingRowsRef.current)) {
+        logger.warn("[TableCompatibility] Filtering blocked due to unsaved changes");
+        return;
+      }
+      handleMRTColumnFiltersChange(updaterOrValue);
     },
-    muiTableBodyCellProps: (props) => {
+    [handleMRTColumnFiltersChange]
+  );
+
+  const handleColumnVisibilityChange = useCallback(
+    (updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)) => {
+      // Manage initial visibility to avoid overwriting saved state on first render
+      if (!hasInitialColumnVisibility) {
+        setHasInitialColumnVisibility(true);
+        const isEmptyVisibility = isEmptyObject(tableColumnVisibility);
+        if (!isEmptyVisibility) return;
+      }
+      handleMRTColumnVisibilityChange(updaterOrValue);
+    },
+    [hasInitialColumnVisibility, tableColumnVisibility, handleMRTColumnVisibilityChange]
+  );
+
+  const handleSortingChange = useCallback(
+    (updaterOrValue) => {
+      // Check if sorting is safe with current editing state - use ref to avoid dependency
+      if (!canSortWithEditingRows(editingRowsRef.current)) {
+        logger.warn("[TableCompatibility] Sorting blocked due to unsaved changes");
+        return;
+      }
+      handleMRTSortingChange(updaterOrValue);
+    },
+    [handleMRTSortingChange]
+  );
+
+  const handleExpandedChange = useCallback(
+    (newExpanded) => {
+      handleMRTExpandChange({ newExpanded });
+    },
+    [handleMRTExpandChange]
+  );
+
+  const handleGetRowCanExpand = useCallback(
+    (row) => {
+      return getCurrentRowCanExpand({ row: row as MRT_Row<EntityData>, shouldUseTreeMode });
+    },
+    [shouldUseTreeMode]
+  );
+
+  // Memoize the expanded state to avoid creating new empty objects
+  const expandedState = useMemo(() => {
+    return shouldUseTreeMode ? expanded : {};
+  }, [shouldUseTreeMode, expanded]);
+
+  // Memoize the entire state object to prevent unnecessary re-renders
+  const tableState = useMemo(
+    () => ({
+      columnFilters: tableColumnFilters,
+      columnVisibility: tableColumnVisibility,
+      sorting: tableColumnSorting,
+      columnOrder: tableColumnOrder,
+      expanded: expandedState,
+      showColumnFilters: true,
+      showProgressBars: loading,
+    }),
+    [tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder, expandedState, loading]
+  );
+
+  // Memoize initialState to avoid creating new objects
+  const initialState = useMemo(
+    () => ({
+      density: "compact" as const,
+      rowSelection: urlBasedRowSelection,
+    }),
+    [urlBasedRowSelection]
+  );
+
+  // Memoize muiTableBodyCellProps callback
+  const muiTableBodyCellProps = useCallback(
+    (props) => {
       const currentValue = props.cell.getValue();
       const currentTitle = getCellTitle(currentValue);
       return {
@@ -489,81 +1615,47 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         title: currentTitle,
       };
     },
-    displayColumnDefOptions: getDisplayColumnDefOptions({ shouldUseTreeMode }),
-    muiTableBodyProps: { sx: sx.tableBody },
+    [shouldUseTreeMode, sx, columns, handleCellContextMenu]
+  );
+
+  // Memoize muiTableBodyProps
+  const muiTableBodyProps = useMemo(() => ({ sx: sx.tableBody }), [sx.tableBody]);
+
+  // Memoize displayColumnDefOptions
+  const displayColumnDefOptions = useMemo(() => getDisplayColumnDefOptions({ shouldUseTreeMode }), [shouldUseTreeMode]);
+
+  const table = useMaterialReactTable<EntityData>({
+    muiTablePaperProps,
+    muiTableHeadCellProps,
+    muiTableBodyCellProps,
+    displayColumnDefOptions,
+    muiTableBodyProps,
     layoutMode: "semantic",
     enableGlobalFilter: false,
     columns,
-    data: displayRecords,
+    data: effectiveRecords,
     enableRowSelection: true,
     enableMultiRowSelection: true,
-    // Disable "Select All" when there are more records to load
-    muiSelectAllCheckboxProps: hasMoreRecords
-      ? {
-          disabled: true,
-          // Wrap disabled checkbox in a span to enable tooltip
-          sx: {
-            "&.Mui-disabled": {
-              pointerEvents: "auto", // Allow hover on disabled element
-              cursor: "not-allowed",
-            },
-          },
-          title: t("table.selectAll.disabledTooltip"),
-        }
-      : {
-          disabled: false,
-          title: t("table.selectAll.enabledTooltip"),
-        },
+    muiSelectAllCheckboxProps,
     positionToolbarAlertBanner: "none",
     muiTableBodyRowProps: rowProps,
-    muiTableContainerProps: {
-      ref: tableContainerRef,
-      sx: { flex: 1, height: "100%", maxHeight: "100%" },
-      onScroll: fetchMoreOnBottomReached,
-    },
+    muiTableContainerProps,
     enablePagination: false,
     enableStickyHeader: true,
     enableColumnVirtualization: true,
-    enableRowVirtualization: true,
+    enableRowVirtualization: canUseVirtualScrollingWithEditing(editingRows, effectiveRecords.length),
     enableTopToolbar: false,
     enableBottomToolbar: false,
     enableExpanding: shouldUseTreeMode,
     paginateExpandedRows: false,
-    getRowCanExpand: (row) => {
-      return getCurrentRowCanExpand({ row: row as MRT_Row<EntityData>, shouldUseTreeMode });
-    },
-    initialState: {
-      density: "compact",
-      rowSelection: urlBasedRowSelection,
-    },
+    getRowCanExpand: handleGetRowCanExpand,
+    initialState,
     renderDetailPanel: undefined,
-    onExpandedChange: (newExpanded) => {
-      handleMRTExpandChange({ newExpanded });
-    },
-    state: {
-      columnFilters: tableColumnFilters,
-      columnVisibility: tableColumnVisibility,
-      sorting: tableColumnSorting,
-      columnOrder: tableColumnOrder,
-      expanded: shouldUseTreeMode ? expanded : {},
-      showColumnFilters: true,
-      showProgressBars: loading,
-    },
-    onColumnFiltersChange: handleMRTColumnFiltersChange,
-    onColumnVisibilityChange: (
-      updaterOrValue: MRT_VisibilityState | ((prev: MRT_VisibilityState) => MRT_VisibilityState)
-    ) => {
-      // Manage initial visibility to avoid overwriting saved state on first render
-      if (!hasInitialColumnVisibility) {
-        setHasInitialColumnVisibility(true);
-        const isEmptyVisibility = isEmptyObject(tableColumnVisibility);
-        // If the current visibility is not empty, it means we have loaded a saved state, so we don't apply the initial state
-        if (!isEmptyVisibility) return;
-      }
-
-      handleMRTColumnVisibilityChange(updaterOrValue);
-    },
-    onSortingChange: handleMRTSortingChange,
+    onExpandedChange: handleExpandedChange,
+    state: tableState,
+    onColumnFiltersChange: handleColumnFiltersChange,
+    onColumnVisibilityChange: handleColumnVisibilityChange,
+    onSortingChange: handleSortingChange,
     onColumnOrderChange: handleMRTColumnOrderChange,
     getRowId,
     enableColumnFilters: true,
@@ -576,6 +1668,33 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   });
 
   useTableSelection(tab, records, table.getState().rowSelection, handleTableSelectionChange);
+
+  // Initialize keyboard navigation manager - use a ref to avoid dependency issues
+  const keyboardManagerRef = useRef<KeyboardNavigationManager | null>(null);
+
+  useEffect(() => {
+    if (!keyboardManagerRef.current && table) {
+      const manager = createKeyboardNavigationManager({
+        onSaveRow: handleSaveRow,
+        onCancelRow: handleCancelRow,
+        isRowEditing: editingRowUtils.isRowEditing,
+        getEditingRowIds: editingRowUtils.getEditingRowIds,
+        table: table,
+      });
+      keyboardManagerRef.current = manager;
+      setKeyboardNavigationManager(manager);
+    }
+  }, [table]); // Only depend on table
+
+  // Cleanup keyboard navigation manager on unmount
+  useEffect(() => {
+    return () => {
+      if (keyboardManagerRef.current) {
+        keyboardManagerRef.current.destroy();
+        keyboardManagerRef.current = null;
+      }
+    };
+  }, []);
 
   // Handle auto-scroll to selected record with virtualization support
   useLayoutEffect(() => {
@@ -649,7 +1768,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       // Record no longer exists but is still selected - clear selection
       table.setRowSelection({});
     }
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table, graph]);
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, graph]);
 
   // Handle browser navigation and direct link access
   // NOTE: Disabled for tabs with children - their selection is handled atomically
@@ -693,7 +1812,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         return () => clearTimeout(timeoutId);
       }
     }
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table, graph]);
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, graph]);
 
   useEffect(() => {
     const windowId = activeWindow?.windowId;
@@ -717,7 +1836,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       table.setRowSelection({ [urlSelectedId]: true });
       hasRestoredSelection.current = true;
     }
-  }, [activeWindow, tab.window, records, table, getSelectedRecord, tab.id]);
+  }, [activeWindow, tab.window, records, getSelectedRecord, tab.id]);
 
   useEffect(() => {
     const handleGraphClear = (eventTab: typeof tab) => {
@@ -738,7 +1857,97 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       graph.removeListener("unselected", handleGraphClear);
       graph.removeListener("unselectedMultiple", handleGraphClear);
     };
-  }, [graph, table, tabId, tab.id]);
+  }, [graph, tabId, tab.id]);
+
+  // Clear editing state and performance optimizations when records change or component unmounts
+  useEffect(() => {
+    return () => {
+      // Clear all editing state on unmount
+      editingRowUtils.clearAllEditingRows();
+      // Clear optimistic records on unmount
+      setOptimisticRecords([]);
+      // Clear memory manager cache
+      memoryManager.clear();
+    };
+  }, [editingRowUtils, memoryManager]);
+
+  // Reset optimistic records when base display records change significantly
+  useEffect(() => {
+    // If we have optimistic records but the base records have changed significantly,
+    // we should reset to avoid inconsistencies
+    // Use a callback to get current optimistic records state to avoid dependency loop
+    setOptimisticRecords((currentOptimistic) => {
+      if (currentOptimistic.length === 0 || displayRecords.length === 0) {
+        return currentOptimistic;
+      }
+
+      const baseRecordIds = new Set(displayRecords.map((record) => String(record.id)));
+      const optimisticRecordIds = new Set(currentOptimistic.map((record) => String(record.id)));
+
+      // Check if there are significant differences (excluding new rows)
+      const nonNewOptimisticIds = Array.from(optimisticRecordIds).filter((id) => !id.startsWith("new_"));
+      const hasSignificantDifferences = nonNewOptimisticIds.some((id) => !baseRecordIds.has(id));
+
+      if (hasSignificantDifferences) {
+        logger.info("[InlineEditing] Resetting optimistic records due to base data changes");
+        return [];
+      }
+
+      return currentOptimistic;
+    });
+  }, [displayRecords]);
+
+  // Clear editing state for rows that no longer exist in the data
+  useEffect(() => {
+    const currentEditingRowIds = editingRowUtils.getEditingRowIds();
+    const existingRowIds = new Set(records?.map((record) => String(record.id)) || []);
+
+    currentEditingRowIds.forEach((editingRowId) => {
+      // Skip new rows (they won't exist in records yet)
+      if (editingRowId.startsWith("new_")) return;
+
+      if (!existingRowIds.has(editingRowId)) {
+        editingRowUtils.removeEditingRow(editingRowId);
+        logger.info(`[InlineEditing] Removed editing state for deleted row: ${editingRowId}`);
+      }
+    });
+  }, [records, editingRowUtils]);
+
+  // Add keyboard support for canceling edits with Escape key
+  useEffect(() => {
+    const handleKeyDown = async (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        const editingRowIds = editingRowUtils.getEditingRowIds();
+
+        // If there are editing rows, cancel the first one (or all of them)
+        if (editingRowIds.length > 0) {
+          const rowId = editingRowIds[0]; // Cancel the first editing row
+          const editingRowData = editingRowUtils.getEditingRowData(rowId);
+
+          if (editingRowData) {
+            try {
+              const { handleCancelOperation } = await import("./utils/cancelOperations");
+
+              await handleCancelOperation({
+                rowId,
+                editingRowData,
+                removeEditingRow: editingRowUtils.removeEditingRow,
+                showConfirmation: true,
+              });
+            } catch (error) {
+              // User cancelled the cancel operation, do nothing
+              logger.debug(`[InlineEditing] Escape key cancel was not completed for row ${rowId}`);
+            }
+          }
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [editingRowUtils]);
 
   useEffect(() => {
     if (removeRecordLocally) {
@@ -875,7 +2084,23 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         row={contextMenu.row}
         onFilterByValue={handleFilterByValue}
         columns={baseColumns}
+        onEditRow={handleContextMenuEditRow}
+        onInsertRow={handleContextMenuInsertRow}
+        canEdit={true} // TODO: Add permission checks based on user permissions and field metadata
+        isRowEditing={contextMenu.row ? editingRowUtils.isRowEditing(String(contextMenu.row.original.id)) : false}
         data-testid="CellContextMenu__8ca888"
+      />
+      <ConfirmationDialog
+        isOpen={dialogState.isOpen}
+        type={dialogState.type}
+        title={dialogState.title}
+        message={dialogState.message}
+        confirmText={dialogState.confirmText}
+        cancelText={dialogState.cancelText}
+        confirmDisabled={dialogState.confirmDisabled}
+        showCancel={dialogState.showCancel}
+        onConfirm={dialogState.onConfirm}
+        onCancel={dialogState.onCancel}
       />
     </div>
   );

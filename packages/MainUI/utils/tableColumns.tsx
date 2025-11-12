@@ -95,8 +95,10 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         columnType = column.column.reference$_identifier;
       }
 
-      // Get the proper field type using the reference mapping
+      // Get the proper field type using the corrected reference mapping
       const fieldType = getFieldReference(column.column?.reference);
+      
+      // Field type mapping now uses corrected reference codes
 
       result.push({
         header: column.name ?? column.hqlName,

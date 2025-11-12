@@ -221,6 +221,8 @@ const es = {
       enabledTooltip: "Seleccionar todos los registros",
     },
     useAsFilter: "Usar como filtro",
+    editRow: "Editar Fila",
+    insertRow: "Insertar Fila",
   },
   navigation: {
     common: {

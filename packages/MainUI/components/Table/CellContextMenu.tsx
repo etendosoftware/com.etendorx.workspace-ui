@@ -32,6 +32,10 @@ interface CellContextMenuProps {
   row: MRT_Row<EntityData> | null;
   onFilterByValue: (columnId: string, filterId: string, filterValue: string | number, filterLabel: string) => void;
   columns: any[];
+  onEditRow?: () => void;
+  onInsertRow?: () => void;
+  canEdit?: boolean;
+  isRowEditing?: boolean;
 }
 
 interface FilterValues {
@@ -123,6 +127,10 @@ export const CellContextMenu: React.FC<CellContextMenuProps> = ({
   row,
   onFilterByValue,
   columns,
+  onEditRow,
+  onInsertRow,
+  canEdit = false,
+  isRowEditing = false,
 }) => {
   const { t } = useTranslation();
 
@@ -157,9 +165,52 @@ export const CellContextMenu: React.FC<CellContextMenuProps> = ({
     onClose();
   };
 
+  const handleEditRow = () => {
+    if (onEditRow) {
+      onEditRow();
+      onClose();
+    }
+  };
+
+  const handleInsertRow = () => {
+    if (onInsertRow) {
+      onInsertRow();
+      onClose();
+    }
+  };
+
   return (
     <Menu anchorEl={anchorEl} onClose={onClose} className="rounded-xl" data-testid="Menu__704a8f">
       <div className="rounded-2xl px-2 py-4">
+        {canEdit && !isRowEditing && (
+          <>
+            <div
+              onClick={handleEditRow}
+              className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleEditRow();
+                }
+              }}
+              data-testid="edit-row-menu-item">
+              {t("table.editRow")}
+            </div>
+            <div
+              onClick={handleInsertRow}
+              className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleInsertRow();
+                }
+              }}
+              data-testid="insert-row-menu-item">
+              {t("table.insertRow")}
+            </div>
+            <div className="border-t border-(--color-transparent-neutral-30) my-2" />
+          </>
+        )}
         <div
           onClick={handleUseAsFilter}
           className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
@@ -168,7 +219,8 @@ export const CellContextMenu: React.FC<CellContextMenuProps> = ({
               e.preventDefault();
               handleUseAsFilter();
             }
-          }}>
+          }}
+          data-testid="use-as-filter-menu-item">
           {t("table.useAsFilter")}
         </div>
       </div>

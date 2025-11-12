@@ -222,6 +222,8 @@ const en = {
       enabledTooltip: "Select all records",
     },
     useAsFilter: "Use as filter",
+    editRow: "Edit Row",
+    insertRow: "Insert Row",
   },
   navigation: {
     common: {
