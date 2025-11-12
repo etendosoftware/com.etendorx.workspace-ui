@@ -48,14 +48,7 @@ describe("Spinner", () => {
   });
 
   it("should accept all CircularProgress props", () => {
-    const { container } = render(
-      <Spinner
-        size={40}
-        thickness={4}
-        color="primary"
-        disableShrink
-      />
-    );
+    const { container } = render(<Spinner size={40} thickness={4} color="primary" disableShrink />);
 
     const progressbar = container.querySelector('[role="progressbar"]');
     expect(progressbar).toBeInTheDocument();
