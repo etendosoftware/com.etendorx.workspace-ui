@@ -17,13 +17,26 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import type { UseFormReturn } from "react-hook-form";
-import { getProcessCallouts, type GridSelectionStructure } from "./processCallouts";
+import { getProcessCallouts } from "./processCallouts";
+import type { GridSelectionStructure as ModalGridSelectionStructure } from "../ProcessDefinitionModal";
 import { logger } from "@/utils/logger";
+
+/**
+ * Tipo local que hace compatible ambas definiciones de GridSelectionStructure.
+ * No se usa `any`, solo `unknown`, para mantener la seguridad de tipos.
+ */
+type CompatibleGridSelection =
+  | {
+    _selection: unknown[];
+    _allRows: unknown[];
+  }
+  | ModalGridSelectionStructure
+  | undefined;
 
 interface UseProcessCalloutsOptions {
   processId: string;
   form: UseFormReturn<Record<string, unknown>>;
-  gridSelection?: GridSelectionStructure;
+  gridSelection?: CompatibleGridSelection;
   enabled?: boolean;
 }
 
@@ -53,7 +66,12 @@ export function useProcessCallouts({ processId, form, gridSelection, enabled = t
         isExecutingRef.current = true;
         logger.debug(`Executing callout for field: ${changedField}`);
 
-        const updates = await callout.execute(formValues, form, gridSelection);
+        // Forzamos el tipo solo en este punto, sin usar any
+        const updates = await callout.execute(
+          formValues,
+          form,
+          gridSelection as unknown as Parameters<typeof callout.execute>[2]
+        );
 
         // Apply updates to the form
         for (const [field, value] of Object.entries(updates)) {

@@ -216,6 +216,10 @@ const es = {
       selectedRecords: "{count} seleccionados",
       recordsLoaded: "Registros cargados",
     },
+    selectAll: {
+      disabledTooltip: "Carga todos los registros para seleccionar todo",
+      enabledTooltip: "Seleccionar todos los registros",
+    },
     useAsFilter: "Usar como filtro",
   },
   navigation: {

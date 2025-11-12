@@ -22,6 +22,7 @@ export const ADD_PAYMENT_ORDER_PROCESS_ID = "9BED7889E1034FE68BD85D5D16857320";
 export const CREATE_LINES_FROM_RECEIPT_ID = "7737CA7330FD49FBA7EBC225E85F2BC9";
 export const LANDED_COST_PROCESS = "96FE01F2F12F45FC8ED4A1978EBD034C";
 export const REACTIVATE_LANDED_COST_PROCESS = "C600DAD457664EFDA6B1AA76931552BA";
+export const CREATE_LINE_ID = "6995A4C2592D434A9E16B71E1694CBCA";
 type ProcessDefinition = {
   inpColumnId: string;
   inpPrimaryKeyColumnId: string;
@@ -99,6 +100,15 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
     dynamicKeys: {},
     staticOptions: {},
     additionalPayloadFields: [],
+  },
+  [CREATE_LINE_ID]: {
+    inpColumnId: "C_Order_ID",
+    inpPrimaryKeyColumnId: "inpcOrderId",
+    defaultKeys: {},
+    dynamicKeys: {
+      c_order_id: "C_Order_ID",
+    },
+    staticOptions: {},
   },
 };
 

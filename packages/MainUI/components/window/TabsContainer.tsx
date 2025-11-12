@@ -53,15 +53,14 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
   const { activeWindow } = useWindowContext();
 
   /**
-   * Navigation state persistence hook for the current window.
+   * Graph-based tab hierarchy management system with navigation state.
    *
    * Manages:
    * - activeLevels: Array of currently visible tab levels [0,1] or [1,2] etc.
    * - activeTabsByLevel: Map of level -> tabId for tracking active tab per level
    * - setActiveLevel: Function to change visible navigation levels
    * - setActiveTabsByLevel: Function to update active tab selection per level
-   *
-   * Persistence: State survives window switches and page refreshes
+   * - graph: Hierarchical tab structure
    */
   const { activeLevels, activeTabsByLevel } = useTableStatePersistenceTab({
     windowIdentifier: activeWindow?.windowIdentifier || "",

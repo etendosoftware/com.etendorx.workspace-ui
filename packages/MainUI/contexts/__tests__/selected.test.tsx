@@ -57,8 +57,9 @@ jest.mock("../../hooks/navigation/useMultiWindowURL", () => ({
 }));
 
 jest.mock("../../data/graph", () => {
+  let instanceCounter = 0;
   return jest.fn().mockImplementation((tabs: Tab[]) => {
-    const graphId = `graph_${Date.now()}}`;
+    const graphId = `graph_${Date.now()}_${instanceCounter++}`;
     const instance = {
       id: graphId,
       tabs,

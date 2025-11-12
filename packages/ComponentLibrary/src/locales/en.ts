@@ -217,6 +217,10 @@ const en = {
       selectedRecords: "{count} selected",
       recordsLoaded: "Records loaded",
     },
+    selectAll: {
+      disabledTooltip: "Load all records to select all",
+      enabledTooltip: "Select all records",
+    },
     useAsFilter: "Use as filter",
   },
   navigation: {

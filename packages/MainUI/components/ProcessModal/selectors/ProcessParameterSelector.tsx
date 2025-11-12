@@ -200,7 +200,7 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
           );
 
         case "quantity":
-          return <QuantitySelector field={mappedField} data-testid="QuantitySelector__dac06b" />;
+          return <QuantitySelector allowNegative={true} field={mappedField} data-testid="QuantitySelector__dac06b" />;
 
         case "list":
           if (!mappedField.refList || mappedField.refList.length === 0) {

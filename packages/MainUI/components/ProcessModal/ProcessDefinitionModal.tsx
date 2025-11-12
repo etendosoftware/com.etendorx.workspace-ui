@@ -2,8 +2,7 @@
  *************************************************************************
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
- * the License.
- * You may obtain a copy of the License at
+ * the License. You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -41,6 +40,22 @@ import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
 import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { FormProvider, useForm, useFormState } from "react-hook-form";
+import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
+import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
+import Modal from "../Modal";
+import Loading from "../loading";
+import WindowReferenceGrid from "./WindowReferenceGrid";
+import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
+import Button from "../../../ComponentLibrary/src/components/Button/Button";
+import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
+import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
+import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
+import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
+import { useProcessCallouts } from "./callouts/useProcessCallouts";
 
 // Date field reference codes for conversion
 const DATE_REFERENCE_CODES = [
@@ -59,22 +74,6 @@ const isDateReference = (reference: string): boolean => {
     reference.toLowerCase().includes("time")
   );
 };
-import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
-import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { FormProvider, useForm, useFormState } from "react-hook-form";
-import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
-import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
-import Modal from "../Modal";
-import Loading from "../loading";
-import WindowReferenceGrid from "./WindowReferenceGrid";
-import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
-import Button from "../../../ComponentLibrary/src/components/Button/Button";
-import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
-import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
-import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
-import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
-import { useProcessCallouts } from "./callouts/useProcessCallouts";
 
 /** Fallback object for record values when no record context exists */
 export const FALLBACK_RESULT = {};
@@ -90,6 +89,20 @@ export type GridSelectionStructure = {
 };
 
 export type GridSelectionUpdater = GridSelectionStructure | ((prev: GridSelectionStructure) => GridSelectionStructure);
+
+type AutoSelectLogic = {
+  field?: string;
+  operator?: string; // '=', '!=', '>', '<', 'in'
+  value?: string | number | boolean | string[] | number[] | symbol | null;
+  valueFromContext?: string;
+  ids?: string[]; // alternative to logic by field
+};
+
+type AutoSelectConfig = {
+  table?: string; // key used in gridSelection (dBColumnName or entityName)
+  logic?: AutoSelectLogic;
+  _gridSelection?: Record<string, string[]>; // backward-compatible payload
+};
 
 /**
  * Converts a date field value to ISO format if needed
@@ -154,6 +167,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const [loading, setLoading] = useState(true);
   const [gridSelection, setGridSelection] = useState<GridSelectionStructure>({});
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
+
+  // NEW: autoSelectConfig state to hold declarative selection instructions OR backward-compatible _gridSelection
+  const [autoSelectConfig, setAutoSelectConfig] = useState<AutoSelectConfig | null>(null);
+  const [autoSelectApplied, setAutoSelectApplied] = useState(false);
 
   const selectedRecords = graph.getSelectedMultiple(tab);
   const firstWindowReferenceParam = useMemo(() => {
@@ -678,6 +695,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       }
 
       setGridSelection(initialGridSelection);
+      // clear any previous auto select when opening
+      setAutoSelectConfig(null);
+      setAutoSelectApplied(false);
     }
   }, [button.processDefinition.parameters, open]);
 
@@ -694,23 +714,50 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             tabId,
           });
 
+          // If result is undefined/null, skip
+          const safeResult = result || {};
+
+          // If backend returns a legacy `_gridSelection` mapping (ids), apply it directly (backward compatibility)
+          if (safeResult._gridSelection && typeof safeResult._gridSelection === "object") {
+            // Merge into gridSelection state
+            setGridSelection((prev) => {
+              const next = { ...prev };
+              for (const [key, ids] of Object.entries(safeResult._gridSelection as Record<string, string[]>)) {
+                // keep existing _allRows if present, but overwrite _selection with EntityData array
+                next[key] = {
+                  ...(next[key] || { _selection: [], _allRows: [] }),
+                  _selection: Array.isArray(ids) ? ids.map((id) => ({ id: String(id) } as EntityData)) : [],
+                };
+              }
+              return next;
+            });
+          }
+
+          // If backend returns an autoSelectConfig, store it
+          if (safeResult.autoSelectConfig) {
+            setAutoSelectConfig(safeResult.autoSelectConfig as AutoSelectConfig);
+          }
+
           setParameters((prev) => {
             const newParameters = { ...prev };
 
-            for (const [parameterName, values] of Object.entries(result)) {
-              // Skip if parameter doesn't exist in the parameters list
-              if (!newParameters[parameterName]) {
-                continue;
-              }
+            for (const [parameterName, values] of Object.entries(safeResult)) {
+              if (["_gridSelection", "autoSelectConfig"].includes(parameterName)) continue;
 
-              const newOptions = values as string[];
-              newParameters[parameterName] = { ...newParameters[parameterName] };
+              if (!newParameters[parameterName]) continue;
 
-              // Only filter refList if it exists
-              if (newParameters[parameterName].refList) {
-                newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
-                  newOptions.includes(option.value)
-                );
+              try {
+                const newOptions = values as string[];
+
+                newParameters[parameterName] = { ...newParameters[parameterName] };
+
+                if (Array.isArray(newParameters[parameterName].refList)) {
+                  newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
+                    newOptions.includes(option.value)
+                  );
+                }
+              } catch (e) {
+                logger.warn("Malformed parameter data from onLoad for", parameterName, e);
               }
             }
 
@@ -729,6 +776,114 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
     fetchOptions();
   }, [button.processDefinition, onLoad, open, selectedRecords, tab, tabId]);
+
+  /**
+   * NEW useEffect:
+   * Applies autoSelectConfig when:
+   *  - autoSelectConfig state is set OR legacy _gridSelection has been merged into gridSelection
+   *  - and the corresponding grid's _allRows have been populated by WindowReferenceGrid (via onSelectionChange)
+   *
+   * The logic supports:
+   *  - autoSelectConfig._gridSelection: mapping table -> [ids]
+   *  - autoSelectConfig.table + autoSelectConfig.logic: declarative selection
+   */
+  useEffect(() => {
+    if (!autoSelectConfig || autoSelectApplied) return;
+
+    // If autoSelectConfig contains legacy _gridSelection mapping, handle quickly
+    if (autoSelectConfig._gridSelection) {
+      // Merge into gridSelection (ids already set previously, but ensure structure)
+      setGridSelection((prev) => {
+        const next = { ...prev };
+        for (const [tableKey, ids] of Object.entries(autoSelectConfig._gridSelection || {})) {
+          next[tableKey] = {
+            ...(next[tableKey] || { _selection: [], _allRows: [] }),
+            _selection: Array.isArray(ids) ? ids.map((id) => ({ id: String(id) } as EntityData)) : [],
+          };
+        }
+        return next;
+      });
+      setAutoSelectApplied(true);
+      return;
+    }
+
+    const tableKey = autoSelectConfig.table;
+    const logic = autoSelectConfig.logic;
+    if (!tableKey || !logic) return;
+
+    const target = gridSelection[tableKey];
+    if (!target || !Array.isArray(target._allRows) || target._allRows.length === 0) {
+      // no rows yet — wait until WindowReferenceGrid calls onSelectionChange and updates gridSelection
+      return;
+    }
+
+    // Determine value to compare (literal or from context)
+    let valueToCompare = logic.value;
+    if (logic.valueFromContext) {
+      const selected = Object.values(selectedRecords || {})[0];
+      valueToCompare = selected?.[logic.valueFromContext];
+    }
+
+    // If logic contains explicit ids => select by ids directly
+    if (Array.isArray(logic.ids) && logic.ids.length > 0) {
+      const idsSet = new Set(logic.ids.map((id) => String(id)));
+      const matched = target._allRows.filter((row: unknown) => {
+        const record = row as Record<string, unknown>;
+        return idsSet.has(String(record?.id ?? record?.ID ?? record?.Id ?? row));
+      });
+      if (matched.length > 0) {
+        setGridSelection((prev) => ({
+          ...prev,
+          [tableKey]: {
+            ...prev[tableKey],
+            _selection: matched,
+          },
+        }));
+        logger.debug(`Auto-selection applied on table ${tableKey} by explicit ids (${matched.length})`);
+        setAutoSelectApplied(true);
+      }
+      return;
+    }
+
+    // Otherwise, apply operator-based selection using field comparison
+    const matchedRows = target._allRows.filter((row: unknown) => {
+      const record = row as Record<string, unknown>;
+      const rowValue = record?.[logic.field as string];
+
+      switch (logic.operator) {
+        case "=":
+        case "==":
+          return rowValue === valueToCompare;
+        case "!=":
+        case "<>":
+          return rowValue !== valueToCompare;
+        case ">":
+          return typeof rowValue === "number" && typeof valueToCompare === "number" && rowValue > valueToCompare;
+        case "<":
+          return typeof rowValue === "number" && typeof valueToCompare === "number" && rowValue < valueToCompare;
+        case "in": {
+          if (!Array.isArray(valueToCompare)) return false;
+          const typedArray = valueToCompare as (string | number | boolean)[];
+          return typedArray.some((val) => val === rowValue);
+        }
+        default:
+          // default to strict equality if operator missing
+          return rowValue === valueToCompare;
+      }
+    });
+
+    if (matchedRows.length > 0) {
+      setGridSelection((prev) => ({
+        ...prev,
+        [tableKey]: {
+          ...prev[tableKey],
+          _selection: matchedRows,
+        },
+      }));
+      logger.debug(`Auto-selection applied on table ${tableKey} (${matchedRows.length} rows)`);
+      setAutoSelectApplied(true);
+    }
+  }, [autoSelectConfig, autoSelectApplied, gridSelection, selectedRecords]);
 
   const renderResponse = () => {
     if (!result) return null;
@@ -801,6 +956,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             parameter={parameter}
             parameters={parameters}
             onSelectionChange={setGridSelection}
+            gridSelection={gridSelection}
             tabId={parameterTabId}
             entityName={parameterEntityName}
             windowReferenceTab={parameterTab || windowReferenceTab}
