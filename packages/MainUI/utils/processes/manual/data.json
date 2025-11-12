@@ -94,11 +94,14 @@
     "command": "DEFAULT",
     "inpkeyColumnId": "AD_Process_Request_ID",
     "keyColumnName": "AD_Process_Request_ID"
+<<<<<<< HEAD
   },
   "2922": {
     "url": "/PhysicalInventory/Header_Edition.html",
     "command": "BUTTONGenerateList105",
     "inpkeyColumnId": "M_Inventory_ID",
     "keyColumnName": "M_Inventory_ID"
+=======
+>>>>>>> epic/ETP-2669
   }
 }
