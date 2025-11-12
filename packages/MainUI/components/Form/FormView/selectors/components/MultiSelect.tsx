@@ -15,24 +15,19 @@
  *************************************************************************
  */
 
-import { useTranslation } from "@/hooks/useTranslation";
 import {
   handleKeyboardActivation,
-  useClickOutside,
-  useFocusHandler,
-  useHoverHandlers,
   useInfiniteScroll,
   useKeyboardNavigation,
-  useOpenDropdownEffect,
-  useSearchHandler,
-  useSearchTermHandler,
+  useClickOutside,
   type Option,
 } from "@/utils/selectorUtils";
 import Image from "next/image";
-import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState, useEffect } from "react";
 import checkIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/check-circle-filled.svg?url";
 import ChevronDown from "../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import closeIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/x.svg?url";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const FOCUS_STYLES = "focus:outline-none focus:ring-2 focus:ring-dynamic-light";
 const BASE_TRANSITION = "transition-colors outline-none";
@@ -42,7 +37,6 @@ const ICON_SIZE = "w-5 h-5";
 const HOVER_TEXT_COLOR = "hover:text-baseline-80";
 
 interface MultiSelectOption extends Option {}
-
 interface MultiSelectProps {
   options: MultiSelectOption[];
   selectedValues: string[];
@@ -60,29 +54,23 @@ const OptionItem = memo(
   ({
     id,
     label,
-    index,
     isSelected,
     isHighlighted,
-    onOptionClick,
-    onMouseEnter,
+    onSelect,
   }: {
     id: string;
     label: string;
-    index: number;
     isSelected: boolean;
     isHighlighted: boolean;
-    onOptionClick: (id: string) => void;
-    onMouseEnter: (index: number) => void;
+    onSelect: (id: string) => void;
   }) => (
     <li
       aria-selected={isSelected}
-      onClick={() => onOptionClick(id)}
-      onKeyDown={(e) => handleKeyboardActivation(e, () => onOptionClick(id))}
-      onMouseEnter={() => onMouseEnter(index)}
-      className={`${LIST_ITEM_BASE} cursor-pointer flex items-center justify-between ${FOCUS_STYLES} focus:bg-baseline-10
-      ${isHighlighted ? "bg-baseline-10" : ""}
-      ${isSelected ? "bg-baseline-10 font-medium" : ""}
-      hover:bg-baseline-10`}>
+      onClick={() => onSelect(id)}
+      onKeyDown={(e) => handleKeyboardActivation(e, () => onSelect(id))}
+      className={`${LIST_ITEM_BASE} cursor-pointer flex items-center justify-between ${FOCUS_STYLES} 
+        ${isHighlighted ? "bg-baseline-10" : ""} 
+        ${isSelected ? "bg-baseline-10 font-medium" : ""} hover:bg-baseline-10`}>
       <span className={`truncate mr-2 ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>{label}</span>
       {isSelected && (
         <Image
@@ -97,10 +85,9 @@ const OptionItem = memo(
     </li>
   )
 );
-
 OptionItem.displayName = "OptionItem";
 
-function MultiSelectCmp({
+const MultiSelect = memo(function MultiSelectCmp({
   options,
   selectedValues,
   onSelectionChange,
@@ -115,24 +102,26 @@ function MultiSelectCmp({
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
-  const [isHovering, setIsHovering] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [internalOptions, setInternalOptions] = useState<MultiSelectOption[]>([]);
+  const [isFetchingInitial, setIsFetchingInitial] = useState(false);
+
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const handleSearchChange = useSearchHandler(onSearch);
 
-  const filteredOptions = useMemo(
-    () => options.filter((option) => option.label.toLowerCase().includes(searchTerm.toLowerCase())),
-    [options, searchTerm]
+  // Filtrado
+  const filteredOptions = useMemo(() => {
+    return internalOptions.filter((o) => o.label.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [internalOptions, searchTerm]);
+
+  const selectedLabels = useMemo(
+    () => internalOptions.filter((o) => selectedValues.includes(o.id)).map((o) => o.label),
+    [internalOptions, selectedValues]
   );
 
-  const selectedLabels = useMemo(() => {
-    return options.filter((option) => selectedValues.includes(option.id)).map((option) => option.label);
-  }, [options, selectedValues]);
-
   const displayText = useMemo(() => {
-    if (selectedLabels.length === 0) return placeholder;
+    if (!selectedLabels.length) return placeholder;
     if (selectedLabels.length === 1) return selectedLabels[0];
     return `${selectedLabels.length} selected`;
   }, [selectedLabels, placeholder]);
@@ -140,51 +129,12 @@ function MultiSelectCmp({
   const handleSelect = useCallback(
     (id: string) => {
       const newSelection = selectedValues.includes(id)
-        ? selectedValues.filter((value) => value !== id)
+        ? selectedValues.filter((v) => v !== id)
         : [...selectedValues, id];
       onSelectionChange(newSelection);
     },
     [selectedValues, onSelectionChange]
   );
-
-  const handleOptionClick = useCallback(
-    (id: string) => {
-      handleSelect(id);
-    },
-    [handleSelect]
-  );
-
-  const handleOptionMouseEnter = useCallback((index: number) => {
-    setHighlightedIndex(index);
-  }, []);
-
-  const handleKeyDown = useKeyboardNavigation(
-    filteredOptions,
-    highlightedIndex,
-    setHighlightedIndex,
-    (option) => handleSelect(option.id),
-    () => {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
-  );
-
-  const handleBlur = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
-  }, []);
-
-  const handleClick = useCallback(() => {
-    const wasOpen = isOpen;
-    setIsOpen(!wasOpen);
-
-    // Load options when opening for the first time
-    if (!wasOpen && options.length === 0 && onFocus) {
-      onFocus();
-    }
-  }, [isOpen, options.length, onFocus]);
 
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
@@ -194,60 +144,100 @@ function MultiSelectCmp({
     [onSelectionChange]
   );
 
-  const { handleMouseEnter, handleMouseLeave } = useHoverHandlers(setIsHovering);
+  const handleClick = useCallback(() => {
+    setIsOpen((prev) => {
+      if (!prev) {
+        setIsFetchingInitial(true);
+        onFocus?.();
+      }
+      return !prev;
+    });
+  }, [onFocus]);
+
+  const handleKeyDown = useKeyboardNavigation(
+    filteredOptions,
+    highlightedIndex,
+    setHighlightedIndex,
+    (o) => handleSelect(o.id),
+    () => {
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+    }
+  );
+
+  useClickOutside(wrapperRef, () => setIsOpen(false));
+
+  const handleSetSearchTerm = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const term = e.target.value;
+      setSearchTerm(term);
+      onSearch?.(term);
+    },
+    [onSearch]
+  );
 
   const handleScroll = useInfiniteScroll(listRef, loading, hasMore, onLoadMore);
 
-  const handleFocus = useFocusHandler(onFocus);
+  // Actualizar opciones cuando llegan props
+  useEffect(() => {
+    setInternalOptions(options);
+    if (options.length > 0 && !loading) setIsFetchingInitial(false);
+  }, [options, loading]);
 
-  useClickOutside(wrapperRef, setIsOpen);
+  const showSkeleton = isFetchingInitial && loading;
 
-  const handleSetSearchTerm = useSearchTermHandler(handleSearchChange, setSearchTerm);
-
-  useOpenDropdownEffect(isOpen, setSearchTerm, setHighlightedIndex, searchInputRef);
+  const SKELETON_IDS = ["skeleton-item-1", "skeleton-item-2", "skeleton-item-3"];
 
   const renderedOptions = useMemo(() => {
+    if (showSkeleton) {
+      return SKELETON_IDS.map((id, index) => (
+        <li key={id} className={`${LIST_ITEM_BASE} pointer-events-none`}>
+          <div className="flex items-center gap-3 py-1">
+            <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 bg-gray-200 rounded animate-pulse" style={{ width: `${60 + index * 10}%` }} />
+          </div>
+        </li>
+      ));
+    }
+
     if (filteredOptions.length > 0) {
-      return filteredOptions.map(({ id, label }, index) => (
+      return filteredOptions.map((option, index) => (
         <OptionItem
-          key={id}
-          id={id}
-          label={label}
-          index={index}
-          isSelected={selectedValues.includes(id)}
+          key={option.id}
+          id={option.id}
+          label={option.label}
+          isSelected={selectedValues.includes(option.id)}
           isHighlighted={highlightedIndex === index}
-          onOptionClick={handleOptionClick}
-          onMouseEnter={handleOptionMouseEnter}
+          onSelect={handleSelect}
           data-testid="OptionItem__cb81f7"
         />
       ));
     }
-    return <li className={`${LIST_ITEM_BASE} ${TEXT_MUTED}`}>{t("multiselect.noOptionsFound")}</li>;
-  }, [filteredOptions, highlightedIndex, selectedValues, handleOptionClick, handleOptionMouseEnter, t]);
+
+    if (!loading) {
+      return <li className={`${LIST_ITEM_BASE} ${TEXT_MUTED}`}>{t("multiselect.noOptionsFound")}</li>;
+    }
+
+    return null;
+  }, [filteredOptions, highlightedIndex, selectedValues, handleSelect, showSkeleton, loading, t]);
 
   return (
-    <div ref={wrapperRef} className="relative w-full font-['Inter']" onBlur={handleBlur} tabIndex={-1}>
+    <div ref={wrapperRef} className="relative w-full font-['Inter']" tabIndex={-1}>
       <div
         onClick={handleClick}
         onKeyDown={(e) => handleKeyboardActivation(e, handleClick)}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        className={`w-full flex items-center justify-between px-3 py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 ${FOCUS_STYLES}
-          ${isOpen ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : "border-baseline-40"} 
-           text-baseline-20 cursor-pointer hover:border-baseline-60
-          ${BASE_TRANSITION}`}>
+        className={`w-full flex items-center justify-between px-3 py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 ${FOCUS_STYLES} 
+          ${isOpen ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : ""} 
+          text-baseline-20 cursor-pointer hover:border-baseline-60 ${BASE_TRANSITION}`}>
         <span
-          className={`text-sm truncate max-w-[calc(100%-40px)] ${selectedLabels.length > 0 ? "text-baseline-90 font-medium" : "text-baseline-50"}`}>
+          className={`text-sm truncate max-w-[calc(100%-40px)] ${
+            selectedLabels.length ? "text-baseline-90 font-medium" : "text-baseline-50"
+          }`}>
           {displayText}
         </span>
         <div className="flex items-center flex-shrink-0 ml-2">
-          {selectedLabels.length > 0 && (isHovering || isOpen) && (
-            <button
-              type="button"
-              onClick={handleClear}
-              onKeyDown={(e) => handleKeyboardActivation(e, () => handleClear(e as unknown as React.MouseEvent))}
-              className={`mr-1 ${TEXT_MUTED} ${HOVER_TEXT_COLOR} transition-opacity opacity-100 ${FOCUS_STYLES} rounded`}
-              aria-label={t("multiselect.clearSelection")}>
+          {selectedLabels.length > 0 && isOpen && (
+            <button type="button" onClick={handleClear} className={`mr-1 ${TEXT_MUTED} ${HOVER_TEXT_COLOR} rounded`}>
               <Image src={closeIconUrl} alt="Clear" height={16} width={16} data-testid="Image__cb81f7" />
             </button>
           )}
@@ -259,7 +249,7 @@ function MultiSelectCmp({
         </div>
       </div>
       {isOpen && (
-        <div className="absolute z-10 mt-1 w-64 bg-white rounded shadow-lg overflow-hidden border-1 border-transparent-neutral-10">
+        <div className="absolute z-10 mt-1 w-64 bg-white rounded shadow-lg overflow-hidden border border-transparent-neutral-10">
           <div className="p-2">
             <input
               ref={searchInputRef}
@@ -268,8 +258,6 @@ function MultiSelectCmp({
               onKeyDown={handleKeyDown}
               placeholder={t("multiselect.searchPlaceholder")}
               className="w-full p-2 text-sm border border-baseline-30 rounded focus:outline-none focus:border-dynamic-main focus:ring-1 focus:ring-dynamic-light"
-              aria-label={t("multiselect.searchOptions")}
-              onFocus={handleFocus}
             />
           </div>
           <ul
@@ -278,7 +266,8 @@ function MultiSelectCmp({
             style={{ maxHeight: `${maxHeight}px` }}
             onScroll={handleScroll}>
             {renderedOptions}
-            {loading && hasMore && (
+            {/* Loader scroll infinito */}
+            {loading && hasMore && !showSkeleton && (
               <li className={`${LIST_ITEM_BASE} ${TEXT_MUTED} text-center`}>{t("multiselect.loadingOptions")}</li>
             )}
           </ul>
@@ -286,9 +275,7 @@ function MultiSelectCmp({
       )}
     </div>
   );
-}
+});
 
-const MultiSelect = memo(MultiSelectCmp);
-export default MultiSelect;
 export { MultiSelect };
 export type { MultiSelectProps, MultiSelectOption };
