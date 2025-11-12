@@ -27,7 +27,6 @@ import type { TabLevelProps } from "@/components/window/types";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import {
   NEW_RECORD_ID,
   FORM_MODES,
@@ -100,16 +99,14 @@ const handleEditRecordFormState = (
 export function Tab({ tab, collapsed }: TabLevelProps) {
   const { window } = useMetadataContext();
   const {
-    clearChildrenSelections,
-  } = useMultiWindowURL();
-  const {
     activeWindow,
     clearSelectedRecord,
     getTabFormState,
     setSelectedRecord,
     getSelectedRecord,
     clearTabFormState,
-    setTabFormState
+    setTabFormState,
+    clearChildrenSelections,
   } = useWindowContext();
   const { registerActions, onRefresh } = useToolbarContext();
   const { graph } = useSelected();

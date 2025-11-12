@@ -18,7 +18,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
-import type { TabFormState } from "@/utils/url/constants";
+import { type TabFormState, TAB_MODES } from "@/utils/url/constants";
 import {
   WindowState,
   TableState,
@@ -66,6 +66,8 @@ interface WindowContextI {
   getSelectedRecord: (windowIdentifier: string, tabId: string) => string | undefined;
   setSelectedRecord: (windowIdentifier: string, tabId: string, recordId: string) => void;
   clearSelectedRecord: (windowIdentifier: string, tabId: string) => void;
+  clearChildrenSelections: (windowIdentifier: string, childTabIds: string[], isParentSelectionChanging?: boolean) => void;
+  setSelectedRecordAndClearChildren: (windowIdentifier: string, tabId: string, recordId: string, childTabIds: string[]) => void;
 
   // Navigation initialization management
   getNavigationInitialized: (windowIdentifier: string) => boolean;
@@ -355,6 +357,65 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     });
   }, []);
 
+  const clearChildrenSelections = useCallback(
+    (windowIdentifier: string, childTabIds: string[], isParentSelectionChanging = false) => {
+      // Check if the window exists in the state
+      if (!state[windowIdentifier]) {
+        console.warn(`[clearChildrenSelections] Window ${windowIdentifier} not found in state`);
+        return;
+      }
+
+      const childrenToClean = childTabIds.filter((tabId) => {
+        if (isParentSelectionChanging) {
+          return true;
+        }
+
+        // Use getTabFormState function to maintain consistency with original behavior
+        const childState = getTabFormState(windowIdentifier, tabId);
+        const isInFormView = childState?.mode === TAB_MODES.FORM;
+        if (isInFormView) {
+          console.log(`[clearChildrenSelections] Preserving child ${tabId} - currently in FormView`, childState);
+          return false;
+        }
+        return true;
+      });
+
+      const childrenCleaned: string[] = [];
+
+      childrenToClean.forEach((tabId) => {
+        // Check if tab has selected record before clearing
+        const selectedRecord = getSelectedRecord(windowIdentifier, tabId);
+        if (selectedRecord) {
+          clearSelectedRecord(windowIdentifier, tabId);
+          childrenCleaned.push(tabId);
+        }
+        // Clear form state for ALL children to clean
+        clearTabFormState(windowIdentifier, tabId);
+      });
+
+      console.log(`[clearChildrenSelections] Cleared children: [${childrenCleaned.join(", ")}]`);
+    },
+    [state, getTabFormState, getSelectedRecord, clearSelectedRecord, clearTabFormState]
+  );
+
+  const setSelectedRecordAndClearChildren = useCallback(
+    (windowIdentifier: string, tabId: string, recordId: string, childTabIds: string[]) => {
+      // Check if the window exists in the state
+      if (!state[windowIdentifier]) {
+        console.warn(`[setSelectedRecordAndClearChildren] Window ${windowIdentifier} not found in state`);
+        return;
+      }
+
+      const previousRecordId = getSelectedRecord(windowIdentifier, tabId);
+      const isParentSelectionChanging = previousRecordId !== recordId;
+
+      // Set the selected record using context
+      setSelectedRecord(windowIdentifier, tabId, recordId);
+      clearChildrenSelections(windowIdentifier, childTabIds, isParentSelectionChanging);
+    },
+    [state, getSelectedRecord, setSelectedRecord, clearChildrenSelections]
+  );
+
   const cleanupWindow = useCallback((windowIdentifier: string) => {
     setState((prevState: WindowContextState) => {
       const newState = { ...prevState };
@@ -457,6 +518,8 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       getSelectedRecord,
       setSelectedRecord,
       clearSelectedRecord,
+      clearChildrenSelections,
+      setSelectedRecordAndClearChildren,
 
       getNavigationInitialized,
       setNavigationInitialized,
@@ -494,6 +557,8 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       getSelectedRecord,
       setSelectedRecord,
       clearSelectedRecord,
+      clearChildrenSelections,
+      setSelectedRecordAndClearChildren,
 
       getNavigationInitialized,
       setNavigationInitialized,

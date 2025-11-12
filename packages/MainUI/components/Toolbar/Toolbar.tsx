@@ -50,7 +50,6 @@ import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { TAB_MODES } from "@/utils/url/constants";
 import { useWindowContext } from "@/contexts/window";
 
@@ -72,8 +71,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { saveButtonState } = useToolbarContext();
   const { buttons, processButtons, loading, refetch } = useToolbar(windowId, tab?.id);
   const { graph } = useSelected();
-  const { clearChildrenSelections } = useMultiWindowURL();
-  const { activeWindow, getTabFormState } = useWindowContext();
+  const { activeWindow, getTabFormState, clearChildrenSelections } = useWindowContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { isSessionSyncLoading, isCopilotInstalled, session } = useUserContext();

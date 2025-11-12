@@ -40,7 +40,6 @@ import { mapBy } from "@/utils/structures";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_RowSelectionState } from "material-react-table";
 import { useEffect, useRef, useCallback, useMemo } from "react";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { debounce } from "@/utils/debounce";
 import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/sessionSync";
 import { useUserContext } from "@/hooks/useUserContext";
@@ -436,15 +435,13 @@ export default function useTableSelection(
 ) {
   const { graph } = useSelected();
   const {
-    clearChildrenSelections,
-    setSelectedRecordAndClearChildren,
-  } = useMultiWindowURL();
-  const {
     activeWindow,
     clearSelectedRecord,
     getTabFormState,
     setSelectedRecord,
-    getSelectedRecord
+    getSelectedRecord,
+    clearChildrenSelections,
+    setSelectedRecordAndClearChildren,
   } = useWindowContext();
   const { setSession, setSessionSyncLoading } = useUserContext();
   const previousSelectionRef = useRef<string[]>([]);
@@ -622,5 +619,8 @@ export default function useTableSelection(
     debouncedURLUpdate,
     getSelectedRecord,
     getTabFormState,
+    setSession,
+    setSessionSyncLoading,
+    windowId,
   ]);
 }

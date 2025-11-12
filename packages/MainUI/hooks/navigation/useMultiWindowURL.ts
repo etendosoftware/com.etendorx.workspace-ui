@@ -35,12 +35,9 @@ export function useMultiWindowURL() {
   const searchParams = useSearchParams();
   const {
     windows,
-    getTabFormState,
     setTabFormState,
-    clearTabFormState,
-    getSelectedRecord,
     setSelectedRecord,
-    clearSelectedRecord,
+    setSelectedRecordAndClearChildren,
   } = useWindowContext();
 
   /**
@@ -192,134 +189,10 @@ export function useMultiWindowURL() {
     [windows, navigate, setSelectedRecord, setTabFormState]
   );
 
-  /**
-   * TODO: Consider optimizing this function with improved context-based form state management
-   * Clears selections and form states for child tabs with intelligent form preservation.
-   * Implements smart cleanup logic that preserves child tabs currently in form view to prevent data loss.
-   * Provides detailed debug logging to track which children are cleared vs. preserved.
-   *
-   * **Preservation Logic:**
-   * - Child tabs in form view mode are preserved (no data loss)
-   * - Child tabs in table view are cleared (normal cleanup)
-   * - Detailed logging shows what actions were taken
-   *
-   * @param windowIdentifier - The window identifier of the parent window
-   * @param childTabIds - Array of child tab identifiers to potentially clear
-   * @param isParentSelectionChanging - Whether parent selection is changing
-   *
-   * @example
-   * ```typescript
-   * // Clear child tabs after parent selection change
-   * clearChildrenSelections("CustomerWindow", ["ordersTab", "paymentsTab", "contactsTab"]);
-   *
-   * // Scenario 1: All children in table view
-   * // Result: All children cleared
-   *
-   * // Scenario 2: ordersTab has open form, others in table view
-   * // Result: ordersTab preserved (form open), paymentsTab & contactsTab cleared
-   *
-   * // Debug output shows:
-   * // "[clearChildrenSelections] Preserving child ordersTab - currently in FormView"
-   * // "[clearChildrenSelections] Cleared 2 of 3 children: paymentsTab, contactsTab"
-   * ```
-   */
-  const clearChildrenSelections = useCallback(
-    (windowIdentifier: string, childTabIds: string[], isParentSelectionChanging = false) => {
-      const childrenToClean = childTabIds.filter((tabId) => {
-        if (isParentSelectionChanging) {
-          return true;
-        }
-
-        // UPDATE: Use context instead of w.tabFormStates[tabId]
-        const childState = getTabFormState(windowIdentifier, tabId);
-        const isInFormView = childState?.mode === "form";
-        if (isInFormView) {
-          console.log(`[clearChildrenSelections] Preserving child ${tabId} - currently in FormView`, childState);
-          return false;
-        }
-        return true;
-      });
-
-      const childrenCleaned: string[] = [];
-
-      childrenToClean.forEach((tabId) => {
-        const selectedRecord = getSelectedRecord(windowIdentifier, tabId);
-        if (selectedRecord) {
-          clearSelectedRecord(windowIdentifier, tabId);
-          childrenCleaned.push(tabId);
-        }
-        // UPDATE: Clear context form state instead of tabFormStates
-        clearTabFormState(windowIdentifier, tabId);
-      });
-
-      console.log(`[clearChildrenSelections] Cleared children: [${childrenCleaned.join(", ")}]`);
-    },
-    [getTabFormState, clearTabFormState, getSelectedRecord, clearSelectedRecord]
-  );
-
-  /**
-   * TODO: Consider optimizing this function with improved context-based form state management
-   * Atomically updates parent tab selection and clears child tab selections in a single navigation.
-   * Implements intelligent child preservation logic for form views to prevent data loss during re-renders.
-   *
-   * **Child Clearing Logic:**
-   * - If parent selection changes (user selects different record): Clear ALL children regardless of form state
-   * - If parent selection unchanged (re-render/refresh): Preserve children that are in form view mode
-   *
-   * This prevents accidental data loss when forms are open in child tabs during parent re-renders,
-   * while ensuring proper cleanup when the user intentionally changes the parent selection.
-   *
-   * @param windowId - The business entity ID of the window
-   * @param parentTabId - The identifier of the parent tab whose selection is changing
-   * @param recordId - The ID of the record to select in the parent tab
-   * @param childTabIds - Array of child tab identifiers to potentially clear
-   *
-   * @example
-   * ```typescript
-   * // User selects a different customer record
-   * setSelectedRecordAndClearChildren(
-   *   "CustomerWindow",
-   *   "customerTab",
-   *   "customer_789",
-   *   ["ordersTab", "paymentsTab"]
-   * );
-   * // Result: Customer tab shows customer_789, all child tabs are cleared
-   *
-   * // Re-render with same customer (no actual change)
-   * setSelectedRecordAndClearChildren(
-   *   "CustomerWindow",
-   *   "customerTab",
-   *   "customer_789",  // Same ID as before
-   *   ["ordersTab", "paymentsTab"]
-   * );
-   * // Result: Child tabs in form view are preserved, others are cleared
-   * ```
-   */
-  const setSelectedRecordAndClearChildren = useCallback(
-    (windowIdOrIdentifier: string, tabId: string, recordId: string, childTabIds: string[]) => {
-      const window = windows.find(
-        (w) => w.windowIdentifier === windowIdOrIdentifier || (w.windowId === windowIdOrIdentifier && w.isActive)
-      );
-      if (!window) return;
-
-      const windowIdentifier = window.windowIdentifier;
-      const previousRecordId = getSelectedRecord(windowIdentifier, tabId);
-      const isParentSelectionChanging = previousRecordId !== recordId;
-
-      // Set the selected record using context
-      setSelectedRecord(windowIdentifier, tabId, recordId);
-      clearChildrenSelections(windowIdentifier, childTabIds, isParentSelectionChanging);
-    },
-    [windows, getSelectedRecord, setSelectedRecord, clearChildrenSelections]
-  );
-
   return {
     openWindow,
     buildURL,
 
     setSelectedRecordAndClearChildren,
-
-    // batching helpers
-    clearChildrenSelections,
   };
 }
