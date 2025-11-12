@@ -18,7 +18,7 @@
 // @data-testid-ignore
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
@@ -42,7 +42,7 @@ export default function TabsComponent({ tabs, isTopGroup = false }: ExtendedTabs
   const [isPending, startTransition] = useTransition();
 
   const { activeWindow } = useWindowContext();
-  const { activeLevels, setActiveLevel } = useTableStatePersistenceTab({
+  const { activeLevels, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
     windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: "",
   });
@@ -60,9 +60,12 @@ export default function TabsComponent({ tabs, isTopGroup = false }: ExtendedTabs
         setCustomHeight(50);
         setCurrent(tab);
         setActiveLevel(tab.tabLevel);
+
+        // Update the active tab mapping for this level so child tab filtering works correctly
+        setActiveTabsByLevel(tab);
       });
     },
-    [setActiveLevel, startTransition]
+    [setActiveLevel, startTransition, setActiveTabsByLevel]
   );
 
   const handleDoubleClick = useCallback(
@@ -74,9 +77,12 @@ export default function TabsComponent({ tabs, isTopGroup = false }: ExtendedTabs
         setCurrent(tab);
         setExpanded(newExpand);
         setActiveLevel(tab.tabLevel, newExpand);
+
+        // Update the active tab mapping for this level
+        setActiveTabsByLevel(tab);
       });
     },
-    [expand, setActiveLevel, startTransition]
+    [expand, setActiveLevel, startTransition, setActiveTabsByLevel]
   );
 
   const handleHeightChange = useCallback((height: number) => {

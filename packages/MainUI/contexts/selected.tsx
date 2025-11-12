@@ -100,12 +100,6 @@ export const SelectedProvider = ({
   });
 
   /**
-   * Cache key generation: Uses windowIdentifier if provided, otherwise falls back to windowId.
-   * This supports multiple instances of the same window type while maintaining separate graph states.
-   */
-  const cacheKey = windowIdentifier;
-
-  /**
    * Memoized graph instance with caching strategy.
    *
    * Creates or retrieves a Graph instance from the global cache based on the cache key.
@@ -115,15 +109,16 @@ export const SelectedProvider = ({
    * which is necessary for maintaining consistency with the current tab configuration.
    */
   const graph = useMemo(() => {
+    const cacheKey = windowIdentifier;
     if (!windowGraphCache.has(cacheKey)) {
       windowGraphCache.set(cacheKey, new Graph<Tab>(tabs));
     }
     const cachedGraph = windowGraphCache.get(cacheKey);
     if (!cachedGraph) {
-      throw new Error(`Failed to retrieve graph for window identifier: ${cacheKey}`);
+      throw new Error(`Failed to retrieve graph for cache key: ${cacheKey}`);
     }
     return cachedGraph;
-  }, [cacheKey, tabs]);
+  }, [windowIdentifier, tabs]);
 
   /**
    * Session restoration effect for active tab levels and tab selections.
