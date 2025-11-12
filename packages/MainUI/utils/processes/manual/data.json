@@ -94,5 +94,11 @@
     "command": "DEFAULT",
     "inpkeyColumnId": "AD_Process_Request_ID",
     "keyColumnName": "AD_Process_Request_ID"
+  },
+  "2897": {
+    "url": "/PriceList/PriceListVersion_Edition.html",
+    "command": "BUTTONProcCreate103",
+    "inpkeyColumnId": "M_PriceList_Version_ID",
+    "keyColumnName": "M_PriceList_Version_ID"
   }
 }
