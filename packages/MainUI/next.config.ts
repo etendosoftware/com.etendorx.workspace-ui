@@ -44,6 +44,11 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_APP_VERSION: APP_VERSION,
   },
+  // Expose runtime environment variables to the client (read at runtime, not build time)
+  // This allows the same Docker image to work with different backend URLs
+  publicRuntimeConfig: {
+    ETENDO_CLASSIC_HOST: process.env.ETENDO_CLASSIC_HOST || process.env.ETENDO_CLASSIC_URL,
+  },
   webpack(config) {
     config.optimization = {
       ...config.optimization,

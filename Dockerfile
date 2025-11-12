@@ -3,8 +3,10 @@
 FROM node:18-alpine AS base
 
 ARG ETENDO_CLASSIC_URL
+ARG ETENDO_CLASSIC_HOST
 ARG DEBUG_MODE
 ENV ETENDO_CLASSIC_URL=${ETENDO_CLASSIC_URL}
+ENV ETENDO_CLASSIC_HOST=${ETENDO_CLASSIC_HOST}
 ENV DEBUG_MODE=${DEBUG_MODE}
 
 # Dependencies layer - cached separately
@@ -27,6 +29,14 @@ RUN pnpm install --frozen-lockfile
 # Builder layer - only rebuilt when source changes
 FROM deps AS builder
 WORKDIR /app
+
+# Re-declare build args for this stage (needed for Next.js build)
+ARG ETENDO_CLASSIC_URL
+ARG ETENDO_CLASSIC_HOST
+ARG DEBUG_MODE
+ENV ETENDO_CLASSIC_URL=${ETENDO_CLASSIC_URL}
+ENV ETENDO_CLASSIC_HOST=${ETENDO_CLASSIC_HOST}
+ENV DEBUG_MODE=${DEBUG_MODE}
 
 # Copy only necessary configuration files
 COPY tsconfig.json turbo.json ./
@@ -54,6 +64,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS="--trace-warnings --trace-deprecation"
 ENV DEBUG="*"
 ENV NEXT_DEBUG=1
+
+# Declare environment variables that will be set at runtime
+# These don't have default values - they must be provided when running the container
+ENV ETENDO_CLASSIC_URL=""
+ENV ETENDO_CLASSIC_HOST=""
+ENV DEBUG_MODE=""
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs

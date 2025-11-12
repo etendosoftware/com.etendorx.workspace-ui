@@ -44,13 +44,15 @@ suite.describe(() => {
     const { POST } = await import("@/app/api/erp/[...slug]/route");
 
     const responseBody = { created: true };
+    const responseText = JSON.stringify(responseBody);
     // Configure fetch mock directly
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       status: 201,
       headers: { get: () => "application/json" },
-      text: async () => JSON.stringify(responseBody),
+      text: async () => responseText,
       json: async () => responseBody,
+      arrayBuffer: async () => new TextEncoder().encode(responseText).buffer,
     });
 
     const payload = { data: "value" };
