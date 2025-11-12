@@ -118,7 +118,11 @@ export const useTableData = ({
     setTableColumnSorting,
     setTableColumnOrder,
     setIsImplicitFilterApplied,
-  } = useTableStatePersistenceTab({ windowIdentifier: activeWindow?.windowIdentifier || "", tabId: tab.id });
+  } = useTableStatePersistenceTab({
+    windowIdentifier: activeWindow?.windowIdentifier || "",
+    tabId: tab.id,
+    tabLevel: tab.tabLevel
+  });
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
   // Computed values

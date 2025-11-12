@@ -82,7 +82,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { tab, parentTab, parentRecord } = useTabContext();
 
   const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
-    useTableStatePersistenceTab({ windowIdentifier: activeWindow?.windowIdentifier || "", tabId: tab.id });
+    useTableStatePersistenceTab({
+      windowIdentifier: activeWindow?.windowIdentifier || "",
+      tabId: tab.id,
+      tabLevel: tab.tabLevel
+    });
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -487,20 +491,20 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     // Disable "Select All" when there are more records to load
     muiSelectAllCheckboxProps: hasMoreRecords
       ? {
-          disabled: true,
-          // Wrap disabled checkbox in a span to enable tooltip
-          sx: {
-            "&.Mui-disabled": {
-              pointerEvents: "auto", // Allow hover on disabled element
-              cursor: "not-allowed",
-            },
+        disabled: true,
+        // Wrap disabled checkbox in a span to enable tooltip
+        sx: {
+          "&.Mui-disabled": {
+            pointerEvents: "auto", // Allow hover on disabled element
+            cursor: "not-allowed",
           },
-          title: t("table.selectAll.disabledTooltip"),
-        }
-      : {
-          disabled: false,
-          title: t("table.selectAll.enabledTooltip"),
         },
+        title: t("table.selectAll.disabledTooltip"),
+      }
+      : {
+        disabled: false,
+        title: t("table.selectAll.enabledTooltip"),
+      },
     positionToolbarAlertBanner: "none",
     muiTableBodyRowProps: rowProps,
     muiTableContainerProps: {

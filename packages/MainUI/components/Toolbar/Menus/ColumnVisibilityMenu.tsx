@@ -52,6 +52,7 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
   const { tableColumnVisibility } = useTableStatePersistenceTab({
     windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: tab.id,
+    tabLevel: tab.tabLevel,
   });
 
   const [items, setItems] = useState<ToggleableItem[]>([]);

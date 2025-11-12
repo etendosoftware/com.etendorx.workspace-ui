@@ -44,6 +44,7 @@ export interface NavigationState {
 export interface TabState {
   table: TableState;
   form: TabFormState;
+  level: number;
   selectedRecord?: string;
 }
 

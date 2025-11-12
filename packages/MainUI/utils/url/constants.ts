@@ -16,6 +16,12 @@
  */
 
 export const WINDOW_IDENTIFIER_PREFIX = "wi_";
+export const URL_PREFIXS = {
+  WINDOW_IDENTIFIER: "wi",
+  TAB_IDENTIFIER: "ti",
+  RECORD_IDENTIFIER: "ri",
+};
+
 export const NEW_RECORD_ID = "new";
 
 export const FORM_MODES = {

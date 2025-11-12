@@ -65,7 +65,8 @@ export const LinkedItemsSection = ({ tabId, entityName, recordId }: LinkedItemsS
       const newTabId = item.adTabId;
       const newRecordId = item.id;
       const newTitle = item.adMenuName;
-      const defaultTabState = createDefaultTabState();
+      // TODO: LinkedItem should provide tab level information. For now defaulting to 0 (main level)
+      const defaultTabState = createDefaultTabState(0);
       const tabs = {
         [newTabId]: {
           ...defaultTabState,

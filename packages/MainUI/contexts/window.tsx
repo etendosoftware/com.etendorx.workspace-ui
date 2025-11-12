@@ -17,8 +17,9 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
-import { type TabFormState, TAB_MODES } from "@/utils/url/constants";
+import { type TabFormState, TAB_MODES, URL_PREFIXS } from "@/utils/url/constants";
 import {
   WindowState,
   TableState,
@@ -28,6 +29,7 @@ import {
   WindowPropertyName
 } from "@/utils/window/constants";
 import { getWindowIdFromIdentifier, ensureTabExists, updateTableProperty, updateNavigationProperty } from '@/utils/window/utils';
+import { buildWindowsUrlParams } from '@/utils/url/utils';
 
 interface WindowContextI {
   // State getters
@@ -46,11 +48,11 @@ interface WindowContextI {
   isHomeRoute: boolean;
 
   // State setters
-  setTableFilters: (windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState) => void;
-  setTableVisibility: (windowIdentifier: string, tabId: string, visibility: MRT_VisibilityState) => void;
-  setTableSorting: (windowIdentifier: string, tabId: string, sorting: MRT_SortingState) => void;
-  setTableOrder: (windowIdentifier: string, tabId: string, order: string[]) => void;
-  setTableImplicitFilterApplied: (windowIdentifier: string, tabId: string, isApplied: boolean) => void;
+  setTableFilters: (windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState, tabLevel?: number) => void;
+  setTableVisibility: (windowIdentifier: string, tabId: string, visibility: MRT_VisibilityState, tabLevel?: number) => void;
+  setTableSorting: (windowIdentifier: string, tabId: string, sorting: MRT_SortingState, tabLevel?: number) => void;
+  setTableOrder: (windowIdentifier: string, tabId: string, order: string[], tabLevel?: number) => void;
+  setTableImplicitFilterApplied: (windowIdentifier: string, tabId: string, isApplied: boolean, tabLevel?: number) => void;
   setNavigationActiveLevels: (windowIdentifier: string, activeLevels: number[]) => void;
   setNavigationActiveTabsByLevel: (windowIdentifier: string, activeTabsByLevel: Map<number, string>) => void;
   setWindowActive: ({ windowIdentifier, windowData }: { windowIdentifier: string, windowData?: Partial<WindowState> }) => void;
@@ -59,12 +61,12 @@ interface WindowContextI {
 
   // Form state management
   getTabFormState: (windowIdentifier: string, tabId: string) => TabFormState | undefined;
-  setTabFormState: (windowIdentifier: string, tabId: string, formState: TabFormState) => void;
+  setTabFormState: (windowIdentifier: string, tabId: string, formState: TabFormState, tabLevel?: number) => void;
   clearTabFormState: (windowIdentifier: string, tabId: string) => void;
 
   // Selected record management
   getSelectedRecord: (windowIdentifier: string, tabId: string) => string | undefined;
-  setSelectedRecord: (windowIdentifier: string, tabId: string, recordId: string) => void;
+  setSelectedRecord: (windowIdentifier: string, tabId: string, recordId: string, tabLevel?: number) => void;
   clearSelectedRecord: (windowIdentifier: string, tabId: string) => void;
   clearChildrenSelections: (windowIdentifier: string, childTabIds: string[], isParentSelectionChanging?: boolean) => void;
   setSelectedRecordAndClearChildren: (windowIdentifier: string, tabId: string, recordId: string, childTabIds: string[]) => void;
@@ -83,6 +85,8 @@ const WindowContext = createContext<WindowContextI | undefined>(undefined);
 // Provider component
 export default function WindowProvider({ children }: React.PropsWithChildren) {
   const [state, setState] = useState<WindowContextState>({});
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Getters
   const getTableState = useCallback(
@@ -187,36 +191,36 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   }, [state, getActiveWindowIdentifier]);
 
   // Setters
-  const setTableFilters = useCallback((windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState) => {
+  const setTableFilters = useCallback((windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState, tabLevel: number = 0) => {
     setState((prevState: WindowContextState) =>
-      updateTableProperty(prevState, windowIdentifier, tabId, "filters", filters)
+      updateTableProperty(prevState, windowIdentifier, tabId, "filters", filters, tabLevel)
     );
   }, []);
 
-  const setTableVisibility = useCallback((windowIdentifier: string, tabId: string, visibility: MRT_VisibilityState) => {
+  const setTableVisibility = useCallback((windowIdentifier: string, tabId: string, visibility: MRT_VisibilityState, tabLevel: number = 0) => {
     setState((prevState: WindowContextState) => {
-      const newState = ensureTabExists(prevState, windowIdentifier, tabId);
+      const newState = ensureTabExists(prevState, windowIdentifier, tabId, tabLevel);
       const currentVisibility = newState[windowIdentifier].tabs[tabId].table.visibility;
       newState[windowIdentifier].tabs[tabId].table.visibility = { ...currentVisibility, ...visibility };
       return newState;
     });
   }, []);
 
-  const setTableSorting = useCallback((windowIdentifier: string, tabId: string, sorting: MRT_SortingState) => {
+  const setTableSorting = useCallback((windowIdentifier: string, tabId: string, sorting: MRT_SortingState, tabLevel: number = 0) => {
     setState((prevState: WindowContextState) =>
-      updateTableProperty(prevState, windowIdentifier, tabId, "sorting", sorting)
+      updateTableProperty(prevState, windowIdentifier, tabId, "sorting", sorting, tabLevel)
     );
   }, []);
 
-  const setTableOrder = useCallback((windowIdentifier: string, tabId: string, order: string[]) => {
+  const setTableOrder = useCallback((windowIdentifier: string, tabId: string, order: string[], tabLevel: number = 0) => {
     setState((prevState: WindowContextState) =>
-      updateTableProperty(prevState, windowIdentifier, tabId, "order", order)
+      updateTableProperty(prevState, windowIdentifier, tabId, "order", order, tabLevel)
     );
   }, []);
 
-  const setTableImplicitFilterApplied = useCallback((windowIdentifier: string, tabId: string, isApplied: boolean) => {
+  const setTableImplicitFilterApplied = useCallback((windowIdentifier: string, tabId: string, isApplied: boolean, tabLevel: number = 0) => {
     setState((prevState: WindowContextState) =>
-      updateTableProperty(prevState, windowIdentifier, tabId, "isImplicitFilterApplied", isApplied)
+      updateTableProperty(prevState, windowIdentifier, tabId, "isImplicitFilterApplied", isApplied, tabLevel)
     );
   }, []);
 
@@ -305,9 +309,9 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     [state]
   );
 
-  const setTabFormState = useCallback((windowIdentifier: string, tabId: string, formState: TabFormState) => {
+  const setTabFormState = useCallback((windowIdentifier: string, tabId: string, formState: TabFormState, tabLevel: number = 0) => {
     setState((prevState: WindowContextState) => {
-      const newState = ensureTabExists(prevState, windowIdentifier, tabId);
+      const newState = ensureTabExists(prevState, windowIdentifier, tabId, tabLevel);
       newState[windowIdentifier].tabs[tabId].form = formState;
       return newState;
     });
@@ -336,9 +340,9 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     [state]
   );
 
-  const setSelectedRecord = useCallback((windowIdentifier: string, tabId: string, recordId: string) => {
+  const setSelectedRecord = useCallback((windowIdentifier: string, tabId: string, recordId: string, tabLevel: number = 0) => {
     setState((prevState: WindowContextState) => {
-      const newState = ensureTabExists(prevState, windowIdentifier, tabId);
+      const newState = ensureTabExists(prevState, windowIdentifier, tabId, tabLevel);
       newState[windowIdentifier].tabs[tabId].selectedRecord = recordId;
       return newState;
     });
@@ -481,6 +485,22 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   const isHomeRoute = useMemo((): boolean => {
     return !activeWindow;
   }, [activeWindow]);
+
+  // Update URL when windows change
+  useEffect(() => {
+    if (windows.length === 0) {
+      return; // Don't update URL if no windows
+    }
+
+    const newParams = buildWindowsUrlParams(windows);
+    const currentParams = searchParams?.toString() || "";
+
+    // Only update if params have changed to avoid unnecessary navigation
+    if (newParams !== currentParams) {
+      const newUrl = newParams ? `window?${newParams}` : "window";
+      router.replace(newUrl);
+    }
+  }, [windows, router, searchParams]);
 
   const value = useMemo(
     () => ({
