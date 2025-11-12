@@ -110,6 +110,7 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         column: {
           _identifier: columnType,
           reference: column.column?.reference,
+          readOnlyLogicExpression: column.readOnlyLogicExpression, // Include for inline editing
         },
         shownInStatusBar: column.shownInStatusBar,
         showInGridView: column.showInGridView,
@@ -124,6 +125,10 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         selectorDefinitionId: column.selector?.id,
         datasourceId: column.targetEntity || column.referencedEntity, // Use targetEntity if available
         customJs: column.etmetaCustomjs,
+        // Include additional field properties needed for inline editing
+        isReadOnly: column.isReadOnly,
+        isUpdatable: column.isUpdatable,
+        readOnlyLogicExpression: column.readOnlyLogicExpression,
         accessorFn: (v: Record<string, unknown>) => {
           const reference = getFieldReference(column.column?.reference);
 

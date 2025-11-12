@@ -116,17 +116,36 @@ const isFieldReadOnly = (
   rowValues?: Record<string, unknown>,
   session?: Record<string, unknown>
 ): boolean => {
+  console.log('[isFieldReadOnly] Evaluating field:', {
+    fieldName: field.name,
+    isReadOnly: field.isReadOnly,
+    isUpdatable: field.isUpdatable,
+    isNewRow,
+    hasReadOnlyExpression: !!field.readOnlyLogicExpression,
+    readOnlyExpression: field.readOnlyLogicExpression,
+    rowValues,
+    session,
+  });
+
   // Field explicitly marked as readonly
-  if (field.isReadOnly) return true;
+  if (field.isReadOnly) {
+    console.log('[isFieldReadOnly] Field is explicitly readonly');
+    return true;
+  }
 
   // Field not updatable (readonly except for new rows)
-  if (!field.isUpdatable && !isNewRow) return true;
+  if (!field.isUpdatable && !isNewRow) {
+    console.log('[isFieldReadOnly] Field is not updatable and not a new row');
+    return true;
+  }
 
   // Evaluate readOnlyLogicExpression if present
   if (field.readOnlyLogicExpression && rowValues) {
     try {
+      console.log('[isFieldReadOnly] Evaluating readOnlyLogicExpression:', field.readOnlyLogicExpression);
       const compiledExpr = compileExpression(field.readOnlyLogicExpression);
       const result = compiledExpr(session || {}, rowValues);
+      console.log('[isFieldReadOnly] Expression result:', result, 'will return:', Boolean(result));
       return Boolean(result);
     } catch (error) {
       logger.warn(`Error evaluating readOnlyLogicExpression for field ${field.name}:`, error);
@@ -135,6 +154,7 @@ const isFieldReadOnly = (
     }
   }
 
+  console.log('[isFieldReadOnly] Field is not readonly, returning false');
   return false;
 };
 
@@ -180,24 +200,38 @@ const getFieldTypeFromColumn = (column: Column): FieldType => {
 const fieldCache = new Map<string, Field>();
 
 const columnToFieldForEditor = (column: Column): Field => {
+  // Extract readOnlyLogicExpression from column (now populated by parseColumns)
+  const readOnlyLogicExpression =
+    (column as any).readOnlyLogicExpression ||
+    column.column?.readOnlyLogicExpression;
+
+  // Extract isReadOnly and isUpdatable from column
+  const isReadOnly = (column as any).isReadOnly || false;
+  const isUpdatable = (column as any).isUpdatable !== false; // Default to true if not specified
+
   // Create a cache key based on column properties that affect the Field conversion
-  const cacheKey = `${column.name}-${column.fieldId}-${column.isMandatory}-${column.type}`;
+  // Include a version marker to invalidate old cache entries when logic changes
+  const cacheKey = `v3-${column.name}-${column.fieldId}-${column.isMandatory}-${column.type}-${!!readOnlyLogicExpression}`;
 
   if (fieldCache.has(cacheKey)) {
     return fieldCache.get(cacheKey)!;
   }
+
+  console.log('[columnToFieldForEditor] Cache miss, processing column:', {
+    columnName: column.name,
+    hasReadOnlyExpression: !!readOnlyLogicExpression,
+    readOnlyExpression: readOnlyLogicExpression,
+    isReadOnly,
+    isUpdatable,
+    columnKeys: Object.keys(column),
+    columnColumnKeys: column.column ? Object.keys(column.column) : [],
+  });
 
   // Use the refList and referencedEntity from the column (set by parseColumns)
   const refList = Array.isArray(column.refList) ? column.refList : [];
 
   // Get the corrected field type using the same logic as getFieldTypeFromColumn
   const correctedFieldType = getFieldTypeFromColumn(column);
-
-  // Extract readOnlyLogicExpression from column metadata
-  // The expression can be in column.readOnlyLogicExpression or column.column?.readOnlyLogicExpression
-  const readOnlyLogicExpression =
-    (column as any).readOnlyLogicExpression ||
-    column.column?.readOnlyLogicExpression;
 
   // Create a minimal Field object with the data we need for cell editors
   const field: Field = {
@@ -230,10 +264,10 @@ const columnToFieldForEditor = (column: Column): Field => {
     referencedTabId: "",
     displayLogicExpression: undefined,
     readOnlyLogicExpression: readOnlyLogicExpression,
-    isReadOnly: Boolean(column.isReadOnly),
+    isReadOnly: isReadOnly,
     isDisplayed: column.displayed !== false,
     sequenceNumber: Number(column.sequenceNumber || 0),
-    isUpdatable: Boolean(column.isUpdatable !== false),
+    isUpdatable: isUpdatable,
     description: column.header,
     helpComment: "",
     processDefinition: undefined,
