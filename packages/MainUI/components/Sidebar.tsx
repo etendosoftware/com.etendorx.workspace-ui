@@ -201,7 +201,7 @@ export default function Sidebar() {
       // TODO: delete this code when multi-window is fully stable
       if (isInWindowRoute) {
         // Already in window context - use multi-window system
-        openWindow(windowId, newWindowIdentifier, item.name);
+        openWindow(windowId, newWindowIdentifier);
       } else {
         // Coming from home route - create new window and navigate
         const newWindow: WindowState = {

@@ -19,15 +19,10 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
-import {
-  type TabFormState,
-  type SelectedRecord,
-} from "@/utils/url/constants";
 import { WindowState } from "@/utils/window/constants";
 import {
   setWindowParameters,
 } from "@/utils/url/utils";
-import { isEmptyArray } from "@/utils/commons";
 import { useWindowContext } from "@/contexts/window";
 
 export function useMultiWindowURL() {
@@ -35,8 +30,6 @@ export function useMultiWindowURL() {
   const searchParams = useSearchParams();
   const {
     windows,
-    setTabFormState,
-    setSelectedRecord,
   } = useWindowContext();
 
   /**
@@ -148,25 +141,8 @@ export function useMultiWindowURL() {
       windowId: string,
       windowIdentifier: string,
       title?: string,
-      selectedRecords?: SelectedRecord[],
-      tabFormStates?: { tabId: string; tabFormState: TabFormState }[]
     ) => {
       const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
-
-      // UPDATE: Initialize selected records in context instead of window state
-      if (!isEmptyArray(selectedRecords)) {
-        selectedRecords.forEach((record) => {
-          setSelectedRecord(windowIdentifier, record.tabId, record.recordId);
-        });
-      }
-
-      // UPDATE: Initialize form states in context instead of window state
-      if (!isEmptyArray(tabFormStates)) {
-        tabFormStates.forEach((item) => {
-          const { tabId, tabFormState } = item;
-          setTabFormState(windowIdentifier, tabId, tabFormState);
-        });
-      }
 
       const newWindow: WindowState = {
         windowId,
@@ -185,7 +161,7 @@ export function useMultiWindowURL() {
 
       navigate(updatedWindows);
     },
-    [windows, navigate, setSelectedRecord, setTabFormState]
+    [windows, navigate]
   );
 
   return {

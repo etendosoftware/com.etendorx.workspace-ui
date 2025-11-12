@@ -22,7 +22,9 @@ import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useWindowContext } from "@/contexts/window";
 import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
 import { useTranslation } from "@/hooks/useTranslation";
-import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { getNewWindowIdentifier, createDefaultTabState } from "@/utils/window/utils";
+import { FORM_MODES, TAB_MODES } from '@/utils/url/constants';
+import { TabState } from "@/utils/window/constants";
 
 interface LinkedItemsSectionProps {
   tabId: string;
@@ -30,10 +32,11 @@ interface LinkedItemsSectionProps {
   recordId: string;
 }
 
+// TODO: delete this prop if necessary
 export const LinkedItemsSection = ({ tabId, entityName, recordId }: LinkedItemsSectionProps) => {
   const { openWindow } = useMultiWindowURL();
   const { t } = useTranslation();
-  const { activeWindow } = useWindowContext();
+  const { activeWindow, setWindowActive } = useWindowContext();
 
   const handleFetchCategories = useCallback(
     async (params: { windowId: string; entityName: string; recordId: string }) => {
@@ -58,26 +61,29 @@ export const LinkedItemsSection = ({ tabId, entityName, recordId }: LinkedItemsS
 
   const handleItemClick = useCallback(
     (item: LinkedItem) => {
-      const currentRecord = {
-        tabId: tabId,
-        recordId: recordId,
-      };
-      const newRecord = {
-        tabId: item.adTabId,
-        recordId: item.id,
-      };
-      const selectedRecords = [currentRecord, newRecord];
-      const tabFormStates = [
-        {
-          tabId: newRecord.tabId,
-          tabFormState: { recordId: newRecord.recordId },
-        },
-      ];
-
       const newWindowIdentifier = getNewWindowIdentifier(item.adWindowId);
-      openWindow(item.adWindowId, newWindowIdentifier, item.adMenuName, selectedRecords, tabFormStates);
+      const newTabId = item.adTabId;
+      const newRecordId = item.id;
+      const newTitle = item.adMenuName;
+      const defaultTabState = createDefaultTabState();
+      const tabs = {
+        [newTabId]: {
+          ...defaultTabState,
+          form: {
+            recordId: newRecordId,
+            mode: TAB_MODES.FORM,
+            tabMode: FORM_MODES.EDIT,
+          },
+          selectedRecord: newRecordId,
+        } as TabState,
+      }
+
+      const windowData = { title: newTitle, tabs };
+      setWindowActive({ windowIdentifier: newWindowIdentifier, windowData });
+
+      openWindow(item.adWindowId, newWindowIdentifier);
     },
-    [tabId, recordId, openWindow]
+    [openWindow, setWindowActive]
   );
 
   return (
