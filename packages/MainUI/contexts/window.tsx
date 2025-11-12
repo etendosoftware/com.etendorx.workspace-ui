@@ -16,7 +16,7 @@
  */
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
 import { type TabFormState, TAB_MODES } from "@/utils/url/constants";
 import {
@@ -365,35 +365,31 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
         return;
       }
 
-      const childrenToClean = childTabIds.filter((tabId) => {
-        if (isParentSelectionChanging) {
-          return true;
-        }
-
-        // Use getTabFormState function to maintain consistency with original behavior
-        const childState = getTabFormState(windowIdentifier, tabId);
-        const isInFormView = childState?.mode === TAB_MODES.FORM;
-        if (isInFormView) {
-          console.log(`[clearChildrenSelections] Preserving child ${tabId} - currently in FormView`, childState);
-          return false;
-        }
-        return true;
-      });
-
       const childrenCleaned: string[] = [];
 
-      childrenToClean.forEach((tabId) => {
-        // Check if tab has selected record before clearing
-        const selectedRecord = getSelectedRecord(windowIdentifier, tabId);
-        if (selectedRecord) {
-          clearSelectedRecord(windowIdentifier, tabId);
-          childrenCleaned.push(tabId);
+      childTabIds.forEach((tabId) => {
+        // Check if this child should be preserved
+        const childState = getTabFormState(windowIdentifier, tabId);
+        const isInFormView = childState?.mode === TAB_MODES.FORM;
+
+        // Only clean if not in FormView OR if parent selection is changing (forced clean)
+        const shouldClean = !isInFormView || isParentSelectionChanging;
+
+        if (shouldClean) {
+          // Check if tab has selected record before clearing
+          const selectedRecord = getSelectedRecord(windowIdentifier, tabId);
+          if (selectedRecord) {
+            clearSelectedRecord(windowIdentifier, tabId);
+            childrenCleaned.push(tabId);
+          }
+          // Clear form state only for children that should be cleaned
+          clearTabFormState(windowIdentifier, tabId);
+        } else {
+          console.log(`[clearChildrenSelections] Preserving child ${tabId} - currently in FormView`, childState);
         }
-        // Clear form state for ALL children to clean
-        clearTabFormState(windowIdentifier, tabId);
       });
 
-      console.log(`[clearChildrenSelections] Cleared children: [${childrenCleaned.join(", ")}]`);
+      console.log(`[clearChildrenSelections] Cleared children: [${childrenCleaned.join(", ")}] from window ${windowIdentifier}`);
     },
     [state, getTabFormState, getSelectedRecord, clearSelectedRecord, clearTabFormState]
   );

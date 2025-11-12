@@ -112,7 +112,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const { graph } = useSelected();
   const { registerRefresh, unregisterRefresh } = useTabRefreshContext();
   const [toggle, setToggle] = useState(false);
-  const lastParentSelectionRef = useRef<string | undefined>(undefined);
+  const lastParentSelectionRef = useRef<Map<string, string | undefined>>(new Map());
 
   const windowIdentifier = activeWindow?.windowIdentifier;
 
@@ -300,7 +300,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
 
     const parentSelectedId = getSelectedRecord(windowIdentifier, parentTab.id);
-    const previousParentId = lastParentSelectionRef.current;
+    const previousParentId = lastParentSelectionRef.current.get(windowIdentifier);
 
     // Only process if parent selection ID actually changed
     if (parentSelectedId === previousParentId) {
@@ -308,7 +308,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
 
     // Update ref BEFORE any early returns
-    lastParentSelectionRef.current = parentSelectedId;
+    lastParentSelectionRef.current.set(windowIdentifier, parentSelectedId);
 
     // Skip closing if this is a NEW -> real ID transition (save operation)
     const isParentSaveTransition =
