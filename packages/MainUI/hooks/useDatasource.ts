@@ -150,6 +150,7 @@ export function useDatasource({
       ...params,
       criteria: allCriteria,
       isImplicitFilterApplied,
+      noActiveFilter: true,
     };
 
     return finalParams;

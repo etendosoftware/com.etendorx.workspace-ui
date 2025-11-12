@@ -28,6 +28,7 @@ import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filt
 import { useSearch } from "../../contexts/searchContext";
 import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
+import { useToolbarContext } from "../../contexts/ToolbarContext";
 import { useMultiWindowURL } from "../navigation/useMultiWindowURL";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
@@ -108,6 +109,7 @@ export const useTableData = ({
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
   const { activeWindow } = useMultiWindowURL();
+  const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
 
   const {
     tableColumnFilters,
@@ -526,6 +528,11 @@ export const useTableData = ({
       setIsImplicitFilterApplied(initialIsFilterApplied);
     }
   }, [initialIsFilterApplied, isImplicitFilterApplied, setIsImplicitFilterApplied]);
+
+  /** Sync implicit filter state with toolbar context */
+  useEffect(() => {
+    setToolbarFilterApplied(isImplicitFilterApplied ?? false);
+  }, [isImplicitFilterApplied, setToolbarFilterApplied]);
 
   /** Clear advanced column filters when table filters are cleared */
   useEffect(() => {

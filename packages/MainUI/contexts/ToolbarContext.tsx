@@ -96,6 +96,8 @@ type ToolbarContextType = {
   registerAttachmentAction?: (action: () => void) => void;
   shouldOpenAttachmentModal: boolean;
   setShouldOpenAttachmentModal: (open: boolean) => void;
+  isImplicitFilterApplied: boolean;
+  setIsImplicitFilterApplied: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 const initialState: ToolbarActions = {
@@ -126,6 +128,8 @@ const ToolbarContext = createContext<ToolbarContextType>({
   setSaveButtonState: () => {},
   shouldOpenAttachmentModal: false,
   setShouldOpenAttachmentModal: () => {},
+  isImplicitFilterApplied: false,
+  setIsImplicitFilterApplied: () => {},
 } as ToolbarContextType);
 
 export const useToolbarContext = () => useContext(ToolbarContext);
@@ -134,6 +138,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
   const [formViewRefetch, setFormViewRefetch] = useState<(() => Promise<void>) | undefined>();
   const [attachmentAction, setAttachmentAction] = useState<(() => void) | undefined>();
   const [shouldOpenAttachmentModal, setShouldOpenAttachmentModal] = useState(false);
+  const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState(false);
   const [saveButtonState, setSaveButtonState] = useState<SaveButtonState>({
     isCalloutLoading: false,
     hasValidationErrors: false,
@@ -229,6 +234,8 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       registerAttachmentAction,
       shouldOpenAttachmentModal,
       setShouldOpenAttachmentModal,
+      isImplicitFilterApplied,
+      setIsImplicitFilterApplied,
     }),
     [
       wrappedOnSave,
@@ -245,6 +252,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       attachmentAction,
       registerAttachmentAction,
       shouldOpenAttachmentModal,
+      isImplicitFilterApplied,
     ]
   );
 

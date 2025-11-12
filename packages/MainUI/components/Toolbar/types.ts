@@ -94,6 +94,7 @@ export interface ToolbarButton extends BasicToolbarButton {
   className?: string;
   anchorEl?: HTMLElement | null;
   badgeContent?: number | string;
+  isPressed?: boolean;
 }
 
 export interface ProcessAvailableButton extends BasicToolbarButton {
