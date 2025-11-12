@@ -2,6 +2,7 @@ import {
   URL_PREFIXS,
 } from "@/utils/url/constants";
 import { WindowState } from "@/utils/window/constants";
+import { isEmptyObject } from "../commons";
 
 /**
  * TODO: this func will be usefull to reconstruct the window state from URL params
@@ -111,13 +112,13 @@ export const buildWindowsUrlParams = (windows: WindowState[]): string => {
 
     // Find the tab with highest level that has both tabId and selectedRecord
     const tabEntries = Object.entries(window.tabs);
-    const tabsWithRecords = tabEntries.filter(([_, tabState]) =>
-      tabState.selectedRecord !== undefined && tabState.selectedRecord !== null
+    const tabsWithRecordsForms = tabEntries.filter(([_, tabState]) =>
+      tabState.selectedRecord && tabState.form.recordId
     );
 
-    if (tabsWithRecords.length > 0) {
+    if (tabsWithRecordsForms.length > 0) {
       // Find the tab with the highest level (deepest)
-      const deepestTab = tabsWithRecords.reduce((prev, current) => {
+      const deepestTab = tabsWithRecordsForms.reduce((prev, current) => {
         const [_prevTabId, prevTabState] = prev;
         const [_currentTabId, currentTabState] = current;
 
