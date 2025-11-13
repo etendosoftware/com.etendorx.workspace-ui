@@ -175,13 +175,27 @@ function isBinaryContentType(contentType: string): boolean {
 // Helper: Rewrite HTML resource URLs to point to Tomcat
 function rewriteHtmlResourceUrls(html: string): string {
   let rewritten = html;
-  // Rewrite absolute paths that reference Etendo resources
-  rewritten = rewritten.replace(/(href|src)="(\.\.\/)*web\//gi, `$1="${process.env.ETENDO_CLASSIC_URL}/web/`);
-  // Rewrite paths like href="../../org.openbravo.client.kernel/..."
-  rewritten = rewritten.replace(
-    /(href|src)="(\.\.\/)*org\.openbravo\./gi,
-    `$1="${process.env.ETENDO_CLASSIC_URL}/org.openbravo.`
-  );
+  // Use ETENDO_CLASSIC_HOST for browser-accessible URLs (public host)
+  // Falls back to ETENDO_CLASSIC_URL for backwards compatibility
+  const baseUrl = process.env.ETENDO_CLASSIC_HOST || process.env.ETENDO_CLASSIC_URL || "";
+
+  // Add <base> tag after <head> to set the base URL for all relative URLs
+  // This ensures resources like CSS, JS, images load from Tomcat, not Next.js
+  if (baseUrl && !rewritten.includes("<base")) {
+    rewritten = rewritten.replace(/(<head[^>]*>)/i, `$1\n  <base href="${baseUrl}/" />`);
+  }
+
+  // Rewrite relative paths that reference Etendo resources (e.g., ../web/, ../../web/)
+  rewritten = rewritten.replace(/(href|src)="(\.\.\/)+web\//gi, `$1="${baseUrl}/web/`);
+  rewritten = rewritten.replace(/(href|src)="(\.\.\/)+org\.openbravo\./gi, `$1="${baseUrl}/org.openbravo.`);
+  rewritten = rewritten.replace(/(href|src)="(\.\.\/)+ad_forms\//gi, `$1="${baseUrl}/ad_forms/`);
+
+  // Rewrite absolute paths (e.g., /web/, /org.openbravo., /ad_forms/)
+  // These need to go through the backend, not Next.js
+  rewritten = rewritten.replace(/(href|src)="\/web\//gi, `$1="${baseUrl}/web/`);
+  rewritten = rewritten.replace(/(href|src)="\/org\.openbravo\./gi, `$1="${baseUrl}/org.openbravo.`);
+  rewritten = rewritten.replace(/(href|src)="\/ad_forms\//gi, `$1="${baseUrl}/ad_forms/`);
+
   return rewritten;
 }
 

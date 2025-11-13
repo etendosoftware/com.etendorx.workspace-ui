@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import React from "react";
+import type React from "react";
 import LoadingSkeleton from "./LoadingSkeleton";
 import type { RecordCounterProps } from "./types";
 
