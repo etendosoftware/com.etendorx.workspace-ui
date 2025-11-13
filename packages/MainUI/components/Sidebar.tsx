@@ -75,7 +75,11 @@ interface ManualProcessResult {
   size: "default" | "large";
 }
 
-const getManualProcessConfig = (item: ExtendedMenu, token: string | null, baseUrl: string): ManualProcessResult | null => {
+const getManualProcessConfig = (
+  item: ExtendedMenu,
+  token: string | null,
+  baseUrl: string
+): ManualProcessResult | null => {
   if (item.type === "Process" && item.processId) {
     return {
       url: buildProcessUrl(item.processId, token, baseUrl),
