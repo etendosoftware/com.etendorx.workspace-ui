@@ -4,7 +4,14 @@ import "@testing-library/jest-dom";
 import type React from "react";
 import DynamicTable from "../../../components/Table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
-import type { MRT_Row, MRT_RowData, MRT_TableOptions, MRT_ColumnFiltersState } from "material-react-table";
+import type {
+  MRT_Row,
+  MRT_RowData,
+  MRT_TableOptions,
+  MRT_ColumnFiltersState,
+  MRT_TableInstance,
+} from "material-react-table";
+
 // Types for the component props
 interface ErrorDisplayProps {
   title: string;
@@ -66,13 +73,17 @@ const mockDatasourceContext = {
 };
 
 const mockToolbarContext = {
-  registerActions: jest.fn(),
+  registerActions: jest.fn(), // <---- ESTA ES LA CLAVE
   onSave: jest.fn(),
   onRefresh: jest.fn(),
   onNew: jest.fn(),
   onBack: jest.fn(),
   onFilter: jest.fn(),
   onColumnFilters: jest.fn(),
+  registerAttachmentAction: jest.fn(),
+  setShouldOpenAttachmentModal: jest.fn(),
+  setToolbarFilterApplied: jest.fn(),
+  setIsImplicitFilterApplied: jest.fn(),
 };
 
 const mockLanguageContext = {
@@ -324,8 +335,8 @@ jest.mock("@workspaceui/api-client/src/hooks/useColumnFilterData", () => ({
 
 // Mock for capturing row props from the table
 const capturedRowProps: {
-  onClick?: (event: React.MouseEvent) => void;
-  onDoubleClick?: (event: React.MouseEvent) => void;
+  onClick?: React.MouseEventHandler<Element>;
+  onDoubleClick?: React.MouseEventHandler<Element>;
 } = {};
 
 // Store the table options to access muiTableBodyRowProps
@@ -333,15 +344,19 @@ let tableOptions: MRT_TableOptions<EntityData> | null = null;
 
 // Mock for Material React Table
 jest.mock("material-react-table", () => ({
-  MaterialReactTable: (props: { table: MockTableInstance<EntityData> }) => {
+  MaterialReactTable: (props: { table: MRT_TableInstance<EntityData> }) => {
     const { table } = props;
-    const rows = table.getRowModel().rows;
+    const rows = table.getRowModel().rows as unknown as MRT_Row<EntityData>[];
 
     // Use the stored options to get muiTableBodyRowProps
     if (tableOptions?.muiTableBodyRowProps && rows.length > 0) {
       const rowPropsResult =
         typeof tableOptions.muiTableBodyRowProps === "function"
-          ? tableOptions.muiTableBodyRowProps({ row: rows[0], table })
+          ? tableOptions.muiTableBodyRowProps({
+              row: rows[0],
+              table,
+              staticRowIndex: 0,
+            })
           : tableOptions.muiTableBodyRowProps;
       capturedRowProps.onClick = rowPropsResult.onClick;
       capturedRowProps.onDoubleClick = rowPropsResult.onDoubleClick;

@@ -30,7 +30,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
 
   return (
     <div style={style} className={className}>
-      {buttons.map(({ key, icon, iconText, tooltip, onClick, disabled, className, badgeContent }) => {
+      {buttons.map(({ key, icon, iconText, tooltip, onClick, disabled, className, badgeContent, isPressed }) => {
         if (iconText) {
           return (
             <IconButtonWithText
@@ -54,6 +54,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
             disabled={disabled}
             className={className}
             iconText={iconText}
+            isPressed={isPressed}
             data-testid={`IconButton__${key ?? "2bded0"}`}>
             {icon}
           </IconButton>

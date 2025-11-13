@@ -68,7 +68,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
-  const { saveButtonState } = useToolbarContext();
+  const { saveButtonState, isImplicitFilterApplied } = useToolbarContext();
   const { buttons, processButtons, loading, refetch } = useToolbar(windowId, tab?.id);
   const { graph } = useSelected();
   const { activeWindow, getTabFormState, clearChildrenSelections } = useMultiWindowURL();
@@ -234,6 +234,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       isCopilotInstalled: isCopilotInstalled,
       saveButtonState: saveButtonState,
       session: session,
+      isImplicitFilterApplied: isImplicitFilterApplied,
     });
 
     const config = {
@@ -270,6 +271,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     isSessionSyncLoading,
     isCopilotInstalled,
     session,
+    isImplicitFilterApplied,
   ]);
 
   if (loading) {
