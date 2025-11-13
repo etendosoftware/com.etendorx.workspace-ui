@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
 import { getErpAuthHeaders } from "../../_utils/forwardConfig";
 import { SLUGS_CATEGORIES, SLUGS_METHODS } from "@/app/api/_utils/slug/constants";
+import { detectCharset, isBinaryContentType, rewriteHtmlResourceUrls, createHtmlResponse } from "./route.helpers";
 
 type requestBody = string | ReadableStream<Uint8Array> | undefined;
 
@@ -149,67 +150,6 @@ function buildErpHeaders(
   }
 
   return headers;
-}
-
-// Helper: Detect charset from Content-Type header
-function detectCharset(contentType: string | null): string {
-  if (!contentType) {
-    return "iso-8859-1"; // Default for Tomcat legacy servlets
-  }
-  const charsetMatch = contentType.match(/charset=([^\s;]+)/i);
-  return charsetMatch ? charsetMatch[1].toLowerCase() : "iso-8859-1";
-}
-
-// Helper: Check if response is binary file
-function isBinaryContentType(contentType: string): boolean {
-  return (
-    contentType.includes("application/octet-stream") ||
-    contentType.includes("application/zip") ||
-    contentType.includes("image/") ||
-    contentType.includes("video/") ||
-    contentType.includes("audio/") ||
-    contentType.includes("application/pdf")
-  );
-}
-
-// Helper: Rewrite HTML resource URLs to point to Tomcat
-function rewriteHtmlResourceUrls(html: string): string {
-  let rewritten = html;
-  // Use ETENDO_CLASSIC_HOST for browser-accessible URLs (public host)
-  // Falls back to ETENDO_CLASSIC_URL for backwards compatibility
-  const baseUrl = process.env.ETENDO_CLASSIC_HOST || process.env.ETENDO_CLASSIC_URL || "";
-
-  // Add <base> tag after <head> to set the base URL for all relative URLs
-  // This ensures resources like CSS, JS, images load from Tomcat, not Next.js
-  if (baseUrl && !rewritten.includes("<base")) {
-    rewritten = rewritten.replace(/(<head[^>]*>)/i, `$1\n  <base href="${baseUrl}/" />`);
-  }
-
-  // Rewrite relative paths that reference Etendo resources (e.g., ../web/, ../../web/)
-  rewritten = rewritten.replace(/(href|src)="(\.\.\/)+web\//gi, `$1="${baseUrl}/web/`);
-  rewritten = rewritten.replace(/(href|src)="(\.\.\/)+org\.openbravo\./gi, `$1="${baseUrl}/org.openbravo.`);
-  rewritten = rewritten.replace(/(href|src)="(\.\.\/)+ad_forms\//gi, `$1="${baseUrl}/ad_forms/`);
-
-  // Rewrite absolute paths (e.g., /web/, /org.openbravo., /ad_forms/)
-  // These need to go through the backend, not Next.js
-  rewritten = rewritten.replace(/(href|src)="\/web\//gi, `$1="${baseUrl}/web/`);
-  rewritten = rewritten.replace(/(href|src)="\/org\.openbravo\./gi, `$1="${baseUrl}/org.openbravo.`);
-  rewritten = rewritten.replace(/(href|src)="\/ad_forms\//gi, `$1="${baseUrl}/ad_forms/`);
-
-  return rewritten;
-}
-
-// Helper: Create HTML response with proper headers
-function createHtmlResponse(html: string, originalResponse: Response): Response {
-  const htmlHeaders = new Headers(originalResponse.headers);
-  if (!htmlHeaders.has("content-type")) {
-    htmlHeaders.set("Content-Type", "text/html");
-  }
-  return new Response(html, {
-    status: originalResponse.status,
-    statusText: originalResponse.statusText,
-    headers: htmlHeaders,
-  });
 }
 
 /**
