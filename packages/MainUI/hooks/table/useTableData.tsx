@@ -144,6 +144,7 @@ export const useTableData = ({
     setColumnFilter,
     setColumnFilters,
     setFilterOptions,
+    loadFilterOptions,
     loadMoreFilterOptions,
   } = useColumnFilters({
     columns: rawColumns,
@@ -181,6 +182,9 @@ export const useTableData = ({
         return [];
       }
 
+      // Set loading state before fetching data
+      await loadFilterOptions(columnId, searchQuery);
+
       if (ColumnFilterUtils.isSelectColumn(column)) {
         return loadSelectFilterOptions(column, columnId, searchQuery, setFilterOptions);
       }
@@ -199,7 +203,7 @@ export const useTableData = ({
 
       return [];
     },
-    [rawColumns, fetchFilterOptions, setFilterOptions, tab.id, treeEntity]
+    [rawColumns, fetchFilterOptions, setFilterOptions, loadFilterOptions, tab.id, treeEntity]
   );
 
   const handleLoadMoreFilterOptions = useCallback(

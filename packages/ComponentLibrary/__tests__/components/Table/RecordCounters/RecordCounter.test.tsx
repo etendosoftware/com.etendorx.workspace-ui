@@ -15,7 +15,6 @@
  *************************************************************************
  */
 
-import React from "react";
 import { render, screen } from "@testing-library/react";
 import RecordCounter from "../../../../src/components/Table/RecordCounters/RecordCounter";
 
