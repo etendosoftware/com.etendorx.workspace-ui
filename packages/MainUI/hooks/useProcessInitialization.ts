@@ -4,6 +4,7 @@ import { logger } from "@/utils/logger";
 import { buildProcessPayload } from "@/utils";
 import type { EntityValue, Tab } from "@workspaceui/api-client/src/api/types";
 import type { ProcessDefaultsResponse } from "@/components/ProcessModal/types/ProcessParameterExtensions";
+import { WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
 
 export interface ProcessInitializationParams {
   processId: string;
@@ -121,6 +122,9 @@ export function useProcessInitialization({
         if (record && tab) {
           const processPayload = buildProcessPayload(record, tab, {}, contextData);
 
+          const windowConfig = windowId ? WINDOW_SPECIFIC_KEYS[windowId] : undefined;
+          const extraKey = windowConfig ? { [windowConfig.key]: windowConfig.value(record) } : {};
+
           payload = {
             ...Object.fromEntries(
               Object.entries(processPayload).map(([key, value]) => [
@@ -128,6 +132,7 @@ export function useProcessInitialization({
                 value === null ? null : String(value), // Convert to EntityValue compatible types
               ])
             ),
+            ...extraKey,
             processId,
             windowId: windowId || "",
             recordId: recordId || "",

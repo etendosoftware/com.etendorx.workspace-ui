@@ -19,19 +19,19 @@ import { useCallback } from "react";
 import LinkedItems from "@workspaceui/componentlibrary/src/components/LinkedItems";
 import { fetchLinkedItemCategories, fetchLinkedItems } from "@workspaceui/api-client/src/api/linkedItems";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
-import { FORM_MODES } from "@/utils/url/constants";
 import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface LinkedItemsSectionProps {
-  windowId: string;
+  tabId: string;
   entityName: string;
   recordId: string;
 }
 
-export const LinkedItemsSection = ({ windowId, entityName, recordId }: LinkedItemsSectionProps) => {
-  const { openWindowAndSelect } = useMultiWindowURL();
+export const LinkedItemsSection = ({ tabId, entityName, recordId }: LinkedItemsSectionProps) => {
+  const { openWindow } = useMultiWindowURL();
   const { t } = useTranslation();
+  const { activeWindow } = useMultiWindowURL();
 
   const handleFetchCategories = useCallback(
     async (params: { windowId: string; entityName: string; recordId: string }) => {
@@ -56,21 +56,29 @@ export const LinkedItemsSection = ({ windowId, entityName, recordId }: LinkedIte
 
   const handleItemClick = useCallback(
     (item: LinkedItem) => {
-      openWindowAndSelect(item.adWindowId, {
-        selection: {
-          tabId: item.adTabId,
-          recordId: item.id,
-          openForm: true,
-          formMode: FORM_MODES.EDIT,
+      const currentRecord = {
+        tabId: tabId,
+        recordId: recordId,
+      };
+      const newRecord = {
+        tabId: item.adTabId,
+        recordId: item.id,
+      };
+      const selectedRecords = [currentRecord, newRecord];
+      const tabFormStates = [
+        {
+          tabId: newRecord.tabId,
+          tabFormState: { recordId: newRecord.recordId },
         },
-      });
+      ];
+      openWindow(item.adWindowId, item.adMenuName, selectedRecords, tabFormStates);
     },
-    [openWindowAndSelect]
+    [tabId, recordId, openWindow]
   );
 
   return (
     <LinkedItems
-      windowId={windowId}
+      windowId={activeWindow?.windowId || ""}
       entityName={entityName}
       recordId={recordId}
       onFetchCategories={handleFetchCategories}

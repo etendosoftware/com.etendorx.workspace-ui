@@ -28,6 +28,8 @@ import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filt
 import { useSearch } from "../../contexts/searchContext";
 import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
+import { useToolbarContext } from "../../contexts/ToolbarContext";
+import { useMultiWindowURL } from "../navigation/useMultiWindowURL";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
 import { useDatasource } from "../useDatasource";
@@ -106,6 +108,8 @@ export const useTableData = ({
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
+  const { activeWindow } = useMultiWindowURL();
+  const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
 
   const {
     tableColumnFilters,
@@ -116,7 +120,7 @@ export const useTableData = ({
     setTableColumnSorting,
     setTableColumnOrder,
     setIsImplicitFilterApplied,
-  } = useTableStatePersistenceTab(tab.window, tab.id);
+  } = useTableStatePersistenceTab({ windowIdentifier: activeWindow?.window_identifier || "", tabId: tab.id });
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
   // Computed values
@@ -140,6 +144,7 @@ export const useTableData = ({
     setColumnFilter,
     setColumnFilters,
     setFilterOptions,
+    loadFilterOptions,
     loadMoreFilterOptions,
   } = useColumnFilters({
     columns: rawColumns,
@@ -177,6 +182,9 @@ export const useTableData = ({
         return [];
       }
 
+      // Set loading state before fetching data
+      await loadFilterOptions(columnId, searchQuery);
+
       if (ColumnFilterUtils.isSelectColumn(column)) {
         return loadSelectFilterOptions(column, columnId, searchQuery, setFilterOptions);
       }
@@ -195,7 +203,7 @@ export const useTableData = ({
 
       return [];
     },
-    [rawColumns, fetchFilterOptions, setFilterOptions, tab.id, treeEntity]
+    [rawColumns, fetchFilterOptions, setFilterOptions, loadFilterOptions, tab.id, treeEntity]
   );
 
   const handleLoadMoreFilterOptions = useCallback(
@@ -524,6 +532,11 @@ export const useTableData = ({
       setIsImplicitFilterApplied(initialIsFilterApplied);
     }
   }, [initialIsFilterApplied, isImplicitFilterApplied, setIsImplicitFilterApplied]);
+
+  /** Sync implicit filter state with toolbar context */
+  useEffect(() => {
+    setToolbarFilterApplied(isImplicitFilterApplied ?? false);
+  }, [isImplicitFilterApplied, setToolbarFilterApplied]);
 
   /** Clear advanced column filters when table filters are cleared */
   useEffect(() => {

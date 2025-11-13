@@ -37,6 +37,7 @@ import RadioGridCustom from "./RadioGrid";
 import AboutButtonComp from "./About/AboutButton";
 import AboutModalComp from "./About/AboutModal";
 import LinkedItemsCustom from "./LinkedItems";
+import { RecordCounterBar, RecordCounter, SelectionCounter } from "./Table/RecordCounters";
 
 const Modal = ModalCustom;
 const TextInput = TextInputMUI;
@@ -84,8 +85,14 @@ export {
   AboutButton,
   AboutModal,
   LinkedItems,
+  RecordCounterBar,
+  RecordCounter,
+  SelectionCounter,
 };
 
 // Export Copilot constants from api-client
 export { MESSAGE_ROLES, CONTEXT_CONSTANTS } from "@workspaceui/api-client/src/api/copilot";
 export type { MessageRole } from "@workspaceui/api-client/src/api/copilot";
+
+// Export RecordCounters types
+export type { RecordCounterBarProps, RecordCounterProps, SelectionCounterProps } from "./Table/RecordCounters";

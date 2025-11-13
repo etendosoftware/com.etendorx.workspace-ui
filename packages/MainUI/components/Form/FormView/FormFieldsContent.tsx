@@ -24,7 +24,9 @@ import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import { useFormViewContext } from "./contexts/FormViewContext";
 import { useRef, useEffect, useState } from "react";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
+import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
 import NoteSection from "./Sections/noteSection";
+import AttachmentSection from "./Sections/AttachmentSection";
 
 interface FormFieldsProps {
   tab: Tab;
@@ -33,8 +35,12 @@ interface FormFieldsProps {
   loading: boolean;
   recordId: string;
   initialNoteCount: number;
+  initialAttachmentCount: number;
   onNotesChange: () => void;
+  onAttachmentsChange: () => void;
   showErrorModal?: (message: string) => void;
+  openAttachmentModal?: boolean;
+  onAttachmentModalClose?: () => void;
 }
 
 export function FormFields({
@@ -44,12 +50,17 @@ export function FormFields({
   loading,
   recordId,
   initialNoteCount,
+  initialAttachmentCount,
   onNotesChange,
+  onAttachmentsChange,
   showErrorModal,
+  openAttachmentModal = false,
+  onAttachmentModalClose,
 }: FormFieldsProps) {
   const { watch } = useFormContext();
   const { session } = useUserContext();
   const [noteCount, setNoteCount] = useState(initialNoteCount);
+  const [attachmentCount, setAttachmentCount] = useState(initialAttachmentCount);
   const { expandedSections, selectedTab, handleSectionRef, handleAccordionChange, isSectionExpanded, getIconForGroup } =
     useFormViewContext();
 
@@ -59,6 +70,42 @@ export function FormFields({
   useEffect(() => {
     setNoteCount(initialNoteCount);
   }, [initialNoteCount]);
+
+  // Update local attachmentCount when initialAttachmentCount changes
+  useEffect(() => {
+    setAttachmentCount(initialAttachmentCount);
+  }, [initialAttachmentCount]);
+
+  // Scroll to attachments section when modal is opened from toolbar
+  useEffect(() => {
+    if (openAttachmentModal && containerRef.current) {
+      const sectionRefs = containerRef.current.querySelectorAll("[data-section-id]");
+      const attachmentSection = Array.from(sectionRefs).find(
+        (section) => section.getAttribute("data-section-id") === "attachments_group"
+      ) as HTMLElement;
+
+      if (attachmentSection) {
+        // Expand the section first
+        if (!isSectionExpanded("attachments_group")) {
+          handleAccordionChange("attachments_group", true);
+        }
+
+        // Then scroll to it
+        setTimeout(() => {
+          if (containerRef.current) {
+            const containerRect = containerRef.current.getBoundingClientRect();
+            const sectionRect = attachmentSection.getBoundingClientRect();
+            const sectionTop = sectionRect.top - containerRect.top + containerRef.current.scrollTop;
+
+            containerRef.current.scrollTo({
+              top: sectionTop - 20,
+              behavior: "smooth",
+            });
+          }
+        }, 100);
+      }
+    }
+  }, [openAttachmentModal, handleAccordionChange, isSectionExpanded]);
 
   useEffect(() => {
     if (selectedTab && containerRef.current) {
@@ -150,23 +197,28 @@ export function FormFields({
           />
         </Collapsible>
       </div>
-      {/* Linked Items Section */}
-      {/* <div ref={handleSectionRef("linked-items")} data-section-id="linked-items">
+      {/* Attachments Section */}
+      <div ref={handleSectionRef("attachments_group")} data-section-id="attachments_group">
         <Collapsible
-          title="Linked Items"
-          isExpanded={isSectionExpanded("linked-items")}
-          sectionId="linked-items"
-          icon={<LinkIcon data-testid="LinkIcon__linkeditems" />}
-          onToggle={(isOpen: boolean) => handleAccordionChange("linked-items", isOpen)}
-          data-testid="Collapsible__linkeditems">
-          <LinkedItemsSection
-            windowId={tab.window}
-            entityName={tab.entityName}
+          title={attachmentCount > 0 ? `Attachments (${attachmentCount})` : "Attachments"}
+          isExpanded={isSectionExpanded("attachments_group")}
+          sectionId="attachments_group"
+          icon={<AttachmentIcon data-testid="AttachmentIcon__attachments" />}
+          onToggle={(isOpen: boolean) => handleAccordionChange("attachments_group", isOpen)}
+          data-testid="Collapsible__attachments">
+          <AttachmentSection
             recordId={recordId}
-            data-testid="LinkedItemsSection__38e4a6"
+            tabId={tab.id}
+            initialAttachmentCount={attachmentCount}
+            isSectionExpanded={isSectionExpanded("attachments_group")}
+            onAttachmentsChange={onAttachmentsChange}
+            showErrorModal={showErrorModal}
+            openAddModal={openAttachmentModal}
+            onAddModalClose={onAttachmentModalClose}
+            data-testid="AttachmentSection__attachments"
           />
         </Collapsible>
-      </div> */}
+      </div>
     </div>
   );
 }

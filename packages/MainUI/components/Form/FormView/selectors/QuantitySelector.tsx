@@ -9,9 +9,10 @@ interface QuantitySelectorProps {
   field: Field;
   min?: number | string;
   max?: number | string;
+  allowNegative?: boolean;
 }
 
-export const QuantitySelector = ({ field, min, max }: QuantitySelectorProps) => {
+export const QuantitySelector = ({ field, min, max, allowNegative = false }: QuantitySelectorProps) => {
   const { watch, setValue } = useFormContext();
   const { language } = useLanguage();
   const fieldName = field.hqlName;
@@ -79,14 +80,16 @@ export const QuantitySelector = ({ field, min, max }: QuantitySelectorProps) => 
       if (normalizedValue.endsWith(".") || normalizedValue === "" || normalizedValue === "-") {
         return;
       }
+      const minValue = min ? Number(min) : undefined;
+      const maxValue = max ? Number(max) : undefined;
 
-      const { isValid } = validateNumber(normalizedValue, min ? Number(min) : undefined, max ? Number(max) : undefined);
+      const { isValid } = validateNumber(normalizedValue, minValue, maxValue, allowNegative);
 
       if (isValid) {
         setValue(fieldName, Number(normalizedValue), { shouldValidate: true });
       }
     },
-    [fieldName, min, max, setValue, normalizeDecimalInput, isValidIntermediateValue]
+    [fieldName, min, max, setValue, normalizeDecimalInput, isValidIntermediateValue, allowNegative]
   );
 
   const handleFocus = useCallback(() => {
@@ -102,13 +105,15 @@ export const QuantitySelector = ({ field, min, max }: QuantitySelectorProps) => 
       setValue(fieldName, null, { shouldValidate: true });
       return;
     }
+    const minValue = min ? Number(min) : undefined;
+    const maxValue = max ? Number(max) : undefined;
 
-    const { isValid } = validateNumber(normalizedValue, min ? Number(min) : undefined, max ? Number(max) : undefined);
+    const { isValid } = validateNumber(normalizedValue, minValue, maxValue, allowNegative);
 
     if (isValid) {
       setValue(fieldName, Number(normalizedValue), { shouldValidate: true });
     }
-  }, [localValue, normalizeDecimalInput, fieldName, setValue, min, max]);
+  }, [localValue, normalizeDecimalInput, fieldName, setValue, min, max, allowNegative]);
 
   return (
     <TextInput

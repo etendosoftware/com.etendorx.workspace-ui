@@ -83,6 +83,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
   const [selectedTab, setSelectedTab] = useState<string>("");
   const [isFormInitializing, setIsFormInitializing] = useState(false);
+  const [openAttachmentModal, setOpenAttachmentModal] = useState(false);
 
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
@@ -90,7 +91,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const { activeWindow, getSelectedRecord, setSelectedRecord, setSelectedRecordAndClearChildren } = useMultiWindowURL();
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
   const { resetFormChanges, parentTab } = useTabContext();
-  const { registerFormViewRefetch } = useToolbarContext();
+  const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
+    useToolbarContext();
   const { refetchDatasource, registerRefetchFunction } = useDatasourceContext();
 
   const {
@@ -136,6 +138,22 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     registerRefetchFunction(tab.id, refreshRecordAndSession);
   }, [registerFormViewRefetch, refreshRecordAndSession, registerRefetchFunction, tab.id]);
 
+  // Register attachment action for toolbar button
+  useEffect(() => {
+    if (registerAttachmentAction) {
+      registerAttachmentAction(() => setOpenAttachmentModal(true));
+    }
+  }, [registerAttachmentAction]);
+
+  // Open attachment modal when flag is set (from table navigation)
+  useEffect(() => {
+    if (shouldOpenAttachmentModal) {
+      setOpenAttachmentModal(true);
+      // Reset flag after using it
+      setShouldOpenAttachmentModal(false);
+    }
+  }, [shouldOpenAttachmentModal, setShouldOpenAttachmentModal]);
+
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} data-testid="Info__1a0853" />,
     [theme.palette.baselineColor.neutral]
@@ -161,6 +179,11 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     return formInitialization?.noteCount || 0;
   }, [formInitialization]);
 
+  const initialAttachmentCount = useMemo(() => {
+    // Safely retrieve the attachmentCount, defaulting to 0 if not present
+    return formInitialization?.attachmentCount || 0;
+  }, [formInitialization]);
+
   /**
    * Computes the current record data from multiple sources with priority order:
    * 1. URL-based record selection (highest priority)
@@ -174,12 +197,12 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * @returns EntityData object representing current record or null if no record
    */
   const record = useMemo(() => {
-    const windowId = activeWindow?.windowId;
-    if (!windowId) return null;
+    const windowIdentifier = activeWindow?.window_identifier;
+    if (!windowIdentifier) return null;
 
     if (recordId === NEW_RECORD_ID) return null;
 
-    const selectedRecordId = getSelectedRecord(windowId, tab.id);
+    const selectedRecordId = getSelectedRecord(windowIdentifier, tab.id);
     if (selectedRecordId && selectedRecordId === recordId) {
       const graphRecord = graph.getSelected(tab);
       if (graphRecord && String(graphRecord.id) === recordId) {
@@ -194,7 +217,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     }
 
     return null;
-  }, [activeWindow?.windowId, getSelectedRecord, tab, recordId, graph]);
+  }, [activeWindow?.window_identifier, getSelectedRecord, tab, recordId, graph]);
 
   /**
    * Merges record data with form initialization data to create complete form state.
@@ -276,16 +299,25 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * Wraps react-hook-form's setValue to provide consistent behavior
    * for form field updates with proper dirty state tracking.
    *
+   * When shouldTouch is not explicitly provided:
+   * - During form initialization: shouldTouch = false (to avoid false touches)
+   * - After form is ready: shouldTouch = true (user interactions should mark as touched)
+   *
    * @param name - Field name to update
    * @param value - New field value
-   * @param options - Additional options including shouldDirty flag (defaults to true)
+   * @param options - Additional options including shouldDirty and shouldTouch flags
    */
   const handleSetValue = useCallback(
     (name: string, value: EntityValue, options?: SetValueConfig) => {
-      const { shouldDirty = true, ...rest } = options || {};
-      setValue(name, value, { shouldDirty, ...rest });
+      const { shouldDirty = true, shouldTouch, ...rest } = options || {};
+
+      // If shouldTouch is explicitly provided, use it
+      // Otherwise, only touch if form is not initializing (meaning it's a user interaction)
+      const shouldTouchField = shouldTouch !== undefined ? shouldTouch : !isFormInitializing;
+
+      setValue(name, value, { shouldDirty, shouldTouch: shouldTouchField, ...rest });
     },
-    [setValue]
+    [setValue, isFormInitializing]
   );
 
   /**
@@ -382,9 +414,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       graph.setSelected(tab, data);
       graph.setSelectedMultiple(tab, [data]);
 
-      const windowId = activeWindow?.windowId;
-      if (windowId) {
-        setSelectedRecord(windowId, tab.id, String(data.id));
+      const windowIdentifier = activeWindow?.window_identifier;
+      if (windowIdentifier) {
+        setSelectedRecord(windowIdentifier, tab.id, String(data.id));
       }
       if (showModal) {
         showSuccessModal("Saved");
@@ -401,7 +433,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       mode,
       graph,
       tab,
-      activeWindow?.windowId,
+      activeWindow?.window_identifier,
       showSuccessModal,
       reset,
       initialState,
@@ -478,8 +510,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
       // Use atomic update to change parent selection and clear all children in one operation
       // This forces children to return to table view even if they were in FormView
-      if (activeWindow?.windowId && childIds.length > 0) {
-        setSelectedRecordAndClearChildren(activeWindow.windowId, tab.id, newRecordId, childIds);
+      if (activeWindow?.window_identifier && childIds.length > 0) {
+        setSelectedRecordAndClearChildren(activeWindow.window_identifier, tab.id, newRecordId, childIds);
 
         // Also clear the graph selection for all children to ensure they reset completely
         for (const child of children ?? []) {
@@ -582,8 +614,12 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               loading={isLoading}
               recordId={recordId ?? ""}
               initialNoteCount={initialNoteCount}
+              initialAttachmentCount={initialAttachmentCount}
               onNotesChange={refreshRecordAndSession}
+              onAttachmentsChange={refreshRecordAndSession}
               showErrorModal={showErrorModal}
+              openAttachmentModal={openAttachmentModal}
+              onAttachmentModalClose={() => setOpenAttachmentModal(false)}
               data-testid="FormFields__1a0853"
             />
 

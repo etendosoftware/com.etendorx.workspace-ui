@@ -50,6 +50,7 @@ function WindowReferenceGrid({
   parameter,
   parameters,
   onSelectionChange,
+  gridSelection,
   tabId,
   entityName,
   windowReferenceTab,
@@ -65,6 +66,19 @@ function WindowReferenceGrid({
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [appliedTableFilters, setAppliedTableFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
+
+  // Sync external gridSelection changes (from autoSelectConfig) to visual rowSelection
+  useEffect(() => {
+    const externalSelection = gridSelection[parameter.dBColumnName]?._selection || [];
+    const newRowSelection: MRT_RowSelectionState = {};
+
+    for (const item of externalSelection) {
+      const itemId = String((item as EntityData).id);
+      newRowSelection[itemId] = true;
+    }
+
+    setRowSelection(newRowSelection);
+  }, [gridSelection, parameter.dBColumnName]);
 
   const [isDataReady, setIsDataReady] = useState(false);
 
@@ -383,14 +397,15 @@ function WindowReferenceGrid({
     return stableRecordsRef.current;
   }, [rawRecords]);
 
+  // Populate _allRows when records are loaded
   useEffect(() => {
     if (!records) return;
 
     onSelectionChange((prev: GridSelectionStructure) => ({
       ...prev,
       [parameter.dBColumnName]: {
-        _selection: [],
-        _allRows: [],
+        ...prev[parameter.dBColumnName],
+        _allRows: records,
       },
     }));
   }, [records, onSelectionChange, parameter.dBColumnName]);

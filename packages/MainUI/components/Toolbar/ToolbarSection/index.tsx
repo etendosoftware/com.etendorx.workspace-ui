@@ -23,13 +23,14 @@ import {
   FILLED_BUTTON_TYPE,
   OUTLINED_BUTTON_TYPE,
 } from "@workspaceui/componentlibrary/src/components/IconButtonWithText/constants";
+import { Badge } from "@mui/material";
 
 const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, className = "", processButton }) => {
   if (!buttons.length) return null;
 
   return (
     <div style={style} className={className}>
-      {buttons.map(({ key, icon, iconText, tooltip, onClick, disabled, className }) => {
+      {buttons.map(({ key, icon, iconText, tooltip, onClick, disabled, className, badgeContent, isPressed }) => {
         if (iconText) {
           return (
             <IconButtonWithText
@@ -44,7 +45,8 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
             />
           );
         }
-        return (
+
+        const iconButton = (
           <IconButton
             key={key}
             tooltip={tooltip}
@@ -52,10 +54,36 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
             disabled={disabled}
             className={className}
             iconText={iconText}
+            isPressed={isPressed}
             data-testid={`IconButton__${key ?? "2bded0"}`}>
             {icon}
           </IconButton>
         );
+
+        if (badgeContent !== undefined && badgeContent !== null && badgeContent !== 0 && badgeContent !== "") {
+          return (
+            <Badge
+              key={key}
+              badgeContent={badgeContent}
+              color="error"
+              sx={{
+                "& .MuiBadge-badge": {
+                  fontSize: "0.625rem",
+                  height: "16px",
+                  minWidth: "16px",
+                  padding: "0 4px",
+                  fontWeight: 600,
+                  borderRadius: "8px",
+                  top: "6px",
+                  right: "6px",
+                },
+              }}>
+              {iconButton}
+            </Badge>
+          );
+        }
+
+        return iconButton;
       })}
       {processButton && !processButton.disabled && (
         <div className="h-full flex items-center">

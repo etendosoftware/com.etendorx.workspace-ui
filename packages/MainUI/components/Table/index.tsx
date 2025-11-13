@@ -49,6 +49,7 @@ import { isEmptyObject } from "@/utils/commons";
 import { getDisplayColumnDefOptions, getMUITableBodyCellProps, getCurrentRowCanExpand } from "@/utils/table/utils";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
+import { RecordCounterBar } from "@workspaceui/componentlibrary/src/components";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -75,12 +76,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     registerHasMoreRecordsGetter,
     registerFetchMore,
   } = useDatasourceContext();
-  const { registerActions } = useToolbarContext();
+  const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal } = useToolbarContext();
   const { activeWindow, getSelectedRecord } = useMultiWindowURL();
   const { tab, parentTab, parentRecord } = useTabContext();
 
   const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
-    useTableStatePersistenceTab(tab.window, tab.id);
+    useTableStatePersistenceTab({ windowIdentifier: activeWindow?.window_identifier || "", tabId: tab.id });
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -99,6 +100,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     loading,
     error,
     shouldUseTreeMode,
+    hasMoreRecords,
     handleMRTColumnFiltersChange,
     handleMRTColumnVisibilityChange,
     handleMRTSortingChange,
@@ -108,7 +110,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     fetchMore,
     refetch,
     removeRecordLocally,
-    hasMoreRecords,
     applyQuickFilter,
   } = useTableData({
     isTreeMode,
@@ -163,7 +164,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   const handleFilterByValue = useCallback(
     async (columnId: string, filterId: string, filterValue: string | number, filterLabel: string) => {
-      console.log("handleFilterByValue called with:", { columnId, filterId, filterValue, filterLabel });
       await applyQuickFilter(columnId, filterId, filterValue, filterLabel);
     },
     [applyQuickFilter]
@@ -296,7 +296,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     }
 
     // Get the selected record from URL for this specific tab
-    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    const urlSelectedId = getSelectedRecord(activeWindow.window_identifier, tab.id);
     if (!urlSelectedId) {
       return {};
     }
@@ -315,11 +315,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   useEffect(() => {
     const windowId = activeWindow?.windowId;
-    if (!windowId || windowId !== tab.window) {
+    const windowIdentifier = activeWindow?.window_identifier;
+    if (!windowId || windowId !== tab.window || !windowIdentifier) {
       return;
     }
 
-    const currentURLSelection = getSelectedRecord(windowId, tab.id);
+    const currentURLSelection = getSelectedRecord(windowIdentifier, tab.id);
 
     // Detect URL-driven navigation (direct links, browser back/forward)
     if (currentURLSelection !== previousURLSelection.current && currentURLSelection) {
@@ -406,8 +407,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
           // For child tabs, prevent opening form if parent has no selection in URL
           if (parent) {
-            const windowId = activeWindow?.windowId;
-            const parentSelectedInURL = windowId ? getSelectedRecord(windowId, parent.id) : undefined;
+            const windowIdentifier = activeWindow?.window_identifier;
+            const parentSelectedInURL = windowIdentifier ? getSelectedRecord(windowIdentifier, parent.id) : undefined;
             if (!parentSelectedInURL) {
               return;
             }
@@ -486,6 +487,23 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     data: displayRecords,
     enableRowSelection: true,
     enableMultiRowSelection: true,
+    // Disable "Select All" when there are more records to load
+    muiSelectAllCheckboxProps: hasMoreRecords
+      ? {
+          disabled: true,
+          // Wrap disabled checkbox in a span to enable tooltip
+          sx: {
+            "&.Mui-disabled": {
+              pointerEvents: "auto", // Allow hover on disabled element
+              cursor: "not-allowed",
+            },
+          },
+          title: t("table.selectAll.disabledTooltip"),
+        }
+      : {
+          disabled: false,
+          title: t("table.selectAll.enabledTooltip"),
+        },
     positionToolbarAlertBanner: "none",
     muiTableBodyRowProps: rowProps,
     muiTableContainerProps: {
@@ -552,11 +570,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   // Handle auto-scroll to selected record with virtualization support
   useLayoutEffect(() => {
     const windowId = activeWindow?.windowId;
-    if (!windowId || windowId !== tab.window || !displayRecords) {
+    const windowIdentifier = activeWindow?.window_identifier;
+    if (!windowId || windowId !== tab.window || !displayRecords || !windowIdentifier) {
       return;
     }
 
-    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
     if (!urlSelectedId) {
       return;
     }
@@ -598,11 +617,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   // Sync URL selection to table state
   useEffect(() => {
     const windowId = activeWindow?.windowId;
-    if (!windowId || windowId !== tab.window || !records) {
+    const windowIdentifier = activeWindow?.window_identifier;
+    if (!windowId || windowId !== tab.window || !records || !windowIdentifier) {
       return;
     }
 
-    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
     if (!urlSelectedId) {
       return;
     }
@@ -626,7 +646,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   // by setSelectedRecordAndClearChildren in useTableSelection
   useEffect(() => {
     const windowId = activeWindow?.windowId;
-    if (!windowId || windowId !== tab.window || !records) {
+    const windowIdentifier = activeWindow?.window_identifier;
+    if (!windowId || windowId !== tab.window || !records || !windowIdentifier) {
       return;
     }
 
@@ -637,7 +658,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       return;
     }
 
-    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
     if (!urlSelectedId) {
       return;
     }
@@ -652,7 +673,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         // Add a small delay to avoid applying stale URL selections during transitions
         const timeoutId = setTimeout(() => {
           // Re-check if this is still the correct selection after the delay
-          const latestUrlSelectedId = getSelectedRecord(windowId, tab.id);
+          const latestUrlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
           if (latestUrlSelectedId === urlSelectedId) {
             logger.debug(`[URLNavigation] Applying URL selection for direct navigation: ${urlSelectedId}`);
             table.setRowSelection({ [urlSelectedId]: true });
@@ -666,11 +687,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   useEffect(() => {
     const windowId = activeWindow?.windowId;
-    if (!windowId || windowId !== tab.window || !records || hasRestoredSelection.current) {
+    const windowIdentifier = activeWindow?.window_identifier;
+    if (!windowId || windowId !== tab.window || !records || hasRestoredSelection.current || !windowIdentifier) {
       return;
     }
 
-    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
     if (!urlSelectedId) {
       return;
     }
@@ -753,6 +775,30 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     });
   }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown]);
 
+  // Register attachment action to navigate to FormView
+  useEffect(() => {
+    if (registerAttachmentAction && activeWindow?.windowId && tab) {
+      registerAttachmentAction(() => {
+        const selectedRecordId = getSelectedRecord(activeWindow.windowId, tab.id);
+        if (selectedRecordId) {
+          // Set flag to open attachment modal
+          setShouldOpenAttachmentModal(true);
+          // Navigate to FormView
+          setRecordId(selectedRecordId);
+        } else {
+          logger.warn("No record selected for attachment action");
+        }
+      });
+    }
+  }, [
+    registerAttachmentAction,
+    activeWindow?.windowId,
+    tab,
+    getSelectedRecord,
+    setRecordId,
+    setShouldOpenAttachmentModal,
+  ]);
+
   if (error) {
     return (
       <ErrorDisplay
@@ -776,12 +822,36 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     );
   }
 
+  // Calculate counter values
+  const selectedRecords = Object.keys(table.getState().rowSelection).filter((id) => table.getState().rowSelection[id]);
+  const selectedCount = selectedRecords.length;
+  const loadedRecords = displayRecords.length;
+  const totalRecords = hasMoreRecords ? loadedRecords + 1 : loadedRecords; // Approximate total when more records available
+
+  // Prepare labels for RecordCounterBar with translations
+  const counterLabels = {
+    showingRecords: t("table.counter.showingRecords"),
+    showingPartialRecords: t("table.counter.showingPartialRecords"),
+    selectedRecords: t("table.counter.selectedRecords"),
+    recordsLoaded: t("table.counter.recordsLoaded"),
+  };
+
   return (
     <div
-      className={`h-full overflow-hidden rounded-3xl transition-opacity ${
+      className={`h-full overflow-hidden rounded-3xl transition-opacity flex flex-col ${
         loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
       }`}>
-      <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
+      <RecordCounterBar
+        totalRecords={totalRecords}
+        loadedRecords={loadedRecords}
+        selectedCount={selectedCount}
+        isLoading={loading}
+        labels={counterLabels}
+        data-testid="RecordCounterBar__8ca888"
+      />
+      <div className="flex-1 min-h-0">
+        <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
+      </div>
       <ColumnVisibilityMenu
         anchorEl={columnMenuAnchor}
         onClose={handleCloseColumnMenu}
