@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import type { MRT_Row, MRT_TableInstance } from "material-react-table";
+import type { MRT_TableInstance } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import { logger } from "@/utils/logger";
 
@@ -48,20 +48,20 @@ export class KeyboardNavigationManager {
     const editingRowIds = this.options.getEditingRowIds();
 
     // Find all input elements that have data-row-id and data-column-id attributes
-    editingRowIds.forEach(rowId => {
+    editingRowIds.forEach((rowId) => {
       const inputElements = document.querySelectorAll(
         `input[data-row-id="${rowId}"][data-column-id], select[data-row-id="${rowId}"][data-column-id], textarea[data-row-id="${rowId}"][data-column-id]`
       );
 
       inputElements.forEach((element) => {
         const htmlElement = element as HTMLElement;
-        const columnId = htmlElement.getAttribute('data-column-id');
+        const columnId = htmlElement.getAttribute("data-column-id");
 
-        if (columnId && !htmlElement.hasAttribute('disabled')) {
+        if (columnId && !htmlElement.hasAttribute("disabled")) {
           editableCells.push({
             rowId,
             columnId,
-            element: htmlElement
+            element: htmlElement,
           });
         }
       });
@@ -99,24 +99,31 @@ export class KeyboardNavigationManager {
    */
   public async navigateToNextCell(currentRowId: string, currentColumnId: string): Promise<boolean> {
     const editableCells = this.getEditableCells();
-    console.log('[KeyboardNavigation] navigateToNextCell called', { currentRowId, currentColumnId, totalCells: editableCells.length });
-    console.log('[KeyboardNavigation] Editable cells:', editableCells.map(c => `${c.rowId}:${c.columnId}`));
+    console.log("[KeyboardNavigation] navigateToNextCell called", {
+      currentRowId,
+      currentColumnId,
+      totalCells: editableCells.length,
+    });
+    console.log(
+      "[KeyboardNavigation] Editable cells:",
+      editableCells.map((c) => `${c.rowId}:${c.columnId}`)
+    );
 
     const currentIndex = editableCells.findIndex(
-      cell => cell.rowId === currentRowId && cell.columnId === currentColumnId
+      (cell) => cell.rowId === currentRowId && cell.columnId === currentColumnId
     );
-    console.log('[KeyboardNavigation] Current index:', currentIndex);
+    console.log("[KeyboardNavigation] Current index:", currentIndex);
 
     if (currentIndex >= 0 && currentIndex < editableCells.length - 1) {
       const nextCell = editableCells[currentIndex + 1];
-      console.log('[KeyboardNavigation] Navigating to:', nextCell.rowId, nextCell.columnId);
+      console.log("[KeyboardNavigation] Navigating to:", nextCell.rowId, nextCell.columnId);
       await this.focusCell(nextCell.element);
       this.currentFocusedCell = { rowId: nextCell.rowId, columnId: nextCell.columnId };
       logger.debug(`[KeyboardNavigation] Navigated to next cell: ${nextCell.rowId}:${nextCell.columnId}`);
       return true;
     }
 
-    console.log('[KeyboardNavigation] Could not navigate (at end or not found)');
+    console.log("[KeyboardNavigation] Could not navigate (at end or not found)");
     return false;
   }
 
@@ -126,7 +133,7 @@ export class KeyboardNavigationManager {
   public async navigateToPreviousCell(currentRowId: string, currentColumnId: string): Promise<boolean> {
     const editableCells = this.getEditableCells();
     const currentIndex = editableCells.findIndex(
-      cell => cell.rowId === currentRowId && cell.columnId === currentColumnId
+      (cell) => cell.rowId === currentRowId && cell.columnId === currentColumnId
     );
 
     if (currentIndex > 0) {
@@ -145,22 +152,24 @@ export class KeyboardNavigationManager {
    */
   public async navigateToNextRow(currentRowId: string): Promise<boolean> {
     const editableCells = this.getEditableCells();
-    const currentRowCells = editableCells.filter(cell => cell.rowId === currentRowId);
+    const currentRowCells = editableCells.filter((cell) => cell.rowId === currentRowId);
 
     if (currentRowCells.length === 0) return false;
 
     // Find the next row that has editable cells
-    const allRowIds = [...new Set(editableCells.map(cell => cell.rowId))];
+    const allRowIds = [...new Set(editableCells.map((cell) => cell.rowId))];
     const currentRowIndex = allRowIds.indexOf(currentRowId);
 
     if (currentRowIndex >= 0 && currentRowIndex < allRowIds.length - 1) {
       const nextRowId = allRowIds[currentRowIndex + 1];
-      const nextRowFirstCell = editableCells.find(cell => cell.rowId === nextRowId);
+      const nextRowFirstCell = editableCells.find((cell) => cell.rowId === nextRowId);
 
       if (nextRowFirstCell) {
         await this.focusCell(nextRowFirstCell.element);
         this.currentFocusedCell = { rowId: nextRowFirstCell.rowId, columnId: nextRowFirstCell.columnId };
-        logger.debug(`[KeyboardNavigation] Navigated to next row: ${nextRowFirstCell.rowId}:${nextRowFirstCell.columnId}`);
+        logger.debug(
+          `[KeyboardNavigation] Navigated to next row: ${nextRowFirstCell.rowId}:${nextRowFirstCell.columnId}`
+        );
         return true;
       }
     }
@@ -173,17 +182,19 @@ export class KeyboardNavigationManager {
    */
   public async navigateToPreviousRow(currentRowId: string): Promise<boolean> {
     const editableCells = this.getEditableCells();
-    const allRowIds = [...new Set(editableCells.map(cell => cell.rowId))];
+    const allRowIds = [...new Set(editableCells.map((cell) => cell.rowId))];
     const currentRowIndex = allRowIds.indexOf(currentRowId);
 
     if (currentRowIndex > 0) {
       const previousRowId = allRowIds[currentRowIndex - 1];
-      const previousRowFirstCell = editableCells.find(cell => cell.rowId === previousRowId);
+      const previousRowFirstCell = editableCells.find((cell) => cell.rowId === previousRowId);
 
       if (previousRowFirstCell) {
         await this.focusCell(previousRowFirstCell.element);
         this.currentFocusedCell = { rowId: previousRowFirstCell.rowId, columnId: previousRowFirstCell.columnId };
-        logger.debug(`[KeyboardNavigation] Navigated to previous row: ${previousRowFirstCell.rowId}:${previousRowFirstCell.columnId}`);
+        logger.debug(
+          `[KeyboardNavigation] Navigated to previous row: ${previousRowFirstCell.rowId}:${previousRowFirstCell.columnId}`
+        );
         return true;
       }
     }
@@ -196,12 +207,12 @@ export class KeyboardNavigationManager {
    */
   private async focusCell(element: HTMLElement): Promise<void> {
     // Small delay to allow React Suspense to resolve if needed
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     element.focus();
 
     // Select all text for input elements
-    if (element instanceof HTMLInputElement && element.type === 'text') {
+    if (element instanceof HTMLInputElement && element.type === "text") {
       element.select();
     }
   }
@@ -213,12 +224,12 @@ export class KeyboardNavigationManager {
     const { key, shiftKey, ctrlKey, metaKey } = event;
 
     // Don't handle keyboard shortcuts if modifier keys are pressed (except Shift for Tab)
-    if ((ctrlKey || metaKey) && key !== 'Tab') {
+    if ((ctrlKey || metaKey) && key !== "Tab") {
       return false;
     }
 
     switch (key) {
-      case 'Tab':
+      case "Tab":
         event.preventDefault();
         if (shiftKey) {
           return this.navigateToPreviousCell(rowId, columnId);
@@ -226,7 +237,7 @@ export class KeyboardNavigationManager {
           return this.navigateToNextCell(rowId, columnId);
         }
 
-      case 'Enter':
+      case "Enter":
         event.preventDefault();
         if (shiftKey) {
           // Shift+Enter: Navigate to previous row
@@ -236,7 +247,7 @@ export class KeyboardNavigationManager {
           try {
             await this.options.onSaveRow(rowId);
             logger.info(`[KeyboardNavigation] Saved row via Enter key: ${rowId}`);
-            
+
             // Try to navigate to next row, if no next row, stay on current
             this.navigateToNextRow(rowId);
             return true;
@@ -246,7 +257,7 @@ export class KeyboardNavigationManager {
           }
         }
 
-      case 'Escape':
+      case "Escape":
         event.preventDefault();
         try {
           await this.options.onCancelRow(rowId);
@@ -257,21 +268,21 @@ export class KeyboardNavigationManager {
           return false;
         }
 
-      case 'ArrowUp':
+      case "ArrowUp":
         if (ctrlKey || metaKey) {
           event.preventDefault();
           return this.navigateToPreviousRow(rowId);
         }
         break;
 
-      case 'ArrowDown':
+      case "ArrowDown":
         if (ctrlKey || metaKey) {
           event.preventDefault();
           return this.navigateToNextRow(rowId);
         }
         break;
 
-      case 'ArrowLeft':
+      case "ArrowLeft":
         // Only handle if at the beginning of input
         if (event.target instanceof HTMLInputElement) {
           const input = event.target as HTMLInputElement;
@@ -282,7 +293,7 @@ export class KeyboardNavigationManager {
         }
         break;
 
-      case 'ArrowRight':
+      case "ArrowRight":
         // Only handle if at the end of input
         if (event.target instanceof HTMLInputElement) {
           const input = event.target as HTMLInputElement;
@@ -319,7 +330,7 @@ export class KeyboardNavigationManager {
    */
   public async focusFirstCellInRow(rowId: string): Promise<boolean> {
     const editableCells = this.getEditableCells();
-    const firstCellInRow = editableCells.find(cell => cell.rowId === rowId);
+    const firstCellInRow = editableCells.find((cell) => cell.rowId === rowId);
 
     if (firstCellInRow) {
       await this.focusCell(firstCellInRow.element);
@@ -356,7 +367,7 @@ export const useKeyboardNavigation = (
 ) => {
   const handleKeyDown = async (event: KeyboardEvent): Promise<boolean> => {
     if (!navigationManager) return false;
-    
+
     return await navigationManager.handleKeyDown(event, rowId, columnId);
   };
 
@@ -368,6 +379,6 @@ export const useKeyboardNavigation = (
 
   return {
     handleKeyDown,
-    setFocused
+    setFocused,
   };
 };

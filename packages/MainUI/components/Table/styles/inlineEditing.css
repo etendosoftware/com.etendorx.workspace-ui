@@ -122,7 +122,7 @@
 }
 
 .table-row-editing::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 0;
@@ -144,7 +144,7 @@
 }
 
 .table-row-error::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 0;
@@ -167,7 +167,7 @@
 }
 
 .table-row-saving::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 0;
@@ -179,7 +179,8 @@
 }
 
 @keyframes pulse-saving {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -200,8 +201,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Validation error tooltip styles */
@@ -224,7 +229,7 @@
 }
 
 .inline-edit-error-tooltip::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 100%;
   left: 50%;
@@ -307,7 +312,7 @@
 }
 
 .cell-validation-error::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   right: 0;
@@ -339,7 +344,7 @@
 }
 
 .cell-error-tooltip::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 100%;
   left: 50%;
@@ -392,22 +397,22 @@
     font-size: 16px; /* Prevent zoom on iOS */
     padding: 8px;
   }
-  
+
   .editing-state-indicator {
     font-size: 10px;
     padding: 1px 4px;
   }
-  
+
   .editing-state-indicator .state-text {
     display: none;
   }
-  
+
   .bulk-operation-progress {
     top: 10px;
     right: 10px;
     padding: 8px 12px;
   }
-  
+
   .bulk-operation-progress .progress-bar {
     width: 150px;
   }

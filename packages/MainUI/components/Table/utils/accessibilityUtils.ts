@@ -21,7 +21,7 @@ import { logger } from "@/utils/logger";
 /**
  * ARIA live region types for screen reader announcements
  */
-export type AriaLiveType = 'polite' | 'assertive' | 'off';
+export type AriaLiveType = "polite" | "assertive" | "off";
 
 /**
  * Screen reader announcement manager
@@ -41,10 +41,10 @@ export class ScreenReaderAnnouncer {
    */
   private createLiveRegions(): void {
     // Create polite live region for non-urgent announcements
-    this.politeRegion = document.createElement('div');
-    this.politeRegion.setAttribute('aria-live', 'polite');
-    this.politeRegion.setAttribute('aria-atomic', 'true');
-    this.politeRegion.setAttribute('class', 'sr-only');
+    this.politeRegion = document.createElement("div");
+    this.politeRegion.setAttribute("aria-live", "polite");
+    this.politeRegion.setAttribute("aria-atomic", "true");
+    this.politeRegion.setAttribute("class", "sr-only");
     this.politeRegion.style.cssText = `
       position: absolute !important;
       width: 1px !important;
@@ -59,28 +59,28 @@ export class ScreenReaderAnnouncer {
     document.body.appendChild(this.politeRegion);
 
     // Create assertive live region for urgent announcements
-    this.assertiveRegion = document.createElement('div');
-    this.assertiveRegion.setAttribute('aria-live', 'assertive');
-    this.assertiveRegion.setAttribute('aria-atomic', 'true');
-    this.assertiveRegion.setAttribute('class', 'sr-only');
+    this.assertiveRegion = document.createElement("div");
+    this.assertiveRegion.setAttribute("aria-live", "assertive");
+    this.assertiveRegion.setAttribute("aria-atomic", "true");
+    this.assertiveRegion.setAttribute("class", "sr-only");
     this.assertiveRegion.style.cssText = this.politeRegion.style.cssText;
     document.body.appendChild(this.assertiveRegion);
 
-    logger.debug('[Accessibility] Created ARIA live regions for screen reader announcements');
+    logger.debug("[Accessibility] Created ARIA live regions for screen reader announcements");
   }
 
   /**
    * Announce a message to screen readers
    */
-  announce(message: string, priority: AriaLiveType = 'polite'): void {
+  announce(message: string, priority: AriaLiveType = "polite"): void {
     if (!message.trim()) return;
 
-    const region = priority === 'assertive' ? this.assertiveRegion : this.politeRegion;
+    const region = priority === "assertive" ? this.assertiveRegion : this.politeRegion;
     if (!region) return;
 
     // Clear the region first to ensure the announcement is read
-    region.textContent = '';
-    
+    region.textContent = "";
+
     // Use a small delay to ensure the clearing is processed
     setTimeout(() => {
       region.textContent = message;
@@ -95,10 +95,10 @@ export class ScreenReaderAnnouncer {
     if (isEditing) {
       this.announce(
         `Row ${rowId} is now in edit mode. Use Tab to navigate between ${columnCount} editable fields. Press Enter to save or Escape to cancel.`,
-        'polite'
+        "polite"
       );
     } else {
-      this.announce(`Row ${rowId} is no longer in edit mode.`, 'polite');
+      this.announce(`Row ${rowId} is no longer in edit mode.`, "polite");
     }
   }
 
@@ -106,7 +106,7 @@ export class ScreenReaderAnnouncer {
    * Announce validation errors
    */
   announceValidationErrors(fieldName: string, errorMessage: string): void {
-    this.announce(`Validation error in ${fieldName}: ${errorMessage}`, 'assertive');
+    this.announce(`Validation error in ${fieldName}: ${errorMessage}`, "assertive");
   }
 
   /**
@@ -114,10 +114,10 @@ export class ScreenReaderAnnouncer {
    */
   announceSaveOperation(rowId: string, success: boolean, isNew: boolean): void {
     if (success) {
-      const action = isNew ? 'created' : 'updated';
-      this.announce(`Row ${rowId} has been successfully ${action}.`, 'polite');
+      const action = isNew ? "created" : "updated";
+      this.announce(`Row ${rowId} has been successfully ${action}.`, "polite");
     } else {
-      this.announce(`Failed to save row ${rowId}. Please check for errors and try again.`, 'assertive');
+      this.announce(`Failed to save row ${rowId}. Please check for errors and try again.`, "assertive");
     }
   }
 
@@ -125,14 +125,14 @@ export class ScreenReaderAnnouncer {
    * Announce navigation changes
    */
   announceNavigation(fromCell: string, toCell: string): void {
-    this.announce(`Moved from ${fromCell} to ${toCell}`, 'polite');
+    this.announce(`Moved from ${fromCell} to ${toCell}`, "polite");
   }
 
   /**
    * Announce row insertion
    */
   announceRowInsertion(rowId: string): void {
-    this.announce(`New row ${rowId} has been inserted and is ready for editing.`, 'polite');
+    this.announce(`New row ${rowId} has been inserted and is ready for editing.`, "polite");
   }
 
   /**
@@ -140,9 +140,9 @@ export class ScreenReaderAnnouncer {
    */
   announceRowCancellation(rowId: string, hadUnsavedChanges: boolean): void {
     if (hadUnsavedChanges) {
-      this.announce(`Editing cancelled for row ${rowId}. Unsaved changes have been discarded.`, 'polite');
+      this.announce(`Editing cancelled for row ${rowId}. Unsaved changes have been discarded.`, "polite");
     } else {
-      this.announce(`Editing cancelled for row ${rowId}.`, 'polite');
+      this.announce(`Editing cancelled for row ${rowId}.`, "polite");
     }
   }
 
@@ -158,7 +158,7 @@ export class ScreenReaderAnnouncer {
       document.body.removeChild(this.assertiveRegion);
       this.assertiveRegion = null;
     }
-    logger.debug('[Accessibility] Destroyed ARIA live regions');
+    logger.debug("[Accessibility] Destroyed ARIA live regions");
   }
 }
 
@@ -185,7 +185,7 @@ export const useScreenReaderAnnouncer = () => {
 
   useEffect(() => {
     announcerRef.current = getScreenReaderAnnouncer();
-    
+
     return () => {
       // Don't destroy the global announcer on unmount as it might be used by other components
     };
@@ -209,55 +209,51 @@ export const generateAriaAttributes = {
     rowIndex: number,
     columnIndex: number
   ) => ({
-    'aria-label': `${fieldLabel} for row ${rowIndex + 1}`,
-    'aria-describedby': hasError ? `${fieldName}-error` : undefined,
-    'aria-invalid': hasError,
-    'aria-required': isRequired,
-    'role': 'gridcell',
-    'aria-rowindex': rowIndex + 1,
-    'aria-colindex': columnIndex + 1,
+    "aria-label": `${fieldLabel} for row ${rowIndex + 1}`,
+    "aria-describedby": hasError ? `${fieldName}-error` : undefined,
+    "aria-invalid": hasError,
+    "aria-required": isRequired,
+    role: "gridcell",
+    "aria-rowindex": rowIndex + 1,
+    "aria-colindex": columnIndex + 1,
   }),
 
   /**
    * Generate ARIA attributes for action buttons
    */
-  actionButton: (
-    action: string,
-    rowId: string,
-    disabled: boolean = false
-  ) => ({
-    'aria-label': `${action} row ${rowId}`,
-    'aria-disabled': disabled,
-    'role': 'button',
-    'tabindex': disabled ? -1 : 0,
+  actionButton: (action: string, rowId: string, disabled = false) => ({
+    "aria-label": `${action} row ${rowId}`,
+    "aria-disabled": disabled,
+    role: "button",
+    tabindex: disabled ? -1 : 0,
   }),
 
   /**
    * Generate ARIA attributes for error messages
    */
   errorMessage: (fieldName: string) => ({
-    'id': `${fieldName}-error`,
-    'role': 'alert',
-    'aria-live': 'assertive' as AriaLiveType,
+    id: `${fieldName}-error`,
+    role: "alert",
+    "aria-live": "assertive" as AriaLiveType,
   }),
 
   /**
    * Generate ARIA attributes for the editing row
    */
   editingRow: (rowId: string, hasErrors: boolean) => ({
-    'aria-label': `Row ${rowId} in edit mode${hasErrors ? ' with validation errors' : ''}`,
-    'role': 'row',
-    'aria-expanded': true,
-    'data-editing': 'true',
+    "aria-label": `Row ${rowId} in edit mode${hasErrors ? " with validation errors" : ""}`,
+    role: "row",
+    "aria-expanded": true,
+    "data-editing": "true",
   }),
 
   /**
    * Generate ARIA attributes for the table container
    */
   tableContainer: (totalRows: number, editingRowsCount: number) => ({
-    'role': 'grid',
-    'aria-label': `Data table with ${totalRows} rows, ${editingRowsCount} currently being edited`,
-    'aria-rowcount': totalRows,
+    role: "grid",
+    "aria-label": `Data table with ${totalRows} rows, ${editingRowsCount} currently being edited`,
+    "aria-rowcount": totalRows,
   }),
 };
 
@@ -270,15 +266,15 @@ export const keyboardAccessibility = {
    */
   isFocusable: (element: HTMLElement): boolean => {
     const focusableSelectors = [
-      'input:not([disabled])',
-      'select:not([disabled])',
-      'textarea:not([disabled])',
-      'button:not([disabled])',
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      "button:not([disabled])",
       '[tabindex]:not([tabindex="-1"])',
-      'a[href]',
+      "a[href]",
     ];
 
-    return focusableSelectors.some(selector => element.matches(selector));
+    return focusableSelectors.some((selector) => element.matches(selector));
   },
 
   /**
@@ -286,13 +282,13 @@ export const keyboardAccessibility = {
    */
   getFocusableElements: (container: HTMLElement): HTMLElement[] => {
     const focusableSelectors = [
-      'input:not([disabled])',
-      'select:not([disabled])',
-      'textarea:not([disabled])',
-      'button:not([disabled])',
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      "button:not([disabled])",
       '[tabindex]:not([tabindex="-1"])',
-      'a[href]',
-    ].join(', ');
+      "a[href]",
+    ].join(", ");
 
     return Array.from(container.querySelectorAll(focusableSelectors)) as HTMLElement[];
   },
@@ -301,7 +297,7 @@ export const keyboardAccessibility = {
    * Trap focus within a container
    */
   trapFocus: (container: HTMLElement, event: KeyboardEvent): boolean => {
-    if (event.key !== 'Tab') return false;
+    if (event.key !== "Tab") return false;
 
     const focusableElements = keyboardAccessibility.getFocusableElements(container);
     if (focusableElements.length === 0) return false;
@@ -334,13 +330,13 @@ export const keyboardAccessibility = {
    */
   ensureVisible: (element: HTMLElement): void => {
     // Remove any screen reader hiding classes/styles
-    element.classList.remove('sr-only', 'visually-hidden');
-    element.style.position = '';
-    element.style.width = '';
-    element.style.height = '';
-    element.style.overflow = '';
-    element.style.clip = '';
-    element.style.clipPath = '';
+    element.classList.remove("sr-only", "visually-hidden");
+    element.style.position = "";
+    element.style.width = "";
+    element.style.height = "";
+    element.style.overflow = "";
+    element.style.clip = "";
+    element.style.clipPath = "";
   },
 };
 
@@ -379,7 +375,7 @@ export const colorContrast = {
    * Calculate relative luminance of a color
    */
   getLuminance: (r: number, g: number, b: number): number => {
-    const [rs, gs, bs] = [r, g, b].map(c => {
+    const [rs, gs, bs] = [r, g, b].map((c) => {
       c = c / 255;
       return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
     });
@@ -423,9 +419,9 @@ export const accessibilityTesting = {
    */
   hasProperLabeling: (element: HTMLElement): boolean => {
     return !!(
-      element.getAttribute('aria-label') ||
-      element.getAttribute('aria-labelledby') ||
-      element.getAttribute('title') ||
+      element.getAttribute("aria-label") ||
+      element.getAttribute("aria-labelledby") ||
+      element.getAttribute("title") ||
       (element as HTMLInputElement).labels?.length
     );
   },
@@ -434,13 +430,13 @@ export const accessibilityTesting = {
    * Check if form controls have proper error associations
    */
   hasProperErrorAssociation: (element: HTMLElement): boolean => {
-    const describedBy = element.getAttribute('aria-describedby');
-    const isInvalid = element.getAttribute('aria-invalid') === 'true';
-    
+    const describedBy = element.getAttribute("aria-describedby");
+    const isInvalid = element.getAttribute("aria-invalid") === "true";
+
     if (!isInvalid) return true; // No error, so no association needed
-    
+
     if (!describedBy) return false;
-    
+
     // Check if the described element exists and has error content
     const errorElement = document.getElementById(describedBy);
     return !!(errorElement && errorElement.textContent?.trim());
@@ -451,21 +447,21 @@ export const accessibilityTesting = {
    */
   validateInlineEditingAccessibility: (container: HTMLElement): string[] => {
     const issues: string[] = [];
-    
+
     // Check for proper ARIA roles
     const editableCells = container.querySelectorAll('[role="gridcell"]');
     if (editableCells.length === 0) {
-      issues.push('No gridcell roles found for editable cells');
+      issues.push("No gridcell roles found for editable cells");
     }
-    
+
     // Check for proper labeling
-    const inputs = container.querySelectorAll('input, select, textarea');
+    const inputs = container.querySelectorAll("input, select, textarea");
     inputs.forEach((input, index) => {
       if (!accessibilityTesting.hasProperLabeling(input as HTMLElement)) {
         issues.push(`Input ${index + 1} lacks proper labeling`);
       }
     });
-    
+
     // Check for proper error associations
     const invalidElements = container.querySelectorAll('[aria-invalid="true"]');
     invalidElements.forEach((element, index) => {
@@ -473,7 +469,7 @@ export const accessibilityTesting = {
         issues.push(`Invalid element ${index + 1} lacks proper error association`);
       }
     });
-    
+
     return issues;
   },
 };

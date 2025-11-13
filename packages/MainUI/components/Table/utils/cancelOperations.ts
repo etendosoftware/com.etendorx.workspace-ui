@@ -31,7 +31,7 @@ export function hasUnsavedChanges(editingRowData: EditingRowData): boolean {
 
   // Check if any modified data differs from original data
   return Object.keys(editingRowData.modifiedData).some(
-    key => editingRowData.modifiedData[key] !== editingRowData.originalData[key]
+    (key) => editingRowData.modifiedData[key] !== editingRowData.originalData[key]
   );
 }
 
@@ -41,10 +41,7 @@ export function hasUnsavedChanges(editingRowData: EditingRowData): boolean {
  * @param t Translation function
  * @returns Confirmation message
  */
-export function createCancelConfirmationMessage(
-  editingRowData: EditingRowData,
-  t: (key: string) => string
-): string {
+export function createCancelConfirmationMessage(editingRowData: EditingRowData, t: (key: string) => string): string {
   if (editingRowData.isNew) {
     return t("table.cancel.confirmNewRow");
   } else {
@@ -58,10 +55,7 @@ export function createCancelConfirmationMessage(
  * @param forceConfirm Whether to force confirmation even without changes
  * @returns True if confirmation should be shown
  */
-export function shouldShowCancelConfirmation(
-  editingRowData: EditingRowData,
-  forceConfirm = false
-): boolean {
+export function shouldShowCancelConfirmation(editingRowData: EditingRowData, forceConfirm = false): boolean {
   return forceConfirm || hasUnsavedChanges(editingRowData);
 }
 
@@ -89,22 +83,22 @@ export async function handleCancelOperation({
 }): Promise<void> {
   logger.info(`[CancelOperation] Starting cancel for row: ${rowId}`, {
     isNew: editingRowData.isNew,
-    hasChanges: hasUnsavedChanges(editingRowData)
+    hasChanges: hasUnsavedChanges(editingRowData),
   });
 
   // Check if we need to show confirmation
   if (showConfirmation && shouldShowCancelConfirmation(editingRowData)) {
     // For now, we'll use a simple confirm dialog
     // In a real implementation, this would be replaced with a proper modal component
-    const message = editingRowData.isNew 
+    const message = editingRowData.isNew
       ? "Are you sure you want to discard this new row?"
       : "Are you sure you want to discard your changes?";
-    
+
     const confirmed = window.confirm(message);
-    
+
     if (!confirmed) {
       logger.info(`[CancelOperation] User cancelled the cancel operation for row: ${rowId}`);
-      throw new Error('Cancel operation was cancelled by user');
+      throw new Error("Cancel operation was cancelled by user");
     }
   }
 
@@ -122,7 +116,6 @@ export async function handleCancelOperation({
     } else {
       logger.info(`[CancelOperation] Discarded changes for existing row: ${rowId}`);
     }
-
   } catch (error) {
     logger.error(`[CancelOperation] Failed to cancel row ${rowId}:`, error);
     throw error;
@@ -151,7 +144,7 @@ export async function handleBatchCancelOperation({
   logger.info(`[CancelOperation] Starting batch cancel for ${rowIds.length} rows`);
 
   // Check if any rows have unsaved changes
-  const rowsWithChanges = rowIds.filter(rowId => {
+  const rowsWithChanges = rowIds.filter((rowId) => {
     const editingRowData = getEditingRowData(rowId);
     return editingRowData && hasUnsavedChanges(editingRowData);
   });
@@ -160,10 +153,10 @@ export async function handleBatchCancelOperation({
   if (showConfirmation && rowsWithChanges.length > 0) {
     const message = `Are you sure you want to discard changes for ${rowsWithChanges.length} row(s)?`;
     const confirmed = window.confirm(message);
-    
+
     if (!confirmed) {
       logger.info(`[CancelOperation] User cancelled the batch cancel operation`);
-      throw new Error('Batch cancel operation was cancelled by user');
+      throw new Error("Batch cancel operation was cancelled by user");
     }
   }
 
@@ -202,7 +195,7 @@ export function handleEscapeKeyCancel({
   getEditingRowData: (rowId: string) => EditingRowData | undefined;
   removeEditingRow: (rowId: string) => void;
 }): void {
-  if (event.key === 'Escape' && activeRowId) {
+  if (event.key === "Escape" && activeRowId) {
     const editingRowData = getEditingRowData(activeRowId);
     if (editingRowData) {
       handleCancelOperation({

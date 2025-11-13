@@ -15,11 +15,11 @@
  *************************************************************************
  */
 
-export { CellEditorFactory } from './CellEditorFactory';
-export { TextCellEditor } from './TextCellEditor';
-export { SelectCellEditor } from './SelectCellEditor';
-export { DateCellEditor } from './DateCellEditor';
-export { BooleanCellEditor } from './BooleanCellEditor';
-export { NumericCellEditor } from './NumericCellEditor';
+export { CellEditorFactory } from "./CellEditorFactory";
+export { TextCellEditor } from "./TextCellEditor";
+export { SelectCellEditor } from "./SelectCellEditor";
+export { DateCellEditor } from "./DateCellEditor";
+export { BooleanCellEditor } from "./BooleanCellEditor";
+export { NumericCellEditor } from "./NumericCellEditor";
 
-export type { CellEditorFactoryProps } from './CellEditorFactory';
+export type { CellEditorFactoryProps } from "./CellEditorFactory";

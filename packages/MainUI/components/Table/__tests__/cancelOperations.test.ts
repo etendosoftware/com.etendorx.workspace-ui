@@ -22,11 +22,11 @@ import {
   handleCancelOperation,
   handleBatchCancelOperation,
   handleEscapeKeyCancel,
-} from '../utils/cancelOperations';
-import type { EditingRowData } from '../types/inlineEditing';
+} from "../utils/cancelOperations";
+import type { EditingRowData } from "../types/inlineEditing";
 
 // Mock the logger
-jest.mock('@/utils/logger', () => ({
+jest.mock("@/utils/logger", () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),
@@ -37,21 +37,21 @@ jest.mock('@/utils/logger', () => ({
 
 // Mock window.confirm
 const mockConfirm = jest.fn();
-Object.defineProperty(window, 'confirm', {
+Object.defineProperty(window, "confirm", {
   value: mockConfirm,
   writable: true,
 });
 
-describe('cancelOperations', () => {
+describe("cancelOperations", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockConfirm.mockReturnValue(true);
   });
 
-  describe('hasUnsavedChanges', () => {
-    it('should return true for new rows', () => {
+  describe("hasUnsavedChanges", () => {
+    it("should return true for new rows", () => {
       const editingRowData: EditingRowData = {
-        originalData: { id: 'new_123' },
+        originalData: { id: "new_123" },
         modifiedData: {},
         isNew: true,
         validationErrors: {},
@@ -62,10 +62,10 @@ describe('cancelOperations', () => {
       expect(hasUnsavedChanges(editingRowData)).toBe(true);
     });
 
-    it('should return true when modified data differs from original', () => {
+    it("should return true when modified data differs from original", () => {
       const editingRowData: EditingRowData = {
-        originalData: { id: '456', name: 'Original Name' },
-        modifiedData: { name: 'Modified Name' },
+        originalData: { id: "456", name: "Original Name" },
+        modifiedData: { name: "Modified Name" },
         isNew: false,
         validationErrors: {},
         isSaving: false,
@@ -75,9 +75,9 @@ describe('cancelOperations', () => {
       expect(hasUnsavedChanges(editingRowData)).toBe(true);
     });
 
-    it('should return false when no changes exist', () => {
+    it("should return false when no changes exist", () => {
       const editingRowData: EditingRowData = {
-        originalData: { id: '456', name: 'Original Name' },
+        originalData: { id: "456", name: "Original Name" },
         modifiedData: {},
         isNew: false,
         validationErrors: {},
@@ -88,10 +88,10 @@ describe('cancelOperations', () => {
       expect(hasUnsavedChanges(editingRowData)).toBe(false);
     });
 
-    it('should return false when modified data matches original', () => {
+    it("should return false when modified data matches original", () => {
       const editingRowData: EditingRowData = {
-        originalData: { id: '456', name: 'Original Name' },
-        modifiedData: { name: 'Original Name' },
+        originalData: { id: "456", name: "Original Name" },
+        modifiedData: { name: "Original Name" },
         isNew: false,
         validationErrors: {},
         isSaving: false,
@@ -102,12 +102,12 @@ describe('cancelOperations', () => {
     });
   });
 
-  describe('createCancelConfirmationMessage', () => {
+  describe("createCancelConfirmationMessage", () => {
     const mockT = jest.fn((key: string) => key);
 
-    it('should return new row message for new records', () => {
+    it("should return new row message for new records", () => {
       const editingRowData: EditingRowData = {
-        originalData: { id: 'new_123' },
+        originalData: { id: "new_123" },
         modifiedData: {},
         isNew: true,
         validationErrors: {},
@@ -116,14 +116,14 @@ describe('cancelOperations', () => {
       };
 
       const result = createCancelConfirmationMessage(editingRowData, mockT);
-      expect(result).toBe('table.cancel.confirmNewRow');
-      expect(mockT).toHaveBeenCalledWith('table.cancel.confirmNewRow');
+      expect(result).toBe("table.cancel.confirmNewRow");
+      expect(mockT).toHaveBeenCalledWith("table.cancel.confirmNewRow");
     });
 
-    it('should return changes message for existing records', () => {
+    it("should return changes message for existing records", () => {
       const editingRowData: EditingRowData = {
-        originalData: { id: '456', name: 'Original Name' },
-        modifiedData: { name: 'Modified Name' },
+        originalData: { id: "456", name: "Original Name" },
+        modifiedData: { name: "Modified Name" },
         isNew: false,
         validationErrors: {},
         isSaving: false,
@@ -131,15 +131,15 @@ describe('cancelOperations', () => {
       };
 
       const result = createCancelConfirmationMessage(editingRowData, mockT);
-      expect(result).toBe('table.cancel.confirmChanges');
-      expect(mockT).toHaveBeenCalledWith('table.cancel.confirmChanges');
+      expect(result).toBe("table.cancel.confirmChanges");
+      expect(mockT).toHaveBeenCalledWith("table.cancel.confirmChanges");
     });
   });
 
-  describe('shouldShowCancelConfirmation', () => {
-    it('should return true when forceConfirm is true', () => {
+  describe("shouldShowCancelConfirmation", () => {
+    it("should return true when forceConfirm is true", () => {
       const editingRowData: EditingRowData = {
-        originalData: { id: '456', name: 'Original Name' },
+        originalData: { id: "456", name: "Original Name" },
         modifiedData: {},
         isNew: false,
         validationErrors: {},
@@ -150,10 +150,10 @@ describe('cancelOperations', () => {
       expect(shouldShowCancelConfirmation(editingRowData, true)).toBe(true);
     });
 
-    it('should return true when there are unsaved changes', () => {
+    it("should return true when there are unsaved changes", () => {
       const editingRowData: EditingRowData = {
-        originalData: { id: '456', name: 'Original Name' },
-        modifiedData: { name: 'Modified Name' },
+        originalData: { id: "456", name: "Original Name" },
+        modifiedData: { name: "Modified Name" },
         isNew: false,
         validationErrors: {},
         isSaving: false,
@@ -163,9 +163,9 @@ describe('cancelOperations', () => {
       expect(shouldShowCancelConfirmation(editingRowData)).toBe(true);
     });
 
-    it('should return false when no changes and not forced', () => {
+    it("should return false when no changes and not forced", () => {
       const editingRowData: EditingRowData = {
-        originalData: { id: '456', name: 'Original Name' },
+        originalData: { id: "456", name: "Original Name" },
         modifiedData: {},
         isNew: false,
         validationErrors: {},
@@ -177,7 +177,7 @@ describe('cancelOperations', () => {
     });
   });
 
-  describe('handleCancelOperation', () => {
+  describe("handleCancelOperation", () => {
     const mockRemoveEditingRow = jest.fn();
     const mockOnConfirm = jest.fn();
 
@@ -186,9 +186,9 @@ describe('cancelOperations', () => {
       mockOnConfirm.mockClear();
     });
 
-    it('should cancel without confirmation when no changes', async () => {
+    it("should cancel without confirmation when no changes", async () => {
       const editingRowData: EditingRowData = {
-        originalData: { id: '456', name: 'Original Name' },
+        originalData: { id: "456", name: "Original Name" },
         modifiedData: {},
         isNew: false,
         validationErrors: {},
@@ -197,7 +197,7 @@ describe('cancelOperations', () => {
       };
 
       await handleCancelOperation({
-        rowId: '456',
+        rowId: "456",
         editingRowData,
         removeEditingRow: mockRemoveEditingRow,
         showConfirmation: true,
@@ -206,13 +206,13 @@ describe('cancelOperations', () => {
 
       expect(mockConfirm).not.toHaveBeenCalled();
       expect(mockOnConfirm).toHaveBeenCalled();
-      expect(mockRemoveEditingRow).toHaveBeenCalledWith('456');
+      expect(mockRemoveEditingRow).toHaveBeenCalledWith("456");
     });
 
-    it('should show confirmation and cancel when user confirms', async () => {
+    it("should show confirmation and cancel when user confirms", async () => {
       const editingRowData: EditingRowData = {
-        originalData: { id: '456', name: 'Original Name' },
-        modifiedData: { name: 'Modified Name' },
+        originalData: { id: "456", name: "Original Name" },
+        modifiedData: { name: "Modified Name" },
         isNew: false,
         validationErrors: {},
         isSaving: false,
@@ -222,21 +222,21 @@ describe('cancelOperations', () => {
       mockConfirm.mockReturnValue(true);
 
       await handleCancelOperation({
-        rowId: '456',
+        rowId: "456",
         editingRowData,
         removeEditingRow: mockRemoveEditingRow,
         showConfirmation: true,
         onConfirm: mockOnConfirm,
       });
 
-      expect(mockConfirm).toHaveBeenCalledWith('Are you sure you want to discard your changes?');
+      expect(mockConfirm).toHaveBeenCalledWith("Are you sure you want to discard your changes?");
       expect(mockOnConfirm).toHaveBeenCalled();
-      expect(mockRemoveEditingRow).toHaveBeenCalledWith('456');
+      expect(mockRemoveEditingRow).toHaveBeenCalledWith("456");
     });
 
-    it('should show confirmation for new row', async () => {
+    it("should show confirmation for new row", async () => {
       const editingRowData: EditingRowData = {
-        originalData: { id: 'new_123' },
+        originalData: { id: "new_123" },
         modifiedData: {},
         isNew: true,
         validationErrors: {},
@@ -247,20 +247,20 @@ describe('cancelOperations', () => {
       mockConfirm.mockReturnValue(true);
 
       await handleCancelOperation({
-        rowId: 'new_123',
+        rowId: "new_123",
         editingRowData,
         removeEditingRow: mockRemoveEditingRow,
         showConfirmation: true,
       });
 
-      expect(mockConfirm).toHaveBeenCalledWith('Are you sure you want to discard this new row?');
-      expect(mockRemoveEditingRow).toHaveBeenCalledWith('new_123');
+      expect(mockConfirm).toHaveBeenCalledWith("Are you sure you want to discard this new row?");
+      expect(mockRemoveEditingRow).toHaveBeenCalledWith("new_123");
     });
 
-    it('should throw error when user cancels confirmation', async () => {
+    it("should throw error when user cancels confirmation", async () => {
       const editingRowData: EditingRowData = {
-        originalData: { id: '456', name: 'Original Name' },
-        modifiedData: { name: 'Modified Name' },
+        originalData: { id: "456", name: "Original Name" },
+        modifiedData: { name: "Modified Name" },
         isNew: false,
         validationErrors: {},
         isSaving: false,
@@ -271,20 +271,20 @@ describe('cancelOperations', () => {
 
       await expect(
         handleCancelOperation({
-          rowId: '456',
+          rowId: "456",
           editingRowData,
           removeEditingRow: mockRemoveEditingRow,
           showConfirmation: true,
         })
-      ).rejects.toThrow('Cancel operation was cancelled by user');
+      ).rejects.toThrow("Cancel operation was cancelled by user");
 
       expect(mockRemoveEditingRow).not.toHaveBeenCalled();
     });
 
-    it('should skip confirmation when showConfirmation is false', async () => {
+    it("should skip confirmation when showConfirmation is false", async () => {
       const editingRowData: EditingRowData = {
-        originalData: { id: '456', name: 'Original Name' },
-        modifiedData: { name: 'Modified Name' },
+        originalData: { id: "456", name: "Original Name" },
+        modifiedData: { name: "Modified Name" },
         isNew: false,
         validationErrors: {},
         isSaving: false,
@@ -292,18 +292,18 @@ describe('cancelOperations', () => {
       };
 
       await handleCancelOperation({
-        rowId: '456',
+        rowId: "456",
         editingRowData,
         removeEditingRow: mockRemoveEditingRow,
         showConfirmation: false,
       });
 
       expect(mockConfirm).not.toHaveBeenCalled();
-      expect(mockRemoveEditingRow).toHaveBeenCalledWith('456');
+      expect(mockRemoveEditingRow).toHaveBeenCalledWith("456");
     });
   });
 
-  describe('handleBatchCancelOperation', () => {
+  describe("handleBatchCancelOperation", () => {
     const mockGetEditingRowData = jest.fn();
     const mockRemoveEditingRow = jest.fn();
 
@@ -312,10 +312,10 @@ describe('cancelOperations', () => {
       mockRemoveEditingRow.mockClear();
     });
 
-    it('should cancel multiple rows with confirmation', async () => {
+    it("should cancel multiple rows with confirmation", async () => {
       const editingRowData1: EditingRowData = {
-        originalData: { id: '456', name: 'Original Name 1' },
-        modifiedData: { name: 'Modified Name 1' },
+        originalData: { id: "456", name: "Original Name 1" },
+        modifiedData: { name: "Modified Name 1" },
         isNew: false,
         validationErrors: {},
         isSaving: false,
@@ -323,8 +323,8 @@ describe('cancelOperations', () => {
       };
 
       const editingRowData2: EditingRowData = {
-        originalData: { id: '789', name: 'Original Name 2' },
-        modifiedData: { name: 'Modified Name 2' },
+        originalData: { id: "789", name: "Original Name 2" },
+        modifiedData: { name: "Modified Name 2" },
         isNew: false,
         validationErrors: {},
         isSaving: false,
@@ -332,29 +332,29 @@ describe('cancelOperations', () => {
       };
 
       mockGetEditingRowData.mockImplementation((rowId: string) => {
-        if (rowId === '456') return editingRowData1;
-        if (rowId === '789') return editingRowData2;
+        if (rowId === "456") return editingRowData1;
+        if (rowId === "789") return editingRowData2;
         return undefined;
       });
 
       mockConfirm.mockReturnValue(true);
 
       await handleBatchCancelOperation({
-        rowIds: ['456', '789'],
+        rowIds: ["456", "789"],
         getEditingRowData: mockGetEditingRowData,
         removeEditingRow: mockRemoveEditingRow,
         showConfirmation: true,
       });
 
-      expect(mockConfirm).toHaveBeenCalledWith('Are you sure you want to discard changes for 2 row(s)?');
-      expect(mockRemoveEditingRow).toHaveBeenCalledWith('456');
-      expect(mockRemoveEditingRow).toHaveBeenCalledWith('789');
+      expect(mockConfirm).toHaveBeenCalledWith("Are you sure you want to discard changes for 2 row(s)?");
+      expect(mockRemoveEditingRow).toHaveBeenCalledWith("456");
+      expect(mockRemoveEditingRow).toHaveBeenCalledWith("789");
     });
 
-    it('should throw error when user cancels batch confirmation', async () => {
+    it("should throw error when user cancels batch confirmation", async () => {
       const editingRowData: EditingRowData = {
-        originalData: { id: '456', name: 'Original Name' },
-        modifiedData: { name: 'Modified Name' },
+        originalData: { id: "456", name: "Original Name" },
+        modifiedData: { name: "Modified Name" },
         isNew: false,
         validationErrors: {},
         isSaving: false,
@@ -366,18 +366,18 @@ describe('cancelOperations', () => {
 
       await expect(
         handleBatchCancelOperation({
-          rowIds: ['456'],
+          rowIds: ["456"],
           getEditingRowData: mockGetEditingRowData,
           removeEditingRow: mockRemoveEditingRow,
           showConfirmation: true,
         })
-      ).rejects.toThrow('Batch cancel operation was cancelled by user');
+      ).rejects.toThrow("Batch cancel operation was cancelled by user");
 
       expect(mockRemoveEditingRow).not.toHaveBeenCalled();
     });
   });
 
-  describe('handleEscapeKeyCancel', () => {
+  describe("handleEscapeKeyCancel", () => {
     const mockGetEditingRowData = jest.fn();
     const mockRemoveEditingRow = jest.fn();
 
@@ -386,9 +386,9 @@ describe('cancelOperations', () => {
       mockRemoveEditingRow.mockClear();
     });
 
-    it('should handle escape key for active row', () => {
+    it("should handle escape key for active row", () => {
       const editingRowData: EditingRowData = {
-        originalData: { id: '456', name: 'Original Name' },
+        originalData: { id: "456", name: "Original Name" },
         modifiedData: {},
         isNew: false,
         validationErrors: {},
@@ -398,24 +398,24 @@ describe('cancelOperations', () => {
 
       mockGetEditingRowData.mockReturnValue(editingRowData);
 
-      const event = new KeyboardEvent('keydown', { key: 'Escape' });
+      const event = new KeyboardEvent("keydown", { key: "Escape" });
 
       handleEscapeKeyCancel({
         event,
-        activeRowId: '456',
+        activeRowId: "456",
         getEditingRowData: mockGetEditingRowData,
         removeEditingRow: mockRemoveEditingRow,
       });
 
-      expect(mockGetEditingRowData).toHaveBeenCalledWith('456');
+      expect(mockGetEditingRowData).toHaveBeenCalledWith("456");
     });
 
-    it('should ignore non-escape keys', () => {
-      const event = new KeyboardEvent('keydown', { key: 'Enter' });
+    it("should ignore non-escape keys", () => {
+      const event = new KeyboardEvent("keydown", { key: "Enter" });
 
       handleEscapeKeyCancel({
         event,
-        activeRowId: '456',
+        activeRowId: "456",
         getEditingRowData: mockGetEditingRowData,
         removeEditingRow: mockRemoveEditingRow,
       });
@@ -423,8 +423,8 @@ describe('cancelOperations', () => {
       expect(mockGetEditingRowData).not.toHaveBeenCalled();
     });
 
-    it('should ignore when no active row', () => {
-      const event = new KeyboardEvent('keydown', { key: 'Escape' });
+    it("should ignore when no active row", () => {
+      const event = new KeyboardEvent("keydown", { key: "Escape" });
 
       handleEscapeKeyCancel({
         event,

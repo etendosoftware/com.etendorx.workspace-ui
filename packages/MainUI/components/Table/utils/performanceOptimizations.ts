@@ -22,12 +22,9 @@ import { logger } from "@/utils/logger";
  * Debounce function for performance optimization
  * Delays execution of a function until after a specified delay
  */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  delay: number
-): (...args: Parameters<T>) => void {
+export function debounce<T extends (...args: any[]) => any>(func: T, delay: number): (...args: Parameters<T>) => void {
   let timeoutId: ReturnType<typeof setTimeout>;
-  
+
   return (...args: Parameters<T>) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => func(...args), delay);
@@ -44,19 +41,22 @@ export function throttle<T extends (...args: any[]) => any>(
 ): (...args: Parameters<T>) => void {
   let lastExecution = 0;
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  
+
   return (...args: Parameters<T>) => {
     const now = Date.now();
-    
+
     if (now - lastExecution >= interval) {
       lastExecution = now;
       func(...args);
     } else if (!timeoutId) {
-      timeoutId = setTimeout(() => {
-        lastExecution = Date.now();
-        timeoutId = null;
-        func(...args);
-      }, interval - (now - lastExecution));
+      timeoutId = setTimeout(
+        () => {
+          lastExecution = Date.now();
+          timeoutId = null;
+          func(...args);
+        },
+        interval - (now - lastExecution)
+      );
     }
   };
 }
@@ -70,16 +70,19 @@ export const useDebouncedCallback = <T extends (...args: any[]) => any>(
   delay: number
 ): ((...args: Parameters<T>) => void) => {
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  
-  return useCallback((...args: Parameters<T>) => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    
-    timeoutRef.current = setTimeout(() => {
-      callback(...args);
-    }, delay);
-  }, [callback, delay]);
+
+  return useCallback(
+    (...args: Parameters<T>) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      timeoutRef.current = setTimeout(() => {
+        callback(...args);
+      }, delay);
+    },
+    [callback, delay]
+  );
 };
 
 /**
@@ -92,21 +95,27 @@ export const useThrottledCallback = <T extends (...args: any[]) => any>(
 ): ((...args: Parameters<T>) => void) => {
   const lastExecutionRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
-  return useCallback((...args: Parameters<T>) => {
-    const now = Date.now();
-    
-    if (now - lastExecutionRef.current >= interval) {
-      lastExecutionRef.current = now;
-      callback(...args);
-    } else if (!timeoutRef.current) {
-      timeoutRef.current = setTimeout(() => {
-        lastExecutionRef.current = Date.now();
-        timeoutRef.current = null;
+
+  return useCallback(
+    (...args: Parameters<T>) => {
+      const now = Date.now();
+
+      if (now - lastExecutionRef.current >= interval) {
+        lastExecutionRef.current = now;
         callback(...args);
-      }, interval - (now - lastExecutionRef.current));
-    }
-  }, [callback, interval]);
+      } else if (!timeoutRef.current) {
+        timeoutRef.current = setTimeout(
+          () => {
+            lastExecutionRef.current = Date.now();
+            timeoutRef.current = null;
+            callback(...args);
+          },
+          interval - (now - lastExecutionRef.current)
+        );
+      }
+    },
+    [callback, interval]
+  );
 };
 
 /**
@@ -121,16 +130,19 @@ export const useMemoizedCellEditor = (
   rowId: string,
   columnId: string
 ) => {
-  return useMemo(() => ({
-    fieldType,
-    value,
-    hasError,
-    disabled,
-    rowId,
-    columnId,
-    // Create a stable key for memoization
-    key: `${rowId}-${columnId}-${fieldType}-${String(value)}-${hasError}-${disabled}`
-  }), [fieldType, value, hasError, disabled, rowId, columnId]);
+  return useMemo(
+    () => ({
+      fieldType,
+      value,
+      hasError,
+      disabled,
+      rowId,
+      columnId,
+      // Create a stable key for memoization
+      key: `${rowId}-${columnId}-${fieldType}-${String(value)}-${hasError}-${disabled}`,
+    }),
+    [fieldType, value, hasError, disabled, rowId, columnId]
+  );
 };
 
 /**
@@ -140,14 +152,14 @@ export const useMemoizedCellEditor = (
 export class LazyLoadingManager {
   private loadedEditors = new Set<string>();
   private pendingLoads = new Map<string, Promise<any>>();
-  
+
   /**
    * Check if an editor is already loaded
    */
   isEditorLoaded(editorKey: string): boolean {
     return this.loadedEditors.has(editorKey);
   }
-  
+
   /**
    * Load an editor lazily
    */
@@ -155,31 +167,33 @@ export class LazyLoadingManager {
     if (this.loadedEditors.has(editorKey)) {
       return Promise.resolve();
     }
-    
+
     if (this.pendingLoads.has(editorKey)) {
       return this.pendingLoads.get(editorKey);
     }
-    
-    const loadPromise = loader().then((result) => {
-      this.loadedEditors.add(editorKey);
-      this.pendingLoads.delete(editorKey);
-      logger.debug(`[LazyLoading] Loaded editor: ${editorKey}`);
-      return result;
-    }).catch((error) => {
-      this.pendingLoads.delete(editorKey);
-      logger.error(`[LazyLoading] Failed to load editor: ${editorKey}`, error);
-      throw error;
-    });
-    
+
+    const loadPromise = loader()
+      .then((result) => {
+        this.loadedEditors.add(editorKey);
+        this.pendingLoads.delete(editorKey);
+        logger.debug(`[LazyLoading] Loaded editor: ${editorKey}`);
+        return result;
+      })
+      .catch((error) => {
+        this.pendingLoads.delete(editorKey);
+        logger.error(`[LazyLoading] Failed to load editor: ${editorKey}`, error);
+        throw error;
+      });
+
     this.pendingLoads.set(editorKey, loadPromise);
     return loadPromise;
   }
-  
+
   /**
    * Preload editors that are likely to be needed soon
    */
   preloadEditors(editorKeys: string[], loaders: Map<string, () => Promise<any>>): void {
-    editorKeys.forEach(key => {
+    editorKeys.forEach((key) => {
       const loader = loaders.get(key);
       if (loader && !this.loadedEditors.has(key) && !this.pendingLoads.has(key)) {
         // Preload with low priority
@@ -191,14 +205,14 @@ export class LazyLoadingManager {
       }
     });
   }
-  
+
   /**
    * Clear loaded editors to free memory
    */
   clearLoadedEditors(): void {
     this.loadedEditors.clear();
     this.pendingLoads.clear();
-    logger.debug('[LazyLoading] Cleared all loaded editors');
+    logger.debug("[LazyLoading] Cleared all loaded editors");
   }
 }
 
@@ -214,8 +228,8 @@ export const createLazyLoadingManager = (): LazyLoadingManager => {
  */
 export class PerformanceMonitor {
   private measurements = new Map<string, number>();
-  private enabled = process.env.NODE_ENV === 'development';
-  
+  private enabled = process.env.NODE_ENV === "development";
+
   /**
    * Start measuring performance for a specific operation
    */
@@ -223,18 +237,18 @@ export class PerformanceMonitor {
     if (!this.enabled) return;
     this.measurements.set(key, performance.now());
   }
-  
+
   /**
    * End measurement and log the result
    */
   endMeasurement(key: string, threshold = 16): void {
     if (!this.enabled) return;
-    
+
     const startTime = this.measurements.get(key);
     if (startTime) {
       const duration = performance.now() - startTime;
       this.measurements.delete(key);
-      
+
       if (duration > threshold) {
         logger.warn(`[Performance] Slow operation detected: ${key} took ${duration.toFixed(2)}ms`);
       } else {
@@ -242,13 +256,13 @@ export class PerformanceMonitor {
       }
     }
   }
-  
+
   /**
    * Measure a function execution
    */
   measure<T>(key: string, fn: () => T, threshold = 16): T {
     if (!this.enabled) return fn();
-    
+
     this.startMeasurement(key);
     try {
       const result = fn();
@@ -259,13 +273,13 @@ export class PerformanceMonitor {
       throw error;
     }
   }
-  
+
   /**
    * Measure an async function execution
    */
   async measureAsync<T>(key: string, fn: () => Promise<T>, threshold = 16): Promise<T> {
     if (!this.enabled) return fn();
-    
+
     this.startMeasurement(key);
     try {
       const result = await fn();
@@ -305,11 +319,11 @@ export const calculateVisibleRange = (
   totalItems: number
 ): { startIndex: number; endIndex: number; visibleItems: number } => {
   const { itemHeight, containerHeight, overscan } = config;
-  
+
   const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
   const visibleItems = Math.ceil(containerHeight / itemHeight);
   const endIndex = Math.min(totalItems - 1, startIndex + visibleItems + overscan * 2);
-  
+
   return { startIndex, endIndex, visibleItems };
 };
 
@@ -320,31 +334,31 @@ export class MemoryManager {
   private cache = new Map<string, { data: any; timestamp: number; size: number }>();
   private maxCacheSize = 50 * 1024 * 1024; // 50MB
   private currentCacheSize = 0;
-  
+
   /**
    * Add item to cache with size tracking
    */
   set(key: string, data: any): void {
     const size = this.estimateSize(data);
-    
+
     // Remove existing item if it exists
     if (this.cache.has(key)) {
       const existing = this.cache.get(key)!;
       this.currentCacheSize -= existing.size;
     }
-    
+
     // Add new item
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
-      size
+      size,
     });
     this.currentCacheSize += size;
-    
+
     // Clean up if cache is too large
     this.cleanup();
   }
-  
+
   /**
    * Get item from cache
    */
@@ -357,7 +371,7 @@ export class MemoryManager {
     }
     return undefined;
   }
-  
+
   /**
    * Remove item from cache
    */
@@ -368,7 +382,7 @@ export class MemoryManager {
       this.currentCacheSize -= item.size;
     }
   }
-  
+
   /**
    * Clear all cache
    */
@@ -376,31 +390,29 @@ export class MemoryManager {
     this.cache.clear();
     this.currentCacheSize = 0;
   }
-  
+
   /**
    * Cleanup old items when cache is too large
    */
   private cleanup(): void {
     if (this.currentCacheSize <= this.maxCacheSize) return;
-    
+
     // Sort by timestamp (oldest first)
-    const entries = Array.from(this.cache.entries()).sort(
-      (a, b) => a[1].timestamp - b[1].timestamp
-    );
-    
+    const entries = Array.from(this.cache.entries()).sort((a, b) => a[1].timestamp - b[1].timestamp);
+
     // Remove oldest items until we're under the limit
     for (const [key, item] of entries) {
       this.cache.delete(key);
       this.currentCacheSize -= item.size;
-      
+
       if (this.currentCacheSize <= this.maxCacheSize * 0.8) {
         break;
       }
     }
-    
+
     logger.debug(`[MemoryManager] Cleaned up cache, current size: ${this.currentCacheSize} bytes`);
   }
-  
+
   /**
    * Estimate the size of an object in bytes
    */
@@ -408,7 +420,7 @@ export class MemoryManager {
     const jsonString = JSON.stringify(obj);
     return new Blob([jsonString]).size;
   }
-  
+
   /**
    * Get cache statistics
    */
@@ -416,7 +428,7 @@ export class MemoryManager {
     return {
       items: this.cache.size,
       size: this.currentCacheSize,
-      maxSize: this.maxCacheSize
+      maxSize: this.maxCacheSize,
     };
   }
 }

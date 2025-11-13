@@ -83,6 +83,12 @@ import {
 import { useScreenReaderAnnouncer, generateAriaAttributes, useFocusManagement } from "./utils/accessibilityUtils";
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
+import { globalCalloutManager } from "@/services/callouts";
+import { buildPayloadByInputName } from "@/utils";
+import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import type { FormInitializationResponse } from "@workspaceui/api-client/src/api/types";
+import { getMergedRowData } from "./utils/editingRowUtils";
 import "./styles/inlineEditing.css";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
@@ -183,9 +189,7 @@ const fieldCache = new Map<string, Field>();
 
 const columnToFieldForEditor = (column: Column): Field => {
   // Extract readOnlyLogicExpression from column (now populated by parseColumns)
-  const readOnlyLogicExpression =
-    (column as any).readOnlyLogicExpression ||
-    column.column?.readOnlyLogicExpression;
+  const readOnlyLogicExpression = (column as any).readOnlyLogicExpression || column.column?.readOnlyLogicExpression;
 
   // Extract isReadOnly and isUpdatable from column
   const isReadOnly = (column as any).isReadOnly || false;
@@ -397,17 +401,61 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const columnFieldMappings = useMemo(() => {
     const mappings = new Map<string, { fieldType: FieldType; field: Field }>();
 
+    // Debug: log all available fields in tab
+    logger.debug('[InlineCallout] Available fields in tab.fields:', Object.keys(tab.fields || {}));
+
     baseColumns.forEach((col) => {
       if (col.name !== "actions") {
-        mappings.set(col.name, {
+        // Build field from column as usual
+        const field = columnToFieldForEditor(col);
+
+        // Try to get callout info from original Field in tab.fields
+        // Fields in tab.fields are indexed by their hqlName, which corresponds to col.columnName
+        const fieldKey = col.columnName || col.name;
+        const originalField = tab.fields?.[fieldKey];
+
+        // Debug log for businessPartner field
+        if (col.name === 'businessPartner' || fieldKey === 'businessPartner') {
+          logger.info('[InlineCallout] Searching for businessPartner:', {
+            colName: col.name,
+            colColumnName: col.columnName,
+            fieldKey: fieldKey,
+            hasOriginalField: !!originalField,
+            originalFieldKeys: originalField ? Object.keys(originalField) : [],
+            hasColumn: !!originalField?.column,
+            columnKeys: originalField?.column ? Object.keys(originalField.column) : [],
+            hasCallout: !!originalField?.column?.callout,
+            calloutValue: originalField?.column?.callout
+          });
+        }
+
+        // Transfer callout and proper field names from original field if it exists
+        if (originalField?.column?.callout) {
+          field.column = {
+            ...field.column,
+            callout: originalField.column.callout
+          };
+          // Use the correct inputName and hqlName from the original field for callout execution
+          field.inputName = originalField.inputName;
+          field.hqlName = originalField.hqlName;
+          logger.info(`[InlineCallout] Field ${col.name} (${fieldKey}) has callout: ${originalField.column.callout}, inputName: ${originalField.inputName}`);
+        }
+
+        const mapping = {
           fieldType: getFieldTypeFromColumn(col),
-          field: columnToFieldForEditor(col),
-        });
+          field: field,
+        };
+
+        // Store mapping by both col.name and col.columnName to handle different field name formats
+        mappings.set(col.name, mapping);
+        if (col.columnName && col.columnName !== col.name) {
+          mappings.set(col.columnName, mapping);
+        }
       }
     });
 
     return mappings;
-  }, [baseColumns, getFieldTypeFromColumn, columnToFieldForEditor]);
+  }, [baseColumns, tab.fields, getFieldTypeFromColumn, columnToFieldForEditor]);
 
   // Create debounced validation function for real-time feedback with performance monitoring
   const debouncedValidateField = useDebouncedCallback((rowId: string, fieldName: string, value: unknown) => {
@@ -454,6 +502,172 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       });
     },
     [columnFieldMappings, editingRowUtils, editingRows, performanceMonitor]
+  );
+
+  // Helper function to get Field by name using the columnFieldMappings cache
+  const getFieldByName = useCallback(
+    (fieldName: string): Field | undefined => {
+      return columnFieldMappings.get(fieldName)?.field;
+    },
+    [columnFieldMappings]
+  );
+
+  // Apply callout values to an editing row
+  const applyCalloutValuesToRow = useCallback(
+    (rowId: string, columnValues: FormInitializationResponse["columnValues"]) => {
+      if (!columnValues) return;
+
+      const editingData = editingRowUtils.getEditingRowData(rowId);
+      if (!editingData) return;
+
+      // Get field mappings
+      const fieldsByColumnName = getFieldsByColumnName(tab);
+
+      // Apply each column value
+      for (const [columnName, columnValue] of Object.entries(columnValues)) {
+        const targetField = fieldsByColumnName[columnName];
+        if (!targetField) continue;
+
+        const fieldName = targetField.hqlName || columnName;
+        const { value, identifier } = columnValue;
+
+        // Update the field value in editing row
+        editingRowUtils.updateCellValue(rowId, fieldName, value);
+
+        // If field has identifier, update it too
+        if (identifier && value && String(value) !== identifier) {
+          editingRowUtils.updateCellValue(rowId, `${fieldName}$_identifier`, identifier);
+        }
+
+        // Handle restricted entries for selectors
+        const withEntries = (columnValue as any).entries;
+        if (withEntries?.length) {
+          editingRowUtils.updateCellValue(
+            rowId,
+            `${fieldName}$_entries`,
+            withEntries.map((e: any) => ({ id: e.id, label: e._identifier }))
+          );
+        }
+      }
+
+      logger.info(`[InlineCallout] Applied ${Object.keys(columnValues).length} values to row ${rowId}`);
+    },
+    [tab, editingRowUtils]
+  );
+
+  // Execute inline callout for a field
+  const executeInlineCallout = useCallback(
+    async (rowId: string, field: Field, newValue: unknown) => {
+      logger.info(`[InlineCallout] executeInlineCallout called for ${field.hqlName}`, {
+        hasCallout: !!field.column.callout,
+        rowId,
+        newValue
+      });
+
+      // Don't execute if field doesn't have callout
+      if (!field.column.callout) {
+        logger.warn(`[InlineCallout] Field ${field.hqlName} has no callout configured`);
+        return;
+      }
+
+      // Get current editing row data
+      const editingData = editingRowUtils.getEditingRowData(rowId);
+      if (!editingData) {
+        logger.warn(`[InlineCallout] No editing data found for row ${rowId}`);
+        return;
+      }
+
+      // Don't execute if we're applying callout values (prevent loops)
+      if (editingData.isApplyingCalloutValues) {
+        logger.info(`[InlineCallout] Skipped (applying values): ${field.hqlName}`);
+        return;
+      }
+
+      logger.info(`[InlineCallout] About to execute callout for ${field.hqlName}`);
+
+      try {
+        // Mark that we're applying callout values
+        editingRowUtils.setCalloutApplying(rowId, true);
+
+        // Build payload from current row data
+        const fieldsByHqlName = tab?.fields || {};
+        const fieldsByColumnName = getFieldsByColumnName(tab);
+        const currentRowData = getMergedRowData(editingData);
+        const payload = buildPayloadByInputName(currentRowData, fieldsByHqlName);
+
+        const entityKeyColumn = tab.fields.id.columnName;
+        const calloutData = {
+          ...session,
+          ...payload,
+          inpKeyName: fieldsByColumnName[entityKeyColumn].inputName,
+          inpTabId: tab.id,
+          inpTableId: tab.table,
+          inpkeyColumnId: entityKeyColumn,
+          keyColumnName: entityKeyColumn,
+          _entityName: tab.entityName,
+          inpwindowId: tab.window,
+        };
+
+        logger.info(`[InlineCallout] Calling callout for ${field.hqlName}:`, {
+          fieldInputName: field.inputName,
+          fieldHqlName: field.hqlName,
+          tabId: tab.id,
+          rowId: rowId,
+          isNewRow: editingData.isNew,
+          payloadKeys: Object.keys(calloutData).slice(0, 20),
+          payloadSample: {
+            inpKeyName: calloutData.inpKeyName,
+            inpTabId: calloutData.inpTabId,
+            _entityName: calloutData._entityName,
+            inpcBpartnerId: (calloutData as any).inpcBpartnerId,
+            inpbpartnerLocationId: (calloutData as any).inpbpartnerLocationId
+          }
+        });
+
+        // Execute through global manager
+        await globalCalloutManager.executeCallout(field.hqlName, async () => {
+          const params = new URLSearchParams({
+            _action: "org.openbravo.client.application.window.FormInitializationComponent",
+            MODE: "CHANGE",
+            TAB_ID: tab.id,
+            CHANGED_COLUMN: field.inputName,
+            ROW_ID: rowId,
+            PARENT_ID: String(parentRecord?.id || "null"),
+          });
+
+          const response = await Metadata.kernelClient.post(`?${params}`, calloutData);
+
+          logger.info(`[InlineCallout] Response received for ${field.hqlName}:`, {
+            hasResponse: !!response,
+            hasData: !!response?.data,
+            hasColumnValues: !!response?.data?.columnValues,
+            columnValuesKeys: response?.data?.columnValues ? Object.keys(response.data.columnValues) : [],
+            columnValues: response?.data?.columnValues,
+            responseDataKeys: response?.data ? Object.keys(response.data) : [],
+            calloutMessages: response?.data?.calloutMessages
+          });
+
+          if (response?.data?.columnValues) {
+            // Suppress other callouts while applying values
+            globalCalloutManager.suppress();
+
+            try {
+              applyCalloutValuesToRow(rowId, response.data.columnValues);
+            } finally {
+              setTimeout(() => globalCalloutManager.resume(), 0);
+            }
+          } else {
+            logger.warn(`[InlineCallout] No columnValues in response for ${field.hqlName}`);
+          }
+        });
+      } catch (error) {
+        logger.error(`[InlineCallout] Error executing callout for ${field.hqlName}:`, error);
+      } finally {
+        // Always clear the flag
+        editingRowUtils.setCalloutApplying(rowId, false);
+      }
+    },
+    [tab, session, parentRecord, editingRowUtils, applyCalloutValuesToRow]
   );
 
   const toggleColumnsDropdown = useCallback(
@@ -961,6 +1175,20 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
       // Trigger debounced validation for real-time feedback
       debouncedValidateField(rowId, fieldName, value);
+
+      // Execute callout if field has one
+      const field = getFieldByName(fieldName);
+      logger.debug(`[InlineCallout] Checking field ${fieldName}:`, {
+        hasField: !!field,
+        hasCallout: !!field?.column.callout,
+        calloutName: field?.column.callout
+      });
+      if (field?.column.callout) {
+        logger.info(`[InlineCallout] Executing callout for ${fieldName}: ${field.column.callout}`);
+        executeInlineCallout(rowId, field, value).catch((error) => {
+          logger.error(`[InlineCallout] Error executing callout for ${fieldName}:`, error);
+        });
+      }
     });
   }, 50); // Throttle to max 20 updates per second
 

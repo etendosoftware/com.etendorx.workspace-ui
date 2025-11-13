@@ -34,15 +34,15 @@ const BooleanCellEditorComponent: React.FC<CellEditorProps> = ({
   rowId,
   columnId,
   keyboardNavigationManager,
-  shouldAutoFocus = false
+  shouldAutoFocus = false,
 }) => {
   const checkboxRef = useRef<HTMLInputElement>(null);
   const [localValue, setLocalValue] = useState<boolean>(false);
 
   // Keyboard navigation hook
   const { handleKeyDown: handleNavigationKeyDown, setFocused } = useKeyboardNavigation(
-    rowId || '',
-    columnId || '',
+    rowId || "",
+    columnId || "",
     keyboardNavigationManager
   );
 
@@ -67,19 +67,19 @@ const BooleanCellEditorComponent: React.FC<CellEditorProps> = ({
    * Handles: true/false, "Y"/"N", "true"/"false", 1/0, etc.
    */
   const convertToBoolean = (val: unknown): boolean => {
-    if (typeof val === 'boolean') {
+    if (typeof val === "boolean") {
       return val;
     }
-    
-    if (typeof val === 'string') {
+
+    if (typeof val === "string") {
       const strVal = val.toLowerCase().trim();
-      return strVal === 'true' || strVal === 'y' || strVal === '1' || strVal === 'yes';
+      return strVal === "true" || strVal === "y" || strVal === "1" || strVal === "yes";
     }
-    
-    if (typeof val === 'number') {
+
+    if (typeof val === "number") {
       return val !== 0;
     }
-    
+
     return false;
   };
 
@@ -112,22 +112,22 @@ const BooleanCellEditorComponent: React.FC<CellEditorProps> = ({
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     // First try keyboard navigation
     const navigationHandled = await handleNavigationKeyDown(e.nativeEvent);
-    
+
     if (!navigationHandled) {
       // Handle local keyboard events if navigation didn't handle them
       switch (e.key) {
-        case 'Enter':
+        case "Enter":
           // This should be handled by navigation, but fallback to blur
           e.preventDefault();
           checkboxRef.current?.blur();
           break;
-        case 'Escape':
+        case "Escape":
           // This should be handled by navigation, but fallback to restore value
           e.preventDefault();
           setLocalValue(convertToBoolean(value));
           checkboxRef.current?.blur();
           break;
-        case ' ':
+        case " ":
           // Space key toggles checkbox (default behavior)
           break;
         default:
@@ -162,31 +162,25 @@ const BooleanCellEditorComponent: React.FC<CellEditorProps> = ({
             focus:ring-2
             focus:ring-blue-500
             focus:ring-offset-1
-            ${hasError 
-              ? 'border-red-500 text-red-600 focus:ring-red-500' 
-              : 'border-gray-300 text-blue-600'
-            }
-            ${disabled 
-              ? 'bg-gray-100 border-gray-300 cursor-not-allowed opacity-50' 
-              : 'hover:border-gray-400 cursor-pointer'
+            ${hasError ? "border-red-500 text-red-600 focus:ring-red-500" : "border-gray-300 text-blue-600"}
+            ${
+              disabled
+                ? "bg-gray-100 border-gray-300 cursor-not-allowed opacity-50"
+                : "hover:border-gray-400 cursor-pointer"
             }
           `}
-          title={hasError ? 'This field has validation errors' : field.name}
+          title={hasError ? "This field has validation errors" : field.name}
           aria-label={field.name}
           aria-invalid={hasError}
           aria-describedby={hasError ? `${field.name}-error` : undefined}
         />
-        
+
         {/* Optional label text */}
-        <span className="ml-2 text-sm text-gray-700 select-none">
-          {localValue ? 'Yes' : 'No'}
-        </span>
+        <span className="ml-2 text-sm text-gray-700 select-none">{localValue ? "Yes" : "No"}</span>
       </label>
-      
+
       {/* Visual indicator for the current state */}
-      <div className="ml-2 text-xs text-gray-500">
-        {localValue ? '✓' : '✗'}
-      </div>
+      <div className="ml-2 text-xs text-gray-500">{localValue ? "✓" : "✗"}</div>
     </div>
   );
 };
@@ -203,6 +197,6 @@ export const BooleanCellEditor = React.memo(BooleanCellEditorComponent, (prevPro
   );
 });
 
-BooleanCellEditor.displayName = 'BooleanCellEditor';
+BooleanCellEditor.displayName = "BooleanCellEditor";
 
 export default BooleanCellEditor;

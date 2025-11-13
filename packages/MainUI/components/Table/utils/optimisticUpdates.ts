@@ -24,7 +24,7 @@ import { getMergedRowData } from "./editingRowUtils";
  * Interface for optimistic update operations
  */
 export interface OptimisticUpdate {
-  type: 'create' | 'update' | 'delete';
+  type: "create" | "update" | "delete";
   rowId: string;
   originalData?: EntityData;
   newData?: EntityData;
@@ -57,25 +57,23 @@ export function createOptimisticUpdateManager() {
       logger.debug(`[OptimisticUpdate] Applying ${update.type} update for row: ${update.rowId}`);
 
       switch (update.type) {
-        case 'create':
+        case "create":
           if (update.newData) {
             // Add new record to the beginning of the array
             return [update.newData, ...records];
           }
           break;
 
-        case 'update':
+        case "update":
           if (update.newData) {
             // Update existing record
-            return records.map(record => 
-              String(record.id) === update.rowId ? update.newData! : record
-            );
+            return records.map((record) => (String(record.id) === update.rowId ? update.newData! : record));
           }
           break;
 
-        case 'delete':
+        case "delete":
           // Remove record from array
-          return records.filter(record => String(record.id) !== update.rowId);
+          return records.filter((record) => String(record.id) !== update.rowId);
       }
 
       return records;
@@ -89,9 +87,9 @@ export function createOptimisticUpdateManager() {
      */
     createOptimisticCreate(rowId: string, editingRowData: EditingRowData): OptimisticUpdate {
       const newData = getMergedRowData(editingRowData);
-      
+
       return {
-        type: 'create',
+        type: "create",
         rowId,
         newData,
         timestamp: Date.now(),
@@ -106,9 +104,9 @@ export function createOptimisticUpdateManager() {
      */
     createOptimisticUpdate(rowId: string, editingRowData: EditingRowData): OptimisticUpdate {
       const newData = getMergedRowData(editingRowData);
-      
+
       return {
-        type: 'update',
+        type: "update",
         rowId,
         originalData: editingRowData.originalData,
         newData,
@@ -122,11 +120,11 @@ export function createOptimisticUpdateManager() {
      */
     addPendingUpdate(update: OptimisticUpdate): void {
       pendingUpdates.set(update.rowId, update);
-      
+
       if (update.originalData) {
         rollbackData.set(update.rowId, update.originalData);
       }
-      
+
       logger.debug(`[OptimisticUpdate] Added pending ${update.type} for row: ${update.rowId}`);
     },
 
@@ -152,13 +150,13 @@ export function createOptimisticUpdateManager() {
     rollbackUpdate(rowId: string): EntityData | undefined {
       const update = pendingUpdates.get(rowId);
       const originalData = rollbackData.get(rowId);
-      
+
       if (update) {
         pendingUpdates.delete(rowId);
         rollbackData.delete(rowId);
         logger.debug(`[OptimisticUpdate] Rolled back ${update.type} for row: ${rowId}`);
       }
-      
+
       return originalData;
     },
 
@@ -195,15 +193,14 @@ export function createOptimisticUpdateManager() {
      */
     applyAllOptimisticUpdates(records: EntityData[]): EntityData[] {
       let updatedRecords = [...records];
-      
+
       // Sort updates by timestamp to apply them in order
-      const sortedUpdates = Array.from(pendingUpdates.values())
-        .sort((a, b) => a.timestamp - b.timestamp);
-      
+      const sortedUpdates = Array.from(pendingUpdates.values()).sort((a, b) => a.timestamp - b.timestamp);
+
       for (const update of sortedUpdates) {
         updatedRecords = this.applyOptimisticUpdate(updatedRecords, update);
       }
-      
+
       return updatedRecords;
     },
 
@@ -215,7 +212,7 @@ export function createOptimisticUpdateManager() {
      */
     rollbackAllUpdates(records: EntityData[], originalRecords: EntityData[]): EntityData[] {
       logger.warn(`[OptimisticUpdate] Rolling back all ${pendingUpdates.size} pending updates`);
-      
+
       this.clearAllUpdates();
       return [...originalRecords];
     },
@@ -228,10 +225,7 @@ export function createOptimisticUpdateManager() {
  * @param setRecords Function to update table records
  * @returns Optimistic update manager with bound functions
  */
-export function useOptimisticUpdates(
-  records: EntityData[],
-  setRecords: (records: EntityData[]) => void
-) {
+export function useOptimisticUpdates(records: EntityData[], setRecords: (records: EntityData[]) => void) {
   const manager = createOptimisticUpdateManager();
 
   return {
@@ -252,12 +246,10 @@ export function useOptimisticUpdates(
      */
     confirmUpdate: (rowId: string, serverData?: EntityData) => {
       manager.confirmUpdate(rowId, serverData);
-      
+
       // If server data is provided, update the record with server data
       if (serverData) {
-        const updatedRecords = records.map(record => 
-          String(record.id) === rowId ? serverData : record
-        );
+        const updatedRecords = records.map((record) => (String(record.id) === rowId ? serverData : record));
         setRecords(updatedRecords);
       }
     },
@@ -268,16 +260,14 @@ export function useOptimisticUpdates(
      */
     rollbackUpdate: (rowId: string) => {
       const originalData = manager.rollbackUpdate(rowId);
-      
+
       if (originalData) {
         // Restore the original data
-        const updatedRecords = records.map(record => 
-          String(record.id) === rowId ? originalData : record
-        );
+        const updatedRecords = records.map((record) => (String(record.id) === rowId ? originalData : record));
         setRecords(updatedRecords);
       } else {
         // If it was a create operation, remove the record
-        const updatedRecords = records.filter(record => String(record.id) !== rowId);
+        const updatedRecords = records.filter((record) => String(record.id) !== rowId);
         setRecords(updatedRecords);
       }
     },

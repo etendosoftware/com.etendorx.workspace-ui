@@ -97,7 +97,7 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
 
       // Get the proper field type using the corrected reference mapping
       const fieldType = getFieldReference(column.column?.reference);
-      
+
       // Field type mapping now uses corrected reference codes
 
       result.push({

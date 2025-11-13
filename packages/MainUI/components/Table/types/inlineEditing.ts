@@ -24,7 +24,7 @@ import type { MRT_Cell, MRT_Row } from "material-react-table";
 export interface ValidationError {
   field: string;
   message: string;
-  type: 'required' | 'format' | 'server';
+  type: "required" | "format" | "server";
 }
 
 /**
@@ -51,6 +51,8 @@ export interface EditingRowData {
   isSaving: boolean;
   /** Whether the row has unsaved changes */
   hasUnsavedChanges: boolean;
+  /** Whether callout values are currently being applied (prevents callout loops) */
+  isApplyingCalloutValues?: boolean;
 }
 
 /**
@@ -130,6 +132,8 @@ export interface EditingRowStateUtils {
   setRowValidationErrors: (rowId: string, errors: Record<string, string | undefined>) => void;
   /** Set saving state for a row */
   setRowSaving: (rowId: string, isSaving: boolean) => void;
+  /** Set whether callout values are being applied */
+  setCalloutApplying: (rowId: string, isApplying: boolean) => void;
   /** Check if a row is being edited */
   isRowEditing: (rowId: string) => boolean;
   /** Get editing data for a row */

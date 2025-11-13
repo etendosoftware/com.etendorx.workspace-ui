@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import React from "react";
+import type React from "react";
 import type { MRT_Row } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import { IconButton } from "@workspaceui/componentlibrary/src/components";
@@ -73,37 +73,31 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
   // Create error tooltip content
   const getErrorTooltip = (): string => {
     if (!validationErrors) return "Validation errors present";
-    
+
     const errorMessages = Object.entries(validationErrors)
       .filter(([_, message]) => message)
       .map(([field, message]) => {
-        if (field === '_general') {
+        if (field === "_general") {
           return message;
         }
         return `${field}: ${message}`;
       });
-    
+
     if (errorMessages.length === 0) return "Validation errors present";
-    
-    return errorMessages.join('\n');
+
+    return errorMessages.join("\n");
   };
 
   // Check if there are server errors specifically
-  const hasServerErrors = validationErrors && Object.values(validationErrors).some(error => 
-    error && (error.includes('server') || error.includes('network') || error.includes('constraint'))
-  );
+  const hasServerErrors =
+    validationErrors &&
+    Object.values(validationErrors).some(
+      (error) => error && (error.includes("server") || error.includes("network") || error.includes("constraint"))
+    );
 
   if (isEditing) {
-    const saveButtonAttrs = generateAriaAttributes.actionButton(
-      "Save", 
-      String(row.original.id), 
-      isSaving || hasErrors
-    );
-    const cancelButtonAttrs = generateAriaAttributes.actionButton(
-      "Cancel", 
-      String(row.original.id), 
-      isSaving
-    );
+    const saveButtonAttrs = generateAriaAttributes.actionButton("Save", String(row.original.id), isSaving || hasErrors);
+    const cancelButtonAttrs = generateAriaAttributes.actionButton("Cancel", String(row.original.id), isSaving);
 
     return (
       <div className="flex items-center gap-1 min-w-[80px]" role="group" aria-label="Row editing actions">
@@ -112,60 +106,42 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
           disabled={isSaving || hasErrors}
           title={hasErrors ? "Fix validation errors before saving" : "Save"}
           className={`
-            ${hasErrors 
-              ? "text-gray-400 cursor-not-allowed" 
-              : "text-green-600 hover:text-green-800 hover:bg-green-50"
-            }
+            ${hasErrors ? "text-gray-400 cursor-not-allowed" : "text-green-600 hover:text-green-800 hover:bg-green-50"}
             transition-colors duration-200
           `}
           data-testid={`save-button-${String(row.original.id)}`}
-          {...saveButtonAttrs}
-        >
-          {isSaving ? (
-            <LoadingIndicator size="small" inline />
-          ) : (
-            <CheckIcon className="w-4 h-4" />
-          )}
+          {...saveButtonAttrs}>
+          {isSaving ? <LoadingIndicator size="small" inline /> : <CheckIcon className="w-4 h-4" />}
         </IconButton>
-        
+
         <IconButton
           onClick={onCancel}
           disabled={isSaving}
           title="Cancel"
           className="text-red-600 hover:text-red-800 hover:bg-red-50 transition-colors duration-200"
           data-testid={`cancel-button-${String(row.original.id)}`}
-          {...cancelButtonAttrs}
-        >
+          {...cancelButtonAttrs}>
           <XIcon className="w-4 h-4" />
         </IconButton>
-        
+
         {hasErrors && (
-          <div 
-            className={`flex items-center ${hasServerErrors ? 'text-orange-500' : 'text-red-500'}`}
+          <div
+            className={`flex items-center ${hasServerErrors ? "text-orange-500" : "text-red-500"}`}
             title={getErrorTooltip()}
             data-testid={`error-indicator-${String(row.original.id)}`}
             role="alert"
             aria-live="assertive"
-            aria-label={`Validation errors for row ${String(row.original.id)}`}
-          >
+            aria-label={`Validation errors for row ${String(row.original.id)}`}>
             <AlertCircleIcon className="w-4 h-4" />
-            {hasServerErrors && (
-              <span className="text-xs ml-1 font-medium">SERVER</span>
-            )}
+            {hasServerErrors && <span className="text-xs ml-1 font-medium">SERVER</span>}
           </div>
         )}
       </div>
     );
   }
 
-  const editButtonAttrs = generateAriaAttributes.actionButton(
-    "Edit in grid", 
-    String(row.original.id)
-  );
-  const formButtonAttrs = generateAriaAttributes.actionButton(
-    "Open form view", 
-    String(row.original.id)
-  );
+  const editButtonAttrs = generateAriaAttributes.actionButton("Edit in grid", String(row.original.id));
+  const formButtonAttrs = generateAriaAttributes.actionButton("Open form view", String(row.original.id));
 
   return (
     <div className="flex items-center gap-1 min-w-[80px]" role="group" aria-label="Row actions">
@@ -174,18 +150,16 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
         title="Edit in grid"
         className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors duration-200"
         data-testid={`edit-button-${String(row.original.id)}`}
-        {...editButtonAttrs}
-      >
+        {...editButtonAttrs}>
         <EditIcon className="w-4 h-4" />
       </IconButton>
-      
+
       <IconButton
         onClick={onOpenForm}
         title="Open form view"
         className="text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors duration-200"
         data-testid={`form-button-${String(row.original.id)}`}
-        {...formButtonAttrs}
-      >
+        {...formButtonAttrs}>
         <ExternalLinkIcon className="w-4 h-4" />
       </IconButton>
     </div>

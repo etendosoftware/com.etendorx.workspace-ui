@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { CellEditorProps } from "../types/inlineEditing";
 import type { RefListField } from "@workspaceui/api-client/src/api/types";
 import { useKeyboardNavigation } from "../utils/keyboardNavigation";
@@ -37,17 +37,17 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
   keyboardNavigationManager,
   shouldAutoFocus = false,
   loadOptions,
-  isLoadingOptions
+  isLoadingOptions,
 }) => {
   const selectRef = useRef<HTMLSelectElement>(null);
-  const [localValue, setLocalValue] = useState<string>(String(value || ''));
+  const [localValue, setLocalValue] = useState<string>(String(value || ""));
   const [dynamicOptions, setDynamicOptions] = useState<RefListField[]>([]);
   const [isLoadingDynamicOptions, setIsLoadingDynamicOptions] = useState(false);
 
   // Keyboard navigation hook
   const { handleKeyDown: handleNavigationKeyDown, setFocused } = useKeyboardNavigation(
-    rowId || '',
-    columnId || '',
+    rowId || "",
+    columnId || "",
     keyboardNavigationManager
   );
 
@@ -62,15 +62,15 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
 
   // Update local value when prop value changes
   useEffect(() => {
-    setLocalValue(String(value || ''));
+    setLocalValue(String(value || ""));
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
-    
+
     // For empty string, pass null to indicate no selection
-    onChange(newValue === '' ? null : newValue);
+    onChange(newValue === "" ? null : newValue);
   };
 
   const handleBlur = () => {
@@ -89,18 +89,18 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
     if (!navigationHandled) {
       // Handle local keyboard events if navigation didn't handle them
       switch (e.key) {
-        case 'Enter':
+        case "Enter":
           // This should be handled by navigation, but fallback to blur
           e.preventDefault();
-          if ('blur' in e.target && typeof e.target.blur === 'function') {
+          if ("blur" in e.target && typeof e.target.blur === "function") {
             e.target.blur();
           }
           break;
-        case 'Escape':
+        case "Escape":
           // This should be handled by navigation, but fallback to restore value
           e.preventDefault();
-          setLocalValue(String(value || ''));
-          if ('blur' in e.target && typeof e.target.blur === 'function') {
+          setLocalValue(String(value || ""));
+          if ("blur" in e.target && typeof e.target.blur === "function") {
             e.target.blur();
           }
           break;
@@ -115,10 +115,7 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
   useEffect(() => {
     const loadDynamicOptions = async () => {
       // Check if this field needs dynamic option loading
-      if (loadOptions && 
-          field.type === 'tabledir' && 
-          (!field.refList || field.refList.length === 0)) {
-        
+      if (loadOptions && field.type === "tabledir" && (!field.refList || field.refList.length === 0)) {
         setIsLoadingDynamicOptions(true);
         try {
           const options = await loadOptions(field);
@@ -131,7 +128,7 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
         }
       }
     };
-    
+
     loadDynamicOptions();
   }, [field.name, field.type, field.refList, loadOptions]);
 
@@ -145,13 +142,14 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
   // Removed debugging logs to improve performance during scrolling
 
   // Check if we're loading options or if this is a TABLEDIR field with no options
-  const isLoadingOrNoOptions = isLoadingDynamicOptions || 
-    ((field.type === 'tabledir' || field.referencedEntity) && options.length === 0 && !isLoadingDynamicOptions);
+  const isLoadingOrNoOptions =
+    isLoadingDynamicOptions ||
+    ((field.type === "tabledir" || field.referencedEntity) && options.length === 0 && !isLoadingDynamicOptions);
 
   // Find the display label for the current value
   const getDisplayLabel = (val: string) => {
-    if (!val) return '';
-    const option = options.find(opt => String(opt.value) === val);
+    if (!val) return "";
+    const option = options.find((opt) => String(opt.value) === val);
     return option?.label || val;
   };
 
@@ -166,7 +164,7 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
           onChange={(e) => {
             const newValue = e.target.value;
             setLocalValue(newValue);
-            onChange(newValue === '' ? null : newValue);
+            onChange(newValue === "" ? null : newValue);
           }}
           onBlur={handleBlur}
           onFocus={handleFocus}
@@ -187,22 +185,16 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
             focus:ring-2
             focus:ring-blue-500
             focus:border-transparent
-            ${hasError 
-              ? 'border-red-500 bg-red-50 text-red-900 placeholder-red-400' 
-              : 'border-gray-300 bg-white'
-            }
-            ${disabled 
-              ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
-              : 'hover:border-gray-400'
-            }
+            ${hasError ? "border-red-500 bg-red-50 text-red-900 placeholder-red-400" : "border-gray-300 bg-white"}
+            ${disabled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "hover:border-gray-400"}
           `}
-          title={hasError ? 'This field has validation errors (TABLEDIR fallback)' : `${field.name} (TABLEDIR)`}
+          title={hasError ? "This field has validation errors (TABLEDIR fallback)" : `${field.name} (TABLEDIR)`}
           aria-label={`${field.name} (TABLEDIR)`}
           aria-invalid={hasError}
           aria-describedby={hasError ? `${field.name}-error` : undefined}
         />
         <div className="text-xs text-gray-500 mt-1">
-          {isLoadingDynamicOptions ? 'Loading options...' : 'TABLEDIR field - options not loaded'}
+          {isLoadingDynamicOptions ? "Loading options..." : "TABLEDIR field - options not loaded"}
         </div>
       </div>
     );
@@ -231,32 +223,23 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
         focus:ring-2
         focus:ring-blue-500
         focus:border-transparent
-        ${hasError 
-          ? 'border-red-500 bg-red-50 text-red-900' 
-          : 'border-gray-300 bg-white'
-        }
-        ${disabled 
-          ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
-          : 'hover:border-gray-400 cursor-pointer'
-        }
+        ${hasError ? "border-red-500 bg-red-50 text-red-900" : "border-gray-300 bg-white"}
+        ${disabled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "hover:border-gray-400 cursor-pointer"}
       `}
-      title={hasError ? 'This field has validation errors' : field.name}
+      title={hasError ? "This field has validation errors" : field.name}
       aria-label={field.name}
       aria-invalid={hasError}
-      aria-describedby={hasError ? `${field.name}-error` : undefined}
-    >
+      aria-describedby={hasError ? `${field.name}-error` : undefined}>
       {/* Empty option for no selection */}
-      <option value="">
-        {field.isMandatory ? 'Select an option...' : '(None)'}
-      </option>
-      
+      <option value="">{field.isMandatory ? "Select an option..." : "(None)"}</option>
+
       {/* Render options from refList */}
       {options.map((option) => (
         <option key={option.value} value={option.value}>
           {option.label}
         </option>
       ))}
-      
+
       {/* If no options available, show a message */}
       {options.length === 0 && (
         <option value="" disabled>
@@ -280,6 +263,6 @@ export const SelectCellEditor = React.memo(SelectCellEditorComponent, (prevProps
   );
 });
 
-SelectCellEditor.displayName = 'SelectCellEditor';
+SelectCellEditor.displayName = "SelectCellEditor";
 
 export default SelectCellEditor;

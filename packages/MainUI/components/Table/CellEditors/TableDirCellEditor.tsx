@@ -44,7 +44,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
   loadOptions,
   isLoadingOptions,
 }) => {
-  console.log('[TableDirCellEditor] RENDER START', {
+  console.log("[TableDirCellEditor] RENDER START", {
     fieldName: field.name,
     value,
     disabled,
@@ -79,7 +79,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
 
   // Update local value when prop value changes
   useEffect(() => {
-    console.log('[TableDirCellEditor] value prop changed', {
+    console.log("[TableDirCellEditor] value prop changed", {
       fieldName: field.name,
       newValue: value,
       oldLocalValue: localValue,
@@ -134,7 +134,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
   // Find the current selected option
   const selectedOption = useMemo(() => {
     const found = options.find((opt) => String(opt.value) === localValue);
-    console.log('[TableDirCellEditor] selectedOption memo recalculated', {
+    console.log("[TableDirCellEditor] selectedOption memo recalculated", {
       fieldName: field.name,
       localValue,
       optionsCount: options.length,
@@ -146,12 +146,12 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
 
   // Display text for the input
   const displayText = useMemo(() => {
-    console.log('[TableDirCellEditor] displayText memo recalculated', {
+    console.log("[TableDirCellEditor] displayText memo recalculated", {
       fieldName: field.name,
       hasSelectedOption: !!selectedOption,
       selectedOptionLabel: selectedOption?.label,
       localValue,
-      willReturn: selectedOption ? selectedOption.label : (localValue || ""),
+      willReturn: selectedOption ? selectedOption.label : localValue || "",
     });
 
     if (selectedOption) {
@@ -167,7 +167,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
 
   const handleSelect = useCallback(
     (optionValue: string) => {
-      console.log('[TableDirCellEditor] handleSelect called', {
+      console.log("[TableDirCellEditor] handleSelect called", {
         optionValue,
         fieldName: field.name,
         willPassToOnChange: optionValue === "" ? null : optionValue,
@@ -183,7 +183,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
 
       // Call onChange with the new value
       const valueToSend = optionValue === "" ? null : optionValue;
-      console.log('[TableDirCellEditor] Calling onChange with:', valueToSend);
+      console.log("[TableDirCellEditor] Calling onChange with:", valueToSend);
       onChange(valueToSend);
 
       // Close menu and reset UI state
@@ -191,13 +191,13 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
       setSearchTerm("");
       setHighlightedIndex(-1);
 
-      console.log('[TableDirCellEditor] handleSelect completed, new localValue:', optionValue);
+      console.log("[TableDirCellEditor] handleSelect completed, new localValue:", optionValue);
     },
     [onChange, field.name, localValue, value, options]
   );
 
   const handleClick = useCallback(() => {
-    console.log('[TableDirCellEditor] handleClick called', {
+    console.log("[TableDirCellEditor] handleClick called", {
       fieldName: field.name,
       disabled,
       currentAnchorEl: !!anchorEl,
@@ -283,7 +283,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     (e: React.MouseEvent, optionValue: string) => {
       e.stopPropagation();
       e.preventDefault();
-      console.log('[TableDirCellEditor] Option mousedown', { optionValue, fieldName: field.name });
+      console.log("[TableDirCellEditor] Option mousedown", { optionValue, fieldName: field.name });
       handleSelect(optionValue);
     },
     [handleSelect, field.name]
@@ -349,8 +349,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
         anchorEl={anchorEl}
         onClose={handleMenuClose}
         className="min-w-[200px] max-h-60 overflow-hidden"
-        offsetY={4}
-      >
+        offsetY={4}>
         <div className="p-2">
           <input
             ref={searchInputRef}
@@ -399,9 +398,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
               </li>
             ))
           ) : (
-            <li className="px-4 py-2 text-sm text-gray-500">
-              {isLoading ? "Loading options..." : "No options found"}
-            </li>
+            <li className="px-4 py-2 text-sm text-gray-500">{isLoading ? "Loading options..." : "No options found"}</li>
           )}
         </ul>
       </Menu>

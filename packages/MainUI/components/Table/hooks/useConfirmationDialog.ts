@@ -48,136 +48,133 @@ interface ConfirmationDialogOptions {
 export function useConfirmationDialog() {
   const [dialogState, setDialogState] = useState<ConfirmationDialogState>({
     isOpen: false,
-    type: 'info',
-    title: '',
-    message: '',
+    type: "info",
+    title: "",
+    message: "",
     onConfirm: () => {},
     onCancel: () => {},
   });
 
-  const showConfirmation = useCallback((
-    options: ConfirmationDialogOptions,
-    onConfirm: () => void,
-    onCancel?: () => void
-  ) => {
-    setDialogState({
-      isOpen: true,
-      type: options.type || 'info',
-      title: options.title,
-      message: options.message,
-      confirmText: options.confirmText,
-      cancelText: options.cancelText,
-      confirmDisabled: options.confirmDisabled,
-      showCancel: options.showCancel !== false,
-      onConfirm: () => {
-        setDialogState(prev => ({ ...prev, isOpen: false }));
-        onConfirm();
-      },
-      onCancel: () => {
-        setDialogState(prev => ({ ...prev, isOpen: false }));
-        onCancel?.();
-      },
-    });
-  }, []);
+  const showConfirmation = useCallback(
+    (options: ConfirmationDialogOptions, onConfirm: () => void, onCancel?: () => void) => {
+      setDialogState({
+        isOpen: true,
+        type: options.type || "info",
+        title: options.title,
+        message: options.message,
+        confirmText: options.confirmText,
+        cancelText: options.cancelText,
+        confirmDisabled: options.confirmDisabled,
+        showCancel: options.showCancel !== false,
+        onConfirm: () => {
+          setDialogState((prev) => ({ ...prev, isOpen: false }));
+          onConfirm();
+        },
+        onCancel: () => {
+          setDialogState((prev) => ({ ...prev, isOpen: false }));
+          onCancel?.();
+        },
+      });
+    },
+    []
+  );
 
   const hideConfirmation = useCallback(() => {
-    setDialogState(prev => ({ ...prev, isOpen: false }));
+    setDialogState((prev) => ({ ...prev, isOpen: false }));
   }, []);
 
   // Specific confirmation dialog methods
-  const confirmDiscardChanges = useCallback((
-    onConfirm: () => void,
-    onCancel?: () => void,
-    hasUnsavedChanges = true
-  ) => {
-    if (!hasUnsavedChanges) {
-      onConfirm();
-      return;
-    }
+  const confirmDiscardChanges = useCallback(
+    (onConfirm: () => void, onCancel?: () => void, hasUnsavedChanges = true) => {
+      if (!hasUnsavedChanges) {
+        onConfirm();
+        return;
+      }
 
-    showConfirmation(
-      {
-        type: 'warning',
-        title: 'Discard Changes',
-        message: 'You have unsaved changes that will be lost. Are you sure you want to continue?',
-        confirmText: 'Discard',
-        cancelText: 'Keep Editing',
-      },
-      onConfirm,
-      onCancel
-    );
-  }, [showConfirmation]);
+      showConfirmation(
+        {
+          type: "warning",
+          title: "Discard Changes",
+          message: "You have unsaved changes that will be lost. Are you sure you want to continue?",
+          confirmText: "Discard",
+          cancelText: "Keep Editing",
+        },
+        onConfirm,
+        onCancel
+      );
+    },
+    [showConfirmation]
+  );
 
-  const confirmSaveWithErrors = useCallback((
-    errors: string[],
-    onConfirm: () => void,
-    onCancel?: () => void
-  ) => {
-    const errorList = errors.join('\n• ');
-    showConfirmation(
-      {
-        type: 'warning',
-        title: 'Validation Errors',
-        message: `The following validation errors were found:\n\n• ${errorList}\n\nPlease fix these errors before saving.`,
-        confirmText: 'Fix Errors',
-        showCancel: false,
-      },
-      onCancel || (() => {}), // Use onCancel as the "fix errors" action
-      onCancel
-    );
-  }, [showConfirmation]);
+  const confirmSaveWithErrors = useCallback(
+    (errors: string[], onConfirm: () => void, onCancel?: () => void) => {
+      const errorList = errors.join("\n• ");
+      showConfirmation(
+        {
+          type: "warning",
+          title: "Validation Errors",
+          message: `The following validation errors were found:\n\n• ${errorList}\n\nPlease fix these errors before saving.`,
+          confirmText: "Fix Errors",
+          showCancel: false,
+        },
+        onCancel || (() => {}), // Use onCancel as the "fix errors" action
+        onCancel
+      );
+    },
+    [showConfirmation]
+  );
 
-  const confirmRetryAfterError = useCallback((
-    errorMessage: string,
-    onRetry: () => void,
-    onCancel?: () => void
-  ) => {
-    showConfirmation(
-      {
-        type: 'error',
-        title: 'Save Failed',
-        message: `Failed to save the record:\n\n${errorMessage}\n\nWould you like to try again?`,
-        confirmText: 'Retry',
-        cancelText: 'Cancel',
-      },
-      onRetry,
-      onCancel
-    );
-  }, [showConfirmation]);
+  const confirmRetryAfterError = useCallback(
+    (errorMessage: string, onRetry: () => void, onCancel?: () => void) => {
+      showConfirmation(
+        {
+          type: "error",
+          title: "Save Failed",
+          message: `Failed to save the record:\n\n${errorMessage}\n\nWould you like to try again?`,
+          confirmText: "Retry",
+          cancelText: "Cancel",
+        },
+        onRetry,
+        onCancel
+      );
+    },
+    [showConfirmation]
+  );
 
-  const showSuccessMessage = useCallback((
-    message: string,
-    onOk?: () => void
-  ) => {
-    showConfirmation(
-      {
-        type: 'success',
-        title: 'Success',
-        message,
-        confirmText: 'OK',
-        showCancel: false,
-      },
-      onOk || (() => {}),
-      onOk
-    );
-  }, [showConfirmation]);
+  const showSuccessMessage = useCallback(
+    (message: string, onOk?: () => void) => {
+      showConfirmation(
+        {
+          type: "success",
+          title: "Success",
+          message,
+          confirmText: "OK",
+          showCancel: false,
+        },
+        onOk || (() => {}),
+        onOk
+      );
+    },
+    [showConfirmation]
+  );
 
-  const confirmNavigateWithUnsavedChanges = useCallback((
-    onConfirm: () => void,
-    onCancel?: () => void
-  ) => {
-    showConfirmation(
-      {
-        type: 'warning',
-        title: 'Unsaved Changes',
-        message: 'You have unsaved changes in the grid. Navigating away will discard these changes. Do you want to continue?',
-        confirmText: 'Leave Page',
-        cancelText: 'Stay',
-      },
-      onConfirm,
-      onCancel
-    );
-  }, [showConfirmation]);
+  const confirmNavigateWithUnsavedChanges = useCallback(
+    (onConfirm: () => void, onCancel?: () => void) => {
+      showConfirmation(
+        {
+          type: "warning",
+          title: "Unsaved Changes",
+          message:
+            "You have unsaved changes in the grid. Navigating away will discard these changes. Do you want to continue?",
+          confirmText: "Leave Page",
+          cancelText: "Stay",
+        },
+        onConfirm,
+        onCancel
+      );
+    },
+    [showConfirmation]
+  );
 
   return {
     dialogState,

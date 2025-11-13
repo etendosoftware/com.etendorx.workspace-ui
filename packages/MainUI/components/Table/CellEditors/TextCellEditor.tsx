@@ -35,17 +35,17 @@ const TextCellEditorComponent: React.FC<CellEditorProps> = ({
   rowId,
   columnId,
   keyboardNavigationManager,
-  shouldAutoFocus = false
+  shouldAutoFocus = false,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [localValue, setLocalValue] = useState<string>(String(value || ''));
+  const [localValue, setLocalValue] = useState<string>(String(value || ""));
   const isUserTyping = useRef<boolean>(false);
   const hasInitialFocus = useRef<boolean>(false);
 
   // Keyboard navigation hook
   const { handleKeyDown: handleNavigationKeyDown, setFocused } = useKeyboardNavigation(
-    rowId || '',
-    columnId || '',
+    rowId || "",
+    columnId || "",
     keyboardNavigationManager
   );
 
@@ -65,7 +65,7 @@ const TextCellEditorComponent: React.FC<CellEditorProps> = ({
   // This prevents overwriting user input during typing
   useEffect(() => {
     if (!isUserTyping.current) {
-      setLocalValue(String(value || ''));
+      setLocalValue(String(value || ""));
     }
   }, [value]);
 
@@ -94,31 +94,36 @@ const TextCellEditorComponent: React.FC<CellEditorProps> = ({
     hasError,
     field.isMandatory || false,
     0, // Row index - would need to be passed from parent for accurate value
-    0  // Column index - would need to be passed from parent for accurate value
+    0 // Column index - would need to be passed from parent for accurate value
   );
 
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    console.log('[TextCellEditor] handleKeyDown', { key: e.key, rowId, columnId, hasNavManager: !!keyboardNavigationManager });
+    console.log("[TextCellEditor] handleKeyDown", {
+      key: e.key,
+      rowId,
+      columnId,
+      hasNavManager: !!keyboardNavigationManager,
+    });
 
     // Handle keyboard shortcuts
     switch (e.key) {
-      case 'Tab':
+      case "Tab":
         // Prevent default tab behavior and use our navigation
         e.preventDefault();
-        console.log('[TextCellEditor] Tab pressed, calling navigation manager');
+        console.log("[TextCellEditor] Tab pressed, calling navigation manager");
         if (keyboardNavigationManager && rowId && columnId) {
           const navigationHandled = await handleNavigationKeyDown(e.nativeEvent);
-          console.log('[TextCellEditor] Navigation handled:', navigationHandled);
+          console.log("[TextCellEditor] Navigation handled:", navigationHandled);
           // Navigation manager handles moving focus to next cell
           // Don't blur here - let the navigation manager control focus
         } else {
-          console.log('[TextCellEditor] No navigation manager, blurring');
+          console.log("[TextCellEditor] No navigation manager, blurring");
           // No navigation manager - allow default tab behavior by not preventing default
           // Actually, we already prevented default above, so just blur
           inputRef.current?.blur();
         }
         break;
-      case 'Enter':
+      case "Enter":
         e.preventDefault();
         if (keyboardNavigationManager) {
           // Let navigation manager handle Enter (usually saves and moves to next row)
@@ -127,13 +132,13 @@ const TextCellEditorComponent: React.FC<CellEditorProps> = ({
           inputRef.current?.blur();
         }
         break;
-      case 'Escape':
+      case "Escape":
         e.preventDefault();
         if (keyboardNavigationManager) {
           // Let navigation manager handle Escape (usually cancels editing)
           await handleNavigationKeyDown(e.nativeEvent);
         } else {
-          setLocalValue(String(value || ''));
+          setLocalValue(String(value || ""));
           inputRef.current?.blur();
         }
         break;
@@ -168,16 +173,10 @@ const TextCellEditorComponent: React.FC<CellEditorProps> = ({
         focus:ring-2
         focus:ring-blue-500
         focus:border-transparent
-        ${hasError 
-          ? 'border-red-500 bg-red-50 text-red-900 placeholder-red-400' 
-          : 'border-gray-300 bg-white'
-        }
-        ${disabled 
-          ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
-          : 'hover:border-gray-400'
-        }
+        ${hasError ? "border-red-500 bg-red-50 text-red-900 placeholder-red-400" : "border-gray-300 bg-white"}
+        ${disabled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "hover:border-gray-400"}
       `}
-      title={hasError ? 'This field has validation errors' : field.name}
+      title={hasError ? "This field has validation errors" : field.name}
       {...ariaAttributes}
     />
   );
@@ -195,6 +194,6 @@ export const TextCellEditor = React.memo(TextCellEditorComponent, (prevProps, ne
   );
 });
 
-TextCellEditor.displayName = 'TextCellEditor';
+TextCellEditor.displayName = "TextCellEditor";
 
 export default TextCellEditor;

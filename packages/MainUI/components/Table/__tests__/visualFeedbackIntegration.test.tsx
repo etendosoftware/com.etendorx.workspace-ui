@@ -15,170 +15,133 @@
  *************************************************************************
  */
 
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { EditingStateIndicator } from '../components/EditingStateIndicator';
-import { LoadingIndicator } from '../components/LoadingIndicator';
-import { CellEditorFactory } from '../CellEditors/CellEditorFactory';
-import { FieldType } from '@workspaceui/api-client/src/api/types';
-import type { CellEditorProps } from '../types/inlineEditing';
+import React from "react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { EditingStateIndicator } from "../components/EditingStateIndicator";
+import { LoadingIndicator } from "../components/LoadingIndicator";
+import { CellEditorFactory } from "../CellEditors/CellEditorFactory";
+import { FieldType } from "@workspaceui/api-client/src/api/types";
+import type { CellEditorProps } from "../types/inlineEditing";
 
 // Mock translation hook
-jest.mock('@/hooks/useTranslation', () => ({
+jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({
     t: (key: string, params?: any) => {
       const translations: Record<string, string> = {
-        'table.editing.saving': 'Saving...',
-        'table.editing.hasErrors': 'Has errors',
-        'table.editing.hasError': 'Has error',
-        'table.editing.multipleErrors': `${params?.count} errors`,
-        'table.editing.inProgress': 'Editing',
-        'common.loading': 'Loading',
+        "table.editing.saving": "Saving...",
+        "table.editing.hasErrors": "Has errors",
+        "table.editing.hasError": "Has error",
+        "table.editing.multipleErrors": `${params?.count} errors`,
+        "table.editing.inProgress": "Editing",
+        "common.loading": "Loading",
       };
       return translations[key] || key;
     },
   }),
 }));
 
-describe('Visual Feedback Integration', () => {
-  describe('EditingStateIndicator', () => {
-    it('should not render when not editing', () => {
-      render(
-        <EditingStateIndicator
-          isEditing={false}
-          isSaving={false}
-          hasErrors={false}
-        />
-      );
+describe("Visual Feedback Integration", () => {
+  describe("EditingStateIndicator", () => {
+    it("should not render when not editing", () => {
+      render(<EditingStateIndicator isEditing={false} isSaving={false} hasErrors={false} />);
 
-      expect(screen.queryByText('Editing')).not.toBeInTheDocument();
+      expect(screen.queryByText("Editing")).not.toBeInTheDocument();
     });
 
-    it('should show editing state', () => {
-      render(
-        <EditingStateIndicator
-          isEditing={true}
-          isSaving={false}
-          hasErrors={false}
-        />
-      );
+    it("should show editing state", () => {
+      render(<EditingStateIndicator isEditing={true} isSaving={false} hasErrors={false} />);
 
-      expect(screen.getByText('Editing')).toBeInTheDocument();
-      expect(screen.getByTitle('Editing')).toBeInTheDocument();
+      expect(screen.getByText("Editing")).toBeInTheDocument();
+      expect(screen.getByTitle("Editing")).toBeInTheDocument();
     });
 
-    it('should show saving state with spinner', () => {
-      render(
-        <EditingStateIndicator
-          isEditing={true}
-          isSaving={true}
-          hasErrors={false}
-        />
-      );
+    it("should show saving state with spinner", () => {
+      render(<EditingStateIndicator isEditing={true} isSaving={true} hasErrors={false} />);
 
-      expect(screen.getByText('Saving...')).toBeInTheDocument();
-      expect(screen.getByTitle('Saving...')).toBeInTheDocument();
-      expect(document.querySelector('.inline-edit-saving-spinner')).toBeInTheDocument();
+      expect(screen.getByText("Saving...")).toBeInTheDocument();
+      expect(screen.getByTitle("Saving...")).toBeInTheDocument();
+      expect(document.querySelector(".inline-edit-saving-spinner")).toBeInTheDocument();
     });
 
-    it('should show error state with count', () => {
-      render(
-        <EditingStateIndicator
-          isEditing={true}
-          isSaving={false}
-          hasErrors={true}
-          errorCount={3}
-        />
-      );
+    it("should show error state with count", () => {
+      render(<EditingStateIndicator isEditing={true} isSaving={false} hasErrors={true} errorCount={3} />);
 
-      expect(screen.getByText('3 errors')).toBeInTheDocument();
-      expect(screen.getByTitle('3 errors')).toBeInTheDocument();
+      expect(screen.getByText("3 errors")).toBeInTheDocument();
+      expect(screen.getByTitle("3 errors")).toBeInTheDocument();
     });
 
-    it('should show single error state', () => {
-      render(
-        <EditingStateIndicator
-          isEditing={true}
-          isSaving={false}
-          hasErrors={true}
-          errorCount={1}
-        />
-      );
+    it("should show single error state", () => {
+      render(<EditingStateIndicator isEditing={true} isSaving={false} hasErrors={true} errorCount={1} />);
 
-      expect(screen.getByText('Has error')).toBeInTheDocument();
+      expect(screen.getByText("Has error")).toBeInTheDocument();
     });
 
-    it('should apply custom className', () => {
+    it("should apply custom className", () => {
       const { container } = render(
-        <EditingStateIndicator
-          isEditing={true}
-          isSaving={false}
-          hasErrors={false}
-          className="custom-class"
-        />
+        <EditingStateIndicator isEditing={true} isSaving={false} hasErrors={false} className="custom-class" />
       );
 
-      expect(container.querySelector('.custom-class')).toBeInTheDocument();
+      expect(container.querySelector(".custom-class")).toBeInTheDocument();
     });
   });
 
-  describe('LoadingIndicator', () => {
-    it('should render with default props', () => {
+  describe("LoadingIndicator", () => {
+    it("should render with default props", () => {
       render(<LoadingIndicator />);
 
       const spinner = document.querySelector('[role="status"]');
       expect(spinner).toBeInTheDocument();
-      expect(spinner).toHaveAttribute('aria-label', 'Loading');
+      expect(spinner).toHaveAttribute("aria-label", "Loading");
     });
 
-    it('should render with custom message', () => {
+    it("should render with custom message", () => {
       render(<LoadingIndicator message="Saving record..." />);
 
-      expect(screen.getByText('Saving record...')).toBeInTheDocument();
+      expect(screen.getByText("Saving record...")).toBeInTheDocument();
       const spinner = document.querySelector('[role="status"]');
-      expect(spinner).toHaveAttribute('aria-label', 'Saving record...');
+      expect(spinner).toHaveAttribute("aria-label", "Saving record...");
     });
 
-    it('should render different sizes', () => {
+    it("should render different sizes", () => {
       const { rerender } = render(<LoadingIndicator size="small" />);
-      expect(document.querySelector('.w-4')).toBeInTheDocument();
+      expect(document.querySelector(".w-4")).toBeInTheDocument();
 
       rerender(<LoadingIndicator size="medium" />);
-      expect(document.querySelector('.w-6')).toBeInTheDocument();
+      expect(document.querySelector(".w-6")).toBeInTheDocument();
 
       rerender(<LoadingIndicator size="large" />);
-      expect(document.querySelector('.w-8')).toBeInTheDocument();
+      expect(document.querySelector(".w-8")).toBeInTheDocument();
     });
 
-    it('should render inline version', () => {
+    it("should render inline version", () => {
       const { container } = render(<LoadingIndicator inline />);
 
-      expect(container.querySelector('.inline-flex')).toBeInTheDocument();
+      expect(container.querySelector(".inline-flex")).toBeInTheDocument();
     });
 
-    it('should apply custom className', () => {
+    it("should apply custom className", () => {
       const { container } = render(<LoadingIndicator className="custom-spinner" />);
 
-      expect(container.querySelector('.custom-spinner')).toBeInTheDocument();
+      expect(container.querySelector(".custom-spinner")).toBeInTheDocument();
     });
   });
 
-  describe('CellEditorFactory Visual Feedback', () => {
+  describe("CellEditorFactory Visual Feedback", () => {
     const mockField = {
-      name: 'testField',
-      label: 'Test Field',
+      name: "testField",
+      label: "Test Field",
       type: FieldType.TEXT,
       required: false,
-      hqlName: 'testField',
-      inputName: 'testField',
-      columnName: 'testField',
+      hqlName: "testField",
+      inputName: "testField",
+      columnName: "testField",
       process: false,
       shownInStatusBar: false,
     };
 
     const defaultProps: CellEditorProps = {
-      value: 'test value',
+      value: "test value",
       onChange: jest.fn(),
       onBlur: jest.fn(),
       field: mockField,
@@ -186,74 +149,46 @@ describe('Visual Feedback Integration', () => {
       disabled: false,
     };
 
-    it('should render editor without error state', () => {
-      render(
-        <CellEditorFactory
-          fieldType={FieldType.TEXT}
-          {...defaultProps}
-        />
-      );
+    it("should render editor without error state", () => {
+      render(<CellEditorFactory fieldType={FieldType.TEXT} {...defaultProps} />);
 
-      const wrapper = document.querySelector('.cell-editor-wrapper');
+      const wrapper = document.querySelector(".cell-editor-wrapper");
       expect(wrapper).toBeInTheDocument();
-      expect(wrapper).not.toHaveClass('cell-validation-error');
-      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+      expect(wrapper).not.toHaveClass("cell-validation-error");
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
     });
 
-    it('should render editor with error state and tooltip', () => {
-      render(
-        <CellEditorFactory
-          fieldType={FieldType.TEXT}
-          {...defaultProps}
-          hasError={true}
-        />
-      );
+    it("should render editor with error state and tooltip", () => {
+      render(<CellEditorFactory fieldType={FieldType.TEXT} {...defaultProps} hasError={true} />);
 
-      const wrapper = document.querySelector('.cell-editor-wrapper');
+      const wrapper = document.querySelector(".cell-editor-wrapper");
       expect(wrapper).toBeInTheDocument();
-      expect(wrapper).toHaveClass('cell-validation-error');
-      
-      const tooltip = document.querySelector('.cell-error-tooltip');
+      expect(wrapper).toHaveClass("cell-validation-error");
+
+      const tooltip = document.querySelector(".cell-error-tooltip");
       expect(tooltip).toBeInTheDocument();
-      expect(tooltip).toHaveAttribute('role', 'tooltip');
+      expect(tooltip).toHaveAttribute("role", "tooltip");
     });
 
-    it('should render error container when disabled with errors', () => {
-      render(
-        <CellEditorFactory
-          fieldType={FieldType.TEXT}
-          {...defaultProps}
-          hasError={true}
-          disabled={true}
-        />
-      );
+    it("should render error container when disabled with errors", () => {
+      render(<CellEditorFactory fieldType={FieldType.TEXT} {...defaultProps} hasError={true} disabled={true} />);
 
-      expect(document.querySelector('.inline-edit-error-container')).toBeInTheDocument();
-      expect(screen.getByText('Validation error - please fix before editing')).toBeInTheDocument();
+      expect(document.querySelector(".inline-edit-error-container")).toBeInTheDocument();
+      expect(screen.getByText("Validation error - please fix before editing")).toBeInTheDocument();
     });
 
-    it('should render different editor types with consistent error handling', () => {
-      const fieldTypes = [
-        FieldType.TEXT,
-        FieldType.NUMBER,
-        FieldType.DATE,
-        FieldType.BOOLEAN,
-        FieldType.LIST,
-      ];
+    it("should render different editor types with consistent error handling", () => {
+      const fieldTypes = [FieldType.TEXT, FieldType.NUMBER, FieldType.DATE, FieldType.BOOLEAN, FieldType.LIST];
 
-      fieldTypes.forEach(fieldType => {
+      fieldTypes.forEach((fieldType) => {
         const { container, unmount } = render(
-          <CellEditorFactory
-            fieldType={fieldType}
-            {...defaultProps}
-            hasError={true}
-          />
+          <CellEditorFactory fieldType={fieldType} {...defaultProps} hasError={true} />
         );
 
-        const wrapper = container.querySelector('.cell-editor-wrapper');
-        expect(wrapper).toHaveClass('cell-validation-error');
-        
-        const tooltip = container.querySelector('.cell-error-tooltip');
+        const wrapper = container.querySelector(".cell-editor-wrapper");
+        expect(wrapper).toHaveClass("cell-validation-error");
+
+        const tooltip = container.querySelector(".cell-error-tooltip");
         expect(tooltip).toBeInTheDocument();
 
         unmount();
@@ -261,88 +196,75 @@ describe('Visual Feedback Integration', () => {
     });
   });
 
-  describe('CSS Class Integration', () => {
-    it('should apply row editing classes correctly', () => {
+  describe("CSS Class Integration", () => {
+    it("should apply row editing classes correctly", () => {
       // Create a mock row element
-      const rowElement = document.createElement('tr');
-      rowElement.className = 'table-row-editing';
+      const rowElement = document.createElement("tr");
+      rowElement.className = "table-row-editing";
       document.body.appendChild(rowElement);
 
       const computedStyle = window.getComputedStyle(rowElement);
-      
+
       // Check if the CSS class is applied (we can't test actual styles in jsdom)
-      expect(rowElement).toHaveClass('table-row-editing');
+      expect(rowElement).toHaveClass("table-row-editing");
 
       document.body.removeChild(rowElement);
     });
 
-    it('should apply row error classes correctly', () => {
-      const rowElement = document.createElement('tr');
-      rowElement.className = 'table-row-error';
+    it("should apply row error classes correctly", () => {
+      const rowElement = document.createElement("tr");
+      rowElement.className = "table-row-error";
       document.body.appendChild(rowElement);
 
-      expect(rowElement).toHaveClass('table-row-error');
+      expect(rowElement).toHaveClass("table-row-error");
 
       document.body.removeChild(rowElement);
     });
 
-    it('should apply row saving classes correctly', () => {
-      const rowElement = document.createElement('tr');
-      rowElement.className = 'table-row-saving';
+    it("should apply row saving classes correctly", () => {
+      const rowElement = document.createElement("tr");
+      rowElement.className = "table-row-saving";
       document.body.appendChild(rowElement);
 
-      expect(rowElement).toHaveClass('table-row-saving');
+      expect(rowElement).toHaveClass("table-row-saving");
 
       document.body.removeChild(rowElement);
     });
 
-    it('should apply cell validation error classes correctly', () => {
-      const cellElement = document.createElement('td');
-      cellElement.className = 'cell-validation-error';
+    it("should apply cell validation error classes correctly", () => {
+      const cellElement = document.createElement("td");
+      cellElement.className = "cell-validation-error";
       document.body.appendChild(cellElement);
 
-      expect(cellElement).toHaveClass('cell-validation-error');
+      expect(cellElement).toHaveClass("cell-validation-error");
 
       document.body.removeChild(cellElement);
     });
   });
 
-  describe('Accessibility Integration', () => {
-    it('should provide proper ARIA labels for editing states', () => {
-      render(
-        <EditingStateIndicator
-          isEditing={true}
-          isSaving={false}
-          hasErrors={false}
-        />
-      );
+  describe("Accessibility Integration", () => {
+    it("should provide proper ARIA labels for editing states", () => {
+      render(<EditingStateIndicator isEditing={true} isSaving={false} hasErrors={false} />);
 
-      const indicator = screen.getByTitle('Editing');
+      const indicator = screen.getByTitle("Editing");
       expect(indicator).toBeInTheDocument();
     });
 
-    it('should provide proper ARIA labels for error states', () => {
-      render(
-        <EditingStateIndicator
-          isEditing={true}
-          isSaving={false}
-          hasErrors={true}
-          errorCount={2}
-        />
-      );
+    it("should provide proper ARIA labels for error states", () => {
+      render(<EditingStateIndicator isEditing={true} isSaving={false} hasErrors={true} errorCount={2} />);
 
-      const indicator = screen.getByTitle('2 errors');
+      const indicator = screen.getByTitle("2 errors");
       expect(indicator).toBeInTheDocument();
     });
 
-    it('should provide proper ARIA labels for loading states', () => {
+    it("should provide proper ARIA labels for loading states", () => {
       render(<LoadingIndicator message="Saving..." />);
 
-      const spinner = screen.getByRole('status');
-      expect(spinner).toHaveAttribute('aria-label', 'Saving...');
+      const spinner = screen.getByRole("status");
+      expect(spinner).toHaveAttribute("aria-label", "Saving...");
     });
 
-    it('should provide proper ARIA attributes for error tooltips', () => {
+    it("should provide proper ARIA attributes for error tooltips", () => {
       render(
         <CellEditorFactory
           fieldType={FieldType.TEXT}
@@ -350,13 +272,13 @@ describe('Visual Feedback Integration', () => {
           onChange={jest.fn()}
           onBlur={jest.fn()}
           field={{
-            name: 'test',
-            label: 'Test Field',
+            name: "test",
+            label: "Test Field",
             type: FieldType.TEXT,
             required: false,
-            hqlName: 'test',
-            inputName: 'test',
-            columnName: 'test',
+            hqlName: "test",
+            inputName: "test",
+            columnName: "test",
             process: false,
             shownInStatusBar: false,
           }}
@@ -370,8 +292,8 @@ describe('Visual Feedback Integration', () => {
     });
   });
 
-  describe('Performance with Visual Feedback', () => {
-    it('should render multiple editing indicators efficiently', () => {
+  describe("Performance with Visual Feedback", () => {
+    it("should render multiple editing indicators efficiently", () => {
       const startTime = performance.now();
 
       // Render multiple indicators
@@ -396,7 +318,7 @@ describe('Visual Feedback Integration', () => {
       expect(endTime - startTime).toBeLessThan(100);
     });
 
-    it('should handle rapid state changes efficiently', async () => {
+    it("should handle rapid state changes efficiently", async () => {
       const user = userEvent.setup();
       let renderCount = 0;
 
@@ -412,11 +334,7 @@ describe('Visual Feedback Integration', () => {
             <button onClick={() => setIsEditing(!isEditing)}>Toggle Editing</button>
             <button onClick={() => setIsSaving(!isSaving)}>Toggle Saving</button>
             <button onClick={() => setHasErrors(!hasErrors)}>Toggle Errors</button>
-            <EditingStateIndicator
-              isEditing={isEditing}
-              isSaving={isSaving}
-              hasErrors={hasErrors}
-            />
+            <EditingStateIndicator isEditing={isEditing} isSaving={isSaving} hasErrors={hasErrors} />
           </div>
         );
       };
@@ -426,9 +344,9 @@ describe('Visual Feedback Integration', () => {
       const initialRenderCount = renderCount;
 
       // Rapidly change states
-      await user.click(screen.getByText('Toggle Editing'));
-      await user.click(screen.getByText('Toggle Saving'));
-      await user.click(screen.getByText('Toggle Errors'));
+      await user.click(screen.getByText("Toggle Editing"));
+      await user.click(screen.getByText("Toggle Saving"));
+      await user.click(screen.getByText("Toggle Errors"));
 
       // Should not cause excessive re-renders
       expect(renderCount - initialRenderCount).toBeLessThan(10);

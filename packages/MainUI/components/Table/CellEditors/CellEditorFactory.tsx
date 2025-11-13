@@ -60,15 +60,13 @@ const CellEditorFactoryComponent: React.FC<CellEditorFactoryProps> = ({
   });
 
   // Get error message for tooltip display
-  const errorMessage = editorProps.hasError ? 'Validation error' : '';
+  const errorMessage = editorProps.hasError ? "Validation error" : "";
 
   // Handle error states - if disabled due to errors, show appropriate feedback
   if (editorProps.disabled && editorProps.hasError) {
     return (
       <div className="inline-edit-error-container">
-        <span className="inline-edit-error-text">
-          Validation error - please fix before editing
-        </span>
+        <span className="inline-edit-error-text">Validation error - please fix before editing</span>
       </div>
     );
   }
@@ -79,7 +77,7 @@ const CellEditorFactoryComponent: React.FC<CellEditorFactoryProps> = ({
     rowId,
     columnId,
     keyboardNavigationManager,
-    shouldAutoFocus
+    shouldAutoFocus,
   };
 
   // Wrap editor in container with error feedback
@@ -87,30 +85,30 @@ const CellEditorFactoryComponent: React.FC<CellEditorFactoryProps> = ({
     switch (fieldType) {
       case FieldType.TEXT:
         return <TextCellEditor {...enhancedEditorProps} />;
-      
+
       case FieldType.NUMBER:
       case FieldType.QUANTITY:
         return <NumericCellEditor {...enhancedEditorProps} />;
-      
+
       case FieldType.DATE:
       case FieldType.DATETIME:
         return <DateCellEditor {...enhancedEditorProps} />;
-      
+
       case FieldType.BOOLEAN:
         return <BooleanCellEditor {...enhancedEditorProps} />;
-      
+
       case FieldType.LIST:
       case FieldType.SELECT:
         return <SelectCellEditor {...enhancedEditorProps} />;
-      
+
       case FieldType.TABLEDIR:
         // Use specialized TableDirCellEditor for TABLEDIR fields with dynamic option loading
         return <TableDirCellEditor {...enhancedEditorProps} />;
-      
+
       case FieldType.SEARCH:
         // Use SelectCellEditor for SEARCH fields
         return <SelectCellEditor {...enhancedEditorProps} />;
-      
+
       default:
         // Fallback to text editor for unknown field types
         return <TextCellEditor {...enhancedEditorProps} />;
@@ -118,18 +116,13 @@ const CellEditorFactoryComponent: React.FC<CellEditorFactoryProps> = ({
   };
 
   // Generate ARIA attributes for error messages
-  const errorAttributes = editorProps.hasError 
-    ? generateAriaAttributes.errorMessage(editorProps.field.name)
-    : {};
+  const errorAttributes = editorProps.hasError ? generateAriaAttributes.errorMessage(editorProps.field.name) : {};
 
   return (
-    <div className={`cell-editor-wrapper ${editorProps.hasError ? 'cell-validation-error' : ''}`}>
+    <div className={`cell-editor-wrapper ${editorProps.hasError ? "cell-validation-error" : ""}`}>
       {renderEditor()}
       {editorProps.hasError && errorMessage && (
-        <div 
-          className="cell-error-tooltip" 
-          {...errorAttributes}
-        >
+        <div className="cell-error-tooltip" {...errorAttributes}>
           {errorMessage}
         </div>
       )}
@@ -152,6 +145,6 @@ export const CellEditorFactory = React.memo(CellEditorFactoryComponent, (prevPro
   );
 });
 
-CellEditorFactory.displayName = 'CellEditorFactory';
+CellEditorFactory.displayName = "CellEditorFactory";
 
 export default CellEditorFactory;

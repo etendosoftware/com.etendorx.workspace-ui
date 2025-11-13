@@ -15,11 +15,11 @@
  *************************************************************************
  */
 
-import React from "react";
+import type React from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface LoadingIndicatorProps {
-  size?: 'small' | 'medium' | 'large';
+  size?: "small" | "medium" | "large";
   message?: string;
   className?: string;
   inline?: boolean;
@@ -30,26 +30,24 @@ interface LoadingIndicatorProps {
  * Provides visual feedback during loading states
  */
 export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
-  size = 'medium',
+  size = "medium",
   message,
-  className = '',
+  className = "",
   inline = false,
 }) => {
   const { t } = useTranslation();
 
   const sizeClasses = {
-    small: 'w-4 h-4',
-    medium: 'w-6 h-6',
-    large: 'w-8 h-8',
+    small: "w-4 h-4",
+    medium: "w-6 h-6",
+    large: "w-8 h-8",
   };
 
-  const containerClasses = inline 
-    ? 'inline-flex items-center gap-2'
-    : 'flex items-center justify-center gap-2';
+  const containerClasses = inline ? "inline-flex items-center gap-2" : "flex items-center justify-center gap-2";
 
   return (
     <div className={`${containerClasses} ${className}`}>
-      <div 
+      <div
         className={`
           ${sizeClasses[size]}
           border-2
@@ -59,14 +57,10 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
           animate-spin
         `}
         role="status"
-        aria-label={message || t('common.loading')}
+        aria-label={message || t("common.loading")}
         data-testid="loader-icon"
       />
-      {message && (
-        <span className="text-sm text-gray-600">
-          {message}
-        </span>
-      )}
+      {message && <span className="text-sm text-gray-600">{message}</span>}
     </div>
   );
 };

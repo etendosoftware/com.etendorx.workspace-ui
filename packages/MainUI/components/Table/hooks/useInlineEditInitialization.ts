@@ -15,19 +15,19 @@
  *************************************************************************
  */
 
-import { useCallback, useState } from 'react';
-import type { Tab, EntityData, Field } from '@workspaceui/api-client/src/api/types';
-import { FormMode } from '@workspaceui/api-client/src/api/types';
-import { getFieldsByColumnName } from '@workspaceui/api-client/src/utils/metadata';
-import { 
-  buildFormInitializationParams, 
-  buildFormInitializationPayload, 
-  fetchFormInitialization 
-} from '@/utils/hooks/useFormInitialization/utils';
-import { logger } from '@/utils/logger';
-import { useTabContext } from '@/contexts/tab';
-import useFormParent from '@/hooks/useFormParent';
-import { FieldName } from '@/hooks/types';
+import { useCallback, useState } from "react";
+import type { Tab, EntityData, Field } from "@workspaceui/api-client/src/api/types";
+import { FormMode } from "@workspaceui/api-client/src/api/types";
+import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
+import {
+  buildFormInitializationParams,
+  buildFormInitializationPayload,
+  fetchFormInitialization,
+} from "@/utils/hooks/useFormInitialization/utils";
+import { logger } from "@/utils/logger";
+import { useTabContext } from "@/contexts/tab";
+import useFormParent from "@/hooks/useFormParent";
+import { FieldName } from "@/hooks/types";
 
 interface UseInlineEditInitializationProps {
   tab: Tab;
@@ -43,9 +43,7 @@ interface InlineEditInitializationResult {
  * Hook to fetch form initialization data for inline editing
  * Uses the same utilities as useFormInitialization but adapted for inline editing
  */
-export function useInlineEditInitialization({
-  tab
-}: UseInlineEditInitializationProps): InlineEditInitializationResult {
+export function useInlineEditInitialization({ tab }: UseInlineEditInitializationProps): InlineEditInitializationResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { parentRecord } = useTabContext();
@@ -64,127 +62,131 @@ export function useInlineEditInitialization({
    * Processes form initialization response into EntityData format
    * Uses the exact same logic as useFormInitialState for consistency
    */
-  const processFormInitializationData = useCallback((formInitialization: any, tab: Tab): EntityData => {
-    const fieldsByColumnName = getFieldsByColumnName(tab);
-    const acc = { ...formInitialization.sessionAttributes } as EntityData;
+  const processFormInitializationData = useCallback(
+    (formInitialization: any, tab: Tab): EntityData => {
+      const fieldsByColumnName = getFieldsByColumnName(tab);
+      const acc = { ...formInitialization.sessionAttributes } as EntityData;
 
-    logger.info(`[InlineEdit] Processing form initialization data`, {
-      auxiliaryInputValuesKeys: Object.keys(formInitialization.auxiliaryInputValues || {}),
-      columnValuesKeys: Object.keys(formInitialization.columnValues || {}),
-      sessionAttributesKeys: Object.keys(formInitialization.sessionAttributes || {}),
-      fieldsByColumnNameKeys: Object.keys(fieldsByColumnName || {})
-    });
-
-    // Process auxiliary input values - exact same logic as useFormInitialState
-    for (const [key, valueObj] of Object.entries(formInitialization.auxiliaryInputValues || {})) {
-      const { value } = valueObj as { value: any };
-      const newKey = fieldsByColumnName?.[key]?.hqlName ?? key;
-      
-      logger.debug(`[InlineEdit] Processing auxiliary input: ${key} -> ${newKey}`, {
-        originalKey: key,
-        mappedKey: newKey,
-        value,
-        hasField: !!fieldsByColumnName?.[key],
-        fieldHqlName: fieldsByColumnName?.[key]?.hqlName
-      });
-      
-      acc[newKey] = value;
-    }
-
-    // Process column values with identifiers - exact same logic as useFormInitialState
-    for (const [key, valueObj] of Object.entries(formInitialization.columnValues || {})) {
-      const { value, identifier } = valueObj as { value: any; identifier?: string };
-      const field = fieldsByColumnName?.[key];
-      const newKey = field?.hqlName ?? key;
-
-      logger.debug(`[InlineEdit] Processing column value: ${key} -> ${newKey}`, {
-        originalKey: key,
-        mappedKey: newKey,
-        value,
-        identifier,
-        hasField: !!field,
-        fieldHqlName: field?.hqlName
+      logger.info(`[InlineEdit] Processing form initialization data`, {
+        auxiliaryInputValuesKeys: Object.keys(formInitialization.auxiliaryInputValues || {}),
+        columnValuesKeys: Object.keys(formInitialization.columnValues || {}),
+        sessionAttributesKeys: Object.keys(formInitialization.sessionAttributes || {}),
+        fieldsByColumnNameKeys: Object.keys(fieldsByColumnName || {}),
       });
 
-      acc[newKey] = value;
+      // Process auxiliary input values - exact same logic as useFormInitialState
+      for (const [key, valueObj] of Object.entries(formInitialization.auxiliaryInputValues || {})) {
+        const { value } = valueObj as { value: any };
+        const newKey = fieldsByColumnName?.[key]?.hqlName ?? key;
 
-      if (identifier) {
-        acc[`${newKey}$_identifier`] = identifier;
-      } else if (value !== null && value !== undefined && value !== "") {
-        acc[`${newKey}$_identifier`] = "";
-      }
-    }
+        logger.debug(`[InlineEdit] Processing auxiliary input: ${key} -> ${newKey}`, {
+          originalKey: key,
+          mappedKey: newKey,
+          value,
+          hasField: !!fieldsByColumnName?.[key],
+          fieldHqlName: fieldsByColumnName?.[key]?.hqlName,
+        });
 
-    // Include parent data
-    const processedParentData = { ...parentData };
-    const finalData = { ...acc, ...processedParentData };
-    
-    logger.info(`[InlineEdit] Final processed data`, {
-      totalFields: Object.keys(finalData).length,
-      fieldNames: Object.keys(finalData),
-      sampleValues: Object.fromEntries(
-        Object.entries(finalData).slice(0, 5).map(([key, value]) => [key, value])
-      )
-    });
-    
-    return finalData;
-  }, [parentData]);
-
-  const fetchInitialData = useCallback(async (
-    rowId: string,
-    isNew: boolean
-  ): Promise<EntityData | null> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const mode = isNew ? FormMode.NEW : FormMode.EDIT;
-      const recordId = isNew ? undefined : rowId;
-      const parentId = parentRecord?.id?.toString();
-
-      logger.info(`[InlineEdit] Fetching initialization data for ${mode} mode, rowId: ${rowId}`);
-
-      // Build params for form initialization
-      const params = buildFormInitializationParams({
-        tab,
-        mode,
-        recordId,
-        parentId
-      });
-
-      // Find entity key column
-      const entityKeyColumn = findEntityKeyColumn(tab.fields);
-      if (!entityKeyColumn) {
-        throw new Error('Missing key column for form initialization');
+        acc[newKey] = value;
       }
 
-      // Build payload using the same logic as useFormInitialization
-      const payload = buildFormInitializationPayload(tab, mode, parentData, entityKeyColumn);
+      // Process column values with identifiers - exact same logic as useFormInitialState
+      for (const [key, valueObj] of Object.entries(formInitialization.columnValues || {})) {
+        const { value, identifier } = valueObj as { value: any; identifier?: string };
+        const field = fieldsByColumnName?.[key];
+        const newKey = field?.hqlName ?? key;
 
-      // Fetch initialization data
-      const formInitializationResponse = await fetchFormInitialization(params, payload);
+        logger.debug(`[InlineEdit] Processing column value: ${key} -> ${newKey}`, {
+          originalKey: key,
+          mappedKey: newKey,
+          value,
+          identifier,
+          hasField: !!field,
+          fieldHqlName: field?.hqlName,
+        });
 
-      // Process the response into EntityData format
-      const initializedData = processFormInitializationData(formInitializationResponse, tab);
+        acc[newKey] = value;
 
-      logger.info(`[InlineEdit] Successfully fetched and processed initialization data`, {
-        rowId,
-        processedFields: Object.keys(initializedData).length,
-        hasAuxiliaryInputValues: !!formInitializationResponse.auxiliaryInputValues,
-        hasColumnValues: !!formInitializationResponse.columnValues
+        if (identifier) {
+          acc[`${newKey}$_identifier`] = identifier;
+        } else if (value !== null && value !== undefined && value !== "") {
+          acc[`${newKey}$_identifier`] = "";
+        }
+      }
+
+      // Include parent data
+      const processedParentData = { ...parentData };
+      const finalData = { ...acc, ...processedParentData };
+
+      logger.info(`[InlineEdit] Final processed data`, {
+        totalFields: Object.keys(finalData).length,
+        fieldNames: Object.keys(finalData),
+        sampleValues: Object.fromEntries(
+          Object.entries(finalData)
+            .slice(0, 5)
+            .map(([key, value]) => [key, value])
+        ),
       });
 
-      setLoading(false);
-      return initializedData;
+      return finalData;
+    },
+    [parentData]
+  );
 
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to fetch initialization data');
-      logger.error(`[InlineEdit] Error fetching initialization data:`, error);
-      setError(error);
-      setLoading(false);
-      return null;
-    }
-  }, [tab, parentRecord, parentData, findEntityKeyColumn, processFormInitializationData]);
+  const fetchInitialData = useCallback(
+    async (rowId: string, isNew: boolean): Promise<EntityData | null> => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const mode = isNew ? FormMode.NEW : FormMode.EDIT;
+        const recordId = isNew ? undefined : rowId;
+        const parentId = parentRecord?.id?.toString();
+
+        logger.info(`[InlineEdit] Fetching initialization data for ${mode} mode, rowId: ${rowId}`);
+
+        // Build params for form initialization
+        const params = buildFormInitializationParams({
+          tab,
+          mode,
+          recordId,
+          parentId,
+        });
+
+        // Find entity key column
+        const entityKeyColumn = findEntityKeyColumn(tab.fields);
+        if (!entityKeyColumn) {
+          throw new Error("Missing key column for form initialization");
+        }
+
+        // Build payload using the same logic as useFormInitialization
+        const payload = buildFormInitializationPayload(tab, mode, parentData, entityKeyColumn);
+
+        // Fetch initialization data
+        const formInitializationResponse = await fetchFormInitialization(params, payload);
+
+        // Process the response into EntityData format
+        const initializedData = processFormInitializationData(formInitializationResponse, tab);
+
+        logger.info(`[InlineEdit] Successfully fetched and processed initialization data`, {
+          rowId,
+          processedFields: Object.keys(initializedData).length,
+          hasAuxiliaryInputValues: !!formInitializationResponse.auxiliaryInputValues,
+          hasColumnValues: !!formInitializationResponse.columnValues,
+        });
+
+        setLoading(false);
+        return initializedData;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error("Failed to fetch initialization data");
+        logger.error(`[InlineEdit] Error fetching initialization data:`, error);
+        setError(error);
+        setLoading(false);
+        return null;
+      }
+    },
+    [tab, parentRecord, parentData, findEntityKeyColumn, processFormInitializationData]
+  );
 
   return {
     fetchInitialData,

@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import React from "react";
+import type React from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -24,7 +24,7 @@ import AlertTriangleIcon from "../../../../ComponentLibrary/src/assets/icons/ale
 import InfoIcon from "../../../../ComponentLibrary/src/assets/icons/info.svg";
 import CheckCircleIcon from "../../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 
-export type ConfirmationDialogType = 'warning' | 'info' | 'success' | 'error';
+export type ConfirmationDialogType = "warning" | "info" | "success" | "error";
 
 interface ConfirmationDialogProps {
   /** Whether the dialog is open */
@@ -55,7 +55,7 @@ interface ConfirmationDialogProps {
  */
 export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   isOpen,
-  type = 'warning',
+  type = "warning",
   title,
   message,
   confirmText,
@@ -70,30 +70,30 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   // Get icon and colors based on type
   const getTypeConfig = () => {
     switch (type) {
-      case 'warning':
+      case "warning":
         return {
           icon: <AlertTriangleIcon className="w-6 h-6 text-yellow-600" />,
           confirmButtonClass: "bg-yellow-600 hover:bg-yellow-700 text-white",
-          defaultConfirmText: "Continue"
+          defaultConfirmText: "Continue",
         };
-      case 'error':
+      case "error":
         return {
           icon: <AlertTriangleIcon className="w-6 h-6 text-red-600" />,
           confirmButtonClass: "bg-red-600 hover:bg-red-700 text-white",
-          defaultConfirmText: "Retry"
+          defaultConfirmText: "Retry",
         };
-      case 'success':
+      case "success":
         return {
           icon: <CheckCircleIcon className="w-6 h-6 text-green-600" />,
           confirmButtonClass: "bg-green-600 hover:bg-green-700 text-white",
-          defaultConfirmText: t("common.ok")
+          defaultConfirmText: t("common.ok"),
         };
-      case 'info':
+      case "info":
       default:
         return {
           icon: <InfoIcon className="w-6 h-6 text-blue-600" />,
           confirmButtonClass: "bg-blue-600 hover:bg-blue-700 text-white",
-          defaultConfirmText: t("common.ok")
+          defaultConfirmText: t("common.ok"),
         };
     }
   };
@@ -101,33 +101,21 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   const typeConfig = getTypeConfig();
 
   return (
-    <Dialog
-      open={isOpen}
-      onClose={onCancel}
-      maxWidth="sm"
-      fullWidth
-    >
+    <Dialog open={isOpen} onClose={onCancel} maxWidth="sm" fullWidth>
       <DialogTitle>
         <div className="flex items-center gap-3">
           {typeConfig.icon}
-          <span className="text-lg font-semibold">
-            {title}
-          </span>
+          <span className="text-lg font-semibold">{title}</span>
         </div>
       </DialogTitle>
 
       <DialogContent>
-        <p className="text-gray-700 whitespace-pre-line">
-          {message}
-        </p>
+        <p className="text-gray-700 whitespace-pre-line">{message}</p>
       </DialogContent>
 
       <DialogActions>
         {showCancel && (
-          <Button
-            onClick={onCancel}
-            color="inherit"
-          >
+          <Button onClick={onCancel} color="inherit">
             {cancelText || t("common.cancel")}
           </Button>
         )}
@@ -135,8 +123,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
           onClick={onConfirm}
           disabled={confirmDisabled}
           variant="contained"
-          color={type === 'error' ? 'error' : type === 'success' ? 'success' : 'primary'}
-        >
+          color={type === "error" ? "error" : type === "success" ? "success" : "primary"}>
           {confirmText || typeConfig.defaultConfirmText}
         </Button>
       </DialogActions>

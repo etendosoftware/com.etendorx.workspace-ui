@@ -1,58 +1,37 @@
-/*
- *************************************************************************
- * The contents of this file are subject to the Etendo License
- * (the "License"), you may not use this file except in compliance with
- * the License.
- * You may obtain a copy of the License at
- * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
- * Software distributed under the License is distributed on an
- * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
- * implied. See the License for the specific language governing rights
- * and limitations under the License.
- * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
- * All Rights Reserved.
- * Contributor(s): Futit Services S.L.
- *************************************************************************
- */
-
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MaterialReactTable } from 'material-react-table';
-import type { EntityData } from '@workspaceui/api-client/src/api/types';
-import { 
-  canSortWithEditingRows, 
-  canFilterWithEditingRows, 
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import {
+  canSortWithEditingRows,
+  canFilterWithEditingRows,
   mergeOptimisticRecordsWithSort,
   canUseVirtualScrollingWithEditing,
   adjustSelectionForEditing,
-  shouldDisablePaginationDuringEditing
-} from '../utils/tableFeatureCompatibility';
-import type { EditingRowsState } from '../types/inlineEditing';
+  shouldDisablePaginationDuringEditing,
+} from "../utils/tableFeatureCompatibility";
+import type { EditingRowsState } from "../types/inlineEditing";
 
 // Mock data for testing
 const mockRecords: EntityData[] = [
-  { id: '1', name: 'Record 1', value: 100, active: true },
-  { id: '2', name: 'Record 2', value: 200, active: false },
-  { id: '3', name: 'Record 3', value: 300, active: true },
+  { id: "1", name: "Record 1", value: 100, active: true },
+  { id: "2", name: "Record 2", value: 200, active: false },
+  { id: "3", name: "Record 3", value: 300, active: true },
 ];
 
 const mockColumns = [
-  { id: 'name', header: 'Name', accessorKey: 'name' },
-  { id: 'value', header: 'Value', accessorKey: 'value' },
-  { id: 'active', header: 'Active', accessorKey: 'active' },
+  { id: "name", header: "Name", accessorKey: "name" },
+  { id: "value", header: "Value", accessorKey: "value" },
+  { id: "active", header: "Active", accessorKey: "active" },
 ];
 
-describe('Table Feature Integration with Inline Editing', () => {
-  describe('Sorting Compatibility', () => {
-    it('should allow sorting when no rows are being edited', () => {
+describe("Table Feature Integration with Inline Editing", () => {
+  describe("Sorting Compatibility", () => {
+    it("should allow sorting when no rows are being edited", () => {
       const editingRows: EditingRowsState = {};
       expect(canSortWithEditingRows(editingRows)).toBe(true);
     });
 
-    it('should allow sorting when editing rows have no unsaved changes', () => {
+    it("should allow sorting when editing rows have no unsaved changes", () => {
       const editingRows: EditingRowsState = {
-        '1': {
+        "1": {
           originalData: mockRecords[0],
           modifiedData: {},
           isNew: false,
@@ -64,11 +43,11 @@ describe('Table Feature Integration with Inline Editing', () => {
       expect(canSortWithEditingRows(editingRows)).toBe(true);
     });
 
-    it('should block sorting when editing rows have unsaved changes', () => {
+    it("should block sorting when editing rows have unsaved changes", () => {
       const editingRows: EditingRowsState = {
-        '1': {
+        "1": {
           originalData: mockRecords[0],
-          modifiedData: { name: 'Modified Name' },
+          modifiedData: { name: "Modified Name" },
           isNew: false,
           validationErrors: {},
           isSaving: false,
@@ -78,11 +57,11 @@ describe('Table Feature Integration with Inline Editing', () => {
       expect(canSortWithEditingRows(editingRows)).toBe(false);
     });
 
-    it('should block sorting when there are new rows', () => {
+    it("should block sorting when there are new rows", () => {
       const editingRows: EditingRowsState = {
-        'new_1': {
-          originalData: { id: 'new_1', name: '', value: 0, active: false },
-          modifiedData: { name: 'New Record' },
+        new_1: {
+          originalData: { id: "new_1", name: "", value: 0, active: false },
+          modifiedData: { name: "New Record" },
           isNew: true,
           validationErrors: {},
           isSaving: false,
@@ -93,15 +72,15 @@ describe('Table Feature Integration with Inline Editing', () => {
     });
   });
 
-  describe('Filtering Compatibility', () => {
-    it('should allow filtering when no rows are being edited', () => {
+  describe("Filtering Compatibility", () => {
+    it("should allow filtering when no rows are being edited", () => {
       const editingRows: EditingRowsState = {};
       expect(canFilterWithEditingRows(editingRows)).toBe(true);
     });
 
-    it('should allow filtering when editing rows have no unsaved changes', () => {
+    it("should allow filtering when editing rows have no unsaved changes", () => {
       const editingRows: EditingRowsState = {
-        '1': {
+        "1": {
           originalData: mockRecords[0],
           modifiedData: {},
           isNew: false,
@@ -113,11 +92,11 @@ describe('Table Feature Integration with Inline Editing', () => {
       expect(canFilterWithEditingRows(editingRows)).toBe(true);
     });
 
-    it('should block filtering when editing rows have unsaved changes', () => {
+    it("should block filtering when editing rows have unsaved changes", () => {
       const editingRows: EditingRowsState = {
-        '1': {
+        "1": {
           originalData: mockRecords[0],
-          modifiedData: { name: 'Modified Name' },
+          modifiedData: { name: "Modified Name" },
           isNew: false,
           validationErrors: {},
           isSaving: false,
@@ -128,30 +107,30 @@ describe('Table Feature Integration with Inline Editing', () => {
     });
   });
 
-  describe('Optimistic Updates with Sorting', () => {
-    it('should merge optimistic records while preserving sort order', () => {
+  describe("Optimistic Updates with Sorting", () => {
+    it("should merge optimistic records while preserving sort order", () => {
       const baseRecords = mockRecords;
       const optimisticRecords = [
-        { id: 'new_1', name: 'New Record', value: 150, active: true },
-        { id: '1', name: 'Updated Record 1', value: 100, active: true },
-        { id: '2', name: 'Record 2', value: 200, active: false },
-        { id: '3', name: 'Record 3', value: 300, active: true },
+        { id: "new_1", name: "New Record", value: 150, active: true },
+        { id: "1", name: "Updated Record 1", value: 100, active: true },
+        { id: "2", name: "Record 2", value: 200, active: false },
+        { id: "3", name: "Record 3", value: 300, active: true },
       ];
       const editingRows: EditingRowsState = {};
 
       const merged = mergeOptimisticRecordsWithSort(baseRecords, optimisticRecords, editingRows);
 
       // New records should be at the top
-      expect(merged[0].id).toBe('new_1');
+      expect(merged[0].id).toBe("new_1");
       // Updated records should maintain their position
-      expect(merged[1].id).toBe('1');
-      expect(merged[1].name).toBe('Updated Record 1');
+      expect(merged[1].id).toBe("1");
+      expect(merged[1].name).toBe("Updated Record 1");
       // Other records should remain unchanged
-      expect(merged[2].id).toBe('2');
-      expect(merged[3].id).toBe('3');
+      expect(merged[2].id).toBe("2");
+      expect(merged[3].id).toBe("3");
     });
 
-    it('should handle empty optimistic records', () => {
+    it("should handle empty optimistic records", () => {
       const baseRecords = mockRecords;
       const optimisticRecords: EntityData[] = [];
       const editingRows: EditingRowsState = {};
@@ -162,17 +141,17 @@ describe('Table Feature Integration with Inline Editing', () => {
     });
   });
 
-  describe('Virtual Scrolling Compatibility', () => {
-    it('should allow virtual scrolling with no editing rows', () => {
+  describe("Virtual Scrolling Compatibility", () => {
+    it("should allow virtual scrolling with no editing rows", () => {
       const editingRows: EditingRowsState = {};
       expect(canUseVirtualScrollingWithEditing(editingRows, 1000)).toBe(true);
     });
 
-    it('should allow virtual scrolling with small datasets', () => {
+    it("should allow virtual scrolling with small datasets", () => {
       const editingRows: EditingRowsState = {
-        '1': {
+        "1": {
           originalData: mockRecords[0],
-          modifiedData: { name: 'Modified' },
+          modifiedData: { name: "Modified" },
           isNew: false,
           validationErrors: {},
           isSaving: false,
@@ -182,11 +161,11 @@ describe('Table Feature Integration with Inline Editing', () => {
       expect(canUseVirtualScrollingWithEditing(editingRows, 100)).toBe(true);
     });
 
-    it('should allow virtual scrolling with reasonable number of editing rows', () => {
+    it("should allow virtual scrolling with reasonable number of editing rows", () => {
       const editingRows: EditingRowsState = {
-        '1': {
+        "1": {
           originalData: mockRecords[0],
-          modifiedData: { name: 'Modified' },
+          modifiedData: { name: "Modified" },
           isNew: false,
           validationErrors: {},
           isSaving: false,
@@ -196,7 +175,7 @@ describe('Table Feature Integration with Inline Editing', () => {
       expect(canUseVirtualScrollingWithEditing(editingRows, 10000)).toBe(true);
     });
 
-    it('should block virtual scrolling with too many editing rows', () => {
+    it("should block virtual scrolling with too many editing rows", () => {
       // Create many editing rows
       const editingRows: EditingRowsState = {};
       for (let i = 1; i <= 200; i++) {
@@ -213,9 +192,9 @@ describe('Table Feature Integration with Inline Editing', () => {
     });
   });
 
-  describe('Row Selection Compatibility', () => {
-    it('should preserve selection when no editing rows', () => {
-      const selection = { '1': true, '2': true };
+  describe("Row Selection Compatibility", () => {
+    it("should preserve selection when no editing rows", () => {
+      const selection = { "1": true, "2": true };
       const editingRows: EditingRowsState = {};
 
       const adjusted = adjustSelectionForEditing(selection, editingRows);
@@ -223,12 +202,12 @@ describe('Table Feature Integration with Inline Editing', () => {
       expect(adjusted).toEqual(selection);
     });
 
-    it('should remove selection from editing rows', () => {
-      const selection = { '1': true, '2': true, '3': true };
+    it("should remove selection from editing rows", () => {
+      const selection = { "1": true, "2": true, "3": true };
       const editingRows: EditingRowsState = {
-        '2': {
+        "2": {
           originalData: mockRecords[1],
-          modifiedData: { name: 'Modified' },
+          modifiedData: { name: "Modified" },
           isNew: false,
           validationErrors: {},
           isSaving: false,
@@ -238,20 +217,20 @@ describe('Table Feature Integration with Inline Editing', () => {
 
       const adjusted = adjustSelectionForEditing(selection, editingRows);
 
-      expect(adjusted).toEqual({ '1': true, '3': true });
-      expect(adjusted['2']).toBeUndefined();
+      expect(adjusted).toEqual({ "1": true, "3": true });
+      expect(adjusted["2"]).toBeUndefined();
     });
   });
 
-  describe('Pagination Compatibility', () => {
-    it('should not disable pagination when no editing rows', () => {
+  describe("Pagination Compatibility", () => {
+    it("should not disable pagination when no editing rows", () => {
       const editingRows: EditingRowsState = {};
       expect(shouldDisablePaginationDuringEditing(editingRows)).toBe(false);
     });
 
-    it('should not disable pagination when editing rows have no unsaved changes', () => {
+    it("should not disable pagination when editing rows have no unsaved changes", () => {
       const editingRows: EditingRowsState = {
-        '1': {
+        "1": {
           originalData: mockRecords[0],
           modifiedData: {},
           isNew: false,
@@ -263,11 +242,11 @@ describe('Table Feature Integration with Inline Editing', () => {
       expect(shouldDisablePaginationDuringEditing(editingRows)).toBe(false);
     });
 
-    it('should disable pagination when editing rows have unsaved changes', () => {
+    it("should disable pagination when editing rows have unsaved changes", () => {
       const editingRows: EditingRowsState = {
-        '1': {
+        "1": {
           originalData: mockRecords[0],
-          modifiedData: { name: 'Modified' },
+          modifiedData: { name: "Modified" },
           isNew: false,
           validationErrors: {},
           isSaving: false,
@@ -277,11 +256,11 @@ describe('Table Feature Integration with Inline Editing', () => {
       expect(shouldDisablePaginationDuringEditing(editingRows)).toBe(true);
     });
 
-    it('should disable pagination when there are new rows', () => {
+    it("should disable pagination when there are new rows", () => {
       const editingRows: EditingRowsState = {
-        'new_1': {
-          originalData: { id: 'new_1', name: '', value: 0, active: false },
-          modifiedData: { name: 'New Record' },
+        new_1: {
+          originalData: { id: "new_1", name: "", value: 0, active: false },
+          modifiedData: { name: "New Record" },
           isNew: true,
           validationErrors: {},
           isSaving: false,
@@ -292,8 +271,8 @@ describe('Table Feature Integration with Inline Editing', () => {
     });
   });
 
-  describe('Performance with Large Datasets', () => {
-    it('should handle large datasets efficiently', () => {
+  describe("Performance with Large Datasets", () => {
+    it("should handle large datasets efficiently", () => {
       // Create a large dataset
       const largeDataset: EntityData[] = [];
       for (let i = 1; i <= 10000; i++) {
@@ -307,7 +286,7 @@ describe('Table Feature Integration with Inline Editing', () => {
 
       // Test optimistic updates with large dataset
       const optimisticRecords = [
-        { id: 'new_1', name: 'New Record', value: 150, active: true },
+        { id: "new_1", name: "New Record", value: 150, active: true },
         ...largeDataset.slice(0, 100), // First 100 records
       ];
       const editingRows: EditingRowsState = {};
@@ -319,10 +298,10 @@ describe('Table Feature Integration with Inline Editing', () => {
       // Should complete within reasonable time (less than 100ms)
       expect(endTime - startTime).toBeLessThan(100);
       expect(merged.length).toBeGreaterThan(0);
-      expect(merged[0].id).toBe('new_1'); // New record should be first
+      expect(merged[0].id).toBe("new_1"); // New record should be first
     });
 
-    it('should efficiently check virtual scrolling compatibility', () => {
+    it("should efficiently check virtual scrolling compatibility", () => {
       const editingRows: EditingRowsState = {};
       for (let i = 1; i <= 50; i++) {
         editingRows[String(i)] = {
@@ -345,14 +324,14 @@ describe('Table Feature Integration with Inline Editing', () => {
     });
   });
 
-  describe('Error State Integration', () => {
-    it('should handle validation errors during sorting', () => {
+  describe("Error State Integration", () => {
+    it("should handle validation errors during sorting", () => {
       const editingRows: EditingRowsState = {
-        '1': {
+        "1": {
           originalData: mockRecords[0],
-          modifiedData: { name: '' }, // Invalid empty name
+          modifiedData: { name: "" }, // Invalid empty name
           isNew: false,
-          validationErrors: { name: 'Name is required' },
+          validationErrors: { name: "Name is required" },
           isSaving: false,
           hasUnsavedChanges: true,
         },
@@ -362,13 +341,13 @@ describe('Table Feature Integration with Inline Editing', () => {
       expect(canSortWithEditingRows(editingRows)).toBe(false);
     });
 
-    it('should handle validation errors during filtering', () => {
+    it("should handle validation errors during filtering", () => {
       const editingRows: EditingRowsState = {
-        '1': {
+        "1": {
           originalData: mockRecords[0],
           modifiedData: { value: -100 }, // Invalid negative value
           isNew: false,
-          validationErrors: { value: 'Value must be positive' },
+          validationErrors: { value: "Value must be positive" },
           isSaving: false,
           hasUnsavedChanges: true,
         },
@@ -379,18 +358,18 @@ describe('Table Feature Integration with Inline Editing', () => {
     });
   });
 
-  describe('Concurrent Editing Scenarios', () => {
-    it('should handle multiple rows being edited simultaneously', () => {
+  describe("Concurrent Editing Scenarios", () => {
+    it("should handle multiple rows being edited simultaneously", () => {
       const editingRows: EditingRowsState = {
-        '1': {
+        "1": {
           originalData: mockRecords[0],
-          modifiedData: { name: 'Modified 1' },
+          modifiedData: { name: "Modified 1" },
           isNew: false,
           validationErrors: {},
           isSaving: false,
           hasUnsavedChanges: true,
         },
-        '2': {
+        "2": {
           originalData: mockRecords[1],
           modifiedData: { value: 250 },
           isNew: false,
@@ -398,9 +377,9 @@ describe('Table Feature Integration with Inline Editing', () => {
           isSaving: false,
           hasUnsavedChanges: true,
         },
-        'new_1': {
-          originalData: { id: 'new_1', name: '', value: 0, active: false },
-          modifiedData: { name: 'New Record', value: 400 },
+        new_1: {
+          originalData: { id: "new_1", name: "", value: 0, active: false },
+          modifiedData: { name: "New Record", value: 400 },
           isNew: true,
           validationErrors: {},
           isSaving: false,
@@ -414,14 +393,14 @@ describe('Table Feature Integration with Inline Editing', () => {
       expect(shouldDisablePaginationDuringEditing(editingRows)).toBe(true);
 
       // Selection should be adjusted to exclude editing rows
-      const selection = { '1': true, '2': true, '3': true };
+      const selection = { "1": true, "2": true, "3": true };
       const adjusted = adjustSelectionForEditing(selection, editingRows);
-      expect(adjusted).toEqual({ '3': true });
+      expect(adjusted).toEqual({ "3": true });
     });
 
-    it('should handle mixed editing states', () => {
+    it("should handle mixed editing states", () => {
       const editingRows: EditingRowsState = {
-        '1': {
+        "1": {
           originalData: mockRecords[0],
           modifiedData: {},
           isNew: false,
@@ -429,9 +408,9 @@ describe('Table Feature Integration with Inline Editing', () => {
           isSaving: false,
           hasUnsavedChanges: false, // No unsaved changes
         },
-        '2': {
+        "2": {
           originalData: mockRecords[1],
-          modifiedData: { name: 'Modified' },
+          modifiedData: { name: "Modified" },
           isNew: false,
           validationErrors: {},
           isSaving: false,

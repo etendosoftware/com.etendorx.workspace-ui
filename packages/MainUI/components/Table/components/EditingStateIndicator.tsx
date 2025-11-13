@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import React from "react";
+import type React from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface EditingStateIndicatorProps {
@@ -53,16 +53,13 @@ export const EditingStateIndicator: React.FC<EditingStateIndicatorProps> = ({
   }
 
   if (hasErrors) {
-    const errorText = errorCount > 1 
-      ? t("table.editing.multipleErrors", { count: errorCount })
-      : t("table.editing.hasError");
-    
+    const errorText =
+      errorCount > 1 ? t("table.editing.multipleErrors", { count: errorCount }) : t("table.editing.hasError");
+
     return (
       <div className={`editing-state-indicator error ${className}`} title={errorText}>
         <div className="error-icon">⚠</div>
-        <span className="state-text">
-          {errorText}
-        </span>
+        <span className="state-text">{errorText}</span>
       </div>
     );
   }

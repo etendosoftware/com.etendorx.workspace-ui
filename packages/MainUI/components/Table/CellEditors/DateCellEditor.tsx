@@ -35,16 +35,16 @@ const DateCellEditorComponent: React.FC<CellEditorProps> = ({
   rowId,
   columnId,
   keyboardNavigationManager,
-  shouldAutoFocus = false
+  shouldAutoFocus = false,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [localValue, setLocalValue] = useState<string>('');
-  const [validationError, setValidationError] = useState<string>('');
+  const [localValue, setLocalValue] = useState<string>("");
+  const [validationError, setValidationError] = useState<string>("");
 
   // Keyboard navigation hook
   const { handleKeyDown: handleNavigationKeyDown, setFocused } = useKeyboardNavigation(
-    rowId || '',
-    columnId || '',
+    rowId || "",
+    columnId || "",
     keyboardNavigationManager
   );
 
@@ -69,31 +69,31 @@ const DateCellEditorComponent: React.FC<CellEditorProps> = ({
    * Format a date value for the HTML input element
    */
   const formatDateForInput = (dateValue: unknown): string => {
-    if (!dateValue) return '';
-    
+    if (!dateValue) return "";
+
     try {
       const date = new Date(dateValue as string);
-      
+
       // Check if date is valid
       if (isNaN(date.getTime())) {
-        return '';
+        return "";
       }
 
       if (isDateTime) {
         // Format as datetime-local (YYYY-MM-DDTHH:MM)
         const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
         return `${year}-${month}-${day}T${hours}:${minutes}`;
       } else {
         // Format as date (YYYY-MM-DD)
-        return date.toISOString().split('T')[0];
+        return date.toISOString().split("T")[0];
       }
     } catch (error) {
-      console.warn('Error formatting date for input:', error);
-      return '';
+      console.warn("Error formatting date for input:", error);
+      return "";
     }
   };
 
@@ -105,20 +105,20 @@ const DateCellEditorComponent: React.FC<CellEditorProps> = ({
 
     try {
       const date = new Date(inputValue);
-      
+
       // Check if date is valid
       if (isNaN(date.getTime())) {
-        setValidationError('Invalid date format');
+        setValidationError("Invalid date format");
         return null;
       }
 
       // Clear any previous validation errors
-      setValidationError('');
+      setValidationError("");
 
       // Return ISO string for consistency
       return date.toISOString();
     } catch (error) {
-      setValidationError('Invalid date format');
+      setValidationError("Invalid date format");
       return null;
     }
   };
@@ -126,7 +126,7 @@ const DateCellEditorComponent: React.FC<CellEditorProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
-    
+
     const parsedValue = parseInputValue(newValue);
     onChange(parsedValue);
   };
@@ -143,20 +143,20 @@ const DateCellEditorComponent: React.FC<CellEditorProps> = ({
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     // First try keyboard navigation
     const navigationHandled = await handleNavigationKeyDown(e.nativeEvent);
-    
+
     if (!navigationHandled) {
       // Handle local keyboard events if navigation didn't handle them
       switch (e.key) {
-        case 'Enter':
+        case "Enter":
           // This should be handled by navigation, but fallback to blur
           e.preventDefault();
           inputRef.current?.blur();
           break;
-        case 'Escape':
+        case "Escape":
           // This should be handled by navigation, but fallback to restore value
           e.preventDefault();
           setLocalValue(formatDateForInput(value));
-          setValidationError('');
+          setValidationError("");
           inputRef.current?.blur();
           break;
         default:
@@ -166,7 +166,7 @@ const DateCellEditorComponent: React.FC<CellEditorProps> = ({
     }
   };
 
-  const inputType = isDateTime ? 'datetime-local' : 'date';
+  const inputType = isDateTime ? "datetime-local" : "date";
   const hasValidationError = hasError || !!validationError;
 
   return (
@@ -194,31 +194,18 @@ const DateCellEditorComponent: React.FC<CellEditorProps> = ({
           focus:ring-2
           focus:ring-blue-500
           focus:border-transparent
-          ${hasValidationError 
-            ? 'border-red-500 bg-red-50 text-red-900' 
-            : 'border-gray-300 bg-white'
-          }
-          ${disabled 
-            ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
-            : 'hover:border-gray-400'
-          }
+          ${hasValidationError ? "border-red-500 bg-red-50 text-red-900" : "border-gray-300 bg-white"}
+          ${disabled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "hover:border-gray-400"}
         `}
-        title={
-          hasValidationError 
-            ? validationError || 'This field has validation errors'
-            : field.name
-        }
+        title={hasValidationError ? validationError || "This field has validation errors" : field.name}
         aria-label={field.name}
         aria-invalid={hasValidationError}
         aria-describedby={hasValidationError ? `${field.name}-error` : undefined}
       />
-      
+
       {/* Show validation error message */}
       {validationError && (
-        <div 
-          id={`${field.name}-error`}
-          className="inline-edit-error-message text-xs text-red-600 mt-1"
-        >
+        <div id={`${field.name}-error`} className="inline-edit-error-message text-xs text-red-600 mt-1">
           {validationError}
         </div>
       )}
@@ -239,6 +226,6 @@ export const DateCellEditor = React.memo(DateCellEditorComponent, (prevProps, ne
   );
 });
 
-DateCellEditor.displayName = 'DateCellEditor';
+DateCellEditor.displayName = "DateCellEditor";
 
 export default DateCellEditor;

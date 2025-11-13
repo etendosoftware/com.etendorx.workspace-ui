@@ -30,9 +30,8 @@ export function createEditingRowStateUtils(
   editingRowsRef: React.MutableRefObject<EditingRowsState>,
   setEditingRows: React.Dispatch<React.SetStateAction<EditingRowsState>>
 ): EditingRowStateUtils {
-
   const addEditingRow = (rowId: string, data: EntityData, isNew = false) => {
-    setEditingRows(prev => ({
+    setEditingRows((prev) => ({
       ...prev,
       [rowId]: {
         originalData: data,
@@ -41,12 +40,12 @@ export function createEditingRowStateUtils(
         validationErrors: {},
         isSaving: false,
         hasUnsavedChanges: isNew, // New rows always have unsaved changes
-      }
+      },
     }));
   };
 
   const removeEditingRow = (rowId: string) => {
-    setEditingRows(prev => {
+    setEditingRows((prev) => {
       const newState = { ...prev };
       delete newState[rowId];
       return newState;
@@ -54,7 +53,7 @@ export function createEditingRowStateUtils(
   };
 
   const updateCellValue = (rowId: string, fieldName: string, value: unknown) => {
-    setEditingRows(prev => {
+    setEditingRows((prev) => {
       const editingRow = prev[rowId];
       if (!editingRow) return prev;
 
@@ -62,13 +61,13 @@ export function createEditingRowStateUtils(
       const entityValue = value as EntityData[string];
       const newModifiedData = { ...editingRow.modifiedData, [fieldName]: entityValue };
       const hasChanges = Object.keys(newModifiedData).some(
-        key => newModifiedData[key] !== editingRow.originalData[key]
+        (key) => newModifiedData[key] !== editingRow.originalData[key]
       );
 
       // Update validation errors, allowing undefined to clear errors
       const updatedValidationErrors = {
         ...editingRow.validationErrors,
-        [fieldName]: undefined
+        [fieldName]: undefined,
       };
 
       return {
@@ -78,14 +77,14 @@ export function createEditingRowStateUtils(
           modifiedData: newModifiedData,
           hasUnsavedChanges: hasChanges || editingRow.isNew,
           // Clear field-specific validation error when value changes
-          validationErrors: updatedValidationErrors
-        }
+          validationErrors: updatedValidationErrors,
+        },
       };
     });
   };
 
   const setRowValidationErrors = (rowId: string, errors: Record<string, string | undefined>) => {
-    setEditingRows(prev => {
+    setEditingRows((prev) => {
       const editingRow = prev[rowId];
       if (!editingRow) return prev;
 
@@ -93,14 +92,14 @@ export function createEditingRowStateUtils(
         ...prev,
         [rowId]: {
           ...editingRow,
-          validationErrors: errors
-        }
+          validationErrors: errors,
+        },
       };
     });
   };
 
   const setRowSaving = (rowId: string, isSaving: boolean) => {
-    setEditingRows(prev => {
+    setEditingRows((prev) => {
       const editingRow = prev[rowId];
       if (!editingRow) return prev;
 
@@ -108,8 +107,23 @@ export function createEditingRowStateUtils(
         ...prev,
         [rowId]: {
           ...editingRow,
-          isSaving
-        }
+          isSaving,
+        },
+      };
+    });
+  };
+
+  const setCalloutApplying = (rowId: string, isApplying: boolean) => {
+    setEditingRows((prev) => {
+      const editingRow = prev[rowId];
+      if (!editingRow) return prev;
+
+      return {
+        ...prev,
+        [rowId]: {
+          ...editingRow,
+          isApplyingCalloutValues: isApplying,
+        },
       };
     });
   };
@@ -136,10 +150,11 @@ export function createEditingRowStateUtils(
     updateCellValue,
     setRowValidationErrors,
     setRowSaving,
+    setCalloutApplying,
     isRowEditing,
     getEditingRowData,
     getEditingRowIds,
-    clearAllEditingRows
+    clearAllEditingRows,
   };
 }
 
@@ -159,14 +174,14 @@ export function generateNewRowId(): string {
  */
 export function createEmptyRowData(newRowId: string, baseColumns?: any[]): EntityData {
   const emptyData: EntityData = { id: newRowId };
-  
+
   // Initialize default values based on column metadata if available
   if (baseColumns) {
-    baseColumns.forEach(column => {
-      if (column.name !== 'id' && column.name !== 'actions') {
+    baseColumns.forEach((column) => {
+      if (column.name !== "id" && column.name !== "actions") {
         // Use the existing getFieldReference utility to determine field type
         const fieldType = getFieldReference(column.column?.reference);
-        
+
         // Set default values based on field type
         switch (fieldType) {
           case FieldType.BOOLEAN:
@@ -184,7 +199,7 @@ export function createEmptyRowData(newRowId: string, baseColumns?: any[]): Entit
       }
     });
   }
-  
+
   return emptyData;
 }
 
@@ -198,10 +213,10 @@ export function getMergedRowData(editingRowData: EditingRowData): EntityData {
   const filteredModifiedData = Object.fromEntries(
     Object.entries(editingRowData.modifiedData).filter(([, value]) => value !== undefined)
   ) as EntityData;
-  
+
   return {
     ...editingRowData.originalData,
-    ...filteredModifiedData
+    ...filteredModifiedData,
   };
 }
 
@@ -211,7 +226,7 @@ export function getMergedRowData(editingRowData: EditingRowData): EntityData {
  * @returns True if there are validation errors
  */
 export function hasValidationErrors(editingRowData: EditingRowData): boolean {
-  return Object.values(editingRowData.validationErrors).some(error => error !== undefined && error.trim() !== '');
+  return Object.values(editingRowData.validationErrors).some((error) => error !== undefined && error.trim() !== "");
 }
 
 /**
@@ -245,5 +260,5 @@ export function insertNewRowAtTop(currentRecords: EntityData[], newRowData: Enti
  * @returns New array without the specified row
  */
 export function removeNewRowFromRecords(currentRecords: EntityData[], rowId: string): EntityData[] {
-  return currentRecords.filter(record => String(record.id) !== rowId);
+  return currentRecords.filter((record) => String(record.id) !== rowId);
 }

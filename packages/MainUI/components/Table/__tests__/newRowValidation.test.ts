@@ -15,68 +15,68 @@
  *************************************************************************
  */
 
-import { 
-  validateNewRowForSave, 
-  validateExistingRowForSave, 
+import {
+  validateNewRowForSave,
+  validateExistingRowForSave,
   hasRequiredFieldsForNewRow,
-  validationErrorsToRecord
-} from '../utils/validationUtils';
-import type { EntityData, Column } from '@workspaceui/api-client/src/api/types';
+  validationErrorsToRecord,
+} from "../utils/validationUtils";
+import type { EntityData, Column } from "@workspaceui/api-client/src/api/types";
 
-describe('New Row Validation', () => {
+describe("New Row Validation", () => {
   const mockColumns: Column[] = [
     {
-      name: 'id',
-      header: 'ID',
-      displayType: 'string',
+      name: "id",
+      header: "ID",
+      displayType: "string",
       isMandatory: false,
-      columnName: 'id'
+      columnName: "id",
     },
     {
-      name: 'name',
-      header: 'Name',
-      displayType: 'string',
+      name: "name",
+      header: "Name",
+      displayType: "string",
       isMandatory: true,
-      columnName: 'name'
+      columnName: "name",
     },
     {
-      name: 'email',
-      header: 'Email',
-      displayType: 'string',
+      name: "email",
+      header: "Email",
+      displayType: "string",
       isMandatory: true,
-      columnName: 'email'
+      columnName: "email",
     },
     {
-      name: 'age',
-      header: 'Age',
-      displayType: 'number',
+      name: "age",
+      header: "Age",
+      displayType: "number",
       isMandatory: false,
-      columnName: 'age'
+      columnName: "age",
     },
     {
-      name: 'active',
-      header: 'Active',
-      displayType: 'boolean',
+      name: "active",
+      header: "Active",
+      displayType: "boolean",
       isMandatory: false,
-      columnName: 'active'
+      columnName: "active",
     },
     {
-      name: 'creationDate',
-      header: 'Creation Date',
-      displayType: 'date',
+      name: "creationDate",
+      header: "Creation Date",
+      displayType: "date",
       isMandatory: false,
-      columnName: 'creation_date'
-    }
+      columnName: "creation_date",
+    },
   ];
 
-  describe('validateNewRowForSave', () => {
-    it('should pass validation for valid new row data', () => {
+  describe("validateNewRowForSave", () => {
+    it("should pass validation for valid new row data", () => {
       const rowData: EntityData = {
-        id: 'new_123',
-        name: 'John Doe',
-        email: 'john@example.com',
+        id: "new_123",
+        name: "John Doe",
+        email: "john@example.com",
         age: 30,
-        active: true
+        active: true,
       };
 
       const result = validateNewRowForSave(mockColumns, rowData);
@@ -85,13 +85,13 @@ describe('New Row Validation', () => {
       expect(result.errors).toEqual([]);
     });
 
-    it('should fail validation for missing required fields', () => {
+    it("should fail validation for missing required fields", () => {
       const rowData: EntityData = {
-        id: 'new_123',
-        name: 'John Doe',
+        id: "new_123",
+        name: "John Doe",
         // email is missing but required
         age: 30,
-        active: true
+        active: true,
       };
 
       const result = validateNewRowForSave(mockColumns, rowData);
@@ -99,38 +99,38 @@ describe('New Row Validation', () => {
       expect(result.isValid).toBe(false);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toEqual({
-        field: 'email',
-        message: 'Email is required',
-        type: 'required'
+        field: "email",
+        message: "Email is required",
+        type: "required",
       });
     });
 
-    it('should fail validation for multiple missing required fields', () => {
+    it("should fail validation for multiple missing required fields", () => {
       const rowData: EntityData = {
-        id: 'new_123',
+        id: "new_123",
         // name and email are missing but required
         age: 30,
-        active: true
+        active: true,
       };
 
       const result = validateNewRowForSave(mockColumns, rowData);
 
       expect(result.isValid).toBe(false);
       expect(result.errors).toHaveLength(2);
-      expect(result.errors.map(e => e.field)).toContain('name');
-      expect(result.errors.map(e => e.field)).toContain('email');
+      expect(result.errors.map((e) => e.field)).toContain("name");
+      expect(result.errors.map((e) => e.field)).toContain("email");
     });
 
-    it('should skip system fields during validation', () => {
+    it("should skip system fields during validation", () => {
       const rowData: EntityData = {
-        id: 'new_123',
-        name: 'John Doe',
-        email: 'john@example.com',
+        id: "new_123",
+        name: "John Doe",
+        email: "john@example.com",
         // System fields should be ignored even if missing
         creationDate: undefined,
         createdBy: undefined,
         updated: undefined,
-        updatedBy: undefined
+        updatedBy: undefined,
       };
 
       const result = validateNewRowForSave(mockColumns, rowData);
@@ -139,42 +139,42 @@ describe('New Row Validation', () => {
       expect(result.errors).toEqual([]);
     });
 
-    it('should handle empty string values as invalid for required fields', () => {
+    it("should handle empty string values as invalid for required fields", () => {
       const rowData: EntityData = {
-        id: 'new_123',
-        name: '',  // Empty string should be invalid for required field
-        email: 'john@example.com'
+        id: "new_123",
+        name: "", // Empty string should be invalid for required field
+        email: "john@example.com",
       };
 
       const result = validateNewRowForSave(mockColumns, rowData);
 
       expect(result.isValid).toBe(false);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].field).toBe('name');
+      expect(result.errors[0].field).toBe("name");
     });
 
-    it('should handle null values as invalid for required fields', () => {
+    it("should handle null values as invalid for required fields", () => {
       const rowData: EntityData = {
-        id: 'new_123',
-        name: null,  // Null should be invalid for required field
-        email: 'john@example.com'
+        id: "new_123",
+        name: null, // Null should be invalid for required field
+        email: "john@example.com",
       };
 
       const result = validateNewRowForSave(mockColumns, rowData);
 
       expect(result.isValid).toBe(false);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].field).toBe('name');
+      expect(result.errors[0].field).toBe("name");
     });
   });
 
-  describe('validateExistingRowForSave', () => {
-    it('should pass validation when no fields are modified', () => {
+  describe("validateExistingRowForSave", () => {
+    it("should pass validation when no fields are modified", () => {
       const originalData: EntityData = {
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        age: 30
+        id: "1",
+        name: "John Doe",
+        email: "john@example.com",
+        age: 30,
       };
       const currentData: EntityData = { ...originalData };
 
@@ -184,16 +184,16 @@ describe('New Row Validation', () => {
       expect(result.errors).toEqual([]);
     });
 
-    it('should validate only modified fields', () => {
+    it("should validate only modified fields", () => {
       const originalData: EntityData = {
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        age: 30
+        id: "1",
+        name: "John Doe",
+        email: "john@example.com",
+        age: 30,
       };
       const currentData: EntityData = {
         ...originalData,
-        name: '',  // Modified to invalid value
+        name: "", // Modified to invalid value
         // email unchanged, so should not be validated even if it were invalid
       };
 
@@ -201,20 +201,20 @@ describe('New Row Validation', () => {
 
       expect(result.isValid).toBe(false);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].field).toBe('name');
+      expect(result.errors[0].field).toBe("name");
     });
 
-    it('should pass validation for valid modified fields', () => {
+    it("should pass validation for valid modified fields", () => {
       const originalData: EntityData = {
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        age: 30
+        id: "1",
+        name: "John Doe",
+        email: "john@example.com",
+        age: 30,
       };
       const currentData: EntityData = {
         ...originalData,
-        name: 'Jane Doe',  // Valid modification
-        age: 25           // Valid modification
+        name: "Jane Doe", // Valid modification
+        age: 25, // Valid modification
       };
 
       const result = validateExistingRowForSave(mockColumns, currentData, originalData);
@@ -223,18 +223,18 @@ describe('New Row Validation', () => {
       expect(result.errors).toEqual([]);
     });
 
-    it('should skip system fields during validation', () => {
+    it("should skip system fields during validation", () => {
       const originalData: EntityData = {
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        creationDate: '2023-01-01',
-        createdBy: 'admin'
+        id: "1",
+        name: "John Doe",
+        email: "john@example.com",
+        creationDate: "2023-01-01",
+        createdBy: "admin",
       };
       const currentData: EntityData = {
         ...originalData,
-        creationDate: '',  // System field modification should be ignored
-        createdBy: ''      // System field modification should be ignored
+        creationDate: "", // System field modification should be ignored
+        createdBy: "", // System field modification should be ignored
       };
 
       const result = validateExistingRowForSave(mockColumns, currentData, originalData);
@@ -244,14 +244,14 @@ describe('New Row Validation', () => {
     });
   });
 
-  describe('hasRequiredFieldsForNewRow', () => {
-    it('should return true when all required fields are filled', () => {
+  describe("hasRequiredFieldsForNewRow", () => {
+    it("should return true when all required fields are filled", () => {
       const rowData: EntityData = {
-        id: 'new_123',
-        name: 'John Doe',
-        email: 'john@example.com',
-        age: null,  // Optional field can be null
-        active: false
+        id: "new_123",
+        name: "John Doe",
+        email: "john@example.com",
+        age: null, // Optional field can be null
+        active: false,
       };
 
       const result = hasRequiredFieldsForNewRow(mockColumns, rowData);
@@ -259,12 +259,12 @@ describe('New Row Validation', () => {
       expect(result).toBe(true);
     });
 
-    it('should return false when required fields are missing', () => {
+    it("should return false when required fields are missing", () => {
       const rowData: EntityData = {
-        id: 'new_123',
-        name: 'John Doe',
+        id: "new_123",
+        name: "John Doe",
         // email is missing but required
-        age: 30
+        age: 30,
       };
 
       const result = hasRequiredFieldsForNewRow(mockColumns, rowData);
@@ -272,11 +272,11 @@ describe('New Row Validation', () => {
       expect(result).toBe(false);
     });
 
-    it('should return false when required fields are empty strings', () => {
+    it("should return false when required fields are empty strings", () => {
       const rowData: EntityData = {
-        id: 'new_123',
-        name: '',  // Required field is empty
-        email: 'john@example.com'
+        id: "new_123",
+        name: "", // Required field is empty
+        email: "john@example.com",
       };
 
       const result = hasRequiredFieldsForNewRow(mockColumns, rowData);
@@ -284,11 +284,11 @@ describe('New Row Validation', () => {
       expect(result).toBe(false);
     });
 
-    it('should return false when required fields are null', () => {
+    it("should return false when required fields are null", () => {
       const rowData: EntityData = {
-        id: 'new_123',
-        name: 'John Doe',
-        email: null  // Required field is null
+        id: "new_123",
+        name: "John Doe",
+        email: null, // Required field is null
       };
 
       const result = hasRequiredFieldsForNewRow(mockColumns, rowData);
@@ -296,14 +296,14 @@ describe('New Row Validation', () => {
       expect(result).toBe(false);
     });
 
-    it('should ignore system fields', () => {
+    it("should ignore system fields", () => {
       const rowData: EntityData = {
-        id: 'new_123',
-        name: 'John Doe',
-        email: 'john@example.com',
+        id: "new_123",
+        name: "John Doe",
+        email: "john@example.com",
         // System fields can be missing
         creationDate: undefined,
-        createdBy: undefined
+        createdBy: undefined,
       };
 
       const result = hasRequiredFieldsForNewRow(mockColumns, rowData);
@@ -311,9 +311,9 @@ describe('New Row Validation', () => {
       expect(result).toBe(true);
     });
 
-    it('should handle empty row data', () => {
+    it("should handle empty row data", () => {
       const rowData: EntityData = {
-        id: 'new_123'
+        id: "new_123",
         // All other fields missing
       };
 
@@ -323,22 +323,22 @@ describe('New Row Validation', () => {
     });
   });
 
-  describe('validationErrorsToRecord', () => {
-    it('should convert validation errors array to record format', () => {
+  describe("validationErrorsToRecord", () => {
+    it("should convert validation errors array to record format", () => {
       const errors = [
-        { field: 'name', message: 'Name is required', type: 'required' as const },
-        { field: 'email', message: 'Email is required', type: 'required' as const }
+        { field: "name", message: "Name is required", type: "required" as const },
+        { field: "email", message: "Email is required", type: "required" as const },
       ];
 
       const result = validationErrorsToRecord(errors);
 
       expect(result).toEqual({
-        name: 'Name is required',
-        email: 'Email is required'
+        name: "Name is required",
+        email: "Email is required",
       });
     });
 
-    it('should handle empty errors array', () => {
+    it("should handle empty errors array", () => {
       const errors: any[] = [];
 
       const result = validationErrorsToRecord(errors);
@@ -346,30 +346,30 @@ describe('New Row Validation', () => {
       expect(result).toEqual({});
     });
 
-    it('should handle duplicate field errors (last one wins)', () => {
+    it("should handle duplicate field errors (last one wins)", () => {
       const errors = [
-        { field: 'name', message: 'First error', type: 'required' as const },
-        { field: 'name', message: 'Second error', type: 'format' as const }
+        { field: "name", message: "First error", type: "required" as const },
+        { field: "name", message: "Second error", type: "format" as const },
       ];
 
       const result = validationErrorsToRecord(errors);
 
       expect(result).toEqual({
-        name: 'Second error'
+        name: "Second error",
       });
     });
   });
 
-  describe('Integration Tests', () => {
-    it('should validate complete new row creation workflow', () => {
+  describe("Integration Tests", () => {
+    it("should validate complete new row creation workflow", () => {
       // Step 1: Create empty row data
-      const newRowId = 'new_123';
+      const newRowId = "new_123";
       const emptyRowData: EntityData = {
         id: newRowId,
         name: null,
         email: null,
         age: null,
-        active: false
+        active: false,
       };
 
       // Step 2: Check if required fields are filled (should fail)
@@ -378,8 +378,8 @@ describe('New Row Validation', () => {
       // Step 3: Fill required fields
       const filledRowData: EntityData = {
         ...emptyRowData,
-        name: 'John Doe',
-        email: 'john@example.com'
+        name: "John Doe",
+        email: "john@example.com",
       };
 
       // Step 4: Check if required fields are filled (should pass)
@@ -391,12 +391,12 @@ describe('New Row Validation', () => {
       expect(validationResult.errors).toEqual([]);
     });
 
-    it('should handle validation errors in new row workflow', () => {
+    it("should handle validation errors in new row workflow", () => {
       const newRowData: EntityData = {
-        id: 'new_123',
-        name: '',  // Invalid: empty required field
-        email: 'john@example.com',
-        age: -5    // Invalid: negative age (if we had such validation)
+        id: "new_123",
+        name: "", // Invalid: empty required field
+        email: "john@example.com",
+        age: -5, // Invalid: negative age (if we had such validation)
       };
 
       // Validate for save
@@ -406,7 +406,7 @@ describe('New Row Validation', () => {
       // Convert to record format for state management
       const errorRecord = validationErrorsToRecord(validationResult.errors);
       expect(errorRecord.name).toBeDefined();
-      expect(typeof errorRecord.name).toBe('string');
+      expect(typeof errorRecord.name).toBe("string");
     });
   });
 });

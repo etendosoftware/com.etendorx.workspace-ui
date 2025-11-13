@@ -28,35 +28,35 @@ import { getFieldReference } from "@/utils";
 function columnToFieldForValidation(column: Column): Field {
   // Use the existing getFieldReference utility to determine field type
   const fieldType = getFieldReference(column.column?.reference) || FieldType.TEXT;
-  
+
   // Map display type if reference doesn't provide enough info
   let finalFieldType = fieldType;
   if (fieldType === FieldType.TEXT && column.displayType) {
     switch (column.displayType.toLowerCase()) {
-      case 'integer':
-      case 'number':
+      case "integer":
+      case "number":
         finalFieldType = FieldType.NUMBER;
         break;
-      case 'date':
+      case "date":
         finalFieldType = FieldType.DATE;
         break;
-      case 'datetime':
+      case "datetime":
         finalFieldType = FieldType.DATETIME;
         break;
-      case 'boolean':
-      case 'yesno':
+      case "boolean":
+      case "yesno":
         finalFieldType = FieldType.BOOLEAN;
         break;
-      case 'list':
+      case "list":
         finalFieldType = FieldType.LIST;
         break;
-      case 'search':
+      case "search":
         finalFieldType = FieldType.SEARCH;
         break;
-      case 'tabledir':
+      case "tabledir":
         finalFieldType = FieldType.TABLEDIR;
         break;
-      case 'quantity':
+      case "quantity":
         finalFieldType = FieldType.QUANTITY;
         break;
     }
@@ -82,14 +82,14 @@ function columnToFieldForValidation(column: Column): Field {
  */
 export function validateFieldValue(field: Field | Column, value: unknown): string | undefined {
   // Convert Column to Field if needed
-  const fieldData = 'type' in field ? field : columnToFieldForValidation(field);
+  const fieldData = "type" in field ? field : columnToFieldForValidation(field);
   // Check required fields
-  if (fieldData.isMandatory && (value === null || value === undefined || value === '')) {
+  if (fieldData.isMandatory && (value === null || value === undefined || value === "")) {
     return `${fieldData.description || fieldData.name} is required`;
   }
 
   // Skip validation for empty optional fields
-  if (!fieldData.isMandatory && (value === null || value === undefined || value === '')) {
+  if (!fieldData.isMandatory && (value === null || value === undefined || value === "")) {
     return undefined;
   }
 
@@ -98,21 +98,21 @@ export function validateFieldValue(field: Field | Column, value: unknown): strin
     case FieldType.NUMBER:
     case FieldType.QUANTITY:
       return validateNumericField(fieldData, value);
-    
+
     case FieldType.DATE:
     case FieldType.DATETIME:
       return validateDateField(fieldData, value);
-    
+
     case FieldType.BOOLEAN:
       return validateBooleanField(fieldData, value);
-    
+
     case FieldType.LIST:
     case FieldType.SELECT:
       return validateListField(fieldData, value);
-    
+
     case FieldType.TEXT:
       return validateTextField(fieldData, value);
-    
+
     default:
       return undefined;
   }
@@ -127,11 +127,11 @@ function validateNumericField(field: Field, value: unknown): string | undefined 
     return undefined; // Let the mandatory check handle this
   }
 
-  if (typeof value !== 'number' && typeof value !== 'string') {
+  if (typeof value !== "number" && typeof value !== "string") {
     return `${field.description || field.name} must be a number`;
   }
 
-  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  const numValue = typeof value === "string" ? Number.parseFloat(value) : value;
 
   if (isNaN(numValue)) {
     return `${field.description || field.name} must be a valid number`;
@@ -155,7 +155,7 @@ function validateDateField(field: Field, value: unknown): string | undefined {
   }
 
   // Accept both string and Date objects
-  if (typeof value !== 'string' && !(value instanceof Date) && typeof value !== 'number') {
+  if (typeof value !== "string" && !(value instanceof Date) && typeof value !== "number") {
     return `${field.description || field.name} must be a valid date`;
   }
 
@@ -177,7 +177,7 @@ function validateBooleanField(field: Field, value: unknown): string | undefined 
   }
 
   // Boolean fields accept various formats including actual booleans
-  const validBooleanValues = [true, false, 'Y', 'N', 'true', 'false', '1', '0', 1, 0];
+  const validBooleanValues = [true, false, "Y", "N", "true", "false", "1", "0", 1, 0];
 
   if (!validBooleanValues.includes(value as any)) {
     return `${field.description || field.name} must be a valid boolean value`;
@@ -191,7 +191,7 @@ function validateBooleanField(field: Field, value: unknown): string | undefined 
  */
 function validateListField(field: Field, value: unknown): string | undefined {
   // Accept null/undefined for optional fields
-  if (value === null || value === undefined || value === '') {
+  if (value === null || value === undefined || value === "") {
     return undefined; // Let the mandatory check handle this
   }
 
@@ -199,7 +199,7 @@ function validateListField(field: Field, value: unknown): string | undefined {
     return undefined; // No validation if no options available
   }
 
-  const validValues = field.refList.map(option => option.value);
+  const validValues = field.refList.map((option) => option.value);
   if (!validValues.includes(value as string)) {
     return `${field.description || field.name} must be one of the available options`;
   }
@@ -216,7 +216,7 @@ function validateTextField(field: Field, value: unknown): string | undefined {
     return undefined; // Let the mandatory check handle this
   }
 
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     return `${field.description || field.name} must be text`;
   }
 
@@ -232,24 +232,24 @@ function validateTextField(field: Field, value: unknown): string | undefined {
 export function validateRowData(fields: (Field | Column)[], rowData: EntityData): RowValidationResult {
   const errors: ValidationError[] = [];
 
-  fields.forEach(field => {
+  fields.forEach((field) => {
     const value = rowData[field.name];
     // Convert Column to Field if needed
-    const fieldData = 'type' in field ? field : columnToFieldForValidation(field);
+    const fieldData = "type" in field ? field : columnToFieldForValidation(field);
     const errorMessage = validateFieldValue(fieldData, value);
-    
+
     if (errorMessage) {
       errors.push({
         field: field.name,
         message: errorMessage,
-        type: 'format'
+        type: "format",
       });
     }
   });
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -260,8 +260,8 @@ export function validateRowData(fields: (Field | Column)[], rowData: EntityData)
  */
 export function validationErrorsToRecord(errors: ValidationError[]): Record<string, string | undefined> {
   const record: Record<string, string | undefined> = {};
-  
-  errors.forEach(error => {
+
+  errors.forEach((error) => {
     record[error.field] = error.message;
   });
 
@@ -277,33 +277,38 @@ export function validationErrorsToRecord(errors: ValidationError[]): Record<stri
 export function validateNewRowForSave(fields: (Field | Column)[], rowData: EntityData): RowValidationResult {
   const errors: ValidationError[] = [];
 
-  console.log('[validateNewRowForSave] Starting validation', {
+  console.log("[validateNewRowForSave] Starting validation", {
     fieldsCount: fields.length,
     rowDataKeys: Object.keys(rowData),
   });
 
   // For new rows, we need to be more strict about required fields
-  fields.forEach(field => {
+  fields.forEach((field) => {
     // Skip system fields that are auto-generated
-    if (field.name === 'id' || field.name === 'actions' ||
-        field.name === 'creationDate' || field.name === 'createdBy' ||
-        field.name === 'updated' || field.name === 'updatedBy') {
+    if (
+      field.name === "id" ||
+      field.name === "actions" ||
+      field.name === "creationDate" ||
+      field.name === "createdBy" ||
+      field.name === "updated" ||
+      field.name === "updatedBy"
+    ) {
       return;
     }
 
     // Convert Column to Field if needed
-    const fieldData = 'type' in field ? field : columnToFieldForValidation(field);
+    const fieldData = "type" in field ? field : columnToFieldForValidation(field);
 
     // Skip validation for readonly fields
     if (fieldData.isReadOnly || !fieldData.isUpdatable) {
-      console.log('[validateNewRowForSave] Skipping readonly field:', field.name);
+      console.log("[validateNewRowForSave] Skipping readonly field:", field.name);
       return;
     }
 
     const value = rowData[field.name];
     const errorMessage = validateFieldValue(fieldData, value);
 
-    console.log('[validateNewRowForSave] Field validation:', {
+    console.log("[validateNewRowForSave] Field validation:", {
       fieldName: field.name,
       fieldType: fieldData.type,
       isMandatory: fieldData.isMandatory,
@@ -319,12 +324,12 @@ export function validateNewRowForSave(fields: (Field | Column)[], rowData: Entit
       errors.push({
         field: field.name,
         message: errorMessage,
-        type: 'required'
+        type: "required",
       });
     }
   });
 
-  console.log('[validateNewRowForSave] Validation complete', {
+  console.log("[validateNewRowForSave] Validation complete", {
     isValid: errors.length === 0,
     errorsCount: errors.length,
     errors,
@@ -332,7 +337,7 @@ export function validateNewRowForSave(fields: (Field | Column)[], rowData: Entit
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -344,23 +349,28 @@ export function validateNewRowForSave(fields: (Field | Column)[], rowData: Entit
  * @returns Validation result
  */
 export function validateExistingRowForSave(
-  fields: (Field | Column)[], 
-  rowData: EntityData, 
+  fields: (Field | Column)[],
+  rowData: EntityData,
   originalData: EntityData
 ): RowValidationResult {
   const errors: ValidationError[] = [];
 
   // For existing rows, only validate fields that have been modified
-  fields.forEach(field => {
+  fields.forEach((field) => {
     // Skip system fields
-    if (field.name === 'id' || field.name === 'actions' ||
-        field.name === 'creationDate' || field.name === 'createdBy' ||
-        field.name === 'updated' || field.name === 'updatedBy') {
+    if (
+      field.name === "id" ||
+      field.name === "actions" ||
+      field.name === "creationDate" ||
+      field.name === "createdBy" ||
+      field.name === "updated" ||
+      field.name === "updatedBy"
+    ) {
       return;
     }
 
     // Convert Column to Field if needed
-    const fieldData = 'type' in field ? field : columnToFieldForValidation(field);
+    const fieldData = "type" in field ? field : columnToFieldForValidation(field);
 
     // Skip validation for readonly fields
     if (fieldData.isReadOnly || !fieldData.isUpdatable) {
@@ -378,7 +388,7 @@ export function validateExistingRowForSave(
         errors.push({
           field: field.name,
           message: errorMessage,
-          type: 'format'
+          type: "format",
         });
       }
     }
@@ -386,7 +396,7 @@ export function validateExistingRowForSave(
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -397,23 +407,28 @@ export function validateExistingRowForSave(
  * @returns True if all required fields are filled
  */
 export function hasRequiredFieldsForNewRow(fields: (Field | Column)[], rowData: EntityData): boolean {
-  return fields.every(field => {
+  return fields.every((field) => {
     // Skip system fields
-    if (field.name === 'id' || field.name === 'actions' || 
-        field.name === 'creationDate' || field.name === 'createdBy' ||
-        field.name === 'updated' || field.name === 'updatedBy') {
+    if (
+      field.name === "id" ||
+      field.name === "actions" ||
+      field.name === "creationDate" ||
+      field.name === "createdBy" ||
+      field.name === "updated" ||
+      field.name === "updatedBy"
+    ) {
       return true;
     }
 
     // Convert Column to Field if needed
-    const fieldData = 'type' in field ? field : columnToFieldForValidation(field);
-    
+    const fieldData = "type" in field ? field : columnToFieldForValidation(field);
+
     if (!fieldData.isMandatory) {
       return true; // Optional fields are always valid
     }
 
     const value = rowData[field.name];
-    return value !== null && value !== undefined && value !== '';
+    return value !== null && value !== undefined && value !== "";
   });
 }
 
@@ -425,7 +440,7 @@ export function hasRequiredFieldsForNewRow(fields: (Field | Column)[], rowData: 
  * @returns Validation result with immediate feedback
  */
 export function validateFieldRealTime(
-  field: Field | Column, 
+  field: Field | Column,
   value: unknown,
   options: {
     allowEmpty?: boolean;
@@ -433,24 +448,24 @@ export function validateFieldRealTime(
   } = {}
 ): { isValid: boolean; error?: string; warning?: string } {
   const { allowEmpty = true, showTypingErrors = false } = options;
-  
+
   // Convert Column to Field if needed
-  const fieldData = 'type' in field ? field : columnToFieldForValidation(field);
-  
+  const fieldData = "type" in field ? field : columnToFieldForValidation(field);
+
   // For real-time validation, be more lenient with empty values while typing
-  if (allowEmpty && (value === null || value === undefined || value === '')) {
+  if (allowEmpty && (value === null || value === undefined || value === "")) {
     // Only show required field error if explicitly requested
     if (fieldData.isMandatory && !allowEmpty) {
       return {
         isValid: false,
-        error: `${fieldData.description || fieldData.name} is required`
+        error: `${fieldData.description || fieldData.name} is required`,
       };
     }
     return { isValid: true };
   }
 
   // Skip validation for empty optional fields
-  if (!fieldData.isMandatory && (value === null || value === undefined || value === '')) {
+  if (!fieldData.isMandatory && (value === null || value === undefined || value === "")) {
     return { isValid: true };
   }
 
@@ -459,21 +474,21 @@ export function validateFieldRealTime(
     case FieldType.NUMBER:
     case FieldType.QUANTITY:
       return validateNumericFieldRealTime(fieldData, value, showTypingErrors);
-    
+
     case FieldType.DATE:
     case FieldType.DATETIME:
       return validateDateFieldRealTime(fieldData, value, showTypingErrors);
-    
+
     case FieldType.BOOLEAN:
       return validateBooleanFieldRealTime(fieldData, value);
-    
+
     case FieldType.LIST:
     case FieldType.SELECT:
       return validateListFieldRealTime(fieldData, value);
-    
+
     case FieldType.TEXT:
       return validateTextFieldRealTime(fieldData, value, showTypingErrors);
-    
+
     default:
       return { isValid: true };
   }
@@ -492,10 +507,10 @@ function validateNumericFieldRealTime(
     return { isValid: true };
   }
 
-  if (typeof value !== 'number' && typeof value !== 'string') {
+  if (typeof value !== "number" && typeof value !== "string") {
     return {
       isValid: false,
-      error: `${field.description || field.name} must be a number`
+      error: `${field.description || field.name} must be a number`,
     };
   }
 
@@ -506,12 +521,12 @@ function validateNumericFieldRealTime(
     return { isValid: true };
   }
 
-  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  const numValue = typeof value === "string" ? Number.parseFloat(value) : value;
 
   if (isNaN(numValue)) {
     return {
       isValid: false,
-      error: `${field.description || field.name} must be a valid number`
+      error: `${field.description || field.name} must be a valid number`,
     };
   }
 
@@ -519,7 +534,7 @@ function validateNumericFieldRealTime(
   if (field.type === FieldType.QUANTITY && numValue < 0) {
     return {
       isValid: false,
-      error: `${field.description || field.name} cannot be negative`
+      error: `${field.description || field.name} cannot be negative`,
     };
   }
 
@@ -540,15 +555,15 @@ function validateDateFieldRealTime(
   }
 
   // Accept Date objects, strings, or numbers
-  if (typeof value !== 'string' && !(value instanceof Date) && typeof value !== 'number') {
+  if (typeof value !== "string" && !(value instanceof Date) && typeof value !== "number") {
     return {
       isValid: false,
-      error: `${field.description || field.name} must be a valid date`
+      error: `${field.description || field.name} must be a valid date`,
     };
   }
 
   // Allow partial date input while typing (only for string inputs)
-  if (typeof value === 'string' && !showTypingErrors && /^\d{0,4}-?\d{0,2}-?\d{0,2}$/.test(value)) {
+  if (typeof value === "string" && !showTypingErrors && /^\d{0,4}-?\d{0,2}-?\d{0,2}$/.test(value)) {
     return { isValid: true };
   }
 
@@ -556,7 +571,7 @@ function validateDateFieldRealTime(
   if (isNaN(date.getTime())) {
     return {
       isValid: false,
-      error: `${field.description || field.name} must be a valid date`
+      error: `${field.description || field.name} must be a valid date`,
     };
   }
 
@@ -575,12 +590,12 @@ function validateBooleanFieldRealTime(
     return { isValid: true }; // Let the mandatory check handle this
   }
 
-  const validBooleanValues = [true, false, 'Y', 'N', 'true', 'false', '1', '0', 1, 0];
+  const validBooleanValues = [true, false, "Y", "N", "true", "false", "1", "0", 1, 0];
 
   if (!validBooleanValues.includes(value as any)) {
     return {
       isValid: false,
-      error: `${field.description || field.name} must be a valid boolean value`
+      error: `${field.description || field.name} must be a valid boolean value`,
     };
   }
 
@@ -595,7 +610,7 @@ function validateListFieldRealTime(
   value: unknown
 ): { isValid: boolean; error?: string; warning?: string } {
   // Accept null/undefined for optional fields
-  if (value === null || value === undefined || value === '') {
+  if (value === null || value === undefined || value === "") {
     return { isValid: true }; // Let the mandatory check handle this
   }
 
@@ -603,11 +618,11 @@ function validateListFieldRealTime(
     return { isValid: true }; // No validation if no options available
   }
 
-  const validValues = field.refList.map(option => option.value);
+  const validValues = field.refList.map((option) => option.value);
   if (!validValues.includes(value as string)) {
     return {
       isValid: false,
-      error: `${field.description || field.name} must be one of the available options`
+      error: `${field.description || field.name} must be one of the available options`,
     };
   }
 
@@ -627,10 +642,10 @@ function validateTextFieldRealTime(
     return { isValid: true };
   }
 
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     return {
       isValid: false,
-      error: `${field.description || field.name} must be text`
+      error: `${field.description || field.name} must be text`,
     };
   }
 
@@ -646,25 +661,30 @@ function validateTextFieldRealTime(
 export function validateRowForSave(fields: (Field | Column)[], rowData: EntityData): RowValidationResult {
   const errors: ValidationError[] = [];
 
-  console.log('[validateRowForSave] Starting validation', {
+  console.log("[validateRowForSave] Starting validation", {
     fieldsCount: fields.length,
     rowDataKeys: Object.keys(rowData),
   });
 
-  fields.forEach(field => {
+  fields.forEach((field) => {
     // Skip system fields
-    if (field.name === 'id' || field.name === 'actions' ||
-        field.name === 'creationDate' || field.name === 'createdBy' ||
-        field.name === 'updated' || field.name === 'updatedBy') {
+    if (
+      field.name === "id" ||
+      field.name === "actions" ||
+      field.name === "creationDate" ||
+      field.name === "createdBy" ||
+      field.name === "updated" ||
+      field.name === "updatedBy"
+    ) {
       return;
     }
 
     // Convert Column to Field if needed
-    const fieldData = 'type' in field ? field : columnToFieldForValidation(field);
+    const fieldData = "type" in field ? field : columnToFieldForValidation(field);
 
     // Skip validation for readonly fields
     if (fieldData.isReadOnly || !fieldData.isUpdatable) {
-      console.log('[validateRowForSave] Skipping readonly field:', field.name);
+      console.log("[validateRowForSave] Skipping readonly field:", field.name);
       return;
     }
 
@@ -673,10 +693,10 @@ export function validateRowForSave(fields: (Field | Column)[], rowData: EntityDa
     // Use strict validation for save operations
     const validationResult = validateFieldRealTime(fieldData, value, {
       allowEmpty: false,
-      showTypingErrors: true
+      showTypingErrors: true,
     });
 
-    console.log('[validateRowForSave] Field validation:', {
+    console.log("[validateRowForSave] Field validation:", {
       fieldName: field.name,
       fieldType: fieldData.type,
       isMandatory: fieldData.isMandatory,
@@ -691,12 +711,12 @@ export function validateRowForSave(fields: (Field | Column)[], rowData: EntityDa
       errors.push({
         field: field.name,
         message: validationResult.error,
-        type: 'format'
+        type: "format",
       });
     }
   });
 
-  console.log('[validateRowForSave] Validation complete', {
+  console.log("[validateRowForSave] Validation complete", {
     isValid: errors.length === 0,
     errorsCount: errors.length,
     errors,
@@ -704,7 +724,7 @@ export function validateRowForSave(fields: (Field | Column)[], rowData: EntityDa
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -716,7 +736,7 @@ export function validateRowForSave(fields: (Field | Column)[], rowData: EntityDa
  */
 export function createDebouncedValidation<T extends unknown[]>(
   validationFn: (...args: T) => void,
-  delay: number = 300
+  delay = 300
 ): (...args: T) => void {
   let timeoutId: NodeJS.Timeout | null = null;
 

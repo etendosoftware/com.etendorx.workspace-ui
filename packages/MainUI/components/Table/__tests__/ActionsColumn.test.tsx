@@ -1,39 +1,21 @@
-/*
- *************************************************************************
- * The contents of this file are subject to the Etendo License
- * (the "License"), you may not use this file except in compliance with
- * the License.
- * You may obtain a copy of the License at
- * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
- * Software distributed under the License is distributed on an
- * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
- * implied. See the License for the specific language governing rights
- * and limitations under the License.
- * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
- * All Rights Reserved.
- * Contributor(s): Futit Services S.L.
- *************************************************************************
- */
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import type { MRT_Row } from "material-react-table";
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
 
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import type { MRT_Row } from 'material-react-table';
-import type { EntityData } from '@workspaceui/api-client/src/api/types';
-
-import { ActionsColumn } from '../ActionsColumn';
+import { ActionsColumn } from "../ActionsColumn";
 
 // Mock the translation hook
-jest.mock('@/hooks/useTranslation', () => ({
+jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
-        'table.actions.save': 'Save',
-        'table.actions.cancel': 'Cancel',
-        'table.actions.editInGrid': 'Edit in grid',
-        'table.actions.openFormView': 'Open form view',
-        'table.actions.saveDisabledErrors': 'Fix validation errors before saving',
-        'table.actions.validationErrors': 'Validation errors present',
+        "table.actions.save": "Save",
+        "table.actions.cancel": "Cancel",
+        "table.actions.editInGrid": "Edit in grid",
+        "table.actions.openFormView": "Open form view",
+        "table.actions.saveDisabledErrors": "Fix validation errors before saving",
+        "table.actions.validationErrors": "Validation errors present",
       };
       return translations[key] || key;
     },
@@ -41,32 +23,73 @@ jest.mock('@/hooks/useTranslation', () => ({
 }));
 
 // Mock the IconButton component
-jest.mock('@workspaceui/componentlibrary/src/components', () => ({
-  IconButton: ({ children, onClick, disabled, title, className, size, 'data-testid': testId }: any) => (
+jest.mock("@workspaceui/componentlibrary/src/components", () => ({
+  IconButton: ({ children, onClick, disabled, title, className, size, "data-testid": testId }: any) => (
     <button
       onClick={onClick}
       disabled={disabled}
       title={title}
       className={className}
       data-size={size}
-      data-testid={testId}
-    >
+      data-testid={testId}>
       {children}
     </button>
   ),
 }));
 
 // Mock the SVG icons
-jest.mock('../../../ComponentLibrary/src/assets/icons/edit.svg', () => ({ __esModule: true, default: (props: any) => <div data-testid="edit-icon" {...props}>EditIcon</div> }));
-jest.mock('../../../ComponentLibrary/src/assets/icons/check.svg', () => ({ __esModule: true, default: (props: any) => <div data-testid="check-icon" {...props}>CheckIcon</div> }));
-jest.mock('../../../ComponentLibrary/src/assets/icons/x.svg', () => ({ __esModule: true, default: (props: any) => <div data-testid="x-icon" {...props}>XIcon</div> }));
-jest.mock('../../../ComponentLibrary/src/assets/icons/external-link.svg', () => ({ __esModule: true, default: (props: any) => <div data-testid="external-link-icon" {...props}>ExternalLinkIcon</div> }));
-jest.mock('../../../ComponentLibrary/src/assets/icons/alert-circle.svg', () => ({ __esModule: true, default: (props: any) => <div data-testid="alert-circle-icon" {...props}>AlertCircleIcon</div> }));
-jest.mock('../../../ComponentLibrary/src/assets/icons/loader.svg', () => ({ __esModule: true, default: (props: any) => <div data-testid="loader-icon" {...props}>LoaderIcon</div> }));
+jest.mock("../../../ComponentLibrary/src/assets/icons/edit.svg", () => ({
+  __esModule: true,
+  default: (props: any) => (
+    <div data-testid="edit-icon" {...props}>
+      EditIcon
+    </div>
+  ),
+}));
+jest.mock("../../../ComponentLibrary/src/assets/icons/check.svg", () => ({
+  __esModule: true,
+  default: (props: any) => (
+    <div data-testid="check-icon" {...props}>
+      CheckIcon
+    </div>
+  ),
+}));
+jest.mock("../../../ComponentLibrary/src/assets/icons/x.svg", () => ({
+  __esModule: true,
+  default: (props: any) => (
+    <div data-testid="x-icon" {...props}>
+      XIcon
+    </div>
+  ),
+}));
+jest.mock("../../../ComponentLibrary/src/assets/icons/external-link.svg", () => ({
+  __esModule: true,
+  default: (props: any) => (
+    <div data-testid="external-link-icon" {...props}>
+      ExternalLinkIcon
+    </div>
+  ),
+}));
+jest.mock("../../../ComponentLibrary/src/assets/icons/alert-circle.svg", () => ({
+  __esModule: true,
+  default: (props: any) => (
+    <div data-testid="alert-circle-icon" {...props}>
+      AlertCircleIcon
+    </div>
+  ),
+}));
+jest.mock("../../../ComponentLibrary/src/assets/icons/loader.svg", () => ({
+  __esModule: true,
+  default: (props: any) => (
+    <div data-testid="loader-icon" {...props}>
+      LoaderIcon
+    </div>
+  ),
+}));
 
-describe('ActionsColumn', () => {
+describe("ActionsColumn", () => {
   const mockRow: MRT_Row<EntityData> = {
-    original: { id: 'test-row-123' },
+    original: { id: "test-row-123" },
   } as MRT_Row<EntityData>;
 
   const mockCallbacks = {
@@ -80,200 +103,112 @@ describe('ActionsColumn', () => {
     jest.clearAllMocks();
   });
 
-  describe('Read-only mode (not editing)', () => {
-    it('should render edit and form view buttons when not editing', () => {
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={false}
-          isSaving={false}
-          hasErrors={false}
-          {...mockCallbacks}
-        />
-      );
+  describe("Read-only mode (not editing)", () => {
+    it("should render edit and form view buttons when not editing", () => {
+      render(<ActionsColumn row={mockRow} isEditing={false} isSaving={false} hasErrors={false} {...mockCallbacks} />);
 
-      expect(screen.getByTestId('edit-button-test-row-123')).toBeInTheDocument();
-      expect(screen.getByTestId('form-button-test-row-123')).toBeInTheDocument();
-      expect(screen.queryByTestId('save-button-test-row-123')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('cancel-button-test-row-123')).not.toBeInTheDocument();
+      expect(screen.getByTestId("edit-button-test-row-123")).toBeInTheDocument();
+      expect(screen.getByTestId("form-button-test-row-123")).toBeInTheDocument();
+      expect(screen.queryByTestId("save-button-test-row-123")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("cancel-button-test-row-123")).not.toBeInTheDocument();
     });
 
-    it('should call onEdit when edit button is clicked', async () => {
+    it("should call onEdit when edit button is clicked", async () => {
       const user = userEvent.setup();
-      
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={false}
-          isSaving={false}
-          hasErrors={false}
-          {...mockCallbacks}
-        />
-      );
 
-      const editButton = screen.getByTestId('edit-button-test-row-123');
+      render(<ActionsColumn row={mockRow} isEditing={false} isSaving={false} hasErrors={false} {...mockCallbacks} />);
+
+      const editButton = screen.getByTestId("edit-button-test-row-123");
       await user.click(editButton);
 
       expect(mockCallbacks.onEdit).toHaveBeenCalledTimes(1);
     });
 
-    it('should call onOpenForm when form view button is clicked', async () => {
+    it("should call onOpenForm when form view button is clicked", async () => {
       const user = userEvent.setup();
-      
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={false}
-          isSaving={false}
-          hasErrors={false}
-          {...mockCallbacks}
-        />
-      );
 
-      const formButton = screen.getByTestId('form-button-test-row-123');
+      render(<ActionsColumn row={mockRow} isEditing={false} isSaving={false} hasErrors={false} {...mockCallbacks} />);
+
+      const formButton = screen.getByTestId("form-button-test-row-123");
       await user.click(formButton);
 
       expect(mockCallbacks.onOpenForm).toHaveBeenCalledTimes(1);
     });
 
-    it('should have correct tooltips for read-only buttons', () => {
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={false}
-          isSaving={false}
-          hasErrors={false}
-          {...mockCallbacks}
-        />
-      );
+    it("should have correct tooltips for read-only buttons", () => {
+      render(<ActionsColumn row={mockRow} isEditing={false} isSaving={false} hasErrors={false} {...mockCallbacks} />);
 
-      expect(screen.getByTestId('edit-button-test-row-123')).toHaveAttribute('title', 'Edit in grid');
-      expect(screen.getByTestId('form-button-test-row-123')).toHaveAttribute('title', 'Open form view');
+      expect(screen.getByTestId("edit-button-test-row-123")).toHaveAttribute("title", "Edit in grid");
+      expect(screen.getByTestId("form-button-test-row-123")).toHaveAttribute("title", "Open form view");
     });
   });
 
-  describe('Edit mode', () => {
-    it('should render save and cancel buttons when editing', () => {
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={true}
-          isSaving={false}
-          hasErrors={false}
-          {...mockCallbacks}
-        />
-      );
+  describe("Edit mode", () => {
+    it("should render save and cancel buttons when editing", () => {
+      render(<ActionsColumn row={mockRow} isEditing={true} isSaving={false} hasErrors={false} {...mockCallbacks} />);
 
-      expect(screen.getByTestId('save-button-test-row-123')).toBeInTheDocument();
-      expect(screen.getByTestId('cancel-button-test-row-123')).toBeInTheDocument();
-      expect(screen.queryByTestId('edit-button-test-row-123')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('form-button-test-row-123')).not.toBeInTheDocument();
+      expect(screen.getByTestId("save-button-test-row-123")).toBeInTheDocument();
+      expect(screen.getByTestId("cancel-button-test-row-123")).toBeInTheDocument();
+      expect(screen.queryByTestId("edit-button-test-row-123")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("form-button-test-row-123")).not.toBeInTheDocument();
     });
 
-    it('should call onSave when save button is clicked', async () => {
+    it("should call onSave when save button is clicked", async () => {
       const user = userEvent.setup();
-      
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={true}
-          isSaving={false}
-          hasErrors={false}
-          {...mockCallbacks}
-        />
-      );
 
-      const saveButton = screen.getByTestId('save-button-test-row-123');
+      render(<ActionsColumn row={mockRow} isEditing={true} isSaving={false} hasErrors={false} {...mockCallbacks} />);
+
+      const saveButton = screen.getByTestId("save-button-test-row-123");
       await user.click(saveButton);
 
       expect(mockCallbacks.onSave).toHaveBeenCalledTimes(1);
     });
 
-    it('should call onCancel when cancel button is clicked', async () => {
+    it("should call onCancel when cancel button is clicked", async () => {
       const user = userEvent.setup();
-      
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={true}
-          isSaving={false}
-          hasErrors={false}
-          {...mockCallbacks}
-        />
-      );
 
-      const cancelButton = screen.getByTestId('cancel-button-test-row-123');
+      render(<ActionsColumn row={mockRow} isEditing={true} isSaving={false} hasErrors={false} {...mockCallbacks} />);
+
+      const cancelButton = screen.getByTestId("cancel-button-test-row-123");
       await user.click(cancelButton);
 
       expect(mockCallbacks.onCancel).toHaveBeenCalledTimes(1);
     });
 
-    it('should have correct tooltips for edit mode buttons', () => {
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={true}
-          isSaving={false}
-          hasErrors={false}
-          {...mockCallbacks}
-        />
-      );
+    it("should have correct tooltips for edit mode buttons", () => {
+      render(<ActionsColumn row={mockRow} isEditing={true} isSaving={false} hasErrors={false} {...mockCallbacks} />);
 
-      expect(screen.getByTestId('save-button-test-row-123')).toHaveAttribute('title', 'Save');
-      expect(screen.getByTestId('cancel-button-test-row-123')).toHaveAttribute('title', 'Cancel');
+      expect(screen.getByTestId("save-button-test-row-123")).toHaveAttribute("title", "Save");
+      expect(screen.getByTestId("cancel-button-test-row-123")).toHaveAttribute("title", "Cancel");
     });
   });
 
-  describe('Loading states', () => {
-    it('should show loading spinner when saving', () => {
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={true}
-          isSaving={true}
-          hasErrors={false}
-          {...mockCallbacks}
-        />
-      );
+  describe("Loading states", () => {
+    it("should show loading spinner when saving", () => {
+      render(<ActionsColumn row={mockRow} isEditing={true} isSaving={true} hasErrors={false} {...mockCallbacks} />);
 
-      const saveButton = screen.getByTestId('save-button-test-row-123');
+      const saveButton = screen.getByTestId("save-button-test-row-123");
       expect(saveButton).toBeDisabled();
-      
+
       // Check for loader icon within the save button
-      const saveButton = screen.getByTestId('save-button-test-row-123');
+      const saveButton = screen.getByTestId("save-button-test-row-123");
       expect(saveButton.querySelector('[data-testid="loader-icon"]')).toBeInTheDocument();
     });
 
-    it('should disable cancel button when saving', () => {
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={true}
-          isSaving={true}
-          hasErrors={false}
-          {...mockCallbacks}
-        />
-      );
+    it("should disable cancel button when saving", () => {
+      render(<ActionsColumn row={mockRow} isEditing={true} isSaving={true} hasErrors={false} {...mockCallbacks} />);
 
-      const cancelButton = screen.getByTestId('cancel-button-test-row-123');
+      const cancelButton = screen.getByTestId("cancel-button-test-row-123");
       expect(cancelButton).toBeDisabled();
     });
 
-    it('should not call callbacks when buttons are disabled during saving', async () => {
+    it("should not call callbacks when buttons are disabled during saving", async () => {
       const user = userEvent.setup();
-      
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={true}
-          isSaving={true}
-          hasErrors={false}
-          {...mockCallbacks}
-        />
-      );
 
-      const saveButton = screen.getByTestId('save-button-test-row-123');
-      const cancelButton = screen.getByTestId('cancel-button-test-row-123');
+      render(<ActionsColumn row={mockRow} isEditing={true} isSaving={true} hasErrors={false} {...mockCallbacks} />);
+
+      const saveButton = screen.getByTestId("save-button-test-row-123");
+      const cancelButton = screen.getByTestId("cancel-button-test-row-123");
 
       await user.click(saveButton);
       await user.click(cancelButton);
@@ -283,197 +218,109 @@ describe('ActionsColumn', () => {
     });
   });
 
-  describe('Error states', () => {
-    it('should show error indicator when hasErrors is true', () => {
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={true}
-          isSaving={false}
-          hasErrors={true}
-          {...mockCallbacks}
-        />
-      );
+  describe("Error states", () => {
+    it("should show error indicator when hasErrors is true", () => {
+      render(<ActionsColumn row={mockRow} isEditing={true} isSaving={false} hasErrors={true} {...mockCallbacks} />);
 
-      expect(screen.getByTestId('error-indicator-test-row-123')).toBeInTheDocument();
+      expect(screen.getByTestId("error-indicator-test-row-123")).toBeInTheDocument();
     });
 
-    it('should disable save button when there are errors', () => {
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={true}
-          isSaving={false}
-          hasErrors={true}
-          {...mockCallbacks}
-        />
-      );
+    it("should disable save button when there are errors", () => {
+      render(<ActionsColumn row={mockRow} isEditing={true} isSaving={false} hasErrors={true} {...mockCallbacks} />);
 
-      const saveButton = screen.getByTestId('save-button-test-row-123');
+      const saveButton = screen.getByTestId("save-button-test-row-123");
       expect(saveButton).toBeDisabled();
     });
 
-    it('should show error tooltip when save is disabled due to errors', () => {
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={true}
-          isSaving={false}
-          hasErrors={true}
-          {...mockCallbacks}
-        />
-      );
+    it("should show error tooltip when save is disabled due to errors", () => {
+      render(<ActionsColumn row={mockRow} isEditing={true} isSaving={false} hasErrors={true} {...mockCallbacks} />);
 
-      const saveButton = screen.getByTestId('save-button-test-row-123');
-      expect(saveButton).toHaveAttribute('title', 'Fix validation errors before saving');
+      const saveButton = screen.getByTestId("save-button-test-row-123");
+      expect(saveButton).toHaveAttribute("title", "Fix validation errors before saving");
     });
 
-    it('should have error indicator tooltip', () => {
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={true}
-          isSaving={false}
-          hasErrors={true}
-          {...mockCallbacks}
-        />
-      );
+    it("should have error indicator tooltip", () => {
+      render(<ActionsColumn row={mockRow} isEditing={true} isSaving={false} hasErrors={true} {...mockCallbacks} />);
 
-      const errorIndicator = screen.getByTestId('error-indicator-test-row-123');
-      expect(errorIndicator).toHaveAttribute('title', 'Validation errors present');
+      const errorIndicator = screen.getByTestId("error-indicator-test-row-123");
+      expect(errorIndicator).toHaveAttribute("title", "Validation errors present");
     });
 
-    it('should not call onSave when save button is disabled due to errors', async () => {
+    it("should not call onSave when save button is disabled due to errors", async () => {
       const user = userEvent.setup();
-      
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={true}
-          isSaving={false}
-          hasErrors={true}
-          {...mockCallbacks}
-        />
-      );
 
-      const saveButton = screen.getByTestId('save-button-test-row-123');
+      render(<ActionsColumn row={mockRow} isEditing={true} isSaving={false} hasErrors={true} {...mockCallbacks} />);
+
+      const saveButton = screen.getByTestId("save-button-test-row-123");
       await user.click(saveButton);
 
       expect(mockCallbacks.onSave).not.toHaveBeenCalled();
     });
 
-    it('should still allow cancel when there are errors', async () => {
+    it("should still allow cancel when there are errors", async () => {
       const user = userEvent.setup();
-      
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={true}
-          isSaving={false}
-          hasErrors={true}
-          {...mockCallbacks}
-        />
-      );
 
-      const cancelButton = screen.getByTestId('cancel-button-test-row-123');
+      render(<ActionsColumn row={mockRow} isEditing={true} isSaving={false} hasErrors={true} {...mockCallbacks} />);
+
+      const cancelButton = screen.getByTestId("cancel-button-test-row-123");
       expect(cancelButton).not.toBeDisabled();
-      
+
       await user.click(cancelButton);
       expect(mockCallbacks.onCancel).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('Combined states', () => {
-    it('should handle saving with errors (both disabled)', () => {
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={true}
-          isSaving={true}
-          hasErrors={true}
-          {...mockCallbacks}
-        />
-      );
+  describe("Combined states", () => {
+    it("should handle saving with errors (both disabled)", () => {
+      render(<ActionsColumn row={mockRow} isEditing={true} isSaving={true} hasErrors={true} {...mockCallbacks} />);
 
-      const saveButton = screen.getByTestId('save-button-test-row-123');
-      const cancelButton = screen.getByTestId('cancel-button-test-row-123');
+      const saveButton = screen.getByTestId("save-button-test-row-123");
+      const cancelButton = screen.getByTestId("cancel-button-test-row-123");
 
       expect(saveButton).toBeDisabled();
       expect(cancelButton).toBeDisabled();
-      expect(screen.getByTestId('error-indicator-test-row-123')).toBeInTheDocument();
+      expect(screen.getByTestId("error-indicator-test-row-123")).toBeInTheDocument();
     });
   });
 
-  describe('Button styling', () => {
-    it('should apply correct CSS classes for read-only buttons', () => {
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={false}
-          isSaving={false}
-          hasErrors={false}
-          {...mockCallbacks}
-        />
-      );
+  describe("Button styling", () => {
+    it("should apply correct CSS classes for read-only buttons", () => {
+      render(<ActionsColumn row={mockRow} isEditing={false} isSaving={false} hasErrors={false} {...mockCallbacks} />);
 
-      const editButton = screen.getByTestId('edit-button-test-row-123');
-      const formButton = screen.getByTestId('form-button-test-row-123');
+      const editButton = screen.getByTestId("edit-button-test-row-123");
+      const formButton = screen.getByTestId("form-button-test-row-123");
 
-      expect(editButton).toHaveClass('text-blue-600', 'hover:text-blue-800', 'hover:bg-blue-50');
-      expect(formButton).toHaveClass('text-gray-600', 'hover:text-gray-800', 'hover:bg-gray-50');
+      expect(editButton).toHaveClass("text-blue-600", "hover:text-blue-800", "hover:bg-blue-50");
+      expect(formButton).toHaveClass("text-gray-600", "hover:text-gray-800", "hover:bg-gray-50");
     });
 
-    it('should apply correct CSS classes for edit mode buttons', () => {
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={true}
-          isSaving={false}
-          hasErrors={false}
-          {...mockCallbacks}
-        />
-      );
+    it("should apply correct CSS classes for edit mode buttons", () => {
+      render(<ActionsColumn row={mockRow} isEditing={true} isSaving={false} hasErrors={false} {...mockCallbacks} />);
 
-      const saveButton = screen.getByTestId('save-button-test-row-123');
-      const cancelButton = screen.getByTestId('cancel-button-test-row-123');
+      const saveButton = screen.getByTestId("save-button-test-row-123");
+      const cancelButton = screen.getByTestId("cancel-button-test-row-123");
 
-      expect(saveButton).toHaveClass('text-green-600', 'hover:text-green-800', 'hover:bg-green-50');
-      expect(cancelButton).toHaveClass('text-red-600', 'hover:text-red-800', 'hover:bg-red-50');
+      expect(saveButton).toHaveClass("text-green-600", "hover:text-green-800", "hover:bg-green-50");
+      expect(cancelButton).toHaveClass("text-red-600", "hover:text-red-800", "hover:bg-red-50");
     });
 
-    it('should apply disabled styling when save button has errors', () => {
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={true}
-          isSaving={false}
-          hasErrors={true}
-          {...mockCallbacks}
-        />
-      );
+    it("should apply disabled styling when save button has errors", () => {
+      render(<ActionsColumn row={mockRow} isEditing={true} isSaving={false} hasErrors={true} {...mockCallbacks} />);
 
-      const saveButton = screen.getByTestId('save-button-test-row-123');
-      expect(saveButton).toHaveClass('text-gray-400', 'cursor-not-allowed');
+      const saveButton = screen.getByTestId("save-button-test-row-123");
+      expect(saveButton).toHaveClass("text-gray-400", "cursor-not-allowed");
     });
   });
 
-  describe('Button accessibility', () => {
-    it('should have proper accessibility attributes', () => {
-      render(
-        <ActionsColumn
-          row={mockRow}
-          isEditing={false}
-          isSaving={false}
-          hasErrors={false}
-          {...mockCallbacks}
-        />
-      );
+  describe("Button accessibility", () => {
+    it("should have proper accessibility attributes", () => {
+      render(<ActionsColumn row={mockRow} isEditing={false} isSaving={false} hasErrors={false} {...mockCallbacks} />);
 
-      const editButton = screen.getByTestId('edit-button-test-row-123');
-      const formButton = screen.getByTestId('form-button-test-row-123');
+      const editButton = screen.getByTestId("edit-button-test-row-123");
+      const formButton = screen.getByTestId("form-button-test-row-123");
 
-      expect(editButton).toHaveAttribute('title', 'Edit in grid');
-      expect(formButton).toHaveAttribute('title', 'Open form view');
+      expect(editButton).toHaveAttribute("title", "Edit in grid");
+      expect(formButton).toHaveAttribute("title", "Open form view");
     });
   });
 });
