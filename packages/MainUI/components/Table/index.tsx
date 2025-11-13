@@ -81,6 +81,8 @@ import {
   useMemoryManager,
 } from "./utils/performanceOptimizations";
 import { useScreenReaderAnnouncer, generateAriaAttributes, useFocusManagement } from "./utils/accessibilityUtils";
+import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
+import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import "./styles/inlineEditing.css";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
@@ -116,36 +118,17 @@ const isFieldReadOnly = (
   rowValues?: Record<string, unknown>,
   session?: Record<string, unknown>
 ): boolean => {
-  console.log('[isFieldReadOnly] Evaluating field:', {
-    fieldName: field.name,
-    isReadOnly: field.isReadOnly,
-    isUpdatable: field.isUpdatable,
-    isNewRow,
-    hasReadOnlyExpression: !!field.readOnlyLogicExpression,
-    readOnlyExpression: field.readOnlyLogicExpression,
-    rowValues,
-    session,
-  });
-
   // Field explicitly marked as readonly
-  if (field.isReadOnly) {
-    console.log('[isFieldReadOnly] Field is explicitly readonly');
-    return true;
-  }
+  if (field.isReadOnly) return true;
 
   // Field not updatable (readonly except for new rows)
-  if (!field.isUpdatable && !isNewRow) {
-    console.log('[isFieldReadOnly] Field is not updatable and not a new row');
-    return true;
-  }
+  if (!field.isUpdatable && !isNewRow) return true;
 
   // Evaluate readOnlyLogicExpression if present
   if (field.readOnlyLogicExpression && rowValues) {
     try {
-      console.log('[isFieldReadOnly] Evaluating readOnlyLogicExpression:', field.readOnlyLogicExpression);
       const compiledExpr = compileExpression(field.readOnlyLogicExpression);
       const result = compiledExpr(session || {}, rowValues);
-      console.log('[isFieldReadOnly] Expression result:', result, 'will return:', Boolean(result));
       return Boolean(result);
     } catch (error) {
       logger.warn(`Error evaluating readOnlyLogicExpression for field ${field.name}:`, error);
@@ -154,7 +137,6 @@ const isFieldReadOnly = (
     }
   }
 
-  console.log('[isFieldReadOnly] Field is not readonly, returning false');
   return false;
 };
 
@@ -216,16 +198,6 @@ const columnToFieldForEditor = (column: Column): Field => {
   if (fieldCache.has(cacheKey)) {
     return fieldCache.get(cacheKey)!;
   }
-
-  console.log('[columnToFieldForEditor] Cache miss, processing column:', {
-    columnName: column.name,
-    hasReadOnlyExpression: !!readOnlyLogicExpression,
-    readOnlyExpression: readOnlyLogicExpression,
-    isReadOnly,
-    isUpdatable,
-    columnKeys: Object.keys(column),
-    columnColumnKeys: column.column ? Object.keys(column.column) : [],
-  });
 
   // Use the refList and referencedEntity from the column (set by parseColumns)
   const refList = Array.isArray(column.refList) ? column.refList : [];
@@ -302,6 +274,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   // Confirmation dialog hook for user confirmations
   const { dialogState, confirmDiscardChanges, confirmSaveWithErrors, confirmRetryAfterError, showSuccessMessage } =
     useConfirmationDialog();
+
+  // Status modal for showing save errors and success messages
+  const { statusModal, hideStatusModal, showErrorModal, showSuccessModal } = useStatusModal();
 
   const {
     registerDatasource,
@@ -830,6 +805,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
             serverId: saveResult.data.id,
           });
 
+          // Refetch data to update displayRecords with latest server state
+          // This ensures the table shows updated data even after optimisticRecords is cleared
+          refetch().catch((error) => {
+            logger.warn("[InlineEditing] Failed to refetch after save:", error);
+          });
+
           // Show success feedback to user
           const successMessage = editingRowData.isNew ? "Record created successfully" : "Record updated successfully";
           showSuccessMessage(successMessage);
@@ -861,7 +842,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
           if (generalError) {
             logger.error(`[InlineEditing] Save failed with general error: ${generalError}`);
-            // TODO: Show toast notification for general errors
+            // Show error modal to user
+            showErrorModal(generalError);
           }
 
           editingRowUtils.setRowSaving(rowId, false);
@@ -891,9 +873,13 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         editingRowUtils.setRowSaving(rowId, false);
 
         // Set a general error message
+        const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
         editingRowUtils.setRowValidationErrors(rowId, {
-          _general: error instanceof Error ? error.message : "An unexpected error occurred",
+          _general: errorMessage,
         });
+
+        // Show error modal to user
+        showErrorModal(errorMessage);
 
         // Announce save failure to screen readers
         if (screenReaderAnnouncer) {
@@ -901,7 +887,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         }
       }
     },
-    [editingRowUtils, validateRow, tab, user?.id]
+    [editingRowUtils, validateRow, tab, user?.id, showErrorModal, refetch]
   );
 
   const handleCancelRow = useCallback(
@@ -1213,7 +1199,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
     modifiedColumns[0] = firstColumn;
 
-    // Add actions column as the last column
+    // Add actions column as the first column
     const actionsColumn = {
       id: "actions",
       header: "Actions",
@@ -1255,7 +1241,16 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       },
     };
 
-    modifiedColumns.push(actionsColumn);
+    // Insert actions column at the beginning (after tree/expand column if present)
+    // Check if first column is the tree expand column
+    if (shouldUseTreeMode && modifiedColumns[0]?.id === modifiedColumns[0]?.accessorKey) {
+      // If tree mode, insert after the expand column (position 1)
+      modifiedColumns.splice(1, 0, actionsColumn);
+    } else {
+      // Otherwise, insert at the very beginning
+      modifiedColumns.unshift(actionsColumn);
+    }
+
     return modifiedColumns;
   }, [
     baseColumns,
@@ -2135,6 +2130,19 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         showCancel={dialogState.showCancel}
         onConfirm={dialogState.onConfirm}
         onCancel={dialogState.onCancel}
+      />
+      <StatusModal
+        open={statusModal.open}
+        statusType={statusModal.statusType}
+        statusText={statusModal.statusText}
+        onAfterClose={() => {
+          hideStatusModal();
+          statusModal.onAfterClose?.();
+        }}
+        saveLabel={statusModal.saveLabel}
+        secondaryButtonLabel={statusModal.secondaryButtonLabel}
+        errorMessage={statusModal.errorMessage}
+        data-testid="StatusModal__table"
       />
     </div>
   );

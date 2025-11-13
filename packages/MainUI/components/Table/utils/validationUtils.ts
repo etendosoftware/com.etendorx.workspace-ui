@@ -68,6 +68,8 @@ function columnToFieldForValidation(column: Column): Field {
     type: finalFieldType,
     isMandatory: column.isMandatory || false,
     refList: (column as any).refList || [],
+    isReadOnly: (column as any).isReadOnly || false,
+    isUpdatable: (column as any).isUpdatable !== false, // Default to true if not specified
     // Add other properties as needed for validation
   } as Field;
 }
@@ -120,12 +122,17 @@ export function validateFieldValue(field: Field | Column, value: unknown): strin
  * Validates numeric field values
  */
 function validateNumericField(field: Field, value: unknown): string | undefined {
+  // Accept number, string, null, or undefined for optional fields
+  if (value === null || value === undefined) {
+    return undefined; // Let the mandatory check handle this
+  }
+
   if (typeof value !== 'number' && typeof value !== 'string') {
     return `${field.description || field.name} must be a number`;
   }
 
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
-  
+
   if (isNaN(numValue)) {
     return `${field.description || field.name} must be a valid number`;
   }
@@ -142,11 +149,17 @@ function validateNumericField(field: Field, value: unknown): string | undefined 
  * Validates date field values
  */
 function validateDateField(field: Field, value: unknown): string | undefined {
-  if (typeof value !== 'string') {
+  // Accept null/undefined for optional fields
+  if (value === null || value === undefined) {
+    return undefined; // Let the mandatory check handle this
+  }
+
+  // Accept both string and Date objects
+  if (typeof value !== 'string' && !(value instanceof Date) && typeof value !== 'number') {
     return `${field.description || field.name} must be a valid date`;
   }
 
-  const date = new Date(value);
+  const date = value instanceof Date ? value : new Date(value);
   if (isNaN(date.getTime())) {
     return `${field.description || field.name} must be a valid date`;
   }
@@ -158,9 +171,14 @@ function validateDateField(field: Field, value: unknown): string | undefined {
  * Validates boolean field values
  */
 function validateBooleanField(field: Field, value: unknown): string | undefined {
-  // Boolean fields accept various formats
-  const validBooleanValues = [true, false, 'Y', 'N', 'true', 'false', '1', '0'];
-  
+  // Accept null/undefined for optional fields
+  if (value === null || value === undefined) {
+    return undefined; // Let the mandatory check handle this
+  }
+
+  // Boolean fields accept various formats including actual booleans
+  const validBooleanValues = [true, false, 'Y', 'N', 'true', 'false', '1', '0', 1, 0];
+
   if (!validBooleanValues.includes(value as any)) {
     return `${field.description || field.name} must be a valid boolean value`;
   }
@@ -172,6 +190,11 @@ function validateBooleanField(field: Field, value: unknown): string | undefined 
  * Validates list/select field values
  */
 function validateListField(field: Field, value: unknown): string | undefined {
+  // Accept null/undefined for optional fields
+  if (value === null || value === undefined || value === '') {
+    return undefined; // Let the mandatory check handle this
+  }
+
   if (!field.refList || field.refList.length === 0) {
     return undefined; // No validation if no options available
   }
@@ -188,6 +211,11 @@ function validateListField(field: Field, value: unknown): string | undefined {
  * Validates text field values
  */
 function validateTextField(field: Field, value: unknown): string | undefined {
+  // Accept null/undefined for optional fields
+  if (value === null || value === undefined) {
+    return undefined; // Let the mandatory check handle this
+  }
+
   if (typeof value !== 'string') {
     return `${field.description || field.name} must be text`;
   }
@@ -249,20 +277,44 @@ export function validationErrorsToRecord(errors: ValidationError[]): Record<stri
 export function validateNewRowForSave(fields: (Field | Column)[], rowData: EntityData): RowValidationResult {
   const errors: ValidationError[] = [];
 
+  console.log('[validateNewRowForSave] Starting validation', {
+    fieldsCount: fields.length,
+    rowDataKeys: Object.keys(rowData),
+  });
+
   // For new rows, we need to be more strict about required fields
   fields.forEach(field => {
     // Skip system fields that are auto-generated
-    if (field.name === 'id' || field.name === 'actions' || 
+    if (field.name === 'id' || field.name === 'actions' ||
         field.name === 'creationDate' || field.name === 'createdBy' ||
         field.name === 'updated' || field.name === 'updatedBy') {
       return;
     }
 
-    const value = rowData[field.name];
     // Convert Column to Field if needed
     const fieldData = 'type' in field ? field : columnToFieldForValidation(field);
+
+    // Skip validation for readonly fields
+    if (fieldData.isReadOnly || !fieldData.isUpdatable) {
+      console.log('[validateNewRowForSave] Skipping readonly field:', field.name);
+      return;
+    }
+
+    const value = rowData[field.name];
     const errorMessage = validateFieldValue(fieldData, value);
-    
+
+    console.log('[validateNewRowForSave] Field validation:', {
+      fieldName: field.name,
+      fieldType: fieldData.type,
+      isMandatory: fieldData.isMandatory,
+      isReadOnly: fieldData.isReadOnly,
+      isUpdatable: fieldData.isUpdatable,
+      value,
+      valueType: typeof value,
+      hasError: !!errorMessage,
+      errorMessage,
+    });
+
     if (errorMessage) {
       errors.push({
         field: field.name,
@@ -270,6 +322,12 @@ export function validateNewRowForSave(fields: (Field | Column)[], rowData: Entit
         type: 'required'
       });
     }
+  });
+
+  console.log('[validateNewRowForSave] Validation complete', {
+    isValid: errors.length === 0,
+    errorsCount: errors.length,
+    errors,
   });
 
   return {
@@ -295,21 +353,27 @@ export function validateExistingRowForSave(
   // For existing rows, only validate fields that have been modified
   fields.forEach(field => {
     // Skip system fields
-    if (field.name === 'id' || field.name === 'actions' || 
+    if (field.name === 'id' || field.name === 'actions' ||
         field.name === 'creationDate' || field.name === 'createdBy' ||
         field.name === 'updated' || field.name === 'updatedBy') {
       return;
     }
 
+    // Convert Column to Field if needed
+    const fieldData = 'type' in field ? field : columnToFieldForValidation(field);
+
+    // Skip validation for readonly fields
+    if (fieldData.isReadOnly || !fieldData.isUpdatable) {
+      return;
+    }
+
     const currentValue = rowData[field.name];
     const originalValue = originalData[field.name];
-    
+
     // Only validate if the field has been modified
     if (currentValue !== originalValue) {
-      // Convert Column to Field if needed
-      const fieldData = 'type' in field ? field : columnToFieldForValidation(field);
       const errorMessage = validateFieldValue(fieldData, currentValue);
-      
+
       if (errorMessage) {
         errors.push({
           field: field.name,
@@ -419,10 +483,15 @@ export function validateFieldRealTime(
  * Real-time validation for numeric fields
  */
 function validateNumericFieldRealTime(
-  field: Field, 
-  value: unknown, 
+  field: Field,
+  value: unknown,
   showTypingErrors: boolean
 ): { isValid: boolean; error?: string; warning?: string } {
+  // Accept null/undefined for optional fields
+  if (value === null || value === undefined) {
+    return { isValid: true };
+  }
+
   if (typeof value !== 'number' && typeof value !== 'string') {
     return {
       isValid: false,
@@ -431,14 +500,14 @@ function validateNumericFieldRealTime(
   }
 
   const stringValue = String(value);
-  
+
   // Allow partial input while typing (e.g., "-", ".", "1.")
   if (!showTypingErrors && /^-?\.?$|^-?\d*\.?$/.test(stringValue)) {
     return { isValid: true };
   }
 
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
-  
+
   if (isNaN(numValue)) {
     return {
       isValid: false,
@@ -461,23 +530,29 @@ function validateNumericFieldRealTime(
  * Real-time validation for date fields
  */
 function validateDateFieldRealTime(
-  field: Field, 
-  value: unknown, 
+  field: Field,
+  value: unknown,
   showTypingErrors: boolean
 ): { isValid: boolean; error?: string; warning?: string } {
-  if (typeof value !== 'string') {
+  // Accept null/undefined for optional fields
+  if (value === null || value === undefined) {
+    return { isValid: true }; // Let the mandatory check handle this
+  }
+
+  // Accept Date objects, strings, or numbers
+  if (typeof value !== 'string' && !(value instanceof Date) && typeof value !== 'number') {
     return {
       isValid: false,
       error: `${field.description || field.name} must be a valid date`
     };
   }
 
-  // Allow partial date input while typing
-  if (!showTypingErrors && /^\d{0,4}-?\d{0,2}-?\d{0,2}$/.test(value)) {
+  // Allow partial date input while typing (only for string inputs)
+  if (typeof value === 'string' && !showTypingErrors && /^\d{0,4}-?\d{0,2}-?\d{0,2}$/.test(value)) {
     return { isValid: true };
   }
 
-  const date = new Date(value);
+  const date = value instanceof Date ? value : new Date(value);
   if (isNaN(date.getTime())) {
     return {
       isValid: false,
@@ -492,11 +567,16 @@ function validateDateFieldRealTime(
  * Real-time validation for boolean fields
  */
 function validateBooleanFieldRealTime(
-  field: Field, 
+  field: Field,
   value: unknown
 ): { isValid: boolean; error?: string; warning?: string } {
-  const validBooleanValues = [true, false, 'Y', 'N', 'true', 'false', '1', '0'];
-  
+  // Accept null/undefined for optional fields
+  if (value === null || value === undefined) {
+    return { isValid: true }; // Let the mandatory check handle this
+  }
+
+  const validBooleanValues = [true, false, 'Y', 'N', 'true', 'false', '1', '0', 1, 0];
+
   if (!validBooleanValues.includes(value as any)) {
     return {
       isValid: false,
@@ -511,9 +591,14 @@ function validateBooleanFieldRealTime(
  * Real-time validation for list/select fields
  */
 function validateListFieldRealTime(
-  field: Field, 
+  field: Field,
   value: unknown
 ): { isValid: boolean; error?: string; warning?: string } {
+  // Accept null/undefined for optional fields
+  if (value === null || value === undefined || value === '') {
+    return { isValid: true }; // Let the mandatory check handle this
+  }
+
   if (!field.refList || field.refList.length === 0) {
     return { isValid: true }; // No validation if no options available
   }
@@ -533,10 +618,15 @@ function validateListFieldRealTime(
  * Real-time validation for text fields
  */
 function validateTextFieldRealTime(
-  field: Field, 
-  value: unknown, 
+  field: Field,
+  value: unknown,
   showTypingErrors: boolean
 ): { isValid: boolean; error?: string; warning?: string } {
+  // Accept null/undefined for optional fields
+  if (value === null || value === undefined) {
+    return { isValid: true };
+  }
+
   if (typeof value !== 'string') {
     return {
       isValid: false,
@@ -556,25 +646,47 @@ function validateTextFieldRealTime(
 export function validateRowForSave(fields: (Field | Column)[], rowData: EntityData): RowValidationResult {
   const errors: ValidationError[] = [];
 
+  console.log('[validateRowForSave] Starting validation', {
+    fieldsCount: fields.length,
+    rowDataKeys: Object.keys(rowData),
+  });
+
   fields.forEach(field => {
     // Skip system fields
-    if (field.name === 'id' || field.name === 'actions' || 
+    if (field.name === 'id' || field.name === 'actions' ||
         field.name === 'creationDate' || field.name === 'createdBy' ||
         field.name === 'updated' || field.name === 'updatedBy') {
       return;
     }
 
-    const value = rowData[field.name];
-    
     // Convert Column to Field if needed
     const fieldData = 'type' in field ? field : columnToFieldForValidation(field);
-    
+
+    // Skip validation for readonly fields
+    if (fieldData.isReadOnly || !fieldData.isUpdatable) {
+      console.log('[validateRowForSave] Skipping readonly field:', field.name);
+      return;
+    }
+
+    const value = rowData[field.name];
+
     // Use strict validation for save operations
-    const validationResult = validateFieldRealTime(fieldData, value, { 
-      allowEmpty: false, 
-      showTypingErrors: true 
+    const validationResult = validateFieldRealTime(fieldData, value, {
+      allowEmpty: false,
+      showTypingErrors: true
     });
-    
+
+    console.log('[validateRowForSave] Field validation:', {
+      fieldName: field.name,
+      fieldType: fieldData.type,
+      isMandatory: fieldData.isMandatory,
+      isReadOnly: fieldData.isReadOnly,
+      isUpdatable: fieldData.isUpdatable,
+      value,
+      hasError: !validationResult.isValid,
+      errorMessage: validationResult.error,
+    });
+
     if (!validationResult.isValid && validationResult.error) {
       errors.push({
         field: field.name,
@@ -582,6 +694,12 @@ export function validateRowForSave(fields: (Field | Column)[], rowData: EntityDa
         type: 'format'
       });
     }
+  });
+
+  console.log('[validateRowForSave] Validation complete', {
+    isValid: errors.length === 0,
+    errorsCount: errors.length,
+    errors,
   });
 
   return {
