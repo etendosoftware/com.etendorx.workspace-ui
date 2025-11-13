@@ -19,17 +19,18 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
-import { type TabFormState, TAB_MODES, URL_PREFIXS } from "@/utils/url/constants";
+import { type TabFormState, TAB_MODES } from "@/utils/url/constants";
 import {
   WindowState,
   TableState,
   NavigationState,
   WindowContextState,
   WINDOW_PROPERTY_NAMES,
-  WindowPropertyName
+  WindowPropertyName,
+  type WindowRecoveryInfo
 } from "@/utils/window/constants";
-import { getWindowIdFromIdentifier, ensureTabExists, updateTableProperty, updateNavigationProperty } from '@/utils/window/utils';
-import { buildWindowsUrlParams } from '@/utils/url/utils';
+import { getWindowIdFromIdentifier, ensureTabExists, updateTableProperty, updateNavigationProperty, createRecoveryWindowState } from '@/utils/window/utils';
+import { buildWindowsUrlParams, shouldSkipNavigation, parseWindowRecoveryData } from '@/utils/url/utils';
 
 interface WindowContextI {
   // State getters
@@ -75,6 +76,12 @@ interface WindowContextI {
   getNavigationInitialized: (windowIdentifier: string) => boolean;
   setNavigationInitialized: (windowIdentifier: string, initialized: boolean) => void;
 
+  // Recovery state management
+  isRecovering: boolean;
+  setRecovering: (isRecovering: boolean) => void;
+  isAnyWindowRecovering: () => boolean;
+  areAllWindowsInitialized: () => boolean;
+
   // Window management
   cleanupWindow: (windowIdentifier: string) => void;
 }
@@ -82,11 +89,36 @@ interface WindowContextI {
 // Context creation
 const WindowContext = createContext<WindowContextI | undefined>(undefined);
 
+// Hook for provider-level recovery initialization
+const useRecoveryInitialization = (searchParams: URLSearchParams | null) => {
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const [recoveryData, setRecoveryData] = useState<WindowRecoveryInfo[]>([]);
+
+  useEffect(() => {
+    if (!searchParams || hasInitialized) return;
+
+    const recoveryDataFound = parseWindowRecoveryData(searchParams);
+
+    if (recoveryDataFound.length > 0) {
+      console.log("Provider detected recovery parameters:", recoveryDataFound);
+      setRecoveryData(recoveryDataFound);
+    }
+
+    setHasInitialized(true);
+  }, [searchParams, hasInitialized]);
+
+  return recoveryData;
+};
+
 // Provider component
 export default function WindowProvider({ children }: React.PropsWithChildren) {
   const [state, setState] = useState<WindowContextState>({});
+  const [isRecovering, setIsRecovering] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Add recovery initialization at provider level
+  const recoveryData = useRecoveryInitialization(searchParams);
 
   // Getters
   const getTableState = useCallback(
@@ -190,6 +222,31 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     return activeWindowIdentifier ? state[activeWindowIdentifier] : null;
   }, [state, getActiveWindowIdentifier]);
 
+  // Create phantom windows when recovery data is detected
+  useEffect(() => {
+    if (!recoveryData || recoveryData.length === 0) return;
+
+    recoveryData.forEach((recoveryInfo: WindowRecoveryInfo, index: number) => {
+      const phantomWindow = createRecoveryWindowState(recoveryInfo);
+
+      setState(prevState => {
+        const newState = { ...prevState };
+
+        // Create phantom window if it doesn't exist
+        if (!newState[recoveryInfo.windowIdentifier]) {
+          newState[recoveryInfo.windowIdentifier] = {
+            ...phantomWindow,
+            isActive: index === recoveryData.length - 1, // Make last window active
+          };
+
+          console.log("Created phantom window:", recoveryInfo.windowIdentifier);
+        }
+
+        return newState;
+      });
+    });
+  }, [recoveryData]);
+
   // Setters
   const setTableFilters = useCallback((windowIdentifier: string, tabId: string, filters: MRT_ColumnFiltersState, tabLevel: number = 0) => {
     setState((prevState: WindowContextState) =>
@@ -262,6 +319,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
           windowId,
           windowIdentifier,
           isActive: true,
+          initialized: windowData?.initialized ?? false,
           title: windowData?.title || "",
           navigation: windowData?.navigation || {
             activeLevels: [0],
@@ -473,6 +531,19 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     );
   }, []);
 
+  const setRecovering = useCallback((recovering: boolean) => {
+    setIsRecovering(recovering);
+  }, []);
+
+  const isAnyWindowRecovering = useCallback((): boolean => {
+    return isRecovering || Object.values(state).some(window => window.initialized);
+  }, [isRecovering, state]);
+
+  const areAllWindowsInitialized = useCallback((): boolean => {
+    const windows = Object.values(state);
+    return windows.length > 0 && windows.every(window => window.initialized);
+  }, [state]);
+
   // Computed values using existing helper functions
   const windows = useMemo((): WindowState[] => {
     return getAllWindows();
@@ -486,10 +557,16 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     return !activeWindow;
   }, [activeWindow]);
 
-  // Update URL when windows change
   useEffect(() => {
+    // Only update URL if not recovering and all windows are initialized
+    const isAnyWindowRecoveringValue = isAnyWindowRecovering();
+    const areAllWindowsInitializedValue = areAllWindowsInitialized();
+    if (!isAnyWindowRecoveringValue || !areAllWindowsInitializedValue) {
+      return;
+    }
+
     if (windows.length === 0) {
-      return; // Don't update URL if no windows
+      return;
     }
 
     const newParams = buildWindowsUrlParams(windows);
@@ -500,7 +577,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       const newUrl = newParams ? `window?${newParams}` : "window";
       router.replace(newUrl);
     }
-  }, [windows, router, searchParams]);
+  }, [windows, router, searchParams, isRecovering, isAnyWindowRecovering, areAllWindowsInitialized]);
 
   const value = useMemo(
     () => ({
@@ -540,6 +617,12 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       getNavigationInitialized,
       setNavigationInitialized,
 
+      // Recovery state management
+      isRecovering,
+      setRecovering,
+      isAnyWindowRecovering,
+      areAllWindowsInitialized,
+
       cleanupWindow,
     }),
     [
@@ -578,6 +661,12 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
       getNavigationInitialized,
       setNavigationInitialized,
+
+      // Recovery state management
+      isRecovering,
+      setRecovering,
+      isAnyWindowRecovering,
+      areAllWindowsInitialized,
 
       cleanupWindow,
     ]

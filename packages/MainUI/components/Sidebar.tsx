@@ -196,7 +196,7 @@ export default function Sidebar() {
       }
 
       const newWindowIdentifier = getNewWindowIdentifier(windowId);
-      setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: item.name } });
+      setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: item.name, initialized: true } });
 
       // TODO: delete this code when multi-window is fully stable
       if (isInWindowRoute) {
@@ -214,6 +214,7 @@ export default function Sidebar() {
             activeTabsByLevel: new Map<number, string>(),
             initialized: false,
           },
+          initialized: true,
           tabs: {},
         };
 

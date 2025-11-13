@@ -23,6 +23,7 @@ export const WINDOW_PROPERTY_NAMES = {
   IS_ACTIVE: "isActive",
   WINDOW_IDENTIFIER: "windowIdentifier",
   TABS: "tabs",
+  INITIALIZED: "initialized",
 } as const;
 
 export type WindowPropertyName = typeof WINDOW_PROPERTY_NAMES[keyof typeof WINDOW_PROPERTY_NAMES];
@@ -53,6 +54,7 @@ export interface WindowState {
   windowIdentifier: string;
   title: string;
   isActive: boolean;
+  initialized: boolean;
   navigation: NavigationState;
   tabs: {
     [tabId: string]: TabState;
@@ -62,3 +64,19 @@ export interface WindowState {
 export interface WindowContextState {
   [windowIdentifier: string]: WindowState;
 }
+export interface WindowRecoveryInfo {
+  windowIdentifier: string;
+  tabId?: string;
+  recordId?: string;
+  hasRecoveryData: boolean;
+}
+
+// Recovery state constants
+export const RECOVERY_STATE = {
+  NOT_STARTED: "not_started",
+  IN_PROGRESS: "in_progress",
+  COMPLETED: "completed",
+  FAILED: "failed",
+} as const;
+
+export type RecoveryState = typeof RECOVERY_STATE[keyof typeof RECOVERY_STATE];

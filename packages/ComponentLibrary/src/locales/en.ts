@@ -174,6 +174,10 @@ const en = {
       title: "Window Not Found",
       description: "The requested window could not be found",
     },
+    recoveryFailed: {
+      title: "Recovery Failed",
+      description: "Unable to restore window state from URL"
+    },
   },
   modal: {
     secondaryButtonLabel: "Back",

@@ -27,21 +27,23 @@ export default function Page() {
 
   const shouldShowTabs = windows.length > 0;
 
+  // Updated logic: Show window even if it's a phantom window (initialized: false)
+  const shouldShowWindow = activeWindow && !isHomeRoute;
+
   return (
     <div className="flex flex-col gap-2 w-full h-full max-h-full p-1 pb-0">
       {shouldShowTabs && (
-        <TabsProvider data-testid={`TabsProvider__${activeWindow?.windowId ?? "351d9c"}`}>
-          <WindowTabs data-testid={`WindowTabs__${activeWindow?.windowId ?? "351d9c"}`} />
+        <TabsProvider data-testid={`TabsProvider__${activeWindow?.windowIdentifier ?? "351d9c"}`}>
+          <WindowTabs data-testid={`WindowTabs__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
         </TabsProvider>
       )}
-      {isHomeRoute || !activeWindow ? (
-        <Home data-testid={`Home__${activeWindow?.windowId ?? "351d9c"}`} />
-      ) : (
+      {shouldShowWindow ? (
         <Window
-          windowId={activeWindow.windowId}
-          windowIdentifier={activeWindow.windowIdentifier}
-          data-testid={`Window__${activeWindow?.windowId ?? "351d9c"}`}
+          window={activeWindow} // Pass complete window object
+          data-testid={`Window__${activeWindow.windowIdentifier}`}
         />
+      ) : (
+        <Home data-testid={`Home__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
       )}
     </div>
   );

@@ -21,22 +21,20 @@ import Loading from "@/components/loading";
 import { SelectedProvider } from "@/contexts/selected";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useUrlStateRecovery } from "@/hooks/useUrlStateRecovery";
 import TabsContainer from "@/components/window/TabsContainer";
 import { useState, useEffect, useMemo, useRef } from "react";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
+import { WindowState } from "@/utils/window/constants";
 
-export default function Window({
-  windowId,
-  windowIdentifier,
-}: {
-  windowId: string;
-  windowIdentifier: string;
-}) {
+export default function Window({ window }: { window: WindowState }) {
+  const { windowId, windowIdentifier, initialized } = window;
   const { error, loading, getWindowMetadata } = useMetadataContext();
   const { t } = useTranslation();
 
   const [isTransitioning, setIsTransitioning] = useState(false);
   const previousWindowIdentifier = useRef(windowIdentifier);
+
 
   /**
    * Calculate window metadata based on windowId.
@@ -49,6 +47,15 @@ export default function Window({
       return {} as Etendo.WindowMetadata;
     }
   }, [windowId, getWindowMetadata]);
+
+
+  // Add URL state recovery hook - only enabled for uninitialized windows
+  const { isRecovering, recoveryError, recoveryState } = useUrlStateRecovery({
+    windowId,
+    windowIdentifier,
+    windowData,
+    enabled: !loading && !!windowData && !error && !isTransitioning && !initialized
+  });
 
   /**
    * Handle windowIdentifier changes to show loading state during transitions.
@@ -70,10 +77,11 @@ export default function Window({
     }
   }, [windowIdentifier]);
 
-  if (loading || !windowData || isTransitioning) {
+  if (loading || !windowData || isTransitioning || isRecovering) {
     return <Loading data-testid="Loading__56042a" />;
   }
 
+  // Show error if metadata loading failed
   if (error) {
     return (
       <ErrorDisplay
@@ -83,6 +91,18 @@ export default function Window({
     );
   }
 
+  // Show error if recovery failed
+  if (recoveryError) {
+    return (
+      <ErrorDisplay
+        title={t("errors.recoveryFailed.title")}
+        description={recoveryError}
+        data-testid="ErrorDisplay__RecoveryError"
+      />
+    );
+  }
+
+  // Show error if window metadata is empty
   if (windowData === ({} as Etendo.WindowMetadata)) {
     return (
       <ErrorDisplay

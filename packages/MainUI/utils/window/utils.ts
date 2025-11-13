@@ -27,7 +27,9 @@ import {
   TableState,
   NavigationState,
   WindowContextState,
-  TabState
+  TabState,
+  WindowState,
+  WindowRecoveryInfo
 } from "@/utils/window/constants";
 
 /**
@@ -128,6 +130,7 @@ export const ensureTabExists = (state: WindowContextState, windowIdentifier: str
       windowId,
       windowIdentifier,
       isActive: false,
+      initialized: true,
       title: "",
       navigation: {
         activeLevels: [0],
@@ -206,6 +209,7 @@ export const updateNavigationProperty = <T extends keyof NavigationState>(
       windowId,
       windowIdentifier,
       isActive: false,
+      initialized: true,
       title: "",
       navigation: {
         activeLevels: [0],
@@ -239,4 +243,48 @@ export const isFormView = ({
   hasParentSelection,
 }: { currentMode: string; recordId: string; hasParentSelection: boolean }) => {
   return currentMode === TAB_MODES.FORM && !!recordId && hasParentSelection;
+};
+
+/**
+ * Creates a window state for recovery purposes
+ */
+export const createRecoveryWindowState = (
+  recoveryInfo: WindowRecoveryInfo,
+  windowId?: string,
+  title?: string
+): WindowState => {
+  const extractedWindowId = windowId || getWindowIdFromIdentifier(recoveryInfo.windowIdentifier);
+
+  return {
+    windowId: extractedWindowId,
+    windowIdentifier: recoveryInfo.windowIdentifier,
+    title: title || "",
+    isActive: false,
+    initialized: false, // Key: starts as false during recovery
+    navigation: {
+      activeLevels: [0],
+      activeTabsByLevel: new Map<number, string>(),
+      initialized: false,
+    },
+    tabs: {},
+  };
+};
+
+/**
+ * Updates window state to mark as initialized
+ */
+export const markWindowAsInitialized = (windowState: WindowState): WindowState => ({
+  ...windowState,
+  initialized: true,
+  navigation: {
+    ...windowState.navigation,
+    initialized: true,
+  },
+});
+
+/**
+ * Checks if window is ready for normal operation
+ */
+export const isWindowReady = (windowState: WindowState): boolean => {
+  return windowState.initialized;
 };

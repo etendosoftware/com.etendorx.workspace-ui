@@ -66,6 +66,7 @@ export const useRedirect = () => {
         activeTabsByLevel: new Map<number, string>(),
         initialized: false,
       },
+      initialized: true,
       tabs: {}
     }),
     []

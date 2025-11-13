@@ -150,6 +150,7 @@ export interface Field {
   processDefinition?: ProcessDefinition;
   processAction?: ProcessAction;
   etmetaCustomjs?: string | null;
+  isParentRecordProperty?: boolean;
 }
 
 export interface Option<T extends string = string> {
