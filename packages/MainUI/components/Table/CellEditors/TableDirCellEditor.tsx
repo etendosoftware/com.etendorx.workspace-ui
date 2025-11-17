@@ -118,12 +118,52 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     loadDynamicOptions();
   }, [field.name, field.type, field.refList, loadOptions, searchTerm]);
 
-  // Combine static and dynamic options
+  // Get restricted entries from field (set by callouts)
+  // IMPORTANT: Use inputName to match how entries are stored by callouts (e.g., "inpcBpartnerId")
+  // Callouts use inputName for payload fields, not hqlName
+  const fieldKey = field.inputName || field.hqlName || field.columnName || field.name;
+  const entriesKey = `${fieldKey}$_entries`;
+  const restrictedEntries = (field as any)[entriesKey] || [];
+
+  // Debug logging to understand why entries might not be found
+  if (anchorEl) {
+    console.log("[TableDirCellEditor] Selector opened, checking for entries", {
+      fieldName: field.name,
+      hqlName: field.hqlName,
+      columnName: field.columnName,
+      inputName: field.inputName,
+      fieldKey,
+      entriesKey,
+      hasEntries: !!restrictedEntries.length,
+      restrictedEntries,
+      allFieldKeys: Object.keys(field).filter(k => k.includes('$')),
+    });
+  }
+
+  // Combine static, dynamic, and restricted options (from callouts)
   const options = useMemo(() => {
     const staticOptions = field.refList || [];
-    const combinedOptions = [...staticOptions, ...dynamicOptions];
-    return combinedOptions;
-  }, [field.refList, dynamicOptions]);
+
+    // Combine all options: static + dynamic + restricted entries
+    // Restricted entries are values set by callouts that may not be in the datasource
+    const allOptions = [...staticOptions, ...dynamicOptions, ...restrictedEntries];
+
+    // Remove duplicates by id
+    const uniqueOptions = allOptions.filter((opt, index, self) =>
+      index === self.findIndex((o) => String(o.id) === String(opt.id))
+    );
+
+    console.log("[TableDirCellEditor] Options combined", {
+      fieldName: field.name,
+      staticCount: staticOptions.length,
+      dynamicCount: dynamicOptions.length,
+      restrictedCount: restrictedEntries.length,
+      totalUnique: uniqueOptions.length,
+      restrictedEntries: restrictedEntries.map((e: any) => ({ id: e.id, label: e.label })),
+    });
+
+    return uniqueOptions;
+  }, [field.refList, dynamicOptions, restrictedEntries, field.name]);
 
   // Filter options based on search term
   const filteredOptions = useMemo(() => {
@@ -153,13 +193,13 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
 
     // If no option found but we have an identifier from the row data, use it
     // This handles cases where callouts set values but options aren't loaded yet
-    // Try multiple field name variations to find the identifier
-    const fieldKey = field.columnName || field.hqlName || field.name;
-    const identifierFromField = (field as any)[`${fieldKey}$_identifier`];
+    // IMPORTANT: Use inputName to match how identifiers are stored (same as entries)
+    const identifierFieldKey = field.inputName || field.hqlName || field.columnName || field.name;
+    const identifierFromField = (field as any)[`${identifierFieldKey}$_identifier`];
     if (identifierFromField) {
       console.log("[TableDirCellEditor] Using identifier from field", {
         fieldName: field.name,
-        fieldKey,
+        identifierFieldKey,
         identifier: identifierFromField,
       });
       return identifierFromField;
@@ -382,25 +422,26 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
           )}
 
           {filteredOptions.length > 0 ? (
-            filteredOptions.map((option, index) => (
-              <li
-                key={option.value}
-                onMouseDown={(e) => handleOptionMouseDown(e, option.value)}
-                onMouseEnter={() => handleOptionMouseEnter(index)}
-                className={`
-                  px-4 py-2 text-sm cursor-pointer flex items-center justify-between
-                  ${highlightedIndex === index ? "bg-blue-50" : ""}
-                  ${String(option.value) === localValue ? "bg-blue-50 font-medium" : ""}
-                  hover:bg-blue-50
-                `}
-                role="option"
-                aria-selected={String(option.value) === localValue}>
-                <span className="truncate">{option.label}</span>
-                {String(option.value) === localValue && (
-                  <Image src={checkIconUrl} alt="Selected" width={16} height={16} />
-                )}
-              </li>
-            ))
+            filteredOptions.map((option, index) => {
+              const isSelected = String(option.id) === localValue || String(option.value) === localValue;
+              return (
+                <li
+                  key={option.id || option.value}
+                  onMouseDown={(e) => handleOptionMouseDown(e, option.value)}
+                  onMouseEnter={() => handleOptionMouseEnter(index)}
+                  className={`
+                    px-4 py-2 text-sm cursor-pointer flex items-center justify-between
+                    ${highlightedIndex === index ? "bg-blue-50" : ""}
+                    ${isSelected ? "bg-blue-50 font-medium" : ""}
+                    hover:bg-blue-50
+                  `}
+                  role="option"
+                  aria-selected={isSelected}>
+                  <span className="truncate">{option.label}</span>
+                  {isSelected && <Image src={checkIconUrl} alt="Selected" width={16} height={16} />}
+                </li>
+              );
+            })
           ) : (
             <li className="px-4 py-2 text-sm text-gray-500">{isLoading ? "Loading options..." : "No options found"}</li>
           )}

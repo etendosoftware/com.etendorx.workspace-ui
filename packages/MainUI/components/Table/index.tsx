@@ -544,30 +544,72 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           continue;
         }
 
+        // IMPORTANT: Use inputName for consistency with cell rendering logic
+        // Cell rendering uses inputName first, so we must store identifiers/entries with inputName
         const fieldName = targetField.hqlName || columnName;
+        const fieldInputName = targetField.inputName || targetField.hqlName || columnName;
         const { value, identifier } = columnValue;
 
         logger.info(`[InlineCallout] Applying value for column ${columnName} -> field ${fieldName}:`, {
           value,
-          identifier
+          identifier,
+          fieldInputName,
         });
 
         // Update the field value in editing row
         editingRowUtils.updateCellValue(rowId, fieldName, value);
 
-        // If field has identifier, update it too
+        // If field has identifier, update it too using inputName for the key
         if (identifier && value && String(value) !== identifier) {
-          editingRowUtils.updateCellValue(rowId, `${fieldName}$_identifier`, identifier);
+          editingRowUtils.updateCellValue(rowId, `${fieldInputName}$_identifier`, identifier);
         }
 
         // Handle restricted entries for selectors
         const withEntries = (columnValue as any).entries;
+
+        // Check if this is a TABLEDIR field (reference "19" corresponds to TableDir)
+        const isTableDirField = targetField.column?.reference === "19" || targetField.type === "TABLEDIR";
+
+        logger.debug(`[InlineCallout] Processing entries for ${fieldName}:`, {
+          hasEntries: !!withEntries?.length,
+          entriesLength: withEntries?.length,
+          hasIdentifier: !!identifier,
+          hasValue: !!value,
+          targetFieldType: targetField.type,
+          targetFieldReference: targetField.column?.reference,
+          isTableDir: isTableDirField,
+          fieldInputName,
+        });
+
         if (withEntries?.length) {
+          // Use inputName for entries key to match cell rendering lookup
           editingRowUtils.updateCellValue(
             rowId,
-            `${fieldName}$_entries`,
-            withEntries.map((e: any) => ({ id: e.id, label: e._identifier }))
+            `${fieldInputName}$_entries`,
+            withEntries.map((e: any) => ({ id: e.id, value: e.id, label: e._identifier }))
           );
+          logger.info(`[InlineCallout] Stored entries from backend for ${fieldName}:`, {
+            count: withEntries.length,
+            entriesKey: `${fieldInputName}$_entries`,
+          });
+        } else if (identifier && value && isTableDirField) {
+          // If no entries but we have a value with identifier for a TABLEDIR field,
+          // create a synthetic entry so the selector can display it
+          // Use inputName for entries key to match cell rendering lookup
+          const entriesKey = `${fieldInputName}$_entries`;
+          const syntheticEntry = [{ id: String(value), value: String(value), label: identifier }];
+          editingRowUtils.updateCellValue(rowId, entriesKey, syntheticEntry);
+          logger.info(`[InlineCallout] Created synthetic entry for ${fieldName}:`, {
+            entriesKey,
+            entry: syntheticEntry[0],
+            fieldReference: targetField.column?.reference,
+            fieldInputName,
+          });
+        } else {
+          logger.debug(`[InlineCallout] No entries created for ${fieldName}`, {
+            reason: !isTableDirField ? 'not TABLEDIR' : !identifier ? 'no identifier' : !value ? 'no value' : 'unknown',
+            fieldInputName,
+          });
         }
       }
 
@@ -732,7 +774,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         });
 
         // Execute through global manager
+        logger.info(`[InlineCallout] About to execute callout via globalCalloutManager for ${field.hqlName}`);
         await globalCalloutManager.executeCallout(field.hqlName, async () => {
+          logger.info(`[InlineCallout] Inside globalCalloutManager.executeCallout callback for ${field.hqlName}`);
           const params = new URLSearchParams({
             _action: "org.openbravo.client.application.window.FormInitializationComponent",
             MODE: "CHANGE",
@@ -742,7 +786,13 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
             PARENT_ID: String(parentRecord?.id || "null"),
           });
 
+          logger.info(`[InlineCallout] Making request to backend for ${field.hqlName}`, {
+            params: params.toString(),
+            payloadKeys: Object.keys(calloutData).slice(0, 20),
+          });
+
           const response = await Metadata.kernelClient.post(`?${params}`, calloutData);
+          logger.info(`[InlineCallout] Request completed for ${field.hqlName}`);
 
           logger.info(`[InlineCallout] Response received for ${field.hqlName}:`, {
             hasResponse: !!response,
@@ -1286,13 +1336,14 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   );
 
   // Throttled cell value change handler to prevent excessive updates
-  const handleCellValueChange = useThrottledCallback((rowId: string, fieldName: string, value: unknown, optionData?: Record<string, unknown>) => {
+  const handleCellValueChange = useThrottledCallback((rowId: string, fieldName: string, value: unknown, optionData?: Record<string, unknown>, field?: Field) => {
     performanceMonitor.measure(`cell-value-change-${fieldName}`, () => {
       // Log incoming parameters to debug
       logger.info(`[InlineEditing] handleCellValueChange called for ${fieldName}:`, {
         rowId,
         value,
         hasOptionData: !!optionData,
+        hasField: !!field,
         optionDataKeys: optionData ? Object.keys(optionData).slice(0, 10) : []
       });
 
@@ -1300,7 +1351,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       editingRowUtils.updateCellValue(rowId, fieldName, value);
       logger.debug(`[InlineEditing] Updated cell ${fieldName} in row ${rowId}:`, value);
 
-      // For TABLEDIR fields, also store the identifier for display purposes
+      // For TABLEDIR fields, also store the identifier
+      // Note: We don't create synthetic entries here for user selections,
+      // only for callout values, to avoid overwriting the full options list
       if (optionData && (optionData as any).label) {
         editingRowUtils.updateCellValue(rowId, `${fieldName}$_identifier`, (optionData as any).label);
         logger.debug(`[InlineEditing] Updated identifier ${fieldName}$_identifier:`, (optionData as any).label);
@@ -1310,15 +1363,17 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       debouncedValidateField(rowId, fieldName, value);
 
       // Execute callout if field has one
-      const field = getFieldByName(fieldName);
+      // Use the provided field object if available, otherwise try to find by name
+      const fieldForCallout = field || getFieldByName(fieldName);
       logger.debug(`[InlineCallout] Checking field ${fieldName}:`, {
-        hasField: !!field,
-        hasCallout: !!field?.column.callout,
-        calloutName: field?.column.callout
+        hasField: !!fieldForCallout,
+        hasCallout: !!fieldForCallout?.column.callout,
+        calloutName: fieldForCallout?.column.callout,
+        fieldProvidedDirectly: !!field,
       });
-      if (field?.column.callout) {
-        logger.info(`[InlineCallout] Executing callout for ${fieldName}: ${field.column.callout}`);
-        executeInlineCallout(rowId, field, value, optionData).catch((error) => {
+      if (fieldForCallout?.column.callout) {
+        logger.info(`[InlineCallout] Executing callout for ${fieldName}: ${fieldForCallout.column.callout}`);
+        executeInlineCallout(rowId, fieldForCallout, value, optionData).catch((error) => {
           logger.error(`[InlineCallout] Error executing callout for ${fieldName}:`, error);
         });
       }
@@ -1481,14 +1536,38 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           const rowValues = { ...editingData.originalData, ...editingData.modifiedData };
           const shouldBeReadOnly = isFieldReadOnly(fieldMapping.field, isNewRow, rowValues, session);
 
-          // Get the identifier for this field if it exists (for display in TABLEDIR selectors)
-          const identifierKey = `${fieldKey}$_identifier`;
+          // Get the identifier and entries for this field if they exist (for display in TABLEDIR selectors)
+          // IMPORTANT: Use the field's inputName to match how entries are stored by callouts
+          // Callouts use inputName (e.g., "inpcBpartnerId") for payload fields, not hqlName
+          const fieldInputName = fieldMapping.field.inputName || fieldMapping.field.hqlName || fieldKey;
+          const identifierKey = `${fieldInputName}$_identifier`;
+          const entriesKey = `${fieldInputName}$_entries`;
           const fieldIdentifier = rowValues[identifierKey];
+          const fieldEntries = rowValues[entriesKey];
 
-          // Create an augmented field with the identifier for the cell editor
-          const fieldWithIdentifier = fieldIdentifier
-            ? { ...fieldMapping.field, [identifierKey]: fieldIdentifier }
-            : fieldMapping.field;
+          // Debug: Log what keys we have in rowValues to understand naming mismatches
+          if (fieldMapping.fieldType === "TABLEDIR") {
+            console.log(`[InlineEditing] TABLEDIR field rendering for ${col.name}:`, {
+              colName: col.name,
+              fieldKey,
+              fieldInputName,
+              entriesKey,
+              identifierKey,
+              hasEntries: !!fieldEntries,
+              hasIdentifier: !!fieldIdentifier,
+              fieldEntries,
+              fieldIdentifier,
+              entriesInRowValues: Object.keys(rowValues).filter(k => k.includes('$_entries')),
+              identifiersInRowValues: Object.keys(rowValues).filter(k => k.includes('$_identifier')),
+            });
+          }
+
+          // Create an augmented field with the identifier and entries for the cell editor
+          const fieldWithData = {
+            ...fieldMapping.field,
+            ...(fieldIdentifier && { [identifierKey]: fieldIdentifier }),
+            ...(fieldEntries && { [entriesKey]: fieldEntries }),
+          };
 
           return (
             <div className="inline-edit-cell-container">
@@ -1501,14 +1580,14 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
                 <CellEditorFactory
                   fieldType={fieldMapping.fieldType}
                   value={currentValue}
-                  onChange={(value, optionData) => handleCellValueChange(rowId, fieldKey, value, optionData)}
+                  onChange={(value, optionData) => handleCellValueChange(rowId, fieldKey, value, optionData, fieldMapping.field)}
                   onBlur={() => {
                     validateFieldOnBlur(rowId, fieldKey, currentValue);
                     if (shouldAutoFocus) {
                       setInitialFocusCell(null);
                     }
                   }}
-                  field={fieldWithIdentifier}
+                  field={fieldWithData}
                   hasError={Boolean(editingData.validationErrors[col.name])}
                   disabled={editingData.isSaving || shouldBeReadOnly}
                   rowId={rowId}
