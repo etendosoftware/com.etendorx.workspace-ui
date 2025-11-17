@@ -95,22 +95,27 @@ export function useInlineEditInitialization({ tab }: UseInlineEditInitialization
         const { value, identifier } = valueObj as { value: any; identifier?: string };
         const field = fieldsByColumnName?.[key];
         const newKey = field?.hqlName ?? key;
+        // Use inputName for identifier storage to match callout and selector logic
+        const inputNameKey = field?.inputName || field?.hqlName || key;
 
         logger.debug(`[InlineEdit] Processing column value: ${key} -> ${newKey}`, {
           originalKey: key,
           mappedKey: newKey,
+          inputNameKey,
           value,
           identifier,
           hasField: !!field,
           fieldHqlName: field?.hqlName,
+          fieldInputName: field?.inputName,
         });
 
         acc[newKey] = value;
 
+        // Store identifier with inputName key for consistency with callouts and selectors
         if (identifier) {
-          acc[`${newKey}$_identifier`] = identifier;
+          acc[`${inputNameKey}$_identifier`] = identifier;
         } else if (value !== null && value !== undefined && value !== "") {
-          acc[`${newKey}$_identifier`] = "";
+          acc[`${inputNameKey}$_identifier`] = "";
         }
       }
 

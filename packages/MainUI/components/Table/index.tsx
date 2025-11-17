@@ -1595,7 +1595,13 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
                   keyboardNavigationManager={keyboardNavigationManager}
                   shouldAutoFocus={shouldAutoFocus}
                   loadOptions={async (field, searchQuery) => {
-                    return await loadTableDirOptions(fieldMapping.field, searchQuery);
+                    // Get fresh row values at the time of loading options, not cached values
+                    // This ensures we use the current organization value after FIC updates
+                    const freshEditingData = editingRowUtils.getEditingRowData(rowId);
+                    const freshRowValues = freshEditingData
+                      ? { ...freshEditingData.originalData, ...freshEditingData.modifiedData }
+                      : rowValues;
+                    return await loadTableDirOptions(fieldMapping.field, searchQuery, freshRowValues);
                   }}
                   isLoadingOptions={(fieldName) => isLoadingTableDirOptions(fieldName)}
                 />

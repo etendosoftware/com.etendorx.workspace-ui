@@ -34,9 +34,11 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
   const [optionsCache, setOptionsCache] = useState<Record<string, RefListField[]>>({});
 
   const loadOptions = useCallback(
-    async (field: Field, searchQuery?: string, pageSize = 75): Promise<RefListField[]> => {
+    async (field: Field, searchQuery?: string, contextData?: Record<string, unknown>, pageSize = 75): Promise<RefListField[]> => {
       const fieldKey = field.name || field.hqlName;
-      const cacheKey = `${fieldKey}-${searchQuery || ""}-${pageSize}`;
+      // Include organization in cache key so different orgs have different caches
+      const orgId = contextData?.organization || 'no-org';
+      const cacheKey = `${fieldKey}-${orgId}-${searchQuery || ""}-${pageSize}`;
 
       logger.debug(`[useInlineTableDirOptions] loadOptions called`, {
         fieldKey,
@@ -45,12 +47,15 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
         refListLength: field.refList?.length || 0,
         referencedEntity: field.referencedEntity,
         searchQuery,
+        hasContextData: !!contextData,
+        orgId,
       });
 
       // Return cached options if available and no search query
       if (optionsCache[cacheKey] && !searchQuery) {
         logger.debug(`[useInlineTableDirOptions] Returning cached options for ${fieldKey}`, {
           count: optionsCache[cacheKey].length,
+          cacheKey,
         });
         return optionsCache[cacheKey];
       }
@@ -120,6 +125,16 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
         if (tabId) baseBody.inpTabId = tabId;
         if (windowId) baseBody.windowId = windowId;
         if (windowId) baseBody.inpwindowId = windowId;
+
+        // Add organization context for filtering
+        // The backend uses _org parameter to filter results by organization
+        if (contextData?.organization) {
+          baseBody._org = String(contextData.organization);
+          logger.debug(`[useInlineTableDirOptions] Added _org parameter:`, {
+            fieldKey,
+            org: contextData.organization,
+          });
+        }
 
         // Apply search criteria if provided
         if (searchQuery) {

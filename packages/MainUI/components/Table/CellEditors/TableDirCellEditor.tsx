@@ -88,21 +88,31 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     setLocalValue(String(value || ""));
   }, [value, field.name, localValue]);
 
-  // Load options dynamically for TABLEDIR fields
+  // Load options when selector opens (anchorEl is set) or when search term changes
+  // This ensures we always fetch fresh options with current context (organization, etc.)
   useEffect(() => {
     const loadDynamicOptions = async () => {
-      console.log(`[TableDirCellEditor] Checking if should load options for ${field.name}`, {
+      // Only load if selector is open or there's a search term
+      if (!anchorEl && !searchTerm) {
+        console.log(`[TableDirCellEditor] Skipping load - selector closed and no search`, {
+          fieldName: field.name,
+        });
+        return;
+      }
+
+      console.log(`[TableDirCellEditor] Loading options for ${field.name}`, {
         hasLoadOptions: !!loadOptions,
         fieldType: field.type,
         hasRefList: !!field.refList,
         refListLength: field.refList?.length || 0,
-        shouldLoad: loadOptions && field.type === FieldType.TABLEDIR && (!field.refList || field.refList.length === 0),
+        selectorOpen: !!anchorEl,
+        searchTerm,
       });
 
       if (loadOptions && field.type === FieldType.TABLEDIR && (!field.refList || field.refList.length === 0)) {
         setIsLoadingDynamicOptions(true);
         try {
-          console.log(`[TableDirCellEditor] Loading options for ${field.name}`);
+          console.log(`[TableDirCellEditor] Fetching options for ${field.name}`);
           const options = await loadOptions(field, searchTerm);
           console.log(`[TableDirCellEditor] Loaded ${options.length} options for ${field.name}`);
           setDynamicOptions(options);
@@ -116,7 +126,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     };
 
     loadDynamicOptions();
-  }, [field.name, field.type, field.refList, loadOptions, searchTerm]);
+  }, [anchorEl, searchTerm, field.name, field.type, field.refList, loadOptions]);
 
   // Get restricted entries from field (set by callouts)
   // IMPORTANT: Use inputName to match how entries are stored by callouts (e.g., "inpcBpartnerId")

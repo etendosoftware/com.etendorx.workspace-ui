@@ -95,7 +95,7 @@ export interface CellEditorProps {
   keyboardNavigationManager?: any; // KeyboardNavigationManager type
   shouldAutoFocus?: boolean; // Controls whether this cell should receive initial focus
   // Optional functions for dynamic option loading (TABLEDIR fields)
-  loadOptions?: (field: Field, searchQuery?: string) => Promise<RefListField[]>;
+  loadOptions?: (field: Field, searchQuery?: string, contextData?: Record<string, unknown>) => Promise<RefListField[]>;
   isLoadingOptions?: (fieldName: string) => boolean;
 }
 
