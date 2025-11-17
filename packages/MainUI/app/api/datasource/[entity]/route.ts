@@ -152,7 +152,7 @@ async function handleErpResponseWithCsrfRecovery(
         headers: {
           "Content-Type": response.headers.get("Content-Type") || "text/plain",
         },
-      })
+      }),
     };
   }
 
@@ -165,14 +165,14 @@ async function handleErpResponseWithCsrfRecovery(
     } else {
       return {
         error: `CSRF recovery failed: ${csrfRecoveryResult.error}`,
-        nextResponse: NextResponse.json(jsonData, { status: response.status })
+        nextResponse: NextResponse.json(jsonData, { status: response.status }),
       };
     }
   }
 
   // No CSRF error, return normal response
   return {
-    nextResponse: NextResponse.json(jsonData, { status: response.status })
+    nextResponse: NextResponse.json(jsonData, { status: response.status }),
   };
 }
 

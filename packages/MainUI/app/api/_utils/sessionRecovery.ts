@@ -67,7 +67,7 @@ export function extractJSessionId(response: Response): string | null {
  */
 export function storeCookieForToken(
   erpResponse: Response,
-  data: { token?: string;[key: string]: unknown },
+  data: { token?: string; [key: string]: unknown },
   oldToken?: string
 ): void {
   try {

@@ -21,11 +21,7 @@
 
 import { type NextRequest } from "next/server";
 import { logger } from "@/utils/logger";
-import {
-  isSessionExpired,
-  shouldAttemptRecovery,
-  shouldAttemptCsrfRecovery
-} from "./sessionValidator";
+import { isSessionExpired, shouldAttemptRecovery, shouldAttemptCsrfRecovery } from "./sessionValidator";
 import { recoverSession } from "./sessionRecovery";
 import { recoverFromCsrfError } from "./csrfRecovery";
 import { getErpAuthHeaders } from "./forwardConfig";
@@ -64,11 +60,7 @@ export async function executeWithSessionAndCsrfRetry<T>(
       logger.log("InvalidCSRFToken detected, attempting CSRF recovery");
 
       // Attempt CSRF recovery
-      const csrfRecoveryResult = await recoverFromCsrfError(
-        result.response,
-        result.data,
-        userToken
-      );
+      const csrfRecoveryResult = await recoverFromCsrfError(result.response, result.data, userToken);
 
       if (!csrfRecoveryResult.success) {
         return {

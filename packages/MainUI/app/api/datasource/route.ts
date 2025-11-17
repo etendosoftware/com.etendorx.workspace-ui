@@ -246,7 +246,6 @@ export async function POST(request: NextRequest) {
 
     const result = await executeWithSessionAndCsrfRetry(request, userToken, requestFn);
 
-
     if (!result.success) {
       let errorContext: string;
       if (result.csrfRecovered) {

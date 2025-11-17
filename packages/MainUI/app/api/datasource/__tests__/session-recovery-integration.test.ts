@@ -56,12 +56,12 @@ const mockGetUserContext = require("@/lib/auth").getUserContext as jest.MockedFu
 >;
 const mockShouldCacheDatasource = require("@/app/api/_utils/datasourceCache")
   .shouldCacheDatasource as jest.MockedFunction<
-    typeof import("@/app/api/_utils/datasourceCache").shouldCacheDatasource
-  >;
+  typeof import("@/app/api/_utils/datasourceCache").shouldCacheDatasource
+>;
 const mockExecuteWithSessionAndCsrfRetry = require("@/app/api/_utils/sessionRetryWithCsrf")
   .executeWithSessionAndCsrfRetry as jest.MockedFunction<
-    typeof import("@/app/api/_utils/sessionRetryWithCsrf").executeWithSessionAndCsrfRetry
-  >;
+  typeof import("@/app/api/_utils/sessionRetryWithCsrf").executeWithSessionAndCsrfRetry
+>;
 
 describe("Datasource API Route - Session Recovery Integration", () => {
   const testToken = "test-jwt-token";

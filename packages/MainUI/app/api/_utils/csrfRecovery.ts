@@ -24,7 +24,7 @@ import { extractJSessionId, storeCookieForToken } from "./sessionRecovery";
 import {
   DEFAULT_CSRF_TOKEN_ERROR,
   CSRF_RECOVERY_ENABLED_DEFAULT,
-  CSRF_MAX_RETRY_ATTEMPTS
+  CSRF_MAX_RETRY_ATTEMPTS,
 } from "@/utils/session/constants";
 
 /**
@@ -169,7 +169,7 @@ export async function recoverFromCsrfError(
       return {
         success: false,
         sessionUpdated: false,
-        error: "CSRF recovery is disabled"
+        error: "CSRF recovery is disabled",
       };
     }
 
@@ -178,7 +178,7 @@ export async function recoverFromCsrfError(
       return {
         success: false,
         sessionUpdated: false,
-        error: "No user token provided for CSRF recovery"
+        error: "No user token provided for CSRF recovery",
       };
     }
 
@@ -187,7 +187,7 @@ export async function recoverFromCsrfError(
       return {
         success: false,
         sessionUpdated: false,
-        error: "Response does not contain InvalidCSRFToken error"
+        error: "Response does not contain InvalidCSRFToken error",
       };
     }
 
@@ -199,7 +199,7 @@ export async function recoverFromCsrfError(
       return {
         success: false,
         sessionUpdated: false,
-        error: "Maximum CSRF recovery attempts exceeded"
+        error: "Maximum CSRF recovery attempts exceeded",
       };
     }
 
@@ -211,7 +211,7 @@ export async function recoverFromCsrfError(
       return {
         success: false,
         sessionUpdated: false,
-        error: `Unexpected response status for CSRF error: ${response.status}`
+        error: `Unexpected response status for CSRF error: ${response.status}`,
       };
     }
 
@@ -225,13 +225,13 @@ export async function recoverFromCsrfError(
       logger.log("CSRF recovery successful");
       return {
         success: true,
-        sessionUpdated: true
+        sessionUpdated: true,
       };
     } else {
       return {
         success: false,
         sessionUpdated: false,
-        error: "Failed to extract or update session from CSRF error response"
+        error: "Failed to extract or update session from CSRF error response",
       };
     }
   } catch (error) {
@@ -240,7 +240,7 @@ export async function recoverFromCsrfError(
     return {
       success: false,
       sessionUpdated: false,
-      error: errorMessage
+      error: errorMessage,
     };
   }
 }

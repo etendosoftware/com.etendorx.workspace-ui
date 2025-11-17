@@ -85,7 +85,10 @@ export function shouldAttemptRecovery(response: Response, data: unknown): boolea
  * @param data The parsed response data
  * @returns Object with detailed error classification
  */
-export function classifySessionError(response: Response, data: unknown): {
+export function classifySessionError(
+  response: Response,
+  data: unknown
+): {
   isSessionExpired: boolean;
   isInvalidCsrf: boolean;
   isRecoverable: boolean;
@@ -96,13 +99,13 @@ export function classifySessionError(response: Response, data: unknown): {
   return {
     isSessionExpired: isSessionExp,
     isInvalidCsrf: isInvalidCsrf,
-    isRecoverable: isSessionExp || isInvalidCsrf
+    isRecoverable: isSessionExp || isInvalidCsrf,
   };
 }
 
 /**
  * Checks if an error should trigger CSRF-specific recovery
- * @param response The HTTP response from ERP  
+ * @param response The HTTP response from ERP
  * @param data The parsed response data
  * @returns true if CSRF recovery should be attempted
  */
