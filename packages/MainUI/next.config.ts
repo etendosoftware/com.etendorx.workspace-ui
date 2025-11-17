@@ -43,6 +43,7 @@ const nextConfig: NextConfig = {
   compress: !DEBUG_MODE,
   env: {
     NEXT_PUBLIC_APP_VERSION: APP_VERSION,
+    CSRF_RECOVERY_ENABLED: "false",
   },
   webpack(config) {
     config.optimization = {

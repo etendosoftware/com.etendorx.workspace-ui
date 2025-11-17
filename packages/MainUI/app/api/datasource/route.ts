@@ -3,7 +3,7 @@ import { unstable_cache } from "next/cache";
 import { getUserContext, extractBearerToken } from "@/lib/auth";
 import { shouldCacheDatasource } from "@/app/api/_utils/datasourceCache";
 import { shouldPassthroughJson, getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
-import { executeWithSessionRetry } from "@/app/api/_utils/sessionRetry";
+import { executeWithSessionAndCsrfRetry } from "@/app/api/_utils/sessionRetryWithCsrf";
 import { getDatasourceUrl } from "../_utils/endpoints";
 import type { DatasourceParams } from "@workspaceui/api-client/src/api/types";
 import type { SmartClientPayload } from "@/app/api/_utils/datasource";
@@ -244,10 +244,13 @@ export async function POST(request: NextRequest) {
         : await fetchDatasource(userToken, entity, params, cookieHeader, csrfToken);
     };
 
-    const result = await executeWithSessionRetry(request, userToken, requestFn);
+    const result = await executeWithSessionAndCsrfRetry(request, userToken, requestFn);
+
 
     if (!result.success) {
-      console.error("Datasource request failed:", result.error);
+      const errorContext = result.csrfRecovered ? "after CSRF recovery" :
+        result.recovered ? "after session recovery" : "initial attempt";
+      console.error(`Datasource request failed (${errorContext}):`, result.error);
       return NextResponse.json({ error: result.error || "Failed to fetch data" }, { status: 500 });
     }
 

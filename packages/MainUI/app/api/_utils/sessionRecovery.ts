@@ -37,7 +37,7 @@ export interface SessionRecoveryResult {
  * @param response The HTTP response
  * @returns The JSESSIONID value or null if not found
  */
-function extractJSessionId(response: Response): string | null {
+export function extractJSessionId(response: Response): string | null {
   // Check single set-cookie header
   const singleCookie = response.headers.get("set-cookie");
   if (singleCookie) {
@@ -65,9 +65,9 @@ function extractJSessionId(response: Response): string | null {
  * @param data The parsed response data containing the token
  * @param oldToken The previous token to clear if different
  */
-function storeCookieForToken(
+export function storeCookieForToken(
   erpResponse: Response,
-  data: { token?: string; [key: string]: unknown },
+  data: { token?: string;[key: string]: unknown },
   oldToken?: string
 ): void {
   try {

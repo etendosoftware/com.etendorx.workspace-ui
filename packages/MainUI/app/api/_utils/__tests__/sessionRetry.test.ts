@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { executeWithSessionRetry } from "../sessionRetry";
+import { executeWithSessionAndCsrfRetry } from "../sessionRetryWithCsrf";
 import * as sessionValidator from "../sessionValidator";
 import * as sessionRecovery from "../sessionRecovery";
 import * as forwardConfig from "../forwardConfig";
@@ -51,7 +51,7 @@ const mockLogger = {
 // Apply the mock to the module
 jest.mocked(require("@/utils/logger")).logger = mockLogger;
 
-describe("sessionRetry", () => {
+describe("sessionRetryWithCsrf", () => {
   const testToken = "test-jwt-token";
   let mockRequest: NextRequest;
 
@@ -81,7 +81,7 @@ describe("sessionRetry", () => {
     mockLogger.debug.mockClear();
   });
 
-  describe("executeWithSessionRetry", () => {
+  describe("executeWithSessionAndCsrfRetry", () => {
     it("should return success on first attempt when session is valid", async () => {
       const mockData = { result: "success" };
       const mockResponse = new Response(JSON.stringify(mockData), { status: 200 });
@@ -93,7 +93,7 @@ describe("sessionRetry", () => {
 
       mockIsSessionExpired.mockReturnValue(false);
 
-      const result = await executeWithSessionRetry(mockRequest, testToken, requestFn);
+      const result = await executeWithSessionAndCsrfRetry(mockRequest, testToken, requestFn);
 
       expect(result.success).toBe(true);
       expect(result.data).toEqual(mockData);
@@ -114,7 +114,7 @@ describe("sessionRetry", () => {
       mockIsSessionExpired.mockReturnValue(true);
       mockShouldAttemptRecovery.mockReturnValue(false);
 
-      const result = await executeWithSessionRetry(mockRequest, testToken, requestFn);
+      const result = await executeWithSessionAndCsrfRetry(mockRequest, testToken, requestFn);
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Request failed with status 403");
@@ -148,7 +148,7 @@ describe("sessionRetry", () => {
       mockShouldAttemptRecovery.mockReturnValue(true);
       mockRecoverSession.mockResolvedValue({ success: true });
 
-      const result = await executeWithSessionRetry(mockRequest, testToken, requestFn);
+      const result = await executeWithSessionAndCsrfRetry(mockRequest, testToken, requestFn);
 
       expect(result.success).toBe(true);
       expect(result.data).toEqual(successData);
@@ -157,8 +157,8 @@ describe("sessionRetry", () => {
       expect(mockRecoverSession).toHaveBeenCalledWith(testToken);
 
       // Verify logger calls
-      expect(mockLogger.log).toHaveBeenCalledWith("Session expired, attempting recovery");
-      expect(mockLogger.log).toHaveBeenCalledWith("Session recovery and retry successful");
+      expect(mockLogger.log).toHaveBeenCalledWith("Session expired, attempting traditional session recovery");
+      expect(mockLogger.log).toHaveBeenCalledWith("Traditional session recovery and retry successful");
     });
 
     it("should return error when session recovery fails", async () => {
@@ -177,7 +177,7 @@ describe("sessionRetry", () => {
         error: "Recovery failed",
       });
 
-      const result = await executeWithSessionRetry(mockRequest, testToken, requestFn);
+      const result = await executeWithSessionAndCsrfRetry(mockRequest, testToken, requestFn);
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Session recovery failed: Recovery failed");
@@ -205,7 +205,7 @@ describe("sessionRetry", () => {
       mockShouldAttemptRecovery.mockReturnValue(true);
       mockRecoverSession.mockResolvedValue({ success: true });
 
-      const result = await executeWithSessionRetry(mockRequest, testToken, requestFn);
+      const result = await executeWithSessionAndCsrfRetry(mockRequest, testToken, requestFn);
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Request failed even after session recovery");
@@ -218,7 +218,7 @@ describe("sessionRetry", () => {
       const requestError = new Error("Network error");
       const requestFn = jest.fn().mockRejectedValue(requestError);
 
-      const result = await executeWithSessionRetry(mockRequest, testToken, requestFn);
+      const result = await executeWithSessionAndCsrfRetry(mockRequest, testToken, requestFn);
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Network error");
@@ -226,7 +226,7 @@ describe("sessionRetry", () => {
       expect(mockRecoverSession).not.toHaveBeenCalled();
 
       // Verify error logging
-      expect(mockLogger.error).toHaveBeenCalledWith("Error in session retry logic:", requestError);
+      expect(mockLogger.error).toHaveBeenCalledWith("Error in enhanced session retry logic:", requestError);
     });
 
     it("should handle session recovery errors", async () => {
@@ -243,15 +243,15 @@ describe("sessionRetry", () => {
       mockShouldAttemptRecovery.mockReturnValue(true);
       mockRecoverSession.mockRejectedValue(recoveryError);
 
-      const result = await executeWithSessionRetry(mockRequest, testToken, requestFn);
+      const result = await executeWithSessionAndCsrfRetry(mockRequest, testToken, requestFn);
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Recovery error");
       expect(requestFn).toHaveBeenCalledTimes(1);
 
       // Verify both attempt recovery log and error log
-      expect(mockLogger.log).toHaveBeenCalledWith("Session expired, attempting recovery");
-      expect(mockLogger.error).toHaveBeenCalledWith("Error in session retry logic:", recoveryError);
+      expect(mockLogger.log).toHaveBeenCalledWith("Session expired, attempting traditional session recovery");
+      expect(mockLogger.error).toHaveBeenCalledWith("Error in enhanced session retry logic:", recoveryError);
     });
 
     it("should call getErpAuthHeaders for each request attempt", async () => {
@@ -277,7 +277,7 @@ describe("sessionRetry", () => {
       mockShouldAttemptRecovery.mockReturnValue(true);
       mockRecoverSession.mockResolvedValue({ success: true });
 
-      await executeWithSessionRetry(mockRequest, testToken, requestFn);
+      await executeWithSessionAndCsrfRetry(mockRequest, testToken, requestFn);
 
       // Should be called twice - once for initial attempt, once for retry
       expect(mockGetErpAuthHeaders).toHaveBeenCalledTimes(2);
