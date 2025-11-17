@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import React from "react";
+import type React from "react";
 import RecordCounter from "./RecordCounter";
 import SelectionCounter from "./SelectionCounter";
 import type { RecordCounterBarProps } from "./types";

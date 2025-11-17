@@ -19,7 +19,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
 import { useCallback } from "react";
 import { useUserContext } from "./useUserContext";
-import { useApiContext } from "./useApiContext";
+import { useRuntimeConfig } from "./useRuntimeConfig";
 
 export interface ProcessMessage {
   text: string;
@@ -30,7 +30,11 @@ export interface ProcessMessage {
 export function useProcessMessage(tabId: string) {
   const { t } = useTranslation();
   const { token } = useUserContext();
-  const API_BASE_URL = useApiContext();
+  const { config } = useRuntimeConfig();
+
+  // Use ETENDO_CLASSIC_HOST for direct browser access to Tomcat
+  // This is necessary because the iframe is also loading from Tomcat directly
+  const publicHost = config?.etendoClassicHost || "";
 
   const normalizeMessageType = useCallback(
     (messageType: string, message: string): "success" | "error" | "warning" | "info" => {
@@ -110,7 +114,7 @@ export function useProcessMessage(tabId: string) {
     try {
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
       const response: Response & { data?: any } = await fetch(
-        `${API_BASE_URL}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?_action=org.openbravo.client.application.window.GetTabMessageActionHandler&language=en_US`,
+        `${publicHost}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?_action=org.openbravo.client.application.window.GetTabMessageActionHandler&language=en_US`,
         {
           method: "POST",
           credentials: "include",
@@ -128,7 +132,7 @@ export function useProcessMessage(tabId: string) {
     } catch (error) {
       return handleFetchError(error);
     }
-  }, [API_BASE_URL, token, tabId, processResponseData, handleFetchError]);
+  }, [publicHost, token, tabId, processResponseData, handleFetchError]);
 
   return { fetchProcessMessage };
 }

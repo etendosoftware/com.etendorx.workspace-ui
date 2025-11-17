@@ -19,6 +19,7 @@ import { getNewWindowIdentifier } from "@/utils/url/utils";
 import ProcessIframeModal from "./ProcessModal/Iframe";
 import type { ProcessIframeModalProps } from "./ProcessModal/types";
 import formsData from "../utils/processes/forms/data.json";
+import { useRuntimeConfig } from "../hooks/useRuntimeConfig";
 
 interface ExtendedMenu extends Menu {
   processDefinitionId?: string;
@@ -32,9 +33,7 @@ interface FormData {
   command: string;
 }
 
-const ETENDO_BASE_URL = process.env.NEXT_PUBLIC_ETENDO_URL || "http://localhost:8080/etendo";
-
-const buildProcessUrl = (processId: string, token: string | null): string => {
+const buildProcessUrl = (processId: string, token: string | null, baseUrl: string): string => {
   const params = new URLSearchParams({
     Command: `BUTTON${processId}`,
     IsPopUpCall: "1",
@@ -42,10 +41,10 @@ const buildProcessUrl = (processId: string, token: string | null): string => {
   if (token) {
     params.append("token", token);
   }
-  return `${ETENDO_BASE_URL}/ad_actionButton/ActionButton_Responser.html?${params.toString()}`;
+  return `${baseUrl}/ad_actionButton/ActionButton_Responser.html?${params.toString()}`;
 };
 
-const buildFormUrl = (formId: string, token: string | null): string | null => {
+const buildFormUrl = (formId: string, token: string | null, baseUrl: string): string | null => {
   const formData = (formsData as Record<string, FormData>)[formId];
   if (!formData) {
     return null;
@@ -58,17 +57,17 @@ const buildFormUrl = (formId: string, token: string | null): string | null => {
   if (token) {
     params.append("token", token);
   }
-  return `${ETENDO_BASE_URL}${formData.url}?${params.toString()}`;
+  return `${baseUrl}${formData.url}?${params.toString()}`;
 };
 
-const buildProcessDefinitionUrl = (processDefId: string, token: string | null): string => {
+const buildProcessDefinitionUrl = (processDefId: string, token: string | null, baseUrl: string): string => {
   const viewId = `processDefinition_${processDefId}`;
   const params = new URLSearchParams({ viewId });
   if (token) {
     params.append("token", token);
   }
   const processPath = "/org.openbravo.client.kernel/OBUIAPP_MainLayout/View";
-  return `${ETENDO_BASE_URL}${processPath}?${params.toString()}`;
+  return `${baseUrl}${processPath}?${params.toString()}`;
 };
 
 interface ManualProcessResult {
@@ -76,23 +75,27 @@ interface ManualProcessResult {
   size: "default" | "large";
 }
 
-const getManualProcessConfig = (item: ExtendedMenu, token: string | null): ManualProcessResult | null => {
+const getManualProcessConfig = (
+  item: ExtendedMenu,
+  token: string | null,
+  baseUrl: string
+): ManualProcessResult | null => {
   if (item.type === "Process" && item.processId) {
     return {
-      url: buildProcessUrl(item.processId, token),
+      url: buildProcessUrl(item.processId, token, baseUrl),
       size: "default",
     };
   }
 
   if (item.type === "Form" && item.formId) {
-    const url = buildFormUrl(item.formId, token);
+    const url = buildFormUrl(item.formId, token, baseUrl);
     if (!url) return null;
     return { url, size: "large" };
   }
 
   if (item.type === "ProcessDefinition" && item.processDefinitionId) {
     return {
-      url: buildProcessDefinitionUrl(item.processDefinitionId, token),
+      url: buildProcessDefinitionUrl(item.processDefinitionId, token, baseUrl),
       size: "default",
     };
   }
@@ -144,6 +147,10 @@ export default function Sidebar() {
   const [pendingWindowId, setPendingWindowId] = useState<string | undefined>(undefined);
   const [processIframeModal, setProcessIframeModal] = useState<ProcessIframeModalProps>({ isOpen: false });
 
+  const { config } = useRuntimeConfig();
+
+  const ETENDO_BASE_URL = config?.etendoClassicHost || "";
+
   const searchIndex = useMemo(() => createSearchIndex(menu), [menu]);
   const { filteredItems, searchExpandedItems } = useMemo(() => {
     const result = filterItems(menu, searchValue, searchIndex);
@@ -167,7 +174,7 @@ export default function Sidebar() {
       const extendedItem = item as ExtendedMenu;
 
       // Handle manual processes (Form / ProcessDefinition / Process)
-      const processConfig = getManualProcessConfig(extendedItem, token);
+      const processConfig = getManualProcessConfig(extendedItem, token, ETENDO_BASE_URL);
       if (processConfig) {
         setProcessIframeModal({
           isOpen: true,
@@ -212,7 +219,7 @@ export default function Sidebar() {
         router.push(targetURL);
       }
     },
-    [pathname, router, windows, openWindow, buildURL, getNextOrder, token]
+    [pathname, router, windows, openWindow, buildURL, getNextOrder, token, ETENDO_BASE_URL]
   );
 
   /**
