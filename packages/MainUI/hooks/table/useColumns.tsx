@@ -10,7 +10,6 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Cell } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { Column } from "@workspaceui/api-client/src/api/types";
-import { FieldType } from "@workspaceui/api-client/src/api/types";
 import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
 import { getFieldReference } from "@/utils";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
@@ -19,6 +18,7 @@ import { ColumnFilter } from "../../components/Table/ColumnFilter";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useTranslation } from "../useTranslation";
 import { transformColumnWithCustomJs } from "@/utils/customJsColumnTransformer";
+import { formatClassicDate } from "@/utils/dateFormatter";
 
 interface UseColumnsOptions {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
@@ -30,8 +30,8 @@ interface UseColumnsOptions {
 // Columnas booleanas conocidas
 const BOOLEAN_COLUMNS = ["isOfficialHoliday", "isActive", "isPaid", "stocked", "isGeneric"];
 
-// Audit fields that need special date formatting
-const AUDIT_DATE_COLUMNS = ["creationDate", "updated", "createdBy", "updatedBy"];
+// Audit fields that need special date formatting (with time)
+const AUDIT_DATE_COLUMNS_WITH_TIME = ["creationDate", "updated"];
 
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
@@ -42,17 +42,10 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     const fieldsAsArray = Object.values(tab.fields);
     let originalColumns = parseColumns(fieldsAsArray);
 
-    // Mark boolean columns and audit fields automatically
+    // Mark boolean columns automatically
     originalColumns = originalColumns.map((col) => {
       if (BOOLEAN_COLUMNS.includes(col.columnName)) {
         return { ...col, type: "boolean" };
-      }
-      // Mark audit columns for special handling
-      if (AUDIT_DATE_COLUMNS.includes(col.columnName)) {
-        return {
-          ...col,
-          type: col.columnName.includes("Date") || col.columnName === "updated" ? "datetime" : col.type,
-        };
       }
       return col;
     });
@@ -60,10 +53,11 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     return originalColumns.map((column: Column) => {
       const isReference = isEntityReference(getFieldReference(column.column?.reference));
       const isBooleanColumn = column.type === "boolean" || column.column?._identifier === "YesNo";
+      // Check if it's a date column by TYPE ONLY (strict check)
+      // In Etendo Classic, there are 2 date/time types: "date" and "datetime"
       const isDateColumn =
-        column.type === "datetime" ||
-        AUDIT_DATE_COLUMNS.includes(column.columnName) ||
-        getFieldReference(column.column?.reference) === FieldType.DATE;
+        column.type === "date" ||
+        column.type === "datetime";
       const supportsDropdownFilter = isBooleanColumn || ColumnFilterUtils.supportsDropdownFilter(column);
       const isCustomJsColumn = Boolean(column.customJs && column.customJs.trim().length > 0);
 
@@ -85,6 +79,27 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
       }
 
       let columnConfig = { ...column };
+
+      // Date columns with Etendo Classic formatting
+      if (isDateColumn) {
+        // Include time for audit date columns (creationDate, updated) or datetime type columns
+        const includeTime = AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName) || column.type === "datetime";
+        columnConfig = {
+          ...columnConfig,
+          Cell: ({ cell }: { cell: MRT_Cell<EntityData, unknown> }) => {
+            const value = cell?.getValue();
+            // Only format if the value is a string with valid date format
+            // This prevents formatting non-date values that are incorrectly marked as date type
+            if (typeof value === "string" && value) {
+              const formattedDate = formatClassicDate(value, includeTime);
+              // If formatClassicDate returned a non-empty value, use it; otherwise use original
+              return <span>{formattedDate || value}</span>;
+            }
+            // For non-string or empty values, show as-is or empty
+            return <span>{value ? String(value) : ""}</span>;
+          },
+        };
+      }
 
       // Reference columns with navigation
       if (isReference) {
