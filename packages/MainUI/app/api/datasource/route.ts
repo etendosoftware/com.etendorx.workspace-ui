@@ -248,8 +248,15 @@ export async function POST(request: NextRequest) {
 
 
     if (!result.success) {
-      const errorContext = result.csrfRecovered ? "after CSRF recovery" :
-        result.recovered ? "after session recovery" : "initial attempt";
+      let errorContext: string;
+      if (result.csrfRecovered) {
+        errorContext = "after CSRF recovery";
+      } else if (result.recovered) {
+        errorContext = "after session recovery";
+      } else {
+        errorContext = "initial attempt";
+      }
+
       console.error(`Datasource request failed (${errorContext}):`, result.error);
       return NextResponse.json({ error: result.error || "Failed to fetch data" }, { status: 500 });
     }

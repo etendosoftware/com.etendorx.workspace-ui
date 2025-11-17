@@ -235,9 +235,8 @@ async function handle(request: NextRequest, context: { params: Promise<{ entity:
 
       // Handle retry response (no further CSRF recovery to prevent loops)
       const retryResponseText = await retryResponse.text();
-      return await handleErpResponseWithCsrfRecovery(retryResponse, retryResponseText, userToken).then(result =>
-        result.nextResponse || NextResponse.json({ error: "Retry failed" }, { status: 500 })
-      );
+      const retryResult = await handleErpResponseWithCsrfRecovery(retryResponse, retryResponseText, userToken);
+      return retryResult.nextResponse || NextResponse.json({ error: "Retry failed" }, { status: 500 });
     }
 
     if (responseResult.error) {
