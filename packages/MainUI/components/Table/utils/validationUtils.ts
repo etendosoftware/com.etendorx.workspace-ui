@@ -233,7 +233,9 @@ export function validateRowData(fields: (Field | Column)[], rowData: EntityData)
   const errors: ValidationError[] = [];
 
   fields.forEach((field) => {
-    const value = rowData[field.name];
+    // Try to get value using hqlName first (for Field objects), then fall back to name
+    const fieldKey = ('hqlName' in field && field.hqlName) ? field.hqlName : field.name;
+    const value = rowData[fieldKey] ?? rowData[field.name];
     // Convert Column to Field if needed
     const fieldData = "type" in field ? field : columnToFieldForValidation(field);
     const errorMessage = validateFieldValue(fieldData, value);
@@ -305,11 +307,16 @@ export function validateNewRowForSave(fields: (Field | Column)[], rowData: Entit
       return;
     }
 
-    const value = rowData[field.name];
+    // Try to get value using hqlName first (for Field objects), then fall back to name
+    const fieldKey = ('hqlName' in field && field.hqlName) ? field.hqlName : field.name;
+    const value = rowData[fieldKey] ?? rowData[field.name];
     const errorMessage = validateFieldValue(fieldData, value);
 
     console.log("[validateNewRowForSave] Field validation:", {
       fieldName: field.name,
+      fieldKey,
+      hasHqlName: 'hqlName' in field,
+      hqlName: ('hqlName' in field) ? (field as any).hqlName : undefined,
       fieldType: fieldData.type,
       isMandatory: fieldData.isMandatory,
       isReadOnly: fieldData.isReadOnly,
@@ -427,7 +434,9 @@ export function hasRequiredFieldsForNewRow(fields: (Field | Column)[], rowData: 
       return true; // Optional fields are always valid
     }
 
-    const value = rowData[field.name];
+    // Try to get value using hqlName first (for Field objects), then fall back to name
+    const fieldKey = ('hqlName' in field && field.hqlName) ? field.hqlName : field.name;
+    const value = rowData[fieldKey] ?? rowData[field.name];
     return value !== null && value !== undefined && value !== "";
   });
 }
@@ -688,7 +697,9 @@ export function validateRowForSave(fields: (Field | Column)[], rowData: EntityDa
       return;
     }
 
-    const value = rowData[field.name];
+    // Try to get value using hqlName first (for Field objects), then fall back to name
+    const fieldKey = ('hqlName' in field && field.hqlName) ? field.hqlName : field.name;
+    const value = rowData[fieldKey] ?? rowData[field.name];
 
     // Use strict validation for save operations
     const validationResult = validateFieldRealTime(fieldData, value, {

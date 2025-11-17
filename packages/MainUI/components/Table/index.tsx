@@ -1037,9 +1037,13 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
       let validationResult;
 
+      // Use tab.fields instead of baseColumns for validation
+      // Fields have hqlName which matches how data is stored in rowData
+      const fieldsArray = tab.fields ? Object.values(tab.fields) : [];
+
       if (editingRowData.isNew) {
         // Use stricter validation for new rows
-        validationResult = validateNewRowForSave(baseColumns, currentData);
+        validationResult = validateNewRowForSave(fieldsArray, currentData);
         logger.debug(`[InlineEditing] New row validation for ${rowId}:`, {
           isValid: validationResult.isValid,
           errors: validationResult.errors,
@@ -1047,7 +1051,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       } else {
         // Use less strict validation for existing rows
         validationResult = validateExistingRowForSave(
-          baseColumns,
+          fieldsArray,
           currentData,
           editingRowData.originalData as EntityData
         );

@@ -34,6 +34,7 @@ import type { Column } from "@workspaceui/api-client/src/api/types";
  * @param oldValues The original record data (for updates)
  * @param mode The form mode (NEW or EDIT)
  * @param csrfToken The CSRF token for the request
+ * @param tab The tab metadata to filter valid fields
  * @returns The formatted payload
  */
 function buildSavePayload({
@@ -41,11 +42,13 @@ function buildSavePayload({
   oldValues,
   mode,
   csrfToken,
+  tab,
 }: {
   values: EntityData;
   oldValues?: EntityData;
   mode: FormMode;
   csrfToken: string;
+  tab?: Tab;
 }) {
   // Fields that should be excluded from the payload
   const auditFields = ["creationDate", "createdBy", "updated", "updatedBy"];
@@ -53,13 +56,41 @@ function buildSavePayload({
   // When creating a new record (add operation), exclude the id field as well
   const excludedFields = mode === FormMode.NEW ? [...auditFields, "id"] : auditFields;
 
-  const filteredValues = Object.entries(values).reduce((acc, [key, value]) => {
-    if (!excludedFields.includes(key)) {
-      acc[key] = value;
-      // If this is a password field, also add password_cleartext
-      if (key === "password" && value) {
-        acc.password_cleartext = value;
+  // Build a set of valid field names from tab.fields (using hqlName)
+  // This will filter out display names like "Transaction Document" and keep only "transactionDocument"
+  const validFieldNames = new Set<string>();
+  if (tab?.fields) {
+    Object.values(tab.fields).forEach((field: any) => {
+      if (field.hqlName) {
+        validFieldNames.add(field.hqlName);
       }
+    });
+  }
+
+  const filteredValues = Object.entries(values).reduce((acc, [key, value]) => {
+    // Skip if excluded field
+    if (excludedFields.includes(key)) {
+      return acc;
+    }
+
+    // Skip identifier and entries fields (they're client-side only)
+    if (key.includes('$_identifier') || key.includes('$_entries')) {
+      return acc;
+    }
+
+    // If we have tab metadata, only include fields that are valid (exist in tab.fields)
+    // This filters out display names like "Transaction Document"
+    if (tab && validFieldNames.size > 0) {
+      // Allow fields that are in validFieldNames OR start with $ (system fields like $Element_BP)
+      if (!validFieldNames.has(key) && !key.startsWith('$')) {
+        return acc;
+      }
+    }
+
+    acc[key] = value;
+    // If this is a password field, also add password_cleartext
+    if (key === "password" && value) {
+      acc.password_cleartext = value;
     }
     return acc;
   }, {} as EntityData);
@@ -382,6 +413,7 @@ export async function saveRecord({
       oldValues: processedOriginalData,
       mode,
       csrfToken: userId,
+      tab,
     });
 
     const url = `${tab.entityName}?${queryStringParams}`;
