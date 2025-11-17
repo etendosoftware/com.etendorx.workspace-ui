@@ -133,67 +133,71 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
 
   // Find the current selected option
   const selectedOption = useMemo(() => {
-    const found = options.find((opt) => String(opt.value) === localValue);
+    // Try to find by id first (preferred), then by value
+    const found = options.find((opt) => String(opt.id) === localValue || String(opt.value) === localValue);
     console.log("[TableDirCellEditor] selectedOption memo recalculated", {
       fieldName: field.name,
       localValue,
       optionsCount: options.length,
       foundOption: found,
-      allOptionValues: options.map((opt) => opt.value),
     });
     return found;
   }, [options, localValue, field.name]);
 
   // Display text for the input
   const displayText = useMemo(() => {
-    console.log("[TableDirCellEditor] displayText memo recalculated", {
-      fieldName: field.name,
-      hasSelectedOption: !!selectedOption,
-      selectedOptionLabel: selectedOption?.label,
-      localValue,
-      willReturn: selectedOption ? selectedOption.label : localValue || "",
-    });
-
+    // If we have a selected option, use its label
     if (selectedOption) {
       return selectedOption.label;
     }
-    if (localValue && field.name?.includes("$_identifier")) {
-      // If we have a value but no option, show the identifier if available
-      const identifierKey = `${field.name.replace("$_identifier", "")}$_identifier`;
-      return (field as any)[identifierKey] || localValue;
+
+    // If no option found but we have an identifier from the row data, use it
+    // This handles cases where callouts set values but options aren't loaded yet
+    // Try multiple field name variations to find the identifier
+    const fieldKey = field.columnName || field.hqlName || field.name;
+    const identifierFromField = (field as any)[`${fieldKey}$_identifier`];
+    if (identifierFromField) {
+      console.log("[TableDirCellEditor] Using identifier from field", {
+        fieldName: field.name,
+        fieldKey,
+        identifier: identifierFromField,
+      });
+      return identifierFromField;
     }
+
+    // Fallback to the raw value (will show UUID if no identifier found)
     return localValue || "";
   }, [selectedOption, localValue, field]);
 
   const handleSelect = useCallback(
     (optionValue: string) => {
+      // Find the selected option to get its complete data
+      const selectedOption = options.find((opt) => String(opt.value) === optionValue || String(opt.id) === optionValue);
+
       console.log("[TableDirCellEditor] handleSelect called", {
         optionValue,
         fieldName: field.name,
-        willPassToOnChange: optionValue === "" ? null : optionValue,
-        currentLocalValue: localValue,
-        currentPropValue: value,
-        optionsCount: options.length,
-        selectedOptionBefore: options.find((opt) => String(opt.value) === localValue),
-        willBeSelectedOption: options.find((opt) => String(opt.value) === optionValue),
+        selectedOption,
+        optionId: selectedOption?.id,
+        optionValue: selectedOption?.value,
       });
 
-      // Update local value first
-      setLocalValue(optionValue);
+      // Get the ID to send - prefer id over value
+      const realId = selectedOption?.id || selectedOption?.value || optionValue;
+      const valueToSend = optionValue === "" ? null : realId;
 
-      // Call onChange with the new value
-      const valueToSend = optionValue === "" ? null : optionValue;
-      console.log("[TableDirCellEditor] Calling onChange with:", valueToSend);
-      onChange(valueToSend);
+      // Update local value to the ID (for consistency with what we send to onChange)
+      setLocalValue(realId);
+
+      console.log("[TableDirCellEditor] Calling onChange with ID:", valueToSend);
+      onChange(valueToSend, selectedOption as Record<string, unknown> | undefined);
 
       // Close menu and reset UI state
       setAnchorEl(null);
       setSearchTerm("");
       setHighlightedIndex(-1);
-
-      console.log("[TableDirCellEditor] handleSelect completed, new localValue:", optionValue);
     },
-    [onChange, field.name, localValue, value, options]
+    [onChange, field.name, options]
   );
 
   const handleClick = useCallback(() => {

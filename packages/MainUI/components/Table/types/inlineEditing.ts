@@ -85,7 +85,7 @@ export interface InlineEditingState {
  */
 export interface CellEditorProps {
   value: unknown;
-  onChange: (value: unknown) => void;
+  onChange: (value: unknown, optionData?: Record<string, unknown>) => void;
   onBlur: () => void;
   field: Field;
   hasError: boolean;

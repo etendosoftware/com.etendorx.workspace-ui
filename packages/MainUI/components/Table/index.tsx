@@ -87,6 +87,7 @@ import { globalCalloutManager } from "@/services/callouts";
 import { buildPayloadByInputName } from "@/utils";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { FormInitializationResponse } from "@workspaceui/api-client/src/api/types";
 import { getMergedRowData } from "./utils/editingRowUtils";
 import "./styles/inlineEditing.css";
@@ -429,16 +430,26 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           });
         }
 
-        // Transfer callout and proper field names from original field if it exists
-        if (originalField?.column?.callout) {
-          field.column = {
-            ...field.column,
-            callout: originalField.column.callout
-          };
-          // Use the correct inputName and hqlName from the original field for callout execution
+        // Transfer callout, selector, and proper field names from original field if it exists
+        if (originalField) {
+          // Transfer callout if present
+          if (originalField.column?.callout) {
+            field.column = {
+              ...field.column,
+              callout: originalField.column.callout
+            };
+            logger.info(`[InlineCallout] Field ${col.name} (${fieldKey}) has callout: ${originalField.column.callout}, inputName: ${originalField.inputName}`);
+          }
+
+          // Transfer selector configuration (important for datasources like ProductByPriceAndWarehouse)
+          if (originalField.selector) {
+            field.selector = originalField.selector;
+            logger.debug(`[InlineCallout] Field ${col.name} (${fieldKey}) has selector datasource: ${(originalField.selector as any).datasourceName}`);
+          }
+
+          // Use the correct inputName and hqlName from the original field
           field.inputName = originalField.inputName;
           field.hqlName = originalField.hqlName;
-          logger.info(`[InlineCallout] Field ${col.name} (${fieldKey}) has callout: ${originalField.column.callout}, inputName: ${originalField.inputName}`);
         }
 
         const mapping = {
@@ -526,10 +537,20 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       // Apply each column value
       for (const [columnName, columnValue] of Object.entries(columnValues)) {
         const targetField = fieldsByColumnName[columnName];
-        if (!targetField) continue;
+        if (!targetField) {
+          logger.warn(`[InlineCallout] Field not found for column ${columnName}`, {
+            availableColumns: Object.keys(fieldsByColumnName).slice(0, 10)
+          });
+          continue;
+        }
 
         const fieldName = targetField.hqlName || columnName;
         const { value, identifier } = columnValue;
+
+        logger.info(`[InlineCallout] Applying value for column ${columnName} -> field ${fieldName}:`, {
+          value,
+          identifier
+        });
 
         // Update the field value in editing row
         editingRowUtils.updateCellValue(rowId, fieldName, value);
@@ -557,11 +578,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   // Execute inline callout for a field
   const executeInlineCallout = useCallback(
-    async (rowId: string, field: Field, newValue: unknown) => {
+    async (rowId: string, field: Field, newValue: unknown, optionData?: Record<string, unknown>) => {
       logger.info(`[InlineCallout] executeInlineCallout called for ${field.hqlName}`, {
         hasCallout: !!field.column.callout,
         rowId,
-        newValue
+        newValue,
+        hasOptionData: !!optionData
       });
 
       // Don't execute if field doesn't have callout
@@ -586,13 +608,20 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       logger.info(`[InlineCallout] About to execute callout for ${field.hqlName}`);
 
       try {
-        // Mark that we're applying callout values
-        editingRowUtils.setCalloutApplying(rowId, true);
-
         // Build payload from current row data
         const fieldsByHqlName = tab?.fields || {};
         const fieldsByColumnName = getFieldsByColumnName(tab);
         const currentRowData = getMergedRowData(editingData);
+
+        // Debug: log what businessPartner value we have
+        if (field.hqlName === 'businessPartner') {
+          logger.info(`[InlineCallout] Current row data for businessPartner:`, {
+            businessPartner: currentRowData.businessPartner,
+            businessPartner$_identifier: currentRowData['businessPartner$_identifier'],
+            cBpartnerId: currentRowData.cBpartnerId
+          });
+        }
+
         const payload = buildPayloadByInputName(currentRowData, fieldsByHqlName);
 
         const entityKeyColumn = tab.fields.id.columnName;
@@ -606,7 +635,77 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           keyColumnName: entityKeyColumn,
           _entityName: tab.entityName,
           inpwindowId: tab.window,
-        };
+        } as Record<string, unknown>;
+
+        // IMPORTANT: Add the field that just changed to the payload
+        // This is needed because the field value might not be in currentRowData yet (async update)
+        calloutData[field.inputName] = newValue;
+
+        // Special handling for product callout - need to send additional price/UOM data
+        // This matches the logic in FormView/BaseSelector.tsx lines 164-171
+        if (field.inputName === "inpmProductId" && newValue && optionData) {
+          logger.debug(`[InlineCallout] Product option data received:`, {
+            optionDataKeys: Object.keys(optionData),
+            fullOptionData: optionData
+          });
+
+          // Get priceList from parentRecord (order header)
+          const priceListFromParent = (parentRecord as any)?.priceList || (parentRecord as any)?.mPricelistId;
+          if (priceListFromParent) {
+            calloutData.inpmPricelistId = priceListFromParent;
+          }
+
+          // Try multiple possible field names for currency (from datasource response)
+          calloutData.inpmProductId_CURR =
+            (optionData as any).cCurrencyId ||
+            (optionData as any).currency ||
+            (optionData as any)["currency$id"] ||
+            (optionData as any)["product$currency$id"] ||
+            (parentRecord as any)?.currency ||
+            (parentRecord as any)?.cCurrencyId ||
+            session.$C_Currency_ID;
+
+          // Try multiple possible field names for UOM (from datasource response)
+          calloutData.inpmProductId_UOM =
+            (optionData as any).cUomId ||
+            (optionData as any).uOM ||
+            (optionData as any)["uOM$id"] ||
+            (optionData as any)["product$uOM$id"] ||
+            session["#C_UOM_ID"] || "";
+
+          // Try multiple possible field names for prices (from datasource response)
+          calloutData.inpmProductId_PSTD = String(
+            (optionData as any).standardPrice ||
+            (optionData as any).netListPrice ||
+            (optionData as any).listPrice ||
+            0
+          );
+          calloutData.inpmProductId_PLIST = String(
+            (optionData as any).netListPrice ||
+            (optionData as any).listPrice ||
+            0
+          );
+          calloutData.inpmProductId_PLIM = String(
+            (optionData as any).priceLimit ||
+            (optionData as any).limitPrice ||
+            0
+          );
+
+          // Set default quantity if not present in current row data
+          if (!calloutData.inpqtyordered) {
+            calloutData.inpqtyordered = "1";
+          }
+
+          logger.debug(`[InlineCallout] Added product-specific callout data from optionData:`, {
+            priceList: calloutData.inpmPricelistId,
+            currency: calloutData.inpmProductId_CURR,
+            quantity: calloutData.inpqtyordered,
+            uom: calloutData.inpmProductId_UOM,
+            standardPrice: calloutData.inpmProductId_PSTD,
+            netListPrice: calloutData.inpmProductId_PLIST,
+            priceLimit: calloutData.inpmProductId_PLIM
+          });
+        }
 
         logger.info(`[InlineCallout] Calling callout for ${field.hqlName}:`, {
           fieldInputName: field.inputName,
@@ -614,13 +713,21 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           tabId: tab.id,
           rowId: rowId,
           isNewRow: editingData.isNew,
-          payloadKeys: Object.keys(calloutData).slice(0, 20),
+          payloadKeys: Object.keys(calloutData).slice(0, 30),
           payloadSample: {
             inpKeyName: calloutData.inpKeyName,
             inpTabId: calloutData.inpTabId,
             _entityName: calloutData._entityName,
             inpcBpartnerId: (calloutData as any).inpcBpartnerId,
-            inpbpartnerLocationId: (calloutData as any).inpbpartnerLocationId
+            inpmPricelistId: (calloutData as any).inpmPricelistId,
+            inpqtyordered: (calloutData as any).inpqtyordered,
+            inpmProductId: (calloutData as any).inpmProductId,
+            inpmProductId_CURR: (calloutData as any).inpmProductId_CURR,
+            inpmProductId_UOM: (calloutData as any).inpmProductId_UOM,
+            inpmProductId_PSTD: (calloutData as any).inpmProductId_PSTD,
+            inpmProductId_PLIST: (calloutData as any).inpmProductId_PLIST,
+            inpmProductId_PLIM: (calloutData as any).inpmProductId_PLIM,
+            parentRecordId: parentRecord?.id
           }
         });
 
@@ -648,13 +755,19 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           });
 
           if (response?.data?.columnValues) {
+            // Mark that we're applying callout values to prevent loops
+            editingRowUtils.setCalloutApplying(rowId, true);
+
             // Suppress other callouts while applying values
             globalCalloutManager.suppress();
 
             try {
               applyCalloutValuesToRow(rowId, response.data.columnValues);
             } finally {
-              setTimeout(() => globalCalloutManager.resume(), 0);
+              setTimeout(() => {
+                globalCalloutManager.resume();
+                editingRowUtils.setCalloutApplying(rowId, false);
+              }, 0);
             }
           } else {
             logger.warn(`[InlineCallout] No columnValues in response for ${field.hqlName}`);
@@ -662,9 +775,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         });
       } catch (error) {
         logger.error(`[InlineCallout] Error executing callout for ${field.hqlName}:`, error);
-      } finally {
-        // Always clear the flag
-        editingRowUtils.setCalloutApplying(rowId, false);
       }
     },
     [tab, session, parentRecord, editingRowUtils, applyCalloutValuesToRow]
@@ -1004,9 +1114,18 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
         if (saveResult.success && saveResult.data) {
           // Confirm the optimistic update with server data
+          // Preserve client-side identifiers that were set during inline editing
           const finalRecords = updatedRecords.map((record) => {
             if (String(record.id) === rowId || (editingRowData.isNew && record.id === rowId)) {
-              return saveResult.data!;
+              // Merge server data with client-side identifiers
+              // Server may not return identifiers for all TABLEDIR fields, so preserve them
+              const clientSideIdentifiers: Record<string, unknown> = {};
+              for (const key of Object.keys(record)) {
+                if (key.endsWith("$_identifier")) {
+                  clientSideIdentifiers[key] = record[key];
+                }
+              }
+              return { ...saveResult.data!, ...clientSideIdentifiers };
             }
             return record;
           });
@@ -1167,11 +1286,25 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   );
 
   // Throttled cell value change handler to prevent excessive updates
-  const handleCellValueChange = useThrottledCallback((rowId: string, fieldName: string, value: unknown) => {
+  const handleCellValueChange = useThrottledCallback((rowId: string, fieldName: string, value: unknown, optionData?: Record<string, unknown>) => {
     performanceMonitor.measure(`cell-value-change-${fieldName}`, () => {
+      // Log incoming parameters to debug
+      logger.info(`[InlineEditing] handleCellValueChange called for ${fieldName}:`, {
+        rowId,
+        value,
+        hasOptionData: !!optionData,
+        optionDataKeys: optionData ? Object.keys(optionData).slice(0, 10) : []
+      });
+
       // Update the cell value immediately
       editingRowUtils.updateCellValue(rowId, fieldName, value);
       logger.debug(`[InlineEditing] Updated cell ${fieldName} in row ${rowId}:`, value);
+
+      // For TABLEDIR fields, also store the identifier for display purposes
+      if (optionData && (optionData as any).label) {
+        editingRowUtils.updateCellValue(rowId, `${fieldName}$_identifier`, (optionData as any).label);
+        logger.debug(`[InlineEditing] Updated identifier ${fieldName}$_identifier:`, (optionData as any).label);
+      }
 
       // Trigger debounced validation for real-time feedback
       debouncedValidateField(rowId, fieldName, value);
@@ -1185,7 +1318,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       });
       if (field?.column.callout) {
         logger.info(`[InlineCallout] Executing callout for ${fieldName}: ${field.column.callout}`);
-        executeInlineCallout(rowId, field, value).catch((error) => {
+        executeInlineCallout(rowId, field, value, optionData).catch((error) => {
           logger.error(`[InlineCallout] Error executing callout for ${fieldName}:`, error);
         });
       }
@@ -1327,35 +1460,35 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       }) => {
         const rowId = String(row.original.id);
         const isEditing = editingRowUtils.isRowEditing(rowId);
-        const editingData = editingRowUtils.getEditingRowData(rowId);
+        const fieldKey = col.columnName || col.name;
 
         // If this row is being edited, render the appropriate cell editor
-        if (isEditing && editingData && col.name !== "actions") {
-          // Use columnName (hqlName) instead of name (display name) to get values
-          // because processed data is indexed by hqlName
-          const fieldKey = col.columnName || col.name;
+        if (isEditing && col.name !== "actions") {
+          const editingData = editingRowUtils.getEditingRowData(rowId);
+          if (!editingData) return renderedCellValue;
+
           const currentValue =
             fieldKey in editingData.modifiedData
               ? editingData.modifiedData[fieldKey]
               : editingData.originalData[fieldKey];
 
-          const hasError = Boolean(editingData.validationErrors[col.name]);
-
           // Get memoized field mappings to avoid recalculation
           const fieldMapping = columnFieldMappings.get(col.name);
-          if (!fieldMapping) {
-            // Fallback for actions column or unmapped columns
-            return renderedCellValue;
-          }
+          if (!fieldMapping) return renderedCellValue;
 
-          // Determine if this cell should receive initial focus
           const shouldAutoFocus = initialFocusCell?.rowId === rowId && initialFocusCell?.columnName === col.name;
-
-          // Determine if this field should be readonly
           const isNewRow = editingData.isNew || false;
-          // Combine original and modified data for evaluation context
           const rowValues = { ...editingData.originalData, ...editingData.modifiedData };
           const shouldBeReadOnly = isFieldReadOnly(fieldMapping.field, isNewRow, rowValues, session);
+
+          // Get the identifier for this field if it exists (for display in TABLEDIR selectors)
+          const identifierKey = `${fieldKey}$_identifier`;
+          const fieldIdentifier = rowValues[identifierKey];
+
+          // Create an augmented field with the identifier for the cell editor
+          const fieldWithIdentifier = fieldIdentifier
+            ? { ...fieldMapping.field, [identifierKey]: fieldIdentifier }
+            : fieldMapping.field;
 
           return (
             <div className="inline-edit-cell-container">
@@ -1368,25 +1501,21 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
                 <CellEditorFactory
                   fieldType={fieldMapping.fieldType}
                   value={currentValue}
-                  onChange={(value) => handleCellValueChange(rowId, fieldKey, value)}
+                  onChange={(value, optionData) => handleCellValueChange(rowId, fieldKey, value, optionData)}
                   onBlur={() => {
-                    // Trigger immediate validation on blur with strict settings
                     validateFieldOnBlur(rowId, fieldKey, currentValue);
-
-                    // Clear initial focus after first blur to prevent re-focusing
                     if (shouldAutoFocus) {
                       setInitialFocusCell(null);
                     }
                   }}
-                  field={fieldMapping.field}
-                  hasError={hasError}
+                  field={fieldWithIdentifier}
+                  hasError={Boolean(editingData.validationErrors[col.name])}
                   disabled={editingData.isSaving || shouldBeReadOnly}
                   rowId={rowId}
                   columnId={fieldKey}
                   keyboardNavigationManager={keyboardNavigationManager}
                   shouldAutoFocus={shouldAutoFocus}
                   loadOptions={async (field, searchQuery) => {
-                    // Use the field that has all selector information
                     return await loadTableDirOptions(fieldMapping.field, searchQuery);
                   }}
                   isLoadingOptions={(fieldName) => isLoadingTableDirOptions(fieldName)}
@@ -1396,13 +1525,22 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           );
         }
 
-        // For non-editing cells, preserve original rendering logic and formatting
-        // This ensures existing cell formatting, display logic, and custom renderers are maintained
+        // For non-editing cells, check if we should show identifier instead of UUID
+        const identifierKey = `${fieldKey}$_identifier`;
+        const identifier = row.original[identifierKey];
+
+        if (identifier && typeof identifier === "string" && typeof renderedCellValue === "string") {
+          if (originalCell && typeof originalCell === "function") {
+            return originalCell({ renderedCellValue: identifier, row, table });
+          }
+          return <div className="table-cell-content">{identifier}</div>;
+        }
+
+        // Preserve original rendering logic and formatting
         if (originalCell && typeof originalCell === "function") {
           return originalCell({ renderedCellValue, row, table });
         }
 
-        // Fallback to the default rendered cell value with preserved formatting
         return <div className="table-cell-content">{renderedCellValue}</div>;
       };
 

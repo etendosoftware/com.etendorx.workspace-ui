@@ -59,16 +59,27 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
       setLoadingStates((prev) => ({ ...prev, [fieldKey]: true }));
 
       try {
-        // When selector is undefined, we query the referenced entity directly without filters
-        // This is different from FormView where selector has full configuration
-        const datasourceName = field.referencedEntity;
+        // Use selector's datasourceName ONLY if it's explicitly set and different from referencedEntity
+        // This handles special datasources like ProductByPriceAndWarehouse
+        // For regular fields, use referencedEntity
+        const selectorDatasource = (field.selector as any)?.datasourceName;
+        const useSpecialDatasource = selectorDatasource && selectorDatasource !== field.referencedEntity;
+        const datasourceName = useSpecialDatasource ? selectorDatasource : field.referencedEntity;
 
         if (!datasourceName) {
-          logger.warn(`[useInlineTableDirOptions] No referencedEntity found for field ${fieldKey}`);
+          logger.warn(`[useInlineTableDirOptions] No datasource or referencedEntity found for field ${fieldKey}`);
           return [];
         }
 
-        // Build minimal request body - no filters, just basic pagination and sort
+        logger.debug(`[useInlineTableDirOptions] Using datasource: ${datasourceName}`, {
+          fieldKey,
+          hasSelector: !!field.selector,
+          selectorDatasourceName: (field.selector as any)?.datasourceName,
+          useSpecialDatasource,
+          referencedEntity: field.referencedEntity
+        });
+
+        // Build request body with selector configuration if available
         const baseBody: Record<string, string> = {
           _startRow: "0",
           _endRow: String(pageSize),
@@ -76,6 +87,39 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
           _noCount: "true",
           _textMatchStyle: "substring",
         };
+
+        // Add selector-specific parameters ONLY when using a special datasource (e.g., ProductByPriceAndWarehouse)
+        // For regular datasources, these params can cause issues
+        const selector = field.selector as any;
+        if (selector && useSpecialDatasource) {
+          // Only add safe, universal selector properties
+          const safeParams = [
+            '_selectorDefinitionId',
+            'filterClass',
+            'fieldId',
+            'datasourceName',
+            'displayField',
+            'valueField',
+            'moduleId',
+            '_selectedProperties',
+            '_extraProperties',
+            'extraSearchFields'
+          ];
+
+          safeParams.forEach(param => {
+            if (selector[param] !== null && selector[param] !== undefined) {
+              baseBody[param] = String(selector[param]);
+            }
+          });
+
+          logger.debug(`[useInlineTableDirOptions] Added ${safeParams.filter(p => selector[p] !== undefined).length} selector params for special datasource ${fieldKey}`);
+        }
+
+        // Add tab and window context if available
+        if (tabId) baseBody.tabId = tabId;
+        if (tabId) baseBody.inpTabId = tabId;
+        if (windowId) baseBody.windowId = windowId;
+        if (windowId) baseBody.inpwindowId = windowId;
 
         // Apply search criteria if provided
         if (searchQuery) {
@@ -119,15 +163,50 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
 
         // Process response
         const records = data?.response?.data || [];
-        const options: RefListField[] = records.map((record: Record<string, unknown>) => {
-          // Use standard fields for display and value
-          const displayValue = record._identifier || record.name || record.id;
-          const idValue = record.id;
 
+        // Determine which field to use as the value
+        // selector.valueField tells us which field contains the actual ID
+        // e.g., "bpid" for BusinessPartner, "product$id" for Product
+        const valueField = (field.selector as any)?.valueField;
+
+        const options: RefListField[] = records.map((record: Record<string, unknown>) => {
+          // Use displayField from selector, or fallback to _identifier/name/id
+          const displayField = (field.selector as any)?.displayField;
+          const displayValue = displayField ? record[displayField] : (record._identifier || record.name || record.id);
+
+          // Use valueField from selector if specified, otherwise use id
+          // For nested fields like "product$id", extract the value
+          let idValue = record.id;
+          if (valueField) {
+            // Handle nested field names like "product$id"
+            const fieldParts = valueField.split('$');
+            let value: any = record;
+            for (const part of fieldParts) {
+              value = value?.[part];
+            }
+            idValue = value || record.id;
+          }
+
+          // Debug log for businessPartner to see what we're mapping
+          if (fieldKey === 'Business Partner' || fieldKey === 'businessPartner') {
+            logger.info(`[useInlineTableDirOptions] Mapping BP option:`, {
+              valueField,
+              recordId: record.id,
+              recordBpid: (record as any).bpid,
+              recordValue: (record as any).value,
+              extractedIdValue: idValue,
+              displayValue,
+              record
+            });
+          }
+
+          // Preserve all record fields for use in callouts (especially product data)
+          // This allows callouts to access fields like standardPrice, netListPrice, uOM, currency, etc.
           return {
             id: String(idValue),
             value: String(idValue),
             label: String(displayValue),
+            ...record, // Spread all other fields from the record
           };
         });
 
