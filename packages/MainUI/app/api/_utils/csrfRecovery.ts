@@ -140,7 +140,7 @@ function updateSessionFromCsrfResponse(response: Response, userToken: string): b
     // Reuse existing storeCookieForToken function
     storeCookieForToken(response, mockData);
 
-    logger.log(`CSRF recovery: Updated session for token with new JSESSIONID: ${jsessionId}`);
+    logger.info("CSRF recovery: session updated");
     return true;
   } catch (error) {
     logger.error("Error updating session from CSRF response:", error);
