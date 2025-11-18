@@ -15,52 +15,89 @@
  *************************************************************************
  */
 
-import { isSessionExpired, shouldAttemptRecovery } from "./sessionValidator";
-import { recoverSession } from "./sessionRecovery";
-import { getErpAuthHeaders } from "./forwardConfig";
-import type { NextRequest } from "next/server";
-import { logger } from "@/utils/logger";
-
-/**
- * Request retry utilities with automatic session recovery
+/*
+ * Enhanced session retry with CSRF recovery capabilities
  */
 
-export interface RetryableRequest {
-  url: string;
-  options: RequestInit;
-}
+import { type NextRequest } from "next/server";
+import { logger } from "@/utils/logger";
+import { isSessionExpired, shouldAttemptRecovery, shouldAttemptCsrfRecovery } from "./sessionValidator";
+import { recoverSession } from "./sessionRecovery";
+import { recoverFromCsrfError } from "./csrfRecovery";
+import { getErpAuthHeaders } from "./forwardConfig";
 
-export interface RetryResult<T> {
+/**
+ * Enhanced retry result that includes CSRF recovery information
+ */
+export interface EnhancedRetryResult<T> {
   success: boolean;
   data?: T;
   error?: string;
   recovered?: boolean;
-  newToken?: string; // New token if it was updated during recovery
+  csrfRecovered?: boolean;
+  newToken?: string;
 }
 
 /**
- * Executes a request with automatic session recovery on authentication failure
+ * Executes a request with automatic session and CSRF recovery
  * @param request The original NextRequest for context
  * @param userToken The JWT token
  * @param requestFn Function that executes the actual request
- * @returns Promise resolving to retry result
+ * @returns Promise resolving to enhanced retry result
  */
-export async function executeWithSessionRetry<T>(
+export async function executeWithSessionAndCsrfRetry<T>(
   request: NextRequest,
   userToken: string,
   requestFn: (cookieHeader: string) => Promise<{ response: Response; data: T }>
-): Promise<RetryResult<T>> {
+): Promise<EnhancedRetryResult<T>> {
   try {
     // First attempt with current session
     let cookieHeader = getErpAuthHeaders(request, userToken).cookieHeader;
     let result = await requestFn(cookieHeader);
 
-    // Check if session is expired
+    // Check for CSRF error first (highest priority for our hotfix)
+    if (shouldAttemptCsrfRecovery(result.response, result.data)) {
+      logger.log("InvalidCSRFToken detected, attempting CSRF recovery");
+
+      // Attempt CSRF recovery
+      const csrfRecoveryResult = await recoverFromCsrfError(result.response, result.data, userToken);
+
+      if (!csrfRecoveryResult.success) {
+        return {
+          success: false,
+          error: `CSRF recovery failed: ${csrfRecoveryResult.error}`,
+          data: result.data,
+        };
+      }
+
+      // Retry request with updated session
+      cookieHeader = getErpAuthHeaders(request, userToken).cookieHeader;
+      result = await requestFn(cookieHeader);
+
+      // Check if retry was successful
+      if (shouldAttemptCsrfRecovery(result.response, result.data)) {
+        return {
+          success: false,
+          error: "Request failed even after CSRF recovery",
+          data: result.data,
+        };
+      }
+
+      logger.log("CSRF recovery and retry successful");
+      return {
+        success: true,
+        data: result.data,
+        recovered: true,
+        csrfRecovered: true,
+      };
+    }
+
+    // Check for traditional session expiration
     if (!isSessionExpired(result.response, result.data)) {
       return { success: true, data: result.data };
     }
 
-    // Check if we should attempt recovery
+    // Check if we should attempt traditional recovery
     if (!shouldAttemptRecovery(result.response, result.data)) {
       return {
         success: false,
@@ -69,9 +106,9 @@ export async function executeWithSessionRetry<T>(
       };
     }
 
-    logger.log("Session expired, attempting recovery");
+    logger.log("Session expired, attempting traditional session recovery");
 
-    // Attempt session recovery
+    // Attempt traditional session recovery
     const recoveryResult = await recoverSession(userToken);
 
     if (!recoveryResult.success) {
@@ -98,7 +135,7 @@ export async function executeWithSessionRetry<T>(
       };
     }
 
-    logger.log("Session recovery and retry successful");
+    logger.log("Traditional session recovery and retry successful");
     return {
       success: true,
       data: result.data,
@@ -106,7 +143,7 @@ export async function executeWithSessionRetry<T>(
       newToken: recoveryResult.newToken,
     };
   } catch (error) {
-    logger.error("Error in session retry logic:", error);
+    logger.error("Error in enhanced session retry logic:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error in session retry";
     return { success: false, error: errorMessage };
   }
