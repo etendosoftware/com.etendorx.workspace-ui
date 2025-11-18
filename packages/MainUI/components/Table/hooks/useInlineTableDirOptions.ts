@@ -33,6 +33,119 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
   const [optionsCache, setOptionsCache] = useState<Record<string, RefListField[]>>({});
 
+  /**
+   * Get datasource name from field configuration
+   */
+  const getDatasourceName = useCallback((field: Field): string | undefined => {
+    const selectorDatasource = (field.selector as any)?.datasourceName;
+    const useSpecialDatasource = selectorDatasource && selectorDatasource !== field.referencedEntity;
+    return useSpecialDatasource ? selectorDatasource : field.referencedEntity;
+  }, []);
+
+  /**
+   * Build request body with selector parameters
+   */
+  const buildRequestBody = useCallback(
+    (
+      field: Field,
+      pageSize: number,
+      searchQuery?: string,
+      contextData?: Record<string, unknown>,
+      useSpecialDatasource?: boolean
+    ): Record<string, string> => {
+      const baseBody: Record<string, string> = {
+        _startRow: "0",
+        _endRow: String(pageSize),
+        _operationType: "fetch",
+        _noCount: "true",
+        _textMatchStyle: "substring",
+      };
+
+      // Add selector-specific parameters ONLY when using a special datasource
+      const selector = field.selector as any;
+      if (selector && useSpecialDatasource) {
+        const safeParams = [
+          "_selectorDefinitionId",
+          "filterClass",
+          "fieldId",
+          "datasourceName",
+          "displayField",
+          "valueField",
+          "moduleId",
+          "_selectedProperties",
+          "_extraProperties",
+          "extraSearchFields",
+        ];
+
+        for (const param of safeParams) {
+          if (selector[param] !== null && selector[param] !== undefined) {
+            baseBody[param] = String(selector[param]);
+          }
+        }
+      }
+
+      // Add tab and window context if available
+      if (tabId) {
+        baseBody.tabId = tabId;
+        baseBody.inpTabId = tabId;
+      }
+      if (windowId) {
+        baseBody.windowId = windowId;
+        baseBody.inpwindowId = windowId;
+      }
+
+      // Add organization context for filtering
+      if (contextData?.organization) {
+        baseBody._org = String(contextData.organization);
+      }
+
+      // Apply search criteria if provided
+      if (searchQuery) {
+        baseBody._identifier = searchQuery;
+        baseBody.name = searchQuery;
+      }
+
+      return baseBody;
+    },
+    [tabId, windowId]
+  );
+
+  /**
+   * Extract value from nested field path (e.g., "product$id")
+   */
+  const extractNestedValue = useCallback((record: Record<string, unknown>, fieldPath: string): any => {
+    const fieldParts = fieldPath.split("$");
+    let value: any = record;
+    for (const part of fieldParts) {
+      value = value?.[part];
+    }
+    return value || record.id;
+  }, []);
+
+  /**
+   * Transform datasource records to RefListField format
+   */
+  const transformRecordsToOptions = useCallback(
+    (records: Record<string, unknown>[], field: Field): RefListField[] => {
+      const valueField = (field.selector as any)?.valueField;
+      const displayField = (field.selector as any)?.displayField;
+
+      return records.map((record: Record<string, unknown>) => {
+        const displayValue = displayField ? record[displayField] : record._identifier || record.name || record.id;
+
+        const idValue = valueField ? extractNestedValue(record, valueField) : record.id;
+
+        return {
+          id: String(idValue),
+          value: String(idValue),
+          label: String(displayValue),
+          ...record,
+        };
+      });
+    },
+    [extractNestedValue]
+  );
+
   const loadOptions = useCallback(
     async (
       field: Field,
@@ -41,7 +154,6 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
       pageSize = 75
     ): Promise<RefListField[]> => {
       const fieldKey = field.name || field.hqlName;
-      // Include organization in cache key so different orgs have different caches
       const orgId = contextData?.organization || "no-org";
       const cacheKey = `${fieldKey}-${orgId}-${searchQuery || ""}-${pageSize}`;
 
@@ -54,117 +166,33 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
       setLoadingStates((prev) => ({ ...prev, [fieldKey]: true }));
 
       try {
-        // Use selector's datasourceName ONLY if it's explicitly set and different from referencedEntity
-        // This handles special datasources like ProductByPriceAndWarehouse
-        // For regular fields, use referencedEntity
-        const selectorDatasource = (field.selector as any)?.datasourceName;
-        const useSpecialDatasource = selectorDatasource && selectorDatasource !== field.referencedEntity;
-        const datasourceName = useSpecialDatasource ? selectorDatasource : field.referencedEntity;
+        const datasourceName = getDatasourceName(field);
 
         if (!datasourceName) {
           logger.warn(`[useInlineTableDirOptions] No datasource or referencedEntity found for field ${fieldKey}`);
           return [];
         }
-        // Build request body with selector configuration if available
-        const baseBody: Record<string, string> = {
-          _startRow: "0",
-          _endRow: String(pageSize),
-          _operationType: "fetch",
-          _noCount: "true",
-          _textMatchStyle: "substring",
-        };
 
-        // Add selector-specific parameters ONLY when using a special datasource (e.g., ProductByPriceAndWarehouse)
-        // For regular datasources, these params can cause issues
-        const selector = field.selector as any;
-        if (selector && useSpecialDatasource) {
-          // Only add safe, universal selector properties
-          const safeParams = [
-            "_selectorDefinitionId",
-            "filterClass",
-            "fieldId",
-            "datasourceName",
-            "displayField",
-            "valueField",
-            "moduleId",
-            "_selectedProperties",
-            "_extraProperties",
-            "extraSearchFields",
-          ];
+        const selectorDatasource = (field.selector as any)?.datasourceName;
+        const useSpecialDatasource = selectorDatasource && selectorDatasource !== field.referencedEntity;
 
-          for (const param of safeParams) {
-            if (selector[param] !== null && selector[param] !== undefined) {
-              baseBody[param] = String(selector[param]);
-            }
-          }
-        }
-
-        // Add tab and window context if available
-        if (tabId) baseBody.tabId = tabId;
-        if (tabId) baseBody.inpTabId = tabId;
-        if (windowId) baseBody.windowId = windowId;
-        if (windowId) baseBody.inpwindowId = windowId;
-
-        // Add organization context for filtering
-        // The backend uses _org parameter to filter results by organization
-        if (contextData?.organization) {
-          baseBody._org = String(contextData.organization);
-        }
-
-        // Apply search criteria if provided
-        if (searchQuery) {
-          // Use basic search on common fields
-          baseBody._identifier = searchQuery;
-          baseBody.name = searchQuery;
-        }
+        const baseBody = buildRequestBody(field, pageSize, searchQuery, contextData, useSpecialDatasource);
 
         const body = new URLSearchParams(baseBody);
         const { data } = await datasource.client.request(`/api/datasource/${datasourceName}`, {
           method: "POST",
           body,
         });
+
         // Check for errors in the response
         if (data?.response?.error) {
           logger.error(`[useInlineTableDirOptions] Server returned error for ${fieldKey}:`, data.response.error);
         }
 
-        // Process response
         const records = data?.response?.data || [];
+        const options = transformRecordsToOptions(records, field);
 
-        // Determine which field to use as the value
-        // selector.valueField tells us which field contains the actual ID
-        // e.g., "bpid" for BusinessPartner, "product$id" for Product
-        const valueField = (field.selector as any)?.valueField;
-
-        const options: RefListField[] = records.map((record: Record<string, unknown>) => {
-          // Use displayField from selector, or fallback to _identifier/name/id
-          const displayField = (field.selector as any)?.displayField;
-          const displayValue = displayField ? record[displayField] : record._identifier || record.name || record.id;
-
-          // Use valueField from selector if specified, otherwise use id
-          // For nested fields like "product$id", extract the value
-          let idValue = record.id;
-          if (valueField) {
-            // Handle nested field names like "product$id"
-            const fieldParts = valueField.split("$");
-            let value: any = record;
-            for (const part of fieldParts) {
-              value = value?.[part];
-            }
-            idValue = value || record.id;
-          }
-
-          // Preserve all record fields for use in callouts (especially product data)
-          // This allows callouts to access fields like standardPrice, netListPrice, uOM, currency, etc.
-          return {
-            id: String(idValue),
-            value: String(idValue),
-            label: String(displayValue),
-            ...record, // Spread all other fields from the record
-          };
-        });
-
-        // Cache the options if no search query (to avoid caching filtered results)
+        // Cache the options if no search query
         if (!searchQuery) {
           setOptionsCache((prev) => ({ ...prev, [cacheKey]: options }));
         }
@@ -176,7 +204,7 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
         setLoadingStates((prev) => ({ ...prev, [fieldKey]: false }));
       }
     },
-    [optionsCache, tabId, windowId]
+    [optionsCache, getDatasourceName, buildRequestBody, transformRecordsToOptions]
   );
 
   const isLoading = useCallback(

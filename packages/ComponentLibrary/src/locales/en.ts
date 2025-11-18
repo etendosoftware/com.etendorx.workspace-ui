@@ -225,6 +225,9 @@ const en = {
     useAsFilter: "Use as filter",
     editRow: "Edit Row",
     insertRow: "Insert Row",
+    actions: {
+      createRecordInGrid: "Create Record in Grid",
+    },
   },
   navigation: {
     common: {

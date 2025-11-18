@@ -309,53 +309,95 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     setHighlightedIndex(-1);
   }, []);
 
+  /**
+   * Handle Enter key press
+   */
+  const handleEnterKey = useCallback(
+    (e: React.KeyboardEvent) => {
+      e.preventDefault();
+      if (anchorEl && highlightedIndex >= 0 && filteredOptions[highlightedIndex]) {
+        handleSelect(filteredOptions[highlightedIndex].value);
+      } else if (!anchorEl) {
+        setAnchorEl(comboboxRef.current);
+      }
+    },
+    [anchorEl, highlightedIndex, filteredOptions, handleSelect]
+  );
+
+  /**
+   * Handle Escape key press
+   */
+  const handleEscapeKey = useCallback(
+    (e: React.KeyboardEvent) => {
+      e.preventDefault();
+      if (anchorEl) {
+        setAnchorEl(null);
+        setSearchTerm("");
+        setHighlightedIndex(-1);
+      } else {
+        setLocalValue(String(value || ""));
+        onBlur();
+      }
+    },
+    [anchorEl, value, onBlur]
+  );
+
+  /**
+   * Handle ArrowDown key press
+   */
+  const handleArrowDownKey = useCallback(
+    (e: React.KeyboardEvent) => {
+      e.preventDefault();
+      if (!anchorEl) {
+        setAnchorEl(comboboxRef.current);
+      } else {
+        setHighlightedIndex((prev) => (prev < filteredOptions.length - 1 ? prev + 1 : 0));
+      }
+    },
+    [anchorEl, filteredOptions.length]
+  );
+
+  /**
+   * Handle ArrowUp key press
+   */
+  const handleArrowUpKey = useCallback(
+    (e: React.KeyboardEvent) => {
+      e.preventDefault();
+      if (anchorEl) {
+        setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : filteredOptions.length - 1));
+      }
+    },
+    [anchorEl, filteredOptions.length]
+  );
+
   const handleKeyDown = useCallback(
     async (e: React.KeyboardEvent) => {
       // First try keyboard navigation
       const navigationHandled = await handleNavigationKeyDown(e.nativeEvent);
 
-      if (!navigationHandled) {
-        // Handle local keyboard events
-        switch (e.key) {
-          case "Enter":
-            e.preventDefault();
-            if (anchorEl && highlightedIndex >= 0 && filteredOptions[highlightedIndex]) {
-              handleSelect(filteredOptions[highlightedIndex].value);
-            } else if (!anchorEl) {
-              setAnchorEl(comboboxRef.current);
-            }
-            break;
-          case "Escape":
-            e.preventDefault();
-            if (anchorEl) {
-              setAnchorEl(null);
-              setSearchTerm("");
-              setHighlightedIndex(-1);
-            } else {
-              setLocalValue(String(value || ""));
-              onBlur();
-            }
-            break;
-          case "ArrowDown":
-            e.preventDefault();
-            if (!anchorEl) {
-              setAnchorEl(comboboxRef.current);
-            } else {
-              setHighlightedIndex((prev) => (prev < filteredOptions.length - 1 ? prev + 1 : 0));
-            }
-            break;
-          case "ArrowUp":
-            e.preventDefault();
-            if (anchorEl) {
-              setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : filteredOptions.length - 1));
-            }
-            break;
-          default:
-            break;
-        }
+      if (navigationHandled) {
+        return;
+      }
+
+      // Handle local keyboard events
+      switch (e.key) {
+        case "Enter":
+          handleEnterKey(e);
+          break;
+        case "Escape":
+          handleEscapeKey(e);
+          break;
+        case "ArrowDown":
+          handleArrowDownKey(e);
+          break;
+        case "ArrowUp":
+          handleArrowUpKey(e);
+          break;
+        default:
+          break;
       }
     },
-    [handleNavigationKeyDown, anchorEl, highlightedIndex, filteredOptions, handleSelect, value, onBlur]
+    [handleNavigationKeyDown, handleEnterKey, handleEscapeKey, handleArrowDownKey, handleArrowUpKey]
   );
 
   // Prevent Menu's useClickOutside from closing when clicking on combobox
@@ -404,8 +446,28 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
 
   const isLoading = isLoadingDynamicOptions || isLoadingOptions?.(field.name);
 
+  /**
+   * Get the placeholder text for the combobox
+   */
+  const getPlaceholderText = (): string => {
+    if (field.isMandatory) {
+      return "Select an option...";
+    }
+    return "(None)";
+  };
+
+  /**
+   * Get the display text for the combobox
+   */
+  const getComboboxDisplayText = (): string => {
+    if (isLoading) {
+      return "Loading...";
+    }
+    return displayText || getPlaceholderText();
+  };
+
   return (
-    <div ref={wrapperRef} className="flex-1 w-full min-w-0 box-border">
+    <div ref={wrapperRef} className="w-full max-w-full min-w-0 box-border">
       <div
         ref={comboboxRef}
         onClick={handleClick}
@@ -414,6 +476,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
         className={`
           inline-edit-tabledir
           w-full
+          max-w-full
           min-w-0
           box-border
           px-2
@@ -425,6 +488,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
           flex
           items-center
           justify-between
+          overflow-hidden
           focus:outline-none
           focus:ring-2
           focus:ring-blue-500
@@ -443,7 +507,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
         role="combobox"
       >
         <span className="truncate flex-1 min-w-0">
-          {isLoading ? "Loading..." : displayText || (field.isMandatory ? "Select an option..." : "(None)")}
+          {getComboboxDisplayText()}
         </span>
         <ChevronDown
           className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${anchorEl ? "rotate-180" : ""}`}

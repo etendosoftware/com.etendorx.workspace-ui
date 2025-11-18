@@ -155,51 +155,73 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
     setFocused();
   };
 
+  /**
+   * Check if a key should be allowed in numeric input
+   */
+  const isKeyAllowed = (key: string): boolean => {
+    const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "Tab"];
+    const isNumericKey = /^\d$/.test(key);
+    const isDecimalPoint = key === "." && !localValue.includes(".");
+    const isMinusSign = key === "-" && localValue.length === 0;
+
+    return allowedKeys.includes(key) || isNumericKey || isDecimalPoint || isMinusSign;
+  };
+
+  /**
+   * Handle arrow key increment/decrement
+   */
+  const handleArrowKey = (e: React.KeyboardEvent<HTMLInputElement>, delta: number) => {
+    if (!e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      incrementValue(delta);
+    }
+  };
+
+  /**
+   * Handle Enter key press
+   */
+  const handleEnterKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    inputRef.current?.blur();
+  };
+
+  /**
+   * Handle Escape key press
+   */
+  const handleEscapeKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    setLocalValue(formatNumberForInput(value));
+    setValidationError("");
+    inputRef.current?.blur();
+  };
+
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     // First try keyboard navigation
     const navigationHandled = await handleNavigationKeyDown(e.nativeEvent);
 
-    if (!navigationHandled) {
-      // Handle local keyboard events if navigation didn't handle them
-      switch (e.key) {
-        case "Enter":
-          // This should be handled by navigation, but fallback to blur
-          e.preventDefault();
-          inputRef.current?.blur();
-          break;
-        case "Escape":
-          // This should be handled by navigation, but fallback to restore value
-          e.preventDefault();
-          setLocalValue(formatNumberForInput(value));
-          setValidationError("");
-          inputRef.current?.blur();
-          break;
-        case "ArrowUp":
-          // Only increment if not handled by navigation (Ctrl+ArrowUp)
-          if (!e.ctrlKey && !e.metaKey) {
-            e.preventDefault();
-            incrementValue(1);
-          }
-          break;
-        case "ArrowDown":
-          // Only decrement if not handled by navigation (Ctrl+ArrowDown)
-          if (!e.ctrlKey && !e.metaKey) {
-            e.preventDefault();
-            incrementValue(-1);
-          }
-          break;
-        default: {
-          const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "Tab"];
-          const isNumericKey = /^\d$/.test(e.key);
-          const isDecimalPoint = e.key === "." && !localValue.includes(".");
-          const isMinusSign = e.key === "-" && localValue.length === 0;
+    if (navigationHandled) {
+      return;
+    }
 
-          if (!allowedKeys.includes(e.key) && !isNumericKey && !isDecimalPoint && !isMinusSign) {
-            e.preventDefault();
-          }
-          break;
+    // Handle local keyboard events if navigation didn't handle them
+    switch (e.key) {
+      case "Enter":
+        handleEnterKey(e);
+        break;
+      case "Escape":
+        handleEscapeKey(e);
+        break;
+      case "ArrowUp":
+        handleArrowKey(e, 1);
+        break;
+      case "ArrowDown":
+        handleArrowKey(e, -1);
+        break;
+      default:
+        if (!isKeyAllowed(e.key)) {
+          e.preventDefault();
         }
-      }
+        break;
     }
   };
 

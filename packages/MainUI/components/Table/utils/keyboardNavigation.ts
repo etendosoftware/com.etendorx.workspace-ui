@@ -204,8 +204,112 @@ export class KeyboardNavigationManager {
   /**
    * Handle keyboard events for navigation
    */
+  /**
+   * Handle Tab key navigation
+   */
+  private async handleTabKey(event: KeyboardEvent, rowId: string, columnId: string): Promise<boolean> {
+    event.preventDefault();
+    if (event.shiftKey) {
+      return this.navigateToPreviousCell(rowId, columnId);
+    }
+    return this.navigateToNextCell(rowId, columnId);
+  }
+
+  /**
+   * Handle Enter key navigation
+   */
+  private async handleEnterKey(event: KeyboardEvent, rowId: string): Promise<boolean> {
+    event.preventDefault();
+    if (event.shiftKey) {
+      // Shift+Enter: Navigate to previous row
+      return this.navigateToPreviousRow(rowId);
+    }
+    // Enter: Save current row and navigate to next row or save
+    try {
+      await this.options.onSaveRow(rowId);
+      logger.info(`[KeyboardNavigation] Saved row via Enter key: ${rowId}`);
+
+      // Try to navigate to next row, if no next row, stay on current
+      this.navigateToNextRow(rowId);
+      return true;
+    } catch (error) {
+      logger.error(`[KeyboardNavigation] Failed to save row via Enter key: ${rowId}`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Handle Escape key navigation
+   */
+  private async handleEscapeKey(event: KeyboardEvent, rowId: string): Promise<boolean> {
+    event.preventDefault();
+    try {
+      await this.options.onCancelRow(rowId);
+      logger.info(`[KeyboardNavigation] Cancelled row via Escape key: ${rowId}`);
+      return true;
+    } catch (error) {
+      logger.error(`[KeyboardNavigation] Failed to cancel row via Escape key: ${rowId}`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Handle ArrowUp key navigation
+   */
+  private async handleArrowUpKey(event: KeyboardEvent, rowId: string): Promise<boolean> {
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault();
+      return this.navigateToPreviousRow(rowId);
+    }
+    return false;
+  }
+
+  /**
+   * Handle ArrowDown key navigation
+   */
+  private async handleArrowDownKey(event: KeyboardEvent, rowId: string): Promise<boolean> {
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault();
+      return this.navigateToNextRow(rowId);
+    }
+    return false;
+  }
+
+  /**
+   * Handle ArrowLeft key navigation
+   */
+  private async handleArrowLeftKey(event: KeyboardEvent, rowId: string, columnId: string): Promise<boolean> {
+    // Only handle if at the beginning of input
+    if (event.target instanceof HTMLInputElement) {
+      const input = event.target;
+      if (input.selectionStart === 0 && input.selectionEnd === 0) {
+        event.preventDefault();
+        return this.navigateToPreviousCell(rowId, columnId);
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Handle ArrowRight key navigation
+   */
+  private async handleArrowRightKey(event: KeyboardEvent, rowId: string, columnId: string): Promise<boolean> {
+    // Only handle if at the end of input
+    if (event.target instanceof HTMLInputElement) {
+      const input = event.target;
+      if (input.selectionStart === input.value.length && input.selectionEnd === input.value.length) {
+        event.preventDefault();
+        return this.navigateToNextCell(rowId, columnId);
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Handle keyboard events for navigation
+   */
   public handleKeyDown = async (event: KeyboardEvent, rowId: string, columnId: string): Promise<boolean> => {
-    const { key, shiftKey, ctrlKey, metaKey } = event;
+    const { key, ctrlKey, metaKey } = event;
 
     // Don't handle keyboard shortcuts if modifier keys are pressed (except Shift for Tab)
     if ((ctrlKey || metaKey) && key !== "Tab") {
@@ -214,83 +318,29 @@ export class KeyboardNavigationManager {
 
     switch (key) {
       case "Tab":
-        event.preventDefault();
-        if (shiftKey) {
-          return this.navigateToPreviousCell(rowId, columnId);
-        }
-        return this.navigateToNextCell(rowId, columnId);
+        return this.handleTabKey(event, rowId, columnId);
 
       case "Enter":
-        event.preventDefault();
-        if (shiftKey) {
-          // Shift+Enter: Navigate to previous row
-          return this.navigateToPreviousRow(rowId);
-        }
-        // Enter: Save current row and navigate to next row or save
-        try {
-          await this.options.onSaveRow(rowId);
-          logger.info(`[KeyboardNavigation] Saved row via Enter key: ${rowId}`);
-
-          // Try to navigate to next row, if no next row, stay on current
-          this.navigateToNextRow(rowId);
-          return true;
-        } catch (error) {
-          logger.error(`[KeyboardNavigation] Failed to save row via Enter key: ${rowId}`, error);
-          return false;
-        }
+        return this.handleEnterKey(event, rowId);
 
       case "Escape":
-        event.preventDefault();
-        try {
-          await this.options.onCancelRow(rowId);
-          logger.info(`[KeyboardNavigation] Cancelled row via Escape key: ${rowId}`);
-          return true;
-        } catch (error) {
-          logger.error(`[KeyboardNavigation] Failed to cancel row via Escape key: ${rowId}`, error);
-          return false;
-        }
+        return this.handleEscapeKey(event, rowId);
 
       case "ArrowUp":
-        if (ctrlKey || metaKey) {
-          event.preventDefault();
-          return this.navigateToPreviousRow(rowId);
-        }
-        break;
+        return this.handleArrowUpKey(event, rowId);
 
       case "ArrowDown":
-        if (ctrlKey || metaKey) {
-          event.preventDefault();
-          return this.navigateToNextRow(rowId);
-        }
-        break;
+        return this.handleArrowDownKey(event, rowId);
 
       case "ArrowLeft":
-        // Only handle if at the beginning of input
-        if (event.target instanceof HTMLInputElement) {
-          const input = event.target;
-          if (input.selectionStart === 0 && input.selectionEnd === 0) {
-            event.preventDefault();
-            return this.navigateToPreviousCell(rowId, columnId);
-          }
-        }
-        break;
+        return this.handleArrowLeftKey(event, rowId, columnId);
 
       case "ArrowRight":
-        // Only handle if at the end of input
-        if (event.target instanceof HTMLInputElement) {
-          const input = event.target;
-          if (input.selectionStart === input.value.length && input.selectionEnd === input.value.length) {
-            event.preventDefault();
-            return this.navigateToNextCell(rowId, columnId);
-          }
-        }
-        break;
+        return this.handleArrowRightKey(event, rowId, columnId);
 
       default:
         return false;
     }
-
-    return false;
   };
 
   /**

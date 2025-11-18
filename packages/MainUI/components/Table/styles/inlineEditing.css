@@ -7,6 +7,8 @@
 .inline-edit-cell-container {
   position: relative;
   min-height: 32px;
+  width: 100%;
+  max-width: 100%;
   display: flex;
   align-items: center;
 }
@@ -18,9 +20,17 @@
   flex: 1;
 }
 
+/* Ensure table cells don't allow overflow */
+td:has(.inline-edit-cell-container) {
+  overflow: hidden;
+}
+
+
 /* Cell editor wrapper styles - ensure all editors fill available space */
 .cell-editor-wrapper {
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -29,6 +39,7 @@
 /* Date editor container */
 .inline-edit-date-container {
   min-width: 0;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   flex: 1;

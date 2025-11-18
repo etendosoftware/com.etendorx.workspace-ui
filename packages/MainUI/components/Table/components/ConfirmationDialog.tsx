@@ -100,6 +100,19 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
 
   const typeConfig = getTypeConfig();
 
+  /**
+   * Get the button color based on dialog type
+   */
+  const getButtonColor = (): "error" | "success" | "primary" => {
+    if (type === "error") {
+      return "error";
+    }
+    if (type === "success") {
+      return "success";
+    }
+    return "primary";
+  };
+
   return (
     <Dialog open={isOpen} onClose={onCancel} maxWidth="sm" fullWidth data-testid="Dialog__efae7f">
       <DialogTitle data-testid="DialogTitle__efae7f">
@@ -121,7 +134,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
           onClick={onConfirm}
           disabled={confirmDisabled}
           variant="contained"
-          color={type === "error" ? "error" : type === "success" ? "success" : "primary"}
+          color={getButtonColor()}
           data-testid="Button__efae7f">
           {confirmText || typeConfig.defaultConfirmText}
         </Button>

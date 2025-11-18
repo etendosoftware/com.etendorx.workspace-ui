@@ -224,6 +224,9 @@ const es = {
     useAsFilter: "Usar como filtro",
     editRow: "Editar Fila",
     insertRow: "Insertar Fila",
+    actions: {
+      createRecordInGrid: "Crear Registro en Grilla",
+    },
   },
   navigation: {
     common: {

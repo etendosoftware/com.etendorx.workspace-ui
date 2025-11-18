@@ -216,6 +216,52 @@ function isRetryableError(error: any, response?: any): boolean {
 }
 
 /**
+ * Logs a successful retry attempt
+ */
+function logRetrySuccess(attempt: number, rowId: string): void {
+  if (attempt > 0) {
+    logger.info(`[SaveOperation] Retry successful on attempt ${attempt + 1}:`, {
+      rowId,
+    });
+  }
+}
+
+/**
+ * Checks if the retry loop should be aborted based on the result
+ */
+function shouldAbortRetry(result: SaveResult, attempt: number, maxRetries: number): boolean {
+  // Don't retry validation errors - they won't change
+  const hasValidationErrors = result.errors?.some((error) => error.type === "server" && error.field !== "_general");
+
+  // Return true if there are validation errors or we've reached max retries
+  return (hasValidationErrors ?? false) || attempt === maxRetries;
+}
+
+/**
+ * Waits for a specified duration with exponential backoff
+ */
+async function waitWithBackoff(attempt: number): Promise<void> {
+  const delay = Math.min(1000 * 2 ** attempt, 5000);
+  await new Promise((resolve) => setTimeout(resolve, delay));
+}
+
+/**
+ * Creates a network error result
+ */
+function createNetworkErrorResult(error: unknown): SaveResult {
+  return {
+    success: false,
+    errors: [
+      {
+        field: "_general",
+        message: error instanceof Error ? error.message : "Network error occurred",
+        type: "server",
+      },
+    ],
+  };
+}
+
+/**
  * Saves a record with retry mechanism for network errors
  * @param saveOperation The save operation data
  * @param tab The tab metadata
@@ -252,56 +298,29 @@ export async function saveRecordWithRetry({
         signal,
       });
 
-      // If successful, return immediately
       if (result.success) {
-        if (attempt > 0) {
-          logger.info(`[SaveOperation] Retry successful on attempt ${attempt + 1}:`, {
-            rowId: saveOperation.rowId,
-          });
-        }
+        logRetrySuccess(attempt, saveOperation.rowId);
         return result;
       }
 
-      // If not successful, check if we should retry
       lastResponse = result;
 
-      // Don't retry validation errors - they won't change
-      const hasValidationErrors = result.errors?.some((error) => error.type === "server" && error.field !== "_general");
-      if (hasValidationErrors) {
+      if (shouldAbortRetry(result, attempt, maxRetries)) {
         return result;
       }
-
-      // Check if this is the last attempt
-      if (attempt === maxRetries) {
-        return result;
-      }
-
-      // Wait before retrying (exponential backoff)
-      const delay = Math.min(1000 * 2 ** attempt, 5000);
-      await new Promise((resolve) => setTimeout(resolve, delay));
     } catch (error) {
       if (!isRetryableError(error, lastResponse) || attempt === maxRetries) {
-        return {
-          success: false,
-          errors: [
-            {
-              field: "_general",
-              message: error instanceof Error ? error.message : "Network error occurred",
-              type: "server",
-            },
-          ],
-        };
+        return createNetworkErrorResult(error);
       }
 
       logger.warn(`[SaveOperation] Retryable error on attempt ${attempt + 1}, retrying:`, {
         rowId: saveOperation.rowId,
         error: error instanceof Error ? error.message : String(error),
       });
-
-      // Wait before retrying (exponential backoff)
-      const delay = Math.min(1000 * 2 ** attempt, 5000);
-      await new Promise((resolve) => setTimeout(resolve, delay));
     }
+
+    // Wait before retrying (exponential backoff)
+    await waitWithBackoff(attempt);
   }
 
   // This should never be reached, but just in case
@@ -343,6 +362,92 @@ export function validateRecordBeforeSave(
 }
 
 /**
+ * Logs the start of a save operation
+ */
+function logSaveStart(saveOperation: SaveOperation, tab: Tab): void {
+  logger.info(`[SaveOperation] Starting save for ${saveOperation.isNew ? "new" : "existing"} record:`, {
+    rowId: saveOperation.rowId,
+    entityName: tab.entityName,
+    isNew: saveOperation.isNew,
+  });
+}
+
+/**
+ * Prepares the data for saving by removing IDs if necessary
+ */
+function prepareSaveData(
+  saveOperation: SaveOperation,
+  tab: Tab,
+  mode: FormMode
+): { values: EntityData; oldValues?: EntityData } {
+  const shouldRemoveId = shouldRemoveIdFields(tab.entityName, mode);
+  let processedValues = { ...saveOperation.data };
+  let processedOriginalData = saveOperation.originalData ? { ...saveOperation.originalData } : undefined;
+
+  // For new records, always remove the temporary ID
+  if (saveOperation.isNew || shouldRemoveId) {
+    const { id, id$_identifier: idIdentifier, ...valuesWithoutId } = processedValues;
+    processedValues = valuesWithoutId as EntityData;
+
+    if (processedOriginalData) {
+      const { id: originalId, id$_identifier: originalIdIdentifier, ...originalWithoutId } = processedOriginalData;
+      processedOriginalData = originalWithoutId as EntityData;
+    }
+  }
+
+  return { values: processedValues, oldValues: processedOriginalData };
+}
+
+/**
+ * Handles the response from the save operation
+ */
+function handleSaveResponse(data: any, saveOperation: SaveOperation): SaveResult {
+  if (data?.response?.status === 0) {
+    const savedRecord = data.response.data[0] as EntityData;
+    return {
+      success: true,
+      data: savedRecord,
+    };
+  }
+
+  const errorMessage = data?.response?.error?.message || "Unknown server error";
+  const validationErrors = parseServerValidationErrors(data?.response?.error);
+
+  logger.error(`[SaveOperation] Server error for ${saveOperation.isNew ? "new" : "existing"} record:`, {
+    rowId: saveOperation.rowId,
+    error: errorMessage,
+    validationErrors,
+    responseStatus: data?.response?.status,
+  });
+
+  return {
+    success: false,
+    errors: validationErrors,
+  };
+}
+
+/**
+ * Logs and handles save operation errors
+ */
+function handleSaveError(saveOperation: SaveOperation, error: unknown): SaveResult {
+  logger.error(`[SaveOperation] Request failed for ${saveOperation.isNew ? "new" : "existing"} record:`, {
+    rowId: saveOperation.rowId,
+    error: error instanceof Error ? error.message : String(error),
+  });
+
+  return {
+    success: false,
+    errors: [
+      {
+        field: "_general",
+        message: error instanceof Error ? error.message : "Network error occurred",
+        type: "server",
+      },
+    ],
+  };
+}
+
+/**
  * Saves a record using the datasource servlet
  * @param saveOperation The save operation details
  * @param tab The tab metadata
@@ -365,34 +470,15 @@ export async function saveRecord({
   signal?: AbortSignal;
 }): Promise<SaveResult> {
   try {
-    logger.info(`[SaveOperation] Starting save for ${saveOperation.isNew ? "new" : "existing"} record:`, {
-      rowId: saveOperation.rowId,
-      entityName: tab.entityName,
-      isNew: saveOperation.isNew,
-    });
+    logSaveStart(saveOperation, tab);
 
     const mode = saveOperation.isNew ? FormMode.NEW : FormMode.EDIT;
     const queryStringParams = buildQueryString({ mode, windowMetadata, tab });
-
-    const shouldRemoveId = shouldRemoveIdFields(tab.entityName, mode);
-
-    let processedValues = { ...saveOperation.data };
-    let processedOriginalData = saveOperation.originalData ? { ...saveOperation.originalData } : undefined;
-
-    // For new records, always remove the temporary ID
-    if (saveOperation.isNew || shouldRemoveId) {
-      const { id, id$_identifier: idIdentifier, ...valuesWithoutId } = processedValues;
-      processedValues = valuesWithoutId as EntityData;
-
-      if (processedOriginalData) {
-        const { id: originalId, id$_identifier: originalIdIdentifier, ...originalWithoutId } = processedOriginalData;
-        processedOriginalData = originalWithoutId as EntityData;
-      }
-    }
+    const { values, oldValues } = prepareSaveData(saveOperation, tab, mode);
 
     const body = buildSavePayload({
-      values: processedValues as EntityData,
-      oldValues: processedOriginalData,
+      values,
+      oldValues,
       mode,
       csrfToken: userId,
       tab,
@@ -407,44 +493,13 @@ export async function saveRecord({
 
     const { ok, data } = await Metadata.datasourceServletClient.request(url, options);
 
-    if (ok && data?.response?.status === 0) {
-      const savedRecord = data.response.data[0] as EntityData;
-
-      return {
-        success: true,
-        data: savedRecord,
-      };
+    if (!ok) {
+      throw new Error(data?.response?.error?.message || "Request failed");
     }
-    const errorMessage = data?.response?.error?.message || "Unknown server error";
-    const validationErrors = parseServerValidationErrors(data?.response?.error);
 
-    logger.error(`[SaveOperation] Server error for ${saveOperation.isNew ? "new" : "existing"} record:`, {
-      rowId: saveOperation.rowId,
-      error: errorMessage,
-      validationErrors,
-      responseStatus: data?.response?.status,
-    });
-
-    return {
-      success: false,
-      errors: validationErrors,
-    };
+    return handleSaveResponse(data, saveOperation);
   } catch (error) {
-    logger.error(`[SaveOperation] Request failed for ${saveOperation.isNew ? "new" : "existing"} record:`, {
-      rowId: saveOperation.rowId,
-      error: error instanceof Error ? error.message : String(error),
-    });
-
-    return {
-      success: false,
-      errors: [
-        {
-          field: "_general",
-          message: error instanceof Error ? error.message : "Network error occurred",
-          type: "server",
-        },
-      ],
-    };
+    return handleSaveError(saveOperation, error);
   }
 }
 

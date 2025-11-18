@@ -30,11 +30,11 @@ import { useStyle } from "./styles";
 import type {
   EntityData,
   GridProps,
-  FieldType,
   Column,
   Field,
   FormInitializationResponse,
 } from "@workspaceui/api-client/src/api/types";
+import { FieldType } from "@workspaceui/api-client/src/api/types";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
@@ -106,6 +106,202 @@ type RowProps = (props: {
   row: MRT_Row<EntityData>;
   table: MRT_TableInstance<EntityData>;
 }) => Omit<MRT_TableBodyRowProps<EntityData>, "staticRowIndex">;
+
+/**
+ * Get field identifier from row values
+ * Handles both inputName and hqlName based keys
+ */
+const getFieldIdentifier = (
+  rowValues: Record<string, unknown>,
+  fieldInputName: string,
+  fieldHqlName: string
+): unknown => {
+  const identifierKeyFromInput = `${fieldInputName}$_identifier`;
+  const identifierKeyFromHql = `${fieldHqlName}$_identifier`;
+  return rowValues[identifierKeyFromInput] || rowValues[identifierKeyFromHql];
+};
+
+/**
+ * Get field entries from row values
+ * Handles both inputName and hqlName based keys
+ */
+const getFieldEntries = (
+  rowValues: Record<string, unknown>,
+  fieldInputName: string,
+  fieldHqlName: string
+): unknown => {
+  const entriesKeyFromInput = `${fieldInputName}$_entries`;
+  const entriesKeyFromHql = `${fieldHqlName}$_entries`;
+  return rowValues[entriesKeyFromInput] || rowValues[entriesKeyFromHql];
+};
+
+/**
+ * Create field with augmented data (identifier and entries)
+ */
+const createFieldWithData = (
+  field: Field,
+  fieldInputName: string,
+  fieldIdentifier: unknown,
+  fieldEntries: unknown
+): Field => {
+  const identifierKeyFromInput = `${fieldInputName}$_identifier`;
+  const entriesKeyFromInput = `${fieldInputName}$_entries`;
+
+  return {
+    ...field,
+    ...(fieldIdentifier && { [identifierKeyFromInput]: fieldIdentifier }),
+    ...(fieldEntries && { [entriesKeyFromInput]: fieldEntries }),
+  };
+};
+
+/**
+ * Props for EditableCellContent component
+ */
+interface EditableCellContentProps {
+  rowId: string;
+  fieldKey: string;
+  columnName: string;
+  editingData: any;
+  fieldMapping: { fieldType: FieldType; field: Field };
+  initialFocusCell: { rowId: string; columnName: string } | null;
+  session: Record<string, unknown> | undefined;
+  editingRowUtils: any;
+  keyboardNavigationManager: KeyboardNavigationManager;
+  handleCellValueChange: (rowId: string, fieldKey: string, value: unknown, optionData?: Record<string, unknown>, field?: Field) => void;
+  validateFieldOnBlur: (rowId: string, fieldKey: string, value: unknown) => void;
+  setInitialFocusCell: (cell: { rowId: string; columnName: string } | null) => void;
+  loadTableDirOptions: (field: Field, searchQuery?: string, rowValues?: Record<string, unknown>) => Promise<any>;
+  isLoadingTableDirOptions: (fieldName: string) => boolean;
+}
+
+/**
+ * Editable cell content component
+ * Extracted from inline Cell definition to reduce cognitive complexity
+ */
+const EditableCellContent: React.FC<EditableCellContentProps> = ({
+  rowId,
+  fieldKey,
+  columnName,
+  editingData,
+  fieldMapping,
+  initialFocusCell,
+  session,
+  editingRowUtils,
+  keyboardNavigationManager,
+  handleCellValueChange,
+  validateFieldOnBlur,
+  setInitialFocusCell,
+  loadTableDirOptions,
+  isLoadingTableDirOptions,
+}) => {
+  const currentValue =
+    fieldKey in editingData.modifiedData
+      ? editingData.modifiedData[fieldKey]
+      : editingData.originalData[fieldKey];
+
+  const shouldAutoFocus = initialFocusCell?.rowId === rowId && initialFocusCell?.columnName === columnName;
+  const isNewRow = editingData.isNew || false;
+  const rowValues = { ...editingData.originalData, ...editingData.modifiedData };
+  const shouldBeReadOnly = isFieldReadOnly(fieldMapping.field, isNewRow, rowValues, session);
+
+  const fieldInputName = fieldMapping.field.inputName || fieldMapping.field.hqlName || fieldKey;
+  const fieldHqlName = fieldMapping.field.hqlName || fieldMapping.field.columnName || fieldKey;
+
+  const fieldIdentifier = getFieldIdentifier(rowValues, fieldInputName, fieldHqlName);
+  const fieldEntries = getFieldEntries(rowValues, fieldInputName, fieldHqlName);
+
+  const fieldWithData = createFieldWithData(fieldMapping.field, fieldInputName, fieldIdentifier, fieldEntries);
+
+  return (
+    <div className="inline-edit-cell-container">
+      <React.Suspense
+        fallback={
+          <div className="inline-edit-loading">
+            <span className="text-gray-500 text-sm">Loading...</span>
+          </div>
+        }>
+        <CellEditorFactory
+          fieldType={fieldMapping.fieldType}
+          value={currentValue}
+          onChange={(value, optionData) =>
+            handleCellValueChange(rowId, fieldKey, value, optionData, fieldMapping.field)
+          }
+          onBlur={() => {
+            validateFieldOnBlur(rowId, fieldKey, currentValue);
+            if (shouldAutoFocus) {
+              setInitialFocusCell(null);
+            }
+          }}
+          field={fieldWithData}
+          hasError={Boolean(editingData.validationErrors[columnName])}
+          disabled={editingData.isSaving || shouldBeReadOnly}
+          rowId={rowId}
+          columnId={fieldKey}
+          keyboardNavigationManager={keyboardNavigationManager}
+          shouldAutoFocus={shouldAutoFocus}
+          loadOptions={async (_field, searchQuery) => {
+            const freshEditingData = editingRowUtils.getEditingRowData(rowId);
+            const freshRowValues = freshEditingData
+              ? { ...freshEditingData.originalData, ...freshEditingData.modifiedData }
+              : rowValues;
+            return await loadTableDirOptions(fieldMapping.field, searchQuery, freshRowValues);
+          }}
+          isLoadingOptions={(fieldName) => isLoadingTableDirOptions(fieldName)}
+          data-testid="CellEditorFactory__8ca888"
+        />
+      </React.Suspense>
+    </div>
+  );
+};
+
+/**
+ * Props for ActionsColumnCell component
+ */
+interface ActionsColumnCellProps {
+  row: MRT_Row<EntityData>;
+  editingRowUtils: any;
+  handleEditRow: (row: MRT_Row<EntityData>) => void;
+  handleSaveRow: (rowId: string) => void;
+  handleCancelRow: (rowId: string) => void;
+  setRecordId: (id: string) => void;
+}
+
+/**
+ * Actions column cell component
+ * Extracted from inline Cell definition
+ */
+const ActionsColumnCell: React.FC<ActionsColumnCellProps> = ({
+  row,
+  editingRowUtils,
+  handleEditRow,
+  handleSaveRow,
+  handleCancelRow,
+  setRecordId,
+}) => {
+  const rowId = String(row.original.id);
+  const editingData = editingRowUtils.getEditingRowData(rowId);
+  const isEditing = editingRowUtils.isRowEditing(rowId);
+  const isSaving = editingData?.isSaving || false;
+  const hasErrors = editingData ? Object.values(editingData.validationErrors).some((error) => error) : false;
+
+  return (
+    <ActionsColumn
+      row={row}
+      isEditing={isEditing}
+      isSaving={isSaving}
+      hasErrors={hasErrors}
+      validationErrors={editingData?.validationErrors}
+      onEdit={() => handleEditRow(row)}
+      onSave={() => handleSaveRow(rowId)}
+      onCancel={() => handleCancelRow(rowId)}
+      onOpenForm={() => {
+        // Navigate to form view - this will handle the URL update properly
+        setRecordId(String(row.original.id));
+      }}
+      data-testid="ActionsColumn__8ca888"
+    />
+  );
+};
 
 const getRowId = (row: EntityData) => String(row.id);
 
@@ -414,55 +610,88 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   // Accessibility utilities
   const screenReaderAnnouncer = useScreenReaderAnnouncer();
 
+  /**
+   * Transfer metadata from original field to editor field
+   */
+  const enrichFieldWithOriginalMetadata = useCallback(
+    (field: Field, column: Column): Field => {
+      const fieldKey = column.columnName || column.name;
+      const originalField = tab.fields?.[fieldKey];
+
+      if (!originalField) {
+        return field;
+      }
+
+      // Transfer callout if present
+      if (originalField.column?.callout) {
+        field.column = {
+          ...field.column,
+          callout: originalField.column.callout,
+        };
+      }
+
+      // Transfer selector configuration
+      if (originalField.selector) {
+        field.selector = originalField.selector;
+      }
+
+      // Use the correct inputName and hqlName from the original field
+      field.inputName = originalField.inputName;
+      field.hqlName = originalField.hqlName;
+
+      return field;
+    },
+    [tab.fields]
+  );
+
+  /**
+   * Store field mapping by both col.name and col.columnName
+   */
+  const storeFieldMapping = useCallback(
+    (
+      mappings: Map<string, { fieldType: FieldType; field: Field }>,
+      column: Column,
+      mapping: { fieldType: FieldType; field: Field }
+    ): void => {
+      mappings.set(column.name, mapping);
+      if (column.columnName && column.columnName !== column.name) {
+        mappings.set(column.columnName, mapping);
+      }
+    },
+    []
+  );
+
+  /**
+   * Create field mapping for a single column
+   */
+  const createColumnFieldMapping = useCallback(
+    (column: Column): { fieldType: FieldType; field: Field } => {
+      const field = columnToFieldForEditor(column);
+      const enrichedField = enrichFieldWithOriginalMetadata(field, column);
+
+      return {
+        fieldType: getFieldTypeFromColumn(column),
+        field: enrichedField,
+      };
+    },
+    [columnToFieldForEditor, getFieldTypeFromColumn, enrichFieldWithOriginalMetadata]
+  );
+
   // Memoize field conversions for all columns to avoid recalculation on every render
   const columnFieldMappings = useMemo(() => {
     const mappings = new Map<string, { fieldType: FieldType; field: Field }>();
 
     for (const col of baseColumns) {
-      if (col.name !== COLUMN_NAMES.ACTIONS) {
-        // Build field from column as usual
-        const field = columnToFieldForEditor(col);
-
-        // Try to get callout info from original Field in tab.fields
-        // Fields in tab.fields are indexed by their hqlName, which corresponds to col.columnName
-        const fieldKey = col.columnName || col.name;
-        const originalField = tab.fields?.[fieldKey];
-
-        // Transfer callout, selector, and proper field names from original field if it exists
-        if (originalField) {
-          // Transfer callout if present
-          if (originalField.column?.callout) {
-            field.column = {
-              ...field.column,
-              callout: originalField.column.callout,
-            };
-          }
-
-          // Transfer selector configuration (important for datasources like ProductByPriceAndWarehouse)
-          if (originalField.selector) {
-            field.selector = originalField.selector;
-          }
-
-          // Use the correct inputName and hqlName from the original field
-          field.inputName = originalField.inputName;
-          field.hqlName = originalField.hqlName;
-        }
-
-        const mapping = {
-          fieldType: getFieldTypeFromColumn(col),
-          field: field,
-        };
-
-        // Store mapping by both col.name and col.columnName to handle different field name formats
-        mappings.set(col.name, mapping);
-        if (col.columnName && col.columnName !== col.name) {
-          mappings.set(col.columnName, mapping);
-        }
+      if (col.name === COLUMN_NAMES.ACTIONS) {
+        continue;
       }
+
+      const mapping = createColumnFieldMapping(col);
+      storeFieldMapping(mappings, col, mapping);
     }
 
     return mappings;
-  }, [baseColumns, tab.fields, getFieldTypeFromColumn, columnToFieldForEditor]);
+  }, [baseColumns, createColumnFieldMapping, storeFieldMapping]);
 
   // Create debounced validation function for real-time feedback with performance monitoring
   const debouncedValidateField = useDebouncedCallback((rowId: string, fieldName: string, value: unknown) => {
@@ -945,37 +1174,163 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     [editingRowUtils, baseColumns]
   );
 
+  /**
+   * Format validation errors for display
+   */
+  const formatValidationErrors = useCallback((validationErrors: Record<string, string>): string[] => {
+    return Object.entries(validationErrors)
+      .filter(([_, message]) => message)
+      .map(([field, message]) => (field === "_general" ? message || "" : `${field}: ${message || ""}`));
+  }, []);
+
+  /**
+   * Handle validation errors before save
+   */
+  const handleValidationErrors = useCallback(
+    (rowId: string, editingRowData: any) => {
+      logger.warn(`[InlineEditing] Cannot save row ${rowId} due to validation errors`);
+      const errorMessages = formatValidationErrors(editingRowData.validationErrors);
+
+      if (errorMessages.length > 0) {
+        confirmSaveWithErrors(errorMessages, () => {
+          // User acknowledged the errors, focus on first error field
+        });
+      }
+    },
+    [formatValidationErrors]
+  );
+
+  /**
+   * Preserve client-side identifiers when merging server data
+   */
+  const preserveClientSideIdentifiers = useCallback((record: EntityData): Record<string, unknown> => {
+    const clientSideIdentifiers: Record<string, unknown> = {};
+    for (const key of Object.keys(record)) {
+      if (key.endsWith("$_identifier")) {
+        clientSideIdentifiers[key] = record[key];
+      }
+    }
+    return clientSideIdentifiers;
+  }, []);
+
+  /**
+   * Handle successful save operation
+   */
+  const handleSaveSuccess = useCallback(
+    (rowId: string, editingRowData: any, saveResult: any, updatedRecords: EntityData[]) => {
+      const finalRecords = updatedRecords.map((record) => {
+        if (String(record.id) === rowId || (editingRowData.isNew && record.id === rowId)) {
+          const clientSideIdentifiers = preserveClientSideIdentifiers(record);
+          return { ...(saveResult.data || {}), ...clientSideIdentifiers };
+        }
+        return record;
+      });
+      setOptimisticRecords(finalRecords as EntityData[]);
+
+      editingRowUtils.removeEditingRow(rowId);
+
+      refetch().catch((error) => {
+        logger.warn("[InlineEditing] Failed to refetch after save:", error);
+      });
+
+      const successMessage = editingRowData.isNew ? "Created" : "Saved";
+      showSuccessModal(successMessage);
+
+      if (screenReaderAnnouncer) {
+        screenReaderAnnouncer.announceSaveOperation(rowId, true, editingRowData.isNew);
+      }
+    },
+    [editingRowUtils, refetch, showSuccessModal, screenReaderAnnouncer, preserveClientSideIdentifiers]
+  );
+
+  /**
+   * Rollback optimistic update
+   */
+  const rollbackOptimisticUpdate = useCallback((rowId: string, editingRowData: any, records: EntityData[]) => {
+    if (editingRowData.isNew) {
+      const rolledBackRecords = records.filter((record) => String(record.id) !== rowId);
+      setOptimisticRecords(rolledBackRecords);
+    } else {
+      const rolledBackRecords = records.map((record) =>
+        String(record.id) === rowId ? editingRowData.originalData : record
+      );
+      setOptimisticRecords(rolledBackRecords);
+    }
+  }, []);
+
+  /**
+   * Handle save errors from server
+   */
+  const handleSaveErrors = useCallback(
+    (
+      rowId: string,
+      editingRowData: any,
+      saveResult: any,
+      updatedRecords: EntityData[],
+      processSaveErrors: any,
+      getGeneralErrorMessage: any
+    ) => {
+      rollbackOptimisticUpdate(rowId, editingRowData, updatedRecords);
+
+      const fieldErrors = processSaveErrors(saveResult.errors);
+      const generalError = getGeneralErrorMessage(saveResult.errors);
+
+      editingRowUtils.setRowValidationErrors(rowId, fieldErrors);
+
+      if (generalError) {
+        logger.error(`[InlineEditing] Save failed with general error: ${generalError}`);
+        showErrorModal(generalError);
+      }
+
+      editingRowUtils.setRowSaving(rowId, false);
+      logger.warn(`[InlineEditing] Save failed for row ${rowId} due to server validation errors`);
+
+      if (screenReaderAnnouncer) {
+        screenReaderAnnouncer.announceSaveOperation(rowId, false, editingRowData.isNew);
+      }
+    },
+    [editingRowUtils, showErrorModal, screenReaderAnnouncer, rollbackOptimisticUpdate]
+  );
+
+  /**
+   * Handle unexpected errors during save
+   */
+  const handleSaveException = useCallback(
+    (rowId: string, editingRowData: any, error: unknown) => {
+      const currentRecords = optimisticRecords.length > 0 ? optimisticRecords : displayRecords;
+      rollbackOptimisticUpdate(rowId, editingRowData, currentRecords);
+
+      logger.error(`[InlineEditing] Failed to save row ${rowId}:`, error);
+      editingRowUtils.setRowSaving(rowId, false);
+
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
+      editingRowUtils.setRowValidationErrors(rowId, {
+        _general: errorMessage,
+      });
+
+      showErrorModal(errorMessage);
+
+      if (screenReaderAnnouncer) {
+        screenReaderAnnouncer.announceSaveOperation(rowId, false, editingRowData?.isNew || false);
+      }
+    },
+    [editingRowUtils, showErrorModal, screenReaderAnnouncer, optimisticRecords, displayRecords, rollbackOptimisticUpdate]
+  );
+
   const handleSaveRow = useCallback(
     async (rowId: string) => {
       const editingRowData = editingRowUtils.getEditingRowData(rowId);
       if (!editingRowData) return;
 
-      // Validate the row before saving
       const isValid = await validateRow(rowId);
       if (!isValid) {
-        logger.warn(`[InlineEditing] Cannot save row ${rowId} due to validation errors`);
-
-        // Show validation errors to user
-        const validationErrors = editingRowData.validationErrors;
-        const errorMessages = Object.entries(validationErrors)
-          .filter(([_, message]) => message)
-          .map(([field, message]) => {
-            if (field === "_general") return message || "";
-            return `${field}: ${message || ""}`;
-          });
-
-        if (errorMessages.length > 0) {
-          confirmSaveWithErrors(errorMessages, () => {
-            // User acknowledged the errors, focus on first error field
-          });
-        }
+        handleValidationErrors(rowId, editingRowData);
         return;
       }
 
       try {
         editingRowUtils.setRowSaving(rowId, true);
 
-        // Import save operations and optimistic updates dynamically
         const {
           saveRecordWithRetry,
           createSaveOperation,
@@ -985,156 +1340,59 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         } = await import("./utils/saveOperations");
         const { createOptimisticUpdateManager } = await import("./utils/optimisticUpdates");
 
-        // Create optimistic update manager
         const optimisticManager = createOptimisticUpdateManager();
-
-        // Create save operation from editing data
         const saveOperation = createSaveOperation(rowId, editingRowData);
 
-        // Perform final validation before save to prevent invalid data submission
         const validationResult = validateRecordBeforeSave(saveOperation, baseColumns);
         if (!validationResult.canSave) {
           logger.warn(`[InlineEditing] Final validation failed for row ${rowId}:`, validationResult.errors);
-
-          // Update validation errors in state
           const fieldErrors = processSaveErrors(validationResult.errors);
           editingRowUtils.setRowValidationErrors(rowId, {
             ...editingRowData.validationErrors,
             ...fieldErrors,
           });
-
           editingRowUtils.setRowSaving(rowId, false);
           return;
         }
 
-        // Apply optimistic update immediately for better UX
         const optimisticUpdate = editingRowData.isNew
           ? optimisticManager.createOptimisticCreate(rowId, editingRowData)
           : optimisticManager.createOptimisticUpdate(rowId, editingRowData);
 
-        // Apply optimistic update to current records
         const currentRecords = optimisticRecords.length > 0 ? optimisticRecords : displayRecords;
         const updatedRecords = optimisticManager.applyOptimisticUpdate(currentRecords, optimisticUpdate);
         setOptimisticRecords(updatedRecords);
 
-        // Get required metadata for save operation
-        const windowMetadata = undefined; // Get from context if needed
-        const userId = user?.id || "";
-
-        // Perform the save operation with retry mechanism for better reliability
         const saveResult = await saveRecordWithRetry({
           saveOperation,
           tab,
-          windowMetadata,
-          userId,
+          windowMetadata: undefined,
+          userId: user?.id || "",
           maxRetries: 2,
         });
 
         if (saveResult.success && saveResult.data) {
-          // Confirm the optimistic update with server data
-          // Preserve client-side identifiers that were set during inline editing
-          const finalRecords = updatedRecords.map((record) => {
-            if (String(record.id) === rowId || (editingRowData.isNew && record.id === rowId)) {
-              // Merge server data with client-side identifiers
-              // Server may not return identifiers for all TABLEDIR fields, so preserve them
-              const clientSideIdentifiers: Record<string, unknown> = {};
-              for (const key of Object.keys(record)) {
-                if (key.endsWith("$_identifier")) {
-                  clientSideIdentifiers[key] = record[key];
-                }
-              }
-              return { ...(saveResult.data || {}), ...clientSideIdentifiers };
-            }
-            return record;
-          });
-          setOptimisticRecords(finalRecords as EntityData[]);
-
-          // Remove from editing state after successful save
-          editingRowUtils.removeEditingRow(rowId);
-
-          // Refetch data to update displayRecords with latest server state
-          // This ensures the table shows updated data even after optimisticRecords is cleared
-          refetch().catch((error) => {
-            logger.warn("[InlineEditing] Failed to refetch after save:", error);
-          });
-
-          // Show success feedback to user
-          const successMessage = editingRowData.isNew ? "Created" : "Saved";
-          showSuccessModal(successMessage);
-
-          // Announce save success to screen readers
-          if (screenReaderAnnouncer) {
-            screenReaderAnnouncer.announceSaveOperation(rowId, true, editingRowData.isNew);
-          }
+          handleSaveSuccess(rowId, editingRowData, saveResult, updatedRecords);
         } else if (saveResult.errors) {
-          // Rollback optimistic update on failure
-          if (editingRowData.isNew) {
-            // For new records, remove from optimistic records
-            const rolledBackRecords = updatedRecords.filter((record) => String(record.id) !== rowId);
-            setOptimisticRecords(rolledBackRecords);
-          } else {
-            // For existing records, restore original data
-            const rolledBackRecords = updatedRecords.map((record) =>
-              String(record.id) === rowId ? editingRowData.originalData : record
-            );
-            setOptimisticRecords(rolledBackRecords);
-          }
-
-          // Handle server validation errors
-          const fieldErrors = processSaveErrors(saveResult.errors);
-          const generalError = getGeneralErrorMessage(saveResult.errors);
-
-          // Update validation errors in state
-          editingRowUtils.setRowValidationErrors(rowId, fieldErrors);
-
-          if (generalError) {
-            logger.error(`[InlineEditing] Save failed with general error: ${generalError}`);
-            // Show error modal to user
-            showErrorModal(generalError);
-          }
-
-          editingRowUtils.setRowSaving(rowId, false);
-          logger.warn(`[InlineEditing] Save failed for row ${rowId} due to server validation errors`);
-
-          // Announce save failure to screen readers
-          if (screenReaderAnnouncer) {
-            screenReaderAnnouncer.announceSaveOperation(rowId, false, editingRowData.isNew);
-          }
+          handleSaveErrors(rowId, editingRowData, saveResult, updatedRecords, processSaveErrors, getGeneralErrorMessage);
         }
       } catch (error) {
-        // Rollback optimistic update on error
-        const currentRecords = optimisticRecords.length > 0 ? optimisticRecords : displayRecords;
-        if (editingRowData.isNew) {
-          // For new records, remove from optimistic records
-          const rolledBackRecords = currentRecords.filter((record) => String(record.id) !== rowId);
-          setOptimisticRecords(rolledBackRecords);
-        } else {
-          // For existing records, restore original data
-          const rolledBackRecords = currentRecords.map((record) =>
-            String(record.id) === rowId ? editingRowData.originalData : record
-          );
-          setOptimisticRecords(rolledBackRecords);
-        }
-
-        logger.error(`[InlineEditing] Failed to save row ${rowId}:`, error);
-        editingRowUtils.setRowSaving(rowId, false);
-
-        // Set a general error message
-        const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
-        editingRowUtils.setRowValidationErrors(rowId, {
-          _general: errorMessage,
-        });
-
-        // Show error modal to user
-        showErrorModal(errorMessage);
-
-        // Announce save failure to screen readers
-        if (screenReaderAnnouncer) {
-          screenReaderAnnouncer.announceSaveOperation(rowId, false, editingRowData?.isNew || false);
-        }
+        handleSaveException(rowId, editingRowData, error);
       }
     },
-    [editingRowUtils, validateRow, tab, user?.id, showErrorModal, refetch]
+    [
+      editingRowUtils,
+      validateRow,
+      handleValidationErrors,
+      baseColumns,
+      optimisticRecords,
+      displayRecords,
+      tab,
+      user?.id,
+      handleSaveSuccess,
+      handleSaveErrors,
+      handleSaveException,
+    ]
   );
 
   const handleCancelRow = useCallback(
@@ -1391,87 +1649,26 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           const editingData = editingRowUtils.getEditingRowData(rowId);
           if (!editingData) return renderedCellValue;
 
-          const currentValue =
-            fieldKey in editingData.modifiedData
-              ? editingData.modifiedData[fieldKey]
-              : editingData.originalData[fieldKey];
-
-          // Get memoized field mappings to avoid recalculation
           const fieldMapping = columnFieldMappings.get(col.name);
           if (!fieldMapping) return renderedCellValue;
 
-          const shouldAutoFocus = initialFocusCell?.rowId === rowId && initialFocusCell?.columnName === col.name;
-          const isNewRow = editingData.isNew || false;
-          const rowValues = { ...editingData.originalData, ...editingData.modifiedData };
-          const shouldBeReadOnly = isFieldReadOnly(fieldMapping.field, isNewRow, rowValues, session);
-
-          // Get the identifier and entries for this field if they exist (for display in TABLEDIR selectors)
-          // IMPORTANT: Identifiers can come with different keys depending on the source:
-          // - From server data: uses hqlName (e.g., "partnerAddress$_identifier")
-          // - From callouts: uses inputName (e.g., "inpcBpartnerLocationId$_identifier")
-          // We need to check both possibilities
-          const fieldInputName = fieldMapping.field.inputName || fieldMapping.field.hqlName || fieldKey;
-          const fieldHqlName = fieldMapping.field.hqlName || fieldMapping.field.columnName || fieldKey;
-
-          // Try both possible identifier keys
-          const identifierKeyFromInput = `${fieldInputName}$_identifier`;
-          const identifierKeyFromHql = `${fieldHqlName}$_identifier`;
-          const fieldIdentifier = rowValues[identifierKeyFromInput] || rowValues[identifierKeyFromHql];
-
-          // Try both possible entries keys
-          const entriesKeyFromInput = `${fieldInputName}$_entries`;
-          const entriesKeyFromHql = `${fieldHqlName}$_entries`;
-          const fieldEntries = rowValues[entriesKeyFromInput] || rowValues[entriesKeyFromHql];
-
-          // Create an augmented field with the identifier and entries for the cell editor
-          // Use inputName as the primary key since that's what TableDirCellEditor expects
-          const fieldWithData = {
-            ...fieldMapping.field,
-            ...(fieldIdentifier && { [identifierKeyFromInput]: fieldIdentifier }),
-            ...(fieldEntries && { [entriesKeyFromInput]: fieldEntries }),
-          };
-
           return (
-            <div className="inline-edit-cell-container">
-              <React.Suspense
-                fallback={
-                  <div className="inline-edit-loading">
-                    <span className="text-gray-500 text-sm">Loading...</span>
-                  </div>
-                }>
-                <CellEditorFactory
-                  fieldType={fieldMapping.fieldType}
-                  value={currentValue}
-                  onChange={(value, optionData) =>
-                    handleCellValueChange(rowId, fieldKey, value, optionData, fieldMapping.field)
-                  }
-                  onBlur={() => {
-                    validateFieldOnBlur(rowId, fieldKey, currentValue);
-                    if (shouldAutoFocus) {
-                      setInitialFocusCell(null);
-                    }
-                  }}
-                  field={fieldWithData}
-                  hasError={Boolean(editingData.validationErrors[col.name])}
-                  disabled={editingData.isSaving || shouldBeReadOnly}
-                  rowId={rowId}
-                  columnId={fieldKey}
-                  keyboardNavigationManager={keyboardNavigationManager}
-                  shouldAutoFocus={shouldAutoFocus}
-                  loadOptions={async (_field, searchQuery) => {
-                    // Get fresh row values at the time of loading options, not cached values
-                    // This ensures we use the current organization value after FIC updates
-                    const freshEditingData = editingRowUtils.getEditingRowData(rowId);
-                    const freshRowValues = freshEditingData
-                      ? { ...freshEditingData.originalData, ...freshEditingData.modifiedData }
-                      : rowValues;
-                    return await loadTableDirOptions(fieldMapping.field, searchQuery, freshRowValues);
-                  }}
-                  isLoadingOptions={(fieldName) => isLoadingTableDirOptions(fieldName)}
-                  data-testid="CellEditorFactory__8ca888"
-                />
-              </React.Suspense>
-            </div>
+            <EditableCellContent
+              rowId={rowId}
+              fieldKey={fieldKey}
+              columnName={col.name}
+              editingData={editingData}
+              fieldMapping={fieldMapping}
+              initialFocusCell={initialFocusCell}
+              session={session}
+              editingRowUtils={editingRowUtils}
+              keyboardNavigationManager={keyboardNavigationManager}
+              handleCellValueChange={handleCellValueChange}
+              validateFieldOnBlur={validateFieldOnBlur}
+              setInitialFocusCell={setInitialFocusCell}
+              loadTableDirOptions={loadTableDirOptions}
+              isLoadingTableDirOptions={isLoadingTableDirOptions}
+            />
           );
         }
 
@@ -1531,31 +1728,16 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       enableGlobalFilter: false,
       enableColumnActions: false,
       enableResizing: true,
-      Cell: ({ row }: { row: MRT_Row<EntityData> }) => {
-        const rowId = String(row.original.id);
-        const editingData = editingRowUtils.getEditingRowData(rowId);
-        const isEditing = editingRowUtils.isRowEditing(rowId);
-        const isSaving = editingData?.isSaving || false;
-        const hasErrors = editingData ? Object.values(editingData.validationErrors).some((error) => error) : false;
-
-        return (
-          <ActionsColumn
-            row={row}
-            isEditing={isEditing}
-            isSaving={isSaving}
-            hasErrors={hasErrors}
-            validationErrors={editingData?.validationErrors}
-            onEdit={() => handleEditRow(row)}
-            onSave={() => handleSaveRow(rowId)}
-            onCancel={() => handleCancelRow(rowId)}
-            onOpenForm={() => {
-              // Navigate to form view - this will handle the URL update properly
-              setRecordId(String(row.original.id));
-            }}
-            data-testid="ActionsColumn__8ca888"
-          />
-        );
-      },
+      Cell: ({ row }: { row: MRT_Row<EntityData> }) => (
+        <ActionsColumnCell
+          row={row}
+          editingRowUtils={editingRowUtils}
+          handleEditRow={handleEditRow}
+          handleSaveRow={handleSaveRow}
+          handleCancelRow={handleCancelRow}
+          setRecordId={setRecordId}
+        />
+      ),
     };
 
     // Insert actions column at the beginning (after tree/expand column if present)
@@ -1777,9 +1959,14 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   const renderEmptyRowsFallback = useCallback(
     ({ table }: { table: MRT_TableInstance<EntityData> }) => (
-      <EmptyState table={table} data-testid="EmptyState__8ca888" />
+      <EmptyState 
+        table={table} 
+        onContextMenu={handleTableBodyContextMenu} 
+        onInsertRow={handleInsertRow}
+        data-testid="EmptyState__8ca888" 
+      />
     ),
-    []
+    [handleTableBodyContextMenu, handleInsertRow]
   );
 
   const fetchMoreOnBottomReached = useCallback(

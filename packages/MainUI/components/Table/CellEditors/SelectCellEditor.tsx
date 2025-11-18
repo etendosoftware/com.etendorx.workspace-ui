@@ -82,32 +82,51 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
     setFocused();
   };
 
+  /**
+   * Blur the target element if it has a blur method
+   */
+  const blurTarget = (target: EventTarget) => {
+    if ("blur" in target && typeof target.blur === "function") {
+      target.blur();
+    }
+  };
+
+  /**
+   * Handle Enter key press
+   */
+  const handleEnterKey = (e: React.KeyboardEvent<HTMLSelectElement | HTMLInputElement>) => {
+    e.preventDefault();
+    blurTarget(e.target);
+  };
+
+  /**
+   * Handle Escape key press
+   */
+  const handleEscapeKey = (e: React.KeyboardEvent<HTMLSelectElement | HTMLInputElement>) => {
+    e.preventDefault();
+    setLocalValue(String(value || ""));
+    blurTarget(e.target);
+  };
+
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLSelectElement | HTMLInputElement>) => {
     // First try keyboard navigation
     const navigationHandled = await handleNavigationKeyDown(e.nativeEvent);
 
-    if (!navigationHandled) {
-      // Handle local keyboard events if navigation didn't handle them
-      switch (e.key) {
-        case "Enter":
-          // This should be handled by navigation, but fallback to blur
-          e.preventDefault();
-          if ("blur" in e.target && typeof e.target.blur === "function") {
-            e.target.blur();
-          }
-          break;
-        case "Escape":
-          // This should be handled by navigation, but fallback to restore value
-          e.preventDefault();
-          setLocalValue(String(value || ""));
-          if ("blur" in e.target && typeof e.target.blur === "function") {
-            e.target.blur();
-          }
-          break;
-        default:
-          // Allow normal dropdown navigation (arrow keys, etc.)
-          break;
-      }
+    if (navigationHandled) {
+      return;
+    }
+
+    // Handle local keyboard events if navigation didn't handle them
+    switch (e.key) {
+      case "Enter":
+        handleEnterKey(e);
+        break;
+      case "Escape":
+        handleEscapeKey(e);
+        break;
+      default:
+        // Allow normal dropdown navigation (arrow keys, etc.)
+        break;
     }
   };
 
@@ -141,56 +160,89 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
 
   // Removed debugging logs to improve performance during scrolling
 
-  // Check if we're loading options or if this is a TABLEDIR field with no options
-  const isLoadingOrNoOptions =
-    isLoadingDynamicOptions ||
-    ((field.type === "tabledir" || field.referencedEntity) && options.length === 0 && !isLoadingDynamicOptions);
+  /**
+   * Handle text input change for fallback input
+   */
+  const handleTextInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setLocalValue(newValue);
+    onChange(newValue === "" ? null : newValue);
+  };
+
+  /**
+   * Get placeholder text for fallback input
+   */
+  const getFallbackPlaceholder = (): string => {
+    return isLoadingDynamicOptions ? `Loading ${field.name} options...` : `Enter ${field.name}...`;
+  };
+
+  /**
+   * Get error classes for inputs
+   */
+  const getErrorClasses = (): string => {
+    return hasError ? "border-red-500 bg-red-50 text-red-900 placeholder-red-400" : "border-gray-300 bg-white";
+  };
+
+  /**
+   * Get disabled classes for inputs
+   */
+  const getDisabledClasses = (): string => {
+    return disabled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "hover:border-gray-400";
+  };
+
+  /**
+   * Check if we should render fallback input
+   */
+  const shouldRenderFallbackInput = (): boolean => {
+    return isLoadingDynamicOptions || ((field.type === "tabledir" || field.referencedEntity) && options.length === 0 && !isLoadingDynamicOptions);
+  };
+
+  /**
+   * Render fallback text input for TABLEDIR fields
+   */
+  const renderFallbackInput = () => (
+    <div className="inline-edit-tabledir-fallback">
+      <input
+        ref={selectRef as any}
+        type="text"
+        value={localValue}
+        onChange={handleTextInputChange}
+        onBlur={handleBlur}
+        onFocus={handleFocus}
+        onKeyDown={handleKeyDown}
+        data-row-id={rowId}
+        data-column-id={columnId}
+        disabled={disabled}
+        placeholder={getFallbackPlaceholder()}
+        className={`
+          inline-edit-input
+          w-full
+          px-2
+          py-1
+          border
+          rounded
+          text-sm
+          focus:outline-none
+          focus:ring-2
+          focus:ring-blue-500
+          focus:border-transparent
+          ${getErrorClasses()}
+          ${getDisabledClasses()}
+        `}
+        title={hasError ? "This field has validation errors (TABLEDIR fallback)" : `${field.name} (TABLEDIR)`}
+        aria-label={`${field.name} (TABLEDIR)`}
+        aria-invalid={hasError}
+        aria-describedby={hasError ? `${field.name}-error` : undefined}
+      />
+      <div className="text-xs text-gray-500 mt-1">
+        {isLoadingDynamicOptions ? "Loading options..." : "TABLEDIR field - options not loaded"}
+      </div>
+    </div>
+  );
 
   // If we're loading options or this is a TABLEDIR field without options, render as text input
-  if (isLoadingOrNoOptions) {
-    return (
-      <div className="inline-edit-tabledir-fallback">
-        <input
-          ref={selectRef as any}
-          type="text"
-          value={localValue}
-          onChange={(e) => {
-            const newValue = e.target.value;
-            setLocalValue(newValue);
-            onChange(newValue === "" ? null : newValue);
-          }}
-          onBlur={handleBlur}
-          onFocus={handleFocus}
-          onKeyDown={handleKeyDown}
-          data-row-id={rowId}
-          data-column-id={columnId}
-          disabled={disabled}
-          placeholder={isLoadingDynamicOptions ? `Loading ${field.name} options...` : `Enter ${field.name}...`}
-          className={`
-            inline-edit-input
-            w-full
-            px-2
-            py-1
-            border
-            rounded
-            text-sm
-            focus:outline-none
-            focus:ring-2
-            focus:ring-blue-500
-            focus:border-transparent
-            ${hasError ? "border-red-500 bg-red-50 text-red-900 placeholder-red-400" : "border-gray-300 bg-white"}
-            ${disabled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "hover:border-gray-400"}
-          `}
-          title={hasError ? "This field has validation errors (TABLEDIR fallback)" : `${field.name} (TABLEDIR)`}
-          aria-label={`${field.name} (TABLEDIR)`}
-          aria-invalid={hasError}
-          aria-describedby={hasError ? `${field.name}-error` : undefined}
-        />
-        <div className="text-xs text-gray-500 mt-1">
-          {isLoadingDynamicOptions ? "Loading options..." : "TABLEDIR field - options not loaded"}
-        </div>
-      </div>
-    );
+  if (shouldRenderFallbackInput()) {
+    return renderFallbackInput();
   }
 
   return (
@@ -216,7 +268,7 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
         focus:ring-2
         focus:ring-blue-500
         focus:border-transparent
-        ${hasError ? "border-red-500 bg-red-50 text-red-900" : "border-gray-300 bg-white"}
+        ${getErrorClasses()}
         ${disabled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "hover:border-gray-400 cursor-pointer"}
       `}
       title={hasError ? "This field has validation errors" : field.name}
