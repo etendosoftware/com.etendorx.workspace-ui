@@ -1,6 +1,7 @@
 import type { SxProps, Theme } from "@mui/material";
 import type { MRT_ColumnDef, MRT_Row, MRT_Column } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import { isEmptyObject } from "../commons";
 
 export const getDisplayColumnDefOptions = ({ shouldUseTreeMode }: { shouldUseTreeMode: boolean }) => {
   if (shouldUseTreeMode) {
@@ -111,4 +112,17 @@ export const getNewActiveTabsByLevel = (currentMap: Map<number, string>, level: 
   const newMap = new Map(currentMap);
   newMap.set(level, tabId);
   return newMap;
+};
+
+export const getCellTitle = (cellValue: unknown): string => {
+  if (typeof cellValue === "string") {
+    return cellValue;
+  }
+  if (typeof cellValue === "object" && cellValue !== null && "props" in cellValue) {
+    const cellValueWithProps = cellValue as { props?: Record<string, unknown> };
+    if (cellValueWithProps.props && !isEmptyObject(cellValueWithProps.props)) {
+      return (cellValueWithProps.props as { label?: string }).label ?? "";
+    }
+  }
+  return "";
 };
