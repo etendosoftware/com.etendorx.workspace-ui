@@ -25,7 +25,6 @@ td:has(.inline-edit-cell-container) {
   overflow: hidden;
 }
 
-
 /* Cell editor wrapper styles - ensure all editors fill available space */
 .cell-editor-wrapper {
   width: 100%;

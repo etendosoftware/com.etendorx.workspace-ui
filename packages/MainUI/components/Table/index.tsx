@@ -125,11 +125,7 @@ const getFieldIdentifier = (
  * Get field entries from row values
  * Handles both inputName and hqlName based keys
  */
-const getFieldEntries = (
-  rowValues: Record<string, unknown>,
-  fieldInputName: string,
-  fieldHqlName: string
-): unknown => {
+const getFieldEntries = (rowValues: Record<string, unknown>, fieldInputName: string, fieldHqlName: string): unknown => {
   const entriesKeyFromInput = `${fieldInputName}$_entries`;
   const entriesKeyFromHql = `${fieldHqlName}$_entries`;
   return rowValues[entriesKeyFromInput] || rowValues[entriesKeyFromHql];
@@ -167,7 +163,13 @@ interface EditableCellContentProps {
   session: Record<string, unknown> | undefined;
   editingRowUtils: any;
   keyboardNavigationManager: KeyboardNavigationManager;
-  handleCellValueChange: (rowId: string, fieldKey: string, value: unknown, optionData?: Record<string, unknown>, field?: Field) => void;
+  handleCellValueChange: (
+    rowId: string,
+    fieldKey: string,
+    value: unknown,
+    optionData?: Record<string, unknown>,
+    field?: Field
+  ) => void;
   validateFieldOnBlur: (rowId: string, fieldKey: string, value: unknown) => void;
   setInitialFocusCell: (cell: { rowId: string; columnName: string } | null) => void;
   loadTableDirOptions: (field: Field, searchQuery?: string, rowValues?: Record<string, unknown>) => Promise<any>;
@@ -195,9 +197,7 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
   isLoadingTableDirOptions,
 }) => {
   const currentValue =
-    fieldKey in editingData.modifiedData
-      ? editingData.modifiedData[fieldKey]
-      : editingData.originalData[fieldKey];
+    fieldKey in editingData.modifiedData ? editingData.modifiedData[fieldKey] : editingData.originalData[fieldKey];
 
   const shouldAutoFocus = initialFocusCell?.rowId === rowId && initialFocusCell?.columnName === columnName;
   const isNewRow = editingData.isNew || false;
@@ -1314,7 +1314,14 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         screenReaderAnnouncer.announceSaveOperation(rowId, false, editingRowData?.isNew || false);
       }
     },
-    [editingRowUtils, showErrorModal, screenReaderAnnouncer, optimisticRecords, displayRecords, rollbackOptimisticUpdate]
+    [
+      editingRowUtils,
+      showErrorModal,
+      screenReaderAnnouncer,
+      optimisticRecords,
+      displayRecords,
+      rollbackOptimisticUpdate,
+    ]
   );
 
   const handleSaveRow = useCallback(
@@ -1374,7 +1381,14 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         if (saveResult.success && saveResult.data) {
           handleSaveSuccess(rowId, editingRowData, saveResult, updatedRecords);
         } else if (saveResult.errors) {
-          handleSaveErrors(rowId, editingRowData, saveResult, updatedRecords, processSaveErrors, getGeneralErrorMessage);
+          handleSaveErrors(
+            rowId,
+            editingRowData,
+            saveResult,
+            updatedRecords,
+            processSaveErrors,
+            getGeneralErrorMessage
+          );
         }
       } catch (error) {
         handleSaveException(rowId, editingRowData, error);
@@ -1668,6 +1682,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
               setInitialFocusCell={setInitialFocusCell}
               loadTableDirOptions={loadTableDirOptions}
               isLoadingTableDirOptions={isLoadingTableDirOptions}
+              data-testid="EditableCellContent__8ca888"
             />
           );
         }
@@ -1736,6 +1751,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           handleSaveRow={handleSaveRow}
           handleCancelRow={handleCancelRow}
           setRecordId={setRecordId}
+          data-testid="ActionsColumnCell__8ca888"
         />
       ),
     };
@@ -1959,11 +1975,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   const renderEmptyRowsFallback = useCallback(
     ({ table }: { table: MRT_TableInstance<EntityData> }) => (
-      <EmptyState 
-        table={table} 
-        onContextMenu={handleTableBodyContextMenu} 
+      <EmptyState
+        table={table}
+        onContextMenu={handleTableBodyContextMenu}
         onInsertRow={handleInsertRow}
-        data-testid="EmptyState__8ca888" 
+        data-testid="EmptyState__8ca888"
       />
     ),
     [handleTableBodyContextMenu, handleInsertRow]

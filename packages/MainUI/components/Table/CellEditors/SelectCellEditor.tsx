@@ -65,7 +65,10 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
     setLocalValue(String(value || ""));
   }, [value]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  /**
+   * Handle value change for both select and text input
+   */
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
 
@@ -161,15 +164,6 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
   // Removed debugging logs to improve performance during scrolling
 
   /**
-   * Handle text input change for fallback input
-   */
-  const handleTextInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setLocalValue(newValue);
-    onChange(newValue === "" ? null : newValue);
-  };
-
-  /**
    * Get placeholder text for fallback input
    */
   const getFallbackPlaceholder = (): string => {
@@ -194,7 +188,10 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
    * Check if we should render fallback input
    */
   const shouldRenderFallbackInput = (): boolean => {
-    return isLoadingDynamicOptions || ((field.type === "tabledir" || field.referencedEntity) && options.length === 0 && !isLoadingDynamicOptions);
+    return (
+      isLoadingDynamicOptions ||
+      ((field.type === "tabledir" || field.referencedEntity) && options.length === 0 && !isLoadingDynamicOptions)
+    );
   };
 
   /**
@@ -206,7 +203,7 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
         ref={selectRef as any}
         type="text"
         value={localValue}
-        onChange={handleTextInputChange}
+        onChange={handleChange}
         onBlur={handleBlur}
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}

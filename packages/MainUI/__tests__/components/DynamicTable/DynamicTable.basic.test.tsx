@@ -336,7 +336,7 @@ jest.mock("../../../components/Table/styles/inlineEditing.css", () => ({}));
 jest.mock("../../../components/Table/utils/tableFeatureCompatibility", () => ({
   canSortWithEditingRows: jest.fn(() => true),
   canFilterWithEditingRows: jest.fn(() => true),
-  mergeOptimisticRecordsWithSort: jest.fn((display, optimistic) => optimistic.length > 0 ? optimistic : display),
+  mergeOptimisticRecordsWithSort: jest.fn((display, optimistic) => (optimistic.length > 0 ? optimistic : display)),
   canUseVirtualScrollingWithEditing: jest.fn(() => true),
 }));
 

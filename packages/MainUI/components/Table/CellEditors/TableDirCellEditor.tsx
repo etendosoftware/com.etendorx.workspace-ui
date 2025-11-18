@@ -506,9 +506,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
         // biome-ignore lint/a11y/useSemanticElements: Custom combobox with search requires div not select
         role="combobox"
       >
-        <span className="truncate flex-1 min-w-0">
-          {getComboboxDisplayText()}
-        </span>
+        <span className="truncate flex-1 min-w-0">{getComboboxDisplayText()}</span>
         <ChevronDown
           className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${anchorEl ? "rotate-180" : ""}`}
           data-testid={"ChevronDown__" + field.id}

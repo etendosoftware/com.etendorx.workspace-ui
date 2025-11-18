@@ -37,23 +37,21 @@ const EmptyState = ({
   maxWidth = table?.refs.tableContainerRef.current?.clientWidth ?? maxWidth;
 
   return (
-    <div 
-      className="flex flex-col items-center justify-center text-center py-8 flex-1 min-h-0 w-full" 
-      style={{ maxWidth }} 
-      onContextMenu={onContextMenu}
-    >
+    <div
+      className="flex flex-col items-center justify-center text-center py-8 flex-1 min-h-0 w-full"
+      style={{ maxWidth }}
+      onContextMenu={onContextMenu}>
       <div className="w-16 h-8 text-gray-300 pointer-events-none" />
       <h3 className="text-lg font-semibold text-gray-700 mb-2 pointer-events-none">{t("table.labels.emptyRecords")}</h3>
       <p className="text-sm text-gray-500 mb-4 pointer-events-none">{t("status.noRecords")}</p>
-      
+
       {onInsertRow && (
         <Button
           variant="filled"
           style={{ maxWidth: "15rem" }}
           startIcon={<PlusCircle fill="white" data-testid="PlusCircle__empty-state" />}
           onClick={onInsertRow}
-          data-testid="Button__insert-row-empty-state"
-        >
+          data-testid="Button__insert-row-empty-state">
           {t("table.actions.createRecordInGrid")}
         </Button>
       )}
