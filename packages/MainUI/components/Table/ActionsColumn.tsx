@@ -19,7 +19,6 @@ import type React from "react";
 import type { MRT_Row } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import { IconButton } from "@workspaceui/componentlibrary/src/components";
-import { useTranslation } from "@/hooks/useTranslation";
 import { LoadingIndicator } from "./components/LoadingIndicator";
 import { generateAriaAttributes } from "./utils/accessibilityUtils";
 
@@ -68,9 +67,6 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
   onCancel,
   onOpenForm,
 }) => {
-  const { t } = useTranslation();
-
-  // Create error tooltip content
   const getErrorTooltip = (): string => {
     if (!validationErrors) return "Validation errors present";
 
@@ -100,7 +96,7 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
     const cancelButtonAttrs = generateAriaAttributes.actionButton("Cancel", String(row.original.id), isSaving);
 
     return (
-      <div className="flex items-center gap-1 min-w-[80px]" role="group" aria-label="Row editing actions">
+      <fieldset className="flex items-center gap-1 min-w-[80px]" aria-label="Row editing actions">
         <IconButton
           onClick={onSave}
           disabled={isSaving || hasErrors}
@@ -136,7 +132,7 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
             {hasServerErrors && <span className="text-xs ml-1 font-medium">SERVER</span>}
           </div>
         )}
-      </div>
+      </fieldset>
     );
   }
 
@@ -144,7 +140,7 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
   const formButtonAttrs = generateAriaAttributes.actionButton("Open form view", String(row.original.id));
 
   return (
-    <div className="flex items-center gap-1 min-w-[80px]" role="group" aria-label="Row actions">
+    <fieldset className="flex items-center gap-1 min-w-[80px]" aria-label="Row actions">
       <IconButton
         onClick={onEdit}
         title="Edit in grid"
@@ -162,6 +158,6 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
         {...formButtonAttrs}>
         <ExternalLinkIcon className="w-4 h-4" />
       </IconButton>
-    </div>
+    </fieldset>
   );
 };

@@ -66,6 +66,7 @@ export function shouldShowCancelConfirmation(editingRowData: EditingRowData, for
  * @param removeEditingRow Function to remove row from editing state
  * @param showConfirmation Whether to show confirmation dialog
  * @param onConfirm Optional callback when user confirms cancellation
+ * @param confirmationCallback Optional async callback to show confirmation dialog
  * @returns Promise that resolves when cancel is complete or rejected if cancelled
  */
 export async function handleCancelOperation({
@@ -74,12 +75,14 @@ export async function handleCancelOperation({
   removeEditingRow,
   showConfirmation = true,
   onConfirm,
+  confirmationCallback,
 }: {
   rowId: string;
   editingRowData: EditingRowData;
   removeEditingRow: (rowId: string) => void;
   showConfirmation?: boolean;
   onConfirm?: () => void;
+  confirmationCallback?: (message: string, title?: string) => Promise<boolean>;
 }): Promise<void> {
   logger.info(`[CancelOperation] Starting cancel for row: ${rowId}`, {
     isNew: editingRowData.isNew,
@@ -88,13 +91,16 @@ export async function handleCancelOperation({
 
   // Check if we need to show confirmation
   if (showConfirmation && shouldShowCancelConfirmation(editingRowData)) {
-    // For now, we'll use a simple confirm dialog
-    // In a real implementation, this would be replaced with a proper modal component
     const message = editingRowData.isNew
       ? "Are you sure you want to discard this new row?"
       : "Are you sure you want to discard your changes?";
 
-    const confirmed = window.confirm(message);
+    const title = editingRowData.isNew ? "Discard New Row" : "Discard Changes";
+
+    // Use custom confirmation callback if provided, otherwise fallback to window.confirm
+    const confirmed = confirmationCallback
+      ? await confirmationCallback(message, title)
+      : window.confirm(message);
 
     if (!confirmed) {
       logger.info(`[CancelOperation] User cancelled the cancel operation for row: ${rowId}`);
@@ -128,6 +134,7 @@ export async function handleCancelOperation({
  * @param getEditingRowData Function to get editing row data
  * @param removeEditingRow Function to remove row from editing state
  * @param showConfirmation Whether to show confirmation dialog
+ * @param confirmationCallback Optional async callback to show confirmation dialog
  * @returns Promise that resolves when all cancels are complete
  */
 export async function handleBatchCancelOperation({
@@ -135,11 +142,13 @@ export async function handleBatchCancelOperation({
   getEditingRowData,
   removeEditingRow,
   showConfirmation = true,
+  confirmationCallback,
 }: {
   rowIds: string[];
   getEditingRowData: (rowId: string) => EditingRowData | undefined;
   removeEditingRow: (rowId: string) => void;
   showConfirmation?: boolean;
+  confirmationCallback?: (message: string, title?: string) => Promise<boolean>;
 }): Promise<void> {
   logger.info(`[CancelOperation] Starting batch cancel for ${rowIds.length} rows`);
 
@@ -152,7 +161,12 @@ export async function handleBatchCancelOperation({
   // Show confirmation if needed
   if (showConfirmation && rowsWithChanges.length > 0) {
     const message = `Are you sure you want to discard changes for ${rowsWithChanges.length} row(s)?`;
-    const confirmed = window.confirm(message);
+    const title = "Discard Changes";
+
+    // Use custom confirmation callback if provided, otherwise fallback to window.confirm
+    const confirmed = confirmationCallback
+      ? await confirmationCallback(message, title)
+      : window.confirm(message);
 
     if (!confirmed) {
       logger.info(`[CancelOperation] User cancelled the batch cancel operation`);

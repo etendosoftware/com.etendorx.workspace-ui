@@ -182,6 +182,7 @@ const en = {
     descriptionText: "Confirm your shipment and save it in the system. 📝📦",
   },
   table: {
+    newRecord: "New Record",
     tooltips: {
       search: "Search",
       views: "Views",

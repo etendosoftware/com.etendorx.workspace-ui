@@ -297,10 +297,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { user, session } = useUserContext();
 
   // Confirmation dialog hook for user confirmations
-  const { dialogState, confirmDiscardChanges, confirmSaveWithErrors, showSuccessMessage } = useConfirmationDialog();
+  const { dialogState, confirmDiscardChanges, confirmSaveWithErrors } = useConfirmationDialog();
 
   // Status modal for showing save errors and success messages
-  const { statusModal, hideStatusModal, showErrorModal } = useStatusModal();
+  const { statusModal, hideStatusModal, showErrorModal, showSuccessModal } = useStatusModal();
 
   const {
     registerDatasource,
@@ -738,11 +738,56 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     []
   );
 
+  const handleTableBodyContextMenu = useCallback((event: React.MouseEvent) => {
+    // Check if the click is on an empty area (not on a row/cell)
+    // We detect this by checking if the target is not a table cell or row
+    const target = event.target as HTMLElement;
+    const isClickOnEmptyArea = !target.closest("tr") && !target.closest("td") && !target.closest("th");
+
+    if (isClickOnEmptyArea) {
+      event.preventDefault();
+
+      // Create a temporary anchor element at the mouse position
+      // This ensures the menu appears exactly where the user clicked
+      const anchorElement = document.createElement("div");
+      anchorElement.style.position = "fixed";
+      anchorElement.style.left = `${event.clientX}px`;
+      anchorElement.style.top = `${event.clientY}px`;
+      anchorElement.style.width = "0px";
+      anchorElement.style.height = "0px";
+      // Mark this as a temporary element so we know to remove it later
+      anchorElement.setAttribute("data-context-menu-anchor", "true");
+      document.body.appendChild(anchorElement);
+
+      setContextMenu({
+        anchorEl: anchorElement,
+        cell: null,
+        row: null,
+      });
+    }
+  }, []);
+
   const handleCloseContextMenu = useCallback(() => {
-    setContextMenu({
-      anchorEl: null,
-      cell: null,
-      row: null,
+    setContextMenu((prev) => {
+      // Only clean up temporary anchor elements that we created
+      // IMPORTANT: Do NOT remove table cells that were used as anchors!
+      if (prev.anchorEl?.hasAttribute("data-context-menu-anchor")) {
+        try {
+          // Check if the element is still in the DOM and has a parent before removing
+          if (prev.anchorEl.parentNode && document.body.contains(prev.anchorEl)) {
+            prev.anchorEl.parentNode.removeChild(prev.anchorEl);
+          }
+        } catch (error) {
+          // Silently ignore if element was already removed
+          console.debug("[handleCloseContextMenu] Element already removed:", error);
+        }
+      }
+
+      return {
+        anchorEl: null,
+        cell: null,
+        row: null,
+      };
     });
   }, []);
 
@@ -1019,8 +1064,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           });
 
           // Show success feedback to user
-          const successMessage = editingRowData.isNew ? "Record created successfully" : "Record updated successfully";
-          showSuccessMessage(successMessage);
+          const successMessage = editingRowData.isNew ? "Created" : "Saved";
+          showSuccessModal(successMessage);
 
           // Announce save success to screen readers
           if (screenReaderAnnouncer) {
@@ -1165,13 +1210,26 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         // Update the cell value immediately
         editingRowUtils.updateCellValue(rowId, fieldName, value);
 
-        // For TABLEDIR fields, also store the identifier
+        // For TABLEDIR fields, also store the identifier and any nested field values
         // Note: We don't create synthetic entries here for user selections,
         // only for callout values, to avoid overwriting the full options list
-        const optionLabel =
-          optionData && typeof optionData === "object" && "label" in optionData ? optionData.label : undefined;
-        if (optionLabel) {
-          editingRowUtils.updateCellValue(rowId, `${fieldName}$_identifier`, optionLabel);
+        if (optionData && typeof optionData === "object") {
+          const optionLabel = "label" in optionData ? optionData.label : undefined;
+          if (optionLabel) {
+            editingRowUtils.updateCellValue(rowId, `${fieldName}$_identifier`, optionLabel);
+          }
+
+          // Store any nested field values (like product$id for ProductByPriceAndWarehouse)
+          // These are needed for proper payload construction
+          for (const [key, val] of Object.entries(optionData)) {
+            // Skip already saved fields and metadata fields
+            if (key === "id" || key === "value" || key === "label" || key.startsWith("_")) continue;
+
+            // Save nested fields that might be needed (like product$id, bpid, etc.)
+            if (key.includes("$")) {
+              editingRowUtils.updateCellValue(rowId, key, val);
+            }
+          }
         }
 
         // Trigger debounced validation for real-time feedback
@@ -1201,6 +1259,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const handleContextMenuInsertRow = useCallback(() => {
     handleInsertRow();
   }, [handleInsertRow]);
+
+  const handleContextMenuNewRecord = useCallback(() => {
+    // Open form view in new mode
+    setRecordId("NEW");
+  }, [setRecordId]);
 
   const renderFirstColumnCell = ({
     renderedCellValue,
@@ -1348,19 +1411,29 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           const shouldBeReadOnly = isFieldReadOnly(fieldMapping.field, isNewRow, rowValues, session);
 
           // Get the identifier and entries for this field if they exist (for display in TABLEDIR selectors)
-          // IMPORTANT: Use the field's inputName to match how entries are stored by callouts
-          // Callouts use inputName (e.g., "inpcBpartnerId") for payload fields, not hqlName
+          // IMPORTANT: Identifiers can come with different keys depending on the source:
+          // - From server data: uses hqlName (e.g., "partnerAddress$_identifier")
+          // - From callouts: uses inputName (e.g., "inpcBpartnerLocationId$_identifier")
+          // We need to check both possibilities
           const fieldInputName = fieldMapping.field.inputName || fieldMapping.field.hqlName || fieldKey;
-          const identifierKey = `${fieldInputName}$_identifier`;
-          const entriesKey = `${fieldInputName}$_entries`;
-          const fieldIdentifier = rowValues[identifierKey];
-          const fieldEntries = rowValues[entriesKey];
+          const fieldHqlName = fieldMapping.field.hqlName || fieldMapping.field.columnName || fieldKey;
+
+          // Try both possible identifier keys
+          const identifierKeyFromInput = `${fieldInputName}$_identifier`;
+          const identifierKeyFromHql = `${fieldHqlName}$_identifier`;
+          const fieldIdentifier = rowValues[identifierKeyFromInput] || rowValues[identifierKeyFromHql];
+
+          // Try both possible entries keys
+          const entriesKeyFromInput = `${fieldInputName}$_entries`;
+          const entriesKeyFromHql = `${fieldHqlName}$_entries`;
+          const fieldEntries = rowValues[entriesKeyFromInput] || rowValues[entriesKeyFromHql];
 
           // Create an augmented field with the identifier and entries for the cell editor
+          // Use inputName as the primary key since that's what TableDirCellEditor expects
           const fieldWithData = {
             ...fieldMapping.field,
-            ...(fieldIdentifier && { [identifierKey]: fieldIdentifier }),
-            ...(fieldEntries && { [entriesKey]: fieldEntries }),
+            ...(fieldIdentifier && { [identifierKeyFromInput]: fieldIdentifier }),
+            ...(fieldEntries && { [entriesKeyFromInput]: fieldEntries }),
           };
 
           return (
@@ -2174,25 +2247,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       if (event.key === "Escape") {
         const editingRowIds = editingRowUtils.getEditingRowIds();
 
-        // If there are editing rows, cancel the first one (or all of them)
+        // If there are editing rows, cancel the first one using handleCancelRow
+        // This ensures we use the confirmation modal instead of window.confirm
         if (editingRowIds.length > 0) {
           const rowId = editingRowIds[0]; // Cancel the first editing row
-          const editingRowData = editingRowUtils.getEditingRowData(rowId);
-
-          if (editingRowData) {
-            try {
-              const { handleCancelOperation } = await import("./utils/cancelOperations");
-
-              await handleCancelOperation({
-                rowId,
-                editingRowData,
-                removeEditingRow: editingRowUtils.removeEditingRow,
-                showConfirmation: true,
-              });
-            } catch (_error) {
-              // User cancelled the cancel operation, do nothing
-            }
-          }
+          await handleCancelRow(rowId);
         }
       }
     };
@@ -2201,7 +2260,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [editingRowUtils]);
+  }, [editingRowUtils, handleCancelRow]);
 
   useEffect(() => {
     if (removeRecordLocally) {
@@ -2322,7 +2381,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         labels={counterLabels}
         data-testid="RecordCounterBar__8ca888"
       />
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
         <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
       </div>
       <ColumnVisibilityMenu
@@ -2340,6 +2399,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         columns={baseColumns}
         onEditRow={handleContextMenuEditRow}
         onInsertRow={handleContextMenuInsertRow}
+        onNewRecord={handleContextMenuNewRecord}
         canEdit={true} // TODO: Add permission checks based on user permissions and field metadata
         isRowEditing={contextMenu.row ? editingRowUtils.isRowEditing(String(contextMenu.row.original.id)) : false}
         data-testid="CellContextMenu__8ca888"
@@ -2360,8 +2420,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         open={statusModal.open}
         statusType={statusModal.statusType}
         statusText={statusModal.statusText}
+        onClose={hideStatusModal}
         onAfterClose={() => {
-          hideStatusModal();
           if ("onAfterClose" in statusModal && typeof statusModal.onAfterClose === "function") {
             statusModal.onAfterClose();
           }
@@ -2369,6 +2429,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         saveLabel={statusModal.saveLabel}
         secondaryButtonLabel={statusModal.secondaryButtonLabel}
         errorMessage={statusModal.errorMessage}
+        isDeleteSuccess={statusModal.isDeleteSuccess}
         data-testid="StatusModal__table"
       />
     </div>

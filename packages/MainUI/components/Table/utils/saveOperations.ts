@@ -78,6 +78,12 @@ function buildSavePayload({
       return acc;
     }
 
+    // Skip nested field data (like product$id, product$name) that should not be sent directly
+    // These are auxiliary fields from TABLEDIR selectors that use special datasources
+    if (key.includes("$") && !key.startsWith("$")) {
+      return acc;
+    }
+
     // If we have tab metadata, only include fields that are valid (exist in tab.fields)
     // This filters out display names like "Transaction Document"
     if (tab && validFieldNames.size > 0) {
@@ -85,6 +91,14 @@ function buildSavePayload({
       if (!validFieldNames.has(key) && !key.startsWith("$")) {
         return acc;
       }
+    }
+
+    // Special handling for product field: use product$id if available
+    // biome-ignore lint/complexity/useLiteralKeys: product$id is not a valid JS identifier due to $ character
+    if (key === "product" && values["product$id"]) {
+      // biome-ignore lint/complexity/useLiteralKeys: product$id is not a valid JS identifier due to $ character
+      acc[key] = values["product$id"];
+      return acc;
     }
 
     acc[key] = value;

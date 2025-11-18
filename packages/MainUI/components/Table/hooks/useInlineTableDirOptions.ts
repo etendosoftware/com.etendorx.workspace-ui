@@ -45,23 +45,8 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
       const orgId = contextData?.organization || "no-org";
       const cacheKey = `${fieldKey}-${orgId}-${searchQuery || ""}-${pageSize}`;
 
-      logger.debug(`[useInlineTableDirOptions] loadOptions called`, {
-        fieldKey,
-        fieldType: field.type,
-        hasRefList: !!field.refList,
-        refListLength: field.refList?.length || 0,
-        referencedEntity: field.referencedEntity,
-        searchQuery,
-        hasContextData: !!contextData,
-        orgId,
-      });
-
       // Return cached options if available and no search query
       if (optionsCache[cacheKey] && !searchQuery) {
-        logger.debug(`[useInlineTableDirOptions] Returning cached options for ${fieldKey}`, {
-          count: optionsCache[cacheKey].length,
-          cacheKey,
-        });
         return optionsCache[cacheKey];
       }
 
@@ -80,15 +65,6 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
           logger.warn(`[useInlineTableDirOptions] No datasource or referencedEntity found for field ${fieldKey}`);
           return [];
         }
-
-        logger.debug(`[useInlineTableDirOptions] Using datasource: ${datasourceName}`, {
-          fieldKey,
-          hasSelector: !!field.selector,
-          selectorDatasourceName: (field.selector as any)?.datasourceName,
-          useSpecialDatasource,
-          referencedEntity: field.referencedEntity,
-        });
-
         // Build request body with selector configuration if available
         const baseBody: Record<string, string> = {
           _startRow: "0",
@@ -116,15 +92,11 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
             "extraSearchFields",
           ];
 
-          safeParams.forEach((param) => {
+          for (const param of safeParams) {
             if (selector[param] !== null && selector[param] !== undefined) {
               baseBody[param] = String(selector[param]);
             }
-          });
-
-          logger.debug(
-            `[useInlineTableDirOptions] Added ${safeParams.filter((p) => selector[p] !== undefined).length} selector params for special datasource ${fieldKey}`
-          );
+          }
         }
 
         // Add tab and window context if available
@@ -137,10 +109,6 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
         // The backend uses _org parameter to filter results by organization
         if (contextData?.organization) {
           baseBody._org = String(contextData.organization);
-          logger.debug(`[useInlineTableDirOptions] Added _org parameter:`, {
-            fieldKey,
-            org: contextData.organization,
-          });
         }
 
         // Apply search criteria if provided
@@ -151,33 +119,10 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
         }
 
         const body = new URLSearchParams(baseBody);
-
-        logger.debug("[useInlineTableDirOptions] Fetching options", {
-          fieldKey,
-          datasourceName,
-          searchQuery,
-          baseBodyKeys: Object.keys(baseBody),
-          requestBody: Object.fromEntries(body.entries()),
-        });
-
         const { data } = await datasource.client.request(`/api/datasource/${datasourceName}`, {
           method: "POST",
           body,
         });
-
-        logger.debug("[useInlineTableDirOptions] Response received", {
-          fieldKey,
-          hasData: !!data,
-          hasResponse: !!data?.response,
-          dataKeys: data ? Object.keys(data) : [],
-          responseKeys: data?.response ? Object.keys(data.response) : [],
-          recordCount: data?.response?.data?.length || 0,
-          sampleRecord: data?.response?.data?.[0],
-          hasError: !!data?.response?.error,
-          error: data?.response?.error,
-          status: data?.response?.status,
-        });
-
         // Check for errors in the response
         if (data?.response?.error) {
           logger.error(`[useInlineTableDirOptions] Server returned error for ${fieldKey}:`, data.response.error);
@@ -209,19 +154,6 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
             idValue = value || record.id;
           }
 
-          // Debug log for businessPartner to see what we're mapping
-          if (fieldKey === "Business Partner" || fieldKey === "businessPartner") {
-            logger.info(`[useInlineTableDirOptions] Mapping BP option:`, {
-              valueField,
-              recordId: record.id,
-              recordBpid: (record as any).bpid,
-              recordValue: (record as any).value,
-              extractedIdValue: idValue,
-              displayValue,
-              record,
-            });
-          }
-
           // Preserve all record fields for use in callouts (especially product data)
           // This allows callouts to access fields like standardPrice, netListPrice, uOM, currency, etc.
           return {
@@ -236,14 +168,6 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
         if (!searchQuery) {
           setOptionsCache((prev) => ({ ...prev, [cacheKey]: options }));
         }
-
-        logger.debug(`[useInlineTableDirOptions] Loaded ${options.length} options for ${fieldKey}`, {
-          fieldKey,
-          searchQuery,
-          optionsCount: options.length,
-          datasourceName,
-        });
-
         return options;
       } catch (error) {
         logger.error(`[useInlineTableDirOptions] Failed to load options for ${fieldKey}:`, error);

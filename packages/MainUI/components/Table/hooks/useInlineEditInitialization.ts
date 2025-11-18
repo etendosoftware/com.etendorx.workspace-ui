@@ -24,7 +24,6 @@ import {
   buildFormInitializationPayload,
   fetchFormInitialization,
 } from "@/utils/hooks/useFormInitialization/utils";
-import { logger } from "@/utils/logger";
 import { useTabContext } from "@/contexts/tab";
 import useFormParent from "@/hooks/useFormParent";
 import { FieldName } from "@/hooks/types";
@@ -67,25 +66,9 @@ export function useInlineEditInitialization({ tab }: UseInlineEditInitialization
       const fieldsByColumnName = getFieldsByColumnName(tab);
       const acc = { ...formInitialization.sessionAttributes } as EntityData;
 
-      logger.info(`[InlineEdit] Processing form initialization data`, {
-        auxiliaryInputValuesKeys: Object.keys(formInitialization.auxiliaryInputValues || {}),
-        columnValuesKeys: Object.keys(formInitialization.columnValues || {}),
-        sessionAttributesKeys: Object.keys(formInitialization.sessionAttributes || {}),
-        fieldsByColumnNameKeys: Object.keys(fieldsByColumnName || {}),
-      });
-
-      // Process auxiliary input values - exact same logic as useFormInitialState
       for (const [key, valueObj] of Object.entries(formInitialization.auxiliaryInputValues || {})) {
         const { value } = valueObj as { value: any };
         const newKey = fieldsByColumnName?.[key]?.hqlName ?? key;
-
-        logger.debug(`[InlineEdit] Processing auxiliary input: ${key} -> ${newKey}`, {
-          originalKey: key,
-          mappedKey: newKey,
-          value,
-          hasField: !!fieldsByColumnName?.[key],
-          fieldHqlName: fieldsByColumnName?.[key]?.hqlName,
-        });
 
         acc[newKey] = value;
       }
@@ -97,17 +80,6 @@ export function useInlineEditInitialization({ tab }: UseInlineEditInitialization
         const newKey = field?.hqlName ?? key;
         // Use inputName for identifier storage to match callout and selector logic
         const inputNameKey = field?.inputName || field?.hqlName || key;
-
-        logger.debug(`[InlineEdit] Processing column value: ${key} -> ${newKey}`, {
-          originalKey: key,
-          mappedKey: newKey,
-          inputNameKey,
-          value,
-          identifier,
-          hasField: !!field,
-          fieldHqlName: field?.hqlName,
-          fieldInputName: field?.inputName,
-        });
 
         acc[newKey] = value;
 
@@ -123,16 +95,6 @@ export function useInlineEditInitialization({ tab }: UseInlineEditInitialization
       const processedParentData = { ...parentData };
       const finalData = { ...acc, ...processedParentData };
 
-      logger.info(`[InlineEdit] Final processed data`, {
-        totalFields: Object.keys(finalData).length,
-        fieldNames: Object.keys(finalData),
-        sampleValues: Object.fromEntries(
-          Object.entries(finalData)
-            .slice(0, 5)
-            .map(([key, value]) => [key, value])
-        ),
-      });
-
       return finalData;
     },
     [parentData]
@@ -147,8 +109,6 @@ export function useInlineEditInitialization({ tab }: UseInlineEditInitialization
         const mode = isNew ? FormMode.NEW : FormMode.EDIT;
         const recordId = isNew ? undefined : rowId;
         const parentId = parentRecord?.id?.toString();
-
-        logger.info(`[InlineEdit] Fetching initialization data for ${mode} mode, rowId: ${rowId}`);
 
         // Build params for form initialization
         const params = buildFormInitializationParams({
@@ -173,18 +133,10 @@ export function useInlineEditInitialization({ tab }: UseInlineEditInitialization
         // Process the response into EntityData format
         const initializedData = processFormInitializationData(formInitializationResponse, tab);
 
-        logger.info(`[InlineEdit] Successfully fetched and processed initialization data`, {
-          rowId,
-          processedFields: Object.keys(initializedData).length,
-          hasAuxiliaryInputValues: !!formInitializationResponse.auxiliaryInputValues,
-          hasColumnValues: !!formInitializationResponse.columnValues,
-        });
-
         setLoading(false);
         return initializedData;
       } catch (err) {
         const error = err instanceof Error ? err : new Error("Failed to fetch initialization data");
-        logger.error(`[InlineEdit] Error fetching initialization data:`, error);
         setError(error);
         setLoading(false);
         return null;

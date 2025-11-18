@@ -193,17 +193,15 @@ export class LazyLoadingManager {
    * Preload editors that are likely to be needed soon
    */
   preloadEditors(editorKeys: string[], loaders: Map<string, () => Promise<any>>): void {
-    editorKeys.forEach((key) => {
+    for (const key of editorKeys) {
       const loader = loaders.get(key);
       if (loader && !this.loadedEditors.has(key) && !this.pendingLoads.has(key)) {
         // Preload with low priority
         setTimeout(() => {
-          this.loadEditor(key, loader).catch(() => {
-            // Ignore preload errors
-          });
+          this.loadEditor(key, loader).catch(() => {});
         }, 100);
       }
-    });
+    }
   }
 
   /**
@@ -251,8 +249,6 @@ export class PerformanceMonitor {
 
       if (duration > threshold) {
         logger.warn(`[Performance] Slow operation detected: ${key} took ${duration.toFixed(2)}ms`);
-      } else {
-        logger.debug(`[Performance] ${key} completed in ${duration.toFixed(2)}ms`);
       }
     }
   }

@@ -615,10 +615,14 @@ function validateTextFieldRealTime(
   }
 
   if (typeof value !== "string") {
-    return {
-      isValid: false,
-      error: `${field.description || field.name} must be text`,
-    };
+    // Only show type error if showTypingErrors is enabled
+    if (showTypingErrors) {
+      return {
+        isValid: false,
+        error: `${field.description || field.name} must be text`,
+      };
+    }
+    return { isValid: true };
   }
 
   return { isValid: true };

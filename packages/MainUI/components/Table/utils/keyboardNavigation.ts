@@ -48,12 +48,12 @@ export class KeyboardNavigationManager {
     const editingRowIds = this.options.getEditingRowIds();
 
     // Find all input elements that have data-row-id and data-column-id attributes
-    editingRowIds.forEach((rowId) => {
+    for (const rowId of editingRowIds) {
       const inputElements = document.querySelectorAll(
         `input[data-row-id="${rowId}"][data-column-id], select[data-row-id="${rowId}"][data-column-id], textarea[data-row-id="${rowId}"][data-column-id]`
       );
 
-      inputElements.forEach((element) => {
+      for (const element of inputElements) {
         const htmlElement = element as HTMLElement;
         const columnId = htmlElement.getAttribute("data-column-id");
 
@@ -64,8 +64,8 @@ export class KeyboardNavigationManager {
             element: htmlElement,
           });
         }
-      });
-    });
+      }
+    }
 
     // Sort cells by row order and then column order for consistent navigation
     const columnOrder = this.options.getColumnOrder?.() || [];
@@ -99,31 +99,15 @@ export class KeyboardNavigationManager {
    */
   public async navigateToNextCell(currentRowId: string, currentColumnId: string): Promise<boolean> {
     const editableCells = this.getEditableCells();
-    console.log("[KeyboardNavigation] navigateToNextCell called", {
-      currentRowId,
-      currentColumnId,
-      totalCells: editableCells.length,
-    });
-    console.log(
-      "[KeyboardNavigation] Editable cells:",
-      editableCells.map((c) => `${c.rowId}:${c.columnId}`)
-    );
-
     const currentIndex = editableCells.findIndex(
       (cell) => cell.rowId === currentRowId && cell.columnId === currentColumnId
     );
-    console.log("[KeyboardNavigation] Current index:", currentIndex);
-
     if (currentIndex >= 0 && currentIndex < editableCells.length - 1) {
       const nextCell = editableCells[currentIndex + 1];
-      console.log("[KeyboardNavigation] Navigating to:", nextCell.rowId, nextCell.columnId);
       await this.focusCell(nextCell.element);
       this.currentFocusedCell = { rowId: nextCell.rowId, columnId: nextCell.columnId };
-      logger.debug(`[KeyboardNavigation] Navigated to next cell: ${nextCell.rowId}:${nextCell.columnId}`);
       return true;
     }
-
-    console.log("[KeyboardNavigation] Could not navigate (at end or not found)");
     return false;
   }
 
@@ -233,28 +217,26 @@ export class KeyboardNavigationManager {
         event.preventDefault();
         if (shiftKey) {
           return this.navigateToPreviousCell(rowId, columnId);
-        } else {
-          return this.navigateToNextCell(rowId, columnId);
         }
+        return this.navigateToNextCell(rowId, columnId);
 
       case "Enter":
         event.preventDefault();
         if (shiftKey) {
           // Shift+Enter: Navigate to previous row
           return this.navigateToPreviousRow(rowId);
-        } else {
-          // Enter: Save current row and navigate to next row or save
-          try {
-            await this.options.onSaveRow(rowId);
-            logger.info(`[KeyboardNavigation] Saved row via Enter key: ${rowId}`);
+        }
+        // Enter: Save current row and navigate to next row or save
+        try {
+          await this.options.onSaveRow(rowId);
+          logger.info(`[KeyboardNavigation] Saved row via Enter key: ${rowId}`);
 
-            // Try to navigate to next row, if no next row, stay on current
-            this.navigateToNextRow(rowId);
-            return true;
-          } catch (error) {
-            logger.error(`[KeyboardNavigation] Failed to save row via Enter key: ${rowId}`, error);
-            return false;
-          }
+          // Try to navigate to next row, if no next row, stay on current
+          this.navigateToNextRow(rowId);
+          return true;
+        } catch (error) {
+          logger.error(`[KeyboardNavigation] Failed to save row via Enter key: ${rowId}`, error);
+          return false;
         }
 
       case "Escape":

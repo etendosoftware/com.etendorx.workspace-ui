@@ -34,6 +34,7 @@ interface CellContextMenuProps {
   columns: any[];
   onEditRow?: () => void;
   onInsertRow?: () => void;
+  onNewRecord?: () => void;
   canEdit?: boolean;
   isRowEditing?: boolean;
 }
@@ -129,10 +130,13 @@ export const CellContextMenu: React.FC<CellContextMenuProps> = ({
   columns,
   onEditRow,
   onInsertRow,
+  onNewRecord,
   canEdit = false,
   isRowEditing = false,
 }) => {
   const { t } = useTranslation();
+
+  const isEmptyTableMenu = !row && !cell;
 
   const handleUseAsFilter = () => {
     if (!cell || !row) return;
@@ -179,50 +183,94 @@ export const CellContextMenu: React.FC<CellContextMenuProps> = ({
     }
   };
 
+  const handleNewRecord = () => {
+    if (onNewRecord) {
+      onNewRecord();
+      onClose();
+    }
+  };
+
   return (
     <Menu anchorEl={anchorEl} onClose={onClose} className="rounded-xl" data-testid="Menu__704a8f">
       <div className="rounded-2xl px-2 py-4">
-        {canEdit && !isRowEditing && (
+        {isEmptyTableMenu ? (
+          // Menu for empty table background
+          canEdit && (
+            <>
+              <div
+                onClick={handleInsertRow}
+                className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleInsertRow();
+                  }
+                }}
+                data-testid="insert-row-menu-item">
+                {t("table.insertRow")}
+              </div>
+              {onNewRecord && (
+                <div
+                  onClick={handleNewRecord}
+                  className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleNewRecord();
+                    }
+                  }}
+                  data-testid="new-record-menu-item">
+                  {t("table.newRecord")}
+                </div>
+              )}
+            </>
+          )
+        ) : (
+          // Menu for clicking on a row
           <>
+            {canEdit && !isRowEditing && (
+              <>
+                <div
+                  onClick={handleEditRow}
+                  className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleEditRow();
+                    }
+                  }}
+                  data-testid="edit-row-menu-item">
+                  {t("table.editRow")}
+                </div>
+                <div
+                  onClick={handleInsertRow}
+                  className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleInsertRow();
+                    }
+                  }}
+                  data-testid="insert-row-menu-item">
+                  {t("table.insertRow")}
+                </div>
+                <div className="border-t border-(--color-transparent-neutral-30) my-2" />
+              </>
+            )}
             <div
-              onClick={handleEditRow}
+              onClick={handleUseAsFilter}
               className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  handleEditRow();
+                  handleUseAsFilter();
                 }
               }}
-              data-testid="edit-row-menu-item">
-              {t("table.editRow")}
+              data-testid="use-as-filter-menu-item">
+              {t("table.useAsFilter")}
             </div>
-            <div
-              onClick={handleInsertRow}
-              className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleInsertRow();
-                }
-              }}
-              data-testid="insert-row-menu-item">
-              {t("table.insertRow")}
-            </div>
-            <div className="border-t border-(--color-transparent-neutral-30) my-2" />
           </>
         )}
-        <div
-          onClick={handleUseAsFilter}
-          className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              handleUseAsFilter();
-            }
-          }}
-          data-testid="use-as-filter-menu-item">
-          {t("table.useAsFilter")}
-        </div>
       </div>
     </Menu>
   );

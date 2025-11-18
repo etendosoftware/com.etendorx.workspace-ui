@@ -54,6 +54,15 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const comboboxRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const hasLoadedForCurrentValue = useRef<string | null>(null);
+  const loadOptionsRef = useRef(loadOptions);
+  const fieldNameRef = useRef(field.name);
+
+  // Update refs when props change to avoid triggering effects
+  useEffect(() => {
+    loadOptionsRef.current = loadOptions;
+    fieldNameRef.current = field.name;
+  });
 
   // Keyboard navigation hook
   const { handleKeyDown: handleNavigationKeyDown, setFocused } = useKeyboardNavigation(
@@ -72,34 +81,105 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
 
   // Update local value when prop value changes
   useEffect(() => {
-    setLocalValue(String(value || ""));
+    const newValue = String(value || "");
+    setLocalValue(newValue);
+    // Reset the loaded flag when value changes from outside
+    if (newValue !== hasLoadedForCurrentValue.current) {
+      hasLoadedForCurrentValue.current = null;
+    }
   }, [value]);
 
-  // Load options when selector opens (anchorEl is set) or when search term changes
-  // This ensures we always fetch fresh options with current context (organization, etc.)
+  // Load initial options ONCE when component mounts IF we have a value but no display label
+  // This handles the case where we're editing an existing row and need to show the label
   useEffect(() => {
-    const loadDynamicOptions = async () => {
-      // Only load if selector is open or there's a search term
-      if (!anchorEl && !searchTerm) {
+    // Skip if already loaded for this value
+    if (hasLoadedForCurrentValue.current === localValue) {
+      return;
+    }
+
+    // Skip if no value
+    if (!localValue) {
+      hasLoadedForCurrentValue.current = "";
+      return;
+    }
+
+    // Check if we have a display label already
+    const hasIdentifier =
+      (field.refList && field.refList.length > 0) ||
+      dynamicOptions.some((opt) => String(opt.id) === localValue || String(opt.value) === localValue);
+
+    // Also check for identifier fields
+    const identifierFieldKey = field.inputName || field.hqlName || field.columnName || field.name;
+    const identifierKey = `${identifierFieldKey}$_identifier`;
+    const hasIdentifierField = !!(field as unknown as Record<string, unknown>)[identifierKey];
+
+    // If we have a way to display the value, don't load options yet
+    if (hasIdentifier || hasIdentifierField) {
+      hasLoadedForCurrentValue.current = localValue;
+      return;
+    }
+
+    // Load options for this value
+    const loadInitialOptions = async () => {
+      const loadOptionsFn = loadOptionsRef.current;
+
+      if (!loadOptionsFn || field.type !== FieldType.TABLEDIR) {
         return;
       }
 
-      if (loadOptions && field.type === FieldType.TABLEDIR && (!field.refList || field.refList.length === 0)) {
-        setIsLoadingDynamicOptions(true);
-        try {
-          const options = await loadOptions(field, searchTerm);
-          setDynamicOptions(options);
-        } catch (error) {
-          console.error(`[TableDirCellEditor] Failed to load options for ${field.name}:`, error);
-          setDynamicOptions([]);
-        } finally {
-          setIsLoadingDynamicOptions(false);
-        }
+      setIsLoadingDynamicOptions(true);
+      try {
+        const loadedOptions = await loadOptionsFn(field, "");
+        setDynamicOptions(loadedOptions);
+        hasLoadedForCurrentValue.current = localValue;
+      } catch (error) {
+        console.error(`[TableDirCellEditor] Failed to load initial options for ${fieldNameRef.current}:`, error);
+        setDynamicOptions([]);
+      } finally {
+        setIsLoadingDynamicOptions(false);
+      }
+    };
+
+    loadInitialOptions();
+  }, [localValue]); // Only run when localValue changes
+
+  // Load options only when dropdown opens or search term changes
+  // IMPORTANT: This effect should NOT run on scroll, resize, or other re-renders
+  // We use refs to avoid re-triggering when loadOptions or field object changes
+  useEffect(() => {
+    // Only load options when:
+    // 1. Dropdown is explicitly opened (anchorEl is set)
+    // 2. User is actively searching (searchTerm changes)
+    if (!anchorEl && !searchTerm) {
+      return;
+    }
+
+    const loadDynamicOptions = async () => {
+      const loadOptionsFn = loadOptionsRef.current;
+
+      if (!loadOptionsFn || field.type !== FieldType.TABLEDIR) {
+        return;
+      }
+
+      // Skip if we have static options
+      if (field.refList && field.refList.length > 0) {
+        return;
+      }
+
+      setIsLoadingDynamicOptions(true);
+      try {
+        const loadedOptions = await loadOptionsFn(field, searchTerm);
+        setDynamicOptions(loadedOptions);
+      } catch (error) {
+        console.error(`[TableDirCellEditor] Failed to load options for ${fieldNameRef.current}:`, error);
+        setDynamicOptions([]);
+      } finally {
+        setIsLoadingDynamicOptions(false);
       }
     };
 
     loadDynamicOptions();
-  }, [anchorEl, searchTerm, field, loadOptions]);
+  }, [anchorEl, searchTerm]); // Only depend on anchorEl and searchTerm - NOT on field or loadOptions
 
   // Get restricted entries from field (set by callouts)
   // IMPORTANT: Use inputName to match how entries are stored by callouts (e.g., "inpcBpartnerId")
@@ -118,13 +198,39 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     // Restricted entries are values set by callouts that may not be in the datasource
     const allOptions = [...staticOptions, ...dynamicOptions, ...restrictedEntries];
 
+    // If we have a current value with an identifier but it's not in the options,
+    // create a temporary option for it so it appears in the dropdown
+    if (localValue) {
+      const valueExists = allOptions.some(
+        (opt) => String(opt.id) === localValue || String(opt.value) === localValue
+      );
+
+      if (!valueExists) {
+        // Try to get the identifier for this value
+        const identifierFieldKey = field.inputName || field.hqlName || field.columnName || field.name;
+        const identifierKey = `${identifierFieldKey}$_identifier`;
+        const identifierFromField = (field as unknown as Record<string, unknown>)[identifierKey];
+        const directIdentifier = (field as unknown as Record<string, unknown>)._identifier;
+        const identifier = (identifierFromField || directIdentifier) as string | undefined;
+
+        // If we have an identifier, create a temporary option
+        if (identifier) {
+          allOptions.push({
+            id: localValue,
+            value: localValue,
+            label: identifier,
+          });
+        }
+      }
+    }
+
     // Remove duplicates by id
     const uniqueOptions = allOptions.filter(
       (opt, index, self) => index === self.findIndex((o) => String(o.id) === String(opt.id))
     );
 
     return uniqueOptions;
-  }, [field.refList, dynamicOptions, restrictedEntries]);
+  }, [field.refList, dynamicOptions, restrictedEntries, localValue, field]);
 
   // Filter options based on search term
   const filteredOptions = useMemo(() => {
@@ -149,9 +255,17 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     // This handles cases where callouts set values but options aren't loaded yet
     // IMPORTANT: Use inputName to match how identifiers are stored (same as entries)
     const identifierFieldKey = field.inputName || field.hqlName || field.columnName || field.name;
-    const identifierFromField = (field as unknown as Record<string, unknown>)[`${identifierFieldKey}$_identifier`];
+    const identifierKey = `${identifierFieldKey}$_identifier`;
+    const identifierFromField = (field as unknown as Record<string, unknown>)[identifierKey];
+
     if (identifierFromField) {
       return identifierFromField as string;
+    }
+
+    // Also check if the field itself has a _identifier property (from server data)
+    const directIdentifier = (field as unknown as Record<string, unknown>)._identifier;
+    if (directIdentifier && typeof directIdentifier === "string") {
+      return directIdentifier;
     }
 
     // Fallback to the raw value (will show UUID if no identifier found)
@@ -170,6 +284,8 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
       // Update local value to the ID (for consistency with what we send to onChange)
       setLocalValue(realId);
 
+      // Pass the entire selected option to onChange
+      // This allows the parent to access all fields including product$id, bpid, etc.
       onChange(valueToSend, selectedOption as Record<string, unknown> | undefined);
 
       // Close menu and reset UI state
@@ -291,7 +407,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
   const isLoading = isLoadingDynamicOptions || isLoadingOptions?.(field.name);
 
   return (
-    <div ref={wrapperRef} className="relative w-full">
+    <div ref={wrapperRef} className="flex-1 w-full min-w-0 box-border">
       <div
         ref={comboboxRef}
         onClick={handleClick}
@@ -300,6 +416,8 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
         className={`
           inline-edit-tabledir
           w-full
+          min-w-0
+          box-border
           px-2
           py-1
           border
@@ -326,12 +444,13 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
         // biome-ignore lint/a11y/useSemanticElements: Custom combobox with search requires div not select
         role="combobox"
       >
-        <span className="truncate flex-1">
+        <span className="truncate flex-1 min-w-0">
           {isLoading ? "Loading..." : displayText || (field.isMandatory ? "Select an option..." : "(None)")}
         </span>
-        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${anchorEl ? "rotate-180" : ""}`} />
+        <ChevronDown
+          className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${anchorEl ? "rotate-180" : ""}`}
+        />
       </div>
-
       <Menu
         anchorEl={anchorEl}
         onClose={handleMenuClose}

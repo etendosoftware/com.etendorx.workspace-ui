@@ -16,7 +16,6 @@
  */
 
 import { useCallback, useEffect, useRef } from "react";
-import { logger } from "@/utils/logger";
 
 /**
  * ARIA live region types for screen reader announcements
@@ -65,8 +64,6 @@ export class ScreenReaderAnnouncer {
     this.assertiveRegion.setAttribute("class", "sr-only");
     this.assertiveRegion.style.cssText = this.politeRegion.style.cssText;
     document.body.appendChild(this.assertiveRegion);
-
-    logger.debug("[Accessibility] Created ARIA live regions for screen reader announcements");
   }
 
   /**
@@ -84,7 +81,6 @@ export class ScreenReaderAnnouncer {
     // Use a small delay to ensure the clearing is processed
     setTimeout(() => {
       region.textContent = message;
-      logger.debug(`[Accessibility] Announced (${priority}): ${message}`);
     }, 100);
   }
 
@@ -158,7 +154,6 @@ export class ScreenReaderAnnouncer {
       document.body.removeChild(this.assertiveRegion);
       this.assertiveRegion = null;
     }
-    logger.debug("[Accessibility] Destroyed ARIA live regions");
   }
 }
 
@@ -225,7 +220,7 @@ export const generateAriaAttributes = {
     "aria-label": `${action} row ${rowId}`,
     "aria-disabled": disabled,
     role: "button",
-    tabindex: disabled ? -1 : 0,
+    tabIndex: disabled ? -1 : 0,
   }),
 
   /**
@@ -377,7 +372,7 @@ export const colorContrast = {
   getLuminance: (r: number, g: number, b: number): number => {
     const [rs, gs, bs] = [r, g, b].map((c) => {
       c = c / 255;
-      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
     });
     return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
   },
@@ -439,7 +434,7 @@ export const accessibilityTesting = {
 
     // Check if the described element exists and has error content
     const errorElement = document.getElementById(describedBy);
-    return !!(errorElement && errorElement.textContent?.trim());
+    return !!errorElement?.textContent?.trim();
   },
 
   /**

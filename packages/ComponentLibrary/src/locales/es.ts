@@ -181,6 +181,7 @@ const es = {
     descriptionText: "Confirma tu envío y guárdalo en el sistema. 📝📦",
   },
   table: {
+    newRecord: "Nuevo Registro",
     tooltips: {
       search: "Buscar",
       views: "Vistas",

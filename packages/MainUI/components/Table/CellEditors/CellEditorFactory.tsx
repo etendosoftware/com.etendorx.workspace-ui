@@ -50,15 +50,6 @@ const CellEditorFactoryComponent: React.FC<CellEditorFactoryProps> = ({
   shouldAutoFocus = false,
   ...editorProps
 }) => {
-  // Debug logging to track which editor is being used
-  console.log(`[CellEditorFactory] Rendering editor for field ${editorProps.field.name}`, {
-    fieldType,
-    fieldName: editorProps.field.name,
-    hasRefList: !!editorProps.field.refList,
-    refListLength: editorProps.field.refList?.length || 0,
-    referencedEntity: editorProps.field.referencedEntity,
-  });
-
   // Get error message for tooltip display
   const errorMessage = editorProps.hasError ? "Validation error" : "";
 
