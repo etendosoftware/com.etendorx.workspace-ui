@@ -113,10 +113,6 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       [ref]
     );
 
-    const handleFocus = useCallback(() => {
-      setIsFocused(true);
-    }, []);
-
     const handleBlur = useCallback(
       (e: React.FocusEvent<HTMLInputElement>) => {
         const relatedTarget = e.relatedTarget as HTMLElement;
