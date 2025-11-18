@@ -34,12 +34,20 @@ jest.mock("../sessionRecovery", () => ({
   storeCookieForToken: jest.fn(),
 }));
 
+// Mock the sessionStore module
+jest.mock("../sessionStore", () => ({
+  setErpSessionCookie: jest.fn(),
+  getErpSessionCookie: jest.fn(),
+  clearErpSessionCookie: jest.fn(),
+}));
+
 // Mock logger
 jest.mock("@/utils/logger", () => ({
   logger: {
     log: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
+    info: jest.fn(),
   },
 }));
 
@@ -47,7 +55,7 @@ const mockExtractJSessionId = require("../sessionRecovery").extractJSessionId as
 const mockStoreCookieForToken = require("../sessionRecovery").storeCookieForToken as jest.Mock;
 
 describe("csrfRecovery", () => {
-  const createMockResponse = (status: number = 200) =>
+  const createMockResponse = (status = 200) =>
     ({
       status,
       headers: {
@@ -188,7 +196,9 @@ describe("csrfRecovery", () => {
 
     it("should successfully recover from CSRF error", async () => {
       mockExtractJSessionId.mockReturnValue("new-session-123");
-      mockStoreCookieForToken.mockImplementation(() => {});
+      mockStoreCookieForToken.mockImplementation(() => {
+        // Mock successful execution without throwing
+      });
 
       const result = await recoverFromCsrfError(mockResponse, validCsrfErrorData, "test-token");
 
@@ -278,6 +288,7 @@ describe("csrfRecovery", () => {
 
     it("should clear attempts on successful recovery", async () => {
       mockExtractJSessionId.mockReturnValue("session-123");
+      mockStoreCookieForToken.mockReturnValue(undefined);
 
       // First attempt (should succeed)
       await recoverFromCsrfError(mockResponse, validCsrfErrorData, "test-token", { maxRetryAttempts: 2 });
