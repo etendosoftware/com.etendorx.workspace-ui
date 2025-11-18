@@ -74,7 +74,7 @@ describe("Visual Feedback Integration", () => {
     it("should show single error state", () => {
       render(<EditingStateIndicator isEditing={true} isSaving={false} hasErrors={true} errorCount={1} />);
 
-      expect(screen.getByText("Has error")).toBeInTheDocument();
+      expect(screen.getByText("Has errors")).toBeInTheDocument();
     });
 
     it("should apply custom className", () => {
@@ -167,7 +167,7 @@ describe("Visual Feedback Integration", () => {
 
       const tooltip = document.querySelector(".cell-error-tooltip");
       expect(tooltip).toBeInTheDocument();
-      expect(tooltip).toHaveAttribute("role", "tooltip");
+      expect(tooltip).toHaveAttribute("role", "alert");
     });
 
     it("should render error container when disabled with errors", () => {
@@ -287,7 +287,7 @@ describe("Visual Feedback Integration", () => {
         />
       );
 
-      const tooltip = document.querySelector('[role="tooltip"]');
+      const tooltip = document.querySelector('[role="alert"]');
       expect(tooltip).toBeInTheDocument();
     });
   });

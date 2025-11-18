@@ -1473,6 +1473,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
                     return await loadTableDirOptions(fieldMapping.field, searchQuery, freshRowValues);
                   }}
                   isLoadingOptions={(fieldName) => isLoadingTableDirOptions(fieldName)}
+                  data-testid="CellEditorFactory__8ca888"
                 />
               </React.Suspense>
             </div>
@@ -1556,6 +1557,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
               // Navigate to form view - this will handle the URL update properly
               setRecordId(String(row.original.id));
             }}
+            data-testid="ActionsColumn__8ca888"
           />
         );
       },
@@ -2415,6 +2417,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         showCancel={dialogState.showCancel}
         onConfirm={dialogState.onConfirm}
         onCancel={dialogState.onCancel}
+        data-testid="ConfirmationDialog__8ca888"
       />
       <StatusModal
         open={statusModal.open}

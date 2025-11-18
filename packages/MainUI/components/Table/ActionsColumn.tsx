@@ -107,9 +107,12 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
           `}
           data-testid={`save-button-${String(row.original.id)}`}
           {...saveButtonAttrs}>
-          {isSaving ? <LoadingIndicator size="small" inline /> : <CheckIcon className="w-4 h-4" />}
+          {isSaving ? (
+            <LoadingIndicator size="small" inline data-testid="LoadingIndicator__6c559a" />
+          ) : (
+            <CheckIcon className="w-4 h-4" data-testid="CheckIcon__6c559a" />
+          )}
         </IconButton>
-
         <IconButton
           onClick={onCancel}
           disabled={isSaving}
@@ -117,9 +120,8 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
           className="text-red-600 hover:text-red-800 hover:bg-red-50 transition-colors duration-200"
           data-testid={`cancel-button-${String(row.original.id)}`}
           {...cancelButtonAttrs}>
-          <XIcon className="w-4 h-4" />
+          <XIcon className="w-4 h-4" data-testid="XIcon__6c559a" />
         </IconButton>
-
         {hasErrors && (
           <div
             className={`flex items-center ${hasServerErrors ? "text-orange-500" : "text-red-500"}`}
@@ -128,7 +130,7 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
             role="alert"
             aria-live="assertive"
             aria-label={`Validation errors for row ${String(row.original.id)}`}>
-            <AlertCircleIcon className="w-4 h-4" />
+            <AlertCircleIcon className="w-4 h-4" data-testid="AlertCircleIcon__6c559a" />
             {hasServerErrors && <span className="text-xs ml-1 font-medium">SERVER</span>}
           </div>
         )}
@@ -147,16 +149,15 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
         className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors duration-200"
         data-testid={`edit-button-${String(row.original.id)}`}
         {...editButtonAttrs}>
-        <EditIcon className="w-4 h-4" />
+        <EditIcon className="w-4 h-4" data-testid="EditIcon__6c559a" />
       </IconButton>
-
       <IconButton
         onClick={onOpenForm}
         title="Open form view"
         className="text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors duration-200"
         data-testid={`form-button-${String(row.original.id)}`}
         {...formButtonAttrs}>
-        <ExternalLinkIcon className="w-4 h-4" />
+        <ExternalLinkIcon className="w-4 h-4" data-testid="ExternalLinkIcon__6c559a" />
       </IconButton>
     </fieldset>
   );

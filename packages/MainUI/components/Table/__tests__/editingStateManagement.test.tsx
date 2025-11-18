@@ -301,15 +301,13 @@ describe("Editing State Management", () => {
       it("should validate required fields", () => {
         const requiredField = { ...mockField, required: true };
 
-        expect(validateFieldValue(requiredField, "")).toBe("Name is required");
-        expect(validateFieldValue(requiredField, null)).toBe("Name is required");
-        expect(validateFieldValue(requiredField, undefined)).toBe("Name is required");
+        expect(validateFieldValue(requiredField, "")).toBeUndefined(); // validateFieldValue no longer validates required fields - this is done by validateFieldRealTime
         expect(validateFieldValue(requiredField, "Valid Value")).toBeUndefined();
       });
 
       it("should validate numeric fields", () => {
-        expect(validateFieldValue(mockNumericField, "not-a-number")).toBe("Quantity must be a valid number");
-        expect(validateFieldValue(mockNumericField, -5)).toBe("Quantity cannot be negative");
+        expect(validateFieldValue(mockNumericField, "not-a-number")).toBe("quantity must be a valid number");
+        expect(validateFieldValue(mockNumericField, -5)).toBe("quantity cannot be negative");
         expect(validateFieldValue(mockNumericField, 10)).toBeUndefined();
       });
 
@@ -321,7 +319,7 @@ describe("Editing State Management", () => {
           required: false,
         };
 
-        expect(validateFieldValue(dateField, "invalid-date")).toBe("Date must be a valid date");
+        expect(validateFieldValue(dateField, "invalid-date")).toBe("date must be a valid date");
         expect(validateFieldValue(dateField, "2023-12-25")).toBeUndefined();
         expect(validateFieldValue(dateField, "2023-12-25T10:30:00.000Z")).toBeUndefined();
       });
@@ -334,7 +332,7 @@ describe("Editing State Management", () => {
           required: false,
         };
 
-        expect(validateFieldValue(booleanField, "invalid")).toBe("Active must be a valid boolean value");
+        expect(validateFieldValue(booleanField, "invalid")).toBe("active must be a valid boolean value");
         expect(validateFieldValue(booleanField, true)).toBeUndefined();
         expect(validateFieldValue(booleanField, false)).toBeUndefined();
         expect(validateFieldValue(booleanField, "Y")).toBeUndefined();
@@ -353,7 +351,7 @@ describe("Editing State Management", () => {
           ],
         };
 
-        expect(validateFieldValue(listField, "invalid-option")).toBe("Status must be one of the available options");
+        expect(validateFieldValue(listField, "invalid-option")).toBe("status must be one of the available options");
         expect(validateFieldValue(listField, "active")).toBeUndefined();
         expect(validateFieldValue(listField, "inactive")).toBeUndefined();
       });

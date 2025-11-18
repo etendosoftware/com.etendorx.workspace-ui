@@ -72,26 +72,26 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
     switch (type) {
       case "warning":
         return {
-          icon: <AlertTriangleIcon className="w-6 h-6 text-yellow-600" />,
+          icon: <AlertTriangleIcon className="w-6 h-6 text-yellow-600" data-testid="AlertTriangleIcon__efae7f" />,
           confirmButtonClass: "bg-yellow-600 hover:bg-yellow-700 text-white",
           defaultConfirmText: "Continue",
         };
       case "error":
         return {
-          icon: <AlertTriangleIcon className="w-6 h-6 text-red-600" />,
+          icon: <AlertTriangleIcon className="w-6 h-6 text-red-600" data-testid="AlertTriangleIcon__efae7f" />,
           confirmButtonClass: "bg-red-600 hover:bg-red-700 text-white",
           defaultConfirmText: "Retry",
         };
       case "success":
         return {
-          icon: <CheckCircleIcon className="w-6 h-6 text-green-600" />,
+          icon: <CheckCircleIcon className="w-6 h-6 text-green-600" data-testid="CheckCircleIcon__efae7f" />,
           confirmButtonClass: "bg-green-600 hover:bg-green-700 text-white",
           defaultConfirmText: "OK",
         };
       case "info":
       default:
         return {
-          icon: <InfoIcon className="w-6 h-6 text-blue-600" />,
+          icon: <InfoIcon className="w-6 h-6 text-blue-600" data-testid="InfoIcon__efae7f" />,
           confirmButtonClass: "bg-blue-600 hover:bg-blue-700 text-white",
           defaultConfirmText: "OK",
         };
@@ -101,21 +101,19 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   const typeConfig = getTypeConfig();
 
   return (
-    <Dialog open={isOpen} onClose={onCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>
+    <Dialog open={isOpen} onClose={onCancel} maxWidth="sm" fullWidth data-testid="Dialog__efae7f">
+      <DialogTitle data-testid="DialogTitle__efae7f">
         <div className="flex items-center gap-3">
           {typeConfig.icon}
           <span className="text-lg font-semibold">{title}</span>
         </div>
       </DialogTitle>
-
-      <DialogContent>
+      <DialogContent data-testid="DialogContent__efae7f">
         <p className="text-gray-700 whitespace-pre-line">{message}</p>
       </DialogContent>
-
-      <DialogActions>
+      <DialogActions data-testid="DialogActions__efae7f">
         {showCancel && (
-          <Button onClick={onCancel} color="inherit">
+          <Button onClick={onCancel} color="inherit" data-testid="Button__efae7f">
             {cancelText || t("common.cancel")}
           </Button>
         )}
@@ -123,7 +121,8 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
           onClick={onConfirm}
           disabled={confirmDisabled}
           variant="contained"
-          color={type === "error" ? "error" : type === "success" ? "success" : "primary"}>
+          color={type === "error" ? "error" : type === "success" ? "success" : "primary"}
+          data-testid="Button__efae7f">
           {confirmText || typeConfig.defaultConfirmText}
         </Button>
       </DialogActions>

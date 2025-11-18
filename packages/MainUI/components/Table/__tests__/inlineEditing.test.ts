@@ -320,10 +320,10 @@ describe("Inline Editing Infrastructure", () => {
         const newRowId = "new_123";
         const baseColumns = [
           { name: "id", displayType: "string" },
-          { name: "name", displayType: "string" },
-          { name: "active", displayType: "boolean" },
-          { name: "quantity", displayType: "number" },
-          { name: "date", displayType: "date" },
+          { name: "name", displayType: "string", column: { reference: "10" } },
+          { name: "active", displayType: "boolean", column: { reference: "20" } },
+          { name: "quantity", displayType: "number", column: { reference: "22" } },
+          { name: "date", displayType: "date", column: { reference: "15" } },
           { name: "actions", displayType: "string" },
         ];
 
@@ -482,7 +482,7 @@ describe("Inline Editing Infrastructure", () => {
         expect(updatedRecords[0]).toEqual({
           id: newRowId,
           name: null,
-          active: false,
+          active: null, // Without column.reference, defaults to null
         });
         expect(utils.isRowEditing(newRowId)).toBe(true);
         expect(editingRows[newRowId].isNew).toBe(true);

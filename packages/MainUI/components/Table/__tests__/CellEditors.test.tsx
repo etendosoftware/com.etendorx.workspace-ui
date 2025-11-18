@@ -44,7 +44,7 @@ describe("Cell Editor Components", () => {
       );
 
       expect(screen.getByDisplayValue("test")).toBeInTheDocument();
-      expect(screen.getByRole("textbox")).toBeInTheDocument();
+      expect(screen.getByRole("gridcell")).toBeInTheDocument();
     });
 
     it("should render NumericCellEditor for NUMBER field type", () => {
@@ -179,7 +179,7 @@ describe("Cell Editor Components", () => {
         />
       );
 
-      const input = screen.getByRole("textbox");
+      const input = screen.getByRole("gridcell");
       await user.type(input, "new value");
 
       expect(mockOnChange).toHaveBeenCalledWith("new value");
@@ -200,9 +200,11 @@ describe("Cell Editor Components", () => {
         />
       );
 
-      const input = screen.getByRole("textbox");
+      const input = screen.getByRole("gridcell");
       await user.click(input);
-      await user.tab();
+      // Tab now prevents default and is managed by keyboard navigation
+      // Use Escape to trigger blur instead
+      await user.keyboard("{Escape}");
 
       expect(mockOnBlur).toHaveBeenCalled();
     });
@@ -222,7 +224,7 @@ describe("Cell Editor Components", () => {
         />
       );
 
-      const input = screen.getByRole("textbox");
+      const input = screen.getByRole("gridcell");
       await user.click(input);
       await user.keyboard("{Enter}");
 
@@ -243,7 +245,7 @@ describe("Cell Editor Components", () => {
         />
       );
 
-      const input = screen.getByRole("textbox");
+      const input = screen.getByRole("gridcell");
       expect(input).toHaveClass("border-red-500");
     });
   });

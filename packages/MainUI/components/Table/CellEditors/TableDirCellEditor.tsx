@@ -201,9 +201,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     // If we have a current value with an identifier but it's not in the options,
     // create a temporary option for it so it appears in the dropdown
     if (localValue) {
-      const valueExists = allOptions.some(
-        (opt) => String(opt.id) === localValue || String(opt.value) === localValue
-      );
+      const valueExists = allOptions.some((opt) => String(opt.id) === localValue || String(opt.value) === localValue);
 
       if (!valueExists) {
         // Try to get the identifier for this value
@@ -449,13 +447,15 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
         </span>
         <ChevronDown
           className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${anchorEl ? "rotate-180" : ""}`}
+          data-testid={"ChevronDown__" + field.id}
         />
       </div>
       <Menu
         anchorEl={anchorEl}
         onClose={handleMenuClose}
         className="min-w-[200px] max-h-60 overflow-hidden"
-        offsetY={4}>
+        offsetY={4}
+        data-testid={"Menu__" + field.id}>
         <div className="p-2">
           <input
             ref={searchInputRef}
@@ -484,7 +484,9 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
               aria-selected={localValue === ""}
               tabIndex={-1}>
               <span className="text-gray-500">(None)</span>
-              {localValue === "" && <Image src={checkIconUrl} alt="Selected" width={16} height={16} />}
+              {localValue === "" && (
+                <Image src={checkIconUrl} alt="Selected" width={16} height={16} data-testid={"Image__" + field.id} />
+              )}
             </div>
           )}
 
@@ -507,7 +509,15 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
                   aria-selected={isSelected}
                   tabIndex={-1}>
                   <span className="truncate">{option.label}</span>
-                  {isSelected && <Image src={checkIconUrl} alt="Selected" width={16} height={16} />}
+                  {isSelected && (
+                    <Image
+                      src={checkIconUrl}
+                      alt="Selected"
+                      width={16}
+                      height={16}
+                      data-testid={"Image__" + field.id}
+                    />
+                  )}
                 </div>
               );
             })

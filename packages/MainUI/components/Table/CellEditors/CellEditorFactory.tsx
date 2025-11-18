@@ -75,34 +75,34 @@ const CellEditorFactoryComponent: React.FC<CellEditorFactoryProps> = ({
   const renderEditor = () => {
     switch (fieldType) {
       case FieldType.TEXT:
-        return <TextCellEditor {...enhancedEditorProps} />;
+        return <TextCellEditor {...enhancedEditorProps} data-testid="TextCellEditor__89bcf8" />;
 
       case FieldType.NUMBER:
       case FieldType.QUANTITY:
-        return <NumericCellEditor {...enhancedEditorProps} />;
+        return <NumericCellEditor {...enhancedEditorProps} data-testid="NumericCellEditor__89bcf8" />;
 
       case FieldType.DATE:
       case FieldType.DATETIME:
-        return <DateCellEditor {...enhancedEditorProps} />;
+        return <DateCellEditor {...enhancedEditorProps} data-testid="DateCellEditor__89bcf8" />;
 
       case FieldType.BOOLEAN:
-        return <BooleanCellEditor {...enhancedEditorProps} />;
+        return <BooleanCellEditor {...enhancedEditorProps} data-testid="BooleanCellEditor__89bcf8" />;
 
       case FieldType.LIST:
       case FieldType.SELECT:
-        return <SelectCellEditor {...enhancedEditorProps} />;
+        return <SelectCellEditor {...enhancedEditorProps} data-testid="SelectCellEditor__89bcf8" />;
 
       case FieldType.TABLEDIR:
         // Use specialized TableDirCellEditor for TABLEDIR fields with dynamic option loading
-        return <TableDirCellEditor {...enhancedEditorProps} />;
+        return <TableDirCellEditor {...enhancedEditorProps} data-testid="TableDirCellEditor__89bcf8" />;
 
       case FieldType.SEARCH:
         // Use SelectCellEditor for SEARCH fields
-        return <SelectCellEditor {...enhancedEditorProps} />;
+        return <SelectCellEditor {...enhancedEditorProps} data-testid="SelectCellEditor__89bcf8" />;
 
       default:
         // Fallback to text editor for unknown field types
-        return <TextCellEditor {...enhancedEditorProps} />;
+        return <TextCellEditor {...enhancedEditorProps} data-testid="TextCellEditor__89bcf8" />;
     }
   };
 

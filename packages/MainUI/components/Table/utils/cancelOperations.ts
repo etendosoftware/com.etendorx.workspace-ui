@@ -98,9 +98,7 @@ export async function handleCancelOperation({
     const title = editingRowData.isNew ? "Discard New Row" : "Discard Changes";
 
     // Use custom confirmation callback if provided, otherwise fallback to window.confirm
-    const confirmed = confirmationCallback
-      ? await confirmationCallback(message, title)
-      : window.confirm(message);
+    const confirmed = confirmationCallback ? await confirmationCallback(message, title) : window.confirm(message);
 
     if (!confirmed) {
       logger.info(`[CancelOperation] User cancelled the cancel operation for row: ${rowId}`);
@@ -164,9 +162,7 @@ export async function handleBatchCancelOperation({
     const title = "Discard Changes";
 
     // Use custom confirmation callback if provided, otherwise fallback to window.confirm
-    const confirmed = confirmationCallback
-      ? await confirmationCallback(message, title)
-      : window.confirm(message);
+    const confirmed = confirmationCallback ? await confirmationCallback(message, title) : window.confirm(message);
 
     if (!confirmed) {
       logger.info(`[CancelOperation] User cancelled the batch cancel operation`);
