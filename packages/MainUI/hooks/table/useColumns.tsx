@@ -15,6 +15,7 @@ import { getFieldReference } from "@/utils";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilter } from "../../components/Table/ColumnFilter";
+import { DateSelector } from "../../components/Table/DateSelector";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useTranslation } from "../useTranslation";
 import { transformColumnWithCustomJs } from "@/utils/customJsColumnTransformer";
@@ -22,6 +23,7 @@ import { formatClassicDate } from "@/utils/dateFormatter";
 
 interface UseColumnsOptions {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
+  onDateTextFilterChange?: (columnId: string, filterValue: string) => void;
   onLoadFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   onLoadMoreFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   columnFilterStates?: ColumnFilterState[];
@@ -35,7 +37,7 @@ const AUDIT_DATE_COLUMNS_WITH_TIME = ["creationDate", "updated"];
 
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
-  const { onColumnFilter, onLoadFilterOptions, onLoadMoreFilterOptions, columnFilterStates } = options || {};
+  const { onColumnFilter, onDateTextFilterChange, onLoadFilterOptions, onLoadMoreFilterOptions, columnFilterStates } = options || {};
   const { t } = useTranslation();
 
   const columns = useMemo(() => {
@@ -156,11 +158,19 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         };
       }
 
-      // Enable simple text filtering for date columns
+      // Enable DateSelector for date columns
       if (isDateColumn && !supportsDropdownFilter) {
         columnConfig = {
           ...columnConfig,
           enableColumnFilter: true,
+          Filter: () => (
+            <DateSelector
+              column={column}
+              onFilterChange={(filterValue: string) => {
+                onDateTextFilterChange?.(column.id, filterValue);
+              }}
+            />
+          ),
           columnFilterModeOptions: ["contains", "startsWith", "endsWith"],
           filterFn: "contains",
         };
@@ -176,6 +186,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     tab.fields,
     columnFilterStates,
     onColumnFilter,
+    onDateTextFilterChange,
     onLoadFilterOptions,
     t,
     handleClickRedirect,

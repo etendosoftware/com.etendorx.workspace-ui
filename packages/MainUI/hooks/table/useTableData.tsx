@@ -71,6 +71,7 @@ interface UseTableDataReturn {
   handleMRTSortingChange: (updaterOrValue: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)) => void;
   handleMRTColumnOrderChange: (updaterOrValue: string[] | ((prev: string[]) => string[])) => void;
   handleColumnFilterChange: (columnId: string, selectedOptions: FilterOption[]) => Promise<void>;
+  handleDateTextFilterChange: (columnId: string, filterValue: string) => void;
   handleLoadFilterOptions: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   handleLoadMoreFilterOptions: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   handleMRTExpandChange: ({ newExpanded }: { newExpanded: Updater<ExpandedState> }) => void;
@@ -175,6 +176,26 @@ export const useTableData = ({
     [setColumnFilter, onColumnFilter, setTableColumnFilters]
   );
 
+  const handleDateTextFilterChange = useCallback(
+    (columnId: string, filterValue: string) => {
+      // For date filters, pass the value as a string (not as FilterOption array)
+      // This preserves range filter detection (e.g., "2025-09-29 - 2025-09-30")
+      const mrtFilter =
+        filterValue?.trim()
+          ? {
+              id: columnId,
+              value: filterValue,
+            }
+          : null;
+
+      setTableColumnFilters((prev) => {
+        const filtered = prev.filter((f) => f.id !== columnId);
+        return mrtFilter ? [...filtered, mrtFilter] : filtered;
+      });
+    },
+    [setTableColumnFilters]
+  );
+
   const handleLoadFilterOptions = useCallback(
     async (columnId: string, searchQuery?: string): Promise<FilterOption[]> => {
       const column = rawColumns.find((col: Column) => col.id === columnId || col.columnName === columnId);
@@ -244,6 +265,7 @@ export const useTableData = ({
   // Get columns with filter handlers
   const baseColumns = useColumns(tab, {
     onColumnFilter: onColumnFilter || handleColumnFilterChange,
+    onDateTextFilterChange: handleDateTextFilterChange,
     onLoadFilterOptions: onLoadFilterOptions || handleLoadFilterOptions,
     onLoadMoreFilterOptions: onLoadMoreFilterOptions || handleLoadMoreFilterOptions,
     columnFilterStates: advancedColumnFilters,
@@ -683,6 +705,7 @@ export const useTableData = ({
     handleMRTColumnVisibilityChange,
     handleMRTSortingChange,
     handleColumnFilterChange,
+    handleDateTextFilterChange,
     handleLoadFilterOptions,
     handleLoadMoreFilterOptions,
     handleMRTColumnOrderChange,
