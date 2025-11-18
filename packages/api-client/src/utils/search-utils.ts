@@ -562,12 +562,21 @@ export class LegacyColumnFilterUtils {
   }
 
   /**
-   * Checks if a string looks like a date input
+   * Checks if a string looks like a date input with proper format (2 digits, separator, 2 digits, separator, 4 digits)
    */
   private static looksLikeDateInput(value: string): boolean {
     if (!value) return false;
-    // Contains digits and common date separators (-, /, .)
-    return /[\d\-\/\.]/.test(value) && /\d/.test(value);
+
+    // Match patterns:
+    // DD-MM-YYYY, DD/MM/YYYY, DD.MM.YYYY format (2+2+4 with separator)
+    // MM-DD-YYYY format (2+2+4 with separator)
+    // YYYY-MM-DD format (4+2+2 with separator)
+    const datePatterns = [
+      /^\d{2}[-\/\.]\d{2}[-\/\.]\d{4}$/, // DD-MM-YYYY or MM-DD-YYYY
+      /^\d{4}[-\/\.]\d{2}[-\/\.]\d{2}$/, // YYYY-MM-DD
+    ];
+
+    return datePatterns.some(pattern => pattern.test(value));
   }
 
   static createColumnFilterCriteria(columnFilters: MRT_ColumnFiltersState, columns: Column[]): BaseCriteria[] {
