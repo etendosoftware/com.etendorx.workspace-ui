@@ -267,7 +267,7 @@ export class KeyboardNavigationManager {
       case "ArrowLeft":
         // Only handle if at the beginning of input
         if (event.target instanceof HTMLInputElement) {
-          const input = event.target as HTMLInputElement;
+          const input = event.target;
           if (input.selectionStart === 0 && input.selectionEnd === 0) {
             event.preventDefault();
             return this.navigateToPreviousCell(rowId, columnId);
@@ -278,7 +278,7 @@ export class KeyboardNavigationManager {
       case "ArrowRight":
         // Only handle if at the end of input
         if (event.target instanceof HTMLInputElement) {
-          const input = event.target as HTMLInputElement;
+          const input = event.target;
           if (input.selectionStart === input.value.length && input.selectionEnd === input.value.length) {
             event.preventDefault();
             return this.navigateToNextCell(rowId, columnId);

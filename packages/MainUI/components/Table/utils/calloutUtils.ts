@@ -15,9 +15,8 @@
  *************************************************************************
  */
 
-import type { FormInitializationResponse, Field } from "@workspaceui/api-client/src/api/types";
+import type { FormInitializationResponse, Field, Tab } from "@workspaceui/api-client/src/api/types";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
-import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { logger } from "@/utils/logger";
 
@@ -53,7 +52,6 @@ export function processCalloutColumnValues(
 
     const { value, identifier } = columnValue;
     const fieldName = targetField.hqlName || columnName;
-    const fieldInputName = targetField.inputName || targetField.hqlName || columnName;
 
     const update: CalloutValueUpdate = {
       fieldName,

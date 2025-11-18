@@ -203,8 +203,6 @@ describe("Visual Feedback Integration", () => {
       rowElement.className = "table-row-editing";
       document.body.appendChild(rowElement);
 
-      const computedStyle = window.getComputedStyle(rowElement);
-
       // Check if the CSS class is applied (we can't test actual styles in jsdom)
       expect(rowElement).toHaveClass("table-row-editing");
 

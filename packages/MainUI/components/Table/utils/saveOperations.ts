@@ -15,18 +15,16 @@
  *************************************************************************
  */
 
-import type { EntityData, Tab, WindowMetadata } from "@workspaceui/api-client/src/api/types";
+import type { EntityData, Tab, WindowMetadata, Column } from "@workspaceui/api-client/src/api/types";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { buildQueryString } from "@/utils";
 import { shouldRemoveIdFields } from "@/utils/form/entityConfig";
 import { normalizeDates } from "@/utils/form/normalizeDates";
 import { logger } from "@/utils/logger";
-import type { SaveOperation, SaveResult, ValidationError } from "../types/inlineEditing";
+import type { SaveOperation, SaveResult, ValidationError, EditingRowData } from "../types/inlineEditing";
 import { getMergedRowData } from "./editingRowUtils";
-import type { EditingRowData } from "../types/inlineEditing";
 import { validateRowForSave } from "./validationUtils";
-import type { Column } from "@workspaceui/api-client/src/api/types";
 
 /**
  * Builds the payload for saving a record via the datasource servlet
@@ -60,11 +58,11 @@ function buildSavePayload({
   // This will filter out display names like "Transaction Document" and keep only "transactionDocument"
   const validFieldNames = new Set<string>();
   if (tab?.fields) {
-    Object.values(tab.fields).forEach((field: any) => {
+    for (const field of Object.values(tab.fields)) {
       if (field.hqlName) {
         validFieldNames.add(field.hqlName);
       }
-    });
+    }
   }
 
   const filteredValues = Object.entries(values).reduce((acc, [key, value]) => {
@@ -153,35 +151,35 @@ function parseServerValidationErrors(errorData: any): ValidationError[] {
 
   // Parse field-specific validation errors if they exist
   if (errorData?.fieldErrors) {
-    Object.entries(errorData.fieldErrors).forEach(([field, message]) => {
+    for (const [field, message] of Object.entries(errorData.fieldErrors)) {
       errors.push({
         field,
         message: String(message),
         type: "server",
       });
-    });
+    }
   }
 
   // Parse validation errors from different server response formats
   if (errorData?.validationErrors && Array.isArray(errorData.validationErrors)) {
-    errorData.validationErrors.forEach((error: any) => {
+    for (const error of errorData.validationErrors) {
       errors.push({
         field: error.field || "_general",
         message: error.message || "Validation error",
         type: "server",
       });
-    });
+    }
   }
 
   // Handle constraint violation errors
   if (errorData?.constraintViolations && Array.isArray(errorData.constraintViolations)) {
-    errorData.constraintViolations.forEach((violation: any) => {
+    for (const violation of errorData.constraintViolations) {
       errors.push({
         field: violation.propertyPath || "_general",
         message: violation.message || "Constraint violation",
         type: "server",
       });
-    });
+    }
   }
 
   return errors;
@@ -242,7 +240,6 @@ export async function saveRecordWithRetry({
   signal?: AbortSignal;
   maxRetries?: number;
 }): Promise<SaveResult> {
-  let lastError: any;
   let lastResponse: any;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -280,19 +277,10 @@ export async function saveRecordWithRetry({
       }
 
       // Wait before retrying (exponential backoff)
-      const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
+      const delay = Math.min(1000 * 2 ** attempt, 5000);
       await new Promise((resolve) => setTimeout(resolve, delay));
     } catch (error) {
-      lastError = error;
-
-      // Check if we should retry this error
       if (!isRetryableError(error, lastResponse) || attempt === maxRetries) {
-        logger.error(`[SaveOperation] Non-retryable error or max retries reached:`, {
-          rowId: saveOperation.rowId,
-          attempt: attempt + 1,
-          error: error instanceof Error ? error.message : String(error),
-        });
-
         return {
           success: false,
           errors: [
@@ -311,7 +299,7 @@ export async function saveRecordWithRetry({
       });
 
       // Wait before retrying (exponential backoff)
-      const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
+      const delay = Math.min(1000 * 2 ** attempt, 5000);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
@@ -339,29 +327,14 @@ export function validateRecordBeforeSave(
   saveOperation: SaveOperation,
   columns: Column[]
 ): { canSave: boolean; errors: ValidationError[] } {
-  logger.debug(`[SaveValidation] Validating record before save:`, {
-    rowId: saveOperation.rowId,
-    isNew: saveOperation.isNew,
-  });
-
-  // Validate the merged data
-  const validationResult = validateRowForSave(columns, saveOperation.data as EntityData);
+  const validationResult = validateRowForSave(columns, saveOperation.data);
 
   if (!validationResult.isValid) {
-    logger.warn(`[SaveValidation] Validation failed for record:`, {
-      rowId: saveOperation.rowId,
-      errors: validationResult.errors,
-    });
-
     return {
       canSave: false,
       errors: validationResult.errors,
     };
   }
-
-  logger.debug(`[SaveValidation] Validation passed for record:`, {
-    rowId: saveOperation.rowId,
-  });
 
   return {
     canSave: true,
@@ -411,11 +384,6 @@ export async function saveRecord({
       const { id, id$_identifier: idIdentifier, ...valuesWithoutId } = processedValues;
       processedValues = valuesWithoutId as EntityData;
 
-      logger.debug(`[SaveOperation] Removed ID field for new record:`, {
-        originalId: id,
-        processedKeys: Object.keys(processedValues),
-      });
-
       if (processedOriginalData) {
         const { id: originalId, id$_identifier: originalIdIdentifier, ...originalWithoutId } = processedOriginalData;
         processedOriginalData = originalWithoutId as EntityData;
@@ -437,45 +405,30 @@ export async function saveRecord({
       body: normalizeDates(body) as Record<string, unknown>,
     };
 
-    logger.debug(
-      `[SaveOperation] Making ${saveOperation.isNew ? "POST (create)" : "POST (update)"} request to: ${url}`,
-      {
-        operationType: body.operationType,
-        dataKeys: Object.keys(body.data || {}),
-        hasOldValues: !!body.oldValues,
-      }
-    );
-
     const { ok, data } = await Metadata.datasourceServletClient.request(url, options);
 
     if (ok && data?.response?.status === 0) {
       const savedRecord = data.response.data[0] as EntityData;
-      logger.info(`[SaveOperation] Successfully ${saveOperation.isNew ? "created" : "updated"} record:`, {
-        rowId: saveOperation.rowId,
-        recordId: savedRecord.id,
-        isNew: saveOperation.isNew,
-      });
 
       return {
         success: true,
         data: savedRecord,
       };
-    } else {
-      const errorMessage = data?.response?.error?.message || "Unknown server error";
-      const validationErrors = parseServerValidationErrors(data?.response?.error);
-
-      logger.error(`[SaveOperation] Server error for ${saveOperation.isNew ? "new" : "existing"} record:`, {
-        rowId: saveOperation.rowId,
-        error: errorMessage,
-        validationErrors,
-        responseStatus: data?.response?.status,
-      });
-
-      return {
-        success: false,
-        errors: validationErrors,
-      };
     }
+    const errorMessage = data?.response?.error?.message || "Unknown server error";
+    const validationErrors = parseServerValidationErrors(data?.response?.error);
+
+    logger.error(`[SaveOperation] Server error for ${saveOperation.isNew ? "new" : "existing"} record:`, {
+      rowId: saveOperation.rowId,
+      error: errorMessage,
+      validationErrors,
+      responseStatus: data?.response?.status,
+    });
+
+    return {
+      success: false,
+      errors: validationErrors,
+    };
   } catch (error) {
     logger.error(`[SaveOperation] Request failed for ${saveOperation.isNew ? "new" : "existing"} record:`, {
       rowId: saveOperation.rowId,
@@ -520,11 +473,11 @@ export function createSaveOperation(rowId: string, editingRowData: EditingRowDat
 export function processSaveErrors(errors: ValidationError[]): Record<string, string | undefined> {
   const fieldErrors: Record<string, string | undefined> = {};
 
-  errors.forEach((error) => {
+  for (const error of errors) {
     if (error.field !== "_general") {
       fieldErrors[error.field] = error.message;
     }
-  });
+  }
 
   return fieldErrors;
 }
@@ -555,13 +508,6 @@ export async function createNewRecord({
     throw new Error("createNewRecord should only be called for new records");
   }
 
-  logger.info(`[CreateRecord] Creating new record:`, {
-    rowId: saveOperation.rowId,
-    entityName: tab.entityName,
-    dataKeys: Object.keys(saveOperation.data),
-  });
-
-  // Use the general saveRecord function which handles both new and existing records
   return saveRecord({
     saveOperation,
     tab,
@@ -596,13 +542,6 @@ export async function updateExistingRecord({
   if (saveOperation.isNew) {
     throw new Error("updateExistingRecord should only be called for existing records");
   }
-
-  logger.info(`[UpdateRecord] Updating existing record:`, {
-    rowId: saveOperation.rowId,
-    entityName: tab.entityName,
-    recordId: saveOperation.originalData?.id,
-  });
-
   // Use the general saveRecord function which handles both new and existing records
   return saveRecord({
     saveOperation,

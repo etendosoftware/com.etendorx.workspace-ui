@@ -108,7 +108,7 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         isMandatory: column.isMandatory,
         _identifier: column.name,
         column: {
-          _identifier: (columnType || "") as string,
+          _identifier: columnType || "",
           reference: column.column?.reference,
           ...(column.readOnlyLogicExpression ? { readOnlyLogicExpression: column.readOnlyLogicExpression } : {}), // Include for inline editing
         },

@@ -335,9 +335,6 @@ describe("optimisticUpdates", () => {
 
       const optimisticUpdates = useOptimisticUpdates(modifiedRecords, mockSetRecords);
 
-      // Mock the manager to return original data
-      const originalData = { id: "2", name: "Record 2", value: 200 };
-
       // We need to simulate the rollback behavior
       optimisticUpdates.rollbackUpdate("2");
 

@@ -146,13 +146,6 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
     isLoadingDynamicOptions ||
     ((field.type === "tabledir" || field.referencedEntity) && options.length === 0 && !isLoadingDynamicOptions);
 
-  // Find the display label for the current value
-  const getDisplayLabel = (val: string) => {
-    if (!val) return "";
-    const option = options.find((opt) => String(opt.value) === val);
-    return option?.label || val;
-  };
-
   // If we're loading options or this is a TABLEDIR field without options, render as text input
   if (isLoadingOrNoOptions) {
     return (

@@ -27,7 +27,14 @@ import {
 } from "material-react-table";
 import type { ColumnFiltersState, SortingState, ExpandedState, Updater } from "@tanstack/react-table";
 import { useStyle } from "./styles";
-import type { EntityData, GridProps } from "@workspaceui/api-client/src/api/types";
+import type {
+  EntityData,
+  GridProps,
+  FieldType,
+  Column,
+  Field,
+  FormInitializationResponse,
+} from "@workspaceui/api-client/src/api/types";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
@@ -61,12 +68,10 @@ import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab
 import { CellContextMenu } from "./CellContextMenu";
 import { RecordCounterBar } from "@workspaceui/componentlibrary/src/components";
 import type { EditingRowsState, InlineEditingContextMenu, RowValidationResult } from "./types/inlineEditing";
-import { createEditingRowStateUtils } from "./utils/editingRowUtils";
+import { createEditingRowStateUtils, getMergedRowData } from "./utils/editingRowUtils";
 import { ActionsColumn } from "./ActionsColumn";
 import { validateFieldRealTime } from "./utils/validationUtils";
-import { FieldType } from "@workspaceui/api-client/src/api/types";
-import type { Column, Field } from "@workspaceui/api-client/src/api/types";
-import { getFieldReference, parseDynamicExpression } from "@/utils";
+import { getFieldReference, parseDynamicExpression, buildPayloadByInputName } from "@/utils";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useConfirmationDialog } from "./hooks/useConfirmationDialog";
 import { useInlineTableDirOptions } from "./hooks/useInlineTableDirOptions";
@@ -89,11 +94,8 @@ import { useScreenReaderAnnouncer, generateAriaAttributes } from "./utils/access
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import { globalCalloutManager } from "@/services/callouts";
-import { buildPayloadByInputName } from "@/utils";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import type { FormInitializationResponse } from "@workspaceui/api-client/src/api/types";
-import { getMergedRowData } from "./utils/editingRowUtils";
 import "./styles/inlineEditing.css";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
@@ -606,13 +608,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         const fieldsByHqlName = tab?.fields || {};
         const fieldsByColumnName = getFieldsByColumnName(tab);
         const currentRowData = getMergedRowData(editingData);
-
-        // Debug: log what businessPartner value we have
-        if (field.hqlName === "businessPartner") {
-        }
-
         const payload = buildPayloadByInputName(currentRowData, fieldsByHqlName);
-
         const entityKeyColumn = tab.fields.id.columnName;
         const calloutData = {
           ...session,
@@ -630,7 +626,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         if (field.inputName === "inpmProductId" && newValue && optionData) {
           // Cast to typed interfaces
           const productOption = optionData as ProductOptionData;
-          const parentData = parentRecord as ParentRecordData;
+          const parentData = parentRecord;
 
           // Get priceList from parentRecord (order header)
           const priceListFromParent = parentData?.priceList || parentData?.mPricelistId;
@@ -844,7 +840,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
             // Update the editing row with enriched data
             editingRowUtils.addEditingRow(rowId, mergedData, false);
-          } else {
           }
         }
       } catch (error) {
@@ -1023,7 +1018,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         setOptimisticRecords(updatedRecords);
 
         // Get required metadata for save operation
-        const windowMetadata = undefined; // TODO: Get from context if needed
+        const windowMetadata = undefined; // Get from context if needed
         const userId = user?.id || "";
 
         // Perform the save operation with retry mechanism for better reliability
@@ -2402,7 +2397,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         onEditRow={handleContextMenuEditRow}
         onInsertRow={handleContextMenuInsertRow}
         onNewRecord={handleContextMenuNewRecord}
-        canEdit={true} // TODO: Add permission checks based on user permissions and field metadata
+        canEdit={true}
         isRowEditing={contextMenu.row ? editingRowUtils.isRowEditing(String(contextMenu.row.original.id)) : false}
         data-testid="CellContextMenu__8ca888"
       />

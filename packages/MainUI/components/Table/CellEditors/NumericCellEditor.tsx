@@ -188,10 +188,9 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
             incrementValue(-1);
           }
           break;
-        default:
-          // Allow numeric input, decimal point, minus sign, and control keys
+        default: {
           const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "Tab"];
-          const isNumericKey = /^[0-9]$/.test(e.key);
+          const isNumericKey = /^\d$/.test(e.key);
           const isDecimalPoint = e.key === "." && !localValue.includes(".");
           const isMinusSign = e.key === "-" && localValue.length === 0;
 
@@ -199,6 +198,7 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
             e.preventDefault();
           }
           break;
+        }
       }
     }
   };

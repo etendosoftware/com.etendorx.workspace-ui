@@ -163,7 +163,7 @@ export function createEditingRowStateUtils(
  * @returns Unique string ID
  */
 export function generateNewRowId(): string {
-  return `new_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `new_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
 /**

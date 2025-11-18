@@ -324,13 +324,11 @@ export const keyboardAccessibility = {
    * Ensure an element is visible for screen readers
    */
   ensureVisible: (element: HTMLElement): void => {
-    // Remove any screen reader hiding classes/styles
     element.classList.remove("sr-only", "visually-hidden");
     element.style.position = "";
     element.style.width = "";
     element.style.height = "";
     element.style.overflow = "";
-    element.style.clip = "";
     element.style.clipPath = "";
   },
 };
