@@ -46,11 +46,15 @@ import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check.svg";
 import { useTableData } from "@/hooks/table/useTableData";
 import { isEmptyObject } from "@/utils/commons";
-import { getDisplayColumnDefOptions, getMUITableBodyCellProps, getCurrentRowCanExpand } from "@/utils/table/utils";
+import {
+  getDisplayColumnDefOptions,
+  getMUITableBodyCellProps,
+  getCurrentRowCanExpand,
+  getCellTitle,
+} from "@/utils/table/utils";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
 import { RecordCounterBar } from "@workspaceui/componentlibrary/src/components";
-import { getCellTitle } from "@/utils/table/utils";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
