@@ -412,7 +412,13 @@ export class LegacyColumnFilterUtils {
     const result: BaseCriteria[] = [];
 
     if (rangeFilter.from !== null && rangeFilter.from !== undefined) {
-      const formattedValue = LegacyColumnFilterUtils.formatValueForType(rangeFilter.from, column);
+      let formattedValue = LegacyColumnFilterUtils.formatValueForType(rangeFilter.from, column);
+
+      // For date fields, convert to backend format (YYYY-MM-DD)
+      if (formattedValue !== null && LegacyColumnFilterUtils.isDateField(fieldName, column)) {
+        formattedValue = LegacyColumnFilterUtils.convertDateFormatForBackend(String(formattedValue));
+      }
+
       if (formattedValue !== null) {
         result.push({
           fieldName,
@@ -423,7 +429,13 @@ export class LegacyColumnFilterUtils {
     }
 
     if (rangeFilter.to !== null && rangeFilter.to !== undefined) {
-      const formattedValue = LegacyColumnFilterUtils.formatValueForType(rangeFilter.to, column);
+      let formattedValue = LegacyColumnFilterUtils.formatValueForType(rangeFilter.to, column);
+
+      // For date fields, convert to backend format (YYYY-MM-DD)
+      if (formattedValue !== null && LegacyColumnFilterUtils.isDateField(fieldName, column)) {
+        formattedValue = LegacyColumnFilterUtils.convertDateFormatForBackend(String(formattedValue));
+      }
+
       if (formattedValue !== null) {
         result.push({
           fieldName,
@@ -510,6 +522,54 @@ export class LegacyColumnFilterUtils {
     ];
   }
 
+  /**
+   * Detects if a date string contains a range (e.g., "09-20-2025 - 09-30-2025")
+   * and parses it into {from, to} format
+   */
+  private static parseDateRangeIfExists(
+    value: unknown,
+    column: Column
+  ): { from: FormattedValue; to: FormattedValue } | null {
+    if (!LegacyColumnFilterUtils.isDateField(column.columnName, column)) {
+      return null;
+    }
+
+    const stringValue = String(value).trim();
+
+    // Match patterns like "09-20-2025 - 09-30-2025" or "09/20/2025 - 09/30/2025"
+    // Use " - " with mandatory spaces to distinguish from date separators
+    const rangePattern = /^(.+?)\s+-\s+(.+)$/;
+    const match = stringValue.match(rangePattern);
+
+    if (!match) {
+      return null;
+    }
+
+    const [, fromStr, toStr] = match;
+    const fromTrimmed = fromStr.trim();
+    const toTrimmed = toStr.trim();
+
+    // Validate that both parts look like dates
+    if (!LegacyColumnFilterUtils.looksLikeDateInput(fromTrimmed) ||
+        !LegacyColumnFilterUtils.looksLikeDateInput(toTrimmed)) {
+      return null;
+    }
+
+    return {
+      from: fromTrimmed,
+      to: toTrimmed,
+    };
+  }
+
+  /**
+   * Checks if a string looks like a date input
+   */
+  private static looksLikeDateInput(value: string): boolean {
+    if (!value) return false;
+    // Contains digits and common date separators (-, /, .)
+    return /[\d\-\/\.]/.test(value) && /\d/.test(value);
+  }
+
   static createColumnFilterCriteria(columnFilters: MRT_ColumnFiltersState, columns: Column[]): BaseCriteria[] {
     if (!columnFilters.length) return [];
 
@@ -528,6 +588,7 @@ export class LegacyColumnFilterUtils {
 
       let filterCriteria: BaseCriteria[] = [];
 
+      // Check if it's already a range object
       if (typeof filter.value === "object" && filter.value !== null && "from" in filter.value && "to" in filter.value) {
         filterCriteria = LegacyColumnFilterUtils.handleRangeFilter(
           fieldName,
@@ -538,7 +599,14 @@ export class LegacyColumnFilterUtils {
         // Handle dropdown filters (our new implementation)
         filterCriteria = LegacyColumnFilterUtils.handleArrayFilter(fieldName, filter.value, column);
       } else {
-        filterCriteria = LegacyColumnFilterUtils.handleSingleValueFilter(fieldName, filter.value, column);
+        // Check if it's a date range string (e.g., "09-20-2025 - 09-30-2025")
+        const dateRange = LegacyColumnFilterUtils.parseDateRangeIfExists(filter.value, column);
+
+        if (dateRange) {
+          filterCriteria = LegacyColumnFilterUtils.handleRangeFilter(fieldName, dateRange, column);
+        } else {
+          filterCriteria = LegacyColumnFilterUtils.handleSingleValueFilter(fieldName, filter.value, column);
+        }
       }
 
       allCriteria.push(...filterCriteria);
