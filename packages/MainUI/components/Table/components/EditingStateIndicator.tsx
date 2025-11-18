@@ -16,7 +16,6 @@
  */
 
 import type React from "react";
-import { useTranslation } from "@/hooks/useTranslation";
 
 interface EditingStateIndicatorProps {
   isEditing: boolean;
@@ -37,24 +36,21 @@ export const EditingStateIndicator: React.FC<EditingStateIndicatorProps> = ({
   errorCount = 0,
   className = "",
 }) => {
-  const { t } = useTranslation();
-
   if (!isEditing) {
     return null;
   }
 
   if (isSaving) {
     return (
-      <div className={`editing-state-indicator saving ${className}`} title={t("table.editing.saving")}>
+      <div className={`editing-state-indicator saving ${className}`} title="Saving...">
         <div className="inline-edit-saving-spinner" />
-        <span className="state-text">{t("table.editing.saving")}</span>
+        <span className="state-text">Saving...</span>
       </div>
     );
   }
 
   if (hasErrors) {
-    const errorText =
-      errorCount > 1 ? t("table.editing.multipleErrors", { count: errorCount }) : t("table.editing.hasError");
+    const errorText = errorCount > 1 ? `${errorCount} errors` : "Has errors";
 
     return (
       <div className={`editing-state-indicator error ${className}`} title={errorText}>
@@ -65,9 +61,9 @@ export const EditingStateIndicator: React.FC<EditingStateIndicatorProps> = ({
   }
 
   return (
-    <div className={`editing-state-indicator editing ${className}`} title={t("table.editing.inProgress")}>
+    <div className={`editing-state-indicator editing ${className}`} title="Editing">
       <div className="editing-icon">✎</div>
-      <span className="state-text">{t("table.editing.inProgress")}</span>
+      <span className="state-text">Editing</span>
     </div>
   );
 };

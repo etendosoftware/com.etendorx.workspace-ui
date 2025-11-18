@@ -34,10 +34,15 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
   const [optionsCache, setOptionsCache] = useState<Record<string, RefListField[]>>({});
 
   const loadOptions = useCallback(
-    async (field: Field, searchQuery?: string, contextData?: Record<string, unknown>, pageSize = 75): Promise<RefListField[]> => {
+    async (
+      field: Field,
+      searchQuery?: string,
+      contextData?: Record<string, unknown>,
+      pageSize = 75
+    ): Promise<RefListField[]> => {
       const fieldKey = field.name || field.hqlName;
       // Include organization in cache key so different orgs have different caches
-      const orgId = contextData?.organization || 'no-org';
+      const orgId = contextData?.organization || "no-org";
       const cacheKey = `${fieldKey}-${orgId}-${searchQuery || ""}-${pageSize}`;
 
       logger.debug(`[useInlineTableDirOptions] loadOptions called`, {
@@ -81,7 +86,7 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
           hasSelector: !!field.selector,
           selectorDatasourceName: (field.selector as any)?.datasourceName,
           useSpecialDatasource,
-          referencedEntity: field.referencedEntity
+          referencedEntity: field.referencedEntity,
         });
 
         // Build request body with selector configuration if available
@@ -99,25 +104,27 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
         if (selector && useSpecialDatasource) {
           // Only add safe, universal selector properties
           const safeParams = [
-            '_selectorDefinitionId',
-            'filterClass',
-            'fieldId',
-            'datasourceName',
-            'displayField',
-            'valueField',
-            'moduleId',
-            '_selectedProperties',
-            '_extraProperties',
-            'extraSearchFields'
+            "_selectorDefinitionId",
+            "filterClass",
+            "fieldId",
+            "datasourceName",
+            "displayField",
+            "valueField",
+            "moduleId",
+            "_selectedProperties",
+            "_extraProperties",
+            "extraSearchFields",
           ];
 
-          safeParams.forEach(param => {
+          safeParams.forEach((param) => {
             if (selector[param] !== null && selector[param] !== undefined) {
               baseBody[param] = String(selector[param]);
             }
           });
 
-          logger.debug(`[useInlineTableDirOptions] Added ${safeParams.filter(p => selector[p] !== undefined).length} selector params for special datasource ${fieldKey}`);
+          logger.debug(
+            `[useInlineTableDirOptions] Added ${safeParams.filter((p) => selector[p] !== undefined).length} selector params for special datasource ${fieldKey}`
+          );
         }
 
         // Add tab and window context if available
@@ -187,14 +194,14 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
         const options: RefListField[] = records.map((record: Record<string, unknown>) => {
           // Use displayField from selector, or fallback to _identifier/name/id
           const displayField = (field.selector as any)?.displayField;
-          const displayValue = displayField ? record[displayField] : (record._identifier || record.name || record.id);
+          const displayValue = displayField ? record[displayField] : record._identifier || record.name || record.id;
 
           // Use valueField from selector if specified, otherwise use id
           // For nested fields like "product$id", extract the value
           let idValue = record.id;
           if (valueField) {
             // Handle nested field names like "product$id"
-            const fieldParts = valueField.split('$');
+            const fieldParts = valueField.split("$");
             let value: any = record;
             for (const part of fieldParts) {
               value = value?.[part];
@@ -203,7 +210,7 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
           }
 
           // Debug log for businessPartner to see what we're mapping
-          if (fieldKey === 'Business Partner' || fieldKey === 'businessPartner') {
+          if (fieldKey === "Business Partner" || fieldKey === "businessPartner") {
             logger.info(`[useInlineTableDirOptions] Mapping BP option:`, {
               valueField,
               recordId: record.id,
@@ -211,7 +218,7 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
               recordValue: (record as any).value,
               extractedIdValue: idValue,
               displayValue,
-              record
+              record,
             });
           }
 

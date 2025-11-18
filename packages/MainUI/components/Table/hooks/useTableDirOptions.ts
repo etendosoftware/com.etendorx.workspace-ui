@@ -55,8 +55,8 @@ export const useTableDirOptions = ({ tabId, entityName }: UseTableDirOptionsPara
         // Use the same logic as loadTableDirFilterOptions
         // First, check if we should use the selector/datasource approach (for fields that reference other entities)
         // Extract from selector object if available, or check column properties
-        const selectorDefinitionId =
-          (column.selector?.id as string | undefined) || (column.selectorDefinitionId as string | undefined);
+        const selector = column.selector as { id?: string } | undefined;
+        const selectorDefinitionId = selector?.id || (column.selectorDefinitionId as string | undefined);
         const datasourceId =
           (column.column?.datasourceId as string | undefined) ||
           (column.datasourceId as string | undefined) ||
@@ -146,7 +146,8 @@ export const useTableDirOptions = ({ tabId, entityName }: UseTableDirOptionsPara
 
   // Helper to check if a column needs options loading
   const needsOptionsLoading = useCallback((column: Column) => {
-    return ColumnFilterUtils.isTableDirColumn(column) && (!column.refList || column.refList.length === 0);
+    const refList = column.refList as Array<unknown> | undefined;
+    return ColumnFilterUtils.isTableDirColumn(column) && (!refList || refList.length === 0);
   }, []);
 
   return {

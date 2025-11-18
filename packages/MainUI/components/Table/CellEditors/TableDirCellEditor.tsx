@@ -44,14 +44,6 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
   loadOptions,
   isLoadingOptions,
 }) => {
-  console.log("[TableDirCellEditor] RENDER START", {
-    fieldName: field.name,
-    value,
-    disabled,
-    hasRefList: !!field.refList,
-    refListLength: field.refList?.length || 0,
-  });
-
   const [localValue, setLocalValue] = useState<string>(String(value || ""));
   const [dynamicOptions, setDynamicOptions] = useState<RefListField[]>([]);
   const [isLoadingDynamicOptions, setIsLoadingDynamicOptions] = useState(false);
@@ -60,6 +52,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const comboboxRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Keyboard navigation hook
@@ -79,14 +72,8 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
 
   // Update local value when prop value changes
   useEffect(() => {
-    console.log("[TableDirCellEditor] value prop changed", {
-      fieldName: field.name,
-      newValue: value,
-      oldLocalValue: localValue,
-      willSetLocalValue: String(value || ""),
-    });
     setLocalValue(String(value || ""));
-  }, [value, field.name, localValue]);
+  }, [value]);
 
   // Load options when selector opens (anchorEl is set) or when search term changes
   // This ensures we always fetch fresh options with current context (organization, etc.)
@@ -94,27 +81,13 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     const loadDynamicOptions = async () => {
       // Only load if selector is open or there's a search term
       if (!anchorEl && !searchTerm) {
-        console.log(`[TableDirCellEditor] Skipping load - selector closed and no search`, {
-          fieldName: field.name,
-        });
         return;
       }
-
-      console.log(`[TableDirCellEditor] Loading options for ${field.name}`, {
-        hasLoadOptions: !!loadOptions,
-        fieldType: field.type,
-        hasRefList: !!field.refList,
-        refListLength: field.refList?.length || 0,
-        selectorOpen: !!anchorEl,
-        searchTerm,
-      });
 
       if (loadOptions && field.type === FieldType.TABLEDIR && (!field.refList || field.refList.length === 0)) {
         setIsLoadingDynamicOptions(true);
         try {
-          console.log(`[TableDirCellEditor] Fetching options for ${field.name}`);
           const options = await loadOptions(field, searchTerm);
-          console.log(`[TableDirCellEditor] Loaded ${options.length} options for ${field.name}`);
           setDynamicOptions(options);
         } catch (error) {
           console.error(`[TableDirCellEditor] Failed to load options for ${field.name}:`, error);
@@ -126,29 +99,16 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     };
 
     loadDynamicOptions();
-  }, [anchorEl, searchTerm, field.name, field.type, field.refList, loadOptions]);
+  }, [anchorEl, searchTerm, field, loadOptions]);
 
   // Get restricted entries from field (set by callouts)
   // IMPORTANT: Use inputName to match how entries are stored by callouts (e.g., "inpcBpartnerId")
   // Callouts use inputName for payload fields, not hqlName
-  const fieldKey = field.inputName || field.hqlName || field.columnName || field.name;
-  const entriesKey = `${fieldKey}$_entries`;
-  const restrictedEntries = (field as any)[entriesKey] || [];
-
-  // Debug logging to understand why entries might not be found
-  if (anchorEl) {
-    console.log("[TableDirCellEditor] Selector opened, checking for entries", {
-      fieldName: field.name,
-      hqlName: field.hqlName,
-      columnName: field.columnName,
-      inputName: field.inputName,
-      fieldKey,
-      entriesKey,
-      hasEntries: !!restrictedEntries.length,
-      restrictedEntries,
-      allFieldKeys: Object.keys(field).filter(k => k.includes('$')),
-    });
-  }
+  const restrictedEntries = useMemo(() => {
+    const fieldKey = field.inputName || field.hqlName || field.columnName || field.name;
+    const entriesKey = `${fieldKey}$_entries`;
+    return ((field as unknown as Record<string, unknown>)[entriesKey] || []) as RefListField[];
+  }, [field]);
 
   // Combine static, dynamic, and restricted options (from callouts)
   const options = useMemo(() => {
@@ -159,21 +119,12 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     const allOptions = [...staticOptions, ...dynamicOptions, ...restrictedEntries];
 
     // Remove duplicates by id
-    const uniqueOptions = allOptions.filter((opt, index, self) =>
-      index === self.findIndex((o) => String(o.id) === String(opt.id))
+    const uniqueOptions = allOptions.filter(
+      (opt, index, self) => index === self.findIndex((o) => String(o.id) === String(opt.id))
     );
 
-    console.log("[TableDirCellEditor] Options combined", {
-      fieldName: field.name,
-      staticCount: staticOptions.length,
-      dynamicCount: dynamicOptions.length,
-      restrictedCount: restrictedEntries.length,
-      totalUnique: uniqueOptions.length,
-      restrictedEntries: restrictedEntries.map((e: any) => ({ id: e.id, label: e.label })),
-    });
-
     return uniqueOptions;
-  }, [field.refList, dynamicOptions, restrictedEntries, field.name]);
+  }, [field.refList, dynamicOptions, restrictedEntries]);
 
   // Filter options based on search term
   const filteredOptions = useMemo(() => {
@@ -184,15 +135,8 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
   // Find the current selected option
   const selectedOption = useMemo(() => {
     // Try to find by id first (preferred), then by value
-    const found = options.find((opt) => String(opt.id) === localValue || String(opt.value) === localValue);
-    console.log("[TableDirCellEditor] selectedOption memo recalculated", {
-      fieldName: field.name,
-      localValue,
-      optionsCount: options.length,
-      foundOption: found,
-    });
-    return found;
-  }, [options, localValue, field.name]);
+    return options.find((opt) => String(opt.id) === localValue || String(opt.value) === localValue);
+  }, [options, localValue]);
 
   // Display text for the input
   const displayText = useMemo(() => {
@@ -205,14 +149,9 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     // This handles cases where callouts set values but options aren't loaded yet
     // IMPORTANT: Use inputName to match how identifiers are stored (same as entries)
     const identifierFieldKey = field.inputName || field.hqlName || field.columnName || field.name;
-    const identifierFromField = (field as any)[`${identifierFieldKey}$_identifier`];
+    const identifierFromField = (field as unknown as Record<string, unknown>)[`${identifierFieldKey}$_identifier`];
     if (identifierFromField) {
-      console.log("[TableDirCellEditor] Using identifier from field", {
-        fieldName: field.name,
-        identifierFieldKey,
-        identifier: identifierFromField,
-      });
-      return identifierFromField;
+      return identifierFromField as string;
     }
 
     // Fallback to the raw value (will show UUID if no identifier found)
@@ -224,14 +163,6 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
       // Find the selected option to get its complete data
       const selectedOption = options.find((opt) => String(opt.value) === optionValue || String(opt.id) === optionValue);
 
-      console.log("[TableDirCellEditor] handleSelect called", {
-        optionValue,
-        fieldName: field.name,
-        selectedOption,
-        optionId: selectedOption?.id,
-        optionValue: selectedOption?.value,
-      });
-
       // Get the ID to send - prefer id over value
       const realId = selectedOption?.id || selectedOption?.value || optionValue;
       const valueToSend = optionValue === "" ? null : realId;
@@ -239,7 +170,6 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
       // Update local value to the ID (for consistency with what we send to onChange)
       setLocalValue(realId);
 
-      console.log("[TableDirCellEditor] Calling onChange with ID:", valueToSend);
       onChange(valueToSend, selectedOption as Record<string, unknown> | undefined);
 
       // Close menu and reset UI state
@@ -247,24 +177,18 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
       setSearchTerm("");
       setHighlightedIndex(-1);
     },
-    [onChange, field.name, options]
+    [onChange, options]
   );
 
   const handleClick = useCallback(() => {
-    console.log("[TableDirCellEditor] handleClick called", {
-      fieldName: field.name,
-      disabled,
-      currentAnchorEl: !!anchorEl,
-      willOpen: !anchorEl && !disabled,
-    });
     if (disabled) return;
     if (anchorEl) {
       setAnchorEl(null);
     } else {
-      setAnchorEl(wrapperRef.current);
+      setAnchorEl(comboboxRef.current);
     }
     setFocused();
-  }, [anchorEl, disabled, setFocused, field.name]);
+  }, [anchorEl, disabled, setFocused]);
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -284,7 +208,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
             if (anchorEl && highlightedIndex >= 0 && filteredOptions[highlightedIndex]) {
               handleSelect(filteredOptions[highlightedIndex].value);
             } else if (!anchorEl) {
-              setAnchorEl(wrapperRef.current);
+              setAnchorEl(comboboxRef.current);
             }
             break;
           case "Escape":
@@ -301,7 +225,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
           case "ArrowDown":
             e.preventDefault();
             if (!anchorEl) {
-              setAnchorEl(wrapperRef.current);
+              setAnchorEl(comboboxRef.current);
             } else {
               setHighlightedIndex((prev) => (prev < filteredOptions.length - 1 ? prev + 1 : 0));
             }
@@ -320,27 +244,27 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     [handleNavigationKeyDown, anchorEl, highlightedIndex, filteredOptions, handleSelect, value, onBlur]
   );
 
-  const handleBlur = useCallback(
-    (e: React.FocusEvent) => {
-      // Only blur if focus is moving outside the component
-      if (!wrapperRef.current?.contains(e.relatedTarget as Node)) {
-        setAnchorEl(null);
-        setSearchTerm("");
-        setHighlightedIndex(-1);
-        onBlur();
+  // Prevent Menu's useClickOutside from closing when clicking on combobox
+  useEffect(() => {
+    const handleMouseDown = (e: MouseEvent) => {
+      if (comboboxRef.current?.contains(e.target as Node)) {
+        e.stopPropagation();
       }
-    },
-    [onBlur]
-  );
+    };
+
+    if (anchorEl) {
+      document.addEventListener("mousedown", handleMouseDown, true);
+      return () => document.removeEventListener("mousedown", handleMouseDown, true);
+    }
+  }, [anchorEl]);
 
   const handleOptionMouseDown = useCallback(
     (e: React.MouseEvent, optionValue: string) => {
       e.stopPropagation();
       e.preventDefault();
-      console.log("[TableDirCellEditor] Option mousedown", { optionValue, fieldName: field.name });
       handleSelect(optionValue);
     },
-    [handleSelect, field.name]
+    [handleSelect]
   );
 
   const handleOptionMouseEnter = useCallback((index: number) => {
@@ -358,15 +282,21 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     setAnchorEl(null);
     setSearchTerm("");
     setHighlightedIndex(-1);
-  }, []);
+    // Only call onBlur if focus is not on the combobox button
+    if (document.activeElement !== wrapperRef.current) {
+      onBlur();
+    }
+  }, [onBlur]);
 
-  const isLoading = isLoadingDynamicOptions || (isLoadingOptions && isLoadingOptions(field.name));
+  const isLoading = isLoadingDynamicOptions || isLoadingOptions?.(field.name);
 
   return (
-    <div ref={wrapperRef} className="relative w-full" onBlur={handleBlur} tabIndex={-1}>
+    <div ref={wrapperRef} className="relative w-full">
       <div
+        ref={comboboxRef}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
+        tabIndex={disabled ? -1 : 0}
         className={`
           inline-edit-tabledir
           w-full
@@ -392,7 +322,10 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
         aria-invalid={hasError}
         aria-expanded={!!anchorEl}
         aria-haspopup="listbox"
-        role="combobox">
+        aria-controls="tabledir-listbox"
+        // biome-ignore lint/a11y/useSemanticElements: Custom combobox with search requires div not select
+        role="combobox"
+      >
         <span className="truncate flex-1">
           {isLoading ? "Loading..." : displayText || (field.isMandatory ? "Select an option..." : "(None)")}
         </span>
@@ -409,14 +342,17 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
             ref={searchInputRef}
             value={searchTerm}
             onChange={handleSearchChange}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
             placeholder={`Search ${field.name}...`}
             className="w-full p-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           />
         </div>
-        <ul className="overflow-y-auto max-h-40" role="listbox">
+        {/* biome-ignore lint/a11y/useSemanticElements: Custom listbox with search requires div not select */}
+        <div id="tabledir-listbox" className="overflow-y-auto max-h-40" role="listbox" tabIndex={-1}>
           {/* Empty option */}
           {!field.isMandatory && (
-            <li
+            <div
               onMouseDown={(e) => handleOptionMouseDown(e, "")}
               onMouseEnter={() => handleOptionMouseEnter(-1)}
               className={`
@@ -424,18 +360,20 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
                 ${highlightedIndex === -1 ? "bg-blue-50" : ""}
                 hover:bg-blue-50
               `}
+              // biome-ignore lint/a11y/useSemanticElements: Custom option with rich content requires div not option
               role="option"
-              aria-selected={localValue === ""}>
+              aria-selected={localValue === ""}
+              tabIndex={-1}>
               <span className="text-gray-500">(None)</span>
               {localValue === "" && <Image src={checkIconUrl} alt="Selected" width={16} height={16} />}
-            </li>
+            </div>
           )}
 
           {filteredOptions.length > 0 ? (
             filteredOptions.map((option, index) => {
               const isSelected = String(option.id) === localValue || String(option.value) === localValue;
               return (
-                <li
+                <div
                   key={option.id || option.value}
                   onMouseDown={(e) => handleOptionMouseDown(e, option.value)}
                   onMouseEnter={() => handleOptionMouseEnter(index)}
@@ -445,17 +383,21 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
                     ${isSelected ? "bg-blue-50 font-medium" : ""}
                     hover:bg-blue-50
                   `}
+                  // biome-ignore lint/a11y/useSemanticElements: Custom option with rich content requires div not option
                   role="option"
-                  aria-selected={isSelected}>
+                  aria-selected={isSelected}
+                  tabIndex={-1}>
                   <span className="truncate">{option.label}</span>
                   {isSelected && <Image src={checkIconUrl} alt="Selected" width={16} height={16} />}
-                </li>
+                </div>
               );
             })
           ) : (
-            <li className="px-4 py-2 text-sm text-gray-500">{isLoading ? "Loading options..." : "No options found"}</li>
+            <div className="px-4 py-2 text-sm text-gray-500">
+              {isLoading ? "Loading options..." : "No options found"}
+            </div>
           )}
-        </ul>
+        </div>
       </Menu>
     </div>
   );

@@ -82,7 +82,7 @@ function columnToFieldForValidation(column: Column): Field {
  */
 export function validateFieldValue(field: Field | Column, value: unknown): string | undefined {
   // Convert Column to Field if needed
-  const fieldData = "type" in field ? field : columnToFieldForValidation(field);
+  const fieldData: Field = ("type" in field ? field : columnToFieldForValidation(field)) as Field;
   // Check required fields
   if (fieldData.isMandatory && (value === null || value === undefined || value === "")) {
     return `${fieldData.description || fieldData.name} is required`;
@@ -133,7 +133,7 @@ function validateNumericField(field: Field, value: unknown): string | undefined 
 
   const numValue = typeof value === "string" ? Number.parseFloat(value) : value;
 
-  if (isNaN(numValue)) {
+  if (Number.isNaN(numValue)) {
     return `${field.description || field.name} must be a valid number`;
   }
 
@@ -160,7 +160,7 @@ function validateDateField(field: Field, value: unknown): string | undefined {
   }
 
   const date = value instanceof Date ? value : new Date(value);
-  if (isNaN(date.getTime())) {
+  if (Number.isNaN(date.getTime())) {
     return `${field.description || field.name} must be a valid date`;
   }
 
@@ -232,12 +232,10 @@ function validateTextField(field: Field, value: unknown): string | undefined {
 export function validateRowData(fields: (Field | Column)[], rowData: EntityData): RowValidationResult {
   const errors: ValidationError[] = [];
 
-  fields.forEach((field) => {
-    // Try to get value using hqlName first (for Field objects), then fall back to name
-    const fieldKey = ('hqlName' in field && field.hqlName) ? field.hqlName : field.name;
+  for (const field of fields) {
+    const fieldKey = ("hqlName" in field && field.hqlName ? field.hqlName : field.name) as string;
     const value = rowData[fieldKey] ?? rowData[field.name];
-    // Convert Column to Field if needed
-    const fieldData = "type" in field ? field : columnToFieldForValidation(field);
+    const fieldData: Field = ("type" in field ? field : columnToFieldForValidation(field)) as Field;
     const errorMessage = validateFieldValue(fieldData, value);
 
     if (errorMessage) {
@@ -247,7 +245,7 @@ export function validateRowData(fields: (Field | Column)[], rowData: EntityData)
         type: "format",
       });
     }
-  });
+  }
 
   return {
     isValid: errors.length === 0,
@@ -263,9 +261,9 @@ export function validateRowData(fields: (Field | Column)[], rowData: EntityData)
 export function validationErrorsToRecord(errors: ValidationError[]): Record<string, string | undefined> {
   const record: Record<string, string | undefined> = {};
 
-  errors.forEach((error) => {
+  for (const error of errors) {
     record[error.field] = error.message;
-  });
+  }
 
   return record;
 }
@@ -279,14 +277,7 @@ export function validationErrorsToRecord(errors: ValidationError[]): Record<stri
 export function validateNewRowForSave(fields: (Field | Column)[], rowData: EntityData): RowValidationResult {
   const errors: ValidationError[] = [];
 
-  console.log("[validateNewRowForSave] Starting validation", {
-    fieldsCount: fields.length,
-    rowDataKeys: Object.keys(rowData),
-  });
-
-  // For new rows, we need to be more strict about required fields
-  fields.forEach((field) => {
-    // Skip system fields that are auto-generated
+  for (const field of fields) {
     if (
       field.name === "id" ||
       field.name === "actions" ||
@@ -295,37 +286,15 @@ export function validateNewRowForSave(fields: (Field | Column)[], rowData: Entit
       field.name === "updated" ||
       field.name === "updatedBy"
     ) {
-      return;
+      continue;
     }
-
-    // Convert Column to Field if needed
-    const fieldData = "type" in field ? field : columnToFieldForValidation(field);
-
-    // Skip validation for readonly fields
+    const fieldData: Field = ("type" in field ? field : columnToFieldForValidation(field)) as Field;
     if (fieldData.isReadOnly || !fieldData.isUpdatable) {
-      console.log("[validateNewRowForSave] Skipping readonly field:", field.name);
-      return;
+      continue;
     }
-
-    // Try to get value using hqlName first (for Field objects), then fall back to name
-    const fieldKey = ('hqlName' in field && field.hqlName) ? field.hqlName : field.name;
+    const fieldKey = ("hqlName" in field && field.hqlName ? field.hqlName : field.name) as string;
     const value = rowData[fieldKey] ?? rowData[field.name];
     const errorMessage = validateFieldValue(fieldData, value);
-
-    console.log("[validateNewRowForSave] Field validation:", {
-      fieldName: field.name,
-      fieldKey,
-      hasHqlName: 'hqlName' in field,
-      hqlName: ('hqlName' in field) ? (field as any).hqlName : undefined,
-      fieldType: fieldData.type,
-      isMandatory: fieldData.isMandatory,
-      isReadOnly: fieldData.isReadOnly,
-      isUpdatable: fieldData.isUpdatable,
-      value,
-      valueType: typeof value,
-      hasError: !!errorMessage,
-      errorMessage,
-    });
 
     if (errorMessage) {
       errors.push({
@@ -334,13 +303,7 @@ export function validateNewRowForSave(fields: (Field | Column)[], rowData: Entit
         type: "required",
       });
     }
-  });
-
-  console.log("[validateNewRowForSave] Validation complete", {
-    isValid: errors.length === 0,
-    errorsCount: errors.length,
-    errors,
-  });
+  }
 
   return {
     isValid: errors.length === 0,
@@ -363,8 +326,8 @@ export function validateExistingRowForSave(
   const errors: ValidationError[] = [];
 
   // For existing rows, only validate fields that have been modified
-  fields.forEach((field) => {
-    // Skip system fields
+
+  for (const field of fields) {
     if (
       field.name === "id" ||
       field.name === "actions" ||
@@ -373,15 +336,15 @@ export function validateExistingRowForSave(
       field.name === "updated" ||
       field.name === "updatedBy"
     ) {
-      return;
+      continue;
     }
 
     // Convert Column to Field if needed
-    const fieldData = "type" in field ? field : columnToFieldForValidation(field);
+    const fieldData: Field = ("type" in field ? field : columnToFieldForValidation(field)) as Field;
 
     // Skip validation for readonly fields
     if (fieldData.isReadOnly || !fieldData.isUpdatable) {
-      return;
+      continue;
     }
 
     const currentValue = rowData[field.name];
@@ -399,7 +362,7 @@ export function validateExistingRowForSave(
         });
       }
     }
-  });
+  }
 
   return {
     isValid: errors.length === 0,
@@ -428,14 +391,14 @@ export function hasRequiredFieldsForNewRow(fields: (Field | Column)[], rowData: 
     }
 
     // Convert Column to Field if needed
-    const fieldData = "type" in field ? field : columnToFieldForValidation(field);
+    const fieldData: Field = ("type" in field ? field : columnToFieldForValidation(field)) as Field;
 
     if (!fieldData.isMandatory) {
       return true; // Optional fields are always valid
     }
 
     // Try to get value using hqlName first (for Field objects), then fall back to name
-    const fieldKey = ('hqlName' in field && field.hqlName) ? field.hqlName : field.name;
+    const fieldKey = ("hqlName" in field && field.hqlName ? field.hqlName : field.name) as string;
     const value = rowData[fieldKey] ?? rowData[field.name];
     return value !== null && value !== undefined && value !== "";
   });
@@ -459,7 +422,7 @@ export function validateFieldRealTime(
   const { allowEmpty = true, showTypingErrors = false } = options;
 
   // Convert Column to Field if needed
-  const fieldData = "type" in field ? field : columnToFieldForValidation(field);
+  const fieldData: Field = ("type" in field ? field : columnToFieldForValidation(field)) as Field;
 
   // For real-time validation, be more lenient with empty values while typing
   if (allowEmpty && (value === null || value === undefined || value === "")) {
@@ -532,7 +495,7 @@ function validateNumericFieldRealTime(
 
   const numValue = typeof value === "string" ? Number.parseFloat(value) : value;
 
-  if (isNaN(numValue)) {
+  if (Number.isNaN(numValue)) {
     return {
       isValid: false,
       error: `${field.description || field.name} must be a valid number`,
@@ -577,7 +540,7 @@ function validateDateFieldRealTime(
   }
 
   const date = value instanceof Date ? value : new Date(value);
-  if (isNaN(date.getTime())) {
+  if (Number.isNaN(date.getTime())) {
     return {
       isValid: false,
       error: `${field.description || field.name} must be a valid date`,
@@ -670,12 +633,7 @@ function validateTextFieldRealTime(
 export function validateRowForSave(fields: (Field | Column)[], rowData: EntityData): RowValidationResult {
   const errors: ValidationError[] = [];
 
-  console.log("[validateRowForSave] Starting validation", {
-    fieldsCount: fields.length,
-    rowDataKeys: Object.keys(rowData),
-  });
-
-  fields.forEach((field) => {
+  for (const field of fields) {
     // Skip system fields
     if (
       field.name === "id" ||
@@ -685,37 +643,25 @@ export function validateRowForSave(fields: (Field | Column)[], rowData: EntityDa
       field.name === "updated" ||
       field.name === "updatedBy"
     ) {
-      return;
+      continue;
     }
 
     // Convert Column to Field if needed
-    const fieldData = "type" in field ? field : columnToFieldForValidation(field);
+    const fieldData: Field = ("type" in field ? field : columnToFieldForValidation(field)) as Field;
 
     // Skip validation for readonly fields
     if (fieldData.isReadOnly || !fieldData.isUpdatable) {
-      console.log("[validateRowForSave] Skipping readonly field:", field.name);
-      return;
+      continue;
     }
 
     // Try to get value using hqlName first (for Field objects), then fall back to name
-    const fieldKey = ('hqlName' in field && field.hqlName) ? field.hqlName : field.name;
+    const fieldKey = ("hqlName" in field && field.hqlName ? field.hqlName : field.name) as string;
     const value = rowData[fieldKey] ?? rowData[field.name];
 
     // Use strict validation for save operations
     const validationResult = validateFieldRealTime(fieldData, value, {
       allowEmpty: false,
       showTypingErrors: true,
-    });
-
-    console.log("[validateRowForSave] Field validation:", {
-      fieldName: field.name,
-      fieldType: fieldData.type,
-      isMandatory: fieldData.isMandatory,
-      isReadOnly: fieldData.isReadOnly,
-      isUpdatable: fieldData.isUpdatable,
-      value,
-      hasError: !validationResult.isValid,
-      errorMessage: validationResult.error,
     });
 
     if (!validationResult.isValid && validationResult.error) {
@@ -725,13 +671,7 @@ export function validateRowForSave(fields: (Field | Column)[], rowData: EntityDa
         type: "format",
       });
     }
-  });
-
-  console.log("[validateRowForSave] Validation complete", {
-    isValid: errors.length === 0,
-    errorsCount: errors.length,
-    errors,
-  });
+  }
 
   return {
     isValid: errors.length === 0,

@@ -76,7 +76,7 @@ const TextCellEditorComponent: React.FC<CellEditorProps> = ({
     onChange(newValue);
   };
 
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+  const handleBlur = () => {
     isUserTyping.current = false;
     onBlur();
   };
@@ -98,30 +98,11 @@ const TextCellEditorComponent: React.FC<CellEditorProps> = ({
   );
 
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    console.log("[TextCellEditor] handleKeyDown", {
-      key: e.key,
-      rowId,
-      columnId,
-      hasNavManager: !!keyboardNavigationManager,
-    });
-
     // Handle keyboard shortcuts
     switch (e.key) {
       case "Tab":
         // Prevent default tab behavior and use our navigation
         e.preventDefault();
-        console.log("[TextCellEditor] Tab pressed, calling navigation manager");
-        if (keyboardNavigationManager && rowId && columnId) {
-          const navigationHandled = await handleNavigationKeyDown(e.nativeEvent);
-          console.log("[TextCellEditor] Navigation handled:", navigationHandled);
-          // Navigation manager handles moving focus to next cell
-          // Don't blur here - let the navigation manager control focus
-        } else {
-          console.log("[TextCellEditor] No navigation manager, blurring");
-          // No navigation manager - allow default tab behavior by not preventing default
-          // Actually, we already prevented default above, so just blur
-          inputRef.current?.blur();
-        }
         break;
       case "Enter":
         e.preventDefault();

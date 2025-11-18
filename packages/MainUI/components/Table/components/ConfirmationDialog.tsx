@@ -86,14 +86,14 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
         return {
           icon: <CheckCircleIcon className="w-6 h-6 text-green-600" />,
           confirmButtonClass: "bg-green-600 hover:bg-green-700 text-white",
-          defaultConfirmText: t("common.ok"),
+          defaultConfirmText: "OK",
         };
       case "info":
       default:
         return {
           icon: <InfoIcon className="w-6 h-6 text-blue-600" />,
           confirmButtonClass: "bg-blue-600 hover:bg-blue-700 text-white",
-          defaultConfirmText: t("common.ok"),
+          defaultConfirmText: "OK",
         };
     }
   };

@@ -74,7 +74,7 @@ function buildSavePayload({
     }
 
     // Skip identifier and entries fields (they're client-side only)
-    if (key.includes('$_identifier') || key.includes('$_entries')) {
+    if (key.includes("$_identifier") || key.includes("$_entries")) {
       return acc;
     }
 
@@ -82,7 +82,7 @@ function buildSavePayload({
     // This filters out display names like "Transaction Document"
     if (tab && validFieldNames.size > 0) {
       // Allow fields that are in validFieldNames OR start with $ (system fields like $Element_BP)
-      if (!validFieldNames.has(key) && !key.startsWith('$')) {
+      if (!validFieldNames.has(key) && !key.startsWith("$")) {
         return acc;
       }
     }
@@ -331,7 +331,7 @@ export function validateRecordBeforeSave(
   });
 
   // Validate the merged data
-  const validationResult = validateRowForSave(columns, saveOperation.data);
+  const validationResult = validateRowForSave(columns, saveOperation.data as EntityData);
 
   if (!validationResult.isValid) {
     logger.warn(`[SaveValidation] Validation failed for record:`, {
@@ -409,7 +409,7 @@ export async function saveRecord({
     }
 
     const body = buildSavePayload({
-      values: processedValues,
+      values: processedValues as EntityData,
       oldValues: processedOriginalData,
       mode,
       csrfToken: userId,

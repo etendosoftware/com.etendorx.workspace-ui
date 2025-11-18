@@ -23,7 +23,9 @@ import {
   type MRT_TableInstance,
   type MRT_VisibilityState,
   type MRT_Cell,
+  type MRT_Column,
 } from "material-react-table";
+import type { ColumnFiltersState, SortingState, ExpandedState, Updater } from "@tanstack/react-table";
 import { useStyle } from "./styles";
 import type { EntityData, GridProps } from "@workspaceui/api-client/src/api/types";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -52,10 +54,13 @@ import {
   getCurrentRowCanExpand,
   getCellTitle,
 } from "@/utils/table/utils";
+import { processCalloutColumnValues, getIdentifierKey, getEntriesKey } from "./utils/calloutUtils";
+import { ACTION_FORM_INITIALIZATION, MODE_CHANGE } from "@/utils/hooks/useFormInitialization/constants";
+import { COLUMN_NAMES } from "./constants";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
 import { RecordCounterBar } from "@workspaceui/componentlibrary/src/components";
-import type { EditingRowsState, InlineEditingContextMenu } from "./types/inlineEditing";
+import type { EditingRowsState, InlineEditingContextMenu, RowValidationResult } from "./types/inlineEditing";
 import { createEditingRowStateUtils } from "./utils/editingRowUtils";
 import { ActionsColumn } from "./ActionsColumn";
 import { validateFieldRealTime } from "./utils/validationUtils";
@@ -80,14 +85,13 @@ import {
   usePerformanceMonitor,
   useMemoryManager,
 } from "./utils/performanceOptimizations";
-import { useScreenReaderAnnouncer, generateAriaAttributes, useFocusManagement } from "./utils/accessibilityUtils";
+import { useScreenReaderAnnouncer, generateAriaAttributes } from "./utils/accessibilityUtils";
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import { globalCalloutManager } from "@/services/callouts";
 import { buildPayloadByInputName } from "@/utils";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { FormInitializationResponse } from "@workspaceui/api-client/src/api/types";
 import { getMergedRowData } from "./utils/editingRowUtils";
 import "./styles/inlineEditing.css";
@@ -107,6 +111,18 @@ const getRowId = (row: EntityData) => String(row.id);
 // Simple cache implementation with size limit
 const fieldTypeCache = new Map<string, FieldType>();
 const MAX_CACHE_SIZE = 100;
+
+// Extended Column type with optional metadata properties
+interface ExtendedColumn extends Column {
+  column?: {
+    reference?: string;
+    referencedEntity?: string;
+    readOnlyLogicExpression?: string;
+  };
+  readOnlyLogicExpression?: string;
+  isReadOnly?: boolean;
+  isUpdatable?: boolean;
+}
 
 // Helper function to compile readOnlyLogic expressions
 const compileExpression = (expression: string) => {
@@ -151,15 +167,17 @@ const getFieldTypeFromColumn = (column: Column): FieldType => {
   // Create a cache key based on column properties that affect field type
   const cacheKey = `${column.name}-${column.type}-${column.column?.reference}-${column.displayType}`;
 
-  if (fieldTypeCache.has(cacheKey)) {
-    return fieldTypeCache.get(cacheKey)!;
+  const cached = fieldTypeCache.get(cacheKey);
+  if (cached) {
+    return cached;
   }
 
   let fieldType: FieldType;
 
   // First, check if this is a TABLEDIR field based on referencedEntity
   // Fields with referencedEntity should be TABLEDIR, not SELECT
-  if (column.referencedEntity || (column as any).column?.referencedEntity) {
+  const extColumn = column as ExtendedColumn;
+  if (column.referencedEntity || extColumn.column?.referencedEntity) {
     fieldType = FieldType.TABLEDIR;
   } else if (column.type && Object.values(FieldType).includes(column.type as FieldType)) {
     fieldType = column.type as FieldType;
@@ -190,18 +208,20 @@ const fieldCache = new Map<string, Field>();
 
 const columnToFieldForEditor = (column: Column): Field => {
   // Extract readOnlyLogicExpression from column (now populated by parseColumns)
-  const readOnlyLogicExpression = (column as any).readOnlyLogicExpression || column.column?.readOnlyLogicExpression;
+  const extColumn = column as ExtendedColumn;
+  const readOnlyLogicExpression = extColumn.readOnlyLogicExpression || extColumn.column?.readOnlyLogicExpression;
 
   // Extract isReadOnly and isUpdatable from column
-  const isReadOnly = (column as any).isReadOnly || false;
-  const isUpdatable = (column as any).isUpdatable !== false; // Default to true if not specified
+  const isReadOnly = extColumn.isReadOnly || false;
+  const isUpdatable = extColumn.isUpdatable !== false; // Default to true if not specified
 
   // Create a cache key based on column properties that affect the Field conversion
   // Include a version marker to invalidate old cache entries when logic changes
   const cacheKey = `v3-${column.name}-${column.fieldId}-${column.isMandatory}-${column.type}-${!!readOnlyLogicExpression}`;
 
-  if (fieldCache.has(cacheKey)) {
-    return fieldCache.get(cacheKey)!;
+  const cachedField = fieldCache.get(cacheKey);
+  if (cachedField) {
+    return cachedField;
   }
 
   // Use the refList and referencedEntity from the column (set by parseColumns)
@@ -277,11 +297,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { user, session } = useUserContext();
 
   // Confirmation dialog hook for user confirmations
-  const { dialogState, confirmDiscardChanges, confirmSaveWithErrors, confirmRetryAfterError, showSuccessMessage } =
-    useConfirmationDialog();
+  const { dialogState, confirmDiscardChanges, confirmSaveWithErrors, showSuccessMessage } = useConfirmationDialog();
 
   // Status modal for showing save errors and success messages
-  const { statusModal, hideStatusModal, showErrorModal, showSuccessModal } = useStatusModal();
+  const { statusModal, hideStatusModal, showErrorModal } = useStatusModal();
 
   const {
     registerDatasource,
@@ -310,10 +329,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // Debug: Compare baseColumns with rawColumns from parseColumns
-  const rawColumns = useMemo(() => {
-    const { parseColumns } = require("@/utils/tableColumns");
-    return parseColumns(Object.values(tab.fields));
-  }, [tab.fields]);
 
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const hasScrolledToSelection = useRef<boolean>(false);
@@ -370,7 +385,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   // Debug comparison completed - issue identified and resolved
 
-  const [inlineEditingContextMenu, setInlineEditingContextMenu] = useState<InlineEditingContextMenu>({
+  const [_inlineEditingContextMenu, _setInlineEditingContextMenu] = useState<InlineEditingContextMenu>({
     anchorEl: null,
     cell: null,
     row: null,
@@ -396,17 +411,13 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   // Accessibility utilities
   const screenReaderAnnouncer = useScreenReaderAnnouncer();
-  const { setFocusedElement, getFocusedElement, restoreFocus } = useFocusManagement();
 
   // Memoize field conversions for all columns to avoid recalculation on every render
   const columnFieldMappings = useMemo(() => {
     const mappings = new Map<string, { fieldType: FieldType; field: Field }>();
 
-    // Debug: log all available fields in tab
-    logger.debug('[InlineCallout] Available fields in tab.fields:', Object.keys(tab.fields || {}));
-
-    baseColumns.forEach((col) => {
-      if (col.name !== "actions") {
+    for (const col of baseColumns) {
+      if (col.name !== COLUMN_NAMES.ACTIONS) {
         // Build field from column as usual
         const field = columnToFieldForEditor(col);
 
@@ -415,36 +426,19 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         const fieldKey = col.columnName || col.name;
         const originalField = tab.fields?.[fieldKey];
 
-        // Debug log for businessPartner field
-        if (col.name === 'businessPartner' || fieldKey === 'businessPartner') {
-          logger.info('[InlineCallout] Searching for businessPartner:', {
-            colName: col.name,
-            colColumnName: col.columnName,
-            fieldKey: fieldKey,
-            hasOriginalField: !!originalField,
-            originalFieldKeys: originalField ? Object.keys(originalField) : [],
-            hasColumn: !!originalField?.column,
-            columnKeys: originalField?.column ? Object.keys(originalField.column) : [],
-            hasCallout: !!originalField?.column?.callout,
-            calloutValue: originalField?.column?.callout
-          });
-        }
-
         // Transfer callout, selector, and proper field names from original field if it exists
         if (originalField) {
           // Transfer callout if present
           if (originalField.column?.callout) {
             field.column = {
               ...field.column,
-              callout: originalField.column.callout
+              callout: originalField.column.callout,
             };
-            logger.info(`[InlineCallout] Field ${col.name} (${fieldKey}) has callout: ${originalField.column.callout}, inputName: ${originalField.inputName}`);
           }
 
           // Transfer selector configuration (important for datasources like ProductByPriceAndWarehouse)
           if (originalField.selector) {
             field.selector = originalField.selector;
-            logger.debug(`[InlineCallout] Field ${col.name} (${fieldKey}) has selector datasource: ${(originalField.selector as any).datasourceName}`);
           }
 
           // Use the correct inputName and hqlName from the original field
@@ -463,7 +457,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           mappings.set(col.columnName, mapping);
         }
       }
-    });
+    }
 
     return mappings;
   }, [baseColumns, tab.fields, getFieldTypeFromColumn, columnToFieldForEditor]);
@@ -524,6 +518,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   );
 
   // Apply callout values to an editing row
+  // Reuses calloutUtils for consistency with FormView's BaseSelector logic
   const applyCalloutValuesToRow = useCallback(
     (rowId: string, columnValues: FormInitializationResponse["columnValues"]) => {
       if (!columnValues) return;
@@ -531,103 +526,63 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       const editingData = editingRowUtils.getEditingRowData(rowId);
       if (!editingData) return;
 
-      // Get field mappings
+      // Process callout column values using shared utility
+      const updates = processCalloutColumnValues(columnValues, tab);
       const fieldsByColumnName = getFieldsByColumnName(tab);
 
-      // Apply each column value
-      for (const [columnName, columnValue] of Object.entries(columnValues)) {
+      // Apply each update to the editing row
+      for (const [columnName, _columnValue] of Object.entries(columnValues)) {
         const targetField = fieldsByColumnName[columnName];
-        if (!targetField) {
-          logger.warn(`[InlineCallout] Field not found for column ${columnName}`, {
-            availableColumns: Object.keys(fieldsByColumnName).slice(0, 10)
-          });
-          continue;
+        if (!targetField) continue;
+
+        const update = updates.find((u) => u.fieldName === (targetField.hqlName || columnName));
+        if (!update) continue;
+
+        // Update field value
+        editingRowUtils.updateCellValue(rowId, update.fieldName, update.value);
+
+        // Update identifier if present
+        if (update.identifier && update.value && String(update.value) !== update.identifier) {
+          editingRowUtils.updateCellValue(rowId, getIdentifierKey(targetField), update.identifier);
         }
 
-        // IMPORTANT: Use inputName for consistency with cell rendering logic
-        // Cell rendering uses inputName first, so we must store identifiers/entries with inputName
-        const fieldName = targetField.hqlName || columnName;
-        const fieldInputName = targetField.inputName || targetField.hqlName || columnName;
-        const { value, identifier } = columnValue;
-
-        logger.info(`[InlineCallout] Applying value for column ${columnName} -> field ${fieldName}:`, {
-          value,
-          identifier,
-          fieldInputName,
-        });
-
-        // Update the field value in editing row
-        editingRowUtils.updateCellValue(rowId, fieldName, value);
-
-        // If field has identifier, update it too using inputName for the key
-        if (identifier && value && String(value) !== identifier) {
-          editingRowUtils.updateCellValue(rowId, `${fieldInputName}$_identifier`, identifier);
-        }
-
-        // Handle restricted entries for selectors
-        const withEntries = (columnValue as any).entries;
-
-        // Check if this is a TABLEDIR field (reference "19" corresponds to TableDir)
-        const isTableDirField = targetField.column?.reference === "19" || targetField.type === "TABLEDIR";
-
-        logger.debug(`[InlineCallout] Processing entries for ${fieldName}:`, {
-          hasEntries: !!withEntries?.length,
-          entriesLength: withEntries?.length,
-          hasIdentifier: !!identifier,
-          hasValue: !!value,
-          targetFieldType: targetField.type,
-          targetFieldReference: targetField.column?.reference,
-          isTableDir: isTableDirField,
-          fieldInputName,
-        });
-
-        if (withEntries?.length) {
-          // Use inputName for entries key to match cell rendering lookup
-          editingRowUtils.updateCellValue(
-            rowId,
-            `${fieldInputName}$_entries`,
-            withEntries.map((e: any) => ({ id: e.id, value: e.id, label: e._identifier }))
-          );
-          logger.info(`[InlineCallout] Stored entries from backend for ${fieldName}:`, {
-            count: withEntries.length,
-            entriesKey: `${fieldInputName}$_entries`,
-          });
-        } else if (identifier && value && isTableDirField) {
-          // If no entries but we have a value with identifier for a TABLEDIR field,
-          // create a synthetic entry so the selector can display it
-          // Use inputName for entries key to match cell rendering lookup
-          const entriesKey = `${fieldInputName}$_entries`;
-          const syntheticEntry = [{ id: String(value), value: String(value), label: identifier }];
-          editingRowUtils.updateCellValue(rowId, entriesKey, syntheticEntry);
-          logger.info(`[InlineCallout] Created synthetic entry for ${fieldName}:`, {
-            entriesKey,
-            entry: syntheticEntry[0],
-            fieldReference: targetField.column?.reference,
-            fieldInputName,
-          });
-        } else {
-          logger.debug(`[InlineCallout] No entries created for ${fieldName}`, {
-            reason: !isTableDirField ? 'not TABLEDIR' : !identifier ? 'no identifier' : !value ? 'no value' : 'unknown',
-            fieldInputName,
-          });
+        // Update entries if present
+        if (update.entries) {
+          editingRowUtils.updateCellValue(rowId, getEntriesKey(targetField), update.entries);
         }
       }
-
-      logger.info(`[InlineCallout] Applied ${Object.keys(columnValues).length} values to row ${rowId}`);
     },
     [tab, editingRowUtils]
   );
 
+  // Type for product option data from datasource
+  interface ProductOptionData {
+    cCurrencyId?: string;
+    currency?: string;
+    currency$id?: string;
+    product$currency$id?: string;
+    cUomId?: string;
+    uOM?: string;
+    uOM$id?: string;
+    product$uOM$id?: string;
+    standardPrice?: number;
+    netListPrice?: number;
+    listPrice?: number;
+    priceLimit?: number;
+    limitPrice?: number;
+  }
+
+  // Type for parent record with optional price/currency fields
+  type ParentRecordData = EntityData & {
+    priceList?: string | number;
+    mPricelistId?: string | number;
+    currency?: string | number;
+    cCurrencyId?: string | number;
+  };
+
   // Execute inline callout for a field
   const executeInlineCallout = useCallback(
     async (rowId: string, field: Field, newValue: unknown, optionData?: Record<string, unknown>) => {
-      logger.info(`[InlineCallout] executeInlineCallout called for ${field.hqlName}`, {
-        hasCallout: !!field.column.callout,
-        rowId,
-        newValue,
-        hasOptionData: !!optionData
-      });
-
       // Don't execute if field doesn't have callout
       if (!field.column.callout) {
         logger.warn(`[InlineCallout] Field ${field.hqlName} has no callout configured`);
@@ -643,11 +598,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
       // Don't execute if we're applying callout values (prevent loops)
       if (editingData.isApplyingCalloutValues) {
-        logger.info(`[InlineCallout] Skipped (applying values): ${field.hqlName}`);
         return;
       }
-
-      logger.info(`[InlineCallout] About to execute callout for ${field.hqlName}`);
 
       try {
         // Build payload from current row data
@@ -656,12 +608,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         const currentRowData = getMergedRowData(editingData);
 
         // Debug: log what businessPartner value we have
-        if (field.hqlName === 'businessPartner') {
-          logger.info(`[InlineCallout] Current row data for businessPartner:`, {
-            businessPartner: currentRowData.businessPartner,
-            businessPartner$_identifier: currentRowData['businessPartner$_identifier'],
-            cBpartnerId: currentRowData.cBpartnerId
-          });
+        if (field.hqlName === "businessPartner") {
         }
 
         const payload = buildPayloadByInputName(currentRowData, fieldsByHqlName);
@@ -679,130 +626,63 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           inpwindowId: tab.window,
         } as Record<string, unknown>;
 
-        // IMPORTANT: Add the field that just changed to the payload
-        // This is needed because the field value might not be in currentRowData yet (async update)
         calloutData[field.inputName] = newValue;
-
-        // Special handling for product callout - need to send additional price/UOM data
-        // This matches the logic in FormView/BaseSelector.tsx lines 164-171
         if (field.inputName === "inpmProductId" && newValue && optionData) {
-          logger.debug(`[InlineCallout] Product option data received:`, {
-            optionDataKeys: Object.keys(optionData),
-            fullOptionData: optionData
-          });
+          // Cast to typed interfaces
+          const productOption = optionData as ProductOptionData;
+          const parentData = parentRecord as ParentRecordData;
 
           // Get priceList from parentRecord (order header)
-          const priceListFromParent = (parentRecord as any)?.priceList || (parentRecord as any)?.mPricelistId;
+          const priceListFromParent = parentData?.priceList || parentData?.mPricelistId;
           if (priceListFromParent) {
             calloutData.inpmPricelistId = priceListFromParent;
           }
 
           // Try multiple possible field names for currency (from datasource response)
           calloutData.inpmProductId_CURR =
-            (optionData as any).cCurrencyId ||
-            (optionData as any).currency ||
-            (optionData as any)["currency$id"] ||
-            (optionData as any)["product$currency$id"] ||
-            (parentRecord as any)?.currency ||
-            (parentRecord as any)?.cCurrencyId ||
+            productOption.cCurrencyId ||
+            productOption.currency ||
+            productOption.currency$id ||
+            productOption.product$currency$id ||
+            parentData?.currency ||
+            parentData?.cCurrencyId ||
             session.$C_Currency_ID;
 
           // Try multiple possible field names for UOM (from datasource response)
           calloutData.inpmProductId_UOM =
-            (optionData as any).cUomId ||
-            (optionData as any).uOM ||
-            (optionData as any)["uOM$id"] ||
-            (optionData as any)["product$uOM$id"] ||
-            session["#C_UOM_ID"] || "";
+            productOption.cUomId ||
+            productOption.uOM ||
+            productOption.uOM$id ||
+            productOption.product$uOM$id ||
+            session["#C_UOM_ID"] ||
+            "";
 
           // Try multiple possible field names for prices (from datasource response)
           calloutData.inpmProductId_PSTD = String(
-            (optionData as any).standardPrice ||
-            (optionData as any).netListPrice ||
-            (optionData as any).listPrice ||
-            0
+            productOption.standardPrice || productOption.netListPrice || productOption.listPrice || 0
           );
-          calloutData.inpmProductId_PLIST = String(
-            (optionData as any).netListPrice ||
-            (optionData as any).listPrice ||
-            0
-          );
-          calloutData.inpmProductId_PLIM = String(
-            (optionData as any).priceLimit ||
-            (optionData as any).limitPrice ||
-            0
-          );
+          calloutData.inpmProductId_PLIST = String(productOption.netListPrice || productOption.listPrice || 0);
+          calloutData.inpmProductId_PLIM = String(productOption.priceLimit || productOption.limitPrice || 0);
 
           // Set default quantity if not present in current row data
           if (!calloutData.inpqtyordered) {
             calloutData.inpqtyordered = "1";
           }
-
-          logger.debug(`[InlineCallout] Added product-specific callout data from optionData:`, {
-            priceList: calloutData.inpmPricelistId,
-            currency: calloutData.inpmProductId_CURR,
-            quantity: calloutData.inpqtyordered,
-            uom: calloutData.inpmProductId_UOM,
-            standardPrice: calloutData.inpmProductId_PSTD,
-            netListPrice: calloutData.inpmProductId_PLIST,
-            priceLimit: calloutData.inpmProductId_PLIM
-          });
         }
 
-        logger.info(`[InlineCallout] Calling callout for ${field.hqlName}:`, {
-          fieldInputName: field.inputName,
-          fieldHqlName: field.hqlName,
-          tabId: tab.id,
-          rowId: rowId,
-          isNewRow: editingData.isNew,
-          payloadKeys: Object.keys(calloutData).slice(0, 30),
-          payloadSample: {
-            inpKeyName: calloutData.inpKeyName,
-            inpTabId: calloutData.inpTabId,
-            _entityName: calloutData._entityName,
-            inpcBpartnerId: (calloutData as any).inpcBpartnerId,
-            inpmPricelistId: (calloutData as any).inpmPricelistId,
-            inpqtyordered: (calloutData as any).inpqtyordered,
-            inpmProductId: (calloutData as any).inpmProductId,
-            inpmProductId_CURR: (calloutData as any).inpmProductId_CURR,
-            inpmProductId_UOM: (calloutData as any).inpmProductId_UOM,
-            inpmProductId_PSTD: (calloutData as any).inpmProductId_PSTD,
-            inpmProductId_PLIST: (calloutData as any).inpmProductId_PLIST,
-            inpmProductId_PLIM: (calloutData as any).inpmProductId_PLIM,
-            parentRecordId: parentRecord?.id
-          }
-        });
-
         // Execute through global manager
-        logger.info(`[InlineCallout] About to execute callout via globalCalloutManager for ${field.hqlName}`);
+
         await globalCalloutManager.executeCallout(field.hqlName, async () => {
-          logger.info(`[InlineCallout] Inside globalCalloutManager.executeCallout callback for ${field.hqlName}`);
           const params = new URLSearchParams({
-            _action: "org.openbravo.client.application.window.FormInitializationComponent",
-            MODE: "CHANGE",
+            _action: ACTION_FORM_INITIALIZATION,
+            MODE: MODE_CHANGE,
             TAB_ID: tab.id,
             CHANGED_COLUMN: field.inputName,
             ROW_ID: rowId,
             PARENT_ID: String(parentRecord?.id || "null"),
           });
 
-          logger.info(`[InlineCallout] Making request to backend for ${field.hqlName}`, {
-            params: params.toString(),
-            payloadKeys: Object.keys(calloutData).slice(0, 20),
-          });
-
           const response = await Metadata.kernelClient.post(`?${params}`, calloutData);
-          logger.info(`[InlineCallout] Request completed for ${field.hqlName}`);
-
-          logger.info(`[InlineCallout] Response received for ${field.hqlName}:`, {
-            hasResponse: !!response,
-            hasData: !!response?.data,
-            hasColumnValues: !!response?.data?.columnValues,
-            columnValuesKeys: response?.data?.columnValues ? Object.keys(response.data.columnValues) : [],
-            columnValues: response?.data?.columnValues,
-            responseDataKeys: response?.data ? Object.keys(response.data) : [],
-            calloutMessages: response?.data?.calloutMessages
-          });
 
           if (response?.data?.columnValues) {
             // Mark that we're applying callout values to prevent loops
@@ -878,15 +758,13 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     async (row: MRT_Row<EntityData>) => {
       const rowId = String(row.original.id);
 
-      logger.info(`[InlineEditing] Started editing row: ${rowId}`);
-
       // Add the row to editing state with original data immediately
       // This ensures the inputs show up right away
       editingRowUtils.addEditingRow(rowId, row.original, false);
 
       // Set focus to the first editable column (skip 'id' and 'actions')
       const firstEditableColumn = baseColumns.find(
-        (col) => col.name !== "id" && col.name !== "actions" && col.displayed !== false
+        (col) => col.name !== COLUMN_NAMES.ID && col.name !== COLUMN_NAMES.ACTIONS && col.displayed !== false
       );
 
       if (firstEditableColumn) {
@@ -895,16 +773,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
       // Announce editing state change to screen readers
       if (screenReaderAnnouncer) {
-        const columnCount = baseColumns.filter((col) => col.name !== "actions").length;
+        const columnCount = baseColumns.filter((col) => col.name !== COLUMN_NAMES.ACTIONS).length;
         screenReaderAnnouncer.announceEditingStateChange(rowId, true, columnCount);
       }
 
       // Fetch initialized data in background to get proper values for selectors and other fields
       try {
-        logger.info(`[InlineEditing] Column names in table for debugging`, {
-          columnNames: baseColumns.map((col) => ({ name: col.name, columnName: col.columnName })).slice(0, 10),
-        });
-
         const initializedData = await fetchInitialData(rowId, false);
         if (initializedData) {
           // Check if user hasn't made any modifications yet
@@ -920,27 +794,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
             };
 
             // Check which column names match with initialized data
-            const columnNames = baseColumns.map((col) => col.name);
-            const initializedFieldNames = Object.keys(initializedData);
-            const matchingFields = columnNames.filter((colName) => initializedFieldNames.includes(colName));
-            const missingFields = columnNames.filter((colName) => !initializedFieldNames.includes(colName));
-
-            logger.info(`[InlineEditing] Merged initialized data for row ${rowId}`, {
-              originalFields: Object.keys(row.original).length,
-              initializedFields: Object.keys(initializedData).length,
-              mergedFields: Object.keys(mergedData).length,
-              matchingFields: matchingFields.length,
-              missingFields: missingFields.slice(0, 5), // Show first 5 missing fields
-              matchingFieldsSample: matchingFields.slice(0, 5), // Show first 5 matching fields
-              originalSample: Object.fromEntries(Object.entries(row.original).slice(0, 3)),
-              initializedSample: Object.fromEntries(Object.entries(initializedData).slice(0, 3)),
-              mergedSample: Object.fromEntries(Object.entries(mergedData).slice(0, 3)),
-            });
+            const _columnNames = baseColumns.map((col) => col.name);
+            const _initializedFieldNames = Object.keys(initializedData);
 
             // Update the editing row with enriched data
             editingRowUtils.addEditingRow(rowId, mergedData, false);
           } else {
-            logger.debug(`[InlineEditing] Skipping data merge for row ${rowId} - user has already made modifications`);
           }
         }
       } catch (error) {
@@ -961,8 +820,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     // Create empty row data with proper default values based on column metadata
     const emptyRowData = createEmptyRowData(newRowId, baseColumns);
 
-    logger.info(`[InlineEditing] Creating new row: ${newRowId}`, { emptyRowData });
-
     // Fetch initialized data for new row to get default values and proper field setup
     let finalRowData = emptyRowData;
     try {
@@ -975,26 +832,18 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           // Always keep the generated ID for new rows
           id: newRowId,
         };
-
-        logger.info(`[InlineEditing] Merged initialized data for new row ${newRowId}`, {
-          emptyFields: Object.keys(emptyRowData).length,
-          initializedFields: Object.keys(initializedData).length,
-          finalFields: Object.keys(finalRowData).length,
-        });
       }
     } catch (error) {
       logger.warn(`[InlineEditing] Failed to fetch initialized data for new row ${newRowId}:`, error);
       // Continue with empty data if initialization fails
     }
 
-    logger.info(`[InlineEditing] New row data prepared with default values`);
-
     // Add the new row to editing state first - this automatically sets it to editing mode
     editingRowUtils.addEditingRow(newRowId, finalRowData, true);
 
     // Set focus to the first editable column for the new row
     const firstEditableColumn = baseColumns.find(
-      (col) => col.name !== "id" && col.name !== "actions" && col.displayed !== false
+      (col) => col.name !== COLUMN_NAMES.ID && col.name !== COLUMN_NAMES.ACTIONS && col.displayed !== false
     );
 
     if (firstEditableColumn) {
@@ -1005,12 +854,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     const currentRecords = optimisticRecords.length > 0 ? optimisticRecords : displayRecords;
     const updatedRecords = insertNewRowAtTop(currentRecords, finalRowData);
     setOptimisticRecords(updatedRecords);
-
-    logger.info(`[InlineEditing] Successfully created new row at top of grid: ${newRowId}`, {
-      totalRecords: updatedRecords.length,
-      isAtTop: updatedRecords[0].id === newRowId,
-      isInEditingState: editingRowUtils.isRowEditing(newRowId),
-    });
 
     // Announce row insertion to screen readers
     if (screenReaderAnnouncer) {
@@ -1035,7 +878,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         ...editingRowData.modifiedData,
       } as EntityData;
 
-      let validationResult;
+      let validationResult: RowValidationResult;
 
       // Use tab.fields instead of baseColumns for validation
       // Fields have hqlName which matches how data is stored in rowData
@@ -1044,10 +887,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       if (editingRowData.isNew) {
         // Use stricter validation for new rows
         validationResult = validateNewRowForSave(fieldsArray, currentData);
-        logger.debug(`[InlineEditing] New row validation for ${rowId}:`, {
-          isValid: validationResult.isValid,
-          errors: validationResult.errors,
-        });
       } else {
         // Use less strict validation for existing rows
         validationResult = validateExistingRowForSave(
@@ -1055,21 +894,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           currentData,
           editingRowData.originalData as EntityData
         );
-        logger.debug(`[InlineEditing] Existing row validation for ${rowId}:`, {
-          isValid: validationResult.isValid,
-          errors: validationResult.errors,
-        });
       }
 
       // Convert validation errors to record format and update state
-      const validationErrors = validationErrorsToRecord(validationResult.errors);
+      const validationErrors = validationErrorsToRecord(validationResult.errors || []);
       editingRowUtils.setRowValidationErrors(rowId, validationErrors);
-
-      logger.debug(`[InlineEditing] Row validation for ${rowId}:`, {
-        isValid: validationResult.isValid,
-        validationErrors,
-        isNew: editingRowData.isNew,
-      });
 
       return validationResult.isValid;
     },
@@ -1091,14 +920,13 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         const errorMessages = Object.entries(validationErrors)
           .filter(([_, message]) => message)
           .map(([field, message]) => {
-            if (field === "_general") return message!;
-            return `${field}: ${message!}`;
+            if (field === "_general") return message || "";
+            return `${field}: ${message || ""}`;
           });
 
         if (errorMessages.length > 0) {
           confirmSaveWithErrors(errorMessages, () => {
             // User acknowledged the errors, focus on first error field
-            logger.debug(`[InlineEditing] User acknowledged validation errors for row ${rowId}`);
           });
         }
         return;
@@ -1106,14 +934,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
       try {
         editingRowUtils.setRowSaving(rowId, true);
-        logger.info(`[InlineEditing] Saving row: ${rowId}`);
 
         // Import save operations and optimistic updates dynamically
         const {
-          saveRecord,
           saveRecordWithRetry,
-          createNewRecord,
-          updateExistingRecord,
           createSaveOperation,
           processSaveErrors,
           getGeneralErrorMessage,
@@ -1179,18 +1003,14 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
                   clientSideIdentifiers[key] = record[key];
                 }
               }
-              return { ...saveResult.data!, ...clientSideIdentifiers };
+              return { ...(saveResult.data || {}), ...clientSideIdentifiers };
             }
             return record;
           });
-          setOptimisticRecords(finalRecords);
+          setOptimisticRecords(finalRecords as EntityData[]);
 
           // Remove from editing state after successful save
           editingRowUtils.removeEditingRow(rowId);
-          logger.info(`[InlineEditing] Successfully saved row: ${rowId}`, {
-            isNew: editingRowData.isNew,
-            serverId: saveResult.data.id,
-          });
 
           // Refetch data to update displayRecords with latest server state
           // This ensures the table shows updated data even after optimisticRecords is cleared
@@ -1303,7 +1123,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
                 // For new rows, remove from optimistic records using utility function
                 const updatedRecords = removeNewRowFromRecords(currentRecords, rowId);
                 setOptimisticRecords(updatedRecords);
-                logger.info(`[InlineEditing] Removed new row from optimistic records: ${rowId}`);
               } else {
                 // For existing rows, restore original data if it was modified
                 const hasOptimisticChanges = currentRecords.some(
@@ -1315,7 +1134,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
                     String(record.id) === rowId ? editingRowData.originalData : record
                   );
                   setOptimisticRecords(updatedRecords);
-                  logger.info(`[InlineEditing] Restored original data for cancelled row: ${rowId}`);
                 }
               }
             },
@@ -1331,7 +1149,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         performCancel,
         () => {
           // User chose to keep editing
-          logger.debug(`[InlineEditing] User chose to keep editing row ${rowId}`);
         },
         hasUnsavedChanges
       );
@@ -1340,49 +1157,39 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   );
 
   // Throttled cell value change handler to prevent excessive updates
-  const handleCellValueChange = useThrottledCallback((rowId: string, fieldName: string, value: unknown, optionData?: Record<string, unknown>, field?: Field) => {
-    performanceMonitor.measure(`cell-value-change-${fieldName}`, () => {
-      // Log incoming parameters to debug
-      logger.info(`[InlineEditing] handleCellValueChange called for ${fieldName}:`, {
-        rowId,
-        value,
-        hasOptionData: !!optionData,
-        hasField: !!field,
-        optionDataKeys: optionData ? Object.keys(optionData).slice(0, 10) : []
+  const handleCellValueChange = useThrottledCallback(
+    (rowId: string, fieldName: string, value: unknown, optionData?: Record<string, unknown>, field?: Field) => {
+      performanceMonitor.measure(`cell-value-change-${fieldName}`, () => {
+        // Log incoming parameters to debug
+
+        // Update the cell value immediately
+        editingRowUtils.updateCellValue(rowId, fieldName, value);
+
+        // For TABLEDIR fields, also store the identifier
+        // Note: We don't create synthetic entries here for user selections,
+        // only for callout values, to avoid overwriting the full options list
+        const optionLabel =
+          optionData && typeof optionData === "object" && "label" in optionData ? optionData.label : undefined;
+        if (optionLabel) {
+          editingRowUtils.updateCellValue(rowId, `${fieldName}$_identifier`, optionLabel);
+        }
+
+        // Trigger debounced validation for real-time feedback
+        debouncedValidateField(rowId, fieldName, value);
+
+        // Execute callout if field has one
+        // Use the provided field object if available, otherwise try to find by name
+        const fieldForCallout = field || getFieldByName(fieldName);
+
+        if (fieldForCallout?.column.callout) {
+          executeInlineCallout(rowId, fieldForCallout, value, optionData).catch((error) => {
+            logger.error(`[InlineCallout] Error executing callout for ${fieldName}:`, error);
+          });
+        }
       });
-
-      // Update the cell value immediately
-      editingRowUtils.updateCellValue(rowId, fieldName, value);
-      logger.debug(`[InlineEditing] Updated cell ${fieldName} in row ${rowId}:`, value);
-
-      // For TABLEDIR fields, also store the identifier
-      // Note: We don't create synthetic entries here for user selections,
-      // only for callout values, to avoid overwriting the full options list
-      if (optionData && (optionData as any).label) {
-        editingRowUtils.updateCellValue(rowId, `${fieldName}$_identifier`, (optionData as any).label);
-        logger.debug(`[InlineEditing] Updated identifier ${fieldName}$_identifier:`, (optionData as any).label);
-      }
-
-      // Trigger debounced validation for real-time feedback
-      debouncedValidateField(rowId, fieldName, value);
-
-      // Execute callout if field has one
-      // Use the provided field object if available, otherwise try to find by name
-      const fieldForCallout = field || getFieldByName(fieldName);
-      logger.debug(`[InlineCallout] Checking field ${fieldName}:`, {
-        hasField: !!fieldForCallout,
-        hasCallout: !!fieldForCallout?.column.callout,
-        calloutName: fieldForCallout?.column.callout,
-        fieldProvidedDirectly: !!field,
-      });
-      if (fieldForCallout?.column.callout) {
-        logger.info(`[InlineCallout] Executing callout for ${fieldName}: ${fieldForCallout.column.callout}`);
-        executeInlineCallout(rowId, fieldForCallout, value, optionData).catch((error) => {
-          logger.error(`[InlineCallout] Error executing callout for ${fieldName}:`, error);
-        });
-      }
-    });
-  }, 50); // Throttle to max 20 updates per second
+    },
+    50
+  ); // Throttle to max 20 updates per second
 
   // Context menu action handlers
   const handleContextMenuEditRow = useCallback(() => {
@@ -1522,7 +1329,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         const fieldKey = col.columnName || col.name;
 
         // If this row is being edited, render the appropriate cell editor
-        if (isEditing && col.name !== "actions") {
+        if (isEditing && col.name !== COLUMN_NAMES.ACTIONS) {
           const editingData = editingRowUtils.getEditingRowData(rowId);
           if (!editingData) return renderedCellValue;
 
@@ -1549,23 +1356,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           const fieldIdentifier = rowValues[identifierKey];
           const fieldEntries = rowValues[entriesKey];
 
-          // Debug: Log what keys we have in rowValues to understand naming mismatches
-          if (fieldMapping.fieldType === "TABLEDIR") {
-            console.log(`[InlineEditing] TABLEDIR field rendering for ${col.name}:`, {
-              colName: col.name,
-              fieldKey,
-              fieldInputName,
-              entriesKey,
-              identifierKey,
-              hasEntries: !!fieldEntries,
-              hasIdentifier: !!fieldIdentifier,
-              fieldEntries,
-              fieldIdentifier,
-              entriesInRowValues: Object.keys(rowValues).filter(k => k.includes('$_entries')),
-              identifiersInRowValues: Object.keys(rowValues).filter(k => k.includes('$_identifier')),
-            });
-          }
-
           // Create an augmented field with the identifier and entries for the cell editor
           const fieldWithData = {
             ...fieldMapping.field,
@@ -1584,7 +1374,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
                 <CellEditorFactory
                   fieldType={fieldMapping.fieldType}
                   value={currentValue}
-                  onChange={(value, optionData) => handleCellValueChange(rowId, fieldKey, value, optionData, fieldMapping.field)}
+                  onChange={(value, optionData) =>
+                    handleCellValueChange(rowId, fieldKey, value, optionData, fieldMapping.field)
+                  }
                   onBlur={() => {
                     validateFieldOnBlur(rowId, fieldKey, currentValue);
                     if (shouldAutoFocus) {
@@ -1598,7 +1390,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
                   columnId={fieldKey}
                   keyboardNavigationManager={keyboardNavigationManager}
                   shouldAutoFocus={shouldAutoFocus}
-                  loadOptions={async (field, searchQuery) => {
+                  loadOptions={async (_field, searchQuery) => {
                     // Get fresh row values at the time of loading options, not cached values
                     // This ensures we use the current organization value after FIC updates
                     const freshEditingData = editingRowUtils.getEditingRowData(rowId);
@@ -1656,12 +1448,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
     // Add actions column as the first column
     const actionsColumn = {
-      id: "actions",
+      id: COLUMN_NAMES.ACTIONS,
       header: "Actions",
       accessorFn: () => "", // Actions column doesn't need data
-      columnName: "actions",
-      name: "actions",
-      _identifier: "actions",
+      columnName: COLUMN_NAMES.ACTIONS,
+      name: COLUMN_NAMES.ACTIONS,
+      _identifier: COLUMN_NAMES.ACTIONS,
       size: 100,
       minSize: 80,
       maxSize: 120,
@@ -1722,20 +1514,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   ]);
 
   // Helper function to check if a row is being edited
-  const isRowBeingEdited = useCallback(
-    (rowId: string) => {
-      return editingRowUtils.isRowEditing(rowId);
-    },
-    [editingRowUtils]
-  );
 
   // Get editing data for a specific row
-  const getRowEditingData = useCallback(
-    (rowId: string) => {
-      return editingRowUtils.getEditingRowData(rowId);
-    },
-    [editingRowUtils]
-  );
 
   // Initialize row selection from URL parameters with proper validation and logging
   const urlBasedRowSelection = useMemo(() => {
@@ -1777,7 +1557,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       const recordExists = records?.some((record) => String(record.id) === currentURLSelection);
 
       if (recordExists) {
-        logger.info(`[URLNavigation] Detected URL navigation to record: ${currentURLSelection}`);
       } else {
         logger.warn(`[URLNavigation] URL navigation to invalid record: ${currentURLSelection}`);
       }
@@ -1792,9 +1571,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const handleTableSelectionChange = useCallback(
     (recordId: string) => {
       if (recordId) {
-        logger.debug(`[TableSelection] Selection changed to record: ${recordId} in tab: ${tab.id}`);
       } else {
-        logger.debug(`[TableSelection] Selection cleared in tab: ${tab.id}`);
       }
 
       if (onRecordSelection) {
@@ -2002,7 +1779,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   }, [hasMoreRecords, editingRowsCount, t]);
 
   const handleColumnFiltersChange = useCallback(
-    (updaterOrValue) => {
+    (updaterOrValue: Updater<ColumnFiltersState>) => {
       // Check if filtering is safe with current editing state - use ref to avoid dependency
       if (!canFilterWithEditingRows(editingRowsRef.current)) {
         logger.warn("[TableCompatibility] Filtering blocked due to unsaved changes");
@@ -2027,7 +1804,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   );
 
   const handleSortingChange = useCallback(
-    (updaterOrValue) => {
+    (updaterOrValue: Updater<SortingState>) => {
       // Check if sorting is safe with current editing state - use ref to avoid dependency
       if (!canSortWithEditingRows(editingRowsRef.current)) {
         logger.warn("[TableCompatibility] Sorting blocked due to unsaved changes");
@@ -2039,14 +1816,15 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   );
 
   const handleExpandedChange = useCallback(
-    (newExpanded) => {
+    (newExpanded: Updater<ExpandedState>) => {
       handleMRTExpandChange({ newExpanded });
     },
     [handleMRTExpandChange]
   );
 
   const handleGetRowCanExpand = useCallback(
-    (row) => {
+    // @ts-ignore - Type mismatch due to duplicate @tanstack/table-core versions
+    (row: any) => {
       return getCurrentRowCanExpand({ row: row as MRT_Row<EntityData>, shouldUseTreeMode });
     },
     [shouldUseTreeMode]
@@ -2082,7 +1860,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   // Memoize muiTableBodyCellProps callback
   const muiTableBodyCellProps = useCallback(
-    (props) => {
+    (props: { column: MRT_Column<EntityData>; row: MRT_Row<EntityData>; cell: MRT_Cell<EntityData> }) => {
       const currentValue = props.cell.getValue();
       const currentTitle = getCellTitle(currentValue);
       return {
@@ -2214,14 +1992,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
               top: Math.max(0, scrollTop),
               behavior: "smooth",
             });
-
-            logger.info(`[TableScroll] Auto-scrolled to record at index ${selectedIndex}: ${urlSelectedId}`);
           }
         } catch (error) {
           logger.error(`[TableScroll] Error scrolling to selected record: ${error}`);
         }
       } else {
-        logger.debug(`[TableScroll] Record found but scroll not needed: ${urlSelectedId}`);
       }
     }
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, displayRecords, table]);
@@ -2288,7 +2063,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           // Re-check if this is still the correct selection after the delay
           const latestUrlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
           if (latestUrlSelectedId === urlSelectedId) {
-            logger.debug(`[URLNavigation] Applying URL selection for direct navigation: ${urlSelectedId}`);
             table.setRowSelection({ [urlSelectedId]: true });
           }
         }, 100);
@@ -2316,7 +2090,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     const isCurrentlySelected = currentSelection[urlSelectedId];
 
     if (recordExists && !isCurrentlySelected) {
-      logger.debug(`[DynamicTable] Restoring selection on mount from URL: ${urlSelectedId}`);
       table.setRowSelection({ [urlSelectedId]: true });
       hasRestoredSelection.current = true;
     }
@@ -2373,7 +2146,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       const hasSignificantDifferences = nonNewOptimisticIds.some((id) => !baseRecordIds.has(id));
 
       if (hasSignificantDifferences) {
-        logger.info("[InlineEditing] Resetting optimistic records due to base data changes");
         return [];
       }
 
@@ -2386,15 +2158,14 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     const currentEditingRowIds = editingRowUtils.getEditingRowIds();
     const existingRowIds = new Set(records?.map((record) => String(record.id)) || []);
 
-    currentEditingRowIds.forEach((editingRowId) => {
+    for (const editingRowId of currentEditingRowIds) {
       // Skip new rows (they won't exist in records yet)
-      if (editingRowId.startsWith("new_")) return;
+      if (editingRowId.startsWith("new_")) continue;
 
       if (!existingRowIds.has(editingRowId)) {
         editingRowUtils.removeEditingRow(editingRowId);
-        logger.info(`[InlineEditing] Removed editing state for deleted row: ${editingRowId}`);
       }
-    });
+    }
   }, [records, editingRowUtils]);
 
   // Add keyboard support for canceling edits with Escape key
@@ -2418,9 +2189,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
                 removeEditingRow: editingRowUtils.removeEditingRow,
                 showConfirmation: true,
               });
-            } catch (error) {
+            } catch (_error) {
               // User cancelled the cancel operation, do nothing
-              logger.debug(`[InlineEditing] Escape key cancel was not completed for row ${rowId}`);
             }
           }
         }
@@ -2592,7 +2362,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         statusText={statusModal.statusText}
         onAfterClose={() => {
           hideStatusModal();
-          statusModal.onAfterClose?.();
+          if ("onAfterClose" in statusModal && typeof statusModal.onAfterClose === "function") {
+            statusModal.onAfterClose();
+          }
         }}
         saveLabel={statusModal.saveLabel}
         secondaryButtonLabel={statusModal.secondaryButtonLabel}
