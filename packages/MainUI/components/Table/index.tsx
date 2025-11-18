@@ -46,7 +46,12 @@ import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check.svg";
 import { useTableData } from "@/hooks/table/useTableData";
 import { isEmptyObject } from "@/utils/commons";
-import { getDisplayColumnDefOptions, getMUITableBodyCellProps, getCurrentRowCanExpand } from "@/utils/table/utils";
+import {
+  getDisplayColumnDefOptions,
+  getMUITableBodyCellProps,
+  getCurrentRowCanExpand,
+  getCellTitle,
+} from "@/utils/table/utils";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
 import { RecordCounterBar } from "@workspaceui/componentlibrary/src/components";
@@ -467,18 +472,23 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         ...sx.tableHeadCell,
       },
     },
-    muiTableBodyCellProps: (props) => ({
-      sx: getMUITableBodyCellProps({
-        shouldUseTreeMode,
-        sx,
-        columns,
-        column: props.column,
-        row: props.row,
-      }),
-      onContextMenu: (event: React.MouseEvent<HTMLTableCellElement>) => {
-        handleCellContextMenu(event, props.cell, props.row);
-      },
-    }),
+    muiTableBodyCellProps: (props) => {
+      const currentValue = props.cell.getValue();
+      const currentTitle = getCellTitle(currentValue);
+      return {
+        sx: getMUITableBodyCellProps({
+          shouldUseTreeMode,
+          sx,
+          columns,
+          column: props.column,
+          row: props.row,
+        }),
+        onContextMenu: (event: React.MouseEvent<HTMLTableCellElement>) => {
+          handleCellContextMenu(event, props.cell, props.row);
+        },
+        title: currentTitle,
+      };
+    },
     displayColumnDefOptions: getDisplayColumnDefOptions({ shouldUseTreeMode }),
     muiTableBodyProps: { sx: sx.tableBody },
     layoutMode: "semantic",
