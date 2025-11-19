@@ -493,10 +493,8 @@ export async function saveRecord({
 
     const { ok, data } = await Metadata.datasourceServletClient.request(url, options);
 
-    if (!ok) {
-      throw new Error(data?.response?.error?.message || "Request failed");
-    }
-
+    // Always handle the response through handleSaveResponse, which will parse validation errors
+    // even when ok is false (server validation errors)
     return handleSaveResponse(data, saveOperation);
   } catch (error) {
     return handleSaveError(saveOperation, error);

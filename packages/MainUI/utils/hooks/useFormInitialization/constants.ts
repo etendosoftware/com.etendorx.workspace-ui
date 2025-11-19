@@ -4,3 +4,4 @@ export const ACTION_FORM_INITIALIZATION = "org.openbravo.client.application.wind
  * Form initialization modes
  */
 export const MODE_CHANGE = "CHANGE";
+export const MODE_NEW = "NEW";

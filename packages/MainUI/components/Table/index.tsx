@@ -62,7 +62,7 @@ import {
   getCellTitle,
 } from "@/utils/table/utils";
 import { processCalloutColumnValues, getIdentifierKey, getEntriesKey } from "./utils/calloutUtils";
-import { ACTION_FORM_INITIALIZATION, MODE_CHANGE } from "@/utils/hooks/useFormInitialization/constants";
+import { ACTION_FORM_INITIALIZATION, MODE_CHANGE, MODE_NEW } from "@/utils/hooks/useFormInitialization/constants";
 import { COLUMN_NAMES } from "./constants";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
@@ -769,17 +769,19 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         const update = updates.find((u) => u.fieldName === (targetField.hqlName || columnName));
         if (!update) continue;
 
+        const gridFieldName = update.fieldName; // Use hqlName from update
+
         // Update field value
-        editingRowUtils.updateCellValue(rowId, update.fieldName, update.value);
+        editingRowUtils.updateCellValue(rowId, gridFieldName, update.value);
 
         // Update identifier if present
         if (update.identifier && update.value && String(update.value) !== update.identifier) {
-          editingRowUtils.updateCellValue(rowId, getIdentifierKey(targetField), update.identifier);
+          editingRowUtils.updateCellValue(rowId, `${gridFieldName}$_identifier`, update.identifier);
         }
 
         // Update entries if present
         if (update.entries) {
-          editingRowUtils.updateCellValue(rowId, getEntriesKey(targetField), update.entries);
+          editingRowUtils.updateCellValue(rowId, `${gridFieldName}$_entries`, update.entries);
         }
       }
     },
@@ -837,7 +839,39 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         const fieldsByHqlName = tab?.fields || {};
         const fieldsByColumnName = getFieldsByColumnName(tab);
         const currentRowData = getMergedRowData(editingData);
-        const payload = buildPayloadByInputName(currentRowData, fieldsByHqlName);
+
+        // Filter out fields that don't have metadata definitions
+        // This removes display names like "Tax", "Alternate Taxable Amount", etc.
+        // and grid-specific field names that aren't in the field definitions
+        const validFieldNames = new Set([
+          ...Object.keys(fieldsByHqlName),
+          ...Object.values(fieldsByHqlName).map((f) => f.inputName),
+          ...Object.values(fieldsByHqlName).map((f) => f.columnName),
+        ]);
+
+        const filteredRowData = Object.entries(currentRowData).reduce(
+          (acc, [key, value]) => {
+            // Keep the field if:
+            // 1. It's a known field name (hqlName, inputName, or columnName)
+            // 2. It's an identifier field (ends with $_identifier)
+            // 3. It's an entries field (ends with $_entries)
+            // 4. It's a data field (ends with _data)
+            const baseFieldName = key.replace(/(\$_identifier|\$_entries|_data)$/, "");
+            if (
+              validFieldNames.has(key) ||
+              validFieldNames.has(baseFieldName) ||
+              key.endsWith("$_identifier") ||
+              key.endsWith("$_entries") ||
+              key.endsWith("_data")
+            ) {
+              acc[key] = value;
+            }
+            return acc;
+          },
+          {} as Record<string, unknown>
+        );
+
+        const payload = buildPayloadByInputName(filteredRowData, fieldsByHqlName);
         const entityKeyColumn = tab.fields.id.columnName;
         const calloutData = {
           ...session,
@@ -851,11 +885,30 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           inpwindowId: tab.window,
         } as Record<string, unknown>;
 
-        calloutData[field.inputName] = newValue;
+        // CRITICAL FIX: For product field, use the actual product ID, not the datasource compound ID
+        // The datasource returns a compound ID (warehouse + product), but backend expects just the product ID
+        if (field.inputName === "inpmProductId" && newValue && optionData) {
+          const productOption = optionData as ProductOptionData;
+          const actualProductId = productOption.product$id || productOption["product$id"];
+          if (actualProductId) {
+            calloutData[field.inputName] = actualProductId;
+          } else {
+            calloutData[field.inputName] = newValue;
+          }
+        } else {
+          calloutData[field.inputName] = newValue;
+        }
+
         if (field.inputName === "inpmProductId" && newValue && optionData) {
           // Cast to typed interfaces
           const productOption = optionData as ProductOptionData;
           const parentData = parentRecord;
+
+          // CRITICAL: Add parent order ID to payload
+          // The product callout needs this to query order data (date, isCashVAT, etc.) for tax calculation
+          if (parentData?.id) {
+            calloutData.inpcOrderId = String(parentData.id);
+          }
 
           // Get priceList from parentRecord (order header)
           const priceListFromParent = parentData?.priceList || parentData?.mPricelistId;
@@ -889,6 +942,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           calloutData.inpmProductId_PLIST = String(productOption.netListPrice || productOption.listPrice || 0);
           calloutData.inpmProductId_PLIM = String(productOption.priceLimit || productOption.limitPrice || 0);
 
+          // Add complete product_data object for backend callout (needed for tax calculation)
+          calloutData.product_data = optionData;
+
           // Set default quantity if not present in current row data
           if (!calloutData.inpqtyordered) {
             calloutData.inpqtyordered = "1";
@@ -898,18 +954,24 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         // Execute through global manager
 
         await globalCalloutManager.executeCallout(field.hqlName, async () => {
+          // For new records (rowId starts with "new_"), send ROW_ID=null
+          const isNewRecord = rowId.startsWith("new_");
+          const rowIdForBackend = isNewRecord ? "null" : rowId;
+
+          // Always use MODE=CHANGE like form view does
+          // The key is having auxiliary fields initialized (done below)
           const params = new URLSearchParams({
             _action: ACTION_FORM_INITIALIZATION,
             MODE: MODE_CHANGE,
             TAB_ID: tab.id,
             CHANGED_COLUMN: field.inputName,
-            ROW_ID: rowId,
+            ROW_ID: rowIdForBackend,
             PARENT_ID: String(parentRecord?.id || "null"),
           });
 
           const response = await Metadata.kernelClient.post(`?${params}`, calloutData);
 
-          if (response?.data?.columnValues) {
+          if (response?.data?.columnValues || response?.data?.auxiliaryInputValues) {
             // Mark that we're applying callout values to prevent loops
             editingRowUtils.setCalloutApplying(rowId, true);
 
@@ -917,7 +979,19 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
             globalCalloutManager.suppress();
 
             try {
-              applyCalloutValuesToRow(rowId, response.data.columnValues);
+              // Apply column values (field values, identifiers, entries)
+              if (response.data.columnValues) {
+                applyCalloutValuesToRow(rowId, response.data.columnValues);
+              }
+
+              // Apply auxiliary input values (PRODUCTTYPE, isBOM, etc.)
+              // These are needed for subsequent callouts to work correctly
+              if (response.data.auxiliaryInputValues) {
+                for (const [key, valueObj] of Object.entries(response.data.auxiliaryInputValues)) {
+                  const { value } = valueObj as { value: unknown };
+                  editingRowUtils.updateCellValue(rowId, key, value);
+                }
+              }
             } finally {
               setTimeout(() => {
                 globalCalloutManager.resume();
@@ -925,7 +999,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
               }, 0);
             }
           } else {
-            logger.warn(`[InlineCallout] No columnValues in response for ${field.hqlName}`);
+            logger.warn(`[InlineCallout] No columnValues or auxiliaryInputValues in response for ${field.hqlName}`);
           }
         });
       } catch (error) {

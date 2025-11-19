@@ -424,20 +424,19 @@ export function validateFieldRealTime(
   // Convert Column to Field if needed
   const fieldData: Field = ("type" in field ? field : columnToFieldForValidation(field)) as Field;
 
-  // For real-time validation, be more lenient with empty values while typing
-  if (allowEmpty && (value === null || value === undefined || value === "")) {
-    // Only show required field error if explicitly requested
+  // Check if value is empty
+  const isEmpty = value === null || value === undefined || value === "";
+
+  // For empty values, check if they're allowed
+  if (isEmpty) {
+    // If this is a mandatory field and we're not allowing empty (strict validation for save)
     if (fieldData.isMandatory && !allowEmpty) {
       return {
         isValid: false,
         error: `${fieldData.description || fieldData.name} is required`,
       };
     }
-    return { isValid: true };
-  }
-
-  // Skip validation for empty optional fields
-  if (!fieldData.isMandatory && (value === null || value === undefined || value === "")) {
+    // For optional fields or when allowEmpty is true, empty values are valid
     return { isValid: true };
   }
 

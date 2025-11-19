@@ -100,6 +100,8 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
 
       // Field type mapping now uses corrected reference codes
 
+      // Field type mapping now uses corrected reference codes
+
       result.push({
         header: column.name ?? column.hqlName,
         id: column.name,
