@@ -80,7 +80,7 @@ const Button = ({
       className={cleanDefaultClasses(classes, className)}
       style={buttonStyle}
       {...rest}>
-      <span className="mr-2 [&>svg]:w-4 [&>svg]:h-4">{startIcon}</span>
+      {startIcon && <span className="mr-2 [&>svg]:w-4 [&>svg]:h-4">{startIcon}</span>}
       <span>{children}</span>
     </button>
   );

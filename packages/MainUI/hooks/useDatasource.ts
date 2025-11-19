@@ -127,8 +127,14 @@ export function useDatasource({
   }, []);
 
   const columnFilterCriteria = useMemo(() => {
-    if (!columns || !activeColumnFilters.length) return [];
+    if (!columns || !activeColumnFilters.length) {
+      console.log("[useDatasource] No filters to process", { hasColumns: !!columns, filterCount: activeColumnFilters?.length });
+      return [];
+    }
+    console.log("[useDatasource] Active column filters:", activeColumnFilters);
+    console.log("[useDatasource] Available columns:", columns.map((c) => ({ id: c.id, columnName: c.columnName, type: c.type })));
     const criteria = LegacyColumnFilterUtils.createColumnFilterCriteria(activeColumnFilters, columns);
+    console.log("[useDatasource] Generated criteria:", criteria);
     return criteria;
   }, [activeColumnFilters, columns]);
 

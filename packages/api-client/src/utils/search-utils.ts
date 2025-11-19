@@ -257,6 +257,11 @@ export class LegacyColumnFilterUtils {
       "478169542A1747BD942DD70C8B45089C", // ABSOLUTE_DATETIME
     ];
 
+    // Check for type field first (most reliable indicator)
+    if (column.type === "date" || column.type === "datetime") {
+      return true;
+    }
+
     // Get reference from the correct location in the column structure
     const columnReference = column.reference || (column as any).column?.reference;
 
@@ -529,16 +534,17 @@ export class LegacyColumnFilterUtils {
   private static parseDateRangeIfExists(
     value: unknown,
     column: Column
-  ): { from: FormattedValue; to: FormattedValue } | null {
+  ): { from: FormattedValue | null; to: FormattedValue | null } | null {
     if (!LegacyColumnFilterUtils.isDateField(column.columnName, column)) {
       return null;
     }
 
-    const stringValue = String(value).trim();
+    const stringValue = String(value);
 
-    // Match patterns like "09-20-2025 - 09-30-2025" or "09/20/2025 - 09/30/2025"
-    // Use " - " with mandatory spaces to distinguish from date separators
-    const rangePattern = /^(.+?)\s+-\s+(.+)$/;
+    // Match patterns like "2025-11-01 - 2025-11-19" or "2025-11-01 - " or " - 2025-11-19"
+    // Pattern: (space)(dash)(space) with optional content before/after
+    // Using \s*$ at the end to allow empty right side like "2025-11-01 - "
+    const rangePattern = /^(.*?)\s+-\s*(.*)$/;
     const match = stringValue.match(rangePattern);
 
     if (!match) {
@@ -549,15 +555,18 @@ export class LegacyColumnFilterUtils {
     const fromTrimmed = fromStr.trim();
     const toTrimmed = toStr.trim();
 
-    // Validate that both parts look like dates
-    if (!LegacyColumnFilterUtils.looksLikeDateInput(fromTrimmed) ||
-        !LegacyColumnFilterUtils.looksLikeDateInput(toTrimmed)) {
+    // At least one of them must look like a date
+    const fromIsDate = LegacyColumnFilterUtils.looksLikeDateInput(fromTrimmed);
+    const toIsDate = LegacyColumnFilterUtils.looksLikeDateInput(toTrimmed);
+
+    if (!fromIsDate && !toIsDate) {
       return null;
     }
 
+    // Both from and to are optional, but at least one must be a date
     return {
-      from: fromTrimmed,
-      to: toTrimmed,
+      from: fromIsDate ? fromTrimmed : null,
+      to: toIsDate ? toTrimmed : null,
     };
   }
 
@@ -608,7 +617,7 @@ export class LegacyColumnFilterUtils {
         // Handle dropdown filters (our new implementation)
         filterCriteria = LegacyColumnFilterUtils.handleArrayFilter(fieldName, filter.value, column);
       } else {
-        // Check if it's a date range string (e.g., "09-20-2025 - 09-30-2025")
+        // Check if it's a date range string (e.g., "2025-11-01 - 2025-11-19" or "2025-11-01 - " for desde only)
         const dateRange = LegacyColumnFilterUtils.parseDateRangeIfExists(filter.value, column);
 
         if (dateRange) {
