@@ -38,6 +38,28 @@ const BOOLEAN_COLUMNS = ["isOfficialHoliday", "isActive", "isPaid", "stocked", "
 // Audit fields that need special date formatting (with time)
 const AUDIT_DATE_COLUMNS_WITH_TIME = ["creationDate", "updated"];
 
+/**
+ * Gets the current filter value for a column from tableColumnFilters
+ * Searches by both column.id and column.columnName for consistency
+ */
+const getCurrentFilterValue = (
+  column: Column,
+  tableColumnFilters?: Array<{ id: string; value: unknown }>
+): string | undefined => {
+  const currentFilter = tableColumnFilters?.find((f) => f.id === column.id || f.id === column.columnName);
+  return currentFilter ? String(currentFilter.value) : undefined;
+};
+
+/**
+ * Helper to check if column should use date formatting
+ */
+const shouldFormatDateColumn = (column: Column): boolean => {
+  return (
+    column.column?.reference === FIELD_REFERENCE_CODES.DATE ||
+    column.column?.reference === FIELD_REFERENCE_CODES.DATETIME
+  );
+};
+
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
   const {
@@ -66,11 +88,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
       const fieldReference = getFieldReference(column.column?.reference);
       const isReference = isEntityReference(fieldReference);
       const isBooleanColumn = column.type === "boolean" || column.column?._identifier === "YesNo";
-      // Check if it's a date column by reference code (same as GenericSelector in FormView)
-      // Use field.column.reference to check for DATE (15) or DATETIME (16) field types
-      const isDateColumn =
-        column.column?.reference === FIELD_REFERENCE_CODES.DATE ||
-        column.column?.reference === FIELD_REFERENCE_CODES.DATETIME;
+      const isDateColumn = shouldFormatDateColumn(column);
       const supportsDropdownFilter = isBooleanColumn || ColumnFilterUtils.supportsDropdownFilter(column);
       const isCustomJsColumn = Boolean(column.customJs && column.customJs.trim().length > 0);
 
@@ -173,10 +191,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
       // Enable DateSelector for date columns
       if (isDateColumn && !supportsDropdownFilter) {
-        // Get current filter value from tableColumnFilters
-        // Search by both id and columnName since columnId from context menu can be either
-        const currentFilter = tableColumnFilters?.find((f) => f.id === column.id || f.id === column.columnName);
-        const currentFilterValue = currentFilter ? String(currentFilter.value) : undefined;
+        const currentFilterValue = getCurrentFilterValue(column, tableColumnFilters);
 
         columnConfig = {
           ...columnConfig,
@@ -197,10 +212,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
       // Enable default text filtering for columns without specialized filters
       if (!supportsDropdownFilter && !isDateColumn && onDateTextFilterChange) {
-        // Get current filter value from tableColumnFilters
-        // Search by both id and columnName since columnId from context menu can be either
-        const currentFilter = tableColumnFilters?.find((f) => f.id === column.id || f.id === column.columnName);
-        const currentFilterValue = currentFilter ? String(currentFilter.value) : undefined;
+        const currentFilterValue = getCurrentFilterValue(column, tableColumnFilters);
 
         columnConfig = {
           ...columnConfig,
