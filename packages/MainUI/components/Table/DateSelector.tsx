@@ -4,6 +4,7 @@ import type { Column } from "@workspaceui/api-client/src/api/types";
 import DateRangeModal from "../../../ComponentLibrary/src/components/RangeDateModal/RangeDateModal";
 import { formatBrowserDate } from "../../../MainUI/utils/dateFormatter";
 import CalendarIcon from "../../../ComponentLibrary/src/assets/icons/calendar.svg";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export interface DateSelectorProps {
   column: Column;
@@ -11,6 +12,7 @@ export interface DateSelectorProps {
 }
 
 export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChange }) => {
+  const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -95,6 +97,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
         onConfirm={handleDateConfirm}
         initialStartDate={startDate || undefined}
         initialEndDate={endDate || undefined}
+        t={t}
       />
     </>
   );

@@ -1,8 +1,7 @@
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { formatBrowserDate, getLocaleDatePlaceholder } from "@/utils/dateFormatter";
-import { useTranslation } from "@/hooks/useTranslation";
 import CalendarIcon from "../../assets/icons/calendar.svg";
 import ChevronLeftIcon from "../../assets/icons/chevron-left.svg";
 import ChevronRightIcon from "../../assets/icons/chevron-right.svg";
@@ -27,7 +26,7 @@ const DateInput = ({
 }) => {
   return (
     <div>
-      <label className="flex flex-col text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+      <label className="flex flex-col text-xs font-semibold text-(--color-baseline-80) uppercase tracking-wider mb-1.5">
         {label}
         <div className="relative">
           <input
@@ -44,7 +43,7 @@ const DateInput = ({
               type="button"
               onClick={onClear}
               className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:text-gray-600 transition-colors z-10 flex items-center justify-center">
-              <XIcon height={16} width={16} color="currentColor" />
+              <XIcon height={20} width={20} className="fill-(--color-baseline-80)" />
             </button>
           )}
         </div>
@@ -59,6 +58,7 @@ interface DateRangeModalProps {
   onConfirm: (startDate: Date | null, endDate: Date | null) => void;
   initialStartDate?: Date;
   initialEndDate?: Date;
+  t?: (key: string) => string;
 }
 
 const DateRangeModal: React.FC<DateRangeModalProps> = ({
@@ -67,15 +67,39 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
   onConfirm,
   initialStartDate,
   initialEndDate,
+  t,
 }) => {
-  const { t } = useTranslation();
   const [startDate, setStartDate] = useState<Date | null>(initialStartDate || null);
   const [endDate, setEndDate] = useState<Date | null>(initialEndDate || null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  // 1. Get translated month names and create abbreviated versions
-  const translatedMonths = t("dateModal.months") as string[];
-  const months = translatedMonths.map((month) => month.slice(0, 3));
+  // Refs for month and year selects
+  const monthSelectRef = useRef<HTMLSelectElement>(null);
+  const yearSelectRef = useRef<HTMLSelectElement>(null);
+
+  // Translation helper with fallback to English defaults
+  const translate = (key: string, defaultValue: string): string => {
+    if (t) {
+      return t(key);
+    }
+    const defaults: Record<string, string> = {
+      "dateModal.selectDates": "Select dates",
+      "dateModal.from": "From",
+      "dateModal.to": "To",
+      "dateModal.clearFilters": "Clear filters",
+      "common.cancel": "Cancel",
+      "common.confirm": "Confirm",
+    };
+    return defaults[key] || defaultValue;
+  };
+
+  // 1. Generate month names using browser locale (Intl API)
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const date = new Date(2000, i, 1);
+    const monthName = new Intl.DateTimeFormat(undefined, { month: "short" }).format(date);
+    const cleanName = monthName.replace(".", "");
+    return cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+  });
 
   // 2. Generar Años
   const currentYear = new Date().getFullYear();
@@ -218,28 +242,25 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
     const firstDayOfMonth = getFirstDayOfMonth(currentMonth);
     const days = [];
 
-    // --- 1. DÍAS DEL MES ANTERIOR ---
     const prevMonthDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
     const daysInPrevMonth = getDaysInMonth(prevMonthDate);
 
     for (let i = 0; i < firstDayOfMonth; i++) {
       const dayNum = daysInPrevMonth - firstDayOfMonth + 1 + i;
-      // Construimos la fecha real del mes pasado
       const date = new Date(prevMonthDate.getFullYear(), prevMonthDate.getMonth(), dayNum);
 
       days.push(
         <div key={`prev-${dayNum}`} className="h-8 w-full flex items-center justify-center">
           <button
             type="button"
-            onClick={() => handleDateClick(date)} // Ahora selecciona Y cambia mes
-            className="h-8 w-8 flex items-center justify-center text-sm text-gray-300 hover:text-gray-500 hover:bg-gray-50 rounded-full transition-colors">
+            onClick={() => handleDateClick(date)}
+            className="h-8 w-8 flex items-center justify-center text-sm text-(--color-transparent-neutral-50) hover:text-(--color-transparent-neutral-80) hover:bg-gray-50 rounded-full transition-colors">
             {dayNum}
           </button>
         </div>
       );
     }
 
-    // --- 2. DÍAS DEL MES ACTUAL ---
     for (let day = 1; day <= daysInMonth; day++) {
       const currentDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
       const selection = getDateSelection(currentDate);
@@ -280,12 +301,10 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
       );
     }
 
-    // --- 3. DÍAS DEL MES SIGUIENTE ---
     const totalCellsRendered = firstDayOfMonth + daysInMonth;
     const remainingCells = 7 - (totalCellsRendered % 7);
 
     if (remainingCells < 7) {
-      // Fecha base del mes siguiente
       const nextMonthDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
 
       for (let i = 1; i <= remainingCells; i++) {
@@ -295,7 +314,7 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
           <div key={`next-${i}`} className="h-8 w-full flex items-center justify-center">
             <button
               type="button"
-              onClick={() => handleDateClick(date)} // Ahora selecciona Y cambia mes
+              onClick={() => handleDateClick(date)}
               className="h-8 w-8 flex items-center justify-center text-sm text-gray-300 hover:text-gray-500 hover:bg-gray-50 rounded-full transition-colors">
               {i}
             </button>
@@ -319,16 +338,18 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="bg-white rounded-xl shadow-2xl w-[650px] pointer-events-auto overflow-hidden">
           {/* Header Modal */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white">
+          <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 bg-white">
             <div className="flex items-center gap-2 text-gray-800">
-              <CalendarIcon height={20} width={20} color="red" fill="red" />
-              <h2 className="text-lg font-semibold">{t("dateModal.selectDates")}</h2>
+              <div className="rounded-full bg-gray-100 p-2">
+                <CalendarIcon height={20} width={20} className="fill-(--color-baseline-80)" />
+              </div>
+              <h2 className="text-lg font-semibold">{translate("dateModal.selectDates", "Select dates")}</h2>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100">
-              <XIcon height={20} width={20} color="red" fill="red" />
+              className="text-(--color-baseline-80) hover:text-(--color-etendo-main) transition-colors p-2 rounded-full hover:bg-gray-100">
+              <XIcon height={20} width={20} />
             </button>
           </div>
 
@@ -337,13 +358,13 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
             <div className="w-full md:w-64 bg-gray-50/50 p-6 border-r border-gray-100 flex flex-col justify-between">
               <div className="space-y-5">
                 <DateInput
-                  label={t("dateModal.from")}
+                  label={translate("dateModal.from", "From")}
                   value={formatDate(startDate)}
                   placeholder={datePlaceholder.toUpperCase()}
                   onClear={handleClearStart}
                 />
                 <DateInput
-                  label={t("dateModal.to")}
+                  label={translate("dateModal.to", "To")}
                   value={formatDate(endDate)}
                   placeholder={datePlaceholder.toUpperCase()}
                   onClear={handleClearEnd}
@@ -354,38 +375,54 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
             {/* Calendario Derecho */}
             <div className="flex-1 p-6 bg-white">
               <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center">
                   {/* Selector de MES */}
-                  <div className="relative group">
+                  <div className="relative w-20 flex justify-center items-center group hover:cursor-pointer transition-colors gap-1">
                     <select
+                      ref={monthSelectRef}
                       value={currentMonth.getMonth()}
                       onChange={handleMonthChange}
-                      className="appearance-none bg-transparent text-lg font-bold text-gray-800 cursor-pointer outline-none pr-6 hover:text-blue-700 transition-colors">
+                      className="absolute inset-0 w-full h-full appearance-none bg-transparent text-lg text-(--color-baseline-80) cursor-pointer outline-none opacity-0">
                       {months.map((month, index) => (
                         <option key={month} value={index}>
                           {month}
                         </option>
                       ))}
                     </select>
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <ChevronDownIcon height={18} width={18} fill="currentColor" />
+                    <div className="pointer-events-none text-lg font-normal text-(--color-baseline-80) group-hover:text-(--color-dynamic-main) transition-colors">
+                      {months[currentMonth.getMonth()]}
+                    </div>
+                    <div className="pointer-events-none transition-colors">
+                      <ChevronDownIcon
+                        height={20}
+                        width={20}
+                        className="fill-(--color-baseline-80) group-hover:fill-(--color-dynamic-main)"
+                      />
                     </div>
                   </div>
 
                   {/* Selector de AÑO */}
-                  <div className="relative group">
+                  <div className="relative w-20 flex justify-center items-center group hover:cursor-pointer transition-colors gap-1">
                     <select
+                      ref={yearSelectRef}
                       value={currentMonth.getFullYear()}
                       onChange={handleYearChange}
-                      className="appearance-none bg-transparent text-lg font-normal text-gray-500 cursor-pointer outline-none pr-6 hover:text-blue-700 transition-colors">
+                      className="absolute inset-0 w-full h-full appearance-none bg-transparent text-lg font-normal text-(--color-baseline-80) cursor-pointer outline-none opacity-0">
                       {years.map((year) => (
                         <option key={year} value={year}>
                           {year}
                         </option>
                       ))}
                     </select>
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <ChevronDownIcon height={18} width={18} fill="currentColor" />
+                    <div className="pointer-events-none text-lg font-normal text-(--color-baseline-80) group-hover:text-(--color-dynamic-main) transition-colors">
+                      {currentMonth.getFullYear()}
+                    </div>
+                    <div className="pointer-events-none group-hover:fill-(--color-dynamic-main) transition-colors">
+                      <ChevronDownIcon
+                        height={20}
+                        width={20}
+                        className="fill-(--color-baseline-80) group-hover:fill-(--color-dynamic-main)"
+                      />
                     </div>
                   </div>
                 </div>
@@ -394,14 +431,22 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
                   <button
                     type="button"
                     onClick={() => changeMonth(-1)}
-                    className="p-1.5 hover:bg-gray-100 rounded-md transition-all text-gray-500 hover:text-gray-800">
-                    <ChevronLeftIcon height={16} width={16} fill="currentColor" />
+                    className="p-1.5 hover:bg-gray-100 rounded-md transition-all hover:text-(--color-dynamic-main) group ">
+                    <ChevronLeftIcon
+                      height={20}
+                      width={20}
+                      className="fill-(--color-baseline-80) group-hover:fill-(--color-dynamic-main)"
+                    />
                   </button>
                   <button
                     type="button"
                     onClick={() => changeMonth(1)}
-                    className="p-1.5 hover:bg-gray-100 rounded-md transition-all text-gray-500 hover:text-gray-800">
-                    <ChevronRightIcon height={16} width={16} fill="currentColor" />
+                    className="p-1.5 hover:bg-gray-100 rounded-md transition-all hover:text-(--color-dynamic-main) group ">
+                    <ChevronRightIcon
+                      height={20}
+                      width={20}
+                      className="fill-(--color-baseline-80) group-hover:fill-(--color-dynamic-main)"
+                    />
                   </button>
                 </div>
               </div>
@@ -410,7 +455,7 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
                 {weekDays.map((day) => (
                   <div
                     key={day}
-                    className="h-8 flex items-center justify-center text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                    className="h-8 flex items-center justify-center text-xs text-(color-transparent-neutral-70) uppercase tracking-wide">
                     {day}
                   </div>
                 ))}
@@ -423,16 +468,20 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
             <button
               type="button"
               onClick={clearFilters}
-              className="text-sm text-gray-500 hover:text-red-600 font-medium transition-colors flex items-center gap-2 group px-2 py-1 rounded-md hover:bg-red-50 w-fit">
-              {t("dateModal.clearFilters")}
-              <EraserIcon height={20} width={20} color="red" fill="red" />
+              className="text-sm text-(--color-etendo-main) hover:text-(--color-baseline-80) font-medium transition-colors flex items-center gap-2 group px-2 py-1 rounded-md w-fit">
+              {translate("dateModal.clearFilters", "Clear filters")}
+              <EraserIcon
+                height={20}
+                width={20}
+                className="fill-(--color-etendo-main) group-hover:fill-(--color-baseline-80) transition-colors"
+              />
             </button>
             <div className="flex gap-3">
               <Button variant="outlined" size="large" className="w-auto" onClick={onClose}>
-                {t("common.cancel")}
+                {translate("common.cancel", "Cancel")}
               </Button>
               <Button size="large" className="w-auto" onClick={handleConfirm}>
-                {t("common.confirm")}
+                {translate("common.confirm", "Confirm")}
               </Button>
             </div>
           </div>
