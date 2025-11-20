@@ -21,7 +21,7 @@ import { TextFilter } from "../../components/Table/TextFilter";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useTranslation } from "../useTranslation";
 import { transformColumnWithCustomJs } from "@/utils/customJsColumnTransformer";
-import { formatClassicDate } from "@/utils/dateFormatter";
+import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 
 interface UseColumnsOptions {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;

@@ -18,7 +18,7 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { forwardRef, useCallback, useRef, useState, useEffect, useMemo } from "react";
 import CalendarIcon from "../../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
-import { formatClassicDate, getLocaleDatePlaceholder } from "../../../../../utils/dateFormatter";
+import { formatClassicDate, getLocaleDatePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 
 interface DateInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;

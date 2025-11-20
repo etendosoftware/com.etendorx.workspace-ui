@@ -22,7 +22,7 @@ import {
   isDateLike,
   isKnownDateField,
   AUDIT_DATE_FIELD_NAMES,
-} from "../../utils/dateFormatter";
+} from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 
 describe("dateFormatter utilities", () => {
   describe("parseOBDate", () => {

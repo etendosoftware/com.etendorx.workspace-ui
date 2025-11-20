@@ -2,7 +2,7 @@ import type React from "react";
 import { useState } from "react";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import DateRangeModal from "../../../ComponentLibrary/src/components/RangeDateModal/RangeDateModal";
-import { formatBrowserDate } from "../../../MainUI/utils/dateFormatter";
+import { formatBrowserDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import CalendarIcon from "../../../ComponentLibrary/src/assets/icons/calendar.svg";
 import { useTranslation } from "@/hooks/useTranslation";
 

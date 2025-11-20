@@ -18,7 +18,7 @@ import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useFormContext } from "react-hook-form";
 import { useCallback, useState, useMemo, useEffect, useRef } from "react";
 import CalendarIcon from "../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
-import { formatClassicDate, getLocaleDatetimePlaceholder } from "../../../../utils/dateFormatter";
+import { formatClassicDate, getLocaleDatetimePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 
 interface DatetimeSelectorProps {
   field: Field;
