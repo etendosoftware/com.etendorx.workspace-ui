@@ -24,7 +24,7 @@ export const validateNumber = (
   value: string,
   minValue: number | undefined,
   maxValue: number | undefined,
-  allowNegative: boolean = false
+  allowNegative = false
 ): { isValid: boolean; errorMessage: string } => {
   if (!isValidNumber(value)) {
     return { isValid: false, errorMessage: "Please enter a valid number" };

@@ -3,17 +3,10 @@
  * These functions handle encoding detection, HTML rewriting, and content type detection
  */
 
+import { detectCharset, isBinaryContentType, rewriteHtmlResourceUrls, createHtmlResponse } from "../route.helpers";
+
 describe("ERP route helper functions", () => {
   describe("detectCharset", () => {
-    // Mock the detectCharset function behavior
-    const detectCharset = (contentType: string | null): string => {
-      if (!contentType) {
-        return "iso-8859-1";
-      }
-      const charsetMatch = contentType.match(/charset=([^\s;]+)/i);
-      return charsetMatch ? charsetMatch[1].toLowerCase() : "iso-8859-1";
-    };
-
     it("should return iso-8859-1 when contentType is null", () => {
       expect(detectCharset(null)).toBe("iso-8859-1");
     });
@@ -40,17 +33,6 @@ describe("ERP route helper functions", () => {
   });
 
   describe("isBinaryContentType", () => {
-    const isBinaryContentType = (contentType: string): boolean => {
-      return (
-        contentType.includes("application/octet-stream") ||
-        contentType.includes("application/zip") ||
-        contentType.includes("image/") ||
-        contentType.includes("video/") ||
-        contentType.includes("audio/") ||
-        contentType.includes("application/pdf")
-      );
-    };
-
     it("should detect octet-stream as binary", () => {
       expect(isBinaryContentType("application/octet-stream")).toBe(true);
     });
@@ -84,69 +66,88 @@ describe("ERP route helper functions", () => {
   });
 
   describe("rewriteHtmlResourceUrls", () => {
-    const ETENDO_CLASSIC_URL = "http://localhost:8080/etendo";
-
-    const rewriteHtmlResourceUrls = (html: string): string => {
-      let rewritten = html;
-      rewritten = rewritten.replace(/(href|src)="(\.\.\/)*web\//gi, `$1="${ETENDO_CLASSIC_URL}/web/`);
-      rewritten = rewritten.replace(
-        /(href|src)="(\.\.\/)*org\.openbravo\./gi,
-        `$1="${ETENDO_CLASSIC_URL}/org.openbravo.`
-      );
-      return rewritten;
-    };
+    // In production, ETENDO_CLASSIC_HOST would be used (e.g., http://localhost:8080/etendo)
+    // This is the browser-accessible URL for legacy resources
+    const ETENDO_CLASSIC_HOST = "http://localhost:8080/etendo";
 
     it("should rewrite relative web paths", () => {
       const html = '<link href="../web/styles.css" />';
-      const result = rewriteHtmlResourceUrls(html);
-      expect(result).toContain(`href="${ETENDO_CLASSIC_URL}/web/styles.css"`);
+      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
+      expect(result).toContain(`href="${ETENDO_CLASSIC_HOST}/web/styles.css"`);
     });
 
     it("should rewrite deeply nested web paths", () => {
       const html = '<script src="../../../web/js/app.js"></script>';
-      const result = rewriteHtmlResourceUrls(html);
-      expect(result).toContain(`src="${ETENDO_CLASSIC_URL}/web/js/app.js"`);
+      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
+      expect(result).toContain(`src="${ETENDO_CLASSIC_HOST}/web/js/app.js"`);
     });
 
     it("should rewrite org.openbravo paths", () => {
       const html = '<link href="../org.openbravo.client.kernel/style.css" />';
-      const result = rewriteHtmlResourceUrls(html);
-      expect(result).toContain(`href="${ETENDO_CLASSIC_URL}/org.openbravo.client.kernel/style.css"`);
+      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
+      expect(result).toContain(`href="${ETENDO_CLASSIC_HOST}/org.openbravo.client.kernel/style.css"`);
     });
 
     it("should handle both href and src attributes", () => {
       const html = '<link href="../web/style.css" /><img src="../web/logo.png" />';
-      const result = rewriteHtmlResourceUrls(html);
-      expect(result).toContain(`href="${ETENDO_CLASSIC_URL}/web/style.css"`);
-      expect(result).toContain(`src="${ETENDO_CLASSIC_URL}/web/logo.png"`);
+      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
+      expect(result).toContain(`href="${ETENDO_CLASSIC_HOST}/web/style.css"`);
+      expect(result).toContain(`src="${ETENDO_CLASSIC_HOST}/web/logo.png"`);
     });
 
     it("should be case insensitive", () => {
       const html = '<LINK HREF="../web/styles.css" />';
-      const result = rewriteHtmlResourceUrls(html);
-      expect(result).toContain(`HREF="${ETENDO_CLASSIC_URL}/web/styles.css"`);
+      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
+      expect(result).toContain(`HREF="${ETENDO_CLASSIC_HOST}/web/styles.css"`);
     });
 
     it("should not modify absolute URLs", () => {
       const html = '<link href="http://external.com/style.css" />';
-      const result = rewriteHtmlResourceUrls(html);
+      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
       expect(result).toBe(html);
+    });
+
+    it("should rewrite absolute web paths", () => {
+      const html = '<link href="/web/styles.css" />';
+      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
+      expect(result).toContain(`href="${ETENDO_CLASSIC_HOST}/web/styles.css"`);
+    });
+
+    it("should rewrite absolute org.openbravo paths", () => {
+      const html = '<script src="/org.openbravo.client.kernel/app.js"></script>';
+      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
+      expect(result).toContain(`src="${ETENDO_CLASSIC_HOST}/org.openbravo.client.kernel/app.js"`);
+    });
+
+    it("should rewrite absolute ad_forms paths", () => {
+      const html = '<link href="/ad_forms/styles.css" />';
+      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
+      expect(result).toContain(`href="${ETENDO_CLASSIC_HOST}/ad_forms/styles.css"`);
+    });
+
+    it("should rewrite relative ad_forms paths", () => {
+      const html = '<script src="../../ad_forms/script.js"></script>';
+      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
+      expect(result).toContain(`src="${ETENDO_CLASSIC_HOST}/ad_forms/script.js"`);
+    });
+
+    it("should add base tag to HTML head", () => {
+      const html = "<html><head><title>Test</title></head><body></body></html>";
+      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
+      expect(result).toContain('<base href="http://localhost:8080/etendo/" />');
+      expect(result).toMatch(/<head[^>]*>\s*<base href="http:\/\/localhost:8080\/etendo\/" \/>/);
+    });
+
+    it("should not add base tag if already present", () => {
+      const html = '<html><head><base href="http://example.com/" /><title>Test</title></head><body></body></html>';
+      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
+      // Should only have one base tag
+      const baseTagCount = (result.match(/<base/g) || []).length;
+      expect(baseTagCount).toBe(1);
     });
   });
 
   describe("createHtmlResponse", () => {
-    const createHtmlResponse = (html: string, originalResponse: Response): Response => {
-      const htmlHeaders = new Headers(originalResponse.headers);
-      if (!htmlHeaders.has("content-type")) {
-        htmlHeaders.set("Content-Type", "text/html");
-      }
-      return new Response(html, {
-        status: originalResponse.status,
-        statusText: originalResponse.statusText,
-        headers: htmlHeaders,
-      });
-    };
-
     it("should create response with HTML content", () => {
       const originalResponse = new Response("", {
         status: 200,
