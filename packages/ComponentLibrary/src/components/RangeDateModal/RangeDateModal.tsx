@@ -103,13 +103,13 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
     return cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
   });
 
-  // 2. Generar Años
+  // 2. Generate years
   const currentYear = new Date().getFullYear();
   const startYear = 1980;
   const endYear = currentYear + 5;
   const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
 
-  // 3. Días de la semana
+  // 3. Week days
   const getWeekDays = () => {
     const days = [];
     for (let i = 1; i <= 7; i++) {
@@ -189,9 +189,9 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
     }
   };
 
-  // Helper para determinar estado visual
+  // Helper to determine visual state
   const getDateSelection = (dateToCheck: Date) => {
-    // Normalizar horas
+    // Normalize time to midnight for comparison
     const target = new Date(dateToCheck);
     target.setHours(0, 0, 0, 0);
     const targetTime = target.getTime();

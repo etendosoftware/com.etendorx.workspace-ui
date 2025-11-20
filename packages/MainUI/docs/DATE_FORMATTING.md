@@ -1,76 +1,76 @@
 # Date Formatting in DynamicTable
 
-Este documento describe cómo funciona el parseado y formateo de fechas en el DynamicTable, replicando el comportamiento de Etendo Classic.
+This document describes how date parsing and formatting works in the DynamicTable, replicating the behavior of Etendo Classic.
 
-## Visión General
+## Overview
 
-Las fechas que vienen del backend de Etendo Classic se muestran en el DynamicTable con el siguiente comportamiento:
+Dates coming from the Etendo Classic backend are displayed in the DynamicTable with the following behavior:
 
-1. **Detección automática**: Se detectan todas las columnas de tipo `date` o `datetime`
-2. **Parseado correcto**: Soporta tanto fechas simples (`yyyy-MM-dd`) como ISO datetime con zona horaria
-3. **Formato del navegador**: Usa `Intl.DateTimeFormat` para formatear según el locale del navegador
-4. **Hora opcional**: Las columnas de auditoría (`creationDate`, `updated`) muestran también la hora
+1. **Automatic detection**: All columns of type `date` or `datetime` are automatically detected
+2. **Correct parsing**: Supports both simple dates (`yyyy-MM-dd`) and ISO datetime with timezone
+3. **Browser formatting**: Uses `Intl.DateTimeFormat` to format according to browser locale
+4. **Optional time**: Audit columns (`creationDate`, `updated`) also display time
 
-## Estructura de Datos
+## Data Structure
 
-### Formato de entrada desde el backend
+### Input format from backend
 
-Hay dos formatos principales que vienen del backend:
+There are two main formats that come from the backend:
 
 ```json
 {
   "invoiceDate": "2025-10-06",                          // Plain date
   "accountingDate": "2025-10-06",                       // Plain date
-  "creationDate": "2025-10-06T10:20:00-03:00",         // ISO datetime con timezone
-  "updated": "2025-10-06T15:03:15-03:00",              // ISO datetime con timezone
+  "creationDate": "2025-10-06T10:20:00-03:00",         // ISO datetime with timezone
+  "updated": "2025-10-06T15:03:15-03:00",              // ISO datetime with timezone
   "finalSettlementDate": null                           // Null values are handled
 }
 ```
 
-### Formato de salida (según locale del navegador)
+### Output format (according to browser locale)
 
-**Nota**: El separador es específico del locale (Intl.DateTimeFormat determina cuál usar):
+**Note**: The separator is locale-specific (Intl.DateTimeFormat determines which to use):
 
 ```
 Argentina (es-AR):     06-10-2025
-España (es-ES):        06-10-2025
+Spain (es-ES):         06-10-2025
 USA (en-US):           10/06/2025
-Alemania (de-DE):      06.10.2025
-Francia (fr-FR):       06/10/2025
+Germany (de-DE):       06.10.2025
+France (fr-FR):        06/10/2025
 ```
 
-Con hora (para columnas de auditoría):
+With time (for audit columns):
 ```
 Argentina:             06-10-2025 10:20:00
-España:                06-10-2025 10:20:00
+Spain:                 06-10-2025 10:20:00
 USA:                   10/06/2025 10:20:00 AM
-Alemania:              06.10.2025 10:20:00
+Germany:               06.10.2025 10:20:00
 ```
 
-## Funciones Principales
+## Main Functions
 
 ### `formatClassicDate(value, includeTime?)`
 
-Función principal para usar. Combina parsing y formatting en un solo paso:
+Primary function to use. Combines parsing and formatting in a single step:
 
 ```typescript
 import { formatClassicDate } from "@/utils/dateFormatter";
 
-// Sin hora (por defecto)
+// Without time (default)
 formatClassicDate("2025-10-06") → "06-10-2025"
 formatClassicDate("2025-10-06T10:20:00-03:00") → "06-10-2025"
 
-// Con hora
+// With time
 formatClassicDate("2025-10-06T10:20:00-03:00", true) → "06-10-2025 10:20:00"
 
-// Valores nulos
+// Null values
 formatClassicDate(null) → ""
 formatClassicDate(undefined) → ""
 ```
 
 ### `parseOBDate(value)`
 
-Parsea una fecha del backend:
+Parses a date from the backend:
 
 ```typescript
 parseOBDate("2025-10-06")                    // Date(2025, 9, 6)
@@ -81,7 +81,7 @@ parseOBDate("invalid")                       // null
 
 ### `formatBrowserDate(date)`
 
-Formatea una fecha SIN hora (con separador específico del locale):
+Formats a date WITHOUT time (with locale-specific separator):
 
 ```typescript
 formatBrowserDate(new Date(2025, 9, 6)) → "06-10-2025" (Argentina)
@@ -92,7 +92,7 @@ formatBrowserDate(null) → ""
 
 ### `formatBrowserDateTime(date, includeTime)`
 
-Formatea una fecha CON o SIN hora (con separador específico del locale):
+Formats a date WITH or WITHOUT time (with locale-specific separator):
 
 ```typescript
 const date = new Date(2025, 9, 6, 10, 20, 0);
@@ -102,56 +102,58 @@ formatBrowserDateTime(date, false) → "06.10.2025" (Germany)
 formatBrowserDateTime(date, true)  → "06.10.2025 10:20:00" (Germany)
 ```
 
-## Detección Automática de Columnas de Fecha
+## Automatic Date Column Detection
 
-En `useColumns.tsx`, la detección es **estrictamente por TIPO de dato**:
+In `useColumns.tsx`, detection is **strictly by DATA TYPE**:
 
 ```typescript
-// En Etendo Classic hay 2 tipos de fecha/hora (FieldType enum):
-// - DATE = "date"        (solo fecha, sin hora)
-// - DATETIME = "datetime" (fecha + hora)
+// In Etendo Classic there are 2 date/time types (FieldType enum):
+// - DATE = "date"        (date only, no time)
+// - DATETIME = "datetime" (date + time)
 
 const isDateColumn =
-  column.type === "date" ||              // Solo si el tipo es explícitamente "date"
-  column.type === "datetime";             // O si el tipo es explícitamente "datetime"
+  column.column?.reference === FIELD_REFERENCE_CODES.DATE ||      // Detected by reference code 15
+  column.column?.reference === FIELD_REFERENCE_CODES.DATETIME;    // Or reference code 16
 ```
 
-**Esto significa que:**
-- ✅ Solo formatea si el tipo es realmente "date" o "datetime"
-- ✅ No formatea campos numéricos (documentNo, amount, etc.)
-- ✅ No se deja engañar por nombres de columna
-- ✅ La metadata de Etendo debe estar correcta (types bien asignados)
+**This means:**
+- ✅ Only formats if the type is really a date or datetime field
+- ✅ Does not format numeric fields (documentNo, amount, etc.)
+- ✅ Not fooled by column names
+- ✅ Etendo metadata must be correct (types properly assigned)
 
-## Columnas de Auditoría
+## Audit Columns
 
-Hay columnas especiales que siempre incluyen la hora:
+There are special columns that always include time:
 
 ```typescript
 const AUDIT_DATE_COLUMNS_WITH_TIME = ["creationDate", "updated"];
 ```
 
-Estas columnas muestran formato con hora:
+These columns display format with time:
 - `creationDate`: 06-10-2025 10:20:00
 - `updated`: 06-10-2025 15:03:15
 
-Todas las demás columnas de fecha muestran solo la fecha:
+All other date columns display only the date:
 - `invoiceDate`: 06-10-2025
 - `accountingDate`: 06-10-2025
 
-## Implementación en DynamicTable
+## Implementation in DynamicTable
 
-El renderizado automático se aplica en el hook `useColumns.tsx`:
+Automatic rendering is applied in the `useColumns.tsx` hook:
 
 ```typescript
-// Detecta columnas de fecha (SOLO por tipo, no por reference)
+// Detects date columns (by reference code for accuracy)
 const isDateColumn =
-  column.type === "date" ||
-  column.type === "datetime";
+  column.column?.reference === FIELD_REFERENCE_CODES.DATE ||
+  column.column?.reference === FIELD_REFERENCE_CODES.DATETIME;
 
-// Aplica formateo automático
+// Applies automatic formatting
 if (isDateColumn) {
-  // Incluye hora para creationDate, updated, o si es tipo datetime
-  const includeTime = AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName) || column.type === "datetime";
+  // Includes time for creationDate, updated, or if datetime type
+  const includeTime =
+    AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName) ||
+    column.column?.reference === FIELD_REFERENCE_CODES.DATETIME;
   columnConfig = {
     ...columnConfig,
     Cell: ({ cell }) => {
@@ -163,9 +165,9 @@ if (isDateColumn) {
 }
 ```
 
-## Ejemplos de Uso
+## Usage Examples
 
-### En una tabla de facturas
+### In an invoice table
 
 ```json
 {
@@ -175,56 +177,98 @@ if (isDateColumn) {
   "accountingDate": "2025-10-06",        // → 06-10-2025
   "creationDate": "2025-10-06T10:20:00-03:00",  // → 06-10-2025 10:20:00
   "updated": "2025-10-06T15:03:15-03:00",       // → 06-10-2025 15:03:15
-  "finalSettlementDate": null             // → (vacío)
+  "finalSettlementDate": null             // → (empty)
 }
 ```
 
-### Output en tabla (Argentina)
+### Table output (Argentina)
 ```
 | Document | Status | Invoice Date | Accounting Date | Creation Date         | Updated               | Settlement Date |
 |----------|--------|--------------|-----------------|----------------------|----------------------|-----------------|
 | 10000018 | DR     | 06-10-2025   | 06-10-2025      | 06-10-2025 10:20:00 | 06-10-2025 15:03:15 |                 |
 ```
 
-### Output en tabla (USA)
+### Table output (USA)
 ```
 | Document | Status | Invoice Date | Accounting Date | Creation Date         | Updated               | Settlement Date |
 |----------|--------|--------------|-----------------|----------------------|----------------------|-----------------|
 | 10000018 | DR     | 10-06-2025   | 10-06-2025      | 10-06-2025 10:20:00 | 10-06-2025 15:03:15 |                 |
 ```
 
-## Casos Especiales
+## Special Cases
 
-### Valores nulos
+### Null values
 ```typescript
 formatClassicDate(null)         // → ""
 formatClassicDate(undefined)    // → ""
 formatClassicDate("")           // → ""
 ```
 
-### Timestamps numéricos
+### Numeric timestamps
 ```typescript
 const timestamp = new Date("2025-10-06").getTime();
-formatClassicDate(timestamp)    // Funciona correctamente
+formatClassicDate(timestamp)    // Works correctly
 ```
 
-### Fechas con diferentes timezones
+### Dates with different timezones
 ```typescript
-formatClassicDate("2025-10-06T10:20:00-03:00") // Parseado correctamente
-formatClassicDate("2025-10-06T10:20:00+02:00") // Parseado correctamente
-formatClassicDate("2025-10-06T10:20:00Z")      // Parseado correctamente
+formatClassicDate("2025-10-06T10:20:00-03:00") // Parsed correctly
+formatClassicDate("2025-10-06T10:20:00+02:00") // Parsed correctly
+formatClassicDate("2025-10-06T10:20:00Z")      // Parsed correctly
+```
+
+## Date Filtering in Tables
+
+Date filtering uses the `DateSelector` component with an interactive `RangeDateModal`:
+
+### Components
+- **DateSelector**: Wrapper component for filtering by date
+- **RangeDateModal**: Interactive modal for selecting date ranges
+
+### Usage
+
+```typescript
+import { DateSelector } from "@/components/Table/DateSelector";
+
+// In table filter configuration
+{
+  enableColumnFilter: true,
+  Filter: () => (
+    <DateSelector
+      column={column}
+      onFilterChange={(filterValue: string) => {
+        onDateTextFilterChange?.(column.columnName, filterValue);
+      }}
+    />
+  ),
+}
+```
+
+### Filter Format
+
+The filter supports both single dates and ranges:
+
+```typescript
+// Single date (From)
+"2025-10-06 - "
+
+// Date range (From - To)
+"2025-10-06 - 2025-10-15"
+
+// Single date (To)
+" - 2025-10-15"
 ```
 
 ## Testing
 
-Todos los casos están cubiertos en:
+All cases are covered in:
 ```
 packages/MainUI/__tests__/utils/dateFormatter.test.ts
 ```
 
-Incluye tests para:
-- Parsing de diferentes formatos
-- Formatting según locale
-- Valores nulos y inválidos
-- Datos reales de Invoice
-- Diferentes timezones
+Includes tests for:
+- Parsing different formats
+- Formatting according to locale
+- Null and invalid values
+- Real Invoice data
+- Different timezones
