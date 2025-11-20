@@ -14,7 +14,6 @@
  * Contributor(s): Futit Services S.L.
  *************************************************************************
  */
-
 import {
   parseOBDate,
   formatBrowserDate,
@@ -23,7 +22,7 @@ import {
   isDateLike,
   isKnownDateField,
   AUDIT_DATE_FIELD_NAMES,
-} from "@/utils/dateFormatter";
+} from "../../utils/dateFormatter";
 
 describe("dateFormatter utilities", () => {
   describe("parseOBDate", () => {

@@ -97,7 +97,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
         onConfirm={handleDateConfirm}
         initialStartDate={startDate || undefined}
         initialEndDate={endDate || undefined}
-        t={t}
+        t={t as (key: string) => string}
       />
     </>
   );

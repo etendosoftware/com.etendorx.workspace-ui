@@ -101,13 +101,13 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     const handleRef = useCallback(
       (node: HTMLInputElement | null) => {
         if (node) {
-          inputRef.current = node;
+          (inputRef as React.MutableRefObject<HTMLInputElement | null>).current = node;
         }
 
         if (typeof ref === "function") {
           ref(node);
         } else if (ref) {
-          ref.current = node;
+          (ref as React.MutableRefObject<HTMLInputElement | null>).current = node;
         }
       },
       [ref]

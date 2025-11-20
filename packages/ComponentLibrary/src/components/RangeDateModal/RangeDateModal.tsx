@@ -1,7 +1,6 @@
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { formatBrowserDate, getLocaleDatePlaceholder } from "@/utils/dateFormatter";
 import CalendarIcon from "../../assets/icons/calendar.svg";
 import ChevronLeftIcon from "../../assets/icons/chevron-left.svg";
 import ChevronRightIcon from "../../assets/icons/chevron-right.svg";
@@ -9,6 +8,7 @@ import ChevronDownIcon from "../../assets/icons/chevron-down.svg";
 import EraserIcon from "../../assets/icons/eraser.svg";
 import XIcon from "../../assets/icons/x.svg";
 import Button from "../Button/Button";
+import { formatBrowserDate, getLocaleDatePlaceholder } from "../../utils/dateFormatter";
 
 // Simple TextInput-like component for the modal
 const DateInput = ({
@@ -52,13 +52,15 @@ const DateInput = ({
   );
 };
 
+type TranslateFn = (key: string) => string;
+
 interface DateRangeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (startDate: Date | null, endDate: Date | null) => void;
   initialStartDate?: Date;
   initialEndDate?: Date;
-  t?: (key: string) => string;
+  t?: TranslateFn;
 }
 
 const DateRangeModal: React.FC<DateRangeModalProps> = ({
