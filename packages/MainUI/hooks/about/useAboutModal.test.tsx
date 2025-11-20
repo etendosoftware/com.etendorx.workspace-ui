@@ -21,40 +21,82 @@ describe("useAboutModal", () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Mock useRuntimeConfig to return a loading state
+    // Mock useRuntimeConfig to return a loading state by default
     mockedUseRuntimeConfig.mockReturnValue({
       config: null,
       loading: false,
     });
   });
 
-  it("should return the Next.js proxy URL with the user's token", () => {
+  it("should return empty URL when no etendoClassicHost is configured", () => {
     mockedUseUserContext.mockReturnValue({ token: "abc123" });
+    mockedUseRuntimeConfig.mockReturnValue({
+      config: null,
+      loading: false,
+    });
 
     const { result } = renderHook(() => useAboutModal());
 
     expect(result.current).toEqual({
-      aboutUrl: "/api/erp/meta/legacy/ad_forms/about.html?IsPopUpCall=1&token=abc123",
+      aboutUrl: "",
       loading: false,
     });
   });
 
-  it("should handle correctly if there is no token", () => {
-    mockedUseUserContext.mockReturnValue({ token: undefined });
+  it("should return empty URL when config exists but etendoClassicHost is not set", () => {
+    mockedUseUserContext.mockReturnValue({ token: "abc123" });
+    mockedUseRuntimeConfig.mockReturnValue({
+      config: { someOtherConfig: "value" },
+      loading: false,
+    });
 
     const { result } = renderHook(() => useAboutModal());
 
-    expect(result.current.aboutUrl).toBe("/api/erp/meta/legacy/ad_forms/about.html?IsPopUpCall=1&token=undefined");
+    expect(result.current).toEqual({
+      aboutUrl: "",
+      loading: false,
+    });
+  });
+
+  it("should return direct Tomcat URL when etendoClassicHost is configured", () => {
+    mockedUseUserContext.mockReturnValue({ token: "abc123" });
+    mockedUseRuntimeConfig.mockReturnValue({
+      config: { etendoClassicHost: "http://localhost:8080" },
+      loading: false,
+    });
+
+    const { result } = renderHook(() => useAboutModal());
+
+    expect(result.current).toEqual({
+      aboutUrl: "http://localhost:8080/meta/legacy/ad_forms/about.html?IsPopUpCall=1&token=abc123",
+      loading: false,
+    });
+  });
+
+  it("should handle undefined token correctly when etendoClassicHost is configured", () => {
+    mockedUseUserContext.mockReturnValue({ token: undefined });
+    mockedUseRuntimeConfig.mockReturnValue({
+      config: { etendoClassicHost: "http://localhost:8080" },
+      loading: false,
+    });
+
+    const { result } = renderHook(() => useAboutModal());
+
+    expect(result.current.aboutUrl).toBe(
+      "http://localhost:8080/meta/legacy/ad_forms/about.html?IsPopUpCall=1&token=undefined"
+    );
     expect(result.current.loading).toBe(false);
   });
 
-  it("should always use the Next.js proxy regardless of the token", () => {
-    mockedUseUserContext.mockReturnValue({ token: "test-token-123" });
+  it("should return loading state from useRuntimeConfig", () => {
+    mockedUseUserContext.mockReturnValue({ token: "test-token" });
+    mockedUseRuntimeConfig.mockReturnValue({
+      config: { etendoClassicHost: "http://localhost:8080" },
+      loading: true,
+    });
 
     const { result } = renderHook(() => useAboutModal());
 
-    // Verify it starts with the proxy path, not a full URL
-    expect(result.current.aboutUrl).toMatch(/^\/api\/erp\/meta\/legacy/);
-    expect(result.current.loading).toBe(false);
+    expect(result.current.loading).toBe(true);
   });
 });
