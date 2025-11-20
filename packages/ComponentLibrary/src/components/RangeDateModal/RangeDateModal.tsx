@@ -162,13 +162,13 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
 
   // Handle date selection with proper range logic
   const handleDateClick = (selectedDate: Date) => {
-    // If no start date yet, set it
-    if (!startDate) {
+    // If no start date or we have a complete range, start a new range
+    if (!startDate || endDate) {
       setStartDate(selectedDate);
       setEndDate(null);
     }
     // If we have start date but no end date, set end date
-    else if (!endDate) {
+    else {
       // If selected date is before start date, swap them
       if (selectedDate < startDate) {
         setEndDate(startDate);
@@ -176,11 +176,6 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
       } else {
         setEndDate(selectedDate);
       }
-    }
-    // If we have both dates, treat as starting a new range
-    else {
-      setStartDate(selectedDate);
-      setEndDate(null);
     }
 
     // Move calendar to the selected month if needed
