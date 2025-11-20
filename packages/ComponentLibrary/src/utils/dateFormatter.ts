@@ -225,10 +225,7 @@ export const getLocaleDatetimePlaceholder = (): string => {
       .replace(/\b02\b/g, "mm")
       .replace(/2034/g, "yyyy");
 
-    const timePlaceholder = timeFormatted
-      .replace(/15/g, "hh")
-      .replace(/30/g, "mm")
-      .replace(/45/g, "ss");
+    const timePlaceholder = timeFormatted.replace(/15/g, "hh").replace(/30/g, "mm").replace(/45/g, "ss");
 
     return `${datePlaceholder} ${timePlaceholder}`;
   } catch {

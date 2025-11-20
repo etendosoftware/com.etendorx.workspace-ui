@@ -186,13 +186,12 @@ export const useTableData = ({
 
       // For date filters, pass the value as a string (not as FilterOption array)
       // This preserves range filter detection (e.g., "2025-09-29 - 2025-09-30")
-      const mrtFilter =
-        filterValue?.trim()
-          ? {
-              id: filterKey,
-              value: filterValue,
-            }
-          : null;
+      const mrtFilter = filterValue?.trim()
+        ? {
+            id: filterKey,
+            value: filterValue,
+          }
+        : null;
 
       setTableColumnFilters((prev) => {
         // Remove any previous filter for this column using any ID variant
