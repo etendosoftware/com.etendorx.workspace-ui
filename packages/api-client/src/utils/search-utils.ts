@@ -549,17 +549,21 @@ export class LegacyColumnFilterUtils {
 
     const stringValue = String(value);
 
-    // Match patterns like "2025-11-01 - 2025-11-19" or "2025-11-01 - " or " - 2025-11-19"
-    // Pattern: (space)(dash)(space) with optional content before/after
-    // Using \s*$ at the end to allow empty right side like "2025-11-01 - "
-    const rangePattern = /^(.*?)\s+-\s*(.*)$/;
-    const match = stringValue.match(rangePattern);
+    // FIX: Use string search instead of Regex to prevent ReDoS.
+    // This looks for " -" (space followed by dash), which matches the intent
+    // of the original regex `\s+-\s*`.
+    // The check ensures we don't split on the hyphens INSIDE a date (e.g., 2025-01-01)
+    // because those do not have a preceding space.
+    const separatorIndex = stringValue.indexOf(" -");
 
-    if (!match) {
+    if (separatorIndex === -1) {
       return null;
     }
 
-    const [, fromStr, toStr] = match;
+    const fromStr = stringValue.substring(0, separatorIndex);
+    // +2 skips the " -" characters. trim() handles the rest of the spacing.
+    const toStr = stringValue.substring(separatorIndex + 2);
+
     const fromTrimmed = fromStr.trim();
     const toTrimmed = toStr.trim();
 
@@ -593,7 +597,7 @@ export class LegacyColumnFilterUtils {
       /^\d{4}[-\/\.]\d{2}[-\/\.]\d{2}$/, // YYYY-MM-DD
     ];
 
-    return datePatterns.some(pattern => pattern.test(value));
+    return datePatterns.some((pattern) => pattern.test(value));
   }
 
   static createColumnFilterCriteria(columnFilters: MRT_ColumnFiltersState, columns: Column[]): BaseCriteria[] {
