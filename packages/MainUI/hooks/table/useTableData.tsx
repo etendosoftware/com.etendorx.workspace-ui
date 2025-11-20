@@ -520,10 +520,12 @@ export const useTableData = ({
         const prevExpandedObj =
           typeof prevExpanded === "object" && prevExpanded !== null && !Array.isArray(prevExpanded) ? prevExpanded : {};
 
-        const prevKeys = Object.keys(prevExpandedObj).filter((k) => prevExpandedObj[k as keyof typeof prevExpandedObj]);
-        const newKeys = Object.keys(newExpandedState).filter(
-          (k) => newExpandedState[k as keyof typeof newExpandedState]
-        );
+        const prevKeys = Object.entries(prevExpandedObj)
+          .filter(([, value]) => value)
+          .map(([key]) => key);
+        const newKeys = Object.entries(newExpandedState)
+          .filter(([, value]) => value)
+          .map(([key]) => key);
 
         const expandedRowIds = newKeys.filter((k) => !prevKeys.includes(k));
         const collapsedRowIds = prevKeys.filter((k) => !newKeys.includes(k));
