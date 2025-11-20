@@ -29,6 +29,7 @@ interface UseColumnsOptions {
   onLoadFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   onLoadMoreFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   columnFilterStates?: ColumnFilterState[];
+  tableColumnFilters?: Array<{ id: string; value: unknown }>;
 }
 
 // Columnas booleanas conocidas
@@ -39,8 +40,14 @@ const AUDIT_DATE_COLUMNS_WITH_TIME = ["creationDate", "updated"];
 
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
-  const { onColumnFilter, onDateTextFilterChange, onLoadFilterOptions, onLoadMoreFilterOptions, columnFilterStates } =
-    options || {};
+  const {
+    onColumnFilter,
+    onDateTextFilterChange,
+    onLoadFilterOptions,
+    onLoadMoreFilterOptions,
+    columnFilterStates,
+    tableColumnFilters,
+  } = options || {};
   const { t } = useTranslation();
 
   const columns = useMemo(() => {
@@ -166,12 +173,18 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
       // Enable DateSelector for date columns
       if (isDateColumn && !supportsDropdownFilter) {
+        // Get current filter value from tableColumnFilters
+        // Search by both id and columnName since columnId from context menu can be either
+        const currentFilter = tableColumnFilters?.find((f) => f.id === column.id || f.id === column.columnName);
+        const currentFilterValue = currentFilter ? String(currentFilter.value) : undefined;
+
         columnConfig = {
           ...columnConfig,
           enableColumnFilter: true,
           Filter: () => (
             <DateSelector
               column={column}
+              filterValue={currentFilterValue}
               onFilterChange={(filterValue: string) => {
                 onDateTextFilterChange?.(column.columnName, filterValue);
               }}
@@ -184,12 +197,18 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
       // Enable default text filtering for columns without specialized filters
       if (!supportsDropdownFilter && !isDateColumn && onDateTextFilterChange) {
+        // Get current filter value from tableColumnFilters
+        // Search by both id and columnName since columnId from context menu can be either
+        const currentFilter = tableColumnFilters?.find((f) => f.id === column.id || f.id === column.columnName);
+        const currentFilterValue = currentFilter ? String(currentFilter.value) : undefined;
+
         columnConfig = {
           ...columnConfig,
           enableColumnFilter: true,
           Filter: () => (
             <TextFilter
               column={column}
+              filterValue={currentFilterValue}
               onFilterChange={(filterValue: string) => {
                 onDateTextFilterChange(column.columnName, filterValue);
               }}
@@ -216,6 +235,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     handleClickRedirect,
     handleKeyDownRedirect,
     onLoadMoreFilterOptions,
+    tableColumnFilters,
   ]);
 
   return columns;

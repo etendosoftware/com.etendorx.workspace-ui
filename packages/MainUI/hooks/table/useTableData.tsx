@@ -282,6 +282,7 @@ export const useTableData = ({
     onLoadFilterOptions: onLoadFilterOptions || handleLoadFilterOptions,
     onLoadMoreFilterOptions: onLoadMoreFilterOptions || handleLoadMoreFilterOptions,
     columnFilterStates: advancedColumnFilters,
+    tableColumnFilters,
   });
 
   // Build query

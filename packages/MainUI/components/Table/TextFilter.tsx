@@ -1,14 +1,21 @@
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 
 export interface TextFilterProps {
   column: Column;
   onFilterChange: (filterValue: string) => void;
+  filterValue?: string;
 }
 
-export const TextFilter: React.FC<TextFilterProps> = ({ column, onFilterChange }) => {
+export const TextFilter: React.FC<TextFilterProps> = ({ column, onFilterChange, filterValue }) => {
   const [inputValue, setInputValue] = useState("");
+
+  // Synchronize inputValue when filterValue changes externally (e.g., from "Use as filter")
+  // Also handle clearing when filterValue becomes undefined
+  useEffect(() => {
+    setInputValue(filterValue || "");
+  }, [filterValue]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;

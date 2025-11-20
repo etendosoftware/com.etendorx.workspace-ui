@@ -1,5 +1,5 @@
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import DateRangeModal from "../../../ComponentLibrary/src/components/RangeDateModal/RangeDateModal";
 import { formatBrowserDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
@@ -9,14 +9,21 @@ import { useTranslation } from "@/hooks/useTranslation";
 export interface DateSelectorProps {
   column: Column;
   onFilterChange: (filterValue: string) => void;
+  filterValue?: string;
 }
 
-export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChange }) => {
+export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChange, filterValue }) => {
   const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [inputValue, setInputValue] = useState("");
+
+  // Synchronize inputValue when filterValue changes externally (e.g., from "Use as filter")
+  // Also handle clearing when filterValue becomes undefined
+  useEffect(() => {
+    setInputValue(filterValue || "");
+  }, [filterValue]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
