@@ -226,7 +226,7 @@ const MultiSelect = memo(function MultiSelectCmp({
       <div
         onClick={handleClick}
         onKeyDown={(e) => handleKeyboardActivation(e, handleClick)}
-        className={`w-full flex items-center justify-between px-3 py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 ${FOCUS_STYLES} 
+        className={`w-full flex items-center justify-between py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 ${FOCUS_STYLES} 
           ${isOpen ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : ""} 
           text-baseline-20 cursor-pointer hover:border-baseline-60 ${BASE_TRANSITION}`}>
         <span

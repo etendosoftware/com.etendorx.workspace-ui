@@ -2,6 +2,7 @@ import type React from "react";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { formatBrowserDate, getLocaleDatePlaceholder } from "@/utils/dateFormatter";
+import { useTranslation } from "@/hooks/useTranslation";
 import CalendarIcon from "../../assets/icons/calendar.svg";
 import ChevronLeftIcon from "../../assets/icons/chevron-left.svg";
 import ChevronRightIcon from "../../assets/icons/chevron-right.svg";
@@ -67,17 +68,14 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
   initialStartDate,
   initialEndDate,
 }) => {
+  const { t } = useTranslation();
   const [startDate, setStartDate] = useState<Date | null>(initialStartDate || null);
   const [endDate, setEndDate] = useState<Date | null>(initialEndDate || null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  // 1. Generar Meses Abreviados
-  const months = Array.from({ length: 12 }, (_, i) => {
-    const date = new Date(2000, i, 1);
-    const monthName = new Intl.DateTimeFormat(undefined, { month: "short" }).format(date);
-    const cleanName = monthName.replace(".", "");
-    return cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
-  });
+  // 1. Get translated month names and create abbreviated versions
+  const translatedMonths = t("dateModal.months") as string[];
+  const months = translatedMonths.map((month) => month.slice(0, 3));
 
   // 2. Generar Años
   const currentYear = new Date().getFullYear();
@@ -324,7 +322,7 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white">
             <div className="flex items-center gap-2 text-gray-800">
               <CalendarIcon height={20} width={20} color="red" fill="red" />
-              <h2 className="text-lg font-semibold">Seleccionar fechas</h2>
+              <h2 className="text-lg font-semibold">{t("dateModal.selectDates")}</h2>
             </div>
             <button
               type="button"
@@ -339,13 +337,13 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
             <div className="w-full md:w-64 bg-gray-50/50 p-6 border-r border-gray-100 flex flex-col justify-between">
               <div className="space-y-5">
                 <DateInput
-                  label="Desde"
+                  label={t("dateModal.from")}
                   value={formatDate(startDate)}
                   placeholder={datePlaceholder.toUpperCase()}
                   onClear={handleClearStart}
                 />
                 <DateInput
-                  label="Hasta"
+                  label={t("dateModal.to")}
                   value={formatDate(endDate)}
                   placeholder={datePlaceholder.toUpperCase()}
                   onClear={handleClearEnd}
@@ -426,15 +424,15 @@ const DateRangeModal: React.FC<DateRangeModalProps> = ({
               type="button"
               onClick={clearFilters}
               className="text-sm text-gray-500 hover:text-red-600 font-medium transition-colors flex items-center gap-2 group px-2 py-1 rounded-md hover:bg-red-50 w-fit">
-              Borrar filtros
+              {t("dateModal.clearFilters")}
               <EraserIcon height={20} width={20} color="red" fill="red" />
             </button>
             <div className="flex gap-3">
               <Button variant="outlined" size="large" className="w-auto" onClick={onClose}>
-                Cancelar
+                {t("common.cancel")}
               </Button>
               <Button size="large" className="w-auto" onClick={handleConfirm}>
-                Confirmar
+                {t("common.confirm")}
               </Button>
             </div>
           </div>

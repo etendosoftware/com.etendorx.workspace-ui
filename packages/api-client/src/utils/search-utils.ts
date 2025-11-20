@@ -257,16 +257,24 @@ export class LegacyColumnFilterUtils {
       "478169542A1747BD942DD70C8B45089C", // ABSOLUTE_DATETIME
     ];
 
-    // Check for type field first (most reliable indicator)
-    if (column.type === "date" || column.type === "datetime") {
+    // Get reference from the correct location in the column structure (most reliable)
+    const columnReference = column.reference || (column as any).column?.reference;
+
+    // PRIMARY CHECK: Use reference codes for accurate date field identification
+    // If reference explicitly says it's NOT a date (e.g., "10" = String), return false immediately
+    if (columnReference && !DATE_REFERENCE_CODES.includes(columnReference)) {
+      // Reference explicitly says this is NOT a date field (e.g., "10" = String)
+      // Don't trust column.type if reference says otherwise
+      return false;
+    }
+
+    // If reference code says it IS a date, trust that
+    if (columnReference && DATE_REFERENCE_CODES.includes(columnReference)) {
       return true;
     }
 
-    // Get reference from the correct location in the column structure
-    const columnReference = column.reference || (column as any).column?.reference;
-
-    // Primary check: Use reference codes for accurate date field identification
-    if (columnReference && DATE_REFERENCE_CODES.includes(columnReference)) {
+    // Check for type field as secondary indicator
+    if (column.type === "date" || column.type === "datetime") {
       return true;
     }
 
@@ -602,7 +610,9 @@ export class LegacyColumnFilterUtils {
 
       // Use filterFieldName if available (for WindowReferenceGrid), otherwise use columnName
       const fieldName = (column as any).filterFieldName || column.columnName;
-      if (filter.value === undefined || filter.value === null) continue;
+      if (filter.value === undefined || filter.value === null) {
+        continue;
+      }
 
       let filterCriteria: BaseCriteria[] = [];
 

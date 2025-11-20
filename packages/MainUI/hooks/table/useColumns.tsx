@@ -12,10 +12,12 @@ import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
 import { getFieldReference } from "@/utils";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilter } from "../../components/Table/ColumnFilter";
 import { DateSelector } from "../../components/Table/DateSelector";
+import { TextFilter } from "../../components/Table/TextFilter";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useTranslation } from "../useTranslation";
 import { transformColumnWithCustomJs } from "@/utils/customJsColumnTransformer";
@@ -37,7 +39,8 @@ const AUDIT_DATE_COLUMNS_WITH_TIME = ["creationDate", "updated"];
 
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
-  const { onColumnFilter, onDateTextFilterChange, onLoadFilterOptions, onLoadMoreFilterOptions, columnFilterStates } = options || {};
+  const { onColumnFilter, onDateTextFilterChange, onLoadFilterOptions, onLoadMoreFilterOptions, columnFilterStates } =
+    options || {};
   const { t } = useTranslation();
 
   const columns = useMemo(() => {
@@ -53,13 +56,14 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     });
 
     return originalColumns.map((column: Column) => {
-      const isReference = isEntityReference(getFieldReference(column.column?.reference));
+      const fieldReference = getFieldReference(column.column?.reference);
+      const isReference = isEntityReference(fieldReference);
       const isBooleanColumn = column.type === "boolean" || column.column?._identifier === "YesNo";
-      // Check if it's a date column by TYPE ONLY (strict check)
-      // In Etendo Classic, there are 2 date/time types: "date" and "datetime"
+      // Check if it's a date column by reference code (same as GenericSelector in FormView)
+      // Use field.column.reference to check for DATE (15) or DATETIME (16) field types
       const isDateColumn =
-        column.type === "date" ||
-        column.type === "datetime";
+        column.column?.reference === FIELD_REFERENCE_CODES.DATE ||
+        column.column?.reference === FIELD_REFERENCE_CODES.DATETIME;
       const supportsDropdownFilter = isBooleanColumn || ColumnFilterUtils.supportsDropdownFilter(column);
       const isCustomJsColumn = Boolean(column.customJs && column.customJs.trim().length > 0);
 
@@ -85,7 +89,9 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
       // Date columns with Etendo Classic formatting
       if (isDateColumn) {
         // Include time for audit date columns (creationDate, updated) or datetime type columns
-        const includeTime = AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName) || column.type === "datetime";
+        const includeTime =
+          AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName) ||
+          column.column?.reference === FIELD_REFERENCE_CODES.DATETIME;
         columnConfig = {
           ...columnConfig,
           Cell: ({ cell }: { cell: MRT_Cell<EntityData, unknown> }) => {
@@ -167,7 +173,25 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
             <DateSelector
               column={column}
               onFilterChange={(filterValue: string) => {
-                onDateTextFilterChange?.(column.id, filterValue);
+                onDateTextFilterChange?.(column.columnName, filterValue);
+              }}
+            />
+          ),
+          columnFilterModeOptions: ["contains", "startsWith", "endsWith"],
+          filterFn: "contains",
+        };
+      }
+
+      // Enable default text filtering for columns without specialized filters
+      if (!supportsDropdownFilter && !isDateColumn && onDateTextFilterChange) {
+        columnConfig = {
+          ...columnConfig,
+          enableColumnFilter: true,
+          Filter: () => (
+            <TextFilter
+              column={column}
+              onFilterChange={(filterValue: string) => {
+                onDateTextFilterChange(column.columnName, filterValue);
               }}
             />
           ),

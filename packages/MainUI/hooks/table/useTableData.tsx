@@ -178,22 +178,35 @@ export const useTableData = ({
 
   const handleDateTextFilterChange = useCallback(
     (columnId: string, filterValue: string) => {
+      // Find the column to get its columnName for consistent filter key
+      const column = rawColumns.find((col: Column) => col.columnName === columnId || col.id === columnId);
+
+      // Always use columnName as the filter ID for consistency
+      const filterKey = column?.columnName || columnId;
+
       // For date filters, pass the value as a string (not as FilterOption array)
       // This preserves range filter detection (e.g., "2025-09-29 - 2025-09-30")
       const mrtFilter =
         filterValue?.trim()
           ? {
-              id: columnId,
+              id: filterKey,
               value: filterValue,
             }
           : null;
 
       setTableColumnFilters((prev) => {
-        const filtered = prev.filter((f) => f.id !== columnId);
+        // Remove any previous filter for this column using any ID variant
+        const filtered = prev.filter((f) => {
+          if (column) {
+            // Remove by columnName (new standard), id (old display name), or provided columnId
+            return f.id !== column.columnName && f.id !== column.id && f.id !== columnId;
+          }
+          return f.id !== columnId;
+        });
         return mrtFilter ? [...filtered, mrtFilter] : filtered;
       });
     },
-    [setTableColumnFilters]
+    [rawColumns, setTableColumnFilters]
   );
 
   const handleLoadFilterOptions = useCallback(

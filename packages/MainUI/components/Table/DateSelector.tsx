@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import DateRangeModal from "../../../ComponentLibrary/src/components/RangeDateModal/RangeDateModal";
 import { formatBrowserDate } from "../../../MainUI/utils/dateFormatter";
+import CalendarIcon from "../../../ComponentLibrary/src/assets/icons/calendar.svg";
 
 export interface DateSelectorProps {
   column: Column;
@@ -71,7 +72,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
 
   return (
     <>
-      <div className="w-full flex items-center px-3 py-2 h-10 border-b border-baseline-10 hover:bg-baseline-5 transition-colors gap-2">
+      <div className="w-full flex items-center py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 transition-colors gap-2">
         <input
           type="text"
           placeholder={`Filter ${column.name || column.columnName}...`}
@@ -84,7 +85,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
           onClick={handleDatePickerClick}
           className="flex-shrink-0 text-xl hover:opacity-70 transition-opacity"
           title={`Open date picker for ${column.name || column.columnName}`}>
-          📅
+          <CalendarIcon className={"fill-(--color-baseline-110)"} />
         </button>
       </div>
 

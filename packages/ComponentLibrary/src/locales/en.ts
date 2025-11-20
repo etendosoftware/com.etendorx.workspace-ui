@@ -412,6 +412,26 @@ const en = {
     noOptionsFound: "No options found",
     loadingOptions: "Loading more options...",
   },
+  dateModal: {
+    selectDates: "Select dates",
+    from: "From",
+    to: "To",
+    clearFilters: "Clear filters",
+    months: [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ],
+  },
 };
 
 export default en;
