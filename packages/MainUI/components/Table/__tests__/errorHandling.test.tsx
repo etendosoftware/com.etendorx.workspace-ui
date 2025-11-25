@@ -15,16 +15,14 @@
  *************************************************************************
  */
 
-import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { validateFieldRealTime, validateRowForSave } from "../utils/validationUtils";
 import { saveRecordWithRetry } from "../utils/saveOperations";
 import { useConfirmationDialog } from "../hooks/useConfirmationDialog";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
 import { ActionsColumn } from "../ActionsColumn";
-import { FieldType } from "@workspaceui/api-client/src/api/types";
-import type { Column, EntityData } from "@workspaceui/api-client/src/api/types";
+import type { Column, EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Row } from "material-react-table";
 
 // Mock dependencies
@@ -35,14 +33,38 @@ jest.mock("@/hooks/useTranslation", () => ({
   }),
 }));
 
+const createMockTab = (overrides?: Partial<Tab>): Tab => ({
+  uIPattern: "STD",
+  window: "test-window",
+  name: "test-tab",
+  title: "Test Tab",
+  parentColumns: [],
+  id: "test-tab",
+  table: "test-table",
+  entityName: "TestEntity",
+  fields: {},
+  tabLevel: 0,
+  _identifier: "test-tab-identifier",
+  records: {},
+  hqlfilterclause: "",
+  hqlwhereclause: "",
+  sQLWhereClause: "",
+  module: "test-module",
+  ...overrides,
+});
+
 describe("Error Handling", () => {
   describe("Real-time Validation", () => {
-    const mockColumn: Column = {
+    const mockColumn = {
       name: "testField",
       header: "Test Field",
       displayType: "string",
       isMandatory: true,
-    };
+      id: "test-field-id",
+      columnName: "testField",
+      accessorFn: (row: Record<string, unknown>) => row.testField,
+      _identifier: "test-identifier",
+    } as Column;
 
     it("should validate required fields in real-time", () => {
       // When allowEmpty is false and field is mandatory, it should fail for empty values
@@ -74,6 +96,10 @@ describe("Error Handling", () => {
         header: "Amount",
         displayType: "number",
         isMandatory: false,
+        id: "amount-id",
+        columnName: "amount",
+        accessorFn: (row: Record<string, unknown>) => row.amount,
+        _identifier: "amount-identifier",
       };
 
       // Allow partial input while typing
@@ -105,6 +131,10 @@ describe("Error Handling", () => {
         header: "Quantity",
         displayType: "quantity",
         isMandatory: false,
+        id: "quantity-id",
+        columnName: "quantity",
+        accessorFn: (row: Record<string, unknown>) => row.quantity,
+        _identifier: "quantity-identifier",
       };
 
       const result = validateFieldRealTime(quantityColumn, -5, {
@@ -122,6 +152,10 @@ describe("Error Handling", () => {
         header: "Date",
         displayType: "date",
         isMandatory: false,
+        id: "date-id",
+        columnName: "date",
+        accessorFn: (row: Record<string, unknown>) => row.date,
+        _identifier: "date-identifier",
       };
 
       // Allow partial date while typing
@@ -148,18 +182,30 @@ describe("Error Handling", () => {
         header: "Name",
         displayType: "string",
         isMandatory: true,
+        id: "name-id",
+        columnName: "name",
+        accessorFn: (row: Record<string, unknown>) => row.name,
+        _identifier: "name-identifier",
       },
       {
         name: "email",
         header: "Email",
         displayType: "string",
         isMandatory: false,
+        id: "email-id",
+        columnName: "email",
+        accessorFn: (row: Record<string, unknown>) => row.email,
+        _identifier: "email-identifier",
       },
       {
         name: "age",
         header: "Age",
         displayType: "number",
         isMandatory: false,
+        id: "age-id",
+        columnName: "age",
+        accessorFn: (row: Record<string, unknown>) => row.age,
+        _identifier: "age-identifier",
       },
     ];
 
@@ -220,10 +266,7 @@ describe("Error Handling", () => {
       originalData: { id: "test-row", name: "Original" },
     };
 
-    const mockTab = {
-      id: "test-tab",
-      entityName: "TestEntity",
-    } as any;
+    const mockTab = createMockTab();
 
     beforeEach(() => {
       jest.clearAllMocks();
@@ -300,7 +343,7 @@ describe("Error Handling", () => {
   describe("ActionsColumn Error Display", () => {
     const mockRow = {
       original: { id: "test-row" },
-    } as MRT_Row<EntityData>;
+    } as unknown as MRT_Row<EntityData>;
 
     const defaultProps = {
       row: mockRow,
@@ -438,6 +481,7 @@ describe("Error Handling", () => {
       return (
         <div>
           <button
+            type="button"
             onClick={() =>
               confirmDiscardChanges(
                 () => {},
@@ -449,11 +493,12 @@ describe("Error Handling", () => {
             Discard Changes
           </button>
           <button
+            type="button"
             onClick={() => confirmSaveWithErrors(["Name is required"], () => {})}
             data-testid="save-errors-button">
             Save with Errors
           </button>
-          <button onClick={() => showSuccessMessage("Success!")} data-testid="success-button">
+          <button type="button" onClick={() => showSuccessMessage("Success!")} data-testid="success-button">
             Show Success
           </button>
           <ConfirmationDialog
