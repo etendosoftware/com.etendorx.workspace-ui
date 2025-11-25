@@ -131,8 +131,8 @@ const BooleanCellEditorComponent: React.FC<CellEditorProps> = ({
           // Space key toggles checkbox (default behavior)
           break;
         default:
-          // Prevent other keys from affecting the checkbox
-          e.preventDefault();
+          // Allow other keys (Tab, arrows, etc.) to pass through for default browser behavior
+          // Do not prevent default for navigation keys
           break;
       }
     }
