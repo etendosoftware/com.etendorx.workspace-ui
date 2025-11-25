@@ -306,8 +306,8 @@ export const NumericCellEditor = React.memo(NumericCellEditorComponent, (prevPro
     prevProps.disabled === nextProps.disabled &&
     prevProps.rowId === nextProps.rowId &&
     prevProps.columnId === nextProps.columnId &&
-    prevProps.field.name === nextProps.field.name &&
-    prevProps.field.type === nextProps.field.type
+    prevProps.field?.name === nextProps.field?.name &&
+    prevProps.field?.type === nextProps.field?.type
   );
 });
 

@@ -107,7 +107,7 @@ const CellEditorFactoryComponent: React.FC<CellEditorFactoryProps> = ({
   };
 
   // Generate ARIA attributes for error messages
-  const errorAttributes = editorProps.hasError ? generateAriaAttributes.errorMessage(editorProps.field.name) : {};
+  const errorAttributes = editorProps.hasError && editorProps.field ? generateAriaAttributes.errorMessage(editorProps.field.name) : {};
 
   return (
     <div className={`cell-editor-wrapper ${editorProps.hasError ? "cell-validation-error" : ""}`}>
@@ -131,8 +131,8 @@ export const CellEditorFactory = React.memo(CellEditorFactoryComponent, (prevPro
     prevProps.disabled === nextProps.disabled &&
     prevProps.rowId === nextProps.rowId &&
     prevProps.columnId === nextProps.columnId &&
-    prevProps.field.name === nextProps.field.name &&
-    prevProps.field.isMandatory === nextProps.field.isMandatory
+    prevProps.field?.name === nextProps.field?.name &&
+    prevProps.field?.isMandatory === nextProps.field?.isMandatory
   );
 });
 

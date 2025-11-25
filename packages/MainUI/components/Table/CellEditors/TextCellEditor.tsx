@@ -171,7 +171,7 @@ export const TextCellEditor = React.memo(TextCellEditorComponent, (prevProps, ne
     prevProps.disabled === nextProps.disabled &&
     prevProps.rowId === nextProps.rowId &&
     prevProps.columnId === nextProps.columnId &&
-    prevProps.field.name === nextProps.field.name
+    prevProps.field?.name === nextProps.field?.name
   );
 });
 

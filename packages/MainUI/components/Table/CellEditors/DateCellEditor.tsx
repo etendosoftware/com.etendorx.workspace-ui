@@ -221,8 +221,8 @@ export const DateCellEditor = React.memo(DateCellEditorComponent, (prevProps, ne
     prevProps.disabled === nextProps.disabled &&
     prevProps.rowId === nextProps.rowId &&
     prevProps.columnId === nextProps.columnId &&
-    prevProps.field.name === nextProps.field.name &&
-    prevProps.field.type === nextProps.field.type
+    prevProps.field?.name === nextProps.field?.name &&
+    prevProps.field?.type === nextProps.field?.type
   );
 });
 

@@ -131,8 +131,16 @@ const BooleanCellEditorComponent: React.FC<CellEditorProps> = ({
           // Space key toggles checkbox (default behavior)
           break;
         default:
-          // Allow other keys (Tab, arrows, etc.) to pass through for default browser behavior
-          // Do not prevent default for navigation keys
+          // Allow navigation keys (Tab/Arrow/Home/End) to pass through to browser/framework
+          if (["Tab", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) {
+            // Keep default behaviour so focus/navigation is not broken
+            return;
+          }
+          // Prevent only other printable characters from affecting the checkbox
+          // (e.key length === 1 indicates printable char in most browsers)
+          if (e.key && e.key.length === 1) {
+            e.preventDefault();
+          }
           break;
       }
     }
@@ -193,7 +201,7 @@ export const BooleanCellEditor = React.memo(BooleanCellEditorComponent, (prevPro
     prevProps.disabled === nextProps.disabled &&
     prevProps.rowId === nextProps.rowId &&
     prevProps.columnId === nextProps.columnId &&
-    prevProps.field.name === nextProps.field.name
+    prevProps.field?.name === nextProps.field?.name
   );
 });
 

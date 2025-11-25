@@ -37,7 +37,7 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
   keyboardNavigationManager,
   shouldAutoFocus = false,
   loadOptions,
-  isLoadingOptions,
+  // isLoadingOptions - not currently used, available for future enhancements
 }) => {
   const selectRef = useRef<HTMLSelectElement>(null);
   const [localValue, setLocalValue] = useState<string>(String(value || ""));
@@ -190,7 +190,7 @@ const SelectCellEditorComponent: React.FC<CellEditorProps> = ({
   const shouldRenderFallbackInput = (): boolean => {
     return (
       isLoadingDynamicOptions ||
-      ((field.type === "tabledir" || field.referencedEntity) && options.length === 0 && !isLoadingDynamicOptions)
+      ((field.type === "tabledir" || !!field.referencedEntity) && options.length === 0 && !isLoadingDynamicOptions)
     );
   };
 
@@ -300,8 +300,8 @@ export const SelectCellEditor = React.memo(SelectCellEditorComponent, (prevProps
     prevProps.disabled === nextProps.disabled &&
     prevProps.rowId === nextProps.rowId &&
     prevProps.columnId === nextProps.columnId &&
-    prevProps.field.name === nextProps.field.name &&
-    JSON.stringify(prevProps.field.refList) === JSON.stringify(nextProps.field.refList)
+    prevProps.field?.name === nextProps.field?.name &&
+    JSON.stringify(prevProps.field?.refList) === JSON.stringify(nextProps.field?.refList)
   );
 });
 
