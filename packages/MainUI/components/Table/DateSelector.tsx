@@ -136,10 +136,9 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
           onClick={handleDatePickerClick}
           className="flex-shrink-0 text-xl hover:opacity-70 transition-opacity"
           title={`Open date picker for ${column.name || column.columnName}`}>
-          <CalendarIcon className={"fill-(--color-baseline-110)"} />
+          <CalendarIcon className={"fill-(--color-baseline-110)"} data-testid="CalendarIcon__72491e" />
         </button>
       </div>
-
       <DateRangeModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
@@ -147,6 +146,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
         initialStartDate={startDate || undefined}
         initialEndDate={endDate || undefined}
         t={t as (key: string) => string}
+        data-testid="DateRangeModal__72491e"
       />
     </>
   );

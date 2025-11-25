@@ -203,6 +203,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
               onFilterChange={(filterValue: string) => {
                 onDateTextFilterChange?.(column.columnName, filterValue);
               }}
+              data-testid="DateSelector__46c09c"
             />
           ),
           columnFilterModeOptions: ["contains", "startsWith", "endsWith"],
@@ -224,6 +225,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
               onFilterChange={(filterValue: string) => {
                 onDateTextFilterChange(column.columnName, filterValue);
               }}
+              data-testid="TextFilter__46c09c"
             />
           ),
           columnFilterModeOptions: ["contains", "startsWith", "endsWith"],
