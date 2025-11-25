@@ -163,7 +163,6 @@ export function createEditingRowStateUtils(
  * @returns Unique string ID
  */
 export function generateNewRowId(): string {
-  // Available in all modern browsers and Node.js 14.17+
   return `new_${crypto.randomUUID()}`;
 }
 /**

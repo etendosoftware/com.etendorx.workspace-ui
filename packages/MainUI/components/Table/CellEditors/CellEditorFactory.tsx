@@ -107,7 +107,8 @@ const CellEditorFactoryComponent: React.FC<CellEditorFactoryProps> = ({
   };
 
   // Generate ARIA attributes for error messages
-  const errorAttributes = editorProps.hasError && editorProps.field ? generateAriaAttributes.errorMessage(editorProps.field.name) : {};
+  const errorAttributes =
+    editorProps.hasError && editorProps.field ? generateAriaAttributes.errorMessage(editorProps.field.name) : {};
 
   return (
     <div className={`cell-editor-wrapper ${editorProps.hasError ? "cell-validation-error" : ""}`}>
