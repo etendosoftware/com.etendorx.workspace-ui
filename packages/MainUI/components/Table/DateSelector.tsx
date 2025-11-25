@@ -21,8 +21,50 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
 
   // Synchronize inputValue when filterValue changes externally (e.g., from "Use as filter")
   // Also handle clearing when filterValue becomes undefined
+  // Parse and format the filterValue from state properly
   useEffect(() => {
-    setInputValue(filterValue || "");
+    if (!filterValue) {
+      setInputValue("");
+      setStartDate(null);
+      setEndDate(null);
+      return;
+    }
+
+    // Parse the filter value which could be:
+    // "YYYY-MM-DD - YYYY-MM-DD" (range)
+    // "YYYY-MM-DD - " (desde/from only)
+    // " - YYYY-MM-DD" (hasta/to only)
+    const parts = filterValue.split(" - ");
+    const startStr = parts[0]?.trim();
+    const endStr = parts[1]?.trim();
+
+    let displayValue = "";
+    let parsedStart: Date | null = null;
+    let parsedEnd: Date | null = null;
+
+    // Parse the dates if they exist
+    if (startStr) {
+      const [year, month, day] = startStr.split("-");
+      parsedStart = new Date(Number(year), Number(month) - 1, Number(day));
+      setStartDate(parsedStart);
+    }
+
+    if (endStr) {
+      const [year, month, day] = endStr.split("-");
+      parsedEnd = new Date(Number(year), Number(month) - 1, Number(day));
+      setEndDate(parsedEnd);
+    }
+
+    // Format the display value the same way handleDateConfirm does
+    if (parsedStart && parsedEnd) {
+      displayValue = `${formatBrowserDate(parsedStart)} - ${formatBrowserDate(parsedEnd)}`;
+    } else if (parsedStart && !parsedEnd) {
+      displayValue = `Desde ${formatBrowserDate(parsedStart)}`;
+    } else if (!parsedStart && parsedEnd) {
+      displayValue = `Hasta ${formatBrowserDate(parsedEnd)}`;
+    }
+
+    setInputValue(displayValue);
   }, [filterValue]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
