@@ -1,8 +1,5 @@
-import {
-  URL_PREFIXS,
-} from "@/utils/url/constants";
-import { WindowState, WindowRecoveryInfo } from "@/utils/window/constants";
-
+import { URL_PREFIXS } from "@/utils/url/constants";
+import type { WindowState, WindowRecoveryInfo } from "@/utils/window/constants";
 
 /**
  * TODO: this func will be usefull to set all window params in URL
@@ -19,9 +16,7 @@ import { WindowState, WindowRecoveryInfo } from "@/utils/window/constants";
  * // params now contains: w_abc123=active&o_abc123=1&wi_abc123=MainWindow
  */
 export const setWindowParameters = (params: URLSearchParams, window: WindowState): void => {
-  const {
-    windowIdentifier,
-  } = window;
+  const { windowIdentifier } = window;
 
   params.set(`${URL_PREFIXS.WINDOW_IDENTIFIER}`, windowIdentifier);
 };
@@ -57,7 +52,7 @@ export const shouldSkipNavigation = (targetUrl: string, searchParams: URLSearchP
  * // With 2 windows: first has no records, second has deepest tab at level 1
  * const windows = [
  *   { windowIdentifier: "143", tabs: {} },
- *   { windowIdentifier: "144", tabs: { 
+ *   { windowIdentifier: "144", tabs: {
  *     "tab1": { level: 0, selectedRecord: "rec1" },
  *     "tab2": { level: 1, selectedRecord: "rec2" }
  *   }}
@@ -74,8 +69,8 @@ export const buildWindowsUrlParams = (windows: WindowState[]): string => {
 
     // Find the tab with highest level that has both tabId and selectedRecord
     const tabEntries = Object.entries(window.tabs);
-    const tabsWithRecordsForms = tabEntries.filter(([_, tabState]) =>
-      tabState.selectedRecord && tabState.form.recordId
+    const tabsWithRecordsForms = tabEntries.filter(
+      ([_, tabState]) => tabState.selectedRecord && tabState.form.recordId
     );
 
     if (tabsWithRecordsForms.length > 0) {
@@ -96,19 +91,18 @@ export const buildWindowsUrlParams = (windows: WindowState[]): string => {
   });
 
   return params.toString();
-}
+};
 
 /**
  * Extracts recovery information for all windows from URL parameters
  */
 export const parseWindowRecoveryData = (searchParams: URLSearchParams): WindowRecoveryInfo[] => {
   const recoveryData: WindowRecoveryInfo[] = [];
-  const windowIdentifiers = new Set<string>();
 
   // Extract window identifiers
   searchParams.forEach((value, key) => {
     if (key.startsWith(URL_PREFIXS.WINDOW_IDENTIFIER)) {
-      const index = key.split('_')[1];
+      const index = key.split("_")[1];
       const tabId = searchParams.get(`${URL_PREFIXS.TAB_IDENTIFIER}_${index}`);
       const recordId = searchParams.get(`${URL_PREFIXS.RECORD_IDENTIFIER}_${index}`);
 
@@ -129,8 +123,7 @@ export const parseWindowRecoveryData = (searchParams: URLSearchParams): WindowRe
  */
 export const validateRecoveryParameters = (recoveryInfo: WindowRecoveryInfo): boolean => {
   // Both tabId and recordId must be present together, or neither
-  return (!recoveryInfo.tabId && !recoveryInfo.recordId) ||
-    (!!recoveryInfo.tabId && !!recoveryInfo.recordId);
+  return (!recoveryInfo.tabId && !recoveryInfo.recordId) || (!!recoveryInfo.tabId && !!recoveryInfo.recordId);
 };
 
 /**
@@ -158,7 +151,8 @@ export const removeRecoveryParameters = (searchParams: URLSearchParams): URLSear
   const cleanParams = new URLSearchParams();
 
   searchParams.forEach((value, key) => {
-    const isRecoveryParam = key.startsWith(URL_PREFIXS.WINDOW_IDENTIFIER) ||
+    const isRecoveryParam =
+      key.startsWith(URL_PREFIXS.WINDOW_IDENTIFIER) ||
       key.startsWith(URL_PREFIXS.TAB_IDENTIFIER) ||
       key.startsWith(URL_PREFIXS.RECORD_IDENTIFIER);
 
@@ -173,10 +167,7 @@ export const removeRecoveryParameters = (searchParams: URLSearchParams): URLSear
 /**
  * Removes parameters for specific window index
  */
-export const removeWindowParameters = (
-  searchParams: URLSearchParams,
-  windowIndex: number
-): URLSearchParams => {
+export const removeWindowParameters = (searchParams: URLSearchParams, windowIndex: number): URLSearchParams => {
   const cleanParams = new URLSearchParams(searchParams);
 
   cleanParams.delete(`${URL_PREFIXS.WINDOW_IDENTIFIER}_${windowIndex}`);
