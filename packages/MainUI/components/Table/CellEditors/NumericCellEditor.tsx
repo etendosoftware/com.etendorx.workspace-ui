@@ -78,7 +78,7 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
     // Convert to number if it's a string
     const num = typeof numValue === "string" ? Number.parseFloat(numValue) : Number(numValue);
 
-    if (isNaN(num)) {
+    if (Number.isNaN(num)) {
       return "";
     }
 
@@ -99,7 +99,7 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
     const cleanValue = inputValue.replace(/[^0-9.-]/g, "");
 
     // Check for valid number format
-    const numberRegex = /^-?\d*\.?\d*$/;
+    const numberRegex = /^-?(?:\d+(?:\.\d*)?|\.\d+)$/;
     if (!numberRegex.test(cleanValue)) {
       setValidationError("Invalid number format");
       return null;
@@ -107,7 +107,7 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
 
     const num = Number.parseFloat(cleanValue);
 
-    if (isNaN(num)) {
+    if (Number.isNaN(num)) {
       setValidationError("Invalid number");
       return null;
     }
@@ -141,7 +141,7 @@ const NumericCellEditorComponent: React.FC<CellEditorProps> = ({
     // Format the number on blur for better display
     if (localValue && !validationError) {
       const num = Number.parseFloat(localValue);
-      if (!isNaN(num)) {
+      if (!Number.isNaN(num)) {
         // Format with appropriate decimal places
         const formatted = isQuantity ? num.toFixed(2) : String(num);
         setLocalValue(formatted);

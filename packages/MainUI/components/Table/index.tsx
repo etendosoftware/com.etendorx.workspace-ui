@@ -68,7 +68,15 @@ import { COLUMN_NAMES } from "./constants";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
 import { RecordCounterBar } from "@workspaceui/componentlibrary/src/components";
-import type { EditingRowsState, InlineEditingContextMenu, RowValidationResult, EditingRowStateUtils, EditingRowData, SaveResult, ValidationError } from "./types/inlineEditing";
+import type {
+  EditingRowsState,
+  InlineEditingContextMenu,
+  RowValidationResult,
+  EditingRowStateUtils,
+  EditingRowData,
+  SaveResult,
+  ValidationError,
+} from "./types/inlineEditing";
 import { createEditingRowStateUtils, getMergedRowData } from "./utils/editingRowUtils";
 import { ActionsColumn } from "./ActionsColumn";
 import { validateFieldRealTime } from "./utils/validationUtils";
@@ -173,7 +181,11 @@ interface EditableCellContentProps {
   ) => void;
   validateFieldOnBlur: (rowId: string, fieldKey: string, value: unknown) => void;
   setInitialFocusCell: (cell: { rowId: string; columnName: string } | null) => void;
-  loadTableDirOptions: (field: Field, searchQuery?: string, rowValues?: Record<string, unknown>) => Promise<RefListField[]>;
+  loadTableDirOptions: (
+    field: Field,
+    searchQuery?: string,
+    rowValues?: Record<string, unknown>
+  ) => Promise<RefListField[]>;
   isLoadingTableDirOptions: (fieldName: string) => boolean;
 }
 
@@ -326,10 +338,23 @@ interface ExtendedColumn extends Column {
 // Helper function to compile readOnlyLogic expressions
 const compileExpression = (expression: string) => {
   try {
-    return new Function("context", "currentValues", `return ${parseDynamicExpression(expression)};`);
+    // 1. PARSE: Transform your DSL to JS
+    const jsCode = parseDynamicExpression(expression);
+
+    // 2. VALIDATE: Strict Regex Allowlist
+    // This regex only allows alphanumeric, dots, spaces, and specific operators.
+    // It rejects function calls '()' to prevent execution of arbitrary functions.
+    const safePattern = /^[a-zA-Z0-9\s\.\+\-\*\/\%\>\<\=\!\&\|\?\_]*$/;
+
+    if (!safePattern.test(jsCode)) {
+      throw new Error("Unsafe characters detected in expression");
+    }
+
+    // 3. COMPILE
+    return new Function("context", "currentValues", `return ${jsCode};`);
   } catch (error) {
-    logger.error("Error compiling expression:", expression, error);
-    return () => true;
+    console.error("Error compiling expression:", expression, error);
+    return () => false;
   }
 };
 
@@ -1274,7 +1299,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
    * Handle successful save operation
    */
   const handleSaveSuccess = useCallback(
-    (rowId: string, editingRowData: EditingRowData, saveResult: { data?: EntityData; errors?: unknown[] }, updatedRecords: EntityData[]) => {
+    (
+      rowId: string,
+      editingRowData: EditingRowData,
+      saveResult: { data?: EntityData; errors?: unknown[] },
+      updatedRecords: EntityData[]
+    ) => {
       const finalRecords = updatedRecords.map((record) => {
         if (String(record.id) === rowId || (editingRowData.isNew && record.id === rowId)) {
           const clientSideIdentifiers = preserveClientSideIdentifiers(record);
@@ -1303,17 +1333,20 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   /**
    * Rollback optimistic update
    */
-  const rollbackOptimisticUpdate = useCallback((rowId: string, editingRowData: EditingRowData, records: EntityData[]) => {
-    if (editingRowData.isNew) {
-      const rolledBackRecords = records.filter((record) => String(record.id) !== rowId);
-      setOptimisticRecords(rolledBackRecords);
-    } else {
-      const rolledBackRecords = records.map((record) =>
-        String(record.id) === rowId ? editingRowData.originalData : record
-      );
-      setOptimisticRecords(rolledBackRecords);
-    }
-  }, []);
+  const rollbackOptimisticUpdate = useCallback(
+    (rowId: string, editingRowData: EditingRowData, records: EntityData[]) => {
+      if (editingRowData.isNew) {
+        const rolledBackRecords = records.filter((record) => String(record.id) !== rowId);
+        setOptimisticRecords(rolledBackRecords);
+      } else {
+        const rolledBackRecords = records.map((record) =>
+          String(record.id) === rowId ? editingRowData.originalData : record
+        );
+        setOptimisticRecords(rolledBackRecords);
+      }
+    },
+    []
+  );
 
   /**
    * Handle save errors from server

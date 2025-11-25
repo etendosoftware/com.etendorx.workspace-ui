@@ -163,9 +163,9 @@ export function createEditingRowStateUtils(
  * @returns Unique string ID
  */
 export function generateNewRowId(): string {
-  return `new_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  // Available in all modern browsers and Node.js 14.17+
+  return `new_${crypto.randomUUID()}`;
 }
-
 /**
  * Creates an empty row data object for new records
  * @param newRowId The unique ID for the new row
