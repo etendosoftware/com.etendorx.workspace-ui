@@ -33,6 +33,7 @@ import type {
   Column,
   Field,
   FormInitializationResponse,
+  RefListField,
 } from "@workspaceui/api-client/src/api/types";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -61,13 +62,13 @@ import {
   getCurrentRowCanExpand,
   getCellTitle,
 } from "@/utils/table/utils";
-import { processCalloutColumnValues, getIdentifierKey, getEntriesKey } from "./utils/calloutUtils";
-import { ACTION_FORM_INITIALIZATION, MODE_CHANGE, MODE_NEW } from "@/utils/hooks/useFormInitialization/constants";
+import { processCalloutColumnValues } from "./utils/calloutUtils";
+import { ACTION_FORM_INITIALIZATION, MODE_CHANGE } from "@/utils/hooks/useFormInitialization/constants";
 import { COLUMN_NAMES } from "./constants";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
 import { RecordCounterBar } from "@workspaceui/componentlibrary/src/components";
-import type { EditingRowsState, InlineEditingContextMenu, RowValidationResult } from "./types/inlineEditing";
+import type { EditingRowsState, InlineEditingContextMenu, RowValidationResult, EditingRowStateUtils, EditingRowData, SaveResult, ValidationError } from "./types/inlineEditing";
 import { createEditingRowStateUtils, getMergedRowData } from "./utils/editingRowUtils";
 import { ActionsColumn } from "./ActionsColumn";
 import { validateFieldRealTime } from "./utils/validationUtils";
@@ -145,8 +146,8 @@ const createFieldWithData = (
 
   return {
     ...field,
-    ...(fieldIdentifier && { [identifierKeyFromInput]: fieldIdentifier }),
-    ...(fieldEntries && { [entriesKeyFromInput]: fieldEntries }),
+    ...(fieldIdentifier ? { [identifierKeyFromInput]: fieldIdentifier } : {}),
+    ...(fieldEntries ? { [entriesKeyFromInput]: fieldEntries } : {}),
   };
 };
 
@@ -157,12 +158,12 @@ interface EditableCellContentProps {
   rowId: string;
   fieldKey: string;
   columnName: string;
-  editingData: any;
+  editingData: EditingRowData;
   fieldMapping: { fieldType: FieldType; field: Field };
   initialFocusCell: { rowId: string; columnName: string } | null;
   session: Record<string, unknown> | undefined;
-  editingRowUtils: any;
-  keyboardNavigationManager: KeyboardNavigationManager;
+  editingRowUtils: EditingRowStateUtils;
+  keyboardNavigationManager: KeyboardNavigationManager | null;
   handleCellValueChange: (
     rowId: string,
     fieldKey: string,
@@ -172,7 +173,7 @@ interface EditableCellContentProps {
   ) => void;
   validateFieldOnBlur: (rowId: string, fieldKey: string, value: unknown) => void;
   setInitialFocusCell: (cell: { rowId: string; columnName: string } | null) => void;
-  loadTableDirOptions: (field: Field, searchQuery?: string, rowValues?: Record<string, unknown>) => Promise<any>;
+  loadTableDirOptions: (field: Field, searchQuery?: string, rowValues?: Record<string, unknown>) => Promise<RefListField[]>;
   isLoadingTableDirOptions: (fieldName: string) => boolean;
 }
 
@@ -259,7 +260,7 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
  */
 interface ActionsColumnCellProps {
   row: MRT_Row<EntityData>;
-  editingRowUtils: any;
+  editingRowUtils: EditingRowStateUtils;
   handleEditRow: (row: MRT_Row<EntityData>) => void;
   handleSaveRow: (rowId: string) => void;
   handleCancelRow: (rowId: string) => void;
@@ -674,7 +675,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         field: enrichedField,
       };
     },
-    [columnToFieldForEditor, getFieldTypeFromColumn, enrichFieldWithOriginalMetadata]
+    [enrichFieldWithOriginalMetadata]
   );
 
   // Memoize field conversions for all columns to avoid recalculation on every render
@@ -805,14 +806,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     limitPrice?: number;
   }
 
-  // Type for parent record with optional price/currency fields
-  type ParentRecordData = EntityData & {
-    priceList?: string | number;
-    mPricelistId?: string | number;
-    currency?: string | number;
-    cCurrencyId?: string | number;
-  };
-
   // Execute inline callout for a field
   const executeInlineCallout = useCallback(
     async (rowId: string, field: Field, newValue: unknown, optionData?: Record<string, unknown>) => {
@@ -887,17 +880,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
         // CRITICAL FIX: For product field, use the actual product ID, not the datasource compound ID
         // The datasource returns a compound ID (warehouse + product), but backend expects just the product ID
-        if (field.inputName === "inpmProductId" && newValue && optionData) {
-          const productOption = optionData as ProductOptionData;
-          const actualProductId = productOption.product$id || productOption["product$id"];
-          if (actualProductId) {
-            calloutData[field.inputName] = actualProductId;
-          } else {
-            calloutData[field.inputName] = newValue;
-          }
-        } else {
-          calloutData[field.inputName] = newValue;
-        }
+        calloutData[field.inputName] = newValue;
 
         if (field.inputName === "inpmProductId" && newValue && optionData) {
           // Cast to typed interfaces
@@ -1150,7 +1133,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         // Continue with original data if initialization fails
       }
     },
-    [editingRowUtils, screenReaderAnnouncer, baseColumns]
+    [editingRowUtils, screenReaderAnnouncer, baseColumns, fetchInitialData]
   );
 
   const handleInsertRow = useCallback(async () => {
@@ -1202,7 +1185,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     if (screenReaderAnnouncer) {
       screenReaderAnnouncer.announceRowInsertion(newRowId);
     }
-  }, [editingRowUtils, optimisticRecords, displayRecords, baseColumns, screenReaderAnnouncer]);
+  }, [editingRowUtils, optimisticRecords, displayRecords, baseColumns, screenReaderAnnouncer, fetchInitialData]);
 
   // Validate an entire row before saving
   const validateRow = useCallback(
@@ -1245,13 +1228,13 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
       return validationResult.isValid;
     },
-    [editingRowUtils, baseColumns]
+    [editingRowUtils, tab.fields]
   );
 
   /**
    * Format validation errors for display
    */
-  const formatValidationErrors = useCallback((validationErrors: Record<string, string>): string[] => {
+  const formatValidationErrors = useCallback((validationErrors: Record<string, string | undefined>): string[] => {
     return Object.entries(validationErrors)
       .filter(([_, message]) => message)
       .map(([field, message]) => (field === "_general" ? message || "" : `${field}: ${message || ""}`));
@@ -1261,7 +1244,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
    * Handle validation errors before save
    */
   const handleValidationErrors = useCallback(
-    (rowId: string, editingRowData: any) => {
+    (rowId: string, editingRowData: EditingRowData) => {
       logger.warn(`[InlineEditing] Cannot save row ${rowId} due to validation errors`);
       const errorMessages = formatValidationErrors(editingRowData.validationErrors);
 
@@ -1271,7 +1254,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         });
       }
     },
-    [formatValidationErrors]
+    [formatValidationErrors, confirmSaveWithErrors]
   );
 
   /**
@@ -1291,7 +1274,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
    * Handle successful save operation
    */
   const handleSaveSuccess = useCallback(
-    (rowId: string, editingRowData: any, saveResult: any, updatedRecords: EntityData[]) => {
+    (rowId: string, editingRowData: EditingRowData, saveResult: { data?: EntityData; errors?: unknown[] }, updatedRecords: EntityData[]) => {
       const finalRecords = updatedRecords.map((record) => {
         if (String(record.id) === rowId || (editingRowData.isNew && record.id === rowId)) {
           const clientSideIdentifiers = preserveClientSideIdentifiers(record);
@@ -1320,7 +1303,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   /**
    * Rollback optimistic update
    */
-  const rollbackOptimisticUpdate = useCallback((rowId: string, editingRowData: any, records: EntityData[]) => {
+  const rollbackOptimisticUpdate = useCallback((rowId: string, editingRowData: EditingRowData, records: EntityData[]) => {
     if (editingRowData.isNew) {
       const rolledBackRecords = records.filter((record) => String(record.id) !== rowId);
       setOptimisticRecords(rolledBackRecords);
@@ -1338,16 +1321,16 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const handleSaveErrors = useCallback(
     (
       rowId: string,
-      editingRowData: any,
-      saveResult: any,
+      editingRowData: EditingRowData,
+      saveResult: SaveResult,
       updatedRecords: EntityData[],
-      processSaveErrors: any,
-      getGeneralErrorMessage: any
+      processSaveErrors: (errors: ValidationError[]) => Record<string, string | undefined>,
+      getGeneralErrorMessage: (errors: ValidationError[]) => string | undefined
     ) => {
       rollbackOptimisticUpdate(rowId, editingRowData, updatedRecords);
 
-      const fieldErrors = processSaveErrors(saveResult.errors);
-      const generalError = getGeneralErrorMessage(saveResult.errors);
+      const fieldErrors = processSaveErrors(saveResult.errors ?? []);
+      const generalError = getGeneralErrorMessage(saveResult.errors ?? []);
 
       editingRowUtils.setRowValidationErrors(rowId, fieldErrors);
 
@@ -1370,7 +1353,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
    * Handle unexpected errors during save
    */
   const handleSaveException = useCallback(
-    (rowId: string, editingRowData: any, error: unknown) => {
+    (rowId: string, editingRowData: EditingRowData, error: unknown) => {
       const currentRecords = optimisticRecords.length > 0 ? optimisticRecords : displayRecords;
       rollbackOptimisticUpdate(rowId, editingRowData, currentRecords);
 
@@ -1606,97 +1589,100 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     setRecordId("NEW");
   }, [setRecordId]);
 
-  const renderFirstColumnCell = ({
-    renderedCellValue,
-    row,
-    table,
-    originalCell,
-    shouldUseTreeMode,
-  }: {
-    renderedCellValue: React.ReactNode;
-    row: MRT_Row<EntityData>;
-    table: MRT_TableInstance<EntityData>;
-    originalCell?: unknown;
-    shouldUseTreeMode: boolean;
-  }) => {
-    const hasChildren = row.original.showDropIcon === true;
-    const canExpand = shouldUseTreeMode && hasChildren;
-    const isExpanded = row.getIsExpanded();
-    const isSelected = row.getIsSelected();
+  const renderFirstColumnCell = useCallback(
+    ({
+      renderedCellValue,
+      row,
+      table,
+      originalCell,
+      shouldUseTreeMode,
+    }: {
+      renderedCellValue: React.ReactNode;
+      row: MRT_Row<EntityData>;
+      table: MRT_TableInstance<EntityData>;
+      originalCell?: unknown;
+      shouldUseTreeMode: boolean;
+    }) => {
+      const hasChildren = row.original.showDropIcon === true;
+      const canExpand = shouldUseTreeMode && hasChildren;
+      const isExpanded = row.getIsExpanded();
+      const isSelected = row.getIsSelected();
 
-    let expandIcon: React.ReactNode = null;
-    if (canExpand) {
-      expandIcon = isExpanded ? (
-        <ChevronUp height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronUp__8ca888" />
-      ) : (
-        <ChevronDown height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronDown__8ca888" />
-      );
-    }
-
-    let HierarchyIcon = null;
-    if (shouldUseTreeMode) {
-      if (hasChildren) {
-        HierarchyIcon = isExpanded ? MinusFolderIcon : PlusFolderFilledIcon;
-      } else {
-        HierarchyIcon = CircleFilledIcon;
+      let expandIcon: React.ReactNode = null;
+      if (canExpand) {
+        expandIcon = isExpanded ? (
+          <ChevronUp height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronUp__8ca888" />
+        ) : (
+          <ChevronDown height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronDown__8ca888" />
+        );
       }
-    }
 
-    if (shouldUseTreeMode) {
-      return (
-        <div className="flex items-center gap-2 w-full">
-          {hasChildren ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (canExpand) {
-                  row.toggleExpanded();
-                }
-              }}
-              className="bg-transparent border-0 cursor-pointer p-0.5 flex items-center justify-center min-w-5 min-h-5 rounded-full shadow-[0px_2.5px_6.25px_0px_rgba(0,3,13,0.1)]">
-              {expandIcon}
-            </button>
-          ) : (
-            <div className="w-5 h-5" />
-          )}
-          <div className="relative flex items-end">
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={(e) => {
-                e.stopPropagation();
-                row.toggleSelected();
-              }}
-              className="min-w-4 min-h-4 cursor-pointer rounded border-[1.67px] border-[rgba(0,3,13,0.4)] appearance-none bg-white checked:bg-[#004ACA] checked:border-[#004ACA]"
-            />
-            {isSelected && (
-              <CheckIcon
-                className="absolute top-0.5 left-0.5 w-3 h-3 pointer-events-none fill-white"
-                data-testid="CheckIcon__8ca888"
-              />
+      let HierarchyIcon = null;
+      if (shouldUseTreeMode) {
+        if (hasChildren) {
+          HierarchyIcon = isExpanded ? MinusFolderIcon : PlusFolderFilledIcon;
+        } else {
+          HierarchyIcon = CircleFilledIcon;
+        }
+      }
+
+      if (shouldUseTreeMode) {
+        return (
+          <div className="flex items-center gap-2 w-full">
+            {hasChildren ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (canExpand) {
+                    row.toggleExpanded();
+                  }
+                }}
+                className="bg-transparent border-0 cursor-pointer p-0.5 flex items-center justify-center min-w-5 min-h-5 rounded-full shadow-[0px_2.5px_6.25px_0px_rgba(0,3,13,0.1)]">
+                {expandIcon}
+              </button>
+            ) : (
+              <div className="w-5 h-5" />
             )}
+            <div className="relative flex items-end">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  row.toggleSelected();
+                }}
+                className="min-w-4 min-h-4 cursor-pointer rounded border-[1.67px] border-[rgba(0,3,13,0.4)] appearance-none bg-white checked:bg-[#004ACA] checked:border-[#004ACA]"
+              />
+              {isSelected && (
+                <CheckIcon
+                  className="absolute top-0.5 left-0.5 w-3 h-3 pointer-events-none fill-white"
+                  data-testid="CheckIcon__8ca888"
+                />
+              )}
+            </div>
+            {HierarchyIcon && (
+              <HierarchyIcon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />
+            )}
+            <span className="flex-1">
+              {originalCell && typeof originalCell === "function"
+                ? originalCell({ renderedCellValue, row, table })
+                : renderedCellValue}
+            </span>
           </div>
-          {HierarchyIcon && (
-            <HierarchyIcon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />
-          )}
-          <span className="flex-1">
-            {originalCell && typeof originalCell === "function"
-              ? originalCell({ renderedCellValue, row, table })
-              : renderedCellValue}
-          </span>
-        </div>
-      );
-    }
+        );
+      }
 
-    return (
-      <span className="flex-1">
-        {originalCell && typeof originalCell === "function"
-          ? originalCell({ renderedCellValue, row, table })
-          : renderedCellValue}
-      </span>
-    );
-  };
+      return (
+        <span className="flex-1">
+          {originalCell && typeof originalCell === "function"
+            ? originalCell({ renderedCellValue, row, table })
+            : renderedCellValue}
+        </span>
+      );
+    },
+    []
+  );
 
   // Use optimistic records if available, otherwise use display records
   // Merge optimistic updates with base records while preserving sort order and table features
@@ -1849,10 +1835,15 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     handleSaveRow,
     handleCancelRow,
     setRecordId,
-    t,
     columnFieldMappings,
     initialFocusCell,
-    setInitialFocusCell,
+    session,
+    keyboardNavigationManager,
+    handleCellValueChange,
+    validateFieldOnBlur,
+    loadTableDirOptions,
+    isLoadingTableDirOptions,
+    renderFirstColumnCell,
   ]);
 
   // Helper function to check if a row is being edited
@@ -2170,8 +2161,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   );
 
   const handleGetRowCanExpand = useCallback(
-    // @ts-ignore - Type mismatch due to duplicate @tanstack/table-core versions
-    (row: any) => {
+    (row: unknown) => {
       return getCurrentRowCanExpand({ row: row as MRT_Row<EntityData>, shouldUseTreeMode });
     },
     [shouldUseTreeMode]
