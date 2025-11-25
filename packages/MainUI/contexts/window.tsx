@@ -122,36 +122,14 @@ interface WindowContextI {
 // Context creation
 const WindowContext = createContext<WindowContextI | undefined>(undefined);
 
-// Hook for provider-level recovery initialization
-const useRecoveryInitialization = (searchParams: URLSearchParams | null) => {
-  const [hasInitialized, setHasInitialized] = useState(false);
-  const [recoveryData, setRecoveryData] = useState<WindowRecoveryInfo[]>([]);
-
-  useEffect(() => {
-    if (!searchParams || hasInitialized) return;
-
-    const recoveryDataFound = parseWindowRecoveryData(searchParams);
-
-    if (recoveryDataFound.length > 0) {
-      console.log("Provider detected recovery parameters:", recoveryDataFound);
-      setRecoveryData(recoveryDataFound);
-    }
-
-    setHasInitialized(true);
-  }, [searchParams, hasInitialized]);
-
-  return recoveryData;
-};
-
 // Provider component
 export default function WindowProvider({ children }: React.PropsWithChildren) {
   const [state, setState] = useState<WindowContextState>({});
   const [isRecovering, setIsRecovering] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const [recoveryData, setRecoveryData] = useState<WindowRecoveryInfo[]>([]);
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  // Add recovery initialization at provider level
-  const recoveryData = useRecoveryInitialization(searchParams);
 
   // Getters
   const getTableState = useCallback(
@@ -257,31 +235,6 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     const activeWindowIdentifier = getActiveWindowIdentifier();
     return activeWindowIdentifier ? state[activeWindowIdentifier] : null;
   }, [state, getActiveWindowIdentifier]);
-
-  // Create phantom windows when recovery data is detected
-  useEffect(() => {
-    if (!recoveryData || recoveryData.length === 0) return;
-
-    recoveryData.forEach((recoveryInfo: WindowRecoveryInfo, index: number) => {
-      const phantomWindow = createRecoveryWindowState(recoveryInfo);
-
-      setState((prevState) => {
-        const newState = { ...prevState };
-
-        // Create phantom window if it doesn't exist
-        if (!newState[recoveryInfo.windowIdentifier]) {
-          newState[recoveryInfo.windowIdentifier] = {
-            ...phantomWindow,
-            isActive: index === recoveryData.length - 1, // Make last window active
-          };
-
-          console.log("Created phantom window:", recoveryInfo.windowIdentifier);
-        }
-
-        return newState;
-      });
-    });
-  }, [recoveryData]);
 
   // Setters
   const setTableFilters = useCallback(
@@ -613,6 +566,110 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     return !activeWindow;
   }, [activeWindow]);
 
+  /**
+   * Parse URL recovery parameters
+   *
+   * Purpose: Detects and parses window recovery data from URL search parameters on initial mount.
+   * This is the first step in the recovery flow when the application is loaded with window state in the URL.
+   *
+   * Execution: Runs only once when searchParams are first available and component hasn't been initialized.
+   * The hasInitialized guard ensures this effect executes exactly once during the component lifecycle.
+   *
+   * Flow:
+   * 1. Checks if searchParams exist and component hasn't initialized yet
+   * 2. Parses URL parameters to extract window recovery information
+   * 3. If recovery data is found, stores it in recoveryData state
+   * 4. Sets hasInitialized to true to prevent re-execution
+   */
+  useEffect(() => {
+    if (!searchParams || hasInitialized) return;
+
+    const recoveryDataFound = parseWindowRecoveryData(searchParams);
+
+    if (recoveryDataFound.length > 0) {
+      console.log("Provider detected recovery parameters:", recoveryDataFound);
+      setRecoveryData(recoveryDataFound);
+    }
+
+    setHasInitialized(true);
+  }, [searchParams, hasInitialized]);
+
+  /**
+   * Create phantom windows from recovery data
+   *
+   * Purpose: Creates "phantom windows" - temporary window state objects based on the parsed recovery data.
+   * These windows are created with minimal information extracted from the URL before full metadata is loaded.
+   *
+   * Phantom Window: A window state object created with only the information available from URL parameters
+   * (windowId, tabId, recordId, etc.) before the complete window metadata is fetched from the backend.
+   * This allows the UI to initialize quickly and show loading states while full data is being retrieved.
+   *
+   * Execution: Runs when recoveryData state is populated by Effect 1.
+   *
+   * Flow:
+   * 1. Iterates through each recovery info object from the URL
+   * 2. Creates a phantom window state using createRecoveryWindowState utility
+   * 3. Adds the phantom window to the state if it doesn't already exist
+   * 4. Sets the last window in the array as active (business logic requirement)
+   *
+   * Note: The last window being active is a business logic decision to show the most recent
+   * window the user was interacting with before the page reload/recovery.
+   */
+  useEffect(() => {
+    if (!recoveryData || recoveryData.length === 0) return;
+
+    recoveryData.forEach((recoveryInfo: WindowRecoveryInfo, index: number) => {
+      const phantomWindow = createRecoveryWindowState(recoveryInfo);
+
+      setState((prevState) => {
+        const newState = { ...prevState };
+
+        // Create phantom window if it doesn't exist
+        if (!newState[recoveryInfo.windowIdentifier]) {
+          newState[recoveryInfo.windowIdentifier] = {
+            ...phantomWindow,
+            isActive: index === recoveryData.length - 1, // Make last window active
+          };
+
+          console.log("Created phantom window:", recoveryInfo.windowIdentifier);
+        }
+
+        return newState;
+      });
+    });
+  }, [recoveryData]);
+
+  /**
+   * Synchronize window state to URL
+   *
+   * Purpose: Maintains bidirectional synchronization between the window context state and the browser URL.
+   * This effect ensures that any changes to window state (navigation, selections, filters, etc.) are
+   * reflected in the URL, enabling:
+   * - Browser back/forward navigation
+   * - Page refresh recovery
+   * - Shareable URLs with specific window states
+   *
+   * Execution: Runs throughout the component lifecycle whenever window state changes.
+   *
+   * Critical Guards:
+   * 1. !isAnyWindowRecoveringValue: Prevents URL updates during the recovery process.
+   *    During recovery, the URL is the source of truth and should not be modified until recovery completes.
+   *    This prevents race conditions and circular updates between URL → State → URL.
+   *
+   * 2. areAllWindowsInitializedValue: Ensures all phantom windows have been fully initialized with
+   *    their complete metadata before syncing to URL. This prevents partial/incomplete state from
+   *    being persisted to the URL.
+   *
+   * 3. windows.length === 0: Prevents unnecessary URL updates when no windows exist.
+   *
+   * 4. newParams !== currentParams: Avoids redundant navigation calls when URL already reflects current state.
+   *
+   * Flow:
+   * 1. Validates that recovery is complete and windows are initialized
+   * 2. Builds new URL parameters from current window state
+   * 3. Compares with current URL parameters
+   * 4. Updates URL via router.replace if parameters have changed
+   */
   useEffect(() => {
     // Only update URL if not recovering and all windows are initialized
     const isAnyWindowRecoveringValue = isAnyWindowRecovering();
@@ -633,7 +690,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       const newUrl = newParams ? `window?${newParams}` : "window";
       router.replace(newUrl);
     }
-  }, [windows, router, searchParams, isRecovering, isAnyWindowRecovering, areAllWindowsInitialized]);
+  }, [windows, router, searchParams, isAnyWindowRecovering, areAllWindowsInitialized]);
 
   const value = useMemo(
     () => ({
