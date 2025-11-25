@@ -28,32 +28,23 @@ import { render, screen } from "@testing-library/react";
 import { SelectedProvider, SelectContext } from "../selected";
 import { useContext } from "react";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
+import WindowProvider from "../window";
 
-// Mock useMultiWindowURL hook
-const mockWindowStates = [
-  {
-    windowId: "TestWindow",
-    window_identifier: "TestWindow_123456789",
-    isActive: true,
-    order: 1,
-    selectedRecords: { tab1: "record1" },
-    tabFormStates: {},
-  },
-  {
-    windowId: "TestWindow",
-    window_identifier: "TestWindow_987654321",
-    isActive: false,
-    order: 2,
-    selectedRecords: { tab1: "record2" },
-    tabFormStates: {},
-  },
-];
+// Mock Next.js navigation hooks
+const mockReplace = jest.fn();
+const mockSearchParams = new URLSearchParams();
 
-jest.mock("../../hooks/navigation/useMultiWindowURL", () => ({
-  useMultiWindowURL: () => ({
-    windows: mockWindowStates,
-    activeWindow: mockWindowStates[0],
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({
+    replace: mockReplace,
+    push: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
+    prefetch: jest.fn(),
   }),
+  useSearchParams: () => mockSearchParams,
+  usePathname: () => "/window",
 }));
 
 jest.mock("../../data/graph", () => {
@@ -123,6 +114,11 @@ const createMockTabs = (): Tab[] => [
 describe("SelectedProvider Multi-Window Instance Isolation", () => {
   const mockTabs = createMockTabs();
 
+  // Helper function to wrap components with WindowProvider
+  const renderWithWindowProvider = (ui: React.ReactElement) => {
+    return render(<WindowProvider>{ui}</WindowProvider>);
+  };
+
   const TestConsumer = ({ testId }: { testId: string }) => {
     const context = useContext(SelectContext);
 
@@ -136,12 +132,13 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockReplace.mockClear();
   });
 
   describe("windowIdentifier Functionality", () => {
     it("should render successfully when windowIdentifier is provided", () => {
       expect(() => {
-        render(
+        renderWithWindowProvider(
           <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_123456789">
             <TestConsumer testId="valid" />
           </SelectedProvider>
@@ -152,7 +149,7 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
     });
 
     it("should use windowIdentifier for graph cache key generation", () => {
-      render(
+      renderWithWindowProvider(
         <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_123456789">
           <TestConsumer testId="cache-key-test" />
         </SelectedProvider>
@@ -165,7 +162,7 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
 
   describe("Graph Instance Isolation", () => {
     it("should create different graph instances for different window identifiers", () => {
-      const { unmount: unmount1 } = render(
+      const { unmount: unmount1 } = renderWithWindowProvider(
         <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_123456789">
           <TestConsumer testId="instance1" />
         </SelectedProvider>
@@ -175,7 +172,7 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
 
       unmount1();
 
-      render(
+      renderWithWindowProvider(
         <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_987654321">
           <TestConsumer testId="instance2" />
         </SelectedProvider>
@@ -190,7 +187,7 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
     });
 
     it("should reuse graph instance for same window identifier", () => {
-      const { unmount: unmount1 } = render(
+      const { unmount: unmount1 } = renderWithWindowProvider(
         <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_123456789">
           <TestConsumer testId="first-render" />
         </SelectedProvider>
@@ -201,7 +198,7 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
       unmount1();
 
       // Re-render with same windowIdentifier
-      render(
+      renderWithWindowProvider(
         <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_123456789">
           <TestConsumer testId="second-render" />
         </SelectedProvider>
@@ -215,7 +212,7 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
 
     it("should use windowIdentifier as cache key instead of windowId", () => {
       // First instance with specific windowIdentifier
-      const { unmount: unmount1 } = render(
+      const { unmount: unmount1 } = renderWithWindowProvider(
         <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_specific_123">
           <TestConsumer testId="specific" />
         </SelectedProvider>
@@ -226,7 +223,7 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
       unmount1();
 
       // Second instance with same windowId but different windowIdentifier
-      render(
+      renderWithWindowProvider(
         <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_different_456">
           <TestConsumer testId="different" />
         </SelectedProvider>
@@ -248,7 +245,7 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
         return <div data-testid="context-capture">captured</div>;
       };
 
-      render(
+      renderWithWindowProvider(
         <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_123456789">
           <ContextCapture />
         </SelectedProvider>
@@ -262,7 +259,7 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
     });
 
     it("should initialize with proper default state", () => {
-      render(
+      renderWithWindowProvider(
         <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_123456789">
           <TestConsumer testId="defaults" />
         </SelectedProvider>
@@ -278,7 +275,7 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
 
   describe("Instance Isolation Requirements", () => {
     it("should use windowIdentifier for instance isolation", () => {
-      render(
+      renderWithWindowProvider(
         <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_isolated_123">
           <TestConsumer testId="isolation-test" />
         </SelectedProvider>
@@ -295,7 +292,7 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
       const identifiers = ["TestWindow_111", "TestWindow_222", "ProductWindow_333"];
 
       for (const identifier of identifiers) {
-        const { unmount } = render(
+        const { unmount } = renderWithWindowProvider(
           <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier={identifier}>
             <TestConsumer testId={`test-${identifier}`} />
           </SelectedProvider>

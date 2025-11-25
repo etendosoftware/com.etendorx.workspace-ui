@@ -2,11 +2,33 @@ import { render } from "@testing-library/react";
 import { FormActions } from "../FormActions";
 import { globalCalloutManager } from "../../../../services/callouts";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
+import WindowProvider from "@/contexts/window";
+
+// Mock Next.js navigation hooks
+const mockReplace = jest.fn();
+const mockSearchParams = new URLSearchParams();
+
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({
+    replace: mockReplace,
+    push: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
+    prefetch: jest.fn(),
+  }),
+  useSearchParams: () => mockSearchParams,
+  usePathname: () => "/window",
+}));
 
 // Mock de hooks y contextos usados
 jest.mock("react-hook-form", () => ({
   useFormContext: () => ({
     formState: { isDirty: false },
+  }),
+  useForm: () => ({
+    handleSubmit: jest.fn(),
+    reset: jest.fn(),
   }),
 }));
 
@@ -21,13 +43,6 @@ jest.mock("@/contexts/tab", () => ({
   useTabContext: () => ({
     markFormAsChanged: jest.fn(),
     resetFormChanges: jest.fn(),
-  }),
-}));
-
-jest.mock("@/hooks/navigation/useMultiWindowURL", () => ({
-  useMultiWindowURL: () => ({
-    activeWindow: { windowId: "TEST_WINDOW" },
-    clearTabFormStateAtomic: jest.fn(),
   }),
 }));
 
@@ -73,8 +88,23 @@ describe("FormActions", () => {
     showErrorModal: jest.fn(),
   };
 
+  beforeEach(() => {
+    mockReplace.mockClear();
+    // Clear all search params
+    Array.from(mockSearchParams.keys()).forEach(key => mockSearchParams.delete(key));
+    
+    // Initialize a window in URL params
+    mockSearchParams.set('w_WIN1', 'active');
+    mockSearchParams.set('wi_WIN1', 'WIN1');
+    mockSearchParams.set('o_WIN1', '1');
+  });
+
   it("renders and registers actions", () => {
-    render(<FormActions {...props} />);
+    render(
+      <WindowProvider>
+        <FormActions {...props} />
+      </WindowProvider>
+    );
     // Esperamos que se registre el objeto con las acciones
     // (el mock de registerActions se llama desde el useEffect)
   });
@@ -86,7 +116,11 @@ describe("FormActions", () => {
       pendingCount: 0,
     });
 
-    render(<FormActions {...props} />);
+    render(
+      <WindowProvider>
+        <FormActions {...props} />
+      </WindowProvider>
+    );
     expect(globalCalloutManager.getState).toHaveBeenCalled();
   });
 });

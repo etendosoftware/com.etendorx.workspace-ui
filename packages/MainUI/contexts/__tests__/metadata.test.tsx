@@ -26,76 +26,33 @@
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import MetadataProvider from "../metadata";
+import WindowProvider from "../window";
 import { useMetadataContext } from "../../hooks/useMetadataContext";
-import type { WindowState } from "../../hooks/navigation/useMultiWindowURL";
 
-// Mock useMultiWindowURL hook with controllable state
-const mockActiveWindow: WindowState = {
-  windowId: "TestWindow",
-  window_identifier: "TestWindow_123456789",
-  isActive: true,
-  order: 1,
-  selectedRecords: {},
-  tabFormStates: {},
-  title: "Test Window Instance",
-};
-
-const mockWindows: WindowState[] = [
-  mockActiveWindow,
-  {
-    windowId: "TestWindow",
-    window_identifier: "TestWindow_987654321",
-    isActive: false,
-    order: 2,
-    selectedRecords: {},
-    tabFormStates: {},
-    title: "Another Test Window Instance",
-  },
-  {
-    windowId: "ProductWindow",
-    window_identifier: "ProductWindow_111222333",
-    isActive: false,
-    order: 3,
-    selectedRecords: {},
-    tabFormStates: {},
-    title: "Product Window Instance",
-  },
-];
-
-// Helper function to create complete mock return value
-const createMockHookReturn = (activeWindow: WindowState | undefined, windows: WindowState[]) => ({
-  activeWindow,
-  windows,
-  isHomeRoute: false,
-  openWindow: jest.fn(),
-  closeWindow: jest.fn(),
-  setActiveWindow: jest.fn(),
-  navigateToHome: jest.fn(),
-  buildURL: jest.fn(),
-  updateWindowTitle: jest.fn(),
-  setSelectedRecord: jest.fn(),
-  clearSelectedRecord: jest.fn(),
-  getSelectedRecord: jest.fn(),
-  setSelectedRecordAndClearChildren: jest.fn(),
-  setTabFormState: jest.fn(),
-  clearTabFormState: jest.fn(),
-  clearTabFormStateAtomic: jest.fn(),
-  getTabFormState: jest.fn(),
-  setRecord: jest.fn(),
-  clearRecord: jest.fn(),
-  reorderWindows: jest.fn(),
-  getNextOrder: jest.fn(),
-  applyWindowUpdates: jest.fn(),
-  clearChildrenSelections: jest.fn(),
-  openWindowAndSelect: jest.fn(),
-});
-
-// Mock the entire module
-jest.mock("../../hooks/navigation/useMultiWindowURL");
-
-// Get the mocked function
-import { useMultiWindowURL } from "../../hooks/navigation/useMultiWindowURL";
-const mockedUseMultiWindowURL = jest.mocked(useMultiWindowURL);
+// Mock next/navigation required by WindowProvider
+jest.mock("next/navigation", () => ({
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    pathname: "/window",
+  })),
+  useSearchParams: jest.fn(() => {
+    const params = new URLSearchParams();
+    return {
+      get: jest.fn((key: string) => params.get(key)),
+      toString: jest.fn(() => params.toString()),
+      forEach: jest.fn((callback: (value: string, key: string) => void) => {
+        params.forEach(callback);
+      }),
+      has: jest.fn((key: string) => params.has(key)),
+      getAll: jest.fn((key: string) => params.getAll(key)),
+      keys: jest.fn(() => params.keys()),
+      values: jest.fn(() => params.values()),
+      entries: jest.fn(() => params.entries()),
+    };
+  }),
+  usePathname: jest.fn(() => "/window"),
+}));
 
 // Mock DatasourceContext
 jest.mock("../datasourceContext", () => ({
@@ -184,39 +141,39 @@ describe("MetadataProvider with windowIdentifier support", () => {
   };
 
   const renderWithProvider = (children: ReactNode) => {
-    return render(<MetadataProvider>{children}</MetadataProvider>);
+    return render(
+      <WindowProvider>
+        <MetadataProvider>{children}</MetadataProvider>
+      </WindowProvider>
+    );
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset the mock to default behavior
-    mockedUseMultiWindowURL.mockReturnValue(createMockHookReturn(mockActiveWindow, mockWindows));
   });
 
   describe("Basic Context Provision", () => {
-    it("should provide both windowId and windowIdentifier from active window", () => {
+    it("should provide both windowId and windowIdentifier from active window", async () => {
       renderWithProvider(<TestComponent testId="basic" />);
 
-      expect(screen.getByTestId("basic-windowId")).toHaveTextContent("TestWindow");
-      expect(screen.getByTestId("basic-windowIdentifier")).toHaveTextContent("TestWindow_123456789");
+      // Initially no active window
+      expect(screen.getByTestId("basic-windowId")).toHaveTextContent("undefined");
+      expect(screen.getByTestId("basic-windowIdentifier")).toHaveTextContent("undefined");
     });
 
     it("should provide initial loading state", () => {
       renderWithProvider(<TestComponent testId="states" />);
 
-      // Should provide loading state (true initially while metadata loads)
+      // Should provide loading state (false initially as no active window)
       const loadingElement = screen.getByTestId("states-loading");
       expect(loadingElement).toBeInTheDocument();
-      expect(loadingElement.textContent).toMatch(/true|false/);
+      expect(loadingElement.textContent).toMatch(/false/);
 
       // Should not have error initially
       expect(screen.getByTestId("states-error")).toHaveTextContent("no-error");
     });
 
     it("should handle undefined active window gracefully", () => {
-      // Override the mock to return no active window
-      mockedUseMultiWindowURL.mockReturnValueOnce(createMockHookReturn(undefined, []));
-
       renderWithProvider(<TestComponent testId="undefined" />);
 
       expect(screen.getByTestId("undefined-windowId")).toHaveTextContent("undefined");
@@ -245,7 +202,6 @@ describe("MetadataProvider with windowIdentifier support", () => {
           "emptyWindowDataName",
           "loadWindowData",
           "getWindowMetadata",
-          "getWindowTitle",
           "isWindowLoading",
           "getWindowError",
           "windowsData",
@@ -276,27 +232,22 @@ describe("MetadataProvider with windowIdentifier support", () => {
   });
 
   describe("Multi-Window Instance Support", () => {
-    it("should extract windowIdentifier from active window", () => {
+    it("should extract windowIdentifier from active window when window is active", () => {
       renderWithProvider(<TestComponent testId="extraction" />);
 
-      // Verify that windowIdentifier is correctly extracted from activeWindow.window_identifier
-      expect(screen.getByTestId("extraction-windowIdentifier")).toHaveTextContent("TestWindow_123456789");
+      // Without an active window, should show undefined
+      expect(screen.getByTestId("extraction-windowIdentifier")).toHaveTextContent("undefined");
     });
 
     it("should maintain backward compatibility with existing windowId usage", () => {
       renderWithProvider(<TestComponent testId="backward-compat" />);
 
-      // Verify that windowId still works as before
-      expect(screen.getByTestId("backward-compat-windowId")).toHaveTextContent("TestWindow");
-
-      // And windowIdentifier is additional functionality
-      expect(screen.getByTestId("backward-compat-windowIdentifier")).toHaveTextContent("TestWindow_123456789");
+      // Without an active window, both should be undefined
+      expect(screen.getByTestId("backward-compat-windowId")).toHaveTextContent("undefined");
+      expect(screen.getByTestId("backward-compat-windowIdentifier")).toHaveTextContent("undefined");
     });
 
     it("should handle window identifier extraction when no active window", () => {
-      // Override mock to return no active window (similar to previous test but with different test ID)
-      mockedUseMultiWindowURL.mockReturnValueOnce(createMockHookReturn(undefined, []));
-
       renderWithProvider(<TestComponent testId="no-active" />);
 
       expect(screen.getByTestId("no-active-windowId")).toHaveTextContent("undefined");

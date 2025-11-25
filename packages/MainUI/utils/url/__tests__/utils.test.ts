@@ -18,387 +18,468 @@
 /**
  * @fileoverview Unit tests for URL utility functions
  *
- * Tests the window identifier generation implementation:
- * - Unique identifier generation for window instances
- * - URL parameter handling utilities
- * - Instance isolation validation
+ * Tests the URL parameter handling utilities:
+ * - Window parameter encoding/decoding
+ * - URL navigation utilities
+ * - Recovery parameter management
  */
 
-import { getNewWindowIdentifier } from "../utils";
+import {
+  shouldSkipNavigation,
+  buildWindowsUrlParams,
+  parseWindowRecoveryData,
+  validateRecoveryParameters,
+  cleanInvalidRecoveryParams,
+  removeRecoveryParameters,
+  removeWindowParameters,
+} from "../utils";
+import type { WindowState } from "../../window/constants";
+import { TAB_MODES } from "../constants";
 
 describe("URL Utility Functions", () => {
-  // Mock Date.now to control timestamp generation
-  let mockNow: jest.SpyInstance;
-  let timestampCounter = 1000000; // Start with a base timestamp
+  describe("shouldSkipNavigation", () => {
+    it("should return true when current and target params are identical", () => {
+      const searchParams = new URLSearchParams("wi_0=window1&ti_0=tab1");
+      const targetUrl = "/workspace?wi_0=window1&ti_0=tab1";
 
-  beforeEach(() => {
-    timestampCounter = 1000000; // Reset counter for each test
-    mockNow = jest.spyOn(Date, "now").mockImplementation(() => {
-      return timestampCounter++; // Increment to ensure uniqueness
+      expect(shouldSkipNavigation(targetUrl, searchParams)).toBe(true);
+    });
+
+    it("should return false when params differ", () => {
+      const searchParams = new URLSearchParams("wi_0=window1");
+      const targetUrl = "/workspace?wi_0=window2";
+
+      expect(shouldSkipNavigation(targetUrl, searchParams)).toBe(false);
+    });
+
+    it("should return false when target has no params but current does", () => {
+      const searchParams = new URLSearchParams("wi_0=window1");
+      const targetUrl = "/workspace";
+
+      expect(shouldSkipNavigation(targetUrl, searchParams)).toBe(false);
+    });
+
+    it("should return true when both have no params", () => {
+      const searchParams = new URLSearchParams("");
+      const targetUrl = "/workspace";
+
+      expect(shouldSkipNavigation(targetUrl, searchParams)).toBe(true);
+    });
+
+    it("should handle malformed URLs gracefully", () => {
+      const searchParams = new URLSearchParams("wi_0=window1");
+      const malformedUrl = "not a url";
+
+      // Should return false to proceed with navigation
+      expect(shouldSkipNavigation(malformedUrl, searchParams)).toBe(false);
+    });
+
+    it("should handle null searchParams safely", () => {
+      const targetUrl = "/workspace?wi_0=window1";
+
+      // @ts-expect-error Testing null case
+      expect(shouldSkipNavigation(targetUrl, null)).toBe(false);
     });
   });
 
-  afterEach(() => {
-    mockNow.mockRestore();
-  });
-
-  describe("getNewWindowIdentifier", () => {
-    it("should generate unique identifiers for the same window type", () => {
-      const identifier1 = getNewWindowIdentifier("TestWindow");
-      const identifier2 = getNewWindowIdentifier("TestWindow");
-
-      expect(identifier1).not.toBe(identifier2);
-      expect(identifier1).toMatch(/^TestWindow_\d+$/);
-      expect(identifier2).toMatch(/^TestWindow_\d+$/);
-
-      // Verify the timestamps are different
-      const timestamp1 = identifier1.split("_")[1];
-      const timestamp2 = identifier2.split("_")[1];
-      expect(timestamp1).not.toBe(timestamp2);
-    });
-
-    it("should include window ID in the identifier format", () => {
-      const windowTypes = ["Product", "Customer", "Invoice", "Order"];
-
-      for (const windowId of windowTypes) {
-        const identifier = getNewWindowIdentifier(windowId);
-        expect(identifier.startsWith(`${windowId}_`)).toBe(true);
-        expect(identifier).toMatch(new RegExp(`^${windowId}_\\d+$`));
-      }
-    });
-
-    it("should generate timestamp-based identifiers", () => {
-      // Use real Date.now for this test to verify actual timestamp behavior
-      mockNow.mockRestore();
-
-      const beforeTime = Date.now();
-      const identifier = getNewWindowIdentifier("TestWindow");
-      const afterTime = Date.now();
-
-      const timestampPart = identifier.split("_")[1];
-
-      // Should be a valid timestamp (numeric)
-      expect(Number.isInteger(Number(timestampPart))).toBe(true);
-
-      // Should be a reasonable timestamp (within the test execution window)
-      const timestamp = Number(timestampPart);
-      expect(timestamp).toBeGreaterThanOrEqual(beforeTime);
-      expect(timestamp).toBeLessThanOrEqual(afterTime);
-
-      // Re-establish mock for subsequent tests
-      mockNow = jest.spyOn(Date, "now").mockImplementation(() => {
-        return timestampCounter++;
-      });
-    });
-
-    it("should handle empty or undefined window IDs gracefully", () => {
-      const emptyIdentifier = getNewWindowIdentifier("");
-      const undefinedIdentifier = getNewWindowIdentifier(undefined as unknown as string);
-
-      expect(emptyIdentifier).toMatch(/^_\d+$/);
-      expect(undefinedIdentifier).toMatch(/^undefined_\d+$/);
-
-      // Verify they have different timestamps
-      const emptyTimestamp = emptyIdentifier.split("_")[1];
-      const undefinedTimestamp = undefinedIdentifier.split("_")[1];
-      expect(emptyTimestamp).not.toBe(undefinedTimestamp);
-    });
-
-    it("should handle special characters in window IDs", () => {
-      const specialWindowIds = [
-        "Window-With-Dashes",
-        "Window_With_Underscores",
-        "Window.With.Dots",
-        "Window123",
-        "UPPERCASE_WINDOW",
+  describe("buildWindowsUrlParams", () => {
+    it("should build params for single window with no tabs", () => {
+      const windows: WindowState[] = [
+        {
+          windowId: "143",
+          windowIdentifier: "143_123456",
+          title: "Window 1",
+          isActive: true,
+          order: 0,
+          tabs: {},
+          navigation: {
+            activeLevels: [],
+            activeTabsByLevel: new Map(),
+            isInitialized: false,
+          },
+          isRecovering: false,
+        },
       ];
 
-      for (const windowId of specialWindowIds) {
-        const identifier = getNewWindowIdentifier(windowId);
-        expect(identifier.startsWith(`${windowId}_`)).toBe(true);
-        expect(identifier).toMatch(new RegExp(`^${windowId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}_\\d+$`));
-      }
+      const result = buildWindowsUrlParams(windows);
+
+      expect(result).toBe("wi_0=143_123456");
     });
 
-    it("should generate unique identifiers across rapid calls", () => {
-      const identifiers = new Set<string>();
-      const windowId = "RapidTest";
+    it("should include deepest tab with record", () => {
+      const windows: WindowState[] = [
+        {
+          windowId: "143",
+          windowIdentifier: "143_123456",
+          title: "Window 1",
+          isActive: true,
+          order: 0,
+          tabs: {
+            tab1: {
+              level: 0,
+              selectedRecord: "rec1",
+              form: {
+                recordId: "rec1",
+                mode: TAB_MODES.EDIT,
+                isDirty: false,
+              },
+            },
+            tab2: {
+              level: 1,
+              selectedRecord: "rec2",
+              form: {
+                recordId: "rec2",
+                mode: TAB_MODES.EDIT,
+                isDirty: false,
+              },
+            },
+          },
+          navigation: {
+            activeLevels: [0, 1],
+            activeTabsByLevel: new Map([
+              [0, "tab1"],
+              [1, "tab2"],
+            ]),
+            isInitialized: true,
+          },
+          isRecovering: false,
+        },
+      ];
 
-      // Generate multiple identifiers quickly - mock ensures uniqueness
-      for (let i = 0; i < 100; i++) {
-        const identifier = getNewWindowIdentifier(windowId);
-        expect(identifiers.has(identifier)).toBe(false);
-        identifiers.add(identifier);
-      }
+      const result = buildWindowsUrlParams(windows);
 
-      expect(identifiers.size).toBe(100);
-
-      // Verify all identifiers have different timestamps
-      const timestamps = Array.from(identifiers).map((id) => id.split("_")[1]);
-      const uniqueTimestamps = new Set(timestamps);
-      expect(uniqueTimestamps.size).toBe(100);
+      expect(result).toContain("wi_0=143_123456");
+      expect(result).toContain("ti_0=tab2");
+      expect(result).toContain("ri_0=rec2");
     });
 
-    it("should maintain consistency in identifier format", () => {
-      const identifier = getNewWindowIdentifier("FormatTest");
-      const parts = identifier.split("_");
+    it("should handle multiple windows", () => {
+      const windows: WindowState[] = [
+        {
+          windowId: "143",
+          windowIdentifier: "143_123456",
+          title: "Window 1",
+          isActive: true,
+          order: 0,
+          tabs: {},
+          navigation: {
+            activeLevels: [],
+            activeTabsByLevel: new Map(),
+            isInitialized: false,
+          },
+          isRecovering: false,
+        },
+        {
+          windowId: "144",
+          windowIdentifier: "144_789012",
+          title: "Window 2",
+          isActive: false,
+          order: 1,
+          tabs: {
+            tab1: {
+              level: 0,
+              selectedRecord: "rec1",
+              form: {
+                recordId: "rec1",
+                mode: TAB_MODES.EDIT,
+                isDirty: false,
+              },
+            },
+          },
+          navigation: {
+            activeLevels: [0],
+            activeTabsByLevel: new Map([[0, "tab1"]]),
+            isInitialized: true,
+          },
+          isRecovering: false,
+        },
+      ];
 
-      expect(parts).toHaveLength(2);
-      expect(parts[0]).toBe("FormatTest");
-      expect(parts[1]).toMatch(/^\d+$/);
-      expect(Number(parts[1])).toBeGreaterThan(0);
+      const result = buildWindowsUrlParams(windows);
+
+      expect(result).toContain("wi_0=143_123456");
+      expect(result).toContain("wi_1=144_789012");
+      expect(result).toContain("ti_1=tab1");
+      expect(result).toContain("ri_1=rec1");
     });
 
-    it("should support concurrent identifier generation", async () => {
-      // Reset mock to use incremental timestamps for concurrent test
-      timestampCounter = 2000000;
+    it("should only include tabs with both selectedRecord and form.recordId", () => {
+      const windows: WindowState[] = [
+        {
+          windowId: "143",
+          windowIdentifier: "143_123456",
+          title: "Window 1",
+          isActive: true,
+          order: 0,
+          tabs: {
+            tab1: {
+              level: 0,
+              selectedRecord: "rec1",
+              form: {
+                recordId: "", // No recordId
+                mode: TAB_MODES.EDIT,
+                isDirty: false,
+              },
+            },
+            tab2: {
+              level: 1,
+              selectedRecord: undefined, // No selectedRecord
+              form: {
+                recordId: "rec2",
+                mode: TAB_MODES.EDIT,
+                isDirty: false,
+              },
+            },
+          },
+          navigation: {
+            activeLevels: [],
+            activeTabsByLevel: new Map(),
+            isInitialized: false,
+          },
+          isRecovering: false,
+        },
+      ];
 
-      const promises = Array(50)
-        .fill(null)
-        .map(() => Promise.resolve(getNewWindowIdentifier("ConcurrentTest")));
+      const result = buildWindowsUrlParams(windows);
 
-      const identifiers = await Promise.all(promises);
-      const uniqueIdentifiers = new Set(identifiers);
-
-      expect(uniqueIdentifiers.size).toBe(identifiers.length);
-      expect(identifiers.every((id) => id.startsWith("ConcurrentTest_"))).toBe(true);
-
-      // Verify all have unique timestamps
-      const timestamps = identifiers.map((id) => id.split("_")[1]);
-      const uniqueTimestamps = new Set(timestamps);
-      expect(uniqueTimestamps.size).toBe(50);
+      // Should only have window identifier, no tab or record
+      expect(result).toBe("wi_0=143_123456");
     });
 
-    it("should handle extremely long window IDs", () => {
-      const longWindowId = "A".repeat(1000);
-      const identifier = getNewWindowIdentifier(longWindowId);
+    it("should handle empty windows array", () => {
+      const result = buildWindowsUrlParams([]);
 
-      expect(identifier.startsWith(`${longWindowId}_`)).toBe(true);
-      expect(identifier.split("_")).toHaveLength(2);
-    });
-
-    it("should generate identifiers that are URL-safe", () => {
-      const windowIds = ["Window With Spaces", "Window@#$%Special", "Window+&=Symbols", "Window[]{|}Brackets"];
-
-      for (const windowId of windowIds) {
-        const identifier = getNewWindowIdentifier(windowId);
-
-        // Should not contain URL-unsafe characters in the timestamp part
-        const timestampPart = identifier.split("_")[1];
-        expect(timestampPart).toMatch(/^\d+$/);
-
-        // The entire identifier should be present
-        expect(identifier).toContain(windowId);
-      }
+      expect(result).toBe("");
     });
   });
 
-  describe("Identifier Uniqueness Validation", () => {
-    it("should generate globally unique identifiers across different window types", () => {
-      const identifiers = new Set<string>();
-      const windowTypes = ["Product", "Customer", "Invoice", "Order", "Payment"];
+  describe("parseWindowRecoveryData", () => {
+    it("should parse single window with tab and record", () => {
+      const params = new URLSearchParams("wi_0=143_123456&ti_0=tab1&ri_0=rec1");
 
-      for (const windowType of windowTypes) {
-        for (let i = 0; i < 10; i++) {
-          const identifier = getNewWindowIdentifier(windowType);
-          expect(identifiers.has(identifier)).toBe(false);
-          identifiers.add(identifier);
-        }
-      }
+      const result = parseWindowRecoveryData(params);
 
-      expect(identifiers.size).toBe(50); // 5 types × 10 identifiers each
-
-      // Verify all timestamps are unique
-      const timestamps = Array.from(identifiers).map((id) => id.split("_")[1]);
-      const uniqueTimestamps = new Set(timestamps);
-      expect(uniqueTimestamps.size).toBe(50);
-    });
-
-    it("should maintain uniqueness over extended time periods", () => {
-      // Use real Date.now for this test to simulate time passage
-      mockNow.mockRestore();
-
-      const identifiers = new Set<string>();
-      const windowId = "TimeTest";
-
-      // Generate identifiers with small delays
-      for (let i = 0; i < 10; i++) {
-        const identifier = getNewWindowIdentifier(windowId);
-        identifiers.add(identifier);
-
-        // Small delay to ensure timestamp difference - use busy wait
-        const start = Date.now();
-        while (Date.now() - start < 2) {
-          // Busy wait for 2ms to ensure different timestamps
-        }
-      }
-
-      expect(identifiers.size).toBe(10);
-
-      // Re-establish mock for subsequent tests
-      timestampCounter = 3000000;
-      mockNow = jest.spyOn(Date, "now").mockImplementation(() => {
-        return timestampCounter++;
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        windowIdentifier: "143_123456",
+        tabId: "tab1",
+        recordId: "rec1",
+        hasRecoveryData: true,
       });
     });
 
-    it("should create identifiers suitable for URL parameters", () => {
-      const identifier = getNewWindowIdentifier("URLTest");
+    it("should parse window without recovery data", () => {
+      const params = new URLSearchParams("wi_0=143_123456");
 
-      // Should be usable in URLSearchParams
-      const params = new URLSearchParams();
-      params.set("windowIdentifier", identifier);
+      const result = parseWindowRecoveryData(params);
 
-      expect(params.get("windowIdentifier")).toBe(identifier);
-      expect(params.toString()).toContain(identifier);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        windowIdentifier: "143_123456",
+        tabId: undefined,
+        recordId: undefined,
+        hasRecoveryData: false,
+      });
     });
 
-    it("should support identifier parsing back to components", () => {
-      const windowId = "ParseTest";
-      const identifier = getNewWindowIdentifier(windowId);
+    it("should parse multiple windows", () => {
+      const params = new URLSearchParams("wi_0=143_123456&ti_0=tab1&ri_0=rec1&wi_1=144_789012");
 
-      const [extractedWindowId, timestampStr] = identifier.split("_");
+      const result = parseWindowRecoveryData(params);
 
-      expect(extractedWindowId).toBe(windowId);
-      expect(Number.isInteger(Number(timestampStr))).toBe(true);
-      expect(Number(timestampStr)).toBeGreaterThan(0);
+      expect(result).toHaveLength(2);
+      expect(result[0].windowIdentifier).toBe("143_123456");
+      expect(result[0].hasRecoveryData).toBe(true);
+      expect(result[1].windowIdentifier).toBe("144_789012");
+      expect(result[1].hasRecoveryData).toBe(false);
+    });
+
+    it("should handle empty params", () => {
+      const params = new URLSearchParams("");
+
+      const result = parseWindowRecoveryData(params);
+
+      expect(result).toHaveLength(0);
+    });
+
+    it("should handle params with only tabId", () => {
+      const params = new URLSearchParams("wi_0=143_123456&ti_0=tab1");
+
+      const result = parseWindowRecoveryData(params);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        windowIdentifier: "143_123456",
+        tabId: "tab1",
+        recordId: undefined,
+        hasRecoveryData: false, // Both tabId and recordId required
+      });
     });
   });
 
-  describe("Window Identifier Requirements", () => {
-    it("should support the multi-window instance isolation pattern", () => {
-      // Simulate multiple instances of the same window type
-      const windowId = "MultiInstanceTest";
-      const instances = Array(5)
-        .fill(null)
-        .map(() => ({
-          windowId,
-          windowIdentifier: getNewWindowIdentifier(windowId),
-        }));
+  describe("validateRecoveryParameters", () => {
+    it("should return true when both tabId and recordId are present", () => {
+      const info = {
+        windowIdentifier: "143_123456",
+        tabId: "tab1",
+        recordId: "rec1",
+        hasRecoveryData: true,
+      };
 
-      // All should have the same windowId but different identifiers
-      expect(instances.every((instance) => instance.windowId === windowId)).toBe(true);
-
-      const identifiers = instances.map((instance) => instance.windowIdentifier);
-      const uniqueIdentifiers = new Set(identifiers);
-      expect(uniqueIdentifiers.size).toBe(5);
-
-      // Verify all have different timestamps
-      const timestamps = identifiers.map((id) => id.split("_")[1]);
-      const uniqueTimestamps = new Set(timestamps);
-      expect(uniqueTimestamps.size).toBe(5);
+      expect(validateRecoveryParameters(info)).toBe(true);
     });
 
-    it("should integrate with URL state management requirements", () => {
-      const identifier = getNewWindowIdentifier("URLStateTest");
+    it("should return true when both are missing", () => {
+      const info = {
+        windowIdentifier: "143_123456",
+        tabId: undefined,
+        recordId: undefined,
+        hasRecoveryData: false,
+      };
 
-      // Should work with URLSearchParams
-      const searchParams = new URLSearchParams();
-      searchParams.set("windowIdentifier", identifier);
-      searchParams.set("tabId", "mainTab");
-      searchParams.set("recordId", "12345");
-
-      const urlString = searchParams.toString();
-      expect(urlString).toContain(`windowIdentifier=${identifier}`);
-
-      // Should be parseable from URL
-      const parsedParams = new URLSearchParams(urlString);
-      expect(parsedParams.get("windowIdentifier")).toBe(identifier);
+      expect(validateRecoveryParameters(info)).toBe(true);
     });
 
-    it("should maintain performance characteristics under load", () => {
-      // Use real Date.now for performance testing
-      mockNow.mockRestore();
+    it("should return false when only tabId is present", () => {
+      const info = {
+        windowIdentifier: "143_123456",
+        tabId: "tab1",
+        recordId: undefined,
+        hasRecoveryData: false,
+      };
 
-      const startTime = performance.now();
-      const identifiers = [];
-
-      // Generate 1000 identifiers
-      for (let i = 0; i < 1000; i++) {
-        identifiers.push(getNewWindowIdentifier("PerformanceTest"));
-      }
-
-      const endTime = performance.now();
-      const duration = endTime - startTime;
-
-      // Should complete within reasonable time (less than 100ms for 1000 identifiers)
-      expect(duration).toBeLessThan(100);
-
-      // Verify we got 1000 identifiers
-      expect(identifiers).toHaveLength(1000);
-
-      // All should follow the correct format
-      expect(identifiers.every((id) => id.startsWith("PerformanceTest_"))).toBe(true);
-      expect(identifiers.every((id) => /^PerformanceTest_\d+$/.test(id))).toBe(true);
-
-      // Re-establish mock for subsequent tests
-      timestampCounter = 4000000;
-      mockNow = jest.spyOn(Date, "now").mockImplementation(() => {
-        return timestampCounter++;
-      });
+      expect(validateRecoveryParameters(info)).toBe(false);
     });
 
-    it("should provide deterministic format for testing and validation", () => {
-      const identifier = getNewWindowIdentifier("TestWindow");
+    it("should return false when only recordId is present", () => {
+      const info = {
+        windowIdentifier: "143_123456",
+        tabId: undefined,
+        recordId: "rec1",
+        hasRecoveryData: false,
+      };
 
-      // Should match expected pattern (using mocked timestamp)
-      expect(identifier).toMatch(/^TestWindow_\d+$/);
+      expect(validateRecoveryParameters(info)).toBe(false);
+    });
+  });
 
-      // Should be splittable
-      const parts = identifier.split("_");
-      expect(parts[0]).toBe("TestWindow");
-      expect(parts[1]).toMatch(/^\d+$/);
-      expect(Number(parts[1])).toBeGreaterThan(0);
+  describe("cleanInvalidRecoveryParams", () => {
+    it("should remove inconsistent parameters", () => {
+      const params = new URLSearchParams("wi_0=143_123456&ti_0=tab1"); // Missing recordId
 
-      // With mocked timestamps, we know the exact format
-      expect(parts[1]).toBe(String(timestampCounter - 1)); // Last used timestamp
+      const result = cleanInvalidRecoveryParams(params);
+
+      expect(result.has("wi_0")).toBe(true);
+      expect(result.has("ti_0")).toBe(false); // Should be removed
+      expect(result.has("ri_0")).toBe(false);
     });
 
-    it("should support instance management across browser sessions", () => {
-      // Test that identifiers are suitable for persistence/restoration
-      const identifier = getNewWindowIdentifier("SessionTest");
+    it("should keep valid parameters", () => {
+      const params = new URLSearchParams("wi_0=143_123456&ti_0=tab1&ri_0=rec1");
 
-      // Should be JSON serializable
-      const serialized = JSON.stringify({ windowIdentifier: identifier });
-      const deserialized = JSON.parse(serialized);
+      const result = cleanInvalidRecoveryParams(params);
 
-      expect(deserialized.windowIdentifier).toBe(identifier);
-
-      // Should be URL encodable
-      const encoded = encodeURIComponent(identifier);
-      const decoded = decodeURIComponent(encoded);
-
-      expect(decoded).toBe(identifier);
+      expect(result.has("wi_0")).toBe(true);
+      expect(result.has("ti_0")).toBe(true);
+      expect(result.has("ri_0")).toBe(true);
     });
 
-    it("should generate unique identifiers under normal usage conditions", () => {
-      // Use real Date.now to simulate normal user interactions
-      mockNow.mockRestore();
+    it("should handle multiple windows with mixed validity", () => {
+      const params = new URLSearchParams("wi_0=143_123456&ti_0=tab1&wi_1=144_789012&ti_1=tab2&ri_1=rec2");
 
-      const identifiers = new Set<string>();
+      const result = cleanInvalidRecoveryParams(params);
 
-      // Simulate normal user behavior - opening windows with some delay between them
-      const delays = [10, 5, 15, 8, 12]; // Simulate realistic delays in ms
+      // First window incomplete, should remove ti_0
+      expect(result.has("wi_0")).toBe(true);
+      expect(result.has("ti_0")).toBe(false);
 
-      for (const delay of delays) {
-        const identifier = getNewWindowIdentifier("NormalUsage");
-        identifiers.add(identifier);
+      // Second window complete, should keep all
+      expect(result.has("wi_1")).toBe(true);
+      expect(result.has("ti_1")).toBe(true);
+      expect(result.has("ri_1")).toBe(true);
+    });
+  });
 
-        // Simulate user delay between window openings
-        const start = Date.now();
-        while (Date.now() - start < delay) {
-          // Busy wait to simulate realistic timing
-        }
-      }
+  describe("removeRecoveryParameters", () => {
+    it("should remove all recovery parameters", () => {
+      const params = new URLSearchParams("wi_0=143_123456&ti_0=tab1&ri_0=rec1&other=value");
 
-      // Under normal usage conditions, all identifiers should be unique
-      expect(identifiers.size).toBe(5);
+      const result = removeRecoveryParameters(params);
 
-      // Re-establish mock for any subsequent tests
-      timestampCounter = 5000000;
-      mockNow = jest.spyOn(Date, "now").mockImplementation(() => {
-        return timestampCounter++;
-      });
+      expect(result.has("wi_0")).toBe(false);
+      expect(result.has("ti_0")).toBe(false);
+      expect(result.has("ri_0")).toBe(false);
+      expect(result.get("other")).toBe("value"); // Non-recovery param preserved
+    });
+
+    it("should preserve non-recovery parameters", () => {
+      const params = new URLSearchParams("wi_0=143_123456&filter=active&sort=name");
+
+      const result = removeRecoveryParameters(params);
+
+      expect(result.has("wi_0")).toBe(false);
+      expect(result.get("filter")).toBe("active");
+      expect(result.get("sort")).toBe("name");
+    });
+
+    it("should handle params with only recovery data", () => {
+      const params = new URLSearchParams("wi_0=143_123456&ti_0=tab1&ri_0=rec1");
+
+      const result = removeRecoveryParameters(params);
+
+      expect(result.toString()).toBe("");
+    });
+
+    it("should handle empty params", () => {
+      const params = new URLSearchParams("");
+
+      const result = removeRecoveryParameters(params);
+
+      expect(result.toString()).toBe("");
+    });
+  });
+
+  describe("removeWindowParameters", () => {
+    it("should remove parameters for specific window index", () => {
+      const params = new URLSearchParams("wi_0=143_123456&ti_0=tab1&ri_0=rec1&wi_1=144_789012&ti_1=tab2&ri_1=rec2");
+
+      const result = removeWindowParameters(params, 0);
+
+      expect(result.has("wi_0")).toBe(false);
+      expect(result.has("ti_0")).toBe(false);
+      expect(result.has("ri_0")).toBe(false);
+      expect(result.has("wi_1")).toBe(true);
+      expect(result.has("ti_1")).toBe(true);
+      expect(result.has("ri_1")).toBe(true);
+    });
+
+    it("should handle removing from middle index", () => {
+      const params = new URLSearchParams("wi_0=143&wi_1=144&wi_2=145");
+
+      const result = removeWindowParameters(params, 1);
+
+      expect(result.has("wi_0")).toBe(true);
+      expect(result.has("wi_1")).toBe(false);
+      expect(result.has("wi_2")).toBe(true);
+    });
+
+    it("should handle non-existent index", () => {
+      const params = new URLSearchParams("wi_0=143_123456");
+
+      const result = removeWindowParameters(params, 5);
+
+      expect(result.has("wi_0")).toBe(true);
+      expect(result.toString()).toBe("wi_0=143_123456");
+    });
+
+    it("should preserve other parameters", () => {
+      const params = new URLSearchParams("wi_0=143_123456&ti_0=tab1&other=value");
+
+      const result = removeWindowParameters(params, 0);
+
+      expect(result.has("wi_0")).toBe(false);
+      expect(result.has("ti_0")).toBe(false);
+      expect(result.get("other")).toBe("value");
     });
   });
 });

@@ -1,4 +1,6 @@
 import { render } from "@testing-library/react";
+import TabsContainer from "./TabsContainer";
+import WindowProvider from "@/contexts/window";
 
 // Mocks for hooks used by TabsContainer so we can hit the skeleton branch
 jest.mock("@/hooks/useSelected", () => ({
@@ -44,12 +46,13 @@ jest.mock("@/components/Breadcrums", () => ({
   default: () => null,
 }));
 
-import TabsContainer from "./TabsContainer";
-
 describe("TabsContainer - skeleton when no windowData", () => {
   it("renders loading skeleton when no windowData is available", () => {
-    const { container } = render(<TabsContainer windowData={undefined as any} />);
-    // Find the container with skeleton animation class
+    const { container } = render(
+      <WindowProvider>
+        <TabsContainer windowData={undefined as any} />
+      </WindowProvider>
+    );
     const skeleton = container.querySelector(".animate-pulse");
     expect(skeleton).toBeInTheDocument();
   });

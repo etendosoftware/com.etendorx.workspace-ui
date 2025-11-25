@@ -1,4 +1,23 @@
 import { render, screen } from "@testing-library/react";
+import TabsComponent from "./Tabs";
+import WindowProvider from "@/contexts/window";
+
+// Mock Next.js navigation hooks
+const mockReplace = jest.fn();
+const mockSearchParams = new URLSearchParams();
+
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({
+    replace: mockReplace,
+    push: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
+    prefetch: jest.fn(),
+  }),
+  useSearchParams: () => mockSearchParams,
+  usePathname: () => "/window",
+}));
 
 // Mock subcomponents to reduce rendering complexity
 jest.mock("@/components/window/SubTabsSwitch", () => ({
@@ -27,10 +46,6 @@ jest.mock("@/hooks/useSelected", () => ({
   useSelected: () => ({ activeLevels: [1], setActiveLevel: jest.fn() }),
 }));
 
-jest.mock("@/hooks/navigation/useMultiWindowURL", () => ({
-  useMultiWindowURL: () => ({ activeWindow: null }),
-}));
-
 jest.mock("@/hooks/useTableStatePersistenceTab", () => ({
   useTableStatePersistenceTab: () => ({
     activeLevels: [1],
@@ -38,14 +53,12 @@ jest.mock("@/hooks/useTableStatePersistenceTab", () => ({
   }),
 }));
 
-// Spy on useTransition to force pending state
 // Force React.useTransition to always be pending
 jest.mock("react", () => {
   const actual = jest.requireActual("react");
   return { ...actual, useTransition: () => [true, (cb: any) => cb()] };
 });
 
-import TabsComponent from "./Tabs";
 
 describe("Tabs - pending state skeleton", () => {
   const tabs = [
@@ -53,9 +66,24 @@ describe("Tabs - pending state skeleton", () => {
     { id: "t2", name: "Tab 2", tabLevel: 2 },
   ] as any[];
 
+  beforeEach(() => {
+    mockReplace.mockClear();
+    // Clear all search params
+    Array.from(mockSearchParams.keys()).forEach(key => mockSearchParams.delete(key));
+    
+    // Initialize a window in URL params
+    mockSearchParams.set('w_window1', 'active');
+    mockSearchParams.set('wi_window1', 'window1');
+    mockSearchParams.set('o_window1', '1');
+  });
+
   it("renders skeleton content when transition is pending", () => {
     const TabsAsAny = TabsComponent as any;
-    render(<TabsAsAny tabs={tabs} />);
+    render(
+      <WindowProvider>
+        <TabsAsAny tabs={tabs} />
+      </WindowProvider>
+    );
 
     expect(screen.getByTestId("tab-container")).toBeInTheDocument();
     // When pending, the skeleton container with animate-pulse should be present

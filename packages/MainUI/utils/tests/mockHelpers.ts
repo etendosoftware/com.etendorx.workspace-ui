@@ -524,10 +524,14 @@ export const createTableSelectionTestHelpers = () => {
   /**
    * Executes a renderHook call and waits for effects to complete
    */
-  const renderHookAndWait = async (hookFn: () => void, waitTime = 100) => {
+  const renderHookAndWait = async (
+    hookFn: () => void,
+    waitTime = 100,
+    options?: { wrapper?: React.ComponentType<{ children: React.ReactNode }> }
+  ) => {
     const { renderHook, act } = require("@testing-library/react");
 
-    const result = renderHook(hookFn);
+    const result = renderHook(hookFn, options);
 
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, waitTime));
