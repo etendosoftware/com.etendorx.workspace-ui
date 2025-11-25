@@ -325,7 +325,7 @@ describe("commons utilities", () => {
     it("should handle special characters in keys", () => {
       const input = {
         "field-name": { value: "hyphenated" },
-        "field_name": { value: "underscored" },
+        field_name: { value: "underscored" },
         fieldName: { value: "camelCase" },
       };
       const result = extractKeyValuePairs(input);
@@ -397,11 +397,7 @@ describe("commons utilities", () => {
         lastName: "Smith",
       };
 
-      const displayName = extractValue(
-        user,
-        ["_identifier", "displayName", "firstName", "lastName"],
-        "Anonymous"
-      );
+      const displayName = extractValue(user, ["_identifier", "displayName", "firstName", "lastName"], "Anonymous");
 
       expect(displayName).toBe("Jane");
     });

@@ -449,9 +449,7 @@ describe("DynamicTable Component", () => {
 
     it("should handle onRecordSelection callback prop", async () => {
       const mockOnRecordSelectionLocal = jest.fn();
-      render(
-        <DynamicTable setRecordId={mockSetRecordId} onRecordSelection={mockOnRecordSelectionLocal} />
-      );
+      render(<DynamicTable setRecordId={mockSetRecordId} onRecordSelection={mockOnRecordSelectionLocal} />);
 
       await waitFor(() => {
         expect(screen.getByTestId("MaterialReactTable__8ca888")).toBeInTheDocument();
