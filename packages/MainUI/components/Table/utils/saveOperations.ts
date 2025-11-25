@@ -491,7 +491,7 @@ export async function saveRecord({
       body: normalizeDates(body) as Record<string, unknown>,
     };
 
-    const { ok, data } = await Metadata.datasourceServletClient.request(url, options);
+    const { data } = await Metadata.datasourceServletClient.request(url, options);
 
     // Always handle the response through handleSaveResponse, which will parse validation errors
     // even when ok is false (server validation errors)
