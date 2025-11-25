@@ -80,7 +80,7 @@ import type {
 import { createEditingRowStateUtils, getMergedRowData } from "./utils/editingRowUtils";
 import { ActionsColumn } from "./ActionsColumn";
 import { validateFieldRealTime } from "./utils/validationUtils";
-import { getFieldReference, parseDynamicExpression, buildPayloadByInputName } from "@/utils";
+import { getFieldReference, buildPayloadByInputName } from "@/utils";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useConfirmationDialog } from "./hooks/useConfirmationDialog";
 import { useInlineTableDirOptions } from "./hooks/useInlineTableDirOptions";
@@ -106,6 +106,7 @@ import { globalCalloutManager } from "@/services/callouts";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import "./styles/inlineEditing.css";
+import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
@@ -334,42 +335,6 @@ interface ExtendedColumn extends Column {
   isReadOnly?: boolean;
   isUpdatable?: boolean;
 }
-const SAFE_CHARS = /^[a-zA-Z0-9_().<>=!&| "'+-]*$/;
-type SafeContext = Record<string, Record<string, unknown>>;
-
-const safeEvaluate = (expr: string, ctx: SafeContext) => {
-  const resolveVar = (match: string) => {
-    const [root, prop] = match.split(".");
-    return JSON.stringify(ctx[root]?.[prop]);
-  };
-
-  const sanitized = expr.replace(/[a-zA-Z_]+\.[a-zA-Z_]+/g, resolveVar);
-
-  if (!SAFE_CHARS.test(sanitized)) {
-    throw new Error("Expression contains unsafe characters");
-  }
-
-  return Function(
-    `"use strict";
-     const allowed = /^([0-9 "'().<>=!&|+-]+)$/;
-     if (!allowed.test(${JSON.stringify(sanitized)})) throw new Error("Unsafe");
-     return (${sanitized});
-  `
-  )();
-};
-
-// Helper function to compile readOnlyLogic expressions
-const compileExpression = (expression: string) => {
-  try {
-    const parsed = parseDynamicExpression(expression);
-
-    return (context: Record<string, unknown>, currentValues: Record<string, unknown>) =>
-      safeEvaluate(parsed, { context, currentValues });
-  } catch (error) {
-    logger.error("Invalid readOnlyLogic expression:", expression, error);
-    return () => true;
-  }
-};
 
 // Helper function to determine if a field should be readonly in inline editing
 const isFieldReadOnly = (
