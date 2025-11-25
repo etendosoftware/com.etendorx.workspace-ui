@@ -115,6 +115,75 @@ describe("Inline Editing Infrastructure", () => {
       expect(editingRows["1"].hasUnsavedChanges).toBe(true);
     });
 
+    it("should update multiple cell values independently", () => {
+      const rowData: EntityData = { id: "1", name: "John", email: "john@example.com", active: true };
+      utils.addEditingRow("1", rowData, false);
+
+      utils.updateCellValue("1", "name", "Jane");
+      utils.updateCellValue("1", "email", "jane@example.com");
+
+      expect(editingRows["1"].modifiedData).toEqual({
+        name: "Jane",
+        email: "jane@example.com",
+      });
+      expect(editingRows["1"].hasUnsavedChanges).toBe(true);
+    });
+
+    it("should revert cell to original value by updating with same value", () => {
+      const rowData: EntityData = { id: "1", name: "Original Name" };
+      utils.addEditingRow("1", rowData, false);
+
+      utils.updateCellValue("1", "name", "Updated Name");
+      expect(editingRows["1"].hasUnsavedChanges).toBe(true);
+
+      utils.updateCellValue("1", "name", "Original Name");
+      expect(editingRows["1"].hasUnsavedChanges).toBe(false);
+    });
+
+    it("should clear validation error when updating cell", () => {
+      const rowData: EntityData = { id: "1", name: "" };
+      utils.addEditingRow("1", rowData, false);
+      utils.setRowValidationErrors("1", { name: "Name is required" });
+
+      expect(editingRows["1"].validationErrors.name).toBe("Name is required");
+
+      utils.updateCellValue("1", "name", "Valid Name");
+
+      expect(editingRows["1"].validationErrors.name).toBeUndefined();
+    });
+
+    it("should handle updating with null value", () => {
+      const rowData: EntityData = { id: "1", name: "Original", value: 100 };
+      utils.addEditingRow("1", rowData, false);
+
+      utils.updateCellValue("1", "name", null);
+
+      expect(editingRows["1"].modifiedData.name).toBeNull();
+      expect(editingRows["1"].hasUnsavedChanges).toBe(true);
+    });
+
+    it("should detect changes with different types", () => {
+      const rowData: EntityData = { id: "1", count: 5 };
+      utils.addEditingRow("1", rowData, false);
+
+      utils.updateCellValue("1", "count", "5");
+
+      expect(editingRows["1"].hasUnsavedChanges).toBe(true);
+    });
+
+    it("should preserve other modified fields when updating new field", () => {
+      const rowData: EntityData = { id: "1", name: "John", email: "john@example.com" };
+      utils.addEditingRow("1", rowData, false);
+
+      utils.updateCellValue("1", "name", "Jane");
+      utils.updateCellValue("1", "phone", "123-456-7890");
+
+      expect(editingRows["1"].modifiedData).toEqual({
+        name: "Jane",
+        phone: "123-456-7890",
+      });
+    });
+
     it("should set validation errors for a row", () => {
       const rowData: EntityData = { id: "1", name: "" };
       utils.addEditingRow("1", rowData, false);
@@ -131,6 +200,63 @@ describe("Inline Editing Infrastructure", () => {
       utils.setRowSaving("1", true);
 
       expect(editingRows["1"].isSaving).toBe(true);
+    });
+
+    it("should toggle saving state for a row", () => {
+      const rowData: EntityData = { id: "1", name: "Test Row" };
+      utils.addEditingRow("1", rowData, false);
+
+      utils.setRowSaving("1", true);
+      expect(editingRows["1"].isSaving).toBe(true);
+
+      utils.setRowSaving("1", false);
+      expect(editingRows["1"].isSaving).toBe(false);
+    });
+
+    it("should set callout applying state for a row", () => {
+      const rowData: EntityData = { id: "1", name: "Test Row" };
+      utils.addEditingRow("1", rowData, false);
+
+      utils.setCalloutApplying("1", true);
+
+      expect(editingRows["1"].isApplyingCalloutValues).toBe(true);
+    });
+
+    it("should toggle callout applying state for a row", () => {
+      const rowData: EntityData = { id: "1", name: "Test Row" };
+      utils.addEditingRow("1", rowData, false);
+
+      utils.setCalloutApplying("1", true);
+      expect(editingRows["1"].isApplyingCalloutValues).toBe(true);
+
+      utils.setCalloutApplying("1", false);
+      expect(editingRows["1"].isApplyingCalloutValues).toBe(false);
+    });
+
+    it("should handle updating non-existent row gracefully", () => {
+      expect(() => {
+        utils.updateCellValue("non-existent", "name", "Test");
+      }).not.toThrow();
+      // State should remain unchanged
+      expect(setEditingRows).toHaveBeenCalled();
+    });
+
+    it("should handle setting validation errors on non-existent row gracefully", () => {
+      expect(() => {
+        utils.setRowValidationErrors("non-existent", { name: "Required" });
+      }).not.toThrow();
+    });
+
+    it("should handle setting saving state on non-existent row gracefully", () => {
+      expect(() => {
+        utils.setRowSaving("non-existent", true);
+      }).not.toThrow();
+    });
+
+    it("should handle setting callout applying on non-existent row gracefully", () => {
+      expect(() => {
+        utils.setCalloutApplying("non-existent", true);
+      }).not.toThrow();
     });
 
     it("should check if a row is being edited", () => {
@@ -279,6 +405,32 @@ describe("Inline Editing Infrastructure", () => {
 
       expect(hasValidationErrors(editingRowData)).toBe(false);
     });
+
+    it("should handle multiple validation errors with mixed content", () => {
+      const editingRowData = {
+        originalData: { id: "1" },
+        modifiedData: {},
+        isNew: false,
+        validationErrors: { name: "Required", email: "   ", phone: "Invalid format" },
+        isSaving: false,
+        hasUnsavedChanges: false,
+      };
+
+      expect(hasValidationErrors(editingRowData)).toBe(true);
+    });
+
+    it("should return true when at least one error is non-empty", () => {
+      const editingRowData = {
+        originalData: { id: "1" },
+        modifiedData: {},
+        isNew: false,
+        validationErrors: { name: "   ", email: "", phone: "Invalid" },
+        isSaving: false,
+        hasUnsavedChanges: false,
+      };
+
+      expect(hasValidationErrors(editingRowData)).toBe(true);
+    });
   });
 
   describe("getFieldValue", () => {
@@ -319,6 +471,62 @@ describe("Inline Editing Infrastructure", () => {
       };
 
       expect(getFieldValue(editingRowData, "nonexistent")).toBeUndefined();
+    });
+  });
+
+  describe("Multiple Rows State Management", () => {
+    it("should handle multiple rows being edited independently", () => {
+      const rowData1: EntityData = { id: "1", name: "Row 1", value: 100 };
+      const rowData2: EntityData = { id: "2", name: "Row 2", value: 200 };
+      const rowData3: EntityData = { id: "3", name: "Row 3", value: 300 };
+
+      utils.addEditingRow("1", rowData1, false);
+      utils.addEditingRow("2", rowData2, false);
+      utils.addEditingRow("3", rowData3, false);
+
+      // Update different fields in different rows
+      utils.updateCellValue("1", "name", "Updated Row 1");
+      utils.updateCellValue("2", "value", 250);
+      utils.setRowSaving("3", true);
+
+      expect(editingRows["1"].modifiedData.name).toBe("Updated Row 1");
+      expect(editingRows["2"].modifiedData.value).toBe(250);
+      expect(editingRows["3"].isSaving).toBe(true);
+      expect(editingRows["1"].isSaving).toBe(false);
+    });
+
+    it("should allow independent validation for multiple rows", () => {
+      const rowData1: EntityData = { id: "1", name: "" };
+      const rowData2: EntityData = { id: "2", name: "" };
+
+      utils.addEditingRow("1", rowData1, false);
+      utils.addEditingRow("2", rowData2, false);
+
+      utils.setRowValidationErrors("1", { name: "Name required" });
+      utils.setRowValidationErrors("2", { name: "Name required", email: "Email required" });
+
+      expect(editingRows["1"].validationErrors).toEqual({ name: "Name required" });
+      expect(editingRows["2"].validationErrors).toEqual({
+        name: "Name required",
+        email: "Email required",
+      });
+    });
+
+    it("should remove only specified row and keep others intact", () => {
+      const rowData1: EntityData = { id: "1", name: "Row 1" };
+      const rowData2: EntityData = { id: "2", name: "Row 2" };
+      const rowData3: EntityData = { id: "3", name: "Row 3" };
+
+      utils.addEditingRow("1", rowData1, false);
+      utils.addEditingRow("2", rowData2, false);
+      utils.addEditingRow("3", rowData3, false);
+
+      utils.removeEditingRow("2");
+
+      expect(editingRows["1"]).toBeDefined();
+      expect(editingRows["2"]).toBeUndefined();
+      expect(editingRows["3"]).toBeDefined();
+      expect(utils.getEditingRowIds()).toEqual(["1", "3"]);
     });
   });
 
@@ -371,6 +579,79 @@ describe("Inline Editing Infrastructure", () => {
         const emptyData = createEmptyRowData(newRowId, []);
 
         expect(emptyData).toEqual({ id: newRowId });
+      });
+
+      it("should initialize number field types correctly", () => {
+        const newRowId = "new_123";
+        const baseColumns = [
+          { name: "id", displayType: "string" },
+          { name: "quantity", displayType: "number", column: { reference: "22" } },
+        ];
+
+        const emptyData = createEmptyRowData(newRowId, baseColumns);
+
+        expect(emptyData.quantity).toBeNull();
+      });
+
+      it("should initialize datetime field correctly", () => {
+        const newRowId = "new_123";
+        const baseColumns = [
+          { name: "id", displayType: "string" },
+          { name: "createdAt", displayType: "datetime", column: { reference: "16" } },
+        ];
+
+        const emptyData = createEmptyRowData(newRowId, baseColumns);
+
+        expect(emptyData.createdAt).toBeNull();
+      });
+
+      it("should skip columns with 'actions' in name", () => {
+        const newRowId = "new_123";
+        const baseColumns = [
+          { name: "id", displayType: "string" },
+          { name: "actions", displayType: "string" },
+          { name: "name", displayType: "string" },
+        ];
+
+        const emptyData = createEmptyRowData(newRowId, baseColumns);
+
+        expect(emptyData.actions).toBeUndefined();
+        expect(emptyData.name).toBeNull();
+      });
+
+      it("should handle column without reference field", () => {
+        const newRowId = "new_123";
+        const baseColumns = [
+          { name: "id", displayType: "string" },
+          { name: "description", displayType: "string", column: {} },
+        ];
+
+        const emptyData = createEmptyRowData(newRowId, baseColumns);
+
+        expect(emptyData.description).toBeNull();
+      });
+
+      it("should initialize multiple field types correctly", () => {
+        const newRowId = "new_123";
+        const baseColumns = [
+          { name: "id", displayType: "string" },
+          { name: "name", displayType: "string", column: { reference: "10" } },
+          { name: "active", displayType: "boolean", column: { reference: "20" } },
+          { name: "quantity", displayType: "number", column: { reference: "22" } },
+          { name: "created", displayType: "date", column: { reference: "15" } },
+          { name: "updated", displayType: "datetime", column: { reference: "16" } },
+        ];
+
+        const emptyData = createEmptyRowData(newRowId, baseColumns);
+
+        expect(emptyData).toEqual({
+          id: newRowId,
+          name: null,
+          active: false,
+          quantity: null,
+          created: null,
+          updated: null,
+        });
       });
     });
 
