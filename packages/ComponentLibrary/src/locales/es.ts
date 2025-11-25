@@ -417,6 +417,26 @@ const es = {
     noOptionsFound: "No se encontraron opciones",
     loadingOptions: "Cargando más opciones...",
   },
+  dateModal: {
+    selectDates: "Seleccionar fechas",
+    from: "Desde",
+    to: "Hasta",
+    clearFilters: "Borrar filtros",
+    months: [
+      "Enero",
+      "Febrero",
+      "Marzo",
+      "Abril",
+      "Mayo",
+      "Junio",
+      "Julio",
+      "Agosto",
+      "Septiembre",
+      "Octubre",
+      "Noviembre",
+      "Diciembre",
+    ],
+  },
 };
 
 export default es;
