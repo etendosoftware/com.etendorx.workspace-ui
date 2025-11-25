@@ -334,27 +334,40 @@ interface ExtendedColumn extends Column {
   isReadOnly?: boolean;
   isUpdatable?: boolean;
 }
+const SAFE_CHARS = /^[a-zA-Z0-9_().<>=!&| "'+-]*$/;
+type SafeContext = Record<string, Record<string, unknown>>;
+
+const safeEvaluate = (expr: string, ctx: SafeContext) => {
+  const resolveVar = (match: string) => {
+    const [root, prop] = match.split(".");
+    return JSON.stringify(ctx[root]?.[prop]);
+  };
+
+  const sanitized = expr.replace(/[a-zA-Z_]+\.[a-zA-Z_]+/g, resolveVar);
+
+  if (!SAFE_CHARS.test(sanitized)) {
+    throw new Error("Expression contains unsafe characters");
+  }
+
+  return Function(
+    `"use strict";
+     const allowed = /^([0-9 "'().<>=!&|+-]+)$/;
+     if (!allowed.test(${JSON.stringify(sanitized)})) throw new Error("Unsafe");
+     return (${sanitized});
+  `
+  )();
+};
 
 // Helper function to compile readOnlyLogic expressions
 const compileExpression = (expression: string) => {
   try {
-    // 1. PARSE: Transform your DSL to JS
-    const jsCode = parseDynamicExpression(expression);
+    const parsed = parseDynamicExpression(expression);
 
-    // 2. VALIDATE: Strict Regex Allowlist
-    // This regex only allows alphanumeric, dots, spaces, and specific operators.
-    // It rejects function calls '()' to prevent execution of arbitrary functions.
-    const safePattern = /^[a-zA-Z0-9\s\.\+\-\*\/\%\>\<\=\!\&\|\?\_]*$/;
-
-    if (!safePattern.test(jsCode)) {
-      throw new Error("Unsafe characters detected in expression");
-    }
-
-    // 3. COMPILE
-    return new Function("context", "currentValues", `return ${jsCode};`);
+    return (context: Record<string, unknown>, currentValues: Record<string, unknown>) =>
+      safeEvaluate(parsed, { context, currentValues });
   } catch (error) {
-    console.error("Error compiling expression:", expression, error);
-    return () => false;
+    logger.error("Invalid readOnlyLogic expression:", expression, error);
+    return () => true;
   }
 };
 
