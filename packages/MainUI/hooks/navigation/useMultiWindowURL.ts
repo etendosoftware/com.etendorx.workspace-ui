@@ -154,7 +154,8 @@ export function useMultiWindowURL() {
           activeTabsByLevel: new Map<number, string>(),
           initialized: false,
         },
-        tabs: {}
+        tabs: {},
+        initialized: true,
       };
 
       updatedWindows.push(newWindow);
