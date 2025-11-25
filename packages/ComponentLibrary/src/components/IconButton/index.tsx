@@ -40,6 +40,8 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
   ref?: React.LegacyRef<HTMLButtonElement>;
   /** Additional CSS classes to customize the container */
   containerClassName?: string;
+  /** Whether the button appears as pressed/active */
+  isPressed?: boolean;
 }
 
 /**
@@ -62,28 +64,40 @@ const IconButton = ({
   iconText,
   ref,
   containerClassName,
+  isPressed = false,
   ...rest
 }: IconButtonProps) => {
   const DEFAULT_BUTTON_CLASSES = `
-    transition
-    duration-400
-    disabled:bg-transparent
-    disabled:text-(--color-transparent-neutral-30)
-    disabled:cursor-not-allowed
-    rounded-full
-    text-(--color-baseline-80)
-    bg-(--color-baseline-0)
-    hover:text-(--color-baseline-0)
-    hover:bg-(--color-dynamic-main)
-    inline-flex
-    items-center
-    justify-center
-    text-[0.825rem]
-    min-w-max
-    [&>svg]:text-[1.5rem]
-    [&>svg]:fill-current
-    ${iconText ? "px-2 gap-2" : "w-8 h-8"}
-  `;
+  transition
+  duration-400
+  disabled:bg-transparent
+  disabled:text-(--color-transparent-neutral-30)
+  disabled:cursor-not-allowed
+  rounded-full
+  text-(--color-baseline-80)
+  bg-(--color-baseline-0)
+  hover:text-(--color-baseline-0)
+  hover:bg-(--color-dynamic-main)
+  inline-flex
+  items-center
+  justify-center
+  text-[0.825rem]
+  min-w-max
+  [&>svg]:text-[1.5rem]
+  [&>svg]:fill-current
+  ${iconText ? "px-2 gap-2" : "w-8 h-8"}
+  ${isPressed ? "[&>img]:filter [&>img]:brightness-0 [&>img]:invert [&>svg]:filter [&>svg]:brightness-0 [&>svg]:invert" : ""}
+`;
+
+  const buttonStyle: React.CSSProperties = {
+    ...(disabled ? { cursor: "not-allowed" } : {}),
+    ...(isPressed
+      ? {
+          backgroundColor: "var(--color-dynamic-main)",
+          color: "var(--color-baseline-0)",
+        }
+      : {}),
+  };
 
   return (
     <Tooltip title={tooltip} position={tooltipPosition} containerClassName={containerClassName} disabled={disabled}>
@@ -93,10 +107,10 @@ const IconButton = ({
         aria-label={ariaLabel}
         disabled={disabled}
         className={cleanDefaultClasses(DEFAULT_BUTTON_CLASSES, className)}
-        style={disabled ? { cursor: "not-allowed" } : undefined}
+        style={buttonStyle}
         {...rest}>
-        {children}
         {iconText && <span>{iconText}</span>}
+        {children}
       </button>
     </Tooltip>
   );

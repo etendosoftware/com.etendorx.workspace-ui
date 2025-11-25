@@ -15,15 +15,32 @@
  *************************************************************************
  */
 
-import type { IconButtonProps } from "@mui/material";
+import { useEffect, useState } from "react";
 
-export interface IIconComponentProps extends React.PropsWithChildren<Omit<IconButtonProps, "children">> {
-  fill?: string;
-  hoverFill?: string;
-  width?: number;
-  height?: number;
-  tooltip?: string;
-  isHovered?: boolean;
-  iconText?: string;
-  isPressed?: boolean;
+interface RuntimeConfig {
+  etendoClassicHost: string;
+}
+
+/**
+ * Hook to fetch runtime configuration from the server
+ * This allows getting environment variables that are set at container runtime
+ */
+export function useRuntimeConfig() {
+  const [config, setConfig] = useState<RuntimeConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/config")
+      .then((res) => res.json())
+      .then((data) => {
+        setConfig(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("[useRuntimeConfig] Failed to fetch config:", error);
+        setLoading(false);
+      });
+  }, []);
+
+  return { config, loading };
 }

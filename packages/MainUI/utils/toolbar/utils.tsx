@@ -128,6 +128,7 @@ export const createButtonByType = ({
   hasParentRecordSelected,
   isCopilotInstalled,
   saveButtonState,
+  isImplicitFilterApplied,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
@@ -137,6 +138,7 @@ export const createButtonByType = ({
   hasParentRecordSelected: boolean;
   isCopilotInstalled?: boolean;
   saveButtonState?: SaveButtonState;
+  isImplicitFilterApplied?: boolean;
 }): ToolbarButton => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
@@ -227,11 +229,19 @@ export const createButtonByType = ({
     }
   };
 
+  const getPressedConfig = (): Partial<ToolbarButton> => {
+    if (button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER && isImplicitFilterApplied) {
+      return { isPressed: true };
+    }
+    return {};
+  };
+
   return {
     ...baseConfig,
     ...getIconTextConfig(),
     ...getDisableConfig(),
     ...getClickConfig(),
+    ...getPressedConfig(),
   };
 };
 
@@ -250,6 +260,7 @@ interface ButtonConfig {
   saveButtonState?: SaveButtonState;
   isCopilotInstalled?: boolean;
   session?: ISession;
+  isImplicitFilterApplied?: boolean;
 }
 
 /**
@@ -264,7 +275,13 @@ const createSectionButtons = (
     const toolbarButton = createButtonByType({
       button,
       onAction,
-      ...config,
+      isFormView: config.isFormView,
+      hasFormChanges: config.hasFormChanges,
+      hasSelectedRecord: config.hasSelectedRecord,
+      hasParentRecordSelected: config.hasParentRecordSelected,
+      saveButtonState: config.saveButtonState,
+      isCopilotInstalled: config.isCopilotInstalled,
+      isImplicitFilterApplied: config.isImplicitFilterApplied,
     });
 
     // Apply button-specific styles if available
@@ -305,6 +322,7 @@ interface ToolbarSectionsConfig {
   isCopilotInstalled?: boolean;
   saveButtonState?: SaveButtonState;
   session?: ISession;
+  isImplicitFilterApplied?: boolean;
 }
 
 export const getToolbarSections = ({
@@ -318,6 +336,7 @@ export const getToolbarSections = ({
   isCopilotInstalled = false,
   saveButtonState,
   session = {},
+  isImplicitFilterApplied = false,
 }: ToolbarSectionsConfig): {
   leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
@@ -334,6 +353,7 @@ export const getToolbarSections = ({
     saveButtonState,
     isCopilotInstalled,
     session,
+    isImplicitFilterApplied,
   };
 
   return {

@@ -29,6 +29,7 @@ import { useSearch } from "../../contexts/searchContext";
 import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
 import { useWindowContext } from "../../contexts/window";
+import { useToolbarContext } from "../../contexts/ToolbarContext";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
 import { useDatasource } from "../useDatasource";
@@ -108,6 +109,7 @@ export const useTableData = ({
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
   const { activeWindow } = useWindowContext();
+  const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
 
   const {
     tableColumnFilters,
@@ -146,6 +148,7 @@ export const useTableData = ({
     setColumnFilter,
     setColumnFilters,
     setFilterOptions,
+    loadFilterOptions,
     loadMoreFilterOptions,
   } = useColumnFilters({
     columns: rawColumns,
@@ -183,6 +186,9 @@ export const useTableData = ({
         return [];
       }
 
+      // Set loading state before fetching data
+      await loadFilterOptions(columnId, searchQuery);
+
       if (ColumnFilterUtils.isSelectColumn(column)) {
         return loadSelectFilterOptions(column, columnId, searchQuery, setFilterOptions);
       }
@@ -201,7 +207,7 @@ export const useTableData = ({
 
       return [];
     },
-    [rawColumns, fetchFilterOptions, setFilterOptions, tab.id, treeEntity]
+    [rawColumns, fetchFilterOptions, setFilterOptions, loadFilterOptions, tab.id, treeEntity]
   );
 
   const handleLoadMoreFilterOptions = useCallback(
@@ -530,6 +536,11 @@ export const useTableData = ({
       setIsImplicitFilterApplied(initialIsFilterApplied);
     }
   }, [initialIsFilterApplied, isImplicitFilterApplied, setIsImplicitFilterApplied]);
+
+  /** Sync implicit filter state with toolbar context */
+  useEffect(() => {
+    setToolbarFilterApplied(isImplicitFilterApplied ?? false);
+  }, [isImplicitFilterApplied, setToolbarFilterApplied]);
 
   /** Clear advanced column filters when table filters are cleared */
   useEffect(() => {

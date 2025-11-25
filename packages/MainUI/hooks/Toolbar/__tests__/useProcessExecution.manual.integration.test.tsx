@@ -28,6 +28,16 @@ jest.mock("@/hooks/useApiContext", () => ({
   useApiContext: () => "http://localhost:3000/api",
 }));
 
+// Mock useRuntimeConfig to return ETENDO_CLASSIC_HOST
+jest.mock("@/hooks/useRuntimeConfig", () => ({
+  useRuntimeConfig: () => ({
+    config: {
+      etendoClassicHost: "http://localhost:8080/etendo",
+    },
+    loading: false,
+  }),
+}));
+
 // Provide windowId via metadata context
 jest.mock("@/hooks/useMetadataContext", () => ({
   useMetadataContext: () => ({ windowId: "W123" }),
@@ -129,7 +139,7 @@ describe("useProcessExecution manual processes integration", () => {
     fireEvent.click(screen.getByRole("button", { name: /run/i }));
 
     const resultEl = await screen.findByTestId("result");
-    await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:3000/api"));
+    await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:8080/etendo"));
 
     const url = new URL(resultEl.textContent || "http://localhost");
     expect(url.pathname).toContain("/meta/legacy");
@@ -166,7 +176,7 @@ describe("useProcessExecution manual processes integration", () => {
     fireEvent.click(screen.getByRole("button", { name: /run/i }));
 
     const resultEl = await screen.findByTestId("result");
-    await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:3000/api"));
+    await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:8080/etendo"));
 
     const url = new URL(resultEl.textContent || "http://localhost");
     const p = url.searchParams;
@@ -225,7 +235,7 @@ describe("useProcessExecution manual processes integration", () => {
     fireEvent.click(screen.getByRole("button", { name: /run/i }));
 
     const resultEl = await screen.findByTestId("result");
-    await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:3000/api"));
+    await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:8080/etendo"));
     const dbg = require("@/utils/debug");
     expect(dbg.isDebugManualProcesses()).toBe(true);
     // Note: in some environments console-backed spies may not capture calls reliably.

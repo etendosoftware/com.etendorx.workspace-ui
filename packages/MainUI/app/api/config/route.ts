@@ -15,15 +15,29 @@
  *************************************************************************
  */
 
-import type { IconButtonProps } from "@mui/material";
+import { NextResponse } from "next/server";
 
-export interface IIconComponentProps extends React.PropsWithChildren<Omit<IconButtonProps, "children">> {
-  fill?: string;
-  hoverFill?: string;
-  width?: number;
-  height?: number;
-  tooltip?: string;
-  isHovered?: boolean;
-  iconText?: string;
-  isPressed?: boolean;
+/**
+ * GET /api/config
+ *
+ * Returns runtime configuration from environment variables
+ * This allows the client to get backend URLs dynamically at runtime
+ */
+export async function GET() {
+  const config = {
+    etendoClassicHost: process.env.ETENDO_CLASSIC_HOST || process.env.ETENDO_CLASSIC_URL || "",
+  };
+
+  // In production, cache for a reasonable time (5 minutes)
+  // In development/debug mode, don't cache to allow quick changes
+  const isDebugMode = process.env.DEBUG_MODE === "true";
+  const cacheControl = isDebugMode
+    ? "no-store, no-cache, must-revalidate, max-age=0"
+    : "public, max-age=300, s-maxage=300";
+
+  return NextResponse.json(config, {
+    headers: {
+      "Cache-Control": cacheControl,
+    },
+  });
 }
