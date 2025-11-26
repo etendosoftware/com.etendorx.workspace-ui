@@ -16,7 +16,6 @@
  */
 // @data-testid-ignore
 "use client";
-import { useEffect } from "react";
 import WindowTabs from "@/components/NavigationTabs/WindowTabs";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useQueryParams } from "@/hooks/useQueryParams";
@@ -26,14 +25,8 @@ import TabsProvider from "@/contexts/tabs";
 import WindowProvider from "@/contexts/window";
 
 export default function Page() {
-  const { windows, activeWindow, isHomeRoute, openWindow } = useMultiWindowURL();
+  const { windows, activeWindow, isHomeRoute } = useMultiWindowURL();
   const { windowId } = useQueryParams<{ windowId?: string }>();
-
-  useEffect(() => {
-    if (windowId && windows.length === 0) {
-      openWindow(windowId);
-    }
-  }, [windowId, windows.length, openWindow]);
 
   const shouldShowTabs = windows.length > 0;
 
@@ -50,6 +43,7 @@ export default function Page() {
         ) : (
           <Window
             windowId={activeWindow.windowId}
+            windowIdentifier={activeWindow.window_identifier}
             data-testid={`Window__${activeWindow?.windowId ?? windowId ?? "351d9c"}`}
           />
         )}

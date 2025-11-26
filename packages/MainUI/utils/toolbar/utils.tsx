@@ -21,6 +21,7 @@ import Base64Icon from "@workspaceui/componentlibrary/src/components/Base64Icon"
 import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
 import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
 import type { SaveButtonState } from "@/contexts/ToolbarContext";
+import type { ISession } from "@workspaceui/api-client/src/api/types";
 
 const isBase64Image = (str: string): boolean => {
   try {
@@ -47,6 +48,7 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: "toolbar-button-copilot",
   [TOOLBAR_BUTTONS_ACTIONS.COLUMN_FILTERS]: "toolbar-button-column-filters",
   [TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW]: "toolbar-button-toggle-tree-view",
+  [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: "toolbar-button-attachment",
 } as const;
 
 export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
@@ -126,6 +128,7 @@ export const createButtonByType = ({
   hasParentRecordSelected,
   isCopilotInstalled,
   saveButtonState,
+  isImplicitFilterApplied,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
@@ -135,6 +138,7 @@ export const createButtonByType = ({
   hasParentRecordSelected: boolean;
   isCopilotInstalled?: boolean;
   saveButtonState?: SaveButtonState;
+  isImplicitFilterApplied?: boolean;
 }): ToolbarButton => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
@@ -180,6 +184,7 @@ export const createButtonByType = ({
       [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: () => buildDisableConfig(!(isFormView || hasSelectedRecord)),
       [TOOLBAR_BUTTONS_ACTIONS.DELETE]: () => buildDisableConfig(!hasSelectedRecord),
       [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () => buildDisableConfig(!hasSelectedRecord || !isCopilotInstalled),
+      [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: () => buildDisableConfig(!hasSelectedRecord),
       [TOOLBAR_BUTTONS_ACTIONS.NEW]: () => buildDisableConfig(!hasParentRecordSelected),
       [TOOLBAR_BUTTONS_ACTIONS.REFRESH]: () => buildDisableConfig(!hasParentRecordSelected),
       [TOOLBAR_BUTTONS_ACTIONS.SAVE]: () => {
@@ -224,11 +229,19 @@ export const createButtonByType = ({
     }
   };
 
+  const getPressedConfig = (): Partial<ToolbarButton> => {
+    if (button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER && isImplicitFilterApplied) {
+      return { isPressed: true };
+    }
+    return {};
+  };
+
   return {
     ...baseConfig,
     ...getIconTextConfig(),
     ...getDisableConfig(),
     ...getClickConfig(),
+    ...getPressedConfig(),
   };
 };
 
@@ -246,6 +259,8 @@ interface ButtonConfig {
   hasParentRecordSelected: boolean;
   saveButtonState?: SaveButtonState;
   isCopilotInstalled?: boolean;
+  session?: ISession;
+  isImplicitFilterApplied?: boolean;
 }
 
 /**
@@ -260,13 +275,27 @@ const createSectionButtons = (
     const toolbarButton = createButtonByType({
       button,
       onAction,
-      ...config,
+      isFormView: config.isFormView,
+      hasFormChanges: config.hasFormChanges,
+      hasSelectedRecord: config.hasSelectedRecord,
+      hasParentRecordSelected: config.hasParentRecordSelected,
+      saveButtonState: config.saveButtonState,
+      isCopilotInstalled: config.isCopilotInstalled,
+      isImplicitFilterApplied: config.isImplicitFilterApplied,
     });
 
     // Apply button-specific styles if available
     const styles = getButtonStyles(button);
     if (styles) {
       toolbarButton.className = toolbarButton.className ? `${toolbarButton.className} ${styles}` : styles;
+    }
+
+    // Add badge for ATTACHMENT button only when a record is selected
+    if (button.action === TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT && config.session && config.hasSelectedRecord) {
+      const attachmentCount = config.session._attachmentCount;
+      if (attachmentCount && Number.parseInt(String(attachmentCount)) > 0) {
+        toolbarButton.badgeContent = String(attachmentCount);
+      }
     }
 
     return toolbarButton;
@@ -292,6 +321,8 @@ interface ToolbarSectionsConfig {
   hasParentRecordSelected?: boolean;
   isCopilotInstalled?: boolean;
   saveButtonState?: SaveButtonState;
+  session?: ISession;
+  isImplicitFilterApplied?: boolean;
 }
 
 export const getToolbarSections = ({
@@ -304,6 +335,8 @@ export const getToolbarSections = ({
   hasParentRecordSelected = false,
   isCopilotInstalled = false,
   saveButtonState,
+  session = {},
+  isImplicitFilterApplied = false,
 }: ToolbarSectionsConfig): {
   leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
@@ -319,6 +352,8 @@ export const getToolbarSections = ({
     hasParentRecordSelected,
     saveButtonState,
     isCopilotInstalled,
+    session,
+    isImplicitFilterApplied,
   };
 
   return {

@@ -126,31 +126,27 @@ function formatDateTime(isoString: string, field: Field): string {
 }
 
 /**
- * Formats a date without time (DD-MM-YYYY)
+ * Formats a date without time using browser's locale
  */
 function formatDateOnly(date: Date): string {
-  return new Intl.DateTimeFormat("es-AR", {
+  return new Intl.DateTimeFormat(undefined, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-  })
-    .format(date)
-    .replace(/\//g, "-");
+  }).format(date);
 }
 
 /**
- * Formats audit field timestamps (DD-MM-YYYY HH:mm:ss)
+ * Formats audit field timestamps using browser's locale (DD-MM-YYYY HH:mm:ss or locale-specific format)
  */
 function formatAuditDateTime(date: Date): string {
-  const dateStr = new Intl.DateTimeFormat("es-AR", {
+  const dateStr = new Intl.DateTimeFormat(undefined, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-  })
-    .format(date)
-    .replace(/\//g, "-");
+  }).format(date);
 
-  const timeStr = new Intl.DateTimeFormat("es-AR", {
+  const timeStr = new Intl.DateTimeFormat(undefined, {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",

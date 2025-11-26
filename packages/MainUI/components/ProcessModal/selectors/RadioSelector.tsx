@@ -23,6 +23,7 @@ import { useFormContext } from "react-hook-form";
 
 const RadioSelector = ({ parameter }: { parameter: ProcessParameter }) => {
   const { register, setValue, watch } = useFormContext();
+
   const selectedOption = watch(parameter.dBColumnName);
 
   useEffect(() => {
@@ -40,6 +41,15 @@ const RadioSelector = ({ parameter }: { parameter: ProcessParameter }) => {
     label: option.label,
     description: option.value !== option.label ? option.value : undefined,
   }));
+  // Don't render if parameter doesn't have a dBColumnName
+  if (!parameter.dBColumnName) {
+    return null;
+  }
+
+  // Don't render if parameter doesn't have a dBColumnName
+  if (!parameter.dBColumnName) {
+    return null;
+  }
 
   return (
     <div>

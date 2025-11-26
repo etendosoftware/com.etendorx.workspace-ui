@@ -25,4 +25,5 @@ export interface IIconComponentProps extends React.PropsWithChildren<Omit<IconBu
   tooltip?: string;
   isHovered?: boolean;
   iconText?: string;
+  isPressed?: boolean;
 }

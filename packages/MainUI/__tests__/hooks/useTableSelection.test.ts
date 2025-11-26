@@ -100,7 +100,15 @@ const createMockGraph = () => ({
 
 // Mock window URL functions
 const createMockWindowURL = (selectedRecord?: string) => ({
-  activeWindow: { windowId: "window1" } as { windowId: string } | null | undefined,
+  activeWindow: {
+    windowId: "window1",
+    window_identifier: "window1_123456789",
+    isActive: true,
+    order: 1,
+    selectedRecords: {},
+    tabFormStates: {},
+    title: "Test Window",
+  } as ReturnType<typeof useMultiWindowURL>["activeWindow"],
   clearSelectedRecord: jest.fn(),
   setSelectedRecord: jest.fn(),
   getSelectedRecord: jest.fn().mockReturnValue(selectedRecord),
@@ -229,7 +237,7 @@ describe("useTableSelection", () => {
       expect(mockGraph.setSelected).toHaveBeenCalledWith(tab, records[1]);
       expect(mockGraph.setSelectedMultiple).toHaveBeenCalledWith(tab, [records[1]]);
       // onSelectionChange is no longer called - URL is updated directly via debounced function
-      expect(mockDebouncedFunction).toHaveBeenCalledWith([records[1]], "window1", "tab1");
+      expect(mockDebouncedFunction).toHaveBeenCalledWith([records[1]], "window1_123456789", "tab1");
     });
 
     it("should process multiple record selection", () => {
@@ -244,7 +252,7 @@ describe("useTableSelection", () => {
       expect(mockGraph.setSelected).toHaveBeenCalledWith(tab, records[4]); // Last selected
       expect(mockGraph.setSelectedMultiple).toHaveBeenCalledWith(tab, expectedRecords);
       // onSelectionChange is no longer called - URL is updated directly via debounced function
-      expect(mockDebouncedFunction).toHaveBeenCalledWith(expectedRecords, "window1", "tab1");
+      expect(mockDebouncedFunction).toHaveBeenCalledWith(expectedRecords, "window1_123456789", "tab1");
     });
 
     it("should clear selection when no records are selected", () => {
@@ -344,7 +352,7 @@ describe("useTableSelection", () => {
 
       renderHook(() => useTableSelection(tab, records, rowSelection));
 
-      expect(mockDebouncedFunction).toHaveBeenCalledWith([records[1]], "window1", "tab1");
+      expect(mockDebouncedFunction).toHaveBeenCalledWith([records[1]], "window1_123456789", "tab1");
     });
 
     it("should update URL for multiple selection", () => {
@@ -355,7 +363,7 @@ describe("useTableSelection", () => {
       renderHook(() => useTableSelection(tab, records, rowSelection));
 
       const expectedRecords = [records[0], records[2]];
-      expect(mockDebouncedFunction).toHaveBeenCalledWith(expectedRecords, "window1", "tab1");
+      expect(mockDebouncedFunction).toHaveBeenCalledWith(expectedRecords, "window1_123456789", "tab1");
     });
 
     it("should clear URL when no selection", () => {
@@ -370,7 +378,7 @@ describe("useTableSelection", () => {
       // Clear the selection to trigger URL clearing
       rerender({ selection: {} });
 
-      expect(mockDebouncedFunction).toHaveBeenCalledWith([], "window1", "tab1");
+      expect(mockDebouncedFunction).toHaveBeenCalledWith([], "window1_123456789", "tab1");
     });
   });
 
@@ -387,7 +395,9 @@ describe("useTableSelection", () => {
       renderHook(() => useTableSelection(parentTab, records, rowSelection));
 
       // Now uses atomic update instead of separate clearChildrenSelections
-      expect(mockWindowURL.setSelectedRecordAndClearChildren).toHaveBeenCalledWith("window1", "parent", "1", ["child"]);
+      expect(mockWindowURL.setSelectedRecordAndClearChildren).toHaveBeenCalledWith("window1_123456789", "parent", "1", [
+        "child",
+      ]);
     });
 
     it("should not clear children when they belong to different window", () => {
@@ -540,7 +550,7 @@ describe("useTableSelection", () => {
 
       // The debounced function should be called with the selection
       expect(mockDebounce).toHaveBeenCalled();
-      expect(debouncedFunction).toHaveBeenCalledWith([records[0]], "window1", "tab1");
+      expect(debouncedFunction).toHaveBeenCalledWith([records[0]], "window1_123456789", "tab1");
     });
   });
 
@@ -948,7 +958,7 @@ describe("Performance considerations", () => {
     expect(mockDebounce.mock.calls.length).toBeGreaterThanOrEqual(initialDebounceCallCount);
 
     // More importantly, verify the debounced function is being called correctly
-    expect(mockDebouncedFunction).toHaveBeenCalledWith([records[0]], "window1", "tab1");
+    expect(mockDebouncedFunction).toHaveBeenCalledWith([records[0]], "window1_123456789", "tab1");
   });
 
   it("should handle rapid re-renders efficiently", async () => {
@@ -1056,7 +1066,15 @@ describe("Dependency updates", () => {
     const { rerender } = renderHook(() => useTableSelection(tab, records, rowSelection));
 
     // Change active window
-    mockWindowURL.activeWindow = { windowId: "window2" };
+    mockWindowURL.activeWindow = {
+      windowId: "window2",
+      window_identifier: "window2_123456789",
+      isActive: true,
+      order: 1,
+      selectedRecords: {},
+      tabFormStates: {},
+      title: "Test Window 2",
+    } as ReturnType<typeof useMultiWindowURL>["activeWindow"];
 
     jest.clearAllMocks();
 

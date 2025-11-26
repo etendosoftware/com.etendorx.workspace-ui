@@ -18,6 +18,7 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { forwardRef, useCallback, useRef, useState, useEffect, useMemo } from "react";
 import CalendarIcon from "../../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
+import { formatClassicDate, getLocaleDatePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 
 interface DateInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -29,9 +30,13 @@ interface DateInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
   ({ name, label, isReadOnly, error, helperText, field, ...props }, ref) => {
-    const inputRef = useRef<HTMLInputElement>();
+    const inputRef = useRef<HTMLInputElement>(null);
+    const hiddenDateInputRef = useRef<HTMLInputElement | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [isFocused, setIsFocused] = useState(false);
+    const [displayValue, setDisplayValue] = useState<string>("");
+
+    const datePlaceholder = useMemo(() => getLocaleDatePlaceholder(), []);
 
     const labelClassNames = useMemo(() => {
       const baseClasses = "flex items-center gap-1 font-medium text-sm leading-5 tracking-normal transition-colors";
@@ -87,30 +92,26 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     }, [error]);
 
     const handleCalendarClick = useCallback(() => {
-      if (!isReadOnly && inputRef.current) {
-        inputRef.current.showPicker();
-        inputRef.current.focus();
+      if (!isReadOnly && hiddenDateInputRef.current) {
+        hiddenDateInputRef.current.showPicker();
+        hiddenDateInputRef.current.focus();
       }
     }, [isReadOnly]);
 
     const handleRef = useCallback(
-      (node: HTMLInputElement) => {
+      (node: HTMLInputElement | null) => {
         if (node) {
-          inputRef.current = node;
+          (inputRef as React.MutableRefObject<HTMLInputElement | null>).current = node;
         }
 
         if (typeof ref === "function") {
           ref(node);
         } else if (ref) {
-          ref.current = node;
+          (ref as React.MutableRefObject<HTMLInputElement | null>).current = node;
         }
       },
       [ref]
     );
-
-    const handleFocus = useCallback(() => {
-      setIsFocused(true);
-    }, []);
 
     const handleBlur = useCallback(
       (e: React.FocusEvent<HTMLInputElement>) => {
@@ -122,6 +123,19 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       },
       [props]
     );
+
+    // Sync the hidden date input value with the display value
+    useEffect(() => {
+      if (hiddenDateInputRef.current) {
+        const isoValue = hiddenDateInputRef.current.value;
+        if (isoValue) {
+          const formatted = formatClassicDate(isoValue, false);
+          setDisplayValue(formatted);
+        } else {
+          setDisplayValue("");
+        }
+      }
+    }, [hiddenDateInputRef.current?.value]);
 
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -157,25 +171,52 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       );
     }, [helperText, helperTextClassNames]);
 
+    const handleDisplayInputFocus = useCallback(() => {
+      if (!isReadOnly && hiddenDateInputRef.current) {
+        hiddenDateInputRef.current.showPicker();
+      }
+    }, [isReadOnly]);
+
+    const handleHiddenDateChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        props.onChange?.(e);
+      },
+      [props]
+    );
+
     return (
       <div ref={containerRef} className="w-full font-['Inter'] font-medium">
         {renderLabel()}
         <div className={`relative flex items-center w-full ${isReadOnly ? "pointer-events-none" : ""}`}>
+          {/* Visible text input showing formatted date */}
           <input
-            type="date"
+            type="text"
             id={name}
-            name={name}
-            ref={handleRef}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
+            value={displayValue}
+            readOnly
             className={inputClassNames}
-            readOnly={isReadOnly}
-            disabled={isReadOnly}
+            onFocus={handleDisplayInputFocus}
+            onBlur={handleBlur}
             aria-label={field.name}
-            aria-readonly={isReadOnly}
+            aria-readonly={isReadOnly || true}
             aria-required={field.isMandatory}
             aria-disabled={isReadOnly}
             aria-details={field.helpComment}
+            placeholder={datePlaceholder}
+          />
+          {/* Hidden date input connected to react-hook-form - overlayed on visible input for correct picker positioning */}
+          <input
+            type="date"
+            ref={(node) => {
+              hiddenDateInputRef.current = node;
+              handleRef(node);
+            }}
+            name={name}
+            onChange={handleHiddenDateChange}
+            className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+            tabIndex={-1}
+            readOnly={isReadOnly}
+            disabled={isReadOnly}
             {...props}
           />
           <button type="button" onClick={handleCalendarClick} className={buttonClassNames} disabled={isReadOnly}>

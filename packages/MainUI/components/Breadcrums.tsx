@@ -18,7 +18,6 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { useQueryParams } from "@/hooks/useQueryParams";
 import Breadcrumb from "@workspaceui/componentlibrary/src/components/Breadcrums";
 import type { BreadcrumbItem } from "@workspaceui/componentlibrary/src/components/Breadcrums/types";
 import { usePathname } from "next/navigation";
@@ -39,8 +38,7 @@ interface BreadcrumbProps {
 const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { t } = useTranslation();
   const pathname = usePathname();
-  const { window } = useMetadataContext();
-  const { windowId } = useQueryParams<{ windowId: string }>();
+  const { window, windowId, windowIdentifier } = useMetadataContext();
   const { navigateToHome, clearTabFormState, getTabFormState } = useMultiWindowURL();
   const { graph } = useSelected();
 
@@ -63,16 +61,19 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     return tab;
   }, [allTabsFormatted, windowId, window]);
 
-  let tabFormState = undefined;
+  const tabFormState = useMemo(() => {
+    if (!currentTab) return undefined;
 
-  if (currentTab) {
-    tabFormState =
+    return (
       getTabFormState(currentTab.window, currentTab.id) ||
-      getTabFormState(windowId, currentTab.id) ||
-      getTabFormState(currentTab.window$_identifier || currentTab.window, currentTab.id);
-  }
+      getTabFormState(windowId || "", currentTab.id) ||
+      getTabFormState(currentTab.window$_identifier || currentTab.window, currentTab.id)
+    );
+  }, [currentTab, windowId, getTabFormState]);
 
-  const currentRecordId = tabFormState?.recordId || (graph?.getSelected?.(currentTab)?.[0] as string) || "";
+  const currentRecordId = useMemo(() => {
+    return tabFormState?.recordId || (graph?.getSelected?.(currentTab)?.[0] as string) || "";
+  }, [tabFormState, graph, currentTab]);
 
   const { record } = useCurrentRecord({
     tab: currentTab,
@@ -82,28 +83,28 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const isNewRecord = useCallback(() => pathname.includes("/NewRecord"), [pathname]);
 
   const handleWindowClick = useCallback(
-    (windowId: string) => {
+    (windowIdentifier: string) => {
       const allTabsFormatted = allTabs.flat();
       const currentTab = allTabsFormatted.find((tab) => tab.window === windowId);
-      if (windowId && currentTab && currentTab.id) {
-        clearTabFormState(windowId, currentTab.id);
+      if (windowIdentifier && currentTab && currentTab.id) {
+        clearTabFormState(windowIdentifier, currentTab.id);
       }
       if (currentTab && graph) {
         graph.clear(currentTab);
         graph.clearSelected(currentTab);
       }
     },
-    [clearTabFormState, allTabs, graph]
+    [clearTabFormState, allTabs, graph, windowId]
   );
 
   const breadcrumbItems = useMemo(() => {
     const items: BreadcrumbItem[] = [];
 
-    if (windowId && window) {
+    if (windowId && window && windowIdentifier) {
       items.push({
         id: windowId,
         label: String(window.window$_identifier || window.name || t("common.loading")),
-        onClick: () => handleWindowClick(windowId),
+        onClick: () => handleWindowClick(windowIdentifier),
       });
     }
 
@@ -115,6 +116,8 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     }
 
     if (currentTab) {
+      const tabFormState = windowIdentifier ? getTabFormState(windowIdentifier, currentTab.id) : undefined;
+      const currentRecordId = tabFormState?.recordId || "";
       const currentLabel = record?._identifier?.toString();
 
       if (currentRecordId && currentLabel && currentRecordId !== NEW_RECORD_ID) {
@@ -126,7 +129,17 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     }
 
     return items;
-  }, [windowId, window, isNewRecord, currentTab, t, handleWindowClick, currentRecordId, record]);
+  }, [
+    windowId,
+    windowIdentifier,
+    window,
+    currentTab,
+    record?._identifier,
+    isNewRecord,
+    t,
+    handleWindowClick,
+    getTabFormState,
+  ]);
 
   const handleHomeClick = useCallback(() => {
     navigateToHome();

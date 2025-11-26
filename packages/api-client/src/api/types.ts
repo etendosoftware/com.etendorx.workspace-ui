@@ -732,6 +732,7 @@ export interface FormInitializationResponse {
   dynamicCols: string[];
   attachmentExists: boolean;
   noteCount: number;
+  attachmentCount?: number;
   _readOnly?: boolean;
 }
 
@@ -835,6 +836,7 @@ export interface LinkedItemCategory {
 }
 
 export interface LinkedItem {
+  adMenuName: string;
   adTabId: string;
   adWindowId: string;
   id: string;
@@ -885,6 +887,56 @@ export interface CreateNoteParams {
   content: string;
 }
 
+// Attachment types
+export interface Attachment {
+  id: string;
+  name: string;
+  description?: string;
+  createdBy: string;
+  createdBy$_identifier: string;
+  creationDate: string;
+  fileSize?: number;
+  mimeType?: string;
+}
+
+export interface FetchAttachmentsParams {
+  tabId: string;
+  recordId: string;
+}
+
+export interface CreateAttachmentParams {
+  recordId: string;
+  tabId: string;
+  file: File;
+  description?: string;
+  inpDocumentOrg: string;
+}
+
+export interface EditAttachmentParams {
+  attachmentId: string;
+  tabId: string;
+  recordId: string;
+  description: string;
+}
+
+export interface DeleteAttachmentParams {
+  attachmentId?: string;
+  tabId: string;
+  recordId: string;
+}
+
+export interface DownloadAttachmentParams {
+  attachmentId: string;
+  tabId: string;
+  recordId: string;
+}
+
+export interface DownloadAllAttachmentsParams {
+  tabId: string;
+  recordId: string;
+}
+
+// Response structure for success/failure
 export interface DatasourceResponse {
   response: {
     data?: Note;

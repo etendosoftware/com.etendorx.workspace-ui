@@ -56,7 +56,8 @@ export const useToolbarConfig = ({
     hideStatusModal,
   } = useStatusModal();
   const { t } = useTranslation();
-  const { onRefresh, onSave, onNew, onBack, onFilter, onColumnFilters, onToggleTreeView } = useToolbarContext();
+  const { onRefresh, onSave, onNew, onBack, onFilter, onColumnFilters, onToggleTreeView, attachmentAction } =
+    useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -69,9 +70,9 @@ export const useToolbarConfig = ({
   const { contextString, hasSelectedRecords, contextItems } = useRecordContext();
 
   const selectedRecordId = useMemo(() => {
-    if (!activeWindow?.windowId || !tab) return null;
-    return getSelectedRecord(activeWindow.windowId, tab.id);
-  }, [activeWindow?.windowId, tab, getSelectedRecord]);
+    if (!activeWindow?.window_identifier || !tab) return null;
+    return getSelectedRecord(activeWindow.window_identifier, tab.id);
+  }, [activeWindow?.window_identifier, tab, getSelectedRecord]);
 
   const selectedIds = useMemo(() => {
     if (selectedMultiple.length > 0) {
@@ -115,8 +116,8 @@ export const useToolbarConfig = ({
         onAfterClose: () => {
           setIsDeleting(false);
 
-          if (activeWindow?.windowId && tab) {
-            clearSelectedRecord(activeWindow.windowId, tab.id);
+          if (activeWindow?.window_identifier && tab) {
+            clearSelectedRecord(activeWindow.window_identifier, tab.id);
             graph.clearSelected(tab);
             graph.clearSelectedMultiple(tab);
           }
@@ -232,6 +233,13 @@ export const useToolbarConfig = ({
       TOGGLE_TREE_VIEW: () => {
         onToggleTreeView?.();
       },
+      ATTACHMENT: () => {
+        if (attachmentAction) {
+          attachmentAction();
+        } else {
+          logger.info("Attachment button clicked - no action registered");
+        }
+      },
     }),
     [
       onBack,
@@ -251,6 +259,8 @@ export const useToolbarConfig = ({
       contextItems,
       onColumnFilters,
       onToggleTreeView,
+      handleDeleteRecord,
+      attachmentAction,
     ]
   );
 

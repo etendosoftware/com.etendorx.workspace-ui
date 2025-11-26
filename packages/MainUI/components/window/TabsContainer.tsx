@@ -17,38 +17,99 @@
 
 "use client";
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect, useState } from "react";
 import Tabs from "@/components/window/Tabs";
-import { useMetadataContext } from "@/hooks/useMetadataContext";
+import AppBreadcrumb from "@/components/Breadcrums";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useSelected } from "@/hooks/useSelected";
 import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
-import AppBreadcrumb from "@/components/Breadcrums";
-import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
+import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
 
-export default function TabsContainer() {
-  const { activeLevels, activeTabsByLevel, setActiveTabsByLevel } = useSelected();
+/**
+ * TabsContainer Component
+ *
+ * Manages the hierarchical display and navigation of tabs within a window, providing:
+ * - Dynamic tab grouping by hierarchical levels (0, 1, 2, etc.)
+ * - Session restoration from URL state after page refresh
+ * - Conditional tab filtering based on parent-child relationships
+ * - Navigation state persistence across window switches
+ * - Two-level visibility system where any two consecutive levels can be visible
+ *
+ * The component coordinates multiple systems:
+ * - Tab hierarchy management through groupTabsByLevel
+ * - Navigation state persistence via useTableStatePersistenceTab
+ * - Parent-child relationship validation through shouldShowTab
+ * - Session restoration from multiWindowURL state
+ *
+ * @param windowData - Complete window metadata including tab definitions from Etendo Classic backend
+ */
+export default function TabsContainer({ windowData }: { windowData: Etendo.WindowMetadata }) {
+  /**
+   * Flag to track if initial level loading from URL state has completed.
+   */
+  const [activeLevelsLoaded, setActiveLevelsLoaded] = useState<boolean>(false);
+
+  /**
+   * Multi-window navigation hook providing access to current window state.
+   */
   const { activeWindow } = useMultiWindowURL();
-  const { getWindowMetadata } = useMetadataContext();
 
-  const windowData = useMemo(() => {
-    return activeWindow ? getWindowMetadata(activeWindow.windowId) : undefined;
-  }, [activeWindow, getWindowMetadata]);
+  /**
+   * Graph-based tab hierarchy management system with navigation state.
+   *
+   * Manages:
+   * - activeLevels: Array of currently visible tab levels [0,1] or [1,2] etc.
+   * - activeTabsByLevel: Map of level -> tabId for tracking active tab per level
+   * - setActiveLevel: Function to change visible navigation levels
+   * - setActiveTabsByLevel: Function to update active tab selection per level
+   * - graph: Hierarchical tab structure
+   */
+  const { graph, activeLevels, activeTabsByLevel, setActiveLevel, setActiveTabsByLevel } = useSelected();
 
+  /**
+   * Memoized tab grouping by hierarchical levels.
+   *
+   * Purpose: Organizes flat tab array into groups by tabLevel property
+   * Structure: Array<Array<Tab>> where each inner array contains tabs of same level
+   * Example: [[level0Tabs], [level1Tabs], [level2Tabs]]
+   *
+   * The grouping enables:
+   * - Hierarchical navigation where tabs depend on parent selections
+   * - Two-level visibility system (any two consecutive levels can be visible)
+   * - Dynamic filtering based on parent-child relationships
+   */
   const groupedTabs = useMemo(() => {
     return windowData ? groupTabsByLevel(windowData) : [];
   }, [windowData]);
 
-  const handleTabChange = useCallback((tab: Tab) => {
-    setActiveTabsByLevel((prev) => {
-      const newMap = new Map(prev);
-      newMap.set(tab.tabLevel, tab.id);
-      return newMap;
-    });
-  }, []);
+  /**
+   * Callback to handle tab selection changes within a level.
+   *
+   * Purpose: Updates the activeTabsByLevel mapping when user selects different tab
+   * Triggers: Navigation state persistence and potential child tab filtering updates
+   */
+  const handleTabChange = useCallback(
+    (tab: Tab) => {
+      setActiveTabsByLevel(tab);
+    },
+    [setActiveTabsByLevel]
+  );
 
+  /**
+   * Determines which tab should be active for a given hierarchical level.
+   *
+   * Algorithm:
+   * 1. Find tab group for the specified level
+   * 2. Check if there's a previously selected tab (from activeTabsByLevel mapping)
+   * 3. If found and still exists in group, return that tab
+   * 4. Otherwise, return first tab in group as default
+   *
+   * Purpose: Maintains tab selection consistency during navigation and restoration
+   * Fallback: Always returns first tab if no specific selection exists
+   */
   const getActiveTabForLevel = useCallback(
     (level: number): Tab | null => {
       const tabGroup = groupedTabs.find((group) => group[0]?.tabLevel === level);
@@ -65,6 +126,24 @@ export default function TabsContainer() {
     [groupedTabs, activeTabsByLevel]
   );
 
+  /**
+   * Dynamically filters tabs based on parent-child relationships and API conditions.
+   *
+   * Filtering Logic:
+   * - Level 0 tabs: Always shown (root level)
+   * - Higher level tabs: Filtered based on active parent tab selection
+   *
+   * Process for each tab group:
+   * 1. Identify current level and its parent level (currentLevel - 1)
+   * 2. Get currently active parent tab for validation
+   * 3. Apply shouldShowTab filter which checks:
+   *    - parentTabId matches
+   *    - parentColumns relationships with parent entity/table
+   *    - API-provided conditions (active status, display logic)
+   *
+   * Purpose: Ensures only relevant child tabs are visible based on parent context
+   * Result: Array of filtered tab groups maintaining hierarchy structure
+   */
   const filteredGroupedTabs = useMemo(() => {
     return groupedTabs.map((tabGroup) => {
       const currentLevel = tabGroup[0]?.tabLevel;
@@ -85,10 +164,90 @@ export default function TabsContainer() {
     });
   }, [groupedTabs, getActiveTabForLevel]);
 
+  /**
+   * Determines the first expanded (visible) tab group index for rendering optimization.
+   *
+   * Purpose: Identifies which tab group should be treated as the "top group" for:
+   * - Visual styling differences (expanded vs collapsed appearance)
+   * - Breadcrumb navigation context
+   * - Layout calculations
+   *
+   * Logic: Finds first tab group that has tabs AND is currently active (in activeLevels)
+   * Returns: Index of first expanded group, or -1 if none found
+   */
   const firstExpandedIndex = filteredGroupedTabs.findIndex(
     (tabs) => tabs.length > 0 && activeLevels.includes(tabs[0].tabLevel)
   );
 
+  /**
+   * Session restoration effect for active tab levels and tab selections.
+   *
+   * This effect runs once during component initialization to restore navigation state
+   * from URL parameters or saved session data. It coordinates with useMultiWindowURL
+   * to determine the appropriate tab levels to activate based on previously saved form states.
+   *
+   * Enhanced Process:
+   * 1. Checks if initial loading has already completed (prevents multiple executions)
+   * 2. Retrieves tabFormStates and selectedRecords from the active window URL state
+   * 3. Extracts tab IDs from form states and selected records
+   * 4. Calculates navigation depth based on the position of the last form state in selected records
+   * 5. Uses expand mode to set levels directly without navigation logic
+   * 6. Resets tab-by-level mapping for clean state or restores based on calculated depth
+   * 7. Marks loading as complete to prevent interference with user navigation
+   *
+   * Key improvements:
+   * - Uses selectedRecords order to determine proper navigation level
+   * - Maintains activeTabsByLevel state consistency during restoration
+   * - Handles edge cases where form states and selected records may be misaligned
+   *
+   * This ensures users return to their previous navigation context when:
+   * - Refreshing the page
+   * - Navigating back to a previously opened window
+   * - Restoring from bookmarked URLs
+   *
+   * Dependencies:
+   * - activeWindow: Contains tabFormStates and selectedRecords from URL
+   * - activeLevelsLoaded: Prevents multiple restoration attempts
+   * - windowData?.tabs: Available tabs for clearing selections
+   * - graph: Tab hierarchy for clearing dependent selections
+   * - setActiveLevel: Navigation state control function
+   */
+  useEffect(() => {
+    // Early return: Skip if already loaded or function not available
+    if (activeLevelsLoaded || !setActiveLevel) return;
+
+    // Extract window state data including both form states and selected records
+    const { tabFormStates, selectedRecords, windowId } = activeWindow || {};
+    const formStatesIds = tabFormStates ? Object.keys(tabFormStates) : [];
+
+    // Handle window with no saved form states - reset to clean state
+    if (windowId && formStatesIds.length === 0) {
+      setActiveLevel(0);
+      setActiveTabsByLevel();
+      const tabs = windowData?.tabs || [];
+      for (const tab of tabs) {
+        graph.clearSelected(tab);
+        graph.clearSelectedMultiple(tab);
+      }
+      setActiveLevelsLoaded(true);
+      return;
+    }
+
+    // Calculate navigation depth based on form state position in selected records
+    const lastFormStateId = formStatesIds.length > 0 ? formStatesIds[formStatesIds.length - 1] : null;
+    const selectedRecordsIds = selectedRecords ? Object.keys(selectedRecords) : [];
+    const lastFormStateIndex = lastFormStateId ? selectedRecordsIds.indexOf(lastFormStateId) : -1;
+
+    // Handle window with saved form states - restore navigation depth
+    if (lastFormStateIndex > 0) {
+      setActiveLevel(lastFormStateIndex, true); // Use expand mode for direct restoration
+    }
+
+    // Mark as loaded to prevent subsequent executions
+    setActiveLevelsLoaded(true);
+  }, [activeWindow, activeLevelsLoaded, windowData?.tabs, graph, setActiveLevel, setActiveTabsByLevel]);
+
+  // Loading state: Show skeleton UI while window metadata is being fetched
   if (!windowData) {
     return (
       <div className="p-4 animate-pulse flex-1 flex flex-col gap-4">

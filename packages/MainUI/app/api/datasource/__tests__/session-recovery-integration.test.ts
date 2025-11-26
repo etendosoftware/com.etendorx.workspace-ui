@@ -35,7 +35,7 @@ jest.mock("next/cache", () => ({
 jest.mock("@/lib/auth");
 jest.mock("@/app/api/_utils/datasourceCache");
 jest.mock("@/app/api/_utils/forwardConfig");
-jest.mock("@/app/api/_utils/sessionRetry");
+jest.mock("@/app/api/_utils/sessionRetryWithCsrf");
 jest.mock("@/app/api/_utils/url");
 import { POST } from "../route";
 import {
@@ -58,9 +58,9 @@ const mockShouldCacheDatasource = require("@/app/api/_utils/datasourceCache")
   .shouldCacheDatasource as jest.MockedFunction<
   typeof import("@/app/api/_utils/datasourceCache").shouldCacheDatasource
 >;
-const mockExecuteWithSessionRetry = require("@/app/api/_utils/sessionRetry")
-  .executeWithSessionRetry as jest.MockedFunction<
-  typeof import("@/app/api/_utils/sessionRetry").executeWithSessionRetry
+const mockExecuteWithSessionAndCsrfRetry = require("@/app/api/_utils/sessionRetryWithCsrf")
+  .executeWithSessionAndCsrfRetry as jest.MockedFunction<
+  typeof import("@/app/api/_utils/sessionRetryWithCsrf").executeWithSessionAndCsrfRetry
 >;
 
 describe("Datasource API Route - Session Recovery Integration", () => {
@@ -90,12 +90,12 @@ describe("Datasource API Route - Session Recovery Integration", () => {
 
     const mockResponseData = createMockResponseData();
 
-    mockExecuteWithSessionRetry.mockResolvedValue(createSessionRetryResult(mockResponseData));
+    mockExecuteWithSessionAndCsrfRetry.mockResolvedValue(createSessionRetryResult(mockResponseData));
 
     const response = await POST(mockRequest);
 
     await expectSuccessfulResponse(response, mockResponseData);
-    expect(mockExecuteWithSessionRetry).toHaveBeenCalledWith(mockRequest, testToken, expect.any(Function));
+    expect(mockExecuteWithSessionAndCsrfRetry).toHaveBeenCalledWith(mockRequest, testToken, expect.any(Function));
   });
 
   it("should successfully recover from session expiration", async () => {
@@ -106,14 +106,14 @@ describe("Datasource API Route - Session Recovery Integration", () => {
 
     const mockResponseData = createMockResponseData([{ id: 1, name: "Test After Recovery" }]);
 
-    mockExecuteWithSessionRetry.mockResolvedValue(
+    mockExecuteWithSessionAndCsrfRetry.mockResolvedValue(
       createSessionRetryResult(mockResponseData, true) // Indicates session was recovered
     );
 
     const response = await POST(mockRequest);
 
     await expectSuccessfulResponse(response, mockResponseData);
-    expect(mockExecuteWithSessionRetry).toHaveBeenCalledWith(mockRequest, testToken, expect.any(Function));
+    expect(mockExecuteWithSessionAndCsrfRetry).toHaveBeenCalledWith(mockRequest, testToken, expect.any(Function));
   });
 
   it("should return error when session recovery fails", async () => {
@@ -122,14 +122,14 @@ describe("Datasource API Route - Session Recovery Integration", () => {
       token: testToken,
     });
 
-    mockExecuteWithSessionRetry.mockResolvedValue(
+    mockExecuteWithSessionAndCsrfRetry.mockResolvedValue(
       createSessionRetryError("Session recovery failed: Maximum recovery attempts exceeded")
     );
 
     const response = await POST(mockRequest);
 
     await expectErrorResponse(response, 500, "Session recovery failed: Maximum recovery attempts exceeded");
-    expect(mockExecuteWithSessionRetry).toHaveBeenCalledWith(mockRequest, testToken, expect.any(Function));
+    expect(mockExecuteWithSessionAndCsrfRetry).toHaveBeenCalledWith(mockRequest, testToken, expect.any(Function));
   });
 
   it("should bypass session retry for cached requests", async () => {
@@ -144,7 +144,7 @@ describe("Datasource API Route - Session Recovery Integration", () => {
     await POST(mockRequest);
 
     // Should not call session retry logic for cached requests
-    expect(mockExecuteWithSessionRetry).not.toHaveBeenCalled();
+    expect(mockExecuteWithSessionAndCsrfRetry).not.toHaveBeenCalled();
   });
 
   it("should handle missing authorization token", async () => {
@@ -158,7 +158,7 @@ describe("Datasource API Route - Session Recovery Integration", () => {
     const response = await POST(mockRequest);
 
     await expectErrorResponse(response, 401, "Unauthorized - Missing Bearer token");
-    expect(mockExecuteWithSessionRetry).not.toHaveBeenCalled();
+    expect(mockExecuteWithSessionAndCsrfRetry).not.toHaveBeenCalled();
   });
 
   it("should handle missing user context", async () => {
@@ -172,7 +172,7 @@ describe("Datasource API Route - Session Recovery Integration", () => {
     const response = await POST(mockRequest);
 
     await expectErrorResponse(response, 401, "Unauthorized - Missing user context");
-    expect(mockExecuteWithSessionRetry).not.toHaveBeenCalled();
+    expect(mockExecuteWithSessionAndCsrfRetry).not.toHaveBeenCalled();
   });
 
   it("should handle missing entity parameter", async () => {
@@ -194,6 +194,6 @@ describe("Datasource API Route - Session Recovery Integration", () => {
     const response = await POST(mockRequest);
 
     await expectErrorResponse(response, 400, "Entity is required");
-    expect(mockExecuteWithSessionRetry).not.toHaveBeenCalled();
+    expect(mockExecuteWithSessionAndCsrfRetry).not.toHaveBeenCalled();
   });
 });
