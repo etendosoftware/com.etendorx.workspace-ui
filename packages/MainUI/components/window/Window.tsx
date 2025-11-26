@@ -25,7 +25,7 @@ import { useUrlStateRecovery } from "@/hooks/useUrlStateRecovery";
 import TabsContainer from "@/components/window/TabsContainer";
 import { useState, useEffect, useMemo, useRef } from "react";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
-import { WindowState } from "@/utils/window/constants";
+import type { WindowState } from "@/utils/window/constants";
 
 export default function Window({ window }: { window: WindowState }) {
   const { windowId, windowIdentifier, initialized } = window;
@@ -34,7 +34,6 @@ export default function Window({ window }: { window: WindowState }) {
 
   const [isTransitioning, setIsTransitioning] = useState(false);
   const previousWindowIdentifier = useRef(windowIdentifier);
-
 
   /**
    * Calculate window metadata based on windowId.
@@ -48,13 +47,12 @@ export default function Window({ window }: { window: WindowState }) {
     }
   }, [windowId, getWindowMetadata]);
 
-
   // Add URL state recovery hook - only enabled for uninitialized windows
   const { isRecovering, recoveryError, recoveryState } = useUrlStateRecovery({
     windowId,
     windowIdentifier,
     windowData,
-    enabled: !loading && !!windowData && !error && !isTransitioning && !initialized
+    enabled: !loading && !!windowData && !error && !isTransitioning && !initialized,
   });
 
   /**

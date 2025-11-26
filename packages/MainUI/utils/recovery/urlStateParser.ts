@@ -19,15 +19,14 @@ export const parseUrlState = async (recoveryInfo: WindowRecoveryInfo): Promise<P
     throw new Error("Missing tabId or recordId for URL state parsing");
   }
 
-  const url = `/etendo/org.openbravo.client.kernel`;
   const params = new URLSearchParams({
     tabId: recoveryInfo.tabId,
     recordId: recoveryInfo.recordId,
-    _action: 'org.openbravo.client.application.ComputeWindowActionHandler'
+    _action: "org.openbravo.client.application.ComputeWindowActionHandler",
   });
 
   try {
-    const { ok, data } = await Metadata.kernelClient.request(`${url}?${params.toString()}`);
+    const { ok, data } = await Metadata.kernelClient.request(`?${params.toString()}`);
 
     if (!ok || !data) {
       throw new Error("Failed to fetch window action handler data");
@@ -52,6 +51,6 @@ export const parseUrlState = async (recoveryInfo: WindowRecoveryInfo): Promise<P
     };
   } catch (error) {
     console.error("Error parsing URL state:", error);
-    throw new Error(`Failed to parse URL state: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(`Failed to parse URL state: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 };
