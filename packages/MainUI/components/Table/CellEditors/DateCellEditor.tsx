@@ -15,14 +15,18 @@
  *************************************************************************
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 import type { CellEditorProps } from "../types/inlineEditing";
 import { useKeyboardNavigation } from "../utils/keyboardNavigation";
+import { formatClassicDate, getLocaleDatePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
+import CalendarIcon from "../../../../ComponentLibrary/src/assets/icons/calendar.svg";
 
 /**
  * Date input editor for date/datetime fields
- * Handles date formatting, parsing, validation, and error display
+ * Uses a dual-input approach like FormView DateInput:
+ * - Visible input: Shows formatted date in browser locale
+ * - Hidden input: Native HTML5 date/datetime picker
  * Memoized for performance optimization
  */
 const DateCellEditorComponent: React.FC<CellEditorProps> = ({
@@ -37,8 +41,9 @@ const DateCellEditorComponent: React.FC<CellEditorProps> = ({
   keyboardNavigationManager,
   shouldAutoFocus = false,
 }) => {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [localValue, setLocalValue] = useState<string>("");
+  const visibleInputRef = useRef<HTMLInputElement>(null);
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
+  const [displayValue, setDisplayValue] = useState<string>("");
   const [validationError, setValidationError] = useState<string>("");
 
   // Keyboard navigation hook
@@ -53,16 +58,29 @@ const DateCellEditorComponent: React.FC<CellEditorProps> = ({
 
   // Auto-focus only when shouldAutoFocus is true
   useEffect(() => {
-    if (inputRef.current && !disabled && shouldAutoFocus) {
-      inputRef.current.focus();
+    if (hiddenInputRef.current && !disabled && shouldAutoFocus) {
+      // Focus and open the picker
+      hiddenInputRef.current.focus();
+      hiddenInputRef.current.showPicker?.();
       // Register this cell as focused
       setFocused();
     }
   }, [shouldAutoFocus, disabled, setFocused]);
 
-  // Update local value when prop value changes
+  // Initialize and sync display value when prop value changes
   useEffect(() => {
-    setLocalValue(formatDateForInput(value));
+    const isoValue = formatDateForInput(value);
+    if (hiddenInputRef.current) {
+      hiddenInputRef.current.value = isoValue;
+    }
+
+    // Update the formatted display value
+    if (isoValue) {
+      const formatted = formatClassicDate(value, isDateTime);
+      setDisplayValue(formatted);
+    } else {
+      setDisplayValue("");
+    }
   }, [value, isDateTime]);
 
   /**
@@ -99,46 +117,81 @@ const DateCellEditorComponent: React.FC<CellEditorProps> = ({
 
   /**
    * Parse input value and convert to appropriate format
+   * Returns the format expected by Etendo Classic backend:
+   * - DATE: yyyy-MM-dd
+   * - DATETIME: yyyy-MM-ddTHH:mm:ss (without timezone)
    */
   const parseInputValue = (inputValue: string): string | null => {
     if (!inputValue) return null;
 
     try {
-      const date = new Date(inputValue);
+      // For date inputs, the value comes as "yyyy-MM-dd" string
+      // For datetime-local inputs, the value comes as "yyyy-MM-ddTHH:mm" string
 
-      // Check if date is valid
-      if (isNaN(date.getTime())) {
+      if (isDateTime) {
+        // For DATETIME fields, input format is: yyyy-MM-ddTHH:mm
+        // We need to add seconds: yyyy-MM-ddTHH:mm:ss
+        if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(inputValue)) {
+          // Clear any previous validation errors
+          setValidationError("");
+          return `${inputValue}:00`; // Add :00 for seconds
+        }
+
+        setValidationError("Invalid datetime format");
+        return null;
+      } else {
+        // For DATE fields, input format is already: yyyy-MM-dd
+        // This is exactly what Classic expects, so return it as-is
+        if (/^\d{4}-\d{2}-\d{2}$/.test(inputValue)) {
+          // Clear any previous validation errors
+          setValidationError("");
+          return inputValue;
+        }
+
         setValidationError("Invalid date format");
         return null;
       }
-
-      // Clear any previous validation errors
-      setValidationError("");
-
-      // Return ISO string for consistency
-      return date.toISOString();
     } catch (error) {
       setValidationError("Invalid date format");
       return null;
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleHiddenInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setLocalValue(newValue);
 
+    // Update the formatted display value immediately
+    if (newValue) {
+      const formatted = formatClassicDate(newValue, isDateTime);
+      setDisplayValue(formatted);
+    } else {
+      setDisplayValue("");
+    }
+
+    // Parse and send the value in the correct format for Classic
     const parsedValue = parseInputValue(newValue);
     onChange(parsedValue);
   };
 
-  const handleBlur = () => {
+  const handleBlur = useCallback(() => {
     onBlur();
-  };
+  }, [onBlur]);
 
-  const handleFocus = () => {
-    // Register this cell as focused when it receives focus
+  const handleVisibleInputClick = useCallback(() => {
+    // When clicking the visible input, open the hidden date picker
+    if (!disabled && hiddenInputRef.current) {
+      hiddenInputRef.current.showPicker?.();
+      hiddenInputRef.current.focus();
+    }
     setFocused();
-  };
+  }, [disabled, setFocused]);
+
+  const handleCalendarClick = useCallback(() => {
+    if (!disabled && hiddenInputRef.current) {
+      hiddenInputRef.current.showPicker?.();
+      hiddenInputRef.current.focus();
+    }
+  }, [disabled]);
 
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     // First try keyboard navigation
@@ -150,14 +203,23 @@ const DateCellEditorComponent: React.FC<CellEditorProps> = ({
         case "Enter":
           // This should be handled by navigation, but fallback to blur
           e.preventDefault();
-          inputRef.current?.blur();
+          hiddenInputRef.current?.blur();
           break;
         case "Escape":
           // This should be handled by navigation, but fallback to restore value
           e.preventDefault();
-          setLocalValue(formatDateForInput(value));
+          const isoValue = formatDateForInput(value);
+          if (hiddenInputRef.current) {
+            hiddenInputRef.current.value = isoValue;
+          }
+          if (isoValue) {
+            const formatted = formatClassicDate(value, isDateTime);
+            setDisplayValue(formatted);
+          } else {
+            setDisplayValue("");
+          }
           setValidationError("");
-          inputRef.current?.blur();
+          hiddenInputRef.current?.blur();
           break;
         default:
           // Allow normal date input behavior
@@ -168,25 +230,27 @@ const DateCellEditorComponent: React.FC<CellEditorProps> = ({
 
   const inputType = isDateTime ? "datetime-local" : "date";
   const hasValidationError = hasError || !!validationError;
+  const datePlaceholder = getLocaleDatePlaceholder();
 
   return (
-    <div className="inline-edit-date-container">
+    <div className="inline-edit-date-container relative flex items-center">
+      {/* Visible input showing formatted date in browser locale */}
       <input
-        ref={inputRef}
-        type={inputType}
-        value={localValue}
-        onChange={handleChange}
+        ref={visibleInputRef}
+        type="text"
+        value={displayValue}
+        readOnly
+        onClick={handleVisibleInputClick}
         onBlur={handleBlur}
-        onFocus={handleFocus}
-        onKeyDown={handleKeyDown}
         data-row-id={rowId}
         data-column-id={columnId}
         disabled={disabled}
         className={`
-          inline-edit-date
+          inline-edit-date-visible
           w-full
           px-2
           py-1
+          pr-8
           border
           rounded
           text-sm
@@ -194,6 +258,7 @@ const DateCellEditorComponent: React.FC<CellEditorProps> = ({
           focus:ring-2
           focus:ring-blue-500
           focus:border-transparent
+          cursor-pointer
           ${hasValidationError ? "border-red-500 bg-red-50 text-red-900" : "border-gray-300 bg-white"}
           ${disabled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "hover:border-gray-400"}
         `}
@@ -201,11 +266,35 @@ const DateCellEditorComponent: React.FC<CellEditorProps> = ({
         aria-label={field.name}
         aria-invalid={hasValidationError}
         aria-describedby={hasValidationError ? `${field.name}-error` : undefined}
+        placeholder={datePlaceholder}
       />
-
+      {/* Hidden native date/datetime picker */}
+      <input
+        ref={hiddenInputRef}
+        type={inputType}
+        onChange={handleHiddenInputChange}
+        onKeyDown={handleKeyDown}
+        data-row-id={rowId}
+        data-column-id={columnId}
+        disabled={disabled}
+        className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+      {/* Calendar icon button */}
+      <button
+        type="button"
+        onClick={handleCalendarClick}
+        disabled={disabled}
+        className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center justify-center text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        aria-label="Open date picker">
+        <CalendarIcon fill="currentColor" className="h-4 w-4" data-testid={"CalendarIcon__" + field.id} />
+      </button>
       {/* Show validation error message */}
       {validationError && (
-        <div id={`${field.name}-error`} className="inline-edit-error-message text-xs text-red-600 mt-1">
+        <div
+          id={`${field.name}-error`}
+          className="inline-edit-error-message text-xs text-red-600 mt-1 absolute top-full left-0">
           {validationError}
         </div>
       )}

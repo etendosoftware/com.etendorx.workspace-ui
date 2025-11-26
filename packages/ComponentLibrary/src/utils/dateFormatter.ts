@@ -25,10 +25,20 @@
 export const parseOBDate = (value: unknown): Date | null => {
   if (!value) return null;
 
-  // Only process strings, not numbers or other types
-  if (typeof value !== "string") return null;
+  // Only process strings and Date objects, NOT numbers
+  // Numbers like document numbers (60001, 50018) should not be parsed as dates
+  let stringValue: string;
+  if (typeof value === "string") {
+    stringValue = value.trim();
+  } else if (value instanceof Date) {
+    // Already a Date object
+    return Number.isNaN(value.getTime()) ? null : value;
+  } else {
+    // Don't process numbers or other types
+    return null;
+  }
 
-  const stringValue = value.trim();
+  if (!stringValue) return null;
 
   // Case: plain date without time (yyyy-MM-dd)
   if (/^\d{4}-\d{2}-\d{2}$/.test(stringValue)) {
@@ -46,6 +56,21 @@ export const parseOBDate = (value: unknown): Date | null => {
       const date = new Date(stringValue);
       // Validate that the date was parsed correctly
       if (Number.isNaN(date.getTime())) return null;
+      return date;
+    } catch {
+      return null;
+    }
+  }
+
+  // Try parsing as a general date string (fallback for unexpected formats)
+  // This handles formats like "2025-10-06 10:20:00" (space instead of T)
+  if (/^\d{4}-\d{2}-\d{2}/.test(stringValue)) {
+    try {
+      const date = new Date(stringValue);
+      // Validate that the date was parsed correctly and is reasonable
+      if (Number.isNaN(date.getTime())) return null;
+      // Sanity check: year should be between 1900 and 2200
+      if (date.getFullYear() < 1900 || date.getFullYear() > 2200) return null;
       return date;
     } catch {
       return null;

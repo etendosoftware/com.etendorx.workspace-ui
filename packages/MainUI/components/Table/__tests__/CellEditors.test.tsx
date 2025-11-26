@@ -370,7 +370,9 @@ describe("Cell Editor Components", () => {
         />
       );
 
-      const input = screen.getByDisplayValue("");
+      const inputs = screen.getAllByDisplayValue("");
+      const input = inputs.find((i) => i.getAttribute("type") === "text");
+      if (!input) throw new Error("Visible input not found");
       await user.type(input, "2023-12-25");
 
       expect(mockOnChange).toHaveBeenCalledWith(expect.stringContaining("2023-12-25"));
@@ -391,7 +393,9 @@ describe("Cell Editor Components", () => {
       );
 
       // Should render empty input for invalid date
-      expect(screen.getByDisplayValue("")).toBeInTheDocument();
+      const inputs = screen.getAllByDisplayValue("");
+      const visibleInput = inputs.find((i) => i.getAttribute("type") === "text");
+      expect(visibleInput).toBeInTheDocument();
     });
   });
 

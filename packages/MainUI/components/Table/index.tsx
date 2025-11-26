@@ -180,7 +180,7 @@ interface EditableCellContentProps {
     optionData?: Record<string, unknown>,
     field?: Field
   ) => void;
-  validateFieldOnBlur: (rowId: string, fieldKey: string, value: unknown) => void;
+  validateFieldOnBlur: (rowId: string, fieldKey: string) => void;
   setInitialFocusCell: (cell: { rowId: string; columnName: string } | null) => void;
   loadTableDirOptions: (
     field: Field,
@@ -241,7 +241,7 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
             handleCellValueChange(rowId, fieldKey, value, optionData, fieldMapping.field)
           }
           onBlur={() => {
-            validateFieldOnBlur(rowId, fieldKey, currentValue);
+            validateFieldOnBlur(rowId, fieldKey);
             if (shouldAutoFocus) {
               setInitialFocusCell(null);
             }
@@ -721,27 +721,46 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   // Immediate validation function for blur events with performance monitoring
   const validateFieldOnBlur = useCallback(
-    (rowId: string, fieldName: string, value: unknown) => {
-      performanceMonitor.measure(`validate-field-blur-${fieldName}`, () => {
-        // Use memoized field mapping to avoid column lookup
-        const fieldMapping = columnFieldMappings.get(fieldName);
-        if (!fieldMapping) return;
+    (rowId: string, fieldName: string) => {
+      // Add a small delay to ensure throttled onChange has completed
+      // handleCellValueChange is throttled to 50ms, so we wait 60ms to be safe
+      setTimeout(() => {
+        performanceMonitor.measure(`validate-field-blur-${fieldName}`, () => {
+          // Use memoized field mapping to avoid column lookup
+          const fieldMapping = columnFieldMappings.get(fieldName);
+          if (!fieldMapping) {
+            return;
+          }
 
-        // Use strict validation on blur
-        const validationResult = validateFieldRealTime(fieldMapping.field, value, {
-          allowEmpty: false,
-          showTypingErrors: true,
-        });
+          // Get the current value from the editing state (not from the closure)
+          // This ensures we validate the most recent value after onChange
+          const editingData = editingRowUtils.getEditingRowData(rowId);
+          if (!editingData) {
+            return;
+          }
 
-        // Update validation errors in state
-        const currentErrors = editingRows[rowId]?.validationErrors || {};
-        editingRowUtils.setRowValidationErrors(rowId, {
-          ...currentErrors,
-          [fieldName]: validationResult.error,
+          const currentValue =
+            fieldName in editingData.modifiedData
+              ? editingData.modifiedData[fieldName]
+              : editingData.originalData[fieldName];
+
+          // Only enforce non-empty validation if the field is mandatory
+          // Optional fields can be empty
+          const validationResult = validateFieldRealTime(fieldMapping.field, currentValue, {
+            allowEmpty: !fieldMapping.field.isMandatory,
+            showTypingErrors: true,
+          });
+
+          // Update validation errors in state
+          const currentErrors = editingData.validationErrors || {};
+          editingRowUtils.setRowValidationErrors(rowId, {
+            ...currentErrors,
+            [fieldName]: validationResult.error,
+          });
         });
-      });
+      }, 60); // Wait for throttled onChange to complete (50ms + 10ms buffer)
     },
-    [columnFieldMappings, editingRowUtils, editingRows, performanceMonitor]
+    [columnFieldMappings, editingRowUtils, performanceMonitor]
   );
 
   // Helper function to get Field by name using the columnFieldMappings cache
