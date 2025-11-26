@@ -96,13 +96,14 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
     const cancelButtonAttrs = generateAriaAttributes.actionButton("Cancel", String(row.original.id), isSaving);
 
     return (
-      <fieldset className="flex items-center gap-1 min-w-[80px]" aria-label="Row editing actions">
+    <fieldset className="flex items-center justify-center gap-1 min-w-[80px]" aria-label="Row editing actions">
         <IconButton
           onClick={onSave}
           disabled={isSaving || hasErrors}
           title={hasErrors ? "Fix validation errors before saving" : "Save"}
           className={`
-            ${hasErrors ? "text-gray-400 cursor-not-allowed" : "text-green-600 hover:text-green-800 hover:bg-green-50"}
+            w-6 h-6 border border-gray-200
+            ${hasErrors ? "text-gray-400 cursor-not-allowed" : "text-green-600 hover:text-green-800 hover:bg-green-200"}
             transition-colors duration-200
           `}
           data-testid={`save-button-${String(row.original.id)}`}
@@ -117,7 +118,7 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
           onClick={onCancel}
           disabled={isSaving}
           title="Cancel"
-          className="text-red-600 hover:text-red-800 hover:bg-red-50 transition-colors duration-200"
+          className="w-6 h-6 border border-gray-200 text-red-600 hover:text-red-800 hover:bg-red-200 transition-colors duration-200"
           data-testid={`cancel-button-${String(row.original.id)}`}
           {...cancelButtonAttrs}>
           <XIcon className="w-4 h-4" data-testid="XIcon__6c559a" />
@@ -142,11 +143,11 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
   const formButtonAttrs = generateAriaAttributes.actionButton("Open form view", String(row.original.id));
 
   return (
-    <fieldset className="flex items-center gap-1 min-w-[80px]" aria-label="Row actions">
+    <fieldset className="flex items-center justify-center gap-1 min-w-[80px]" aria-label="Row actions">
       <IconButton
         onClick={onEdit}
         title="Edit in grid"
-        className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors duration-200"
+        className="w-6 h-6 text-blue-600"
         data-testid={`edit-button-${String(row.original.id)}`}
         {...editButtonAttrs}>
         <EditIcon className="w-4 h-4" data-testid="EditIcon__6c559a" />
@@ -154,7 +155,7 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
       <IconButton
         onClick={onOpenForm}
         title="Open form view"
-        className="text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors duration-200"
+        className="w-6 h-6 text-gray-600"
         data-testid={`form-button-${String(row.original.id)}`}
         {...formButtonAttrs}>
         <ExternalLinkIcon className="w-4 h-4" data-testid="ExternalLinkIcon__6c559a" />

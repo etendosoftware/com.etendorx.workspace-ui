@@ -6,7 +6,7 @@
 /* Cell container styles */
 .inline-edit-cell-container {
   position: relative;
-  min-height: 32px;
+  min-height: 28px;
   width: 100%;
   max-width: 100%;
   display: flex;
@@ -14,7 +14,7 @@
 }
 
 .table-cell-content {
-  padding: 4px 8px;
+  padding: 0 0.25rem;
   display: flex;
   align-items: center;
   flex: 1;
@@ -60,7 +60,7 @@ td:has(.inline-edit-cell-container) {
 .inline-edit-number,
 .inline-edit-checkbox {
   width: 100%;
-  padding: 6px 8px;
+  padding: 4px 8px;
   border: 1px solid #d1d5db;
   border-radius: 4px;
   font-size: 14px;
