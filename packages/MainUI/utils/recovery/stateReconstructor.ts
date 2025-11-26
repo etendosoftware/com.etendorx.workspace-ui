@@ -45,8 +45,12 @@ export const reconstructState = async (
       tabs[tabNode.tabId].selectedRecord = currentRecordId;
       tabs[tabNode.tabId].form = getNewTabFormState(currentRecordId, TAB_MODES.FORM, FORM_MODES.EDIT);
     } else {
+      if (!currentRecordId) {
+        console.warn(`No current record ID available for parent tab ${tabNode.tabId}`);
+        continue; // No record to select parent on
+      }
       // For parent tabs, calculate the selected record
-      const selectedRecord = await calculateParentSelectedRecord(tabNode, currentRecordId!, windowMetadata);
+      const selectedRecord = await calculateParentSelectedRecord(tabNode, currentRecordId, windowMetadata);
 
       currentRecordId = selectedRecord;
       tabs[tabNode.tabId].selectedRecord = selectedRecord;
@@ -110,7 +114,7 @@ const calculateParentSelectedRecord = async (
 
     return String(parentRecordId);
   } catch (error) {
-    console.error(`Error calculating parent selected record:`, error);
+    console.error("Error calculating parent selected record: ", error);
     throw new Error(`Failed to calculate parent record: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 };

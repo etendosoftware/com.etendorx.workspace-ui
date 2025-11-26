@@ -120,6 +120,7 @@ export const useUrlStateRecovery = ({
         setWindowActive({
           windowIdentifier,
           windowData: {
+            title: urlState.tabTitle,
             initialized: true,
             tabs: reconstructedState.tabs,
             navigation: reconstructedState.navigation,
