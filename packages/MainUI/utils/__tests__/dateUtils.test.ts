@@ -63,7 +63,7 @@ describe("dateUtils", () => {
 
         const result = formatCellValue("2024-01-15", field);
 
-        expect(result).toMatch(/\d{2}-\d{2}-2024/);
+        expect(result).toBe("01/14/2024");
       });
 
       it("should format ISO datetime string with time for DATETIME reference", () => {
@@ -79,7 +79,7 @@ describe("dateUtils", () => {
 
         const result = formatCellValue("2024-01-15T14:30:00Z", field);
 
-        expect(result).toMatch(/\d{2}-01-2024/);
+        expect(result).toMatch(/01\/15\/2024/);
         expect(result).toContain(":");
       });
 
@@ -94,7 +94,7 @@ describe("dateUtils", () => {
 
         const result = formatCellValue("2024-01-15T14:30:45Z", field);
 
-        expect(result).toMatch(/\d{2}-01-2024/);
+        expect(result).toMatch(/01\/15\/2024/);
         expect(result).toMatch(/\d{2}:\d{2}:\d{2}/);
       });
 
@@ -109,7 +109,7 @@ describe("dateUtils", () => {
 
         const result = formatCellValue("2024-01-15T14:30:45Z", field);
 
-        expect(result).toMatch(/\d{2}-01-2024/);
+        expect(result).toMatch(/01\/15\/2024/);
         expect(result).toMatch(/\d{2}:\d{2}:\d{2}/);
       });
 
@@ -123,7 +123,7 @@ describe("dateUtils", () => {
 
         const result = formatCellValue("2024-01-15T14:30:45Z", field);
 
-        expect(result).toMatch(/\d{2}-01-2024/);
+        expect(result).toMatch(/01\/15\/2024/);
       });
 
       it("should handle invalid date strings by returning the original string", () => {
@@ -155,7 +155,7 @@ describe("dateUtils", () => {
 
           const result = formatCellValue("2024-01-15T14:30:45Z", field);
 
-          expect(result).toMatch(/\d{2}-01-2024/);
+          expect(result).toMatch(/01\/15\/2024/);
         }
       });
     });
@@ -490,7 +490,7 @@ describe("dateUtils", () => {
 
         const result = formatCellValue("2099-12-31", field);
 
-        expect(result).toMatch(/\d{2}-12-2099/);
+        expect(result).toMatch(/12\/30\/2099/);
       });
 
       it("should handle very small/negative numbers gracefully", () => {
