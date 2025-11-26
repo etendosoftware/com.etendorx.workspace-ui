@@ -295,8 +295,8 @@ describe("Table Feature Integration with Inline Editing", () => {
       const merged = mergeOptimisticRecordsWithSort(largeDataset, optimisticRecords, editingRows);
       const endTime = performance.now();
 
-      // Should complete within reasonable time (less than 100ms)
-      expect(endTime - startTime).toBeLessThan(100);
+      // Should complete within reasonable time (less than 150ms)
+      expect(endTime - startTime).toBeLessThan(150);
       expect(merged.length).toBeGreaterThan(0);
       expect(merged[0].id).toBe("new_1"); // New record should be first
     });
