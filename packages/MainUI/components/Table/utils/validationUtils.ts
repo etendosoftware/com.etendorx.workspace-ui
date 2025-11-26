@@ -656,6 +656,56 @@ function validateTextFieldRealTime(
   return { isValid: true };
 }
 
+const SYSTEM_FIELDS = ["id", "actions", "creationDate", "createdBy", "updated", "updatedBy"];
+
+function isSystemField(fieldName: string): boolean {
+  return SYSTEM_FIELDS.includes(fieldName);
+}
+
+function getFieldKey(field: Field | Column): string {
+  if ("hqlName" in field && field.hqlName) {
+    return field.hqlName;
+  }
+  if ("columnName" in field && field.columnName) {
+    return field.columnName;
+  }
+  return field.name;
+}
+
+function validateFieldForSave(field: Field | Column, rowData: EntityData): ValidationError | null {
+  if (isSystemField(field.name)) {
+    return null;
+  }
+
+  // Convert Column to Field if needed
+  const fieldData: Field = ("type" in field ? field : columnToFieldForValidation(field)) as Field;
+
+  // Skip validation for readonly fields
+  if (fieldData.isReadOnly || !fieldData.isUpdatable) {
+    return null;
+  }
+
+  const fieldKey = getFieldKey(field);
+  const value = rowData[fieldKey] ?? rowData[field.name];
+
+  // Use strict validation for save operations
+  // Only mandatory fields must be non-empty
+  const validationResult = validateFieldRealTime(fieldData, value, {
+    allowEmpty: !fieldData.isMandatory,
+    showTypingErrors: true,
+  });
+
+  if (!validationResult.isValid && validationResult.error) {
+    return {
+      field: field.name,
+      message: validationResult.error,
+      type: "format",
+    };
+  }
+
+  return null;
+}
+
 /**
  * Validates a row and prevents save if validation fails
  * @param fields Array of field metadata
@@ -666,52 +716,9 @@ export function validateRowForSave(fields: (Field | Column)[], rowData: EntityDa
   const errors: ValidationError[] = [];
 
   for (const field of fields) {
-    // Skip system fields
-    if (
-      field.name === "id" ||
-      field.name === "actions" ||
-      field.name === "creationDate" ||
-      field.name === "createdBy" ||
-      field.name === "updated" ||
-      field.name === "updatedBy"
-    ) {
-      continue;
-    }
-
-    // Convert Column to Field if needed
-    const fieldData: Field = ("type" in field ? field : columnToFieldForValidation(field)) as Field;
-
-    // Skip validation for readonly fields
-    if (fieldData.isReadOnly || !fieldData.isUpdatable) {
-      continue;
-    }
-
-    // Try to get value using the most specific key available
-    // Priority: hqlName > columnName > name
-    // This ensures we match how data is actually stored in rowData
-    let fieldKey: string;
-    if ("hqlName" in field && field.hqlName) {
-      fieldKey = field.hqlName;
-    } else if ("columnName" in field && field.columnName) {
-      fieldKey = field.columnName;
-    } else {
-      fieldKey = field.name;
-    }
-    const value = rowData[fieldKey] ?? rowData[field.name];
-
-    // Use strict validation for save operations
-    // Only mandatory fields must be non-empty
-    const validationResult = validateFieldRealTime(fieldData, value, {
-      allowEmpty: !fieldData.isMandatory,
-      showTypingErrors: true,
-    });
-
-    if (!validationResult.isValid && validationResult.error) {
-      errors.push({
-        field: field.name,
-        message: validationResult.error,
-        type: "format",
-      });
+    const error = validateFieldForSave(field, rowData);
+    if (error) {
+      errors.push(error);
     }
   }
 

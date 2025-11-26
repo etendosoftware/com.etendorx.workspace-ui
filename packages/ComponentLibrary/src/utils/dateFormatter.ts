@@ -22,63 +22,55 @@
  * @param value - The date string to parse
  * @returns A Date object or null if the value is invalid
  */
+const getStringValue = (value: unknown): string | null => {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed || null;
+  }
+  return null;
+};
+
+const parsePlainDate = (value: string): Date | null => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [y, m, d] = value.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const parseISODate = (value: string): Date | null => {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) return null;
+  try {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  } catch {
+    return null;
+  }
+};
+
+const parseGeneralDate = (value: string): Date | null => {
+  if (!/^\d{4}-\d{2}-\d{2}/.test(value)) return null;
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    // Sanity check: year should be between 1900 and 2200
+    if (date.getFullYear() < 1900 || date.getFullYear() > 2200) return null;
+    return date;
+  } catch {
+    return null;
+  }
+};
+
 export const parseOBDate = (value: unknown): Date | null => {
   if (!value) return null;
 
-  // Only process strings and Date objects, NOT numbers
-  // Numbers like document numbers (60001, 50018) should not be parsed as dates
-  let stringValue: string;
-  if (typeof value === "string") {
-    stringValue = value.trim();
-  } else if (value instanceof Date) {
-    // Already a Date object
+  if (value instanceof Date) {
     return Number.isNaN(value.getTime()) ? null : value;
-  } else {
-    // Don't process numbers or other types
-    return null;
   }
 
+  const stringValue = getStringValue(value);
   if (!stringValue) return null;
 
-  // Case: plain date without time (yyyy-MM-dd)
-  if (/^\d{4}-\d{2}-\d{2}$/.test(stringValue)) {
-    const [y, m, d] = stringValue.split("-").map(Number);
-    const date = new Date(y, m - 1, d);
-    // Validate that the date was parsed correctly
-    if (Number.isNaN(date.getTime())) return null;
-    return date;
-  }
-
-  // Case: datetime with timezone or ISO format (2025-10-06T10:20:00-03:00)
-  // Must match ISO 8601 pattern to avoid parsing random numbers
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(stringValue)) {
-    try {
-      const date = new Date(stringValue);
-      // Validate that the date was parsed correctly
-      if (Number.isNaN(date.getTime())) return null;
-      return date;
-    } catch {
-      return null;
-    }
-  }
-
-  // Try parsing as a general date string (fallback for unexpected formats)
-  // This handles formats like "2025-10-06 10:20:00" (space instead of T)
-  if (/^\d{4}-\d{2}-\d{2}/.test(stringValue)) {
-    try {
-      const date = new Date(stringValue);
-      // Validate that the date was parsed correctly and is reasonable
-      if (Number.isNaN(date.getTime())) return null;
-      // Sanity check: year should be between 1900 and 2200
-      if (date.getFullYear() < 1900 || date.getFullYear() > 2200) return null;
-      return date;
-    } catch {
-      return null;
-    }
-  }
-
-  // Don't attempt to parse any other formats
-  return null;
+  return parsePlainDate(stringValue) || parseISODate(stringValue) || parseGeneralDate(stringValue);
 };
 
 /**
