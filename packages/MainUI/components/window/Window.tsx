@@ -39,17 +39,17 @@ export default function Window({ window }: { window: WindowState }) {
    * Calculate window metadata based on windowId.
    * This is memoized to avoid unnecessary recalculations.
    */
-  const windowData = useMemo(() => {
+  const windowData: Etendo.WindowMetadata | undefined = useMemo(() => {
     try {
-      return getWindowMetadata(windowId) ?? null;
+      return getWindowMetadata(windowId);
     } catch (error) {
-      return {} as Etendo.WindowMetadata;
+      console.error("Error fetching window metadata for windowId:", windowId, error);
+      return undefined;
     }
   }, [windowId, getWindowMetadata]);
 
   // Add URL state recovery hook - only enabled for uninitialized windows
-  const { isRecovering, recoveryError, recoveryState } = useUrlStateRecovery({
-    windowId,
+  const { isRecovering, recoveryError } = useUrlStateRecovery({
     windowIdentifier,
     windowData,
     enabled: !loading && !!windowData && !error && !isTransitioning && !initialized,

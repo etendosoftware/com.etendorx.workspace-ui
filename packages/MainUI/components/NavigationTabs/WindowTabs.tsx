@@ -27,7 +27,7 @@ import MenuTabs from "@/components/NavigationTabs/MenuTabs";
 import { useTabs } from "@/contexts/tabs";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useWindowContext } from "@/contexts/window";
-import { WindowState } from "@/utils/window/constants";
+import type { WindowState } from "@/utils/window/constants";
 
 export default function WindowTabs() {
   const { t } = useTranslation();
