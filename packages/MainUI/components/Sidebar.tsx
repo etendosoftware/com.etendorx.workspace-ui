@@ -22,6 +22,7 @@ import ProcessIframeModal from "./ProcessModal/Iframe";
 import type { ProcessIframeModalProps } from "./ProcessModal/types";
 import formsData from "../utils/processes/forms/data.json";
 import { useRuntimeConfig } from "../hooks/useRuntimeConfig";
+import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 
 interface ExtendedMenu extends Menu {
   processDefinitionId?: string;
@@ -43,7 +44,7 @@ const buildProcessUrl = (processId: string, token: string | null, baseUrl: strin
   if (token) {
     params.append("token", token);
   }
-  return `${baseUrl}/ad_actionButton/ActionButton_Responser.html?${params.toString()}`;
+  return `${baseUrl}${API_IFRAME_FORWARD_PATH}/ad_actionButton/ActionButton_Responser.html?${params.toString()}`;
 };
 
 const buildFormUrl = (formId: string, token: string | null, baseUrl: string): string | null => {

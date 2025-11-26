@@ -257,11 +257,24 @@ export class LegacyColumnFilterUtils {
       "478169542A1747BD942DD70C8B45089C", // ABSOLUTE_DATETIME
     ];
 
-    // Get reference from the correct location in the column structure
+    // Get reference from the correct location in the column structure (most reliable)
     const columnReference = column.reference || (column as any).column?.reference;
 
-    // Primary check: Use reference codes for accurate date field identification
+    // PRIMARY CHECK: Use reference codes for accurate date field identification
+    // If reference explicitly says it's NOT a date (e.g., "10" = String), return false immediately
+    if (columnReference && !DATE_REFERENCE_CODES.includes(columnReference)) {
+      // Reference explicitly says this is NOT a date field (e.g., "10" = String)
+      // Don't trust column.type if reference says otherwise
+      return false;
+    }
+
+    // If reference code says it IS a date, trust that
     if (columnReference && DATE_REFERENCE_CODES.includes(columnReference)) {
+      return true;
+    }
+
+    // Check for type field as secondary indicator
+    if (column.type === "date" || column.type === "datetime") {
       return true;
     }
 
@@ -312,9 +325,52 @@ export class LegacyColumnFilterUtils {
   }
 
   /**
-   * Converts date format from DD-MM-YYYY to YYYY-MM-DD for backend compatibility
+   * Detects the date format order from the browser's locale
+   * Returns the order of date parts (day, month, year)
+   * @returns 'dd-mm-yyyy' | 'mm-dd-yyyy' | 'yyyy-mm-dd'
+   */
+  private static getLocaleDateFormatOrder(): "dd-mm-yyyy" | "mm-dd-yyyy" | "yyyy-mm-dd" {
+    try {
+      // Use a sample date (1st of February, 2034) to determine the format
+      const sampleDate = new Date(2034, 1, 1); // Month is 0-indexed
+      const formatted = new Intl.DateTimeFormat(undefined, {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }).format(sampleDate);
+
+      // Check if starts with year (2034)
+      if (formatted.includes("2034") && formatted.indexOf("2034") === 0) {
+        return "yyyy-mm-dd";
+      }
+
+      // Check if month comes before day (02 before 01)
+      // If formatted string has "02" before "01", it's MM-DD-YYYY
+      const indexOf02 = formatted.indexOf("02");
+      const indexOf01 = formatted.indexOf("01");
+
+      if (indexOf02 !== -1 && indexOf01 !== -1 && indexOf02 < indexOf01) {
+        return "mm-dd-yyyy";
+      }
+
+      // Default to DD-MM-YYYY (most locales)
+      return "dd-mm-yyyy";
+    } catch {
+      return "dd-mm-yyyy";
+    }
+  }
+
+  /**
+   * Converts date format from browser locale format to YYYY-MM-DD for backend compatibility
+   * Supports multiple formats:
+   * - DD-MM-YYYY, DD.MM.YYYY, DD/MM/YYYY (any separator)
+   * - MM-DD-YYYY, MM/DD/YYYY, MM.DD.YYYY (USA format)
+   * - YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD (ISO and variants)
+   * Also handles ISO 8601 format (YYYY-MM-DDTHH:MM:SS)
    */
   static convertDateFormatForBackend(dateValue: string): string {
+    if (!dateValue) return dateValue;
+
     // Pattern for YYYY-MM-DD format (backend expected)
     const yyyyMmDdPattern = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -323,13 +379,38 @@ export class LegacyColumnFilterUtils {
       return dateValue;
     }
 
-    // Pattern for DD-MM-YYYY format
-    const ddMmYyyyPattern = /^(\d{2})-(\d{2})-(\d{4})$/;
-    const match = dateValue.match(ddMmYyyyPattern);
+    // Pattern for ISO 8601 format (YYYY-MM-DDTHH:MM:SS)
+    const isoPattern = /^(\d{4})-(\d{2})-(\d{2})T/;
+    if (isoPattern.test(dateValue)) {
+      // Extract just the date part
+      const [datePart] = dateValue.split("T");
+      return datePart;
+    }
+
+    // Pattern for YYYY/MM/DD, YYYY.MM.DD, or YYYY-MM-DD format (4+2+2)
+    const yyyyMmDdAlternativePattern = /^(\d{4})[-./](\d{2})[-./](\d{2})$/;
+    const yyyyMatch = dateValue.match(yyyyMmDdAlternativePattern);
+
+    if (yyyyMatch) {
+      const [, year, month, day] = yyyyMatch;
+      return `${year}-${month}-${day}`;
+    }
+
+    // Pattern for dates with 2+2+4 format (could be DD-MM-YYYY or MM-DD-YYYY)
+    const twoTwoFourPattern = /^(\d{2})[-./](\d{2})[-./](\d{4})$/;
+    const match = dateValue.match(twoTwoFourPattern);
 
     if (match) {
-      const [, day, month, year] = match;
-      return `${year}-${month}-${day}`;
+      const [, first, second, year] = match;
+      const localeFormat = LegacyColumnFilterUtils.getLocaleDateFormatOrder();
+
+      if (localeFormat === "mm-dd-yyyy") {
+        // User's locale is MM/DD/YYYY, so first is month, second is day
+        return `${year}-${first}-${second}`;
+      }
+
+      // Default to DD-MM-YYYY (first is day, second is month)
+      return `${year}-${second}-${first}`;
     }
 
     // If no pattern matches, return as-is (let backend handle validation)
@@ -344,7 +425,13 @@ export class LegacyColumnFilterUtils {
     const result: BaseCriteria[] = [];
 
     if (rangeFilter.from !== null && rangeFilter.from !== undefined) {
-      const formattedValue = LegacyColumnFilterUtils.formatValueForType(rangeFilter.from, column);
+      let formattedValue = LegacyColumnFilterUtils.formatValueForType(rangeFilter.from, column);
+
+      // For date fields, convert to backend format (YYYY-MM-DD)
+      if (formattedValue !== null && LegacyColumnFilterUtils.isDateField(fieldName, column)) {
+        formattedValue = LegacyColumnFilterUtils.convertDateFormatForBackend(String(formattedValue));
+      }
+
       if (formattedValue !== null) {
         result.push({
           fieldName,
@@ -355,7 +442,13 @@ export class LegacyColumnFilterUtils {
     }
 
     if (rangeFilter.to !== null && rangeFilter.to !== undefined) {
-      const formattedValue = LegacyColumnFilterUtils.formatValueForType(rangeFilter.to, column);
+      let formattedValue = LegacyColumnFilterUtils.formatValueForType(rangeFilter.to, column);
+
+      // For date fields, convert to backend format (YYYY-MM-DD)
+      if (formattedValue !== null && LegacyColumnFilterUtils.isDateField(fieldName, column)) {
+        formattedValue = LegacyColumnFilterUtils.convertDateFormatForBackend(String(formattedValue));
+      }
+
       if (formattedValue !== null) {
         result.push({
           fieldName,
@@ -442,6 +535,71 @@ export class LegacyColumnFilterUtils {
     ];
   }
 
+  /**
+   * Detects if a date string contains a range (e.g., "09-20-2025 - 09-30-2025")
+   * and parses it into {from, to} format
+   */
+  private static parseDateRangeIfExists(
+    value: unknown,
+    column: Column
+  ): { from: FormattedValue | null; to: FormattedValue | null } | null {
+    if (!LegacyColumnFilterUtils.isDateField(column.columnName, column)) {
+      return null;
+    }
+
+    const stringValue = String(value);
+
+    // FIX: Use string search instead of Regex to prevent ReDoS.
+    // This looks for " -" (space followed by dash), which matches the intent
+    // of the original regex `\s+-\s*`.
+    // The check ensures we don't split on the hyphens INSIDE a date (e.g., 2025-01-01)
+    // because those do not have a preceding space.
+    const separatorIndex = stringValue.indexOf(" -");
+
+    if (separatorIndex === -1) {
+      return null;
+    }
+
+    const fromStr = stringValue.substring(0, separatorIndex);
+    // +2 skips the " -" characters. trim() handles the rest of the spacing.
+    const toStr = stringValue.substring(separatorIndex + 2);
+
+    const fromTrimmed = fromStr.trim();
+    const toTrimmed = toStr.trim();
+
+    // At least one of them must look like a date
+    const fromIsDate = LegacyColumnFilterUtils.looksLikeDateInput(fromTrimmed);
+    const toIsDate = LegacyColumnFilterUtils.looksLikeDateInput(toTrimmed);
+
+    if (!fromIsDate && !toIsDate) {
+      return null;
+    }
+
+    // Both from and to are optional, but at least one must be a date
+    return {
+      from: fromIsDate ? fromTrimmed : null,
+      to: toIsDate ? toTrimmed : null,
+    };
+  }
+
+  /**
+   * Checks if a string looks like a date input with proper format (2 digits, separator, 2 digits, separator, 4 digits)
+   */
+  private static looksLikeDateInput(value: string): boolean {
+    if (!value) return false;
+
+    // Match patterns:
+    // DD-MM-YYYY, DD/MM/YYYY, DD.MM.YYYY format (2+2+4 with separator)
+    // MM-DD-YYYY format (2+2+4 with separator)
+    // YYYY-MM-DD format (4+2+2 with separator)
+    const datePatterns = [
+      /^\d{2}[-\/\.]\d{2}[-\/\.]\d{4}$/, // DD-MM-YYYY or MM-DD-YYYY
+      /^\d{4}[-\/\.]\d{2}[-\/\.]\d{2}$/, // YYYY-MM-DD
+    ];
+
+    return datePatterns.some((pattern) => pattern.test(value));
+  }
+
   static createColumnFilterCriteria(columnFilters: MRT_ColumnFiltersState, columns: Column[]): BaseCriteria[] {
     if (!columnFilters.length) return [];
 
@@ -456,10 +614,13 @@ export class LegacyColumnFilterUtils {
 
       // Use filterFieldName if available (for WindowReferenceGrid), otherwise use columnName
       const fieldName = (column as any).filterFieldName || column.columnName;
-      if (filter.value === undefined || filter.value === null) continue;
+      if (filter.value === undefined || filter.value === null) {
+        continue;
+      }
 
       let filterCriteria: BaseCriteria[] = [];
 
+      // Check if it's already a range object
       if (typeof filter.value === "object" && filter.value !== null && "from" in filter.value && "to" in filter.value) {
         filterCriteria = LegacyColumnFilterUtils.handleRangeFilter(
           fieldName,
@@ -470,7 +631,14 @@ export class LegacyColumnFilterUtils {
         // Handle dropdown filters (our new implementation)
         filterCriteria = LegacyColumnFilterUtils.handleArrayFilter(fieldName, filter.value, column);
       } else {
-        filterCriteria = LegacyColumnFilterUtils.handleSingleValueFilter(fieldName, filter.value, column);
+        // Check if it's a date range string (e.g., "2025-11-01 - 2025-11-19" or "2025-11-01 - " for desde only)
+        const dateRange = LegacyColumnFilterUtils.parseDateRangeIfExists(filter.value, column);
+
+        if (dateRange) {
+          filterCriteria = LegacyColumnFilterUtils.handleRangeFilter(fieldName, dateRange, column);
+        } else {
+          filterCriteria = LegacyColumnFilterUtils.handleSingleValueFilter(fieldName, filter.value, column);
+        }
       }
 
       allCriteria.push(...filterCriteria);

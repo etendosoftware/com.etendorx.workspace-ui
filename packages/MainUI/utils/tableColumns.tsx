@@ -22,7 +22,7 @@ import { type Column, type Field, FieldType } from "@workspaceui/api-client/src/
 import { DEFAULT_STATUS_CONFIG, IDENTIFIER_KEY, statusConfig, yesNoConfig } from "./columnsConstants";
 import { isColorString, getContrastTextColor } from "@/utils/color/utils";
 
-// Utility function to format audit date fields only
+// Utility function to format audit date fields using browser's locale
 const formatAuditDateField = (value: unknown): string => {
   if (!value || typeof value !== "string") return String(value || "");
 
@@ -30,16 +30,14 @@ const formatAuditDateField = (value: unknown): string => {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return String(value);
 
-    // Format as DD-MM-YYYY HH:mm:ss
-    const dateStr = new Intl.DateTimeFormat("es-AR", {
+    // Format as DD-MM-YYYY HH:mm:ss using browser's locale
+    const dateStr = new Intl.DateTimeFormat(undefined, {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
-    })
-      .format(date)
-      .replace(/\//g, "-");
+    }).format(date);
 
-    const timeStr = new Intl.DateTimeFormat("es-AR", {
+    const timeStr = new Intl.DateTimeFormat(undefined, {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
