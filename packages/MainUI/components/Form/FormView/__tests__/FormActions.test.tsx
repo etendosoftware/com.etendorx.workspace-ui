@@ -91,12 +91,12 @@ describe("FormActions", () => {
   beforeEach(() => {
     mockReplace.mockClear();
     // Clear all search params
-    Array.from(mockSearchParams.keys()).forEach(key => mockSearchParams.delete(key));
-    
+    Array.from(mockSearchParams.keys()).forEach((key) => mockSearchParams.delete(key));
+
     // Initialize a window in URL params
-    mockSearchParams.set('w_WIN1', 'active');
-    mockSearchParams.set('wi_WIN1', 'WIN1');
-    mockSearchParams.set('o_WIN1', '1');
+    mockSearchParams.set("w_WIN1", "active");
+    mockSearchParams.set("wi_WIN1", "WIN1");
+    mockSearchParams.set("o_WIN1", "1");
   });
 
   it("renders and registers actions", () => {

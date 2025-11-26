@@ -90,7 +90,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     useTableStatePersistenceTab({
       windowIdentifier: activeWindow?.windowIdentifier || "",
       tabId: tab.id,
-      tabLevel: tab.tabLevel
+      tabLevel: tab.tabLevel,
     });
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -501,20 +501,20 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     // Disable "Select All" when there are more records to load
     muiSelectAllCheckboxProps: hasMoreRecords
       ? {
-        disabled: true,
-        // Wrap disabled checkbox in a span to enable tooltip
-        sx: {
-          "&.Mui-disabled": {
-            pointerEvents: "auto", // Allow hover on disabled element
-            cursor: "not-allowed",
+          disabled: true,
+          // Wrap disabled checkbox in a span to enable tooltip
+          sx: {
+            "&.Mui-disabled": {
+              pointerEvents: "auto", // Allow hover on disabled element
+              cursor: "not-allowed",
+            },
           },
-        },
-        title: t("table.selectAll.disabledTooltip"),
-      }
+          title: t("table.selectAll.disabledTooltip"),
+        }
       : {
-        disabled: false,
-        title: t("table.selectAll.enabledTooltip"),
-      },
+          disabled: false,
+          title: t("table.selectAll.enabledTooltip"),
+        },
     positionToolbarAlertBanner: "none",
     muiTableBodyRowProps: rowProps,
     muiTableContainerProps: {
@@ -782,7 +782,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     registerActions({
       refresh: refetch,
       filter: toggleImplicitFilters,
-      save: async () => { },
+      save: async () => {},
       columnFilters: toggleColumnsDropdown,
     });
   }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown]);
@@ -850,8 +850,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   return (
     <div
-      className={`h-full overflow-hidden rounded-3xl transition-opacity flex flex-col ${loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
-        }`}>
+      className={`h-full overflow-hidden rounded-3xl transition-opacity flex flex-col ${
+        loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
+      }`}>
       <RecordCounterBar
         totalRecords={totalRecords}
         loadedRecords={loadedRecords}

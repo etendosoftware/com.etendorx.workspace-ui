@@ -184,14 +184,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
 
           const isTopGroup = index === firstExpandedIndex && firstExpandedIndex !== -1;
 
-          return (
-            <Tabs
-              key={tabs[0].id}
-              tabs={tabs}
-              isTopGroup={isTopGroup}
-              data-testid="Tabs__895626"
-            />
-          );
+          return <Tabs key={tabs[0].id} tabs={tabs} isTopGroup={isTopGroup} data-testid="Tabs__895626" />;
         })}
       </div>
     </TabRefreshProvider>

@@ -15,21 +15,14 @@
  *************************************************************************
  */
 
-import {
-  TAB_MODES,
-  TabFormState,
-  FORM_MODES,
-  NEW_RECORD_ID,
-  FormMode,
-  TabMode,
-} from "@/utils/url/constants";
+import { TAB_MODES, TabFormState, FORM_MODES, NEW_RECORD_ID, FormMode, TabMode } from "@/utils/url/constants";
 import {
   TableState,
   NavigationState,
   WindowContextState,
   TabState,
   WindowState,
-  WindowRecoveryInfo
+  WindowRecoveryInfo,
 } from "@/utils/window/constants";
 
 /**
@@ -58,7 +51,7 @@ export const getNewTabFormState = (
  * Extracts the window ID from a window identifier.
  * @param windowIdentifier - The window identifier to extract the ID from
  * @returns The extracted window ID
- * 
+ *
  * @example
  * const windowId = getWindowIdFromIdentifier("12345_67890");
  * // Returns: "12345"
@@ -69,7 +62,7 @@ export const getWindowIdFromIdentifier = (windowIdentifier: string): string => {
     return windowIdentifier;
   }
   return windowIdentifier.substring(0, underscoreIndex);
-}
+};
 
 /**
  * Generates a unique window identifier by appending a timestamp to the window ID.
@@ -115,13 +108,18 @@ export const createDefaultTabState = (tabLevel: number = 0): TabState => ({
  * @param tabId - The ID of the tab within the window
  * @param tabLevel - The hierarchical level of the tab (defaults to 0)
  * @returns A new state object with the window and tab guaranteed to exist
- * 
+ *
  * @example
  * // Used in window context to ensure state structure before updates
  * const newState = ensureTabExists(prevState, "window_123", "tab1", 0);
  * // Now safely access: newState["window_123"].tabs["tab1"]
  */
-export const ensureTabExists = (state: WindowContextState, windowIdentifier: string, tabId: string, tabLevel: number = 0): WindowContextState => {
+export const ensureTabExists = (
+  state: WindowContextState,
+  windowIdentifier: string,
+  tabId: string,
+  tabLevel: number = 0
+): WindowContextState => {
   const newState = { ...state };
 
   if (!newState[windowIdentifier]) {
@@ -161,7 +159,7 @@ export const ensureTabExists = (state: WindowContextState, windowIdentifier: str
  * @param value - The new value for the table property
  * @param tabLevel - The hierarchical level of the tab (defaults to 0)
  * @returns A new state object with the updated table property
- * 
+ *
  * @example
  * // Used in setTableFilters:
  * updateTableProperty(prevState, "window_123", "tab1", "filters", newFilters, 0);
@@ -190,7 +188,7 @@ export const updateTableProperty = <T extends keyof TableState>(
  * @param property - The navigation property to update (activeLevels, activeTabsByLevel)
  * @param value - The new value for the navigation property
  * @returns A new state object with the updated navigation property
- * 
+ *
  * @example
  * // Used in setNavigationActiveLevels:
  * updateNavigationProperty(prevState, "window_123", "activeLevels", [0, 1, 2]);

@@ -243,13 +243,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       processButton:
         processButtons.length > 0
           ? createProcessMenuButton(
-            processButtons.length,
-            hasSelectedRecord,
-            handleMenuToggle,
-            t,
-            anchorEl,
-            isSessionSyncLoading
-          )
+              processButtons.length,
+              hasSelectedRecord,
+              handleMenuToggle,
+              t,
+              anchorEl,
+              isSessionSyncLoading
+            )
           : undefined,
     };
 

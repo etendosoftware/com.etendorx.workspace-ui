@@ -133,11 +133,11 @@ let mockDebouncedFunction: jest.Mock;
 const wrapper = ({ children }: { children: React.ReactNode }) => {
   // Set up URL params to create an active window
   React.useEffect(() => {
-    mockSearchParams.set('w_window1_123456789', 'active');
-    mockSearchParams.set('wi_window1_123456789', 'window1');
-    mockSearchParams.set('o_window1_123456789', '1');
+    mockSearchParams.set("w_window1_123456789", "active");
+    mockSearchParams.set("wi_window1_123456789", "window1");
+    mockSearchParams.set("o_window1_123456789", "1");
   }, []);
-  
+
   return React.createElement(WindowProvider, null, children);
 };
 
@@ -145,11 +145,11 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
 beforeEach(() => {
   jest.clearAllMocks();
   mockReplace.mockClear();
-  
+
   // Setup URL params for active window
-  mockSearchParams.set('w_window1_123456789', 'active');
-  mockSearchParams.set('wi_window1_123456789', 'window1');
-  mockSearchParams.set('o_window1_123456789', '1');
+  mockSearchParams.set("w_window1_123456789", "active");
+  mockSearchParams.set("wi_window1_123456789", "window1");
+  mockSearchParams.set("o_window1_123456789", "1");
 
   mockGraph = createMockGraph();
   mockUserContext = createMockUserContext();
@@ -253,7 +253,10 @@ describe("useTableSelection", () => {
       mockGraph.getSelected.mockReturnValue(records[0]);
 
       // First render with selection
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), { initialProps: { selection: createMockRowSelection(["1"]) }, wrapper });
+      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+        initialProps: { selection: createMockRowSelection(["1"]) },
+        wrapper,
+      });
 
       // Clear selection
       rerender({ selection: {} });
@@ -298,7 +301,10 @@ describe("useTableSelection", () => {
       const tab = createMockTab();
       const records = createMockRecords(5);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), { initialProps: { selection: createMockRowSelection(["2", "1"]) }, wrapper });
+      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+        initialProps: { selection: createMockRowSelection(["2", "1"]) },
+        wrapper,
+      });
 
       // Clear mock calls from initial render
       jest.clearAllMocks();
@@ -314,7 +320,10 @@ describe("useTableSelection", () => {
       const tab = createMockTab();
       const records = createMockRecords(5);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), { initialProps: { selection: createMockRowSelection(["1", "2"]) }, wrapper });
+      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+        initialProps: { selection: createMockRowSelection(["1", "2"]) },
+        wrapper,
+      });
 
       // Clear mock calls from initial render
       jest.clearAllMocks();
@@ -355,7 +364,10 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
 
       // Start with a selection and then clear it to trigger the URL update
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), { initialProps: { selection: createMockRowSelection(["1"]) }, wrapper });
+      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+        initialProps: { selection: createMockRowSelection(["1"]) },
+        wrapper,
+      });
 
       // Clear the selection to trigger URL clearing
       rerender({ selection: {} });
@@ -442,7 +454,10 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
       const rowSelection = createMockRowSelection(["1"]);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(parentTab, records, selection), { initialProps: { selection: rowSelection }, wrapper });
+      const { rerender } = renderHook(({ selection }) => useTableSelection(parentTab, records, selection), {
+        initialProps: { selection: rowSelection },
+        wrapper,
+      });
 
       // Clear mock calls from initial render
       jest.clearAllMocks();
@@ -513,7 +528,10 @@ describe("useTableSelection", () => {
       const tab = createMockTab();
       const records = createMockRecords(3);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), { initialProps: { selection: {} as MRT_RowSelectionState }, wrapper });
+      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+        initialProps: { selection: {} as MRT_RowSelectionState },
+        wrapper,
+      });
 
       // Clear initial calls
       jest.clearAllMocks();
@@ -529,7 +547,10 @@ describe("useTableSelection", () => {
       const tab = createMockTab();
       const records = createMockRecords(5);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), { initialProps: { selection: createMockRowSelection(["2"]) }, wrapper });
+      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+        initialProps: { selection: createMockRowSelection(["2"]) },
+        wrapper,
+      });
 
       // Clear initial calls
       jest.clearAllMocks();
@@ -546,7 +567,10 @@ describe("useTableSelection", () => {
       const tab = createMockTab();
       const records = createMockRecords(5);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), { initialProps: { selection: createMockRowSelection(["1", "2", "4"]) }, wrapper });
+      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+        initialProps: { selection: createMockRowSelection(["1", "2", "4"]) },
+        wrapper,
+      });
 
       // Clear initial calls
       jest.clearAllMocks();
@@ -565,7 +589,10 @@ describe("useTableSelection", () => {
       // Configure mock to simulate that there was a previous selection
       mockGraph.getSelected.mockReturnValue(records[1]); // Simulate record 2 was selected
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), { initialProps: { selection: createMockRowSelection(["1", "2"]) }, wrapper });
+      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+        initialProps: { selection: createMockRowSelection(["1", "2"]) },
+        wrapper,
+      });
 
       // Clear initial calls
       jest.clearAllMocks();
@@ -583,7 +610,10 @@ describe("useTableSelection", () => {
       const tab = createMockTab();
       const records = createMockRecords(10);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), { initialProps: { selection: createMockRowSelection(["1"]) }, wrapper });
+      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+        initialProps: { selection: createMockRowSelection(["1"]) },
+        wrapper,
+      });
 
       // Rapid selection changes
       const selections = [
@@ -609,7 +639,10 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
       const rowSelection = createMockRowSelection(["1"]);
 
-      const { rerender } = renderHook(({ tab }) => useTableSelection(tab, records, rowSelection), { initialProps: { tab: initialTab }, wrapper });
+      const { rerender } = renderHook(({ tab }) => useTableSelection(tab, records, rowSelection), {
+        initialProps: { tab: initialTab },
+        wrapper,
+      });
 
       // Clear initial calls
       jest.clearAllMocks();
@@ -626,7 +659,10 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
 
       // Start with selection
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), { initialProps: { selection: createMockRowSelection(["1"]) }, wrapper });
+      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+        initialProps: { selection: createMockRowSelection(["1"]) },
+        wrapper,
+      });
 
       // Mock that graph has current selection
       mockGraph.getSelected.mockReturnValue(records[0]);
@@ -660,7 +696,10 @@ describe("Utility functions", () => {
       const tab = createMockTab();
       const records = createMockRecords(5);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), { initialProps: { selection: createMockRowSelection(["1", "2"]) }, wrapper });
+      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+        initialProps: { selection: createMockRowSelection(["1", "2"]) },
+        wrapper,
+      });
 
       jest.clearAllMocks();
 
@@ -674,7 +713,10 @@ describe("Utility functions", () => {
       const tab = createMockTab();
       const records = createMockRecords(5);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), { initialProps: { selection: createMockRowSelection(["b", "a", "c"]) }, wrapper });
+      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+        initialProps: { selection: createMockRowSelection(["b", "a", "c"]) },
+        wrapper,
+      });
 
       jest.clearAllMocks();
 
@@ -712,7 +754,10 @@ describe("Integration scenarios", () => {
     let currentSelectedRecord: EntityData | undefined = undefined;
     mockGraph.getSelected.mockImplementation(() => currentSelectedRecord);
 
-    const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection, onSelectionChange), { initialProps: { selection: {} as MRT_RowSelectionState }, wrapper });
+    const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection, onSelectionChange), {
+      initialProps: { selection: {} as MRT_RowSelectionState },
+      wrapper,
+    });
 
     // Start with no selection
     expect(mockDebouncedFunction).not.toHaveBeenCalled();
@@ -754,7 +799,10 @@ describe("Integration scenarios", () => {
     const rowSelection = createMockRowSelection(["1"]);
 
     // Test with first window
-    const { rerender } = renderHook(({ tab }) => useTableSelection(tab, records, rowSelection), { initialProps: { tab: tab1 }, wrapper });
+    const { rerender } = renderHook(({ tab }) => useTableSelection(tab, records, rowSelection), {
+      initialProps: { tab: tab1 },
+      wrapper,
+    });
 
     // Switch to different window
     rerender({ tab: tab2 });
@@ -809,7 +857,10 @@ describe("Performance considerations", () => {
     const tab = createMockTab();
     const records = createMockRecords(10);
 
-    const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), { initialProps: { selection: createMockRowSelection(["1"]) }, wrapper });
+    const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+      initialProps: { selection: createMockRowSelection(["1"]) },
+      wrapper,
+    });
 
     // Rapid re-renders with same selection
     for (let i = 0; i < 10; i++) {
@@ -852,7 +903,10 @@ describe("Error handling and edge cases", () => {
     const records = createMockRecords(3);
     const rowSelection = createMockRowSelection(["1"]);
 
-    const { rerender } = renderHook(({ records, selection }) => useTableSelection(tab, records, selection), { initialProps: { records, selection: rowSelection }, wrapper });
+    const { rerender } = renderHook(({ records, selection }) => useTableSelection(tab, records, selection), {
+      initialProps: { records, selection: rowSelection },
+      wrapper,
+    });
 
     // Mutate original array (bad practice but should be handled)
     records.push(createMockEntityData("4"));
@@ -887,7 +941,10 @@ describe("Dependency updates", () => {
     const records = createMockRecords(3);
     const rowSelection = createMockRowSelection(["1"]);
 
-    const { rerender } = renderHook(({ tab }) => useTableSelection(tab, records, rowSelection), { initialProps: { tab: initialTab }, wrapper });
+    const { rerender } = renderHook(({ tab }) => useTableSelection(tab, records, rowSelection), {
+      initialProps: { tab: initialTab },
+      wrapper,
+    });
 
     jest.clearAllMocks();
 

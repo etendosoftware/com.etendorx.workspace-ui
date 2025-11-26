@@ -22,7 +22,6 @@ export const calculateHierarchy = async (
   urlState: ParsedUrlState,
   windowMetadata: WindowMetadata
 ): Promise<CalculatedHierarchy> => {
-
   // Find the target tab (deepest tab from URL)
   const targetTab = windowMetadata.tabs.find((tab) => tab.id === urlState.tabId);
   if (!targetTab) {
@@ -33,7 +32,7 @@ export const calculateHierarchy = async (
     tabId: targetTab.id,
     tab: targetTab,
     level: targetTab.tabLevel,
-    children: []
+    children: [],
   };
 
   // If target tab is at level 0, no parents to calculate
@@ -41,7 +40,7 @@ export const calculateHierarchy = async (
     return {
       targetTab: targetNode,
       parentTabs: [],
-      rootTab: targetNode
+      rootTab: targetNode,
     };
   }
 
@@ -69,7 +68,7 @@ export const calculateHierarchy = async (
       tab: parentTab,
       level: parentTab.tabLevel,
       parentKeyField: parentKeyField.name,
-      children: []
+      children: [],
     };
 
     parentTabs.unshift(parentNode); // Add to beginning to maintain order
@@ -89,6 +88,6 @@ export const calculateHierarchy = async (
   return {
     targetTab: targetNode,
     parentTabs,
-    rootTab: parentTabs[0] || targetNode
+    rootTab: parentTabs[0] || targetNode,
   };
 };

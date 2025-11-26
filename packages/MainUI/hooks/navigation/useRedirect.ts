@@ -20,13 +20,13 @@ import { useRouter, usePathname } from "next/navigation";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useWindowContext } from "@/contexts/window";
 import { getNewWindowIdentifier, createDefaultTabState } from "@/utils/window/utils";
-import { FORM_MODES, TAB_MODES } from '@/utils/url/constants';
+import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
 import { TabState } from "@/utils/window/constants";
 
 interface HandleActionProps {
-  windowId: string,
-  windowTitle: string,
-  referencedTabId: string,
+  windowId: string;
+  windowTitle: string;
+  referencedTabId: string;
   selectedRecordId?: string;
   tabLevel?: number;
 }
@@ -35,7 +35,7 @@ interface HandleClickRedirectProps {
   e: React.MouseEvent;
   windowId: string;
   windowTitle: string;
-  referencedTabId: string,
+  referencedTabId: string;
   selectedRecordId?: string;
   tabLevel?: number;
 }
@@ -44,7 +44,7 @@ interface HandleKeyDownRedirectProps {
   e: React.KeyboardEvent;
   windowId: string;
   windowTitle: string;
-  referencedTabId: string,
+  referencedTabId: string;
   selectedRecordId?: string;
   tabLevel?: number;
 }
@@ -67,7 +67,7 @@ export const useRedirect = () => {
         initialized: false,
       },
       initialized: true,
-      tabs: {}
+      tabs: {},
     }),
     []
   );
@@ -92,8 +92,8 @@ export const useRedirect = () => {
             formMode: FORM_MODES.EDIT,
           },
           selectedRecord: selectedRecordId,
-        } as TabState
-      }
+        } as TabState,
+      };
       const windowData = { title: windowTitle, tabs };
       setWindowActive({ windowIdentifier: newWindowIdentifier, windowData });
 

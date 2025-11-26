@@ -126,11 +126,7 @@ jest.mock("../../../components/loading", () => ({
 }));
 
 // Helper function to create window state
-const createWindowState = (
-  windowId: string,
-  windowIdentifier: string,
-  initialized: boolean = true
-): WindowState => ({
+const createWindowState = (windowId: string, windowIdentifier: string, initialized: boolean = true): WindowState => ({
   windowId,
   windowIdentifier,
   isActive: true,
@@ -179,7 +175,7 @@ describe("Window Component Multi-Window Instance Support", () => {
   describe("Component Interface Updates", () => {
     it("should accept window prop with windowId and windowIdentifier", () => {
       const window = createWindowState("TestWindow", "TestWindow_123456789");
-      
+
       expect(() => {
         render(<Window window={window} />);
       }).not.toThrow();

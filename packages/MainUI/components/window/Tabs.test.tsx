@@ -59,7 +59,6 @@ jest.mock("react", () => {
   return { ...actual, useTransition: () => [true, (cb: any) => cb()] };
 });
 
-
 describe("Tabs - pending state skeleton", () => {
   const tabs = [
     { id: "t1", name: "Tab 1", tabLevel: 1 },
@@ -69,12 +68,12 @@ describe("Tabs - pending state skeleton", () => {
   beforeEach(() => {
     mockReplace.mockClear();
     // Clear all search params
-    Array.from(mockSearchParams.keys()).forEach(key => mockSearchParams.delete(key));
-    
+    Array.from(mockSearchParams.keys()).forEach((key) => mockSearchParams.delete(key));
+
     // Initialize a window in URL params
-    mockSearchParams.set('w_window1', 'active');
-    mockSearchParams.set('wi_window1', 'window1');
-    mockSearchParams.set('o_window1', '1');
+    mockSearchParams.set("w_window1", "active");
+    mockSearchParams.set("wi_window1", "window1");
+    mockSearchParams.set("o_window1", "1");
   });
 
   it("renders skeleton content when transition is pending", () => {

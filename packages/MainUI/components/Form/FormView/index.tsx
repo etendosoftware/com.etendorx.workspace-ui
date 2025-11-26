@@ -592,8 +592,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
           data-testid="FormProvider__1a0853">
           <form
             key={`form-${tab.id}-${recordId}`}
-            className={`flex h-full max-h-full w-full flex-col gap-2 overflow-hidden transition duration-300 ${loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
-              }`}>
+            className={`flex h-full max-h-full w-full flex-col gap-2 overflow-hidden transition duration-300 ${
+              loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
+            }`}>
             <FormHeader
               statusBarFields={fields.statusBarFields}
               groups={groups}

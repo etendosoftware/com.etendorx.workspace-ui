@@ -27,9 +27,9 @@ import { logger } from "@/utils/logger";
  */
 type CompatibleGridSelection =
   | {
-    _selection: unknown[];
-    _allRows: unknown[];
-  }
+      _selection: unknown[];
+      _allRows: unknown[];
+    }
   | ModalGridSelectionStructure
   | undefined;
 

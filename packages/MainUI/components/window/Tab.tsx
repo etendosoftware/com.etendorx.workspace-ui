@@ -27,15 +27,10 @@ import type { TabLevelProps } from "@/components/window/types";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
-import {
-  NEW_RECORD_ID,
-  FORM_MODES,
-  TAB_MODES,
-  TabFormState,
-} from "@/utils/url/constants";
+import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, TabFormState } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { getNewTabFormState, isFormView } from "@/utils/window/utils";
-import { useWindowContext } from '@/contexts/window';
+import { useWindowContext } from "@/contexts/window";
 
 /**
  * Validates if a child tab can open FormView based on parent selection in context
@@ -81,7 +76,6 @@ const handleEditRecordFormState = (
 ): void => {
   const formMode = FORM_MODES.EDIT;
   const newTabFormState = getNewTabFormState(newValue, TAB_MODES.FORM, formMode);
-
 
   if (selectedRecordId !== newValue) {
     // Record selection changed - update selection first, then form state
@@ -237,15 +231,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         graph.clearSelected(tab);
       }
     }
-  }, [
-    windowIdentifier,
-    clearTabFormState,
-    tab,
-    getTabFormState,
-    clearSelectedRecord,
-    clearChildrenSelections,
-    graph,
-  ]);
+  }, [windowIdentifier, clearTabFormState, tab, getTabFormState, clearSelectedRecord, clearChildrenSelections, graph]);
 
   const handleTreeView = useCallback(() => {
     if (windowIdentifier) {
@@ -335,8 +321,9 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   return (
     <div
-      className={`bg-(linear-gradient(180deg, #C6CFFF 0%, #FCFCFD 55.65%)) flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${collapsed ? "hidden" : "flex-1 h-full"
-        }`}>
+      className={`bg-(linear-gradient(180deg, #C6CFFF 0%, #FCFCFD 55.65%)) flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${
+        collapsed ? "hidden" : "flex-1 h-full"
+      }`}>
       <Toolbar
         windowId={windowIdentifier || tab.window}
         tabId={tab.id}

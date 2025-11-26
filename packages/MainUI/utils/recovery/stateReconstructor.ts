@@ -19,15 +19,15 @@ export const reconstructState = async (
   hierarchy: CalculatedHierarchy,
   windowMetadata: WindowMetadata
 ): Promise<ReconstructedState> => {
-
   const tabs: { [tabId: string]: TabState } = {};
   const activeLevels: number[] = [];
   const activeTabsByLevel = new Map<number, string>();
 
   // Start from root tab and work down
   let currentRecordId: string | undefined;
-  const allTabs = [hierarchy.rootTab, ...hierarchy.parentTabs.slice(1), hierarchy.targetTab]
-    .filter((tab, index, arr) => arr.findIndex(t => t.tabId === tab.tabId) === index); // Remove duplicates
+  const allTabs = [hierarchy.rootTab, ...hierarchy.parentTabs.slice(1), hierarchy.targetTab].filter(
+    (tab, index, arr) => arr.findIndex((t) => t.tabId === tab.tabId) === index
+  ); // Remove duplicates
 
   for (const tabNode of allTabs) {
     const isTargetTab = tabNode.tabId === hierarchy.targetTab.tabId;
@@ -43,18 +43,10 @@ export const reconstructState = async (
       // For target tab, we already have the recordId from URL state
       currentRecordId = hierarchy.targetTab.tabId; // This should be the recordId from URL state
       tabs[tabNode.tabId].selectedRecord = currentRecordId;
-      tabs[tabNode.tabId].form = getNewTabFormState(
-        currentRecordId,
-        TAB_MODES.FORM,
-        FORM_MODES.EDIT
-      );
+      tabs[tabNode.tabId].form = getNewTabFormState(currentRecordId, TAB_MODES.FORM, FORM_MODES.EDIT);
     } else {
       // For parent tabs, calculate the selected record
-      const selectedRecord = await calculateParentSelectedRecord(
-        tabNode,
-        currentRecordId!,
-        windowMetadata
-      );
+      const selectedRecord = await calculateParentSelectedRecord(tabNode, currentRecordId!, windowMetadata);
 
       currentRecordId = selectedRecord;
       tabs[tabNode.tabId].selectedRecord = selectedRecord;
@@ -69,8 +61,8 @@ export const reconstructState = async (
     navigation: {
       activeLevels: Array.from(new Set(activeLevels)).sort(),
       activeTabsByLevel,
-      initialized: true
-    }
+      initialized: true,
+    },
   };
 };
 
@@ -82,7 +74,6 @@ const calculateParentSelectedRecord = async (
   childRecordId: string,
   windowMetadata: WindowMetadata
 ): Promise<string> => {
-
   if (!parentTabNode.parentKeyField) {
     throw new Error(`Parent key field not found for tab ${parentTabNode.tabId}`);
   }
@@ -100,7 +91,7 @@ const calculateParentSelectedRecord = async (
     const queryParams = buildQueryString({
       mode: FormMode.EDIT, // Use EDIT mode for querying existing record
       windowMetadata,
-      tab: childTab
+      tab: childTab,
     });
 
     const url = `${childTab.entityName}?${queryParams}&_recordId=${childRecordId}`;
@@ -118,9 +109,8 @@ const calculateParentSelectedRecord = async (
     }
 
     return String(parentRecordId);
-
   } catch (error) {
     console.error(`Error calculating parent selected record:`, error);
-    throw new Error(`Failed to calculate parent record: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(`Failed to calculate parent record: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 };

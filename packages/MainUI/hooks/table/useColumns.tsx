@@ -160,10 +160,10 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
               cell?.getValue() != null
                 ? String(cell.getValue())
                 : String(
-                  recordData?.[identifierKey as keyof EntityData] ||
-                  recordData?.[column.columnName as keyof EntityData] ||
-                  ""
-                );
+                    recordData?.[identifierKey as keyof EntityData] ||
+                      recordData?.[column.columnName as keyof EntityData] ||
+                      ""
+                  );
 
             return (
               <button
@@ -177,16 +177,18 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                     windowId,
                     windowTitle: columnTitle,
                     referencedTabId,
-                    selectedRecordId: String(selectedRecordId ?? "")
+                    selectedRecordId: String(selectedRecordId ?? ""),
                   });
                 }}
-                onKeyDown={(e) => handleKeyDownRedirect({
-                  e,
-                  windowId,
-                  windowTitle: columnTitle,
-                  referencedTabId,
-                  selectedRecordId: String(selectedRecordId ?? "")
-                })}>
+                onKeyDown={(e) =>
+                  handleKeyDownRedirect({
+                    e,
+                    windowId,
+                    windowTitle: columnTitle,
+                    referencedTabId,
+                    selectedRecordId: String(selectedRecordId ?? ""),
+                  })
+                }>
                 {displayValue}
               </button>
             );

@@ -27,7 +27,7 @@ export const useUrlStateRecovery = ({
   windowId,
   windowIdentifier,
   windowData,
-  enabled
+  enabled,
 }: UseUrlStateRecoveryParams): UseUrlStateRecoveryReturn => {
   const [isRecovering, setIsRecovering] = useState(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
@@ -36,65 +36,65 @@ export const useUrlStateRecovery = ({
   const searchParams = useSearchParams();
   const windowContext = useWindowContext();
 
-  const performRecovery = useCallback(async (recoveryInfo: WindowRecoveryInfo) => {
-    try {
-      console.log("Starting individual window recovery for:", windowIdentifier);
-      setIsRecovering(true);
-      setRecoveryState("in_progress");
-      setRecoveryError(null);
+  const performRecovery = useCallback(
+    async (recoveryInfo: WindowRecoveryInfo) => {
+      try {
+        console.log("Starting individual window recovery for:", windowIdentifier);
+        setIsRecovering(true);
+        setRecoveryState("in_progress");
+        setRecoveryError(null);
 
-      // Window already exists as phantom - just update it
-      if (!recoveryInfo.hasRecoveryData) {
-        // Simple case: just mark as initialized
+        // Window already exists as phantom - just update it
+        if (!recoveryInfo.hasRecoveryData) {
+          // Simple case: just mark as initialized
+          windowContext.setWindowActive({
+            windowIdentifier,
+            windowData: { initialized: true },
+          });
+          setRecoveryState("completed");
+          setIsRecovering(false);
+          return;
+        }
+
+        // Complex case: perform full recovery
+        const urlState = await parseUrlState(recoveryInfo);
+        const hierarchy = await calculateHierarchy(urlState, windowData!);
+        const reconstructedState = await reconstructState(hierarchy, windowData!);
+
+        // Update existing phantom window with recovered state
         windowContext.setWindowActive({
           windowIdentifier,
-          windowData: { initialized: true }
+          windowData: {
+            initialized: true,
+            tabs: reconstructedState.tabs,
+            navigation: reconstructedState.navigation,
+          },
         });
+
         setRecoveryState("completed");
         setIsRecovering(false);
-        return;
+      } catch (error) {
+        console.log("Error during URL state recovery:", error);
+        const errorMessage = await handleRecoveryError(error, recoveryInfo);
+        setRecoveryError(errorMessage);
+        setRecoveryState("failed");
+        setIsRecovering(false);
+
+        // Fallback: mark phantom window as initialized with default state
+        windowContext.setWindowActive({
+          windowIdentifier,
+          windowData: { initialized: true },
+        });
       }
-
-      // Complex case: perform full recovery
-      const urlState = await parseUrlState(recoveryInfo);
-      const hierarchy = await calculateHierarchy(urlState, windowData!);
-      const reconstructedState = await reconstructState(hierarchy, windowData!);
-
-      // Update existing phantom window with recovered state
-      windowContext.setWindowActive({
-        windowIdentifier,
-        windowData: {
-          initialized: true,
-          tabs: reconstructedState.tabs,
-          navigation: reconstructedState.navigation
-        }
-      });
-
-      setRecoveryState("completed");
-      setIsRecovering(false);
-
-    } catch (error) {
-      console.log("Error during URL state recovery:", error);
-      const errorMessage = await handleRecoveryError(error, recoveryInfo);
-      setRecoveryError(errorMessage);
-      setRecoveryState("failed");
-      setIsRecovering(false);
-
-      // Fallback: mark phantom window as initialized with default state
-      windowContext.setWindowActive({
-        windowIdentifier,
-        windowData: { initialized: true }
-      });
-    }
-  }, [windowIdentifier, windowData, windowContext]);
+    },
+    [windowIdentifier, windowData, windowContext]
+  );
 
   useEffect(() => {
     if (!enabled || !searchParams || !windowData) return;
 
     const recoveryData = parseWindowRecoveryData(searchParams);
-    const currentWindowRecovery = recoveryData.find(
-      info => info.windowIdentifier === windowIdentifier
-    );
+    const currentWindowRecovery = recoveryData.find((info) => info.windowIdentifier === windowIdentifier);
 
     if (currentWindowRecovery) {
       performRecovery(currentWindowRecovery);
@@ -102,7 +102,7 @@ export const useUrlStateRecovery = ({
       // No recovery needed - just mark as initialized
       windowContext.setWindowActive({
         windowIdentifier,
-        windowData: { initialized: true }
+        windowData: { initialized: true },
       });
     }
   }, [enabled, searchParams, windowData, windowIdentifier, performRecovery, windowContext]);
@@ -110,6 +110,6 @@ export const useUrlStateRecovery = ({
   return {
     isRecovering,
     recoveryError,
-    recoveryState
+    recoveryState,
   };
 };

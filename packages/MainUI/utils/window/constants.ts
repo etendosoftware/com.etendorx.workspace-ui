@@ -26,7 +26,7 @@ export const WINDOW_PROPERTY_NAMES = {
   INITIALIZED: "initialized",
 } as const;
 
-export type WindowPropertyName = typeof WINDOW_PROPERTY_NAMES[keyof typeof WINDOW_PROPERTY_NAMES];
+export type WindowPropertyName = (typeof WINDOW_PROPERTY_NAMES)[keyof typeof WINDOW_PROPERTY_NAMES];
 
 export interface TableState {
   filters: MRT_ColumnFiltersState;
@@ -79,4 +79,4 @@ export const RECOVERY_STATE = {
   FAILED: "failed",
 } as const;
 
-export type RecoveryState = typeof RECOVERY_STATE[keyof typeof RECOVERY_STATE];
+export type RecoveryState = (typeof RECOVERY_STATE)[keyof typeof RECOVERY_STATE];

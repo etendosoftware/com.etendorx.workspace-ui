@@ -150,8 +150,8 @@ export const SelectedProvider = ({
 
     // Get form states from context for all available tabs
     const formStateTabIds = tabs
-      .map(tab => tab.id)
-      .filter(tabId => getTabFormState(windowIdentifier, tabId) !== undefined);
+      .map((tab) => tab.id)
+      .filter((tabId) => getTabFormState(windowIdentifier, tabId) !== undefined);
 
     // Handle window with no saved form states - reset to clean state
     if (formStateTabIds.length === 0) {
@@ -167,8 +167,8 @@ export const SelectedProvider = ({
 
     // Get selected records from context for all tabs to determine navigation depth
     const selectedRecordTabIds = tabs
-      .map(tab => tab.id)
-      .filter(tabId => getSelectedRecord(windowIdentifier, tabId) !== undefined);
+      .map((tab) => tab.id)
+      .filter((tabId) => getSelectedRecord(windowIdentifier, tabId) !== undefined);
 
     // Calculate navigation depth based on form state position in selected records
     const lastFormStateTabId = formStateTabIds.length > 0 ? formStateTabIds[formStateTabIds.length - 1] : null;
@@ -190,7 +190,7 @@ export const SelectedProvider = ({
     getTabFormState,
     getSelectedRecord,
     getNavigationInitialized,
-    setNavigationInitialized
+    setNavigationInitialized,
   ]);
 
   /**

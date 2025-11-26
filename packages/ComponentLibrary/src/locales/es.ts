@@ -175,7 +175,7 @@ const es = {
     },
     recoveryFailed: {
       title: "Error de Recuperación",
-      description: "No se pudo restaurar el estado de la ventana desde la URL"
+      description: "No se pudo restaurar el estado de la ventana desde la URL",
     },
   },
   modal: {

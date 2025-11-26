@@ -23,7 +23,7 @@ import { useWindowContext } from "@/contexts/window";
 import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getNewWindowIdentifier, createDefaultTabState } from "@/utils/window/utils";
-import { FORM_MODES, TAB_MODES } from '@/utils/url/constants';
+import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
 import { TabState } from "@/utils/window/constants";
 
 interface LinkedItemsSectionProps {
@@ -77,7 +77,7 @@ export const LinkedItemsSection = ({ tabId, entityName, recordId }: LinkedItemsS
           },
           selectedRecord: newRecordId,
         } as TabState,
-      }
+      };
 
       const windowData = { title: newTitle, tabs };
       setWindowActive({ windowIdentifier: newWindowIdentifier, windowData });

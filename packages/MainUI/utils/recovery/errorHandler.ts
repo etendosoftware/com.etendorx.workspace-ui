@@ -7,7 +7,7 @@ export enum RecoveryErrorType {
   NETWORK_ERROR = "NETWORK_ERROR",
   PERMISSION_DENIED = "PERMISSION_DENIED",
   DATA_NOT_FOUND = "DATA_NOT_FOUND",
-  UNKNOWN_ERROR = "UNKNOWN_ERROR"
+  UNKNOWN_ERROR = "UNKNOWN_ERROR",
 }
 
 export interface RecoveryError {
@@ -20,11 +20,7 @@ export interface RecoveryError {
 /**
  * Handles recovery errors and determines appropriate fallback action
  */
-export const handleRecoveryError = async (
-  error: unknown,
-  recoveryInfo: WindowRecoveryInfo
-): Promise<string> => {
-
+export const handleRecoveryError = async (error: unknown, recoveryInfo: WindowRecoveryInfo): Promise<string> => {
   const recoveryError = classifyError(error, recoveryInfo);
 
   // Log error for debugging
@@ -43,7 +39,7 @@ export const handleRecoveryError = async (
 const classifyError = (error: unknown, recoveryInfo: WindowRecoveryInfo): RecoveryError => {
   const baseError = {
     originalError: error instanceof Error ? error : undefined,
-    recoveryInfo
+    recoveryInfo,
   };
 
   if (error instanceof Error) {
@@ -53,7 +49,7 @@ const classifyError = (error: unknown, recoveryInfo: WindowRecoveryInfo): Recove
       return {
         ...baseError,
         type: RecoveryErrorType.NETWORK_ERROR,
-        message: "Network error during recovery"
+        message: "Network error during recovery",
       };
     }
 
@@ -61,7 +57,7 @@ const classifyError = (error: unknown, recoveryInfo: WindowRecoveryInfo): Recove
       return {
         ...baseError,
         type: RecoveryErrorType.DATA_NOT_FOUND,
-        message: "Requested data no longer exists"
+        message: "Requested data no longer exists",
       };
     }
 
@@ -69,7 +65,7 @@ const classifyError = (error: unknown, recoveryInfo: WindowRecoveryInfo): Recove
       return {
         ...baseError,
         type: RecoveryErrorType.PERMISSION_DENIED,
-        message: "Insufficient permissions for recovery"
+        message: "Insufficient permissions for recovery",
       };
     }
 
@@ -77,21 +73,21 @@ const classifyError = (error: unknown, recoveryInfo: WindowRecoveryInfo): Recove
       return {
         ...baseError,
         type: RecoveryErrorType.INVALID_PARAMETERS,
-        message: "Invalid recovery parameters"
+        message: "Invalid recovery parameters",
       };
     }
 
     return {
       ...baseError,
       type: RecoveryErrorType.ENDPOINT_FAILURE,
-      message: error.message
+      message: error.message,
     };
   }
 
   return {
     ...baseError,
     type: RecoveryErrorType.UNKNOWN_ERROR,
-    message: "Unknown error during recovery"
+    message: "Unknown error during recovery",
   };
 };
 
@@ -107,9 +103,8 @@ const cleanUrlOnError = async (recoveryError: RecoveryError): Promise<void> => {
     const cleanParams = removeRecoveryParameters(searchParams);
 
     // Update URL without recovery parameters
-    const newUrl = `${currentUrl.pathname}${cleanParams.toString() ? `?${cleanParams.toString()}` : ''}`;
-    window.history.replaceState(null, '', newUrl);
-
+    const newUrl = `${currentUrl.pathname}${cleanParams.toString() ? `?${cleanParams.toString()}` : ""}`;
+    window.history.replaceState(null, "", newUrl);
   } catch (error) {
     console.error("Error cleaning URL after recovery failure:", error);
   }

@@ -1,4 +1,9 @@
-import { removeRecoveryParameters, removeWindowParameters, parseWindowRecoveryData, validateRecoveryParameters } from "@/utils/url/utils";
+import {
+  removeRecoveryParameters,
+  removeWindowParameters,
+  parseWindowRecoveryData,
+  validateRecoveryParameters,
+} from "@/utils/url/utils";
 
 /**
  * Cleans up URL after successful recovery
@@ -16,8 +21,7 @@ export const cleanupUrl = (): void => {
     const newUrl = cleanParams.toString() ? `${baseUrl}?${cleanParams.toString()}` : baseUrl;
 
     // Replace current URL state
-    window.history.replaceState(null, '', newUrl);
-
+    window.history.replaceState(null, "", newUrl);
   } catch (error) {
     console.error("Error during URL cleanup:", error);
   }
@@ -39,8 +43,7 @@ export const cleanupFailedWindowUrl = (windowIndex: number): void => {
     const newUrl = cleanParams.toString() ? `${baseUrl}?${cleanParams.toString()}` : baseUrl;
 
     // Replace current URL state
-    window.history.replaceState(null, '', newUrl);
-
+    window.history.replaceState(null, "", newUrl);
   } catch (error) {
     console.error("Error during failed window URL cleanup:", error);
   }
@@ -70,7 +73,7 @@ export const cleanInvalidParameters = (): void => {
         console.warn(`Removed invalid recovery parameters for window index ${index}:`, {
           windowIdentifier: info.windowIdentifier,
           tabId: info.tabId,
-          recordId: info.recordId
+          recordId: info.recordId,
         });
       }
     });
@@ -80,10 +83,9 @@ export const cleanInvalidParameters = (): void => {
       const baseUrl = `${currentUrl.origin}${currentUrl.pathname}`;
       const newUrl = cleanParams.toString() ? `${baseUrl}?${cleanParams.toString()}` : baseUrl;
 
-      window.history.replaceState(null, '', newUrl);
+      window.history.replaceState(null, "", newUrl);
       console.log("Cleaned invalid recovery parameters from URL");
     }
-
   } catch (error) {
     console.error("Error cleaning invalid parameters:", error);
   }

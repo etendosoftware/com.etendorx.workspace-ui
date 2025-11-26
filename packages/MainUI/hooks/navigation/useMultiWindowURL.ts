@@ -20,17 +20,13 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 import { WindowState } from "@/utils/window/constants";
-import {
-  setWindowParameters,
-} from "@/utils/url/utils";
+import { setWindowParameters } from "@/utils/url/utils";
 import { useWindowContext } from "@/contexts/window";
 
 export function useMultiWindowURL() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const {
-    windows,
-  } = useWindowContext();
+  const { windows } = useWindowContext();
 
   /**
    * Builds a complete URL with all window states encoded as URL parameters.
@@ -137,11 +133,7 @@ export function useMultiWindowURL() {
    * ```
    */
   const openWindow = useCallback(
-    (
-      windowId: string,
-      windowIdentifier: string,
-      title?: string,
-    ) => {
+    (windowId: string, windowIdentifier: string, title?: string) => {
       const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
 
       const newWindow: WindowState = {

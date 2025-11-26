@@ -726,7 +726,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                 // keep existing _allRows if present, but overwrite _selection with EntityData array
                 next[key] = {
                   ...(next[key] || { _selection: [], _allRows: [] }),
-                  _selection: Array.isArray(ids) ? ids.map((id) => ({ id: String(id) } as EntityData)) : [],
+                  _selection: Array.isArray(ids) ? ids.map((id) => ({ id: String(id) }) as EntityData) : [],
                 };
               }
               return next;
@@ -798,7 +798,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         for (const [tableKey, ids] of Object.entries(autoSelectConfig._gridSelection || {})) {
           next[tableKey] = {
             ...(next[tableKey] || { _selection: [], _allRows: [] }),
-            _selection: Array.isArray(ids) ? ids.map((id) => ({ id: String(id) } as EntityData)) : [],
+            _selection: Array.isArray(ids) ? ids.map((id) => ({ id: String(id) }) as EntityData) : [],
           };
         }
         return next;
@@ -1057,8 +1057,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                 <div className="flex-1 overflow-auto p-4">
                   <div className={`relative ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
                     <div
-                      className={`absolute inset-0 flex items-center pointer-events-none justify-center bg-white ${(loading || initializationLoading) && !result ? "opacity-100" : "opacity-0"
-                        }`}>
+                      className={`absolute inset-0 flex items-center pointer-events-none justify-center bg-white ${
+                        (loading || initializationLoading) && !result ? "opacity-100" : "opacity-0"
+                      }`}>
                       <Loading data-testid="Loading__761503" />
                     </div>
                     <div className={(loading || initializationLoading) && !result ? "opacity-0" : "opacity-100"}>

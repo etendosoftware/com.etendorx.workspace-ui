@@ -45,26 +45,32 @@ describe("Table State Persistence - Integration Tests", () => {
   beforeEach(() => {
     mockReplace.mockClear();
     // Clear all search params
-    Array.from(mockSearchParams.keys()).forEach(key => mockSearchParams.delete(key));
-    
+    Array.from(mockSearchParams.keys()).forEach((key) => mockSearchParams.delete(key));
+
     // Initialize default windows in URL params
     // This ensures WindowProvider has active windows to work with
-    mockSearchParams.set('w_windowA', 'active');
-    mockSearchParams.set('wi_windowA', 'windowA');
-    mockSearchParams.set('o_windowA', '1');
-    
-    mockSearchParams.set('w_windowB', 'inactive');
-    mockSearchParams.set('wi_windowB', 'windowB');
-    mockSearchParams.set('o_windowB', '2');
+    mockSearchParams.set("w_windowA", "active");
+    mockSearchParams.set("wi_windowA", "windowA");
+    mockSearchParams.set("o_windowA", "1");
+
+    mockSearchParams.set("w_windowB", "inactive");
+    mockSearchParams.set("wi_windowB", "windowB");
+    mockSearchParams.set("o_windowB", "2");
   });
 
   describe("Complete Window Switching Workflow", () => {
     it("should persist state correctly during window switching", () => {
       // Simulate Window A with Tab X
-      const { result: windowA } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }), { wrapper });
+      const { result: windowA } = renderHook(
+        () => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }),
+        { wrapper }
+      );
 
       // Simulate Window B with Tab Y
-      const { result: windowB } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowB", tabId: "tabY" }), { wrapper });
+      const { result: windowB } = renderHook(
+        () => useTableStatePersistenceTab({ windowIdentifier: "windowB", tabId: "tabY" }),
+        { wrapper }
+      );
 
       // Apply configurations to Window A
       act(() => {
@@ -97,8 +103,14 @@ describe("Table State Persistence - Integration Tests", () => {
 
     it("should handle multiple tabs per window", () => {
       // Window A with multiple tabs
-      const { result: tabX } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }), { wrapper });
-      const { result: tabY } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabY" }), { wrapper });
+      const { result: tabX } = renderHook(
+        () => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }),
+        { wrapper }
+      );
+      const { result: tabY } = renderHook(
+        () => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabY" }),
+        { wrapper }
+      );
 
       // Configure each tab differently
       act(() => {
@@ -113,10 +125,16 @@ describe("Table State Persistence - Integration Tests", () => {
 
     it("should handle parent-child tab relationships", () => {
       // Parent tab
-      const { result: parentTab } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "parentTab" }), { wrapper });
+      const { result: parentTab } = renderHook(
+        () => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "parentTab" }),
+        { wrapper }
+      );
 
       // Child tab
-      const { result: childTab } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "childTab" }), { wrapper });
+      const { result: childTab } = renderHook(
+        () => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "childTab" }),
+        { wrapper }
+      );
 
       // Configure parent
       act(() => {
@@ -136,7 +154,9 @@ describe("Table State Persistence - Integration Tests", () => {
 
   describe("State Persistence with Different Table Configurations", () => {
     it("should handle complex column filter configurations", () => {
-      const { result } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }), { wrapper });
+      const { result } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }), {
+        wrapper,
+      });
 
       const complexFilters: MRT_ColumnFiltersState = [
         { id: "name", value: ["John", "Jane"] },
@@ -152,7 +172,9 @@ describe("Table State Persistence - Integration Tests", () => {
     });
 
     it("should handle complex visibility configurations", () => {
-      const { result } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }), { wrapper });
+      const { result } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }), {
+        wrapper,
+      });
 
       const complexVisibility: MRT_VisibilityState = {
         id: false,
@@ -173,7 +195,9 @@ describe("Table State Persistence - Integration Tests", () => {
     });
 
     it("should handle complex sorting configurations", () => {
-      const { result } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }), { wrapper });
+      const { result } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }), {
+        wrapper,
+      });
 
       const complexSorting: MRT_SortingState = [
         { id: "department", desc: false },
@@ -189,7 +213,9 @@ describe("Table State Persistence - Integration Tests", () => {
     });
 
     it("should handle complex column order configurations", () => {
-      const { result } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }), { wrapper });
+      const { result } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }), {
+        wrapper,
+      });
 
       const complexOrder = [
         "actions",
@@ -216,7 +242,9 @@ describe("Table State Persistence - Integration Tests", () => {
 
   describe("Rapid State Changes", () => {
     it("should handle rapid consecutive updates", () => {
-      const { result } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }), { wrapper });
+      const { result } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }), {
+        wrapper,
+      });
 
       // Rapid filter updates
       act(() => {
@@ -231,7 +259,10 @@ describe("Table State Persistence - Integration Tests", () => {
 
   describe("React Hooks Integration", () => {
     it("should handle component unmounting gracefully", () => {
-      const { result, unmount } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }), { wrapper });
+      const { result, unmount } = renderHook(
+        () => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }),
+        { wrapper }
+      );
 
       act(() => {
         result.current.setTableColumnFilters([{ id: "test", value: "value" }]);
@@ -256,9 +287,12 @@ describe("Table State Persistence - Integration Tests", () => {
       const Wrapper1 = ({ children }: { children: React.ReactNode }) => <WindowProvider>{children}</WindowProvider>;
 
       // First render with first provider
-      const { result: result1, unmount: unmount1 } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }), {
-        wrapper: Wrapper1,
-      });
+      const { result: result1, unmount: unmount1 } = renderHook(
+        () => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }),
+        {
+          wrapper: Wrapper1,
+        }
+      );
 
       // Set some state
       act(() => {
@@ -275,9 +309,12 @@ describe("Table State Persistence - Integration Tests", () => {
       const Wrapper2 = ({ children }: { children: React.ReactNode }) => <WindowProvider>{children}</WindowProvider>;
 
       // Render with new provider
-      const { result: result2 } = renderHook(() => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }), {
-        wrapper: Wrapper2,
-      });
+      const { result: result2 } = renderHook(
+        () => useTableStatePersistenceTab({ windowIdentifier: "windowA", tabId: "tabX" }),
+        {
+          wrapper: Wrapper2,
+        }
+      );
 
       // State should be reset with new provider
       expect(result2.current.tableColumnFilters).toEqual([]);

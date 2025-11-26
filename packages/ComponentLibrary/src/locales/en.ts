@@ -176,7 +176,7 @@ const en = {
     },
     recoveryFailed: {
       title: "Recovery Failed",
-      description: "Unable to restore window state from URL"
+      description: "Unable to restore window state from URL",
     },
   },
   modal: {

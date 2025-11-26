@@ -22,7 +22,7 @@ export interface CachedData<T> {
   value: T;
 }
 
-export interface CacheStore<T> extends Map<string, CachedData<T>> { }
+export interface CacheStore<T> extends Map<string, CachedData<T>> {}
 
 export interface BaseCriteria {
   fieldName: string;
@@ -219,7 +219,7 @@ export interface MappedData {
   fields?: MappedField[];
 }
 
-export interface ViewStandardProperties extends Record<string, unknown> { }
+export interface ViewStandardProperties extends Record<string, unknown> {}
 
 export interface WindowMetadataProperties {
   windowId: string;
@@ -328,7 +328,7 @@ export interface LoginResponse {
   token: string;
 }
 
-export interface ISession extends Record<string, string | number | boolean | null> { }
+export interface ISession extends Record<string, string | number | boolean | null> {}
 
 export interface User {
   id: string;
@@ -747,7 +747,7 @@ export interface ProcessBindings {
   onProcess: (
     process: ProcessDefinition,
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    params: { recordIds: string[]; windowId: string; entityName: string; buttonValue: any;[param: string]: unknown }
+    params: { recordIds: string[]; windowId: string; entityName: string; buttonValue: any; [param: string]: unknown }
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   ) => Promise<any>;
   metadata: Record<string, unknown>;
