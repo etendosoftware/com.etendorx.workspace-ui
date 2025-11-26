@@ -59,13 +59,13 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
     if (parsedStart && parsedEnd) {
       displayValue = `${formatBrowserDate(parsedStart)} - ${formatBrowserDate(parsedEnd)}`;
     } else if (parsedStart && !parsedEnd) {
-      displayValue = `Desde ${formatBrowserDate(parsedStart)}`;
+      displayValue = `${t("dateModal.from")} ${formatBrowserDate(parsedStart)}`;
     } else if (!parsedStart && parsedEnd) {
-      displayValue = `Hasta ${formatBrowserDate(parsedEnd)}`;
+      displayValue = `${t("dateModal.to")} ${formatBrowserDate(parsedEnd)}`;
     }
 
     setInputValue(displayValue);
-  }, [filterValue]);
+  }, [filterValue, t]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
