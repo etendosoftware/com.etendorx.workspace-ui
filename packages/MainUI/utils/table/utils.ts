@@ -124,6 +124,9 @@ export const getCellTitle = (cellValue: unknown): string => {
     }
     return cellValue;
   }
+  if (typeof cellValue === "number") {
+    return cellValue.toString();
+  }
   if (typeof cellValue === "object" && cellValue !== null && "props" in cellValue) {
     const cellValueWithProps = cellValue as { props?: Record<string, unknown> };
     if (cellValueWithProps.props && !isEmptyObject(cellValueWithProps.props)) {
