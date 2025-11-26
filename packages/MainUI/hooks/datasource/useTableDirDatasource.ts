@@ -27,8 +27,8 @@ import {
   PRODUCT_SELECTOR_DEFAULTS,
   TABLEDIR_SELECTOR_DEFAULTS,
   INVOICE_FIELD_MAPPINGS,
-  FORM_VALUE_MAPPINGS,
 } from "./constants";
+import { transformValueToClassicFormat } from "@/utils/datasourceUtils";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 const FALLBACK_RESULT: Record<string, EntityValue> = {} as Record<string, EntityValue>;
@@ -81,20 +81,16 @@ export const useTableDirDatasource = ({
     (formData: Record<string, EntityValue>) => {
       const formValues: Record<string, EntityValue> = {};
 
-      for (const [key, value] of Object.entries(formData)) {
-        const currentField = tab.fields[key];
-        const inputName = currentField?.inputName || key;
-        const stringValue = String(value);
+      // Include ALL fields from tab, not just the ones with values in formData
+      // This ensures that selector datasources receive all context fields like Classic UI
+      for (const [fieldKey, fieldDef] of Object.entries(tab.fields)) {
+        const inputName = fieldDef?.inputName || fieldKey;
+        const value = formData[fieldKey];
 
-        const isISODate = /^\d{4}-\d{2}-\d{2}$/.test(stringValue);
+        // Use the value from formData if available, otherwise use defaultValue, otherwise null
+        const actualValue = value !== undefined ? value : (fieldDef.defaultValue ?? null);
 
-        const formattedValue = isISODate ? stringValue.split("-").reverse().join("-") : stringValue;
-
-        const safeValue = Object.prototype.hasOwnProperty.call(FORM_VALUE_MAPPINGS, formattedValue)
-          ? FORM_VALUE_MAPPINGS[formattedValue as keyof typeof FORM_VALUE_MAPPINGS]
-          : formattedValue;
-
-        formValues[inputName] = safeValue;
+        formValues[inputName] = transformValueToClassicFormat(actualValue);
       }
 
       return formValues;

@@ -20,16 +20,28 @@ import type { Field, RefListField } from "@workspaceui/api-client/src/api/types"
 import { logger } from "@/utils/logger";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 
+import type { Tab } from "@workspaceui/api-client/src/api/types";
+
 interface UseInlineTableDirOptionsParams {
   tabId?: string;
   windowId?: string;
+  tab?: Tab;
 }
+
 
 /**
  * Hook for loading TABLEDIR options for inline editing
  * Based on the same logic used in FormView's useTableDirDatasource
  */
-export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirOptionsParams = {}) => {
+
+import { transformValueToClassicFormat } from "@/utils/datasourceUtils";
+
+/**
+ * Hook for loading TABLEDIR options for inline editing
+ * Based on the same logic used in FormView's useTableDirDatasource
+ */
+
+export const useInlineTableDirOptions = ({ tabId, windowId, tab }: UseInlineTableDirOptionsParams = {}) => {
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
   const [optionsCache, setOptionsCache] = useState<Record<string, RefListField[]>>({});
 
@@ -51,7 +63,8 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
       pageSize: number,
       searchQuery?: string,
       contextData?: Record<string, unknown>,
-      useSpecialDatasource?: boolean
+      useSpecialDatasource?: boolean,
+      datasourceName?: string
     ): Record<string, string> => {
       const baseBody: Record<string, string> = {
         _startRow: "0",
@@ -59,10 +72,28 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
         _operationType: "fetch",
         _noCount: "true",
         _textMatchStyle: "substring",
+        _sortBy: "_identifier",
+        _constructor: "AdvancedCriteria",
       };
 
-      // Add selector-specific parameters ONLY when using a special datasource
       const selector = field.selector as any;
+      const isComboTableDatasource = datasourceName === "ComboTableDatasourceService";
+
+      // For ComboTableDatasourceService, ALWAYS include these critical parameters
+      if (isComboTableDatasource && selector) {
+        if (selector.fieldId) {
+          baseBody.fieldId = String(selector.fieldId);
+        }
+        if (selector.datasourceName) {
+          baseBody.datasourceName = String(selector.datasourceName);
+        }
+        // moduleId is required for ComboTableDatasourceService, default to "0" if not provided
+        baseBody.moduleId = selector.moduleId !== null && selector.moduleId !== undefined 
+          ? String(selector.moduleId) 
+          : "0";
+      }
+
+      // Add selector-specific parameters ONLY when using a special datasource
       if (selector && useSpecialDatasource) {
         const safeParams = [
           "_selectorDefinitionId",
@@ -97,6 +128,35 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
       // Add organization context for filtering
       if (contextData?.organization) {
         baseBody._org = String(contextData.organization);
+        baseBody.inpadOrgId = String(contextData.organization);
+      }
+
+      // Include ALL row context data as form fields (similar to Classic UI)
+      // This is critical for selector datasources to apply proper filters
+      if (contextData && tab?.fields) {
+        for (const [key, value] of Object.entries(contextData)) {
+          // Skip internal fields and already processed fields
+          if (key.startsWith("_") || key === "organization" || key === "id") {
+            continue;
+          }
+
+          // Find the field definition to get the inputName
+          const fieldDef = tab.fields[key];
+          const inputName = fieldDef?.inputName || key;
+
+          // Transform value to Classic backend format (dates, booleans, etc.)
+          const transformedValue = transformValueToClassicFormat(value);
+          baseBody[inputName] = transformedValue;
+        }
+      } else if (contextData) {
+        // Fallback: if no tab info, just use the keys as-is
+        for (const [key, value] of Object.entries(contextData)) {
+          if (key.startsWith("_") || key === "organization" || key === "id") {
+            continue;
+          }
+          const transformedValue = transformValueToClassicFormat(value);
+          baseBody[key] = transformedValue;
+        }
       }
 
       // Apply search criteria if provided
@@ -107,7 +167,7 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
 
       return baseBody;
     },
-    [tabId, windowId]
+    [tabId, windowId, tab?.fields]
   );
 
   /**
@@ -176,7 +236,7 @@ export const useInlineTableDirOptions = ({ tabId, windowId }: UseInlineTableDirO
         const selectorDatasource = (field.selector as any)?.datasourceName;
         const useSpecialDatasource = selectorDatasource && selectorDatasource !== field.referencedEntity;
 
-        const baseBody = buildRequestBody(field, pageSize, searchQuery, contextData, useSpecialDatasource);
+        const baseBody = buildRequestBody(field, pageSize, searchQuery, contextData, useSpecialDatasource, datasourceName);
 
         const body = new URLSearchParams(baseBody);
         const { data } = await datasource.client.request(`/api/datasource/${datasourceName}`, {

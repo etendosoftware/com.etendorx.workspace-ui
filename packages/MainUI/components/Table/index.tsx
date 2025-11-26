@@ -82,9 +82,8 @@ import { ActionsColumn } from "./ActionsColumn";
 import { validateFieldRealTime } from "./utils/validationUtils";
 import { getFieldReference, buildPayloadByInputName } from "@/utils";
 import { useUserContext } from "@/hooks/useUserContext";
-import { useConfirmationDialog } from "./hooks/useConfirmationDialog";
+import { useTableConfirmation } from "./hooks/useTableConfirmation";
 import { useInlineTableDirOptions } from "./hooks/useInlineTableDirOptions";
-import { ConfirmationDialog } from "./components/ConfirmationDialog";
 import { useInlineEditInitialization } from "./hooks/useInlineEditInitialization";
 import {
   canSortWithEditingRows,
@@ -499,7 +498,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { user, session } = useUserContext();
 
   // Confirmation dialog hook for user confirmations
-  const { dialogState, confirmDiscardChanges, confirmSaveWithErrors } = useConfirmationDialog();
+  const { confirmationState, confirmDiscardChanges, confirmSaveWithErrors } = useTableConfirmation();
 
   // Status modal for showing save errors and success messages
   const { statusModal, hideStatusModal, showErrorModal, showSuccessModal } = useStatusModal();
@@ -523,6 +522,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { loadOptions: loadTableDirOptions, isLoading: isLoadingTableDirOptions } = useInlineTableDirOptions({
     tabId: tab.id,
     windowId: tab.window,
+    tab: tab,
   });
 
   const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
@@ -2698,17 +2698,17 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         isRowEditing={contextMenu.row ? editingRowUtils.isRowEditing(String(contextMenu.row.original.id)) : false}
         data-testid="CellContextMenu__8ca888"
       />
-      <ConfirmationDialog
-        isOpen={dialogState.isOpen}
-        type={dialogState.type}
-        title={dialogState.title}
-        message={dialogState.message}
-        confirmText={dialogState.confirmText}
-        cancelText={dialogState.cancelText}
-        confirmDisabled={dialogState.confirmDisabled}
-        showCancel={dialogState.showCancel}
-        onConfirm={dialogState.onConfirm}
-        onCancel={dialogState.onCancel}
+      <StatusModal
+        open={confirmationState.isOpen}
+        statusType={confirmationState.statusType}
+        statusText={confirmationState.statusType === "error" ? confirmationState.title : `${confirmationState.title}\n\n${confirmationState.message}`}
+        errorMessage={confirmationState.statusType === "error" ? confirmationState.message : undefined}
+        saveLabel={confirmationState.confirmText || "OK"}
+        secondaryButtonLabel={confirmationState.showCancel ? confirmationState.cancelText : undefined}
+        onSave={confirmationState.onConfirm}
+        onCancel={confirmationState.onCancel}
+        onClose={confirmationState.onCancel}
+        isDeleteSuccess={false}
         data-testid="ConfirmationDialog__8ca888"
       />
       <StatusModal

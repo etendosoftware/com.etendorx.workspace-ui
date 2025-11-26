@@ -16,23 +16,23 @@
  */
 
 import { useState, useCallback } from "react";
-import type { ConfirmationDialogType } from "../components/ConfirmationDialog";
+import type { StatusType } from "@workspaceui/componentlibrary/src/components/StatusModal/types";
 
-interface ConfirmationDialogState {
+interface ConfirmationState {
   isOpen: boolean;
-  type: ConfirmationDialogType;
+  statusType: StatusType;
   title: string;
   message: string;
   confirmText?: string;
   cancelText?: string;
   confirmDisabled?: boolean;
-  showCancel?: boolean;
+  showCancel: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-interface ConfirmationDialogOptions {
-  type?: ConfirmationDialogType;
+interface ConfirmationOptions {
+  type?: StatusType;
   title: string;
   message: string;
   confirmText?: string;
@@ -42,24 +42,25 @@ interface ConfirmationDialogOptions {
 }
 
 /**
- * Hook for managing confirmation dialogs in inline editing
- * Provides methods to show different types of confirmation dialogs
+ * Hook for managing confirmation modals in Table component using StatusModal
+ * Replaces the old useConfirmationDialog hook with StatusModal-based confirmations
  */
-export function useConfirmationDialog() {
-  const [dialogState, setDialogState] = useState<ConfirmationDialogState>({
+export function useTableConfirmation() {
+  const [confirmationState, setConfirmationState] = useState<ConfirmationState>({
     isOpen: false,
-    type: "info",
+    statusType: "info",
     title: "",
     message: "",
+    showCancel: true,
     onConfirm: () => {},
     onCancel: () => {},
   });
 
   const showConfirmation = useCallback(
-    (options: ConfirmationDialogOptions, onConfirm: () => void, onCancel?: () => void) => {
-      setDialogState({
+    (options: ConfirmationOptions, onConfirm: () => void, onCancel?: () => void) => {
+      setConfirmationState({
         isOpen: true,
-        type: options.type || "info",
+        statusType: options.type || "info",
         title: options.title,
         message: options.message,
         confirmText: options.confirmText,
@@ -67,11 +68,11 @@ export function useConfirmationDialog() {
         confirmDisabled: options.confirmDisabled,
         showCancel: options.showCancel !== false,
         onConfirm: () => {
-          setDialogState((prev) => ({ ...prev, isOpen: false }));
+          setConfirmationState((prev) => ({ ...prev, isOpen: false }));
           onConfirm();
         },
         onCancel: () => {
-          setDialogState((prev) => ({ ...prev, isOpen: false }));
+          setConfirmationState((prev) => ({ ...prev, isOpen: false }));
           onCancel?.();
         },
       });
@@ -80,7 +81,7 @@ export function useConfirmationDialog() {
   );
 
   const hideConfirmation = useCallback(() => {
-    setDialogState((prev) => ({ ...prev, isOpen: false }));
+    setConfirmationState((prev) => ({ ...prev, isOpen: false }));
   }, []);
 
   // Specific confirmation dialog methods
@@ -177,7 +178,7 @@ export function useConfirmationDialog() {
   );
 
   return {
-    dialogState,
+    confirmationState,
     showConfirmation,
     hideConfirmation,
     confirmDiscardChanges,
@@ -188,4 +189,4 @@ export function useConfirmationDialog() {
   };
 }
 
-export default useConfirmationDialog;
+export default useTableConfirmation;

@@ -148,11 +148,11 @@ jest.mock("@/hooks/useTableStatePersistenceTab", () => ({
   }),
 }));
 
-jest.mock("@/components/Table/hooks/useConfirmationDialog", () => ({
-  useConfirmationDialog: () => ({
-    dialogState: {
+jest.mock("@/components/Table/hooks/useTableConfirmation", () => ({
+  useTableConfirmation: () => ({
+    confirmationState: {
       isOpen: false,
-      type: "info",
+      statusType: "info",
       title: "",
       message: "",
       confirmText: "OK",
