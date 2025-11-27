@@ -54,26 +54,28 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
 
   const [displayValue, setDisplayValue] = useState<string>("");
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const existingIdentifier = watch(`${field.hqlName}$_identifier`);
+    const currentValue = watch(field.hqlName);
 
     if (existingIdentifier && !displayValue) {
       setDisplayValue(existingIdentifier);
     }
 
-    if (value?.id && !locationData.id) {
+    if (currentValue?.id && !locationData.id) {
       setLocationData({
-        id: value.id || "",
-        address1: value.address1 || "",
-        address2: value.address2 || "",
-        postal: value.postal || "",
-        city: value.city || "",
-        countryId: value.country || "",
-        regionId: value.region || "",
-        _identifier: value._identifier || "",
+        id: currentValue.id || "",
+        address1: currentValue.address1 || "",
+        address2: currentValue.address2 || "",
+        postal: currentValue.postal || "",
+        city: currentValue.city || "",
+        countryId: currentValue.country || "",
+        regionId: currentValue.region || "",
+        _identifier: currentValue._identifier || "",
       });
     }
-  }, [field.hqlName, watch, displayValue, locationData.id, value]);
+  }, [field.hqlName]);
 
   const {
     records: countryRecords,
@@ -84,26 +86,13 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
     skip: false,
   });
 
-  const [shouldLoadRegions, setShouldLoadRegions] = useState(false);
-  const [regionEntity, setRegionEntity] = useState<string>("");
-
-  useEffect(() => {
-    if (locationData.countryId && !shouldLoadRegions) {
-      setShouldLoadRegions(true);
-      setRegionEntity("Region");
-    } else if (!locationData.countryId && shouldLoadRegions) {
-      setShouldLoadRegions(false);
-      setRegionEntity("");
-    }
-  }, [locationData.countryId, shouldLoadRegions]);
-
   const {
     records: regionRecords,
     loading: loadingRegions,
     error: regionError,
   } = useDatasource({
-    entity: regionEntity,
-    skip: !shouldLoadRegions,
+    entity: "Region",
+    skip: !locationData.countryId,
   });
 
   const countries = useMemo((): CountryOption[] => {
