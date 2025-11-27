@@ -32,6 +32,70 @@ import { useTranslation } from "@/hooks/useTranslation";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { LocationData, CountryOption, RegionOption } from "./LocationSelector/types";
 
+const parseDisplayValue = (
+  displayValue: string,
+  countries: CountryOption[] = [],
+  regions: RegionOption[] = []
+): Partial<LocationData> => {
+  if (!displayValue) return {};
+
+  const parts = displayValue.split(" - ").map((part) => part.trim());
+
+  let countryId = "";
+  let regionId = "";
+
+  // Find country by name
+  if (parts[5]) {
+    const countryMatch = countries.find(
+      (c) => c.title.toLowerCase() === parts[5].toLowerCase()
+    );
+    if (countryMatch) {
+      countryId = countryMatch.value;
+    }
+  }
+
+  // Find region by name (only if we have a countryId)
+  if (parts[4] && countryId) {
+    const regionMatch = regions.find(
+      (r) => r.title.toLowerCase() === parts[4].toLowerCase() && r.value
+    );
+    if (regionMatch) {
+      regionId = regionMatch.value;
+    }
+  }
+
+  return {
+    address1: parts[0] || "",
+    address2: parts[1] || "",
+    postal: parts[2] || "",
+    city: parts[3] || "",
+    regionId: regionId || "",
+    countryId: countryId || "",
+  };
+};
+
+const generateDisplayValue = (
+  locationData: LocationData,
+  countries: CountryOption[] = [],
+  regions: RegionOption[] = []
+): string => {
+  const countryName =
+    countries.find((c) => c.value === locationData.countryId)?.title || "";
+  const regionName =
+    regions.find((r) => r.value === locationData.regionId)?.title || "";
+
+  return [
+    locationData.address1,
+    locationData.address2,
+    locationData.postal,
+    locationData.city,
+    regionName,
+    countryName,
+  ]
+    .join(" - ")
+    .replace(/\s*-\s*$/, ""); // Remove trailing " - "
+};
+
 const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }) => {
   const { watch, setValue } = useFormContext();
   const { t } = useTranslation();
@@ -53,29 +117,30 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
   });
 
   const [displayValue, setDisplayValue] = useState<string>("");
+  const identifier = watch(`${field.hqlName}$_identifier`);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const existingIdentifier = watch(`${field.hqlName}$_identifier`);
-    const currentValue = watch(field.hqlName);
+    if (!value && !identifier) return;
 
-    if (existingIdentifier && !displayValue) {
-      setDisplayValue(existingIdentifier);
+    const displayIdentifier = identifier || value?._identifier || "";
+
+    if (displayIdentifier) {
+      setDisplayValue(displayIdentifier);
     }
 
-    if (currentValue?.id && !locationData.id) {
+    if (value?.id) {
       setLocationData({
-        id: currentValue.id || "",
-        address1: currentValue.address1 || "",
-        address2: currentValue.address2 || "",
-        postal: currentValue.postal || "",
-        city: currentValue.city || "",
-        countryId: currentValue.country || "",
-        regionId: currentValue.region || "",
-        _identifier: currentValue._identifier || "",
+        id: value.id || "",
+        address1: value.address1 || "",
+        address2: value.address2 || "",
+        postal: value.postal || "",
+        city: value.city || "",
+        countryId: value.country || "",
+        regionId: value.region || "",
+        _identifier: value._identifier || "",
       });
     }
-  }, [field.hqlName]);
+  }, [value, identifier]);
 
   const {
     records: countryRecords,
@@ -123,12 +188,38 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
 
   const handleOpenModal = useCallback(() => {
     if (isReadOnly) return;
+
+    const existingData = watch(`${field.hqlName}`);
+    const existingIdentifier = watch(`${field.hqlName}$_identifier`);
+
+    if (existingData?.id) {
+      setLocationData({
+        id: existingData.id || "",
+        address1: existingData.address1 || "",
+        address2: existingData.address2 || "",
+        postal: existingData.postal || "",
+        city: existingData.city || "",
+        countryId: existingData.country || "",
+        regionId: existingData.region || "",
+        _identifier: existingData._identifier || existingIdentifier || "",
+      });
+    } else if (displayValue) {
+      // If no existing data, try to parse displayValue and populate fields
+      const parsedData = parseDisplayValue(displayValue, countries, regions);
+      setLocationData((prev) => ({
+        ...prev,
+        ...parsedData,
+      }));
+    }
+
     setIsModalOpen(true);
-  }, [isReadOnly]);
+  }, [isReadOnly, field.hqlName, watch, displayValue, countries, regions]);
 
   const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
     const existingData = watch(`${field.hqlName}`);
+    const existingIdentifier = watch(`${field.hqlName}$_identifier`);
+
     if (existingData?.id) {
       setLocationData({
         id: existingData.id || "",
@@ -140,6 +231,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
         regionId: existingData.region || "",
         _identifier: existingData._identifier || "",
       });
+      setDisplayValue(existingIdentifier);
     } else {
       setLocationData({
         id: "",
@@ -151,6 +243,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
         regionId: "",
         _identifier: "",
       });
+      setDisplayValue("");
     }
   }, [field.hqlName, watch]);
 
@@ -270,13 +363,27 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
 
       const locationId = createdLocation.id;
       const locationIdentifier = createdLocation._identifier;
+      const displayIdentifier = generateDisplayValue(
+        {
+          id: locationId,
+          address1: createdLocation.address1,
+          address2: createdLocation.address2,
+          postal: createdLocation.postal,
+          city: createdLocation.city,
+          countryId: createdLocation.countryId,
+          regionId: createdLocation.regionId || "",
+          _identifier: locationIdentifier,
+        },
+        countries,
+        regions
+      );
 
       if (locationId) {
         setValue(field.hqlName, locationId);
-        setValue(`${field.hqlName}$_identifier`, locationIdentifier);
+        setValue(`${field.hqlName}$_identifier`, displayIdentifier);
         setValue(`${field.hqlName}_data`, {
           id: locationId,
-          _identifier: locationIdentifier,
+          _identifier: displayIdentifier,
           _entityName: "Location",
           address1: createdLocation.address1,
           address2: createdLocation.address2,
@@ -286,13 +393,13 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
           region: createdLocation.regionId || null,
         });
 
-        setDisplayValue(locationIdentifier);
+        setDisplayValue(displayIdentifier);
         setIsModalOpen(false);
       }
     } catch (error) {
       console.error(t("location.errors.creating"), error);
     }
-  }, [isFormValid, locationLoading, locationData, createLocation, setValue, field.hqlName, t]);
+  }, [isFormValid, locationLoading, locationData, createLocation, setValue, field.hqlName, t, countries, regions]);
 
   const combinedError = locationError || countryError || regionError;
 
