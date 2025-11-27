@@ -109,31 +109,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [removeRecordFromDatasource]
   );
 
-  const emptyWindowDataName = useCallback(() => {
-    if (!currentWindowId) return;
-
-    setWindowsData((prevWindowsData) => ({
-      ...prevWindowsData,
-      [currentWindowId]: {
-        ...prevWindowsData[currentWindowId],
-        name: "",
-        window$_identifier: "",
-      } as Etendo.WindowMetadata,
-    }));
-  }, [currentWindowId]);
-
-  const refetchCurrentWindow = useCallback(() => {
-    if (currentWindowId) {
-      setWindowsData((prev) => {
-        const { [currentWindowId]: _, ...rest } = prev;
-        return rest;
-      });
-
-      return loadWindowData(currentWindowId);
-    }
-    return Promise.resolve({} as Etendo.WindowMetadata);
-  }, [currentWindowId, loadWindowData]);
-
   useEffect(() => {
     if (activeWindow?.windowId && !windowsData[activeWindow.windowId] && !loadingWindows[activeWindow.windowId]) {
       loadWindowData(activeWindow.windowId).catch(() => {
@@ -151,9 +126,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       error: currentError,
       groupedTabs: currentGroupedTabs,
       tabs: currentTabs,
-      refetch: refetchCurrentWindow,
       removeRecord,
-      emptyWindowDataName,
 
       loadWindowData,
       getWindowMetadata,
@@ -171,9 +144,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       currentError,
       currentGroupedTabs,
       currentTabs,
-      refetchCurrentWindow,
       removeRecord,
-      emptyWindowDataName,
       loadWindowData,
       getWindowMetadata,
       isWindowLoading,

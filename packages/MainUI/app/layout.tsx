@@ -82,7 +82,7 @@ export default async function RootLayout({
             <LanguageProvider data-testid="LanguageProvider__ba7569">
               <UserProvider data-testid="UserProvider__ba7569">
                 <DatasourceProvider data-testid="DatasourceProvider__ba7569">
-                  <WindowProvider>
+                  <WindowProvider data-testid="WindowProvider__ba7569">
                     <MetadataProvider data-testid="MetadataProvider__ba7569">
                       <LoadingProvider data-testid="LoadingProvider__ba7569">
                         <Layout data-testid="Layout__ba7569">{children}</Layout>
