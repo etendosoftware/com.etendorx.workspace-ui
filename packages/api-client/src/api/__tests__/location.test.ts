@@ -36,7 +36,7 @@ describe("LocationClient", () => {
 
       const result = await client.createLocation(mockData);
 
-      expect(client.post).toHaveBeenCalledWith("location/create", mockData);
+      expect(client.post).toHaveBeenCalledWith("meta/location/create", mockData);
       expect(result).toEqual(mockResponse.data.data);
     });
 
@@ -65,7 +65,7 @@ describe("LocationClient", () => {
       jest.spyOn(client, "post").mockResolvedValue({ data: { identifier: "LOC-001" } } as any);
 
       expect(await client.getLocationIdentifier("loc-123")).toBe("LOC-001");
-      expect(client.post).toHaveBeenCalledWith("location/identifier", { locationId: "loc-123" });
+      expect(client.post).toHaveBeenCalledWith("meta/location/identifier", { locationId: "loc-123" });
     });
 
     it("handles errors", async () => {
