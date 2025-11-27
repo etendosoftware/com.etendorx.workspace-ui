@@ -7,6 +7,10 @@ on:
       - "epic/**"
     tags:
       - "*"
+  pull_request:
+    branches:
+      - "develop"
+      - "epic/**"
 
 jobs:
   build-and-publish:
@@ -31,6 +35,9 @@ jobs:
             # Remove 'v' prefix from tag name if it exists
             TAG_NAME="${{ github.ref_name }}"
             BRANCH_NAME="${TAG_NAME#v}"
+          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+            # For PRs, use the base branch (target branch) and sanitize it
+            BRANCH_NAME=$(echo "${{ github.base_ref }}" | sed 's/[^a-zA-Z0-9._-]/-/g')
           elif [ "${{ github.ref_name }}" == "develop" ] && [ "${{ github.event_name }}" == "push" ]; then
             BRANCH_NAME="latest"
           elif [[ "${{ github.ref_name }}" == epic/* ]]; then
