@@ -22,6 +22,7 @@ import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/sr
 import { useTranslation } from "../useTranslation";
 import { transformColumnWithCustomJs } from "@/utils/customJsColumnTransformer";
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
+import { dateTimeSortingFn, dateSortingFn } from "@/utils/table/sortingFunctions";
 
 interface UseColumnsOptions {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
@@ -117,6 +118,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         const includeTime =
           AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName) ||
           column.column?.reference === FIELD_REFERENCE_CODES.DATETIME;
+        const isAuditField = AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName);
         columnConfig = {
           ...columnConfig,
           Cell: ({ cell }: { cell: MRT_Cell<EntityData, unknown> }) => {
@@ -131,6 +133,9 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
             // For non-string or empty values, show as-is or empty
             return <span>{value ? String(value) : ""}</span>;
           },
+          // Use custom sorting function for datetime fields to sort by actual date value
+          // rather than the formatted string representation
+          sortingFn: isAuditField ? dateTimeSortingFn : dateSortingFn,
         };
       }
 
