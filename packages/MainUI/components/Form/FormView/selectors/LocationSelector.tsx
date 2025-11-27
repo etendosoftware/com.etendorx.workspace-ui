@@ -89,6 +89,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
   const value = watch(field.hqlName);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [previousLocationData, setPreviousLocationData] = useState<LocationData | null>(null);
 
   const { createLocation, loading: locationLoading, error: locationError } = useLocation();
 
@@ -179,8 +180,10 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
     const existingData = watch(`${field.hqlName}`);
     const existingIdentifier = watch(`${field.hqlName}$_identifier`);
 
+    let newLocationData: LocationData;
+
     if (existingData?.id) {
-      setLocationData({
+      newLocationData = {
         id: existingData.id || "",
         address1: existingData.address1 || "",
         address2: existingData.address2 || "",
@@ -189,50 +192,31 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
         countryId: existingData.country || "",
         regionId: existingData.region || "",
         _identifier: existingData._identifier || existingIdentifier || "",
-      });
+      };
     } else if (displayValue) {
       // If no existing data, try to parse displayValue and populate fields
       const parsedData = parseDisplayValue(displayValue, countries, regions);
-      setLocationData((prev) => ({
-        ...prev,
+      newLocationData = {
+        ...locationData,
         ...parsedData,
-      }));
+      };
+    } else {
+      newLocationData = locationData;
     }
 
+    // Save current state to restore if user cancels
+    setPreviousLocationData(newLocationData);
+    setLocationData(newLocationData);
     setIsModalOpen(true);
-  }, [isReadOnly, field.hqlName, watch, displayValue, countries, regions]);
+  }, [isReadOnly, field.hqlName, watch, displayValue, countries, regions, locationData]);
 
   const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
-    const existingData = watch(`${field.hqlName}`);
-    const existingIdentifier = watch(`${field.hqlName}$_identifier`);
-
-    if (existingData?.id) {
-      setLocationData({
-        id: existingData.id || "",
-        address1: existingData.address1 || "",
-        address2: existingData.address2 || "",
-        postal: existingData.postal || "",
-        city: existingData.city || "",
-        countryId: existingData.country || "",
-        regionId: existingData.region || "",
-        _identifier: existingData._identifier || "",
-      });
-      setDisplayValue(existingIdentifier);
-    } else {
-      setLocationData({
-        id: "",
-        address1: "",
-        address2: "",
-        postal: "",
-        city: "",
-        countryId: "",
-        regionId: "",
-        _identifier: "",
-      });
-      setDisplayValue("");
+    // Restore previous state when user cancels
+    if (previousLocationData) {
+      setLocationData(previousLocationData);
     }
-  }, [field.hqlName, watch]);
+  }, [previousLocationData]);
 
   const handleCountryChange = useCallback((_event: React.SyntheticEvent, newValue: CountryOption | null) => {
     setLocationData((prev) => ({

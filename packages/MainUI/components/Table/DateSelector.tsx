@@ -1,5 +1,5 @@
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import DateRangeModal from "../../../ComponentLibrary/src/components/RangeDateModal/RangeDateModal";
 import { formatBrowserDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
@@ -18,6 +18,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [inputValue, setInputValue] = useState("");
+  const isFromModalRef = useRef(false);
 
   // Synchronize inputValue when filterValue changes externally (e.g., from "Use as filter")
   // Also handle clearing when filterValue becomes undefined
@@ -29,6 +30,15 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
       setEndDate(null);
       return;
     }
+
+    // Only reformat and add "from"/"to" labels if it comes from the modal
+    if (!isFromModalRef.current) {
+      setInputValue(filterValue);
+      return;
+    }
+
+    // Reset the flag after processing
+    isFromModalRef.current = false;
 
     // Parse the filter value which could be:
     // "YYYY-MM-DD - YYYY-MM-DD" (range)
@@ -59,16 +69,19 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
     if (parsedStart && parsedEnd) {
       displayValue = `${formatBrowserDate(parsedStart)} - ${formatBrowserDate(parsedEnd)}`;
     } else if (parsedStart && !parsedEnd) {
-      displayValue = `Desde ${formatBrowserDate(parsedStart)}`;
+      displayValue = `${t("dateModal.from")} - ${formatBrowserDate(parsedStart)}`;
     } else if (!parsedStart && parsedEnd) {
-      displayValue = `Hasta ${formatBrowserDate(parsedEnd)}`;
+      displayValue = `${t("dateModal.to")} - ${formatBrowserDate(parsedEnd)}`;
     }
 
     setInputValue(displayValue);
-  }, [filterValue]);
+  }, [filterValue, t]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    isFromModalRef.current = false;
     setInputValue(e.target.value);
+    setStartDate(null);
+    setEndDate(null);
     onFilterChange(e.target.value);
   };
 
@@ -89,6 +102,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
   };
 
   const handleDateConfirm = (start: Date | null, end: Date | null) => {
+    isFromModalRef.current = true;
     setStartDate(start);
     setEndDate(end);
 
@@ -103,14 +117,14 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
       onFilterChange(filterValue);
     } else if (start && !end) {
       // Only start date: should be treated as "desde" (greaterOrEqual)
-      const displayValue = `Desde ${formatBrowserDate(start)}`;
+      const displayValue = `${t("dateModal.from")} ${formatBrowserDate(start)}`;
       setInputValue(displayValue);
       // Format: "YYYY-MM-DD - " to be detected as range by LegacyColumnFilterUtils
       const filterValue = `${formatDateAsISO(start)} - `;
       onFilterChange(filterValue);
     } else if (!start && end) {
       // Only end date: should be treated as "hasta" (lessOrEqual)
-      const displayValue = `Hasta ${formatBrowserDate(end)}`;
+      const displayValue = `${t("dateModal.to")} ${formatBrowserDate(end)}`;
       setInputValue(displayValue);
       // Format: " - YYYY-MM-DD" to be detected as range by LegacyColumnFilterUtils
       const filterValue = ` - ${formatDateAsISO(end)}`;

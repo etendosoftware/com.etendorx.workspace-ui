@@ -2,6 +2,7 @@ import type { SxProps, Theme } from "@mui/material";
 import type { MRT_ColumnDef, MRT_Row, MRT_Column } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import { isEmptyObject } from "../commons";
+import { formatClassicDate, isDateLike } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 
 export const getDisplayColumnDefOptions = ({ shouldUseTreeMode }: { shouldUseTreeMode: boolean }) => {
   if (shouldUseTreeMode) {
@@ -116,7 +117,15 @@ export const getNewActiveTabsByLevel = (currentMap: Map<number, string>, level: 
 
 export const getCellTitle = (cellValue: unknown): string => {
   if (typeof cellValue === "string") {
+    // Check if the string looks like a date and format it accordingly
+    if (isDateLike(cellValue)) {
+      const formattedDate = formatClassicDate(cellValue, false);
+      return formattedDate || cellValue;
+    }
     return cellValue;
+  }
+  if (typeof cellValue === "number") {
+    return cellValue.toString();
   }
   if (typeof cellValue === "object" && cellValue !== null && "props" in cellValue) {
     const cellValueWithProps = cellValue as { props?: Record<string, unknown> };
