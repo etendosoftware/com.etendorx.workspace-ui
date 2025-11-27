@@ -15,8 +15,15 @@
  *************************************************************************
  */
 
-import { TAB_MODES, TabFormState, FORM_MODES, NEW_RECORD_ID, FormMode, TabMode } from "@/utils/url/constants";
 import {
+  TAB_MODES,
+  type TabFormState,
+  FORM_MODES,
+  NEW_RECORD_ID,
+  type FormMode,
+  type TabMode,
+} from "@/utils/url/constants";
+import type {
   TableState,
   NavigationState,
   WindowContextState,
@@ -85,7 +92,7 @@ export const getNewWindowIdentifier = (windowId: string) => {
  * @param tabLevel - The hierarchical level of the tab (from tab.tabLevel)
  * @returns A new TabState object with default table configuration
  */
-export const createDefaultTabState = (tabLevel: number = 0): TabState => ({
+export const createDefaultTabState = (tabLevel = 0): TabState => ({
   table: {
     filters: [],
     visibility: {},
@@ -118,7 +125,7 @@ export const ensureTabExists = (
   state: WindowContextState,
   windowIdentifier: string,
   tabId: string,
-  tabLevel: number = 0
+  tabLevel = 0
 ): WindowContextState => {
   const newState = { ...state };
 
@@ -170,7 +177,7 @@ export const updateTableProperty = <T extends keyof TableState>(
   tabId: string,
   property: T,
   value: TableState[T],
-  tabLevel: number = 0
+  tabLevel = 0
 ): WindowContextState => {
   const newState = ensureTabExists(prevState, windowIdentifier, tabId, tabLevel);
   newState[windowIdentifier].tabs[tabId].table[property] = value;
