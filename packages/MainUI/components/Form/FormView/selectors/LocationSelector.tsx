@@ -365,14 +365,14 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
       const locationIdentifier = createdLocation._identifier;
       const displayIdentifier = generateDisplayValue(
         {
-          id: locationId,
-          address1: createdLocation.address1,
-          address2: createdLocation.address2,
-          postal: createdLocation.postal,
-          city: createdLocation.city,
-          countryId: createdLocation.countryId,
+          id: locationId || "",
+          address1: createdLocation.address1 || "",
+          address2: createdLocation.address2 || "",
+          postal: createdLocation.postal || "",
+          city: createdLocation.city || "",
+          countryId: createdLocation.countryId || "",
           regionId: createdLocation.regionId || "",
-          _identifier: locationIdentifier,
+          _identifier: locationIdentifier || "",
         },
         countries,
         regions
