@@ -24,6 +24,7 @@ import {
 } from "@/utils/selectorUtils";
 import Image from "next/image";
 import { memo, useCallback, useMemo, useRef, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import checkIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/check-circle-filled.svg?url";
 import ChevronDown from "../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import closeIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/x.svg?url";
@@ -109,6 +110,7 @@ const MultiSelect = memo(function MultiSelectCmp({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
   // Filtrado
   const filteredOptions = useMemo(() => {
@@ -149,6 +151,15 @@ const MultiSelect = memo(function MultiSelectCmp({
       if (!prev) {
         setIsFetchingInitial(true);
         onFocus?.();
+        // Calculate dropdown position
+        if (wrapperRef.current) {
+          const rect = wrapperRef.current.getBoundingClientRect();
+          setDropdownPosition({
+            top: rect.bottom + window.scrollY,
+            left: rect.left + window.scrollX,
+            width: rect.width,
+          });
+        }
       }
       return !prev;
     });
@@ -221,6 +232,62 @@ const MultiSelect = memo(function MultiSelectCmp({
     return null;
   }, [filteredOptions, highlightedIndex, selectedValues, handleSelect, showSkeleton, loading, t]);
 
+  // Update dropdown position on scroll or resize
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updatePosition = () => {
+      if (wrapperRef.current) {
+        const rect = wrapperRef.current.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        });
+      }
+    };
+
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [isOpen]);
+
+  const dropdownContent = isOpen && (
+    <div
+      className="absolute z-[9999] mt-1 bg-white rounded shadow-lg overflow-hidden border border-transparent-neutral-10"
+      style={{
+        top: `${dropdownPosition.top}px`,
+        left: `${dropdownPosition.left}px`,
+        width: dropdownPosition.width > 256 ? `${dropdownPosition.width}px` : "256px",
+      }}>
+      <div className="p-2">
+        <input
+          ref={searchInputRef}
+          value={searchTerm}
+          onChange={handleSetSearchTerm}
+          onKeyDown={handleKeyDown}
+          placeholder={t("multiselect.searchPlaceholder")}
+          className="w-full p-2 text-sm border border-baseline-30 rounded focus:outline-none focus:border-dynamic-main focus:ring-1 focus:ring-dynamic-light"
+        />
+      </div>
+      <ul
+        ref={listRef}
+        className="overflow-y-auto focus:outline-none"
+        style={{ maxHeight: `${maxHeight}px` }}
+        onScroll={handleScroll}>
+        {renderedOptions}
+        {/* Loader scroll infinito */}
+        {loading && hasMore && !showSkeleton && (
+          <li className={`${LIST_ITEM_BASE} ${TEXT_MUTED} text-center`}>{t("multiselect.loadingOptions")}</li>
+        )}
+      </ul>
+    </div>
+  );
+
   return (
     <div ref={wrapperRef} className="relative w-full font-['Inter']" tabIndex={-1}>
       <div
@@ -248,31 +315,7 @@ const MultiSelect = memo(function MultiSelectCmp({
           />
         </div>
       </div>
-      {isOpen && (
-        <div className="absolute z-10 mt-1 w-64 bg-white rounded shadow-lg overflow-hidden border border-transparent-neutral-10">
-          <div className="p-2">
-            <input
-              ref={searchInputRef}
-              value={searchTerm}
-              onChange={handleSetSearchTerm}
-              onKeyDown={handleKeyDown}
-              placeholder={t("multiselect.searchPlaceholder")}
-              className="w-full p-2 text-sm border border-baseline-30 rounded focus:outline-none focus:border-dynamic-main focus:ring-1 focus:ring-dynamic-light"
-            />
-          </div>
-          <ul
-            ref={listRef}
-            className="overflow-y-auto focus:outline-none"
-            style={{ maxHeight: `${maxHeight}px` }}
-            onScroll={handleScroll}>
-            {renderedOptions}
-            {/* Loader scroll infinito */}
-            {loading && hasMore && !showSkeleton && (
-              <li className={`${LIST_ITEM_BASE} ${TEXT_MUTED} text-center`}>{t("multiselect.loadingOptions")}</li>
-            )}
-          </ul>
-        </div>
-      )}
+      {typeof document !== "undefined" && createPortal(dropdownContent, document.body)}
     </div>
   );
 });
