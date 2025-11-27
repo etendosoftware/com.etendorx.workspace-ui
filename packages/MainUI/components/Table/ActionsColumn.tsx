@@ -96,7 +96,7 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
     const cancelButtonAttrs = generateAriaAttributes.actionButton("Cancel", String(row.original.id), isSaving);
 
     return (
-    <fieldset className="flex items-center justify-center gap-1 min-w-[80px]" aria-label="Row editing actions">
+      <fieldset className="flex items-center justify-center gap-1 min-w-[80px]" aria-label="Row editing actions">
         <IconButton
           onClick={onSave}
           disabled={isSaving || hasErrors}

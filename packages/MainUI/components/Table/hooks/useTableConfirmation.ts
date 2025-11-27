@@ -56,29 +56,26 @@ export function useTableConfirmation() {
     onCancel: () => {},
   });
 
-  const showConfirmation = useCallback(
-    (options: ConfirmationOptions, onConfirm: () => void, onCancel?: () => void) => {
-      setConfirmationState({
-        isOpen: true,
-        statusType: options.type || "info",
-        title: options.title,
-        message: options.message,
-        confirmText: options.confirmText,
-        cancelText: options.cancelText,
-        confirmDisabled: options.confirmDisabled,
-        showCancel: options.showCancel !== false,
-        onConfirm: () => {
-          setConfirmationState((prev) => ({ ...prev, isOpen: false }));
-          onConfirm();
-        },
-        onCancel: () => {
-          setConfirmationState((prev) => ({ ...prev, isOpen: false }));
-          onCancel?.();
-        },
-      });
-    },
-    []
-  );
+  const showConfirmation = useCallback((options: ConfirmationOptions, onConfirm: () => void, onCancel?: () => void) => {
+    setConfirmationState({
+      isOpen: true,
+      statusType: options.type || "info",
+      title: options.title,
+      message: options.message,
+      confirmText: options.confirmText,
+      cancelText: options.cancelText,
+      confirmDisabled: options.confirmDisabled,
+      showCancel: options.showCancel !== false,
+      onConfirm: () => {
+        setConfirmationState((prev) => ({ ...prev, isOpen: false }));
+        onConfirm();
+      },
+      onCancel: () => {
+        setConfirmationState((prev) => ({ ...prev, isOpen: false }));
+        onCancel?.();
+      },
+    });
+  }, []);
 
   const hideConfirmation = useCallback(() => {
     setConfirmationState((prev) => ({ ...prev, isOpen: false }));

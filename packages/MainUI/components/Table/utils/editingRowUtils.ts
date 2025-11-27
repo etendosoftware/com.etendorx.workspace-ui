@@ -52,7 +52,7 @@ export function createEditingRowStateUtils(
     });
   };
 
-  const updateCellValue = (rowId: string, fieldName: string, value: unknown) => {
+  const updateCellValue = (rowId: string, fieldName: string, value: unknown, validationFieldName?: string) => {
     setEditingRows((prev) => {
       const editingRow = prev[rowId];
       if (!editingRow) return prev;
@@ -67,7 +67,7 @@ export function createEditingRowStateUtils(
       // Update validation errors, allowing undefined to clear errors
       const updatedValidationErrors = {
         ...editingRow.validationErrors,
-        [fieldName]: undefined,
+        [validationFieldName || fieldName]: undefined,
       };
 
       return {

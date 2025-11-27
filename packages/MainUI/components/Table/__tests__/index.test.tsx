@@ -268,10 +268,6 @@ jest.mock("@/components/Table/CellContextMenu", () => ({
   CellContextMenu: () => <div data-testid="CellContextMenu__8ca888">Context Menu</div>,
 }));
 
-jest.mock("@/components/Table/components/ConfirmationDialog", () => ({
-  ConfirmationDialog: () => <div data-testid="ConfirmationDialog__8ca888">Confirmation</div>,
-}));
-
 jest.mock("@workspaceui/componentlibrary/src/components/StatusModal", () => ({
   __esModule: true,
   default: () => <div data-testid="StatusModal__table">Status Modal</div>,
@@ -420,19 +416,12 @@ describe("DynamicTable Component", () => {
       });
     });
 
-    it("should render ConfirmationDialog component", async () => {
-      render(<DynamicTable setRecordId={mockSetRecordId} />);
-
-      await waitFor(() => {
-        expect(screen.getByTestId("ConfirmationDialog__8ca888")).toBeInTheDocument();
-      });
-    });
-
     it("should render StatusModal component", async () => {
       render(<DynamicTable setRecordId={mockSetRecordId} />);
 
       await waitFor(() => {
-        expect(screen.getByTestId("StatusModal__table")).toBeInTheDocument();
+        const statusModals = screen.getAllByTestId("StatusModal__table");
+        expect(statusModals.length).toBeGreaterThan(0);
       });
     });
   });

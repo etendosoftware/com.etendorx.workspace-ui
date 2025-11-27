@@ -54,5 +54,3 @@ export const INVOICE_FIELD_MAPPINGS: Record<string, string> = {
   stDimension: "inpuser1Id",
   ndDimension: "inpuser2Id",
 } as const;
-
-

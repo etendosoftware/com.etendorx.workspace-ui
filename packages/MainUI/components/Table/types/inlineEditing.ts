@@ -127,7 +127,7 @@ export interface EditingRowStateUtils {
   /** Remove a row from editing state */
   removeEditingRow: (rowId: string) => void;
   /** Update cell value in editing row */
-  updateCellValue: (rowId: string, fieldName: string, value: unknown) => void;
+  updateCellValue: (rowId: string, fieldName: string, value: unknown, validationFieldName?: string) => void;
   /** Set validation errors for a row */
   setRowValidationErrors: (rowId: string, errors: Record<string, string | undefined>) => void;
   /** Set saving state for a row */

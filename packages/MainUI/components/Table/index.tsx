@@ -246,7 +246,7 @@ const EditableCellContent: React.FC<EditableCellContentProps> = ({
             }
           }}
           field={fieldWithData}
-          hasError={Boolean(editingData.validationErrors[columnName])}
+          hasError={Boolean(editingData.validationErrors[fieldMapping.field.name || columnName])}
           disabled={editingData.isSaving || shouldBeReadOnly}
           rowId={rowId}
           columnId={fieldKey}
@@ -697,34 +697,64 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     return mappings;
   }, [baseColumns, createColumnFieldMapping, storeFieldMapping]);
 
+  // Immediate validation function (no debounce)
+  const validateFieldImmediate = useCallback(
+    (rowId: string, fieldName: string, value: unknown) => {
+      performanceMonitor.measure(`validate-field-immediate-${fieldName}`, () => {
+        // Use memoized field mapping to avoid column lookup
+        const fieldMapping = columnFieldMappings.get(fieldName);
+        if (!fieldMapping) return;
+
+        // Use real-time validation with lenient settings for typing
+        const validationResult = validateFieldRealTime(fieldMapping.field, value, {
+          allowEmpty: true,
+          showTypingErrors: false,
+        });
+
+        // Use field.name as the validation key to match Save validation and Callout logic
+        const validationKey = fieldMapping.field.name || fieldName;
+
+        // Update validation errors in state
+        const currentErrors = editingRows[rowId]?.validationErrors || {};
+        editingRowUtils.setRowValidationErrors(rowId, {
+          ...currentErrors,
+          [validationKey]: validationResult.error,
+        });
+      });
+    },
+    [columnFieldMappings, editingRows, editingRowUtils]
+  );
+
   // Create debounced validation function for real-time feedback with performance monitoring
   const debouncedValidateField = useDebouncedCallback((rowId: string, fieldName: string, value: unknown) => {
-    performanceMonitor.measure(`validate-field-${fieldName}`, () => {
-      // Use memoized field mapping to avoid column lookup
-      const fieldMapping = columnFieldMappings.get(fieldName);
-      if (!fieldMapping) return;
-
-      // Use real-time validation with lenient settings for typing
-      const validationResult = validateFieldRealTime(fieldMapping.field, value, {
-        allowEmpty: true,
-        showTypingErrors: false,
-      });
-
-      // Update validation errors in state
-      const currentErrors = editingRows[rowId]?.validationErrors || {};
-      editingRowUtils.setRowValidationErrors(rowId, {
-        ...currentErrors,
-        [fieldName]: validationResult.error,
-      });
-    });
+    validateFieldImmediate(rowId, fieldName, value);
   }, 300);
+
+  // Function to cancel pending validations for specific fields
+  const blurValidationTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  const cancelPendingDebouncedValidations = useCallback(() => {
+    // Cancel only the debounced validation, not blur validations
+    // Blur validations read current state so they should be safe
+    debouncedValidateField.cancel();
+  }, [debouncedValidateField]);
 
   // Immediate validation function for blur events with performance monitoring
   const validateFieldOnBlur = useCallback(
     (rowId: string, fieldName: string) => {
       // Add a small delay to ensure throttled onChange has completed
       // handleCellValueChange is throttled to 50ms, so we wait 60ms to be safe
-      setTimeout(() => {
+      const timerKey = `${rowId}-${fieldName}`;
+
+      // Clear any existing timer for this field
+      const existingTimer = blurValidationTimersRef.current.get(timerKey);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+      }
+
+      const timer = setTimeout(() => {
+        // Remove from map when executed
+        blurValidationTimersRef.current.delete(timerKey);
         performanceMonitor.measure(`validate-field-blur-${fieldName}`, () => {
           // Use memoized field mapping to avoid column lookup
           const fieldMapping = columnFieldMappings.get(fieldName);
@@ -751,14 +781,20 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
             showTypingErrors: true,
           });
 
+          // Use field.name as the validation key to match Save validation and Callout logic
+          const validationKey = fieldMapping.field.name || fieldName;
+
           // Update validation errors in state
           const currentErrors = editingData.validationErrors || {};
           editingRowUtils.setRowValidationErrors(rowId, {
             ...currentErrors,
-            [fieldName]: validationResult.error,
+            [validationKey]: validationResult.error,
           });
         });
       }, 60); // Wait for throttled onChange to complete (50ms + 10ms buffer)
+
+      // Store the timer so it can be cancelled if needed
+      blurValidationTimersRef.current.set(timerKey, timer);
     },
     [columnFieldMappings, editingRowUtils, performanceMonitor]
   );
@@ -780,6 +816,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       const editingData = editingRowUtils.getEditingRowData(rowId);
       if (!editingData) return;
 
+      // Cancel pending debounced validations to prevent stale validations
+      cancelPendingDebouncedValidations();
+
       // Process callout column values using shared utility
       const updates = processCalloutColumnValues(columnValues, tab);
       const fieldsByColumnName = getFieldsByColumnName(tab);
@@ -793,9 +832,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         if (!update) continue;
 
         const gridFieldName = update.fieldName; // Use hqlName from update
+        const validationKey = targetField.name || gridFieldName;
 
         // Update field value
-        editingRowUtils.updateCellValue(rowId, gridFieldName, update.value);
+        // Pass validationKey to ensure the correct error is cleared
+        editingRowUtils.updateCellValue(rowId, gridFieldName, update.value, validationKey);
 
         // Update identifier if present
         if (update.identifier && update.value && String(update.value) !== update.identifier) {
@@ -806,9 +847,14 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         if (update.entries) {
           editingRowUtils.updateCellValue(rowId, `${gridFieldName}$_entries`, update.entries);
         }
+
+        // NOTE: We don't trigger validation here because:
+        // 1. updateCellValue already clears the error for this field
+        // 2. Any pending blur validations will read the new value from state
+        // 3. Triggering validation here can interfere with auto-selection logic
       }
     },
-    [tab, editingRowUtils]
+    [tab, editingRowUtils, cancelPendingDebouncedValidations]
   );
 
   // Type for product option data from datasource
@@ -1561,8 +1607,13 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       performanceMonitor.measure(`cell-value-change-${fieldName}`, () => {
         // Log incoming parameters to debug
 
+        // Determine the key used for validation (usually field.name/columnName)
+        // If field is provided, use its name, otherwise fallback to fieldName (which is fieldKey)
+        const validationKey = field?.name || fieldName;
+
         // Update the cell value immediately
-        editingRowUtils.updateCellValue(rowId, fieldName, value);
+        // Pass validationKey to ensure the correct error is cleared
+        editingRowUtils.updateCellValue(rowId, fieldName, value, validationKey);
 
         // For TABLEDIR fields, also store the identifier and any nested field values
         // Note: We don't create synthetic entries here for user selections,
@@ -1587,6 +1638,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         }
 
         // Trigger debounced validation for real-time feedback
+        // Use fieldName (fieldKey) to lookup the field mapping in debouncedValidateField
+        // The function will internally use field.name as the validation error key
         debouncedValidateField(rowId, fieldName, value);
 
         // Execute callout if field has one
@@ -2701,7 +2754,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       <StatusModal
         open={confirmationState.isOpen}
         statusType={confirmationState.statusType}
-        statusText={confirmationState.statusType === "error" ? confirmationState.title : `${confirmationState.title}\n\n${confirmationState.message}`}
+        statusText={
+          confirmationState.statusType === "error"
+            ? confirmationState.title
+            : `${confirmationState.title}\n\n${confirmationState.message}`
+        }
         errorMessage={confirmationState.statusType === "error" ? confirmationState.message : undefined}
         saveLabel={confirmationState.confirmText || "OK"}
         secondaryButtonLabel={confirmationState.showCancel ? confirmationState.cancelText : undefined}

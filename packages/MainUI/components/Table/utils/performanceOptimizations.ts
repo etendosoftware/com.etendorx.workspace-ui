@@ -64,14 +64,22 @@ export function throttle<T extends (...args: any[]) => any>(
 /**
  * Hook for creating debounced callbacks
  * Automatically handles cleanup on unmount
+ * Returns an object with the debounced function and a cancel method
  */
 export const useDebouncedCallback = <T extends (...args: any[]) => any>(
   callback: T,
   delay: number
-): ((...args: Parameters<T>) => void) => {
+): ((...args: Parameters<T>) => void) & { cancel: () => void } => {
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
-  return useCallback(
+  const cancel = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = undefined;
+    }
+  }, []);
+
+  const debouncedFn = useCallback(
     (...args: Parameters<T>) => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -79,10 +87,16 @@ export const useDebouncedCallback = <T extends (...args: any[]) => any>(
 
       timeoutRef.current = setTimeout(() => {
         callback(...args);
+        timeoutRef.current = undefined;
       }, delay);
     },
     [callback, delay]
   );
+
+  // Attach cancel method to the debounced function
+  (debouncedFn as any).cancel = cancel;
+
+  return debouncedFn as ((...args: Parameters<T>) => void) & { cancel: () => void };
 };
 
 /**

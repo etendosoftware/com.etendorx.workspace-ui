@@ -28,7 +28,6 @@ interface UseInlineTableDirOptionsParams {
   tab?: Tab;
 }
 
-
 /**
  * Hook for loading TABLEDIR options for inline editing
  * Based on the same logic used in FormView's useTableDirDatasource
@@ -88,9 +87,8 @@ export const useInlineTableDirOptions = ({ tabId, windowId, tab }: UseInlineTabl
           baseBody.datasourceName = String(selector.datasourceName);
         }
         // moduleId is required for ComboTableDatasourceService, default to "0" if not provided
-        baseBody.moduleId = selector.moduleId !== null && selector.moduleId !== undefined 
-          ? String(selector.moduleId) 
-          : "0";
+        baseBody.moduleId =
+          selector.moduleId !== null && selector.moduleId !== undefined ? String(selector.moduleId) : "0";
       }
 
       // Add selector-specific parameters ONLY when using a special datasource
@@ -236,7 +234,14 @@ export const useInlineTableDirOptions = ({ tabId, windowId, tab }: UseInlineTabl
         const selectorDatasource = (field.selector as any)?.datasourceName;
         const useSpecialDatasource = selectorDatasource && selectorDatasource !== field.referencedEntity;
 
-        const baseBody = buildRequestBody(field, pageSize, searchQuery, contextData, useSpecialDatasource, datasourceName);
+        const baseBody = buildRequestBody(
+          field,
+          pageSize,
+          searchQuery,
+          contextData,
+          useSpecialDatasource,
+          datasourceName
+        );
 
         const body = new URLSearchParams(baseBody);
         const { data } = await datasource.client.request(`/api/datasource/${datasourceName}`, {
