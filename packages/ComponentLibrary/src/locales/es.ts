@@ -298,6 +298,11 @@ const es = {
         description:
           "Has sido desconectado automáticamente por razones de seguridad. Por favor, inicia sesión nuevamente para continuar.",
       },
+      defaultLogout: {
+        title: "Error del sistema - Sesión cerrada",
+        description:
+          "Your session has been closed due to a system error. Please log in again to continue. If the problem persists, contact your system administrator for assistance.",
+      },
     },
     or: "O",
   },
