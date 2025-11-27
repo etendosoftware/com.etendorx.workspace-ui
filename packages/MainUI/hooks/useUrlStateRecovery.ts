@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useWindowContext } from "@/contexts/window";
 import { parseWindowRecoveryData } from "@/utils/url/utils";
-import { parseUrlState } from "@/utils/recovery/urlStateParser";
+import { parseUrlState, getWindowName } from "@/utils/recovery/urlStateParser";
 import { calculateHierarchy } from "@/utils/recovery/hierarchyCalculator";
 import { reconstructState } from "@/utils/recovery/stateReconstructor";
 import { handleRecoveryError } from "@/utils/recovery/errorHandler";
@@ -97,10 +97,11 @@ export const useUrlStateRecovery = ({
 
         // Window already exists as phantom - just update it
         if (!recoveryInfo.hasRecoveryData) {
-          // Simple case: just mark as initialized
+          const windowName = await getWindowName(recoveryInfo);
+          // Simple case: just mark as initialized and set title
           setWindowActive({
             windowIdentifier,
-            windowData: { initialized: true },
+            windowData: { initialized: true, title: windowName },
           });
           setRecoveryState("completed");
           setIsRecovering(false);
