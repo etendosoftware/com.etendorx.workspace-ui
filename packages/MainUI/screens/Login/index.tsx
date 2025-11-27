@@ -29,13 +29,14 @@ export default function LoginScreen() {
     async (username: string, password: string) => {
       try {
         await login(username, password);
-      } catch (e) {
-        logger.warn(e);
+      } catch (error) {
+        logger.warn(error);
+        const message = error instanceof Error ? error.message : String(error);
         setLoginErrorText(DEFAULT_LOGIN_ERROR_TEXT);
-        setLoginErrorDescription(e instanceof Error ? e.message : String(e));
+        setLoginErrorDescription(message);
       }
     },
-    [login]
+    [login, setLoginErrorText, setLoginErrorDescription]
   );
 
   return <Login title="Etendo" onSubmit={handleLogin} data-testid="Login__da518c" />;

@@ -293,6 +293,11 @@ const en = {
         title: "No Access to Table",
         description: "You have been automatically logged out for security reasons. Please log in again to continue.",
       },
+      defaultLogout: {
+        title: "System Error - Session Closed",
+        description:
+          "Your session has been closed due to a system error. Please log in again to continue. If the problem persists, contact your system administrator for assistance.",
+      },
     },
     or: "OR",
   },

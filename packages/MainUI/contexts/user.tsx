@@ -43,6 +43,7 @@ import { useLanguage } from "./language";
 import LoginScreen from "@/screens/Login";
 import { usePrevious } from "@/hooks/usePrevious";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "../hooks/useTranslation";
 
 export const UserContext = createContext({} as IUserContext);
 
@@ -64,6 +65,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [loginErrorText, setLoginErrorText] = useState<string>("");
   const [loginErrorDescription, setLoginErrorDescription] = useState<string>("");
   const prevRole = usePrevious(currentRole);
+  const { t } = useTranslation();
 
   const [roles, setRoles] = useState<SessionResponse["roles"]>(() => {
     const savedRoles = localStorage.getItem("roles");
@@ -303,7 +305,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
   useEffect(() => {
     const interceptor = (response: Response) => {
       if (response.status === HTTP_CODES.UNAUTHORIZED || response.status === HTTP_CODES.INTERNAL_SERVER_ERROR) {
-        clearUserData();
+        logout();
+        setLoginErrorText(t("login.errors.defaultLogout.title"));
+        setLoginErrorDescription(t("login.errors.defaultLogout.description"));
       }
 
       return response;
@@ -320,7 +324,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         unregisterCopilotInterceptor();
       };
     }
-  }, [clearUserData, token]);
+  }, [logout, t, token]);
 
   useEffect(() => {
     if (ready && prevRole && prevRole?.id !== currentRole?.id) {
