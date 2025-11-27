@@ -10,60 +10,86 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Cell } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { Column } from "@workspaceui/api-client/src/api/types";
-import { FieldType } from "@workspaceui/api-client/src/api/types";
 import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
 import { getFieldReference } from "@/utils";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilter } from "../../components/Table/ColumnFilter";
+import { DateSelector } from "../../components/Table/DateSelector";
+import { TextFilter } from "../../components/Table/TextFilter";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useTranslation } from "../useTranslation";
 import { transformColumnWithCustomJs } from "@/utils/customJsColumnTransformer";
+import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
+import { dateTimeSortingFn, dateSortingFn } from "@/utils/table/sortingFunctions";
 
 interface UseColumnsOptions {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
+  onDateTextFilterChange?: (columnId: string, filterValue: string) => void;
   onLoadFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   onLoadMoreFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   columnFilterStates?: ColumnFilterState[];
+  tableColumnFilters?: Array<{ id: string; value: unknown }>;
 }
 
 // Columnas booleanas conocidas
 const BOOLEAN_COLUMNS = ["isOfficialHoliday", "isActive", "isPaid", "stocked", "isGeneric"];
 
-// Audit fields that need special date formatting
-const AUDIT_DATE_COLUMNS = ["creationDate", "updated", "createdBy", "updatedBy"];
+// Audit fields that need special date formatting (with time)
+const AUDIT_DATE_COLUMNS_WITH_TIME = ["creationDate", "updated"];
+
+/**
+ * Gets the current filter value for a column from tableColumnFilters
+ * Searches by both column.id and column.columnName for consistency
+ */
+const getCurrentFilterValue = (
+  column: Column,
+  tableColumnFilters?: Array<{ id: string; value: unknown }>
+): string | undefined => {
+  const currentFilter = tableColumnFilters?.find((f) => f.id === column.id || f.id === column.columnName);
+  return currentFilter ? String(currentFilter.value) : undefined;
+};
+
+/**
+ * Helper to check if column should use date formatting
+ */
+const shouldFormatDateColumn = (column: Column): boolean => {
+  return (
+    column.column?.reference === FIELD_REFERENCE_CODES.DATE ||
+    column.column?.reference === FIELD_REFERENCE_CODES.DATETIME
+  );
+};
 
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
-  const { onColumnFilter, onLoadFilterOptions, onLoadMoreFilterOptions, columnFilterStates } = options || {};
+  const {
+    onColumnFilter,
+    onDateTextFilterChange,
+    onLoadFilterOptions,
+    onLoadMoreFilterOptions,
+    columnFilterStates,
+    tableColumnFilters,
+  } = options || {};
   const { t } = useTranslation();
 
   const columns = useMemo(() => {
     const fieldsAsArray = Object.values(tab.fields);
     let originalColumns = parseColumns(fieldsAsArray);
 
-    // Mark boolean columns and audit fields automatically
+    // Mark boolean columns automatically
     originalColumns = originalColumns.map((col) => {
       if (BOOLEAN_COLUMNS.includes(col.columnName)) {
         return { ...col, type: "boolean" };
-      }
-      // Mark audit columns for special handling
-      if (AUDIT_DATE_COLUMNS.includes(col.columnName)) {
-        return {
-          ...col,
-          type: col.columnName.includes("Date") || col.columnName === "updated" ? "datetime" : col.type,
-        };
       }
       return col;
     });
 
     return originalColumns.map((column: Column) => {
-      const isReference = isEntityReference(getFieldReference(column.column?.reference));
+      const fieldReference = getFieldReference(column.column?.reference);
+      const isReference = isEntityReference(fieldReference);
       const isBooleanColumn = column.type === "boolean" || column.column?._identifier === "YesNo";
-      const isDateColumn =
-        column.type === "datetime" ||
-        AUDIT_DATE_COLUMNS.includes(column.columnName) ||
-        getFieldReference(column.column?.reference) === FieldType.DATE;
+      const isDateColumn = shouldFormatDateColumn(column);
       const supportsDropdownFilter = isBooleanColumn || ColumnFilterUtils.supportsDropdownFilter(column);
       const isCustomJsColumn = Boolean(column.customJs && column.customJs.trim().length > 0);
 
@@ -85,6 +111,33 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
       }
 
       let columnConfig = { ...column };
+
+      // Date columns with Etendo Classic formatting
+      if (isDateColumn) {
+        // Include time for audit date columns (creationDate, updated) or datetime type columns
+        const includeTime =
+          AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName) ||
+          column.column?.reference === FIELD_REFERENCE_CODES.DATETIME;
+        const isAuditField = AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName);
+        columnConfig = {
+          ...columnConfig,
+          Cell: ({ cell }: { cell: MRT_Cell<EntityData, unknown> }) => {
+            const value = cell?.getValue();
+            // Only format if the value is a string with valid date format
+            // This prevents formatting non-date values that are incorrectly marked as date type
+            if (typeof value === "string" && value) {
+              const formattedDate = formatClassicDate(value, includeTime);
+              // If formatClassicDate returned a non-empty value, use it; otherwise use original
+              return <span>{formattedDate || value}</span>;
+            }
+            // For non-string or empty values, show as-is or empty
+            return <span>{value ? String(value) : ""}</span>;
+          },
+          // Use custom sorting function for datetime fields to sort by actual date value
+          // rather than the formatted string representation
+          sortingFn: isAuditField ? dateTimeSortingFn : dateSortingFn,
+        };
+      }
 
       // Reference columns with navigation
       if (isReference) {
@@ -141,11 +194,45 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         };
       }
 
-      // Enable simple text filtering for date columns
+      // Enable DateSelector for date columns
       if (isDateColumn && !supportsDropdownFilter) {
+        const currentFilterValue = getCurrentFilterValue(column, tableColumnFilters);
+
         columnConfig = {
           ...columnConfig,
           enableColumnFilter: true,
+          Filter: () => (
+            <DateSelector
+              column={column}
+              filterValue={currentFilterValue}
+              onFilterChange={(filterValue: string) => {
+                onDateTextFilterChange?.(column.columnName, filterValue);
+              }}
+              data-testid="DateSelector__46c09c"
+            />
+          ),
+          columnFilterModeOptions: ["contains", "startsWith", "endsWith"],
+          filterFn: "contains",
+        };
+      }
+
+      // Enable default text filtering for columns without specialized filters
+      if (!supportsDropdownFilter && !isDateColumn && onDateTextFilterChange) {
+        const currentFilterValue = getCurrentFilterValue(column, tableColumnFilters);
+
+        columnConfig = {
+          ...columnConfig,
+          enableColumnFilter: true,
+          Filter: () => (
+            <TextFilter
+              column={column}
+              filterValue={currentFilterValue}
+              onFilterChange={(filterValue: string) => {
+                onDateTextFilterChange(column.columnName, filterValue);
+              }}
+              data-testid="TextFilter__46c09c"
+            />
+          ),
           columnFilterModeOptions: ["contains", "startsWith", "endsWith"],
           filterFn: "contains",
         };
@@ -161,11 +248,13 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     tab.fields,
     columnFilterStates,
     onColumnFilter,
+    onDateTextFilterChange,
     onLoadFilterOptions,
     t,
     handleClickRedirect,
     handleKeyDownRedirect,
     onLoadMoreFilterOptions,
+    tableColumnFilters,
   ]);
 
   return columns;

@@ -113,6 +113,7 @@ export const fetchFormInitialization = async (
  * Extracts and transforms auxiliary input values from the form initialization
  * response into a flat key-value object suitable for session storage.
  * This ensures form field values are properly maintained across user interactions.
+ * Also includes attachment information (count and existence) when available.
  *
  * @param data - Form initialization response containing auxiliary input values
  * @returns Flattened object with field names as keys and their string values
@@ -120,9 +121,19 @@ export const fetchFormInitialization = async (
  * @example
  * ```typescript
  * const sessionAttrs = buildSessionAttributes(formData);
- * // Returns: { "fieldName1": "value1", "fieldName2": "value2" }
+ * // Returns: { "fieldName1": "value1", "fieldName2": "value2", "_attachmentCount": "3", ... }
  * ```
  */
 export const buildSessionAttributes = (data: FormInitializationResponse): Record<string, string> => {
-  return { ...extractKeyValuePairs(data.auxiliaryInputValues), ...data.sessionAttributes };
+  const result = { ...extractKeyValuePairs(data.auxiliaryInputValues), ...data.sessionAttributes };
+
+  // Include attachment information when available
+  if (data.attachmentExists !== undefined) {
+    result._attachmentExists = String(data.attachmentExists);
+  }
+  if (data.attachmentCount !== undefined) {
+    result._attachmentCount = String(data.attachmentCount);
+  }
+
+  return result;
 };

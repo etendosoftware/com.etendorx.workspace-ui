@@ -1,6 +1,8 @@
 import type { SxProps, Theme } from "@mui/material";
 import type { MRT_ColumnDef, MRT_Row, MRT_Column } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import { isEmptyObject } from "../commons";
+import { formatClassicDate, isDateLike } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 
 export const getDisplayColumnDefOptions = ({ shouldUseTreeMode }: { shouldUseTreeMode: boolean }) => {
   if (shouldUseTreeMode) {
@@ -93,4 +95,43 @@ export const getCurrentRowCanExpand = ({
   const isParentNode = row.original.__isParent !== false;
   const canExpand = row.original.showDropIcon === true && isParentNode;
   return canExpand;
+};
+
+export const getNewActiveLevels = (currentLevels: number[], level: number, expand?: boolean) => {
+  if (expand) return [level];
+
+  const maxLevel = currentLevels[currentLevels.length - 1];
+
+  if (level === 0) return [0];
+  if (maxLevel === level) return currentLevels;
+  if (maxLevel > level) return [level - 1, level];
+
+  return [maxLevel, level];
+};
+
+export const getNewActiveTabsByLevel = (currentMap: Map<number, string>, level: number, tabId: string) => {
+  const newMap = new Map(currentMap);
+  newMap.set(level, tabId);
+  return newMap;
+};
+
+export const getCellTitle = (cellValue: unknown): string => {
+  if (typeof cellValue === "string") {
+    // Check if the string looks like a date and format it accordingly
+    if (isDateLike(cellValue)) {
+      const formattedDate = formatClassicDate(cellValue, false);
+      return formattedDate || cellValue;
+    }
+    return cellValue;
+  }
+  if (typeof cellValue === "number") {
+    return cellValue.toString();
+  }
+  if (typeof cellValue === "object" && cellValue !== null && "props" in cellValue) {
+    const cellValueWithProps = cellValue as { props?: Record<string, unknown> };
+    if (cellValueWithProps.props && !isEmptyObject(cellValueWithProps.props)) {
+      return (cellValueWithProps.props as { label?: string }).label ?? "";
+    }
+  }
+  return "";
 };

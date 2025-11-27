@@ -72,6 +72,8 @@ const defaultParams: DatasourceOptions = {
   pageSize: 1000,
 };
 
+const EMPTY_FILTERS: MRT_ColumnFiltersState = [];
+
 export type UseDatasourceOptions = {
   entity: string;
   params?: DatasourceOptions;
@@ -97,7 +99,7 @@ export function useDatasource({
   searchQuery,
   skip,
   treeOptions,
-  activeColumnFilters = [],
+  activeColumnFilters = EMPTY_FILTERS,
   isImplicitFilterApplied = false,
   setIsImplicitFilterApplied,
 }: UseDatasourceOptions) {
@@ -127,29 +129,34 @@ export function useDatasource({
   }, []);
 
   const columnFilterCriteria = useMemo(() => {
-    if (!columns || !activeColumnFilters.length) return [];
-    const criteria = LegacyColumnFilterUtils.createColumnFilterCriteria(activeColumnFilters, columns);
-    return criteria;
+    if (!columns || !activeColumnFilters.length) {
+      return [];
+    }
+    return LegacyColumnFilterUtils.createColumnFilterCriteria(activeColumnFilters, columns);
   }, [activeColumnFilters, columns]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const queryParams = useMemo(() => {
-    const baseCriteria = params.criteria || [];
-    const searchCriteriaArray = searchQuery && columns ? SearchUtils.createSearchCriteria(columns, searchQuery) : [];
+    const baseCriteria = params.criteria || ([] as any[]);
+    const searchCriteriaArray = (
+      searchQuery && columns ? SearchUtils.createSearchCriteria(columns, searchQuery) : []
+    ) as any[];
 
-    let allCriteria = [...baseCriteria];
+    let allCriteria: any[] = [...baseCriteria];
 
     if (searchCriteriaArray.length > 0) {
       allCriteria = [...allCriteria, ...searchCriteriaArray];
     }
 
     if (columnFilterCriteria.length > 0) {
-      allCriteria = [...allCriteria, ...columnFilterCriteria];
+      allCriteria = [...allCriteria, ...(columnFilterCriteria as any[])];
     }
 
     const finalParams = {
       ...params,
       criteria: allCriteria,
       isImplicitFilterApplied,
+      noActiveFilter: true,
     };
 
     return finalParams;
@@ -183,6 +190,7 @@ export function useDatasource({
     [entity, page, pageSize, queryParams, treeOptions, isImplicitFilterApplied]
   );
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (skip) {
       setRecords([]);
@@ -196,7 +204,7 @@ export function useDatasource({
     setLoading(true);
 
     fetchData();
-  }, [entity, page, pageSize, queryParams, skip, treeOptions, isImplicitFilterApplied, fetchData]);
+  }, [entity, page, pageSize, queryParams, skip, treeOptions, isImplicitFilterApplied]);
 
   useEffect(() => {
     reinit();

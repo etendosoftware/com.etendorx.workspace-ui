@@ -22,36 +22,6 @@ import { type Column, type Field, FieldType } from "@workspaceui/api-client/src/
 import { DEFAULT_STATUS_CONFIG, IDENTIFIER_KEY, statusConfig, yesNoConfig } from "./columnsConstants";
 import { isColorString, getContrastTextColor } from "@/utils/color/utils";
 
-// Utility function to format audit date fields only
-const formatAuditDateField = (value: unknown): string => {
-  if (!value || typeof value !== "string") return String(value || "");
-
-  try {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return String(value);
-
-    // Format as DD-MM-YYYY HH:mm:ss
-    const dateStr = new Intl.DateTimeFormat("es-AR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    })
-      .format(date)
-      .replace(/\//g, "-");
-
-    const timeStr = new Intl.DateTimeFormat("es-AR", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    }).format(date);
-
-    return `${dateStr} ${timeStr}`;
-  } catch {
-    return String(value);
-  }
-};
-
 // Helper function to handle boolean field rendering
 const renderBooleanField = (value: Record<string, unknown>, column: Field, t?: TranslateFunction) => {
   const yesText = t ? t("common.trueText") : "Yes";
@@ -165,11 +135,8 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
 
           const rawValue = getRawCellValue(v, column);
 
-          // Only format audit date fields specifically
-          if (column.hqlName === "creationDate" || column.hqlName === "updated") {
-            return formatAuditDateField(rawValue);
-          }
-
+          // Don't format audit date fields here - let useColumns handle display formatting
+          // This preserves the original datetime value for correct sorting
           return rawValue;
         },
       });

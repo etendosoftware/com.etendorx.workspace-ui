@@ -8,12 +8,47 @@ import { isReferenceValue, isSimpleValue } from "@/components/ProcessModal/types
 import { logger } from "@/utils/logger";
 
 /**
+ * Type alias for field value types
+ */
+type FieldValue = string | number | boolean;
+
+/**
  * Interface for processed default value result
  */
 interface ProcessedDefaultValue {
   fieldName: string;
-  fieldValue: string | number | boolean;
+  fieldValue: FieldValue;
   identifier?: string;
+}
+
+/**
+ * Converts various date formats to ISO format (YYYY-MM-DD) for HTML date inputs
+ * Supports:
+ * - DD-MM-YYYY (27-10-2025)
+ * - DD/MM/YYYY (27/10/2025)
+ * - YYYY-MM-DD (already correct)
+ * - ISO datetime (2025-10-27T00:00:00Z)
+ */
+export function convertToISODateFormat(dateString: string): string {
+  // Already in ISO format (YYYY-MM-DD)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return dateString;
+  }
+
+  // ISO datetime format (2025-10-27T00:00:00Z) - extract date part
+  if (/^\d{4}-\d{2}-\d{2}T/.test(dateString)) {
+    return dateString.split("T")[0];
+  }
+
+  // DD-MM-YYYY or DD/MM/YYYY format
+  const ddmmyyyyMatch = dateString.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
+  if (ddmmyyyyMatch) {
+    const [, day, month, year] = ddmmyyyyMatch;
+    const isoDate = `${year}-${month}-${day}`;
+    return isoDate;
+  }
+
+  return dateString;
 }
 
 /**
@@ -63,6 +98,60 @@ export function createParameterNameMap(
 }
 
 /**
+ * Checks if a parameter is a date field
+ */
+function isDateField(parameter: ProcessParameter | undefined): boolean {
+  if (!parameter?.reference) return false;
+  const ref = parameter.reference.toLowerCase();
+  return ref.includes("date") || ref.includes("time");
+}
+
+/**
+ * Processes a simple value (string, number, boolean)
+ */
+function processSimpleValue(value: FieldValue, parameter: ProcessParameter | undefined): FieldValue {
+  if (isDateField(parameter)) {
+    return typeof value === "string" ? convertToISODateFormat(value) : String(value);
+  }
+  return typeof value === "boolean" ? value : String(value);
+}
+
+/**
+ * Processes a reference value
+ */
+function processReferenceValue(
+  fieldName: string,
+  formFieldName: string,
+  value: { value: string; identifier: string }
+): ProcessedDefaultValue {
+  logger.debug(`Mapped reference field ${fieldName} to ${formFieldName}:`, {
+    value: value.value,
+    identifier: value.identifier,
+  });
+  return {
+    fieldName: formFieldName,
+    fieldValue: value.value,
+    identifier: value.identifier,
+  };
+}
+
+/**
+ * Processes a fallback value for unexpected types
+ */
+function processFallbackValue(
+  fieldName: string,
+  formFieldName: string,
+  value: ProcessDefaultValue
+): ProcessedDefaultValue {
+  logger.warn(`Unexpected value type for field ${fieldName}:`, value);
+  const fallbackValue = typeof value === "object" && value !== null ? JSON.stringify(value) : String(value || "");
+  return {
+    fieldName: formFieldName,
+    fieldValue: fallbackValue,
+  };
+}
+
+/**
  * Processes a single default value into a form-compatible format
  */
 export function processDefaultValue(
@@ -81,37 +170,18 @@ export function processDefaultValue(
     const formFieldName = parameter?.name || fieldName;
 
     if (isReferenceValue(value)) {
-      logger.debug(`Mapped reference field ${fieldName} to ${formFieldName}:`, {
-        value: value.value,
-        identifier: value.identifier,
-      });
-      return {
-        fieldName: formFieldName,
-        fieldValue: value.value,
-        identifier: value.identifier,
-      };
+      return processReferenceValue(fieldName, formFieldName, value);
     }
 
     if (isSimpleValue(value)) {
-      const processedValue = typeof value === "boolean" ? value : String(value);
-      logger.debug(`Mapped simple field ${fieldName} to ${formFieldName}:`, {
-        value: String(value),
-        type: typeof value,
-      });
       return {
         fieldName: formFieldName,
-        fieldValue: processedValue,
+        fieldValue: processSimpleValue(value, parameter),
       };
     }
 
     // Fallback for unexpected value types
-    logger.warn(`Unexpected value type for field ${fieldName}:`, value);
-    const fallbackValue = typeof value === "object" && value !== null ? JSON.stringify(value) : String(value || "");
-
-    return {
-      fieldName: formFieldName,
-      fieldValue: fallbackValue,
-    };
+    return processFallbackValue(fieldName, formFieldName, value);
   } catch (error) {
     logger.error(`Error processing default value for field ${fieldName}:`, error);
     const parameter = parameterMap.get(fieldName);

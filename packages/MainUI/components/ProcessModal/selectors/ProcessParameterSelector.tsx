@@ -116,8 +116,8 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
   // Don't render if display logic evaluates to false
   // EXCEPT for auxiliary logic fields (*_readonly_logic, *_display_logic) which need to be in the form
   const isAuxiliaryLogicField =
-    parameter.name.endsWith("_readonly_logic") ||
-    parameter.name.endsWith("_display_logic") ||
+    parameter.name?.endsWith("_readonly_logic") ||
+    parameter.name?.endsWith("_display_logic") ||
     parameter.dBColumnName?.endsWith("_readonly_logic") ||
     parameter.dBColumnName?.endsWith("_display_logic");
 
@@ -129,6 +129,10 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
   if (isAuxiliaryLogicField) {
     // Register with dBColumnName because readOnlyLogic expressions use that format
     const fieldName = parameter.dBColumnName || parameter.name;
+    // Don't render if we don't have a valid field name
+    if (!fieldName) {
+      return null;
+    }
     return <input type="hidden" {...register(fieldName)} />;
   }
 
@@ -196,7 +200,7 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
           );
 
         case "quantity":
-          return <QuantitySelector field={mappedField} data-testid="QuantitySelector__dac06b" />;
+          return <QuantitySelector allowNegative={true} field={mappedField} data-testid="QuantitySelector__dac06b" />;
 
         case "list":
           if (!mappedField.refList || mappedField.refList.length === 0) {

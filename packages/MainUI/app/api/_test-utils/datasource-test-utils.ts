@@ -158,6 +158,7 @@ export function createDatasourceRequest(bearer: string, jsonBody: JsonBody): Nex
     method: "POST",
     headers: { get: (k: string) => headers.get(k) || null } as NextRequest["headers"],
     url: "http://localhost:3000/api/datasource",
+    body: null, // Not a stream for these tests
     text: async () => JSON.stringify(jsonBody),
     json: async () => jsonBody,
   } as unknown as NextRequest;
@@ -180,6 +181,7 @@ export function createErpRequest({
     method,
     headers: { get: (k: string) => headers.get(k) || null } as NextRequest["headers"],
     url,
+    body: null, // Not a stream for these tests
     text: async () => body,
     json: async () => (body ? JSON.parse(body) : {}),
   } as unknown as NextRequest;

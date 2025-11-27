@@ -27,6 +27,17 @@ jest.mock("@/hooks/useSelected", () => ({
   useSelected: () => ({ activeLevels: [1], setActiveLevel: jest.fn() }),
 }));
 
+jest.mock("@/hooks/navigation/useMultiWindowURL", () => ({
+  useMultiWindowURL: () => ({ activeWindow: null }),
+}));
+
+jest.mock("@/hooks/useTableStatePersistenceTab", () => ({
+  useTableStatePersistenceTab: () => ({
+    activeLevels: [1],
+    setActiveLevel: jest.fn(),
+  }),
+}));
+
 // Spy on useTransition to force pending state
 // Force React.useTransition to always be pending
 jest.mock("react", () => {
@@ -34,7 +45,7 @@ jest.mock("react", () => {
   return { ...actual, useTransition: () => [true, (cb: any) => cb()] };
 });
 
-import Tabs from "./Tabs";
+import TabsComponent from "./Tabs";
 
 describe("Tabs - pending state skeleton", () => {
   const tabs = [
@@ -43,7 +54,8 @@ describe("Tabs - pending state skeleton", () => {
   ] as any[];
 
   it("renders skeleton content when transition is pending", () => {
-    render(<Tabs tabs={tabs as any} />);
+    const TabsAsAny = TabsComponent as any;
+    render(<TabsAsAny tabs={tabs} />);
 
     expect(screen.getByTestId("tab-container")).toBeInTheDocument();
     // When pending, the skeleton container with animate-pulse should be present

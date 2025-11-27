@@ -110,7 +110,14 @@ export default function UserProvider(props: React.PropsWithChildren) {
         image: sessionResponse.user.image || "",
       };
 
-      setSession((prev) => ({ ...prev, ...sessionResponse.attributes }));
+      // Update session attributes and explicitly set organization ID from current organization
+      // This ensures the organization is always in sync with the role change
+      setSession((prev) => ({
+        ...prev,
+        ...sessionResponse.attributes,
+        "#AD_Org_ID": sessionResponse.currentOrganization.id,
+        adOrgId: sessionResponse.currentOrganization.id,
+      }));
       updateProfile(currentProfileInfo);
       setUser(sessionResponse.user);
       setProfile(currentProfileInfo);

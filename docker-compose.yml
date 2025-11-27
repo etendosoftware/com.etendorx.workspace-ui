@@ -4,6 +4,7 @@ services:
     image: etendo/etendo_ui:${UI_VERSION:-latest}
     ports:
       - "3000:3000"
+    restart: unless-stopped
     networks:
       - etendo
     environment:

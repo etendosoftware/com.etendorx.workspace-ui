@@ -37,6 +37,7 @@ const ProcessIframeOpenModal = ({
   title,
   onProcessSuccess,
   tabId,
+  size = "default",
 }: ProcessIframeModalOpenProps) => {
   const { t } = useTranslation();
   const [iframeLoading, setIframeLoading] = useState(true);
@@ -208,11 +209,15 @@ const ProcessIframeOpenModal = ({
 
   if (!isOpen) return null;
 
+  // Apply larger size for Forms - responsive with max size
+  const sizeClass = size === "large" ? "!w-[90vw] !max-w-[1600px] !h-[85vh] !max-h-[900px]" : "";
+
   return (
     <CustomModal
       isOpen={isOpen}
       title={title || t("common.processes")}
       iframeLoading={iframeLoading}
+      customContentClass={sizeClass}
       customContent={
         processMessage && (
           <div

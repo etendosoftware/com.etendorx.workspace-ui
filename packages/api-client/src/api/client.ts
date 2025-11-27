@@ -81,14 +81,31 @@ export class Client {
     return response.headers.get("Content-Type")?.includes("application/json") ?? false;
   }
 
+  private isBinary(response: Response) {
+    const contentType = response.headers.get("Content-Type");
+    return (
+      contentType &&
+      (contentType.includes("application/octet-stream") ||
+        contentType.includes("application/zip") ||
+        contentType.includes("image/") ||
+        contentType.includes("video/") ||
+        contentType.includes("audio/") ||
+        contentType.includes("application/pdf"))
+    );
+  }
+
   private setContentType(options: ClientOptions) {
     const { headers = {}, body } = options;
 
     if (!headers["Content-Type"]) {
-      headers["Content-Type"] =
-        body instanceof URLSearchParams || typeof body === "string" || body instanceof FormData
-          ? this.FORM_CONTENT_TYPE
-          : this.JSON_CONTENT_TYPE;
+      // Don't set Content-Type for FormData - let browser set it with boundary
+      if (body instanceof FormData) {
+        // Remove Content-Type header to let browser set multipart/form-data with boundary
+        delete headers["Content-Type"];
+      } else {
+        headers["Content-Type"] =
+          body instanceof URLSearchParams || typeof body === "string" ? this.FORM_CONTENT_TYPE : this.JSON_CONTENT_TYPE;
+      }
     }
 
     options.headers = headers;
@@ -154,7 +171,14 @@ export class Client {
         response = await this.interceptor(response);
       }
 
-      response.data = await (this.isJson(response) ? getDecodedJsonResponse(response) : response.text());
+      // Handle different response types
+      if (this.isJson(response)) {
+        response.data = await getDecodedJsonResponse(response);
+      } else if (this.isBinary(response)) {
+        response.data = await response.blob();
+      } else {
+        response.data = await response.text();
+      }
 
       return response;
     } catch (error) {

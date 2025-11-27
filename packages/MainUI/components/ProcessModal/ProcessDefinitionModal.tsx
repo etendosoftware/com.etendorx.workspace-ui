@@ -2,8 +2,7 @@
  *************************************************************************
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
- * the License.
- * You may obtain a copy of the License at
+ * the License. You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -41,6 +40,25 @@ import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
 import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+
+// Date field reference codes for conversion
+const DATE_REFERENCE_CODES = [
+  FIELD_REFERENCE_CODES.DATE, // "15"
+  FIELD_REFERENCE_CODES.DATETIME, // "16"
+  FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME, // UUID
+];
+
+/**
+ * Checks if a parameter reference is a date/time field
+ */
+const isDateReference = (reference: string): boolean => {
+  return (
+    DATE_REFERENCE_CODES.includes(reference as (typeof DATE_REFERENCE_CODES)[number]) ||
+    reference.toLowerCase().includes("date") ||
+    reference.toLowerCase().includes("time")
+  );
+};
+import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { FormProvider, useForm, useFormState } from "react-hook-form";
@@ -55,6 +73,7 @@ import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, R
 import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
 import type { Tab, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
+import { useProcessCallouts } from "./callouts/useProcessCallouts";
 
 /** Fallback object for record values when no record context exists */
 export const FALLBACK_RESULT = {};
@@ -70,6 +89,53 @@ export type GridSelectionStructure = {
 };
 
 export type GridSelectionUpdater = GridSelectionStructure | ((prev: GridSelectionStructure) => GridSelectionStructure);
+
+type AutoSelectLogic = {
+  field?: string;
+  operator?: string; // '=', '!=', '>', '<', 'in'
+  value?: string | number | boolean | string[] | number[] | symbol | null;
+  valueFromContext?: string;
+  ids?: string[]; // alternative to logic by field
+};
+
+type AutoSelectConfig = {
+  table?: string; // key used in gridSelection (dBColumnName or entityName)
+  logic?: AutoSelectLogic;
+  _gridSelection?: Record<string, string[]>; // backward-compatible payload
+};
+
+/**
+ * Converts a date field value to ISO format if needed
+ * @param fieldValue - The field value to convert
+ * @returns The converted value or original if no conversion needed
+ */
+const convertDateFieldValue = (fieldValue: unknown): unknown => {
+  if (!fieldValue || typeof fieldValue !== "string") {
+    return fieldValue;
+  }
+
+  const originalValue = String(fieldValue);
+  const convertedValue = convertToISODateFormat(originalValue);
+
+  return convertedValue !== originalValue ? convertedValue : fieldValue;
+};
+
+/**
+ * Converts date fields in combined data for a single parameter
+ * @param combined - The combined data object
+ * @param param - The parameter to process
+ */
+const convertParameterDateFields = (combined: Record<string, unknown>, param: ProcessParameter): void => {
+  // Convert by parameter name
+  if (combined[param.name]) {
+    combined[param.name] = convertDateFieldValue(combined[param.name]);
+  }
+
+  // Convert by dBColumnName if different from name
+  if (param.dBColumnName && param.dBColumnName !== param.name && combined[param.dBColumnName]) {
+    combined[param.dBColumnName] = convertDateFieldValue(combined[param.dBColumnName]);
+  }
+};
 /**
  * ProcessDefinitionModalContent - Core modal component for process execution
  *
@@ -101,6 +167,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const [loading, setLoading] = useState(true);
   const [gridSelection, setGridSelection] = useState<GridSelectionStructure>({});
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
+
+  // NEW: autoSelectConfig state to hold declarative selection instructions OR backward-compatible _gridSelection
+  const [autoSelectConfig, setAutoSelectConfig] = useState<AutoSelectConfig | null>(null);
+  const [autoSelectApplied, setAutoSelectApplied] = useState(false);
 
   const selectedRecords = graph.getSelectedMultiple(tab);
   const firstWindowReferenceParam = useMemo(() => {
@@ -167,11 +237,26 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     // Build base payload with system context fields
     const basePayload = buildProcessPayload(record, tab, {}, {});
 
-    return {
+    const combined = {
       ...basePayload,
       ...initialState,
     };
-  }, [record, tab, initialState]);
+
+    // Convert date fields to ISO format for all parameters
+    // This ensures date inputs display values correctly regardless of source (record or defaults)
+    const parametersList = Object.values(parameters);
+
+    for (const param of parametersList) {
+      // Check if parameter is a date field by reference code OR by name containing "date"/"time"
+      const isDateField = param.reference && isDateReference(param.reference);
+
+      if (isDateField) {
+        convertParameterDateFields(combined, param);
+      }
+    }
+
+    return combined;
+  }, [record, tab, initialState, parameters]);
 
   const form = useForm({
     defaultValues: availableFormData,
@@ -189,6 +274,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   // Watch all form values to trigger re-validation when any field changes
   const formValues = form.watch();
+
+  // Process callouts - execute when form values change
+  useProcessCallouts({
+    processId: processId || "",
+    form,
+    gridSelection,
+    enabled: open && !loading && !initializationLoading,
+  });
 
   // Combine loading states: initialization and callouts (do not include internal param-loading)
 
@@ -319,6 +412,53 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   );
 
   /**
+   * Builds process-specific payload fields based on process configuration
+   */
+  const buildProcessSpecificFields = useCallback(
+    (processId: string): Record<string, unknown> => {
+      const currentAttrs = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+      if (!currentAttrs || !recordValues) {
+        return {};
+      }
+
+      const currentRecordValue = recordValues[currentAttrs.inpPrimaryKeyColumnId];
+      const fields: Record<string, unknown> = {
+        [currentAttrs.inpColumnId]: currentRecordValue,
+        [currentAttrs.inpPrimaryKeyColumnId]: currentRecordValue,
+      };
+
+      // Add additional payload fields from process configuration
+      if (currentAttrs.additionalPayloadFields) {
+        for (const fieldName of currentAttrs.additionalPayloadFields) {
+          if (recordValues[fieldName] !== undefined) {
+            fields[fieldName] = recordValues[fieldName];
+          }
+        }
+      }
+
+      return fields;
+    },
+    [recordValues]
+  );
+
+  /**
+   * Builds window-specific payload fields based on window configuration
+   */
+  const buildWindowSpecificFields = useCallback(
+    (windowId: string): Record<string, unknown> => {
+      const windowSpecificKey = WINDOW_SPECIFIC_KEYS[windowId];
+      if (!windowSpecificKey) {
+        return {};
+      }
+
+      return {
+        [windowSpecificKey.key]: windowSpecificKey.value(record),
+      };
+    },
+    [record]
+  );
+
+  /**
    * Executes processes with window reference parameters
    * Used for processes that require grid record selection
    * Calls servlet with selected grid records and process-specific data
@@ -329,27 +469,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     }
     startTransition(async () => {
       try {
-        const currentAttrs = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
-        const currentRecordValue = recordValues?.[currentAttrs.inpPrimaryKeyColumnId];
-        const payload = {
-          [currentAttrs.inpColumnId]: currentRecordValue,
-          [currentAttrs.inpPrimaryKeyColumnId]: currentRecordValue,
+        // Build base payload
+        const payload: Record<string, unknown> = {
+          recordIds: record?.id ? [record.id] : [],
           _buttonValue: "DONE",
           _params: {
             ...mapKeysWithDefaults({ ...form.getValues(), ...gridSelection }),
           },
           _entityName: tab.entityName,
           windowId: tab.window,
+          ...buildProcessSpecificFields(processId),
+          ...(tab.window ? buildWindowSpecificFields(tab.window) : {}),
         };
-
-        // Add additional payload fields from configuration
-        if (currentAttrs.additionalPayloadFields && recordValues) {
-          for (const fieldName of currentAttrs.additionalPayloadFields) {
-            if (recordValues[fieldName] !== undefined) {
-              payload[fieldName] = recordValues[fieldName];
-            }
-          }
-        }
 
         const res = await executeProcess(
           processId,
@@ -371,7 +502,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
     });
-  }, [tab, processId, recordValues, form, gridSelection, token, javaClassName, parseProcessResponse]);
+  }, [
+    tab,
+    processId,
+    form,
+    gridSelection,
+    token,
+    javaClassName,
+    parseProcessResponse,
+    record,
+    buildProcessSpecificFields,
+    buildWindowSpecificFields,
+  ]);
 
   /**
    * Executes processes directly via servlet using javaClassName
@@ -459,15 +601,23 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           return formValues;
         })() // User input from form
       );
+
+      const stringFunctionPayload = {
+        _buttonValue: "DONE",
+        buttonValue: "DONE",
+        windowId: tab.window,
+        entityName: tab.entityName,
+        recordIds: selectedRecords?.map((r) => r.id),
+        ...completePayload, // Use complete payload instead of just form values
+      };
+
       try {
-        const stringFnResult = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
-          _buttonValue: "DONE",
-          buttonValue: "DONE",
-          windowId: tab.window,
-          entityName: tab.entityName,
-          recordIds: selectedRecords?.map((r) => r.id),
-          ...completePayload, // Use complete payload instead of just form values
-        });
+        const stringFnResult = await executeStringFunction(
+          onProcess,
+          { Metadata },
+          button.processDefinition,
+          stringFunctionPayload
+        );
 
         const responseMessage = stringFnResult.responseActions[0].showMsgInProcessView;
         const success = responseMessage.msgType === "success";
@@ -545,6 +695,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       }
 
       setGridSelection(initialGridSelection);
+      // clear any previous auto select when opening
+      setAutoSelectConfig(null);
+      setAutoSelectApplied(false);
     }
   }, [button.processDefinition.parameters, open]);
 
@@ -561,15 +714,51 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             tabId,
           });
 
+          // If result is undefined/null, skip
+          const safeResult = result || {};
+
+          // If backend returns a legacy `_gridSelection` mapping (ids), apply it directly (backward compatibility)
+          if (safeResult._gridSelection && typeof safeResult._gridSelection === "object") {
+            // Merge into gridSelection state
+            setGridSelection((prev) => {
+              const next = { ...prev };
+              for (const [key, ids] of Object.entries(safeResult._gridSelection as Record<string, string[]>)) {
+                // keep existing _allRows if present, but overwrite _selection with ids array
+                next[key] = {
+                  ...(next[key] || { _selection: [], _allRows: [] }),
+                  _selection: Array.isArray(ids) ? ids.map((id) => String(id)) : [],
+                };
+              }
+              return next;
+            });
+          }
+
+          // If backend returns an autoSelectConfig, store it
+          if (safeResult.autoSelectConfig) {
+            setAutoSelectConfig(safeResult.autoSelectConfig as AutoSelectConfig);
+          }
+
           setParameters((prev) => {
             const newParameters = { ...prev };
 
-            for (const [parameterName, values] of Object.entries(result)) {
-              const newOptions = values as string[];
-              newParameters[parameterName] = { ...newParameters[parameterName] };
-              newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
-                newOptions.includes(option.value)
-              );
+            for (const [parameterName, values] of Object.entries(safeResult)) {
+              if (["_gridSelection", "autoSelectConfig"].includes(parameterName)) continue;
+
+              if (!newParameters[parameterName]) continue;
+
+              try {
+                const newOptions = values as string[];
+
+                newParameters[parameterName] = { ...newParameters[parameterName] };
+
+                if (Array.isArray(newParameters[parameterName].refList)) {
+                  newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
+                    newOptions.includes(option.value)
+                  );
+                }
+              } catch (e) {
+                logger.warn("Malformed parameter data from onLoad for", parameterName, e);
+              }
             }
 
             return newParameters;
@@ -587,6 +776,114 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
     fetchOptions();
   }, [button.processDefinition, onLoad, open, selectedRecords, tab, tabId]);
+
+  /**
+   * NEW useEffect:
+   * Applies autoSelectConfig when:
+   *  - autoSelectConfig state is set OR legacy _gridSelection has been merged into gridSelection
+   *  - and the corresponding grid's _allRows have been populated by WindowReferenceGrid (via onSelectionChange)
+   *
+   * The logic supports:
+   *  - autoSelectConfig._gridSelection: mapping table -> [ids]
+   *  - autoSelectConfig.table + autoSelectConfig.logic: declarative selection
+   */
+  useEffect(() => {
+    if (!autoSelectConfig || autoSelectApplied) return;
+
+    // If autoSelectConfig contains legacy _gridSelection mapping, handle quickly
+    if (autoSelectConfig._gridSelection) {
+      // Merge into gridSelection (ids already set previously, but ensure structure)
+      setGridSelection((prev) => {
+        const next = { ...prev };
+        for (const [tableKey, ids] of Object.entries(autoSelectConfig._gridSelection || {})) {
+          next[tableKey] = {
+            ...(next[tableKey] || { _selection: [], _allRows: [] }),
+            _selection: Array.isArray(ids) ? ids.map((id) => String(id)) : [],
+          };
+        }
+        return next;
+      });
+      setAutoSelectApplied(true);
+      return;
+    }
+
+    const tableKey = autoSelectConfig.table;
+    const logic = autoSelectConfig.logic;
+    if (!tableKey || !logic) return;
+
+    const target = gridSelection[tableKey];
+    if (!target || !Array.isArray(target._allRows) || target._allRows.length === 0) {
+      // no rows yet — wait until WindowReferenceGrid calls onSelectionChange and updates gridSelection
+      return;
+    }
+
+    // Determine value to compare (literal or from context)
+    let valueToCompare = logic.value;
+    if (logic.valueFromContext) {
+      const selected = Object.values(selectedRecords || {})[0];
+      valueToCompare = selected?.[logic.valueFromContext];
+    }
+
+    // If logic contains explicit ids => select by ids directly
+    if (Array.isArray(logic.ids) && logic.ids.length > 0) {
+      const idsSet = new Set(logic.ids.map((id) => String(id)));
+      const matched = target._allRows.filter((row: unknown) => {
+        const record = row as Record<string, unknown>;
+        return idsSet.has(String(record?.id ?? record?.ID ?? record?.Id ?? row));
+      });
+      if (matched.length > 0) {
+        setGridSelection((prev) => ({
+          ...prev,
+          [tableKey]: {
+            ...prev[tableKey],
+            _selection: matched,
+          },
+        }));
+        logger.debug(`Auto-selection applied on table ${tableKey} by explicit ids (${matched.length})`);
+        setAutoSelectApplied(true);
+      }
+      return;
+    }
+
+    // Otherwise, apply operator-based selection using field comparison
+    const matchedRows = target._allRows.filter((row: unknown) => {
+      const record = row as Record<string, unknown>;
+      const rowValue = record?.[logic.field as string];
+
+      switch (logic.operator) {
+        case "=":
+        case "==":
+          return rowValue === valueToCompare;
+        case "!=":
+        case "<>":
+          return rowValue !== valueToCompare;
+        case ">":
+          return typeof rowValue === "number" && typeof valueToCompare === "number" && rowValue > valueToCompare;
+        case "<":
+          return typeof rowValue === "number" && typeof valueToCompare === "number" && rowValue < valueToCompare;
+        case "in": {
+          if (!Array.isArray(valueToCompare)) return false;
+          const typedArray = valueToCompare as (string | number | boolean)[];
+          return typedArray.some((val) => val === rowValue);
+        }
+        default:
+          // default to strict equality if operator missing
+          return rowValue === valueToCompare;
+      }
+    });
+
+    if (matchedRows.length > 0) {
+      setGridSelection((prev) => ({
+        ...prev,
+        [tableKey]: {
+          ...prev[tableKey],
+          _selection: matchedRows,
+        },
+      }));
+      logger.debug(`Auto-selection applied on table ${tableKey} (${matchedRows.length} rows)`);
+      setAutoSelectApplied(true);
+    }
+  }, [autoSelectConfig, autoSelectApplied, gridSelection, selectedRecords]);
 
   const renderResponse = () => {
     if (!result) return null;
@@ -659,6 +956,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             parameter={parameter}
             parameters={parameters}
             onSelectionChange={setGridSelection}
+            gridSelection={gridSelection}
             tabId={parameterTabId}
             entityName={parameterEntityName}
             windowReferenceTab={parameterTab || windowReferenceTab}

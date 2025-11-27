@@ -19,6 +19,8 @@
  * Session validation utilities for detecting expired ERP sessions
  */
 
+import { isInvalidCsrfTokenError } from "./csrfRecovery";
+
 /**
  * Checks if a response indicates an expired session
  * @param response The HTTP response from ERP
@@ -75,4 +77,44 @@ export function isSessionExpired(response: Response, data: unknown): boolean {
 export function shouldAttemptRecovery(response: Response, data: unknown): boolean {
   // Only attempt recovery for session expiration, not other authentication issues
   return isSessionExpired(response, data);
+}
+
+/**
+ * Enhanced error classification that includes CSRF-specific errors
+ * @param response The HTTP response from ERP
+ * @param data The parsed response data
+ * @returns Object with detailed error classification
+ */
+export function classifySessionError(
+  response: Response,
+  data: unknown
+): {
+  isSessionExpired: boolean;
+  isInvalidCsrf: boolean;
+  isRecoverable: boolean;
+} {
+  const isSessionExp = isSessionExpired(response, data);
+  const isInvalidCsrf = isInvalidCsrfTokenError(data);
+
+  return {
+    isSessionExpired: isSessionExp,
+    isInvalidCsrf: isInvalidCsrf,
+    isRecoverable: isSessionExp || isInvalidCsrf,
+  };
+}
+
+/**
+ * Checks if an error should trigger CSRF-specific recovery
+ * @param response The HTTP response from ERP
+ * @param data The parsed response data
+ * @returns true if CSRF recovery should be attempted
+ */
+export function shouldAttemptCsrfRecovery(response: Response, data: unknown): boolean {
+  try {
+    // Only attempt CSRF recovery for 200 responses with InvalidCSRFToken
+    return response.status === 200 && isInvalidCsrfTokenError(data);
+  } catch (error) {
+    // If CSRF detection fails, don't attempt recovery
+    return false;
+  }
 }

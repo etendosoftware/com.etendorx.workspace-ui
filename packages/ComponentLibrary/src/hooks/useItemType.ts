@@ -22,7 +22,7 @@ import type { UseItemActionsProps } from "./types";
 export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }: UseItemActionsProps) => {
   const handleItemClick = useCallback(
     (item: Menu) => {
-      const validType = ["Window", "Report", "ProcessDefinition"].includes(item.type || "");
+      const validType = ["Window", "Report", "ProcessDefinition", "Form", "Process"].includes(item.type || "");
       if (!validType) {
         console.warn(`Invalid item type: ${item.type}, defaulting to Window`);
         if (item.windowId && onWindowClick) {
@@ -43,6 +43,8 @@ export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }:
           }
           break;
         case "ProcessDefinition":
+        case "Form":
+        case "Process":
           if (item.id && onProcessClick) {
             onProcessClick(item);
           }

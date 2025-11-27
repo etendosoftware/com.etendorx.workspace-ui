@@ -23,7 +23,8 @@ export const isValidNumber = (value: string): boolean => {
 export const validateNumber = (
   value: string,
   minValue: number | undefined,
-  maxValue: number | undefined
+  maxValue: number | undefined,
+  allowNegative = false
 ): { isValid: boolean; errorMessage: string } => {
   if (!isValidNumber(value)) {
     return { isValid: false, errorMessage: "Please enter a valid number" };
@@ -31,7 +32,7 @@ export const validateNumber = (
 
   const num = Number.parseFloat(value);
 
-  if (num < 0) {
+  if (!allowNegative && num < 0) {
     return { isValid: false, errorMessage: "Value must be non-negative" };
   }
 
