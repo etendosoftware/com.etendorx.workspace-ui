@@ -1,6 +1,6 @@
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { WindowRecoveryInfo } from "@/utils/window/constants";
-import { getWindowIdFromIdentifier } from "@/utils/window/utils";
+import type { WindowMetadata } from "@workspaceui/api-client/src/api/types";
 
 export interface ParsedUrlState {
   windowIdentifier: string;
@@ -19,7 +19,10 @@ export interface ParsedUrlState {
  * @returns Parsed URL state containing window and tab details
  * @throws Error if parsing fails or required data is missing
  */
-export const parseUrlState = async (recoveryInfo: WindowRecoveryInfo): Promise<ParsedUrlState> => {
+export const parseUrlState = async (
+  recoveryInfo: WindowRecoveryInfo,
+  windowData: WindowMetadata
+): Promise<ParsedUrlState> => {
   const { tabId: recoveryTabId, recordId: recoveryRecordId } = recoveryInfo;
 
   if (!recoveryTabId || !recoveryRecordId) {
@@ -39,9 +42,7 @@ export const parseUrlState = async (recoveryInfo: WindowRecoveryInfo): Promise<P
       throw new Error("Failed to fetch window action handler data");
     }
 
-    // Get window metadata to determine tab level
-    const windowMetadata = await Metadata.getWindow(data.windowId);
-    const targetTab = windowMetadata.tabs.find((tab) => tab.id === recoveryTabId);
+    const targetTab = windowData.tabs.find((tab) => tab.id === recoveryTabId);
 
     if (!targetTab) {
       throw new Error(`Tab ${recoveryTabId} not found in window metadata`);
@@ -63,17 +64,15 @@ export const parseUrlState = async (recoveryInfo: WindowRecoveryInfo): Promise<P
 };
 
 /**
- * Gets window name from recovery information
- * @param recoveryInfo - Window recovery information extracted from URL parameters
- * @returns Window name
- * @throws Error if fetching window name fails
+ * Gets the window name from window metadata.
+ *
+ * @param windowData - Window metadata from backend
+ * @returns The window name as a string
+ * @throws Error if window name cannot be retrieved
  */
-export const getWindowName = async (recoveryInfo: WindowRecoveryInfo): Promise<string> => {
+export const getWindowName = (windowData: WindowMetadata): string => {
   try {
-    const { windowIdentifier: recoveryWindowIdentifier } = recoveryInfo;
-    const recoveryWindowId = getWindowIdFromIdentifier(recoveryWindowIdentifier);
-    const windowMetadata = await Metadata.getWindow(recoveryWindowId);
-    return windowMetadata.name;
+    return windowData.name;
   } catch (error) {
     console.error("Error getting window name:", error);
     throw new Error(`Failed to get window name: ${error instanceof Error ? error.message : "Unknown error"}`);

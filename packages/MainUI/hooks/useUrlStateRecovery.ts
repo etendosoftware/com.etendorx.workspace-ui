@@ -95,9 +95,13 @@ export const useUrlStateRecovery = ({
         setRecoveryState("in_progress");
         setRecoveryError(null);
 
+        if (!windowData) {
+          throw new Error("Window metadata is required for URL state recovery.");
+        }
+
         // Window already exists as phantom - just update it
         if (!recoveryInfo.hasRecoveryData) {
-          const windowName = await getWindowName(recoveryInfo);
+          const windowName = getWindowName(windowData);
           // Simple case: just mark as initialized and set title
           setWindowActive({
             windowIdentifier,
@@ -108,12 +112,8 @@ export const useUrlStateRecovery = ({
           return;
         }
 
-        if (!windowData) {
-          throw new Error("Window metadata is required for URL state recovery.");
-        }
-
         // Complex case: perform full recovery
-        const urlState = await parseUrlState(recoveryInfo);
+        const urlState = await parseUrlState(recoveryInfo, windowData);
         const hierarchy = await calculateHierarchy(urlState, windowData);
         const reconstructedState = await reconstructState(hierarchy, windowData);
 

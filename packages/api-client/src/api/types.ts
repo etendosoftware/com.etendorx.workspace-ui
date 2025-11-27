@@ -150,6 +150,12 @@ export interface Field {
   processDefinition?: ProcessDefinition;
   processAction?: ProcessAction;
   etmetaCustomjs?: string | null;
+  /**
+   * Indicates if this field contains the parent record ID in a hierarchical tab structure.
+   * Used during URL state recovery to traverse from child records up to parent records.
+   * The field KEY (not the value of this property) is used to access the parent record ID
+   * from the child record's data (e.g., record["cBpartnerId"]).
+   */
   isParentRecordProperty?: boolean;
 }
 
