@@ -16,12 +16,10 @@
  */
 
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { ThemeProvider, createTheme } from "@mui/material";
+import { createTheme } from "@mui/material";
 import { validateFieldRealTime, validateRowForSave } from "../utils/validationUtils";
 import { saveRecordWithRetry } from "../utils/saveOperations";
 import { useTableConfirmation } from "../hooks/useTableConfirmation";
-import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import { ActionsColumn } from "../ActionsColumn";
 import type { Column, EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Row } from "material-react-table";

@@ -16,11 +16,9 @@
  */
 
 import { useState, useCallback } from "react";
-import type { Field, RefListField } from "@workspaceui/api-client/src/api/types";
+import type { Field, RefListField, Tab } from "@workspaceui/api-client/src/api/types";
 import { logger } from "@/utils/logger";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
-
-import type { Tab } from "@workspaceui/api-client/src/api/types";
 
 interface UseInlineTableDirOptionsParams {
   tabId?: string;
@@ -54,6 +52,123 @@ export const useInlineTableDirOptions = ({ tabId, windowId, tab }: UseInlineTabl
   }, []);
 
   /**
+   * Add ComboTableDatasource specific parameters
+   */
+  const addComboTableParams = useCallback((body: Record<string, string>, selector: any): void => {
+    if (selector.fieldId) {
+      body.fieldId = String(selector.fieldId);
+    }
+    if (selector.datasourceName) {
+      body.datasourceName = String(selector.datasourceName);
+    }
+    // moduleId is required for ComboTableDatasourceService, default to "0" if not provided
+    body.moduleId = selector.moduleId !== null && selector.moduleId !== undefined ? String(selector.moduleId) : "0";
+  }, []);
+
+  /**
+   * Add selector-specific parameters for special datasources
+   */
+  const addSelectorParams = useCallback((body: Record<string, string>, selector: any): void => {
+    const safeParams = [
+      "_selectorDefinitionId",
+      "filterClass",
+      "fieldId",
+      "datasourceName",
+      "displayField",
+      "valueField",
+      "moduleId",
+      "_selectedProperties",
+      "_extraProperties",
+      "extraSearchFields",
+    ];
+
+    for (const param of safeParams) {
+      if (selector[param] !== null && selector[param] !== undefined) {
+        body[param] = String(selector[param]);
+      }
+    }
+  }, []);
+
+  /**
+   * Add window and tab context parameters
+   */
+  const addWindowTabContext = useCallback(
+    (body: Record<string, string>): void => {
+      if (tabId) {
+        body.tabId = tabId;
+        body.inpTabId = tabId;
+      }
+      if (windowId) {
+        body.windowId = windowId;
+        body.inpwindowId = windowId;
+      }
+    },
+    [tabId, windowId]
+  );
+
+  /**
+   * Add organization context parameters
+   */
+  const addOrganizationContext = useCallback(
+    (body: Record<string, string>, contextData?: Record<string, unknown>): void => {
+      if (contextData?.organization) {
+        body._org = String(contextData.organization);
+        body.inpadOrgId = String(contextData.organization);
+      }
+    },
+    []
+  );
+
+  /**
+   * Check if a context key should be skipped
+   */
+  const shouldSkipContextKey = useCallback((key: string): boolean => {
+    return key.startsWith("_") || key === "organization" || key === "id";
+  }, []);
+
+  /**
+   * Add context data with field name transformation
+   */
+  const addContextDataWithFields = useCallback(
+    (body: Record<string, string>, contextData: Record<string, unknown>): void => {
+      for (const [key, value] of Object.entries(contextData)) {
+        if (shouldSkipContextKey(key)) continue;
+
+        const fieldDef = tab?.fields?.[key];
+        const inputName = fieldDef?.inputName || key;
+        const transformedValue = transformValueToClassicFormat(value);
+        body[inputName] = transformedValue;
+      }
+    },
+    [tab?.fields, shouldSkipContextKey]
+  );
+
+  /**
+   * Add context data without field transformation (fallback)
+   */
+  const addContextDataRaw = useCallback(
+    (body: Record<string, string>, contextData: Record<string, unknown>): void => {
+      for (const [key, value] of Object.entries(contextData)) {
+        if (shouldSkipContextKey(key)) continue;
+
+        const transformedValue = transformValueToClassicFormat(value);
+        body[key] = transformedValue;
+      }
+    },
+    [shouldSkipContextKey]
+  );
+
+  /**
+   * Add search query parameters
+   */
+  const addSearchQuery = useCallback((body: Record<string, string>, searchQuery?: string): void => {
+    if (searchQuery) {
+      body._identifier = searchQuery;
+      body.name = searchQuery;
+    }
+  }, []);
+
+  /**
    * Build request body with selector parameters
    */
   const buildRequestBody = useCallback(
@@ -65,7 +180,7 @@ export const useInlineTableDirOptions = ({ tabId, windowId, tab }: UseInlineTabl
       useSpecialDatasource?: boolean,
       datasourceName?: string
     ): Record<string, string> => {
-      const baseBody: Record<string, string> = {
+      const body: Record<string, string> = {
         _startRow: "0",
         _endRow: String(pageSize),
         _operationType: "fetch",
@@ -78,94 +193,43 @@ export const useInlineTableDirOptions = ({ tabId, windowId, tab }: UseInlineTabl
       const selector = field.selector as any;
       const isComboTableDatasource = datasourceName === "ComboTableDatasourceService";
 
-      // For ComboTableDatasourceService, ALWAYS include these critical parameters
+      // Add datasource-specific parameters
       if (isComboTableDatasource && selector) {
-        if (selector.fieldId) {
-          baseBody.fieldId = String(selector.fieldId);
-        }
-        if (selector.datasourceName) {
-          baseBody.datasourceName = String(selector.datasourceName);
-        }
-        // moduleId is required for ComboTableDatasourceService, default to "0" if not provided
-        baseBody.moduleId =
-          selector.moduleId !== null && selector.moduleId !== undefined ? String(selector.moduleId) : "0";
+        addComboTableParams(body, selector);
       }
 
-      // Add selector-specific parameters ONLY when using a special datasource
       if (selector && useSpecialDatasource) {
-        const safeParams = [
-          "_selectorDefinitionId",
-          "filterClass",
-          "fieldId",
-          "datasourceName",
-          "displayField",
-          "valueField",
-          "moduleId",
-          "_selectedProperties",
-          "_extraProperties",
-          "extraSearchFields",
-        ];
+        addSelectorParams(body, selector);
+      }
 
-        for (const param of safeParams) {
-          if (selector[param] !== null && selector[param] !== undefined) {
-            baseBody[param] = String(selector[param]);
-          }
+      // Add context parameters
+      addWindowTabContext(body);
+      addOrganizationContext(body, contextData);
+
+      // Add row context data
+      if (contextData) {
+        if (tab?.fields) {
+          addContextDataWithFields(body, contextData);
+        } else {
+          addContextDataRaw(body, contextData);
         }
       }
 
-      // Add tab and window context if available
-      if (tabId) {
-        baseBody.tabId = tabId;
-        baseBody.inpTabId = tabId;
-      }
-      if (windowId) {
-        baseBody.windowId = windowId;
-        baseBody.inpwindowId = windowId;
-      }
+      // Add search criteria
+      addSearchQuery(body, searchQuery);
 
-      // Add organization context for filtering
-      if (contextData?.organization) {
-        baseBody._org = String(contextData.organization);
-        baseBody.inpadOrgId = String(contextData.organization);
-      }
-
-      // Include ALL row context data as form fields (similar to Classic UI)
-      // This is critical for selector datasources to apply proper filters
-      if (contextData && tab?.fields) {
-        for (const [key, value] of Object.entries(contextData)) {
-          // Skip internal fields and already processed fields
-          if (key.startsWith("_") || key === "organization" || key === "id") {
-            continue;
-          }
-
-          // Find the field definition to get the inputName
-          const fieldDef = tab.fields[key];
-          const inputName = fieldDef?.inputName || key;
-
-          // Transform value to Classic backend format (dates, booleans, etc.)
-          const transformedValue = transformValueToClassicFormat(value);
-          baseBody[inputName] = transformedValue;
-        }
-      } else if (contextData) {
-        // Fallback: if no tab info, just use the keys as-is
-        for (const [key, value] of Object.entries(contextData)) {
-          if (key.startsWith("_") || key === "organization" || key === "id") {
-            continue;
-          }
-          const transformedValue = transformValueToClassicFormat(value);
-          baseBody[key] = transformedValue;
-        }
-      }
-
-      // Apply search criteria if provided
-      if (searchQuery) {
-        baseBody._identifier = searchQuery;
-        baseBody.name = searchQuery;
-      }
-
-      return baseBody;
+      return body;
     },
-    [tabId, windowId, tab?.fields]
+    [
+      addComboTableParams,
+      addSelectorParams,
+      addWindowTabContext,
+      addOrganizationContext,
+      addContextDataWithFields,
+      addContextDataRaw,
+      addSearchQuery,
+      tab?.fields,
+    ]
   );
 
   /**
