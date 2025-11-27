@@ -81,16 +81,11 @@ export const useTableDirDatasource = ({
     (formData: Record<string, EntityValue>) => {
       const formValues: Record<string, EntityValue> = {};
 
-      // Include ALL fields from tab, not just the ones with values in formData
-      // This ensures that selector datasources receive all context fields like Classic UI
-      for (const [fieldKey, fieldDef] of Object.entries(tab.fields)) {
-        const inputName = fieldDef?.inputName || fieldKey;
-        const value = formData[fieldKey];
+      for (const [key, value] of Object.entries(formData)) {
+        const currentField = tab.fields[key];
+        const inputName = currentField?.inputName || key;
 
-        // Use the value from formData if available, otherwise use defaultValue, otherwise null
-        const actualValue = value !== undefined ? value : (fieldDef.defaultValue ?? null);
-
-        formValues[inputName] = transformValueToClassicFormat(actualValue);
+        formValues[inputName] = transformValueToClassicFormat(value);
       }
 
       return formValues;

@@ -47,6 +47,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
 import { useSelected } from "@/hooks/useSelected";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { logger } from "@/utils/logger";
 import PlusFolderFilledIcon from "../../../ComponentLibrary/src/assets/icons/folder-plus-filled.svg";
 import MinusFolderIcon from "../../../ComponentLibrary/src/assets/icons/folder-minus.svg";
@@ -1669,7 +1670,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   const handleContextMenuNewRecord = useCallback(() => {
     // Open form view in new mode
-    setRecordId("NEW");
+    setRecordId(NEW_RECORD_ID);
   }, [setRecordId]);
 
   const renderFirstColumnCell = useCallback(
