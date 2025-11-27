@@ -46,9 +46,7 @@ const parseDisplayValue = (
 
   // Find country by name
   if (parts[5]) {
-    const countryMatch = countries.find(
-      (c) => c.title.toLowerCase() === parts[5].toLowerCase()
-    );
+    const countryMatch = countries.find((c) => c.title.toLowerCase() === parts[5].toLowerCase());
     if (countryMatch) {
       countryId = countryMatch.value;
     }
@@ -56,9 +54,7 @@ const parseDisplayValue = (
 
   // Find region by name (only if we have a countryId)
   if (parts[4] && countryId) {
-    const regionMatch = regions.find(
-      (r) => r.title.toLowerCase() === parts[4].toLowerCase() && r.value
-    );
+    const regionMatch = regions.find((r) => r.title.toLowerCase() === parts[4].toLowerCase() && r.value);
     if (regionMatch) {
       regionId = regionMatch.value;
     }
@@ -79,21 +75,12 @@ const generateDisplayValue = (
   countries: CountryOption[] = [],
   regions: RegionOption[] = []
 ): string => {
-  const countryName =
-    countries.find((c) => c.value === locationData.countryId)?.title || "";
-  const regionName =
-    regions.find((r) => r.value === locationData.regionId)?.title || "";
+  const countryName = countries.find((c) => c.value === locationData.countryId)?.title || "";
+  const regionName = regions.find((r) => r.value === locationData.regionId)?.title || "";
 
-  return [
-    locationData.address1,
-    locationData.address2,
-    locationData.postal,
-    locationData.city,
-    regionName,
-    countryName,
-  ]
+  return [locationData.address1, locationData.address2, locationData.postal, locationData.city, regionName, countryName]
     .join(" - ")
-    .replace(/\s*-\s*$/, ""); // Remove trailing " - "
+    .replace(/\s{0,100}-\s{0,100}$/, "");
 };
 
 const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }) => {
