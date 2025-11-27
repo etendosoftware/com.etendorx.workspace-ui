@@ -17,143 +17,72 @@
 
 "use client";
 
-import { createContext, useCallback, useEffect, useMemo, useState } from "react";
-import { type Etendo, Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { useEffect, useMemo } from "react";
 import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
 import type { IMetadataContext } from "./types";
 import { useDatasourceContext } from "./datasourceContext";
 import { mapBy } from "@/utils/structures";
 import { useWindowContext } from "@/contexts/window";
-import { logger } from "@/utils/logger";
+import { useMetadataStore } from "./metadataStore";
 
-export const MetadataContext = createContext({} as IMetadataContext);
-
-export default function MetadataProvider({ children }: React.PropsWithChildren) {
-  const [windowsData, setWindowsData] = useState<Record<string, Etendo.WindowMetadata>>({});
-  const [loadingWindows, setLoadingWindows] = useState<Record<string, boolean>>({});
-  const [errors, setErrors] = useState<Record<string, Error | undefined>>({});
-
+export const MetadataSynchronizer = () => {
   const { activeWindow } = useWindowContext();
+  const { loadWindowData, isWindowLoading, windowsData } = useMetadataStore();
+
+  useEffect(() => {
+    if (
+      activeWindow?.windowId &&
+      !windowsData[activeWindow.windowId] &&
+      !isWindowLoading(activeWindow.windowId)
+    ) {
+      loadWindowData(activeWindow.windowId).catch(console.error);
+    }
+  }, [activeWindow?.windowId, windowsData, isWindowLoading, loadWindowData]);
+
+  return null;
+};
+
+export const useMetadataContext = (): IMetadataContext => {
+  const { activeWindow } = useWindowContext();
+  const {
+    getWindowMetadata,
+    isWindowLoading,
+    getWindowError,
+    loadWindowData,
+    windowsData,
+    loadingWindows,
+    errors,
+  } = useMetadataStore();
   const { removeRecordFromDatasource } = useDatasourceContext();
 
   const currentWindowId = activeWindow?.windowId;
   const currentWindowIdentifier = activeWindow?.windowIdentifier;
-  const currentWindow = currentWindowId ? windowsData[currentWindowId] : undefined;
-  const currentLoading = currentWindowId ? loadingWindows[currentWindowId] || false : false;
-  const currentError = currentWindowId ? errors[currentWindowId] : undefined;
+  const currentWindow = currentWindowId ? getWindowMetadata(currentWindowId) : undefined;
 
-  const currentGroupedTabs = useMemo(() => {
-    return currentWindow ? groupTabsByLevel(currentWindow) : [];
-  }, [currentWindow]);
-
-  const currentTabs = useMemo(() => {
-    return currentWindow?.tabs ? mapBy(currentWindow.tabs, "id") : {};
-  }, [currentWindow?.tabs]);
-
-  const loadWindowData = useCallback(
-    async (windowId: string): Promise<Etendo.WindowMetadata> => {
-      if (windowsData[windowId]) {
-        return windowsData[windowId];
-      }
-
-      try {
-        setLoadingWindows((prev) => ({ ...prev, [windowId]: true }));
-        setErrors((prev) => ({ ...prev, [windowId]: undefined }));
-
-        logger.info(`Loading metadata for window ${windowId}`);
-
-        Metadata.clearWindowCache(windowId);
-        const newWindowData = await Metadata.forceWindowReload(windowId);
-
-        setWindowsData((prev) => ({ ...prev, [windowId]: newWindowData }));
-
-        return newWindowData;
-      } catch (err) {
-        const error = err as Error;
-        logger.warn(`Error loading window ${windowId}:`, error);
-
-        setErrors((prev) => ({ ...prev, [windowId]: error }));
-        throw error;
-      } finally {
-        setLoadingWindows((prev) => ({ ...prev, [windowId]: false }));
-      }
-    },
-    [windowsData]
+  const currentGroupedTabs = useMemo(
+    () => (currentWindow ? groupTabsByLevel(currentWindow) : []),
+    [currentWindow]
+  );
+  const currentTabs = useMemo(
+    () => (currentWindow?.tabs ? mapBy(currentWindow.tabs, "id") : {}),
+    [currentWindow]
   );
 
-  const getWindowMetadata = useCallback(
-    (windowId: string) => {
-      return windowsData[windowId];
-    },
-    [windowsData]
-  );
-
-  const isWindowLoading = useCallback(
-    (windowId: string) => {
-      return loadingWindows[windowId] || false;
-    },
-    [loadingWindows]
-  );
-
-  const getWindowError = useCallback(
-    (windowId: string) => {
-      return errors[windowId];
-    },
-    [errors]
-  );
-
-  const removeRecord = useCallback(
-    (tabId: string, recordId: string) => {
-      removeRecordFromDatasource(tabId, recordId);
-    },
-    [removeRecordFromDatasource]
-  );
-
-  useEffect(() => {
-    if (activeWindow?.windowId && !windowsData[activeWindow.windowId] && !loadingWindows[activeWindow.windowId]) {
-      loadWindowData(activeWindow.windowId).catch(() => {
-        // Error handled in load
-      });
-    }
-  }, [activeWindow?.windowId, windowsData, loadingWindows, loadWindowData]);
-
-  const value = useMemo<IMetadataContext>(
-    () => ({
-      windowId: currentWindowId,
-      windowIdentifier: currentWindowIdentifier,
-      window: currentWindow,
-      loading: currentLoading,
-      error: currentError,
-      groupedTabs: currentGroupedTabs,
-      tabs: currentTabs,
-      removeRecord,
-
-      loadWindowData,
-      getWindowMetadata,
-      isWindowLoading,
-      getWindowError,
-      windowsData,
-      loadingWindows,
-      errors,
-    }),
-    [
-      currentWindowId,
-      currentWindowIdentifier,
-      currentWindow,
-      currentLoading,
-      currentError,
-      currentGroupedTabs,
-      currentTabs,
-      removeRecord,
-      loadWindowData,
-      getWindowMetadata,
-      isWindowLoading,
-      getWindowError,
-      windowsData,
-      loadingWindows,
-      errors,
-    ]
-  );
-
-  return <MetadataContext.Provider value={value}>{children}</MetadataContext.Provider>;
-}
+  return {
+    windowId: currentWindowId,
+    windowIdentifier: currentWindowIdentifier,
+    window: currentWindow,
+    loading: currentWindowId ? isWindowLoading(currentWindowId) : false,
+    error: currentWindowId ? getWindowError(currentWindowId) : undefined,
+    groupedTabs: currentGroupedTabs,
+    tabs: currentTabs,
+    removeRecord: (tabId, recordId) => removeRecordFromDatasource(tabId, recordId), // Proxy to datasource
+    loadWindowData,
+    getWindowMetadata,
+    isWindowLoading,
+    getWindowError,
+    windowsData,
+    loadingWindows,
+    errors,
+  };
+};
