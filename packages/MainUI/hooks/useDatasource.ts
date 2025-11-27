@@ -138,7 +138,9 @@ export function useDatasource({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const queryParams = useMemo(() => {
     const baseCriteria = params.criteria || ([] as any[]);
-    const searchCriteriaArray = (searchQuery && columns ? SearchUtils.createSearchCriteria(columns, searchQuery) : []) as any[];
+    const searchCriteriaArray = (
+      searchQuery && columns ? SearchUtils.createSearchCriteria(columns, searchQuery) : []
+    ) as any[];
 
     let allCriteria: any[] = [...baseCriteria];
 
