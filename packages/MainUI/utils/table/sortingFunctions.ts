@@ -18,6 +18,7 @@
 import type { MRT_SortingFn } from "material-react-table";
 
 type DateValue = string | number | Date | null | undefined;
+type ValidDateValue = string | number | Date;
 
 function validateDateValues(valueA: DateValue, valueB: DateValue): 0 | 1 | -1 | null {
   if (valueA == null && valueB == null) return 0;
@@ -45,8 +46,8 @@ export const dateTimeSortingFn: MRT_SortingFn<Record<string, DateValue>> = (rowA
   const nullCheck = validateDateValues(valueA, valueB);
   if (nullCheck !== null) return nullCheck;
 
-  const dateA = new Date(valueA as string | number | Date);
-  const dateB = new Date(valueB as string | number | Date);
+  const dateA = new Date(valueA as ValidDateValue);
+  const dateB = new Date(valueB as ValidDateValue);
 
   const validCheck = validateDateObjects(dateA, dateB);
   if (validCheck !== null) return validCheck;
@@ -65,8 +66,8 @@ export const dateSortingFn: MRT_SortingFn<Record<string, DateValue>> = (rowA, ro
   const nullCheck = validateDateValues(valueA, valueB);
   if (nullCheck !== null) return nullCheck;
 
-  const dateA = new Date(valueA as string | number | Date);
-  const dateB = new Date(valueB as string | number | Date);
+  const dateA = new Date(valueA as ValidDateValue);
+  const dateB = new Date(valueB as ValidDateValue);
 
   const validCheck = validateDateObjects(dateA, dateB);
   if (validCheck !== null) return validCheck;
