@@ -4,12 +4,15 @@ on:
   push:
     branches:
       - "develop"
+      - "epic/ETP-2912"
     tags:
       - "*"
 
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    env:
+      EPIC_BRANCH: "epic/ETP-2912"
 
     steps:
       - name: Checkout repository
@@ -32,6 +35,9 @@ jobs:
             BRANCH_NAME="${TAG_NAME#v}"
           elif [ "${{ github.ref_name }}" == "develop" ] && [ "${{ github.event_name }}" == "push" ]; then
             BRANCH_NAME="latest"
+          elif [ "${{ github.ref_name }}" == "${{ env.EPIC_BRANCH }}" ] || [ "${{ github.base_ref }}" == "${{ env.EPIC_BRANCH }}" ]; then
+            # For epic branch or PRs to it
+            BRANCH_NAME=$(echo "${{ env.EPIC_BRANCH }}" | sed 's/[^a-zA-Z0-9._-]/-/g')
           else
             # For feature branches, use sanitized branch name
             BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9._-]/-/g')
