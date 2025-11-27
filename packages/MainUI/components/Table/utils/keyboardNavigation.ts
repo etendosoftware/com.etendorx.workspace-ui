@@ -47,10 +47,11 @@ export class KeyboardNavigationManager {
     const editableCells: Array<{ rowId: string; columnId: string; element: HTMLElement }> = [];
     const editingRowIds = this.options.getEditingRowIds();
 
-    // Find all input elements that have data-row-id and data-column-id attributes
+    // Find all editable elements that have data-row-id and data-column-id attributes
+    // This includes: input, select, textarea, and elements with role="combobox" (for TableDir)
     for (const rowId of editingRowIds) {
       const inputElements = document.querySelectorAll(
-        `input[data-row-id="${rowId}"][data-column-id], select[data-row-id="${rowId}"][data-column-id], textarea[data-row-id="${rowId}"][data-column-id]`
+        `input[data-row-id="${rowId}"][data-column-id], select[data-row-id="${rowId}"][data-column-id], textarea[data-row-id="${rowId}"][data-column-id], [role="combobox"][data-row-id="${rowId}"][data-column-id]`
       );
 
       for (const element of inputElements) {

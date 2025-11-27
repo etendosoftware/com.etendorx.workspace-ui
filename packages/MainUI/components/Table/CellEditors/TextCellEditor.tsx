@@ -103,6 +103,9 @@ const TextCellEditorComponent: React.FC<CellEditorProps> = ({
       case "Tab":
         // Prevent default tab behavior and use our navigation
         e.preventDefault();
+        if (keyboardNavigationManager) {
+          await handleNavigationKeyDown(e.nativeEvent);
+        }
         break;
       case "Enter":
         e.preventDefault();

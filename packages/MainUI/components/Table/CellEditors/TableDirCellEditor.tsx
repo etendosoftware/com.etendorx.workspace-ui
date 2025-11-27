@@ -400,6 +400,53 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
     [handleNavigationKeyDown, handleEnterKey, handleEscapeKey, handleArrowDownKey, handleArrowUpKey]
   );
 
+  /**
+   * Handle key down on the search input (when dropdown is open)
+   */
+  const handleSearchInputKeyDown = useCallback(
+    async (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // Handle Tab for navigation between cells
+      if (e.key === "Tab") {
+        e.preventDefault();
+        // Close the dropdown first
+        setAnchorEl(null);
+        // Then let keyboard navigation handle moving to next/previous cell
+        await handleNavigationKeyDown(e.nativeEvent);
+        return;
+      }
+
+      // Handle other keys locally
+      switch (e.key) {
+        case "Escape":
+          e.preventDefault();
+          setAnchorEl(null);
+          comboboxRef.current?.focus();
+          break;
+        case "Enter":
+          e.preventDefault();
+          if (highlightedIndex >= 0 && highlightedIndex < filteredOptions.length) {
+            const selectedOption = filteredOptions[highlightedIndex];
+            // Select the option and close dropdown
+            setLocalValue(String(selectedOption.id || selectedOption.value || ""));
+            onChange(String(selectedOption.id || selectedOption.value || ""));
+            setAnchorEl(null);
+          }
+          break;
+        case "ArrowDown":
+          e.preventDefault();
+          setHighlightedIndex((prev) => (prev < filteredOptions.length - 1 ? prev + 1 : prev));
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setHighlightedIndex((prev) => (prev > -1 ? prev - 1 : -1));
+          break;
+        default:
+          break;
+      }
+    },
+    [handleNavigationKeyDown, filteredOptions, highlightedIndex]
+  );
+
   // Prevent Menu's useClickOutside from closing when clicking on combobox
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
@@ -473,6 +520,8 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         tabIndex={disabled ? -1 : 0}
+        data-row-id={rowId}
+        data-column-id={columnId}
         className={`
           inline-edit-tabledir
           w-full
@@ -523,6 +572,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
             ref={searchInputRef}
             value={searchTerm}
             onChange={handleSearchChange}
+            onKeyDown={handleSearchInputKeyDown}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             placeholder={`Search ${field.name}...`}
