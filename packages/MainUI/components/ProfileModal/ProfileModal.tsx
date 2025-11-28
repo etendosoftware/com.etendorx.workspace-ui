@@ -33,6 +33,7 @@ import UserProfile from "./UserProfile";
 import { useStyle } from "./styles";
 import type { ProfileModalProps } from "./types";
 import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
+import { useWindowContext } from "@/contexts/window";
 
 const DefaultOrg = { title: "*", value: "0", id: "0" };
 
@@ -63,6 +64,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const { language: initialLanguage, getFlag } = useLanguage();
   const [languagesFlags, setLanguageFlags] = useState(getFlag(initialLanguage));
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const { cleanState: cleanWindowState } = useWindowContext();
 
   const [selectedRole, setSelectedRole] = useState<Option | null>(() => {
     if (currentRole) {
@@ -238,6 +240,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             language: selectedLanguage?.id,
           });
         }
+        cleanWindowState();
         handleClose();
       } catch (error) {
         logger.warn("Error changing role, warehouse, or saving default configuration:", error);

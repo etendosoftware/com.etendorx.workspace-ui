@@ -114,6 +114,7 @@ interface WindowContextI {
 
   // Window management
   cleanupWindow: (windowIdentifier: string) => void;
+  cleanState: () => void;
 }
 
 // Context creation
@@ -537,6 +538,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     );
   }, []);
 
+  const cleanState = useCallback(() => {
+    setState({});
+  }, []);
+
   // Computed values using existing helper functions
   const windows = useMemo((): WindowState[] => {
     return getAllWindows();
@@ -669,6 +674,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setNavigationInitialized,
 
       cleanupWindow,
+      cleanState,
     }),
     [
       windows,
@@ -711,6 +717,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setNavigationInitialized,
 
       cleanupWindow,
+      cleanState,
     ]
   );
 
