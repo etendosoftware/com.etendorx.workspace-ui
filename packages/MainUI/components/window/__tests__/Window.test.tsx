@@ -27,7 +27,7 @@
 import { render, screen } from "@testing-library/react";
 import Window from "../Window";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
-import { WindowState } from "@/utils/window/constants";
+import type { WindowState } from "@/utils/window/constants";
 
 // Mock all required contexts and hooks with controllable behavior
 const mockMetadataContext = {
@@ -71,12 +71,41 @@ jest.mock("../../../hooks/useTranslation", () => ({
   }),
 }));
 
-// Mock useUrlStateRecovery hook
-jest.mock("../../../hooks/useUrlStateRecovery", () => ({
-  useUrlStateRecovery: () => ({
-    isRecovering: false,
+// Mock useGlobalUrlStateRecovery hook
+jest.mock("../../../hooks/useGlobalUrlStateRecovery", () => ({
+  useGlobalUrlStateRecovery: () => ({
+    isRecoveryLoading: false,
     recoveryError: null,
-    recoveryState: null,
+    recoveredWindows: [],
+  }),
+}));
+
+// Mock useWindowContext hook
+jest.mock("../../../contexts/window", () => ({
+  useWindowContext: () => ({
+    activeWindow: null,
+    windows: [],
+    setSelectedRecord: jest.fn(),
+    clearSelectedRecord: jest.fn(),
+    getSelectedRecord: jest.fn(() => undefined),
+    getTabFormState: jest.fn(() => undefined),
+    clearChildrenSelections: jest.fn(),
+    setSelectedRecordAndClearChildren: jest.fn(),
+    addWindow: jest.fn(),
+    removeWindow: jest.fn(),
+    updateWindow: jest.fn(),
+    setActiveWindow: jest.fn(),
+    getAllWindows: jest.fn(() => []),
+    getActiveWindow: jest.fn(() => null),
+    getWindow: jest.fn(() => undefined),
+    addTab: jest.fn(),
+    removeTab: jest.fn(),
+    updateTab: jest.fn(),
+    getTab: jest.fn(() => undefined),
+    setTabFormState: jest.fn(),
+    clearTabFormState: jest.fn(),
+    isRecoveryLoading: false,
+    setIsRecoveryLoading: jest.fn(),
   }),
 }));
 
@@ -126,7 +155,7 @@ jest.mock("../../../components/loading", () => ({
 }));
 
 // Helper function to create window state
-const createWindowState = (windowId: string, windowIdentifier: string, initialized: boolean = true): WindowState => ({
+const createWindowState = (windowId: string, windowIdentifier: string, initialized = true): WindowState => ({
   windowId,
   windowIdentifier,
   isActive: true,
