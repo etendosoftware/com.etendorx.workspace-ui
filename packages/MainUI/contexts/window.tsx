@@ -247,10 +247,26 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   const setTableVisibility = useCallback(
     (windowIdentifier: string, tabId: string, visibility: MRT_VisibilityState, tabLevel = 0) => {
       setState((prevState: WindowContextState) => {
-        const newState = ensureTabExists(prevState, windowIdentifier, tabId, tabLevel);
-        const currentVisibility = newState[windowIdentifier].tabs[tabId].table.visibility;
-        newState[windowIdentifier].tabs[tabId].table.visibility = { ...currentVisibility, ...visibility };
-        return newState;
+        const tempState = ensureTabExists(prevState, windowIdentifier, tabId, tabLevel);
+        const currentVisibility = tempState[windowIdentifier].tabs[tabId].table.visibility;
+
+        // Create deep copy with proper immutability at all levels
+        return {
+          ...tempState,
+          [windowIdentifier]: {
+            ...tempState[windowIdentifier],
+            tabs: {
+              ...tempState[windowIdentifier].tabs,
+              [tabId]: {
+                ...tempState[windowIdentifier].tabs[tabId],
+                table: {
+                  ...tempState[windowIdentifier].tabs[tabId].table,
+                  visibility: { ...currentVisibility, ...visibility },
+                },
+              },
+            },
+          },
+        };
       });
     },
     []
@@ -372,9 +388,22 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   const setTabFormState = useCallback(
     (windowIdentifier: string, tabId: string, formState: TabFormState, tabLevel = 0) => {
       setState((prevState: WindowContextState) => {
-        const newState = ensureTabExists(prevState, windowIdentifier, tabId, tabLevel);
-        newState[windowIdentifier].tabs[tabId].form = formState;
-        return newState;
+        const tempState = ensureTabExists(prevState, windowIdentifier, tabId, tabLevel);
+
+        // Create deep copy with proper immutability at all levels
+        return {
+          ...tempState,
+          [windowIdentifier]: {
+            ...tempState[windowIdentifier],
+            tabs: {
+              ...tempState[windowIdentifier].tabs,
+              [tabId]: {
+                ...tempState[windowIdentifier].tabs[tabId],
+                form: formState,
+              },
+            },
+          },
+        };
       });
     },
     []
@@ -382,14 +411,25 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
   const clearTabFormState = useCallback((windowIdentifier: string, tabId: string) => {
     setState((prevState: WindowContextState) => {
-      const newState = { ...prevState };
-      if (newState[windowIdentifier]?.tabs[tabId]) {
-        newState[windowIdentifier].tabs[tabId] = {
-          ...newState[windowIdentifier].tabs[tabId],
-          form: {},
-        };
+      // Validate window and tab exist
+      if (!prevState[windowIdentifier]?.tabs[tabId]) {
+        return prevState;
       }
-      return newState;
+
+      // Create deep copy with proper immutability at all levels
+      return {
+        ...prevState,
+        [windowIdentifier]: {
+          ...prevState[windowIdentifier],
+          tabs: {
+            ...prevState[windowIdentifier].tabs,
+            [tabId]: {
+              ...prevState[windowIdentifier].tabs[tabId],
+              form: {},
+            },
+          },
+        },
+      };
     });
   }, []);
 
@@ -406,20 +446,47 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   const setSelectedRecord = useCallback((windowIdentifier: string, tabId: string, recordId: string, tabLevel = 0) => {
     setState((prevState: WindowContextState) => {
       const newState = ensureTabExists(prevState, windowIdentifier, tabId, tabLevel);
-      newState[windowIdentifier].tabs[tabId].selectedRecord = recordId;
-      return newState;
+
+      // Create deep copy with proper immutability at all levels
+      return {
+        ...newState,
+        [windowIdentifier]: {
+          ...newState[windowIdentifier],
+          tabs: {
+            ...newState[windowIdentifier].tabs,
+            [tabId]: {
+              ...newState[windowIdentifier].tabs[tabId],
+              selectedRecord: recordId,
+            },
+          },
+        },
+      };
     });
   }, []);
 
   const clearSelectedRecord = useCallback((windowIdentifier: string, tabId: string) => {
     setState((prevState: WindowContextState) => {
-      const newState = { ...prevState };
-      if (newState[windowIdentifier]?.tabs[tabId]) {
-        newState[windowIdentifier].tabs[tabId] = {
-          ...newState[windowIdentifier].tabs[tabId],
-          selectedRecord: undefined,
-        };
+      // Validate window and tab exist
+      if (!prevState[windowIdentifier]?.tabs[tabId]) {
+        console.warn(`[clearSelectedRecord] Tab ${tabId} not found in window ${windowIdentifier}`);
+        return prevState;
       }
+
+      // Use destructuring to REMOVE the selectedRecord property entirely
+      const { selectedRecord: _removed, ...tabWithoutSelectedRecord } = prevState[windowIdentifier].tabs[tabId];
+
+      // Create deep copy with proper immutability at all levels
+      const newState = {
+        ...prevState,
+        [windowIdentifier]: {
+          ...prevState[windowIdentifier],
+          tabs: {
+            ...prevState[windowIdentifier].tabs,
+            [tabId]: tabWithoutSelectedRecord,
+          },
+        },
+      };
+
       return newState;
     });
   }, []);

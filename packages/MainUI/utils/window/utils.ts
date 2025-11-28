@@ -127,30 +127,45 @@ export const ensureTabExists = (
   tabId: string,
   tabLevel = 0
 ): WindowContextState => {
-  const newState = { ...state };
-
-  if (!newState[windowIdentifier]) {
+  // If window doesn't exist, create it
+  if (!state[windowIdentifier]) {
     const windowId = getWindowIdFromIdentifier(windowIdentifier);
-    newState[windowIdentifier] = {
-      windowId,
-      windowIdentifier,
-      isActive: false,
-      initialized: true,
-      title: "",
-      navigation: {
-        activeLevels: [0],
-        activeTabsByLevel: new Map(),
-        initialized: false,
+    return {
+      ...state,
+      [windowIdentifier]: {
+        windowId,
+        windowIdentifier,
+        isActive: false,
+        initialized: true,
+        title: "",
+        navigation: {
+          activeLevels: [0],
+          activeTabsByLevel: new Map(),
+          initialized: false,
+        },
+        tabs: {
+          [tabId]: createDefaultTabState(tabLevel),
+        },
       },
-      tabs: {},
     };
   }
 
-  if (!newState[windowIdentifier].tabs[tabId]) {
-    newState[windowIdentifier].tabs[tabId] = createDefaultTabState(tabLevel);
+  // If tab doesn't exist, create it with proper immutability
+  if (!state[windowIdentifier].tabs[tabId]) {
+    return {
+      ...state,
+      [windowIdentifier]: {
+        ...state[windowIdentifier],
+        tabs: {
+          ...state[windowIdentifier].tabs,
+          [tabId]: createDefaultTabState(tabLevel),
+        },
+      },
+    };
   }
 
-  return newState;
+  // Both window and tab exist, return state as-is
+  return state;
 };
 
 /**
@@ -179,9 +194,25 @@ export const updateTableProperty = <T extends keyof TableState>(
   value: TableState[T],
   tabLevel = 0
 ): WindowContextState => {
-  const newState = ensureTabExists(prevState, windowIdentifier, tabId, tabLevel);
-  newState[windowIdentifier].tabs[tabId].table[property] = value;
-  return newState;
+  const tempState = ensureTabExists(prevState, windowIdentifier, tabId, tabLevel);
+
+  // Create deep copy with proper immutability at all levels
+  return {
+    ...tempState,
+    [windowIdentifier]: {
+      ...tempState[windowIdentifier],
+      tabs: {
+        ...tempState[windowIdentifier].tabs,
+        [tabId]: {
+          ...tempState[windowIdentifier].tabs[tabId],
+          table: {
+            ...tempState[windowIdentifier].tabs[tabId].table,
+            [property]: value,
+          },
+        },
+      },
+    },
+  };
 };
 
 /**
@@ -206,27 +237,39 @@ export const updateNavigationProperty = <T extends keyof NavigationState>(
   property: T,
   value: NavigationState[T]
 ): WindowContextState => {
-  const newState = { ...prevState };
-
-  if (!newState[windowIdentifier]) {
+  // If window doesn't exist, create it with the navigation property
+  if (!prevState[windowIdentifier]) {
     const windowId = getWindowIdFromIdentifier(windowIdentifier);
-    newState[windowIdentifier] = {
-      windowId,
-      windowIdentifier,
-      isActive: false,
-      initialized: true,
-      title: "",
-      navigation: {
-        activeLevels: [0],
-        activeTabsByLevel: new Map(),
-        initialized: false,
+    return {
+      ...prevState,
+      [windowIdentifier]: {
+        windowId,
+        windowIdentifier,
+        isActive: false,
+        initialized: true,
+        title: "",
+        navigation: {
+          activeLevels: [0],
+          activeTabsByLevel: new Map(),
+          initialized: false,
+          [property]: value,
+        },
+        tabs: {},
       },
-      tabs: {},
     };
   }
 
-  newState[windowIdentifier].navigation[property] = value;
-  return newState;
+  // Window exists, update navigation property with proper immutability
+  return {
+    ...prevState,
+    [windowIdentifier]: {
+      ...prevState[windowIdentifier],
+      navigation: {
+        ...prevState[windowIdentifier].navigation,
+        [property]: value,
+      },
+    },
+  };
 };
 
 /**
