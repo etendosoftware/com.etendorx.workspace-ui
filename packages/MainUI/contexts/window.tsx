@@ -27,16 +27,15 @@ import {
   type WindowContextState,
   WINDOW_PROPERTY_NAMES,
   type WindowPropertyName,
-  type WindowRecoveryInfo,
 } from "@/utils/window/constants";
 import {
   getWindowIdFromIdentifier,
   ensureTabExists,
   updateTableProperty,
   updateNavigationProperty,
-  createRecoveryWindowState,
 } from "@/utils/window/utils";
-import { buildWindowsUrlParams, parseWindowRecoveryData } from "@/utils/url/utils";
+import { buildWindowsUrlParams } from "@/utils/url/utils";
+import { useGlobalUrlStateRecovery } from "@/hooks/useGlobalUrlStateRecovery";
 
 interface WindowContextI {
   // State getters
@@ -110,10 +109,8 @@ interface WindowContextI {
   setNavigationInitialized: (windowIdentifier: string, initialized: boolean) => void;
 
   // Recovery state management
-  isRecovering: boolean;
-  setRecovering: (isRecovering: boolean) => void;
-  isAnyWindowRecovering: () => boolean;
-  areAllWindowsInitialized: () => boolean;
+  isRecoveryLoading: boolean;
+  recoveryError: string | null;
 
   // Window management
   cleanupWindow: (windowIdentifier: string) => void;
@@ -125,9 +122,9 @@ const WindowContext = createContext<WindowContextI | undefined>(undefined);
 // Provider component
 export default function WindowProvider({ children }: React.PropsWithChildren) {
   const [state, setState] = useState<WindowContextState>({});
-  const [isRecovering, setIsRecovering] = useState(false);
-  const [hasInitialized, setHasInitialized] = useState(false);
-  const [recoveryData, setRecoveryData] = useState<WindowRecoveryInfo[]>([]);
+
+  const { recoveredWindows, isRecoveryLoading, recoveryError } = useGlobalUrlStateRecovery();
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -540,19 +537,6 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     );
   }, []);
 
-  const setRecovering = useCallback((recovering: boolean) => {
-    setIsRecovering(recovering);
-  }, []);
-
-  const isAnyWindowRecovering = useCallback((): boolean => {
-    return isRecovering || Object.values(state).some((window) => window.initialized);
-  }, [isRecovering, state]);
-
-  const areAllWindowsInitialized = useCallback((): boolean => {
-    const windows = Object.values(state);
-    return windows.length > 0 && windows.every((window) => window.initialized);
-  }, [state]);
-
   // Computed values using existing helper functions
   const windows = useMemo((): WindowState[] => {
     return getAllWindows();
@@ -567,77 +551,30 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   }, [activeWindow]);
 
   /**
-   * Parse URL recovery parameters
+   * Initialize state from recovered windows
    *
-   * Purpose: Detects and parses window recovery data from URL search parameters on initial mount.
-   * This is the first step in the recovery flow when the application is loaded with window state in the URL.
+   * Purpose: Populates the WindowContext state with the fully recovered window objects
+   * once the global recovery process is complete. This replaces the previous "ghost window"
+   * mechanism with a full state initialization.
    *
-   * Execution: Runs only once when searchParams are first available and component hasn't been initialized.
-   * The hasInitialized guard ensures this effect executes exactly once during the component lifecycle.
+   * Execution: Runs when `isRecoveryLoading` becomes false and `recoveredWindows` are available.
    *
    * Flow:
-   * 1. Checks if searchParams exist and component hasn't initialized yet
-   * 2. Parses URL parameters to extract window recovery information
-   * 3. If recovery data is found, stores it in recoveryData state
-   * 4. Sets hasInitialized to true to prevent re-execution
+   * 1. Waits for global recovery to finish (!isRecoveryLoading)
+   * 2. Checks if any windows were recovered
+   * 3. Transforms the array of recovered windows into the WindowContextState map format
+   * 4. Updates the provider state, effectively "mounting" all windows at once
    */
   useEffect(() => {
-    if (!searchParams || hasInitialized) return;
+    if (!isRecoveryLoading && recoveredWindows.length > 0) {
+      const windowsMap = recoveredWindows.reduce((acc, win) => {
+        acc[win.windowIdentifier] = win;
+        return acc;
+      }, {} as WindowContextState);
 
-    const recoveryDataFound = parseWindowRecoveryData(searchParams);
-
-    if (recoveryDataFound.length > 0) {
-      console.log("Provider detected recovery parameters:", recoveryDataFound);
-      setRecoveryData(recoveryDataFound);
+      setState(windowsMap);
     }
-
-    setHasInitialized(true);
-  }, [searchParams, hasInitialized]);
-
-  /**
-   * Create phantom windows from recovery data
-   *
-   * Purpose: Creates "phantom windows" - temporary window state objects based on the parsed recovery data.
-   * These windows are created with minimal information extracted from the URL before full metadata is loaded.
-   *
-   * Phantom Window: A window state object created with only the information available from URL parameters
-   * (windowId, tabId, recordId, etc.) before the complete window metadata is fetched from the backend.
-   * This allows the UI to initialize quickly and show loading states while full data is being retrieved.
-   *
-   * Execution: Runs when recoveryData state is populated by Effect 1.
-   *
-   * Flow:
-   * 1. Iterates through each recovery info object from the URL
-   * 2. Creates a phantom window state using createRecoveryWindowState utility
-   * 3. Adds the phantom window to the state if it doesn't already exist
-   * 4. Sets the last window in the array as active (business logic requirement)
-   *
-   * Note: The last window being active is a business logic decision to show the most recent
-   * window the user was interacting with before the page reload/recovery.
-   */
-  useEffect(() => {
-    if (!recoveryData || recoveryData.length === 0) return;
-
-    recoveryData.forEach((recoveryInfo: WindowRecoveryInfo, index: number) => {
-      const phantomWindow = createRecoveryWindowState(recoveryInfo);
-
-      setState((prevState) => {
-        const newState = { ...prevState };
-
-        // Create phantom window if it doesn't exist
-        if (!newState[recoveryInfo.windowIdentifier]) {
-          newState[recoveryInfo.windowIdentifier] = {
-            ...phantomWindow,
-            isActive: index === recoveryData.length - 1, // Make last window active
-          };
-
-          console.log("Created phantom window:", recoveryInfo.windowIdentifier);
-        }
-
-        return newState;
-      });
-    });
-  }, [recoveryData]);
+  }, [isRecoveryLoading, recoveredWindows]);
 
   /**
    * Synchronize window state to URL
@@ -672,9 +609,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
    */
   useEffect(() => {
     // Only update URL if not recovering and all windows are initialized
-    const isAnyWindowRecoveringValue = isAnyWindowRecovering();
-    const areAllWindowsInitializedValue = areAllWindowsInitialized();
-    if (!isAnyWindowRecoveringValue || !areAllWindowsInitializedValue) {
+    if (isRecoveryLoading) {
       return;
     }
 
@@ -690,7 +625,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       const newUrl = newParams ? `window?${newParams}` : "window";
       router.replace(newUrl);
     }
-  }, [windows, router, searchParams, isAnyWindowRecovering, areAllWindowsInitialized]);
+  }, [windows, router, searchParams, isRecoveryLoading]);
 
   const value = useMemo(
     () => ({
@@ -727,14 +662,11 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       clearChildrenSelections,
       setSelectedRecordAndClearChildren,
 
+      isRecoveryLoading,
+      recoveryError,
+
       getNavigationInitialized,
       setNavigationInitialized,
-
-      // Recovery state management
-      isRecovering,
-      setRecovering,
-      isAnyWindowRecovering,
-      areAllWindowsInitialized,
 
       cleanupWindow,
     }),
@@ -772,14 +704,11 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       clearChildrenSelections,
       setSelectedRecordAndClearChildren,
 
+      isRecoveryLoading,
+      recoveryError,
+
       getNavigationInitialized,
       setNavigationInitialized,
-
-      // Recovery state management
-      isRecovering,
-      setRecovering,
-      isAnyWindowRecovering,
-      areAllWindowsInitialized,
 
       cleanupWindow,
     ]

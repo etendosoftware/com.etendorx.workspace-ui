@@ -21,18 +21,22 @@ import Loading from "@/components/loading";
 import { SelectedProvider } from "@/contexts/selected";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useUrlStateRecovery } from "@/hooks/useUrlStateRecovery";
+
 import TabsContainer from "@/components/window/TabsContainer";
 import { useState, useEffect, useMemo, useRef } from "react";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import type { WindowState } from "@/utils/window/constants";
+import { useWindowContext } from "@/contexts/window";
 
 export default function Window({ window }: { window: WindowState }) {
-  const { windowId, windowIdentifier, initialized } = window;
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const { windowId, windowIdentifier } = window;
   const { error, loading, getWindowMetadata } = useMetadataContext();
+  const { isRecoveryLoading, recoveryError } = useWindowContext();
+
   const { t } = useTranslation();
 
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const previousWindowIdentifier = useRef(windowIdentifier);
 
   /**
@@ -47,13 +51,6 @@ export default function Window({ window }: { window: WindowState }) {
       return undefined;
     }
   }, [windowId, getWindowMetadata]);
-
-  // Add URL state recovery hook - only enabled for uninitialized windows
-  const { isRecovering, recoveryError } = useUrlStateRecovery({
-    windowIdentifier,
-    windowData,
-    enabled: !loading && !!windowData && !error && !isTransitioning && !initialized,
-  });
 
   /**
    * Handle windowIdentifier changes to show loading state during transitions.
@@ -75,7 +72,7 @@ export default function Window({ window }: { window: WindowState }) {
     }
   }, [windowIdentifier]);
 
-  if (loading || !windowData || isTransitioning || isRecovering) {
+  if (loading || !windowData || isTransitioning || isRecoveryLoading) {
     return <Loading data-testid="Loading__56042a" />;
   }
 

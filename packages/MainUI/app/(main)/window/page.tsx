@@ -21,14 +21,18 @@ import { useWindowContext } from "@/contexts/window";
 import Home from "@/screens/Home";
 import Window from "@/components/window/Window";
 import TabsProvider from "@/contexts/tabs";
+import Loading from "@/components/loading";
 
 export default function Page() {
-  const { windows, activeWindow, isHomeRoute } = useWindowContext();
+  const { windows, activeWindow, isHomeRoute, isRecoveryLoading } = useWindowContext();
 
   const shouldShowTabs = windows.length > 0;
 
-  // Updated logic: Show window even if it's a phantom window (initialized: false)
   const shouldShowWindow = activeWindow && !isHomeRoute;
+
+  if (isRecoveryLoading && !activeWindow) {
+    return <Loading data-testid="Loading__Recovery" />;
+  }
 
   return (
     <div className="flex flex-col gap-2 w-full h-full max-h-full p-1 pb-0">
@@ -38,10 +42,7 @@ export default function Page() {
         </TabsProvider>
       )}
       {shouldShowWindow ? (
-        <Window
-          window={activeWindow} // Pass complete window object
-          data-testid={`Window__${activeWindow.windowIdentifier}`}
-        />
+        <Window window={activeWindow} data-testid={`Window__${activeWindow.windowIdentifier}`} />
       ) : (
         <Home data-testid={`Home__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
       )}
