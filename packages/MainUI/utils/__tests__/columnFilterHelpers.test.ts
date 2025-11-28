@@ -127,7 +127,7 @@ describe("columnFilterHelpers", () => {
   });
 
   describe("loadTableDirFilterOptions", () => {
-    it("should load TABLEDIR options with datasourceId (uses distinct values path)", async () => {
+    it("should load TABLEDIR options with datasourceId (uses datasource approach)", async () => {
       const mockColumn = createTableDirColumn({
         id: "organization",
         columnName: "organization",
@@ -146,18 +146,18 @@ describe("columnFilterHelpers", () => {
 
       expect(result).toEqual(mockData);
       expect(mockFetchFilterOptions).toHaveBeenCalledWith(
-        "SalesOrder",
+        "Organization",
         undefined,
         undefined,
         20,
-        "organization",
-        "tab123",
+        undefined,
+        undefined,
         0
       );
       expect(mockSetFilterOptions).toHaveBeenCalledWith("organization", mockData, false, false);
     });
 
-    it("should load TABLEDIR options with referencedEntity (uses selector path)", async () => {
+    it("should load TABLEDIR options with referencedEntity (uses datasource/selector approach)", async () => {
       const mockColumn = createTableDirColumn({
         id: "businessPartner",
         columnName: "businessPartner",
@@ -179,12 +179,12 @@ describe("columnFilterHelpers", () => {
 
       expect(result).toEqual(mockData);
       expect(mockFetchFilterOptions).toHaveBeenCalledWith(
-        "SalesOrder",
-        undefined,
+        "BusinessPartner",
+        "selector123",
         undefined,
         20,
-        "businessPartner",
-        "tab123",
+        undefined,
+        undefined,
         0
       );
     });
@@ -205,12 +205,12 @@ describe("columnFilterHelpers", () => {
       });
 
       expect(mockFetchFilterOptions).toHaveBeenCalledWith(
-        "SalesOrder",
+        "Product",
         undefined,
         undefined,
         10,
-        "product",
-        "tab123",
+        undefined,
+        undefined,
         20
       );
       expect(mockSetFilterOptions).toHaveBeenCalledWith("product", mockData, false, true);

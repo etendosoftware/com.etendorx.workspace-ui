@@ -18,10 +18,27 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useFormContext } from "react-hook-form";
 import { useFieldValue } from "@/hooks/useFieldValue";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function StatusBarField({ field }: { field: Field }) {
   const { register } = useFormContext();
   const { displayValue } = useFieldValue(field);
+  const { t } = useTranslation();
+
+  const formatDisplayValue = (value: string) => {
+    if (value === "Y") return t("common.trueText");
+    if (value === "N") return t("common.falseText");
+
+    // Check if this is a LIST field with refList
+    if (field.refList && Array.isArray(field.refList)) {
+      const refItem = field.refList.find((item) => item.value === value);
+      if (refItem) {
+        return refItem.label;
+      }
+    }
+
+    return value;
+  };
 
   return (
     <div className="inline-flex gap-1">
@@ -29,7 +46,7 @@ export default function StatusBarField({ field }: { field: Field }) {
         {field.name}:
       </label>
       <span className="" {...register(field.hqlName)}>
-        {displayValue}
+        {formatDisplayValue(displayValue)}
       </span>
     </div>
   );

@@ -27,8 +27,8 @@ import {
   PRODUCT_SELECTOR_DEFAULTS,
   TABLEDIR_SELECTOR_DEFAULTS,
   INVOICE_FIELD_MAPPINGS,
-  FORM_VALUE_MAPPINGS,
 } from "./constants";
+import { transformValueToClassicFormat } from "@/utils/datasourceUtils";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 const FALLBACK_RESULT: Record<string, EntityValue> = {} as Record<string, EntityValue>;
@@ -84,17 +84,8 @@ export const useTableDirDatasource = ({
       for (const [key, value] of Object.entries(formData)) {
         const currentField = tab.fields[key];
         const inputName = currentField?.inputName || key;
-        const stringValue = String(value);
 
-        const isISODate = /^\d{4}-\d{2}-\d{2}$/.test(stringValue);
-
-        const formattedValue = isISODate ? stringValue.split("-").reverse().join("-") : stringValue;
-
-        const safeValue = Object.prototype.hasOwnProperty.call(FORM_VALUE_MAPPINGS, formattedValue)
-          ? FORM_VALUE_MAPPINGS[formattedValue as keyof typeof FORM_VALUE_MAPPINGS]
-          : formattedValue;
-
-        formValues[inputName] = safeValue;
+        formValues[inputName] = transformValueToClassicFormat(value);
       }
 
       return formValues;

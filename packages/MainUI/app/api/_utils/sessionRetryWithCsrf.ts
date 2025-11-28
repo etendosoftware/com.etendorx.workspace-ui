@@ -19,7 +19,7 @@
  * Enhanced session retry with CSRF recovery capabilities
  */
 
-import { type NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { logger } from "@/utils/logger";
 import { isSessionExpired, shouldAttemptRecovery, shouldAttemptCsrfRecovery } from "./sessionValidator";
 import { recoverSession } from "./sessionRecovery";

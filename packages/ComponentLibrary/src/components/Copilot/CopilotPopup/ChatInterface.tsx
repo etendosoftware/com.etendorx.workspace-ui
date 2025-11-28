@@ -120,7 +120,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setShowConversations(newShowState);
 
     if (newShowState && onLoadConversations) {
-      console.log("Loading conversations for assistant:", selectedAssistant);
       onLoadConversations();
     }
   };

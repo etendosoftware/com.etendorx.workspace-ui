@@ -75,35 +75,33 @@ export const loadTableDirFilterOptions = async ({
   try {
     let options: FilterOption[] = [];
 
-    if (ColumnFilterUtils.needsDistinctValues(column)) {
-      const currentDatasource = entityName;
-      const tabIdStr = tabId;
-      const distinctField = column.columnName;
+    // First, check if we should use the selector/datasource approach (for fields that reference other entities)
+    const selectorDefinitionId = column.selectorDefinitionId as string | undefined;
+    const datasourceId = column.datasourceId || column.referencedEntity;
 
+    if (datasourceId) {
+      // Use selector/datasource approach for fields that reference other entities (e.g., businessPartner, product)
       options = await fetchFilterOptions(
-        String(currentDatasource),
+        String(datasourceId),
+        selectorDefinitionId,
+        searchQuery,
+        pageSize,
+        undefined,
+        undefined,
+        offset
+      );
+    } else if (entityName && tabId && column.columnName) {
+      // Fallback to distinct values approach for fields without a referenced entity
+      // This queries the main datasource for unique values of this field
+      options = await fetchFilterOptions(
+        String(entityName),
         undefined,
         searchQuery,
         pageSize,
-        distinctField,
-        tabIdStr,
+        column.columnName,
+        tabId,
         offset
       );
-    } else {
-      const selectorDefinitionId = column.selectorDefinitionId as string | undefined;
-      const datasourceId = column.datasourceId || column.referencedEntity;
-
-      if (datasourceId) {
-        options = await fetchFilterOptions(
-          String(datasourceId),
-          selectorDefinitionId,
-          searchQuery,
-          pageSize,
-          undefined,
-          undefined,
-          offset
-        );
-      }
     }
 
     const hasMore = options.length === pageSize;

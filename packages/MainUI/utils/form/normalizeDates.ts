@@ -1,11 +1,17 @@
 export function normalizeDates(obj: unknown): unknown {
   if (typeof obj === "string") {
+    // Only normalize ISO strings with milliseconds and/or timezone
+    // Format: 2025-10-06T10:20:00.123Z or 2025-10-06T10:20:00.123+03:00
     const isoToNormalize = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+(Z|[+-]\d{2}:\d{2})$/;
     if (isoToNormalize.test(obj)) {
       const date = new Date(obj);
       const pad = (n: number) => n.toString().padStart(2, "0");
       return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
     }
+
+    // Do NOT modify these formats - they're already correct for Classic:
+    // - Plain date: 2025-10-06
+    // - Simple datetime: 2025-10-06T10:20:00
     return obj;
   }
 

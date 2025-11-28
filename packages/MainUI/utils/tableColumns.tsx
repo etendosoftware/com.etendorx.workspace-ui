@@ -95,8 +95,12 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         columnType = column.column.reference$_identifier;
       }
 
-      // Get the proper field type using the reference mapping
+      // Get the proper field type using the corrected reference mapping
       const fieldType = getFieldReference(column.column?.reference);
+
+      // Field type mapping now uses corrected reference codes
+
+      // Field type mapping now uses corrected reference codes
 
       result.push({
         header: column.name ?? column.hqlName,
@@ -106,8 +110,9 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         isMandatory: column.isMandatory,
         _identifier: column.name,
         column: {
-          _identifier: columnType,
+          _identifier: columnType || "",
           reference: column.column?.reference,
+          ...(column.readOnlyLogicExpression ? { readOnlyLogicExpression: column.readOnlyLogicExpression } : {}), // Include for inline editing
         },
         shownInStatusBar: column.shownInStatusBar,
         showInGridView: column.showInGridView,
@@ -122,6 +127,10 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         selectorDefinitionId: column.selector?.id,
         datasourceId: column.targetEntity || column.referencedEntity, // Use targetEntity if available
         customJs: column.etmetaCustomjs,
+        // Include additional field properties needed for inline editing
+        isReadOnly: column.isReadOnly,
+        isUpdatable: column.isUpdatable,
+        readOnlyLogicExpression: column.readOnlyLogicExpression,
         accessorFn: (v: Record<string, unknown>) => {
           const reference = getFieldReference(column.column?.reference);
 
