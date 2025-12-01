@@ -234,7 +234,6 @@ const validateParentSelection = (
  *
  * @returns void - This hook manages side effects and doesn't return values
  *
- * @see {@link useMultiWindowURL} - For URL parameter management
  * @see {@link useSelected} - For global selection graph access
  * @see {@link useStateReconciliation} - For handling selection conflicts
  * @see {@link debounce} - For performance optimization of URL updates
