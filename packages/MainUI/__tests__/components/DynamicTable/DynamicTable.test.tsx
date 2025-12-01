@@ -3,7 +3,6 @@ import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import type React from "react";
 import DynamicTable from "../../../components/Table";
-import WindowProvider from "../../../contexts/window";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type {
   MRT_Row,
@@ -187,18 +186,6 @@ const mockMultiWindowURL = {
   clearChildrenSelections: jest.fn(),
 };
 
-jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(() => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    prefetch: jest.fn(),
-  })),
-  useSearchParams: jest.fn(() => ({
-    get: jest.fn(),
-    forEach: jest.fn(),
-  })),
-}));
-
 jest.mock("@/utils/logger", () => ({
   logger: {
     log: jest.fn(),
@@ -207,6 +194,10 @@ jest.mock("@/utils/logger", () => ({
     error: jest.fn(),
     debug: jest.fn(),
   },
+}));
+
+jest.mock("@/hooks/navigation/useMultiWindowURL", () => ({
+  useMultiWindowURL: () => mockMultiWindowURL,
 }));
 
 // Mock the hooks
@@ -485,11 +476,6 @@ const mockRecords: EntityData[] = [
   },
 ];
 
-// Helper to wrap components with WindowProvider
-const renderWithProviders = (component: React.ReactElement) => {
-  return render(<WindowProvider>{component}</WindowProvider>);
-};
-
 describe("DynamicTable", () => {
   const defaultProps = {
     setRecordId: jest.fn(),
@@ -514,32 +500,32 @@ describe("DynamicTable", () => {
 
   describe("Rendering", () => {
     it("renders the table container correctly", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
 
     it("renders table records", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(screen.getByTestId("table-content")).toBeInTheDocument();
     });
 
     it("renders with tree mode enabled by default", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // Tree mode should be enabled based on the mocked tree metadata
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
 
     it("renders correctly when tree mode is disabled", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} isTreeMode={false} />);
+      render(<DynamicTable {...defaultProps} isTreeMode={false} />);
 
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
 
     it("renders column visibility menu", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(screen.getByTestId("column-visibility-menu")).toBeInTheDocument();
     });
@@ -549,7 +535,7 @@ describe("DynamicTable", () => {
     it("displays loading state correctly", () => {
       mockDatasourceHook.loading = true;
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       const container = screen.getByTestId("material-react-table").closest(".h-full");
       expect(container).toHaveClass("opacity-60", "cursor-progress");
@@ -558,7 +544,7 @@ describe("DynamicTable", () => {
     it("removes loading state when not loading", () => {
       mockDatasourceHook.loading = false;
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       const container = screen.getByTestId("material-react-table").closest(".h-full");
       expect(container).toHaveClass("opacity-100");
@@ -570,7 +556,7 @@ describe("DynamicTable", () => {
     it("displays error when datasource has error", () => {
       mockDatasourceHook.error = new Error("Database connection failed");
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(screen.getByTestId("error-display")).toBeInTheDocument();
       expect(screen.getByText("Table Error")).toBeInTheDocument();
@@ -581,7 +567,7 @@ describe("DynamicTable", () => {
       const user = userEvent.setup();
       mockDatasourceHook.error = new Error("Network error");
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       const retryButton = screen.getByText("Retry");
       await user.click(retryButton);
@@ -599,7 +585,7 @@ describe("DynamicTable", () => {
       mockTabContext.parentTab = { id: "parent-tab" };
       mockTabContext.parentRecord = null;
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(screen.getByText("Selection Required")).toBeInTheDocument();
       expect(screen.getByText("Please select a parent record")).toBeInTheDocument();
@@ -609,7 +595,7 @@ describe("DynamicTable", () => {
       mockTabContext.parentTab = { id: "parent-tab" };
       mockTabContext.parentRecord = { id: "parent-123" };
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
       expect(screen.queryByText("Selection Required")).not.toBeInTheDocument();
@@ -618,14 +604,14 @@ describe("DynamicTable", () => {
 
   describe("Tree Mode Functionality", () => {
     it("handles tree mode metadata loading", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} isTreeMode={true} />);
+      render(<DynamicTable {...defaultProps} isTreeMode={true} />);
 
       // Should render without tree mode while metadata is loading
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
 
     it("supports expanding and collapsing nodes in tree mode", async () => {
-      renderWithProviders(<DynamicTable {...defaultProps} isTreeMode={true} />);
+      render(<DynamicTable {...defaultProps} isTreeMode={true} />);
 
       // The expand/collapse functionality would be tested through the table interactions
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
@@ -637,7 +623,7 @@ describe("DynamicTable", () => {
       const mockSetRecordId = jest.fn();
       const mockOnRecordSelection = jest.fn();
 
-      renderWithProviders(
+      render(
         <DynamicTable setRecordId={mockSetRecordId} onRecordSelection={mockOnRecordSelection} isTreeMode={true} />
       );
 
@@ -645,7 +631,7 @@ describe("DynamicTable", () => {
     });
 
     it("handles multiple record selection", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // Multiple selection functionality would be handled by the table component
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
@@ -654,14 +640,14 @@ describe("DynamicTable", () => {
 
   describe("Column Filtering", () => {
     it("handles column filter changes", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // Column filtering is now handled through activeColumnFilters prop
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
 
     it("toggles implicit filters", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // toggleImplicitFilters is now handled internally by useTableData
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
@@ -672,7 +658,7 @@ describe("DynamicTable", () => {
     it("fetches more records when scrolling to bottom", () => {
       mockDatasourceHook.hasMoreRecords = true;
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // Scroll functionality would be tested through scroll events
       expect(mockDatasourceHook.fetchMore).toBeDefined();
@@ -681,7 +667,7 @@ describe("DynamicTable", () => {
     it("does not fetch more when no more records available", () => {
       mockDatasourceHook.hasMoreRecords = false;
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(mockDatasourceHook.hasMoreRecords).toBe(false);
     });
@@ -689,13 +675,13 @@ describe("DynamicTable", () => {
 
   describe("Context Integration", () => {
     it("registers datasource and refetch function", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(mockDatasourceContext.registerRefetchFunction).toHaveBeenCalled();
     });
 
     it("registers toolbar actions", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(mockToolbarContext.registerActions).toHaveBeenCalledWith({
         refresh: expect.any(Function),
@@ -706,7 +692,7 @@ describe("DynamicTable", () => {
     });
 
     it("unregisters datasource on unmount", () => {
-      const { unmount } = renderWithProviders(<DynamicTable {...defaultProps} />);
+      const { unmount } = render(<DynamicTable {...defaultProps} />);
 
       unmount();
 
@@ -718,7 +704,7 @@ describe("DynamicTable", () => {
     it("responds to search query changes", () => {
       mockSearchContext.searchQuery = "test search";
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // Search functionality is passed to the useDatasource hook
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
@@ -729,7 +715,7 @@ describe("DynamicTable", () => {
     it("renders empty state when no records", () => {
       mockDatasourceHook.records = [];
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // Empty state would be handled by the table's renderEmptyRowsFallback
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
@@ -738,14 +724,14 @@ describe("DynamicTable", () => {
 
   describe("Accessibility", () => {
     it("has proper keyboard navigation support", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // Material React Table handles most accessibility features
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
 
     it("supports screen readers", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // Table should have proper ARIA labels and roles
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
@@ -764,7 +750,7 @@ describe("DynamicTable", () => {
 
       mockDatasourceHook.records = largeDataset;
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
@@ -772,7 +758,7 @@ describe("DynamicTable", () => {
 
   describe("Props Validation", () => {
     it("handles missing optional props", () => {
-      renderWithProviders(
+      render(
         <DynamicTable
           setRecordId={jest.fn()}
           // onRecordSelection is optional
@@ -785,7 +771,7 @@ describe("DynamicTable", () => {
 
     it("validates required props", () => {
       expect(() => {
-        renderWithProviders(<DynamicTable {...defaultProps} />);
+        render(<DynamicTable {...defaultProps} />);
       }).not.toThrow();
     });
   });
@@ -811,7 +797,7 @@ describe("DynamicTable", () => {
       const mockSetRecordId = jest.fn();
       const mockOnRecordSelection = jest.fn();
 
-      renderWithProviders(<DynamicTable setRecordId={mockSetRecordId} onRecordSelection={mockOnRecordSelection} />);
+      render(<DynamicTable setRecordId={mockSetRecordId} onRecordSelection={mockOnRecordSelection} />);
 
       // Wait for render to complete and row props to be captured
       await screen.findByTestId("table-row-0");
@@ -847,7 +833,7 @@ describe("DynamicTable", () => {
       const mockSetRecordId = jest.fn();
       const mockOnRecordSelection = jest.fn();
 
-      renderWithProviders(<DynamicTable setRecordId={mockSetRecordId} onRecordSelection={mockOnRecordSelection} />);
+      render(<DynamicTable setRecordId={mockSetRecordId} onRecordSelection={mockOnRecordSelection} />);
 
       // Wait for render to complete and row props to be captured
       await screen.findByTestId("table-row-0");
@@ -874,7 +860,7 @@ describe("DynamicTable", () => {
       const mockSetRecordId = jest.fn();
       const mockOnRecordSelection = jest.fn();
 
-      renderWithProviders(<DynamicTable setRecordId={mockSetRecordId} onRecordSelection={mockOnRecordSelection} />);
+      render(<DynamicTable setRecordId={mockSetRecordId} onRecordSelection={mockOnRecordSelection} />);
 
       // Wait for render to complete and row props to be captured
       await screen.findByTestId("table-row-0");
@@ -909,7 +895,7 @@ describe("DynamicTable", () => {
       const user = userEvent.setup({ delay: null });
       const mockSetRecordId = jest.fn();
 
-      renderWithProviders(<DynamicTable setRecordId={mockSetRecordId} />);
+      render(<DynamicTable setRecordId={mockSetRecordId} />);
 
       const row = screen.getByTestId("table-row-0");
 
@@ -927,28 +913,27 @@ describe("DynamicTable", () => {
     });
 
     it("should apply initial URL selection on mount", () => {
-      // This test is now handled by WindowContext internally
-      // The component uses useWindowContext().getSelectedRecord() instead of mockMultiWindowURL
+      mockMultiWindowURL.getSelectedRecord.mockReturnValue("2");
       mockDatasourceHook.records = mockRecords;
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
-      // Verify table renders correctly with URL selection
-      expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
+      expect(mockMultiWindowURL.getSelectedRecord).toHaveBeenCalledWith("test-window-id_123456789", "test-tab-id");
     });
 
     it("should handle invalid URL record IDs gracefully", () => {
       mockMultiWindowURL.getSelectedRecord.mockReturnValue("999"); // Non-existent record
       mockDatasourceHook.records = mockRecords;
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // Should not break when URL has invalid record ID
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
 
     it("should restore URL selection when table data changes", () => {
-      const { rerender } = renderWithProviders(<DynamicTable {...defaultProps} />);
+      mockMultiWindowURL.getSelectedRecord.mockReturnValue("1");
+      const { rerender } = render(<DynamicTable {...defaultProps} />);
 
       // Change the records
       mockDatasourceHook.records = [
@@ -956,14 +941,9 @@ describe("DynamicTable", () => {
         { id: "4", name: "New Record", status: "Active", showDropIcon: false, parentId: null },
       ];
 
-      rerender(
-        <WindowProvider>
-          <DynamicTable {...defaultProps} />
-        </WindowProvider>
-      );
+      rerender(<DynamicTable {...defaultProps} />);
 
-      // Verify table handles data changes correctly
-      expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
+      expect(mockMultiWindowURL.getSelectedRecord).toHaveBeenCalled();
     });
 
     it("should handle missing window ID gracefully", () => {
@@ -978,7 +958,7 @@ describe("DynamicTable", () => {
         title: "Empty Window",
       }; // Empty window ID
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
 
@@ -994,25 +974,27 @@ describe("DynamicTable", () => {
     });
 
     it("should enable tree mode when conditions are met", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} isTreeMode={true} />);
+      render(<DynamicTable {...defaultProps} isTreeMode={true} />);
 
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
 
     it("should disable tree mode when isTreeMode is false", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} isTreeMode={false} />);
+      render(<DynamicTable {...defaultProps} isTreeMode={false} />);
 
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
 
     it("should handle tree mode toggle", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} isTreeMode={true} />);
+      const { rerender } = render(<DynamicTable {...defaultProps} isTreeMode={false} />);
+
+      rerender(<DynamicTable {...defaultProps} isTreeMode={true} />);
 
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
 
     it("should render tree styles when in tree mode", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} isTreeMode={true} />);
+      render(<DynamicTable {...defaultProps} isTreeMode={true} />);
 
       // Check that the table renders in tree mode
       // Note: The actual CSS injection might be handled by the component library or styled-components
@@ -1030,21 +1012,21 @@ describe("DynamicTable", () => {
     });
 
     it("should handle column filter changes", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // Column filtering functionality is tested through the integration
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
 
     it("should handle filter options loading", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // This tests that the component initializes with filter options
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
 
     it("should toggle column visibility menu", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(screen.getByTestId("column-visibility-menu")).toBeInTheDocument();
     });
@@ -1058,7 +1040,7 @@ describe("DynamicTable", () => {
     it("should handle empty records gracefully", () => {
       mockDatasourceHook.records = [];
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
@@ -1066,7 +1048,7 @@ describe("DynamicTable", () => {
     it("should handle null/undefined records", () => {
       mockDatasourceHook.records = [] as EntityData[]; // Use empty array instead of null
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
@@ -1075,7 +1057,7 @@ describe("DynamicTable", () => {
       const user = userEvent.setup();
       mockDatasourceHook.error = new Error("Network timeout");
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(screen.getByTestId("error-display")).toBeInTheDocument();
 
@@ -1086,28 +1068,20 @@ describe("DynamicTable", () => {
     });
 
     it("should handle rapid state changes", () => {
-      const { rerender } = renderWithProviders(<DynamicTable {...defaultProps} />);
+      const { rerender } = render(<DynamicTable {...defaultProps} />);
 
       // Rapidly change loading state
       mockDatasourceHook.loading = true;
-      rerender(
-        <WindowProvider>
-          <DynamicTable {...defaultProps} />
-        </WindowProvider>
-      );
+      rerender(<DynamicTable {...defaultProps} />);
 
       mockDatasourceHook.loading = false;
-      rerender(
-        <WindowProvider>
-          <DynamicTable {...defaultProps} />
-        </WindowProvider>
-      );
+      rerender(<DynamicTable {...defaultProps} />);
 
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
 
     it("should handle component unmounting cleanly", () => {
-      const { unmount } = renderWithProviders(<DynamicTable {...defaultProps} />);
+      const { unmount } = render(<DynamicTable {...defaultProps} />);
 
       expect(() => unmount()).not.toThrow();
       expect(mockDatasourceContext.unregisterDatasource).toHaveBeenCalled();
@@ -1120,13 +1094,13 @@ describe("DynamicTable", () => {
     });
 
     it("should register datasource and refetch function on mount", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(mockDatasourceContext.registerRefetchFunction).toHaveBeenCalledWith("test-tab-id", expect.any(Function));
     });
 
     it("should register all toolbar actions", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(mockToolbarContext.registerActions).toHaveBeenCalledWith({
         refresh: expect.any(Function),
@@ -1137,7 +1111,7 @@ describe("DynamicTable", () => {
     });
 
     it("should handle graph selection events", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(mockSelectedContext.graph.addListener).toHaveBeenCalledWith("unselected", expect.any(Function));
       expect(mockSelectedContext.graph.addListener).toHaveBeenCalledWith("unselectedMultiple", expect.any(Function));
@@ -1146,7 +1120,7 @@ describe("DynamicTable", () => {
     it("should respond to search query changes", () => {
       mockSearchContext.searchQuery = "test search";
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // Search functionality is passed to the useDatasource hook
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
@@ -1155,7 +1129,7 @@ describe("DynamicTable", () => {
     it("should handle language changes", () => {
       mockLanguageContext.language = "es_ES";
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
@@ -1183,7 +1157,7 @@ describe("DynamicTable", () => {
       mockDatasourceHook.records = largeDataset;
 
       const startTime = performance.now();
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
       const endTime = performance.now();
 
       expect(endTime - startTime).toBeLessThan(1000); // Should render in less than 1 second
@@ -1191,7 +1165,7 @@ describe("DynamicTable", () => {
     });
 
     it("should not cause memory leaks with timeouts", () => {
-      const { unmount } = renderWithProviders(<DynamicTable {...defaultProps} />);
+      const { unmount } = render(<DynamicTable {...defaultProps} />);
 
       // Fast-forward all timers to ensure cleanup
       jest.runAllTimers();
@@ -1201,7 +1175,7 @@ describe("DynamicTable", () => {
 
     it("should handle rapid mount/unmount cycles", () => {
       for (let i = 0; i < 10; i++) {
-        const { unmount } = renderWithProviders(<DynamicTable {...defaultProps} />);
+        const { unmount } = render(<DynamicTable {...defaultProps} />);
         unmount();
       }
 
@@ -1211,7 +1185,7 @@ describe("DynamicTable", () => {
 
   describe("Accessibility", () => {
     it("should have proper semantic structure", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       const table = screen.getByTestId("material-react-table");
       expect(table).toBeInTheDocument();
@@ -1219,7 +1193,7 @@ describe("DynamicTable", () => {
 
     it("should support keyboard navigation", async () => {
       const user = userEvent.setup();
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       const firstRow = screen.getByTestId("table-row-0");
 
@@ -1228,7 +1202,7 @@ describe("DynamicTable", () => {
     });
 
     it("should have accessible button elements for rows", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       const rows = screen.getAllByRole("button");
       expect(rows.length).toBeGreaterThan(0);
@@ -1239,7 +1213,7 @@ describe("DynamicTable", () => {
     });
 
     it("should handle screen reader navigation", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // Check that interactive elements are properly marked
       const buttons = screen.getAllByRole("button");
@@ -1255,21 +1229,21 @@ describe("DynamicTable", () => {
     it("should call onRecordSelection when selection changes", () => {
       const mockOnRecordSelection = jest.fn();
 
-      renderWithProviders(<DynamicTable {...defaultProps} onRecordSelection={mockOnRecordSelection} />);
+      render(<DynamicTable {...defaultProps} onRecordSelection={mockOnRecordSelection} />);
 
       // Selection changes are handled through the useTableSelection hook
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
 
     it("should handle multiple record selection", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // Multiple selection functionality is built into Material React Table
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
 
     it("should clear selection when required", () => {
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // Selection clearing is handled through the graph events
       expect(mockSelectedContext.graph.addListener).toHaveBeenCalled();
@@ -1284,7 +1258,7 @@ describe("DynamicTable", () => {
     it("should fetch more records when scrolling to bottom", () => {
       mockDatasourceHook.hasMoreRecords = true;
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // Simulate scroll to bottom by dispatching a scroll event
       const container = screen.getByTestId("material-react-table");
@@ -1302,7 +1276,7 @@ describe("DynamicTable", () => {
     it("should not fetch more when no more records available", () => {
       mockDatasourceHook.hasMoreRecords = false;
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(mockDatasourceHook.hasMoreRecords).toBe(false);
     });
@@ -1310,7 +1284,7 @@ describe("DynamicTable", () => {
     it("should show loading state during fetch", () => {
       mockDatasourceHook.loading = true;
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       const container = screen.getByTestId("material-react-table").closest(".h-full");
       expect(container).toHaveClass("opacity-60");
@@ -1327,7 +1301,7 @@ describe("DynamicTable", () => {
       mockTabContext.parentRecord = { id: "parent-123" };
       mockTabContext.parentRecords = [{ id: "parent-123" }]; // Exactly one record
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
       expect(screen.queryByText("Selection Required")).not.toBeInTheDocument();
@@ -1337,7 +1311,7 @@ describe("DynamicTable", () => {
       mockTabContext.parentTab = { id: "parent-tab" };
       mockTabContext.parentRecord = null;
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       expect(screen.getByText("Selection Required")).toBeInTheDocument();
     });
@@ -1352,7 +1326,7 @@ describe("DynamicTable", () => {
       // Mock empty records due to skip=true
       mockDatasourceHook.records = [];
 
-      renderWithProviders(<DynamicTable {...defaultProps} />);
+      render(<DynamicTable {...defaultProps} />);
 
       // Should NOT show error message (because parentRecord is not null)
       expect(screen.queryByText("Selection Required")).not.toBeInTheDocument();

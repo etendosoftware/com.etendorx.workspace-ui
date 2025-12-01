@@ -64,12 +64,38 @@ const getCurrentFilterValue = (
 
 /**
  * Helper to check if column should use date formatting
+ * Checks multiple indicators to ensure date columns are properly detected
  */
 const shouldFormatDateColumn = (column: Column): boolean => {
-  return (
+  // Check column.column.reference (primary check)
+  if (
     column.column?.reference === FIELD_REFERENCE_CODES.DATE ||
-    column.column?.reference === FIELD_REFERENCE_CODES.DATETIME
-  );
+    column.column?.reference === FIELD_REFERENCE_CODES.DATETIME ||
+    column.column?.reference === FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME
+  ) {
+    return true;
+  }
+
+  // Check column.type (FieldType)
+  if (column.type === "date" || column.type === "datetime") {
+    return true;
+  }
+
+  // Check reference identifier
+  if (
+    column.column?.reference$_identifier === "Date" ||
+    column.column?.reference$_identifier === "DateTime" ||
+    column.column?.reference$_identifier === "Absolute DateTime"
+  ) {
+    return true;
+  }
+
+  // Check display type
+  if (column.displayType === "date" || column.displayType === "datetime") {
+    return true;
+  }
+
+  return false;
 };
 
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
@@ -132,8 +158,17 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         const isAuditField = AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName);
         columnConfig = {
           ...columnConfig,
-          Cell: ({ cell }: { cell: MRT_Cell<EntityData, unknown> }) => {
-            const value = cell?.getValue();
+          Cell: ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: { original: EntityData } }) => {
+            // Try to get value from cell first, then fallback to row data
+            let value = cell?.getValue();
+
+            // If cell.getValue() returns undefined, try getting from row.original directly
+            if (value === undefined || value === null) {
+              const rowData = row.original;
+              // Try both hqlName and name to find the value
+              value = rowData[column.columnName] ?? rowData[column.name];
+            }
+
             // Only format if the value is a string with valid date format
             // This prevents formatting non-date values that are incorrectly marked as date type
             if (typeof value === "string" && value) {

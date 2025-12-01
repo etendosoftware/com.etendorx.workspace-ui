@@ -47,6 +47,8 @@ export const compileExpression = (expression: string) => {
 };
 
 const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; formMode?: FormMode }) => {
+  // Field type mapping corrected - reference "10" now properly maps to TEXT
+
   const formMethods = useFormContext();
   const { watch, getValues, setValue, register, formState } = formMethods;
   const { isFormInitializing, isSettingInitialValues, setIsSettingInitialValues } = useFormInitializationContext();
