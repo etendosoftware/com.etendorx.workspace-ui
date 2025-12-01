@@ -27,7 +27,7 @@ import type { TabLevelProps } from "@/components/window/types";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
-import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, TabFormState } from "@/utils/url/constants";
+import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { getNewTabFormState, isFormView } from "@/utils/window/utils";
 import { useWindowContext } from "@/contexts/window";
@@ -260,7 +260,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, [registerActions, handleNew, handleBack, handleTreeView, tab.id]);
 
   /**
-   * TODO: move to a more central location
    * Clear selection when creating a new record
    * This prevents issues when creating a new record from a selected record in the table
    * which could lead to inconsistent state.
@@ -273,7 +272,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, [currentRecordId, graph, tab]);
 
   // Auto-close child FormView when parent selection changes
-  // TODO: move to a more central location
   useEffect(() => {
     if (!windowIdentifier) {
       return;

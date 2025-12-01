@@ -2,45 +2,6 @@ import { URL_PREFIXS } from "@/utils/url/constants";
 import type { WindowState, WindowRecoveryInfo } from "@/utils/window/constants";
 
 /**
- * TODO: this func will be usefull to set all window params in URL
- * Sets all URL parameters for a window based on its WindowState.
- * Encodes the complete window state into URL parameters using the established parameter naming conventions.
- *
- * @param params - The URLSearchParams object to modify
- * @param window - The WindowState object containing the state to encode
- *
- * @example
- * const params = new URLSearchParams();
- * const windowState = { windowId: "MainWindow", isActive: true, ... };
- * setWindowParameters(params, windowState);
- * // params now contains: w_abc123=active&o_abc123=1&wi_abc123=MainWindow
- */
-export const setWindowParameters = (params: URLSearchParams, window: WindowState): void => {
-  const { windowIdentifier } = window;
-
-  params.set(`${URL_PREFIXS.WINDOW_IDENTIFIER}`, windowIdentifier);
-};
-
-/**
- * Determines if navigation should be skipped because URL parameters are identical.
- * Safely compares current search parameters with target URL parameters.
- *
- * @param targetUrl - The URL we want to navigate to
- * @returns true if navigation should be skipped, false otherwise
- */
-export const shouldSkipNavigation = (targetUrl: string, searchParams: URLSearchParams): boolean => {
-  try {
-    const currentParams = searchParams?.toString?.() ?? "";
-    const targetParams = targetUrl.split("?")[1] || "";
-
-    return currentParams === targetParams;
-  } catch {
-    // If comparison fails for any reason, proceed with navigation
-    return false;
-  }
-};
-
-/**
  * Builds URL parameters for multiple windows based on their current state.
  * Generates URL parameters with indexed format for each window, including the deepest tab
  * that has both a selected record and tab identifier.

@@ -25,10 +25,10 @@ import { useFormViewContext } from "./contexts/FormViewContext";
 import { useRef, useEffect, useState } from "react";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
 import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
-import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
+// import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import NoteSection from "./Sections/noteSection";
 import AttachmentSection from "./Sections/AttachmentSection";
-import LinkedItemsSection from "./Sections/LinkedItemsSection";
+// import LinkedItemsSection from "./Sections/LinkedItemsSection";
 
 interface FormFieldsProps {
   tab: Tab;
@@ -223,7 +223,7 @@ export function FormFields({
         </Collapsible>
       </div>
       {/* Linked Items Section */}
-      <div ref={handleSectionRef("linked-items")} data-section-id="linked-items">
+      {/* <div ref={handleSectionRef("linked-items")} data-section-id="linked-items">
         <Collapsible
           title="Linked Items"
           isExpanded={isSectionExpanded("linked-items")}
@@ -238,7 +238,7 @@ export function FormFields({
             data-testid="LinkedItemsSection__38e4a6"
           />
         </Collapsible>
-      </div>
+      </div> */}
     </div>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
 import { Drawer } from "@workspaceui/componentlibrary/src/components/Drawer/index";
 import EtendoLogotype from "../public/etendo.png";
 import { useTranslation } from "../hooks/useTranslation";
@@ -11,13 +10,11 @@ import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { useMenuTranslation } from "../hooks/useMenuTranslation";
 import { createSearchIndex, filterItems } from "@workspaceui/componentlibrary/src/utils/searchUtils";
 import { useLanguage } from "@/contexts/language";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { useWindowContext } from "@/contexts/window";
-import { WindowState } from "@/utils/window/constants";
 import ProcessIframeModal from "./ProcessModal/Iframe";
 import type { ProcessIframeModalProps } from "./ProcessModal/types";
 import formsData from "../utils/processes/forms/data.json";
@@ -141,9 +138,6 @@ export default function Sidebar() {
   const { language, prevLanguage } = useLanguage();
   const { translateMenuItem } = useMenuTranslation();
   const menu = useMenu(token, currentRole || undefined, language);
-  const router = useRouter();
-  const pathname = usePathname();
-  const { openWindow, buildURL } = useMultiWindowURL();
   const { activeWindow, setWindowActive } = useWindowContext();
 
   const [searchValue, setSearchValue] = useState("");
@@ -197,40 +191,14 @@ export default function Sidebar() {
         return;
       }
 
-      const isInWindowRoute = pathname.includes("window");
-
       if (windowId) {
         setPendingWindowId(windowId);
       }
 
       const newWindowIdentifier = getNewWindowIdentifier(windowId);
       setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: item.name, initialized: true } });
-
-      // TODO: delete this code when multi-window is fully stable
-      if (isInWindowRoute) {
-        // Already in window context - use multi-window system
-        openWindow(windowId, newWindowIdentifier);
-      } else {
-        // Coming from home route - create new window and navigate
-        const newWindow: WindowState = {
-          windowId,
-          windowIdentifier: newWindowIdentifier,
-          isActive: true,
-          title: item.name,
-          navigation: {
-            activeLevels: [],
-            activeTabsByLevel: new Map<number, string>(),
-            initialized: false,
-          },
-          initialized: true,
-          tabs: {},
-        };
-
-        const targetURL = buildURL([newWindow]);
-        router.push(targetURL);
-      }
     },
-    [pathname, router, token, ETENDO_BASE_URL, openWindow, buildURL, setWindowActive]
+    [token, ETENDO_BASE_URL, setWindowActive]
   );
 
   /**

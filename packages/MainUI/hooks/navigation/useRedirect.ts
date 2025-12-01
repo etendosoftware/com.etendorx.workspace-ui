@@ -16,12 +16,10 @@
  */
 
 import { useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useWindowContext } from "@/contexts/window";
 import { getNewWindowIdentifier, createDefaultTabState } from "@/utils/window/utils";
 import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
-import { TabState } from "@/utils/window/constants";
+import type { TabState } from "@/utils/window/constants";
 
 interface HandleActionProps {
   windowId: string;
@@ -50,27 +48,7 @@ interface HandleKeyDownRedirectProps {
 }
 
 export const useRedirect = () => {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { openWindow, buildURL } = useMultiWindowURL();
   const { setWindowActive } = useWindowContext();
-
-  const createBaseWindow = useCallback(
-    (windowId: string, windowIdentifier?: string) => ({
-      windowId,
-      windowIdentifier: windowIdentifier || windowId,
-      isActive: true,
-      title: windowIdentifier || windowId,
-      navigation: {
-        activeLevels: [],
-        activeTabsByLevel: new Map<number, string>(),
-        initialized: false,
-      },
-      initialized: true,
-      tabs: {},
-    }),
-    []
-  );
 
   const handleAction = useCallback(
     async ({ windowId, windowTitle, referencedTabId, selectedRecordId, tabLevel = 0 }: HandleActionProps) => {
@@ -78,8 +56,6 @@ export const useRedirect = () => {
         console.warn("No windowId found");
         return;
       }
-
-      const isInWindowRoute = pathname.includes("window");
 
       const newWindowIdentifier = getNewWindowIdentifier(windowId);
       const defaultTabState = createDefaultTabState(tabLevel);
@@ -96,18 +72,8 @@ export const useRedirect = () => {
       };
       const windowData = { title: windowTitle, tabs };
       setWindowActive({ windowIdentifier: newWindowIdentifier, windowData });
-
-      // Default behavior (no preselection)
-      if (isInWindowRoute) {
-        openWindow(windowId, newWindowIdentifier);
-        return;
-      }
-
-      const newWindow = createBaseWindow(windowId, newWindowIdentifier);
-      const targetURL = buildURL([newWindow]);
-      router.push(targetURL);
     },
-    [router, pathname, openWindow, createBaseWindow, setWindowActive, buildURL]
+    [setWindowActive]
   );
 
   const handleClickRedirect = useCallback(

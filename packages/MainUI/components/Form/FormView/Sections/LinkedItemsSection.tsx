@@ -18,13 +18,12 @@
 import { useCallback } from "react";
 import LinkedItems from "@workspaceui/componentlibrary/src/components/LinkedItems";
 import { fetchLinkedItemCategories, fetchLinkedItems } from "@workspaceui/api-client/src/api/linkedItems";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useWindowContext } from "@/contexts/window";
 import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getNewWindowIdentifier, createDefaultTabState } from "@/utils/window/utils";
 import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
-import { TabState } from "@/utils/window/constants";
+import type { TabState } from "@/utils/window/constants";
 
 interface LinkedItemsSectionProps {
   tabId: string;
@@ -32,9 +31,7 @@ interface LinkedItemsSectionProps {
   recordId: string;
 }
 
-// TODO: delete this prop if necessary
-export const LinkedItemsSection = ({ tabId, entityName, recordId }: LinkedItemsSectionProps) => {
-  const { openWindow } = useMultiWindowURL();
+export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionProps) => {
   const { t } = useTranslation();
   const { activeWindow, setWindowActive } = useWindowContext();
 
@@ -65,7 +62,6 @@ export const LinkedItemsSection = ({ tabId, entityName, recordId }: LinkedItemsS
       const newTabId = item.adTabId;
       const newRecordId = item.id;
       const newTitle = item.adMenuName;
-      // TODO: LinkedItem should provide tab level information. For now defaulting to 0 (main level)
       const defaultTabState = createDefaultTabState(0);
       const tabs = {
         [newTabId]: {
@@ -81,10 +77,8 @@ export const LinkedItemsSection = ({ tabId, entityName, recordId }: LinkedItemsS
 
       const windowData = { title: newTitle, tabs };
       setWindowActive({ windowIdentifier: newWindowIdentifier, windowData });
-
-      openWindow(item.adWindowId, newWindowIdentifier);
     },
-    [openWindow, setWindowActive]
+    [setWindowActive]
   );
 
   return (

@@ -113,8 +113,6 @@ export default function WindowTabs() {
         className="w-full flex items-center px-2 overflow-x-auto overflow-y-hidden scroll-smooth hide-scrollbar h-9"
         ref={windowsContainerRef}>
         {visibleWindows.map((window, index) => {
-          // TODO: improve loading display
-          // TODO: if the window.title dosen't finish loading, get the title from metadata
           const title = window.title || "Loading...";
           const isActive = window.isActive;
           const canClose = visibleWindows.length > 1;
