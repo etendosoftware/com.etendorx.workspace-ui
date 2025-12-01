@@ -507,7 +507,8 @@ describe("getWindowName", () => {
     const windowData = new Proxy(createMockWindowMetadata("143"), {
       get(target, prop) {
         if (prop === "name") {
-          throw "String error";
+          // eslint-disable-next-line @typescript-eslint/no-throw-literal
+          throw "String error"; // Intentionally throw non-Error to test error handling
         }
         return target[prop as keyof typeof target];
       },

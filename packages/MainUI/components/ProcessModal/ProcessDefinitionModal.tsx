@@ -726,7 +726,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                 // keep existing _allRows if present, but overwrite _selection with EntityData array
                 next[key] = {
                   ...(next[key] || { _selection: [], _allRows: [] }),
-                  _selection: Array.isArray(ids) ? ids.map((id) => ({ id: String(id) }) as EntityData) : [],
+                  _selection: Array.isArray(ids)
+                    ? ids.map(
+                        (id) =>
+                          ({
+                            id: String(id),
+                          }) as EntityData
+                      )
+                    : [],
                 };
               }
               return next;
@@ -798,7 +805,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         for (const [tableKey, ids] of Object.entries(autoSelectConfig._gridSelection || {})) {
           next[tableKey] = {
             ...(next[tableKey] || { _selection: [], _allRows: [] }),
-            _selection: Array.isArray(ids) ? ids.map((id) => ({ id: String(id) }) as EntityData) : [],
+            _selection: Array.isArray(ids)
+              ? ids.map(
+                  (id) =>
+                    ({
+                      id: String(id),
+                    }) as EntityData
+                )
+              : [],
           };
         }
         return next;

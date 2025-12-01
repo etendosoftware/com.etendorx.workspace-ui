@@ -18,7 +18,7 @@
 // @data-testid-ignore
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";

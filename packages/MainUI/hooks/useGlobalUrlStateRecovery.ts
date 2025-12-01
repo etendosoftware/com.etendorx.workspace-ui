@@ -6,9 +6,8 @@ import { parseWindowRecoveryData } from "@/utils/url/utils";
 import { parseUrlState, getWindowName } from "@/utils/recovery/urlStateParser";
 import { calculateHierarchy } from "@/utils/recovery/hierarchyCalculator";
 import { reconstructState } from "@/utils/recovery/stateReconstructor";
-import { createRecoveryWindowState } from "@/utils/window/utils";
+import { createRecoveryWindowState, getWindowIdFromIdentifier } from "@/utils/window/utils";
 import type { WindowState } from "@/utils/window/constants";
-import { getWindowIdFromIdentifier } from "@/utils/window/utils";
 
 export const useGlobalUrlStateRecovery = () => {
   const searchParams = useSearchParams();

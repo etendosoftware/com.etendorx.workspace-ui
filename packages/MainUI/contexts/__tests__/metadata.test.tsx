@@ -30,8 +30,7 @@ import { MetadataSynchronizer, useMetadataContext } from "../metadata";
 import { useWindowContext } from "../window";
 import { useMetadataStore } from "../metadataStore";
 import { useDatasourceContext } from "../datasourceContext";
-import type { Etendo } from "@workspaceui/api-client/src/api/types";
-import type { Tab } from "@workspaceui/api-client/src/api/types";
+import type { Tab, WindowMetadata } from "@workspaceui/api-client/src/api/types";
 
 // Mock dependencies
 jest.mock("../window");
@@ -69,7 +68,7 @@ const createMockTab = (id: string): Tab => ({
   module: "test_module",
 });
 
-const createMockWindowMetadata = (windowId: string): Etendo.WindowMetadata => ({
+const createMockWindowMetadata = (windowId: string): WindowMetadata => ({
   id: windowId,
   name: `Window ${windowId}`,
   tabs: [createMockTab("tab1"), createMockTab("tab2")],

@@ -83,9 +83,9 @@ export default async function RootLayout({
             <LanguageProvider data-testid="LanguageProvider__ba7569">
               <UserProvider data-testid="UserProvider__ba7569">
                 <DatasourceProvider data-testid="DatasourceProvider__ba7569">
-                  <MetadataStoreProvider>
+                  <MetadataStoreProvider data-testid="MetadataStoreProvider__ba7569">
                     <WindowProvider data-testid="WindowProvider__ba7569">
-                      <MetadataSynchronizer />
+                      <MetadataSynchronizer data-testid="MetadataSynchronizer__ba7569" />
                       <LoadingProvider data-testid="LoadingProvider__ba7569">
                         <Layout data-testid="Layout__ba7569">{children}</Layout>
                       </LoadingProvider>

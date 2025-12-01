@@ -47,7 +47,7 @@ export const buildWindowsUrlParams = (windows: WindowState[]): string => {
 
       // Add tab and record to URL
       params.set(`${URL_PREFIXS.TAB_IDENTIFIER}_${index}`, deepestTabId);
-      params.set(`${URL_PREFIXS.RECORD_IDENTIFIER}_${index}`, deepestTabState.selectedRecord!);
+      params.set(`${URL_PREFIXS.RECORD_IDENTIFIER}_${index}`, deepestTabState.selectedRecord || "");
     }
   });
 

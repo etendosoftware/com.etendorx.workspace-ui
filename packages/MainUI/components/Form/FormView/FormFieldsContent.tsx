@@ -25,10 +25,8 @@ import { useFormViewContext } from "./contexts/FormViewContext";
 import { useRef, useEffect, useState } from "react";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
 import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
-// import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import NoteSection from "./Sections/noteSection";
 import AttachmentSection from "./Sections/AttachmentSection";
-// import LinkedItemsSection from "./Sections/LinkedItemsSection";
 
 interface FormFieldsProps {
   tab: Tab;
@@ -222,23 +220,6 @@ export function FormFields({
           />
         </Collapsible>
       </div>
-      {/* Linked Items Section */}
-      {/* <div ref={handleSectionRef("linked-items")} data-section-id="linked-items">
-        <Collapsible
-          title="Linked Items"
-          isExpanded={isSectionExpanded("linked-items")}
-          sectionId="linked-items"
-          icon={<LinkIcon data-testid="LinkIcon__linkeditems" />}
-          onToggle={(isOpen: boolean) => handleAccordionChange("linked-items", isOpen)}
-          data-testid="Collapsible__linkeditems">
-          <LinkedItemsSection
-            tabId={tab.id}
-            entityName={tab.entityName}
-            recordId={recordId}
-            data-testid="LinkedItemsSection__38e4a6"
-          />
-        </Collapsible>
-      </div> */}
     </div>
   );
 }

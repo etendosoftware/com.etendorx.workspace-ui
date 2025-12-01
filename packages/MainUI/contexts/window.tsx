@@ -311,8 +311,6 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     []
   );
 
-  // NOTE: on the transtiton to active a new window, the activeWindow is null then show a empty window
-  // TODO: show a loading state instead of an empty window
   const setWindowActive = useCallback(
     ({ windowIdentifier, windowData }: { windowIdentifier: string; windowData?: Partial<WindowState> }) => {
       setState((prevState: WindowContextState) => {
