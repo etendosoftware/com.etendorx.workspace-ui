@@ -128,6 +128,68 @@ const createParsedUrlState = (
   keyParameter: "testKey",
 });
 
+// Test execution helpers
+const expectHierarchyError = async (
+  urlState: ParsedUrlState,
+  windowMetadata: WindowMetadata,
+  expectedErrorMessage: string
+) => {
+  await expect(calculateHierarchy(urlState, windowMetadata)).rejects.toThrow(expectedErrorMessage);
+};
+
+const expectTargetTab = (result: any, expectedTabId: string, expectedLevel: number, expectedRecordId: string) => {
+  expect(result.targetTab.tabId).toBe(expectedTabId);
+  expect(result.targetTab.level).toBe(expectedLevel);
+  expect(result.targetTab.recordId).toBe(expectedRecordId);
+};
+
+const expectParentTab = (
+  parentTab: any,
+  expectedTabId: string,
+  expectedLevel: number,
+  expectedParentKeyField?: string
+) => {
+  expect(parentTab.tabId).toBe(expectedTabId);
+  expect(parentTab.level).toBe(expectedLevel);
+  if (expectedParentKeyField !== undefined) {
+    expect(parentTab.parentKeyField).toBe(expectedParentKeyField);
+  }
+};
+
+const expectParentChildLink = (parent: any, child: any) => {
+  expect(parent.children).toHaveLength(1);
+  expect(parent.children[0]).toBe(child);
+};
+
+const testInvalidFieldsScenario = async (
+  fieldsValue: any,
+  expectedError = "Parent key field not found in tab tab2"
+) => {
+  const rootTab = createMockTab("tab1", 0, "RootEntity");
+  const childTab = createMockTab("tab2", 1, "ChildEntity");
+  childTab.fields = fieldsValue;
+
+  const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
+  const urlState = createParsedUrlState("143_123", "tab2", "childRecord123", "143", 1);
+
+  await expectHierarchyError(urlState, windowMetadata, expectedError);
+};
+
+const expectErrorMessageContains = async (
+  windowMetadata: WindowMetadata,
+  urlState: ParsedUrlState,
+  ...expectedSubstrings: string[]
+) => {
+  try {
+    await calculateHierarchy(urlState, windowMetadata);
+    fail("Should have thrown error");
+  } catch (error: any) {
+    expectedSubstrings.forEach((substring) => {
+      expect(error.message).toContain(substring);
+    });
+  }
+};
+
 describe("calculateHierarchy", () => {
   describe("Single level (root tab)", () => {
     it("should calculate hierarchy for root tab at level 0", async () => {
@@ -137,12 +199,9 @@ describe("calculateHierarchy", () => {
 
       const result = await calculateHierarchy(urlState, windowMetadata);
 
-      expect(result.targetTab.tabId).toBe("tab1");
-      expect(result.targetTab.level).toBe(0);
-      expect(result.targetTab.recordId).toBe("record123");
+      expectTargetTab(result, "tab1", 0, "record123");
       expect(result.targetTab.children).toEqual([]);
       expect(result.targetTab.parentKeyField).toBeUndefined();
-
       expect(result.parentTabs).toEqual([]);
       expect(result.rootTab).toBe(result.targetTab);
     });
@@ -152,9 +211,7 @@ describe("calculateHierarchy", () => {
       const windowMetadata = createMockWindowMetadata([rootTab]);
       const urlState = createParsedUrlState("143_123", "nonexistent", "record123");
 
-      await expect(calculateHierarchy(urlState, windowMetadata)).rejects.toThrow(
-        "Target tab nonexistent not found in window metadata"
-      );
+      await expectHierarchyError(urlState, windowMetadata, "Target tab nonexistent not found in window metadata");
     });
 
     it("should handle root tab with multiple fields", async () => {
@@ -182,7 +239,7 @@ describe("calculateHierarchy", () => {
 
       const result = await calculateHierarchy(urlState, windowMetadata);
 
-      expect(result.targetTab.tabId).toBe("tab1");
+      expectTargetTab(result, "tab1", 0, "record123");
       expect(result.parentTabs).toEqual([]);
     });
   });
@@ -200,25 +257,15 @@ describe("calculateHierarchy", () => {
 
       const result = await calculateHierarchy(urlState, windowMetadata);
 
-      // Check target tab
-      expect(result.targetTab.tabId).toBe("tab2");
-      expect(result.targetTab.level).toBe(1);
-      expect(result.targetTab.recordId).toBe("childRecord123");
+      expectTargetTab(result, "tab2", 1, "childRecord123");
       expect(result.targetTab.tab.entityName).toBe("ChildEntity");
 
-      // Check parent tabs array
       expect(result.parentTabs).toHaveLength(1);
-      expect(result.parentTabs[0].tabId).toBe("tab1");
-      expect(result.parentTabs[0].level).toBe(0);
-      expect(result.parentTabs[0].parentKeyField).toBe("parentFieldKey");
+      expectParentTab(result.parentTabs[0], "tab1", 0, "parentFieldKey");
       expect(result.parentTabs[0].recordId).toBeUndefined();
 
-      // Check root tab
       expect(result.rootTab).toBe(result.parentTabs[0]);
-
-      // Check parent-child linking
-      expect(result.parentTabs[0].children).toHaveLength(1);
-      expect(result.parentTabs[0].children[0]).toBe(result.targetTab);
+      expectParentChildLink(result.parentTabs[0], result.targetTab);
     });
 
     it("should throw error when parent key field is missing", async () => {
@@ -243,7 +290,9 @@ describe("calculateHierarchy", () => {
       const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
       const urlState = createParsedUrlState("143_123", "tab2", "childRecord123", "143", 1);
 
-      await expect(calculateHierarchy(urlState, windowMetadata)).rejects.toThrow(
+      await expectHierarchyError(
+        urlState,
+        windowMetadata,
         'Parent tab nonexistentTab not found in window metadata for field "parentFieldKey"'
       );
     });
@@ -312,31 +361,16 @@ describe("calculateHierarchy", () => {
 
       const result = await calculateHierarchy(urlState, windowMetadata);
 
-      // Check target tab
-      expect(result.targetTab.tabId).toBe("tab3");
-      expect(result.targetTab.level).toBe(2);
-      expect(result.targetTab.recordId).toBe("leafRecord123");
+      expectTargetTab(result, "tab3", 2, "leafRecord123");
 
-      // Check parent tabs array (should be ordered from root to deepest)
       expect(result.parentTabs).toHaveLength(2);
-      expect(result.parentTabs[0].tabId).toBe("tab1");
-      expect(result.parentTabs[0].level).toBe(0);
-      expect(result.parentTabs[0].parentKeyField).toBe("rootParentField");
+      expectParentTab(result.parentTabs[0], "tab1", 0, "rootParentField");
+      expectParentTab(result.parentTabs[1], "tab2", 1, "middleParentField");
 
-      expect(result.parentTabs[1].tabId).toBe("tab2");
-      expect(result.parentTabs[1].level).toBe(1);
-      expect(result.parentTabs[1].parentKeyField).toBe("middleParentField");
-
-      // Check root tab
       expect(result.rootTab).toBe(result.parentTabs[0]);
 
-      // Check parent-child linking
-      expect(result.parentTabs[0].children).toHaveLength(1);
-      expect(result.parentTabs[0].children[0]).toBe(result.parentTabs[1]);
-
-      expect(result.parentTabs[1].children).toHaveLength(1);
-      expect(result.parentTabs[1].children[0]).toBe(result.targetTab);
-
+      expectParentChildLink(result.parentTabs[0], result.parentTabs[1]);
+      expectParentChildLink(result.parentTabs[1], result.targetTab);
       expect(result.targetTab.children).toHaveLength(0);
     });
 
@@ -351,9 +385,7 @@ describe("calculateHierarchy", () => {
       const windowMetadata = createMockWindowMetadata([rootTab, middleTab, leafTab]);
       const urlState = createParsedUrlState("143_123", "tab3", "leafRecord123", "143", 2);
 
-      await expect(calculateHierarchy(urlState, windowMetadata)).rejects.toThrow(
-        "Parent key field not found in tab tab2"
-      );
+      await expectHierarchyError(urlState, windowMetadata, "Parent key field not found in tab tab2");
     });
 
     it("should handle hierarchy with different parent field names at each level", async () => {
@@ -398,17 +430,14 @@ describe("calculateHierarchy", () => {
 
       const result = await calculateHierarchy(urlState, windowMetadata);
 
-      expect(result.targetTab.tabId).toBe("tab4");
-      expect(result.targetTab.level).toBe(3);
+      expectTargetTab(result, "tab4", 3, "deepRecord123");
 
       expect(result.parentTabs).toHaveLength(3);
       expect(result.parentTabs[0].tabId).toBe("tab1");
       expect(result.parentTabs[1].tabId).toBe("tab2");
       expect(result.parentTabs[2].tabId).toBe("tab3");
-
       expect(result.rootTab.tabId).toBe("tab1");
 
-      // Verify full chain linking
       expect(result.parentTabs[0].children[0].tabId).toBe("tab2");
       expect(result.parentTabs[1].children[0].tabId).toBe("tab3");
       expect(result.parentTabs[2].children[0].tabId).toBe("tab4");
@@ -417,42 +446,15 @@ describe("calculateHierarchy", () => {
 
   describe("Edge cases", () => {
     it("should handle empty fields object", async () => {
-      const rootTab = createMockTab("tab1", 0, "RootEntity");
-      const childTab = createMockTab("tab2", 1, "ChildEntity");
-      childTab.fields = {}; // Empty fields
-
-      const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
-      const urlState = createParsedUrlState("143_123", "tab2", "childRecord123", "143", 1);
-
-      await expect(calculateHierarchy(urlState, windowMetadata)).rejects.toThrow(
-        "Parent key field not found in tab tab2"
-      );
+      await testInvalidFieldsScenario({});
     });
 
     it("should handle null fields object", async () => {
-      const rootTab = createMockTab("tab1", 0, "RootEntity");
-      const childTab = createMockTab("tab2", 1, "ChildEntity");
-      childTab.fields = null as any; // Null fields
-
-      const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
-      const urlState = createParsedUrlState("143_123", "tab2", "childRecord123", "143", 1);
-
-      await expect(calculateHierarchy(urlState, windowMetadata)).rejects.toThrow(
-        "Parent key field not found in tab tab2"
-      );
+      await testInvalidFieldsScenario(null as any);
     });
 
     it("should handle undefined fields object", async () => {
-      const rootTab = createMockTab("tab1", 0, "RootEntity");
-      const childTab = createMockTab("tab2", 1, "ChildEntity");
-      childTab.fields = undefined as any; // Undefined fields
-
-      const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
-      const urlState = createParsedUrlState("143_123", "tab2", "childRecord123", "143", 1);
-
-      await expect(calculateHierarchy(urlState, windowMetadata)).rejects.toThrow(
-        "Parent key field not found in tab tab2"
-      );
+      await testInvalidFieldsScenario(undefined as any);
     });
 
     it("should preserve tab metadata properties", async () => {
@@ -512,7 +514,7 @@ describe("calculateHierarchy", () => {
 
       const result = await calculateHierarchy(urlState, windowMetadata);
 
-      expect(result.targetTab.tabId).toBe("targetTab");
+      expectTargetTab(result, "targetTab", 0, "record123");
     });
 
     it("should maintain parent-child references correctly", async () => {
@@ -536,8 +538,8 @@ describe("calculateHierarchy", () => {
       const middle = result.parentTabs[1];
       const leaf = result.targetTab;
 
-      expect(root.children[0]).toBe(middle);
-      expect(middle.children[0]).toBe(leaf);
+      expectParentChildLink(root, middle);
+      expectParentChildLink(middle, leaf);
       expect(leaf.children).toEqual([]);
     });
 
@@ -586,15 +588,7 @@ describe("calculateHierarchy", () => {
       const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
       const urlState = createParsedUrlState("143_123", "tab2", "childRecord123", "143", 1);
 
-      try {
-        await calculateHierarchy(urlState, windowMetadata);
-        fail("Should have thrown error");
-      } catch (error: any) {
-        expect(error.message).toContain("Available fields:");
-        expect(error.message).toContain("field1");
-        expect(error.message).toContain("field2");
-        expect(error.message).toContain("field3");
-      }
+      await expectErrorMessageContains(windowMetadata, urlState, "Available fields:", "field1", "field2", "field3");
     });
 
     it("should include tab name and level in error message", async () => {
@@ -606,13 +600,7 @@ describe("calculateHierarchy", () => {
       const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
       const urlState = createParsedUrlState("143_123", "tab2", "childRecord123", "143", 1);
 
-      try {
-        await calculateHierarchy(urlState, windowMetadata);
-        fail("Should have thrown error");
-      } catch (error: any) {
-        expect(error.message).toContain("Custom Child Tab Name");
-        expect(error.message).toContain("at level 1");
-      }
+      await expectErrorMessageContains(windowMetadata, urlState, "Custom Child Tab Name", "at level 1");
     });
 
     it("should include field name in parent tab not found error", async () => {
@@ -625,13 +613,7 @@ describe("calculateHierarchy", () => {
       const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
       const urlState = createParsedUrlState("143_123", "tab2", "childRecord123", "143", 1);
 
-      try {
-        await calculateHierarchy(urlState, windowMetadata);
-        fail("Should have thrown error");
-      } catch (error: any) {
-        expect(error.message).toContain('field "customParentField"');
-        expect(error.message).toContain("Tab tab2");
-      }
+      await expectErrorMessageContains(windowMetadata, urlState, 'field "customParentField"', "Tab tab2");
     });
   });
 
