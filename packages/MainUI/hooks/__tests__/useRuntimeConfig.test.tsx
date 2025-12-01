@@ -6,9 +6,7 @@ import type { ReactNode } from "react";
 global.fetch = jest.fn();
 
 describe("useRuntimeConfig", () => {
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <RuntimeConfigProvider>{children}</RuntimeConfigProvider>
-  );
+  const wrapper = ({ children }: { children: ReactNode }) => <RuntimeConfigProvider>{children}</RuntimeConfigProvider>;
 
   beforeEach(() => {
     jest.clearAllMocks();

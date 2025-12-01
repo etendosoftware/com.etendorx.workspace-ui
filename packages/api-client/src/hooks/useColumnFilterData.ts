@@ -82,7 +82,7 @@ export const useColumnFilterData = () => {
           }
         }
 
-        const response = await datasource.get(datasourceId, params) as any;
+        const response = (await datasource.get(datasourceId, params)) as any;
 
         if (response.ok && response.data?.response?.data) {
           const options = response.data.response.data.map((item: Record<string, unknown>) => {
