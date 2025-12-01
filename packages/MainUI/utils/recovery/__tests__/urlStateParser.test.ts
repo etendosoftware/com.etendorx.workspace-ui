@@ -35,7 +35,7 @@ jest.mock("@workspaceui/api-client/src/api/metadata");
 
 const mockMetadata = Metadata as jest.Mocked<typeof Metadata>;
 
-// Mock data
+// Test data builders
 const createMockTab = (id: string, level = 0): Tab => ({
   id,
   name: `Tab ${id}`,
@@ -84,37 +84,61 @@ const createMockWindowMetadata = (windowId: string): WindowMetadata => ({
   window$_identifier: "window_identifier",
 });
 
+// Test helpers
+const createMockRecoveryInfo = (overrides?: Partial<WindowRecoveryInfo>): WindowRecoveryInfo => ({
+  windowIdentifier: "143_123456",
+  tabId: "tab2",
+  recordId: "record123",
+  hasRecoveryData: true,
+  ...overrides,
+});
+
+const createMockApiResponse = (overrides?: Partial<{ windowId: string; tabTitle: string; keyParameter: string }>) => ({
+  ok: true,
+  data: {
+    windowId: "143",
+    tabTitle: "Order Lines",
+    keyParameter: "cOrderId",
+    ...overrides,
+  },
+});
+
+const setupMockKernelClient = () => {
+  const mockKernelClient = {
+    request: jest.fn(),
+  };
+  mockMetadata.kernelClient = mockKernelClient as any;
+  return mockKernelClient;
+};
+
+const mockConsoleError = () => {
+  const spy = jest.spyOn(console, "error").mockImplementation(() => {});
+  return spy;
+};
+
+const expectErrorToBeThrown = async (promise: Promise<any>, errorMessage: string) => {
+  await expect(promise).rejects.toThrow(errorMessage);
+};
+
+const verifyApiRequest = (mockKernelClient: { request: jest.Mock }, expectedParams: string[]) => {
+  const calledUrl = mockKernelClient.request.mock.calls[0][0];
+  expectedParams.forEach((param) => {
+    expect(calledUrl).toContain(param);
+  });
+};
+
 describe("parseUrlState", () => {
   let mockKernelClient: { request: jest.Mock };
 
   beforeEach(() => {
     jest.clearAllMocks();
-
-    mockKernelClient = {
-      request: jest.fn(),
-    };
-
-    mockMetadata.kernelClient = mockKernelClient as any;
+    mockKernelClient = setupMockKernelClient();
   });
 
   it("should parse URL state successfully with valid data", async () => {
-    const recoveryInfo: WindowRecoveryInfo = {
-      windowIdentifier: "143_123456",
-      tabId: "tab2",
-      recordId: "record123",
-      hasRecoveryData: true,
-    };
-
+    const recoveryInfo = createMockRecoveryInfo();
     const windowData = createMockWindowMetadata("143");
-
-    const mockApiResponse = {
-      ok: true,
-      data: {
-        windowId: "143",
-        tabTitle: "Order Lines",
-        keyParameter: "cOrderId",
-      },
-    };
+    const mockApiResponse = createMockApiResponse();
 
     mockKernelClient.request.mockResolvedValue(mockApiResponse);
 
@@ -130,22 +154,19 @@ describe("parseUrlState", () => {
       keyParameter: "cOrderId",
     });
 
-    expect(mockKernelClient.request).toHaveBeenCalledWith(
-      "?tabId=tab2&recordId=record123&_action=org.openbravo.client.application.ComputeWindowActionHandler"
-    );
+    verifyApiRequest(mockKernelClient, [
+      "tabId=tab2",
+      "recordId=record123",
+      "_action=org.openbravo.client.application.ComputeWindowActionHandler",
+    ]);
   });
 
   it("should throw error when tabId is missing", async () => {
-    const recoveryInfo: WindowRecoveryInfo = {
-      windowIdentifier: "143_123456",
-      tabId: undefined,
-      recordId: "record123",
-      hasRecoveryData: false,
-    };
-
+    const recoveryInfo = createMockRecoveryInfo({ tabId: undefined, hasRecoveryData: false });
     const windowData = createMockWindowMetadata("143");
 
-    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow(
+    await expectErrorToBeThrown(
+      parseUrlState(recoveryInfo, windowData),
       "Missing tabId or recordId for URL state parsing"
     );
 
@@ -153,16 +174,11 @@ describe("parseUrlState", () => {
   });
 
   it("should throw error when recordId is missing", async () => {
-    const recoveryInfo: WindowRecoveryInfo = {
-      windowIdentifier: "143_123456",
-      tabId: "tab2",
-      recordId: undefined,
-      hasRecoveryData: false,
-    };
-
+    const recoveryInfo = createMockRecoveryInfo({ recordId: undefined, hasRecoveryData: false });
     const windowData = createMockWindowMetadata("143");
 
-    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow(
+    await expectErrorToBeThrown(
+      parseUrlState(recoveryInfo, windowData),
       "Missing tabId or recordId for URL state parsing"
     );
 
@@ -170,105 +186,60 @@ describe("parseUrlState", () => {
   });
 
   it("should throw error when both tabId and recordId are missing", async () => {
-    const recoveryInfo: WindowRecoveryInfo = {
-      windowIdentifier: "143_123456",
-      tabId: undefined,
-      recordId: undefined,
-      hasRecoveryData: false,
-    };
-
+    const recoveryInfo = createMockRecoveryInfo({ tabId: undefined, recordId: undefined, hasRecoveryData: false });
     const windowData = createMockWindowMetadata("143");
 
-    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow(
+    await expectErrorToBeThrown(
+      parseUrlState(recoveryInfo, windowData),
       "Missing tabId or recordId for URL state parsing"
     );
   });
 
   it("should throw error when API request fails", async () => {
-    const recoveryInfo: WindowRecoveryInfo = {
-      windowIdentifier: "143_123456",
-      tabId: "tab2",
-      recordId: "record123",
-      hasRecoveryData: true,
-    };
-
+    const recoveryInfo = createMockRecoveryInfo();
     const windowData = createMockWindowMetadata("143");
 
-    const mockApiResponse = {
-      ok: false,
-      data: null,
-    };
+    mockKernelClient.request.mockResolvedValue({ ok: false, data: null });
 
-    mockKernelClient.request.mockResolvedValue(mockApiResponse);
-
-    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow(
+    await expectErrorToBeThrown(
+      parseUrlState(recoveryInfo, windowData),
       "Failed to parse URL state: Failed to fetch window action handler data"
     );
   });
 
   it("should throw error when API returns no data", async () => {
-    const recoveryInfo: WindowRecoveryInfo = {
-      windowIdentifier: "143_123456",
-      tabId: "tab2",
-      recordId: "record123",
-      hasRecoveryData: true,
-    };
-
+    const recoveryInfo = createMockRecoveryInfo();
     const windowData = createMockWindowMetadata("143");
 
-    const mockApiResponse = {
-      ok: true,
-      data: null,
-    };
+    mockKernelClient.request.mockResolvedValue({ ok: true, data: null });
 
-    mockKernelClient.request.mockResolvedValue(mockApiResponse);
-
-    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow(
+    await expectErrorToBeThrown(
+      parseUrlState(recoveryInfo, windowData),
       "Failed to parse URL state: Failed to fetch window action handler data"
     );
   });
 
   it("should throw error when target tab is not found in window metadata", async () => {
-    const recoveryInfo: WindowRecoveryInfo = {
-      windowIdentifier: "143_123456",
-      tabId: "nonexistentTab",
-      recordId: "record123",
-      hasRecoveryData: true,
-    };
-
+    const recoveryInfo = createMockRecoveryInfo({ tabId: "nonexistentTab" });
     const windowData = createMockWindowMetadata("143");
-
-    const mockApiResponse = {
-      ok: true,
-      data: {
-        windowId: "143",
-        tabTitle: "Order Lines",
-        keyParameter: "cOrderId",
-      },
-    };
+    const mockApiResponse = createMockApiResponse();
 
     mockKernelClient.request.mockResolvedValue(mockApiResponse);
 
-    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow(
+    await expectErrorToBeThrown(
+      parseUrlState(recoveryInfo, windowData),
       "Failed to parse URL state: Tab nonexistentTab not found in window metadata"
     );
   });
 
   it("should handle API request network error", async () => {
-    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-
-    const recoveryInfo: WindowRecoveryInfo = {
-      windowIdentifier: "143_123456",
-      tabId: "tab2",
-      recordId: "record123",
-      hasRecoveryData: true,
-    };
-
+    const consoleErrorSpy = mockConsoleError();
+    const recoveryInfo = createMockRecoveryInfo();
     const windowData = createMockWindowMetadata("143");
 
     mockKernelClient.request.mockRejectedValue(new Error("Network error"));
 
-    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow("Failed to parse URL state: Network error");
+    await expectErrorToBeThrown(parseUrlState(recoveryInfo, windowData), "Failed to parse URL state: Network error");
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Error parsing URL state:", expect.any(Error));
 
@@ -276,23 +247,9 @@ describe("parseUrlState", () => {
   });
 
   it("should handle tab at level 0", async () => {
-    const recoveryInfo: WindowRecoveryInfo = {
-      windowIdentifier: "143_123456",
-      tabId: "tab1",
-      recordId: "record123",
-      hasRecoveryData: true,
-    };
-
+    const recoveryInfo = createMockRecoveryInfo({ tabId: "tab1" });
     const windowData = createMockWindowMetadata("143");
-
-    const mockApiResponse = {
-      ok: true,
-      data: {
-        windowId: "143",
-        tabTitle: "Main Tab",
-        keyParameter: "cOrderId",
-      },
-    };
+    const mockApiResponse = createMockApiResponse({ tabTitle: "Main Tab" });
 
     mockKernelClient.request.mockResolvedValue(mockApiResponse);
 
@@ -303,52 +260,28 @@ describe("parseUrlState", () => {
   });
 
   it("should construct proper query parameters", async () => {
-    const recoveryInfo: WindowRecoveryInfo = {
-      windowIdentifier: "143_123456",
-      tabId: "tab2",
-      recordId: "record123",
-      hasRecoveryData: true,
-    };
-
+    const recoveryInfo = createMockRecoveryInfo();
     const windowData = createMockWindowMetadata("143");
-
-    const mockApiResponse = {
-      ok: true,
-      data: {
-        windowId: "143",
-        tabTitle: "Order Lines",
-        keyParameter: "cOrderId",
-      },
-    };
+    const mockApiResponse = createMockApiResponse();
 
     mockKernelClient.request.mockResolvedValue(mockApiResponse);
 
     await parseUrlState(recoveryInfo, windowData);
 
-    const calledUrl = mockKernelClient.request.mock.calls[0][0];
-    expect(calledUrl).toContain("tabId=tab2");
-    expect(calledUrl).toContain("recordId=record123");
-    expect(calledUrl).toContain("_action=org.openbravo.client.application.ComputeWindowActionHandler");
+    verifyApiRequest(mockKernelClient, [
+      "tabId=tab2",
+      "recordId=record123",
+      "_action=org.openbravo.client.application.ComputeWindowActionHandler",
+    ]);
   });
 
   it("should preserve all recovery info properties", async () => {
-    const recoveryInfo: WindowRecoveryInfo = {
+    const recoveryInfo = createMockRecoveryInfo({
       windowIdentifier: "CUSTOM_143_123456",
-      tabId: "tab2",
       recordId: "CUSTOM_RECORD_123",
-      hasRecoveryData: true,
-    };
-
+    });
     const windowData = createMockWindowMetadata("143");
-
-    const mockApiResponse = {
-      ok: true,
-      data: {
-        windowId: "143",
-        tabTitle: "Order Lines",
-        keyParameter: "customKey",
-      },
-    };
+    const mockApiResponse = createMockApiResponse({ keyParameter: "customKey" });
 
     mockKernelClient.request.mockResolvedValue(mockApiResponse);
 
@@ -361,13 +294,7 @@ describe("parseUrlState", () => {
   });
 
   it("should handle window metadata with many tabs", async () => {
-    const recoveryInfo: WindowRecoveryInfo = {
-      windowIdentifier: "143_123456",
-      tabId: "tab5",
-      recordId: "record123",
-      hasRecoveryData: true,
-    };
-
+    const recoveryInfo = createMockRecoveryInfo({ tabId: "tab5" });
     const windowData: WindowMetadata = {
       ...createMockWindowMetadata("143"),
       tabs: [
@@ -378,15 +305,7 @@ describe("parseUrlState", () => {
         createMockTab("tab5", 4),
       ],
     };
-
-    const mockApiResponse = {
-      ok: true,
-      data: {
-        windowId: "143",
-        tabTitle: "Deep Tab",
-        keyParameter: "deepKey",
-      },
-    };
+    const mockApiResponse = createMockApiResponse({ tabTitle: "Deep Tab", keyParameter: "deepKey" });
 
     mockKernelClient.request.mockResolvedValue(mockApiResponse);
 
@@ -397,35 +316,23 @@ describe("parseUrlState", () => {
   });
 
   it("should handle non-Error thrown values", async () => {
-    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-
-    const recoveryInfo: WindowRecoveryInfo = {
-      windowIdentifier: "143_123456",
-      tabId: "tab2",
-      recordId: "record123",
-      hasRecoveryData: true,
-    };
-
+    const consoleErrorSpy = mockConsoleError();
+    const recoveryInfo = createMockRecoveryInfo();
     const windowData = createMockWindowMetadata("143");
 
     mockKernelClient.request.mockRejectedValue("String error");
 
-    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow("Failed to parse URL state: Unknown error");
+    await expectErrorToBeThrown(parseUrlState(recoveryInfo, windowData), "Failed to parse URL state: Unknown error");
 
     consoleErrorSpy.mockRestore();
   });
 
   it("should handle empty tabId and recordId strings", async () => {
-    const recoveryInfo: WindowRecoveryInfo = {
-      windowIdentifier: "143_123456",
-      tabId: "",
-      recordId: "",
-      hasRecoveryData: false,
-    };
-
+    const recoveryInfo = createMockRecoveryInfo({ tabId: "", recordId: "", hasRecoveryData: false });
     const windowData = createMockWindowMetadata("143");
 
-    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow(
+    await expectErrorToBeThrown(
+      parseUrlState(recoveryInfo, windowData),
       "Missing tabId or recordId for URL state parsing"
     );
   });
@@ -482,7 +389,7 @@ describe("getWindowName", () => {
   });
 
   it("should throw error when window name access fails", () => {
-    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const consoleErrorSpy = mockConsoleError();
 
     // Create a metadata object that will throw when accessing name
     const windowData = new Proxy(createMockWindowMetadata("143"), {
@@ -542,32 +449,13 @@ describe("Integration scenarios", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-
-    mockKernelClient = {
-      request: jest.fn(),
-    };
-
-    mockMetadata.kernelClient = mockKernelClient as any;
+    mockKernelClient = setupMockKernelClient();
   });
 
   it("should handle complete recovery flow", async () => {
-    const recoveryInfo: WindowRecoveryInfo = {
-      windowIdentifier: "143_123456",
-      tabId: "tab2",
-      recordId: "record123",
-      hasRecoveryData: true,
-    };
-
+    const recoveryInfo = createMockRecoveryInfo();
     const windowData = createMockWindowMetadata("143");
-
-    const mockApiResponse = {
-      ok: true,
-      data: {
-        windowId: "143",
-        tabTitle: "Order Lines",
-        keyParameter: "cOrderId",
-      },
-    };
+    const mockApiResponse = createMockApiResponse();
 
     mockKernelClient.request.mockResolvedValue(mockApiResponse);
 
@@ -579,23 +467,9 @@ describe("Integration scenarios", () => {
   });
 
   it("should handle parseUrlState followed by getWindowName", async () => {
-    const recoveryInfo: WindowRecoveryInfo = {
-      windowIdentifier: "143_123456",
-      tabId: "tab1",
-      recordId: "record123",
-      hasRecoveryData: true,
-    };
-
+    const recoveryInfo = createMockRecoveryInfo({ tabId: "tab1" });
     const windowData = createMockWindowMetadata("143");
-
-    const mockApiResponse = {
-      ok: true,
-      data: {
-        windowId: "143",
-        tabTitle: "Main Tab",
-        keyParameter: "mainKey",
-      },
-    };
+    const mockApiResponse = createMockApiResponse({ tabTitle: "Main Tab", keyParameter: "mainKey" });
 
     mockKernelClient.request.mockResolvedValue(mockApiResponse);
 
@@ -613,21 +487,11 @@ describe("Integration scenarios", () => {
     const name1 = getWindowName(windowData);
 
     // Parse URL state
-    const recoveryInfo: WindowRecoveryInfo = {
-      windowIdentifier: "143_123456",
-      tabId: "tab1",
-      recordId: "record123",
-      hasRecoveryData: true,
-    };
+    const recoveryInfo = createMockRecoveryInfo({ tabId: "tab1" });
 
-    mockKernelClient.request.mockResolvedValue({
-      ok: true,
-      data: {
-        windowId: "143",
-        tabTitle: "Main Tab",
-        keyParameter: "mainKey",
-      },
-    });
+    mockKernelClient.request.mockResolvedValue(
+      createMockApiResponse({ tabTitle: "Main Tab", keyParameter: "mainKey" })
+    );
 
     await parseUrlState(recoveryInfo, windowData);
 

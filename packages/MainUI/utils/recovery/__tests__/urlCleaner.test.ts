@@ -35,28 +35,65 @@ jest.mock("@/utils/url/utils");
 
 const mockUrlUtils = urlUtils as jest.Mocked<typeof urlUtils>;
 
+// Test helpers
+const createMockLocation = (search: string, pathname = "/app", origin = "http://localhost:3000") => ({
+  href: `${origin}${pathname}${search ? `?${search}` : ""}`,
+  origin,
+  pathname,
+  search: search ? `?${search}` : "",
+});
+
+const setupWindowLocation = (search: string, pathname = "/app", origin = "http://localhost:3000") => {
+  const originalLocation = window.location;
+  delete (window as any).location;
+  window.location = createMockLocation(search, pathname, origin) as any;
+  return originalLocation;
+};
+
+const setupHistoryMock = () => {
+  const mockReplaceState = jest.fn();
+  window.history.replaceState = mockReplaceState;
+  return mockReplaceState;
+};
+
+const mockConsole = (method: "error" | "warn" | "log" = "error") => {
+  return jest.spyOn(console, method).mockImplementation(() => {});
+};
+
+const createMockRecoveryInfo = (
+  windowIdentifier: string,
+  overrides?: { tabId?: string; recordId?: string; hasRecoveryData?: boolean }
+): WindowRecoveryInfo => ({
+  windowIdentifier,
+  tabId: overrides?.tabId,
+  recordId: overrides?.recordId,
+  hasRecoveryData: overrides?.hasRecoveryData ?? false,
+});
+
+const expectReplaceStateCalledWith = (mockReplaceState: jest.Mock, expectedUrl: string) => {
+  expect(mockReplaceState).toHaveBeenCalledWith(null, "", expectedUrl);
+};
+
+const expectUrlContains = (url: string, ...params: string[]) => {
+  params.forEach((param) => {
+    expect(url).toContain(param);
+  });
+};
+
+const expectUrlNotContains = (url: string, ...params: string[]) => {
+  params.forEach((param) => {
+    expect(url).not.toContain(param);
+  });
+};
+
 describe("cleanupUrl", () => {
   let originalLocation: Location;
   let mockReplaceState: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
-
-    // Save original location
-    originalLocation = window.location;
-
-    // Mock window.location
-    delete (window as any).location;
-    window.location = {
-      href: "http://localhost:3000/app?w=143_123&ti_0=tab1&ri_0=rec1",
-      origin: "http://localhost:3000",
-      pathname: "/app",
-      search: "?w=143_123&ti_0=tab1&ri_0=rec1",
-    } as any;
-
-    // Mock window.history.replaceState
-    mockReplaceState = jest.fn();
-    window.history.replaceState = mockReplaceState;
+    originalLocation = setupWindowLocation("w=143_123&ti_0=tab1&ri_0=rec1");
+    mockReplaceState = setupHistoryMock();
 
     // Mock removeRecoveryParameters to return clean params
     mockUrlUtils.removeRecoveryParameters.mockImplementation((params: URLSearchParams) => {
@@ -68,7 +105,6 @@ describe("cleanupUrl", () => {
   });
 
   afterEach(() => {
-    // Restore original location
     window.location = originalLocation;
   });
 
@@ -76,31 +112,20 @@ describe("cleanupUrl", () => {
     cleanupUrl();
 
     expect(mockUrlUtils.removeRecoveryParameters).toHaveBeenCalledWith(expect.any(URLSearchParams));
-    expect(mockReplaceState).toHaveBeenCalledWith(null, "", "http://localhost:3000/app?w=143_123");
+    expectReplaceStateCalledWith(mockReplaceState, "http://localhost:3000/app?w=143_123");
   });
 
   it("should handle URL with no query parameters", () => {
-    window.location = {
-      href: "http://localhost:3000/app",
-      origin: "http://localhost:3000",
-      pathname: "/app",
-      search: "",
-    } as any;
-
+    window.location = createMockLocation("") as any;
     mockUrlUtils.removeRecoveryParameters.mockReturnValue(new URLSearchParams());
 
     cleanupUrl();
 
-    expect(mockReplaceState).toHaveBeenCalledWith(null, "", "http://localhost:3000/app");
+    expectReplaceStateCalledWith(mockReplaceState, "http://localhost:3000/app");
   });
 
   it("should preserve non-recovery parameters", () => {
-    window.location = {
-      href: "http://localhost:3000/app?w=143_123&ti_0=tab1&other=value",
-      origin: "http://localhost:3000",
-      pathname: "/app",
-      search: "?w=143_123&ti_0=tab1&other=value",
-    } as any;
+    window.location = createMockLocation("w=143_123&ti_0=tab1&other=value") as any;
 
     mockUrlUtils.removeRecoveryParameters.mockImplementation((params: URLSearchParams) => {
       const cleanParams = new URLSearchParams(params);
@@ -110,16 +135,11 @@ describe("cleanupUrl", () => {
 
     cleanupUrl();
 
-    expect(mockReplaceState).toHaveBeenCalledWith(null, "", "http://localhost:3000/app?w=143_123&other=value");
+    expectReplaceStateCalledWith(mockReplaceState, "http://localhost:3000/app?w=143_123&other=value");
   });
 
   it("should handle URL with multiple recovery parameters", () => {
-    window.location = {
-      href: "http://localhost:3000/app?w=143_123&ti_0=tab1&ri_0=rec1&ti_1=tab2&ri_1=rec2",
-      origin: "http://localhost:3000",
-      pathname: "/app",
-      search: "?w=143_123&ti_0=tab1&ri_0=rec1&ti_1=tab2&ri_1=rec2",
-    } as any;
+    window.location = createMockLocation("w=143_123&ti_0=tab1&ri_0=rec1&ti_1=tab2&ri_1=rec2") as any;
 
     mockUrlUtils.removeRecoveryParameters.mockImplementation((params: URLSearchParams) => {
       const cleanParams = new URLSearchParams(params);
@@ -132,71 +152,47 @@ describe("cleanupUrl", () => {
 
     cleanupUrl();
 
-    expect(mockReplaceState).toHaveBeenCalledWith(null, "", "http://localhost:3000/app?w=143_123");
+    expectReplaceStateCalledWith(mockReplaceState, "http://localhost:3000/app?w=143_123");
   });
 
   it("should handle URL with special characters in parameters", () => {
-    window.location = {
-      href: "http://localhost:3000/app?w=143_123&param=hello%20world",
-      origin: "http://localhost:3000",
-      pathname: "/app",
-      search: "?w=143_123&param=hello%20world",
-    } as any;
-
+    window.location = createMockLocation("w=143_123&param=hello%20world") as any;
     mockUrlUtils.removeRecoveryParameters.mockReturnValue(new URLSearchParams("w=143_123&param=hello%20world"));
 
     cleanupUrl();
 
-    expect(mockReplaceState).toHaveBeenCalledWith(null, "", "http://localhost:3000/app?w=143_123&param=hello+world");
+    expectReplaceStateCalledWith(mockReplaceState, "http://localhost:3000/app?w=143_123&param=hello+world");
   });
 
   it("should handle deep nested paths", () => {
-    window.location = {
-      href: "http://localhost:3000/app/dashboard/view?w=143_123&ti_0=tab1",
-      origin: "http://localhost:3000",
-      pathname: "/app/dashboard/view",
-      search: "?w=143_123&ti_0=tab1",
-    } as any;
-
+    window.location = createMockLocation("w=143_123&ti_0=tab1", "/app/dashboard/view") as any;
     mockUrlUtils.removeRecoveryParameters.mockReturnValue(new URLSearchParams("w=143_123"));
 
     cleanupUrl();
 
-    expect(mockReplaceState).toHaveBeenCalledWith(null, "", "http://localhost:3000/app/dashboard/view?w=143_123");
+    expectReplaceStateCalledWith(mockReplaceState, "http://localhost:3000/app/dashboard/view?w=143_123");
   });
 
   it("should handle different ports", () => {
-    window.location = {
-      href: "http://localhost:8080/app?w=143_123&ti_0=tab1",
-      origin: "http://localhost:8080",
-      pathname: "/app",
-      search: "?w=143_123&ti_0=tab1",
-    } as any;
-
+    window.location = createMockLocation("w=143_123&ti_0=tab1", "/app", "http://localhost:8080") as any;
     mockUrlUtils.removeRecoveryParameters.mockReturnValue(new URLSearchParams("w=143_123"));
 
     cleanupUrl();
 
-    expect(mockReplaceState).toHaveBeenCalledWith(null, "", "http://localhost:8080/app?w=143_123");
+    expectReplaceStateCalledWith(mockReplaceState, "http://localhost:8080/app?w=143_123");
   });
 
   it("should handle HTTPS protocol", () => {
-    window.location = {
-      href: "https://example.com/app?w=143_123&ti_0=tab1",
-      origin: "https://example.com",
-      pathname: "/app",
-      search: "?w=143_123&ti_0=tab1",
-    } as any;
-
+    window.location = createMockLocation("w=143_123&ti_0=tab1", "/app", "https://example.com") as any;
     mockUrlUtils.removeRecoveryParameters.mockReturnValue(new URLSearchParams("w=143_123"));
 
     cleanupUrl();
 
-    expect(mockReplaceState).toHaveBeenCalledWith(null, "", "https://example.com/app?w=143_123");
+    expectReplaceStateCalledWith(mockReplaceState, "https://example.com/app?w=143_123");
   });
 
   it("should handle errors gracefully", () => {
-    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const consoleErrorSpy = mockConsole("error");
 
     mockUrlUtils.removeRecoveryParameters.mockImplementation(() => {
       throw new Error("Mock error");
@@ -211,14 +207,8 @@ describe("cleanupUrl", () => {
   });
 
   it("should handle URL constructor errors", () => {
-    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-
-    window.location = {
-      href: "invalid-url",
-      origin: "",
-      pathname: "",
-      search: "",
-    } as any;
+    const consoleErrorSpy = mockConsole("error");
+    window.location = createMockLocation("", "", "invalid-url") as any;
 
     cleanupUrl();
 
@@ -246,19 +236,8 @@ describe("cleanupFailedWindowUrl", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-
-    originalLocation = window.location;
-
-    delete (window as any).location;
-    window.location = {
-      href: "http://localhost:3000/app?w=143_123&w=144_456&ti_0=tab1&ri_0=rec1&ti_1=tab2&ri_1=rec2",
-      origin: "http://localhost:3000",
-      pathname: "/app",
-      search: "?w=143_123&w=144_456&ti_0=tab1&ri_0=rec1&ti_1=tab2&ri_1=rec2",
-    } as any;
-
-    mockReplaceState = jest.fn();
-    window.history.replaceState = mockReplaceState;
+    originalLocation = setupWindowLocation("w=143_123&w=144_456&ti_0=tab1&ri_0=rec1&ti_1=tab2&ri_1=rec2");
+    mockReplaceState = setupHistoryMock();
   });
 
   afterEach(() => {
@@ -347,37 +326,25 @@ describe("cleanupFailedWindowUrl", () => {
   });
 
   it("should handle URL with no remaining parameters", () => {
-    window.location = {
-      href: "http://localhost:3000/app?w=143_123&ti_0=tab1&ri_0=rec1",
-      origin: "http://localhost:3000",
-      pathname: "/app",
-      search: "?w=143_123&ti_0=tab1&ri_0=rec1",
-    } as any;
-
+    window.location = createMockLocation("w=143_123&ti_0=tab1&ri_0=rec1") as any;
     mockUrlUtils.removeWindowParameters.mockReturnValue(new URLSearchParams());
 
     cleanupFailedWindowUrl(0);
 
-    expect(mockReplaceState).toHaveBeenCalledWith(null, "", "http://localhost:3000/app");
+    expectReplaceStateCalledWith(mockReplaceState, "http://localhost:3000/app");
   });
 
   it("should preserve other parameters", () => {
-    window.location = {
-      href: "http://localhost:3000/app?w=143_123&ti_0=tab1&other=value",
-      origin: "http://localhost:3000",
-      pathname: "/app",
-      search: "?w=143_123&ti_0=tab1&other=value",
-    } as any;
-
+    window.location = createMockLocation("w=143_123&ti_0=tab1&other=value") as any;
     mockUrlUtils.removeWindowParameters.mockReturnValue(new URLSearchParams("other=value"));
 
     cleanupFailedWindowUrl(0);
 
-    expect(mockReplaceState).toHaveBeenCalledWith(null, "", "http://localhost:3000/app?other=value");
+    expectReplaceStateCalledWith(mockReplaceState, "http://localhost:3000/app?other=value");
   });
 
   it("should handle errors gracefully", () => {
-    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const consoleErrorSpy = mockConsole("error");
 
     mockUrlUtils.removeWindowParameters.mockImplementation(() => {
       throw new Error("Mock error");
@@ -408,18 +375,12 @@ describe("cleanupFailedWindowUrl", () => {
   });
 
   it("should handle URL with encoded characters", () => {
-    window.location = {
-      href: "http://localhost:3000/app?w=143_123&ti_0=tab%201&ri_0=rec%201",
-      origin: "http://localhost:3000",
-      pathname: "/app",
-      search: "?w=143_123&ti_0=tab%201&ri_0=rec%201",
-    } as any;
-
+    window.location = createMockLocation("w=143_123&ti_0=tab%201&ri_0=rec%201") as any;
     mockUrlUtils.removeWindowParameters.mockReturnValue(new URLSearchParams("w=143_123"));
 
     cleanupFailedWindowUrl(0);
 
-    expect(mockReplaceState).toHaveBeenCalledWith(null, "", "http://localhost:3000/app?w=143_123");
+    expectReplaceStateCalledWith(mockReplaceState, "http://localhost:3000/app?w=143_123");
   });
 });
 
@@ -431,22 +392,10 @@ describe("cleanInvalidParameters", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-
-    originalLocation = window.location;
-
-    delete (window as any).location;
-    window.location = {
-      href: "http://localhost:3000/app?w=143_123&ti_0=tab1&ri_0=rec1",
-      origin: "http://localhost:3000",
-      pathname: "/app",
-      search: "?w=143_123&ti_0=tab1&ri_0=rec1",
-    } as any;
-
-    mockReplaceState = jest.fn();
-    window.history.replaceState = mockReplaceState;
-
-    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
-    consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    originalLocation = setupWindowLocation("w=143_123&ti_0=tab1&ri_0=rec1");
+    mockReplaceState = setupHistoryMock();
+    consoleWarnSpy = mockConsole("warn");
+    consoleLogSpy = mockConsole("log");
   });
 
   afterEach(() => {
@@ -503,12 +452,7 @@ describe("cleanInvalidParameters", () => {
   });
 
   it("should handle multiple windows with mixed validity", () => {
-    window.location = {
-      href: "http://localhost:3000/app?w=143_123&w=144_456&ti_0=tab1&ti_1=tab2&ri_1=rec2",
-      origin: "http://localhost:3000",
-      pathname: "/app",
-      search: "?w=143_123&w=144_456&ti_0=tab1&ti_1=tab2&ri_1=rec2",
-    } as any;
+    window.location = createMockLocation("w=143_123&w=144_456&ti_0=tab1&ti_1=tab2&ri_1=rec2") as any;
 
     const mockRecoveryData: WindowRecoveryInfo[] = [
       {
@@ -542,12 +486,7 @@ describe("cleanInvalidParameters", () => {
   });
 
   it("should remove all invalid parameters from multiple windows", () => {
-    window.location = {
-      href: "http://localhost:3000/app?w=143_123&w=144_456&ti_0=tab1&ti_1=tab2",
-      origin: "http://localhost:3000",
-      pathname: "/app",
-      search: "?w=143_123&w=144_456&ti_0=tab1&ti_1=tab2",
-    } as any;
+    window.location = createMockLocation("w=143_123&w=144_456&ti_0=tab1&ti_1=tab2") as any;
 
     const mockRecoveryData: WindowRecoveryInfo[] = [
       {
@@ -609,12 +548,7 @@ describe("cleanInvalidParameters", () => {
   });
 
   it("should handle URL with no parameters", () => {
-    window.location = {
-      href: "http://localhost:3000/app",
-      origin: "http://localhost:3000",
-      pathname: "/app",
-      search: "",
-    } as any;
+    window.location = createMockLocation("") as any;
 
     mockUrlUtils.parseWindowRecoveryData.mockReturnValue([]);
 
@@ -692,12 +626,7 @@ describe("cleanInvalidParameters", () => {
   });
 
   it("should construct clean URL correctly when removing parameters", () => {
-    window.location = {
-      href: "http://localhost:3000/app?w=143_123&ti_0=tab1&ri_0=rec1&other=value",
-      origin: "http://localhost:3000",
-      pathname: "/app",
-      search: "?w=143_123&ti_0=tab1&ri_0=rec1&other=value",
-    } as any;
+    window.location = createMockLocation("w=143_123&ti_0=tab1&ri_0=rec1&other=value") as any;
 
     const mockRecoveryData: WindowRecoveryInfo[] = [
       {
@@ -723,12 +652,7 @@ describe("cleanInvalidParameters", () => {
   });
 
   it("should handle URL cleanup when no parameters remain", () => {
-    window.location = {
-      href: "http://localhost:3000/app?ti_0=tab1&ri_0=rec1",
-      origin: "http://localhost:3000",
-      pathname: "/app",
-      search: "?ti_0=tab1&ri_0=rec1",
-    } as any;
+    window.location = createMockLocation("ti_0=tab1&ri_0=rec1") as any;
 
     const mockRecoveryData: WindowRecoveryInfo[] = [
       {
@@ -757,22 +681,10 @@ describe("Integration scenarios", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-
-    originalLocation = window.location;
-
-    delete (window as any).location;
-    window.location = {
-      href: "http://localhost:3000/app?w=143_123&w=144_456&ti_0=tab1&ri_0=rec1&ti_1=tab2",
-      origin: "http://localhost:3000",
-      pathname: "/app",
-      search: "?w=143_123&w=144_456&ti_0=tab1&ri_0=rec1&ti_1=tab2",
-    } as any;
-
-    mockReplaceState = jest.fn();
-    window.history.replaceState = mockReplaceState;
-
-    jest.spyOn(console, "warn").mockImplementation(() => {});
-    jest.spyOn(console, "log").mockImplementation(() => {});
+    originalLocation = setupWindowLocation("w=143_123&w=144_456&ti_0=tab1&ri_0=rec1&ti_1=tab2");
+    mockReplaceState = setupHistoryMock();
+    mockConsole("warn");
+    mockConsole("log");
   });
 
   afterEach(() => {

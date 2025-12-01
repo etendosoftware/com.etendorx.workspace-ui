@@ -61,16 +61,70 @@ jest.mock("@/hooks/useGlobalUrlStateRecovery", () => ({
   }),
 }));
 
-describe("WindowProvider", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockReplace.mockClear();
-    mockSearchParams.delete("w_window1_123456789");
+// Test helpers
+const setupTestEnvironment = () => {
+  jest.clearAllMocks();
+  mockReplace.mockClear();
+  mockSearchParams.delete("w_window1_123456789");
+};
+
+const renderWindowContext = () => {
+  return renderHook(() => useWindowContext(), {
+    wrapper: WindowProvider,
   });
+};
+
+const createWindowData = (overrides?: Partial<{ windowIdentifier: string; title: string; [key: string]: any }>) => ({
+  windowIdentifier: "window1_123",
+  windowData: { title: "Test Window" },
+  ...overrides,
+});
+
+const createFormState = (overrides?: Partial<TabFormState>): TabFormState => ({
+  mode: TAB_MODES.FORM,
+  recordId: "record1",
+  ...overrides,
+});
+
+const mockConsole = (method: "error" | "warn" | "log" = "error") => {
+  const spy = jest.spyOn(console, method).mockImplementation(() => {});
+  return spy;
+};
+
+const actSetWindowActive = (result: any, data: ReturnType<typeof createWindowData>) => {
+  act(() => {
+    result.current.setWindowActive(data);
+  });
+};
+
+const expectWindowState = (result: any, expectedIdentifier: string | null, expectedActive = true) => {
+  if (expectedIdentifier === null) {
+    expect(result.current.activeWindow).toBeNull();
+  } else {
+    expect(result.current.activeWindow?.windowIdentifier).toBe(expectedIdentifier);
+    expect(result.current.activeWindow?.isActive).toBe(expectedActive);
+  }
+};
+
+const getDefaultTableState = () => ({
+  filters: [],
+  visibility: {},
+  sorting: [],
+  order: [],
+  isImplicitFilterApplied: undefined,
+});
+
+const getDefaultNavigationState = () => ({
+  activeLevels: [0],
+  activeTabsByLevel: new Map(),
+  initialized: false,
+});
+
+describe("WindowProvider", () => {
+  beforeEach(setupTestEnvironment);
 
   it("should throw error when useWindowContext is used outside provider", () => {
-    // Suppress console.error for this test
-    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const consoleErrorSpy = mockConsole("error");
 
     expect(() => {
       renderHook(() => useWindowContext());
@@ -80,9 +134,7 @@ describe("WindowProvider", () => {
   });
 
   it("should provide initial empty state", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     expect(result.current.windows).toEqual([]);
     expect(result.current.activeWindow).toBeNull();
@@ -90,9 +142,7 @@ describe("WindowProvider", () => {
   });
 
   it("should provide all required functions", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     // Getters
     expect(typeof result.current.getTableState).toBe("function");
@@ -139,31 +189,18 @@ describe("WindowProvider", () => {
 });
 
 describe("Table state management", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockReplace.mockClear();
-  });
+  beforeEach(setupTestEnvironment);
 
   it("should return default table state for non-existent window", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     const tableState = result.current.getTableState("nonexistent", "tab1");
 
-    expect(tableState).toEqual({
-      filters: [],
-      visibility: {},
-      sorting: [],
-      order: [],
-      isImplicitFilterApplied: undefined,
-    });
+    expect(tableState).toEqual(getDefaultTableState());
   });
 
   it("should set and get table filters", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     const filters: MRT_ColumnFiltersState = [{ id: "name", value: "test" }];
 
@@ -176,9 +213,7 @@ describe("Table state management", () => {
   });
 
   it("should set and get table visibility", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     const visibility: MRT_VisibilityState = { column1: false, column2: true };
 
@@ -191,9 +226,7 @@ describe("Table state management", () => {
   });
 
   it("should merge table visibility updates", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     const visibility1: MRT_VisibilityState = { column1: false };
     const visibility2: MRT_VisibilityState = { column2: true };
@@ -211,9 +244,7 @@ describe("Table state management", () => {
   });
 
   it("should set and get table sorting", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     const sorting: MRT_SortingState = [{ id: "name", desc: false }];
 
@@ -226,9 +257,7 @@ describe("Table state management", () => {
   });
 
   it("should set and get table order", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     const order = ["col1", "col2", "col3"];
 
@@ -241,9 +270,7 @@ describe("Table state management", () => {
   });
 
   it("should set and get implicit filter applied state", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     act(() => {
       result.current.setTableImplicitFilterApplied("window1", "tab1", true);
@@ -254,9 +281,7 @@ describe("Table state management", () => {
   });
 
   it("should handle multiple tabs independently", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     const filters1: MRT_ColumnFiltersState = [{ id: "name", value: "test1" }];
     const filters2: MRT_ColumnFiltersState = [{ id: "name", value: "test2" }];
@@ -272,29 +297,18 @@ describe("Table state management", () => {
 });
 
 describe("Navigation state management", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockReplace.mockClear();
-  });
+  beforeEach(setupTestEnvironment);
 
   it("should return default navigation state for non-existent window", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     const navState = result.current.getNavigationState("nonexistent");
 
-    expect(navState).toEqual({
-      activeLevels: [0],
-      activeTabsByLevel: new Map(),
-      initialized: false,
-    });
+    expect(navState).toEqual(getDefaultNavigationState());
   });
 
   it("should set and get navigation active levels", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     const activeLevels = [0, 1, 2];
 
@@ -307,9 +321,7 @@ describe("Navigation state management", () => {
   });
 
   it("should set and get navigation active tabs by level", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     const activeTabsByLevel = new Map<number, string>([
       [0, "tab1"],
@@ -325,9 +337,7 @@ describe("Navigation state management", () => {
   });
 
   it("should set and get navigation initialized state", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     expect(result.current.getNavigationInitialized("window1")).toBe(false);
 
@@ -340,22 +350,12 @@ describe("Navigation state management", () => {
 });
 
 describe("Window management", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockReplace.mockClear();
-  });
+  beforeEach(setupTestEnvironment);
 
   it("should set window as active", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window1_123",
-        windowData: { title: "Test Window" },
-      });
-    });
+    actSetWindowActive(result, createWindowData());
 
     expect(result.current.activeWindow).not.toBeNull();
     expect(result.current.activeWindow?.windowIdentifier).toBe("window1_123");
@@ -364,23 +364,16 @@ describe("Window management", () => {
   });
 
   it("should deactivate other windows when setting one active", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window1_123",
-        windowData: { title: "Window 1" },
-      });
-    });
-
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window2_456",
-        windowData: { title: "Window 2" },
-      });
-    });
+    actSetWindowActive(
+      result,
+      createWindowData({ windowIdentifier: "window1_123", windowData: { title: "Window 1" } })
+    );
+    actSetWindowActive(
+      result,
+      createWindowData({ windowIdentifier: "window2_456", windowData: { title: "Window 2" } })
+    );
 
     const windows = result.current.getAllWindows();
     const window1 = windows.find((w) => w.windowIdentifier === "window1_123");
@@ -391,16 +384,9 @@ describe("Window management", () => {
   });
 
   it("should set window as inactive", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window1_123",
-        windowData: { title: "Test Window" },
-      });
-    });
+    actSetWindowActive(result, createWindowData());
 
     act(() => {
       result.current.setWindowInactive("window1_123");
@@ -410,20 +396,16 @@ describe("Window management", () => {
   });
 
   it("should set all windows as inactive", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window1_123",
-        windowData: { title: "Window 1" },
-      });
-      result.current.setWindowActive({
-        windowIdentifier: "window2_456",
-        windowData: { title: "Window 2" },
-      });
-    });
+    actSetWindowActive(
+      result,
+      createWindowData({ windowIdentifier: "window1_123", windowData: { title: "Window 1" } })
+    );
+    actSetWindowActive(
+      result,
+      createWindowData({ windowIdentifier: "window2_456", windowData: { title: "Window 2" } })
+    );
 
     act(() => {
       result.current.setAllWindowsInactive();
@@ -435,35 +417,24 @@ describe("Window management", () => {
   });
 
   it("should get active window identifier", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window1_123",
-        windowData: { title: "Test Window" },
-      });
-    });
+    actSetWindowActive(result, createWindowData());
 
     expect(result.current.getActiveWindowIdentifier()).toBe("window1_123");
   });
 
   it("should get all window identifiers", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window1_123",
-        windowData: { title: "Window 1" },
-      });
-      result.current.setWindowActive({
-        windowIdentifier: "window2_456",
-        windowData: { title: "Window 2" },
-      });
-    });
+    actSetWindowActive(
+      result,
+      createWindowData({ windowIdentifier: "window1_123", windowData: { title: "Window 1" } })
+    );
+    actSetWindowActive(
+      result,
+      createWindowData({ windowIdentifier: "window2_456", windowData: { title: "Window 2" } })
+    );
 
     const identifiers = result.current.getAllWindowsIdentifiers();
     expect(identifiers).toContain("window1_123");
@@ -471,20 +442,16 @@ describe("Window management", () => {
   });
 
   it("should cleanup window and activate previous window", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window1_123",
-        windowData: { title: "Window 1" },
-      });
-      result.current.setWindowActive({
-        windowIdentifier: "window2_456",
-        windowData: { title: "Window 2" },
-      });
-    });
+    actSetWindowActive(
+      result,
+      createWindowData({ windowIdentifier: "window1_123", windowData: { title: "Window 1" } })
+    );
+    actSetWindowActive(
+      result,
+      createWindowData({ windowIdentifier: "window2_456", windowData: { title: "Window 2" } })
+    );
 
     act(() => {
       result.current.cleanupWindow("window2_456");
@@ -495,20 +462,16 @@ describe("Window management", () => {
   });
 
   it("should cleanup window and activate next window if deleting first", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window1_123",
-        windowData: { title: "Window 1" },
-      });
-      result.current.setWindowActive({
-        windowIdentifier: "window2_456",
-        windowData: { title: "Window 2" },
-      });
-    });
+    actSetWindowActive(
+      result,
+      createWindowData({ windowIdentifier: "window1_123", windowData: { title: "Window 1" } })
+    );
+    actSetWindowActive(
+      result,
+      createWindowData({ windowIdentifier: "window2_456", windowData: { title: "Window 2" } })
+    );
 
     // Set window1 as active
     act(() => {
@@ -525,16 +488,12 @@ describe("Window management", () => {
   });
 
   it("should clean all state", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window1_123",
-        windowData: { title: "Window 1" },
-      });
-    });
+    actSetWindowActive(
+      result,
+      createWindowData({ windowIdentifier: "window1_123", windowData: { title: "Window 1" } })
+    );
 
     act(() => {
       result.current.cleanState();
@@ -546,28 +505,18 @@ describe("Window management", () => {
 });
 
 describe("Form state management", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockReplace.mockClear();
-  });
+  beforeEach(setupTestEnvironment);
 
   it("should return undefined for non-existent tab form state", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     expect(result.current.getTabFormState("window1", "tab1")).toBeUndefined();
   });
 
   it("should set and get tab form state", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
-    const formState: TabFormState = {
-      mode: TAB_MODES.FORM,
-      recordId: "record1",
-    };
+    const formState = createFormState();
 
     act(() => {
       result.current.setTabFormState("window1", "tab1", formState);
@@ -577,14 +526,9 @@ describe("Form state management", () => {
   });
 
   it("should clear tab form state", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
-    const formState: TabFormState = {
-      mode: TAB_MODES.FORM,
-      recordId: "record1",
-    };
+    const formState = createFormState();
 
     act(() => {
       result.current.setTabFormState("window1", "tab1", formState);
@@ -598,9 +542,7 @@ describe("Form state management", () => {
   });
 
   it("should not error when clearing non-existent form state", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     expect(() => {
       act(() => {
@@ -611,23 +553,16 @@ describe("Form state management", () => {
 });
 
 describe("Selected record management", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockReplace.mockClear();
-  });
+  beforeEach(setupTestEnvironment);
 
   it("should return undefined for non-existent selected record", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     expect(result.current.getSelectedRecord("window1", "tab1")).toBeUndefined();
   });
 
   it("should set and get selected record", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     act(() => {
       result.current.setSelectedRecord("window1", "tab1", "record1");
@@ -637,9 +572,7 @@ describe("Selected record management", () => {
   });
 
   it("should clear selected record", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     act(() => {
       result.current.setSelectedRecord("window1", "tab1", "record1");
@@ -653,11 +586,8 @@ describe("Selected record management", () => {
   });
 
   it("should handle clearing non-existent selected record", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
-
-    const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const { result } = renderWindowContext();
+    const consoleWarnSpy = mockConsole("warn");
 
     act(() => {
       result.current.clearSelectedRecord("window1", "tab1");
@@ -668,9 +598,7 @@ describe("Selected record management", () => {
   });
 
   it("should set selected record and clear children", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     // Set up parent and children
     act(() => {
@@ -689,11 +617,8 @@ describe("Selected record management", () => {
   });
 
   it("should preserve children in FormView when parent selection changes", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
-
-    const consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const { result } = renderWindowContext();
+    const consoleLogSpy = mockConsole("log");
 
     // Set up parent and child with form state
     act(() => {
@@ -716,18 +641,13 @@ describe("Selected record management", () => {
   });
 
   it("should force clear children when parent selection is changing", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     // Set up parent and child with form state
     act(() => {
       result.current.setSelectedRecord("window1", "parentTab", "parent1");
       result.current.setSelectedRecord("window1", "childTab", "child1");
-      result.current.setTabFormState("window1", "childTab", {
-        mode: TAB_MODES.FORM,
-        recordId: "child1",
-      });
+      result.current.setTabFormState("window1", "childTab", createFormState({ recordId: "child1" }));
     });
 
     act(() => {
@@ -740,170 +660,108 @@ describe("Selected record management", () => {
 });
 
 describe("Window property getters", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockReplace.mockClear();
-  });
+  beforeEach(setupTestEnvironment);
 
   it("should return null for empty property name", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     expect(result.current.getActiveWindowProperty("")).toBeNull();
   });
 
   it("should return null for invalid property name", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     expect(result.current.getActiveWindowProperty("invalidProperty")).toBeNull();
   });
 
   it("should return null when no active window", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     expect(result.current.getActiveWindowProperty("title")).toBeNull();
   });
 
   it("should return window title", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window1_123",
-        windowData: { title: "Test Window" },
-      });
-    });
+    actSetWindowActive(result, createWindowData());
 
     expect(result.current.getActiveWindowProperty("title")).toBe("Test Window");
   });
 
   it("should return isActive property", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window1_123",
-        windowData: { title: "Test Window" },
-      });
-    });
+    actSetWindowActive(result, createWindowData());
 
     expect(result.current.getActiveWindowProperty("isActive")).toBe(true);
   });
 
   it("should return windowIdentifier property", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window1_123",
-        windowData: { title: "Test Window" },
-      });
-    });
+    actSetWindowActive(result, createWindowData());
 
     expect(result.current.getActiveWindowProperty("windowIdentifier")).toBe("window1_123");
   });
 
   it("should return tabs property", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window1_123",
-        windowData: { title: "Test Window" },
-      });
-    });
+    actSetWindowActive(result, createWindowData());
 
     expect(result.current.getActiveWindowProperty("tabs")).toEqual({});
   });
 });
 
 describe("Recovery state", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockReplace.mockClear();
-  });
+  beforeEach(setupTestEnvironment);
 
   it("should provide recovery loading state", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     expect(result.current.isRecoveryLoading).toBe(false);
   });
 
   it("should provide recovery error state", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     expect(result.current.recoveryError).toBeNull();
   });
 });
 
 describe("Computed values", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockReplace.mockClear();
-  });
+  beforeEach(setupTestEnvironment);
 
   it("should compute isHomeRoute correctly when no active window", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     expect(result.current.isHomeRoute).toBe(true);
   });
 
   it("should compute isHomeRoute correctly when active window exists", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window1_123",
-        windowData: { title: "Test Window" },
-      });
-    });
+    actSetWindowActive(result, createWindowData());
 
     expect(result.current.isHomeRoute).toBe(false);
   });
 
   it("should update windows array reactively", () => {
-    const { result } = renderHook(() => useWindowContext(), {
-      wrapper: WindowProvider,
-    });
+    const { result } = renderWindowContext();
 
     expect(result.current.windows).toEqual([]);
 
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window1_123",
-        windowData: { title: "Window 1" },
-      });
-    });
+    actSetWindowActive(
+      result,
+      createWindowData({ windowIdentifier: "window1_123", windowData: { title: "Window 1" } })
+    );
 
     expect(result.current.windows.length).toBe(1);
 
-    act(() => {
-      result.current.setWindowActive({
-        windowIdentifier: "window2_456",
-        windowData: { title: "Window 2" },
-      });
-    });
+    actSetWindowActive(
+      result,
+      createWindowData({ windowIdentifier: "window2_456", windowData: { title: "Window 2" } })
+    );
 
     expect(result.current.windows.length).toBe(2);
   });

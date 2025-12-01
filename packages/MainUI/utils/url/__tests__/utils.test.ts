@@ -35,24 +35,101 @@ import {
 import type { WindowState } from "../../window/constants";
 import { TAB_MODES, FORM_MODES } from "../constants";
 
+/**
+ * Test helpers
+ */
+
+const createMockTabState = (level: number, selectedRecord: string, recordId: string) => ({
+  level,
+  selectedRecord,
+  table: {
+    filters: [],
+    visibility: {},
+    sorting: [],
+    order: [],
+    isImplicitFilterApplied: false,
+  },
+  form: {
+    recordId,
+    mode: TAB_MODES.FORM,
+    formMode: FORM_MODES.EDIT,
+  },
+});
+
+const createMockTabStateEmpty = (level: number, selectedRecord: string) => ({
+  level,
+  selectedRecord,
+  table: {
+    filters: [],
+    visibility: {},
+    sorting: [],
+    order: [],
+    isImplicitFilterApplied: false,
+  },
+  form: {},
+});
+
+const createMockTabStateNoRecordId = (level: number, selectedRecord: string | undefined, recordId: string) => ({
+  level,
+  selectedRecord,
+  table: {
+    filters: [],
+    visibility: {},
+    sorting: [],
+    order: [],
+    isImplicitFilterApplied: false,
+  },
+  form: {
+    recordId,
+    mode: TAB_MODES.FORM,
+    formMode: FORM_MODES.EDIT,
+  },
+});
+
+const createMockWindowState = (
+  windowId: string,
+  windowIdentifier: string,
+  tabs: Record<string, any> = {},
+  isActive = true,
+  navigation: any = {
+    activeLevels: [],
+    activeTabsByLevel: new Map(),
+    initialized: false,
+  }
+): WindowState => ({
+  windowId,
+  windowIdentifier,
+  title: `Window ${windowId}`,
+  isActive,
+  initialized: true,
+  tabs,
+  navigation,
+});
+
+const createMockNavigation = (activeTabsByLevel: Map<number, string>) => ({
+  activeLevels: Array.from(activeTabsByLevel.keys()),
+  activeTabsByLevel,
+  initialized: true,
+});
+
+const createMockRecoveryInfo = (
+  windowIdentifier: string,
+  tabId: string | undefined = undefined,
+  recordId: string | undefined = undefined,
+  hasRecoveryData = false
+) => ({
+  windowIdentifier,
+  tabId,
+  recordId,
+  hasRecoveryData,
+});
+
+const createSearchParams = (params: string) => new URLSearchParams(params);
+
 describe("URL Utility Functions", () => {
   describe("buildWindowsUrlParams", () => {
     it("should build params for single window with no tabs", () => {
-      const windows: WindowState[] = [
-        {
-          windowId: "143",
-          windowIdentifier: "143_123456",
-          title: "Window 1",
-          isActive: true,
-          initialized: true,
-          tabs: {},
-          navigation: {
-            activeLevels: [],
-            activeTabsByLevel: new Map(),
-            initialized: false,
-          },
-        },
-      ];
+      const windows: WindowState[] = [createMockWindowState("143", "143_123456")];
 
       const result = buildWindowsUrlParams(windows);
 
@@ -61,55 +138,21 @@ describe("URL Utility Functions", () => {
 
     it("should include deepest tab with record", () => {
       const windows: WindowState[] = [
-        {
-          windowId: "143",
-          windowIdentifier: "143_123456",
-          title: "Window 1",
-          isActive: true,
-          initialized: true,
-          tabs: {
-            tab1: {
-              level: 0,
-              selectedRecord: "rec1",
-              table: {
-                filters: [],
-                visibility: {},
-                sorting: [],
-                order: [],
-                isImplicitFilterApplied: false,
-              },
-              form: {
-                recordId: "rec1",
-                mode: TAB_MODES.FORM,
-                formMode: FORM_MODES.EDIT,
-              },
-            },
-            tab2: {
-              level: 1,
-              selectedRecord: "rec2",
-              table: {
-                filters: [],
-                visibility: {},
-                sorting: [],
-                order: [],
-                isImplicitFilterApplied: false,
-              },
-              form: {
-                recordId: "rec2",
-                mode: TAB_MODES.FORM,
-                formMode: FORM_MODES.EDIT,
-              },
-            },
+        createMockWindowState(
+          "143",
+          "143_123456",
+          {
+            tab1: createMockTabState(0, "rec1", "rec1"),
+            tab2: createMockTabState(1, "rec2", "rec2"),
           },
-          navigation: {
-            activeLevels: [0, 1],
-            activeTabsByLevel: new Map([
+          true,
+          createMockNavigation(
+            new Map([
               [0, "tab1"],
               [1, "tab2"],
-            ]),
-            initialized: true,
-          },
-        },
+            ])
+          )
+        ),
       ];
 
       const result = buildWindowsUrlParams(windows);
@@ -121,49 +164,14 @@ describe("URL Utility Functions", () => {
 
     it("should handle multiple windows", () => {
       const windows: WindowState[] = [
-        {
-          windowId: "143",
-          windowIdentifier: "143_123456",
-          title: "Window 1",
-          isActive: true,
-          initialized: true,
-          tabs: {},
-          navigation: {
-            activeLevels: [],
-            activeTabsByLevel: new Map(),
-            initialized: false,
-          },
-        },
-        {
-          windowId: "144",
-          windowIdentifier: "144_789012",
-          title: "Window 2",
-          isActive: false,
-          initialized: true,
-          tabs: {
-            tab1: {
-              level: 0,
-              selectedRecord: "rec1",
-              table: {
-                filters: [],
-                visibility: {},
-                sorting: [],
-                order: [],
-                isImplicitFilterApplied: false,
-              },
-              form: {
-                recordId: "rec1",
-                mode: TAB_MODES.FORM,
-                formMode: FORM_MODES.EDIT,
-              },
-            },
-          },
-          navigation: {
-            activeLevels: [0],
-            activeTabsByLevel: new Map([[0, "tab1"]]),
-            initialized: true,
-          },
-        },
+        createMockWindowState("143", "143_123456"),
+        createMockWindowState(
+          "144",
+          "144_789012",
+          { tab1: createMockTabState(0, "rec1", "rec1") },
+          false,
+          createMockNavigation(new Map([[0, "tab1"]]))
+        ),
       ];
 
       const result = buildWindowsUrlParams(windows);
@@ -176,52 +184,10 @@ describe("URL Utility Functions", () => {
 
     it("should only include tabs with both selectedRecord and form.recordId", () => {
       const windows: WindowState[] = [
-        {
-          windowId: "143",
-          windowIdentifier: "143_123456",
-          title: "Window 1",
-          isActive: true,
-          initialized: true,
-          tabs: {
-            tab1: {
-              level: 0,
-              selectedRecord: "rec1",
-              table: {
-                filters: [],
-                visibility: {},
-                sorting: [],
-                order: [],
-                isImplicitFilterApplied: false,
-              },
-              form: {
-                recordId: "", // No recordId
-                mode: TAB_MODES.FORM,
-                formMode: FORM_MODES.EDIT,
-              },
-            },
-            tab2: {
-              level: 1,
-              selectedRecord: undefined, // No selectedRecord
-              table: {
-                filters: [],
-                visibility: {},
-                sorting: [],
-                order: [],
-                isImplicitFilterApplied: false,
-              },
-              form: {
-                recordId: "rec2",
-                mode: TAB_MODES.FORM,
-                formMode: FORM_MODES.EDIT,
-              },
-            },
-          },
-          navigation: {
-            activeLevels: [],
-            activeTabsByLevel: new Map(),
-            initialized: false,
-          },
-        },
+        createMockWindowState("143", "143_123456", {
+          tab1: createMockTabStateNoRecordId(0, "rec1", ""),
+          tab2: createMockTabStateNoRecordId(1, undefined, "rec2"),
+        }),
       ];
 
       const result = buildWindowsUrlParams(windows);
@@ -238,72 +204,23 @@ describe("URL Utility Functions", () => {
 
     it("should select deepest tab among multiple tabs with records", () => {
       const windows: WindowState[] = [
-        {
-          windowId: "143",
-          windowIdentifier: "143_123456",
-          title: "Window 1",
-          isActive: true,
-          initialized: true,
-          tabs: {
-            tab1: {
-              level: 0,
-              selectedRecord: "rec1",
-              table: {
-                filters: [],
-                visibility: {},
-                sorting: [],
-                order: [],
-                isImplicitFilterApplied: false,
-              },
-              form: {
-                recordId: "rec1",
-                mode: TAB_MODES.FORM,
-                formMode: FORM_MODES.EDIT,
-              },
-            },
-            tab2: {
-              level: 1,
-              selectedRecord: "rec2",
-              table: {
-                filters: [],
-                visibility: {},
-                sorting: [],
-                order: [],
-                isImplicitFilterApplied: false,
-              },
-              form: {
-                recordId: "rec2",
-                mode: TAB_MODES.FORM,
-                formMode: FORM_MODES.EDIT,
-              },
-            },
-            tab3: {
-              level: 2,
-              selectedRecord: "rec3",
-              table: {
-                filters: [],
-                visibility: {},
-                sorting: [],
-                order: [],
-                isImplicitFilterApplied: false,
-              },
-              form: {
-                recordId: "rec3",
-                mode: TAB_MODES.FORM,
-                formMode: FORM_MODES.EDIT,
-              },
-            },
+        createMockWindowState(
+          "143",
+          "143_123456",
+          {
+            tab1: createMockTabState(0, "rec1", "rec1"),
+            tab2: createMockTabState(1, "rec2", "rec2"),
+            tab3: createMockTabState(2, "rec3", "rec3"),
           },
-          navigation: {
-            activeLevels: [0, 1, 2],
-            activeTabsByLevel: new Map([
+          true,
+          createMockNavigation(
+            new Map([
               [0, "tab1"],
               [1, "tab2"],
               [2, "tab3"],
-            ]),
-            initialized: true,
-          },
-        },
+            ])
+          )
+        ),
       ];
 
       const result = buildWindowsUrlParams(windows);
@@ -317,52 +234,16 @@ describe("URL Utility Functions", () => {
 
     it("should handle tabs with same level correctly", () => {
       const windows: WindowState[] = [
-        {
-          windowId: "143",
-          windowIdentifier: "143_123456",
-          title: "Window 1",
-          isActive: true,
-          initialized: true,
-          tabs: {
-            tab1: {
-              level: 1,
-              selectedRecord: "rec1",
-              table: {
-                filters: [],
-                visibility: {},
-                sorting: [],
-                order: [],
-                isImplicitFilterApplied: false,
-              },
-              form: {
-                recordId: "rec1",
-                mode: TAB_MODES.FORM,
-                formMode: FORM_MODES.EDIT,
-              },
-            },
-            tab2: {
-              level: 1,
-              selectedRecord: "rec2",
-              table: {
-                filters: [],
-                visibility: {},
-                sorting: [],
-                order: [],
-                isImplicitFilterApplied: false,
-              },
-              form: {
-                recordId: "rec2",
-                mode: TAB_MODES.FORM,
-                formMode: FORM_MODES.EDIT,
-              },
-            },
+        createMockWindowState(
+          "143",
+          "143_123456",
+          {
+            tab1: createMockTabState(1, "rec1", "rec1"),
+            tab2: createMockTabState(1, "rec2", "rec2"),
           },
-          navigation: {
-            activeLevels: [1],
-            activeTabsByLevel: new Map([[1, "tab1"]]),
-            initialized: true,
-          },
-        },
+          true,
+          createMockNavigation(new Map([[1, "tab1"]]))
+        ),
       ];
 
       const result = buildWindowsUrlParams(windows);
@@ -376,35 +257,25 @@ describe("URL Utility Functions", () => {
 
   describe("parseWindowRecoveryData", () => {
     it("should parse single window with tab and record", () => {
-      const params = new URLSearchParams("wi_0=143_123456&ti_0=tab1&ri_0=rec1");
+      const params = createSearchParams("wi_0=143_123456&ti_0=tab1&ri_0=rec1");
 
       const result = parseWindowRecoveryData(params);
 
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        windowIdentifier: "143_123456",
-        tabId: "tab1",
-        recordId: "rec1",
-        hasRecoveryData: true,
-      });
+      expect(result[0]).toEqual(createMockRecoveryInfo("143_123456", "tab1", "rec1", true));
     });
 
     it("should parse window without recovery data", () => {
-      const params = new URLSearchParams("wi_0=143_123456");
+      const params = createSearchParams("wi_0=143_123456");
 
       const result = parseWindowRecoveryData(params);
 
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        windowIdentifier: "143_123456",
-        tabId: undefined,
-        recordId: undefined,
-        hasRecoveryData: false,
-      });
+      expect(result[0]).toEqual(createMockRecoveryInfo("143_123456"));
     });
 
     it("should parse multiple windows", () => {
-      const params = new URLSearchParams("wi_0=143_123456&ti_0=tab1&ri_0=rec1&wi_1=144_789012");
+      const params = createSearchParams("wi_0=143_123456&ti_0=tab1&ri_0=rec1&wi_1=144_789012");
 
       const result = parseWindowRecoveryData(params);
 
@@ -416,7 +287,7 @@ describe("URL Utility Functions", () => {
     });
 
     it("should handle empty params", () => {
-      const params = new URLSearchParams("");
+      const params = createSearchParams("");
 
       const result = parseWindowRecoveryData(params);
 
@@ -424,28 +295,18 @@ describe("URL Utility Functions", () => {
     });
 
     it("should handle params with only tabId", () => {
-      const params = new URLSearchParams("wi_0=143_123456&ti_0=tab1");
+      const params = createSearchParams("wi_0=143_123456&ti_0=tab1");
 
       const result = parseWindowRecoveryData(params);
 
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        windowIdentifier: "143_123456",
-        tabId: "tab1",
-        recordId: undefined,
-        hasRecoveryData: false, // Both tabId and recordId required
-      });
+      expect(result[0]).toEqual(createMockRecoveryInfo("143_123456", "tab1", undefined, false));
     });
   });
 
   describe("validateRecoveryParameters", () => {
     it("should return true when both tabId and recordId are present", () => {
-      const info = {
-        windowIdentifier: "143_123456",
-        tabId: "tab1",
-        recordId: "rec1",
-        hasRecoveryData: true,
-      };
+      const info = createMockRecoveryInfo("143_123456", "tab1", "rec1", true);
 
       expect(validateRecoveryParameters(info)).toBe(true);
     });
@@ -626,32 +487,13 @@ describe("URL Utility Functions", () => {
   describe("Edge cases and integration", () => {
     it("should handle buildWindowsUrlParams with window having empty form object", () => {
       const windows: WindowState[] = [
-        {
-          windowId: "143",
-          windowIdentifier: "143_123456",
-          title: "Window 1",
-          isActive: true,
-          initialized: true,
-          tabs: {
-            tab1: {
-              level: 0,
-              selectedRecord: "rec1",
-              table: {
-                filters: [],
-                visibility: {},
-                sorting: [],
-                order: [],
-                isImplicitFilterApplied: false,
-              },
-              form: {}, // Empty form object
-            },
-          },
-          navigation: {
-            activeLevels: [0],
-            activeTabsByLevel: new Map([[0, "tab1"]]),
-            initialized: true,
-          },
-        },
+        createMockWindowState(
+          "143",
+          "143_123456",
+          { tab1: createMockTabStateEmpty(0, "rec1") },
+          true,
+          createMockNavigation(new Map([[0, "tab1"]]))
+        ),
       ];
 
       const result = buildWindowsUrlParams(windows);
@@ -718,36 +560,13 @@ describe("URL Utility Functions", () => {
 
     it("should handle buildWindowsUrlParams and parseWindowRecoveryData roundtrip", () => {
       const windows: WindowState[] = [
-        {
-          windowId: "143",
-          windowIdentifier: "143_123456",
-          title: "Window 1",
-          isActive: true,
-          initialized: true,
-          tabs: {
-            tab1: {
-              level: 0,
-              selectedRecord: "rec1",
-              table: {
-                filters: [],
-                visibility: {},
-                sorting: [],
-                order: [],
-                isImplicitFilterApplied: false,
-              },
-              form: {
-                recordId: "rec1",
-                mode: TAB_MODES.FORM,
-                formMode: FORM_MODES.EDIT,
-              },
-            },
-          },
-          navigation: {
-            activeLevels: [0],
-            activeTabsByLevel: new Map([[0, "tab1"]]),
-            initialized: true,
-          },
-        },
+        createMockWindowState(
+          "143",
+          "143_123456",
+          { tab1: createMockTabState(0, "rec1", "rec1") },
+          true,
+          createMockNavigation(new Map([[0, "tab1"]]))
+        ),
       ];
 
       const urlParams = buildWindowsUrlParams(windows);
@@ -763,36 +582,13 @@ describe("URL Utility Functions", () => {
 
     it("should handle special characters in identifiers", () => {
       const windows: WindowState[] = [
-        {
-          windowId: "143-ABC",
-          windowIdentifier: "143-ABC_123456",
-          title: "Window 1",
-          isActive: true,
-          initialized: true,
-          tabs: {
-            "tab-1": {
-              level: 0,
-              selectedRecord: "rec-1",
-              table: {
-                filters: [],
-                visibility: {},
-                sorting: [],
-                order: [],
-                isImplicitFilterApplied: false,
-              },
-              form: {
-                recordId: "rec-1",
-                mode: TAB_MODES.FORM,
-                formMode: FORM_MODES.EDIT,
-              },
-            },
-          },
-          navigation: {
-            activeLevels: [0],
-            activeTabsByLevel: new Map([[0, "tab-1"]]),
-            initialized: true,
-          },
-        },
+        createMockWindowState(
+          "143-ABC",
+          "143-ABC_123456",
+          { "tab-1": createMockTabState(0, "rec-1", "rec-1") },
+          true,
+          createMockNavigation(new Map([[0, "tab-1"]]))
+        ),
       ];
 
       const result = buildWindowsUrlParams(windows);

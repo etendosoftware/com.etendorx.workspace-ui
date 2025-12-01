@@ -59,6 +59,7 @@ const mockReconstructState = reconstructState as jest.MockedFunction<typeof reco
  * Test helpers
  */
 
+// Mock data creators
 const createMockTab = (id: string, level = 0): Tab => ({
   id,
   name: `Tab ${id}`,
@@ -107,12 +108,18 @@ const createMockWindowMetadata = (windowId: string): WindowMetadata => ({
   window$_identifier: "window_identifier",
 });
 
-const createMockRecoveryInfo = (windowIdentifier: string, hasRecoveryData = false): WindowRecoveryInfo => ({
-  windowIdentifier,
-  tabId: hasRecoveryData ? "tab2" : undefined,
-  recordId: hasRecoveryData ? "record123" : undefined,
-  hasRecoveryData,
-});
+const createMockRecoveryInfo = (
+  windowIdentifier: string,
+  overrides?: { hasRecoveryData?: boolean; tabId?: string; recordId?: string }
+): WindowRecoveryInfo => {
+  const hasRecoveryData = overrides?.hasRecoveryData ?? false;
+  return {
+    windowIdentifier,
+    tabId: overrides?.tabId ?? (hasRecoveryData ? "tab2" : undefined),
+    recordId: overrides?.recordId ?? (hasRecoveryData ? "record123" : undefined),
+    hasRecoveryData,
+  };
+};
 
 const createMockSearchParams = (params: Record<string, string>): URLSearchParams => {
   const searchParams = new URLSearchParams();
@@ -120,10 +127,6 @@ const createMockSearchParams = (params: Record<string, string>): URLSearchParams
     searchParams.set(key, value);
   });
   return searchParams;
-};
-
-const createConsoleErrorSpy = () => {
-  return jest.spyOn(console, "error").mockImplementation(() => {});
 };
 
 const createMockTabState = (tabId: string, level: number, recordId: string, isTarget = false) => ({
@@ -181,6 +184,19 @@ const createMockReconstructedState = (tabStates: Record<string, any>, activeLeve
   },
 });
 
+// Test utilities
+const mockConsole = (method: "error" | "warn" | "log" = "error") => {
+  return jest.spyOn(console, method).mockImplementation(() => {});
+};
+
+const renderHookAndWait = async () => {
+  const hookResult = renderHook(() => useGlobalUrlStateRecovery());
+  await waitFor(() => {
+    expect(hookResult.result.current.isRecoveryLoading).toBe(false);
+  });
+  return hookResult;
+};
+
 const expectRecoveredWindow = (
   window: any,
   expectations: {
@@ -213,6 +229,22 @@ const expectRecoveredWindow = (
   }
 };
 
+const setupMetadataStore = () => {
+  const mockLoadWindowData = jest.fn();
+
+  mockUseMetadataStore.mockReturnValue({
+    windowsData: {},
+    loadingWindows: {},
+    errors: {},
+    loadWindowData: mockLoadWindowData,
+    getWindowMetadata: jest.fn(),
+    isWindowLoading: jest.fn(),
+    getWindowError: jest.fn(),
+  });
+
+  return mockLoadWindowData;
+};
+
 describe("useGlobalUrlStateRecovery", () => {
   let mockLoadWindowData: jest.Mock;
 
@@ -221,7 +253,7 @@ describe("useGlobalUrlStateRecovery", () => {
    */
   const setupSimpleRecovery = (windowId: string, windowIdentifier: string) => {
     const params = createMockSearchParams({ wi_0: windowIdentifier });
-    const recoveryInfo = createMockRecoveryInfo(windowIdentifier, false);
+    const recoveryInfo = createMockRecoveryInfo(windowIdentifier);
     const windowMetadata = createMockWindowMetadata(windowId);
 
     mockUseSearchParams.mockReturnValue(params);
@@ -238,7 +270,7 @@ describe("useGlobalUrlStateRecovery", () => {
       ti_0: tabId,
       ri_0: recordId,
     });
-    const recoveryInfo = createMockRecoveryInfo(windowIdentifier, true);
+    const recoveryInfo = createMockRecoveryInfo(windowIdentifier, { hasRecoveryData: true, tabId, recordId });
     const windowMetadata = createMockWindowMetadata(windowId);
     const urlState = createMockUrlState(windowIdentifier, windowId, tabId, recordId);
     const hierarchy = createMockHierarchy(tabId, 1, recordId);
@@ -262,19 +294,7 @@ describe("useGlobalUrlStateRecovery", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-
-    mockLoadWindowData = jest.fn();
-
-    mockUseMetadataStore.mockReturnValue({
-      windowsData: {},
-      loadingWindows: {},
-      errors: {},
-      loadWindowData: mockLoadWindowData,
-      getWindowMetadata: jest.fn(),
-      isWindowLoading: jest.fn(),
-      getWindowError: jest.fn(),
-    });
-
+    mockLoadWindowData = setupMetadataStore();
     mockUseSearchParams.mockReturnValue(null);
   });
 
@@ -322,11 +342,7 @@ describe("useGlobalUrlStateRecovery", () => {
     it("should recover single window without tab/record data", async () => {
       const { windowMetadata } = setupSimpleRecovery("143", "143_123456");
 
-      const { result } = renderHook(() => useGlobalUrlStateRecovery());
-
-      await waitFor(() => {
-        expect(result.current.isRecoveryLoading).toBe(false);
-      });
+      const { result } = await renderHookAndWait();
 
       expect(mockLoadWindowData).toHaveBeenCalledWith("143");
       expect(mockGetWindowName).toHaveBeenCalledWith(windowMetadata);
@@ -343,8 +359,8 @@ describe("useGlobalUrlStateRecovery", () => {
 
     it("should recover multiple windows without recovery data", async () => {
       const params = createMockSearchParams({ wi_0: "143_123456", wi_1: "144_789012" });
-      const recoveryInfo1 = createMockRecoveryInfo("143_123456", false);
-      const recoveryInfo2 = createMockRecoveryInfo("144_789012", false);
+      const recoveryInfo1 = createMockRecoveryInfo("143_123456");
+      const recoveryInfo2 = createMockRecoveryInfo("144_789012");
       const windowMetadata1 = createMockWindowMetadata("143");
       const windowMetadata2 = createMockWindowMetadata("144");
 
@@ -353,11 +369,7 @@ describe("useGlobalUrlStateRecovery", () => {
       mockLoadWindowData.mockResolvedValueOnce(windowMetadata1).mockResolvedValueOnce(windowMetadata2);
       mockGetWindowName.mockReturnValueOnce("Sales Order").mockReturnValueOnce("Purchase Order");
 
-      const { result } = renderHook(() => useGlobalUrlStateRecovery());
-
-      await waitFor(() => {
-        expect(result.current.isRecoveryLoading).toBe(false);
-      });
+      const { result } = await renderHookAndWait();
 
       expect(mockLoadWindowData).toHaveBeenCalledTimes(2);
       expect(result.current.recoveredWindows).toHaveLength(2);
@@ -376,11 +388,7 @@ describe("useGlobalUrlStateRecovery", () => {
         "record123"
       );
 
-      const { result } = renderHook(() => useGlobalUrlStateRecovery());
-
-      await waitFor(() => {
-        expect(result.current.isRecoveryLoading).toBe(false);
-      });
+      const { result } = await renderHookAndWait();
 
       expect(mockLoadWindowData).toHaveBeenCalledWith("143");
       expect(mockParseUrlState).toHaveBeenCalledWith(recoveryInfo, windowMetadata);
@@ -410,10 +418,12 @@ describe("useGlobalUrlStateRecovery", () => {
         ri_1: "record456",
       });
 
-      const recoveryInfo1 = createMockRecoveryInfo("143_123456", false);
-      const recoveryInfo2 = createMockRecoveryInfo("144_789012", true);
-      recoveryInfo2.tabId = "tab2";
-      recoveryInfo2.recordId = "record456";
+      const recoveryInfo1 = createMockRecoveryInfo("143_123456");
+      const recoveryInfo2 = createMockRecoveryInfo("144_789012", {
+        hasRecoveryData: true,
+        tabId: "tab2",
+        recordId: "record456",
+      });
 
       const windowMetadata1 = createMockWindowMetadata("143");
       const windowMetadata2 = createMockWindowMetadata("144");
@@ -479,11 +489,7 @@ describe("useGlobalUrlStateRecovery", () => {
       mockCalculateHierarchy.mockResolvedValue(mockHierarchy);
       mockReconstructState.mockResolvedValue(mockReconstructed);
 
-      const { result } = renderHook(() => useGlobalUrlStateRecovery());
-
-      await waitFor(() => {
-        expect(result.current.isRecoveryLoading).toBe(false);
-      });
+      const { result } = await renderHookAndWait();
 
       expect(result.current.recoveredWindows).toHaveLength(2);
       expect(result.current.recoveredWindows[0].hasRecoveryData).toBeUndefined();
@@ -494,19 +500,15 @@ describe("useGlobalUrlStateRecovery", () => {
 
   describe("Error handling", () => {
     it("should handle metadata loading error", async () => {
-      const consoleErrorSpy = createConsoleErrorSpy();
+      const consoleErrorSpy = mockConsole("error");
       const params = createMockSearchParams({ wi_0: "143_123456" });
-      const recoveryInfo = createMockRecoveryInfo("143_123456", false);
+      const recoveryInfo = createMockRecoveryInfo("143_123456");
 
       mockUseSearchParams.mockReturnValue(params);
       mockParseWindowRecoveryData.mockReturnValue([recoveryInfo]);
       mockLoadWindowData.mockRejectedValue(new Error("Failed to load metadata"));
 
-      const { result } = renderHook(() => useGlobalUrlStateRecovery());
-
-      await waitFor(() => {
-        expect(result.current.isRecoveryLoading).toBe(false);
-      });
+      const { result } = await renderHookAndWait();
 
       expect(result.current.recoveredWindows).toEqual([]);
       expect(result.current.recoveryError).toBe("Failed to recover windows");
@@ -516,17 +518,13 @@ describe("useGlobalUrlStateRecovery", () => {
     });
 
     it("should handle URL state parsing error", async () => {
-      const consoleErrorSpy = createConsoleErrorSpy();
-      const { recoveryInfo, windowMetadata } = setupComplexRecovery("143", "143_123456", "tab2", "record123");
+      const consoleErrorSpy = mockConsole("error");
+      setupComplexRecovery("143", "143_123456", "tab2", "record123");
 
       mockParseUrlState.mockReset();
       mockParseUrlState.mockRejectedValue(new Error("Failed to parse URL state"));
 
-      const { result } = renderHook(() => useGlobalUrlStateRecovery());
-
-      await waitFor(() => {
-        expect(result.current.isRecoveryLoading).toBe(false);
-      });
+      const { result } = await renderHookAndWait();
 
       expect(result.current.recoveredWindows).toEqual([]);
       expect(result.current.recoveryError).toBe("Failed to recover windows");
@@ -536,17 +534,13 @@ describe("useGlobalUrlStateRecovery", () => {
     });
 
     it("should handle hierarchy calculation error", async () => {
-      const consoleErrorSpy = createConsoleErrorSpy();
-      const { urlState } = setupComplexRecovery("143", "143_123456", "tab2", "record123");
+      const consoleErrorSpy = mockConsole("error");
+      setupComplexRecovery("143", "143_123456", "tab2", "record123");
 
       mockCalculateHierarchy.mockReset();
       mockCalculateHierarchy.mockRejectedValue(new Error("Failed to calculate hierarchy"));
 
-      const { result } = renderHook(() => useGlobalUrlStateRecovery());
-
-      await waitFor(() => {
-        expect(result.current.isRecoveryLoading).toBe(false);
-      });
+      const { result } = await renderHookAndWait();
 
       expect(result.current.recoveredWindows).toEqual([]);
       expect(result.current.recoveryError).toBe("Failed to recover windows");
@@ -556,17 +550,13 @@ describe("useGlobalUrlStateRecovery", () => {
     });
 
     it("should handle state reconstruction error", async () => {
-      const consoleErrorSpy = createConsoleErrorSpy();
+      const consoleErrorSpy = mockConsole("error");
       setupComplexRecovery("143", "143_123456", "tab2", "record123");
 
       mockReconstructState.mockReset();
       mockReconstructState.mockRejectedValue(new Error("Failed to reconstruct state"));
 
-      const { result } = renderHook(() => useGlobalUrlStateRecovery());
-
-      await waitFor(() => {
-        expect(result.current.isRecoveryLoading).toBe(false);
-      });
+      const { result } = await renderHookAndWait();
 
       expect(result.current.recoveredWindows).toEqual([]);
       expect(result.current.recoveryError).toBe("Failed to recover windows");
@@ -584,9 +574,9 @@ describe("useGlobalUrlStateRecovery", () => {
         wi_2: "145_345678",
       });
 
-      const recoveryInfo1 = createMockRecoveryInfo("143_123456", false);
-      const recoveryInfo2 = createMockRecoveryInfo("144_789012", false);
-      const recoveryInfo3 = createMockRecoveryInfo("145_345678", false);
+      const recoveryInfo1 = createMockRecoveryInfo("143_123456");
+      const recoveryInfo2 = createMockRecoveryInfo("144_789012");
+      const recoveryInfo3 = createMockRecoveryInfo("145_345678");
 
       const windowMetadata1 = createMockWindowMetadata("143");
       const windowMetadata2 = createMockWindowMetadata("144");
@@ -600,11 +590,7 @@ describe("useGlobalUrlStateRecovery", () => {
         .mockResolvedValueOnce(windowMetadata3);
       mockGetWindowName.mockReturnValue("Test Window");
 
-      const { result } = renderHook(() => useGlobalUrlStateRecovery());
-
-      await waitFor(() => {
-        expect(result.current.isRecoveryLoading).toBe(false);
-      });
+      const { result } = await renderHookAndWait();
 
       expect(result.current.recoveredWindows).toHaveLength(3);
       expect(result.current.recoveredWindows[0].isActive).toBe(false);
@@ -616,11 +602,7 @@ describe("useGlobalUrlStateRecovery", () => {
       setupSimpleRecovery("143", "143_123456");
       mockGetWindowName.mockReturnValue("Test Window");
 
-      const { result } = renderHook(() => useGlobalUrlStateRecovery());
-
-      await waitFor(() => {
-        expect(result.current.isRecoveryLoading).toBe(false);
-      });
+      const { result } = await renderHookAndWait();
 
       expect(result.current.recoveredWindows).toHaveLength(1);
       expect(result.current.recoveredWindows[0].isActive).toBe(true);
@@ -667,9 +649,9 @@ describe("useGlobalUrlStateRecovery", () => {
       });
 
       const recoveryInfos = [
-        createMockRecoveryInfo("143_123456", false),
-        createMockRecoveryInfo("144_789012", false),
-        createMockRecoveryInfo("145_345678", false),
+        createMockRecoveryInfo("143_123456"),
+        createMockRecoveryInfo("144_789012"),
+        createMockRecoveryInfo("145_345678"),
       ];
 
       const windowMetadatas = [
@@ -718,11 +700,7 @@ describe("useGlobalUrlStateRecovery", () => {
       setupSimpleRecovery("143", "143_123456789");
       mockGetWindowName.mockReturnValue("Test Window");
 
-      const { result } = renderHook(() => useGlobalUrlStateRecovery());
-
-      await waitFor(() => {
-        expect(result.current.isRecoveryLoading).toBe(false);
-      });
+      const { result } = await renderHookAndWait();
 
       expect(mockLoadWindowData).toHaveBeenCalledWith("143");
       expect(result.current.recoveredWindows[0].windowId).toBe("143");

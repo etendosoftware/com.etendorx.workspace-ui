@@ -44,7 +44,10 @@ jest.mock("@/utils/logger", () => ({
 
 const mockMetadata = Metadata as jest.Mocked<typeof Metadata>;
 
-// Mock data
+/**
+ * Test helpers
+ */
+
 const createMockTab = (id: string): Tab => ({
   id,
   name: `Tab ${id}`,
@@ -93,27 +96,55 @@ const createMockWindowMetadata = (windowId: string): Etendo.WindowMetadata => ({
   window$_identifier: "window_identifier",
 });
 
-describe("MetadataStoreProvider", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockMetadata.clearWindowCache = jest.fn();
-    mockMetadata.forceWindowReload = jest.fn();
+const setupMocks = () => {
+  jest.clearAllMocks();
+  mockMetadata.clearWindowCache = jest.fn();
+  mockMetadata.forceWindowReload = jest.fn();
+};
+
+const renderMetadataStoreHook = () => {
+  return renderHook(() => useMetadataStore(), {
+    wrapper: MetadataStoreProvider,
   });
+};
+
+const setupLoadingPromise = (windowMetadata: Etendo.WindowMetadata) => {
+  let resolveLoad: (value: Etendo.WindowMetadata) => void;
+  const loadPromise = new Promise<Etendo.WindowMetadata>((resolve) => {
+    resolveLoad = resolve;
+  });
+  mockMetadata.forceWindowReload.mockReturnValue(loadPromise);
+  return { loadPromise, resolveLoad: resolveLoad!, windowMetadata };
+};
+
+const expectInitialState = (result: any) => {
+  expect(result.current.windowsData).toEqual({});
+  expect(result.current.loadingWindows).toEqual({});
+  expect(result.current.errors).toEqual({});
+};
+
+const expectWindowLoaded = (result: any, windowId: string, metadata: Etendo.WindowMetadata) => {
+  expect(result.current.windowsData[windowId]).toEqual(metadata);
+  expect(result.current.isWindowLoading(windowId)).toBe(false);
+  expect(result.current.getWindowError(windowId)).toBeUndefined();
+};
+
+const expectWindowError = (result: any, windowId: string, error: Error) => {
+  expect(result.current.getWindowError(windowId)).toBe(error);
+  expect(result.current.isWindowLoading(windowId)).toBe(false);
+  expect(result.current.getWindowMetadata(windowId)).toBeUndefined();
+};
+
+describe("MetadataStoreProvider", () => {
+  beforeEach(setupMocks);
 
   it("should provide initial empty state", () => {
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
-
-    expect(result.current.windowsData).toEqual({});
-    expect(result.current.loadingWindows).toEqual({});
-    expect(result.current.errors).toEqual({});
+    const { result } = renderMetadataStoreHook();
+    expectInitialState(result);
   });
 
   it("should provide all required functions", () => {
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { result } = renderMetadataStoreHook();
 
     expect(typeof result.current.loadWindowData).toBe("function");
     expect(typeof result.current.getWindowMetadata).toBe("function");
@@ -123,19 +154,13 @@ describe("MetadataStoreProvider", () => {
 });
 
 describe("loadWindowData", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockMetadata.clearWindowCache = jest.fn();
-    mockMetadata.forceWindowReload = jest.fn();
-  });
+  beforeEach(setupMocks);
 
   it("should load window metadata successfully", async () => {
     const windowMetadata = createMockWindowMetadata("window1");
     mockMetadata.forceWindowReload.mockResolvedValue(windowMetadata);
 
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { result } = renderMetadataStoreHook();
 
     let loadedData: Etendo.WindowMetadata | undefined;
 
@@ -150,16 +175,8 @@ describe("loadWindowData", () => {
   });
 
   it("should set loading state during load", async () => {
-    const windowMetadata = createMockWindowMetadata("window1");
-    let resolveLoad: (value: Etendo.WindowMetadata) => void;
-    const loadPromise = new Promise<Etendo.WindowMetadata>((resolve) => {
-      resolveLoad = resolve;
-    });
-    mockMetadata.forceWindowReload.mockReturnValue(loadPromise);
-
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { loadPromise, resolveLoad, windowMetadata } = setupLoadingPromise(createMockWindowMetadata("window1"));
+    const { result } = renderMetadataStoreHook();
 
     // Start loading
     act(() => {
@@ -173,9 +190,7 @@ describe("loadWindowData", () => {
 
     // Resolve the load
     await act(async () => {
-      if (resolveLoad) {
-        resolveLoad(windowMetadata);
-      }
+      resolveLoad(windowMetadata);
       await loadPromise;
     });
 
@@ -188,10 +203,7 @@ describe("loadWindowData", () => {
   it("should clear loading state after successful load", async () => {
     const windowMetadata = createMockWindowMetadata("window1");
     mockMetadata.forceWindowReload.mockResolvedValue(windowMetadata);
-
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { result } = renderMetadataStoreHook();
 
     await act(async () => {
       await result.current.loadWindowData("window1");
@@ -203,10 +215,7 @@ describe("loadWindowData", () => {
   it("should return cached data if already loaded", async () => {
     const windowMetadata = createMockWindowMetadata("window1");
     mockMetadata.forceWindowReload.mockResolvedValue(windowMetadata);
-
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { result } = renderMetadataStoreHook();
 
     // First load
     await act(async () => {
@@ -230,10 +239,7 @@ describe("loadWindowData", () => {
   it("should handle load errors correctly", async () => {
     const loadError = new Error("Failed to load window");
     mockMetadata.forceWindowReload.mockRejectedValue(loadError);
-
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { result } = renderMetadataStoreHook();
 
     await act(async () => {
       try {
@@ -244,18 +250,14 @@ describe("loadWindowData", () => {
     });
 
     await waitFor(() => {
-      expect(result.current.getWindowError("window1")).toBe(loadError);
-      expect(result.current.isWindowLoading("window1")).toBe(false);
+      expectWindowError(result, "window1", loadError);
     });
   });
 
   it("should clear error state before new load attempt", async () => {
     const loadError = new Error("Failed to load window");
     mockMetadata.forceWindowReload.mockRejectedValueOnce(loadError);
-
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { result } = renderMetadataStoreHook();
 
     // First load fails
     await act(async () => {
@@ -289,10 +291,7 @@ describe("loadWindowData", () => {
     const window2Metadata = createMockWindowMetadata("window2");
 
     mockMetadata.forceWindowReload.mockResolvedValueOnce(window1Metadata).mockResolvedValueOnce(window2Metadata);
-
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { result } = renderMetadataStoreHook();
 
     await act(async () => {
       await result.current.loadWindowData("window1");
@@ -333,16 +332,10 @@ describe("loadWindowData", () => {
 });
 
 describe("getWindowMetadata", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockMetadata.clearWindowCache = jest.fn();
-    mockMetadata.forceWindowReload = jest.fn();
-  });
+  beforeEach(setupMocks);
 
   it("should return undefined for non-existent window", () => {
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { result } = renderMetadataStoreHook();
 
     expect(result.current.getWindowMetadata("nonexistent")).toBeUndefined();
   });
@@ -350,10 +343,7 @@ describe("getWindowMetadata", () => {
   it("should return window metadata after loading", async () => {
     const windowMetadata = createMockWindowMetadata("window1");
     mockMetadata.forceWindowReload.mockResolvedValue(windowMetadata);
-
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { result } = renderMetadataStoreHook();
 
     await act(async () => {
       await result.current.loadWindowData("window1");
@@ -383,31 +373,17 @@ describe("getWindowMetadata", () => {
 });
 
 describe("isWindowLoading", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockMetadata.clearWindowCache = jest.fn();
-    mockMetadata.forceWindowReload = jest.fn();
-  });
+  beforeEach(setupMocks);
 
   it("should return false for non-loading window", () => {
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { result } = renderMetadataStoreHook();
 
     expect(result.current.isWindowLoading("window1")).toBe(false);
   });
 
   it("should return true during loading", async () => {
-    const windowMetadata = createMockWindowMetadata("window1");
-    let resolveLoad: (value: Etendo.WindowMetadata) => void;
-    const loadPromise = new Promise<Etendo.WindowMetadata>((resolve) => {
-      resolveLoad = resolve;
-    });
-    mockMetadata.forceWindowReload.mockReturnValue(loadPromise);
-
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { loadPromise, resolveLoad, windowMetadata } = setupLoadingPromise(createMockWindowMetadata("window1"));
+    const { result } = renderMetadataStoreHook();
 
     act(() => {
       result.current.loadWindowData("window1");
@@ -418,9 +394,7 @@ describe("isWindowLoading", () => {
     });
 
     await act(async () => {
-      if (resolveLoad) {
-        resolveLoad(windowMetadata);
-      }
+      resolveLoad(windowMetadata);
       await loadPromise;
     });
 
@@ -430,10 +404,7 @@ describe("isWindowLoading", () => {
   it("should return false after load completes", async () => {
     const windowMetadata = createMockWindowMetadata("window1");
     mockMetadata.forceWindowReload.mockResolvedValue(windowMetadata);
-
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { result } = renderMetadataStoreHook();
 
     await act(async () => {
       await result.current.loadWindowData("window1");
@@ -461,16 +432,10 @@ describe("isWindowLoading", () => {
 });
 
 describe("getWindowError", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockMetadata.clearWindowCache = jest.fn();
-    mockMetadata.forceWindowReload = jest.fn();
-  });
+  beforeEach(setupMocks);
 
   it("should return undefined for window without error", () => {
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { result } = renderMetadataStoreHook();
 
     expect(result.current.getWindowError("window1")).toBeUndefined();
   });
@@ -478,10 +443,7 @@ describe("getWindowError", () => {
   it("should return error after failed load", async () => {
     const loadError = new Error("Failed to load window");
     mockMetadata.forceWindowReload.mockRejectedValue(loadError);
-
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { result } = renderMetadataStoreHook();
 
     await act(async () => {
       try {
@@ -562,21 +524,14 @@ describe("getWindowError", () => {
 });
 
 describe("Integration scenarios", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockMetadata.clearWindowCache = jest.fn();
-    mockMetadata.forceWindowReload = jest.fn();
-  });
+  beforeEach(setupMocks);
 
   it("should handle complete workflow: load, error, retry, success", async () => {
     const loadError = new Error("Network error");
     const windowMetadata = createMockWindowMetadata("window1");
 
     mockMetadata.forceWindowReload.mockRejectedValueOnce(loadError).mockResolvedValueOnce(windowMetadata);
-
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { result } = renderMetadataStoreHook();
 
     // Initial state
     expect(result.current.getWindowMetadata("window1")).toBeUndefined();
@@ -603,9 +558,7 @@ describe("Integration scenarios", () => {
       await result.current.loadWindowData("window1");
     });
 
-    expect(result.current.getWindowMetadata("window1")).toEqual(windowMetadata);
-    expect(result.current.isWindowLoading("window1")).toBe(false);
-    expect(result.current.getWindowError("window1")).toBeUndefined();
+    expectWindowLoaded(result, "window1", windowMetadata);
   });
 
   it("should manage state for multiple windows simultaneously", async () => {
@@ -617,10 +570,7 @@ describe("Integration scenarios", () => {
       .mockResolvedValueOnce(window1Metadata)
       .mockResolvedValueOnce(window2Metadata)
       .mockRejectedValueOnce(window3Error);
-
-    const { result } = renderHook(() => useMetadataStore(), {
-      wrapper: MetadataStoreProvider,
-    });
+    const { result } = renderMetadataStoreHook();
 
     await act(async () => {
       await result.current.loadWindowData("window1");
