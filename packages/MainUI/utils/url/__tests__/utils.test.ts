@@ -39,7 +39,7 @@ import { TAB_MODES, FORM_MODES } from "../constants";
  * Test helpers
  */
 
-const createMockTabState = (level: number, selectedRecord: string, recordId: string) => ({
+const createMockTabState = (level: number, selectedRecord: string | undefined, recordId: string) => ({
   level,
   selectedRecord,
   table: {
@@ -67,23 +67,6 @@ const createMockTabStateEmpty = (level: number, selectedRecord: string) => ({
     isImplicitFilterApplied: false,
   },
   form: {},
-});
-
-const createMockTabStateNoRecordId = (level: number, selectedRecord: string | undefined, recordId: string) => ({
-  level,
-  selectedRecord,
-  table: {
-    filters: [],
-    visibility: {},
-    sorting: [],
-    order: [],
-    isImplicitFilterApplied: false,
-  },
-  form: {
-    recordId,
-    mode: TAB_MODES.FORM,
-    formMode: FORM_MODES.EDIT,
-  },
 });
 
 const createMockWindowState = (
@@ -185,8 +168,8 @@ describe("URL Utility Functions", () => {
     it("should only include tabs with both selectedRecord and form.recordId", () => {
       const windows: WindowState[] = [
         createMockWindowState("143", "143_123456", {
-          tab1: createMockTabStateNoRecordId(0, "rec1", ""),
-          tab2: createMockTabStateNoRecordId(1, undefined, "rec2"),
+          tab1: createMockTabState(0, "rec1", ""),
+          tab2: createMockTabState(1, undefined, "rec2"),
         }),
       ];
 

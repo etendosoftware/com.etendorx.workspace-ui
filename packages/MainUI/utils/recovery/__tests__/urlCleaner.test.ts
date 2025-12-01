@@ -36,12 +36,15 @@ jest.mock("@/utils/url/utils");
 const mockUrlUtils = urlUtils as jest.Mocked<typeof urlUtils>;
 
 // Test helpers
-const createMockLocation = (search: string, pathname = "/app", origin = "http://localhost:3000") => ({
-  href: `${origin}${pathname}${search ? `?${search}` : ""}`,
-  origin,
-  pathname,
-  search: search ? `?${search}` : "",
-});
+const createMockLocation = (search: string, pathname = "/app", origin = "http://localhost:3000") => {
+  const queryString = search ? `?${search}` : "";
+  return {
+    href: `${origin}${pathname}${queryString}`,
+    origin,
+    pathname,
+    search: queryString,
+  };
+};
 
 const setupWindowLocation = (search: string, pathname = "/app", origin = "http://localhost:3000") => {
   const originalLocation = window.location;
