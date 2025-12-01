@@ -30,11 +30,7 @@ export const MetadataSynchronizer = () => {
   const { loadWindowData, isWindowLoading, windowsData } = useMetadataStore();
 
   useEffect(() => {
-    if (
-      activeWindow?.windowId &&
-      !windowsData[activeWindow.windowId] &&
-      !isWindowLoading(activeWindow.windowId)
-    ) {
+    if (activeWindow?.windowId && !windowsData[activeWindow.windowId] && !isWindowLoading(activeWindow.windowId)) {
       loadWindowData(activeWindow.windowId).catch(console.error);
     }
   }, [activeWindow?.windowId, windowsData, isWindowLoading, loadWindowData]);
@@ -44,29 +40,16 @@ export const MetadataSynchronizer = () => {
 
 export const useMetadataContext = (): IMetadataContext => {
   const { activeWindow } = useWindowContext();
-  const {
-    getWindowMetadata,
-    isWindowLoading,
-    getWindowError,
-    loadWindowData,
-    windowsData,
-    loadingWindows,
-    errors,
-  } = useMetadataStore();
+  const { getWindowMetadata, isWindowLoading, getWindowError, loadWindowData, windowsData, loadingWindows, errors } =
+    useMetadataStore();
   const { removeRecordFromDatasource } = useDatasourceContext();
 
   const currentWindowId = activeWindow?.windowId;
   const currentWindowIdentifier = activeWindow?.windowIdentifier;
   const currentWindow = currentWindowId ? getWindowMetadata(currentWindowId) : undefined;
 
-  const currentGroupedTabs = useMemo(
-    () => (currentWindow ? groupTabsByLevel(currentWindow) : []),
-    [currentWindow]
-  );
-  const currentTabs = useMemo(
-    () => (currentWindow?.tabs ? mapBy(currentWindow.tabs, "id") : {}),
-    [currentWindow]
-  );
+  const currentGroupedTabs = useMemo(() => (currentWindow ? groupTabsByLevel(currentWindow) : []), [currentWindow]);
+  const currentTabs = useMemo(() => (currentWindow?.tabs ? mapBy(currentWindow.tabs, "id") : {}), [currentWindow]);
 
   return {
     windowId: currentWindowId,

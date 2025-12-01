@@ -103,15 +103,7 @@ export function MetadataStoreProvider({ children }: React.PropsWithChildren) {
       isWindowLoading,
       getWindowError,
     }),
-    [
-      windowsData,
-      loadingWindows,
-      errors,
-      loadWindowData,
-      getWindowMetadata,
-      isWindowLoading,
-      getWindowError,
-    ]
+    [windowsData, loadingWindows, errors, loadWindowData, getWindowMetadata, isWindowLoading, getWindowError]
   );
 
   return <MetadataStoreContext.Provider value={value}>{children}</MetadataStoreContext.Provider>;
