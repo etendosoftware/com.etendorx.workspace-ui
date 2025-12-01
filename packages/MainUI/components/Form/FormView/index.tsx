@@ -84,6 +84,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const [selectedTab, setSelectedTab] = useState<string>("");
   const [isFormInitializing, setIsFormInitializing] = useState(false);
   const [openAttachmentModal, setOpenAttachmentModal] = useState(false);
+  const [currentMode, setCurrentMode] = useState<FormMode>(mode);
+  const [currentRecordId, setCurrentRecordId] = useState<string>(recordId);
+  const [waitingForRefetch, setWaitingForRefetch] = useState<string | null>(null);
 
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
@@ -95,16 +98,34 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     useToolbarContext();
   const { refetchDatasource, registerRefetchFunction } = useDatasourceContext();
 
+  // Sync currentMode and currentRecordId with props when they change (e.g., navigating to a different record)
+  useEffect(() => {
+    setCurrentMode(mode);
+  }, [mode]);
+
+  useEffect(() => {
+    setCurrentRecordId(recordId);
+  }, [recordId]);
+
   const {
     formInitialization,
     refetch,
     loading: loadingFormInitialization,
   } = useFormInitialization({
     tab,
-    mode: mode,
-    recordId,
+    mode: currentMode,
+    recordId: currentRecordId,
   });
   const initialState = useFormInitialState(formInitialization) || undefined;
+
+  // Effect to detect when form initialization completes after save
+  useEffect(() => {
+    if (waitingForRefetch && !loadingFormInitialization && currentRecordId === waitingForRefetch) {
+      // Form initialization has completed for the newly saved record
+      setWaitingForRefetch(null);
+      setIsFormInitializing(false);
+    }
+  }, [waitingForRefetch, loadingFormInitialization, currentRecordId]);
 
   const refreshRecordAndSession = useCallback(async () => {
     if (!recordId || recordId === NEW_RECORD_ID) return;
@@ -230,7 +251,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     return { ...record, ...initialState };
   }, [record, initialState]);
 
-  const { fields, groups } = useFormFields(tab, recordId, mode, true, availableFormData);
+  const { fields, groups } = useFormFields(tab, currentRecordId, currentMode, true, availableFormData);
 
   const formMethods = useForm({ defaultValues: availableFormData as EntityData });
   const { reset, setValue, formState, ...form } = formMethods;
@@ -403,13 +424,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    */
   const onSuccess = useCallback(
     async (data: EntityData, showModal: boolean) => {
-      setIsFormInitializing(true);
-      if (mode === FormMode.EDIT) {
-        reset({ ...initialState, ...data });
-      } else {
-        setRecordId(String(data.id));
+      // Clear only the cache for this specific entity to get fresh data
+      // This is more targeted than clearing the entire cache
+      datasource.clearCacheForEntity(tab.entityName);
+      if (parentTab) {
+        datasource.clearCacheForEntity(parentTab.entityName);
       }
-      setTimeout(() => setIsFormInitializing(false), 50);
+
+      setIsFormInitializing(true);
 
       graph.setSelected(tab, data);
       graph.setSelectedMultiple(tab, [data]);
@@ -418,6 +440,25 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       if (windowIdentifier) {
         setSelectedRecord(windowIdentifier, tab.id, String(data.id));
       }
+
+      const newRecordId = String(data.id);
+
+      if (currentMode === FormMode.NEW) {
+        // For new records, change to EDIT mode with the new record ID first
+        setCurrentMode(FormMode.EDIT);
+        setCurrentRecordId(newRecordId);
+        setRecordId(newRecordId); // Also update parent state
+
+        // Set flag to wait for automatic refetch to complete
+        setWaitingForRefetch(newRecordId);
+        // The useEffect will clear waitingForRefetch and set isFormInitializing to false
+        // when the refetch completes
+      } else {
+        // For EDIT mode, manually refetch to get updated calculated fields
+        await refetch();
+        setIsFormInitializing(false);
+      }
+
       if (showModal) {
         showSuccessModal("Saved");
       }
@@ -430,18 +471,17 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       }
     },
     [
-      mode,
+      currentMode,
       graph,
       tab,
       activeWindow?.windowIdentifier,
       showSuccessModal,
-      reset,
-      initialState,
       setRecordId,
       setSelectedRecord,
       resetFormChanges,
       parentTab,
       refetchDatasource,
+      refetch,
     ]
   );
 
@@ -461,7 +501,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const { save, loading } = useFormAction({
     windowMetadata,
     tab,
-    mode,
+    mode: currentMode,
     onSuccess,
     onError,
     initialState,
@@ -549,7 +589,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     () => ({
       window: windowMetadata,
       tab,
-      mode,
+      mode: currentMode,
       recordId,
       setRecordId,
       expandedSections,
@@ -567,7 +607,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     [
       windowMetadata,
       tab,
-      mode,
+      currentMode,
       recordId,
       setRecordId,
       expandedSections,
@@ -609,7 +649,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
             <FormFields
               tab={tab}
-              mode={mode}
+              mode={currentMode}
               groups={groups}
               loading={isLoading}
               recordId={recordId ?? ""}

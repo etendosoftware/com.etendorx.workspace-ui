@@ -18,7 +18,7 @@ import { useWindowContext } from "@/contexts/window";
 import ProcessIframeModal from "./ProcessModal/Iframe";
 import type { ProcessIframeModalProps } from "./ProcessModal/types";
 import formsData from "../utils/processes/forms/data.json";
-import { useRuntimeConfig } from "../hooks/useRuntimeConfig";
+import { useRuntimeConfig } from "../contexts/RuntimeConfigContext";
 import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 
 interface ExtendedMenu extends Menu {

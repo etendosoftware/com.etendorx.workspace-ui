@@ -171,14 +171,14 @@ const NoteSection = ({
             tittleHeader={modalTitleText || t("forms.notes.addNoteModalTitle")}
             descriptionText={modalDescriptionText || t("forms.notes.addNoteModalDescription")}
             customTrigger={
-              <Button sx={sx.addNoteButton} data-testid="Button__a680f8_add">
+              <Box sx={sx.addNoteButton} data-testid="Button__a680f8_add">
                 <IconButton data-testid="IconButton__a680f8_add">
                   <PlusIcon fill={theme.palette.baselineColor.neutral[80]} data-testid="PlusIcon__a680f8_add" />
                 </IconButton>
                 <Typography variant="body1" sx={sx.addNoteText} data-testid="Typography__a680f8_add">
                   {addNoteButtonText || t("forms.notes.addNote")}
                 </Typography>
-              </Button>
+              </Box>
             }
             data-testid="Modal__a680f8_add">
             <TextField

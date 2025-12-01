@@ -1,10 +1,15 @@
 import { renderHook, waitFor } from "@testing-library/react";
-import { useRuntimeConfig } from "../useRuntimeConfig";
+import { useRuntimeConfig, RuntimeConfigProvider } from "../../contexts/RuntimeConfigContext";
+import type { ReactNode } from "react";
 
 // Mock global fetch
 global.fetch = jest.fn();
 
 describe("useRuntimeConfig", () => {
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <RuntimeConfigProvider>{children}</RuntimeConfigProvider>
+  );
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -19,7 +24,7 @@ describe("useRuntimeConfig", () => {
       json: async () => mockConfig,
     });
 
-    const { result } = renderHook(() => useRuntimeConfig());
+    const { result } = renderHook(() => useRuntimeConfig(), { wrapper });
 
     // Initially loading
     expect(result.current.loading).toBe(true);
@@ -40,7 +45,7 @@ describe("useRuntimeConfig", () => {
 
     (global.fetch as jest.Mock).mockRejectedValueOnce(new Error("Network error"));
 
-    const { result } = renderHook(() => useRuntimeConfig());
+    const { result } = renderHook(() => useRuntimeConfig(), { wrapper });
 
     expect(result.current.loading).toBe(true);
 
@@ -49,7 +54,7 @@ describe("useRuntimeConfig", () => {
     });
 
     expect(result.current.config).toBeNull();
-    expect(consoleErrorSpy).toHaveBeenCalledWith("[useRuntimeConfig] Failed to fetch config:", expect.any(Error));
+    expect(consoleErrorSpy).toHaveBeenCalledWith("[RuntimeConfigProvider] Failed to fetch config:", expect.any(Error));
 
     consoleErrorSpy.mockRestore();
   });
@@ -64,7 +69,7 @@ describe("useRuntimeConfig", () => {
       json: async () => mockConfig,
     });
 
-    const { result, rerender } = renderHook(() => useRuntimeConfig());
+    const { result, rerender } = renderHook(() => useRuntimeConfig(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -86,7 +91,7 @@ describe("useRuntimeConfig", () => {
       json: async () => mockConfig,
     });
 
-    const { result } = renderHook(() => useRuntimeConfig());
+    const { result } = renderHook(() => useRuntimeConfig(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -107,7 +112,7 @@ describe("useRuntimeConfig", () => {
       },
     });
 
-    const { result } = renderHook(() => useRuntimeConfig());
+    const { result } = renderHook(() => useRuntimeConfig(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
