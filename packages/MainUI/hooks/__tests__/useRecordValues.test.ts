@@ -191,7 +191,7 @@ describe("useRecordValues", () => {
 
     mockBuildPayloadByInputName.mockReturnValue({ name: "Test Record" });
 
-    const { result, rerender } = renderHook(() => useRecordValues());
+    const { rerender } = renderHook(() => useRecordValues());
 
     expect(mockBuildPayloadByInputName).toHaveBeenCalledWith(mockRecord, mockTab1.fields);
 

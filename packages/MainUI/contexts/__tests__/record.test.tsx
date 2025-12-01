@@ -30,54 +30,61 @@ describe("RecordContext", () => {
 
   const useRecordContext = () => useContext(RecordContext);
 
+  // Helper: Create mock record
+  const createMockRecord = (overrides?: Partial<any>) => ({
+    id: "org-1",
+    documentNo: { value: "DOC-001" },
+    transactionDocument: { value: "Invoice" },
+    ...overrides,
+  });
+
+  // Helper: Render hook with context
+  const renderRecordHook = () => renderHook(() => useRecordContext(), { wrapper });
+
+  // Helper: Set and verify record
+  const setAndVerifyRecord = (result: any, record: any) => {
+    act(() => {
+      result.current.setSelectedRecord(record);
+    });
+    expect(result.current.selectedRecord).toBe(record);
+  };
+
+  // Helper: Expect formatted result
+  const expectFormattedResult = (result: any, record: any, expected: { identifier: string; type: string }) => {
+    const formatted = result.current.getFormattedRecord(record);
+    expect(formatted).toEqual(expected);
+  };
+
   it("should provide initial selected record as null", () => {
-    const { result } = renderHook(() => useRecordContext(), { wrapper });
+    const { result } = renderRecordHook();
 
     expect(result.current.selectedRecord).toBe(null);
   });
 
   it("should provide setSelectedRecord function", () => {
-    const { result } = renderHook(() => useRecordContext(), { wrapper });
+    const { result } = renderRecordHook();
 
     expect(typeof result.current.setSelectedRecord).toBe("function");
   });
 
   it("should provide getFormattedRecord function", () => {
-    const { result } = renderHook(() => useRecordContext(), { wrapper });
+    const { result } = renderRecordHook();
 
     expect(typeof result.current.getFormattedRecord).toBe("function");
   });
 
   it("should update selected record when setSelectedRecord is called", () => {
-    const { result } = renderHook(() => useRecordContext(), { wrapper });
+    const { result } = renderRecordHook();
+    const mockRecord = createMockRecord();
 
-    const mockRecord: any = {
-      id: "org-1",
-      documentNo: { value: "DOC-001" },
-      transactionDocument: { value: "Invoice" },
-    };
-
-    act(() => {
-      result.current.setSelectedRecord(mockRecord);
-    });
-
-    expect(result.current.selectedRecord).toBe(mockRecord);
+    setAndVerifyRecord(result, mockRecord);
   });
 
   it("should clear selected record when setSelectedRecord is called with null", () => {
-    const { result } = renderHook(() => useRecordContext(), { wrapper });
+    const { result } = renderRecordHook();
+    const mockRecord = createMockRecord();
 
-    const mockRecord: any = {
-      id: "org-1",
-      documentNo: { value: "DOC-001" },
-      transactionDocument: { value: "Invoice" },
-    };
-
-    act(() => {
-      result.current.setSelectedRecord(mockRecord);
-    });
-
-    expect(result.current.selectedRecord).toBe(mockRecord);
+    setAndVerifyRecord(result, mockRecord);
 
     act(() => {
       result.current.setSelectedRecord(null);
@@ -87,7 +94,7 @@ describe("RecordContext", () => {
   });
 
   it("should return null when getFormattedRecord is called with null", () => {
-    const { result } = renderHook(() => useRecordContext(), { wrapper });
+    const { result } = renderRecordHook();
 
     const formatted = result.current.getFormattedRecord(null);
 
@@ -95,88 +102,60 @@ describe("RecordContext", () => {
   });
 
   it("should format record correctly with valid documentNo and transactionDocument", () => {
-    const { result } = renderHook(() => useRecordContext(), { wrapper });
+    const { result } = renderRecordHook();
+    const mockRecord = createMockRecord();
 
-    const mockRecord: any = {
-      id: "org-1",
-      documentNo: { value: "DOC-001" },
-      transactionDocument: { value: "Invoice" },
-    };
-
-    const formatted = result.current.getFormattedRecord(mockRecord);
-
-    expect(formatted).toEqual({
+    expectFormattedResult(result, mockRecord, {
       identifier: "DOC-001",
       type: "Invoice",
     });
   });
 
   it("should use fallback text when documentNo is missing", () => {
-    const { result } = renderHook(() => useRecordContext(), { wrapper });
+    const { result } = renderRecordHook();
+    const mockRecord = createMockRecord({ documentNo: undefined });
 
-    const mockRecord: any = {
-      id: "org-1",
-      transactionDocument: { value: "Invoice" },
-    };
-
-    const formatted = result.current.getFormattedRecord(mockRecord);
-
-    expect(formatted).toEqual({
+    expectFormattedResult(result, mockRecord, {
       identifier: "No item selected",
       type: "Invoice",
     });
   });
 
   it("should use fallback text when transactionDocument is missing", () => {
-    const { result } = renderHook(() => useRecordContext(), { wrapper });
+    const { result } = renderRecordHook();
+    const mockRecord = createMockRecord({ transactionDocument: undefined });
 
-    const mockRecord: any = {
-      id: "org-1",
-      documentNo: { value: "DOC-001" },
-    };
-
-    const formatted = result.current.getFormattedRecord(mockRecord);
-
-    expect(formatted).toEqual({
+    expectFormattedResult(result, mockRecord, {
       identifier: "DOC-001",
       type: "No type",
     });
   });
 
   it("should use fallback text when both documentNo and transactionDocument are missing", () => {
-    const { result } = renderHook(() => useRecordContext(), { wrapper });
+    const { result } = renderRecordHook();
+    const mockRecord = createMockRecord({ documentNo: undefined, transactionDocument: undefined });
 
-    const mockRecord: any = {
-      id: "org-1",
-    };
-
-    const formatted = result.current.getFormattedRecord(mockRecord);
-
-    expect(formatted).toEqual({
+    expectFormattedResult(result, mockRecord, {
       identifier: "No item selected",
       type: "No type",
     });
   });
 
   it("should handle empty string values", () => {
-    const { result } = renderHook(() => useRecordContext(), { wrapper });
-
-    const mockRecord: any = {
-      id: "org-1",
+    const { result } = renderRecordHook();
+    const mockRecord = createMockRecord({
       documentNo: { value: "" },
       transactionDocument: { value: "" },
-    };
+    });
 
-    const formatted = result.current.getFormattedRecord(mockRecord);
-
-    expect(formatted).toEqual({
+    expectFormattedResult(result, mockRecord, {
       identifier: "No item selected",
       type: "No type",
     });
   });
 
   it("should maintain stable getFormattedRecord reference", () => {
-    const { result, rerender } = renderHook(() => useRecordContext(), { wrapper });
+    const { result, rerender } = renderRecordHook();
 
     const getFormattedRecordRef = result.current.getFormattedRecord;
 
@@ -186,47 +165,23 @@ describe("RecordContext", () => {
   });
 
   it("should handle multiple record updates", () => {
-    const { result } = renderHook(() => useRecordContext(), { wrapper });
+    const { result } = renderRecordHook();
 
-    const mockRecord1: any = {
-      id: "org-1",
-      documentNo: { value: "DOC-001" },
-      transactionDocument: { value: "Invoice" },
-    };
+    const mockRecord1 = createMockRecord({ id: "org-1", documentNo: { value: "DOC-001" } });
+    const mockRecord2 = createMockRecord({ id: "org-2", documentNo: { value: "DOC-002" }, transactionDocument: { value: "Order" } });
 
-    const mockRecord2: any = {
-      id: "org-2",
-      documentNo: { value: "DOC-002" },
-      transactionDocument: { value: "Order" },
-    };
-
-    act(() => {
-      result.current.setSelectedRecord(mockRecord1);
-    });
-
-    expect(result.current.selectedRecord).toBe(mockRecord1);
-
-    act(() => {
-      result.current.setSelectedRecord(mockRecord2);
-    });
-
-    expect(result.current.selectedRecord).toBe(mockRecord2);
+    setAndVerifyRecord(result, mockRecord1);
+    setAndVerifyRecord(result, mockRecord2);
   });
 
   it("should work with multiple consumers sharing the same provider", () => {
-    // Create a shared provider instance
     let sharedSetSelectedRecord: ((record: any) => void) | null = null;
 
-    const { result: result1 } = renderHook(() => useRecordContext(), { wrapper });
+    const { result: result1 } = renderRecordHook();
 
-    // Capture the shared function
     sharedSetSelectedRecord = result1.current.setSelectedRecord;
 
-    const mockRecord: any = {
-      id: "org-1",
-      documentNo: { value: "DOC-001" },
-      transactionDocument: { value: "Invoice" },
-    };
+    const mockRecord = createMockRecord();
 
     act(() => {
       sharedSetSelectedRecord!(mockRecord);
@@ -236,34 +191,27 @@ describe("RecordContext", () => {
   });
 
   it("should handle records with nested properties", () => {
-    const { result } = renderHook(() => useRecordContext(), { wrapper });
+    const { result } = renderRecordHook();
 
-    const mockRecord: any = {
-      id: "org-1",
+    const mockRecord = createMockRecord({
       documentNo: { value: "DOC-001", label: "Document 001" },
       transactionDocument: { value: "Invoice", description: "Sales Invoice" },
       metadata: {
         createdAt: "2025-01-01",
         updatedAt: "2025-01-02",
       },
-    };
-
-    act(() => {
-      result.current.setSelectedRecord(mockRecord);
     });
 
-    expect(result.current.selectedRecord).toEqual(mockRecord);
+    setAndVerifyRecord(result, mockRecord);
 
-    const formatted = result.current.getFormattedRecord(mockRecord);
-
-    expect(formatted).toEqual({
+    expectFormattedResult(result, mockRecord, {
       identifier: "DOC-001",
       type: "Invoice",
     });
   });
 
   it("should have correct context type structure", () => {
-    const { result } = renderHook(() => useRecordContext(), { wrapper });
+    const { result } = renderRecordHook();
 
     expect(result.current).toHaveProperty("selectedRecord");
     expect(result.current).toHaveProperty("setSelectedRecord");
@@ -272,11 +220,11 @@ describe("RecordContext", () => {
   });
 
   it("should handle rapid state changes", () => {
-    const { result } = renderHook(() => useRecordContext(), { wrapper });
+    const { result } = renderRecordHook();
 
-    const mockRecord1: any = { id: "org-1", documentNo: { value: "DOC-001" } };
-    const mockRecord2: any = { id: "org-2", documentNo: { value: "DOC-002" } };
-    const mockRecord3: any = { id: "org-3", documentNo: { value: "DOC-003" } };
+    const mockRecord1 = createMockRecord({ id: "org-1", documentNo: { value: "DOC-001" } });
+    const mockRecord2 = createMockRecord({ id: "org-2", documentNo: { value: "DOC-002" } });
+    const mockRecord3 = createMockRecord({ id: "org-3", documentNo: { value: "DOC-003" } });
 
     act(() => {
       result.current.setSelectedRecord(mockRecord1);

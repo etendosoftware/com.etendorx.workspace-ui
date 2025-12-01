@@ -116,49 +116,11 @@ const mockConsoleError = () => {
   return spy;
 };
 
-const expectErrorToBeThrown = async (promise: Promise<any>, errorMessage: string) => {
-  await expect(promise).rejects.toThrow(errorMessage);
-};
-
 const verifyApiRequest = (mockKernelClient: { request: jest.Mock }, expectedParams: string[]) => {
   const calledUrl = mockKernelClient.request.mock.calls[0][0];
   expectedParams.forEach((param) => {
     expect(calledUrl).toContain(param);
   });
-};
-
-const expectUrlStateResult = (
-  result: any,
-  expected: {
-    windowIdentifier: string;
-    tabId: string;
-    recordId: string;
-    windowId: string;
-    tabTitle: string;
-    tabLevel: number;
-    keyParameter: string;
-  }
-) => {
-  expect(result).toEqual(expected);
-};
-
-const expectErrorWithoutApiCall = async (
-  promise: Promise<any>,
-  errorMessage: string,
-  mockKernelClient: { request: jest.Mock }
-) => {
-  await expectErrorToBeThrown(promise, errorMessage);
-  expect(mockKernelClient.request).not.toHaveBeenCalled();
-};
-
-const setupSuccessfulParseTest = async (
-  recoveryInfo: WindowRecoveryInfo,
-  windowData: WindowMetadata,
-  mockApiResponse: any,
-  mockKernelClient: { request: jest.Mock }
-) => {
-  mockKernelClient.request.mockResolvedValue(mockApiResponse);
-  return await parseUrlState(recoveryInfo, windowData);
 };
 
 describe("parseUrlState", () => {
@@ -174,9 +136,10 @@ describe("parseUrlState", () => {
     const windowData = createMockWindowMetadata("143");
     const mockApiResponse = createMockApiResponse();
 
-    const result = await setupSuccessfulParseTest(recoveryInfo, windowData, mockApiResponse, mockKernelClient);
+    mockKernelClient.request.mockResolvedValue(mockApiResponse);
+    const result = await parseUrlState(recoveryInfo, windowData);
 
-    expectUrlStateResult(result, {
+    expect(result).toEqual({
       windowIdentifier: "143_123456",
       tabId: "tab2",
       recordId: "record123",
@@ -197,33 +160,30 @@ describe("parseUrlState", () => {
     const recoveryInfo = createMockRecoveryInfo({ tabId: undefined, hasRecoveryData: false });
     const windowData = createMockWindowMetadata("143");
 
-    await expectErrorWithoutApiCall(
-      parseUrlState(recoveryInfo, windowData),
-      "Missing tabId or recordId for URL state parsing",
-      mockKernelClient
+    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow(
+      "Missing tabId or recordId for URL state parsing"
     );
+    expect(mockKernelClient.request).not.toHaveBeenCalled();
   });
 
   it("should throw error when recordId is missing", async () => {
     const recoveryInfo = createMockRecoveryInfo({ recordId: undefined, hasRecoveryData: false });
     const windowData = createMockWindowMetadata("143");
 
-    await expectErrorWithoutApiCall(
-      parseUrlState(recoveryInfo, windowData),
-      "Missing tabId or recordId for URL state parsing",
-      mockKernelClient
+    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow(
+      "Missing tabId or recordId for URL state parsing"
     );
+    expect(mockKernelClient.request).not.toHaveBeenCalled();
   });
 
   it("should throw error when both tabId and recordId are missing", async () => {
     const recoveryInfo = createMockRecoveryInfo({ tabId: undefined, recordId: undefined, hasRecoveryData: false });
     const windowData = createMockWindowMetadata("143");
 
-    await expectErrorWithoutApiCall(
-      parseUrlState(recoveryInfo, windowData),
-      "Missing tabId or recordId for URL state parsing",
-      mockKernelClient
+    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow(
+      "Missing tabId or recordId for URL state parsing"
     );
+    expect(mockKernelClient.request).not.toHaveBeenCalled();
   });
 
   it("should throw error when API request fails", async () => {
@@ -232,8 +192,7 @@ describe("parseUrlState", () => {
 
     mockKernelClient.request.mockResolvedValue({ ok: false, data: null });
 
-    await expectErrorToBeThrown(
-      parseUrlState(recoveryInfo, windowData),
+    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow(
       "Failed to parse URL state: Failed to fetch window action handler data"
     );
   });
@@ -244,8 +203,7 @@ describe("parseUrlState", () => {
 
     mockKernelClient.request.mockResolvedValue({ ok: true, data: null });
 
-    await expectErrorToBeThrown(
-      parseUrlState(recoveryInfo, windowData),
+    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow(
       "Failed to parse URL state: Failed to fetch window action handler data"
     );
   });
@@ -257,8 +215,7 @@ describe("parseUrlState", () => {
 
     mockKernelClient.request.mockResolvedValue(mockApiResponse);
 
-    await expectErrorToBeThrown(
-      parseUrlState(recoveryInfo, windowData),
+    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow(
       "Failed to parse URL state: Tab nonexistentTab not found in window metadata"
     );
   });
@@ -270,7 +227,7 @@ describe("parseUrlState", () => {
 
     mockKernelClient.request.mockRejectedValue(new Error("Network error"));
 
-    await expectErrorToBeThrown(parseUrlState(recoveryInfo, windowData), "Failed to parse URL state: Network error");
+    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow("Failed to parse URL state: Network error");
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Error parsing URL state:", expect.any(Error));
 
@@ -282,7 +239,8 @@ describe("parseUrlState", () => {
     const windowData = createMockWindowMetadata("143");
     const mockApiResponse = createMockApiResponse({ tabTitle: "Main Tab" });
 
-    const result = await setupSuccessfulParseTest(recoveryInfo, windowData, mockApiResponse, mockKernelClient);
+    mockKernelClient.request.mockResolvedValue(mockApiResponse);
+    const result = await parseUrlState(recoveryInfo, windowData);
 
     expect(result.tabLevel).toBe(0);
     expect(result.tabId).toBe("tab1");
@@ -293,7 +251,8 @@ describe("parseUrlState", () => {
     const windowData = createMockWindowMetadata("143");
     const mockApiResponse = createMockApiResponse();
 
-    await setupSuccessfulParseTest(recoveryInfo, windowData, mockApiResponse, mockKernelClient);
+    mockKernelClient.request.mockResolvedValue(mockApiResponse);
+    await parseUrlState(recoveryInfo, windowData);
 
     verifyApiRequest(mockKernelClient, [
       "tabId=tab2",
@@ -310,7 +269,8 @@ describe("parseUrlState", () => {
     const windowData = createMockWindowMetadata("143");
     const mockApiResponse = createMockApiResponse({ keyParameter: "customKey" });
 
-    const result = await setupSuccessfulParseTest(recoveryInfo, windowData, mockApiResponse, mockKernelClient);
+    mockKernelClient.request.mockResolvedValue(mockApiResponse);
+    const result = await parseUrlState(recoveryInfo, windowData);
 
     expect(result.windowIdentifier).toBe("CUSTOM_143_123456");
     expect(result.tabId).toBe("tab2");
@@ -332,7 +292,8 @@ describe("parseUrlState", () => {
     };
     const mockApiResponse = createMockApiResponse({ tabTitle: "Deep Tab", keyParameter: "deepKey" });
 
-    const result = await setupSuccessfulParseTest(recoveryInfo, windowData, mockApiResponse, mockKernelClient);
+    mockKernelClient.request.mockResolvedValue(mockApiResponse);
+    const result = await parseUrlState(recoveryInfo, windowData);
 
     expect(result.tabLevel).toBe(4);
     expect(result.tabId).toBe("tab5");
@@ -345,7 +306,7 @@ describe("parseUrlState", () => {
 
     mockKernelClient.request.mockRejectedValue("String error");
 
-    await expectErrorToBeThrown(parseUrlState(recoveryInfo, windowData), "Failed to parse URL state: Unknown error");
+    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow("Failed to parse URL state: Unknown error");
 
     consoleErrorSpy.mockRestore();
   });
@@ -354,11 +315,10 @@ describe("parseUrlState", () => {
     const recoveryInfo = createMockRecoveryInfo({ tabId: "", recordId: "", hasRecoveryData: false });
     const windowData = createMockWindowMetadata("143");
 
-    await expectErrorWithoutApiCall(
-      parseUrlState(recoveryInfo, windowData),
-      "Missing tabId or recordId for URL state parsing",
-      mockKernelClient
+    await expect(parseUrlState(recoveryInfo, windowData)).rejects.toThrow(
+      "Missing tabId or recordId for URL state parsing"
     );
+    expect(mockKernelClient.request).not.toHaveBeenCalled();
   });
 });
 
@@ -481,7 +441,8 @@ describe("Integration scenarios", () => {
     const windowData = createMockWindowMetadata("143");
     const mockApiResponse = createMockApiResponse();
 
-    const urlState = await setupSuccessfulParseTest(recoveryInfo, windowData, mockApiResponse, mockKernelClient);
+    mockKernelClient.request.mockResolvedValue(mockApiResponse);
+    const urlState = await parseUrlState(recoveryInfo, windowData);
     const windowName = getWindowName(windowData);
 
     expect(urlState.windowId).toBe(windowData.id);
@@ -493,7 +454,8 @@ describe("Integration scenarios", () => {
     const windowData = createMockWindowMetadata("143");
     const mockApiResponse = createMockApiResponse({ tabTitle: "Main Tab", keyParameter: "mainKey" });
 
-    const urlState = await setupSuccessfulParseTest(recoveryInfo, windowData, mockApiResponse, mockKernelClient);
+    mockKernelClient.request.mockResolvedValue(mockApiResponse);
+    const urlState = await parseUrlState(recoveryInfo, windowData);
     expect(urlState).toBeDefined();
 
     const windowName = getWindowName(windowData);
@@ -503,16 +465,14 @@ describe("Integration scenarios", () => {
   it("should maintain data consistency across function calls", async () => {
     const windowData = createMockWindowMetadata("143");
 
-    // First call to getWindowName
     const name1 = getWindowName(windowData);
 
-    // Parse URL state
     const recoveryInfo = createMockRecoveryInfo({ tabId: "tab1" });
     const mockApiResponse = createMockApiResponse({ tabTitle: "Main Tab", keyParameter: "mainKey" });
 
-    await setupSuccessfulParseTest(recoveryInfo, windowData, mockApiResponse, mockKernelClient);
+    mockKernelClient.request.mockResolvedValue(mockApiResponse);
+    await parseUrlState(recoveryInfo, windowData);
 
-    // Second call to getWindowName should return same value
     const name2 = getWindowName(windowData);
 
     expect(name1).toBe(name2);
