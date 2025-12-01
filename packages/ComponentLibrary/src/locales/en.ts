@@ -182,6 +182,7 @@ const en = {
     descriptionText: "Confirm your shipment and save it in the system. 📝📦",
   },
   table: {
+    newRecord: "New Record",
     tooltips: {
       search: "Search",
       views: "Views",
@@ -222,6 +223,11 @@ const en = {
       enabledTooltip: "Select all records",
     },
     useAsFilter: "Use as filter",
+    editRow: "Edit Row",
+    insertRow: "Insert Row",
+    actions: {
+      createRecordInGrid: "Create Record in Grid",
+    },
   },
   navigation: {
     common: {

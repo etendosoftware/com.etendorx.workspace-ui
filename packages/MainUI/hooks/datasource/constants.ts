@@ -54,9 +54,3 @@ export const INVOICE_FIELD_MAPPINGS: Record<string, string> = {
   stDimension: "inpuser1Id",
   ndDimension: "inpuser2Id",
 } as const;
-
-export const FORM_VALUE_MAPPINGS = {
-  true: "Y",
-  false: "N",
-  null: "null",
-} as const;
