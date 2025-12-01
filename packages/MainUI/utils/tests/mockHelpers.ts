@@ -409,15 +409,22 @@ export const createMockTab = (idOrOverrides?: string | Partial<Tab>, level = 0):
   const mockField = createMockField();
 
   // Handle both signatures: (id, level) and (overrides)
-  let id = "test-tab";
-  let tabLevel = 0;
-  let overrides: Partial<Tab> = {};
+  let id: string;
+  let tabLevel: number;
+  let overrides: Partial<Tab>;
 
   if (typeof idOrOverrides === "string") {
     id = idOrOverrides;
     tabLevel = level;
+    overrides = {};
   } else if (idOrOverrides) {
+    id = "test-tab";
+    tabLevel = 0;
     overrides = idOrOverrides;
+  } else {
+    id = "test-tab";
+    tabLevel = 0;
+    overrides = {};
   }
 
   return {
