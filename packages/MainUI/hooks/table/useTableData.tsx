@@ -427,7 +427,10 @@ export const useTableData = ({
           referencedTableId: childTreeOptions.referencedTableId,
         };
 
-        const response = await datasource.get(treeEntity, processedParams) as { ok: boolean; data: { response?: { data?: EntityData[] } } };
+        const response = (await datasource.get(treeEntity, processedParams)) as {
+          ok: boolean;
+          data: { response?: { data?: EntityData[] } };
+        };
 
         if (response.ok && response.data?.response?.data) {
           const childNodes = response.data.response.data;

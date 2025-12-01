@@ -186,7 +186,10 @@ export function useDatasource({
       const safePageSize = pageSize ?? 1000;
 
       try {
-        const { ok, data } = await loadData(entity, targetPage, safePageSize, queryParams, memoizedTreeOptions) as { ok: boolean; data: { response: { data: EntityData[] } } };
+        const { ok, data } = (await loadData(entity, targetPage, safePageSize, queryParams, memoizedTreeOptions)) as {
+          ok: boolean;
+          data: { response: { data: EntityData[] } };
+        };
 
         if (!(ok && data.response.data)) {
           throw data;

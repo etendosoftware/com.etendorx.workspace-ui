@@ -131,12 +131,12 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     if (!recordId || recordId === NEW_RECORD_ID) return;
 
     try {
-      const result = await datasource.get(tab.entityName, {
+      const result = (await datasource.get(tab.entityName, {
         criteria: [{ fieldName: "id", operator: "equals", value: recordId }],
         windowId: tab.window,
         tabId: tab.id,
         pageSize: 1,
-      }) as { data: { response?: { data?: EntityData[] } } };
+      })) as { data: { response?: { data?: EntityData[] } } };
 
       const responseData = result.data.response?.data;
       if (responseData && responseData.length > 0) {
