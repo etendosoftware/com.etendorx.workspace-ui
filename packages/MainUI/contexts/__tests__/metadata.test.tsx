@@ -47,7 +47,7 @@ const mockUseWindowContext = useWindowContext as jest.MockedFunction<typeof useW
 const mockUseMetadataStore = useMetadataStore as jest.MockedFunction<typeof useMetadataStore>;
 const mockUseDatasourceContext = useDatasourceContext as jest.MockedFunction<typeof useDatasourceContext>;
 
-// Mock data
+// Mock data helpers
 const createMockTab = (id: string): Tab => ({
   id,
   name: `Tab ${id}`,
@@ -75,6 +75,59 @@ const createMockWindowMetadata = (windowId: string): WindowMetadata => ({
   _identifier: "window_identifier",
 });
 
+// Mock context helpers
+const createMockWindowContextValue = (activeWindow: any = null, isHomeRoute = false) => ({
+  activeWindow,
+  windows: [],
+  getTableState: jest.fn(),
+  getNavigationState: jest.fn(),
+  getActiveWindowIdentifier: jest.fn(),
+  getActiveWindowProperty: jest.fn(),
+  getAllWindowsIdentifiers: jest.fn(),
+  getAllWindows: jest.fn(),
+  getActiveWindow: jest.fn(),
+  getAllState: jest.fn(),
+  setTableFilters: jest.fn(),
+  setTableVisibility: jest.fn(),
+  setTableSorting: jest.fn(),
+  setTableOrder: jest.fn(),
+  setTableImplicitFilterApplied: jest.fn(),
+  setNavigationActiveLevels: jest.fn(),
+  setNavigationActiveTabsByLevel: jest.fn(),
+  setWindowActive: jest.fn(),
+  setWindowInactive: jest.fn(),
+  setAllWindowsInactive: jest.fn(),
+  getTabFormState: jest.fn(),
+  setTabFormState: jest.fn(),
+  clearTabFormState: jest.fn(),
+  getSelectedRecord: jest.fn(),
+  setSelectedRecord: jest.fn(),
+  clearSelectedRecord: jest.fn(),
+  clearChildrenSelections: jest.fn(),
+  setSelectedRecordAndClearChildren: jest.fn(),
+  getNavigationInitialized: jest.fn(),
+  setNavigationInitialized: jest.fn(),
+  isRecoveryLoading: false,
+  recoveryError: null,
+  cleanupWindow: jest.fn(),
+  cleanState: jest.fn(),
+  isHomeRoute,
+});
+
+const createMockActiveWindow = (windowId: string) => ({
+  windowId,
+  windowIdentifier: `${windowId}_123`,
+  isActive: true,
+  initialized: false,
+  title: "Test Window",
+  navigation: {
+    activeLevels: [0],
+    activeTabsByLevel: new Map(),
+    initialized: false,
+  },
+  tabs: {},
+});
+
 describe("MetadataSynchronizer", () => {
   let mockLoadWindowData: jest.Mock;
   let mockIsWindowLoading: jest.Mock;
@@ -95,43 +148,7 @@ describe("MetadataSynchronizer", () => {
       getWindowError: jest.fn(),
     });
 
-    mockUseWindowContext.mockReturnValue({
-      activeWindow: null,
-      windows: [],
-      getTableState: jest.fn(),
-      getNavigationState: jest.fn(),
-      getActiveWindowIdentifier: jest.fn(),
-      getActiveWindowProperty: jest.fn(),
-      getAllWindowsIdentifiers: jest.fn(),
-      getAllWindows: jest.fn(),
-      getActiveWindow: jest.fn(),
-      getAllState: jest.fn(),
-      setTableFilters: jest.fn(),
-      setTableVisibility: jest.fn(),
-      setTableSorting: jest.fn(),
-      setTableOrder: jest.fn(),
-      setTableImplicitFilterApplied: jest.fn(),
-      setNavigationActiveLevels: jest.fn(),
-      setNavigationActiveTabsByLevel: jest.fn(),
-      setWindowActive: jest.fn(),
-      setWindowInactive: jest.fn(),
-      setAllWindowsInactive: jest.fn(),
-      getTabFormState: jest.fn(),
-      setTabFormState: jest.fn(),
-      clearTabFormState: jest.fn(),
-      getSelectedRecord: jest.fn(),
-      setSelectedRecord: jest.fn(),
-      clearSelectedRecord: jest.fn(),
-      clearChildrenSelections: jest.fn(),
-      setSelectedRecordAndClearChildren: jest.fn(),
-      getNavigationInitialized: jest.fn(),
-      setNavigationInitialized: jest.fn(),
-      isRecoveryLoading: false,
-      recoveryError: null,
-      cleanupWindow: jest.fn(),
-      cleanState: jest.fn(),
-      isHomeRoute: false,
-    });
+    mockUseWindowContext.mockReturnValue(createMockWindowContextValue());
   });
 
   it("should render without errors", () => {
@@ -146,43 +163,7 @@ describe("MetadataSynchronizer", () => {
   });
 
   it("should not load metadata when no active window", () => {
-    mockUseWindowContext.mockReturnValue({
-      activeWindow: null,
-      windows: [],
-      getTableState: jest.fn(),
-      getNavigationState: jest.fn(),
-      getActiveWindowIdentifier: jest.fn(),
-      getActiveWindowProperty: jest.fn(),
-      getAllWindowsIdentifiers: jest.fn(),
-      getAllWindows: jest.fn(),
-      getActiveWindow: jest.fn(),
-      getAllState: jest.fn(),
-      setTableFilters: jest.fn(),
-      setTableVisibility: jest.fn(),
-      setTableSorting: jest.fn(),
-      setTableOrder: jest.fn(),
-      setTableImplicitFilterApplied: jest.fn(),
-      setNavigationActiveLevels: jest.fn(),
-      setNavigationActiveTabsByLevel: jest.fn(),
-      setWindowActive: jest.fn(),
-      setWindowInactive: jest.fn(),
-      setAllWindowsInactive: jest.fn(),
-      getTabFormState: jest.fn(),
-      setTabFormState: jest.fn(),
-      clearTabFormState: jest.fn(),
-      getSelectedRecord: jest.fn(),
-      setSelectedRecord: jest.fn(),
-      clearSelectedRecord: jest.fn(),
-      clearChildrenSelections: jest.fn(),
-      setSelectedRecordAndClearChildren: jest.fn(),
-      getNavigationInitialized: jest.fn(),
-      setNavigationInitialized: jest.fn(),
-      isRecoveryLoading: false,
-      recoveryError: null,
-      cleanupWindow: jest.fn(),
-      cleanState: jest.fn(),
-      isHomeRoute: true,
-    });
+    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(null, true));
 
     render(<MetadataSynchronizer />);
 
@@ -190,55 +171,7 @@ describe("MetadataSynchronizer", () => {
   });
 
   it("should load metadata when active window exists and data is not loaded", async () => {
-    mockUseWindowContext.mockReturnValue({
-      activeWindow: {
-        windowId: "window1",
-        windowIdentifier: "window1_123",
-        isActive: true,
-        initialized: false,
-        title: "Test Window",
-        navigation: {
-          activeLevels: [0],
-          activeTabsByLevel: new Map(),
-          initialized: false,
-        },
-        tabs: {},
-      },
-      windows: [],
-      getTableState: jest.fn(),
-      getNavigationState: jest.fn(),
-      getActiveWindowIdentifier: jest.fn(),
-      getActiveWindowProperty: jest.fn(),
-      getAllWindowsIdentifiers: jest.fn(),
-      getAllWindows: jest.fn(),
-      getActiveWindow: jest.fn(),
-      getAllState: jest.fn(),
-      setTableFilters: jest.fn(),
-      setTableVisibility: jest.fn(),
-      setTableSorting: jest.fn(),
-      setTableOrder: jest.fn(),
-      setTableImplicitFilterApplied: jest.fn(),
-      setNavigationActiveLevels: jest.fn(),
-      setNavigationActiveTabsByLevel: jest.fn(),
-      setWindowActive: jest.fn(),
-      setWindowInactive: jest.fn(),
-      setAllWindowsInactive: jest.fn(),
-      getTabFormState: jest.fn(),
-      setTabFormState: jest.fn(),
-      clearTabFormState: jest.fn(),
-      getSelectedRecord: jest.fn(),
-      setSelectedRecord: jest.fn(),
-      clearSelectedRecord: jest.fn(),
-      clearChildrenSelections: jest.fn(),
-      setSelectedRecordAndClearChildren: jest.fn(),
-      getNavigationInitialized: jest.fn(),
-      setNavigationInitialized: jest.fn(),
-      isRecoveryLoading: false,
-      recoveryError: null,
-      cleanupWindow: jest.fn(),
-      cleanState: jest.fn(),
-      isHomeRoute: false,
-    });
+    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
 
     render(<MetadataSynchronizer />);
 
@@ -250,55 +183,7 @@ describe("MetadataSynchronizer", () => {
   it("should not load metadata when window data is already loaded", () => {
     const windowMetadata = createMockWindowMetadata("window1");
 
-    mockUseWindowContext.mockReturnValue({
-      activeWindow: {
-        windowId: "window1",
-        windowIdentifier: "window1_123",
-        isActive: true,
-        initialized: false,
-        title: "Test Window",
-        navigation: {
-          activeLevels: [0],
-          activeTabsByLevel: new Map(),
-          initialized: false,
-        },
-        tabs: {},
-      },
-      windows: [],
-      getTableState: jest.fn(),
-      getNavigationState: jest.fn(),
-      getActiveWindowIdentifier: jest.fn(),
-      getActiveWindowProperty: jest.fn(),
-      getAllWindowsIdentifiers: jest.fn(),
-      getAllWindows: jest.fn(),
-      getActiveWindow: jest.fn(),
-      getAllState: jest.fn(),
-      setTableFilters: jest.fn(),
-      setTableVisibility: jest.fn(),
-      setTableSorting: jest.fn(),
-      setTableOrder: jest.fn(),
-      setTableImplicitFilterApplied: jest.fn(),
-      setNavigationActiveLevels: jest.fn(),
-      setNavigationActiveTabsByLevel: jest.fn(),
-      setWindowActive: jest.fn(),
-      setWindowInactive: jest.fn(),
-      setAllWindowsInactive: jest.fn(),
-      getTabFormState: jest.fn(),
-      setTabFormState: jest.fn(),
-      clearTabFormState: jest.fn(),
-      getSelectedRecord: jest.fn(),
-      setSelectedRecord: jest.fn(),
-      clearSelectedRecord: jest.fn(),
-      clearChildrenSelections: jest.fn(),
-      setSelectedRecordAndClearChildren: jest.fn(),
-      getNavigationInitialized: jest.fn(),
-      setNavigationInitialized: jest.fn(),
-      isRecoveryLoading: false,
-      recoveryError: null,
-      cleanupWindow: jest.fn(),
-      cleanState: jest.fn(),
-      isHomeRoute: false,
-    });
+    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
 
     mockUseMetadataStore.mockReturnValue({
       windowsData: { window1: windowMetadata },
@@ -318,55 +203,7 @@ describe("MetadataSynchronizer", () => {
   it("should not load metadata when window is already loading", () => {
     mockIsWindowLoading.mockReturnValue(true);
 
-    mockUseWindowContext.mockReturnValue({
-      activeWindow: {
-        windowId: "window1",
-        windowIdentifier: "window1_123",
-        isActive: true,
-        initialized: false,
-        title: "Test Window",
-        navigation: {
-          activeLevels: [0],
-          activeTabsByLevel: new Map(),
-          initialized: false,
-        },
-        tabs: {},
-      },
-      windows: [],
-      getTableState: jest.fn(),
-      getNavigationState: jest.fn(),
-      getActiveWindowIdentifier: jest.fn(),
-      getActiveWindowProperty: jest.fn(),
-      getAllWindowsIdentifiers: jest.fn(),
-      getAllWindows: jest.fn(),
-      getActiveWindow: jest.fn(),
-      getAllState: jest.fn(),
-      setTableFilters: jest.fn(),
-      setTableVisibility: jest.fn(),
-      setTableSorting: jest.fn(),
-      setTableOrder: jest.fn(),
-      setTableImplicitFilterApplied: jest.fn(),
-      setNavigationActiveLevels: jest.fn(),
-      setNavigationActiveTabsByLevel: jest.fn(),
-      setWindowActive: jest.fn(),
-      setWindowInactive: jest.fn(),
-      setAllWindowsInactive: jest.fn(),
-      getTabFormState: jest.fn(),
-      setTabFormState: jest.fn(),
-      clearTabFormState: jest.fn(),
-      getSelectedRecord: jest.fn(),
-      setSelectedRecord: jest.fn(),
-      clearSelectedRecord: jest.fn(),
-      clearChildrenSelections: jest.fn(),
-      setSelectedRecordAndClearChildren: jest.fn(),
-      getNavigationInitialized: jest.fn(),
-      setNavigationInitialized: jest.fn(),
-      isRecoveryLoading: false,
-      recoveryError: null,
-      cleanupWindow: jest.fn(),
-      cleanState: jest.fn(),
-      isHomeRoute: false,
-    });
+    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
 
     render(<MetadataSynchronizer />);
 
@@ -378,55 +215,7 @@ describe("MetadataSynchronizer", () => {
     const loadError = new Error("Failed to load metadata");
     mockLoadWindowData.mockRejectedValue(loadError);
 
-    mockUseWindowContext.mockReturnValue({
-      activeWindow: {
-        windowId: "window1",
-        windowIdentifier: "window1_123",
-        isActive: true,
-        initialized: false,
-        title: "Test Window",
-        navigation: {
-          activeLevels: [0],
-          activeTabsByLevel: new Map(),
-          initialized: false,
-        },
-        tabs: {},
-      },
-      windows: [],
-      getTableState: jest.fn(),
-      getNavigationState: jest.fn(),
-      getActiveWindowIdentifier: jest.fn(),
-      getActiveWindowProperty: jest.fn(),
-      getAllWindowsIdentifiers: jest.fn(),
-      getAllWindows: jest.fn(),
-      getActiveWindow: jest.fn(),
-      getAllState: jest.fn(),
-      setTableFilters: jest.fn(),
-      setTableVisibility: jest.fn(),
-      setTableSorting: jest.fn(),
-      setTableOrder: jest.fn(),
-      setTableImplicitFilterApplied: jest.fn(),
-      setNavigationActiveLevels: jest.fn(),
-      setNavigationActiveTabsByLevel: jest.fn(),
-      setWindowActive: jest.fn(),
-      setWindowInactive: jest.fn(),
-      setAllWindowsInactive: jest.fn(),
-      getTabFormState: jest.fn(),
-      setTabFormState: jest.fn(),
-      clearTabFormState: jest.fn(),
-      getSelectedRecord: jest.fn(),
-      setSelectedRecord: jest.fn(),
-      clearSelectedRecord: jest.fn(),
-      clearChildrenSelections: jest.fn(),
-      setSelectedRecordAndClearChildren: jest.fn(),
-      getNavigationInitialized: jest.fn(),
-      setNavigationInitialized: jest.fn(),
-      isRecoveryLoading: false,
-      recoveryError: null,
-      cleanupWindow: jest.fn(),
-      cleanState: jest.fn(),
-      isHomeRoute: false,
-    });
+    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
 
     render(<MetadataSynchronizer />);
 
@@ -473,43 +262,7 @@ describe("useMetadataContext", () => {
       clearDatasource: jest.fn(),
     });
 
-    mockUseWindowContext.mockReturnValue({
-      activeWindow: null,
-      windows: [],
-      getTableState: jest.fn(),
-      getNavigationState: jest.fn(),
-      getActiveWindowIdentifier: jest.fn(),
-      getActiveWindowProperty: jest.fn(),
-      getAllWindowsIdentifiers: jest.fn(),
-      getAllWindows: jest.fn(),
-      getActiveWindow: jest.fn(),
-      getAllState: jest.fn(),
-      setTableFilters: jest.fn(),
-      setTableVisibility: jest.fn(),
-      setTableSorting: jest.fn(),
-      setTableOrder: jest.fn(),
-      setTableImplicitFilterApplied: jest.fn(),
-      setNavigationActiveLevels: jest.fn(),
-      setNavigationActiveTabsByLevel: jest.fn(),
-      setWindowActive: jest.fn(),
-      setWindowInactive: jest.fn(),
-      setAllWindowsInactive: jest.fn(),
-      getTabFormState: jest.fn(),
-      setTabFormState: jest.fn(),
-      clearTabFormState: jest.fn(),
-      getSelectedRecord: jest.fn(),
-      setSelectedRecord: jest.fn(),
-      clearSelectedRecord: jest.fn(),
-      clearChildrenSelections: jest.fn(),
-      setSelectedRecordAndClearChildren: jest.fn(),
-      getNavigationInitialized: jest.fn(),
-      setNavigationInitialized: jest.fn(),
-      isRecoveryLoading: false,
-      recoveryError: null,
-      cleanupWindow: jest.fn(),
-      cleanState: jest.fn(),
-      isHomeRoute: true,
-    });
+    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(null, true));
   });
 
   it("should return default values when no active window", () => {
@@ -528,55 +281,7 @@ describe("useMetadataContext", () => {
     const windowMetadata = createMockWindowMetadata("window1");
     mockGetWindowMetadata.mockReturnValue(windowMetadata);
 
-    mockUseWindowContext.mockReturnValue({
-      activeWindow: {
-        windowId: "window1",
-        windowIdentifier: "window1_123",
-        isActive: true,
-        initialized: false,
-        title: "Test Window",
-        navigation: {
-          activeLevels: [0],
-          activeTabsByLevel: new Map(),
-          initialized: false,
-        },
-        tabs: {},
-      },
-      windows: [],
-      getTableState: jest.fn(),
-      getNavigationState: jest.fn(),
-      getActiveWindowIdentifier: jest.fn(),
-      getActiveWindowProperty: jest.fn(),
-      getAllWindowsIdentifiers: jest.fn(),
-      getAllWindows: jest.fn(),
-      getActiveWindow: jest.fn(),
-      getAllState: jest.fn(),
-      setTableFilters: jest.fn(),
-      setTableVisibility: jest.fn(),
-      setTableSorting: jest.fn(),
-      setTableOrder: jest.fn(),
-      setTableImplicitFilterApplied: jest.fn(),
-      setNavigationActiveLevels: jest.fn(),
-      setNavigationActiveTabsByLevel: jest.fn(),
-      setWindowActive: jest.fn(),
-      setWindowInactive: jest.fn(),
-      setAllWindowsInactive: jest.fn(),
-      getTabFormState: jest.fn(),
-      setTabFormState: jest.fn(),
-      clearTabFormState: jest.fn(),
-      getSelectedRecord: jest.fn(),
-      setSelectedRecord: jest.fn(),
-      clearSelectedRecord: jest.fn(),
-      clearChildrenSelections: jest.fn(),
-      setSelectedRecordAndClearChildren: jest.fn(),
-      getNavigationInitialized: jest.fn(),
-      setNavigationInitialized: jest.fn(),
-      isRecoveryLoading: false,
-      recoveryError: null,
-      cleanupWindow: jest.fn(),
-      cleanState: jest.fn(),
-      isHomeRoute: false,
-    });
+    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
 
     const { result } = renderHook(() => useMetadataContext());
 
@@ -589,55 +294,7 @@ describe("useMetadataContext", () => {
   it("should return loading state correctly", () => {
     mockIsWindowLoading.mockReturnValue(true);
 
-    mockUseWindowContext.mockReturnValue({
-      activeWindow: {
-        windowId: "window1",
-        windowIdentifier: "window1_123",
-        isActive: true,
-        initialized: false,
-        title: "Test Window",
-        navigation: {
-          activeLevels: [0],
-          activeTabsByLevel: new Map(),
-          initialized: false,
-        },
-        tabs: {},
-      },
-      windows: [],
-      getTableState: jest.fn(),
-      getNavigationState: jest.fn(),
-      getActiveWindowIdentifier: jest.fn(),
-      getActiveWindowProperty: jest.fn(),
-      getAllWindowsIdentifiers: jest.fn(),
-      getAllWindows: jest.fn(),
-      getActiveWindow: jest.fn(),
-      getAllState: jest.fn(),
-      setTableFilters: jest.fn(),
-      setTableVisibility: jest.fn(),
-      setTableSorting: jest.fn(),
-      setTableOrder: jest.fn(),
-      setTableImplicitFilterApplied: jest.fn(),
-      setNavigationActiveLevels: jest.fn(),
-      setNavigationActiveTabsByLevel: jest.fn(),
-      setWindowActive: jest.fn(),
-      setWindowInactive: jest.fn(),
-      setAllWindowsInactive: jest.fn(),
-      getTabFormState: jest.fn(),
-      setTabFormState: jest.fn(),
-      clearTabFormState: jest.fn(),
-      getSelectedRecord: jest.fn(),
-      setSelectedRecord: jest.fn(),
-      clearSelectedRecord: jest.fn(),
-      clearChildrenSelections: jest.fn(),
-      setSelectedRecordAndClearChildren: jest.fn(),
-      getNavigationInitialized: jest.fn(),
-      setNavigationInitialized: jest.fn(),
-      isRecoveryLoading: false,
-      recoveryError: null,
-      cleanupWindow: jest.fn(),
-      cleanState: jest.fn(),
-      isHomeRoute: false,
-    });
+    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
 
     const { result } = renderHook(() => useMetadataContext());
 
@@ -648,55 +305,7 @@ describe("useMetadataContext", () => {
     const testError = new Error("Test error");
     mockGetWindowError.mockReturnValue(testError);
 
-    mockUseWindowContext.mockReturnValue({
-      activeWindow: {
-        windowId: "window1",
-        windowIdentifier: "window1_123",
-        isActive: true,
-        initialized: false,
-        title: "Test Window",
-        navigation: {
-          activeLevels: [0],
-          activeTabsByLevel: new Map(),
-          initialized: false,
-        },
-        tabs: {},
-      },
-      windows: [],
-      getTableState: jest.fn(),
-      getNavigationState: jest.fn(),
-      getActiveWindowIdentifier: jest.fn(),
-      getActiveWindowProperty: jest.fn(),
-      getAllWindowsIdentifiers: jest.fn(),
-      getAllWindows: jest.fn(),
-      getActiveWindow: jest.fn(),
-      getAllState: jest.fn(),
-      setTableFilters: jest.fn(),
-      setTableVisibility: jest.fn(),
-      setTableSorting: jest.fn(),
-      setTableOrder: jest.fn(),
-      setTableImplicitFilterApplied: jest.fn(),
-      setNavigationActiveLevels: jest.fn(),
-      setNavigationActiveTabsByLevel: jest.fn(),
-      setWindowActive: jest.fn(),
-      setWindowInactive: jest.fn(),
-      setAllWindowsInactive: jest.fn(),
-      getTabFormState: jest.fn(),
-      setTabFormState: jest.fn(),
-      clearTabFormState: jest.fn(),
-      getSelectedRecord: jest.fn(),
-      setSelectedRecord: jest.fn(),
-      clearSelectedRecord: jest.fn(),
-      clearChildrenSelections: jest.fn(),
-      setSelectedRecordAndClearChildren: jest.fn(),
-      getNavigationInitialized: jest.fn(),
-      setNavigationInitialized: jest.fn(),
-      isRecoveryLoading: false,
-      recoveryError: null,
-      cleanupWindow: jest.fn(),
-      cleanState: jest.fn(),
-      isHomeRoute: false,
-    });
+    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
 
     const { result } = renderHook(() => useMetadataContext());
 
@@ -724,55 +333,7 @@ describe("useMetadataContext", () => {
     const windowMetadata = createMockWindowMetadata("window1");
     mockGetWindowMetadata.mockReturnValue(windowMetadata);
 
-    mockUseWindowContext.mockReturnValue({
-      activeWindow: {
-        windowId: "window1",
-        windowIdentifier: "window1_123",
-        isActive: true,
-        initialized: false,
-        title: "Test Window",
-        navigation: {
-          activeLevels: [0],
-          activeTabsByLevel: new Map(),
-          initialized: false,
-        },
-        tabs: {},
-      },
-      windows: [],
-      getTableState: jest.fn(),
-      getNavigationState: jest.fn(),
-      getActiveWindowIdentifier: jest.fn(),
-      getActiveWindowProperty: jest.fn(),
-      getAllWindowsIdentifiers: jest.fn(),
-      getAllWindows: jest.fn(),
-      getActiveWindow: jest.fn(),
-      getAllState: jest.fn(),
-      setTableFilters: jest.fn(),
-      setTableVisibility: jest.fn(),
-      setTableSorting: jest.fn(),
-      setTableOrder: jest.fn(),
-      setTableImplicitFilterApplied: jest.fn(),
-      setNavigationActiveLevels: jest.fn(),
-      setNavigationActiveTabsByLevel: jest.fn(),
-      setWindowActive: jest.fn(),
-      setWindowInactive: jest.fn(),
-      setAllWindowsInactive: jest.fn(),
-      getTabFormState: jest.fn(),
-      setTabFormState: jest.fn(),
-      clearTabFormState: jest.fn(),
-      getSelectedRecord: jest.fn(),
-      setSelectedRecord: jest.fn(),
-      clearSelectedRecord: jest.fn(),
-      clearChildrenSelections: jest.fn(),
-      setSelectedRecordAndClearChildren: jest.fn(),
-      getNavigationInitialized: jest.fn(),
-      setNavigationInitialized: jest.fn(),
-      isRecoveryLoading: false,
-      recoveryError: null,
-      cleanupWindow: jest.fn(),
-      cleanState: jest.fn(),
-      isHomeRoute: false,
-    });
+    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
 
     const { result } = renderHook(() => useMetadataContext());
 
@@ -783,55 +344,7 @@ describe("useMetadataContext", () => {
     const windowMetadata = createMockWindowMetadata("window1");
     mockGetWindowMetadata.mockReturnValue(windowMetadata);
 
-    mockUseWindowContext.mockReturnValue({
-      activeWindow: {
-        windowId: "window1",
-        windowIdentifier: "window1_123",
-        isActive: true,
-        initialized: false,
-        title: "Test Window",
-        navigation: {
-          activeLevels: [0],
-          activeTabsByLevel: new Map(),
-          initialized: false,
-        },
-        tabs: {},
-      },
-      windows: [],
-      getTableState: jest.fn(),
-      getNavigationState: jest.fn(),
-      getActiveWindowIdentifier: jest.fn(),
-      getActiveWindowProperty: jest.fn(),
-      getAllWindowsIdentifiers: jest.fn(),
-      getAllWindows: jest.fn(),
-      getActiveWindow: jest.fn(),
-      getAllState: jest.fn(),
-      setTableFilters: jest.fn(),
-      setTableVisibility: jest.fn(),
-      setTableSorting: jest.fn(),
-      setTableOrder: jest.fn(),
-      setTableImplicitFilterApplied: jest.fn(),
-      setNavigationActiveLevels: jest.fn(),
-      setNavigationActiveTabsByLevel: jest.fn(),
-      setWindowActive: jest.fn(),
-      setWindowInactive: jest.fn(),
-      setAllWindowsInactive: jest.fn(),
-      getTabFormState: jest.fn(),
-      setTabFormState: jest.fn(),
-      clearTabFormState: jest.fn(),
-      getSelectedRecord: jest.fn(),
-      setSelectedRecord: jest.fn(),
-      clearSelectedRecord: jest.fn(),
-      clearChildrenSelections: jest.fn(),
-      setSelectedRecordAndClearChildren: jest.fn(),
-      getNavigationInitialized: jest.fn(),
-      setNavigationInitialized: jest.fn(),
-      isRecoveryLoading: false,
-      recoveryError: null,
-      cleanupWindow: jest.fn(),
-      cleanState: jest.fn(),
-      isHomeRoute: false,
-    });
+    mockUseWindowContext.mockReturnValue(createMockWindowContextValue(createMockActiveWindow("window1")));
 
     const { result } = renderHook(() => useMetadataContext());
 

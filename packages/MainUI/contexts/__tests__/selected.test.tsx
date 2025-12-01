@@ -34,15 +34,17 @@ import WindowProvider from "../window";
 const mockReplace = jest.fn();
 const mockSearchParams = new URLSearchParams();
 
+const createMockRouter = () => ({
+  replace: mockReplace,
+  push: jest.fn(),
+  back: jest.fn(),
+  forward: jest.fn(),
+  refresh: jest.fn(),
+  prefetch: jest.fn(),
+});
+
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({
-    replace: mockReplace,
-    push: jest.fn(),
-    back: jest.fn(),
-    forward: jest.fn(),
-    refresh: jest.fn(),
-    prefetch: jest.fn(),
-  }),
+  useRouter: () => createMockRouter(),
   useSearchParams: () => mockSearchParams,
   usePathname: () => "/window",
 }));
@@ -70,54 +72,57 @@ jest.mock("../../data/graph", () => {
 });
 
 // Create mock tabs
+const createMockTab = (id: string, name: string, level: number, parentTabId?: string): Tab => ({
+  id,
+  name,
+  title: name,
+  tabLevel: level,
+  parentTabId,
+  window: "TestWindow",
+  table: level === 0 ? "test_table" : "child_table",
+  entityName: level === 0 ? "TestEntity" : "ChildEntity",
+  fields: {},
+  parentColumns: level > 0 ? ["parentId"] : [],
+  _identifier: level === 0 ? "test_identifier" : "child_identifier",
+  records: {},
+  hqlfilterclause: "",
+  hqlwhereclause: "",
+  sQLWhereClause: "",
+  module: "test_module",
+  uIPattern: "STD",
+});
+
 const createMockTabs = (): Tab[] => [
-  {
-    id: "tab1",
-    name: "Main Tab",
-    title: "Main Tab",
-    tabLevel: 0,
-    parentTabId: undefined,
-    window: "TestWindow",
-    table: "test_table",
-    entityName: "TestEntity",
-    fields: {},
-    parentColumns: [],
-    _identifier: "test_identifier",
-    records: {},
-    hqlfilterclause: "",
-    hqlwhereclause: "",
-    sQLWhereClause: "",
-    module: "test_module",
-    uIPattern: "STD",
-  },
-  {
-    id: "tab2",
-    name: "Child Tab",
-    title: "Child Tab",
-    tabLevel: 1,
-    parentTabId: "tab1",
-    window: "TestWindow",
-    table: "child_table",
-    entityName: "ChildEntity",
-    fields: {},
-    parentColumns: ["parentId"],
-    _identifier: "child_identifier",
-    records: {},
-    hqlfilterclause: "",
-    hqlwhereclause: "",
-    sQLWhereClause: "",
-    module: "test_module",
-    uIPattern: "STD",
-  },
+  createMockTab("tab1", "Main Tab", 0),
+  createMockTab("tab2", "Child Tab", 1, "tab1"),
 ];
+
+// Test helpers
+const renderWithWindowProvider = (ui: React.ReactElement) => {
+  return render(<WindowProvider>{ui}</WindowProvider>);
+};
+
+const createSelectedProvider = (windowIdentifier: string, tabs = createMockTabs(), windowId = "TestWindow") => (
+  <SelectedProvider tabs={tabs} windowId={windowId} windowIdentifier={windowIdentifier}>
+    <TestConsumer testId={windowIdentifier} />
+  </SelectedProvider>
+);
+
+const TestConsumer = ({ testId }: { testId: string }) => {
+  const context = useContext(SelectContext);
+
+  return (
+    <div>
+      <span data-testid={`${testId}-graph-id`}>{(context.graph as { id?: string })?.id || "no-graph"}</span>
+      <span data-testid={`${testId}-graph-exists`}>{context.graph ? "true" : "false"}</span>
+    </div>
+  );
+};
+
+const getGraphId = (testId: string) => screen.getByTestId(`${testId}-graph-id`).textContent;
 
 describe("SelectedProvider Multi-Window Instance Isolation", () => {
   const mockTabs = createMockTabs();
-
-  // Helper function to wrap components with WindowProvider
-  const renderWithWindowProvider = (ui: React.ReactElement) => {
-    return render(<WindowProvider>{ui}</WindowProvider>);
-  };
 
   const TestConsumer = ({ testId }: { testId: string }) => {
     const context = useContext(SelectContext);
@@ -138,100 +143,52 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
   describe("windowIdentifier Functionality", () => {
     it("should render successfully when windowIdentifier is provided", () => {
       expect(() => {
-        renderWithWindowProvider(
-          <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_123456789">
-            <TestConsumer testId="valid" />
-          </SelectedProvider>
-        );
+        renderWithWindowProvider(createSelectedProvider("TestWindow_123456789"));
       }).not.toThrow();
 
-      expect(screen.getByTestId("valid-graph-id")).toBeInTheDocument();
+      expect(screen.getByTestId("TestWindow_123456789-graph-id")).toBeInTheDocument();
     });
 
     it("should use windowIdentifier for graph cache key generation", () => {
-      renderWithWindowProvider(
-        <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_123456789">
-          <TestConsumer testId="cache-key-test" />
-        </SelectedProvider>
-      );
+      renderWithWindowProvider(createSelectedProvider("TestWindow_123456789"));
 
-      // Should successfully create graph instance
-      expect(screen.getByTestId("cache-key-test-graph-id")).not.toHaveTextContent("no-graph");
+      expect(screen.getByTestId("TestWindow_123456789-graph-id")).not.toHaveTextContent("no-graph");
     });
   });
 
   describe("Graph Instance Isolation", () => {
     it("should create different graph instances for different window identifiers", () => {
-      const { unmount: unmount1 } = renderWithWindowProvider(
-        <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_123456789">
-          <TestConsumer testId="instance1" />
-        </SelectedProvider>
-      );
-
-      const graph1Id = screen.getByTestId("instance1-graph-id").textContent;
-
+      const { unmount: unmount1 } = renderWithWindowProvider(createSelectedProvider("TestWindow_123456789"));
+      const graph1Id = getGraphId("TestWindow_123456789");
       unmount1();
 
-      renderWithWindowProvider(
-        <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_987654321">
-          <TestConsumer testId="instance2" />
-        </SelectedProvider>
-      );
+      renderWithWindowProvider(createSelectedProvider("TestWindow_987654321"));
+      const graph2Id = getGraphId("TestWindow_987654321");
 
-      const graph2Id = screen.getByTestId("instance2-graph-id").textContent;
-
-      // Different window identifiers should create different graph instances
       expect(graph1Id).not.toBe(graph2Id);
       expect(graph1Id).not.toBe("no-graph");
       expect(graph2Id).not.toBe("no-graph");
     });
 
     it("should reuse graph instance for same window identifier", () => {
-      const { unmount: unmount1 } = renderWithWindowProvider(
-        <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_123456789">
-          <TestConsumer testId="first-render" />
-        </SelectedProvider>
-      );
-
-      const firstGraphId = screen.getByTestId("first-render-graph-id").textContent;
-
+      const { unmount: unmount1 } = renderWithWindowProvider(createSelectedProvider("TestWindow_123456789"));
+      const firstGraphId = getGraphId("TestWindow_123456789");
       unmount1();
 
-      // Re-render with same windowIdentifier
-      renderWithWindowProvider(
-        <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_123456789">
-          <TestConsumer testId="second-render" />
-        </SelectedProvider>
-      );
+      renderWithWindowProvider(createSelectedProvider("TestWindow_123456789"));
+      const secondGraphId = getGraphId("TestWindow_123456789");
 
-      const secondGraphId = screen.getByTestId("second-render-graph-id").textContent;
-
-      // Same window identifier should reuse cached graph instance
       expect(firstGraphId).toBe(secondGraphId);
     });
 
     it("should use windowIdentifier as cache key instead of windowId", () => {
-      // First instance with specific windowIdentifier
-      const { unmount: unmount1 } = renderWithWindowProvider(
-        <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_specific_123">
-          <TestConsumer testId="specific" />
-        </SelectedProvider>
-      );
-
-      const specificGraphId = screen.getByTestId("specific-graph-id").textContent;
-
+      const { unmount: unmount1 } = renderWithWindowProvider(createSelectedProvider("TestWindow_specific_123"));
+      const specificGraphId = getGraphId("TestWindow_specific_123");
       unmount1();
 
-      // Second instance with same windowId but different windowIdentifier
-      renderWithWindowProvider(
-        <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_different_456">
-          <TestConsumer testId="different" />
-        </SelectedProvider>
-      );
+      renderWithWindowProvider(createSelectedProvider("TestWindow_different_456"));
+      const differentGraphId = getGraphId("TestWindow_different_456");
 
-      const differentGraphId = screen.getByTestId("different-graph-id").textContent;
-
-      // Should create different graphs even with same windowId but different windowIdentifier
       expect(specificGraphId).not.toBe(differentGraphId);
     });
   });
@@ -253,60 +210,35 @@ describe("SelectedProvider Multi-Window Instance Isolation", () => {
 
       expect(screen.getByTestId("context-capture")).toBeInTheDocument();
       expect(contextInstance).not.toBeNull();
-
-      // Verify required context properties exist
       expect(contextInstance).toHaveProperty("graph");
     });
 
     it("should initialize with proper default state", () => {
-      renderWithWindowProvider(
-        <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_123456789">
-          <TestConsumer testId="defaults" />
-        </SelectedProvider>
-      );
+      renderWithWindowProvider(createSelectedProvider("TestWindow_123456789"));
 
-      // Should have graph instance
-      expect(screen.getByTestId("defaults-graph-id")).not.toHaveTextContent("no-graph");
-
-      // Should have a valid graph
-      expect(screen.getByTestId("defaults-graph-exists")).toHaveTextContent("true");
+      expect(screen.getByTestId("TestWindow_123456789-graph-id")).not.toHaveTextContent("no-graph");
+      expect(screen.getByTestId("TestWindow_123456789-graph-exists")).toHaveTextContent("true");
     });
   });
 
   describe("Instance Isolation Requirements", () => {
     it("should use windowIdentifier for instance isolation", () => {
-      renderWithWindowProvider(
-        <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier="TestWindow_isolated_123">
-          <TestConsumer testId="isolation-test" />
-        </SelectedProvider>
-      );
+      renderWithWindowProvider(createSelectedProvider("TestWindow_isolated_123"));
 
-      // Should successfully create isolated graph instance
-      expect(screen.getByTestId("isolation-test-graph-id")).not.toHaveTextContent("no-graph");
+      expect(screen.getByTestId("TestWindow_isolated_123-graph-id")).not.toHaveTextContent("no-graph");
     });
 
     it("should use consistent cache key pattern", () => {
+      const identifiers = ["TestWindow_111", "TestWindow_222", "ProductWindow_333"];
       const graphIds: string[] = [];
 
-      // Test multiple instances with predictable identifiers
-      const identifiers = ["TestWindow_111", "TestWindow_222", "ProductWindow_333"];
-
       for (const identifier of identifiers) {
-        const { unmount } = renderWithWindowProvider(
-          <SelectedProvider tabs={mockTabs} windowId="TestWindow" windowIdentifier={identifier}>
-            <TestConsumer testId={`test-${identifier}`} />
-          </SelectedProvider>
-        );
-
-        const graphId = screen.getByTestId(`test-${identifier}-graph-id`).textContent;
-        if (graphId) {
-          graphIds.push(graphId);
-        }
-
+        const { unmount } = renderWithWindowProvider(createSelectedProvider(identifier));
+        const graphId = getGraphId(identifier);
+        if (graphId) graphIds.push(graphId);
         unmount();
       }
 
-      // All instances should have unique graph IDs
       const uniqueIds = new Set(graphIds);
       expect(uniqueIds.size).toBe(identifiers.length);
     });

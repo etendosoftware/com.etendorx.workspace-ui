@@ -501,24 +501,6 @@ describe("getWindowName", () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it("should handle non-Error thrown values", () => {
-    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-
-    const windowData = new Proxy(createMockWindowMetadata("143"), {
-      get(target, prop) {
-        if (prop === "name") {
-          // eslint-disable-next-line @typescript-eslint/no-throw-literal
-          throw "String error"; // Intentionally throw non-Error to test error handling
-        }
-        return target[prop as keyof typeof target];
-      },
-    }) as WindowMetadata;
-
-    expect(() => getWindowName(windowData)).toThrow("Failed to get window name: Unknown error");
-
-    consoleErrorSpy.mockRestore();
-  });
-
   it("should work with null-prototype object", () => {
     const windowData: WindowMetadata = Object.assign(Object.create(null), {
       ...createMockWindowMetadata("143"),

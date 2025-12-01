@@ -6,15 +6,17 @@ import WindowProvider from "@/contexts/window";
 const mockReplace = jest.fn();
 const mockSearchParams = new URLSearchParams();
 
+const createMockRouter = () => ({
+  replace: mockReplace,
+  push: jest.fn(),
+  back: jest.fn(),
+  forward: jest.fn(),
+  refresh: jest.fn(),
+  prefetch: jest.fn(),
+});
+
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({
-    replace: mockReplace,
-    push: jest.fn(),
-    back: jest.fn(),
-    forward: jest.fn(),
-    refresh: jest.fn(),
-    prefetch: jest.fn(),
-  }),
+  useRouter: () => createMockRouter(),
   useSearchParams: () => mockSearchParams,
   usePathname: () => "/window",
 }));
@@ -59,33 +61,45 @@ jest.mock("react", () => {
   return { ...actual, useTransition: () => [true, (cb: any) => cb()] };
 });
 
-describe("Tabs - pending state skeleton", () => {
-  const tabs = [
+// Test helpers
+const createMockTabs = () =>
+  [
     { id: "t1", name: "Tab 1", tabLevel: 1 },
     { id: "t2", name: "Tab 2", tabLevel: 2 },
   ] as any[];
 
+const setupWindowParams = (windowId = "window1") => {
+  mockSearchParams.set(`w_${windowId}`, "active");
+  mockSearchParams.set(`wi_${windowId}`, windowId);
+  mockSearchParams.set(`o_${windowId}`, "1");
+};
+
+const clearSearchParams = () => {
+  Array.from(mockSearchParams.keys()).forEach((key) => mockSearchParams.delete(key));
+};
+
+const renderTabsComponent = (tabs: any[]) => {
+  const TabsAsAny = TabsComponent as any;
+  return render(
+    <WindowProvider>
+      <TabsAsAny tabs={tabs} />
+    </WindowProvider>
+  );
+};
+
+describe("Tabs - pending state skeleton", () => {
+  const tabs = createMockTabs();
+
   beforeEach(() => {
     mockReplace.mockClear();
-    // Clear all search params
-    Array.from(mockSearchParams.keys()).forEach((key) => mockSearchParams.delete(key));
-
-    // Initialize a window in URL params
-    mockSearchParams.set("w_window1", "active");
-    mockSearchParams.set("wi_window1", "window1");
-    mockSearchParams.set("o_window1", "1");
+    clearSearchParams();
+    setupWindowParams();
   });
 
   it("renders skeleton content when transition is pending", () => {
-    const TabsAsAny = TabsComponent as any;
-    render(
-      <WindowProvider>
-        <TabsAsAny tabs={tabs} />
-      </WindowProvider>
-    );
+    renderTabsComponent(tabs);
 
     expect(screen.getByTestId("tab-container")).toBeInTheDocument();
-    // When pending, the skeleton container with animate-pulse should be present
     const skeleton = document.querySelector(".animate-pulse");
     expect(skeleton).toBeInTheDocument();
   });
