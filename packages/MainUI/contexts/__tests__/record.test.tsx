@@ -168,7 +168,11 @@ describe("RecordContext", () => {
     const { result } = renderRecordHook();
 
     const mockRecord1 = createMockRecord({ id: "org-1", documentNo: { value: "DOC-001" } });
-    const mockRecord2 = createMockRecord({ id: "org-2", documentNo: { value: "DOC-002" }, transactionDocument: { value: "Order" } });
+    const mockRecord2 = createMockRecord({
+      id: "org-2",
+      documentNo: { value: "DOC-002" },
+      transactionDocument: { value: "Order" },
+    });
 
     setAndVerifyRecord(result, mockRecord1);
     setAndVerifyRecord(result, mockRecord2);

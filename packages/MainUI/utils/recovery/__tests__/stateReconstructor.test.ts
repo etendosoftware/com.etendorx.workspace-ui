@@ -139,17 +139,6 @@ const mockDatasourceSuccess = (data: EntityData[]) => {
   } as any);
 };
 
-const mockDatasourceFailure = () => {
-  mockDatasource.get.mockResolvedValue({
-    ok: false,
-    data: null,
-  } as any);
-};
-
-const mockDatasourceError = (error: unknown) => {
-  mockDatasource.get.mockRejectedValue(error);
-};
-
 const createConsoleErrorSpy = () => {
   return jest.spyOn(console, "error").mockImplementation(() => {});
 };
@@ -377,26 +366,18 @@ describe("reconstructState", () => {
       const result = await reconstructState(hierarchy, windowMetadata);
 
       // Check child tab (target)
-      expectTabState(result, "tab2", {
-        selectedRecord: "child123",
-        formRecordId: "child123",
-        formMode: FORM_MODES.EDIT,
-      });
+      expect(result.tabs["tab2"].selectedRecord).toBe("child123");
+      expect(result.tabs["tab2"].form.recordId).toBe("child123");
+      expect(result.tabs["tab2"].form.mode).toBe(FORM_MODES.EDIT);
 
       // Check parent tab
-      expectTabState(result, "tab1", {
-        selectedRecord: "parent456",
-        formEmpty: true,
-      });
+      expect(result.tabs["tab1"].selectedRecord).toBe("parent456");
+      expect(result.tabs["tab1"].form).toEqual({});
 
       // Check navigation
-      expectNavigationState(result, {
-        activeLevels: [1],
-        activeTabsByLevel: new Map([
-          [0, "tab1"],
-          [1, "tab2"],
-        ]),
-      });
+      expect(result.navigation.activeLevels).toEqual([1]);
+      expect(result.navigation.activeTabsByLevel.get(0)).toBe("tab1");
+      expect(result.navigation.activeTabsByLevel.get(1)).toBe("tab2");
 
       // Verify datasource call
       expect(mockDatasource.get).toHaveBeenCalledWith("ChildEntity", {
@@ -434,7 +415,7 @@ describe("reconstructState", () => {
     it("should throw error when datasource query fails", async () => {
       const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
 
-      mockDatasourceFailure();
+      mockDatasource.get.mockResolvedValue({ ok: false, data: null } as any);
 
       await expect(reconstructState(hierarchy, windowMetadata)).rejects.toThrow("Failed to fetch child record data");
     });
@@ -475,30 +456,20 @@ describe("reconstructState", () => {
       const result = await reconstructState(hierarchy, windowMetadata);
 
       // Check all three tabs
-      expectTabState(result, "tab3", {
-        selectedRecord: "leaf789",
-        formRecordId: "leaf789",
-      });
+      expect(result.tabs["tab3"].selectedRecord).toBe("leaf789");
+      expect(result.tabs["tab3"].form.recordId).toBe("leaf789");
 
-      expectTabState(result, "tab2", {
-        selectedRecord: "middle456",
-        formEmpty: true,
-      });
+      expect(result.tabs["tab2"].selectedRecord).toBe("middle456");
+      expect(result.tabs["tab2"].form).toEqual({});
 
-      expectTabState(result, "tab1", {
-        selectedRecord: "root123",
-        formEmpty: true,
-      });
+      expect(result.tabs["tab1"].selectedRecord).toBe("root123");
+      expect(result.tabs["tab1"].form).toEqual({});
 
       // Check navigation
-      expectNavigationState(result, {
-        activeLevels: [2],
-        activeTabsByLevel: new Map([
-          [0, "tab1"],
-          [1, "tab2"],
-          [2, "tab3"],
-        ]),
-      });
+      expect(result.navigation.activeLevels).toEqual([2]);
+      expect(result.navigation.activeTabsByLevel.get(0)).toBe("tab1");
+      expect(result.navigation.activeTabsByLevel.get(1)).toBe("tab2");
+      expect(result.navigation.activeTabsByLevel.get(2)).toBe("tab3");
 
       // Verify datasource was called twice
       expect(mockDatasource.get).toHaveBeenCalledTimes(2);
@@ -569,7 +540,7 @@ describe("reconstructState", () => {
 
       const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
 
-      mockDatasourceError(new Error("Network error"));
+      mockDatasource.get.mockRejectedValue(new Error("Network error"));
 
       await expect(reconstructState(hierarchy, windowMetadata)).rejects.toThrow("Network error");
 
@@ -583,7 +554,7 @@ describe("reconstructState", () => {
 
       const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
 
-      mockDatasourceError("String error");
+      mockDatasource.get.mockRejectedValue("String error");
 
       await expect(reconstructState(hierarchy, windowMetadata)).rejects.toThrow("Unknown error");
 

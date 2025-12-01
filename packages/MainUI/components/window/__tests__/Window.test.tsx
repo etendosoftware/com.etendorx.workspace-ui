@@ -166,6 +166,18 @@ const createWindowState = (windowId: string, windowIdentifier: string, initializ
   initialized,
 });
 
+// Helper to verify SelectedProvider attributes
+const expectProviderAttributes = (
+  provider: HTMLElement,
+  expected: { windowId: string; windowIdentifier: string; tabsCount?: string }
+) => {
+  expect(provider).toHaveAttribute("data-window-id", expected.windowId);
+  expect(provider).toHaveAttribute("data-window-identifier", expected.windowIdentifier);
+  if (expected.tabsCount !== undefined) {
+    expect(provider).toHaveAttribute("data-tabs-count", expected.tabsCount);
+  }
+};
+
 describe("Window Component Multi-Window Instance Support", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -216,8 +228,10 @@ describe("Window Component Multi-Window Instance Support", () => {
       const window = createWindowState("TestWindow", "TestWindow_123456789");
       render(<Window window={window} />);
 
-      const selectedProvider = screen.getByTestId("selected-provider");
-      expect(selectedProvider).toHaveAttribute("data-window-identifier", "TestWindow_123456789");
+      expectProviderAttributes(screen.getByTestId("selected-provider"), {
+        windowId: "TestWindow",
+        windowIdentifier: "TestWindow_123456789",
+      });
     });
 
     it("should pass windowId to SelectedProvider for metadata operations", () => {
@@ -245,8 +259,10 @@ describe("Window Component Multi-Window Instance Support", () => {
         const window = createWindowState("TestWindow", identifier);
         const { unmount } = render(<Window window={window} />);
 
-        const selectedProvider = screen.getByTestId("selected-provider");
-        expect(selectedProvider).toHaveAttribute("data-window-identifier", identifier);
+        expectProviderAttributes(screen.getByTestId("selected-provider"), {
+          windowId: "TestWindow",
+          windowIdentifier: identifier,
+        });
 
         unmount();
       }
@@ -305,33 +321,31 @@ describe("Window Component Multi-Window Instance Support", () => {
       const window = createWindowState("TestWindow", "TestWindow_123456789");
       render(<Window window={window} />);
 
-      // Verify the complete prop passing chain
-      const selectedProvider = screen.getByTestId("selected-provider");
-
-      // Both windowId and windowIdentifier should be passed
-      expect(selectedProvider).toHaveAttribute("data-window-id", "TestWindow");
-      expect(selectedProvider).toHaveAttribute("data-window-identifier", "TestWindow_123456789");
-
-      // Tabs should be passed from metadata
-      expect(selectedProvider).toHaveAttribute("data-tabs-count", "1");
+      expectProviderAttributes(screen.getByTestId("selected-provider"), {
+        windowId: "TestWindow",
+        windowIdentifier: "TestWindow_123456789",
+        tabsCount: "1",
+      });
     });
 
     it("should support multiple instances with different identifiers", () => {
-      // First instance
       const window1 = createWindowState("TestWindow", "TestWindow_instance1");
       const { unmount: unmount1 } = render(<Window window={window1} />);
 
-      let selectedProvider = screen.getByTestId("selected-provider");
-      expect(selectedProvider).toHaveAttribute("data-window-identifier", "TestWindow_instance1");
+      expectProviderAttributes(screen.getByTestId("selected-provider"), {
+        windowId: "TestWindow",
+        windowIdentifier: "TestWindow_instance1",
+      });
 
       unmount1();
 
-      // Second instance
       const window2 = createWindowState("TestWindow", "TestWindow_instance2");
       render(<Window window={window2} />);
 
-      selectedProvider = screen.getByTestId("selected-provider");
-      expect(selectedProvider).toHaveAttribute("data-window-identifier", "TestWindow_instance2");
+      expectProviderAttributes(screen.getByTestId("selected-provider"), {
+        windowId: "TestWindow",
+        windowIdentifier: "TestWindow_instance2",
+      });
     });
 
     it("should use correct testid format for component identification", () => {
@@ -347,7 +361,6 @@ describe("Window Component Multi-Window Instance Support", () => {
     });
 
     it("should handle complex window metadata structures", () => {
-      // Set complex window data
       Object.assign(mockMetadataContext, {
         error: null,
         loading: false,
@@ -382,10 +395,11 @@ describe("Window Component Multi-Window Instance Support", () => {
       const window = createWindowState("ComplexWindow", "ComplexWindow_complex123");
       render(<Window window={window} />);
 
-      const selectedProvider = screen.getByTestId("selected-provider");
-      expect(selectedProvider).toHaveAttribute("data-tabs-count", "3");
-      expect(selectedProvider).toHaveAttribute("data-window-id", "ComplexWindow");
-      expect(selectedProvider).toHaveAttribute("data-window-identifier", "ComplexWindow_complex123");
+      expectProviderAttributes(screen.getByTestId("selected-provider"), {
+        windowId: "ComplexWindow",
+        windowIdentifier: "ComplexWindow_complex123",
+        tabsCount: "3",
+      });
     });
   });
 });

@@ -64,40 +64,6 @@ describe("useTableStatePersistenceTab", () => {
     expect(getter()).toEqual(testValue);
   };
 
-  // Helper: Set all table state properties at once
-  const setAllTableState = (
-    result: any,
-    values: {
-      filters?: any[];
-      visibility?: Record<string, boolean>;
-      sorting?: any[];
-      order?: string[];
-    }
-  ) => {
-    act(() => {
-      if (values.filters !== undefined) result.setTableColumnFilters(values.filters);
-      if (values.visibility !== undefined) result.setTableColumnVisibility(values.visibility);
-      if (values.sorting !== undefined) result.setTableColumnSorting(values.sorting);
-      if (values.order !== undefined) result.setTableColumnOrder(values.order);
-    });
-  };
-
-  // Helper: Expect all table state properties
-  const expectAllTableState = (
-    result: any,
-    expected: {
-      filters?: any[];
-      visibility?: Record<string, boolean>;
-      sorting?: any[];
-      order?: string[];
-    }
-  ) => {
-    if (expected.filters !== undefined) expect(result.tableColumnFilters).toEqual(expected.filters);
-    if (expected.visibility !== undefined) expect(result.tableColumnVisibility).toEqual(expected.visibility);
-    if (expected.sorting !== undefined) expect(result.tableColumnSorting).toEqual(expected.sorting);
-    if (expected.order !== undefined) expect(result.tableColumnOrder).toEqual(expected.order);
-  };
-
   beforeEach(() => {
     mockReplace.mockClear();
     // Clear all search params
@@ -261,16 +227,24 @@ describe("useTableStatePersistenceTab", () => {
   it("should maintain state consistency across re-renders", () => {
     const { result, rerender } = renderTableHook();
 
-    const testValues = {
-      filters: [{ id: "column1", value: "persistent" }],
-      visibility: { column1: false },
-      sorting: [{ id: "column1", desc: true }],
-      order: ["column2", "column1"],
-    };
+    const testFilters = [{ id: "column1", value: "persistent" }];
+    const testVisibility = { column1: false };
+    const testSorting = [{ id: "column1", desc: true }];
+    const testOrder = ["column2", "column1"];
 
-    setAllTableState(result.current, testValues);
+    act(() => {
+      result.current.setTableColumnFilters(testFilters);
+      result.current.setTableColumnVisibility(testVisibility);
+      result.current.setTableColumnSorting(testSorting);
+      result.current.setTableColumnOrder(testOrder);
+    });
+
     rerender();
-    expectAllTableState(result.current, testValues);
+
+    expect(result.current.tableColumnFilters).toEqual(testFilters);
+    expect(result.current.tableColumnVisibility).toEqual(testVisibility);
+    expect(result.current.tableColumnSorting).toEqual(testSorting);
+    expect(result.current.tableColumnOrder).toEqual(testOrder);
   });
 
   it("should handle rapid consecutive updates correctly", () => {
