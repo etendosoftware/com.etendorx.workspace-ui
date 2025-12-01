@@ -209,10 +209,6 @@ jest.mock("@/utils/logger", () => ({
   },
 }));
 
-jest.mock("@/hooks/navigation/useMultiWindowURL", () => ({
-  useMultiWindowURL: () => mockMultiWindowURL,
-}));
-
 // Mock the hooks
 jest.mock("@/contexts/searchContext", () => ({
   useSearch: () => mockSearchContext,

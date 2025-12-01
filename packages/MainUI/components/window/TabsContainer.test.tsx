@@ -14,10 +14,6 @@ jest.mock("@/hooks/useSelected", () => ({
   }),
 }));
 
-jest.mock("@/hooks/navigation/useMultiWindowURL", () => ({
-  useMultiWindowURL: () => ({ activeWindow: null }),
-}));
-
 jest.mock("@/hooks/useMetadataContext", () => ({
   useMetadataContext: () => ({ getWindowMetadata: jest.fn() }),
 }));

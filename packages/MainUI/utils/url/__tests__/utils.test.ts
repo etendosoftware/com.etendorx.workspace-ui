@@ -25,7 +25,6 @@
  */
 
 import {
-  shouldSkipNavigation,
   buildWindowsUrlParams,
   parseWindowRecoveryData,
   validateRecoveryParameters,
@@ -37,51 +36,6 @@ import type { WindowState } from "../../window/constants";
 import { TAB_MODES } from "../constants";
 
 describe("URL Utility Functions", () => {
-  describe("shouldSkipNavigation", () => {
-    it("should return true when current and target params are identical", () => {
-      const searchParams = new URLSearchParams("wi_0=window1&ti_0=tab1");
-      const targetUrl = "/workspace?wi_0=window1&ti_0=tab1";
-
-      expect(shouldSkipNavigation(targetUrl, searchParams)).toBe(true);
-    });
-
-    it("should return false when params differ", () => {
-      const searchParams = new URLSearchParams("wi_0=window1");
-      const targetUrl = "/workspace?wi_0=window2";
-
-      expect(shouldSkipNavigation(targetUrl, searchParams)).toBe(false);
-    });
-
-    it("should return false when target has no params but current does", () => {
-      const searchParams = new URLSearchParams("wi_0=window1");
-      const targetUrl = "/workspace";
-
-      expect(shouldSkipNavigation(targetUrl, searchParams)).toBe(false);
-    });
-
-    it("should return true when both have no params", () => {
-      const searchParams = new URLSearchParams("");
-      const targetUrl = "/workspace";
-
-      expect(shouldSkipNavigation(targetUrl, searchParams)).toBe(true);
-    });
-
-    it("should handle malformed URLs gracefully", () => {
-      const searchParams = new URLSearchParams("wi_0=window1");
-      const malformedUrl = "not a url";
-
-      // Should return false to proceed with navigation
-      expect(shouldSkipNavigation(malformedUrl, searchParams)).toBe(false);
-    });
-
-    it("should handle null searchParams safely", () => {
-      const targetUrl = "/workspace?wi_0=window1";
-
-      // @ts-expect-error Testing null case
-      expect(shouldSkipNavigation(targetUrl, null)).toBe(false);
-    });
-  });
-
   describe("buildWindowsUrlParams", () => {
     it("should build params for single window with no tabs", () => {
       const windows: WindowState[] = [
