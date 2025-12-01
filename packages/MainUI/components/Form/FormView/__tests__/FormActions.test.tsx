@@ -4,19 +4,65 @@ import { globalCalloutManager } from "../../../../services/callouts";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import WindowProvider from "@/contexts/window";
 
+/**
+ * Test helpers
+ */
+
 // Mock Next.js navigation hooks
 const mockReplace = jest.fn();
 const mockSearchParams = new URLSearchParams();
 
+const createMockRouter = () => ({
+  replace: mockReplace,
+  push: jest.fn(),
+  back: jest.fn(),
+  forward: jest.fn(),
+  refresh: jest.fn(),
+  prefetch: jest.fn(),
+});
+
+const setupSearchParams = (windowId: string) => {
+  Array.from(mockSearchParams.keys()).forEach((key) => mockSearchParams.delete(key));
+  mockSearchParams.set(`w_${windowId}`, "active");
+  mockSearchParams.set(`wi_${windowId}`, windowId);
+  mockSearchParams.set(`o_${windowId}`, "1");
+};
+
+const createMockTab = (tabId: string, windowId: string, name = "Test Tab"): Tab =>
+  ({
+    id: tabId,
+    name,
+    title: name,
+    uIPattern: "STD",
+    window: { id: windowId, name: "Test Window" },
+  }) as unknown as Tab;
+
+const createMockCalloutState = (overrides = {}) => ({
+  isRunning: false,
+  queueLength: 0,
+  pendingCount: 0,
+  ...overrides,
+});
+
+const createFormActionsProps = (tab: Tab, overrides = {}) => ({
+  tab,
+  setRecordId: jest.fn(),
+  refetch: jest.fn(),
+  onSave: jest.fn(),
+  showErrorModal: jest.fn(),
+  ...overrides,
+});
+
+const renderFormActions = (props: ReturnType<typeof createFormActionsProps>) => {
+  return render(
+    <WindowProvider>
+      <FormActions {...props} />
+    </WindowProvider>
+  );
+};
+
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({
-    replace: mockReplace,
-    push: jest.fn(),
-    back: jest.fn(),
-    forward: jest.fn(),
-    refresh: jest.fn(),
-    prefetch: jest.fn(),
-  }),
+  useRouter: () => createMockRouter(),
   useSearchParams: () => mockSearchParams,
   usePathname: () => "/window",
 }));
@@ -72,55 +118,24 @@ jest.mock("@/services/callouts", () => ({
 }));
 
 describe("FormActions", () => {
-  const mockTab = {
-    id: "TAB1",
-    name: "Test Tab",
-    title: "Test Tab",
-    uIPattern: "STD",
-    window: { id: "WIN1", name: "Test Window" },
-  } as unknown as Tab;
-
-  const props = {
-    tab: mockTab,
-    setRecordId: jest.fn(),
-    refetch: jest.fn(),
-    onSave: jest.fn(),
-    showErrorModal: jest.fn(),
-  };
+  const mockTab = createMockTab("TAB1", "WIN1");
+  const props = createFormActionsProps(mockTab);
 
   beforeEach(() => {
     mockReplace.mockClear();
-    // Clear all search params
-    Array.from(mockSearchParams.keys()).forEach((key) => mockSearchParams.delete(key));
-
-    // Initialize a window in URL params
-    mockSearchParams.set("w_WIN1", "active");
-    mockSearchParams.set("wi_WIN1", "WIN1");
-    mockSearchParams.set("o_WIN1", "1");
+    setupSearchParams("WIN1");
   });
 
   it("renders and registers actions", () => {
-    render(
-      <WindowProvider>
-        <FormActions {...props} />
-      </WindowProvider>
-    );
+    renderFormActions(props);
     // Esperamos que se registre el objeto con las acciones
     // (el mock de registerActions se llama desde el useEffect)
   });
 
   it("calls validation when callouts are done", () => {
-    (globalCalloutManager.getState as jest.Mock).mockReturnValue({
-      isRunning: false,
-      queueLength: 0,
-      pendingCount: 0,
-    });
+    (globalCalloutManager.getState as jest.Mock).mockReturnValue(createMockCalloutState());
 
-    render(
-      <WindowProvider>
-        <FormActions {...props} />
-      </WindowProvider>
-    );
+    renderFormActions(props);
     expect(globalCalloutManager.getState).toHaveBeenCalled();
   });
 });

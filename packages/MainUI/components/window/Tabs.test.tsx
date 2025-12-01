@@ -2,6 +2,10 @@ import { render, screen } from "@testing-library/react";
 import TabsComponent from "./Tabs";
 import WindowProvider from "@/contexts/window";
 
+/**
+ * Test helpers
+ */
+
 // Mock Next.js navigation hooks
 const mockReplace = jest.fn();
 const mockSearchParams = new URLSearchParams();
@@ -14,6 +18,32 @@ const createMockRouter = () => ({
   refresh: jest.fn(),
   prefetch: jest.fn(),
 });
+
+const createMockTabs = (count = 2) =>
+  Array.from({ length: count }, (_, i) => ({
+    id: `t${i + 1}`,
+    name: `Tab ${i + 1}`,
+    tabLevel: i + 1,
+  })) as any[];
+
+const setupWindowParams = (windowId = "window1") => {
+  mockSearchParams.set(`w_${windowId}`, "active");
+  mockSearchParams.set(`wi_${windowId}`, windowId);
+  mockSearchParams.set(`o_${windowId}`, "1");
+};
+
+const clearSearchParams = () => {
+  Array.from(mockSearchParams.keys()).forEach((key) => mockSearchParams.delete(key));
+};
+
+const renderTabsComponent = (tabs: any[]) => {
+  const TabsAsAny = TabsComponent as any;
+  return render(
+    <WindowProvider>
+      <TabsAsAny tabs={tabs} />
+    </WindowProvider>
+  );
+};
 
 jest.mock("next/navigation", () => ({
   useRouter: () => createMockRouter(),
@@ -60,32 +90,6 @@ jest.mock("react", () => {
   const actual = jest.requireActual("react");
   return { ...actual, useTransition: () => [true, (cb: any) => cb()] };
 });
-
-// Test helpers
-const createMockTabs = () =>
-  [
-    { id: "t1", name: "Tab 1", tabLevel: 1 },
-    { id: "t2", name: "Tab 2", tabLevel: 2 },
-  ] as any[];
-
-const setupWindowParams = (windowId = "window1") => {
-  mockSearchParams.set(`w_${windowId}`, "active");
-  mockSearchParams.set(`wi_${windowId}`, windowId);
-  mockSearchParams.set(`o_${windowId}`, "1");
-};
-
-const clearSearchParams = () => {
-  Array.from(mockSearchParams.keys()).forEach((key) => mockSearchParams.delete(key));
-};
-
-const renderTabsComponent = (tabs: any[]) => {
-  const TabsAsAny = TabsComponent as any;
-  return render(
-    <WindowProvider>
-      <TabsAsAny tabs={tabs} />
-    </WindowProvider>
-  );
-};
 
 describe("Tabs - pending state skeleton", () => {
   const tabs = createMockTabs();

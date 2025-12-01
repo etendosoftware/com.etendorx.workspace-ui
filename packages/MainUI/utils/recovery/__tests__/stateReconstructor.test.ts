@@ -146,6 +146,14 @@ const mockDatasourceFailure = () => {
   } as any);
 };
 
+const mockDatasourceError = (error: unknown) => {
+  mockDatasource.get.mockRejectedValue(error);
+};
+
+const createConsoleErrorSpy = () => {
+  return jest.spyOn(console, "error").mockImplementation(() => {});
+};
+
 const createMockWindowMetadata = (tabs: Tab[]): WindowMetadata => ({
   id: "143",
   name: "Test Window",
@@ -192,6 +200,123 @@ const createMockTabState = (level: number): TabState => ({
     childSelections: {},
   },
 });
+
+/**
+ * Test setup helpers
+ */
+interface TwoLevelHierarchySetup {
+  rootTab: Tab;
+  childTab: Tab;
+  rootNode: TabHierarchyNode;
+  childNode: TabHierarchyNode;
+  hierarchy: CalculatedHierarchy;
+  windowMetadata: WindowMetadata;
+}
+
+const setupTwoLevelHierarchy = (
+  rootId = "tab1",
+  childId = "tab2",
+  childRecordId = "child123"
+): TwoLevelHierarchySetup => {
+  const rootTab = createMockTab(rootId, 0, "ParentEntity", false);
+  const childTab = createMockTab(childId, 1, "ChildEntity", true, rootId);
+
+  const childNode = createMockTabNode(childId, childTab, 1, {
+    recordId: childRecordId,
+    parentKeyField: "parentField",
+  });
+  const rootNode = createMockTabNode(rootId, rootTab, 0, {
+    parentKeyField: "parentField",
+    children: [childNode],
+  });
+
+  const hierarchy = createMockHierarchy(childNode, [rootNode]);
+  const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
+
+  return { rootTab, childTab, rootNode, childNode, hierarchy, windowMetadata };
+};
+
+interface ThreeLevelHierarchySetup {
+  rootTab: Tab;
+  middleTab: Tab;
+  leafTab: Tab;
+  rootNode: TabHierarchyNode;
+  middleNode: TabHierarchyNode;
+  leafNode: TabHierarchyNode;
+  hierarchy: CalculatedHierarchy;
+  windowMetadata: WindowMetadata;
+}
+
+const setupThreeLevelHierarchy = (
+  rootId = "tab1",
+  middleId = "tab2",
+  leafId = "tab3",
+  leafRecordId = "leaf789"
+): ThreeLevelHierarchySetup => {
+  const rootTab = createMockTab(rootId, 0, "RootEntity", false);
+  const middleTab = createMockTab(middleId, 1, "MiddleEntity", true, rootId);
+  const leafTab = createMockTab(leafId, 2, "LeafEntity", true, middleId);
+
+  const leafNode = createMockTabNode(leafId, leafTab, 2, { recordId: leafRecordId });
+  const middleNode = createMockTabNode(middleId, middleTab, 1, {
+    parentKeyField: "parentField",
+    children: [leafNode],
+  });
+  const rootNode = createMockTabNode(rootId, rootTab, 0, {
+    parentKeyField: "parentField",
+    children: [middleNode],
+  });
+
+  const hierarchy = createMockHierarchy(leafNode, [rootNode, middleNode]);
+  const windowMetadata = createMockWindowMetadata([rootTab, middleTab, leafTab]);
+
+  return { rootTab, middleTab, leafTab, rootNode, middleNode, leafNode, hierarchy, windowMetadata };
+};
+
+/**
+ * Assertion helpers
+ */
+const expectTabState = (
+  result: any,
+  tabId: string,
+  expectations: {
+    selectedRecord?: string;
+    formRecordId?: string;
+    formMode?: string;
+    formEmpty?: boolean;
+  }
+) => {
+  expect(result.tabs[tabId]).toBeDefined();
+  if (expectations.selectedRecord !== undefined) {
+    expect(result.tabs[tabId].selectedRecord).toBe(expectations.selectedRecord);
+  }
+  if (expectations.formRecordId !== undefined) {
+    expect(result.tabs[tabId].form.recordId).toBe(expectations.formRecordId);
+  }
+  if (expectations.formMode !== undefined) {
+    expect(result.tabs[tabId].form.mode).toBe(expectations.formMode);
+  }
+  if (expectations.formEmpty) {
+    expect(result.tabs[tabId].form).toEqual({});
+  }
+};
+
+const expectNavigationState = (
+  result: any,
+  expectations: {
+    activeLevels: number[];
+    activeTabsByLevel: Map<number, string>;
+    initialized?: boolean;
+  }
+) => {
+  expect(result.navigation.activeLevels).toEqual(expectations.activeLevels);
+  expectations.activeTabsByLevel.forEach((tabId, level) => {
+    expect(result.navigation.activeTabsByLevel.get(level)).toBe(tabId);
+  });
+  if (expectations.initialized !== undefined) {
+    expect(result.navigation.initialized).toBe(expectations.initialized);
+  }
+};
 
 describe("reconstructState", () => {
   beforeEach(() => {
@@ -245,37 +370,33 @@ describe("reconstructState", () => {
 
   describe("Two-level hierarchy", () => {
     it("should reconstruct state with parent-child relationship", async () => {
-      const rootTab = createMockTab("tab1", 0, "ParentEntity", false);
-      const childTab = createMockTab("tab2", 1, "ChildEntity", true, "tab1");
-
-      const childNode = createMockTabNode("tab2", childTab, 1, { recordId: "child123" });
-      const rootNode = createMockTabNode("tab1", rootTab, 0, {
-        parentKeyField: "parentField",
-        children: [childNode],
-      });
-
-      const hierarchy = createMockHierarchy(childNode, [rootNode]);
-      const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
+      const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
 
       mockDatasourceSuccess([{ id: "child123", parentField: "parent456", otherField: "value" } as EntityData]);
 
       const result = await reconstructState(hierarchy, windowMetadata);
 
       // Check child tab (target)
-      expect(result.tabs["tab2"]).toBeDefined();
-      expect(result.tabs["tab2"].selectedRecord).toBe("child123");
-      expect(result.tabs["tab2"].form.recordId).toBe("child123");
-      expect(result.tabs["tab2"].form.mode).toBe(FORM_MODES.EDIT);
+      expectTabState(result, "tab2", {
+        selectedRecord: "child123",
+        formRecordId: "child123",
+        formMode: FORM_MODES.EDIT,
+      });
 
       // Check parent tab
-      expect(result.tabs["tab1"]).toBeDefined();
-      expect(result.tabs["tab1"].selectedRecord).toBe("parent456");
-      expect(result.tabs["tab1"].form).toEqual({});
+      expectTabState(result, "tab1", {
+        selectedRecord: "parent456",
+        formEmpty: true,
+      });
 
       // Check navigation
-      expect(result.navigation.activeLevels).toEqual([1]);
-      expect(result.navigation.activeTabsByLevel.get(0)).toBe("tab1");
-      expect(result.navigation.activeTabsByLevel.get(1)).toBe("tab2");
+      expectNavigationState(result, {
+        activeLevels: [1],
+        activeTabsByLevel: new Map([
+          [0, "tab1"],
+          [1, "tab2"],
+        ]),
+      });
 
       // Verify datasource call
       expect(mockDatasource.get).toHaveBeenCalledWith("ChildEntity", {
@@ -311,20 +432,7 @@ describe("reconstructState", () => {
     });
 
     it("should throw error when datasource query fails", async () => {
-      const rootTab = createMockTab("tab1", 0, "ParentEntity", false);
-      const childTab = createMockTab("tab2", 1, "ChildEntity", true, "tab1");
-
-      const childNode = createMockTabNode("tab2", childTab, 1, {
-        recordId: "child123",
-        parentKeyField: "parentField",
-      });
-      const rootNode = createMockTabNode("tab1", rootTab, 0, {
-        parentKeyField: "parentField",
-        children: [childNode],
-      });
-
-      const hierarchy = createMockHierarchy(childNode, [rootNode]);
-      const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
+      const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
 
       mockDatasourceFailure();
 
@@ -332,20 +440,7 @@ describe("reconstructState", () => {
     });
 
     it("should throw error when datasource returns no data", async () => {
-      const rootTab = createMockTab("tab1", 0, "ParentEntity", false);
-      const childTab = createMockTab("tab2", 1, "ChildEntity", true, "tab1");
-
-      const childNode = createMockTabNode("tab2", childTab, 1, {
-        recordId: "child123",
-        parentKeyField: "parentField",
-      });
-      const rootNode = createMockTabNode("tab1", rootTab, 0, {
-        parentKeyField: "parentField",
-        children: [childNode],
-      });
-
-      const hierarchy = createMockHierarchy(childNode, [rootNode]);
-      const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
+      const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
 
       mockDatasourceSuccess([]);
 
@@ -353,20 +448,7 @@ describe("reconstructState", () => {
     });
 
     it("should throw error when parent record ID field is missing in child data", async () => {
-      const rootTab = createMockTab("tab1", 0, "ParentEntity", false);
-      const childTab = createMockTab("tab2", 1, "ChildEntity", true, "tab1");
-
-      const childNode = createMockTabNode("tab2", childTab, 1, {
-        recordId: "child123",
-        parentKeyField: "parentField",
-      });
-      const rootNode = createMockTabNode("tab1", rootTab, 0, {
-        parentKeyField: "parentField",
-        children: [childNode],
-      });
-
-      const hierarchy = createMockHierarchy(childNode, [rootNode]);
-      const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
+      const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
 
       mockDatasourceSuccess([{ id: "child123", otherField: "value" } as EntityData]);
 
@@ -378,22 +460,7 @@ describe("reconstructState", () => {
 
   describe("Three-level hierarchy", () => {
     it("should reconstruct state with multiple parent levels", async () => {
-      const rootTab = createMockTab("tab1", 0, "RootEntity", false);
-      const middleTab = createMockTab("tab2", 1, "MiddleEntity", true, "tab1");
-      const leafTab = createMockTab("tab3", 2, "LeafEntity", true, "tab2");
-
-      const leafNode = createMockTabNode("tab3", leafTab, 2, { recordId: "leaf789" });
-      const middleNode = createMockTabNode("tab2", middleTab, 1, {
-        parentKeyField: "parentField",
-        children: [leafNode],
-      });
-      const rootNode = createMockTabNode("tab1", rootTab, 0, {
-        parentKeyField: "parentField",
-        children: [middleNode],
-      });
-
-      const hierarchy = createMockHierarchy(leafNode, [rootNode, middleNode]);
-      const windowMetadata = createMockWindowMetadata([rootTab, middleTab, leafTab]);
+      const { hierarchy, windowMetadata } = setupThreeLevelHierarchy();
 
       mockDatasource.get
         .mockResolvedValueOnce({
@@ -408,44 +475,39 @@ describe("reconstructState", () => {
       const result = await reconstructState(hierarchy, windowMetadata);
 
       // Check all three tabs
-      expect(result.tabs["tab3"].selectedRecord).toBe("leaf789");
-      expect(result.tabs["tab3"].form.recordId).toBe("leaf789");
+      expectTabState(result, "tab3", {
+        selectedRecord: "leaf789",
+        formRecordId: "leaf789",
+      });
 
-      expect(result.tabs["tab2"].selectedRecord).toBe("middle456");
-      expect(result.tabs["tab2"].form).toEqual({});
+      expectTabState(result, "tab2", {
+        selectedRecord: "middle456",
+        formEmpty: true,
+      });
 
-      expect(result.tabs["tab1"].selectedRecord).toBe("root123");
-      expect(result.tabs["tab1"].form).toEqual({});
+      expectTabState(result, "tab1", {
+        selectedRecord: "root123",
+        formEmpty: true,
+      });
 
       // Check navigation
-      expect(result.navigation.activeLevels).toEqual([2]);
-      expect(result.navigation.activeTabsByLevel.get(0)).toBe("tab1");
-      expect(result.navigation.activeTabsByLevel.get(1)).toBe("tab2");
-      expect(result.navigation.activeTabsByLevel.get(2)).toBe("tab3");
+      expectNavigationState(result, {
+        activeLevels: [2],
+        activeTabsByLevel: new Map([
+          [0, "tab1"],
+          [1, "tab2"],
+          [2, "tab3"],
+        ]),
+      });
 
       // Verify datasource was called twice
       expect(mockDatasource.get).toHaveBeenCalledTimes(2);
     });
 
     it("should handle datasource error in middle of hierarchy", async () => {
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      const consoleErrorSpy = createConsoleErrorSpy();
 
-      const rootTab = createMockTab("tab1", 0, "RootEntity", false);
-      const middleTab = createMockTab("tab2", 1, "MiddleEntity", true, "tab1");
-      const leafTab = createMockTab("tab3", 2, "LeafEntity", true, "tab2");
-
-      const leafNode = createMockTabNode("tab3", leafTab, 2, { recordId: "leaf789" });
-      const middleNode = createMockTabNode("tab2", middleTab, 1, {
-        parentKeyField: "parentField",
-        children: [leafNode],
-      });
-      const rootNode = createMockTabNode("tab1", rootTab, 0, {
-        parentKeyField: "parentField",
-        children: [middleNode],
-      });
-
-      const hierarchy = createMockHierarchy(leafNode, [rootNode, middleNode]);
-      const windowMetadata = createMockWindowMetadata([rootTab, middleTab, leafTab]);
+      const { hierarchy, windowMetadata } = setupThreeLevelHierarchy();
 
       mockDatasource.get
         .mockResolvedValueOnce({
@@ -503,24 +565,11 @@ describe("reconstructState", () => {
     });
 
     it("should handle datasource network error", async () => {
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      const consoleErrorSpy = createConsoleErrorSpy();
 
-      const rootTab = createMockTab("tab1", 0, "ParentEntity", false);
-      const childTab = createMockTab("tab2", 1, "ChildEntity", true, "tab1");
+      const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
 
-      const childNode = createMockTabNode("tab2", childTab, 1, {
-        recordId: "child123",
-        parentKeyField: "parentField",
-      });
-      const rootNode = createMockTabNode("tab1", rootTab, 0, {
-        parentKeyField: "parentField",
-        children: [childNode],
-      });
-
-      const hierarchy = createMockHierarchy(childNode, [rootNode]);
-      const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
-
-      mockDatasource.get.mockRejectedValue(new Error("Network error"));
+      mockDatasourceError(new Error("Network error"));
 
       await expect(reconstructState(hierarchy, windowMetadata)).rejects.toThrow("Network error");
 
@@ -530,24 +579,11 @@ describe("reconstructState", () => {
     });
 
     it("should handle non-Error thrown values", async () => {
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      const consoleErrorSpy = createConsoleErrorSpy();
 
-      const rootTab = createMockTab("tab1", 0, "ParentEntity", false);
-      const childTab = createMockTab("tab2", 1, "ChildEntity", true, "tab1");
+      const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
 
-      const childNode = createMockTabNode("tab2", childTab, 1, {
-        recordId: "child123",
-        parentKeyField: "parentField",
-      });
-      const rootNode = createMockTabNode("tab1", rootTab, 0, {
-        parentKeyField: "parentField",
-        children: [childNode],
-      });
-
-      const hierarchy = createMockHierarchy(childNode, [rootNode]);
-      const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
-
-      mockDatasource.get.mockRejectedValue("String error");
+      mockDatasourceError("String error");
 
       await expect(reconstructState(hierarchy, windowMetadata)).rejects.toThrow("Unknown error");
 
@@ -575,20 +611,7 @@ describe("reconstructState", () => {
     });
 
     it("should convert parent recordId to string", async () => {
-      const rootTab = createMockTab("tab1", 0, "ParentEntity", false);
-      const childTab = createMockTab("tab2", 1, "ChildEntity", true, "tab1");
-
-      const childNode = createMockTabNode("tab2", childTab, 1, {
-        recordId: "child123",
-        parentKeyField: "parentField",
-      });
-      const rootNode = createMockTabNode("tab1", rootTab, 0, {
-        parentKeyField: "parentField",
-        children: [childNode],
-      });
-
-      const hierarchy = createMockHierarchy(childNode, [rootNode]);
-      const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
+      const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
 
       mockDatasourceSuccess([{ id: "child123", parentField: 12345 } as any]);
 
@@ -601,20 +624,7 @@ describe("reconstructState", () => {
 
   describe("Navigation state", () => {
     it("should set correct activeLevels for target tab", async () => {
-      const rootTab = createMockTab("tab1", 0, "RootEntity", false);
-      const childTab = createMockTab("tab2", 1, "ChildEntity", true, "tab1");
-
-      const childNode = createMockTabNode("tab2", childTab, 1, {
-        recordId: "child123",
-        parentKeyField: "parentField",
-      });
-      const rootNode = createMockTabNode("tab1", rootTab, 0, {
-        parentKeyField: "parentField",
-        children: [childNode],
-      });
-
-      const hierarchy = createMockHierarchy(childNode, [rootNode]);
-      const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
+      const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
 
       mockDatasourceSuccess([{ id: "child123", parentField: "parent456" } as EntityData]);
 
@@ -624,20 +634,7 @@ describe("reconstructState", () => {
     });
 
     it("should populate activeTabsByLevel map correctly", async () => {
-      const rootTab = createMockTab("tab1", 0, "RootEntity", false);
-      const childTab = createMockTab("tab2", 1, "ChildEntity", true, "tab1");
-
-      const childNode = createMockTabNode("tab2", childTab, 1, {
-        recordId: "child123",
-        parentKeyField: "parentField",
-      });
-      const rootNode = createMockTabNode("tab1", rootTab, 0, {
-        parentKeyField: "parentField",
-        children: [childNode],
-      });
-
-      const hierarchy = createMockHierarchy(childNode, [rootNode]);
-      const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
+      const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
 
       mockDatasourceSuccess([{ id: "child123", parentField: "parent456" } as EntityData]);
 
@@ -662,20 +659,7 @@ describe("reconstructState", () => {
 
   describe("Datasource query parameters", () => {
     it("should pass correct parameters to datasource.get", async () => {
-      const rootTab = createMockTab("tab1", 0, "ParentEntity", false);
-      const childTab = createMockTab("tab2", 1, "ChildEntity", true, "tab1");
-
-      const childNode = createMockTabNode("tab2", childTab, 1, {
-        recordId: "child123",
-        parentKeyField: "parentField",
-      });
-      const rootNode = createMockTabNode("tab1", rootTab, 0, {
-        parentKeyField: "parentField",
-        children: [childNode],
-      });
-
-      const hierarchy = createMockHierarchy(childNode, [rootNode]);
-      const windowMetadata = createMockWindowMetadata([rootTab, childTab]);
+      const { hierarchy, windowMetadata } = setupTwoLevelHierarchy();
 
       mockDatasourceSuccess([{ id: "child123", parentField: "parent456" } as EntityData]);
 

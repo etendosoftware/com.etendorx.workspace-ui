@@ -55,7 +55,10 @@ const mockGetWindowName = getWindowName as jest.MockedFunction<typeof getWindowN
 const mockCalculateHierarchy = calculateHierarchy as jest.MockedFunction<typeof calculateHierarchy>;
 const mockReconstructState = reconstructState as jest.MockedFunction<typeof reconstructState>;
 
-// Mock data
+/**
+ * Test helpers
+ */
+
 const createMockTab = (id: string, level = 0): Tab => ({
   id,
   name: `Tab ${id}`,
@@ -119,8 +122,143 @@ const createMockSearchParams = (params: Record<string, string>): URLSearchParams
   return searchParams;
 };
 
+const createConsoleErrorSpy = () => {
+  return jest.spyOn(console, "error").mockImplementation(() => {});
+};
+
+const createMockTabState = (tabId: string, level: number, recordId: string, isTarget = false) => ({
+  table: {
+    filters: [],
+    visibility: {},
+    sorting: [],
+    order: [],
+    isImplicitFilterApplied: true,
+  },
+  form: isTarget
+    ? {
+        recordId,
+        mode: "form",
+        formMode: "edit",
+      }
+    : {},
+  level,
+  selectedRecord: recordId,
+});
+
+const createMockUrlState = (windowIdentifier: string, windowId: string, tabId: string, recordId: string) => ({
+  windowIdentifier,
+  tabId,
+  recordId,
+  windowId,
+  tabTitle: "Order Lines",
+  tabLevel: 1,
+  keyParameter: "cOrderId",
+});
+
+const createMockHierarchy = (targetTabId: string, targetLevel: number, recordId: string) => ({
+  targetTab: {
+    tabId: targetTabId,
+    tab: createMockTab(targetTabId, targetLevel),
+    level: targetLevel,
+    recordId,
+    children: [],
+  },
+  parentTabs: [],
+  rootTab: {
+    tabId: "tab1",
+    tab: createMockTab("tab1", 0),
+    level: 0,
+    children: [],
+  },
+});
+
+const createMockReconstructedState = (tabStates: Record<string, any>, activeLevel: number) => ({
+  tabs: tabStates,
+  navigation: {
+    activeLevels: [activeLevel],
+    activeTabsByLevel: new Map(Object.entries(tabStates).map(([tabId], idx) => [idx, tabId])),
+    initialized: true,
+  },
+});
+
+const expectRecoveredWindow = (
+  window: any,
+  expectations: {
+    windowId: string;
+    windowIdentifier: string;
+    title?: string;
+    initialized: boolean;
+    isActive: boolean;
+    hasTabs?: boolean;
+    hasNavigation?: boolean;
+  }
+) => {
+  expect(window).toMatchObject({
+    windowId: expectations.windowId,
+    windowIdentifier: expectations.windowIdentifier,
+    initialized: expectations.initialized,
+    isActive: expectations.isActive,
+  });
+
+  if (expectations.title) {
+    expect(window.title).toBe(expectations.title);
+  }
+
+  if (expectations.hasTabs) {
+    expect(window.tabs).toBeDefined();
+  }
+
+  if (expectations.hasNavigation) {
+    expect(window.navigation).toBeDefined();
+  }
+};
+
 describe("useGlobalUrlStateRecovery", () => {
   let mockLoadWindowData: jest.Mock;
+
+  /**
+   * Setup helpers that depend on mockLoadWindowData
+   */
+  const setupSimpleRecovery = (windowId: string, windowIdentifier: string) => {
+    const params = createMockSearchParams({ wi_0: windowIdentifier });
+    const recoveryInfo = createMockRecoveryInfo(windowIdentifier, false);
+    const windowMetadata = createMockWindowMetadata(windowId);
+
+    mockUseSearchParams.mockReturnValue(params);
+    mockParseWindowRecoveryData.mockReturnValue([recoveryInfo]);
+    mockLoadWindowData.mockResolvedValue(windowMetadata);
+    mockGetWindowName.mockReturnValue("Sales Order");
+
+    return { params, recoveryInfo, windowMetadata };
+  };
+
+  const setupComplexRecovery = (windowId: string, windowIdentifier: string, tabId: string, recordId: string) => {
+    const params = createMockSearchParams({
+      wi_0: windowIdentifier,
+      ti_0: tabId,
+      ri_0: recordId,
+    });
+    const recoveryInfo = createMockRecoveryInfo(windowIdentifier, true);
+    const windowMetadata = createMockWindowMetadata(windowId);
+    const urlState = createMockUrlState(windowIdentifier, windowId, tabId, recordId);
+    const hierarchy = createMockHierarchy(tabId, 1, recordId);
+    const reconstructed = createMockReconstructedState(
+      {
+        tab1: createMockTabState("tab1", 0, "parentRecord", false),
+        [tabId]: createMockTabState(tabId, 1, recordId, true),
+      },
+      1
+    );
+
+    mockUseSearchParams.mockReturnValue(params);
+    mockParseWindowRecoveryData.mockReturnValue([recoveryInfo]);
+    mockLoadWindowData.mockResolvedValue(windowMetadata);
+    mockParseUrlState.mockResolvedValue(urlState);
+    mockCalculateHierarchy.mockResolvedValue(hierarchy);
+    mockReconstructState.mockResolvedValue(reconstructed);
+
+    return { params, recoveryInfo, windowMetadata, urlState, hierarchy, reconstructed };
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -182,14 +320,7 @@ describe("useGlobalUrlStateRecovery", () => {
 
   describe("Simple recovery (window ID only)", () => {
     it("should recover single window without tab/record data", async () => {
-      const params = createMockSearchParams({ wi_0: "143_123456" });
-      const recoveryInfo = createMockRecoveryInfo("143_123456", false);
-      const windowMetadata = createMockWindowMetadata("143");
-
-      mockUseSearchParams.mockReturnValue(params);
-      mockParseWindowRecoveryData.mockReturnValue([recoveryInfo]);
-      mockLoadWindowData.mockResolvedValue(windowMetadata);
-      mockGetWindowName.mockReturnValue("Sales Order");
+      const { windowMetadata } = setupSimpleRecovery("143", "143_123456");
 
       const { result } = renderHook(() => useGlobalUrlStateRecovery());
 
@@ -200,7 +331,7 @@ describe("useGlobalUrlStateRecovery", () => {
       expect(mockLoadWindowData).toHaveBeenCalledWith("143");
       expect(mockGetWindowName).toHaveBeenCalledWith(windowMetadata);
       expect(result.current.recoveredWindows).toHaveLength(1);
-      expect(result.current.recoveredWindows[0]).toMatchObject({
+      expectRecoveredWindow(result.current.recoveredWindows[0], {
         windowId: "143",
         windowIdentifier: "143_123456",
         title: "Sales Order",
@@ -238,88 +369,12 @@ describe("useGlobalUrlStateRecovery", () => {
 
   describe("Complex recovery (with tab and record data)", () => {
     it("should recover single window with tab and record data", async () => {
-      const params = createMockSearchParams({
-        wi_0: "143_123456",
-        ti_0: "tab2",
-        ri_0: "record123",
-      });
-      const recoveryInfo = createMockRecoveryInfo("143_123456", true);
-      const windowMetadata = createMockWindowMetadata("143");
-
-      const mockUrlState = {
-        windowIdentifier: "143_123456",
-        tabId: "tab2",
-        recordId: "record123",
-        windowId: "143",
-        tabTitle: "Order Lines",
-        tabLevel: 1,
-        keyParameter: "cOrderId",
-      };
-
-      const mockHierarchy = {
-        targetTab: {
-          tabId: "tab2",
-          tab: createMockTab("tab2", 1),
-          level: 1,
-          recordId: "record123",
-          children: [],
-        },
-        parentTabs: [],
-        rootTab: {
-          tabId: "tab1",
-          tab: createMockTab("tab1", 0),
-          level: 0,
-          children: [],
-        },
-      };
-
-      const mockReconstructed = {
-        tabs: {
-          tab1: {
-            table: {
-              filters: [],
-              visibility: {},
-              sorting: [],
-              order: [],
-              isImplicitFilterApplied: true,
-            },
-            form: {},
-            level: 0,
-            selectedRecord: "parentRecord",
-          },
-          tab2: {
-            table: {
-              filters: [],
-              visibility: {},
-              sorting: [],
-              order: [],
-              isImplicitFilterApplied: true,
-            },
-            form: {
-              recordId: "record123",
-              mode: "form",
-              formMode: "edit",
-            },
-            level: 1,
-            selectedRecord: "record123",
-          },
-        },
-        navigation: {
-          activeLevels: [1],
-          activeTabsByLevel: new Map([
-            [0, "tab1"],
-            [1, "tab2"],
-          ]),
-          initialized: true,
-        },
-      };
-
-      mockUseSearchParams.mockReturnValue(params);
-      mockParseWindowRecoveryData.mockReturnValue([recoveryInfo]);
-      mockLoadWindowData.mockResolvedValue(windowMetadata);
-      mockParseUrlState.mockResolvedValue(mockUrlState);
-      mockCalculateHierarchy.mockResolvedValue(mockHierarchy);
-      mockReconstructState.mockResolvedValue(mockReconstructed);
+      const { recoveryInfo, windowMetadata, urlState, hierarchy, reconstructed } = setupComplexRecovery(
+        "143",
+        "143_123456",
+        "tab2",
+        "record123"
+      );
 
       const { result } = renderHook(() => useGlobalUrlStateRecovery());
 
@@ -329,19 +384,21 @@ describe("useGlobalUrlStateRecovery", () => {
 
       expect(mockLoadWindowData).toHaveBeenCalledWith("143");
       expect(mockParseUrlState).toHaveBeenCalledWith(recoveryInfo, windowMetadata);
-      expect(mockCalculateHierarchy).toHaveBeenCalledWith(mockUrlState, windowMetadata);
-      expect(mockReconstructState).toHaveBeenCalledWith(mockHierarchy, windowMetadata);
+      expect(mockCalculateHierarchy).toHaveBeenCalledWith(urlState, windowMetadata);
+      expect(mockReconstructState).toHaveBeenCalledWith(hierarchy, windowMetadata);
 
       expect(result.current.recoveredWindows).toHaveLength(1);
-      expect(result.current.recoveredWindows[0]).toMatchObject({
+      expectRecoveredWindow(result.current.recoveredWindows[0], {
         windowId: "143",
         windowIdentifier: "143_123456",
         title: "Order Lines",
         initialized: true,
         isActive: true,
-        tabs: mockReconstructed.tabs,
-        navigation: mockReconstructed.navigation,
+        hasTabs: true,
+        hasNavigation: true,
       });
+      expect(result.current.recoveredWindows[0].tabs).toEqual(reconstructed.tabs);
+      expect(result.current.recoveredWindows[0].navigation).toEqual(reconstructed.navigation);
       expect(result.current.recoveryError).toBeNull();
     });
 
@@ -437,7 +494,7 @@ describe("useGlobalUrlStateRecovery", () => {
 
   describe("Error handling", () => {
     it("should handle metadata loading error", async () => {
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      const consoleErrorSpy = createConsoleErrorSpy();
       const params = createMockSearchParams({ wi_0: "143_123456" });
       const recoveryInfo = createMockRecoveryInfo("143_123456", false);
 
@@ -459,18 +516,10 @@ describe("useGlobalUrlStateRecovery", () => {
     });
 
     it("should handle URL state parsing error", async () => {
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-      const params = createMockSearchParams({
-        wi_0: "143_123456",
-        ti_0: "tab2",
-        ri_0: "record123",
-      });
-      const recoveryInfo = createMockRecoveryInfo("143_123456", true);
-      const windowMetadata = createMockWindowMetadata("143");
+      const consoleErrorSpy = createConsoleErrorSpy();
+      const { recoveryInfo, windowMetadata } = setupComplexRecovery("143", "143_123456", "tab2", "record123");
 
-      mockUseSearchParams.mockReturnValue(params);
-      mockParseWindowRecoveryData.mockReturnValue([recoveryInfo]);
-      mockLoadWindowData.mockResolvedValue(windowMetadata);
+      mockParseUrlState.mockReset();
       mockParseUrlState.mockRejectedValue(new Error("Failed to parse URL state"));
 
       const { result } = renderHook(() => useGlobalUrlStateRecovery());
@@ -487,29 +536,10 @@ describe("useGlobalUrlStateRecovery", () => {
     });
 
     it("should handle hierarchy calculation error", async () => {
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-      const params = createMockSearchParams({
-        wi_0: "143_123456",
-        ti_0: "tab2",
-        ri_0: "record123",
-      });
-      const recoveryInfo = createMockRecoveryInfo("143_123456", true);
-      const windowMetadata = createMockWindowMetadata("143");
+      const consoleErrorSpy = createConsoleErrorSpy();
+      const { urlState } = setupComplexRecovery("143", "143_123456", "tab2", "record123");
 
-      const mockUrlState = {
-        windowIdentifier: "143_123456",
-        tabId: "tab2",
-        recordId: "record123",
-        windowId: "143",
-        tabTitle: "Order Lines",
-        tabLevel: 1,
-        keyParameter: "cOrderId",
-      };
-
-      mockUseSearchParams.mockReturnValue(params);
-      mockParseWindowRecoveryData.mockReturnValue([recoveryInfo]);
-      mockLoadWindowData.mockResolvedValue(windowMetadata);
-      mockParseUrlState.mockResolvedValue(mockUrlState);
+      mockCalculateHierarchy.mockReset();
       mockCalculateHierarchy.mockRejectedValue(new Error("Failed to calculate hierarchy"));
 
       const { result } = renderHook(() => useGlobalUrlStateRecovery());
@@ -526,47 +556,10 @@ describe("useGlobalUrlStateRecovery", () => {
     });
 
     it("should handle state reconstruction error", async () => {
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-      const params = createMockSearchParams({
-        wi_0: "143_123456",
-        ti_0: "tab2",
-        ri_0: "record123",
-      });
-      const recoveryInfo = createMockRecoveryInfo("143_123456", true);
-      const windowMetadata = createMockWindowMetadata("143");
+      const consoleErrorSpy = createConsoleErrorSpy();
+      setupComplexRecovery("143", "143_123456", "tab2", "record123");
 
-      const mockUrlState = {
-        windowIdentifier: "143_123456",
-        tabId: "tab2",
-        recordId: "record123",
-        windowId: "143",
-        tabTitle: "Order Lines",
-        tabLevel: 1,
-        keyParameter: "cOrderId",
-      };
-
-      const mockHierarchy = {
-        targetTab: {
-          tabId: "tab2",
-          tab: createMockTab("tab2", 1),
-          level: 1,
-          recordId: "record123",
-          children: [],
-        },
-        parentTabs: [],
-        rootTab: {
-          tabId: "tab1",
-          tab: createMockTab("tab1", 0),
-          level: 0,
-          children: [],
-        },
-      };
-
-      mockUseSearchParams.mockReturnValue(params);
-      mockParseWindowRecoveryData.mockReturnValue([recoveryInfo]);
-      mockLoadWindowData.mockResolvedValue(windowMetadata);
-      mockParseUrlState.mockResolvedValue(mockUrlState);
-      mockCalculateHierarchy.mockResolvedValue(mockHierarchy);
+      mockReconstructState.mockReset();
       mockReconstructState.mockRejectedValue(new Error("Failed to reconstruct state"));
 
       const { result } = renderHook(() => useGlobalUrlStateRecovery());
@@ -620,13 +613,7 @@ describe("useGlobalUrlStateRecovery", () => {
     });
 
     it("should mark single window as active", async () => {
-      const params = createMockSearchParams({ wi_0: "143_123456" });
-      const recoveryInfo = createMockRecoveryInfo("143_123456", false);
-      const windowMetadata = createMockWindowMetadata("143");
-
-      mockUseSearchParams.mockReturnValue(params);
-      mockParseWindowRecoveryData.mockReturnValue([recoveryInfo]);
-      mockLoadWindowData.mockResolvedValue(windowMetadata);
+      setupSimpleRecovery("143", "143_123456");
       mockGetWindowName.mockReturnValue("Test Window");
 
       const { result } = renderHook(() => useGlobalUrlStateRecovery());
@@ -642,13 +629,7 @@ describe("useGlobalUrlStateRecovery", () => {
 
   describe("Hook lifecycle", () => {
     it("should only run recovery once", async () => {
-      const params = createMockSearchParams({ wi_0: "143_123456" });
-      const recoveryInfo = createMockRecoveryInfo("143_123456", false);
-      const windowMetadata = createMockWindowMetadata("143");
-
-      mockUseSearchParams.mockReturnValue(params);
-      mockParseWindowRecoveryData.mockReturnValue([recoveryInfo]);
-      mockLoadWindowData.mockResolvedValue(windowMetadata);
+      setupSimpleRecovery("143", "143_123456");
       mockGetWindowName.mockReturnValue("Test Window");
 
       const { result, rerender } = renderHook(() => useGlobalUrlStateRecovery());
@@ -734,13 +715,7 @@ describe("useGlobalUrlStateRecovery", () => {
 
   describe("Window identifier extraction", () => {
     it("should extract window ID from identifier correctly", async () => {
-      const params = createMockSearchParams({ wi_0: "143_123456789" });
-      const recoveryInfo = createMockRecoveryInfo("143_123456789", false);
-      const windowMetadata = createMockWindowMetadata("143");
-
-      mockUseSearchParams.mockReturnValue(params);
-      mockParseWindowRecoveryData.mockReturnValue([recoveryInfo]);
-      mockLoadWindowData.mockResolvedValue(windowMetadata);
+      setupSimpleRecovery("143", "143_123456789");
       mockGetWindowName.mockReturnValue("Test Window");
 
       const { result } = renderHook(() => useGlobalUrlStateRecovery());
