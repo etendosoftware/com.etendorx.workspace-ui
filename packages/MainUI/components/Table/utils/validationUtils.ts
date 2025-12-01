@@ -239,7 +239,7 @@ export function validateRowData(fields: (Field | Column)[], rowData: EntityData)
     let fieldKey: string;
     if ("hqlName" in field && field.hqlName && typeof field.hqlName === "string") {
       fieldKey = field.hqlName;
-    } else if ("columnName" in field && field.columnName) {
+    } else if ("columnName" in field && field.columnName && typeof field.columnName === "string") {
       fieldKey = field.columnName;
     } else {
       fieldKey = field.name;
@@ -308,7 +308,7 @@ export function validateNewRowForSave(fields: (Field | Column)[], rowData: Entit
     let fieldKey: string;
     if ("hqlName" in field && field.hqlName && typeof field.hqlName === "string") {
       fieldKey = field.hqlName;
-    } else if ("columnName" in field && field.columnName) {
+    } else if ("columnName" in field && field.columnName && typeof field.columnName === "string") {
       fieldKey = field.columnName;
     } else {
       fieldKey = field.name;

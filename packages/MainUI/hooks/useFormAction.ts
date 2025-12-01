@@ -18,7 +18,6 @@
 import { buildFormPayload, buildQueryString } from "@/utils";
 import { shouldRemoveIdFields } from "@/utils/form/entityConfig";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { EntityData, FormMode, Tab, WindowMetadata } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { UseFormHandleSubmit } from "react-hook-form";

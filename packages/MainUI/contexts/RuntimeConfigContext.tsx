@@ -17,7 +17,7 @@
 
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from "react";
 
 interface RuntimeConfig {
   etendoClassicHost: string;
@@ -56,7 +56,9 @@ export function RuntimeConfigProvider({ children }: RuntimeConfigProviderProps) 
       });
   }, []); // Empty dependency array ensures this runs only once
 
-  return <RuntimeConfigContext.Provider value={{ config, loading }}>{children}</RuntimeConfigContext.Provider>;
+  const value = useMemo(() => ({ config, loading }), [config, loading]);
+
+  return <RuntimeConfigContext.Provider value={value}>{children}</RuntimeConfigContext.Provider>;
 }
 
 /**

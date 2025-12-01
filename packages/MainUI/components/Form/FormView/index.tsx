@@ -85,7 +85,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const [isFormInitializing, setIsFormInitializing] = useState(false);
   const [openAttachmentModal, setOpenAttachmentModal] = useState(false);
   const [currentMode, setCurrentMode] = useState<FormMode>(mode);
-  const [currentRecordId, setCurrentRecordId] = useState<string>(recordId);
+  const [currentRecordId, setCurrentRecordId] = useState<string | undefined>(recordId);
   const [waitingForRefetch, setWaitingForRefetch] = useState<string | null>(null);
 
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
@@ -136,10 +136,10 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         windowId: tab.window,
         tabId: tab.id,
         pageSize: 1,
-      });
+      }) as { data: { response?: { data?: EntityData[] } } };
 
       const responseData = result.data.response?.data;
-      if (responseData?.length > 0) {
+      if (responseData && responseData.length > 0) {
         const updatedRecord = responseData[0];
 
         graph.setSelected(tab, updatedRecord);
