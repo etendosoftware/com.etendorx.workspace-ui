@@ -1889,6 +1889,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       enableGlobalFilter: false,
       enableColumnActions: false,
       enableResizing: true,
+      referencedTabId: null,
       Cell: ({ row }: { row: MRT_Row<EntityData> }) => (
         <ActionsColumnCell
           row={row}

@@ -346,7 +346,7 @@ export function validateRecordBeforeSave(
   saveOperation: SaveOperation,
   columns: Column[]
 ): { canSave: boolean; errors: ValidationError[] } {
-  const validationResult = validateRowForSave(columns, saveOperation.data);
+  const validationResult = validateRowForSave(columns, saveOperation.data as EntityData);
 
   if (!validationResult.isValid) {
     return {
@@ -381,8 +381,10 @@ function prepareSaveData(
   mode: FormMode
 ): { values: EntityData; oldValues?: EntityData } {
   const shouldRemoveId = shouldRemoveIdFields(tab.entityName, mode);
-  let processedValues = { ...saveOperation.data };
-  let processedOriginalData = saveOperation.originalData ? { ...saveOperation.originalData } : undefined;
+  let processedValues: EntityData = { ...saveOperation.data } as EntityData;
+  let processedOriginalData: EntityData | undefined = saveOperation.originalData
+    ? ({ ...saveOperation.originalData } as EntityData)
+    : undefined;
 
   // For new records, always remove the temporary ID
   if (saveOperation.isNew || shouldRemoveId) {

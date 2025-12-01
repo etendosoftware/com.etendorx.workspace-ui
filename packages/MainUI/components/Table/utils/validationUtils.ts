@@ -237,7 +237,7 @@ export function validateRowData(fields: (Field | Column)[], rowData: EntityData)
     // Priority: hqlName > columnName > name
     // This ensures we match how data is actually stored in rowData
     let fieldKey: string;
-    if ("hqlName" in field && field.hqlName) {
+    if ("hqlName" in field && field.hqlName && typeof field.hqlName === "string") {
       fieldKey = field.hqlName;
     } else if ("columnName" in field && field.columnName) {
       fieldKey = field.columnName;
@@ -306,7 +306,7 @@ export function validateNewRowForSave(fields: (Field | Column)[], rowData: Entit
     // Priority: hqlName > columnName > name
     // This ensures we match how data is actually stored in rowData
     let fieldKey: string;
-    if ("hqlName" in field && field.hqlName) {
+    if ("hqlName" in field && field.hqlName && typeof field.hqlName === "string") {
       fieldKey = field.hqlName;
     } else if ("columnName" in field && field.columnName) {
       fieldKey = field.columnName;
@@ -421,9 +421,9 @@ export function hasRequiredFieldsForNewRow(fields: (Field | Column)[], rowData: 
     // Priority: hqlName > columnName > name
     // This ensures we match how data is actually stored in rowData
     let fieldKey: string;
-    if ("hqlName" in field && field.hqlName) {
+    if ("hqlName" in field && field.hqlName && typeof field.hqlName === "string") {
       fieldKey = field.hqlName;
-    } else if ("columnName" in field && field.columnName) {
+    } else if ("columnName" in field && field.columnName && typeof field.columnName === "string") {
       fieldKey = field.columnName;
     } else {
       fieldKey = field.name;
@@ -663,10 +663,10 @@ function isSystemField(fieldName: string): boolean {
 }
 
 function getFieldKey(field: Field | Column): string {
-  if ("hqlName" in field && field.hqlName) {
+  if ("hqlName" in field && field.hqlName && typeof field.hqlName === "string") {
     return field.hqlName;
   }
-  if ("columnName" in field && field.columnName) {
+  if ("columnName" in field && field.columnName && typeof field.columnName === "string") {
     return field.columnName;
   }
   return field.name;
