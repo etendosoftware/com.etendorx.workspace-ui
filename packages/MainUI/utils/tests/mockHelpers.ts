@@ -23,6 +23,7 @@ import type {
   User,
   EntityData,
   FormInitializationResponse,
+  WindowMetadata,
 } from "@workspaceui/api-client/src/api/types";
 
 interface MockRequestOptions {
@@ -401,16 +402,31 @@ export const createMockField = (overrides: Partial<Field> = {}): Field => ({
 
 /**
  * Creates a standardized mock Tab object
+ * @param idOrOverrides - Either a tab id string, or an overrides object for backward compatibility
+ * @param level - Optional tab level (defaults to 0)
  */
-export const createMockTab = (overrides: Partial<Tab> = {}): Tab => {
+export const createMockTab = (idOrOverrides?: string | Partial<Tab>, level = 0): Tab => {
   const mockField = createMockField();
+
+  // Handle both signatures: (id, level) and (overrides)
+  let id = "test-tab";
+  let tabLevel = 0;
+  let overrides: Partial<Tab> = {};
+
+  if (typeof idOrOverrides === "string") {
+    id = idOrOverrides;
+    tabLevel = level;
+  } else if (idOrOverrides) {
+    overrides = idOrOverrides;
+  }
+
   return {
-    id: "test-tab",
-    name: "Test Tab",
-    title: "Test Tab Title",
-    window: "test-window",
-    tabLevel: 0,
-    parentTabId: undefined,
+    id,
+    name: `Tab ${id}`,
+    title: `Tab ${id}`,
+    window: "TestWindow",
+    tabLevel,
+    parentTabId: tabLevel > 0 ? "parentTab" : undefined,
     uIPattern: "STD",
     table: "test_table",
     entityName: "TestEntity",
@@ -427,6 +443,38 @@ export const createMockTab = (overrides: Partial<Tab> = {}): Tab => {
     ...overrides,
   };
 };
+
+/**
+ * Creates a standardized mock WindowMetadata object
+ * @param windowId - The window ID
+ */
+export const createMockWindowMetadata = (windowId: string): WindowMetadata => ({
+  id: windowId,
+  name: `Window ${windowId}`,
+  tabs: [createMockTab("tab1", 0), createMockTab("tab2", 1)],
+  properties: {
+    windowId,
+    multiDocumentEnabled: false,
+    viewProperties: {
+      fields: [],
+      tabTitle: "Test Tab",
+      entity: "TestEntity",
+      statusBarFields: [],
+      iconToolbarButtons: [],
+      actionToolbarButtons: [],
+      isDeleteableTable: true,
+      tabId: "tab1",
+      moduleId: "test_module",
+      showCloneButton: false,
+      askToCloneChildren: false,
+      standardProperties: {} as any,
+      showParentButtons: false,
+      buttonsHaveSessionLogic: false,
+      initialPropertyToColumns: [],
+    },
+  },
+  window$_identifier: "window_identifier",
+});
 
 /**
  * Creates a standardized mock User object
@@ -617,3 +665,43 @@ export const createMockWindowContext = (overrides: Partial<Record<string, unknow
   applyWindowUpdates: jest.fn((fn) => fn([])),
   ...overrides,
 });
+
+/**
+ * Sets up Next.js navigation mocks for testing
+ * Returns mock functions and URLSearchParams that can be used in tests
+ *
+ * Usage:
+ * ```typescript
+ * const { mockReplace, mockSearchParams } = setupNextNavigationMocks();
+ *
+ * jest.mock("next/navigation", () => ({
+ *   useRouter: () => ({
+ *     replace: mockReplace,
+ *     push: jest.fn(),
+ *     back: jest.fn(),
+ *     forward: jest.fn(),
+ *     refresh: jest.fn(),
+ *     prefetch: jest.fn(),
+ *   }),
+ *   useSearchParams: () => mockSearchParams,
+ *   usePathname: () => "/window",
+ * }));
+ * ```
+ */
+export const setupNextNavigationMocks = () => {
+  const mockReplace = jest.fn();
+  const mockSearchParams = new URLSearchParams();
+
+  return {
+    mockReplace,
+    mockSearchParams,
+    mockRouter: {
+      replace: mockReplace,
+      push: jest.fn(),
+      back: jest.fn(),
+      forward: jest.fn(),
+      refresh: jest.fn(),
+      prefetch: jest.fn(),
+    },
+  };
+};

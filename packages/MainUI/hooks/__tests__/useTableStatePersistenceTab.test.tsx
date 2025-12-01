@@ -19,10 +19,10 @@ import { act, renderHook } from "@testing-library/react";
 import WindowProvider from "../../contexts/window";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import type React from "react";
+import { setupNextNavigationMocks } from "@/utils/tests/mockHelpers";
 
 // Mock Next.js navigation hooks
-const mockReplace = jest.fn();
-const mockSearchParams = new URLSearchParams();
+const { mockReplace, mockSearchParams } = setupNextNavigationMocks();
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({

@@ -34,10 +34,10 @@ import WindowProvider, { useWindowContext } from "../window";
 import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } from "material-react-table";
 import type { TabFormState } from "../../utils/url/constants";
 import { TAB_MODES } from "../../utils/url/constants";
+import { setupNextNavigationMocks } from "@/utils/tests/mockHelpers";
 
 // Mock Next.js navigation hooks
-const mockReplace = jest.fn();
-const mockSearchParams = new URLSearchParams();
+const { mockReplace, mockSearchParams } = setupNextNavigationMocks();
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({

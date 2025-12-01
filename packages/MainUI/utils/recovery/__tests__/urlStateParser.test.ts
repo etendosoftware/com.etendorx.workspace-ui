@@ -28,7 +28,8 @@
 import { parseUrlState, getWindowName } from "../urlStateParser";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { WindowRecoveryInfo } from "@/utils/window/constants";
-import type { WindowMetadata, Tab } from "@workspaceui/api-client/src/api/types";
+import type { WindowMetadata } from "@workspaceui/api-client/src/api/types";
+import { createMockTab, createMockWindowMetadata } from "@/utils/tests/mockHelpers";
 
 // Mock dependencies
 jest.mock("@workspaceui/api-client/src/api/metadata");
@@ -36,55 +37,6 @@ jest.mock("@workspaceui/api-client/src/api/metadata");
 const mockMetadata = Metadata as jest.Mocked<typeof Metadata>;
 
 // Test data builders
-const createMockTab = (id: string, level = 0): Tab => ({
-  id,
-  name: `Tab ${id}`,
-  title: `Tab ${id}`,
-  window: "TestWindow",
-  tabLevel: level,
-  parentTabId: level > 0 ? "parentTab" : undefined,
-  uIPattern: "STD",
-  table: "test_table",
-  entityName: "TestEntity",
-  fields: {},
-  parentColumns: [],
-  _identifier: "test_identifier",
-  records: {},
-  hqlfilterclause: "",
-  hqlwhereclause: "",
-  sQLWhereClause: "",
-  module: "test_module",
-});
-
-const createMockWindowMetadata = (windowId: string): WindowMetadata => ({
-  id: windowId,
-  name: `Window ${windowId}`,
-  tabs: [createMockTab("tab1", 0), createMockTab("tab2", 1)],
-  properties: {
-    windowId,
-    multiDocumentEnabled: false,
-    viewProperties: {
-      fields: [],
-      tabTitle: "Test Tab",
-      entity: "TestEntity",
-      statusBarFields: [],
-      iconToolbarButtons: [],
-      actionToolbarButtons: [],
-      isDeleteableTable: true,
-      tabId: "tab1",
-      moduleId: "test_module",
-      showCloneButton: false,
-      askToCloneChildren: false,
-      standardProperties: {} as any,
-      showParentButtons: false,
-      buttonsHaveSessionLogic: false,
-      initialPropertyToColumns: [],
-    },
-  },
-  window$_identifier: "window_identifier",
-});
-
-// Test helpers
 const createMockRecoveryInfo = (overrides?: Partial<WindowRecoveryInfo>): WindowRecoveryInfo => ({
   windowIdentifier: "143_123456",
   tabId: "tab2",
