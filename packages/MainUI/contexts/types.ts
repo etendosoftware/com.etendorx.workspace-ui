@@ -102,12 +102,9 @@ export interface IMetadataContext {
   error?: Error;
   groupedTabs: Etendo.Tab[][];
   tabs: Record<string, Tab>;
-  refetch: () => Promise<Etendo.WindowMetadata>;
   removeRecord: (tabId: string, recordId: string) => void;
-  emptyWindowDataName: () => void;
   loadWindowData: (windowId: string) => Promise<Etendo.WindowMetadata>;
   getWindowMetadata: (windowId: string) => Etendo.WindowMetadata | undefined;
-  getWindowTitle: (windowId: string) => string;
   isWindowLoading: (windowId: string) => boolean;
   getWindowError: (windowId: string) => Error | undefined;
   windowsData: Record<string, Etendo.WindowMetadata>;

@@ -25,12 +25,12 @@ import { useDeleteRecord } from "../useDeleteRecord";
 import { useMetadataContext } from "../useMetadataContext";
 import { useTranslation } from "../useTranslation";
 import { useStatusModal } from "./useStatusModal";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useRecordContext } from "@/hooks/useRecordContext";
 import type { ToolbarButtonMetadata } from "./types";
+import { useWindowContext } from "@/contexts/window";
 
 export const useToolbarConfig = ({
   tabId,
@@ -62,7 +62,7 @@ export const useToolbarConfig = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { tab } = useTabContext();
-  const { activeWindow, getSelectedRecord, clearSelectedRecord } = useMultiWindowURL();
+  const { activeWindow, clearSelectedRecord, getSelectedRecord } = useWindowContext();
   const { graph } = useSelected();
 
   const selectedMultiple = useSelectedRecords(tab);
@@ -70,9 +70,9 @@ export const useToolbarConfig = ({
   const { contextString, hasSelectedRecords, contextItems } = useRecordContext();
 
   const selectedRecordId = useMemo(() => {
-    if (!activeWindow?.window_identifier || !tab) return null;
-    return getSelectedRecord(activeWindow.window_identifier, tab.id);
-  }, [activeWindow?.window_identifier, tab, getSelectedRecord]);
+    if (!activeWindow?.windowIdentifier || !tab) return null;
+    return getSelectedRecord(activeWindow.windowIdentifier, tab.id);
+  }, [activeWindow?.windowIdentifier, tab, getSelectedRecord]);
 
   const selectedIds = useMemo(() => {
     if (selectedMultiple.length > 0) {
@@ -116,8 +116,8 @@ export const useToolbarConfig = ({
         onAfterClose: () => {
           setIsDeleting(false);
 
-          if (activeWindow?.window_identifier && tab) {
-            clearSelectedRecord(activeWindow.window_identifier, tab.id);
+          if (activeWindow?.windowIdentifier && tab) {
+            clearSelectedRecord(activeWindow.windowIdentifier, tab.id);
             graph.clearSelected(tab);
             graph.clearSelectedMultiple(tab);
           }

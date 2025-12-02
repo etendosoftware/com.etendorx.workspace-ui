@@ -17,16 +17,16 @@
 
 "use client";
 
-import { useMemo, useCallback, useEffect, useState } from "react";
+import { useMemo, useCallback } from "react";
 import Tabs from "@/components/window/Tabs";
 import AppBreadcrumb from "@/components/Breadcrums";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
-import { useSelected } from "@/hooks/useSelected";
+import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
 import { shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
+import { useWindowContext } from "@/contexts/window";
 
 /**
  * TabsContainer Component
@@ -48,14 +48,9 @@ import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
  */
 export default function TabsContainer({ windowData }: { windowData: Etendo.WindowMetadata }) {
   /**
-   * Flag to track if initial level loading from URL state has completed.
-   */
-  const [activeLevelsLoaded, setActiveLevelsLoaded] = useState<boolean>(false);
-
-  /**
    * Multi-window navigation hook providing access to current window state.
    */
-  const { activeWindow } = useMultiWindowURL();
+  const { activeWindow } = useWindowContext();
 
   /**
    * Graph-based tab hierarchy management system with navigation state.
@@ -67,7 +62,10 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * - setActiveTabsByLevel: Function to update active tab selection per level
    * - graph: Hierarchical tab structure
    */
-  const { graph, activeLevels, activeTabsByLevel, setActiveLevel, setActiveTabsByLevel } = useSelected();
+  const { activeLevels, activeTabsByLevel } = useTableStatePersistenceTab({
+    windowIdentifier: activeWindow?.windowIdentifier || "",
+    tabId: "",
+  });
 
   /**
    * Memoized tab grouping by hierarchical levels.
@@ -84,19 +82,6 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
   const groupedTabs = useMemo(() => {
     return windowData ? groupTabsByLevel(windowData) : [];
   }, [windowData]);
-
-  /**
-   * Callback to handle tab selection changes within a level.
-   *
-   * Purpose: Updates the activeTabsByLevel mapping when user selects different tab
-   * Triggers: Navigation state persistence and potential child tab filtering updates
-   */
-  const handleTabChange = useCallback(
-    (tab: Tab) => {
-      setActiveTabsByLevel(tab);
-    },
-    [setActiveTabsByLevel]
-  );
 
   /**
    * Determines which tab should be active for a given hierarchical level.
@@ -179,74 +164,6 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
     (tabs) => tabs.length > 0 && activeLevels.includes(tabs[0].tabLevel)
   );
 
-  /**
-   * Session restoration effect for active tab levels and tab selections.
-   *
-   * This effect runs once during component initialization to restore navigation state
-   * from URL parameters or saved session data. It coordinates with useMultiWindowURL
-   * to determine the appropriate tab levels to activate based on previously saved form states.
-   *
-   * Enhanced Process:
-   * 1. Checks if initial loading has already completed (prevents multiple executions)
-   * 2. Retrieves tabFormStates and selectedRecords from the active window URL state
-   * 3. Extracts tab IDs from form states and selected records
-   * 4. Calculates navigation depth based on the position of the last form state in selected records
-   * 5. Uses expand mode to set levels directly without navigation logic
-   * 6. Resets tab-by-level mapping for clean state or restores based on calculated depth
-   * 7. Marks loading as complete to prevent interference with user navigation
-   *
-   * Key improvements:
-   * - Uses selectedRecords order to determine proper navigation level
-   * - Maintains activeTabsByLevel state consistency during restoration
-   * - Handles edge cases where form states and selected records may be misaligned
-   *
-   * This ensures users return to their previous navigation context when:
-   * - Refreshing the page
-   * - Navigating back to a previously opened window
-   * - Restoring from bookmarked URLs
-   *
-   * Dependencies:
-   * - activeWindow: Contains tabFormStates and selectedRecords from URL
-   * - activeLevelsLoaded: Prevents multiple restoration attempts
-   * - windowData?.tabs: Available tabs for clearing selections
-   * - graph: Tab hierarchy for clearing dependent selections
-   * - setActiveLevel: Navigation state control function
-   */
-  useEffect(() => {
-    // Early return: Skip if already loaded or function not available
-    if (activeLevelsLoaded || !setActiveLevel) return;
-
-    // Extract window state data including both form states and selected records
-    const { tabFormStates, selectedRecords, windowId } = activeWindow || {};
-    const formStatesIds = tabFormStates ? Object.keys(tabFormStates) : [];
-
-    // Handle window with no saved form states - reset to clean state
-    if (windowId && formStatesIds.length === 0) {
-      setActiveLevel(0);
-      setActiveTabsByLevel();
-      const tabs = windowData?.tabs || [];
-      for (const tab of tabs) {
-        graph.clearSelected(tab);
-        graph.clearSelectedMultiple(tab);
-      }
-      setActiveLevelsLoaded(true);
-      return;
-    }
-
-    // Calculate navigation depth based on form state position in selected records
-    const lastFormStateId = formStatesIds.length > 0 ? formStatesIds[formStatesIds.length - 1] : null;
-    const selectedRecordsIds = selectedRecords ? Object.keys(selectedRecords) : [];
-    const lastFormStateIndex = lastFormStateId ? selectedRecordsIds.indexOf(lastFormStateId) : -1;
-
-    // Handle window with saved form states - restore navigation depth
-    if (lastFormStateIndex > 0) {
-      setActiveLevel(lastFormStateIndex, true); // Use expand mode for direct restoration
-    }
-
-    // Mark as loaded to prevent subsequent executions
-    setActiveLevelsLoaded(true);
-  }, [activeWindow, activeLevelsLoaded, windowData?.tabs, graph, setActiveLevel, setActiveTabsByLevel]);
-
   // Loading state: Show skeleton UI while window metadata is being fetched
   if (!windowData) {
     return (
@@ -267,15 +184,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
 
           const isTopGroup = index === firstExpandedIndex && firstExpandedIndex !== -1;
 
-          return (
-            <Tabs
-              key={tabs[0].id}
-              tabs={tabs}
-              isTopGroup={isTopGroup}
-              onTabChange={handleTabChange}
-              data-testid="Tabs__895626"
-            />
-          );
+          return <Tabs key={tabs[0].id} tabs={tabs} isTopGroup={isTopGroup} data-testid="Tabs__895626" />;
         })}
       </div>
     </TabRefreshProvider>

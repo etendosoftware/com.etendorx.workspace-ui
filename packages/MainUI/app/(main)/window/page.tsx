@@ -17,37 +17,35 @@
 // @data-testid-ignore
 "use client";
 import WindowTabs from "@/components/NavigationTabs/WindowTabs";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
-import { useQueryParams } from "@/hooks/useQueryParams";
+import { useWindowContext } from "@/contexts/window";
 import Home from "@/screens/Home";
 import Window from "@/components/window/Window";
 import TabsProvider from "@/contexts/tabs";
-import WindowProvider from "@/contexts/window";
+import Loading from "@/components/loading";
 
 export default function Page() {
-  const { windows, activeWindow, isHomeRoute } = useMultiWindowURL();
-  const { windowId } = useQueryParams<{ windowId?: string }>();
+  const { windows, activeWindow, isHomeRoute, isRecoveryLoading } = useWindowContext();
 
   const shouldShowTabs = windows.length > 0;
 
+  const shouldShowWindow = activeWindow && !isHomeRoute;
+
+  if (isRecoveryLoading && !activeWindow) {
+    return <Loading data-testid="Loading__Recovery" />;
+  }
+
   return (
-    <WindowProvider>
-      <div className="flex flex-col gap-2 w-full h-full max-h-full p-1 pb-0">
-        {shouldShowTabs && (
-          <TabsProvider data-testid={`TabsProvider__${activeWindow?.windowId ?? windowId ?? "351d9c"}`}>
-            <WindowTabs data-testid={`WindowTabs__${activeWindow?.windowId ?? windowId ?? "351d9c"}`} />
-          </TabsProvider>
-        )}
-        {isHomeRoute || !activeWindow ? (
-          <Home data-testid={`Home__${activeWindow?.windowId ?? windowId ?? "351d9c"}`} />
-        ) : (
-          <Window
-            windowId={activeWindow.windowId}
-            windowIdentifier={activeWindow.window_identifier}
-            data-testid={`Window__${activeWindow?.windowId ?? windowId ?? "351d9c"}`}
-          />
-        )}
-      </div>
-    </WindowProvider>
+    <div className="flex flex-col gap-2 w-full h-full max-h-full p-1 pb-0">
+      {shouldShowTabs && (
+        <TabsProvider data-testid={`TabsProvider__${activeWindow?.windowIdentifier ?? "351d9c"}`}>
+          <WindowTabs data-testid={`WindowTabs__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
+        </TabsProvider>
+      )}
+      {shouldShowWindow ? (
+        <Window window={activeWindow} data-testid={`Window__${activeWindow.windowIdentifier}`} />
+      ) : (
+        <Home data-testid={`Home__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
+      )}
+    </div>
   );
 }

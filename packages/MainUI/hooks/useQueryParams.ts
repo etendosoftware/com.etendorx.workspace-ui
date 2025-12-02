@@ -19,7 +19,6 @@
 
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
-import { WINDOW_PREFIX, TAB_ACTIVE } from "@/utils/url/constants";
 
 /**
  * Custom React hook that retrieves URL query parameters using Next.js's `useSearchParams`,
@@ -47,15 +46,6 @@ export function useQueryParams<T extends Record<string, string | string[] | unde
 
     for (const [key, value] of entries) {
       result[key] = value;
-    }
-
-    if (!result.windowId) {
-      for (const [key, value] of entries) {
-        if (key.startsWith(WINDOW_PREFIX) && value === TAB_ACTIVE) {
-          result.windowId = key.slice(WINDOW_PREFIX.length);
-          break;
-        }
-      }
     }
 
     return result as T;

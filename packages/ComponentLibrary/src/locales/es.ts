@@ -173,6 +173,10 @@ const es = {
       title: "Ventana no encontrada",
       description: "La ventana solicitada no fue encontrada",
     },
+    recoveryFailed: {
+      title: "Error de Recuperación",
+      description: "No se pudo restaurar el estado de la ventana desde la URL",
+    },
   },
   modal: {
     secondaryButtonLabel: "Atrás",

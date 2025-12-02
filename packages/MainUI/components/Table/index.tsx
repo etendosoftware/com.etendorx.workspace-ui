@@ -46,7 +46,7 @@ import { ErrorDisplay } from "../ErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
 import { useSelected } from "@/hooks/useSelected";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { useWindowContext } from "@/contexts/window";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { logger } from "@/utils/logger";
 import PlusFolderFilledIcon from "../../../ComponentLibrary/src/assets/icons/folder-plus-filled.svg";
@@ -513,7 +513,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     registerFetchMore,
   } = useDatasourceContext();
   const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal } = useToolbarContext();
-  const { activeWindow, getSelectedRecord } = useMultiWindowURL();
+  const { activeWindow, getSelectedRecord } = useWindowContext();
   const { tab, parentTab, parentRecord } = useTabContext();
 
   // Hook for fetching form initialization data when entering edit mode
@@ -527,7 +527,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   });
 
   const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
-    useTableStatePersistenceTab({ windowIdentifier: activeWindow?.window_identifier || "", tabId: tab.id });
+    useTableStatePersistenceTab({
+      windowIdentifier: activeWindow?.windowIdentifier || "",
+      tabId: tab.id,
+      tabLevel: tab.tabLevel,
+    });
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
@@ -535,9 +539,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const hasScrolledToSelection = useRef<boolean>(false);
-
-  // Restore visual selection when returning from FormView
-  // This effect ensures the table shows the selection from URL when it becomes visible
+  const previousURLSelection = useRef<string | null>(null);
   const hasRestoredSelection = useRef(false);
 
   // Use the table data hook
@@ -1887,6 +1889,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       enableGlobalFilter: false,
       enableColumnActions: false,
       enableResizing: true,
+      referencedTabId: null,
       Cell: ({ row }: { row: MRT_Row<EntityData> }) => (
         <ActionsColumnCell
           row={row}
@@ -1943,7 +1946,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     }
 
     // Get the selected record from URL for this specific tab
-    const urlSelectedId = getSelectedRecord(activeWindow.window_identifier, tab.id);
+    const urlSelectedId = getSelectedRecord(activeWindow.windowIdentifier, tab.id);
     if (!urlSelectedId) {
       return {};
     }
@@ -1957,12 +1960,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     return {};
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, records]);
 
-  // Track URL selection changes to detect direct navigation
-  const previousURLSelection = useRef<string | null>(null);
-
+  /** Track URL selection changes to detect direct navigation */
   useEffect(() => {
     const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.window_identifier;
+    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !windowIdentifier) {
       return;
     }
@@ -2089,7 +2090,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
           // For child tabs, prevent opening form if parent has no selection in URL
           if (parent) {
-            const windowIdentifier = activeWindow?.window_identifier;
+            const windowIdentifier = activeWindow?.windowIdentifier;
             const parentSelectedInURL = windowIdentifier ? getSelectedRecord(windowIdentifier, parent.id) : undefined;
             if (!parentSelectedInURL) {
               return;
@@ -2382,7 +2383,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   // Handle auto-scroll to selected record with virtualization support
   useLayoutEffect(() => {
     const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.window_identifier;
+    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !displayRecords || !windowIdentifier) {
       return;
     }
@@ -2426,7 +2427,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   // Sync URL selection to table state
   useEffect(() => {
     const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.window_identifier;
+    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !records || !windowIdentifier) {
       return;
     }
@@ -2455,7 +2456,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   // by setSelectedRecordAndClearChildren in useTableSelection
   useEffect(() => {
     const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.window_identifier;
+    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !records || !windowIdentifier) {
       return;
     }
@@ -2493,9 +2494,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     }
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, graph]);
 
+  /** Restore selection from URL on mount */
   useEffect(() => {
     const windowId = activeWindow?.windowId;
-    const windowIdentifier = activeWindow?.window_identifier;
+    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowId || windowId !== tab.window || !records || hasRestoredSelection.current || !windowIdentifier) {
       return;
     }

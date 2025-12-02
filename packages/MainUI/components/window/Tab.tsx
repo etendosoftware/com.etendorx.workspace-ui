@@ -27,19 +27,13 @@ import type { TabLevelProps } from "@/components/window/types";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
-import {
-  NEW_RECORD_ID,
-  FORM_MODES,
-  TAB_MODES,
-  type FormMode as URLFormMode,
-  type TabMode,
-} from "@/utils/url/constants";
+import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
-import { isFormView } from "@/utils/url/utils";
+import { getNewTabFormState, isFormView } from "@/utils/window/utils";
+import { useWindowContext } from "@/contexts/window";
 
 /**
- * Validates if a child tab can open FormView based on parent selection in URL
+ * Validates if a child tab can open FormView based on parent selection in context
  */
 const validateParentSelectionForFormView = (
   tab: TabLevelProps["tab"],
@@ -52,8 +46,8 @@ const validateParentSelectionForFormView = (
     return true; // No parent, validation passes
   }
 
-  const parentSelectedInURL = getSelectedRecord(windowId, parentTab.id);
-  return !!parentSelectedInURL;
+  const parentSelectedInContext = getSelectedRecord(windowId, parentTab.id);
+  return !!parentSelectedInContext;
 };
 
 /**
@@ -63,9 +57,10 @@ const handleNewRecordFormState = (
   windowId: string,
   tabId: string,
   recordId: string,
-  setTabFormState: (windowId: string, tabId: string, recordId: string, mode?: TabMode, formMode?: URLFormMode) => void
+  setTabFormState: (windowId: string, tabId: string, formState: TabFormState) => void
 ): void => {
-  setTabFormState(windowId, tabId, recordId, TAB_MODES.FORM, FORM_MODES.NEW);
+  const newTabFormState = getNewTabFormState(recordId, TAB_MODES.FORM, FORM_MODES.NEW);
+  setTabFormState(windowId, tabId, newTabFormState);
 };
 
 /**
@@ -77,19 +72,20 @@ const handleEditRecordFormState = (
   newValue: string,
   selectedRecordId: string | undefined,
   setSelectedRecord: (windowId: string, tabId: string, recordId: string) => void,
-  setTabFormState: (windowId: string, tabId: string, recordId: string, mode?: TabMode, formMode?: URLFormMode) => void
+  setTabFormState: (windowId: string, tabId: string, formState: TabFormState) => void
 ): void => {
   const formMode = FORM_MODES.EDIT;
+  const newTabFormState = getNewTabFormState(newValue, TAB_MODES.FORM, formMode);
 
   if (selectedRecordId !== newValue) {
     // Record selection changed - update selection first, then form state
     setSelectedRecord(windowId, tabId, newValue);
     setTimeout(() => {
-      setTabFormState(windowId, tabId, newValue, TAB_MODES.FORM, formMode);
+      setTabFormState(windowId, tabId, newTabFormState);
     }, 50);
   } else {
     // Same record - just open form
-    setTabFormState(windowId, tabId, newValue, TAB_MODES.FORM, formMode);
+    setTabFormState(windowId, tabId, newTabFormState);
   }
 };
 
@@ -97,22 +93,21 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const { window } = useMetadataContext();
   const {
     activeWindow,
-    setSelectedRecord,
     clearSelectedRecord,
-    setTabFormState,
-    clearTabFormState,
-    clearTabFormStateAtomic,
     getTabFormState,
+    setSelectedRecord,
     getSelectedRecord,
+    clearTabFormState,
+    setTabFormState,
     clearChildrenSelections,
-  } = useMultiWindowURL();
+  } = useWindowContext();
   const { registerActions, onRefresh } = useToolbarContext();
   const { graph } = useSelected();
   const { registerRefresh, unregisterRefresh } = useTabRefreshContext();
   const [toggle, setToggle] = useState(false);
-  const lastParentSelectionRef = useRef<string | undefined>(undefined);
+  const lastParentSelectionRef = useRef<Map<string, string | undefined>>(new Map());
 
-  const windowIdentifier = activeWindow?.window_identifier;
+  const windowIdentifier = activeWindow?.windowIdentifier;
 
   const tabFormState = windowIdentifier ? getTabFormState(windowIdentifier, tab.id) : undefined;
   const selectedRecordId = windowIdentifier ? getSelectedRecord(windowIdentifier, tab.id) : undefined;
@@ -121,15 +116,15 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const currentRecordId = tabFormState?.recordId || "";
   const currentFormMode = tabFormState?.formMode;
 
-  // For child tabs, verify parent has selection in URL before showing FormView
+  // For child tabs, verify parent has selection before showing FormView
   const parentTab = graph.getParent(tab);
-  const parentSelectedRecordIdFromURL =
+  const parentSelectedRecordId =
     parentTab && windowIdentifier ? getSelectedRecord(windowIdentifier, parentTab.id) : undefined;
-  const parentHasSelectionInURL = !parentTab || !!parentSelectedRecordIdFromURL;
+  const parentHasSelection = !parentTab || !!parentSelectedRecordId;
 
   const hasFormViewState = !!tabFormState && tabFormState.mode === TAB_MODES.FORM;
   const shouldShowForm =
-    hasFormViewState || isFormView({ currentMode, recordId: currentRecordId, parentHasSelectionInURL });
+    hasFormViewState || isFormView({ currentMode, recordId: currentRecordId, hasParentSelection: parentHasSelection });
   const formMode = currentFormMode === FORM_MODES.NEW ? FormMode.NEW : FormMode.EDIT;
 
   const handleSetRecordId = useCallback<React.Dispatch<React.SetStateAction<string>>>(
@@ -208,7 +203,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   const handleNew = useCallback(() => {
     if (windowIdentifier) {
-      setTabFormState(windowIdentifier, tab.id, NEW_RECORD_ID, TAB_MODES.FORM, FORM_MODES.NEW);
+      const newTabFormState = getNewTabFormState(NEW_RECORD_ID, TAB_MODES.FORM, FORM_MODES.NEW);
+      setTabFormState(windowIdentifier, tab.id, newTabFormState);
     }
   }, [windowIdentifier, tab, setTabFormState]);
 
@@ -218,7 +214,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       const isInFormView = currentFormState?.mode === TAB_MODES.FORM;
 
       if (isInFormView) {
-        clearTabFormStateAtomic(windowIdentifier, tab.id);
+        clearTabFormState(windowIdentifier, tab.id);
       } else {
         clearSelectedRecord(windowIdentifier, tab.id);
 
@@ -235,15 +231,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         graph.clearSelected(tab);
       }
     }
-  }, [
-    windowIdentifier,
-    clearTabFormStateAtomic,
-    tab,
-    getTabFormState,
-    clearSelectedRecord,
-    clearChildrenSelections,
-    graph,
-  ]);
+  }, [windowIdentifier, clearTabFormState, tab, getTabFormState, clearSelectedRecord, clearChildrenSelections, graph]);
 
   const handleTreeView = useCallback(() => {
     if (windowIdentifier) {
@@ -271,11 +259,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     registerActions(actions);
   }, [registerActions, handleNew, handleBack, handleTreeView, tab.id]);
 
-  // NOTE: The "unselected" listener was removed because it caused race conditions
-  // with stale closures. Children clearing is now handled directly in useTableSelection
-  // via setSelectedRecordAndClearChildren and clearChildrenRecords, which use
-  // applyWindowUpdates to avoid stale state issues.
-
   /**
    * Clear selection when creating a new record
    * This prevents issues when creating a new record from a selected record in the table
@@ -300,7 +283,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
 
     const parentSelectedId = getSelectedRecord(windowIdentifier, parentTab.id);
-    const previousParentId = lastParentSelectionRef.current;
+    const previousParentId = lastParentSelectionRef.current.get(windowIdentifier);
 
     // Only process if parent selection ID actually changed
     if (parentSelectedId === previousParentId) {
@@ -308,7 +291,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
 
     // Update ref BEFORE any early returns
-    lastParentSelectionRef.current = parentSelectedId;
+    lastParentSelectionRef.current.set(windowIdentifier, parentSelectedId);
 
     // Skip closing if this is a NEW -> real ID transition (save operation)
     const isParentSaveTransition =

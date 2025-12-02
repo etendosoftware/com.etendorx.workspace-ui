@@ -59,16 +59,6 @@ jest.mock("@/contexts/ToolbarContext", () => ({
   }),
 }));
 
-jest.mock("@/hooks/navigation/useMultiWindowURL", () => ({
-  useMultiWindowURL: () => ({
-    activeWindow: {
-      window_identifier: "test-window",
-      windowId: "test-window-id",
-    },
-    getSelectedRecord: jest.fn(() => "test-record-id"),
-  }),
-}));
-
 jest.mock("@/contexts/tab", () => ({
   useTabContext: () => ({
     tab: {
@@ -108,6 +98,88 @@ jest.mock("@/hooks/useUserContext", () => ({
       name: "Test User",
     },
     session: {},
+  }),
+}));
+
+jest.mock("@/contexts/window", () => ({
+  useWindowContext: () => ({
+    activeWindow: {
+      windowId: "test-window-id",
+      windowIdentifier: "test-window-id_123456789",
+      isActive: true,
+      order: 1,
+      selectedRecords: {},
+      tabFormStates: {},
+      title: "Test Window",
+    },
+    getSelectedRecord: jest.fn(),
+    setSelectedRecord: jest.fn(),
+    clearSelectedRecord: jest.fn(),
+    setTabFormState: jest.fn(),
+    clearTabFormState: jest.fn(),
+    getTabFormState: jest.fn(),
+    clearChildrenSelections: jest.fn(),
+  }),
+}));
+
+jest.mock("@/contexts/searchContext", () => ({
+  useSearch: () => ({
+    searchQuery: "",
+    setSearchQuery: jest.fn(),
+  }),
+}));
+
+jest.mock("@/contexts/language", () => ({
+  useLanguage: () => ({
+    language: "en_US",
+    setLanguage: jest.fn(),
+  }),
+}));
+
+jest.mock("@/hooks/useFormParent", () => ({
+  __esModule: true,
+  default: () => ({}),
+}));
+
+jest.mock("@/hooks/useTreeModeMetadata", () => ({
+  useTreeModeMetadata: () => ({
+    treeMetadata: {
+      supportsTreeMode: true,
+      treeEntity: "TreeEntity",
+      referencedTableId: "155",
+    },
+    loading: false,
+  }),
+}));
+
+jest.mock("@/hooks/table/useColumns", () => ({
+  useColumns: () => [],
+}));
+
+jest.mock("@/hooks/useDatasource", () => ({
+  useDatasource: () => ({
+    fetchMore: jest.fn(),
+    records: [],
+    removeRecordLocally: jest.fn(),
+    error: null,
+    refetch: jest.fn(),
+    loading: false,
+    hasMoreRecords: false,
+  }),
+}));
+
+jest.mock("@workspaceui/api-client/src/hooks/useColumnFilters", () => ({
+  useColumnFilters: () => ({
+    columnFilters: [],
+    setColumnFilter: jest.fn(),
+    loadFilterOptions: jest.fn(),
+    setFilterOptions: jest.fn(),
+  }),
+}));
+
+jest.mock("@workspaceui/api-client/src/hooks/useColumnFilterData", () => ({
+  useColumnFilterData: () => ({
+    fetchFilterOptions: jest.fn().mockResolvedValue([]),
   }),
 }));
 

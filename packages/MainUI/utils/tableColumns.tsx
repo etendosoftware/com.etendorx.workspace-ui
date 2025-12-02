@@ -127,6 +127,7 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         selectorDefinitionId: column.selector?.id,
         datasourceId: column.targetEntity || column.referencedEntity, // Use targetEntity if available
         customJs: column.etmetaCustomjs,
+        referencedTabId: column.referencedTabId,
         // Include additional field properties needed for inline editing
         isReadOnly: column.isReadOnly,
         isUpdatable: column.isUpdatable,

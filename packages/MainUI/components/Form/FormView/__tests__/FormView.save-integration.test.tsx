@@ -1,5 +1,22 @@
 import { globalCalloutManager } from "../../../../services/callouts";
 
+/**
+ * Test helpers
+ */
+const createMockCalloutState = (overrides = {}) => ({
+  isRunning: false,
+  queueLength: 0,
+  pendingCount: 0,
+  isSuppressed: false,
+  ...overrides,
+});
+
+const createMockValidationResult = (overrides = {}) => ({
+  isValid: true,
+  missingFields: [],
+  ...overrides,
+});
+
 // Mock dependencies
 jest.mock("../../../../services/callouts", () => ({
   globalCalloutManager: {
@@ -11,10 +28,7 @@ jest.mock("../../../../services/callouts", () => ({
 
 jest.mock("../../../../hooks/useFormValidation", () => ({
   useFormValidation: jest.fn(() => ({
-    validateRequiredFields: jest.fn(() => ({
-      isValid: true,
-      missingFields: [],
-    })),
+    validateRequiredFields: jest.fn(() => createMockValidationResult()),
     hasValidationErrors: false,
     validationErrors: [],
   })),
@@ -25,12 +39,7 @@ describe("FormView Save Integration Tests", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGlobalCalloutManager.getState.mockReturnValue({
-      isRunning: false,
-      queueLength: 0,
-      pendingCount: 0,
-      isSuppressed: false,
-    });
+    mockGlobalCalloutManager.getState.mockReturnValue(createMockCalloutState());
   });
 
   it("should check callout state for save operations", () => {
@@ -40,12 +49,9 @@ describe("FormView Save Integration Tests", () => {
   });
 
   it("should prevent save when callouts are running", () => {
-    mockGlobalCalloutManager.getState.mockReturnValue({
-      isRunning: true,
-      queueLength: 1,
-      pendingCount: 1,
-      isSuppressed: false,
-    });
+    mockGlobalCalloutManager.getState.mockReturnValue(
+      createMockCalloutState({ isRunning: true, queueLength: 1, pendingCount: 1 })
+    );
 
     const state = mockGlobalCalloutManager.getState();
 

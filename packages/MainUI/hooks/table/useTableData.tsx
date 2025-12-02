@@ -28,8 +28,8 @@ import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filt
 import { useSearch } from "../../contexts/searchContext";
 import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
+import { useWindowContext } from "../../contexts/window";
 import { useToolbarContext } from "../../contexts/ToolbarContext";
-import { useMultiWindowURL } from "../navigation/useMultiWindowURL";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
 import { useDatasource } from "../useDatasource";
@@ -109,7 +109,7 @@ export const useTableData = ({
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
-  const { activeWindow } = useMultiWindowURL();
+  const { activeWindow } = useWindowContext();
   const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
 
   const {
@@ -121,7 +121,11 @@ export const useTableData = ({
     setTableColumnSorting,
     setTableColumnOrder,
     setIsImplicitFilterApplied,
-  } = useTableStatePersistenceTab({ windowIdentifier: activeWindow?.window_identifier || "", tabId: tab.id });
+  } = useTableStatePersistenceTab({
+    windowIdentifier: activeWindow?.windowIdentifier || "",
+    tabId: tab.id,
+    tabLevel: tab.tabLevel,
+  });
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
   // Computed values

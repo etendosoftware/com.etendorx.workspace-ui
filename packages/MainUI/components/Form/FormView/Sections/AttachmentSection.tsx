@@ -116,8 +116,6 @@ const AttachmentSection = ({
     }
   }, [isSectionExpanded, recordId, tabId, initialAttachmentCount, t, showErrorModal]);
 
-  console.debug(attachments);
-
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
