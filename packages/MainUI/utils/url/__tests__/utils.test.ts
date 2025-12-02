@@ -31,9 +31,10 @@ import {
   cleanInvalidRecoveryParams,
   removeRecoveryParameters,
   removeWindowParameters,
+  appendWindowToUrl,
 } from "../utils";
 import type { WindowState } from "../../window/constants";
-import { TAB_MODES, FORM_MODES } from "../constants";
+import { TAB_MODES, FORM_MODES, URL_PREFIXS } from "../constants";
 
 /**
  * Test helpers
@@ -622,6 +623,413 @@ describe("URL Utility Functions", () => {
 
       const keys = Array.from(result.keys());
       expect(keys).toEqual(["first", "middle", "last"]);
+    });
+  });
+});
+
+describe("appendWindowToUrl", () => {
+  describe("single window creation", () => {
+    it("should create URL with single new window when no existing parameters", () => {
+      const currentParams = new URLSearchParams();
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "144_2000",
+        tabId: "LocationTab",
+        recordId: "2000015",
+      });
+
+      expect(result).toBe("wi_0=144_2000&ti_0=LocationTab&ri_0=2000015");
+    });
+
+    it("should use index 0 for first window", () => {
+      const currentParams = new URLSearchParams();
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "143_1000",
+        tabId: "BPartnerTab",
+        recordId: "1000001",
+      });
+
+      const params = new URLSearchParams(result);
+      expect(params.get(`${URL_PREFIXS.WINDOW_IDENTIFIER}_0`)).toBe("143_1000");
+      expect(params.get(`${URL_PREFIXS.TAB_IDENTIFIER}_0`)).toBe("BPartnerTab");
+      expect(params.get(`${URL_PREFIXS.RECORD_IDENTIFIER}_0`)).toBe("1000001");
+    });
+
+    it("should include all three parameters (window, tab, record)", () => {
+      const currentParams = new URLSearchParams();
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "144_2000",
+        tabId: "LocationTab",
+        recordId: "2000015",
+      });
+
+      const params = new URLSearchParams(result);
+      expect(params.has("wi_0")).toBe(true);
+      expect(params.has("ti_0")).toBe(true);
+      expect(params.has("ri_0")).toBe(true);
+    });
+  });
+
+  describe("appending to existing windows", () => {
+    it("should append new window to existing windows in URL", () => {
+      const currentParams = new URLSearchParams("wi_0=143_1000&ti_0=BPartnerTab&ri_0=1000001");
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "144_2000",
+        tabId: "LocationTab",
+        recordId: "2000015",
+      });
+
+      expect(result).toContain("wi_0=143_1000");
+      expect(result).toContain("ti_0=BPartnerTab");
+      expect(result).toContain("ri_0=1000001");
+      expect(result).toContain("wi_1=144_2000");
+      expect(result).toContain("ti_1=LocationTab");
+      expect(result).toContain("ri_1=2000015");
+    });
+
+    it("should correctly calculate next index with multiple existing windows", () => {
+      const currentParams = new URLSearchParams(
+        "wi_0=143_1000&ti_0=BPartnerTab&ri_0=1000001&wi_1=144_1500&ti_1=OrderTab&ri_1=2000001&wi_2=145_2000&ti_2=InvoiceTab&ri_2=3000001"
+      );
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "146_2500",
+        tabId: "PaymentTab",
+        recordId: "4000001",
+      });
+
+      const params = new URLSearchParams(result);
+      expect(params.get("wi_3")).toBe("146_2500");
+      expect(params.get("ti_3")).toBe("PaymentTab");
+      expect(params.get("ri_3")).toBe("4000001");
+    });
+
+    it("should preserve all existing parameters", () => {
+      const currentParams = new URLSearchParams(
+        "wi_0=143_1000&ti_0=BPartnerTab&ri_0=1000001&wi_1=144_2000&ti_1=LocationTab&ri_1=2000015"
+      );
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "145_3000",
+        tabId: "OrderTab",
+        recordId: "3000001",
+      });
+
+      const params = new URLSearchParams(result);
+
+      // Verify all existing parameters are preserved
+      expect(params.get("wi_0")).toBe("143_1000");
+      expect(params.get("ti_0")).toBe("BPartnerTab");
+      expect(params.get("ri_0")).toBe("1000001");
+      expect(params.get("wi_1")).toBe("144_2000");
+      expect(params.get("ti_1")).toBe("LocationTab");
+      expect(params.get("ri_1")).toBe("2000015");
+
+      // Verify new window is added
+      expect(params.get("wi_2")).toBe("145_3000");
+      expect(params.get("ti_2")).toBe("OrderTab");
+      expect(params.get("ri_2")).toBe("3000001");
+    });
+  });
+
+  describe("index calculation", () => {
+    it("should find next available index by counting window identifiers", () => {
+      const currentParams = new URLSearchParams("wi_0=143_1000&wi_1=144_2000");
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "145_3000",
+        tabId: "TestTab",
+        recordId: "1234",
+      });
+
+      const params = new URLSearchParams(result);
+      expect(params.get("wi_2")).toBe("145_3000");
+    });
+
+    it("should handle gaps in indices correctly", () => {
+      // Even if there are gaps, it counts from 0 until it finds a missing index
+      const currentParams = new URLSearchParams("wi_0=143_1000&wi_2=145_3000");
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "146_4000",
+        tabId: "TestTab",
+        recordId: "1234",
+      });
+
+      const params = new URLSearchParams(result);
+      // Should use index 1 (first missing index)
+      expect(params.get("wi_1")).toBe("146_4000");
+    });
+
+    it("should calculate index independently of tab and record parameters", () => {
+      const currentParams = new URLSearchParams("wi_0=143_1000&wi_1=144_2000&ti_0=Tab1");
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "145_3000",
+        tabId: "TestTab",
+        recordId: "1234",
+      });
+
+      const params = new URLSearchParams(result);
+      expect(params.get("wi_2")).toBe("145_3000");
+    });
+  });
+
+  describe("immutability", () => {
+    it("should not mutate original URLSearchParams", () => {
+      const currentParams = new URLSearchParams("wi_0=143_1000&ti_0=BPartnerTab");
+      const originalString = currentParams.toString();
+
+      appendWindowToUrl(currentParams, {
+        windowIdentifier: "144_2000",
+        tabId: "LocationTab",
+        recordId: "2000015",
+      });
+
+      expect(currentParams.toString()).toBe(originalString);
+    });
+
+    it("should create a new URLSearchParams instance internally", () => {
+      const currentParams = new URLSearchParams("wi_0=143_1000");
+
+      const result1 = appendWindowToUrl(currentParams, {
+        windowIdentifier: "144_2000",
+        tabId: "Tab1",
+        recordId: "1234",
+      });
+
+      const result2 = appendWindowToUrl(currentParams, {
+        windowIdentifier: "145_3000",
+        tabId: "Tab2",
+        recordId: "5678",
+      });
+
+      // Both results should start with the same base but have different new windows
+      expect(result1).toContain("wi_0=143_1000");
+      expect(result2).toContain("wi_0=143_1000");
+      expect(result1).toContain("wi_1=144_2000");
+      expect(result2).toContain("wi_1=145_3000");
+    });
+  });
+
+  describe("parameter format", () => {
+    it("should use correct URL_PREFIXS constants", () => {
+      const currentParams = new URLSearchParams();
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "143_1000",
+        tabId: "TestTab",
+        recordId: "1234",
+      });
+
+      expect(result).toContain(`${URL_PREFIXS.WINDOW_IDENTIFIER}_0=`);
+      expect(result).toContain(`${URL_PREFIXS.TAB_IDENTIFIER}_0=`);
+      expect(result).toContain(`${URL_PREFIXS.RECORD_IDENTIFIER}_0=`);
+    });
+
+    it("should encode special characters in parameter values", () => {
+      const currentParams = new URLSearchParams();
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "143_1000",
+        tabId: "Tab With Spaces",
+        recordId: "id&special=chars",
+      });
+
+      const params = new URLSearchParams(result);
+      expect(params.get("ti_0")).toBe("Tab With Spaces");
+      expect(params.get("ri_0")).toBe("id&special=chars");
+    });
+
+    it("should return valid URL query string format", () => {
+      const currentParams = new URLSearchParams("wi_0=143_1000");
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "144_2000",
+        tabId: "LocationTab",
+        recordId: "2000015",
+      });
+
+      // Should be a valid query string (no leading '?')
+      expect(result.startsWith("?")).toBe(false);
+
+      // Should be parseable by URLSearchParams
+      expect(() => new URLSearchParams(result)).not.toThrow();
+    });
+  });
+
+  describe("edge cases", () => {
+    it("should handle empty string values", () => {
+      const currentParams = new URLSearchParams();
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "",
+        tabId: "",
+        recordId: "",
+      });
+
+      const params = new URLSearchParams(result);
+      expect(params.get("wi_0")).toBe("");
+      expect(params.get("ti_0")).toBe("");
+      expect(params.get("ri_0")).toBe("");
+    });
+
+    it("should handle numeric values converted to strings", () => {
+      const currentParams = new URLSearchParams();
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "143_1000",
+        tabId: "tab123",
+        recordId: "999999",
+      });
+
+      const params = new URLSearchParams(result);
+      expect(params.get("ri_0")).toBe("999999");
+    });
+
+    it("should handle very long window identifiers", () => {
+      const currentParams = new URLSearchParams();
+      const longIdentifier = "143_" + "1".repeat(100);
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: longIdentifier,
+        tabId: "TestTab",
+        recordId: "1234",
+      });
+
+      const params = new URLSearchParams(result);
+      expect(params.get("wi_0")).toBe(longIdentifier);
+    });
+
+    it("should handle window identifier format with timestamp", () => {
+      const currentParams = new URLSearchParams();
+      const timestamp = Date.now();
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: `143_${timestamp}`,
+        tabId: "BPartnerTab",
+        recordId: "1000001",
+      });
+
+      const params = new URLSearchParams(result);
+      expect(params.get("wi_0")).toBe(`143_${timestamp}`);
+    });
+
+    it("should handle appending when only partial previous window parameters exist", () => {
+      // Some windows might not have tab/record parameters
+      const currentParams = new URLSearchParams("wi_0=143_1000&wi_1=144_2000&ti_1=Tab1");
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "145_3000",
+        tabId: "TestTab",
+        recordId: "1234",
+      });
+
+      const params = new URLSearchParams(result);
+      expect(params.get("wi_2")).toBe("145_3000");
+      expect(params.get("ti_2")).toBe("TestTab");
+      expect(params.get("ri_2")).toBe("1234");
+    });
+
+    it("should handle unicode characters in tab and record IDs", () => {
+      const currentParams = new URLSearchParams();
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "143_1000",
+        tabId: "Pestaña_Ñoño",
+        recordId: "registro_123",
+      });
+
+      const params = new URLSearchParams(result);
+      expect(params.get("ti_0")).toBe("Pestaña_Ñoño");
+      expect(params.get("ri_0")).toBe("registro_123");
+    });
+  });
+
+  describe("real-world scenarios", () => {
+    it("should handle typical Business Partner to Location scenario", () => {
+      const currentParams = new URLSearchParams("wi_0=143_1732640000&ti_0=BPartnerTab&ri_0=1000001");
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "144_1732640100",
+        tabId: "LocationTab",
+        recordId: "2000015",
+      });
+
+      const params = new URLSearchParams(result);
+
+      // Original window preserved
+      expect(params.get("wi_0")).toBe("143_1732640000");
+      expect(params.get("ti_0")).toBe("BPartnerTab");
+      expect(params.get("ri_0")).toBe("1000001");
+
+      // New window added
+      expect(params.get("wi_1")).toBe("144_1732640100");
+      expect(params.get("ti_1")).toBe("LocationTab");
+      expect(params.get("ri_1")).toBe("2000015");
+    });
+
+    it("should handle opening multiple windows from linked items sequentially", () => {
+      let currentParams = new URLSearchParams();
+
+      // Open first window
+      let result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "143_1000",
+        tabId: "BPartnerTab",
+        recordId: "1000001",
+      });
+
+      currentParams = new URLSearchParams(result);
+
+      // Open second window
+      result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "144_2000",
+        tabId: "LocationTab",
+        recordId: "2000015",
+      });
+
+      currentParams = new URLSearchParams(result);
+
+      // Open third window
+      result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "145_3000",
+        tabId: "OrderTab",
+        recordId: "3000001",
+      });
+
+      const finalParams = new URLSearchParams(result);
+
+      expect(finalParams.get("wi_0")).toBe("143_1000");
+      expect(finalParams.get("wi_1")).toBe("144_2000");
+      expect(finalParams.get("wi_2")).toBe("145_3000");
+    });
+
+    it("should work correctly when WindowProvider will rebuild URL later", () => {
+      // Simulates the scenario described in the function's JSDoc:
+      // appendWindowToUrl only appends the new window,
+      // WindowProvider's useEffect will later rebuild the complete URL
+
+      const currentParams = new URLSearchParams("wi_0=143_1000&ti_0=BPartnerTab&ri_0=1000001");
+
+      const result = appendWindowToUrl(currentParams, {
+        windowIdentifier: "144_2000",
+        tabId: "LocationTab",
+        recordId: "2000015",
+      });
+
+      // Result should be immediately usable for router.replace()
+      expect(result).toBeTruthy();
+      expect(result).toContain("wi_0=");
+      expect(result).toContain("wi_1=");
+
+      // Can be used directly in router
+      const urlForRouter = `window?${result}`;
+      expect(urlForRouter).toBe(
+        "window?wi_0=143_1000&ti_0=BPartnerTab&ri_0=1000001&wi_1=144_2000&ti_1=LocationTab&ri_1=2000015"
+      );
     });
   });
 });

@@ -109,8 +109,17 @@ interface WindowContextI {
   setNavigationInitialized: (windowIdentifier: string, initialized: boolean) => void;
 
   // Recovery state management
+  /** Loading indicator for URL-driven window recovery (true during recovery process) */
   isRecoveryLoading: boolean;
+  /** Error message if recovery fails, null otherwise */
   recoveryError: string | null;
+  /**
+   * Triggers the URL recovery system to re-execute.
+   * Resets the internal guard flag, allowing recovery to run again when URL changes.
+   *
+   * Primary use case: Opening new windows from linked items.
+   * Call this before updating the URL with new window parameters.
+   */
   triggerRecovery: () => void;
 
   // Window management
