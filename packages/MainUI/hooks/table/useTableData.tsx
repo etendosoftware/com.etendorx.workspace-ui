@@ -121,6 +121,7 @@ export const useTableData = ({
     setTableColumnSorting,
     setTableColumnOrder,
     setIsImplicitFilterApplied,
+    tableColumnSorting,
   } = useTableStatePersistenceTab({
     windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: tab.id,
@@ -332,6 +333,34 @@ export const useTableData = ({
       ];
     }
 
+    // Add sorting
+    if (tableColumnSorting?.length > 0) {
+      const sort = tableColumnSorting[0];
+      // Find the field that corresponds to the sorted column ID (which is the field name)
+      const field = Object.values(tab.fields).find((f) => f.name === sort.id);
+      const sortField = field?.hqlName || sort.id;
+
+      options.sortBy = sort.desc ? `-${sortField}` : sortField;
+    } else {
+      // Default sort by identifier column if no explicit sort
+      const identifierField = Object.values(tab.fields).find(
+        (field) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const col = field.column as any;
+          return (
+            col?.isIdentifier === true ||
+            col?.isIdentifier === "true" ||
+            col?.identifier === true ||
+            col?.identifier === "true"
+          );
+        }
+      );
+
+      if (identifierField) {
+        options.sortBy = identifierField.hqlName;
+      }
+    }
+
     return options;
   }, [
     tab.parentColumns,
@@ -347,6 +376,7 @@ export const useTableData = ({
     parentRecord?.id,
     parentTab,
     language,
+    tableColumnSorting,
   ]);
 
   // Tree options
