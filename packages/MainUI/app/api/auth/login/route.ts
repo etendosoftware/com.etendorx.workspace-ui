@@ -47,8 +47,8 @@ async function fetchErpLogin(
     headers,
     body: JSON.stringify(body),
   }).catch((fetchError) => {
-    console.error("Fetch error - Etendo Classic backend not accessible:", fetchError);
-    throw new Error("Etendo Classic backend is not accessible");
+    console.error("Fetch error - Etendo API not accessible:", fetchError);
+    throw new Error("Etendo API is not accessible");
   });
 }
 
