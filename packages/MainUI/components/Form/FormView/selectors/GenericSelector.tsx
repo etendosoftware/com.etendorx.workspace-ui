@@ -37,6 +37,8 @@ export type GenericSelectorProps = {
 };
 
 const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
+  // Reference mapping corrected - "10" now properly handled as STRING
+
   const { reference } = field.column;
   switch (reference) {
     case FIELD_REFERENCE_CODES.PASSWORD:

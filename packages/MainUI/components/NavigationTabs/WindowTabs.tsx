@@ -17,8 +17,6 @@
 
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useMetadataContext } from "@/hooks/useMetadataContext";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import HomeIcon from "@workspaceui/componentlibrary/src/assets/icons/home.svg";
 import ChevronRightIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-right.svg";
@@ -29,12 +27,11 @@ import MenuTabs from "@/components/NavigationTabs/MenuTabs";
 import { useTabs } from "@/contexts/tabs";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useWindowContext } from "@/contexts/window";
+import type { WindowState } from "@/utils/window/constants";
 
 export default function WindowTabs() {
-  const { windows, isHomeRoute, setActiveWindow, closeWindow, navigateToHome } = useMultiWindowURL();
-  const { getWindowTitle } = useMetadataContext();
   const { t } = useTranslation();
-  const { cleanupWindow } = useWindowContext();
+  const { windows, isHomeRoute, cleanupWindow, setWindowActive, setAllWindowsInactive } = useWindowContext();
 
   const {
     containerRef,
@@ -59,30 +56,36 @@ export default function WindowTabs() {
 
   const handleSelectWindow = useCallback(
     (windowIdentifier: string) => {
-      setActiveWindow(windowIdentifier);
+      setWindowActive({ windowIdentifier });
     },
-    [setActiveWindow]
+    [setWindowActive]
   );
 
-  const handleGoHome = () => {
-    navigateToHome();
-  };
+  const handleCloseWindow = useCallback(
+    (window: WindowState) => {
+      // Optimistic removal for instant feedback
+      setClosingWindowIds((prev) => new Set(prev).add(window.windowIdentifier));
+      // Clean up table state for this window
+      cleanupWindow(window.windowIdentifier);
+    },
+    [cleanupWindow]
+  );
+
+  const visibleWindows = useMemo(
+    () => windows.filter((w) => !closingWindowIds.has(w.windowIdentifier)),
+    [windows, closingWindowIds]
+  );
 
   // Clear any optimistic closing ids that no longer exist in windows
   useEffect(() => {
     setClosingWindowIds((prev) => {
       const next = new Set<string>();
       for (const id of prev) {
-        if (windows.some((w) => w.window_identifier === id)) next.add(id);
+        if (windows.some((w) => w.windowIdentifier === id)) next.add(id);
       }
       return next;
     });
   }, [windows]);
-
-  const visibleWindows = useMemo(
-    () => windows.filter((w) => !closingWindowIds.has(w.window_identifier)),
-    [windows, closingWindowIds]
-  );
 
   return (
     <div
@@ -90,7 +93,7 @@ export default function WindowTabs() {
       ref={containerRef}>
       <div className="flex items-center h-8">
         <IconButton
-          onClick={handleGoHome}
+          onClick={setAllWindowsInactive}
           className={`w-8 h-8 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-etendo-main) hover:text-(--color-etendo-contrast-text) ${isHomeRoute ? "bg-(--color-etendo-main) text-(--color-etendo-contrast-text)" : ""}`}
           tooltip={t("primaryTabs.dashboard")}
           aria-label={t("primaryTabs.dashboard")}
@@ -110,7 +113,7 @@ export default function WindowTabs() {
         className="w-full flex items-center px-2 overflow-x-auto overflow-y-hidden scroll-smooth hide-scrollbar h-9"
         ref={windowsContainerRef}>
         {visibleWindows.map((window, index) => {
-          const title = window.title || getWindowTitle?.(window.windowId);
+          const title = window.title || "Loading...";
           const isActive = window.isActive;
           const canClose = visibleWindows.length > 1;
 
@@ -119,24 +122,19 @@ export default function WindowTabs() {
 
           return (
             <div
-              key={window.window_identifier}
+              key={window.windowIdentifier}
               className="flex items-center h-9"
               ref={(el) => {
-                tabRefs.current[window.window_identifier] = el;
+                tabRefs.current[window.windowIdentifier] = el;
               }}>
               <WindowTab
-                windowId={window.window_identifier}
                 title={title}
                 isActive={isActive}
                 onActivate={() => {
-                  handleSelectWindow(window.window_identifier);
+                  handleSelectWindow(window.windowIdentifier);
                 }}
                 onClose={() => {
-                  // Optimistic removal for instant feedback
-                  setClosingWindowIds((prev) => new Set(prev).add(window.window_identifier));
-                  // Clean up table state for this window
-                  cleanupWindow(window.windowId);
-                  closeWindow(window.window_identifier);
+                  handleCloseWindow(window);
                 }}
                 canClose={canClose}
                 data-testid="WindowTab__c8117d"

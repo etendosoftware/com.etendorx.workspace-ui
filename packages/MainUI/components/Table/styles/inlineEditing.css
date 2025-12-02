@@ -1,0 +1,441 @@
+/*
+ * Inline Editing Styles
+ * Provides visual feedback for editing states, validation errors, and loading indicators
+ */
+
+/* Cell container styles */
+.inline-edit-cell-container {
+  position: relative;
+  min-height: 28px;
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.table-cell-content {
+  padding: 0 0.25rem;
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+/* Ensure table cells don't allow overflow */
+td:has(.inline-edit-cell-container) {
+  overflow: hidden;
+}
+
+/* Cell editor wrapper styles - ensure all editors fill available space */
+.cell-editor-wrapper {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* Date editor container */
+.inline-edit-date-container {
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* Loading state styles */
+.inline-edit-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  min-height: 32px;
+}
+
+/* Base input styles for all editors */
+.inline-edit-input,
+.inline-edit-select,
+.inline-edit-date,
+.inline-edit-number,
+.inline-edit-checkbox {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+  background-color: white;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.inline-edit-input:focus,
+.inline-edit-select:focus,
+.inline-edit-date:focus,
+.inline-edit-number:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* Error state styles */
+.inline-edit-input.error,
+.inline-edit-select.error,
+.inline-edit-date.error,
+.inline-edit-number.error,
+.inline-edit-checkbox.error {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.inline-edit-input.error:focus,
+.inline-edit-select.error:focus,
+.inline-edit-date.error:focus,
+.inline-edit-number.error:focus {
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
+}
+
+/* Disabled state styles */
+.inline-edit-input:disabled,
+.inline-edit-select:disabled,
+.inline-edit-date:disabled,
+.inline-edit-number:disabled,
+.inline-edit-checkbox:disabled {
+  background-color: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Checkbox specific styles */
+.inline-edit-checkbox {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+
+.inline-edit-checkbox:disabled {
+  cursor: not-allowed;
+}
+
+/* Error container styles */
+.inline-edit-error-container {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  background-color: #fef2f2;
+  border: 1px solid #ef4444;
+  border-radius: 4px;
+  min-height: 32px;
+}
+
+.inline-edit-error-text {
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Row editing state indicators */
+.table-row-editing {
+  background-color: #f0f9ff !important;
+  position: relative;
+}
+
+.table-row-editing:hover {
+  background-color: #e0f2fe !important;
+}
+
+.table-row-editing::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  z-index: 2;
+  background: #3b82f6;
+}
+
+/* Row error state indicators */
+.table-row-error {
+  background-color: #fef2f2 !important;
+  position: relative;
+}
+
+.table-row-error:hover {
+  background-color: #fde8e8 !important;
+}
+
+.table-row-error::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  z-index: 2;
+  background: #ef4444;
+}
+
+/* Row saving state indicators */
+.table-row-saving {
+  background-color: #fffbeb !important;
+  opacity: 0.9;
+  position: relative;
+}
+
+.table-row-saving:hover {
+  background-color: #fef3c7 !important;
+}
+
+.table-row-saving::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  z-index: 2;
+  background: #f59e0b;
+  animation: pulse-saving 2s ease-in-out infinite;
+}
+
+@keyframes pulse-saving {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Loading spinner for save operations */
+.inline-edit-saving-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f4f6;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Validation error tooltip styles */
+.inline-edit-error-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background-color: #dc2626;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 1000;
+  margin-bottom: 4px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+  pointer-events: none;
+}
+
+.inline-edit-error-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #dc2626;
+}
+
+.inline-edit-cell-container:hover .inline-edit-error-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Focus management for keyboard navigation */
+.inline-edit-input:focus,
+.inline-edit-select:focus,
+.inline-edit-date:focus,
+.inline-edit-number:focus,
+.inline-edit-checkbox:focus {
+  z-index: 10;
+  position: relative;
+}
+
+/* Editing state indicator styles */
+.editing-state-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.editing-state-indicator.editing {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+.editing-state-indicator.saving {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fbbf24;
+}
+
+.editing-state-indicator.error {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.editing-state-indicator .editing-icon,
+.editing-state-indicator .error-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.editing-state-indicator .state-text {
+  font-size: 10px;
+  line-height: 1;
+}
+
+/* Compact version for small spaces */
+.editing-state-indicator.compact {
+  padding: 1px 4px;
+  gap: 2px;
+}
+
+.editing-state-indicator.compact .state-text {
+  display: none;
+}
+
+/* Validation error highlight for cells */
+.cell-validation-error {
+  position: relative;
+}
+
+.cell-validation-error::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-top: 6px solid #ef4444;
+  pointer-events: none;
+}
+
+/* Error message tooltip */
+.cell-error-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1f2937;
+  color: white;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  margin-bottom: 4px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+  pointer-events: none;
+}
+
+.cell-error-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #1f2937;
+}
+
+.cell-validation-error:hover .cell-error-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Progress indicator for bulk operations */
+.bulk-operation-progress {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bulk-operation-progress .progress-bar {
+  width: 200px;
+  height: 4px;
+  background-color: #f3f4f6;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bulk-operation-progress .progress-fill {
+  height: 100%;
+  background-color: #3b82f6;
+  transition: width 0.3s ease-in-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .inline-edit-input,
+  .inline-edit-select,
+  .inline-edit-date,
+  .inline-edit-number {
+    font-size: 16px; /* Prevent zoom on iOS */
+    padding: 8px;
+  }
+
+  .editing-state-indicator {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
+
+  .editing-state-indicator .state-text {
+    display: none;
+  }
+
+  .bulk-operation-progress {
+    top: 10px;
+    right: 10px;
+    padding: 8px 12px;
+  }
+
+  .bulk-operation-progress .progress-bar {
+    width: 150px;
+  }
+}

@@ -51,6 +51,11 @@ const RadioSelector = ({ parameter }: { parameter: ProcessParameter }) => {
     return null;
   }
 
+  // Don't render if parameter doesn't have a dBColumnName
+  if (!parameter.dBColumnName) {
+    return null;
+  }
+
   return (
     <div>
       <RadioGrid

@@ -1,6 +1,17 @@
 /*
  *************************************************************************
- * useColumns.ts
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
  *************************************************************************
  */
 
@@ -53,12 +64,38 @@ const getCurrentFilterValue = (
 
 /**
  * Helper to check if column should use date formatting
+ * Checks multiple indicators to ensure date columns are properly detected
  */
 const shouldFormatDateColumn = (column: Column): boolean => {
-  return (
+  // Check column.column.reference (primary check)
+  if (
     column.column?.reference === FIELD_REFERENCE_CODES.DATE ||
-    column.column?.reference === FIELD_REFERENCE_CODES.DATETIME
-  );
+    column.column?.reference === FIELD_REFERENCE_CODES.DATETIME ||
+    column.column?.reference === FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME
+  ) {
+    return true;
+  }
+
+  // Check column.type (FieldType)
+  if (column.type === "date" || column.type === "datetime") {
+    return true;
+  }
+
+  // Check reference identifier
+  if (
+    column.column?.reference$_identifier === "Date" ||
+    column.column?.reference$_identifier === "DateTime" ||
+    column.column?.reference$_identifier === "Absolute DateTime"
+  ) {
+    return true;
+  }
+
+  // Check display type
+  if (column.displayType === "date" || column.displayType === "datetime") {
+    return true;
+  }
+
+  return false;
 };
 
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
@@ -121,8 +158,17 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         const isAuditField = AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName);
         columnConfig = {
           ...columnConfig,
-          Cell: ({ cell }: { cell: MRT_Cell<EntityData, unknown> }) => {
-            const value = cell?.getValue();
+          Cell: ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: { original: EntityData } }) => {
+            // Try to get value from cell first, then fallback to row data
+            let value = cell?.getValue();
+
+            // If cell.getValue() returns undefined, try getting from row.original directly
+            if (value === undefined || value === null) {
+              const rowData = row.original;
+              // Try both hqlName and name to find the value
+              value = rowData[column.columnName] ?? rowData[column.name];
+            }
+
             // Only format if the value is a string with valid date format
             // This prevents formatting non-date values that are incorrectly marked as date type
             if (typeof value === "string" && value) {
@@ -141,8 +187,9 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
       // Reference columns with navigation
       if (isReference) {
-        const windowId = column.referencedWindowId;
-        const windowIdentifier = column._identifier;
+        const windowId = column.referencedWindowId || "";
+        const columnTitle = column.name;
+        const referencedTabId = column.referencedTabId || "";
         columnConfig = {
           ...columnConfig,
           Cell: ({ row, cell }: { row: { original: EntityData }; cell: MRT_Cell<EntityData, unknown> }) => {
@@ -157,14 +204,31 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                       recordData?.[column.columnName as keyof EntityData] ||
                       ""
                   );
+
             return (
               <button
                 type="button"
                 tabIndex={0}
                 aria-label="Navigate to referenced window"
                 className="bg-transparent border-none p-0 text-(--color-dynamic-main) hover:underline text-left"
-                onClick={(e) => handleClickRedirect(e, windowId, windowIdentifier, String(selectedRecordId ?? ""))}
-                onKeyDown={(e) => handleKeyDownRedirect(e, windowId, windowIdentifier, String(selectedRecordId ?? ""))}>
+                onClick={(e) => {
+                  handleClickRedirect({
+                    e,
+                    windowId,
+                    windowTitle: columnTitle,
+                    referencedTabId,
+                    selectedRecordId: String(selectedRecordId ?? ""),
+                  });
+                }}
+                onKeyDown={(e) =>
+                  handleKeyDownRedirect({
+                    e,
+                    windowId,
+                    windowTitle: columnTitle,
+                    referencedTabId,
+                    selectedRecordId: String(selectedRecordId ?? ""),
+                  })
+                }>
                 {displayValue}
               </button>
             );

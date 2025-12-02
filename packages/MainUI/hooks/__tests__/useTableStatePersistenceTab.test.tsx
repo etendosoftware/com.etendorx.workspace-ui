@@ -18,6 +18,24 @@
 import { act, renderHook } from "@testing-library/react";
 import WindowProvider from "../../contexts/window";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
+import type React from "react";
+import { setupNextNavigationMocks } from "@/utils/tests/mockHelpers";
+
+// Mock Next.js navigation hooks
+const { mockReplace, mockSearchParams } = setupNextNavigationMocks();
+
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({
+    replace: mockReplace,
+    push: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
+    prefetch: jest.fn(),
+  }),
+  useSearchParams: () => mockSearchParams,
+  usePathname: () => "/window",
+}));
 
 describe("useTableStatePersistenceTab", () => {
   const wrapper = ({ children }: { children: React.ReactNode }) => <WindowProvider>{children}</WindowProvider>;
@@ -25,8 +43,44 @@ describe("useTableStatePersistenceTab", () => {
   const windowId = "window1";
   const tabId = "tab1";
 
+  // Helper: Render hook with default window and tab
+  const renderTableHook = (customWindowId = windowId, customTabId = tabId) => {
+    return renderHook(() => useTableStatePersistenceTab({ windowIdentifier: customWindowId, tabId: customTabId }), {
+      wrapper,
+    });
+  };
+
+  // Helper: Test direct value update for any table property
+  const testDirectUpdate = <T,>({
+    setter,
+    getter,
+    testValue,
+  }: {
+    setter: (value: T) => void;
+    getter: () => T;
+    testValue: T;
+  }) => {
+    act(() => setter(testValue));
+    expect(getter()).toEqual(testValue);
+  };
+
+  beforeEach(() => {
+    mockReplace.mockClear();
+    // Clear all search params
+    Array.from(mockSearchParams.keys()).forEach((key) => mockSearchParams.delete(key));
+
+    // Initialize default windows in URL params
+    mockSearchParams.set("w_window1", "active");
+    mockSearchParams.set("wi_window1", "window1");
+    mockSearchParams.set("o_window1", "1");
+
+    mockSearchParams.set("w_window2", "active");
+    mockSearchParams.set("wi_window2", "window2");
+    mockSearchParams.set("o_window2", "2");
+  });
+
   it("should return default values for new tab", () => {
-    const { result } = renderHook(() => useTableStatePersistenceTab(windowId, tabId), { wrapper });
+    const { result } = renderTableHook();
 
     expect(result.current.tableColumnFilters).toEqual([]);
     expect(result.current.tableColumnVisibility).toEqual({});
@@ -35,7 +89,7 @@ describe("useTableStatePersistenceTab", () => {
   });
 
   it("should provide setter functions", () => {
-    const { result } = renderHook(() => useTableStatePersistenceTab(windowId, tabId), { wrapper });
+    const { result } = renderTableHook();
 
     expect(typeof result.current.setTableColumnFilters).toBe("function");
     expect(typeof result.current.setTableColumnVisibility).toBe("function");
@@ -44,29 +98,25 @@ describe("useTableStatePersistenceTab", () => {
   });
 
   it("should update and retrieve table filters with direct value", () => {
-    const { result } = renderHook(() => useTableStatePersistenceTab(windowId, tabId), { wrapper });
-
+    const { result } = renderTableHook();
     const testFilters = [{ id: "column1", value: "test" }];
 
-    act(() => {
-      result.current.setTableColumnFilters(testFilters);
+    testDirectUpdate({
+      setter: result.current.setTableColumnFilters,
+      getter: () => result.current.tableColumnFilters,
+      testValue: testFilters,
     });
-
-    expect(result.current.tableColumnFilters).toEqual(testFilters);
   });
 
   it("should update table filters with updater function", () => {
-    const { result } = renderHook(() => useTableStatePersistenceTab(windowId, tabId), { wrapper });
-
+    const { result } = renderTableHook();
     const initialFilters = [{ id: "column1", value: "initial" }];
     const newFilter = { id: "column2", value: "new" };
 
-    // Set initial value
     act(() => {
       result.current.setTableColumnFilters(initialFilters);
     });
 
-    // Update with function
     act(() => {
       result.current.setTableColumnFilters((prev) => [...prev, newFilter]);
     });
@@ -75,28 +125,24 @@ describe("useTableStatePersistenceTab", () => {
   });
 
   it("should update and retrieve table visibility with direct value", () => {
-    const { result } = renderHook(() => useTableStatePersistenceTab(windowId, tabId), { wrapper });
-
+    const { result } = renderTableHook();
     const testVisibility = { column1: false, column2: true };
 
-    act(() => {
-      result.current.setTableColumnVisibility(testVisibility);
+    testDirectUpdate({
+      setter: result.current.setTableColumnVisibility,
+      getter: () => result.current.tableColumnVisibility,
+      testValue: testVisibility,
     });
-
-    expect(result.current.tableColumnVisibility).toEqual(testVisibility);
   });
 
   it("should update table visibility with updater function", () => {
-    const { result } = renderHook(() => useTableStatePersistenceTab(windowId, tabId), { wrapper });
-
+    const { result } = renderTableHook();
     const initialVisibility = { column1: true };
 
-    // Set initial value
     act(() => {
       result.current.setTableColumnVisibility(initialVisibility);
     });
 
-    // Update with function
     act(() => {
       result.current.setTableColumnVisibility((prev) => ({ ...prev, column2: false }));
     });
@@ -105,28 +151,24 @@ describe("useTableStatePersistenceTab", () => {
   });
 
   it("should update and retrieve table sorting with direct value", () => {
-    const { result } = renderHook(() => useTableStatePersistenceTab(windowId, tabId), { wrapper });
-
+    const { result } = renderTableHook();
     const testSorting = [{ id: "column1", desc: false }];
 
-    act(() => {
-      result.current.setTableColumnSorting(testSorting);
+    testDirectUpdate({
+      setter: result.current.setTableColumnSorting,
+      getter: () => result.current.tableColumnSorting,
+      testValue: testSorting,
     });
-
-    expect(result.current.tableColumnSorting).toEqual(testSorting);
   });
 
   it("should update table sorting with updater function", () => {
-    const { result } = renderHook(() => useTableStatePersistenceTab(windowId, tabId), { wrapper });
-
+    const { result } = renderTableHook();
     const initialSorting = [{ id: "column1", desc: false }];
 
-    // Set initial value
     act(() => {
       result.current.setTableColumnSorting(initialSorting);
     });
 
-    // Update with function
     act(() => {
       result.current.setTableColumnSorting((prev) =>
         prev.map((sort) => (sort.id === "column1" ? { ...sort, desc: true } : sort))
@@ -137,28 +179,24 @@ describe("useTableStatePersistenceTab", () => {
   });
 
   it("should update and retrieve table order with direct value", () => {
-    const { result } = renderHook(() => useTableStatePersistenceTab(windowId, tabId), { wrapper });
-
+    const { result } = renderTableHook();
     const testOrder = ["column1", "column2", "column3"];
 
-    act(() => {
-      result.current.setTableColumnOrder(testOrder);
+    testDirectUpdate({
+      setter: result.current.setTableColumnOrder,
+      getter: () => result.current.tableColumnOrder,
+      testValue: testOrder,
     });
-
-    expect(result.current.tableColumnOrder).toEqual(testOrder);
   });
 
   it("should update table order with updater function", () => {
-    const { result } = renderHook(() => useTableStatePersistenceTab(windowId, tabId), { wrapper });
-
+    const { result } = renderTableHook();
     const initialOrder = ["column1", "column2"];
 
-    // Set initial value
     act(() => {
       result.current.setTableColumnOrder(initialOrder);
     });
 
-    // Update with function
     act(() => {
       result.current.setTableColumnOrder((prev) => [...prev, "column3"]);
     });
@@ -167,9 +205,9 @@ describe("useTableStatePersistenceTab", () => {
   });
 
   it("should isolate state between different window/tab combinations", () => {
-    const { result: result1 } = renderHook(() => useTableStatePersistenceTab("window1", "tab1"), { wrapper });
-    const { result: result2 } = renderHook(() => useTableStatePersistenceTab("window1", "tab2"), { wrapper });
-    const { result: result3 } = renderHook(() => useTableStatePersistenceTab("window2", "tab1"), { wrapper });
+    const { result: result1 } = renderTableHook("window1", "tab1");
+    const { result: result2 } = renderTableHook("window1", "tab2");
+    const { result: result3 } = renderTableHook("window2", "tab1");
 
     const filters1 = [{ id: "column1", value: "window1-tab1" }];
     const filters2 = [{ id: "column2", value: "window1-tab2" }];
@@ -187,7 +225,7 @@ describe("useTableStatePersistenceTab", () => {
   });
 
   it("should maintain state consistency across re-renders", () => {
-    const { result, rerender } = renderHook(() => useTableStatePersistenceTab(windowId, tabId), { wrapper });
+    const { result, rerender } = renderTableHook();
 
     const testFilters = [{ id: "column1", value: "persistent" }];
     const testVisibility = { column1: false };
@@ -201,7 +239,6 @@ describe("useTableStatePersistenceTab", () => {
       result.current.setTableColumnOrder(testOrder);
     });
 
-    // Re-render the hook
     rerender();
 
     expect(result.current.tableColumnFilters).toEqual(testFilters);
@@ -211,7 +248,7 @@ describe("useTableStatePersistenceTab", () => {
   });
 
   it("should handle rapid consecutive updates correctly", () => {
-    const { result } = renderHook(() => useTableStatePersistenceTab(windowId, tabId), { wrapper });
+    const { result } = renderTableHook();
 
     act(() => {
       result.current.setTableColumnFilters([{ id: "column1", value: "first" }]);

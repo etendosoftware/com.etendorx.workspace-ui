@@ -30,7 +30,6 @@ import useFormFields from "@/hooks/useFormFields";
 import { useFormInitialState } from "@/hooks/useFormInitialState";
 import { useFormInitialization } from "@/hooks/useFormInitialization";
 import { useSelected } from "@/hooks/useSelected";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { FormInitializationProvider } from "@/contexts/FormInitializationContext";
 import { globalCalloutManager } from "@/services/callouts";
@@ -47,6 +46,7 @@ import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useRecordNavigation } from "@/hooks/useRecordNavigation";
 import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
+import { useWindowContext } from "@/contexts/window";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
@@ -88,7 +88,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   const { graph } = useSelected();
-  const { activeWindow, getSelectedRecord, setSelectedRecord, setSelectedRecordAndClearChildren } = useMultiWindowURL();
+  const { activeWindow, setSelectedRecord, getSelectedRecord, setSelectedRecordAndClearChildren } = useWindowContext();
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
   const { resetFormChanges, parentTab } = useTabContext();
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
@@ -197,7 +197,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * @returns EntityData object representing current record or null if no record
    */
   const record = useMemo(() => {
-    const windowIdentifier = activeWindow?.window_identifier;
+    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowIdentifier) return null;
 
     if (recordId === NEW_RECORD_ID) return null;
@@ -217,7 +217,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     }
 
     return null;
-  }, [activeWindow?.window_identifier, getSelectedRecord, tab, recordId, graph]);
+  }, [activeWindow?.windowIdentifier, getSelectedRecord, tab, recordId, graph]);
 
   /**
    * Merges record data with form initialization data to create complete form state.
@@ -414,7 +414,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       graph.setSelected(tab, data);
       graph.setSelectedMultiple(tab, [data]);
 
-      const windowIdentifier = activeWindow?.window_identifier;
+      const windowIdentifier = activeWindow?.windowIdentifier;
       if (windowIdentifier) {
         setSelectedRecord(windowIdentifier, tab.id, String(data.id));
       }
@@ -433,7 +433,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       mode,
       graph,
       tab,
-      activeWindow?.window_identifier,
+      activeWindow?.windowIdentifier,
       showSuccessModal,
       reset,
       initialState,
@@ -510,8 +510,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
       // Use atomic update to change parent selection and clear all children in one operation
       // This forces children to return to table view even if they were in FormView
-      if (activeWindow?.window_identifier && childIds.length > 0) {
-        setSelectedRecordAndClearChildren(activeWindow.window_identifier, tab.id, newRecordId, childIds);
+      if (activeWindow?.windowIdentifier && childIds.length > 0) {
+        setSelectedRecordAndClearChildren(activeWindow.windowIdentifier, tab.id, newRecordId, childIds);
 
         // Also clear the graph selection for all children to ensure they reset completely
         for (const child of children ?? []) {

@@ -303,8 +303,6 @@ export const useCopilot = () => {
           conv.title === "Conversación actual"
       );
 
-      console.log(`🎯 Found ${conversationsWithoutTitle.length} conversations without title`);
-
       if (conversationsWithoutTitle.length > 0) {
         // Process in batches to avoid flooding the backend
         const batchSize = 3;
@@ -312,7 +310,6 @@ export const useCopilot = () => {
 
         for (let i = 0; i < conversationsWithoutTitle.length; i += batchSize) {
           const batch = conversationsWithoutTitle.slice(i, i + batchSize);
-          console.log(`🎯 Processing batch ${Math.floor(i / batchSize) + 1} with ${batch.length} conversations`);
 
           // Update UI to show 'Generating...' for batch items
           const batchIds = new Set(batch.map((b) => b.id));
@@ -330,7 +327,6 @@ export const useCopilot = () => {
 
           // Wait before starting the next batch
           if (i + batchSize < conversationsWithoutTitle.length) {
-            console.log(`⏳ Waiting ${batchDelayMs}ms before next batch`);
             await new Promise((resolve) => setTimeout(resolve, batchDelayMs));
           }
         }

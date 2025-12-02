@@ -18,23 +18,22 @@
 // @data-testid-ignore
 "use client";
 
-import { useCallback, useState, useEffect, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
 import { SubTabsSwitch } from "@/components/window/SubTabsSwitch";
 import { Tab } from "@/components/window/Tab";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { useWindowContext } from "@/contexts/window";
 import TabContextProvider from "@/contexts/tab";
 import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHandle";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 
 interface ExtendedTabsProps extends TabsProps {
   isTopGroup?: boolean;
-  onTabChange?: (tab: TabType) => void;
 }
 
-export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }: ExtendedTabsProps) {
+export default function TabsComponent({ tabs, isTopGroup = false }: ExtendedTabsProps) {
   const [current, setCurrent] = useState(tabs[0]);
   // Visual active tab id updates immediately for instant feedback
   const [activeTabId, setActiveTabId] = useState(tabs[0].id);
@@ -42,9 +41,9 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
   const [customHeight, setCustomHeight] = useState(50);
   const [isPending, startTransition] = useTransition();
 
-  const { activeWindow } = useMultiWindowURL();
-  const { activeLevels, setActiveLevel } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.window_identifier || "",
+  const { activeWindow } = useWindowContext();
+  const { activeLevels, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
+    windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: "",
   });
 
@@ -61,9 +60,12 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
         setCustomHeight(50);
         setCurrent(tab);
         setActiveLevel(tab.tabLevel);
+
+        // Update the active tab mapping for this level so child tab filtering works correctly
+        setActiveTabsByLevel(tab);
       });
     },
-    [setActiveLevel, startTransition]
+    [setActiveLevel, startTransition, setActiveTabsByLevel]
   );
 
   const handleDoubleClick = useCallback(
@@ -75,9 +77,12 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
         setCurrent(tab);
         setExpanded(newExpand);
         setActiveLevel(tab.tabLevel, newExpand);
+
+        // Update the active tab mapping for this level
+        setActiveTabsByLevel(tab);
       });
     },
-    [expand, setActiveLevel, startTransition]
+    [expand, setActiveLevel, startTransition, setActiveTabsByLevel]
   );
 
   const handleHeightChange = useCallback((height: number) => {
@@ -121,12 +126,6 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
 
     return subTabsSwitch;
   };
-
-  useEffect(() => {
-    if (onTabChange && current) {
-      onTabChange(current);
-    }
-  }, [current, onTabChange]);
 
   return (
     <TabContainer

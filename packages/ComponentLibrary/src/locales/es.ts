@@ -173,6 +173,10 @@ const es = {
       title: "Ventana no encontrada",
       description: "La ventana solicitada no fue encontrada",
     },
+    recoveryFailed: {
+      title: "Error de Recuperación",
+      description: "No se pudo restaurar el estado de la ventana desde la URL",
+    },
   },
   modal: {
     secondaryButtonLabel: "Atrás",
@@ -181,6 +185,7 @@ const es = {
     descriptionText: "Confirma tu envío y guárdalo en el sistema. 📝📦",
   },
   table: {
+    newRecord: "Nuevo Registro",
     tooltips: {
       search: "Buscar",
       views: "Vistas",
@@ -221,6 +226,11 @@ const es = {
       enabledTooltip: "Seleccionar todos los registros",
     },
     useAsFilter: "Usar como filtro",
+    editRow: "Editar Fila",
+    insertRow: "Insertar Fila",
+    actions: {
+      createRecordInGrid: "Crear Registro en Grilla",
+    },
   },
   navigation: {
     common: {

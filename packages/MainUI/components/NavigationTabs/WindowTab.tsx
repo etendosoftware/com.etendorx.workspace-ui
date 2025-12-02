@@ -21,7 +21,6 @@ import { useTranslation } from "@/hooks/useTranslation";
 import Tooltip from "@workspaceui/componentlibrary/src/components/Tooltip";
 
 interface WindowTabProps {
-  windowId: string;
   title: string;
   isActive: boolean;
   onActivate: () => void;

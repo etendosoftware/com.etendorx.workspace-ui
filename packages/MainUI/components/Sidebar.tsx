@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
 import { Drawer } from "@workspaceui/componentlibrary/src/components/Drawer/index";
 import EtendoLogotype from "../public/etendo.png";
 import { useTranslation } from "../hooks/useTranslation";
@@ -11,11 +10,11 @@ import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { useMenuTranslation } from "../hooks/useMenuTranslation";
 import { createSearchIndex, filterItems } from "@workspaceui/componentlibrary/src/utils/searchUtils";
 import { useLanguage } from "@/contexts/language";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
-import { getNewWindowIdentifier } from "@/utils/url/utils";
+import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { useWindowContext } from "@/contexts/window";
 import ProcessIframeModal from "./ProcessModal/Iframe";
 import type { ProcessIframeModalProps } from "./ProcessModal/types";
 import formsData from "../utils/processes/forms/data.json";
@@ -139,9 +138,7 @@ export default function Sidebar() {
   const { language, prevLanguage } = useLanguage();
   const { translateMenuItem } = useMenuTranslation();
   const menu = useMenu(token, currentRole || undefined, language);
-  const router = useRouter();
-  const pathname = usePathname();
-  const { activeWindow, openWindow, buildURL, getNextOrder, windows } = useMultiWindowURL();
+  const { activeWindow, setWindowActive } = useWindowContext();
 
   const [searchValue, setSearchValue] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -194,33 +191,14 @@ export default function Sidebar() {
         return;
       }
 
-      const isInWindowRoute = pathname.includes("window");
-
       if (windowId) {
         setPendingWindowId(windowId);
       }
 
-      if (isInWindowRoute) {
-        // Already in window context - use multi-window system
-        openWindow(windowId, item.name);
-      } else {
-        // Coming from home route - create new window and navigate
-        const newWindowIdentifier = getNewWindowIdentifier(windowId);
-        const newWindow = {
-          windowId,
-          window_identifier: newWindowIdentifier,
-          isActive: true,
-          order: getNextOrder(windows),
-          title: item.name,
-          selectedRecords: {},
-          tabFormStates: {},
-        };
-
-        const targetURL = buildURL([newWindow]);
-        router.push(targetURL);
-      }
+      const newWindowIdentifier = getNewWindowIdentifier(windowId);
+      setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: item.name, initialized: true } });
     },
-    [pathname, router, windows, openWindow, buildURL, getNextOrder, token, ETENDO_BASE_URL]
+    [token, ETENDO_BASE_URL, setWindowActive]
   );
 
   /**

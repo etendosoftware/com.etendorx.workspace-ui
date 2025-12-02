@@ -2,12 +2,16 @@ import { render, act } from "@testing-library/react";
 import { FormProvider, useForm } from "react-hook-form";
 import { BaseSelector } from "@/components/Form/FormView/selectors/BaseSelector";
 import { FormInitializationProvider } from "@/contexts/FormInitializationContext";
+import WindowProvider from "@/contexts/window";
 
 jest.mock("next/navigation", () => ({
   useParams: () => ({ recordId: "100" }),
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), prefetch: jest.fn() }),
   usePathname: () => "/",
-  useSearchParams: () => new URLSearchParams(""),
+  useSearchParams: () => ({
+    get: jest.fn(),
+    forEach: jest.fn(),
+  }),
 }));
 jest.mock("@/hooks/useDisplayLogic", () => ({ __esModule: true, default: () => true }));
 jest.mock("@/hooks/useFormParent", () => ({ __esModule: true, default: () => ({}) }));
@@ -40,9 +44,11 @@ jest.mock("@/hooks/useCallout", () => ({
 function Wrapper({ children, defaultValues = {} as any }) {
   const methods = useForm({ defaultValues });
   return (
-    <FormInitializationProvider value={{ isFormInitializing: false }}>
-      <FormProvider {...methods}>{children}</FormProvider>
-    </FormInitializationProvider>
+    <WindowProvider>
+      <FormInitializationProvider value={{ isFormInitializing: false }}>
+        <FormProvider {...methods}>{children}</FormProvider>
+      </FormInitializationProvider>
+    </WindowProvider>
   );
 }
 
