@@ -249,7 +249,7 @@ const MultiSelect = memo(function MultiSelectCmp({
           />
         </div>
       </div>
-      <DropdownPortal isOpen={isOpen} triggerRef={wrapperRef} minWidth={256}>
+      <DropdownPortal isOpen={isOpen} triggerRef={wrapperRef} minWidth={256} data-testid="DropdownPortal__cb81f7">
         <div className="p-2">
           <input
             ref={searchInputRef}
