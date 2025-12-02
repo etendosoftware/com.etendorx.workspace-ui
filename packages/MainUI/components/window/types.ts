@@ -17,7 +17,15 @@
 
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 
-export type TabsProps = { tabs: Tab[] };
+export type TabsProps = {
+  tabs: Tab[];
+  /**
+   * Optional initial active tab for the tab group.
+   * Used during URL state recovery to restore the correct tab selection.
+   * If not provided, defaults to the first tab in the tabs array.
+   */
+  initialActiveTab?: Tab;
+};
 export type TabsSwitchProps = {
   current: Tab;
   tabs: Tab[];
