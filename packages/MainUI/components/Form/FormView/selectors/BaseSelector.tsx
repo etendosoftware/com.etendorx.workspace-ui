@@ -36,6 +36,7 @@ import { useFormInitializationContext } from "@/contexts/FormInitializationConte
 import useFormParent from "@/hooks/useFormParent";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.svg";
+import Spinner from "../../../../../ComponentLibrary/src/components/Spinner";
 
 export const compileExpression = (expression: string) => {
   try {
@@ -70,6 +71,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
   });
   const debouncedCallout = useDebounce(executeCalloutBase, 300);
   const value = watch(field.hqlName);
+  const identifier = watch(`${field.hqlName}$_identifier`);
   const values = watch();
   const previousValue = useRef(value);
   const ready = useRef(false);
@@ -77,6 +79,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
   const optionData = watch(`${field.hqlName}_data`);
 
   const isSettingFromCallout = useRef(false);
+  const hasValueWithoutIdentifier = useRef(false);
 
   const isDisplayed = useDisplayLogic({ field });
 
@@ -293,6 +296,18 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     }
   }, [isFormInitializing, setIsSettingInitialValues]);
 
+  // Track if this specific field has a value without identifier
+  useEffect(() => {
+    if (value && !identifier) {
+      hasValueWithoutIdentifier.current = true;
+    } else {
+      hasValueWithoutIdentifier.current = false;
+    }
+  }, [value, identifier]);
+
+  // Determine if this specific field should show loading spinner
+  const isLoadingFieldIdentifier = isSettingInitialValues && hasValueWithoutIdentifier.current;
+
   if (isDisplayed) {
     const isTextLong = field.column.reference === FIELD_REFERENCE_CODES.TEXT_LONG;
     const containerClasses = isTextLong ? "row-span-3 flex items-start pt-2" : "h-12 flex items-center";
@@ -312,7 +327,11 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
           <div className="flex-1 self-center h-[2px] bg-[length:4px_2px] bg-repeat-x bg-[radial-gradient(circle,var(--color-transparent-neutral-20)_1px,transparent_1px)]" />
         </div>
         <div className="w-2/3">
-          <GenericSelector field={field} isReadOnly={isReadOnly} data-testid="GenericSelector__38060a" />
+          {isLoadingFieldIdentifier ? (
+            <Spinner data-testid="Spinner__BaseSelector" />
+          ) : (
+            <GenericSelector field={field} isReadOnly={isReadOnly} data-testid="GenericSelector__38060a" />
+          )}
         </div>
       </div>
     );

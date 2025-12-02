@@ -19,6 +19,7 @@ import type { Field } from "@workspaceui/api-client/src/api/types";
 import Select from "@/components/Form/FormView/selectors/components/Select";
 import { useTableDirDatasource } from "@/hooks/datasource/useTableDirDatasource";
 import { useSelectFieldOptions } from "@/hooks/useSelectFieldOptions";
+import { useLoadMissingIdentifier } from "@/hooks/useLoadMissingIdentifier";
 
 export const TableDirSelector = ({
   field,
@@ -27,6 +28,9 @@ export const TableDirSelector = ({
 }: { field: Field; isReadOnly: boolean; isProcessModal?: boolean }) => {
   const { records, loading, refetch, loadMore, hasMore, search } = useTableDirDatasource({ field, isProcessModal });
   const options = useSelectFieldOptions(field, records);
+
+  // Automatically load the missing identifier when a field has a value but no display name
+  useLoadMissingIdentifier(field, records);
 
   return (
     <Select
