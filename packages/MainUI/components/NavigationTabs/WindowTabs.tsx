@@ -28,10 +28,24 @@ import { useTabs } from "@/contexts/tabs";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useWindowContext } from "@/contexts/window";
 import type { WindowState } from "@/utils/window/constants";
+import { useMetadataContext } from "@/hooks/useMetadataContext";
+import { getWindowIdFromIdentifier } from "@/utils/window/utils";
+
+const getTitleForWindow = (window: WindowState, windowsMetadata: Record<string, any>) => {
+  const windowTitle = window.title;
+  if (windowTitle) return windowTitle;
+  const windowId = getWindowIdFromIdentifier(window.windowIdentifier);
+  const metadata = windowsMetadata[windowId];
+  if (metadata?.name) {
+    return metadata.name;
+  }
+  return "Untitled Window";
+};
 
 export default function WindowTabs() {
   const { t } = useTranslation();
   const { windows, isHomeRoute, cleanupWindow, setWindowActive, setAllWindowsInactive } = useWindowContext();
+  const { windowsData } = useMetadataContext();
 
   const {
     containerRef,
@@ -113,7 +127,7 @@ export default function WindowTabs() {
         className="w-full flex items-center px-2 overflow-x-auto overflow-y-hidden scroll-smooth hide-scrollbar h-9"
         ref={windowsContainerRef}>
         {visibleWindows.map((window, index) => {
-          const title = window.title || "Loading...";
+          const title = getTitleForWindow(window, windowsData);
           const isActive = window.isActive;
           const canClose = visibleWindows.length > 1;
 

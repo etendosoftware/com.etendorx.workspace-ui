@@ -84,44 +84,59 @@ export const useGlobalUrlStateRecovery = () => {
         const windowPromises = recoveryDataList.map(async (info, index) => {
           const windowId = getWindowIdFromIdentifier(info.windowIdentifier);
 
-          // Fetch window metadata (cached if previously loaded)
-          const metadata = await loadWindowData(windowId);
+          try {
+            // Fetch window metadata (cached if previously loaded)
+            const metadata = await loadWindowData(windowId);
 
-          let windowState: WindowState;
+            let windowState: WindowState;
 
-          if (info.hasRecoveryData) {
-            // Complex recovery: URL contains tab and record information
-            // This triggers full hierarchy calculation and state reconstruction
+            if (info.hasRecoveryData) {
+              // Complex recovery: URL contains tab and record information
+              // This triggers full hierarchy calculation and state reconstruction
 
-            // Step 1: Parse URL state - extract tab and record from URL params
-            const urlState = await parseUrlState(info, metadata);
+              // Step 1: Parse URL state - extract tab and record from URL params
+              const urlState = await parseUrlState(info, metadata);
 
-            // Step 2: Calculate hierarchy - build parent chain from deepest tab upward
-            const hierarchy = await calculateHierarchy(urlState, metadata);
+              // Step 2: Calculate hierarchy - build parent chain from deepest tab upward
+              const hierarchy = await calculateHierarchy(urlState, metadata);
 
-            // Step 3: Reconstruct state - query parent records bottom-up
-            const reconstructed = await reconstructState(hierarchy, metadata);
+              // Step 3: Reconstruct state - query parent records bottom-up
+              const reconstructed = await reconstructState(hierarchy, metadata);
 
-            // Build complete window state with all tabs configured
-            windowState = {
+              // Build complete window state with all tabs configured
+              windowState = {
+                ...createRecoveryWindowState(info),
+                title: urlState.tabTitle,
+                initialized: true,
+                tabs: reconstructed.tabs,
+                navigation: reconstructed.navigation,
+                isActive: index === recoveryDataList.length - 1, // Last window is active
+              };
+            } else {
+              // Simple recovery: URL only contains window identifier
+              // Create empty window ready for user interaction
+              windowState = {
+                ...createRecoveryWindowState(info),
+                title: getWindowName(metadata),
+                initialized: true,
+                isActive: index === recoveryDataList.length - 1,
+              };
+            }
+            return windowState;
+          } catch (error) {
+            console.warn(
+              `[Recovery] Failed to recover window ${info.windowIdentifier}, falling back to minimal state.`,
+              error
+            );
+
+            // Fallback to minimal state
+            return {
               ...createRecoveryWindowState(info),
-              title: urlState.tabTitle,
-              initialized: true,
-              tabs: reconstructed.tabs,
-              navigation: reconstructed.navigation,
-              isActive: index === recoveryDataList.length - 1, // Last window is active
-            };
-          } else {
-            // Simple recovery: URL only contains window identifier
-            // Create empty window ready for user interaction
-            windowState = {
-              ...createRecoveryWindowState(info),
-              title: getWindowName(metadata),
+              title: "",
               initialized: true,
               isActive: index === recoveryDataList.length - 1,
             };
           }
-          return windowState;
         });
 
         // Wait for all windows to complete recovery
