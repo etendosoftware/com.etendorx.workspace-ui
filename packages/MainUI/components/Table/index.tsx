@@ -490,13 +490,41 @@ interface DynamicTableProps {
   setRecordId: React.Dispatch<React.SetStateAction<string>>;
   onRecordSelection?: (recordId: string) => void;
   isTreeMode?: boolean;
+  isVisible?: boolean;
 }
 
-const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: DynamicTableProps) => {
+const DynamicTable = ({
+  setRecordId,
+  onRecordSelection,
+  isTreeMode = true,
+  isVisible = true,
+}: DynamicTableProps) => {
   const { sx } = useStyle();
   const { t } = useTranslation();
   const { graph } = useSelected();
   const { user, session } = useUserContext();
+
+  const savedScrollTop = useRef<number>(0);
+
+  // Restore scroll position when table becomes visible
+  useEffect(() => {
+    if (isVisible && tableContainerRef.current && savedScrollTop.current > 0) {
+      // Use requestAnimationFrame to ensure layout is complete
+      requestAnimationFrame(() => {
+        if (tableContainerRef.current) {
+          tableContainerRef.current.scrollTop = savedScrollTop.current;
+        }
+      });
+    }
+  }, [isVisible]);
+
+  // Save scroll position when scrolling
+  const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLDivElement;
+    if (target) {
+      savedScrollTop.current = target.scrollTop;
+    }
+  }, []);
 
   // Confirmation dialog hook for user confirmations
   const { confirmationState, confirmDiscardChanges, confirmSaveWithErrors } = useTableConfirmation();
@@ -2137,16 +2165,24 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   const fetchMoreOnBottomReached = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
+      handleScroll(event);
       const containerRefElement = event.target as HTMLDivElement;
 
       if (containerRefElement) {
         const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
-        if (scrollHeight - scrollTop - clientHeight < 10 && !loading && hasMoreRecords) {
+        // Ensure the container has height (is visible) and has scrollable content before fetching more
+        if (
+          clientHeight > 0 &&
+          scrollHeight > clientHeight &&
+          scrollHeight - scrollTop - clientHeight < 10 &&
+          !loading &&
+          hasMoreRecords
+        ) {
           fetchMore();
         }
       }
     },
-    [fetchMore, hasMoreRecords, loading]
+    [fetchMore, hasMoreRecords, loading, handleScroll]
   );
 
   // Generate ARIA attributes for the table container

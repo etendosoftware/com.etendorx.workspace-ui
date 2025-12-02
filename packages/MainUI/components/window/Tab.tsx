@@ -328,25 +328,27 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         isFormView={shouldShowForm}
         data-testid="Toolbar__5893c8"
       />
-      {shouldShowForm ? (
+      <div className={shouldShowForm ? "flex-1 h-full min-h-0" : "hidden"}>
         <FormView
           mode={formMode}
           tab={tab}
           window={window}
-          recordId={currentRecordId}
+          recordId={shouldShowForm ? currentRecordId : ""}
           setRecordId={handleSetRecordId}
           data-testid="FormView__5893c8"
         />
-      ) : (
+      </div>
+      <div className={!shouldShowForm ? "flex-1 h-full min-h-0" : "hidden"}>
         <AttachmentProvider data-testid="AttachmentProvider__5893c8">
           <DynamicTable
             isTreeMode={toggle}
             setRecordId={handleSetRecordId}
             onRecordSelection={handleRecordSelection}
+            isVisible={!shouldShowForm}
             data-testid="DynamicTable__5893c8"
           />
         </AttachmentProvider>
-      )}
+      </div>
     </div>
   );
 }
