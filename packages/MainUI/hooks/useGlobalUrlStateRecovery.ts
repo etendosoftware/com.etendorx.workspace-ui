@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMetadataStore } from "@/contexts/metadataStore";
 import { parseWindowRecoveryData } from "@/utils/url/utils";
@@ -24,6 +24,7 @@ export const useGlobalUrlStateRecovery = () => {
     hasRun.current = true;
 
     const recoverAllWindows = async () => {
+      setIsRecoveryLoading(true);
       try {
         const recoveryDataList = parseWindowRecoveryData(searchParams);
 
@@ -82,5 +83,13 @@ export const useGlobalUrlStateRecovery = () => {
     recoverAllWindows();
   }, [searchParams, loadWindowData]);
 
-  return { recoveredWindows, isRecoveryLoading, recoveryError };
+  /**
+   * Triggers recovery to run again by resetting the hasRun guard.
+   * This allows the recovery system to re-execute when new windows are added to the URL.
+   */
+  const triggerRecovery = useCallback(() => {
+    hasRun.current = false;
+  }, []);
+
+  return { recoveredWindows, isRecoveryLoading, recoveryError, triggerRecovery };
 };

@@ -111,6 +111,7 @@ interface WindowContextI {
   // Recovery state management
   isRecoveryLoading: boolean;
   recoveryError: string | null;
+  triggerRecovery: () => void;
 
   // Window management
   cleanupWindow: (windowIdentifier: string) => void;
@@ -124,7 +125,7 @@ const WindowContext = createContext<WindowContextI | undefined>(undefined);
 export default function WindowProvider({ children }: React.PropsWithChildren) {
   const [state, setState] = useState<WindowContextState>({});
 
-  const { recoveredWindows, isRecoveryLoading, recoveryError } = useGlobalUrlStateRecovery();
+  const { recoveredWindows, isRecoveryLoading, recoveryError, triggerRecovery } = useGlobalUrlStateRecovery();
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -734,6 +735,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
       isRecoveryLoading,
       recoveryError,
+      triggerRecovery,
 
       getNavigationInitialized,
       setNavigationInitialized,
@@ -777,6 +779,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
       isRecoveryLoading,
       recoveryError,
+      triggerRecovery,
 
       getNavigationInitialized,
       setNavigationInitialized,

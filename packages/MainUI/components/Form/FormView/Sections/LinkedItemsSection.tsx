@@ -16,14 +16,14 @@
  */
 
 import { useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import LinkedItems from "@workspaceui/componentlibrary/src/components/LinkedItems";
 import { fetchLinkedItemCategories, fetchLinkedItems } from "@workspaceui/api-client/src/api/linkedItems";
 import { useWindowContext } from "@/contexts/window";
 import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
 import { useTranslation } from "@/hooks/useTranslation";
-import { getNewWindowIdentifier, createDefaultTabState } from "@/utils/window/utils";
-import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
-import type { TabState } from "@/utils/window/constants";
+import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { appendWindowToUrl } from "@/utils/url/utils";
 
 interface LinkedItemsSectionProps {
   tabId: string;
@@ -33,7 +33,9 @@ interface LinkedItemsSectionProps {
 
 export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionProps) => {
   const { t } = useTranslation();
-  const { activeWindow, setWindowActive } = useWindowContext();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { activeWindow, triggerRecovery } = useWindowContext();
 
   const handleFetchCategories = useCallback(
     async (params: { windowId: string; entityName: string; recordId: string }) => {
@@ -58,27 +60,36 @@ export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionP
 
   const handleItemClick = useCallback(
     (item: LinkedItem) => {
+      // Generate unique window identifier
       const newWindowIdentifier = getNewWindowIdentifier(item.adWindowId);
+
+      // Extract tab and record information
       const newTabId = item.adTabId;
       const newRecordId = item.id;
-      const newTitle = item.adMenuName;
-      const defaultTabState = createDefaultTabState(0);
-      const tabs = {
-        [newTabId]: {
-          ...defaultTabState,
-          form: {
-            recordId: newRecordId,
-            mode: TAB_MODES.FORM,
-            tabMode: FORM_MODES.EDIT,
-          },
-          selectedRecord: newRecordId,
-        } as TabState,
-      };
 
-      const windowData = { title: newTitle, tabs };
-      setWindowActive({ windowIdentifier: newWindowIdentifier, windowData });
+      // Trigger recovery mechanism (resets hasRun guard)
+      triggerRecovery();
+
+      // Build new URL with appended window (uses current URL params)
+      const newUrlParams = appendWindowToUrl(searchParams, {
+        windowIdentifier: newWindowIdentifier,
+        tabId: newTabId,
+        recordId: newRecordId,
+      });
+
+      // Update URL to trigger recovery
+      const newUrl = `window?${newUrlParams}`;
+      router.replace(newUrl);
+
+      // Note: Recovery system will handle:
+      // - Fetching window metadata
+      // - Calculating tab hierarchy
+      // - Reconstructing parent selections
+      // - Setting window as active
+      // - Showing loading state
+      // Then WindowProvider's useEffect will rebuild complete URL from state
     },
-    [setWindowActive]
+    [searchParams, triggerRecovery, router]
   );
 
   return (
