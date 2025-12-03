@@ -1,5 +1,5 @@
 import { useUserContext } from "../useUserContext";
-import { useRuntimeConfig } from "../useRuntimeConfig";
+import { useRuntimeConfig } from "../../contexts/RuntimeConfigContext";
 import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 
 const ABOUT_URL_ENDPOINT = "/ad_forms/about.html?IsPopUpCall=1";

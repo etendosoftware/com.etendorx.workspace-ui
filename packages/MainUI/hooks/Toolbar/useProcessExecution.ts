@@ -28,7 +28,7 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useParams } from "next/navigation";
 import { useCallback, useContext, useState } from "react";
 import { UserContext } from "../../contexts/user";
-import { useRuntimeConfig } from "../useRuntimeConfig";
+import { useRuntimeConfig } from "../../contexts/RuntimeConfigContext";
 import { useMetadataContext } from "../useMetadataContext";
 import type { ExecuteProcessDefinitionParams, ExecuteProcessParams } from "./types";
 import { getParams } from "@/utils/processes/manual/utils";

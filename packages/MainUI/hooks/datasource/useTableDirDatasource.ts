@@ -17,7 +17,7 @@
 
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { buildPayloadByInputName } from "@/utils";
 import { FieldName, type UseTableDirDatasourceParams } from "../types";
@@ -49,6 +49,7 @@ export const useTableDirDatasource = ({
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const value = watch(field.hqlName);
+  const fetchInProgressRef = useRef(false);
 
   const isProductField = field.column.reference === REFERENCE_IDS.PRODUCT;
   const parentData = useFormParent(FieldName.INPUT_NAME);
@@ -290,6 +291,12 @@ export const useTableDirDatasource = ({
       try {
         if (!field || !tab) return;
 
+        // Prevent duplicate fetches when called rapidly (e.g., double onFocus events)
+        if (fetchInProgressRef.current) {
+          return;
+        }
+
+        fetchInProgressRef.current = true;
         setLoading(true);
 
         if (reset) {
@@ -323,6 +330,7 @@ export const useTableDirDatasource = ({
         setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
         setLoading(false);
+        fetchInProgressRef.current = false;
       }
     },
     [field, tab, currentPage, pageSize, initialPageSize, buildRequestBody, applySearchCriteria, processApiResponse]

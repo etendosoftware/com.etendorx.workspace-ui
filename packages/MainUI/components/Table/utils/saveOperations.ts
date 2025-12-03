@@ -397,7 +397,7 @@ function prepareSaveData(
     }
   }
 
-  return { values: processedValues, oldValues: processedOriginalData };
+  return { values: processedValues as EntityData, oldValues: processedOriginalData };
 }
 
 /**

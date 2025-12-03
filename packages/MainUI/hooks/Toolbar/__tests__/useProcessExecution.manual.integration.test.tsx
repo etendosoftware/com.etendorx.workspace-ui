@@ -29,7 +29,7 @@ jest.mock("@/hooks/useApiContext", () => ({
 }));
 
 // Mock useRuntimeConfig to return ETENDO_CLASSIC_HOST
-jest.mock("@/hooks/useRuntimeConfig", () => ({
+jest.mock("@/contexts/RuntimeConfigContext", () => ({
   useRuntimeConfig: () => ({
     config: {
       etendoClassicHost: "http://localhost:8080/etendo",

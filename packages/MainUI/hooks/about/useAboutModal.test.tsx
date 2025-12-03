@@ -7,12 +7,12 @@ jest.mock("../useUserContext", () => ({
 }));
 
 // 🔹 Mock de useRuntimeConfig
-jest.mock("../useRuntimeConfig", () => ({
+jest.mock("../../contexts/RuntimeConfigContext", () => ({
   useRuntimeConfig: jest.fn(),
 }));
 
 import { useUserContext } from "../useUserContext";
-import { useRuntimeConfig } from "../useRuntimeConfig";
+import { useRuntimeConfig } from "../../contexts/RuntimeConfigContext";
 
 const mockedUseUserContext = useUserContext as jest.Mock;
 const mockedUseRuntimeConfig = useRuntimeConfig as jest.Mock;
