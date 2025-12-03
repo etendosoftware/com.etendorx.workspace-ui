@@ -56,8 +56,17 @@ export const useToolbarConfig = ({
     hideStatusModal,
   } = useStatusModal();
   const { t } = useTranslation();
-  const { onRefresh, onSave, onNew, onBack, onFilter, onColumnFilters, onToggleTreeView, attachmentAction, onExportCSV } =
-    useToolbarContext();
+  const {
+    onRefresh,
+    onSave,
+    onNew,
+    onBack,
+    onFilter,
+    onColumnFilters,
+    onToggleTreeView,
+    attachmentAction,
+    onExportCSV,
+  } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
 

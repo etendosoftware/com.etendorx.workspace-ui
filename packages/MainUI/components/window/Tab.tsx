@@ -244,11 +244,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
    * Builds field metadata array matching SmartClient format
    */
   const buildFieldsArray = useCallback(
-    (
-      orderedFieldNames: string[],
-      visibility: Record<string, boolean>,
-      fields: Record<string, unknown> | undefined
-    ) => {
+    (orderedFieldNames: string[], visibility: Record<string, boolean>, fields: Record<string, unknown> | undefined) => {
       const fieldsArray: Array<{
         name: string;
         visible?: boolean;
@@ -292,10 +288,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
    * Format: ({field:"[...]",sort:"(...))",hilite:null,group:{groupByFields:"",groupingModes:{}},filterClause:null,summaryFunctions:{}})
    */
   const buildViewState = useCallback(
-    (
-      fieldsArray: Array<Record<string, unknown>>,
-      sorting: Array<{ id: string; desc: boolean }>
-    ) => {
+    (fieldsArray: Array<Record<string, unknown>>, sorting: Array<{ id: string; desc: boolean }>) => {
       const fieldJson = JSON.stringify(fieldsArray);
 
       let sortJson: string;
@@ -382,34 +375,28 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   /**
    * Downloads CSV file to client
    */
-  const downloadCSVFile = useCallback(
-    (csvContent: string, entityName: string) => {
-      if (!csvContent.trim()) {
-        throw new Error("No data to export");
-      }
+  const downloadCSVFile = useCallback((csvContent: string, entityName: string) => {
+    if (!csvContent.trim()) {
+      throw new Error("No data to export");
+    }
 
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
 
-      link.setAttribute("href", url);
-      link.setAttribute(
-        "download",
-        `${entityName}-export-${new Date().toISOString().split("T")[0]}-${Date.now()}.csv`
-      );
-      link.style.visibility = "hidden";
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${entityName}-export-${new Date().toISOString().split("T")[0]}-${Date.now()}.csv`);
+    link.style.visibility = "hidden";
 
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-      // Cleanup
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, 100);
-    },
-    []
-  );
+    // Cleanup
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 100);
+  }, []);
 
   /**
    * Validates export prerequisites
@@ -429,58 +416,49 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   /**
    * Extracts error message from nested response structure
    */
-  const extractErrorFromResponse = useCallback(
-    (respObj: Record<string, unknown>): string | null => {
-      // Check nested path: response.data.response.error
-      if (respObj.data && typeof respObj.data === "object") {
-        const dataObj = respObj.data as unknown as Record<string, unknown>;
-        if (dataObj.response && typeof dataObj.response === "object") {
-          const respData = dataObj.response as unknown as Record<string, unknown>;
-          if (respData.error && typeof respData.error === "object") {
-            const errorObj = respData.error as unknown as Record<string, unknown>;
-            return String(errorObj.message || "Unknown backend error");
-          }
-        }
-      }
-
-      // Check top-level path: response.error
-      if (respObj.response && typeof respObj.response === "object") {
-        const respData = respObj.response as unknown as Record<string, unknown>;
+  const extractErrorFromResponse = useCallback((respObj: Record<string, unknown>): string | null => {
+    // Check nested path: response.data.response.error
+    if (respObj.data && typeof respObj.data === "object") {
+      const dataObj = respObj.data as unknown as Record<string, unknown>;
+      if (dataObj.response && typeof dataObj.response === "object") {
+        const respData = dataObj.response as unknown as Record<string, unknown>;
         if (respData.error && typeof respData.error === "object") {
           const errorObj = respData.error as unknown as Record<string, unknown>;
           return String(errorObj.message || "Unknown backend error");
         }
       }
+    }
 
-      return null;
-    },
-    []
-  );
+    // Check top-level path: response.error
+    if (respObj.response && typeof respObj.response === "object") {
+      const respData = respObj.response as unknown as Record<string, unknown>;
+      if (respData.error && typeof respData.error === "object") {
+        const errorObj = respData.error as unknown as Record<string, unknown>;
+        return String(errorObj.message || "Unknown backend error");
+      }
+    }
+
+    return null;
+  }, []);
 
   /**
    * Attempts to extract CSV content from data object
    */
-  const tryExtractCSVFromDataObject = useCallback(
-    (dataObj: Record<string, unknown>): string => {
-      if (typeof dataObj.text === "string") return dataObj.text;
-      if (typeof dataObj.data === "string") return dataObj.data;
-      if (typeof dataObj.csv === "string") return dataObj.csv;
-      return "";
-    },
-    []
-  );
+  const tryExtractCSVFromDataObject = useCallback((dataObj: Record<string, unknown>): string => {
+    if (typeof dataObj.text === "string") return dataObj.text;
+    if (typeof dataObj.data === "string") return dataObj.data;
+    if (typeof dataObj.csv === "string") return dataObj.csv;
+    return "";
+  }, []);
 
   /**
    * Attempts to extract CSV content from top-level object
    */
-  const tryExtractCSVFromTopLevel = useCallback(
-    (respObj: Record<string, unknown>): string => {
-      if (typeof respObj.text === "string") return respObj.text;
-      if (typeof respObj.csv === "string") return respObj.csv;
-      return "";
-    },
-    []
-  );
+  const tryExtractCSVFromTopLevel = useCallback((respObj: Record<string, unknown>): string => {
+    if (typeof respObj.text === "string") return respObj.text;
+    if (typeof respObj.csv === "string") return respObj.csv;
+    return "";
+  }, []);
 
   /**
    * Extracts CSV content from various response structures
@@ -521,7 +499,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     },
     [extractErrorFromResponse, tryExtractCSVFromDataObject, tryExtractCSVFromTopLevel]
   );
-
 
   const handleExportCSV = useCallback(async () => {
     try {
@@ -591,16 +568,13 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
           "Export returned empty data. Response structure (keys):",
           response && typeof response === "object" ? Object.keys(respObj) : typeof response
         );
-        throw new Error(
-          "Export returned empty data - check browser console for response structure"
-        );
+        throw new Error("Export returned empty data - check browser console for response structure");
       }
 
       // Download file
       downloadCSVFile(csvContent, tab.entityName!);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred during export";
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred during export";
       console.error("CSV Export Error:", errorMessage, error);
 
       // Re-throw to trigger error boundary or toast notification
