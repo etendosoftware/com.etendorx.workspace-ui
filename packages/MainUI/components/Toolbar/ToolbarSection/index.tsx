@@ -31,18 +31,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
   return (
     <div style={style} className={className}>
       {buttons.map(
-        ({
-          key,
-          icon,
-          iconText,
-          tooltip,
-          onClick,
-          disabled,
-          className,
-          badgeContent,
-          isPressed,
-          forceTooltipOpen,
-        }) => {
+        ({ key, icon, iconText, tooltip, onClick, disabled, className, badgeContent, isPressed, forceTooltipOpen }) => {
           // If forcing tooltip open, we handle it with a wrapper Tooltip and disable the inner one
           const innerTooltip = forceTooltipOpen ? undefined : tooltip;
 
@@ -71,8 +60,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
                 className={className}
                 iconText={iconText}
                 isPressed={isPressed}
-                data-testid={`IconButton__${key ?? "2bded0"}`}
-              >
+                data-testid={`IconButton__${key ?? "2bded0"}`}>
                 {icon}
               </IconButton>
             );
@@ -95,8 +83,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
                     top: "6px",
                     right: "6px",
                   },
-                }}
-              >
+                }}>
                 {buttonElement}
               </Badge>
             );
@@ -124,8 +111,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
                       color: "#03408bff",
                     },
                   },
-                }}
-              >
+                }}>
                 <span>{buttonElement}</span>
               </Tooltip>
             );

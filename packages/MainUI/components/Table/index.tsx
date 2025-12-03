@@ -493,12 +493,7 @@ interface DynamicTableProps {
   isVisible?: boolean;
 }
 
-const DynamicTable = ({
-  setRecordId,
-  onRecordSelection,
-  isTreeMode = true,
-  isVisible = true,
-}: DynamicTableProps) => {
+const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVisible = true }: DynamicTableProps) => {
   const { sx } = useStyle();
   const { t } = useTranslation();
   const { graph } = useSelected();
@@ -513,7 +508,7 @@ const DynamicTable = ({
       // Use requestAnimationFrame to ensure layout is complete
       requestAnimationFrame(() => {
         if (!tableContainerRef.current) return;
-        
+
         // If scroll is already correct, do nothing to avoid triggering scroll events
         if (Math.abs(tableContainerRef.current.scrollTop - savedScrollTop.current) <= 1) {
           return;
@@ -521,7 +516,7 @@ const DynamicTable = ({
 
         isRestoringScroll.current = true;
         tableContainerRef.current.scrollTop = savedScrollTop.current;
-        
+
         // Reset restoration flag after a short delay to allow scroll events to settle
         setTimeout(() => {
           isRestoringScroll.current = false;
@@ -605,7 +600,6 @@ const DynamicTable = ({
     refetch,
     removeRecordLocally,
     applyQuickFilter,
-
   } = useTableData({
     isTreeMode,
   });
@@ -2586,8 +2580,6 @@ const DynamicTable = ({
       graph.removeListener("unselectedMultiple", handleGraphClear);
     };
   }, [graph, tabId, tab.id]);
-
-
 
   // Clear editing state and performance optimizations when records change or component unmounts
   useEffect(() => {

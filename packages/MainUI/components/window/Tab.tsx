@@ -317,8 +317,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     tabFormState?.mode,
   ]);
 
-
-
   return (
     <div
       className={`relative bg-(linear-gradient(180deg, #C6CFFF 0%, #FCFCFD 55.65%)) flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${

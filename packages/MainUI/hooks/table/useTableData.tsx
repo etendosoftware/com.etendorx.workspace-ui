@@ -137,7 +137,9 @@ export const useTableData = ({
   const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
   const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
 
-  const tabFormState = activeWindow?.windowIdentifier ? getTabFormState(activeWindow.windowIdentifier, tab.id) : undefined;
+  const tabFormState = activeWindow?.windowIdentifier
+    ? getTabFormState(activeWindow.windowIdentifier, tab.id)
+    : undefined;
   const hasSelectedRecord = !!tabFormState?.recordId && tabFormState.recordId !== NEW_RECORD_ID;
 
   // Parse columns
@@ -349,18 +351,16 @@ export const useTableData = ({
       options.sortBy = sort.desc ? `-${sortField}` : sortField;
     } else {
       // Default sort by identifier column if no explicit sort
-      const identifierField = Object.values(tab.fields).find(
-        (field) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const col = field.column as any;
-          return (
-            col?.isIdentifier === true ||
-            col?.isIdentifier === "true" ||
-            col?.identifier === true ||
-            col?.identifier === "true"
-          );
-        }
-      );
+      const identifierField = Object.values(tab.fields).find((field) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const col = field.column as any;
+        return (
+          col?.isIdentifier === true ||
+          col?.isIdentifier === "true" ||
+          col?.identifier === true ||
+          col?.identifier === "true"
+        );
+      });
 
       if (identifierField) {
         options.sortBy = identifierField.hqlName;

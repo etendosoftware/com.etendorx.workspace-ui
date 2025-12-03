@@ -157,8 +157,6 @@ export const createButtonByType = ({
     onClick: () => onAction(button.action, button),
   };
 
-
-
   const getIconTextConfig = (): Partial<ToolbarButton> => {
     const showIconTextFor = [TOOLBAR_BUTTONS_ACTIONS.NEW, TOOLBAR_BUTTONS_ACTIONS.SAVE];
 
