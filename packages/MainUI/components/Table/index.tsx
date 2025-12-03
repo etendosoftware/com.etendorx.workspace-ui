@@ -505,21 +505,36 @@ const DynamicTable = ({
   const { user, session } = useUserContext();
 
   const savedScrollTop = useRef<number>(0);
+  const isRestoringScroll = useRef<boolean>(false);
 
   // Restore scroll position when table becomes visible
   useEffect(() => {
     if (isVisible && tableContainerRef.current && savedScrollTop.current > 0) {
       // Use requestAnimationFrame to ensure layout is complete
       requestAnimationFrame(() => {
-        if (tableContainerRef.current) {
-          tableContainerRef.current.scrollTop = savedScrollTop.current;
+        if (!tableContainerRef.current) return;
+        
+        // If scroll is already correct, do nothing to avoid triggering scroll events
+        if (Math.abs(tableContainerRef.current.scrollTop - savedScrollTop.current) <= 1) {
+          return;
         }
+
+        isRestoringScroll.current = true;
+        tableContainerRef.current.scrollTop = savedScrollTop.current;
+        
+        // Reset restoration flag after a short delay to allow scroll events to settle
+        setTimeout(() => {
+          isRestoringScroll.current = false;
+        }, 100);
       });
     }
   }, [isVisible]);
 
   // Save scroll position when scrolling
   const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
+    // Don't save scroll position while we are restoring it
+    if (isRestoringScroll.current) return;
+
     const target = event.target as HTMLDivElement;
     if (target) {
       savedScrollTop.current = target.scrollTop;

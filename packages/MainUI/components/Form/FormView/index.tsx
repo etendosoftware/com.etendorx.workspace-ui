@@ -283,7 +283,17 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * Dependencies: availableFormData, tab.id, stableReset
    */
   useEffect(() => {
-    if (!availableFormData) return;
+    // If we are in a "hidden" state (empty recordId and not NEW mode), just reset and return
+    // This prevents unnecessary initialization logic and potential loops
+    if (!currentRecordId && currentMode !== FormMode.NEW) {
+      stableReset({}, { keepDirty: false });
+      setIsFormInitializing(false);
+      return;
+    }
+
+    if (!availableFormData) {
+      return;
+    }
 
     setIsFormInitializing(true);
     const processedData = processFormData(availableFormData);
