@@ -56,7 +56,7 @@ export const useToolbarConfig = ({
     hideStatusModal,
   } = useStatusModal();
   const { t } = useTranslation();
-  const { onRefresh, onSave, onNew, onBack, onFilter, onColumnFilters, onToggleTreeView, attachmentAction } =
+  const { onRefresh, onSave, onNew, onBack, onFilter, onColumnFilters, onToggleTreeView, attachmentAction, onExportCSV } =
     useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
@@ -240,6 +240,9 @@ export const useToolbarConfig = ({
           logger.info("Attachment button clicked - no action registered");
         }
       },
+      EXPORT_CSV: async () => {
+        await onExportCSV?.();
+      },
     }),
     [
       onBack,
@@ -261,6 +264,7 @@ export const useToolbarConfig = ({
       onToggleTreeView,
       handleDeleteRecord,
       attachmentAction,
+      onExportCSV,
     ]
   );
 

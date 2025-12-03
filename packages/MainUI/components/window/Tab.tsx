@@ -100,6 +100,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     clearTabFormState,
     setTabFormState,
     clearChildrenSelections,
+    getTableState,
   } = useWindowContext();
   const { registerActions, onRefresh } = useToolbarContext();
   const { graph } = useSelected();
@@ -239,6 +240,349 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
   }, [windowIdentifier]);
 
+  /**
+   * Builds field metadata array matching SmartClient format
+   */
+  const buildFieldsArray = useCallback(
+    (
+      orderedFieldNames: string[],
+      visibility: Record<string, boolean>,
+      fields: Record<string, unknown> | undefined
+    ) => {
+      const fieldsArray: Array<{
+        name: string;
+        visible?: boolean;
+        frozen?: boolean;
+        width?: number;
+        autoFitWidth?: boolean;
+      }> = [];
+
+      // Skip UI-specific columns that are not entity fields
+      const skipColumns = new Set(["_editLink", "mrt-row-select", "actions"]);
+
+      // Add all fields with their metadata, excluding UI-specific columns
+      for (const fieldName of orderedFieldNames) {
+        if (skipColumns.has(fieldName)) continue;
+
+        const field = fields?.[fieldName] as Record<string, unknown> | undefined;
+        const isVisible = visibility[fieldName] !== false;
+
+        // Determine width based on field type
+        let width = 200;
+        const fieldType = field?.type as string | undefined;
+        if (["boolean", "date", "datetime", "number", "quantity"].includes(fieldType || "")) {
+          width = 100;
+        }
+
+        fieldsArray.push({
+          name: fieldName,
+          visible: isVisible,
+          width: width,
+          ...(fieldType === "boolean" ? { autoFitWidth: false } : {}),
+        });
+      }
+
+      return fieldsArray;
+    },
+    []
+  );
+
+  /**
+   * Builds viewState string matching SmartClient format for Classic datasource
+   * Format: ({field:"[...]",sort:"(...))",hilite:null,group:{groupByFields:"",groupingModes:{}},filterClause:null,summaryFunctions:{}})
+   */
+  const buildViewState = useCallback(
+    (
+      fieldsArray: Array<Record<string, unknown>>,
+      sorting: Array<{ id: string; desc: boolean }>
+    ) => {
+      const fieldJson = JSON.stringify(fieldsArray);
+
+      let sortJson: string;
+      if (sorting.length > 0) {
+        const sortSpec = {
+          fieldName: sorting[0].id,
+          sortDir: sorting[0].desc ? "descending" : "ascending",
+          sortSpecifiers: [
+            {
+              property: sorting[0].id,
+              direction: sorting[0].desc ? "descending" : "ascending",
+            },
+          ],
+        };
+        sortJson = JSON.stringify(sortSpec);
+      } else {
+        sortJson = "null";
+      }
+
+      // Escape quotes properly for viewState parameter
+      const escapedField = fieldJson.replace(/"/g, '\\"');
+      const escapedSort = sortJson.replace(/"/g, '\\"');
+
+      return `({field:"${escapedField}",sort:"(${escapedSort})",hilite:null,group:{groupByFields:"",groupingModes:{}},filterClause:null,summaryFunctions:{}})`;
+    },
+    []
+  );
+
+  /**
+   * Builds export request parameters matching Classic datasource format
+   */
+  const buildExportParams = useCallback(
+    (
+      entityName: string,
+      tabId: string,
+      fieldsArray: Array<Record<string, unknown>>,
+      sorting: Array<{ id: string; desc: boolean }>,
+      filters: unknown[],
+      isImplicitFilterApplied: boolean,
+      tabFields: Record<string, unknown> | undefined
+    ): Record<string, unknown> => {
+      const viewState = buildViewState(fieldsArray, sorting);
+
+      const params: Record<string, unknown> = {
+        _dataSource: "isc_OBViewDataSource_0",
+        _operationType: "fetch",
+        _noCount: true,
+        exportAs: "csv",
+        exportToFile: true,
+        viewState: viewState,
+        _extraProperties: "undefined",
+        tabId: tabId,
+        _textMatchStyle: "substring",
+        _UTCOffsetMiliseconds: String(new Date().getTimezoneOffset() * -60000),
+        operator: "and",
+        _constructor: "AdvancedCriteria",
+        criteria: filters.length > 0 ? filters : undefined,
+        isImplicitFilterApplied: isImplicitFilterApplied,
+        _startRow: 0,
+        _endRow: 9999,
+      };
+
+      // Add all entity fields as @Entity.fieldName@=undefined (Classic format)
+      // Skip UI-specific columns that are not entity fields
+      const skipColumns = new Set(["_editLink", "mrt-row-select", "actions"]);
+      if (tabFields) {
+        for (const fieldName of Object.keys(tabFields)) {
+          if (!skipColumns.has(fieldName)) {
+            params[`@${entityName}.${fieldName}@`] = "undefined";
+          }
+        }
+      }
+
+      // Add sorting parameter if present
+      if (sorting.length > 0) {
+        params._sortBy = sorting[0].id;
+      }
+
+      return params;
+    },
+    [buildViewState]
+  );
+
+  /**
+   * Downloads CSV file to client
+   */
+  const downloadCSVFile = useCallback(
+    (csvContent: string, entityName: string) => {
+      if (!csvContent.trim()) {
+        throw new Error("No data to export");
+      }
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      link.setAttribute("href", url);
+      link.setAttribute(
+        "download",
+        `${entityName}-export-${new Date().toISOString().split("T")[0]}-${Date.now()}.csv`
+      );
+      link.style.visibility = "hidden";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Cleanup
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 100);
+    },
+    []
+  );
+
+  const handleExportCSV = useCallback(async () => {
+    try {
+      // Validate required data
+      if (!tab?.entityName) {
+        throw new Error("Entity name not found");
+      }
+      if (!windowIdentifier) {
+        throw new Error("Window context not found");
+      }
+      if (!tab.fields || Object.keys(tab.fields).length === 0) {
+        throw new Error("No fields available for export");
+      }
+
+      const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
+
+      // Get table state
+      const tableState = getTableState(windowIdentifier, tab.id) || {};
+      const {
+        filters: tableColumnFilters = [],
+        visibility: tableColumnVisibility = {},
+        sorting: tableColumnSorting = [],
+        isImplicitFilterApplied: stateIsImplicitFilterApplied = false,
+      } = tableState;
+
+      // Get field names from tab.fields (not display names from table column order)
+      // Filter out the 'id' field and any UI-specific columns
+      const skipColumns = new Set(["id", "_editLink", "mrt-row-select", "actions"]);
+      const orderedFieldNames = Object.keys(tab.fields).filter((key) => !skipColumns.has(key));
+
+      // Build field metadata
+      const fieldsArray = buildFieldsArray(orderedFieldNames, tableColumnVisibility, tab.fields);
+
+      // Build request parameters
+      const params = buildExportParams(
+        tab.entityName,
+        tab.id,
+        fieldsArray,
+        tableColumnSorting,
+        tableColumnFilters,
+        stateIsImplicitFilterApplied,
+        tab.fields
+      );
+
+      console.log("Export params keys:", Object.keys(params));
+      console.log("Export exportAs:", params.exportAs);
+      console.log("Export exportToFile:", params.exportToFile);
+      console.log("Export viewState (first 200 chars):", String(params.viewState).substring(0, 200));
+
+      // Make API request
+      const response = await datasource.get(tab.entityName, params);
+
+      // Validate response
+      if (!response) {
+        throw new Error("No response from server");
+      }
+
+      console.log("CSV Export Response:", response);
+
+      if ((response as unknown as Record<string, unknown>).__error) {
+        throw new Error(
+          `Export error: ${(response as unknown as Record<string, unknown>).__error}`
+        );
+      }
+
+      // Extract CSV content from API response - try multiple possible locations
+      let csvContent = "";
+      let backendError: string | null = null;
+
+      // Try direct string response
+      if (typeof response === "string") {
+        console.log("Response is string");
+        csvContent = response;
+      }
+      // Try response.data as string
+      else if (typeof response.data === "string") {
+        console.log("Response.data is string");
+        csvContent = response.data;
+      }
+      // Try response as object with various possible properties
+      else if (response && typeof response === "object") {
+        const respObj = response as unknown as Record<string, unknown>;
+
+        // Log structure for debugging
+        console.log("Response is object, keys:", Object.keys(respObj).slice(0, 10));
+        console.log("Response.data type:", typeof respObj.data, "value:", respObj.data);
+
+        // Try response.data (API route wraps responses)
+        if (respObj.data && typeof respObj.data === "object") {
+          const dataObj = respObj.data as Record<string, unknown>;
+          console.log("Response.data is object, keys:", Object.keys(dataObj));
+
+          // Check for error in response.data.response.error (Classic error structure)
+          if (dataObj.response && typeof dataObj.response === "object") {
+            const respData = dataObj.response as Record<string, unknown>;
+            if (respData.error && typeof respData.error === "object") {
+              const errorObj = respData.error as Record<string, unknown>;
+              backendError = String(errorObj.message || "Unknown backend error");
+              console.error("Backend error detected:", backendError);
+            }
+          }
+
+          // Try to extract CSV content from data object
+          if (typeof dataObj.text === "string") {
+            console.log("Found data.text, length:", dataObj.text.length);
+            csvContent = dataObj.text;
+          } else if (typeof dataObj.data === "string") {
+            console.log("Found data.data (string), length:", dataObj.data.length);
+            csvContent = dataObj.data;
+          } else if (typeof dataObj.csv === "string") {
+            console.log("Found data.csv, length:", dataObj.csv.length);
+            csvContent = dataObj.csv;
+          }
+        }
+        // Try top-level properties
+        else if (typeof respObj.text === "string") {
+          console.log("Found response.text, length:", respObj.text.length);
+          csvContent = respObj.text;
+        } else if (typeof respObj.csv === "string") {
+          console.log("Found response.csv, length:", respObj.csv.length);
+          csvContent = respObj.csv;
+        }
+      }
+
+      // Check for error response from Classic backend (top-level)
+      if (!backendError && response && typeof response === "object") {
+        const respObj = response as Record<string, unknown>;
+        if (respObj.response && typeof respObj.response === "object") {
+          const respData = respObj.response as Record<string, unknown>;
+          if (respData.error && typeof respData.error === "object") {
+            const errorObj = respData.error as Record<string, unknown>;
+            backendError = String(errorObj.message || "Unknown backend error");
+          }
+        }
+      }
+
+      // If there was a backend error, throw it immediately
+      if (backendError) {
+        throw new Error(`CSV export backend error: ${backendError}`);
+      }
+
+      // Log final CSV content length
+      console.log("Final CSV content length:", csvContent.length);
+
+      if (!csvContent || csvContent.trim().length === 0) {
+        console.error(
+          "Export returned empty data. Response structure (keys):",
+          response && typeof response === "object" ? Object.keys(response as Record<string, unknown>) : typeof response
+        );
+        throw new Error(
+          "Export returned empty data - check browser console for response structure"
+        );
+      }
+
+      // Download file
+      downloadCSVFile(csvContent, tab.entityName);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred during export";
+      console.error("CSV Export Error:", errorMessage, error);
+
+      // Re-throw to trigger error boundary or toast notification
+      throw new Error(`CSV Export failed: ${errorMessage}`);
+    }
+  }, [
+    tab,
+    windowIdentifier,
+    getTableState,
+    buildFieldsArray,
+    buildExportParams,
+    downloadCSVFile,
+  ]);
+
   useEffect(() => {
     // Register this tab's refresh callback
     registerRefresh(tab.tabLevel, onRefresh);
@@ -254,10 +598,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       new: handleNew,
       back: handleBack,
       treeView: handleTreeView,
+      exportCSV: handleExportCSV,
     };
 
     registerActions(actions);
-  }, [registerActions, handleNew, handleBack, handleTreeView, tab.id]);
+  }, [registerActions, handleNew, handleBack, handleTreeView, handleExportCSV, tab.id]);
 
   /**
    * Clear selection when creating a new record

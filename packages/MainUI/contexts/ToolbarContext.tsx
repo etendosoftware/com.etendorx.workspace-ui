@@ -72,6 +72,12 @@ type ToolbarActions = {
   treeView: () => void;
 
   /**
+   * Export the current data to CSV format.
+   * Exports selected records or all visible records depending on context.
+   */
+  exportCSV: () => Promise<void>;
+
+  /**
    * Open or toggle column filters for table views.
    * @param buttonRef - Optional reference to the button element that triggered the action,
    *                   used for positioning dropdown/popover filters
@@ -85,6 +91,7 @@ type ToolbarContextType = {
   onNew: () => void;
   onBack: () => void;
   onFilter: () => void;
+  onExportCSV: () => Promise<void>;
   onToggleTreeView: () => void;
   onColumnFilters: (buttonRef?: HTMLElement | null) => void;
   registerActions: (actions: Partial<ToolbarActions>) => void;
@@ -108,6 +115,7 @@ const initialState: ToolbarActions = {
   filter: () => {},
   columnFilters: () => {},
   treeView: () => {},
+  exportCSV: async () => {},
 };
 
 const ToolbarContext = createContext<ToolbarContextType>({
@@ -116,6 +124,7 @@ const ToolbarContext = createContext<ToolbarContextType>({
   onNew: () => {},
   onBack: () => {},
   onFilter: () => {},
+  onExportCSV: async () => {},
   onToggleTreeView: () => {},
   onColumnFilters: () => {},
   registerActions: () => {},
@@ -162,6 +171,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       save: originalOnSave, // Original save function from registered actions
       back: onBack,
       filter: onFilter,
+      exportCSV: onExportCSV,
       columnFilters: onColumnFilters,
     },
     setActions,
@@ -223,6 +233,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       onNew,
       onBack,
       onFilter,
+      onExportCSV,
       onColumnFilters,
       onToggleTreeView,
       registerActions,
@@ -243,6 +254,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       onNew,
       onBack,
       onFilter,
+      onExportCSV,
       onColumnFilters,
       onToggleTreeView,
       registerActions,
