@@ -1,8 +1,8 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import WindowTabs from "@/components/NavigationTabs/WindowTabs";
-import { useWindowContext } from "@/contexts/window";
-import { useTabs } from "@/contexts/tabs";
-import { useTranslation } from "@/hooks/useTranslation";
+import { useWindowContext } from "../../../contexts/window";
+import { useTabs } from "../../../contexts/tabs";
+import { useTranslation } from "../../../hooks/useTranslation";
+import WindowTabs from "../../../components/NavigationTabs/WindowTabs";
 
 // Mock dependencies
 jest.mock("@workspaceui/componentlibrary/src/components/IconButton", () => ({
@@ -71,10 +71,18 @@ jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: jest.fn(),
 }));
 
+jest.mock("@/hooks/useMetadataContext", () => ({
+  useMetadataContext: jest.fn(),
+}));
+
+// Import the mock after it's defined
+import { useMetadataContext } from "../../../hooks/useMetadataContext";
+
 describe("WindowTabs", () => {
   const mockUseWindowContext = useWindowContext as jest.Mock;
   const mockUseTabs = useTabs as jest.Mock;
   const mockUseTranslation = useTranslation as jest.Mock;
+  const mockUseMetadataContext = useMetadataContext as jest.Mock;
 
   const mockCleanupWindow = jest.fn();
   const mockSetWindowActive = jest.fn();
@@ -106,6 +114,10 @@ describe("WindowTabs", () => {
       showRightMenuButton: false,
       handleScrollLeft: mockHandleScrollLeft,
       handleScrollRight: mockHandleScrollRight,
+    });
+
+    mockUseMetadataContext.mockReturnValue({
+      windowsData: {},
     });
   });
 
