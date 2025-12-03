@@ -202,7 +202,7 @@ const calculateParentRecordId = async (
       endRow: "99",
     };
 
-    const { ok, data } = await datasource.get(childTab.entityName, params);
+    const { ok, data } = (await datasource.get(childTab.entityName, params)) as any;
 
     if (!ok || !data?.response?.data?.[0]) {
       throw new Error(`Failed to fetch child record data for recordId: ${childRecordId} in tab ${childTab.name}.`);

@@ -87,17 +87,17 @@ export default async function RootLayout({
                   <DatasourceProvider data-testid="DatasourceProvider__ba7569">
                     <MetadataStoreProvider data-testid="MetadataStoreProvider__ba7569">
                       <WindowProvider data-testid="WindowProvider__ba7569">
-                       <MetadataSynchronizer data-testid="MetadataSynchronizer__ba7569" />
+                        <MetadataSynchronizer data-testid="MetadataSynchronizer__ba7569" />
                         <LoadingProvider data-testid="LoadingProvider__ba7569">
                           <Layout data-testid="Layout__ba7569">{children}</Layout>
                         </LoadingProvider>
-                    </WindowProvider>
-                  </MetadataStoreProvider>
-                </DatasourceProvider>
-              </UserProvider>
-            </LanguageProvider>
-          </ThemeProvider>
-        </ApiProviderWrapper>
+                      </WindowProvider>
+                    </MetadataStoreProvider>
+                  </DatasourceProvider>
+                </UserProvider>
+              </LanguageProvider>
+            </ThemeProvider>
+          </ApiProviderWrapper>
         </RuntimeConfigProvider>
       </body>
     </html>
