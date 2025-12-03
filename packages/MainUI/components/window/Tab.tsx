@@ -411,23 +411,96 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     []
   );
 
+  /**
+   * Validates export prerequisites
+   */
+  const validateExportData = useCallback(() => {
+    if (!tab?.entityName) {
+      throw new Error("Entity name not found");
+    }
+    if (!windowIdentifier) {
+      throw new Error("Window context not found");
+    }
+    if (!tab.fields || Object.keys(tab.fields).length === 0) {
+      throw new Error("No fields available for export");
+    }
+  }, [tab, windowIdentifier]);
+
+  /**
+   * Extracts CSV content from various response structures
+   */
+  const extractCSVContent = useCallback((response: unknown): { csvContent: string; backendError: string | null } => {
+    let csvContent = "";
+    let backendError: string | null = null;
+
+    // Try direct string response
+    if (typeof response === "string") {
+      return { csvContent: response, backendError };
+    }
+
+    // Try response.data as string
+    const respObj = response as unknown as Record<string, unknown>;
+    if (typeof respObj.data === "string") {
+      return { csvContent: respObj.data as string, backendError };
+    }
+
+    // Handle object response
+    if (response && typeof response === "object") {
+      // Check for error in response.data.response.error (Classic error structure)
+      if (respObj.data && typeof respObj.data === "object") {
+        const dataObj = respObj.data as unknown as Record<string, unknown>;
+
+        if (dataObj.response && typeof dataObj.response === "object") {
+          const respData = dataObj.response as unknown as Record<string, unknown>;
+          if (respData.error && typeof respData.error === "object") {
+            const errorObj = respData.error as unknown as Record<string, unknown>;
+            backendError = String(errorObj.message || "Unknown backend error");
+          }
+        }
+
+        // Extract CSV from data object
+        if (typeof dataObj.text === "string") {
+          csvContent = dataObj.text;
+        } else if (typeof dataObj.data === "string") {
+          csvContent = dataObj.data;
+        } else if (typeof dataObj.csv === "string") {
+          csvContent = dataObj.csv;
+        }
+
+        if (csvContent) {
+          return { csvContent, backendError };
+        }
+      }
+
+      // Try top-level properties
+      if (typeof respObj.text === "string") {
+        return { csvContent: respObj.text, backendError };
+      }
+      if (typeof respObj.csv === "string") {
+        return { csvContent: respObj.csv, backendError };
+      }
+
+      // Check for error at top-level
+      if (!backendError && respObj.response && typeof respObj.response === "object") {
+        const respData = respObj.response as unknown as Record<string, unknown>;
+        if (respData.error && typeof respData.error === "object") {
+          const errorObj = respData.error as unknown as Record<string, unknown>;
+          backendError = String(errorObj.message || "Unknown backend error");
+        }
+      }
+    }
+
+    return { csvContent, backendError };
+  }, []);
+
   const handleExportCSV = useCallback(async () => {
     try {
-      // Validate required data
-      if (!tab?.entityName) {
-        throw new Error("Entity name not found");
-      }
-      if (!windowIdentifier) {
-        throw new Error("Window context not found");
-      }
-      if (!tab.fields || Object.keys(tab.fields).length === 0) {
-        throw new Error("No fields available for export");
-      }
+      validateExportData();
 
       const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
 
       // Get table state
-      const tableState = getTableState(windowIdentifier, tab.id) || {};
+      const tableState = getTableState(windowIdentifier!, tab.id) || {};
       const {
         filters: tableColumnFilters = [],
         visibility: tableColumnVisibility = {},
@@ -438,14 +511,14 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       // Get field names from tab.fields (not display names from table column order)
       // Filter out the 'id' field and any UI-specific columns
       const skipColumns = new Set(["id", "_editLink", "mrt-row-select", "actions"]);
-      const orderedFieldNames = Object.keys(tab.fields).filter((key) => !skipColumns.has(key));
+      const orderedFieldNames = Object.keys(tab.fields!).filter((key) => !skipColumns.has(key));
 
       // Build field metadata
       const fieldsArray = buildFieldsArray(orderedFieldNames, tableColumnVisibility, tab.fields);
 
       // Build request parameters
       const params = buildExportParams(
-        tab.entityName,
+        tab.entityName!,
         tab.id,
         fieldsArray,
         tableColumnSorting,
@@ -460,7 +533,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       console.log("Export viewState (first 200 chars):", String(params.viewState).substring(0, 200));
 
       // Make API request
-      const response = await datasource.get(tab.entityName, params);
+      const response = await datasource.get(tab.entityName!, params);
 
       // Validate response
       if (!response) {
@@ -469,95 +542,24 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
       console.log("CSV Export Response:", response);
 
-      if ((response as unknown as Record<string, unknown>).__error) {
-        throw new Error(
-          `Export error: ${(response as unknown as Record<string, unknown>).__error}`
-        );
+      const respObj = response as unknown as Record<string, unknown>;
+      if (respObj.__error) {
+        throw new Error(`Export error: ${respObj.__error}`);
       }
 
-      // Extract CSV content from API response - try multiple possible locations
-      let csvContent = "";
-      let backendError: string | null = null;
+      // Extract CSV content and check for errors
+      const { csvContent, backendError } = extractCSVContent(response);
 
-      // Try direct string response
-      if (typeof response === "string") {
-        console.log("Response is string");
-        csvContent = response;
-      }
-      // Try response.data as string
-      else if (typeof response.data === "string") {
-        console.log("Response.data is string");
-        csvContent = response.data;
-      }
-      // Try response as object with various possible properties
-      else if (response && typeof response === "object") {
-        const respObj = response as unknown as Record<string, unknown>;
-
-        // Log structure for debugging
-        console.log("Response is object, keys:", Object.keys(respObj).slice(0, 10));
-        console.log("Response.data type:", typeof respObj.data, "value:", respObj.data);
-
-        // Try response.data (API route wraps responses)
-        if (respObj.data && typeof respObj.data === "object") {
-          const dataObj = respObj.data as Record<string, unknown>;
-          console.log("Response.data is object, keys:", Object.keys(dataObj));
-
-          // Check for error in response.data.response.error (Classic error structure)
-          if (dataObj.response && typeof dataObj.response === "object") {
-            const respData = dataObj.response as Record<string, unknown>;
-            if (respData.error && typeof respData.error === "object") {
-              const errorObj = respData.error as Record<string, unknown>;
-              backendError = String(errorObj.message || "Unknown backend error");
-              console.error("Backend error detected:", backendError);
-            }
-          }
-
-          // Try to extract CSV content from data object
-          if (typeof dataObj.text === "string") {
-            console.log("Found data.text, length:", dataObj.text.length);
-            csvContent = dataObj.text;
-          } else if (typeof dataObj.data === "string") {
-            console.log("Found data.data (string), length:", dataObj.data.length);
-            csvContent = dataObj.data;
-          } else if (typeof dataObj.csv === "string") {
-            console.log("Found data.csv, length:", dataObj.csv.length);
-            csvContent = dataObj.csv;
-          }
-        }
-        // Try top-level properties
-        else if (typeof respObj.text === "string") {
-          console.log("Found response.text, length:", respObj.text.length);
-          csvContent = respObj.text;
-        } else if (typeof respObj.csv === "string") {
-          console.log("Found response.csv, length:", respObj.csv.length);
-          csvContent = respObj.csv;
-        }
-      }
-
-      // Check for error response from Classic backend (top-level)
-      if (!backendError && response && typeof response === "object") {
-        const respObj = response as Record<string, unknown>;
-        if (respObj.response && typeof respObj.response === "object") {
-          const respData = respObj.response as Record<string, unknown>;
-          if (respData.error && typeof respData.error === "object") {
-            const errorObj = respData.error as Record<string, unknown>;
-            backendError = String(errorObj.message || "Unknown backend error");
-          }
-        }
-      }
-
-      // If there was a backend error, throw it immediately
       if (backendError) {
         throw new Error(`CSV export backend error: ${backendError}`);
       }
 
-      // Log final CSV content length
       console.log("Final CSV content length:", csvContent.length);
 
       if (!csvContent || csvContent.trim().length === 0) {
         console.error(
           "Export returned empty data. Response structure (keys):",
-          response && typeof response === "object" ? Object.keys(response as Record<string, unknown>) : typeof response
+          response && typeof response === "object" ? Object.keys(respObj) : typeof response
         );
         throw new Error(
           "Export returned empty data - check browser console for response structure"
@@ -565,7 +567,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       }
 
       // Download file
-      downloadCSVFile(csvContent, tab.entityName);
+      downloadCSVFile(csvContent, tab.entityName!);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred during export";
@@ -581,6 +583,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     buildFieldsArray,
     buildExportParams,
     downloadCSVFile,
+    validateExportData,
+    extractCSVContent,
   ]);
 
   useEffect(() => {
