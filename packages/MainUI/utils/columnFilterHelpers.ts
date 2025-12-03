@@ -75,33 +75,38 @@ export const loadTableDirFilterOptions = async ({
   try {
     let options: FilterOption[] = [];
 
-    // First, check if we should use the selector/datasource approach (for fields that reference other entities)
-    const selectorDefinitionId = column.selectorDefinitionId as string | undefined;
-    const datasourceId = column.datasourceId || column.referencedEntity;
+    if (ColumnFilterUtils.needsDistinctValues(column)) {
+      // Use distinct values approach for fields that need to filter by table records
+      // This queries the main datasource with _distinct to get unique values of this field from actual table data
+      const currentDatasource = entityName;
+      const tabIdStr = tabId;
+      const distinctField = column.columnName;
 
-    if (datasourceId) {
-      // Use selector/datasource approach for fields that reference other entities (e.g., businessPartner, product)
       options = await fetchFilterOptions(
-        String(datasourceId),
-        selectorDefinitionId,
-        searchQuery,
-        pageSize,
-        undefined,
-        undefined,
-        offset
-      );
-    } else if (entityName && tabId && column.columnName) {
-      // Fallback to distinct values approach for fields without a referenced entity
-      // This queries the main datasource for unique values of this field
-      options = await fetchFilterOptions(
-        String(entityName),
+        String(currentDatasource),
         undefined,
         searchQuery,
         pageSize,
-        column.columnName,
-        tabId,
+        distinctField,
+        tabIdStr,
         offset
       );
+    } else {
+      // Fallback to selector/datasource approach for fields without a referenced entity
+      const selectorDefinitionId = column.selectorDefinitionId as string | undefined;
+      const datasourceId = column.datasourceId || column.referencedEntity;
+
+      if (datasourceId) {
+        options = await fetchFilterOptions(
+          String(datasourceId),
+          selectorDefinitionId,
+          searchQuery,
+          pageSize,
+          undefined,
+          undefined,
+          offset
+        );
+      }
     }
 
     const hasMore = options.length === pageSize;
