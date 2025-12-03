@@ -190,6 +190,7 @@ const es = {
       search: "Buscar",
       views: "Vistas",
       filter: "Filtrar",
+      filterActive: "Filtro activado",
       columns: "Columnas",
       openSidebar: "Abrir barra lateral",
       closeSidebar: "Cerrar barra lateral",

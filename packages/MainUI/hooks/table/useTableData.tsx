@@ -89,6 +89,8 @@ interface UseTableDataReturn {
     filterValue: string | number,
     filterLabel: string
   ) => Promise<void>;
+  isImplicitFilterApplied: boolean;
+  tableColumnFilters: MRT_ColumnFiltersState;
 }
 
 export const useTableData = ({
@@ -612,7 +614,9 @@ export const useTableData = ({
     // Only run this logic once on mount/initialization
     if (!hasInitializedDirectLink.current) {
       // If we are entering directly to a record (Form View), disable implicit filters
-      if (hasSelectedRecord) {
+      // Only apply this if we are actually in Form View (mode === 'form')
+      // This prevents parent tabs (which have selectedRecord but are in TABLE mode) from being affected
+      if (hasSelectedRecord && tabFormState?.mode === "form") {
         if (isImplicitFilterApplied !== false) {
           setIsImplicitFilterApplied(false);
         }
@@ -639,10 +643,31 @@ export const useTableData = ({
     tableColumnFilters,
   ]);
 
+  // Clear filters when parent selection changes
+  // This ensures that if we were filtering by a specific ID (e.g. from direct link),
+  // changing the parent record will reset the view to show all child records for the new parent
+  const prevParentIdRef = useRef<string | undefined>(parentRecord?.id ? String(parentRecord.id) : undefined);
+
+  useEffect(() => {
+    // Only clear filters if the parent ID has actually CHANGED from a previous valid ID
+    // This prevents clearing filters on initial load when the parent ID is first set
+    if (parentRecord?.id && prevParentIdRef.current && parentRecord.id !== prevParentIdRef.current) {
+      const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
+      if (hasIdFilter) {
+        setTableColumnFilters([]);
+        setIsImplicitFilterApplied(true);
+      }
+    }
+    // Update ref for next render
+    prevParentIdRef.current = parentRecord?.id ? String(parentRecord.id) : undefined;
+  }, [parentRecord?.id, setTableColumnFilters, setIsImplicitFilterApplied, tableColumnFilters]);
+
   /** Sync implicit filter state with toolbar context */
   useEffect(() => {
-    setToolbarFilterApplied(isImplicitFilterApplied ?? false);
-  }, [isImplicitFilterApplied, setToolbarFilterApplied]);
+    const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
+    const isFiltered = (isImplicitFilterApplied ?? false) || hasIdFilter;
+    setToolbarFilterApplied(isFiltered);
+  }, [isImplicitFilterApplied, tableColumnFilters, setToolbarFilterApplied]);
 
   /** Clear advanced column filters when table filters are cleared */
   useEffect(() => {
@@ -801,6 +826,8 @@ export const useTableData = ({
     refetch,
     removeRecordLocally,
     applyQuickFilter,
+    isImplicitFilterApplied: isImplicitFilterApplied ?? false,
+    tableColumnFilters,
     hasMoreRecords,
   };
 };

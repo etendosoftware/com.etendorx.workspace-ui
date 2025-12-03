@@ -23,68 +23,117 @@ import {
   FILLED_BUTTON_TYPE,
   OUTLINED_BUTTON_TYPE,
 } from "@workspaceui/componentlibrary/src/components/IconButtonWithText/constants";
-import { Badge } from "@mui/material";
+import { Badge, Tooltip } from "@mui/material";
 
 const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, className = "", processButton }) => {
   if (!buttons.length) return null;
 
   return (
     <div style={style} className={className}>
-      {buttons.map(({ key, icon, iconText, tooltip, onClick, disabled, className, badgeContent, isPressed }) => {
-        if (iconText) {
-          return (
-            <IconButtonWithText
-              key={key}
-              buttonType={FILLED_BUTTON_TYPE}
-              leftIcon={icon}
-              text={iconText}
-              onClick={onClick}
-              disabled={disabled}
-              customContainerStyles={className}
-              data-testid={`IconButtonWithText__${key ?? "2bded0"}`}
-            />
-          );
+      {buttons.map(
+        ({
+          key,
+          icon,
+          iconText,
+          tooltip,
+          onClick,
+          disabled,
+          className,
+          badgeContent,
+          isPressed,
+          forceTooltipOpen,
+        }) => {
+          // If forcing tooltip open, we handle it with a wrapper Tooltip and disable the inner one
+          const innerTooltip = forceTooltipOpen ? undefined : tooltip;
+
+          let buttonElement: React.ReactNode;
+
+          if (iconText) {
+            buttonElement = (
+              <IconButtonWithText
+                key={key}
+                buttonType={FILLED_BUTTON_TYPE}
+                leftIcon={icon}
+                text={iconText}
+                onClick={onClick}
+                disabled={disabled}
+                customContainerStyles={className}
+                data-testid={`IconButtonWithText__${key ?? "2bded0"}`}
+              />
+            );
+          } else {
+            buttonElement = (
+              <IconButton
+                key={key}
+                tooltip={innerTooltip}
+                onClick={onClick}
+                disabled={disabled}
+                className={className}
+                iconText={iconText}
+                isPressed={isPressed}
+                data-testid={`IconButton__${key ?? "2bded0"}`}
+              >
+                {icon}
+              </IconButton>
+            );
+          }
+
+          if (badgeContent !== undefined && badgeContent !== null && badgeContent !== 0 && badgeContent !== "") {
+            buttonElement = (
+              <Badge
+                key={key}
+                badgeContent={badgeContent}
+                color="error"
+                sx={{
+                  "& .MuiBadge-badge": {
+                    fontSize: "0.625rem",
+                    height: "16px",
+                    minWidth: "16px",
+                    padding: "0 4px",
+                    fontWeight: 600,
+                    borderRadius: "8px",
+                    top: "6px",
+                    right: "6px",
+                  },
+                }}
+              >
+                {buttonElement}
+              </Badge>
+            );
+          }
+
+          if (forceTooltipOpen && tooltip) {
+            return (
+              <Tooltip
+                key={key}
+                title={tooltip}
+                open={true}
+                arrow
+                placement="top"
+                componentsProps={{
+                  tooltip: {
+                    sx: {
+                      backgroundColor: "#60a5fa",
+                      color: "#03408bff",
+                      fontWeight: 600,
+                      fontSize: "0.75rem",
+                    },
+                  },
+                  arrow: {
+                    sx: {
+                      color: "#03408bff",
+                    },
+                  },
+                }}
+              >
+                <span>{buttonElement}</span>
+              </Tooltip>
+            );
+          }
+
+          return buttonElement;
         }
-
-        const iconButton = (
-          <IconButton
-            key={key}
-            tooltip={tooltip}
-            onClick={onClick}
-            disabled={disabled}
-            className={className}
-            iconText={iconText}
-            isPressed={isPressed}
-            data-testid={`IconButton__${key ?? "2bded0"}`}>
-            {icon}
-          </IconButton>
-        );
-
-        if (badgeContent !== undefined && badgeContent !== null && badgeContent !== 0 && badgeContent !== "") {
-          return (
-            <Badge
-              key={key}
-              badgeContent={badgeContent}
-              color="error"
-              sx={{
-                "& .MuiBadge-badge": {
-                  fontSize: "0.625rem",
-                  height: "16px",
-                  minWidth: "16px",
-                  padding: "0 4px",
-                  fontWeight: 600,
-                  borderRadius: "8px",
-                  top: "6px",
-                  right: "6px",
-                },
-              }}>
-              {iconButton}
-            </Badge>
-          );
-        }
-
-        return iconButton;
-      })}
+      )}
       {processButton && !processButton.disabled && (
         <div className="h-full flex items-center">
           <div className="h-5 w-0.5 bg-[var(--color-transparent-neutral-20)] mx-0.5" />

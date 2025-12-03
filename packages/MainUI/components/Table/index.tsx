@@ -605,6 +605,7 @@ const DynamicTable = ({
     refetch,
     removeRecordLocally,
     applyQuickFilter,
+
   } = useTableData({
     isTreeMode,
   });
@@ -2573,12 +2574,7 @@ const DynamicTable = ({
   useEffect(() => {
     const handleGraphClear = (eventTab: typeof tab) => {
       if (eventTab.id === tabId) {
-        const currentSelection = table.getState().rowSelection;
-        const hasTableSelection = Object.keys(currentSelection).some((id) => currentSelection[id]);
-
-        if (hasTableSelection) {
-          table.resetRowSelection(true);
-        }
+        table.setRowSelection({});
       }
     };
 
@@ -2590,6 +2586,8 @@ const DynamicTable = ({
       graph.removeListener("unselectedMultiple", handleGraphClear);
     };
   }, [graph, tabId, tab.id]);
+
+
 
   // Clear editing state and performance optimizations when records change or component unmounts
   useEffect(() => {
@@ -2783,6 +2781,7 @@ const DynamicTable = ({
         labels={counterLabels}
         data-testid="RecordCounterBar__8ca888"
       />
+
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
         <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
       </div>
@@ -2837,7 +2836,7 @@ const DynamicTable = ({
         secondaryButtonLabel={statusModal.secondaryButtonLabel}
         errorMessage={statusModal.errorMessage}
         isDeleteSuccess={statusModal.isDeleteSuccess}
-        data-testid="StatusModal__table"
+        data-testid="StatusModal__8ca888"
       />
     </div>
   );
