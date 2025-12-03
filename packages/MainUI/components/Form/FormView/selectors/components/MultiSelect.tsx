@@ -28,6 +28,7 @@ import checkIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/ch
 import ChevronDown from "../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import closeIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/x.svg?url";
 import { useTranslation } from "@/hooks/useTranslation";
+import { DropdownPortal } from "./DropdownPortal";
 
 const FOCUS_STYLES = "focus:outline-none focus:ring-2 focus:ring-dynamic-light";
 const BASE_TRANSITION = "transition-colors outline-none";
@@ -248,31 +249,28 @@ const MultiSelect = memo(function MultiSelectCmp({
           />
         </div>
       </div>
-      {isOpen && (
-        <div className="absolute z-10 mt-1 w-64 bg-white rounded shadow-lg overflow-hidden border border-transparent-neutral-10">
-          <div className="p-2">
-            <input
-              ref={searchInputRef}
-              value={searchTerm}
-              onChange={handleSetSearchTerm}
-              onKeyDown={handleKeyDown}
-              placeholder={t("multiselect.searchPlaceholder")}
-              className="w-full p-2 text-sm border border-baseline-30 rounded focus:outline-none focus:border-dynamic-main focus:ring-1 focus:ring-dynamic-light"
-            />
-          </div>
-          <ul
-            ref={listRef}
-            className="overflow-y-auto focus:outline-none"
-            style={{ maxHeight: `${maxHeight}px` }}
-            onScroll={handleScroll}>
-            {renderedOptions}
-            {/* Loader scroll infinito */}
-            {loading && hasMore && !showSkeleton && (
-              <li className={`${LIST_ITEM_BASE} ${TEXT_MUTED} text-center`}>{t("multiselect.loadingOptions")}</li>
-            )}
-          </ul>
+      <DropdownPortal isOpen={isOpen} triggerRef={wrapperRef} minWidth={256} data-testid="DropdownPortal__cb81f7">
+        <div className="p-2">
+          <input
+            ref={searchInputRef}
+            value={searchTerm}
+            onChange={handleSetSearchTerm}
+            onKeyDown={handleKeyDown}
+            placeholder={t("multiselect.searchPlaceholder")}
+            className="w-full p-2 text-sm border border-baseline-30 rounded focus:outline-none focus:border-dynamic-main focus:ring-1 focus:ring-dynamic-light"
+          />
         </div>
-      )}
+        <ul
+          ref={listRef}
+          className="overflow-y-auto focus:outline-none"
+          style={{ maxHeight: `${maxHeight}px` }}
+          onScroll={handleScroll}>
+          {renderedOptions}
+          {loading && hasMore && !showSkeleton && (
+            <li className={`${LIST_ITEM_BASE} ${TEXT_MUTED} text-center`}>{t("multiselect.loadingOptions")}</li>
+          )}
+        </ul>
+      </DropdownPortal>
     </div>
   );
 });
