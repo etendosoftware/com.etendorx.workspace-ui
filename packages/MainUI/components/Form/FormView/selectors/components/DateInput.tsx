@@ -115,65 +115,63 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       [ref]
     );
 
+    const setNativeInputValue = useCallback((value: string) => {
+      if (!hiddenDateInputRef.current) return;
+
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )?.set;
+      nativeInputValueSetter?.call(hiddenDateInputRef.current, value);
+
+      const event = new Event("change", { bubbles: true });
+      hiddenDateInputRef.current.dispatchEvent(event);
+    }, []);
+
+    const handleValidDateInput = useCallback((isoDate: string) => {
+      if (!hiddenDateInputRef.current) return;
+
+      if (hiddenDateInputRef.current.value !== isoDate) {
+        setNativeInputValue(isoDate);
+      }
+
+      setDisplayValue(formatClassicDate(isoDate, false));
+    }, [setNativeInputValue]);
+
+    const handleInvalidDateInput = useCallback(() => {
+      if (hiddenDateInputRef.current?.value) {
+        setNativeInputValue("");
+      }
+    }, [setNativeInputValue]);
+
+    const handleEmptyInput = useCallback(() => {
+      if (hiddenDateInputRef.current?.value) {
+        setNativeInputValue("");
+      }
+    }, [setNativeInputValue]);
+
     const handleBlur = useCallback(
       (e: React.FocusEvent<HTMLInputElement>) => {
         const relatedTarget = e.relatedTarget as HTMLElement;
         if (!containerRef.current?.contains(relatedTarget)) {
           setIsFocused(false);
         }
-        
-        // Autocomplete logic
+
         if (!isReadOnly && displayValue) {
           const date = autocompleteDate(displayValue, datePlaceholder);
-          if (date && hiddenDateInputRef.current) {
-            // Format to ISO YYYY-MM-DD for the date input
+          if (date) {
             const isoDate = date.toISOString().split('T')[0];
-            
-            // Only update if different
-            if (hiddenDateInputRef.current.value !== isoDate) {
-              // Set value on hidden input
-              const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-                window.HTMLInputElement.prototype,
-                "value"
-              )?.set;
-              nativeInputValueSetter?.call(hiddenDateInputRef.current, isoDate);
-
-              // Dispatch change event for react-hook-form
-              const event = new Event("change", { bubbles: true });
-              hiddenDateInputRef.current.dispatchEvent(event);
-            }
-            
-            // Update display value to formatted date
-            setDisplayValue(formatClassicDate(isoDate, false));
-          } else if (!date && displayValue) {
-             // Invalid date input - clear or handle error
-             // For now, we'll clear the hidden input if the text is invalid
-             if (hiddenDateInputRef.current && hiddenDateInputRef.current.value) {
-                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-                  window.HTMLInputElement.prototype,
-                  "value"
-                )?.set;
-                nativeInputValueSetter?.call(hiddenDateInputRef.current, "");
-
-                const event = new Event("change", { bubbles: true });
-                hiddenDateInputRef.current.dispatchEvent(event);
-             }
+            handleValidDateInput(isoDate);
+          } else {
+            handleInvalidDateInput();
           }
-        } else if (!displayValue && hiddenDateInputRef.current && hiddenDateInputRef.current.value) {
-          // Clear if empty
-           const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-              window.HTMLInputElement.prototype,
-              "value"
-            )?.set;
-            nativeInputValueSetter?.call(hiddenDateInputRef.current, "");
-
-            const event = new Event("change", { bubbles: true });
-            hiddenDateInputRef.current.dispatchEvent(event);
+        } else if (!displayValue) {
+          handleEmptyInput();
         }
 
         props.onBlur?.(e);
       },
-      [props, displayValue, isReadOnly]
+      [props, displayValue, isReadOnly, datePlaceholder, handleValidDateInput, handleInvalidDateInput, handleEmptyInput]
     );
 
     // Sync the hidden date input value with the display value
