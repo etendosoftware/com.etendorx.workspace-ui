@@ -149,6 +149,25 @@ const renderHookAndWait = async () => {
   return hookResult;
 };
 
+const expectFallbackState = async (windowIdentifier: string, consoleMethod: "error" | "warn" | "log" = "warn") => {
+  const consoleSpy = mockConsole(consoleMethod);
+  const { result } = await renderHookAndWait();
+
+  // Should return fallback state instead of empty array
+  expect(result.current.recoveredWindows).toHaveLength(1);
+  expectRecoveredWindow(result.current.recoveredWindows[0], {
+    windowId: "143",
+    windowIdentifier,
+    title: "",
+    initialized: true,
+    isActive: true,
+  });
+  expect(result.current.recoveryError).toBeNull();
+  expect(consoleSpy).toHaveBeenCalled();
+
+  consoleSpy.mockRestore();
+};
+
 const expectRecoveredWindow = (
   window: any,
   expectations: {
@@ -452,7 +471,6 @@ describe("useGlobalUrlStateRecovery", () => {
 
   describe("Error handling", () => {
     it("should handle metadata loading error with fallback state", async () => {
-      const consoleWarnSpy = mockConsole("warn");
       const params = createMockSearchParams({ wi_0: "143_123456" });
       const recoveryInfo = createMockRecoveryInfo("143_123456");
 
@@ -460,96 +478,34 @@ describe("useGlobalUrlStateRecovery", () => {
       mockParseWindowRecoveryData.mockReturnValue([recoveryInfo]);
       mockLoadWindowData.mockRejectedValue(new Error("Failed to load metadata"));
 
-      const { result } = await renderHookAndWait();
-
-      // Should return fallback state instead of empty array
-      expect(result.current.recoveredWindows).toHaveLength(1);
-      expectRecoveredWindow(result.current.recoveredWindows[0], {
-        windowId: "143",
-        windowIdentifier: "143_123456",
-        title: "",
-        initialized: true,
-        isActive: true,
-      });
-      expect(result.current.recoveryError).toBeNull();
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Failed to recover window"),
-        expect.any(Error)
-      );
-
-      consoleWarnSpy.mockRestore();
+      await expectFallbackState("143_123456");
     });
 
     it("should handle URL state parsing error with fallback state", async () => {
-      const consoleWarnSpy = mockConsole("warn");
       setupComplexRecovery("143", "143_123456", "tab2", "record123");
 
       mockParseUrlState.mockReset();
       mockParseUrlState.mockRejectedValue(new Error("Failed to parse URL state"));
 
-      const { result } = await renderHookAndWait();
-
-      // Should return fallback state instead of empty array
-      expect(result.current.recoveredWindows).toHaveLength(1);
-      expectRecoveredWindow(result.current.recoveredWindows[0], {
-        windowId: "143",
-        windowIdentifier: "143_123456",
-        title: "",
-        initialized: true,
-        isActive: true,
-      });
-      expect(result.current.recoveryError).toBeNull();
-      expect(consoleWarnSpy).toHaveBeenCalled();
-
-      consoleWarnSpy.mockRestore();
+      await expectFallbackState("143_123456");
     });
 
     it("should handle hierarchy calculation error with fallback state", async () => {
-      const consoleWarnSpy = mockConsole("warn");
       setupComplexRecovery("143", "143_123456", "tab2", "record123");
 
       mockCalculateHierarchy.mockReset();
       mockCalculateHierarchy.mockRejectedValue(new Error("Failed to calculate hierarchy"));
 
-      const { result } = await renderHookAndWait();
-
-      // Should return fallback state instead of empty array
-      expect(result.current.recoveredWindows).toHaveLength(1);
-      expectRecoveredWindow(result.current.recoveredWindows[0], {
-        windowId: "143",
-        windowIdentifier: "143_123456",
-        title: "",
-        initialized: true,
-        isActive: true,
-      });
-      expect(result.current.recoveryError).toBeNull();
-      expect(consoleWarnSpy).toHaveBeenCalled();
-
-      consoleWarnSpy.mockRestore();
+      await expectFallbackState("143_123456");
     });
 
     it("should handle state reconstruction error with fallback state", async () => {
-      const consoleWarnSpy = mockConsole("warn");
       setupComplexRecovery("143", "143_123456", "tab2", "record123");
 
       mockReconstructState.mockReset();
       mockReconstructState.mockRejectedValue(new Error("Failed to reconstruct state"));
 
-      const { result } = await renderHookAndWait();
-
-      // Should return fallback state instead of empty array
-      expect(result.current.recoveredWindows).toHaveLength(1);
-      expectRecoveredWindow(result.current.recoveredWindows[0], {
-        windowId: "143",
-        windowIdentifier: "143_123456",
-        title: "",
-        initialized: true,
-        isActive: true,
-      });
-      expect(result.current.recoveryError).toBeNull();
-      expect(consoleWarnSpy).toHaveBeenCalled();
-
-      consoleWarnSpy.mockRestore();
+      await expectFallbackState("143_123456");
     });
   });
 

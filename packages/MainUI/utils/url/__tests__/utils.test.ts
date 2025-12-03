@@ -110,6 +110,28 @@ const createMockRecoveryInfo = (
 
 const createSearchParams = (params: string) => new URLSearchParams(params);
 
+/**
+ * Helper to verify URLSearchParams has expected keys and values
+ */
+const expectParamsToHave = (params: URLSearchParams, expectations: Record<string, string | boolean>) => {
+  Object.entries(expectations).forEach(([key, value]) => {
+    if (typeof value === "boolean") {
+      expect(params.has(key)).toBe(value);
+    } else {
+      expect(params.get(key)).toBe(value);
+    }
+  });
+};
+
+/**
+ * Helper to verify URL string contains expected parameters
+ */
+const expectUrlToContain = (url: string, params: Record<string, string>) => {
+  Object.entries(params).forEach(([key, value]) => {
+    expect(url).toContain(`${key}=${value}`);
+  });
+};
+
 describe("URL Utility Functions", () => {
   describe("buildWindowsUrlParams", () => {
     it("should build params for single window with no tabs", () => {
@@ -141,9 +163,11 @@ describe("URL Utility Functions", () => {
 
       const result = buildWindowsUrlParams(windows);
 
-      expect(result).toContain("wi_0=143_123456");
-      expect(result).toContain("ti_0=tab2");
-      expect(result).toContain("ri_0=rec2");
+      expectUrlToContain(result, {
+        wi_0: "143_123456",
+        ti_0: "tab2",
+        ri_0: "rec2",
+      });
     });
 
     it("should handle multiple windows", () => {
@@ -160,10 +184,12 @@ describe("URL Utility Functions", () => {
 
       const result = buildWindowsUrlParams(windows);
 
-      expect(result).toContain("wi_0=143_123456");
-      expect(result).toContain("wi_1=144_789012");
-      expect(result).toContain("ti_1=tab1");
-      expect(result).toContain("ri_1=rec1");
+      expectUrlToContain(result, {
+        wi_0: "143_123456",
+        wi_1: "144_789012",
+        ti_1: "tab1",
+        ri_1: "rec1",
+      });
     });
 
     it("should only include tabs with both selectedRecord and form.recordId", () => {
@@ -209,9 +235,11 @@ describe("URL Utility Functions", () => {
 
       const result = buildWindowsUrlParams(windows);
 
-      expect(result).toContain("wi_0=143_123456");
-      expect(result).toContain("ti_0=tab3"); // Deepest tab
-      expect(result).toContain("ri_0=rec3");
+      expectUrlToContain(result, {
+        wi_0: "143_123456",
+        ti_0: "tab3",
+        ri_0: "rec3",
+      });
       expect(result).not.toContain("ti_0=tab1");
       expect(result).not.toContain("ti_0=tab2");
     });
@@ -345,9 +373,11 @@ describe("URL Utility Functions", () => {
 
       const result = cleanInvalidRecoveryParams(params);
 
-      expect(result.has("wi_0")).toBe(true);
-      expect(result.has("ti_0")).toBe(true);
-      expect(result.has("ri_0")).toBe(true);
+      expectParamsToHave(result, {
+        wi_0: true,
+        ti_0: true,
+        ri_0: true,
+      });
     });
 
     it("should handle multiple windows with mixed validity", () => {
@@ -372,10 +402,12 @@ describe("URL Utility Functions", () => {
 
       const result = removeRecoveryParameters(params);
 
-      expect(result.has("wi_0")).toBe(false);
-      expect(result.has("ti_0")).toBe(false);
-      expect(result.has("ri_0")).toBe(false);
-      expect(result.get("other")).toBe("value"); // Non-recovery param preserved
+      expectParamsToHave(result, {
+        wi_0: false,
+        ti_0: false,
+        ri_0: false,
+        other: "value",
+      });
     });
 
     it("should preserve non-recovery parameters", () => {
@@ -383,9 +415,11 @@ describe("URL Utility Functions", () => {
 
       const result = removeRecoveryParameters(params);
 
-      expect(result.has("wi_0")).toBe(false);
-      expect(result.get("filter")).toBe("active");
-      expect(result.get("sort")).toBe("name");
+      expectParamsToHave(result, {
+        wi_0: false,
+        filter: "active",
+        sort: "name",
+      });
     });
 
     it("should handle params with only recovery data", () => {
@@ -411,12 +445,14 @@ describe("URL Utility Functions", () => {
 
       const result = removeWindowParameters(params, 0);
 
-      expect(result.has("wi_0")).toBe(false);
-      expect(result.has("ti_0")).toBe(false);
-      expect(result.has("ri_0")).toBe(false);
-      expect(result.has("wi_1")).toBe(true);
-      expect(result.has("ti_1")).toBe(true);
-      expect(result.has("ri_1")).toBe(true);
+      expectParamsToHave(result, {
+        wi_0: false,
+        ti_0: false,
+        ri_0: false,
+        wi_1: true,
+        ti_1: true,
+        ri_1: true,
+      });
     });
 
     it("should handle removing from middle index", () => {
@@ -424,9 +460,11 @@ describe("URL Utility Functions", () => {
 
       const result = removeWindowParameters(params, 1);
 
-      expect(result.has("wi_0")).toBe(true);
-      expect(result.has("wi_1")).toBe(false);
-      expect(result.has("wi_2")).toBe(true);
+      expectParamsToHave(result, {
+        wi_0: true,
+        wi_1: false,
+        wi_2: true,
+      });
     });
 
     it("should handle non-existent index", () => {
@@ -443,9 +481,11 @@ describe("URL Utility Functions", () => {
 
       const result = removeWindowParameters(params, 0);
 
-      expect(result.has("wi_0")).toBe(false);
-      expect(result.has("ti_0")).toBe(false);
-      expect(result.get("other")).toBe("value");
+      expectParamsToHave(result, {
+        wi_0: false,
+        ti_0: false,
+        other: "value",
+      });
     });
 
     it("should handle zero index", () => {
@@ -453,9 +493,11 @@ describe("URL Utility Functions", () => {
 
       const result = removeWindowParameters(params, 0);
 
-      expect(result.has("wi_0")).toBe(false);
-      expect(result.has("ti_0")).toBe(false);
-      expect(result.has("ri_0")).toBe(false);
+      expectParamsToHave(result, {
+        wi_0: false,
+        ti_0: false,
+        ri_0: false,
+      });
     });
 
     it("should return new URLSearchParams instance", () => {
@@ -577,9 +619,11 @@ describe("URL Utility Functions", () => {
 
       const result = buildWindowsUrlParams(windows);
 
-      expect(result).toContain("wi_0=143-ABC_123456");
-      expect(result).toContain("ti_0=tab-1");
-      expect(result).toContain("ri_0=rec-1");
+      expectUrlToContain(result, {
+        wi_0: "143-ABC_123456",
+        ti_0: "tab-1",
+        ri_0: "rec-1",
+      });
     });
 
     it("should handle URLSearchParams with duplicate keys", () => {
@@ -682,12 +726,14 @@ describe("appendWindowToUrl", () => {
         recordId: "2000015",
       });
 
-      expect(result).toContain("wi_0=143_1000");
-      expect(result).toContain("ti_0=BPartnerTab");
-      expect(result).toContain("ri_0=1000001");
-      expect(result).toContain("wi_1=144_2000");
-      expect(result).toContain("ti_1=LocationTab");
-      expect(result).toContain("ri_1=2000015");
+      expectUrlToContain(result, {
+        wi_0: "143_1000",
+        ti_0: "BPartnerTab",
+        ri_0: "1000001",
+        wi_1: "144_2000",
+        ti_1: "LocationTab",
+        ri_1: "2000015",
+      });
     });
 
     it("should correctly calculate next index with multiple existing windows", () => {
