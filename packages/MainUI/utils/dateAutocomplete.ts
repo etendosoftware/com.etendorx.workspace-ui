@@ -1,4 +1,111 @@
 /**
+ * Parses format string to get indices of day, month, and year positions
+ */
+const parseFormatIndices = (format: string): { dayIndex: number; monthIndex: number; yearIndex: number } => {
+  const formatLower = format.toLowerCase();
+  const formatParts = formatLower.split(/[\/\.\-]/);
+
+  return {
+    dayIndex: formatParts.findIndex(p => p.includes('d')),
+    monthIndex: formatParts.findIndex(p => p.includes('m')),
+    yearIndex: formatParts.findIndex(p => p.includes('y')),
+  };
+};
+
+/**
+ * Handles single part input (day only)
+ */
+const handleSinglePart = (parts: string[], currentYear: number, currentMonth: number) => {
+  const day = Number.parseInt(parts[0], 10);
+  return { day, month: currentMonth, year: currentYear };
+};
+
+/**
+ * Handles two part input (day/month or month/day based on format)
+ */
+const handleTwoParts = (
+  parts: string[],
+  dayIndex: number,
+  monthIndex: number,
+  currentYear: number
+) => {
+  let day: number;
+  let month: number;
+
+  if (dayIndex < monthIndex) {
+    // dd/mm format
+    day = Number.parseInt(parts[0], 10);
+    month = Number.parseInt(parts[1], 10) - 1;
+  } else {
+    // mm/dd format
+    month = Number.parseInt(parts[0], 10) - 1;
+    day = Number.parseInt(parts[1], 10);
+  }
+
+  return { day, month, year: currentYear };
+};
+
+/**
+ * Assigns a date component value based on format type
+ */
+const assignDateComponent = (
+  type: string | undefined,
+  value: number,
+  state: { day: number; month: number; year: number }
+) => {
+  if (type === 'd') state.day = value;
+  else if (type === 'm') state.month = value - 1;
+  else if (type === 'y') state.year = value;
+};
+
+/**
+ * Handles three or more part input (full date with format mapping)
+ */
+const handleThreeOrMoreParts = (
+  parts: string[],
+  dayIndex: number,
+  monthIndex: number,
+  yearIndex: number,
+  currentYear: number
+) => {
+  const state = { day: 1, month: 0, year: currentYear };
+  const map = new Map<number, string>();
+
+  if (dayIndex !== -1) map.set(dayIndex, 'd');
+  if (monthIndex !== -1) map.set(monthIndex, 'm');
+  if (yearIndex !== -1) map.set(yearIndex, 'y');
+
+  for (let i = 0; i <= 2 && i < parts.length; i++) {
+    const type = map.get(i);
+    const value = Number.parseInt(parts[i], 10);
+    assignDateComponent(type, value, state);
+  }
+
+  // Handle 2-digit years (assume 20xx)
+  if (state.year < 100) {
+    state.year += 2000;
+  }
+
+  return state;
+};
+
+/**
+ * Validates date components and returns null if invalid
+ */
+const validateDateComponents = (day: number, month: number, year: number): boolean => {
+  if (isNaN(day) || isNaN(month) || isNaN(year)) return false;
+  if (month < 0 || month > 11) return false;
+  return true;
+};
+
+/**
+ * Validates that the created date hasn't rolled over to different values
+ */
+const isValidDateObject = (date: Date, year: number, month: number, day: number): boolean => {
+  return date.getFullYear() === year && date.getMonth() === month && date.getDate() === day;
+};
+
+/**
  * Autocompletes a partial date string into a full Date object.
  * Supports:
  * - Day only (e.g., "15" -> 15th of current month/year)
@@ -12,123 +119,42 @@
  * @param format The expected date format (e.g., "dd/mm/yyyy"), defaults to "dd/mm/yyyy"
  * @returns A Date object if valid, or null if invalid
  */
-export const autocompleteDate = (input: string, format: string = "dd/mm/yyyy"): Date | null => {
+export const autocompleteDate = (input: string, format = "dd/mm/yyyy") => {
   if (!input || !input.trim()) return null;
 
   const cleanInput = input.trim();
-  // Split by common separators
   const parts = cleanInput.split(/[\/\.\-]/);
-
   const now = new Date();
   const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth(); // 0-indexed
+  const currentMonth = now.getMonth();
+
+  const { dayIndex, monthIndex, yearIndex } = parseFormatIndices(format);
 
   let day: number;
   let month: number;
   let year: number;
-  
-  // Determine order from format
-  // We look for 'd', 'm', 'y' positions
-  const formatLower = format.toLowerCase();
-  const formatParts = formatLower.split(/[\/\.\-]/);
-  
-  const dayIndex = formatParts.findIndex(p => p.includes('d'));
-  const monthIndex = formatParts.findIndex(p => p.includes('m'));
-  const yearIndex = formatParts.findIndex(p => p.includes('y'));
 
   if (parts.length === 1) {
-    // Day only - always treat single number as day
-    const val = parseInt(parts[0], 10);
-    day = val;
-    month = currentMonth;
-    year = currentYear;
+    ({ day, month, year } = handleSinglePart(parts, currentYear, currentMonth));
   } else if (parts.length === 2) {
-    // Two parts: could be Day/Month or Month/Day depending on format
-    // We assume the user is typing the first two parts of the format
-    // e.g. if format is mm/dd/yyyy, user types mm/dd
-    // if format is dd/mm/yyyy, user types dd/mm
-    // if format is yyyy/mm/dd, user types yyyy/mm (less common for autocomplete but logical)
-    
-    // However, the requirement says: "if it comes mm/dd/yyyy from the browser, the first entered should be the month then the day"
-    
-    // Let's map the input parts to the format parts order
-    // But we only have 2 parts.
-    // If format starts with Year, we might be in trouble if we assume Day/Month.
-    // Let's assume standard Day/Month or Month/Day formats.
-    
-    if (dayIndex < monthIndex) {
-        // dd/mm format
-        day = parseInt(parts[0], 10);
-        month = parseInt(parts[1], 10) - 1;
-    } else {
-        // mm/dd format
-        month = parseInt(parts[0], 10) - 1;
-        day = parseInt(parts[1], 10);
-    }
-    year = currentYear;
+    ({ day, month, year } = handleTwoParts(parts, dayIndex, monthIndex, currentYear));
   } else if (parts.length >= 3) {
-    // Full date - map parts to format indices
-    // We need to handle cases where indices might be -1 (though unlikely for valid format)
-    // or if we have more parts than format (ignore extra)
-    
-    // Create a map of index -> type
-    const map = new Map<number, string>();
-    if (dayIndex !== -1) map.set(dayIndex, 'd');
-    if (monthIndex !== -1) map.set(monthIndex, 'm');
-    if (yearIndex !== -1) map.set(yearIndex, 'y');
-    
-    // We need to assign parts based on the sorted indices of the format
-    // e.g. format "mm/dd/yyyy" -> indices: m=0, d=1, y=2
-    // input "08/15/2023" -> parts[0]=08, parts[1]=15, parts[2]=2023
-    
-    // Default values
-    day = 1;
-    month = 0;
-    year = currentYear;
-
-    if (map.has(0)) {
-        const type = map.get(0);
-        const val = parseInt(parts[0], 10);
-        if (type === 'd') day = val;
-        else if (type === 'm') month = val - 1;
-        else if (type === 'y') year = val;
-    }
-    
-    if (map.has(1) && parts.length > 1) {
-        const type = map.get(1);
-        const val = parseInt(parts[1], 10);
-        if (type === 'd') day = val;
-        else if (type === 'm') month = val - 1;
-        else if (type === 'y') year = val;
-    }
-    
-    if (map.has(2) && parts.length > 2) {
-        const type = map.get(2);
-        const val = parseInt(parts[2], 10);
-        if (type === 'd') day = val;
-        else if (type === 'm') month = val - 1;
-        else if (type === 'y') year = val;
-    }
-
-    // Handle 2-digit years (assume 20xx)
-    if (year < 100) {
-      year += 2000;
-    }
+    ({ day, month, year } = handleThreeOrMoreParts(
+      parts,
+      dayIndex,
+      monthIndex,
+      yearIndex,
+      currentYear
+    ));
   } else {
     return null;
   }
 
-  // Validate components
-  if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
-  if (month < 0 || month > 11) return null;
+  if (!validateDateComponents(day, month, year)) return null;
 
   const date = new Date(year, month, day);
 
-  // Validate that the date components match (handles 31/02 -> invalid, but Date object rolls over)
-  // We want strict validation
-  if (date.getFullYear() !== year || date.getMonth() !== month || date.getDate() !== day) {
-    return null;
-  }
+  if (!isValidDateObject(date, year, month, day)) return null;
 
   return date;
 };
