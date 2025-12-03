@@ -315,18 +315,25 @@ export default function useTableSelection(
       setSelectedRecord(windowIdentifier, tab.id, recordId);
     } else if (selectedRecords.length === 0) {
       // Case B: No Selection (Deselect All)
-      // Guard: Check if any child tab is in "Form Mode"
-      const children = graph.getChildren(tab);
-      const hasChildInFormView = children?.some((child) => {
-        if (!getTabFormState) return false;
-        const childState = getTabFormState(windowIdentifier, child.id);
-        return childState?.mode === "form";
-      });
+      // Only clear if the table selection state is actually empty
+      // If rowSelection has keys but selectedRecords is empty, it means the selected record
+      // is not in the current page of data, so we should PRESERVE the global selection.
+      const hasTableSelection = Object.keys(rowSelection).length > 0;
 
-      if (!hasChildInFormView) {
-        clearSelectedRecord(windowIdentifier, tab.id);
-      } else {
-        logger.debug(`[useTableSelection] NOT clearing parent selection for tab ${tab.id} - child is in FormView`);
+      if (!hasTableSelection) {
+        // Guard: Check if any child tab is in "Form Mode"
+        const children = graph.getChildren(tab);
+        const hasChildInFormView = children?.some((child) => {
+          if (!getTabFormState) return false;
+          const childState = getTabFormState(windowIdentifier, child.id);
+          return childState?.mode === "form";
+        });
+
+        if (!hasChildInFormView) {
+          clearSelectedRecord(windowIdentifier, tab.id);
+        } else {
+          logger.debug(`[useTableSelection] NOT clearing parent selection for tab ${tab.id} - child is in FormView`);
+        }
       }
     }
 

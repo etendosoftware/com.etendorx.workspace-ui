@@ -80,7 +80,19 @@ export const reconstructState = async (
     // Create basic tab state
     const basicTabState = createDefaultTabState(tabNode.level);
 
-    tabs[tabNode.tabId] = { ...basicTabState, table: { ...basicTabState.table, isImplicitFilterApplied: true } };
+    // Disable implicit filters for all tabs in the hierarchy to ensure selected records are visible
+    // This prevents the table from clearing the selection if the record is hidden by implicit filters
+    const isImplicitFilterApplied = false;
+
+    tabs[tabNode.tabId] = {
+      ...basicTabState,
+      table: {
+        ...basicTabState.table,
+        isImplicitFilterApplied,
+        // If target tab, filter by the record ID immediately
+        filters: isTargetTab ? [{ id: "id", value: currentRecordId }] : [],
+      },
+    };
 
     // Add to active tabs by level map
     activeTabsByLevel.set(tabNode.level, tabNode.tabId);
