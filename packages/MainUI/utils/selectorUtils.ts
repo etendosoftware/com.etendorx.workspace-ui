@@ -50,12 +50,12 @@ export const useClickOutside = (
       const target = event.target as Node;
 
       // If click is inside the main wrapper, ignore
-      if (wrapperRef.current && wrapperRef.current.contains(target)) return;
+      if (wrapperRef.current?.contains(target)) return;
 
       // If click is inside any of the additional refs (e.g., portal content), ignore
       if (additionalRefs && additionalRefs.length > 0) {
         for (const ref of additionalRefs) {
-          if (ref?.current && ref.current.contains(target)) return;
+          if (ref?.current?.contains(target)) return;
         }
       }
 

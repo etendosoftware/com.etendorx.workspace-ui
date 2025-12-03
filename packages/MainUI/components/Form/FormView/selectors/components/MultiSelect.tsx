@@ -134,6 +134,10 @@ const MultiSelect = memo(function MultiSelectCmp({
         ? selectedValues.filter((v) => v !== id)
         : [...selectedValues, id];
       onSelectionChange(newSelection);
+      // Close dropdown after selection to provide immediate feedback
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+      setSearchTerm("");
     },
     [selectedValues, onSelectionChange]
   );
@@ -142,6 +146,9 @@ const MultiSelect = memo(function MultiSelectCmp({
     (e: React.MouseEvent) => {
       e.stopPropagation();
       onSelectionChange([]);
+      // Close dropdown when clearing selection
+      setIsOpen(false);
+      setSearchTerm("");
     },
     [onSelectionChange]
   );
@@ -251,7 +258,12 @@ const MultiSelect = memo(function MultiSelectCmp({
           />
         </div>
       </div>
-      <DropdownPortal isOpen={isOpen} triggerRef={wrapperRef} portalRef={portalRef} minWidth={256} data-testid="DropdownPortal__cb81f7">
+      <DropdownPortal
+        isOpen={isOpen}
+        triggerRef={wrapperRef}
+        portalRef={portalRef}
+        minWidth={256}
+        data-testid="DropdownPortal__cb81f7">
         <div className="p-2">
           <input
             ref={searchInputRef}
