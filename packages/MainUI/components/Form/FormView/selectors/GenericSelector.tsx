@@ -77,6 +77,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
       return <SelectSelector field={field} isReadOnly={isReadOnly} data-testid="SelectSelector__6e80fa" />;
     case FIELD_REFERENCE_CODES.DECIMAL:
     case FIELD_REFERENCE_CODES.NUMERIC:
+    case FIELD_REFERENCE_CODES.RATE:
       return (
         <NumericSelector field={field} type="decimal" readOnly={isReadOnly} data-testid="NumericSelector__6e80fa" />
       );

@@ -64,6 +64,9 @@ export const FIELD_REFERENCE_CODES = {
 
   // Advanced numeric types
   DECIMAL: "800008",
+
+  // Rate type
+  RATE: "800019",
 } as const;
 
 /**
