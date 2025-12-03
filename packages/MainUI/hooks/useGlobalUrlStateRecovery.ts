@@ -69,6 +69,7 @@ export const useGlobalUrlStateRecovery = () => {
 
     const recoverAllWindows = async () => {
       setIsRecoveryLoading(true);
+      setRecoveryError(null);
       try {
         // Extract all window identifiers from URL (wi_0, wi_1, wi_2, ...)
         const recoveryDataList = parseWindowRecoveryData(searchParams);
