@@ -470,11 +470,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         return { csvContent: response, backendError: null };
       }
 
-      const respObj = response as unknown as Record<string, unknown>;
+      const respObj = response as Record<string, unknown>;
 
       // Try response.data as string
       if (typeof respObj.data === "string") {
-        return { csvContent: respObj.data as string, backendError: null };
+        return { csvContent: respObj.data, backendError: null };
       }
 
       // Extract errors first
@@ -507,7 +507,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
 
       // Get table state
-      const tableState = getTableState(windowIdentifier!, tab.id) || {};
+      const tableState = getTableState(windowIdentifier, tab.id) || {};
       const {
         filters: tableColumnFilters = [],
         visibility: tableColumnVisibility = {},
@@ -518,14 +518,14 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       // Get field names from tab.fields (not display names from table column order)
       // Filter out the 'id' field and any UI-specific columns
       const skipColumns = new Set(["id", "_editLink", "mrt-row-select", "actions"]);
-      const orderedFieldNames = Object.keys(tab.fields!).filter((key) => !skipColumns.has(key));
+      const orderedFieldNames = Object.keys(tab.fields).filter((key) => !skipColumns.has(key));
 
       // Build field metadata
       const fieldsArray = buildFieldsArray(orderedFieldNames, tableColumnVisibility, tab.fields);
 
       // Build request parameters
       const params = buildExportParams(
-        tab.entityName!,
+        tab.entityName,
         tab.id,
         fieldsArray,
         tableColumnSorting,
@@ -540,7 +540,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       console.log("Export viewState (first 200 chars):", String(params.viewState).substring(0, 200));
 
       // Make API request
-      const response = await datasource.get(tab.entityName!, params);
+      const response = await datasource.get(tab.entityName, params);
 
       // Validate response
       if (!response) {
@@ -572,7 +572,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       }
 
       // Download file
-      downloadCSVFile(csvContent, tab.entityName!);
+      downloadCSVFile(csvContent, tab.entityName);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred during export";
       console.error("CSV Export Error:", errorMessage, error);
