@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
-import { setErpSessionCookie, getErpSessionCookie } from "@/app/api/_utils/sessionStore";
+import { setErpSessionCookie } from "@/app/api/_utils/sessionStore";
 import { extractBearerToken } from "@/lib/auth";
 import { joinUrl } from "../../_utils/url";
 import { handleLoginError } from "../../_utils/sessionErrors";
@@ -47,8 +47,8 @@ async function fetchErpLogin(
     headers,
     body: JSON.stringify(body),
   }).catch((fetchError) => {
-    console.error("Fetch error - Etendo Classic backend not accessible:", fetchError);
-    throw new Error("Etendo Classic backend is not accessible");
+    console.error("Fetch error - Etendo API not accessible:", fetchError);
+    throw new Error("Etendo API is not accessible");
   });
 }
 
@@ -83,15 +83,6 @@ function storeCookieForToken(erpResponse: Response, data: any): void {
   }
 }
 
-function getCookieHeader(userToken: string): string | null {
-  try {
-    return getErpSessionCookie(userToken);
-  } catch (error) {
-    console.error("Error getting cookie header:", error);
-    return null;
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
     validateEnvironment();
@@ -115,6 +106,11 @@ export async function POST(request: NextRequest) {
     const data = await erpResponse.json().catch((jsonError) => {
       throw new Error("Invalid response from Etendo Classic backend", { cause: jsonError });
     });
+
+    if (data.status === "error") {
+      const message = data.message || "Login failed";
+      return NextResponse.json({ message }, { status: 401 });
+    }
 
     storeCookieForToken(erpResponse, data);
 
