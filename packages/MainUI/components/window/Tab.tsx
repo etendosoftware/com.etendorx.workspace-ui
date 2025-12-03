@@ -317,9 +317,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     tabFormState?.mode,
   ]);
 
+
+
   return (
     <div
-      className={`bg-(linear-gradient(180deg, #C6CFFF 0%, #FCFCFD 55.65%)) flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${
+      className={`relative bg-(linear-gradient(180deg, #C6CFFF 0%, #FCFCFD 55.65%)) flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${
         collapsed ? "hidden" : "flex-1 h-full"
       }`}>
       <Toolbar
@@ -328,25 +330,34 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         isFormView={shouldShowForm}
         data-testid="Toolbar__5893c8"
       />
-      {shouldShowForm ? (
-        <FormView
-          mode={formMode}
-          tab={tab}
-          window={window}
-          recordId={currentRecordId}
-          setRecordId={handleSetRecordId}
-          data-testid="FormView__5893c8"
-        />
-      ) : (
+      {shouldShowForm && (
+        <div className="flex-1 h-full min-h-0 relative z-10">
+          <FormView
+            mode={formMode}
+            tab={tab}
+            window={window}
+            recordId={currentRecordId}
+            setRecordId={handleSetRecordId}
+            data-testid="FormView__5893c8"
+          />
+        </div>
+      )}
+      <div
+        className={
+          !shouldShowForm
+            ? "flex-1 h-full min-h-0"
+            : "absolute top-0 left-0 w-full h-full invisible opacity-0 z-[-1] pointer-events-none"
+        }>
         <AttachmentProvider data-testid="AttachmentProvider__5893c8">
           <DynamicTable
             isTreeMode={toggle}
             setRecordId={handleSetRecordId}
             onRecordSelection={handleRecordSelection}
+            isVisible={!shouldShowForm}
             data-testid="DynamicTable__5893c8"
           />
         </AttachmentProvider>
-      )}
+      </div>
     </div>
   );
 }

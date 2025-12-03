@@ -490,13 +490,56 @@ interface DynamicTableProps {
   setRecordId: React.Dispatch<React.SetStateAction<string>>;
   onRecordSelection?: (recordId: string) => void;
   isTreeMode?: boolean;
+  isVisible?: boolean;
 }
 
-const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: DynamicTableProps) => {
+const DynamicTable = ({
+  setRecordId,
+  onRecordSelection,
+  isTreeMode = true,
+  isVisible = true,
+}: DynamicTableProps) => {
   const { sx } = useStyle();
   const { t } = useTranslation();
   const { graph } = useSelected();
   const { user, session } = useUserContext();
+
+  const savedScrollTop = useRef<number>(0);
+  const isRestoringScroll = useRef<boolean>(false);
+
+  // Restore scroll position when table becomes visible
+  useEffect(() => {
+    if (isVisible && tableContainerRef.current && savedScrollTop.current > 0) {
+      // Use requestAnimationFrame to ensure layout is complete
+      requestAnimationFrame(() => {
+        if (!tableContainerRef.current) return;
+        
+        // If scroll is already correct, do nothing to avoid triggering scroll events
+        if (Math.abs(tableContainerRef.current.scrollTop - savedScrollTop.current) <= 1) {
+          return;
+        }
+
+        isRestoringScroll.current = true;
+        tableContainerRef.current.scrollTop = savedScrollTop.current;
+        
+        // Reset restoration flag after a short delay to allow scroll events to settle
+        setTimeout(() => {
+          isRestoringScroll.current = false;
+        }, 100);
+      });
+    }
+  }, [isVisible]);
+
+  // Save scroll position when scrolling
+  const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
+    // Don't save scroll position while we are restoring it
+    if (isRestoringScroll.current) return;
+
+    const target = event.target as HTMLDivElement;
+    if (target) {
+      savedScrollTop.current = target.scrollTop;
+    }
+  }, []);
 
   // Confirmation dialog hook for user confirmations
   const { confirmationState, confirmDiscardChanges, confirmSaveWithErrors } = useTableConfirmation();
@@ -513,7 +556,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     registerFetchMore,
   } = useDatasourceContext();
   const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal } = useToolbarContext();
-  const { activeWindow, getSelectedRecord } = useWindowContext();
+  const { activeWindow, getSelectedRecord, getTabFormState } = useWindowContext();
   const { tab, parentTab, parentRecord } = useTabContext();
 
   // Hook for fetching form initialization data when entering edit mode
@@ -1162,7 +1205,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
       // Set focus to the first editable column (skip 'id' and 'actions')
       const firstEditableColumn = baseColumns.find(
-        (col) => col.name !== COLUMN_NAMES.ID && col.name !== COLUMN_NAMES.ACTIONS && col.displayed !== false
+        (col: Column) => col.name !== COLUMN_NAMES.ID && col.name !== COLUMN_NAMES.ACTIONS && col.displayed !== false
       );
 
       if (firstEditableColumn) {
@@ -1171,7 +1214,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
       // Announce editing state change to screen readers
       if (screenReaderAnnouncer) {
-        const columnCount = baseColumns.filter((col) => col.name !== COLUMN_NAMES.ACTIONS).length;
+        const columnCount = baseColumns.filter((col: Column) => col.name !== COLUMN_NAMES.ACTIONS).length;
         screenReaderAnnouncer.announceEditingStateChange(rowId, true, columnCount);
       }
 
@@ -1192,7 +1235,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
             };
 
             // Check which column names match with initialized data
-            const _columnNames = baseColumns.map((col) => col.name);
+            const _columnNames = baseColumns.map((col: Column) => col.name);
             const _initializedFieldNames = Object.keys(initializedData);
 
             // Update the editing row with enriched data
@@ -1240,7 +1283,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
     // Set focus to the first editable column for the new row
     const firstEditableColumn = baseColumns.find(
-      (col) => col.name !== COLUMN_NAMES.ID && col.name !== COLUMN_NAMES.ACTIONS && col.displayed !== false
+      (col: Column) => col.name !== COLUMN_NAMES.ID && col.name !== COLUMN_NAMES.ACTIONS && col.displayed !== false
     );
 
     if (firstEditableColumn) {
@@ -1362,7 +1405,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
       editingRowUtils.removeEditingRow(rowId);
 
-      refetch().catch((error) => {
+      refetch().catch((error: unknown) => {
         logger.warn("[InlineEditing] Failed to refetch after save:", error);
       });
 
@@ -1574,11 +1617,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
               } else {
                 // For existing rows, restore original data if it was modified
                 const hasOptimisticChanges = currentRecords.some(
-                  (record) => String(record.id) === rowId && record !== editingRowData.originalData
+                  (record: EntityData) => String(record.id) === rowId && record !== editingRowData.originalData
                 );
 
                 if (hasOptimisticChanges) {
-                  const updatedRecords = currentRecords.map((record) =>
+                  const updatedRecords = currentRecords.map((record: EntityData) =>
                     String(record.id) === rowId ? editingRowData.originalData : record
                   );
                   setOptimisticRecords(updatedRecords);
@@ -1786,7 +1829,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       return baseColumns;
     }
 
-    const modifiedColumns = baseColumns.map((col) => {
+    const modifiedColumns = baseColumns.map((col: Column) => {
       const column = { ...col };
       const originalCell = column.Cell;
 
@@ -1952,7 +1995,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     }
 
     // Validate that the record exists in current dataset
-    const recordExists = records?.some((record) => String(record.id) === urlSelectedId);
+    const recordExists = records?.some((record: EntityData) => String(record.id) === urlSelectedId);
     if (recordExists) {
       return { [urlSelectedId]: true };
     }
@@ -1972,7 +2015,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
     // Detect URL-driven navigation (direct links, browser back/forward)
     if (currentURLSelection !== previousURLSelection.current && currentURLSelection) {
-      const recordExists = records?.some((record) => String(record.id) === currentURLSelection);
+      const recordExists = records?.some((record: EntityData) => String(record.id) === currentURLSelection);
 
       if (recordExists) {
       } else {
@@ -2137,16 +2180,24 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   const fetchMoreOnBottomReached = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
+      handleScroll(event);
       const containerRefElement = event.target as HTMLDivElement;
 
       if (containerRefElement) {
         const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
-        if (scrollHeight - scrollTop - clientHeight < 10 && !loading && hasMoreRecords) {
+        // Ensure the container has height (is visible) and has scrollable content before fetching more
+        if (
+          clientHeight > 0 &&
+          scrollHeight > clientHeight &&
+          scrollHeight - scrollTop - clientHeight < 10 &&
+          !loading &&
+          hasMoreRecords
+        ) {
           fetchMore();
         }
       }
     },
-    [fetchMore, hasMoreRecords, loading]
+    [fetchMore, hasMoreRecords, loading, handleScroll]
   );
 
   // Generate ARIA attributes for the table container
@@ -2398,7 +2449,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       hasScrolledToSelection.current = true;
 
       // Find the index of the selected record in the display records
-      const selectedIndex = displayRecords.findIndex((record) => String(record.id) === urlSelectedId);
+      const selectedIndex = displayRecords.findIndex((record: EntityData) => String(record.id) === urlSelectedId);
 
       if (selectedIndex >= 0 && tableContainerRef.current) {
         try {
@@ -2438,18 +2489,19 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     }
 
     // Check if URL selection is still valid with current data
-    const recordExists = records.some((record) => String(record.id) === urlSelectedId);
+    const recordExists = records.some((record: EntityData) => String(record.id) === urlSelectedId);
     const currentSelection = table.getState().rowSelection;
     const isCurrentlySelected = currentSelection[urlSelectedId];
 
     if (recordExists && !isCurrentlySelected) {
       // Record exists but is not selected - restore URL selection visually
       table.setRowSelection({ [urlSelectedId]: true });
-    } else if (!recordExists && isCurrentlySelected) {
-      // Record no longer exists but is still selected - clear selection
-      table.setRowSelection({});
     }
-  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, graph]);
+    // We intentionally DO NOT clear the selection if the record doesn't exist in the current data.
+    // This allows the selection to persist when filters change or pagination occurs,
+    // ensuring that if the record reappears (or if we are just viewing other data),
+    // the logical selection remains intact.
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, graph, getTabFormState]);
 
   // Handle browser navigation and direct link access
   // NOTE: Disabled for tabs with children - their selection is handled atomically
@@ -2474,7 +2526,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     }
 
     const currentSelection = table.getState().rowSelection;
-    const recordExists = records.some((record) => String(record.id) === urlSelectedId);
+    const recordExists = records.some((record: EntityData) => String(record.id) === urlSelectedId);
 
     if (recordExists) {
       const isCurrentlySelected = currentSelection[urlSelectedId];
@@ -2508,7 +2560,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     }
 
     // Check if record exists and restore visual selection if needed
-    const recordExists = records.some((record) => String(record.id) === urlSelectedId);
+    const recordExists = records.some((record: EntityData) => String(record.id) === urlSelectedId);
     const currentSelection = table.getState().rowSelection;
     const isCurrentlySelected = currentSelection[urlSelectedId];
 
@@ -2561,7 +2613,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         return currentOptimistic;
       }
 
-      const baseRecordIds = new Set(displayRecords.map((record) => String(record.id)));
+      const baseRecordIds = new Set(displayRecords.map((record: EntityData) => String(record.id)));
       const optimisticRecordIds = new Set(currentOptimistic.map((record) => String(record.id)));
 
       // Check if there are significant differences (excluding new rows)
@@ -2579,7 +2631,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   // Clear editing state for rows that no longer exist in the data
   useEffect(() => {
     const currentEditingRowIds = editingRowUtils.getEditingRowIds();
-    const existingRowIds = new Set(records?.map((record) => String(record.id)) || []);
+    const existingRowIds = new Set(records?.map((record: EntityData) => String(record.id)) || []);
 
     for (const editingRowId of currentEditingRowIds) {
       // Skip new rows (they won't exist in records yet)
