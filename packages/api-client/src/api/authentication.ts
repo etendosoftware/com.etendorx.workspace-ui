@@ -15,7 +15,7 @@ export const login = async (username: string, password: string): Promise<LoginRe
     });
 
     if (!result.ok) {
-      const errorMessage = result.data?.error || `HTTP error! status: ${result.status}`;
+      const errorMessage = result.data?.message || result.data?.error || `HTTP error! status: ${result.status}`;
       throw new Error(errorMessage);
     }
 
