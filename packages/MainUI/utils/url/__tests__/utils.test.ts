@@ -160,6 +160,19 @@ const expectWindowAtIndex = (
   }
 };
 
+/**
+ * Helper to append window, parse result, and verify window at index 0
+ * Combines appendWindowAndParse + expectWindowAtIndex for common test pattern
+ */
+const appendWindowAndExpectAtIndex0 = (
+  currentParams: URLSearchParams,
+  windowData: { windowIdentifier: string; tabId: string; recordId: string }
+) => {
+  const params = appendWindowAndParse(currentParams, windowData);
+  expectWindowAtIndex(params, 0, windowData);
+  return params;
+};
+
 describe("URL Utility Functions", () => {
   describe("buildWindowsUrlParams", () => {
     it("should build params for single window with no tabs", () => {
@@ -716,13 +729,7 @@ describe("appendWindowToUrl", () => {
     it("should use index 0 for first window", () => {
       const currentParams = new URLSearchParams();
 
-      const params = appendWindowAndParse(currentParams, {
-        windowIdentifier: "143_1000",
-        tabId: "BPartnerTab",
-        recordId: "1000001",
-      });
-
-      expectWindowAtIndex(params, 0, {
+      appendWindowAndExpectAtIndex0(currentParams, {
         windowIdentifier: "143_1000",
         tabId: "BPartnerTab",
         recordId: "1000001",
@@ -732,7 +739,7 @@ describe("appendWindowToUrl", () => {
     it("should include all three parameters (window, tab, record)", () => {
       const currentParams = new URLSearchParams();
 
-      const params = appendWindowAndParse(currentParams, {
+      const params = appendWindowAndExpectAtIndex0(currentParams, {
         windowIdentifier: "144_2000",
         tabId: "LocationTab",
         recordId: "2000015",
