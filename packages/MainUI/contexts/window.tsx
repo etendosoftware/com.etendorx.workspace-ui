@@ -647,12 +647,17 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
    */
   useEffect(() => {
     if (!isRecoveryLoading && recoveredWindows.length > 0) {
-      const windowsMap = recoveredWindows.reduce((acc, win) => {
-        acc[win.windowIdentifier] = win;
-        return acc;
-      }, {} as WindowContextState);
-
-      setState(windowsMap);
+      setState((prevState) => {
+        const windowsMap = recoveredWindows.reduce((acc, win) => {
+          if (prevState[win.windowIdentifier]) {
+            acc[win.windowIdentifier] = { ...prevState[win.windowIdentifier], isActive: false };
+          } else {
+            acc[win.windowIdentifier] = win;
+          }
+          return acc;
+        }, {} as WindowContextState);
+        return windowsMap;
+      });
     }
   }, [isRecoveryLoading, recoveredWindows]);
 
