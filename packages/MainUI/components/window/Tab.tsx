@@ -427,71 +427,101 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, [tab, windowIdentifier]);
 
   /**
-   * Extracts CSV content from various response structures
+   * Extracts error message from nested response structure
    */
-  const extractCSVContent = useCallback((response: unknown): { csvContent: string; backendError: string | null } => {
-    let csvContent = "";
-    let backendError: string | null = null;
-
-    // Try direct string response
-    if (typeof response === "string") {
-      return { csvContent: response, backendError };
-    }
-
-    // Try response.data as string
-    const respObj = response as unknown as Record<string, unknown>;
-    if (typeof respObj.data === "string") {
-      return { csvContent: respObj.data as string, backendError };
-    }
-
-    // Handle object response
-    if (response && typeof response === "object") {
-      // Check for error in response.data.response.error (Classic error structure)
+  const extractErrorFromResponse = useCallback(
+    (respObj: Record<string, unknown>): string | null => {
+      // Check nested path: response.data.response.error
       if (respObj.data && typeof respObj.data === "object") {
         const dataObj = respObj.data as unknown as Record<string, unknown>;
-
         if (dataObj.response && typeof dataObj.response === "object") {
           const respData = dataObj.response as unknown as Record<string, unknown>;
           if (respData.error && typeof respData.error === "object") {
             const errorObj = respData.error as unknown as Record<string, unknown>;
-            backendError = String(errorObj.message || "Unknown backend error");
+            return String(errorObj.message || "Unknown backend error");
           }
         }
+      }
 
-        // Extract CSV from data object
-        if (typeof dataObj.text === "string") {
-          csvContent = dataObj.text;
-        } else if (typeof dataObj.data === "string") {
-          csvContent = dataObj.data;
-        } else if (typeof dataObj.csv === "string") {
-          csvContent = dataObj.csv;
+      // Check top-level path: response.error
+      if (respObj.response && typeof respObj.response === "object") {
+        const respData = respObj.response as unknown as Record<string, unknown>;
+        if (respData.error && typeof respData.error === "object") {
+          const errorObj = respData.error as unknown as Record<string, unknown>;
+          return String(errorObj.message || "Unknown backend error");
         }
+      }
 
+      return null;
+    },
+    []
+  );
+
+  /**
+   * Attempts to extract CSV content from data object
+   */
+  const tryExtractCSVFromDataObject = useCallback(
+    (dataObj: Record<string, unknown>): string => {
+      if (typeof dataObj.text === "string") return dataObj.text;
+      if (typeof dataObj.data === "string") return dataObj.data;
+      if (typeof dataObj.csv === "string") return dataObj.csv;
+      return "";
+    },
+    []
+  );
+
+  /**
+   * Attempts to extract CSV content from top-level object
+   */
+  const tryExtractCSVFromTopLevel = useCallback(
+    (respObj: Record<string, unknown>): string => {
+      if (typeof respObj.text === "string") return respObj.text;
+      if (typeof respObj.csv === "string") return respObj.csv;
+      return "";
+    },
+    []
+  );
+
+  /**
+   * Extracts CSV content from various response structures
+   */
+  const extractCSVContent = useCallback(
+    (response: unknown): { csvContent: string; backendError: string | null } => {
+      // Try direct string response
+      if (typeof response === "string") {
+        return { csvContent: response, backendError: null };
+      }
+
+      const respObj = response as unknown as Record<string, unknown>;
+
+      // Try response.data as string
+      if (typeof respObj.data === "string") {
+        return { csvContent: respObj.data as string, backendError: null };
+      }
+
+      // Extract errors first
+      const backendError = extractErrorFromResponse(respObj);
+
+      // Try nested data object
+      if (respObj.data && typeof respObj.data === "object") {
+        const dataObj = respObj.data as unknown as Record<string, unknown>;
+        const csvContent = tryExtractCSVFromDataObject(dataObj);
         if (csvContent) {
           return { csvContent, backendError };
         }
       }
 
       // Try top-level properties
-      if (typeof respObj.text === "string") {
-        return { csvContent: respObj.text, backendError };
-      }
-      if (typeof respObj.csv === "string") {
-        return { csvContent: respObj.csv, backendError };
+      const csvContent = tryExtractCSVFromTopLevel(respObj);
+      if (csvContent) {
+        return { csvContent, backendError };
       }
 
-      // Check for error at top-level
-      if (!backendError && respObj.response && typeof respObj.response === "object") {
-        const respData = respObj.response as unknown as Record<string, unknown>;
-        if (respData.error && typeof respData.error === "object") {
-          const errorObj = respData.error as unknown as Record<string, unknown>;
-          backendError = String(errorObj.message || "Unknown backend error");
-        }
-      }
-    }
+      return { csvContent: "", backendError };
+    },
+    [extractErrorFromResponse, tryExtractCSVFromDataObject, tryExtractCSVFromTopLevel]
+  );
 
-    return { csvContent, backendError };
-  }, []);
 
   const handleExportCSV = useCallback(async () => {
     try {
