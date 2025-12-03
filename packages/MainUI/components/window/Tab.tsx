@@ -504,6 +504,10 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     try {
       validateExportData();
 
+      if (!windowIdentifier) {
+        throw new Error("Window context not found");
+      }
+
       const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
 
       // Get table state
