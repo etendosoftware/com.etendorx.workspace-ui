@@ -179,6 +179,7 @@ export const useGlobalUrlStateRecovery = () => {
    */
   const triggerRecovery = useCallback(() => {
     hasRun.current = false;
+    setIsRecoveryLoading(true);
   }, []);
 
   return { recoveredWindows, isRecoveryLoading, recoveryError, triggerRecovery };
