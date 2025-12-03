@@ -20,10 +20,17 @@ import { useFormContext } from "react-hook-form";
 import { DateInput } from "./components/DateInput";
 
 export const DateSelector = ({ field, isReadOnly }: { field: Field; isReadOnly?: boolean }) => {
-  const { register } = useFormContext();
+  const { register, watch } = useFormContext();
+  const value = watch(field.hqlName);
 
   return (
-    <DateInput field={field} isReadOnly={isReadOnly} {...register(field.hqlName)} data-testid="DateInput__ad19cd" />
+    <DateInput 
+      field={field} 
+      isReadOnly={isReadOnly} 
+      currentValue={value}
+      {...register(field.hqlName)} 
+      data-testid="DateInput__ad19cd" 
+    />
   );
 };
 
