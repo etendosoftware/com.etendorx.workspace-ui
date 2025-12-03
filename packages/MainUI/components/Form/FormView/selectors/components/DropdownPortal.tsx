@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 
 interface DropdownPortalProps {
@@ -23,6 +23,7 @@ interface DropdownPortalProps {
   triggerRef: React.RefObject<HTMLElement>;
   children: ReactNode;
   minWidth?: number;
+  portalRef?: RefObject<HTMLDivElement>;
 }
 
 /**
@@ -30,7 +31,7 @@ interface DropdownPortalProps {
  * Renders dropdown content in a portal at the body level with automatic positioning
  * Handles scroll and resize events to keep dropdown positioned correctly
  */
-export const DropdownPortal = ({ isOpen, triggerRef, children, minWidth = 256 }: DropdownPortalProps) => {
+export const DropdownPortal = ({ isOpen, triggerRef, children, minWidth = 256, portalRef }: DropdownPortalProps) => {
   const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export const DropdownPortal = ({ isOpen, triggerRef, children, minWidth = 256 }:
 
   const portalContent = (
     <div
+      ref={portalRef}
       className="absolute z-[9999] mt-1 bg-white rounded shadow-lg overflow-hidden border border-transparent-neutral-10"
       style={{
         top: `${position.top}px`,

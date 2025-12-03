@@ -110,6 +110,7 @@ const MultiSelect = memo(function MultiSelectCmp({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const portalRef = useRef<HTMLDivElement>(null);
 
   // Filtrado
   const filteredOptions = useMemo(() => {
@@ -166,7 +167,8 @@ const MultiSelect = memo(function MultiSelectCmp({
     }
   );
 
-  useClickOutside(wrapperRef, () => setIsOpen(false));
+  const clickOutsideRefs = useMemo(() => [portalRef], [portalRef]);
+  useClickOutside(wrapperRef, () => setIsOpen(false), clickOutsideRefs);
 
   const handleSetSearchTerm = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -249,7 +251,7 @@ const MultiSelect = memo(function MultiSelectCmp({
           />
         </div>
       </div>
-      <DropdownPortal isOpen={isOpen} triggerRef={wrapperRef} minWidth={256} data-testid="DropdownPortal__cb81f7">
+      <DropdownPortal isOpen={isOpen} triggerRef={wrapperRef} portalRef={portalRef} minWidth={256} data-testid="DropdownPortal__cb81f7">
         <div className="p-2">
           <input
             ref={searchInputRef}
