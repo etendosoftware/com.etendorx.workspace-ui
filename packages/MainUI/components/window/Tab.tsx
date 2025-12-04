@@ -457,7 +457,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       const fieldNameVisibility: Record<string, boolean> = {};
 
       for (const fieldName of orderedFieldNames) {
-        const field = tabFields[fieldName] as unknown as Record<string, unknown> | undefined;
+        const field = tabFields[fieldName] as Record<string, unknown> | undefined;
 
         // Check if field has showInGridView property (initial visibility from metadata)
         let isVisible = field?.showInGridView !== false; // Default to visible
