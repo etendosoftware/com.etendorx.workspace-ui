@@ -16,7 +16,7 @@
  */
 
 import { useTabContext } from "@/contexts/tab";
-import type { EntityData, FormInitializationResponse } from "@workspaceui/api-client/src/api/types";
+import type { EntityData, EntityValue, FormInitializationResponse } from "@workspaceui/api-client/src/api/types";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import { useMemo } from "react";
 import { FieldName } from "./types";
@@ -38,11 +38,15 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
       acc[newKey] = value;
     }
 
-    for (const [key, { value, identifier }] of Object.entries(formInitialization.columnValues)) {
+    for (const [key, { value, identifier, entries }] of Object.entries(formInitialization.columnValues)) {
       const field = fieldsByColumnName?.[key];
       const newKey = field?.hqlName ?? key;
 
       acc[newKey] = value;
+
+      if (entries) {
+        acc[`${newKey}$_entries`] = entries.map((e) => ({ id: e.id, label: e._identifier })) as unknown as EntityValue;
+      }
 
       if (identifier) {
         acc[`${newKey}$_identifier`] = identifier;
