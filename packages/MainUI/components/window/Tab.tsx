@@ -318,6 +318,39 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   );
 
   /**
+   * Builds implicit filter criteria for child tabs based on parent record selection
+   * Matches parent link by comparing referencedEntity with parentTab.entityName
+   */
+  const buildImplicitFilterCriteria = useCallback(
+    (parentTabArg: typeof tab | null | undefined, parentRecordId: string | undefined): Record<string, unknown>[] => {
+      if (!parentTabArg || !parentRecordId) {
+        return [];
+      }
+
+      // Find the field that links to the parent by matching referencedEntity with parentTab.entityName
+      const parentLinkField = Object.entries(tab.fields || {}).find(([_, field]) => {
+        const fieldData = field as unknown as Record<string, unknown>;
+        return fieldData.referencedEntity === parentTabArg.entityName;
+      });
+
+      if (!parentLinkField) {
+        return [];
+      }
+
+      const fieldName = parentLinkField[0];
+      return [
+        {
+          fieldName,
+          operator: "equals",
+          value: parentRecordId,
+          _constructor: "AdvancedCriteria",
+        },
+      ];
+    },
+    [tab]
+  );
+
+  /**
    * Builds export request parameters matching Classic datasource format
    */
   const buildExportParams = useCallback(
@@ -327,8 +360,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       fieldsArray: Array<Record<string, unknown>>,
       sorting: Array<{ id: string; desc: boolean }>,
       filters: unknown[],
-      isImplicitFilterApplied: boolean,
-      tabFields: Record<string, unknown> | undefined
+      isImplicitFilterApplied: boolean
     ): Record<string, unknown> => {
       const viewState = buildViewState(fieldsArray, sorting);
 
@@ -351,14 +383,14 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         _endRow: 9999,
       };
 
-      // Add all entity fields as @Entity.fieldName@=undefined (Classic format)
-      // Skip UI-specific columns that are not entity fields
-      const skipColumns = new Set(["_editLink", "mrt-row-select", "actions"]);
-      if (tabFields) {
-        for (const fieldName of Object.keys(tabFields)) {
-          if (!skipColumns.has(fieldName)) {
-            params[`@${entityName}.${fieldName}@`] = "undefined";
-          }
+      // Add only visible entity fields as @Entity.fieldName@=undefined (Classic format)
+      // Only include fields that are visible (not hidden by user)
+      for (const field of fieldsArray) {
+        const fieldName = field.name as string;
+        const isVisible = field.visible !== false; // Default to visible if not specified
+
+        if (isVisible) {
+          params[`@${entityName}.${fieldName}@`] = "undefined";
         }
       }
 
@@ -524,8 +556,37 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       const skipColumns = new Set(["id", "_editLink", "mrt-row-select", "actions"]);
       const orderedFieldNames = Object.keys(tab.fields).filter((key) => !skipColumns.has(key));
 
+      // Map field name visibility from display name visibility
+      // tableColumnVisibility uses display names (e.g., "Gross Unit Price") as keys
+      // We need to map to field names (e.g., "grossUnitPrice") for the export
+      const fieldNameVisibility: Record<string, boolean> = {};
+
+      for (const fieldName of orderedFieldNames) {
+        const field = tab.fields[fieldName] as unknown as Record<string, unknown> | undefined;
+
+        // Check if field has showInGridView property (initial visibility from metadata)
+        let isVisible = field?.showInGridView !== false; // Default to visible
+
+        // If field has a label, check tableColumnVisibility for user-set visibility
+        if (field?.label && typeof field.label === "string") {
+          const displayName = field.label as string;
+          // If the display name exists in tableColumnVisibility, use that value (user override)
+          if (displayName in tableColumnVisibility) {
+            isVisible = tableColumnVisibility[displayName] !== false;
+          }
+        }
+
+        fieldNameVisibility[fieldName] = isVisible;
+      }
+
       // Build field metadata
-      const fieldsArray = buildFieldsArray(orderedFieldNames, tableColumnVisibility, tab.fields);
+      const fieldsArray = buildFieldsArray(orderedFieldNames, fieldNameVisibility, tab.fields);
+
+      // Build implicit filter criteria for child tabs
+      const implicitFilterCriteria = buildImplicitFilterCriteria(parentTab, parentSelectedRecordId);
+
+      // Combine implicit filter with table column filters
+      const allFilters = implicitFilterCriteria.length > 0 ? [...implicitFilterCriteria, ...tableColumnFilters] : tableColumnFilters;
 
       // Build request parameters
       const params = buildExportParams(
@@ -533,15 +594,9 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         tab.id,
         fieldsArray,
         tableColumnSorting,
-        tableColumnFilters,
-        stateIsImplicitFilterApplied,
-        tab.fields
+        allFilters,
+        stateIsImplicitFilterApplied
       );
-
-      console.log("Export params keys:", Object.keys(params));
-      console.log("Export exportAs:", params.exportAs);
-      console.log("Export exportToFile:", params.exportToFile);
-      console.log("Export viewState (first 200 chars):", String(params.viewState).substring(0, 200));
 
       // Make API request
       const response = await datasource.get(tab.entityName, params);
@@ -593,6 +648,9 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     downloadCSVFile,
     validateExportData,
     extractCSVContent,
+    parentTab,
+    parentSelectedRecordId,
+    buildImplicitFilterCriteria,
   ]);
 
   useEffect(() => {
