@@ -28,7 +28,7 @@ export default function useFormParent(nameToUse: FieldName = FieldName.HQL_NAME)
     const result = {} as EntityData;
 
     if (tab && parentTab && parentRecord) {
-      const parentColumns = tab.parentColumns.map((field) => tab.fields[field]);
+      const parentColumns = tab.parentColumns.map((field) => tab.fields[field]).filter(Boolean);
       const parentFields = getFieldsByInputName(parentTab);
 
       for (const field of parentColumns) {
