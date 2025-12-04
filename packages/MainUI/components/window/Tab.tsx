@@ -407,7 +407,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   /**
    * Downloads CSV file to client
    */
-  const downloadCSVFile = useCallback((csvContent: string, entityName: string) => {
+  const downloadCSVFile = useCallback((csvContent: string) => {
     if (!csvContent.trim()) {
       throw new Error("No data to export");
     }
@@ -417,7 +417,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     const url = URL.createObjectURL(blob);
 
     link.setAttribute("href", url);
-    link.setAttribute("download", `${entityName}-export-${new Date().toISOString().split("T")[0]}-${Date.now()}.csv`);
+    link.setAttribute("download", "ExportedData.csv");
     link.style.visibility = "hidden";
 
     document.body.appendChild(link);
@@ -648,7 +648,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       }
 
       // Download file
-      downloadCSVFile(csvContent, tab.entityName);
+      downloadCSVFile(csvContent);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred during export";
       console.error("CSV Export Error:", errorMessage, error);
