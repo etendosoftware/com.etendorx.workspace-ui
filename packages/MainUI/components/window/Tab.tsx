@@ -446,6 +446,40 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, [tab, windowIdentifier]);
 
   /**
+   * Builds field name visibility map by combining metadata defaults with user overrides
+   */
+  const buildFieldNameVisibility = useCallback(
+    (
+      orderedFieldNames: string[],
+      tableColumnVisibility: Record<string, boolean>,
+      tabFields: Record<string, unknown>
+    ): Record<string, boolean> => {
+      const fieldNameVisibility: Record<string, boolean> = {};
+
+      for (const fieldName of orderedFieldNames) {
+        const field = tabFields[fieldName] as unknown as Record<string, unknown> | undefined;
+
+        // Check if field has showInGridView property (initial visibility from metadata)
+        let isVisible = field?.showInGridView !== false; // Default to visible
+
+        // If field has a label, check tableColumnVisibility for user-set visibility
+        if (field?.label && typeof field.label === "string") {
+          const displayName = field.label;
+          // If the display name exists in tableColumnVisibility, use that value (user override)
+          if (displayName in tableColumnVisibility) {
+            isVisible = tableColumnVisibility[displayName] !== false;
+          }
+        }
+
+        fieldNameVisibility[fieldName] = isVisible;
+      }
+
+      return fieldNameVisibility;
+    },
+    []
+  );
+
+  /**
    * Extracts error message from nested response structure
    */
   const extractErrorFromResponse = useCallback((respObj: Record<string, unknown>): string | null => {
@@ -559,25 +593,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       // Map field name visibility from display name visibility
       // tableColumnVisibility uses display names (e.g., "Gross Unit Price") as keys
       // We need to map to field names (e.g., "grossUnitPrice") for the export
-      const fieldNameVisibility: Record<string, boolean> = {};
-
-      for (const fieldName of orderedFieldNames) {
-        const field = tab.fields[fieldName] as unknown as Record<string, unknown> | undefined;
-
-        // Check if field has showInGridView property (initial visibility from metadata)
-        let isVisible = field?.showInGridView !== false; // Default to visible
-
-        // If field has a label, check tableColumnVisibility for user-set visibility
-        if (field?.label && typeof field.label === "string") {
-          const displayName = field.label as string;
-          // If the display name exists in tableColumnVisibility, use that value (user override)
-          if (displayName in tableColumnVisibility) {
-            isVisible = tableColumnVisibility[displayName] !== false;
-          }
-        }
-
-        fieldNameVisibility[fieldName] = isVisible;
-      }
+      const fieldNameVisibility = buildFieldNameVisibility(orderedFieldNames, tableColumnVisibility, tab.fields);
 
       // Build field metadata
       const fieldsArray = buildFieldsArray(orderedFieldNames, fieldNameVisibility, tab.fields);
@@ -586,7 +602,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       const implicitFilterCriteria = buildImplicitFilterCriteria(parentTab, parentSelectedRecordId);
 
       // Combine implicit filter with table column filters
-      const allFilters = implicitFilterCriteria.length > 0 ? [...implicitFilterCriteria, ...tableColumnFilters] : tableColumnFilters;
+      const allFilters =
+        implicitFilterCriteria.length > 0 ? [...implicitFilterCriteria, ...tableColumnFilters] : tableColumnFilters;
 
       // Build request parameters
       const params = buildExportParams(
@@ -644,6 +661,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     windowIdentifier,
     getTableState,
     buildFieldsArray,
+    buildFieldNameVisibility,
     buildExportParams,
     downloadCSVFile,
     validateExportData,
