@@ -547,6 +547,9 @@ describe("calculateHierarchy", () => {
       const rootTab = createMockTab("tab1", 0, "ParentEntity");
       const childTab = createMockTab("tab2", 1, "ChildEntity");
 
+      // Set parentTabId explicitly
+      childTab.parentTabId = "tab1";
+
       childTab.fields = {
         normalField: {
           id: "normalField",

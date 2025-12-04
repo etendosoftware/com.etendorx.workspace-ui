@@ -137,3 +137,49 @@ export const removeWindowParameters = (searchParams: URLSearchParams, windowInde
 
   return cleanParams;
 };
+
+/**
+ * Appends a new window to existing URL parameters.
+ *
+ * Reads current URL parameters and adds a new window at the next available index.
+ * The WindowProvider's useEffect will later reconstruct the complete URL from state,
+ * ensuring all windows are properly synchronized.
+ *
+ * @param currentParams - Current URLSearchParams from the browser
+ * @param newWindow - Object containing the new window's information
+ * @returns Complete URL parameter string with new window appended
+ *
+ * @example
+ * const currentParams = new URLSearchParams("wi_0=143_1000&ti_0=BPartnerTab&ri_0=1000001");
+ * const newWindow = {
+ *   windowIdentifier: "144_2000",
+ *   tabId: "LocationTab",
+ *   recordId: "2000015"
+ * };
+ * const params = appendWindowToUrl(currentParams, newWindow);
+ * // Returns: "wi_0=143_1000&ti_0=BPartnerTab&ri_0=1000001&wi_1=144_2000&ti_1=LocationTab&ri_1=2000015"
+ */
+export const appendWindowToUrl = (
+  currentParams: URLSearchParams,
+  newWindow: {
+    windowIdentifier: string;
+    tabId: string;
+    recordId: string;
+  }
+): string => {
+  // Clone current parameters to avoid mutation
+  const params = new URLSearchParams(currentParams);
+
+  // Find the next available index by counting existing window identifiers
+  let nextIndex = 0;
+  while (params.has(`${URL_PREFIXS.WINDOW_IDENTIFIER}_${nextIndex}`)) {
+    nextIndex++;
+  }
+
+  // Add new window at the next index
+  params.set(`${URL_PREFIXS.WINDOW_IDENTIFIER}_${nextIndex}`, newWindow.windowIdentifier);
+  params.set(`${URL_PREFIXS.TAB_IDENTIFIER}_${nextIndex}`, newWindow.tabId);
+  params.set(`${URL_PREFIXS.RECORD_IDENTIFIER}_${nextIndex}`, newWindow.recordId);
+
+  return params.toString();
+};

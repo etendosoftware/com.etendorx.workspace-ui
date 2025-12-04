@@ -39,7 +39,7 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { t } = useTranslation();
   const pathname = usePathname();
   const { window, windowId, windowIdentifier } = useMetadataContext();
-  const { getTabFormState, clearTabFormState, setAllWindowsInactive } = useWindowContext();
+  const { activeWindow, getTabFormState, clearTabFormState, setAllWindowsInactive } = useWindowContext();
   const { graph } = useSelected();
 
   const allTabsFormatted = useMemo(() => allTabs.flat(), [allTabs]);
@@ -61,19 +61,9 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     return tab;
   }, [allTabsFormatted, windowId, window]);
 
-  const tabFormState = useMemo(() => {
-    if (!currentTab) return undefined;
-
-    return (
-      getTabFormState(currentTab.window, currentTab.id) ||
-      getTabFormState(windowId || "", currentTab.id) ||
-      getTabFormState(currentTab.window$_identifier || currentTab.window, currentTab.id)
-    );
-  }, [currentTab, windowId, getTabFormState]);
-
   const currentRecordId = useMemo(() => {
-    return tabFormState?.recordId || (graph?.getSelected?.(currentTab)?.[0] as string) || "";
-  }, [tabFormState, graph, currentTab]);
+    return activeWindow?.tabs[currentTab?.id || ""]?.selectedRecord;
+  }, [activeWindow, currentTab?.id]);
 
   const { record } = useCurrentRecord({
     tab: currentTab,

@@ -144,7 +144,7 @@ export const LinkedItems = memo(
 
     const categoriesContent = useMemo(
       () => (
-        <div>
+        <div className="w-full">
           {categories.map((category) => (
             <button
               type="button"
@@ -156,13 +156,10 @@ export const LinkedItems = memo(
                 }
               }}
               tabIndex={0}
-              className={`p-4 cursor-pointer border-b border-gray-200 ${
+              className={`w-full p-4 cursor-pointer border-b border-gray-200 ${
                 selectedCategory?.adTabId === category.adTabId ? "bg-gray-100" : "bg-transparent"
               } hover:bg-gray-50`}>
-              <p className="text-sm font-medium">{category.fullElementName}</p>
-              <p className="text-xs text-gray-500">
-                ({category.total} {Number.parseInt(category.total) === 1 ? "item" : "items"})
-              </p>
+              <p className="text-left text-sm font-medium">{category.fullElementName}</p>
             </button>
           ))}
         </div>

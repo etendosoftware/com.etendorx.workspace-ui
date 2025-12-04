@@ -117,6 +117,8 @@ export interface MessageInputProps {
   disabled?: boolean;
   contextItems?: ContextItem[];
   onRemoveContext?: (id: string) => void;
+  message?: string;
+  onMessageChange?: (message: string) => void;
   translations?: {
     placeholder: string;
     selectedRegisters?: string;

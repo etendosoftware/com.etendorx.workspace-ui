@@ -165,15 +165,20 @@ export function useDatasource({
       allCriteria = [...allCriteria, ...(columnFilterCriteria as any[])];
     }
 
+    const filterById = columnFilterCriteria.find((criteria) => criteria.fieldName === "id");
+    const hasIdFilter = Boolean(filterById);
+    const idParams = hasIdFilter ? { targetRecordId: filterById?.value, directNavigation: true } : {};
+
     const finalParams = {
       ...params,
+      ...idParams,
       criteria: allCriteria,
       isImplicitFilterApplied,
       noActiveFilter: true,
     };
 
     return finalParams;
-  }, [params, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied]);
+  }, [params, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, activeColumnFilters]);
 
   const fetchData = useCallback(
     async (targetPage: number = page) => {

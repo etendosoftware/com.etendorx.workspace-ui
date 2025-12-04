@@ -33,10 +33,12 @@ interface ExtendedTabsProps extends TabsProps {
   isTopGroup?: boolean;
 }
 
-export default function TabsComponent({ tabs, isTopGroup = false }: ExtendedTabsProps) {
-  const [current, setCurrent] = useState(tabs[0]);
+export default function TabsComponent({ tabs, isTopGroup = false, initialActiveTab }: ExtendedTabsProps) {
+  const initialTab = initialActiveTab && tabs.some((t) => t.id === initialActiveTab.id) ? initialActiveTab : tabs[0];
+
+  const [current, setCurrent] = useState(initialTab);
   // Visual active tab id updates immediately for instant feedback
-  const [activeTabId, setActiveTabId] = useState(tabs[0].id);
+  const [activeTabId, setActiveTabId] = useState(initialTab.id);
   const [expand, setExpanded] = useState(false);
   const [customHeight, setCustomHeight] = useState(50);
   const [isPending, startTransition] = useTransition();

@@ -109,8 +109,18 @@ interface WindowContextI {
   setNavigationInitialized: (windowIdentifier: string, initialized: boolean) => void;
 
   // Recovery state management
+  /** Loading indicator for URL-driven window recovery (true during recovery process) */
   isRecoveryLoading: boolean;
+  /** Error message if recovery fails, null otherwise */
   recoveryError: string | null;
+  /**
+   * Triggers the URL recovery system to re-execute.
+   * Resets the internal guard flag, allowing recovery to run again when URL changes.
+   *
+   * Primary use case: Opening new windows from linked items.
+   * Call this before updating the URL with new window parameters.
+   */
+  triggerRecovery: () => void;
 
   // Window management
   cleanupWindow: (windowIdentifier: string) => void;
@@ -124,7 +134,7 @@ const WindowContext = createContext<WindowContextI | undefined>(undefined);
 export default function WindowProvider({ children }: React.PropsWithChildren) {
   const [state, setState] = useState<WindowContextState>({});
 
-  const { recoveredWindows, isRecoveryLoading, recoveryError } = useGlobalUrlStateRecovery();
+  const { recoveredWindows, isRecoveryLoading, recoveryError, triggerRecovery } = useGlobalUrlStateRecovery();
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -637,12 +647,17 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
    */
   useEffect(() => {
     if (!isRecoveryLoading && recoveredWindows.length > 0) {
-      const windowsMap = recoveredWindows.reduce((acc, win) => {
-        acc[win.windowIdentifier] = win;
-        return acc;
-      }, {} as WindowContextState);
-
-      setState(windowsMap);
+      setState((prevState) => {
+        const windowsMap = recoveredWindows.reduce((acc, win) => {
+          if (prevState[win.windowIdentifier]) {
+            acc[win.windowIdentifier] = { ...prevState[win.windowIdentifier], isActive: false };
+          } else {
+            acc[win.windowIdentifier] = win;
+          }
+          return acc;
+        }, {} as WindowContextState);
+        return windowsMap;
+      });
     }
   }, [isRecoveryLoading, recoveredWindows]);
 
@@ -734,6 +749,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
       isRecoveryLoading,
       recoveryError,
+      triggerRecovery,
 
       getNavigationInitialized,
       setNavigationInitialized,
@@ -777,6 +793,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
       isRecoveryLoading,
       recoveryError,
+      triggerRecovery,
 
       getNavigationInitialized,
       setNavigationInitialized,

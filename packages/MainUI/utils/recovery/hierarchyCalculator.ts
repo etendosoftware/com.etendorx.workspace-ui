@@ -36,7 +36,7 @@ export interface CalculatedHierarchy {
  * 4. Otherwise, walks upward through parent tabs:
  *    - Finds parent key field in child tab (field with isParentRecordProperty: true)
  *    - Gets the FIELD KEY (not field value) to use for data access later
- *    - Finds parent tab using referencedTabId
+ *    - Finds parent tab using parentTabId
  *    - Creates parent node with the field key stored
  * 5. Links all nodes in parent-child relationships
  *
@@ -84,9 +84,9 @@ export const calculateHierarchy = async (
 
   while (currentLevel >= 0) {
     // Find the parent key field in the child tab
-    // CRITICAL: Use Object.entries to preserve the field KEY (not just the field value)
     const fieldEntries = Object.entries(childTab.fields || {});
     const parentKeyFieldEntry = fieldEntries.find(([_, field]) => field.isParentRecordProperty);
+    const parentTabId = childTab.parentTabId;
 
     if (!parentKeyFieldEntry) {
       const availableFields = Object.keys(childTab.fields || {}).join(", ");
@@ -95,14 +95,14 @@ export const calculateHierarchy = async (
       );
     }
 
-    const [parentKeyFieldName, parentKeyField] = parentKeyFieldEntry;
+    const [parentKeyFieldName] = parentKeyFieldEntry;
 
-    // Find parent tab using referencedTabId
-    const parentTab = windowMetadata.tabs.find((tab) => tab.id === parentKeyField.referencedTabId);
+    // Find parent tab using parentTabId
+    const parentTab = windowMetadata.tabs.find((tab) => tab.id === parentTabId);
 
     if (!parentTab) {
       throw new Error(
-        `Parent tab ${parentKeyField.referencedTabId} not found in window metadata for field "${parentKeyFieldName}" in tab ${childTab.name}`
+        `Parent tab ${parentTabId} not found in window metadata for field "${parentKeyFieldName}" in tab ${childTab.name}`
       );
     }
 
