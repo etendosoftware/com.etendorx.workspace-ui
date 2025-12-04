@@ -34,6 +34,7 @@ import { useTranslation } from "../useTranslation";
 import { transformColumnWithCustomJs } from "@/utils/customJsColumnTransformer";
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { dateTimeSortingFn, dateSortingFn } from "@/utils/table/sortingFunctions";
+import { getTextFilterValue, getAvailableOptions, reconstructFilterState } from "@/utils/table/filters/utils";
 
 interface UseColumnsOptions {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
@@ -49,18 +50,6 @@ const BOOLEAN_COLUMNS = ["isOfficialHoliday", "isActive", "isPaid", "stocked", "
 
 // Audit fields that need special date formatting (with time)
 const AUDIT_DATE_COLUMNS_WITH_TIME = ["creationDate", "updated"];
-
-/**
- * Gets the current filter value for a column from tableColumnFilters
- * Searches by both column.id and column.columnName for consistency
- */
-const getCurrentFilterValue = (
-  column: Column,
-  tableColumnFilters?: Array<{ id: string; value: unknown }>
-): string | undefined => {
-  const currentFilter = tableColumnFilters?.find((f) => f.id === column.id || f.id === column.columnName);
-  return currentFilter ? String(currentFilter.value) : undefined;
-};
 
 /**
  * Helper to check if column should use date formatting
@@ -241,26 +230,43 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         columnConfig = {
           ...columnConfig,
           enableColumnFilter: true,
-          Filter: () => (
-            <ColumnFilter
-              column={column}
-              filterState={filterState}
-              onFilterChange={(selectedOptions: FilterOption[]) => onColumnFilter(column.id, selectedOptions)}
-              onLoadOptions={(searchQuery?: string) => onLoadFilterOptions(column.id, searchQuery)}
-              onLoadMoreOptions={
-                onLoadMoreFilterOptions
-                  ? (searchQuery?: string) => onLoadMoreFilterOptions(column.id, searchQuery)
-                  : undefined
-              }
-              data-testid="ColumnFilter__46c09c"
-            />
-          ),
+          Filter: () => {
+            // Get current persisted filter
+            const currentFilter = tableColumnFilters?.find((f) => f.id === column.id || f.id === column.columnName);
+
+            // Boolean options for boolean columns
+            const booleanOptions: FilterOption[] = [
+              { id: "true", label: t("common.trueText"), value: "true" },
+              { id: "false", label: t("common.falseText"), value: "false" },
+            ];
+
+            // Get available options based on column type
+            const availableOptions = getAvailableOptions(column, isBooleanColumn, filterState, booleanOptions);
+
+            // Reconstruct complete filter state from persisted data
+            const effectiveFilterState = reconstructFilterState(column, currentFilter, availableOptions, filterState);
+
+            return (
+              <ColumnFilter
+                column={column}
+                filterState={effectiveFilterState}
+                onFilterChange={(selectedOptions: FilterOption[]) => onColumnFilter(column.id, selectedOptions)}
+                onLoadOptions={(searchQuery?: string) => onLoadFilterOptions(column.id, searchQuery)}
+                onLoadMoreOptions={
+                  onLoadMoreFilterOptions
+                    ? (searchQuery?: string) => onLoadMoreFilterOptions(column.id, searchQuery)
+                    : undefined
+                }
+                data-testid="ColumnFilter__46c09c"
+              />
+            );
+          },
         };
       }
 
       // Enable DateSelector for date columns
       if (isDateColumn && !supportsDropdownFilter) {
-        const currentFilterValue = getCurrentFilterValue(column, tableColumnFilters);
+        const currentFilterValue = getTextFilterValue(column, tableColumnFilters);
 
         columnConfig = {
           ...columnConfig,
@@ -282,7 +288,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
       // Enable default text filtering for columns without specialized filters
       if (!supportsDropdownFilter && !isDateColumn && onDateTextFilterChange) {
-        const currentFilterValue = getCurrentFilterValue(column, tableColumnFilters);
+        const currentFilterValue = getTextFilterValue(column, tableColumnFilters);
 
         columnConfig = {
           ...columnConfig,

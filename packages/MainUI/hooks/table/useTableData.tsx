@@ -171,11 +171,13 @@ export const useTableData = ({
     async (columnId: string, selectedOptions: FilterOption[]) => {
       setColumnFilter(columnId, selectedOptions);
 
+      // Store complete FilterOption[] to preserve id, label, and value
+      // This allows proper reconstruction of filter state when switching windows
       const mrtFilter =
         selectedOptions.length > 0
           ? {
               id: columnId,
-              value: selectedOptions.map((opt) => opt.value),
+              value: selectedOptions,
             }
           : null;
 

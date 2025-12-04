@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import React from "react";
+import type React from "react";
 import { renderHook, act } from "@testing-library/react";
 import { jest } from "@jest/globals";
 import WindowProvider, { useWindowContext } from "../../contexts/window";

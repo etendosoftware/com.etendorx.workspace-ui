@@ -464,24 +464,35 @@ export class LegacyColumnFilterUtils {
   private static handleArrayFilter(fieldName: string, values: unknown[], column: Column): BaseCriteria[] {
     if (values.length === 0) return [];
 
+    // Extract actual values from FilterOption objects if present
+    // This supports both new format (FilterOption[]) and legacy format (string[])
+    const actualValues = values.map((val) => {
+      // If it's a FilterOption object with a value property, extract it
+      if (typeof val === "object" && val !== null && "value" in val) {
+        return (val as { value: unknown }).value;
+      }
+      // Otherwise use the value as-is (backward compatibility with string[])
+      return val;
+    });
+
     // For TABLEDIR columns, use the $_identifier field and iEquals operator (like Etendo Classic)
     const actualFieldName = ColumnFilterUtils.isTableDirColumn(column) ? `${fieldName}$_identifier` : fieldName;
 
     const operator = ColumnFilterUtils.isTableDirColumn(column) ? "iEquals" : "equals";
 
-    if (values.length === 1) {
+    if (actualValues.length === 1) {
       // Single value - direct criteria (no OR wrapper)
       return [
         {
           fieldName: actualFieldName,
           operator,
-          value: String(values[0]),
+          value: String(actualValues[0]),
         },
       ];
     }
 
     // Multiple values - OR criteria
-    const orCriteria = values.map((value) => ({
+    const orCriteria = actualValues.map((value) => ({
       fieldName: actualFieldName,
       operator,
       value: String(value),
