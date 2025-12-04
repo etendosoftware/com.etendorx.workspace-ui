@@ -21,7 +21,8 @@ import type { RegisterModalProps } from "./types";
 import { useStyle } from "./styles";
 import CloseRecordIcon from "../../assets/icons/close-record.svg";
 import Modal from "../BasicModal";
-import { processMock } from "@workspaceui/storybook/src/stories/Components/RegisterModal/registerMock";
+// import { processMock } from "@workspaceui/storybook/src/stories/Components/RegisterModal/registerMock";
+const processMock: any[] = [];
 import RadioButtonItem from "../RadioButton";
 import CheckIcon from "../../assets/icons/check-circle.svg";
 

@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import type { Menu } from "@workspaceui/api-client/src/api/types";
+
 import { findActive } from "../drawerUtils";
 
 describe("drawerUtils", () => {
@@ -25,12 +25,12 @@ describe("drawerUtils", () => {
     });
 
     it("should return false when windowId is undefined", () => {
-      const items: Menu[] = [{ windowId: "window1", children: [] }];
+      const items: any[] = [{ windowId: "window1", children: [] }];
       expect(findActive(undefined, items)).toBe(false);
     });
 
     it("should return true when windowId matches top-level item", () => {
-      const items: Menu[] = [
+      const items: any[] = [
         { windowId: "window1", children: [] },
         { windowId: "window2", children: [] },
       ];
@@ -38,7 +38,7 @@ describe("drawerUtils", () => {
     });
 
     it("should return true when windowId matches nested item", () => {
-      const items: Menu[] = [
+      const items: any[] = [
         {
           windowId: "parent",
           children: [
@@ -51,7 +51,7 @@ describe("drawerUtils", () => {
     });
 
     it("should return true when windowId matches deeply nested item", () => {
-      const items: Menu[] = [
+      const items: any[] = [
         {
           windowId: "level1",
           children: [
@@ -66,7 +66,7 @@ describe("drawerUtils", () => {
     });
 
     it("should return false when windowId does not match any item", () => {
-      const items: Menu[] = [
+      const items: any[] = [
         {
           windowId: "window1",
           children: [{ windowId: "window2", children: [] }],
@@ -80,7 +80,7 @@ describe("drawerUtils", () => {
     });
 
     it("should handle items without children property", () => {
-      const items: Menu[] = [{ windowId: "window1" }];
+      const items: any[] = [{ windowId: "window1" }];
       expect(findActive("window1", items)).toBe(true);
     });
   });

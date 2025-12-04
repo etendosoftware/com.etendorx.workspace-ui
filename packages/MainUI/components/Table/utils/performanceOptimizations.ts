@@ -70,7 +70,7 @@ export const useDebouncedCallback = <T extends (...args: any[]) => any>(
   callback: T,
   delay: number
 ): ((...args: Parameters<T>) => void) & { cancel: () => void } => {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const cancel = useCallback(() => {
     if (timeoutRef.current) {

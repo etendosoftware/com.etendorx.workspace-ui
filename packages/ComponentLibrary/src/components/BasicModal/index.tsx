@@ -16,7 +16,7 @@
  */
 
 import React, { useCallback, useState, useRef, useEffect, forwardRef, useMemo } from "react";
-import { Typography, Button, Box, useTheme } from "@mui/material";
+import { Typography, Button, Box, useTheme, type SxProps, type Theme } from "@mui/material";
 import ModalMUI from "@mui/material/Modal";
 import IconButton from "../IconButton";
 import { Container, Position } from "../enums";
@@ -152,7 +152,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
       }
 
       if (customTrigger) {
-        return React.cloneElement(customTrigger as React.ReactElement, {
+        return React.cloneElement(customTrigger as React.ReactElement<{ onClick?: () => void }>, {
           onClick: handleOpen,
         });
       }
@@ -179,11 +179,13 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
           data-testid="BasicModal_Modal">
           <Box
             ref={ref}
-            sx={{
-              ...styles.boxStyles,
-              ...modalStyles,
-              ...gradientStyles,
-            }}>
+            sx={
+              [
+                styles.boxStyles,
+                modalStyles,
+                gradientStyles,
+              ] as SxProps<Theme>
+            }>
             <Box sx={sx.modalContainer}>
               {showHeader && (
                 <Box sx={sx.headerContainer}>

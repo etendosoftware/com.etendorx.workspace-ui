@@ -44,7 +44,7 @@ const SortableItem: React.FC<SortableItemProps> = ({ id, person, item, onToggle,
     <MenuItem ref={setNodeRef} style={style} sx={menuItemSx} {...attributes} {...listeners} disableRipple>
       <div style={styles.sortableItemContainer}>
         <div style={styles.sortableItemLeftContainer}>
-          {React.cloneElement(icon as React.ReactElement, {
+          {React.cloneElement(icon as React.ReactElement<{ style?: React.CSSProperties }>, {
             style: styles.dragStyles,
           })}
           <span className="person-label" style={styles.sortableItemLabel} title={currentItem?.label}>

@@ -15,7 +15,9 @@
  *************************************************************************
  */
 
-import type { Widget } from "@workspaceui/storybook/src/stories/Components/Table/types";
+// type Widget = any;
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+export type Widget = any;
 import type { Translations } from "../../RegisterModal/types";
 
 export interface SidebarContentProps {

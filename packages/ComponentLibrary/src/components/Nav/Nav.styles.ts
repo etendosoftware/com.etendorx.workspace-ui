@@ -15,8 +15,8 @@
  *************************************************************************
  */
 
-import { type CSSProperties, useMemo } from "react";
-import { useTheme } from "@mui/material";
+import { useMemo } from "react";
+import { type SxProps, type Theme, useTheme } from "@mui/material";
 
 export const useStyle = () => {
   const theme = useTheme();
@@ -49,7 +49,7 @@ export const useStyle = () => {
           display: "flex",
           gap: "0.25rem",
         },
-      } as { [key: string]: CSSProperties },
+      } as Record<string, SxProps<Theme>>,
     }),
     [theme]
   );

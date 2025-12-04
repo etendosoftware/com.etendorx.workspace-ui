@@ -61,14 +61,14 @@ const TextInputBase = (props: TextInputProps) => {
         InputProps={{
           name: props.name,
           startAdornment: leftIcon && (
-            <InputAdornment position="start" sx={styles.inputAdornment}>
+            <InputAdornment position="start" sx={sx.inputAdornment}>
               <IconButton aria-label="left icon" onClick={onLeftIconClick}>
                 {leftIcon}
               </IconButton>
             </InputAdornment>
           ),
           endAdornment: rightIcon && (
-            <InputAdornment position="end" sx={styles.inputAdornment}>
+            <InputAdornment position="end" sx={sx.inputAdornment}>
               <IconButton aria-label="right-icon" onClick={onRightIconClick}>
                 {rightIcon}
               </IconButton>

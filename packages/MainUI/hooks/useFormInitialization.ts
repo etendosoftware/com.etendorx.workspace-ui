@@ -97,7 +97,7 @@ export type useFormInitialization = State & {
 export function useFormInitialization({ tab, mode, recordId }: FormInitializationParams): useFormInitialization {
   const { setSession, setSessionSyncLoading } = useUserContext();
   const { parentRecord: parent } = useTabContext();
-  const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, initialState);
   const { error, formInitialization, loading } = state;
   const parentData = useFormParent(FieldName.INPUT_NAME);
   const parentId = parent?.id?.toString();

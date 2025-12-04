@@ -78,7 +78,7 @@ export async function executeProcess(
 
     // Invalidate caches that may be affected by process execution
     try {
-      revalidateTag("datasource");
+      revalidateTag("datasource", "default");
       revalidatePath("/window");
     } catch (e) {
       logger.warn?.("Cache revalidation failed after executeProcess", e);

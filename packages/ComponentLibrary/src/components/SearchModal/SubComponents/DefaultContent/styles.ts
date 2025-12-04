@@ -15,8 +15,8 @@
  *************************************************************************
  */
 
-import { useTheme } from "@mui/material";
-import { type CSSProperties, useMemo } from "react";
+import { type SxProps, type Theme, useTheme } from "@mui/material";
+import { useMemo } from "react";
 
 export const useStyle = () => {
   const theme = useTheme();
@@ -84,7 +84,7 @@ export const useStyle = () => {
           overflow: "hidden",
           textOverflow: "ellipsis",
         },
-      } as { [key: string]: CSSProperties },
+      } as Record<string, SxProps<Theme>>,
     }),
     [theme]
   );
