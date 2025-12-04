@@ -191,6 +191,7 @@ const en = {
       search: "Search",
       views: "Views",
       filter: "Filter",
+      filterActive: "Filter active",
       columns: "Columns",
       openSidebar: "Open Sidebar",
       closeSidebar: "Close Sidebar",

@@ -15,6 +15,7 @@
  *************************************************************************
  */
 
+import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import type {
   MRT_ColumnFiltersState,
@@ -88,6 +89,8 @@ interface UseTableDataReturn {
     filterValue: string | number,
     filterLabel: string
   ) => Promise<void>;
+  isImplicitFilterApplied: boolean;
+  tableColumnFilters: MRT_ColumnFiltersState;
 }
 
 export const useTableData = ({
@@ -109,7 +112,7 @@ export const useTableData = ({
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
-  const { activeWindow } = useWindowContext();
+  const { activeWindow, getTabFormState } = useWindowContext();
   const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
 
   const {
@@ -121,6 +124,7 @@ export const useTableData = ({
     setTableColumnSorting,
     setTableColumnOrder,
     setIsImplicitFilterApplied,
+    tableColumnSorting,
   } = useTableStatePersistenceTab({
     windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: tab.id,
@@ -132,6 +136,11 @@ export const useTableData = ({
   const parentId = String(parentRecord?.id ?? "");
   const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
   const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
+
+  const tabFormState = activeWindow?.windowIdentifier
+    ? getTabFormState(activeWindow.windowIdentifier, tab.id)
+    : undefined;
+  const hasSelectedRecord = !!tabFormState?.recordId && tabFormState.recordId !== NEW_RECORD_ID;
 
   // Parse columns
   const rawColumns = useMemo(() => {
@@ -314,7 +323,7 @@ export const useTableData = ({
     const options: DatasourceOptions = {
       windowId: tab.window,
       tabId: tab.id,
-      isImplicitFilterApplied: initialIsFilterApplied,
+      isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
       pageSize: 100,
     };
 
@@ -332,12 +341,39 @@ export const useTableData = ({
       ];
     }
 
+    // Add sorting
+    if (tableColumnSorting?.length > 0) {
+      const sort = tableColumnSorting[0];
+      // Find the field that corresponds to the sorted column ID (which is the field name)
+      const field = Object.values(tab.fields).find((f) => f.name === sort.id);
+      const sortField = field?.hqlName || sort.id;
+
+      options.sortBy = sort.desc ? `-${sortField}` : sortField;
+    } else {
+      // Default sort by identifier column if no explicit sort
+      const identifierField = Object.values(tab.fields).find((field) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const col = field.column as any;
+        return (
+          col?.isIdentifier === true ||
+          col?.isIdentifier === "true" ||
+          col?.identifier === true ||
+          col?.identifier === "true"
+        );
+      });
+
+      if (identifierField) {
+        options.sortBy = identifierField.hqlName;
+      }
+    }
+
     return options;
   }, [
     tab.parentColumns,
     tab.window,
     tab.id,
     initialIsFilterApplied,
+    isImplicitFilterApplied,
     tab.name,
     tab.tabLevel,
     tab.parentTabId,
@@ -347,6 +383,7 @@ export const useTableData = ({
     parentRecord?.id,
     parentTab,
     language,
+    tableColumnSorting,
   ]);
 
   // Tree options
@@ -570,17 +607,67 @@ export const useTableData = ({
     setIsImplicitFilterApplied(false);
   }, [isImplicitFilterApplied, setIsImplicitFilterApplied, handleMRTColumnFiltersChange]);
 
+  const hasInitializedDirectLink = useRef(false);
+
   /** Initialize implicit filter state */
   useEffect(() => {
-    if (isImplicitFilterApplied === undefined) {
-      setIsImplicitFilterApplied(initialIsFilterApplied);
+    // Only run this logic once on mount/initialization
+    if (!hasInitializedDirectLink.current) {
+      // If we are entering directly to a record (Form View), disable implicit filters
+      // Only apply this if we are actually in Form View (mode === 'form')
+      // This prevents parent tabs (which have selectedRecord but are in TABLE mode) from being affected
+      if (hasSelectedRecord && tabFormState?.mode === "form") {
+        if (isImplicitFilterApplied !== false) {
+          setIsImplicitFilterApplied(false);
+        }
+        // Filter to the selected record
+        if (tabFormState?.recordId) {
+          const currentIdFilter = tableColumnFilters.find((f) => f.id === "id");
+          if (currentIdFilter?.value !== tabFormState.recordId) {
+            setTableColumnFilters([{ id: "id", value: tabFormState.recordId }]);
+          }
+        }
+        hasInitializedDirectLink.current = true;
+      } else if (isImplicitFilterApplied === undefined) {
+        setIsImplicitFilterApplied(initialIsFilterApplied);
+        hasInitializedDirectLink.current = true;
+      }
     }
-  }, [initialIsFilterApplied, isImplicitFilterApplied, setIsImplicitFilterApplied]);
+  }, [
+    initialIsFilterApplied,
+    isImplicitFilterApplied,
+    setIsImplicitFilterApplied,
+    hasSelectedRecord,
+    tabFormState,
+    setTableColumnFilters,
+    tableColumnFilters,
+  ]);
+
+  // Clear filters when parent selection changes
+  // This ensures that if we were filtering by a specific ID (e.g. from direct link),
+  // changing the parent record will reset the view to show all child records for the new parent
+  const prevParentIdRef = useRef<string | undefined>(parentRecord?.id ? String(parentRecord.id) : undefined);
+
+  useEffect(() => {
+    // Only clear filters if the parent ID has actually CHANGED from a previous valid ID
+    // This prevents clearing filters on initial load when the parent ID is first set
+    if (parentRecord?.id && prevParentIdRef.current && parentRecord.id !== prevParentIdRef.current) {
+      const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
+      if (hasIdFilter) {
+        setTableColumnFilters([]);
+        setIsImplicitFilterApplied(true);
+      }
+    }
+    // Update ref for next render
+    prevParentIdRef.current = parentRecord?.id ? String(parentRecord.id) : undefined;
+  }, [parentRecord?.id, setTableColumnFilters, setIsImplicitFilterApplied, tableColumnFilters]);
 
   /** Sync implicit filter state with toolbar context */
   useEffect(() => {
-    setToolbarFilterApplied(isImplicitFilterApplied ?? false);
-  }, [isImplicitFilterApplied, setToolbarFilterApplied]);
+    const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
+    const isFiltered = (isImplicitFilterApplied ?? false) || hasIdFilter;
+    setToolbarFilterApplied(isFiltered);
+  }, [isImplicitFilterApplied, tableColumnFilters, setToolbarFilterApplied]);
 
   /** Clear advanced column filters when table filters are cleared */
   useEffect(() => {
@@ -739,6 +826,8 @@ export const useTableData = ({
     refetch,
     removeRecordLocally,
     applyQuickFilter,
+    isImplicitFilterApplied: isImplicitFilterApplied ?? false,
+    tableColumnFilters,
     hasMoreRecords,
   };
 };

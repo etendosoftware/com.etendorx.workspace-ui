@@ -77,19 +77,9 @@ export const reconstructState = async (
   for (const tabNode of tabChain) {
     const isTargetTab = tabNode.tabId === hierarchy.targetTab.tabId;
 
-    // Create basic tab state
-    const basicTabState = createDefaultTabState(tabNode.level);
-
-    tabs[tabNode.tabId] = { ...basicTabState, table: { ...basicTabState.table, isImplicitFilterApplied: true } };
-
-    // Add to active tabs by level map
-    activeTabsByLevel.set(tabNode.level, tabNode.tabId);
-
-    if (isTargetTab) {
-      // For target tab: set form state (user was viewing this record in form mode)
-      tabs[tabNode.tabId].selectedRecord = currentRecordId;
-      tabs[tabNode.tabId].form = getNewTabFormState(currentRecordId, TAB_MODES.FORM, FORM_MODES.EDIT);
-    } else {
+    // If this is a parent tab, we must FIRST calculate its record ID based on the child record ID
+    // The currentRecordId variable holds the CHILD's record ID from the previous iteration (or the target ID initially)
+    if (!isTargetTab) {
       const parentKeyField = tabNode.parentKeyField;
       const windowId = windowMetadata.id;
 
@@ -99,13 +89,37 @@ export const reconstructState = async (
         );
       }
 
-      // For parent tabs: calculate the parent's recordId by querying the child FIRST
-      // Then assign the calculated recordId to this parent tab
+      // Calculate the parent's recordId using the child's recordId (currentRecordId)
       currentRecordId = await calculateParentRecordId(tabNode, currentRecordId, parentKeyField, windowId);
+    }
 
-      // Set selected record for parent tab
-      tabs[tabNode.tabId].selectedRecord = currentRecordId;
+    // Create basic tab state
+    const basicTabState = createDefaultTabState(tabNode.level);
 
+    // Disable implicit filters for all tabs to ensure we load exactly the record we need
+    // This aligns the behavior of parent tabs with the target tab
+    const isImplicitFilterApplied = false;
+
+    tabs[tabNode.tabId] = {
+      ...basicTabState,
+      table: {
+        ...basicTabState.table,
+        isImplicitFilterApplied,
+        // Filter by the record ID immediately for both target and parent tabs
+        // This ensures that parent tabs also load the specific record we need for the hierarchy
+        filters: [{ id: "id", value: currentRecordId }],
+      },
+      // Set selected record for both target and parent tabs
+      selectedRecord: currentRecordId,
+    };
+
+    // Add to active tabs by level map
+    activeTabsByLevel.set(tabNode.level, tabNode.tabId);
+
+    if (isTargetTab) {
+      // For target tab: set form state (user was viewing this record in form mode)
+      tabs[tabNode.tabId].form = getNewTabFormState(currentRecordId, TAB_MODES.FORM, FORM_MODES.EDIT);
+    } else {
       // Parent tabs stay in table mode with selection (no form state)
       tabs[tabNode.tabId].form = {};
     }

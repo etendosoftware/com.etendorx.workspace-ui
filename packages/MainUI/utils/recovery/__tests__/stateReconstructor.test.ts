@@ -338,7 +338,7 @@ describe("reconstructState", () => {
         mode: FORM_MODES.EDIT,
         isLoading: false,
       });
-      expect(result.tabs["tab1"].table.isImplicitFilterApplied).toBe(true);
+      expect(result.tabs["tab1"].table.isImplicitFilterApplied).toBe(false);
 
       expect(result.navigation.activeLevels).toEqual([0]);
       expect(result.navigation.activeTabsByLevel.get(0)).toBe("tab1");
@@ -569,7 +569,7 @@ describe("reconstructState", () => {
 
       const result = await reconstructState(hierarchy, windowMetadata);
 
-      expect(result.tabs["tab1"].table.isImplicitFilterApplied).toBe(true);
+      expect(result.tabs["tab1"].table.isImplicitFilterApplied).toBe(false);
     });
 
     it("should handle empty string recordId", async () => {

@@ -27,7 +27,7 @@ import { EMPTY_ARRAY } from "@/utils/defaults";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
 import type React from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useProcessButton } from "../../hooks/Toolbar/useProcessButton";
 import { useProcessExecution } from "../../hooks/Toolbar/useProcessExecution";
 import { useToolbar } from "../../hooks/Toolbar/useToolbar";
@@ -100,6 +100,36 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
   const { formViewRefetch } = useToolbarContext();
+
+  // State for temporary filter tooltip
+  const [showFilterTooltip, setShowFilterTooltip] = useState(false);
+
+  // Check if any child tab is fully expanded
+  const isChildTabExpanded = useMemo(() => {
+    if (!activeWindow || !tab?.id) return false;
+    const navigationState = activeWindow.navigation;
+    // If we are in a parent tab (level 0) and there is an active tab in level 1, it means a child is expanded/visible
+    return navigationState.activeLevels.includes(1) && navigationState.activeTabsByLevel.has(1);
+  }, [activeWindow, tab?.id]);
+
+  // Manage temporary filter tooltip visibility
+  useEffect(() => {
+    // Do not show tooltip if a child tab is expanded/visible
+    if (isChildTabExpanded) {
+      setShowFilterTooltip(false);
+      return;
+    }
+
+    if (isImplicitFilterApplied) {
+      setShowFilterTooltip(true);
+      const timer = setTimeout(() => {
+        setShowFilterTooltip(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    } else {
+      setShowFilterTooltip(false);
+    }
+  }, [isImplicitFilterApplied, isChildTabExpanded]);
 
   const handleMenuToggle = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -235,6 +265,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       saveButtonState: saveButtonState,
       session: session,
       isImplicitFilterApplied: isImplicitFilterApplied,
+      showFilterTooltip: showFilterTooltip,
+      t: t,
     });
 
     const config = {
@@ -272,6 +304,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     isCopilotInstalled,
     session,
     isImplicitFilterApplied,
+    showFilterTooltip,
   ]);
 
   if (loading) {

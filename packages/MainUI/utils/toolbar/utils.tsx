@@ -16,6 +16,7 @@
  */
 
 import type { OrganizedSections, ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
+import type { TranslateFunction } from "@/hooks/types";
 import type React from "react";
 import Base64Icon from "@workspaceui/componentlibrary/src/components/Base64Icon";
 import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
@@ -129,6 +130,8 @@ export const createButtonByType = ({
   isCopilotInstalled,
   saveButtonState,
   isImplicitFilterApplied,
+  showFilterTooltip,
+  t,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
@@ -139,6 +142,8 @@ export const createButtonByType = ({
   isCopilotInstalled?: boolean;
   saveButtonState?: SaveButtonState;
   isImplicitFilterApplied?: boolean;
+  showFilterTooltip?: boolean;
+  t?: TranslateFunction;
 }): ToolbarButton => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
@@ -236,13 +241,20 @@ export const createButtonByType = ({
     return {};
   };
 
-  return {
+  const finalConfig = {
     ...baseConfig,
     ...getIconTextConfig(),
     ...getDisableConfig(),
     ...getClickConfig(),
     ...getPressedConfig(),
   };
+
+  if (button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER && showFilterTooltip) {
+    finalConfig.tooltip = t ? t("table.tooltips.filterActive") : "(Filtro activado)";
+    finalConfig.forceTooltipOpen = true;
+  }
+
+  return finalConfig;
 };
 
 export const getButtonStyles = (button: ToolbarButtonMetadata) => {
@@ -261,6 +273,8 @@ interface ButtonConfig {
   isCopilotInstalled?: boolean;
   session?: ISession;
   isImplicitFilterApplied?: boolean;
+  showFilterTooltip?: boolean;
+  t?: TranslateFunction;
 }
 
 /**
@@ -282,6 +296,8 @@ const createSectionButtons = (
       saveButtonState: config.saveButtonState,
       isCopilotInstalled: config.isCopilotInstalled,
       isImplicitFilterApplied: config.isImplicitFilterApplied,
+      showFilterTooltip: config.showFilterTooltip,
+      t: config.t,
     });
 
     // Apply button-specific styles if available
@@ -323,6 +339,8 @@ interface ToolbarSectionsConfig {
   saveButtonState?: SaveButtonState;
   session?: ISession;
   isImplicitFilterApplied?: boolean;
+  showFilterTooltip?: boolean;
+  t?: TranslateFunction;
 }
 
 export const getToolbarSections = ({
@@ -337,6 +355,8 @@ export const getToolbarSections = ({
   saveButtonState,
   session = {},
   isImplicitFilterApplied = false,
+  showFilterTooltip = false,
+  t,
 }: ToolbarSectionsConfig): {
   leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
@@ -354,6 +374,8 @@ export const getToolbarSections = ({
     isCopilotInstalled,
     session,
     isImplicitFilterApplied,
+    showFilterTooltip,
+    t,
   };
 
   return {
