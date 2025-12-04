@@ -88,7 +88,7 @@ describe("Filter Utils", () => {
     });
 
     it("should return undefined when tableColumnFilters is undefined", () => {
-      expect(getTextFilterValue(mockColumn, undefined)).toBeUndefined();
+      expect(getTextFilterValue(mockColumn)).toBeUndefined();
     });
   });
 
