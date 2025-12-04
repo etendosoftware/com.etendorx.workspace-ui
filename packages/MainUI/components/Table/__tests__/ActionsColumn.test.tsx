@@ -191,7 +191,6 @@ describe("ActionsColumn", () => {
       expect(saveButton).toBeDisabled();
 
       // Check for loader icon within the save button
-      const saveButton = screen.getByTestId("save-button-test-row-123");
       expect(saveButton.querySelector('[data-testid="loader-icon"]')).toBeInTheDocument();
     });
 

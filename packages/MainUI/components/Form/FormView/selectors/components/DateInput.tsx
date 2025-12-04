@@ -19,6 +19,7 @@ import type { Field } from "@workspaceui/api-client/src/api/types";
 import { forwardRef, useCallback, useRef, useState, useEffect, useMemo } from "react";
 import CalendarIcon from "../../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
 import { formatClassicDate, getLocaleDatePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
+import { autocompleteDate } from "@/utils/dateAutocomplete";
 
 interface DateInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -26,10 +27,11 @@ interface DateInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: boolean;
   helperText?: string;
   field: Field;
+  currentValue?: string;
 }
 
 export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
-  ({ name, label, isReadOnly, error, helperText, field, ...props }, ref) => {
+  ({ name, label, isReadOnly, error, helperText, field, currentValue, ...props }, ref) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const hiddenDateInputRef = useRef<HTMLInputElement | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -113,29 +115,88 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       [ref]
     );
 
+    const setNativeInputValue = useCallback((value: string) => {
+      if (!hiddenDateInputRef.current) return;
+
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+      nativeInputValueSetter?.call(hiddenDateInputRef.current, value);
+
+      const event = new Event("change", { bubbles: true });
+      hiddenDateInputRef.current.dispatchEvent(event);
+    }, []);
+
+    const handleValidDateInput = useCallback(
+      (isoDate: string) => {
+        if (!hiddenDateInputRef.current) return;
+
+        if (hiddenDateInputRef.current.value !== isoDate) {
+          setNativeInputValue(isoDate);
+        }
+
+        setDisplayValue(formatClassicDate(isoDate, false));
+      },
+      [setNativeInputValue]
+    );
+
+    const handleInvalidDateInput = useCallback(() => {
+      if (hiddenDateInputRef.current?.value) {
+        setNativeInputValue("");
+      }
+    }, [setNativeInputValue]);
+
+    const handleEmptyInput = useCallback(() => {
+      if (hiddenDateInputRef.current?.value) {
+        setNativeInputValue("");
+      }
+    }, [setNativeInputValue]);
+
     const handleBlur = useCallback(
       (e: React.FocusEvent<HTMLInputElement>) => {
         const relatedTarget = e.relatedTarget as HTMLElement;
         if (!containerRef.current?.contains(relatedTarget)) {
           setIsFocused(false);
         }
+
+        if (!isReadOnly && displayValue) {
+          const date = autocompleteDate(displayValue, datePlaceholder);
+          if (date) {
+            const isoDate = date.toISOString().split("T")[0];
+            handleValidDateInput(isoDate);
+          } else {
+            handleInvalidDateInput();
+          }
+        } else if (!displayValue) {
+          handleEmptyInput();
+        }
+
         props.onBlur?.(e);
       },
-      [props]
+      [props, displayValue, isReadOnly, datePlaceholder, handleValidDateInput, handleInvalidDateInput, handleEmptyInput]
     );
 
     // Sync the hidden date input value with the display value
     useEffect(() => {
       if (hiddenDateInputRef.current) {
         const isoValue = hiddenDateInputRef.current.value;
+        // Only update display value if it's not currently being edited (focused)
+        // OR if the isoValue corresponds to what is currently displayed (to avoid overwriting user typing)
+        // Actually, we should update if the external value changes.
+        // But we need to be careful not to fight with user typing.
+        // The `value` prop from react-hook-form is passed via `...props` to the hidden input.
+        // So `hiddenDateInputRef.current.value` reflects the form state.
+
         if (isoValue) {
           const formatted = formatClassicDate(isoValue, false);
-          setDisplayValue(formatted);
-        } else {
+          // Only update display value if it differs and we are not focused (or if it's a completely new value)
+          // To keep it simple: if we are not focused, always sync.
+          if (!isFocused) {
+            setDisplayValue(formatted);
+          }
+        } else if (!isFocused) {
           setDisplayValue("");
         }
       }
-    }, [hiddenDateInputRef.current?.value]);
+    }, [currentValue, isFocused]); // props.value should be the controlled value
 
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -172,14 +233,20 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     }, [helperText, helperTextClassNames]);
 
     const handleDisplayInputFocus = useCallback(() => {
-      if (!isReadOnly && hiddenDateInputRef.current) {
-        hiddenDateInputRef.current.showPicker();
-      }
-    }, [isReadOnly]);
+      setIsFocused(true);
+    }, []);
+
+    const handleDisplayInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+      setDisplayValue(e.target.value);
+    }, []);
 
     const handleHiddenDateChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
         props.onChange?.(e);
+        // Also update display value immediately if picked from calendar
+        if (e.target.value) {
+          setDisplayValue(formatClassicDate(e.target.value, false));
+        }
       },
       [props]
     );
@@ -193,10 +260,11 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             type="text"
             id={name}
             value={displayValue}
-            readOnly
+            readOnly={isReadOnly}
             className={inputClassNames}
             onFocus={handleDisplayInputFocus}
             onBlur={handleBlur}
+            onChange={handleDisplayInputChange}
             aria-label={field.name}
             aria-readonly={isReadOnly || true}
             aria-required={field.isMandatory}
@@ -204,7 +272,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             aria-details={field.helpComment}
             placeholder={datePlaceholder}
           />
-          {/* Hidden date input connected to react-hook-form - overlayed on visible input for correct picker positioning */}
+          {/* Hidden date input connected to react-hook-form */}
           <input
             type="date"
             ref={(node) => {
@@ -213,7 +281,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             }}
             name={name}
             onChange={handleHiddenDateChange}
-            className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+            className="sr-only"
             tabIndex={-1}
             readOnly={isReadOnly}
             disabled={isReadOnly}
