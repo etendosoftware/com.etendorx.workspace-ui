@@ -24,7 +24,10 @@ import "./style.css";
 import IconButton from "../IconButton";
 import Menu from "../Menu";
 
-const IconRenderer = ({ icon, imageStyles }: { icon: string | React.ReactNode; imageStyles?: string }): React.ReactElement => {
+const IconRenderer = ({
+  icon,
+  imageStyles,
+}: { icon: string | React.ReactNode; imageStyles?: string }): React.ReactElement => {
   if (typeof icon === "string") {
     return <img src={icon} alt="icon" className={imageStyles} />;
   }

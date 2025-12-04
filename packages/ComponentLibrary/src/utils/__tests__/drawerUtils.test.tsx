@@ -15,7 +15,6 @@
  *************************************************************************
  */
 
-
 import { findActive } from "../drawerUtils";
 
 describe("drawerUtils", () => {

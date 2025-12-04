@@ -15,23 +15,27 @@
  *************************************************************************
  */
 
-// import { getColumns } from "@workspaceui/storybook/src/stories/Components/Table/columns";
-// import type { OrganizationField, TableProps } from "@workspaceui/storybook/src/stories/Components/Table/types";
-import { type MRT_ColumnDef } from "material-react-table";
-
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+
+import {
+  type MRT_Row,
+  type MRT_TableOptions,
+  MaterialReactTable,
+  useMaterialReactTable,
+  type MRT_ColumnDef,
+} from "material-react-table";
+import type React from "react";
+import { useMemo } from "react";
+import { useStyle } from "./styles";
+
+type TableDataType = any;
+
 const getColumns = (): MRT_ColumnDef<any>[] => [];
 
 interface TableProps {
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   data?: any[];
 }
-import { type MRT_Row, type MRT_TableOptions, MaterialReactTable, useMaterialReactTable } from "material-react-table";
-import type React from "react";
-import { useMemo } from "react";
-import { useStyle } from "./styles";
-
-type TableDataType = any;
 
 export interface EnhancedTableProps extends TableProps {
   onRowClick: (row: MRT_Row<TableDataType>) => void;

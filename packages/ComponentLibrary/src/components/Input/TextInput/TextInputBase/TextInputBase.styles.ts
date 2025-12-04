@@ -31,7 +31,6 @@ export const useStyle = () => {
     () =>
       ({
         styles: {
-
           inputStyle: {
             padding: "0.25rem 0",
             fontSize: "14px",

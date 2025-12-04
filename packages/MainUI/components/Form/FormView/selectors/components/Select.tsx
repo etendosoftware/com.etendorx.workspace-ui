@@ -293,7 +293,12 @@ function SelectCmp({
     [options, searchTerm]
   );
 
-  const dropdownPosition = useDropdownPosition(isOpen, triggerRef as React.RefObject<HTMLDivElement>, filteredOptions.length, true);
+  const dropdownPosition = useDropdownPosition(
+    isOpen,
+    triggerRef as React.RefObject<HTMLDivElement>,
+    filteredOptions.length,
+    true
+  );
 
   const mainDivClassNames = useMemo(() => {
     const baseClasses =
@@ -470,7 +475,12 @@ function SelectCmp({
     }
   }, [selectedValue, options, currentIdentifier]);
 
-  useOpenDropdownEffect(isOpen, setSearchTerm, setHighlightedIndex, searchInputRef as React.RefObject<HTMLInputElement>);
+  useOpenDropdownEffect(
+    isOpen,
+    setSearchTerm,
+    setHighlightedIndex,
+    searchInputRef as React.RefObject<HTMLInputElement>
+  );
 
   const renderedOptions = useMemo(() => {
     if (filteredOptions.length > 0) {

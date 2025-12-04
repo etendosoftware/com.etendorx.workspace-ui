@@ -20,7 +20,12 @@ import { useStyle } from "../styles";
 import type { FieldLabelProps } from "../types";
 import React from "react";
 
-export const FieldLabel: React.FC<FieldLabelProps> = ({ isEntityReference, label, required, onLinkClick }): React.ReactElement => {
+export const FieldLabel: React.FC<FieldLabelProps> = ({
+  isEntityReference,
+  label,
+  required,
+  onLinkClick,
+}): React.ReactElement => {
   const { styles, sx } = useStyle();
 
   return (

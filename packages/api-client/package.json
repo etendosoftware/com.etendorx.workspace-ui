@@ -13,10 +13,7 @@
     "url": "https://github.com/etendosoftware/com.etendorx.workspace-ui.git",
     "directory": "packages/api-client"
   },
-  "files": [
-    "dist",
-    "src"
-  ],
+  "files": ["dist", "src"],
   "scripts": {
     "lint": "biome lint src/",
     "lint:fix": "biome lint --apply src/",

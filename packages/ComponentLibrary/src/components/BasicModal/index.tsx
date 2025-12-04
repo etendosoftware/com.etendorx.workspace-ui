@@ -177,15 +177,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
           keepMounted={false}
           closeAfterTransition
           data-testid="BasicModal_Modal">
-          <Box
-            ref={ref}
-            sx={
-              [
-                styles.boxStyles,
-                modalStyles,
-                gradientStyles,
-              ] as SxProps<Theme>
-            }>
+          <Box ref={ref} sx={[styles.boxStyles, modalStyles, gradientStyles] as SxProps<Theme>}>
             <Box sx={sx.modalContainer}>
               {showHeader && (
                 <Box sx={sx.headerContainer}>

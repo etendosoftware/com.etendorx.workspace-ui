@@ -175,7 +175,11 @@ const MultiSelect = memo(function MultiSelectCmp({
   );
 
   const clickOutsideRefs = useMemo(() => [portalRef], [portalRef]);
-  useClickOutside(wrapperRef as React.RefObject<HTMLDivElement>, () => setIsOpen(false), clickOutsideRefs as React.RefObject<HTMLElement>[]);
+  useClickOutside(
+    wrapperRef as React.RefObject<HTMLDivElement>,
+    () => setIsOpen(false),
+    clickOutsideRefs as React.RefObject<HTMLElement>[]
+  );
 
   const handleSetSearchTerm = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
