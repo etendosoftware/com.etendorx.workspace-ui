@@ -118,25 +118,25 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     const setNativeInputValue = useCallback((value: string) => {
       if (!hiddenDateInputRef.current) return;
 
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        "value"
-      )?.set;
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
       nativeInputValueSetter?.call(hiddenDateInputRef.current, value);
 
       const event = new Event("change", { bubbles: true });
       hiddenDateInputRef.current.dispatchEvent(event);
     }, []);
 
-    const handleValidDateInput = useCallback((isoDate: string) => {
-      if (!hiddenDateInputRef.current) return;
+    const handleValidDateInput = useCallback(
+      (isoDate: string) => {
+        if (!hiddenDateInputRef.current) return;
 
-      if (hiddenDateInputRef.current.value !== isoDate) {
-        setNativeInputValue(isoDate);
-      }
+        if (hiddenDateInputRef.current.value !== isoDate) {
+          setNativeInputValue(isoDate);
+        }
 
-      setDisplayValue(formatClassicDate(isoDate, false));
-    }, [setNativeInputValue]);
+        setDisplayValue(formatClassicDate(isoDate, false));
+      },
+      [setNativeInputValue]
+    );
 
     const handleInvalidDateInput = useCallback(() => {
       if (hiddenDateInputRef.current?.value) {
@@ -160,7 +160,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
         if (!isReadOnly && displayValue) {
           const date = autocompleteDate(displayValue, datePlaceholder);
           if (date) {
-            const isoDate = date.toISOString().split('T')[0];
+            const isoDate = date.toISOString().split("T")[0];
             handleValidDateInput(isoDate);
           } else {
             handleInvalidDateInput();
@@ -178,13 +178,13 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     useEffect(() => {
       if (hiddenDateInputRef.current) {
         const isoValue = hiddenDateInputRef.current.value;
-        // Only update display value if it's not currently being edited (focused) 
+        // Only update display value if it's not currently being edited (focused)
         // OR if the isoValue corresponds to what is currently displayed (to avoid overwriting user typing)
-        // Actually, we should update if the external value changes. 
+        // Actually, we should update if the external value changes.
         // But we need to be careful not to fight with user typing.
         // The `value` prop from react-hook-form is passed via `...props` to the hidden input.
         // So `hiddenDateInputRef.current.value` reflects the form state.
-        
+
         if (isoValue) {
           const formatted = formatClassicDate(isoValue, false);
           // Only update display value if it differs and we are not focused (or if it's a completely new value)
@@ -235,7 +235,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     const handleDisplayInputFocus = useCallback(() => {
       setIsFocused(true);
     }, []);
-    
+
     const handleDisplayInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
       setDisplayValue(e.target.value);
     }, []);
@@ -245,7 +245,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
         props.onChange?.(e);
         // Also update display value immediately if picked from calendar
         if (e.target.value) {
-           setDisplayValue(formatClassicDate(e.target.value, false));
+          setDisplayValue(formatClassicDate(e.target.value, false));
         }
       },
       [props]

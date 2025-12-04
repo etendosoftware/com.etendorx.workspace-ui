@@ -24,12 +24,12 @@ export const DateSelector = ({ field, isReadOnly }: { field: Field; isReadOnly?:
   const value = watch(field.hqlName);
 
   return (
-    <DateInput 
-      field={field} 
-      isReadOnly={isReadOnly} 
+    <DateInput
+      field={field}
+      isReadOnly={isReadOnly}
       currentValue={value}
-      {...register(field.hqlName)} 
-      data-testid="DateInput__ad19cd" 
+      {...register(field.hqlName)}
+      data-testid="DateInput__ad19cd"
     />
   );
 };

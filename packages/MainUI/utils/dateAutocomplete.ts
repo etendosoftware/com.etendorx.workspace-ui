@@ -6,9 +6,9 @@ const parseFormatIndices = (format: string): { dayIndex: number; monthIndex: num
   const formatParts = formatLower.split(/[\/\.\-]/);
 
   return {
-    dayIndex: formatParts.findIndex(p => p.includes('d')),
-    monthIndex: formatParts.findIndex(p => p.includes('m')),
-    yearIndex: formatParts.findIndex(p => p.includes('y')),
+    dayIndex: formatParts.findIndex((p) => p.includes("d")),
+    monthIndex: formatParts.findIndex((p) => p.includes("m")),
+    yearIndex: formatParts.findIndex((p) => p.includes("y")),
   };
 };
 
@@ -23,12 +23,7 @@ const handleSinglePart = (parts: string[], currentYear: number, currentMonth: nu
 /**
  * Handles two part input (day/month or month/day based on format)
  */
-const handleTwoParts = (
-  parts: string[],
-  dayIndex: number,
-  monthIndex: number,
-  currentYear: number
-) => {
+const handleTwoParts = (parts: string[], dayIndex: number, monthIndex: number, currentYear: number) => {
   let day: number;
   let month: number;
 
@@ -53,9 +48,9 @@ const assignDateComponent = (
   value: number,
   state: { day: number; month: number; year: number }
 ) => {
-  if (type === 'd') state.day = value;
-  else if (type === 'm') state.month = value - 1;
-  else if (type === 'y') state.year = value;
+  if (type === "d") state.day = value;
+  else if (type === "m") state.month = value - 1;
+  else if (type === "y") state.year = value;
 };
 
 /**
@@ -71,9 +66,9 @@ const handleThreeOrMoreParts = (
   const state = { day: 1, month: 0, year: currentYear };
   const map = new Map<number, string>();
 
-  if (dayIndex !== -1) map.set(dayIndex, 'd');
-  if (monthIndex !== -1) map.set(monthIndex, 'm');
-  if (yearIndex !== -1) map.set(yearIndex, 'y');
+  if (dayIndex !== -1) map.set(dayIndex, "d");
+  if (monthIndex !== -1) map.set(monthIndex, "m");
+  if (yearIndex !== -1) map.set(yearIndex, "y");
 
   for (let i = 0; i <= 2 && i < parts.length; i++) {
     const type = map.get(i);
@@ -139,13 +134,7 @@ export const autocompleteDate = (input: string, format = "dd/mm/yyyy") => {
   } else if (parts.length === 2) {
     ({ day, month, year } = handleTwoParts(parts, dayIndex, monthIndex, currentYear));
   } else if (parts.length >= 3) {
-    ({ day, month, year } = handleThreeOrMoreParts(
-      parts,
-      dayIndex,
-      monthIndex,
-      yearIndex,
-      currentYear
-    ));
+    ({ day, month, year } = handleThreeOrMoreParts(parts, dayIndex, monthIndex, yearIndex, currentYear));
   } else {
     return null;
   }
