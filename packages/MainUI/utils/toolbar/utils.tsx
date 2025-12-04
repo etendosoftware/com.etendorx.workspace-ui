@@ -50,6 +50,7 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.COLUMN_FILTERS]: "toolbar-button-column-filters",
   [TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW]: "toolbar-button-toggle-tree-view",
   [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: "toolbar-button-attachment",
+  [TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV]: "toolbar-button-export-csv",
 } as const;
 
 export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
