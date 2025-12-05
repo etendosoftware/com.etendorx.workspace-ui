@@ -1984,8 +1984,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       if (summaryColumn) {
         // Pass summary data via column meta to avoid creating a new component function on every render
         // This resolves the SonarQube warning about component definition inside parent
-        summaryColumn.columnDef.meta = {
-          ...summaryColumn.columnDef.meta,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (summaryColumn.columnDef as any).meta = {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ...(summaryColumn.columnDef as any).meta,
           summaryType: summaryState.type,
           summaryResult: summaryResult,
           isSummaryLoading: isSummaryLoading,
