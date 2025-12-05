@@ -228,9 +228,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           await changeProfile(params);
         }
 
-        if (selectedLanguage && selectedLanguage.value !== language) {
-          onLanguageChange(selectedLanguage.value as Language);
-        }
+        const languageChanged = selectedLanguage && selectedLanguage.value !== language;
 
         if (saveAsDefault) {
           await onSetDefaultConfiguration({
@@ -239,9 +237,26 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             organization: selectedOrg?.value,
             language: selectedLanguage?.id,
           });
+        } else if (languageChanged) {
+          // If language changed but saveAsDefault is false, we still want to persist the language choice
+          // so the backend serves the correct localized content on next load.
+          // We use the current values for others to avoid changing them if they weren't meant to be defaults.
+          await onSetDefaultConfiguration({
+            defaultRole: currentRole?.id,
+            defaultWarehouse: currentWarehouse?.id,
+            organization: currentOrganization?.id,
+            language: selectedLanguage?.id,
+          });
         }
+
         cleanWindowState();
         handleClose();
+
+        if (languageChanged) {
+          // Force a hard reload to ensure all metadata and cached resources are refreshed with the new language
+          onLanguageChange(selectedLanguage?.value as Language);
+          window.location.reload();
+        }
       } catch (error) {
         logger.warn("Error changing role, warehouse, or saving default configuration:", error);
       }
@@ -262,6 +277,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     onLanguageChange,
     onSetDefaultConfiguration,
     logger,
+    cleanWindowState,
   ]);
 
   const isSaveDisabled = useMemo(() => {
