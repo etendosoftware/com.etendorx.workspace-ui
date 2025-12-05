@@ -112,25 +112,21 @@ import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
 
-const SummaryFooter = ({
-  summaryType,
-  summaryResult,
-  isLoading,
-}: {
-  summaryType: string;
-  summaryResult: number | string | null;
-  isLoading: boolean;
-}) => {
+const SummaryFooter = ({ column }: { column: MRT_Column<EntityData> }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const meta = column.columnDef.meta as any;
+  const { summaryType, summaryResult, isSummaryLoading } = meta || {};
+
   let displayValue: React.ReactNode = "Error";
 
-  if (isLoading) {
+  if (isSummaryLoading) {
     displayValue = "Loading...";
-  } else if (summaryResult !== null) {
+  } else if (summaryResult !== null && summaryResult !== undefined) {
     displayValue = summaryResult;
   }
 
   return (
-    <div className="flex items-center font-bold px-4 py-2 bg-(--color-neutral-10)">
+    <div className="flex items-center font-bold px-4 py-2 bg-(--color-neutral-10)" data-testid="SummaryFooter__8ca888">
       <span className="mr-2 text-(--color-neutral-60) uppercase text-xs">{summaryType}:</span>
       <span className="text-(--color-neutral-90)">{displayValue}</span>
     </div>
@@ -743,7 +739,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
    */
   const enrichFieldWithOriginalMetadata = useCallback(
     (field: Field, column: Column): Field => {
-      const columnDef = column.columnDef as { type?: string };
       const fieldKey = column.columnName || column.name;
       const originalField = tab.fields?.[fieldKey];
 
@@ -1987,9 +1982,15 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       );
 
       if (summaryColumn) {
-        summaryColumn.Footer = () => (
-          <SummaryFooter summaryType={summaryState.type} summaryResult={summaryResult} isLoading={isSummaryLoading} />
-        );
+        // Pass summary data via column meta to avoid creating a new component function on every render
+        // This resolves the SonarQube warning about component definition inside parent
+        summaryColumn.columnDef.meta = {
+          ...summaryColumn.columnDef.meta,
+          summaryType: summaryState.type,
+          summaryResult: summaryResult,
+          isSummaryLoading: isSummaryLoading,
+        };
+        summaryColumn.Footer = SummaryFooter;
       } else {
         console.warn("Summary column not found:", summaryState.columnId);
       }
