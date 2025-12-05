@@ -300,6 +300,67 @@ export const useTableData = ({
   });
 
   // Build query
+  // Helper to determine default sort
+  const getDefaultSort = useCallback(() => {
+    if (!tab) return null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tabAny = tab as any;
+
+    // 1. Tab Level: Order By Clause
+    const orderByClause = tabAny.hqlorderbyclause || tabAny.sQLOrderByClause;
+    if (orderByClause) {
+      const parts = orderByClause.trim().split(/\s+/);
+      const fieldName = parts[0];
+      const desc = parts.length > 1 && parts[1].toUpperCase() === "DESC";
+      
+      // Try to find the field to get its UI ID (name)
+      const field = Object.values(tab.fields).find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (f: any) => f.hqlName === fieldName || f.columnName === fieldName || f.name === fieldName
+      );
+      
+      return {
+        id: field ? field.name : fieldName,
+        desc
+      };
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fields = Object.values(tab.fields) as any[];
+
+    // 2. Field Level: Record Sort No
+    const sortNoFields = fields.filter((f) => f.recordSortNo != null);
+    if (sortNoFields.length > 0) {
+      sortNoFields.sort((a, b) => a.recordSortNo - b.recordSortNo);
+      return {
+        id: sortNoFields[0].name,
+        desc: false,
+      };
+    }
+
+    // 3. Field Level: Identifier
+    const identifierFields = fields.filter((field) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const col = field.column as any;
+      return (
+        col?.isIdentifier === true ||
+        col?.isIdentifier === "true" ||
+        col?.identifier === true ||
+        col?.identifier === "true"
+      );
+    });
+
+    if (identifierFields.length > 0) {
+      const identifierField = identifierFields.sort((a, b) => (a.sequenceNumber || 0) - (b.sequenceNumber || 0))[0];
+      return {
+        id: identifierField.name,
+        desc: false,
+      };
+    }
+
+    return null;
+  }, [tab]);
+
   const query: DatasourceOptions = useMemo(() => {
     // Find the correct parent column by matching referencedEntity with parentTab.entityName
     let fieldName = "id";
@@ -351,21 +412,16 @@ export const useTableData = ({
       const sortField = field?.hqlName || sort.id;
 
       options.sortBy = sort.desc ? `-${sortField}` : sortField;
+      options.isSorting = true;
     } else {
-      // Default sort by identifier column if no explicit sort
-      const identifierField = Object.values(tab.fields).find((field) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const col = field.column as any;
-        return (
-          col?.isIdentifier === true ||
-          col?.isIdentifier === "true" ||
-          col?.identifier === true ||
-          col?.identifier === "true"
-        );
-      });
+      // Default sort
+      const defaultSort = getDefaultSort();
+      if (defaultSort) {
+        const field = Object.values(tab.fields).find((f) => f.name === defaultSort.id);
+        const sortField = field?.hqlName || defaultSort.id;
 
-      if (identifierField) {
-        options.sortBy = identifierField.hqlName;
+        options.sortBy = defaultSort.desc ? `-${sortField}` : sortField;
+        options.isSorting = true;
       }
     }
 
@@ -729,6 +785,25 @@ export const useTableData = ({
 
     setTableColumnVisibility(initialVisibility);
   }, [tab.fields, tableColumnVisibility, setTableColumnVisibility]);
+
+
+
+  // Initialize default sorting
+  useEffect(() => {
+    // Only initialize if there's no current sorting
+    if (tableColumnSorting.length === 0 && tab.fields) {
+      const defaultSort = getDefaultSort();
+
+      if (defaultSort) {
+        setTableColumnSorting([
+          {
+            id: defaultSort.id,
+            desc: defaultSort.desc,
+          },
+        ]);
+      }
+    }
+  }, [tab.fields, tableColumnSorting.length, setTableColumnSorting, getDefaultSort]);
 
   // Apply quick filter from context menu
   const applyQuickFilter = useCallback(
