@@ -68,6 +68,7 @@ import { ACTION_FORM_INITIALIZATION, MODE_CHANGE } from "@/utils/hooks/useFormIn
 import { COLUMN_NAMES } from "./constants";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
+import { HeaderContextMenu, type SummaryType } from "./HeaderContextMenu";
 import { RecordCounterBar } from "@workspaceui/componentlibrary/src/components";
 import type {
   EditingRowsState,
@@ -110,6 +111,27 @@ import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
+
+const SummaryFooter = ({ column }: { column: MRT_Column<EntityData> }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const meta = column.columnDef.meta as any;
+  const { summaryType, summaryResult, isSummaryLoading } = meta || {};
+
+  let displayValue: React.ReactNode = "Error";
+
+  if (isSummaryLoading) {
+    displayValue = "Loading...";
+  } else if (summaryResult !== null && summaryResult !== undefined) {
+    displayValue = summaryResult;
+  }
+
+  return (
+    <div className="flex items-center font-bold px-4 py-2 bg-(--color-neutral-10)" data-testid="SummaryFooter__8ca888">
+      <span className="mr-2 text-(--color-neutral-60) uppercase text-xs">{summaryType}:</span>
+      <span className="text-(--color-neutral-90)">{displayValue}</span>
+    </div>
+  );
+};
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -600,9 +622,66 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     refetch,
     removeRecordLocally,
     applyQuickFilter,
+    fetchSummary,
   } = useTableData({
     isTreeMode,
   });
+
+  // Summary State
+  const [summaryState, setSummaryState] = useState<{ columnId: string; type: SummaryType } | null>(null);
+  const [summaryResult, setSummaryResult] = useState<number | string | null>(null);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [headerContextMenuAnchor, setHeaderContextMenuAnchor] = useState<HTMLElement | null>(null);
+  const [headerContextMenuColumn, setHeaderContextMenuColumn] = useState<MRT_Column<EntityData> | null>(null);
+
+  const handleHeaderContextMenu = useCallback(
+    (event: React.MouseEvent<HTMLElement>, column: MRT_Column<EntityData>) => {
+      event.preventDefault();
+      setHeaderContextMenuAnchor(event.currentTarget);
+      setHeaderContextMenuColumn(column);
+    },
+    []
+  );
+
+  const handleCloseHeaderContextMenu = useCallback(() => {
+    setHeaderContextMenuAnchor(null);
+    setHeaderContextMenuColumn(null);
+  }, []);
+
+  const handleSetSummary = useCallback((columnId: string, type: SummaryType) => {
+    setSummaryState({ columnId, type });
+  }, []);
+
+  const handleRemoveSummary = useCallback(() => {
+    setSummaryState(null);
+    setSummaryResult(null);
+  }, []);
+
+  // Fetch summary when state or filters change
+  useEffect(() => {
+    const loadSummary = async () => {
+      if (!summaryState) return;
+
+      setIsSummaryLoading(true);
+      console.log("Fetching summary for:", summaryState);
+      try {
+        const result = await fetchSummary(summaryState.columnId, summaryState.type);
+        console.log("Summary result:", result);
+        if (result) {
+          setSummaryResult(result.value);
+        } else {
+          setSummaryResult(null);
+        }
+      } catch (error) {
+        console.error("Error loading summary:", error);
+        setSummaryResult(null);
+      } finally {
+        setIsSummaryLoading(false);
+      }
+    };
+
+    loadSummary();
+  }, [summaryState, tableColumnFilters, fetchSummary]);
 
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<HTMLElement | null>(null);
   const [hasInitialColumnVisibility, setHasInitialColumnVisibility] = useState<boolean>(false);
@@ -1893,6 +1972,32 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       return column;
     });
 
+    // Add footer to the column that has the active summary
+    if (summaryState) {
+      const summaryColumn = modifiedColumns.find(
+        (col) =>
+          col.columnName === summaryState.columnId ||
+          col.name === summaryState.columnId ||
+          col.id === summaryState.columnId
+      );
+
+      if (summaryColumn) {
+        // Pass summary data via column meta to avoid creating a new component function on every render
+        // This resolves the SonarQube warning about component definition inside parent
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (summaryColumn.columnDef as any).meta = {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ...(summaryColumn.columnDef as any).meta,
+          summaryType: summaryState.type,
+          summaryResult: summaryResult,
+          isSummaryLoading: isSummaryLoading,
+        };
+        summaryColumn.Footer = SummaryFooter;
+      } else {
+        console.warn("Summary column not found:", summaryState.columnId);
+      }
+    }
+
     const firstColumn = { ...modifiedColumns[0] };
     const originalFirstCell = firstColumn.Cell;
 
@@ -1969,6 +2074,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     loadTableDirOptions,
     isLoadingTableDirOptions,
     renderFirstColumnCell,
+    summaryState,
+    summaryResult,
+    isSummaryLoading,
   ]);
 
   // Helper function to check if a row is being edited
@@ -2219,6 +2327,16 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     [sx.tableHeadCell]
   );
 
+  const muiTableHeadCellPropsWithContextMenu = useCallback(
+    ({ column, table }: { column: MRT_Column<EntityData>; table: MRT_TableInstance<EntityData> }) => ({
+      sx: {
+        ...sx.tableHeadCell,
+      },
+      onContextMenu: (e: React.MouseEvent<HTMLElement>) => handleHeaderContextMenu(e, column),
+    }),
+    [sx.tableHeadCell, handleHeaderContextMenu]
+  );
+
   const muiTableContainerProps = useMemo(
     () => ({
       ref: tableContainerRef,
@@ -2356,7 +2474,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
 
   const table = useMaterialReactTable<EntityData>({
     muiTablePaperProps,
-    muiTableHeadCellProps,
+    muiTableHeadCellProps: muiTableHeadCellPropsWithContextMenu,
     muiTableBodyCellProps,
     displayColumnDefOptions,
     muiTableBodyProps,
@@ -2395,6 +2513,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     manualFiltering: true,
     enableColumnOrdering: true,
     renderEmptyRowsFallback,
+    enableTableFooter: !!summaryState,
   });
 
   useTableSelection(tab, records, table.getState().rowSelection, handleTableSelectionChange);
@@ -2773,7 +2892,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
         labels={counterLabels}
         data-testid="RecordCounterBar__8ca888"
       />
-
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
         <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
       </div>
@@ -2829,6 +2947,15 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
         errorMessage={statusModal.errorMessage}
         isDeleteSuccess={statusModal.isDeleteSuccess}
         data-testid="StatusModal__8ca888"
+      />
+      <HeaderContextMenu
+        anchorEl={headerContextMenuAnchor}
+        onClose={handleCloseHeaderContextMenu}
+        column={headerContextMenuColumn}
+        onSetSummary={handleSetSummary}
+        onRemoveSummary={handleRemoveSummary}
+        activeSummary={summaryState}
+        data-testid="HeaderContextMenu__8ca888"
       />
     </div>
   );
