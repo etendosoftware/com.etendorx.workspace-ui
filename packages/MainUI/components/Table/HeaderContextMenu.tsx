@@ -47,7 +47,11 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({
   const columnId = column.id;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const columnDef = column.columnDef as any;
-  const isNumeric = columnDef.type === "integer" || columnDef.type === "number" || columnDef.type === "quantity" || columnDef.type === "amount";
+  const isNumeric =
+    columnDef.type === "integer" ||
+    columnDef.type === "number" ||
+    columnDef.type === "quantity" ||
+    columnDef.type === "amount";
 
   const handleMouseEnterSubMenu = (event: React.MouseEvent<HTMLElement>) => {
     setSubMenuAnchorEl(event.currentTarget);
@@ -76,47 +80,41 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({
         <div
           className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20) flex justify-between items-center relative"
           onMouseEnter={handleMouseEnterSubMenu}
-          data-testid="set-summary-menu-item"
-        >
+          data-testid="set-summary-menu-item">
           <span>{t("table.setSummaryFunction")}</span>
-          
+
           {/* Sub-menu for summary functions */}
           <Menu
             anchorEl={subMenuAnchorEl}
             onClose={handleCloseSubMenu}
             className="rounded-xl ml-2"
-          >
+            data-testid="Menu__3c9781">
             <div className="rounded-2xl px-2 py-2" onMouseLeave={handleCloseSubMenu}>
               <div
                 onClick={() => handleSetSummary("min")}
-                className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
-              >
+                className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)">
                 {t("table.summary.min")}
               </div>
               <div
                 onClick={() => handleSetSummary("max")}
-                className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
-              >
+                className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)">
                 {t("table.summary.max")}
               </div>
               <div
                 onClick={() => handleSetSummary("count")}
-                className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
-              >
+                className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)">
                 {t("table.summary.count")}
               </div>
               {isNumeric && (
                 <>
                   <div
                     onClick={() => handleSetSummary("sum")}
-                    className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
-                  >
+                    className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)">
                     {t("table.summary.sum")}
                   </div>
                   <div
                     onClick={() => handleSetSummary("avg")}
-                    className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
-                  >
+                    className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)">
                     {t("table.summary.avg")}
                   </div>
                 </>
@@ -129,8 +127,7 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({
           <div
             onClick={handleRemoveSummary}
             className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
-            data-testid="remove-summary-menu-item"
-          >
+            data-testid="remove-summary-menu-item">
             {t("table.removeSummaryFunction")}
           </div>
         )}

@@ -2868,7 +2868,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
         labels={counterLabels}
         data-testid="RecordCounterBar__8ca888"
       />
-
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
         <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
       </div>
@@ -2932,6 +2931,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
         onSetSummary={handleSetSummary}
         onRemoveSummary={handleRemoveSummary}
         activeSummary={summaryState}
+        data-testid="HeaderContextMenu__8ca888"
       />
     </div>
   );
