@@ -300,25 +300,102 @@ export const useTableData = ({
   });
 
   // Build query
-  const query: DatasourceOptions = useMemo(() => {
-    // Find the correct parent column by matching referencedEntity with parentTab.entityName
-    let fieldName = "id";
+  // Helper to determine default sort
+  const getDefaultSort = useCallback(() => {
+    if (!tab) return null;
 
-    if (Array.isArray(tab?.parentColumns) && tab.parentColumns.length > 0) {
-      if (parentTab) {
-        // Try to find the field that references the parent tab's entity
-        const matchingField = tab.parentColumns.find((colName) => {
-          const field = tab.fields[colName];
-          return field?.referencedEntity === parentTab.entityName;
-        });
+    // 1. Tab Level: Order By Clause
+    const orderByClause = tab.hqlorderbyclause || tab.sQLOrderByClause;
+    if (orderByClause) {
+      const parts = orderByClause.trim().split(/\s+/);
+      const fieldName = parts[0];
+      const desc = parts.length > 1 && parts[1].toUpperCase() === "DESC";
 
-        fieldName = matchingField || tab.parentColumns[0] || "id";
-      } else {
-        // No parent tab, use first column as fallback
-        fieldName = tab.parentColumns[0] || "id";
-      }
+      // Try to find the field to get its UI ID (name)
+      const field = Object.values(tab.fields).find(
+        (f) => f.hqlName === fieldName || f.columnName === fieldName || f.name === fieldName
+      );
+
+      return {
+        id: field?.name ?? fieldName,
+        desc,
+      };
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fields = Object.values(tab.fields) as any[];
+
+    // 2. Field Level: Record Sort No
+    const sortNoFields = fields.filter((f) => f.recordSortNo != null);
+    if (sortNoFields.length > 0) {
+      sortNoFields.sort((a, b) => a.recordSortNo - b.recordSortNo);
+      return {
+        id: sortNoFields[0].name,
+        desc: false,
+      };
+    }
+
+    // 3. Field Level: Identifier
+    const identifierFields = fields.filter((field) => {
+      const col = field.column as any;
+      if (!col) return false;
+      // Check both boolean true and string "true" values
+      return (
+        col?.isIdentifier === true ||
+        col?.isIdentifier === "true" ||
+        col?.identifier === true ||
+        col?.identifier === "true"
+      );
+    });
+
+    if (identifierFields.length > 0) {
+      const sortedIdentifierFields = identifierFields.toSorted(
+        (a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0)
+      );
+      const identifierField = sortedIdentifierFields[0];
+      return {
+        id: identifierField.name,
+        desc: false,
+      };
+    }
+
+    return null;
+  }, [tab]);
+
+  // Helper to find parent field name
+  const getParentFieldName = useCallback(() => {
+    if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
+      return "id";
+    }
+
+    if (!parentTab) {
+      return tab.parentColumns[0] || "id";
+    }
+
+    const matchingField = tab.parentColumns.find((colName) => {
+      const field = tab.fields[colName];
+      return field?.referencedEntity === parentTab.entityName;
+    });
+
+    return matchingField || tab.parentColumns[0] || "id";
+  }, [tab.parentColumns, tab.fields, parentTab]);
+
+  // Helper to apply sort options to query
+  const applySortToOptions = useCallback(
+    (options: DatasourceOptions, sort: ReturnType<typeof getDefaultSort>) => {
+      if (!sort) return;
+
+      const field = Object.values(tab.fields).find((f) => f.name === sort.id);
+      const sortField = field?.hqlName || sort.id;
+
+      options.sortBy = sort.desc ? `-${sortField}` : sortField;
+      options.isSorting = true;
+    },
+    [tab.fields]
+  );
+
+  const query: DatasourceOptions = useMemo(() => {
+    const fieldName = getParentFieldName();
     const value = parentId;
     const operator = "equals";
 
@@ -334,58 +411,28 @@ export const useTableData = ({
     }
 
     if (value && value !== "" && value !== undefined) {
-      options.criteria = [
-        {
-          fieldName,
-          value,
-          operator,
-        },
-      ];
+      options.criteria = [{ fieldName, value, operator }];
     }
 
-    // Add sorting
+    // Apply sorting
     if (tableColumnSorting?.length > 0) {
-      const sort = tableColumnSorting[0];
-      // Find the field that corresponds to the sorted column ID (which is the field name)
-      const field = Object.values(tab.fields).find((f) => f.name === sort.id);
-      const sortField = field?.hqlName || sort.id;
-
-      options.sortBy = sort.desc ? `-${sortField}` : sortField;
+      applySortToOptions(options, tableColumnSorting[0]);
     } else {
-      // Default sort by identifier column if no explicit sort
-      const identifierField = Object.values(tab.fields).find((field) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const col = field.column as any;
-        return (
-          col?.isIdentifier === true ||
-          col?.isIdentifier === "true" ||
-          col?.identifier === true ||
-          col?.identifier === "true"
-        );
-      });
-
-      if (identifierField) {
-        options.sortBy = identifierField.hqlName;
-      }
+      applySortToOptions(options, getDefaultSort());
     }
 
     return options;
   }, [
-    tab.parentColumns,
     tab.window,
     tab.id,
     initialIsFilterApplied,
     isImplicitFilterApplied,
-    tab.name,
-    tab.tabLevel,
-    tab.parentTabId,
-    tab.entityName,
-    tab.fields,
     parentId,
-    parentRecord?.id,
-    parentTab,
     language,
     tableColumnSorting,
+    getDefaultSort,
+    getParentFieldName,
+    applySortToOptions,
   ]);
 
   // Tree options
@@ -729,6 +776,23 @@ export const useTableData = ({
 
     setTableColumnVisibility(initialVisibility);
   }, [tab.fields, tableColumnVisibility, setTableColumnVisibility]);
+
+  // Initialize default sorting
+  useEffect(() => {
+    // Only initialize if there's no current sorting
+    if (tableColumnSorting.length === 0 && tab.fields) {
+      const defaultSort = getDefaultSort();
+
+      if (defaultSort) {
+        setTableColumnSorting([
+          {
+            id: defaultSort.id,
+            desc: defaultSort.desc,
+          },
+        ]);
+      }
+    }
+  }, [tab.fields, tableColumnSorting.length, setTableColumnSorting, getDefaultSort]);
 
   // Apply quick filter from context menu
   const applyQuickFilter = useCallback(
