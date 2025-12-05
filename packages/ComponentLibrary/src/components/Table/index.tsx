@@ -15,14 +15,27 @@
  *************************************************************************
  */
 
-import { getColumns } from "@workspaceui/storybook/src/stories/Components/Table/columns";
-import type { OrganizationField, TableProps } from "@workspaceui/storybook/src/stories/Components/Table/types";
-import { type MRT_Row, type MRT_TableOptions, MaterialReactTable, useMaterialReactTable } from "material-react-table";
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+
+import {
+  type MRT_Row,
+  type MRT_TableOptions,
+  MaterialReactTable,
+  useMaterialReactTable,
+  type MRT_ColumnDef,
+} from "material-react-table";
 import type React from "react";
 import { useMemo } from "react";
 import { useStyle } from "./styles";
 
-type TableDataType = Record<string, unknown>;
+type TableDataType = any;
+
+const getColumns = (): MRT_ColumnDef<any>[] => [];
+
+interface TableProps {
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  data?: any[];
+}
 
 export interface EnhancedTableProps extends TableProps {
   onRowClick: (row: MRT_Row<TableDataType>) => void;
@@ -37,8 +50,9 @@ const Table: React.FC<EnhancedTableProps> = ({ data = [], onRowClick, onRowDoubl
     return data.map((item) => {
       const flatItem: TableDataType = {};
       for (const [key, field] of Object.entries(item)) {
-        if ("value" in field && typeof field !== "function") {
-          flatItem[key] = (field as OrganizationField & { value: unknown }).value;
+        const fieldAny = field as any;
+        if (fieldAny && typeof fieldAny === "object" && "value" in fieldAny) {
+          flatItem[key] = fieldAny.value;
         }
       }
       return flatItem;

@@ -104,7 +104,7 @@ export function useProcessInitialization({
   record,
   tab,
 }: ProcessInitializationParams): UseProcessInitialization {
-  const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, initialState);
   const { error, processInitialization, loading } = state;
 
   const params = useMemo(

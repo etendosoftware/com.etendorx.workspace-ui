@@ -168,8 +168,8 @@ export default function TabsProvider({
 
   const value = useMemo<TabsContextType>(
     () => ({
-      containerRef,
-      windowsContainerRef,
+      containerRef: containerRef as React.RefObject<HTMLDivElement>,
+      windowsContainerRef: windowsContainerRef as React.RefObject<HTMLDivElement>,
       tabRefs,
       showLeftScrollButton,
       showRightScrollButton,

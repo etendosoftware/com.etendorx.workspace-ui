@@ -26,7 +26,7 @@ interface RightButtonsProps {
 const RightButtons: React.FC<RightButtonsProps> = ({ children }) => {
   const { styles } = useStyle();
   return (
-    <Box style={styles.boxStyles}>
+    <Box sx={styles.boxStyles}>
       <Box sx={styles.childBox}>{children}</Box>
     </Box>
   );

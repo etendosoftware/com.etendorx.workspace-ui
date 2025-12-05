@@ -175,7 +175,11 @@ const MultiSelect = memo(function MultiSelectCmp({
   );
 
   const clickOutsideRefs = useMemo(() => [portalRef], [portalRef]);
-  useClickOutside(wrapperRef, () => setIsOpen(false), clickOutsideRefs);
+  useClickOutside(
+    wrapperRef as React.RefObject<HTMLDivElement>,
+    () => setIsOpen(false),
+    clickOutsideRefs as React.RefObject<HTMLElement>[]
+  );
 
   const handleSetSearchTerm = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,7 +190,7 @@ const MultiSelect = memo(function MultiSelectCmp({
     [onSearch]
   );
 
-  const handleScroll = useInfiniteScroll(listRef, loading, hasMore, onLoadMore);
+  const handleScroll = useInfiniteScroll(listRef as React.RefObject<HTMLUListElement>, loading, hasMore, onLoadMore);
 
   // Actualizar opciones cuando llegan props
   useEffect(() => {
@@ -260,8 +264,8 @@ const MultiSelect = memo(function MultiSelectCmp({
       </div>
       <DropdownPortal
         isOpen={isOpen}
-        triggerRef={wrapperRef}
-        portalRef={portalRef}
+        triggerRef={wrapperRef as React.RefObject<HTMLElement>}
+        portalRef={portalRef as React.RefObject<HTMLDivElement>}
         minWidth={256}
         data-testid="DropdownPortal__cb81f7">
         <div className="p-2">

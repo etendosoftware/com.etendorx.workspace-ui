@@ -955,8 +955,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     if (result) return null;
 
     const parametersList = Object.values(parameters);
-    const windowReferences: JSX.Element[] = [];
-    const selectors: JSX.Element[] = [];
+    const windowReferences: React.ReactElement[] = [];
+    const selectors: React.ReactElement[] = [];
 
     // Separate window references from selectors
     for (const parameter of parametersList) {

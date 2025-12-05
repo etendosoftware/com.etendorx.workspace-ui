@@ -44,7 +44,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const toggleFunctions = useRef<ToggleFunctions>({});
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const menuControlRef = useRef<{ recalculatePosition: () => void } | null>(null);
 

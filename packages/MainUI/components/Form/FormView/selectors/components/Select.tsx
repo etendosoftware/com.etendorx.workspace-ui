@@ -293,7 +293,12 @@ function SelectCmp({
     [options, searchTerm]
   );
 
-  const dropdownPosition = useDropdownPosition(isOpen, triggerRef, filteredOptions.length, true);
+  const dropdownPosition = useDropdownPosition(
+    isOpen,
+    triggerRef as React.RefObject<HTMLDivElement>,
+    filteredOptions.length,
+    true
+  );
 
   const mainDivClassNames = useMemo(() => {
     const baseClasses =
@@ -434,7 +439,7 @@ function SelectCmp({
   );
 
   const { handleMouseEnter, handleMouseLeave } = useHoverHandlers(setIsHovering);
-  const handleScroll = useInfiniteScroll(listRef, loading, hasMore, onLoadMore);
+  const handleScroll = useInfiniteScroll(listRef as React.RefObject<HTMLUListElement>, loading, hasMore, onLoadMore);
   const handleFocus = useFocusHandler(onFocus);
 
   useEffect(() => {
@@ -470,7 +475,12 @@ function SelectCmp({
     }
   }, [selectedValue, options, currentIdentifier]);
 
-  useOpenDropdownEffect(isOpen, setSearchTerm, setHighlightedIndex, searchInputRef);
+  useOpenDropdownEffect(
+    isOpen,
+    setSearchTerm,
+    setHighlightedIndex,
+    searchInputRef as React.RefObject<HTMLInputElement>
+  );
 
   const renderedOptions = useMemo(() => {
     if (filteredOptions.length > 0) {
@@ -536,17 +546,17 @@ function SelectCmp({
           isOpen={isOpen}
           position={dropdownPosition}
           searchTerm={searchTerm}
-          searchInputRef={searchInputRef}
+          searchInputRef={searchInputRef as React.RefObject<HTMLInputElement>}
           handleSetSearchTerm={handleSetSearchTerm}
           handleKeyDown={handleKeyDown}
           handleSearchBlur={handleSearchBlur}
           handleFocus={handleFocus}
-          listRef={listRef}
+          listRef={listRef as React.RefObject<HTMLUListElement>}
           handleScroll={handleScroll}
           renderedOptions={renderedOptions}
           loading={loading}
           hasMore={hasMore}
-          loadingRef={loadingRef}
+          loadingRef={loadingRef as React.RefObject<HTMLLIElement>}
           dropdownId={dropdownId}
           data-testid={`DropdownPortal__${field.id}`}
         />
