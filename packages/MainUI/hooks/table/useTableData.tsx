@@ -48,6 +48,10 @@ interface UseTableDataParams {
   onLoadMoreFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
 }
 
+export interface SummaryResult {
+  value: number | string;
+}
+
 interface UseTableDataReturn {
   // Data
   displayRecords: EntityData[];
@@ -91,6 +95,7 @@ interface UseTableDataReturn {
   ) => Promise<void>;
   isImplicitFilterApplied: boolean;
   tableColumnFilters: MRT_ColumnFiltersState;
+  fetchSummary: (columnId: string, summaryType: string) => Promise<SummaryResult | null>;
 }
 
 export const useTableData = ({
@@ -797,6 +802,57 @@ export const useTableData = ({
     ]
   );
 
+  // Fetch summary data
+  const fetchSummary = useCallback(
+    async (columnId: string, summaryType: string): Promise<SummaryResult | null> => {
+      const column = baseColumns.find((col) => col.columnName === columnId || col.id === columnId);
+      if (!column) {
+        return null;
+      }
+
+      // Use the same query params as the main grid but add summary params
+      // Explicitly remove sortBy and pageSize to prevent the backend from returning sorted records instead of the summary
+      const { sortBy, pageSize, ...cleanQuery } = query;
+      const summaryQuery = {
+        ...cleanQuery,
+        _summary: JSON.stringify({
+          [column.columnName || column.id]: summaryType,
+        }),
+        _noCount: true,
+        _startRow: 0,
+        _endRow: 1,
+        _operationType: "fetch",
+        _textMatchStyle: "substring",
+        _noActiveFilter: true,
+        _className: "OBViewDataSource",
+        Constants_FIELDSEPARATOR: "$",
+        Constants_IDENTIFIER: "_identifier",
+      };
+
+      console.log("Summary Query:", JSON.stringify(summaryQuery, null, 2));
+
+      try {
+        const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
+        const response = (await datasource.get(treeEntity, summaryQuery)) as {
+          ok: boolean;
+          data: { response?: { data?: any[] } };
+        };
+
+        if (response.ok && response.data?.response?.data && response.data.response.data.length > 0) {
+          const result = response.data.response.data[0];
+          // The backend returns the summary result in a field named after the column
+          const value = result[column.columnName || column.id];
+          return { value };
+        }
+        return null;
+      } catch (error) {
+        console.error("❌ Exception fetching summary:", error);
+        return null;
+      }
+    },
+    [query, treeEntity, baseColumns]
+  );
+
   return {
     // Data
     displayRecords,
@@ -828,8 +884,9 @@ export const useTableData = ({
     refetch,
     removeRecordLocally,
     applyQuickFilter,
-    isImplicitFilterApplied: isImplicitFilterApplied ?? false,
+    isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
     tableColumnFilters,
+    fetchSummary,
     hasMoreRecords,
   };
 };
