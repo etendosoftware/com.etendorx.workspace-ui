@@ -1988,11 +1988,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
 
       if (summaryColumn) {
         summaryColumn.Footer = () => (
-          <SummaryFooter
-            summaryType={summaryState.type}
-            summaryResult={summaryResult}
-            isLoading={isSummaryLoading}
-          />
+          <SummaryFooter summaryType={summaryState.type} summaryResult={summaryResult} isLoading={isSummaryLoading} />
         );
       } else {
         console.warn("Summary column not found:", summaryState.columnId);
@@ -2318,8 +2314,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     }),
     [sx.tablePaper, tableAriaAttributes]
   );
-
-
 
   const muiTableHeadCellProps = useMemo(
     () => ({
