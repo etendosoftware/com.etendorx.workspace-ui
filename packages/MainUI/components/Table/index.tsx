@@ -2358,6 +2358,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     muiTablePaperProps,
     muiTableHeadCellProps,
     muiTableBodyCellProps,
+    defaultColumn: {
+      minSize: 60,
+    },
     displayColumnDefOptions,
     muiTableBodyProps,
     layoutMode: "semantic",
