@@ -322,12 +322,13 @@ export const useTableData = ({
       };
     }
 
-    const fields = Object.values(tab.fields);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fields = Object.values(tab.fields) as any[];
 
     // 2. Field Level: Record Sort No
-    const sortNoFields = fields.filter((f) => f.sequenceNumber != null);
+    const sortNoFields = fields.filter((f) => f.recordSortNo != null);
     if (sortNoFields.length > 0) {
-      sortNoFields.sort((a, b) => a.sequenceNumber - b.sequenceNumber);
+      sortNoFields.sort((a, b) => a.recordSortNo - b.recordSortNo);
       return {
         id: sortNoFields[0].name,
         desc: false,
