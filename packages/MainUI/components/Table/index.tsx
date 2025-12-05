@@ -112,6 +112,31 @@ import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
 
+const SummaryFooter = ({
+  summaryType,
+  summaryResult,
+  isLoading,
+}: {
+  summaryType: string;
+  summaryResult: number | string | null;
+  isLoading: boolean;
+}) => {
+  let displayValue: React.ReactNode = "Error";
+
+  if (isLoading) {
+    displayValue = "Loading...";
+  } else if (summaryResult !== null) {
+    displayValue = summaryResult;
+  }
+
+  return (
+    <div className="flex items-center font-bold px-4 py-2 bg-(--color-neutral-10)">
+      <span className="mr-2 text-(--color-neutral-60) uppercase text-xs">{summaryType}:</span>
+      <span className="text-(--color-neutral-90)">{displayValue}</span>
+    </div>
+  );
+};
+
 type RowProps = (props: {
   isDetailPanel?: boolean;
   row: MRT_Row<EntityData>;
@@ -718,6 +743,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
    */
   const enrichFieldWithOriginalMetadata = useCallback(
     (field: Field, column: Column): Field => {
+      const columnDef = column.columnDef as { type?: string };
       const fieldKey = column.columnName || column.name;
       const originalField = tab.fields?.[fieldKey];
 
@@ -1962,12 +1988,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
 
       if (summaryColumn) {
         summaryColumn.Footer = () => (
-          <div className="flex items-center font-bold px-4 py-2 bg-(--color-neutral-10)">
-            <span className="mr-2 text-(--color-neutral-60) uppercase text-xs">{summaryState.type}:</span>
-            <span className="text-(--color-neutral-90)">
-              {isSummaryLoading ? "Loading..." : summaryResult !== null ? summaryResult : "Error"}
-            </span>
-          </div>
+          <SummaryFooter
+            summaryType={summaryState.type}
+            summaryResult={summaryResult}
+            isLoading={isSummaryLoading}
+          />
         );
       } else {
         console.warn("Summary column not found:", summaryState.columnId);
@@ -2293,6 +2318,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     }),
     [sx.tablePaper, tableAriaAttributes]
   );
+
+
 
   const muiTableHeadCellProps = useMemo(
     () => ({

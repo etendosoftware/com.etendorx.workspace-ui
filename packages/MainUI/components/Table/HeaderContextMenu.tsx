@@ -46,7 +46,7 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({
   if (!column) return null;
   const columnId = column.id;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const columnDef = column.columnDef as any;
+  const columnDef = column.columnDef as { type?: string };
   const isNumeric =
     columnDef.type === "integer" ||
     columnDef.type === "number" ||
