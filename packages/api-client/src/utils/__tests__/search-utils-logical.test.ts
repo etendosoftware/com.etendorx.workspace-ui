@@ -1,4 +1,3 @@
-
 import { LegacyColumnFilterUtils } from "../search-utils";
 import type { Column } from "../../api/types";
 

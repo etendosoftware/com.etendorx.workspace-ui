@@ -645,7 +645,16 @@ export class LegacyColumnFilterUtils {
   }
 
   private static handleOrCondition(fieldName: string, trimmedValue: string, column: Column): CompositeCriteria | null {
-    const orParts = trimmedValue.split(/\||\s+or\s+/i);
+    // Prevent ReDoS by limiting length
+    if (trimmedValue.length > 2000) return null;
+
+    // Normalize whitespace to single spaces to avoid catastrophic backtracking in regex
+    const normalizedValue = trimmedValue.replace(/\s+/g, " ");
+
+    // Split by '|' or ' or ' (case insensitive)
+    // Since whitespace is normalized, we can use a simple space check
+    const orParts = normalizedValue.split(/\|| or /i);
+
     if (orParts.length <= 1) return null;
 
     const criteriaList: BaseCriteria[] = [];
@@ -665,7 +674,16 @@ export class LegacyColumnFilterUtils {
   }
 
   private static handleAndCondition(fieldName: string, trimmedValue: string, column: Column): CompositeCriteria | null {
-    const andParts = trimmedValue.split(/&|\s+and\s+/i);
+    // Prevent ReDoS by limiting length
+    if (trimmedValue.length > 2000) return null;
+
+    // Normalize whitespace to single spaces to avoid catastrophic backtracking in regex
+    const normalizedValue = trimmedValue.replace(/\s+/g, " ");
+
+    // Split by '&' or ' and ' (case insensitive)
+    // Since whitespace is normalized, we can use a simple space check
+    const andParts = normalizedValue.split(/&| and /i);
+
     if (andParts.length <= 1) return null;
 
     const criteriaList: BaseCriteria[] = [];
