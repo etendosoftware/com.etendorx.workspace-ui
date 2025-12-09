@@ -206,7 +206,7 @@ export const createButtonByType = ({
       },
       [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: () => {
         const isCloneEnabled = tab?.obuiappShowCloneButton;
-        const isSingleSelection = hasSelectedRecord && selectedRecordsLength === 1;
+        const isSingleSelection = hasSelectedRecord;
         return buildDisableConfig(!isCloneEnabled || !isSingleSelection);
       },
     };
