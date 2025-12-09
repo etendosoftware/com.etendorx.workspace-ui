@@ -308,6 +308,14 @@ export class LegacyColumnFilterUtils {
     return false;
   }
 
+  static isBooleanField(column: Column): boolean {
+    return (
+      column.type === "boolean" ||
+      column.column?._identifier === "YesNo" ||
+      column.column?.reference === "20"
+    );
+  }
+
   static formatValueForType(value: unknown, column: Column): FormattedValue {
     if (value === null || value === undefined || value === "") {
       return null;
@@ -319,6 +327,21 @@ export class LegacyColumnFilterUtils {
         return numValue;
       }
       return null;
+    }
+
+    if (LegacyColumnFilterUtils.isBooleanField(column)) {
+      const strValue = String(value).toLowerCase().trim();
+      if (strValue === "true" || strValue === "yes" || strValue === "si" || strValue === "sí") {
+        return "true";
+      }
+      if (strValue === "false" || strValue === "no") {
+        return "false";
+      }
+      // If it's not a clear boolean value, return as is (might be a partial search?)
+      // But for boolean fields, we usually want exact match or nothing.
+      // Let's return the string so it can be used in "equals" if needed,
+      // but typically boolean filters are strict.
+      return String(value);
     }
 
     return String(value);
@@ -479,6 +502,13 @@ export class LegacyColumnFilterUtils {
 
     // For TABLEDIR columns, use the $_identifier field and iEquals operator (like Etendo Classic)
     const actualFieldName = ColumnFilterUtils.isTableDirColumn(column) ? `${fieldName}$_identifier` : fieldName;
+
+    if (isTextSearch && actualValues.length === 1) {
+      const parsed = LegacyColumnFilterUtils.parseLogicalFilter(actualFieldName, String(actualValues[0]), column);
+      if (parsed) {
+        return [parsed as BaseCriteria];
+      }
+    }
 
     let operator: "iContains" | "iEquals" | "equals";
     if (isTextSearch) {
@@ -750,6 +780,7 @@ export class LegacyColumnFilterUtils {
       { prefix: "<=", operator: "lessOrEqual" },
       { prefix: ">", operator: "greaterThan" },
       { prefix: "<", operator: "lessThan" },
+      { prefix: "==", operator: "equals" },
       { prefix: "=", operator: "equals" },
     ];
 

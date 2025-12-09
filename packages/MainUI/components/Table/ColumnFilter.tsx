@@ -1,4 +1,5 @@
 import type React from "react";
+import { useCallback } from "react";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import {
   ColumnFilterUtils,
@@ -25,7 +26,10 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  const isBooleanColumn = column.type === "boolean" || column.column?._identifier === "YesNo";
+  const isBooleanColumn =
+    column.type === "boolean" ||
+    column.column?._identifier === "YesNo" ||
+    column.column?.reference === "20";
 
   const supportsDropdown = isBooleanColumn || ColumnFilterUtils.supportsDropdownFilter(column);
 
@@ -38,21 +42,25 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
 
   const availableOptions = isBooleanColumn
     ? booleanOptions
-    : (filterState?.availableOptions || []).map((option) => ({
-        id: option.id,
-        label: option.label,
-        value: option.value ?? option.id,
-      }));
+    : (filterState?.availableOptions || [])
+        .filter((option) => !option.isTextSearch)
+        .map((option) => ({
+          id: option.id,
+          label: option.label,
+          value: option.value ?? option.id,
+        }));
 
   // Treat boolean columns the same as LIST columns: use filterState?.selectedOptions directly
-  const selectedValues = (filterState?.selectedOptions || []).map((option) => option.id);
+  const selectedValues = (filterState?.selectedOptions || [])
+    .filter((option) => !option.isTextSearch)
+    .map((option) => option.id);
 
   const handleSelectionChange = (selectedIds: string[]) => {
     const selectedOptions = (availableOptions || []).filter((option) => selectedIds.includes(option.id));
     onFilterChange(selectedOptions);
   };
 
-  const handleSearchChange = (searchQuery: string) => {
+  const handleSearchChange = useCallback((searchQuery: string) => {
     if (onLoadOptions && !isBooleanColumn) onLoadOptions(searchQuery);
 
     if (searchQuery) {
@@ -69,7 +77,7 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
       // Based on "filter only by what I typed", clearing means no filter).
       onFilterChange([]);
     }
-  };
+  }, [onLoadOptions, isBooleanColumn, onFilterChange]);
 
   const handleLoadMore = () => {
     if (onLoadMoreOptions && ColumnFilterUtils.isTableDirColumn(column) && !isBooleanColumn) {
@@ -82,7 +90,7 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
       options={availableOptions}
       selectedValues={selectedValues}
       onSelectionChange={handleSelectionChange}
-      onSearch={!isBooleanColumn ? handleSearchChange : undefined}
+      onSearch={handleSearchChange}
       onFocus={!isBooleanColumn ? onLoadOptions : undefined}
       onLoadMore={!isBooleanColumn ? handleLoadMore : undefined}
       loading={filterState?.loading || false}
@@ -90,6 +98,7 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
       placeholder={`Filter ${column.name || column.columnName}...`}
       maxHeight={200}
       data-testid="MultiSelect__a8fea9"
+      enableTextFilterLogic={true}
     />
   );
 };

@@ -50,6 +50,7 @@ interface MultiSelectProps {
   hasMore?: boolean;
   placeholder?: string;
   maxHeight?: number;
+  enableTextFilterLogic?: boolean;
 }
 
 const OptionItem = memo(
@@ -100,6 +101,7 @@ const MultiSelect = memo(function MultiSelectCmp({
   hasMore = true,
   placeholder = "Select options...",
   maxHeight = 240,
+  enableTextFilterLogic = false,
 }: MultiSelectProps) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
@@ -113,10 +115,35 @@ const MultiSelect = memo(function MultiSelectCmp({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const portalRef = useRef<HTMLDivElement>(null);
 
+  const handleOnSearch = useCallback((term: string) => {
+    onSearch?.(term);
+  }, [onSearch]);
+
+  // Debounce the search callback
+  const debouncedSearch = useDebouncedCallback(handleOnSearch, 500);
+
   // Filtrado
   const filteredOptions = useMemo(() => {
-    return internalOptions.filter((o) => o.label.toLowerCase().includes(searchTerm.toLowerCase()));
-  }, [internalOptions, searchTerm]);
+    let termToFilter = searchTerm;
+    if (enableTextFilterLogic) {
+      // Extract the last part of the logical expression
+      const parts = searchTerm.split(/ OR | or /);
+      const lastPart = parts[parts.length - 1] || "";
+      
+      // If the last part starts with ==, do not filter the dropdown
+      if (lastPart.trim().startsWith("==")) {
+        return internalOptions;
+      }
+      
+      // Remove '==' prefix if present (though the above check handles the == case, 
+      // we might want to support filtering if they type "==SomeText" but usually == implies exact match selection)
+      // Based on requirement: "si se pone por ejemplo ==ETMETA_Cancel no deberia filtrar por a lista dentro del selector"
+      // So if it starts with ==, we show all options.
+      
+      termToFilter = lastPart.trim();
+    }
+    return internalOptions.filter((o) => o.label.toLowerCase().includes(termToFilter.toLowerCase()));
+  }, [internalOptions, searchTerm, enableTextFilterLogic]);
 
   const selectedLabels = useMemo(
     () => internalOptions.filter((o) => selectedValues.includes(o.id)).map((o) => o.label),
@@ -131,19 +158,48 @@ const MultiSelect = memo(function MultiSelectCmp({
 
   const handleSelect = useCallback(
     (id: string) => {
-      const newSelection = selectedValues.includes(id)
-        ? selectedValues.filter((v) => v !== id)
-        : [...selectedValues, id];
-      onSelectionChange(newSelection);
-      // Close dropdown after selection to provide immediate feedback
-      // setIsOpen(false); // Keep open for multi-select? The original code closed it.
-      // Actually, for multi-select usually you want to keep it open, but the original code closed it.
-      // Let's stick to original behavior but clear search.
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-      setSearchTerm("");
+      if (enableTextFilterLogic) {
+        const option = internalOptions.find((o) => o.id === id);
+        if (option) {
+          const label = option.label;
+          // Escape special characters in label for regex
+          const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const token = `==${label}`;
+          
+          // Check if the current search term ends with a logical operator
+          // This allows users to build queries like "==A OR ==B" by typing " OR " and then selecting B
+          // But if they just select B without typing an operator, it replaces the current value (Single Select behavior)
+          const hasTrailingOperator = /\s+(OR|AND|\||&)\s*$/i.test(searchTerm);
+
+          if (hasTrailingOperator) {
+             setSearchTerm(`${searchTerm}${token}`);
+             debouncedSearch(`${searchTerm}${token}`);
+          } else {
+             setSearchTerm(token);
+             debouncedSearch(token);
+          }
+          
+          // Keep dropdown open if we appended (building query), close if we replaced (selection done)?
+          // User said "si selecciono por segunda vez... intercambiar". 
+          // If I replace, I probably want to see the result.
+          // Let's close it to mimic single select feel if we replaced.
+          if (!hasTrailingOperator) {
+            setIsOpen(false);
+          }
+          setHighlightedIndex(-1);
+          // Don't call onSelectionChange, rely on text search
+        }
+      } else {
+        const newSelection = selectedValues.includes(id)
+          ? selectedValues.filter((v) => v !== id)
+          : [...selectedValues, id];
+        onSelectionChange(newSelection);
+        setIsOpen(false);
+        setHighlightedIndex(-1);
+        setSearchTerm("");
+      }
     },
-    [selectedValues, onSelectionChange]
+    [selectedValues, onSelectionChange, enableTextFilterLogic, internalOptions, searchTerm, debouncedSearch]
   );
 
   const handleClear = useCallback(
@@ -153,8 +209,11 @@ const MultiSelect = memo(function MultiSelectCmp({
       // Close dropdown when clearing selection
       setIsOpen(false);
       setSearchTerm("");
+      if (enableTextFilterLogic) {
+        debouncedSearch("");
+      }
     },
-    [onSelectionChange]
+    [onSelectionChange, enableTextFilterLogic, debouncedSearch]
   );
 
   const handleClick = useCallback(() => {
@@ -192,10 +251,7 @@ const MultiSelect = memo(function MultiSelectCmp({
     clickOutsideRefs as React.RefObject<HTMLElement>[]
   );
 
-  // Debounce the search callback
-  const debouncedSearch = useDebouncedCallback((term: string) => {
-    onSearch?.(term);
-  }, 500);
+
 
   const handleSetSearchTerm = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
