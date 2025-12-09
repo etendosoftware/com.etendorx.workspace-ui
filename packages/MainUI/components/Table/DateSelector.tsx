@@ -33,6 +33,19 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
 
     // Only reformat and add "from"/"to" labels if it comes from the modal
     if (!isFromModalRef.current) {
+      // Check for ISO date format (YYYY-MM-DD) which comes from "Use as filter"
+      const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (isoDateRegex.test(filterValue)) {
+        const [year, month, day] = filterValue.split("-").map(Number);
+        const date = new Date(year, month - 1, day);
+        if (!isNaN(date.getTime())) {
+          setInputValue(formatBrowserDate(date));
+          setStartDate(date);
+          setEndDate(null);
+          return;
+        }
+      }
+
       setInputValue(filterValue);
       return;
     }
