@@ -480,11 +480,14 @@ export class LegacyColumnFilterUtils {
     // For TABLEDIR columns, use the $_identifier field and iEquals operator (like Etendo Classic)
     const actualFieldName = ColumnFilterUtils.isTableDirColumn(column) ? `${fieldName}$_identifier` : fieldName;
 
-    const operator = isTextSearch
-      ? "iContains"
-      : ColumnFilterUtils.isTableDirColumn(column)
-      ? "iEquals"
-      : "equals";
+    let operator: "iContains" | "iEquals" | "equals";
+    if (isTextSearch) {
+      operator = "iContains";
+    } else if (ColumnFilterUtils.isTableDirColumn(column)) {
+      operator = "iEquals";
+    } else {
+      operator = "equals";
+    }
 
     if (actualValues.length === 1) {
       // Single value - direct criteria (no OR wrapper)
