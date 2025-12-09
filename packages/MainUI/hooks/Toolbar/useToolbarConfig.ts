@@ -29,13 +29,12 @@ import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useRecordContext } from "@/hooks/useRecordContext";
-import type { ToolbarButtonMetadata, ActionModalResponse } from "./types";
+import type { ToolbarButtonMetadata } from "./types";
 import { useWindowContext } from "@/contexts/window";
 import type { ActionButton, ActionModalProps } from "@workspaceui/componentlibrary/src/components/ActionModal/types";
-import { COPY_RECORD_PROCESS_ID } from "@/utils/processes/toolbar/constants";
 import { isEmptyArray } from "@/utils/commons";
-import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { getNewTabFormState } from "@/utils/window/utils";
+import { copyRecordRequest, handleCopyRecordResponse } from "@/utils/processes/toolbar/utils";
 import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 
@@ -223,62 +222,35 @@ export const useToolbarConfig = ({
 
     const handleRequest = async (cloneWithChildren: boolean) => {
       setActionModal((prev) => ({ ...prev, isLoading: true }));
-
-      const processId = COPY_RECORD_PROCESS_ID;
-      const tabId = tab.id;
-      const recordId = selectedIds[0];
-      const windowId = activeWindow?.windowId;
       const windowIdentifier = activeWindow?.windowIdentifier;
 
-      const options = { method: "POST" };
-
-      const params = new URLSearchParams({
-        processId,
-        tabId,
-        recordId,
-        windowId,
-        _action: "com.smf.jobs.defaults.CloneRecords",
-      });
-
-      const payload = {
-        recordIds: [...selectedIds],
-        _entityName: tab.entityName,
-        _params: {
-          copyChildren: cloneWithChildren,
-        },
-      };
-
-      const { ok, data } = await Metadata.kernelClient.post(`?${params}`, payload, options);
-      const { responseActions, records, refreshParent } = data;
+      const { ok, data } = await copyRecordRequest(tab, selectedIds, activeWindow.windowId, cloneWithChildren);
 
       setActionModal((prev) => ({ ...prev, isLoading: false, isOpen: false }));
-
-      if (
-        !ok ||
-        responseActions.some((action: ActionModalResponse) => action.showMsgInProcessView?.msgType === "error")
-      ) {
-        showErrorModal(t("status.copyError"), {
-          saveLabel: t("common.close"),
-          secondaryButtonLabel: t("modal.secondaryButtonLabel"),
-        });
-        return;
-      }
-
-      if (refreshParent) {
-        triggerParentRefreshes(tab.tabLevel);
-      }
-
-      if (records.length === 1) {
-        const formMode = FORM_MODES.EDIT;
-        const newRecordId = records[0].id;
-        const newTabFormState = getNewTabFormState(newRecordId, TAB_MODES.FORM, formMode);
-        setSelectedRecord(windowIdentifier, tabId, newRecordId);
-        setTabFormState(windowIdentifier, tabId, newTabFormState);
-        return;
-      }
-
       onRefresh?.();
-      clearSelectedRecord(windowIdentifier, tabId);
+
+      handleCopyRecordResponse({
+        ok,
+        data,
+        onError: () => {
+          showErrorModal(t("status.copyError"), {
+            saveLabel: t("common.close"),
+            secondaryButtonLabel: t("modal.secondaryButtonLabel"),
+          });
+        },
+        onRefreshParent: () => {
+          triggerParentRefreshes(tab.tabLevel);
+        },
+        onSingleRecord: (newRecordId) => {
+          const formMode = FORM_MODES.EDIT;
+          const newTabFormState = getNewTabFormState(newRecordId, TAB_MODES.FORM, formMode);
+          setSelectedRecord(windowIdentifier, tabId, newRecordId);
+          setTabFormState(windowIdentifier, tabId, newTabFormState);
+        },
+        onMultipleRecords: () => {
+          clearSelectedRecord(windowIdentifier, tabId);
+        },
+      });
     };
 
     const buttons: ActionButton[] = [];
@@ -335,6 +307,7 @@ export const useToolbarConfig = ({
     setTabFormState,
     triggerParentRefreshes,
     clearSelectedRecord,
+    tabId,
   ]);
 
   useEffect(() => {
