@@ -466,9 +466,11 @@ export class LegacyColumnFilterUtils {
 
     // Extract actual values from FilterOption objects if present
     // This supports both new format (FilterOption[]) and legacy format (string[])
+    let isTextSearch = false;
     const actualValues = values.map((val) => {
       // If it's a FilterOption object with a value property, extract it
       if (typeof val === "object" && val !== null && "value" in val) {
+        if ((val as any).isTextSearch) isTextSearch = true;
         return (val as { value: unknown }).value;
       }
       // Otherwise use the value as-is (backward compatibility with string[])
@@ -478,7 +480,11 @@ export class LegacyColumnFilterUtils {
     // For TABLEDIR columns, use the $_identifier field and iEquals operator (like Etendo Classic)
     const actualFieldName = ColumnFilterUtils.isTableDirColumn(column) ? `${fieldName}$_identifier` : fieldName;
 
-    const operator = ColumnFilterUtils.isTableDirColumn(column) ? "iEquals" : "equals";
+    const operator = isTextSearch
+      ? "iContains"
+      : ColumnFilterUtils.isTableDirColumn(column)
+      ? "iEquals"
+      : "equals";
 
     if (actualValues.length === 1) {
       // Single value - direct criteria (no OR wrapper)

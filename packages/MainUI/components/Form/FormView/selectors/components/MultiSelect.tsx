@@ -29,6 +29,7 @@ import ChevronDown from "../../../../../../ComponentLibrary/src/assets/icons/che
 import closeIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/x.svg?url";
 import { useTranslation } from "@/hooks/useTranslation";
 import { DropdownPortal } from "./DropdownPortal";
+import { useDebouncedCallback } from "../../../../Table/utils/performanceOptimizations";
 
 const FOCUS_STYLES = "focus:outline-none focus:ring-2 focus:ring-dynamic-light";
 const BASE_TRANSITION = "transition-colors outline-none";
@@ -135,6 +136,9 @@ const MultiSelect = memo(function MultiSelectCmp({
         : [...selectedValues, id];
       onSelectionChange(newSelection);
       // Close dropdown after selection to provide immediate feedback
+      // setIsOpen(false); // Keep open for multi-select? The original code closed it.
+      // Actually, for multi-select usually you want to keep it open, but the original code closed it.
+      // Let's stick to original behavior but clear search.
       setIsOpen(false);
       setHighlightedIndex(-1);
       setSearchTerm("");
@@ -163,6 +167,13 @@ const MultiSelect = memo(function MultiSelectCmp({
     });
   }, [onFocus]);
 
+  const handleInputClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsOpen(true);
+    setIsFetchingInitial(true);
+    onFocus?.();
+  }, [onFocus]);
+
   const handleKeyDown = useKeyboardNavigation(
     filteredOptions,
     highlightedIndex,
@@ -181,13 +192,23 @@ const MultiSelect = memo(function MultiSelectCmp({
     clickOutsideRefs as React.RefObject<HTMLElement>[]
   );
 
+  // Debounce the search callback
+  const debouncedSearch = useDebouncedCallback((term: string) => {
+    onSearch?.(term);
+  }, 500);
+
   const handleSetSearchTerm = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const term = e.target.value;
       setSearchTerm(term);
-      onSearch?.(term);
+      debouncedSearch(term);
+      if (!isOpen) {
+        setIsOpen(true);
+        setIsFetchingInitial(true);
+        onFocus?.();
+      }
     },
-    [onSearch]
+    [debouncedSearch, isOpen, onFocus]
   );
 
   const handleScroll = useInfiniteScroll(listRef as React.RefObject<HTMLUListElement>, loading, hasMore, onLoadMore);
@@ -239,18 +260,22 @@ const MultiSelect = memo(function MultiSelectCmp({
     <div ref={wrapperRef} className="relative w-full font-['Inter']" tabIndex={-1}>
       <div
         onClick={handleClick}
-        onKeyDown={(e) => handleKeyboardActivation(e, handleClick)}
         className={`w-full flex items-center justify-between py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 ${FOCUS_STYLES} 
           ${isOpen ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : ""} 
           text-baseline-20 cursor-pointer hover:border-baseline-60 ${BASE_TRANSITION}`}>
-        <span
-          className={`text-sm truncate max-w-[calc(100%-40px)] ${
-            selectedLabels.length ? "text-baseline-90 font-medium" : "text-baseline-50"
-          }`}>
-          {displayText}
-        </span>
+        <input
+          ref={searchInputRef}
+          value={searchTerm}
+          onChange={handleSetSearchTerm}
+          onKeyDown={handleKeyDown}
+          onClick={handleInputClick}
+          placeholder={displayText}
+          className={`w-full bg-transparent outline-none text-sm truncate max-w-[calc(100%-40px)] ${
+            selectedLabels.length && !searchTerm ? "text-baseline-90 font-medium placeholder-baseline-90" : "text-baseline-90 placeholder-baseline-50"
+          }`}
+        />
         <div className="flex items-center flex-shrink-0 ml-2">
-          {selectedLabels.length > 0 && isOpen && (
+          {selectedLabels.length > 0 && (
             <button type="button" onClick={handleClear} className={`mr-1 ${TEXT_MUTED} ${HOVER_TEXT_COLOR} rounded`}>
               <Image src={closeIconUrl} alt="Clear" height={16} width={16} data-testid="Image__cb81f7" />
             </button>
@@ -268,19 +293,9 @@ const MultiSelect = memo(function MultiSelectCmp({
         portalRef={portalRef as React.RefObject<HTMLDivElement>}
         minWidth={256}
         data-testid="DropdownPortal__cb81f7">
-        <div className="p-2">
-          <input
-            ref={searchInputRef}
-            value={searchTerm}
-            onChange={handleSetSearchTerm}
-            onKeyDown={handleKeyDown}
-            placeholder={t("multiselect.searchPlaceholder")}
-            className="w-full p-2 text-sm border border-baseline-30 rounded focus:outline-none focus:border-dynamic-main focus:ring-1 focus:ring-dynamic-light"
-          />
-        </div>
         <ul
           ref={listRef}
-          className="overflow-y-auto focus:outline-none"
+          className="overflow-y-auto focus:outline-none mt-1"
           style={{ maxHeight: `${maxHeight}px` }}
           onScroll={handleScroll}>
           {renderedOptions}

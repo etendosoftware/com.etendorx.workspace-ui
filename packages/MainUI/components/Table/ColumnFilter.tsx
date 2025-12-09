@@ -54,6 +54,21 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
 
   const handleSearchChange = (searchQuery: string) => {
     if (onLoadOptions && !isBooleanColumn) onLoadOptions(searchQuery);
+
+    if (searchQuery) {
+      onFilterChange([
+        {
+          id: searchQuery,
+          value: searchQuery,
+          label: searchQuery,
+          isTextSearch: true,
+        },
+      ]);
+    } else {
+      // If search is cleared, revert to empty selection (or should we restore previous selection?
+      // Based on "filter only by what I typed", clearing means no filter).
+      onFilterChange([]);
+    }
   };
 
   const handleLoadMore = () => {

@@ -22,6 +22,7 @@ export interface FilterOption {
   id: string;
   label: string;
   value: string;
+  isTextSearch?: boolean;
 }
 
 export interface ColumnFilterState {
