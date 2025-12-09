@@ -99,24 +99,6 @@ export function useToolbar(windowId: string, tabId?: string) {
       setError(null);
       const data = (await Metadata.getToolbar()) as ToolbarButtonMetadata[];
 
-      // Inject TOGGLE_TREE_VIEW if missing and tab has tree view enabled
-      if (tab?.tableTree) {
-        const hasTreeViewButton = data.some((btn) => btn.action === TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW);
-
-        if (!hasTreeViewButton) {
-          data.push({
-            id: "toggle-tree-view-injected",
-            action: TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW,
-            name: "Toggle Tree View",
-            icon: "default", // Using default icon for now
-            seqno: 10, // Place it early in the sequence
-            buttonType: TOOLBAR_BUTTONS_TYPES.TOGGLE as any, // Cast to any to avoid strict type issues if enum mismatch
-            section: "left",
-            active: true,
-          });
-        }
-      }
-
       toolbarCache.set(cacheKey, data);
       setToolbar(data);
     } catch (error) {
