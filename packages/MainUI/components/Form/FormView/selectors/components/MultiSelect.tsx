@@ -22,17 +22,26 @@ import {
   useClickOutside,
   type Option,
 } from "@/utils/selectorUtils";
+import { Checkbox, styled } from "@mui/material";
 import Image from "next/image";
 import { memo, useCallback, useMemo, useRef, useState, useEffect } from "react";
-import checkIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/check-circle-filled.svg?url";
+
 import ChevronDown from "../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import closeIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/x.svg?url";
 import { useTranslation } from "@/hooks/useTranslation";
 import { DropdownPortal } from "./DropdownPortal";
 
+const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
+  padding: 0,
+  marginRight: "0.625rem",
+  "&.Mui-checked": {
+    color: (theme.palette as any).dynamicColor?.main,
+  },
+}));
+
 const FOCUS_STYLES = "focus:outline-none focus:ring-2 focus:ring-dynamic-light";
 const BASE_TRANSITION = "transition-colors outline-none";
-const LIST_ITEM_BASE = "px-4 py-3 text-sm";
+const LIST_ITEM_BASE = "px-4 py-2 text-sm";
 const TEXT_MUTED = "text-baseline-60";
 const ICON_SIZE = "w-5 h-5";
 const HOVER_TEXT_COLOR = "hover:text-baseline-80";
@@ -58,31 +67,34 @@ const OptionItem = memo(
     isSelected,
     isHighlighted,
     onSelect,
+    onToggle,
   }: {
     id: string;
     label: string;
     isSelected: boolean;
     isHighlighted: boolean;
     onSelect: (id: string) => void;
+    onToggle: (id: string) => void;
   }) => (
     <li
       aria-selected={isSelected}
       onClick={() => onSelect(id)}
       onKeyDown={(e) => handleKeyboardActivation(e, () => onSelect(id))}
-      className={`${LIST_ITEM_BASE} cursor-pointer flex items-center justify-between ${FOCUS_STYLES} 
+      className={`${LIST_ITEM_BASE} cursor-pointer flex items-center ${FOCUS_STYLES} 
         ${isHighlighted ? "bg-baseline-10" : ""} 
         ${isSelected ? "bg-baseline-10 font-medium" : ""} hover:bg-baseline-10`}>
-      <span className={`truncate mr-2 ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>{label}</span>
-      {isSelected && (
-        <Image
-          src={checkIconUrl}
-          alt="Selected Item"
-          className="fade-in-left flex-shrink-0"
-          height={16}
-          width={16}
-          data-testid="Image__cb81f7"
-        />
-      )}
+      <CustomCheckbox
+        size="small"
+        checked={isSelected}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle(id);
+        }}
+        className="mr-2"
+        disableRipple
+        data-testid="CustomCheckbox__cb81f7"
+      />
+      <span className={`truncate ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>{label}</span>
     </li>
   )
 );
@@ -128,18 +140,24 @@ const MultiSelect = memo(function MultiSelectCmp({
     return `${selectedLabels.length} selected`;
   }, [selectedLabels, placeholder]);
 
-  const handleSelect = useCallback(
+  const handleToggle = useCallback(
     (id: string) => {
       const newSelection = selectedValues.includes(id)
         ? selectedValues.filter((v) => v !== id)
         : [...selectedValues, id];
       onSelectionChange(newSelection);
-      // Close dropdown after selection to provide immediate feedback
+    },
+    [selectedValues, onSelectionChange]
+  );
+
+  const handleSingleSelect = useCallback(
+    (id: string) => {
+      onSelectionChange([id]);
       setIsOpen(false);
       setHighlightedIndex(-1);
       setSearchTerm("");
     },
-    [selectedValues, onSelectionChange]
+    [onSelectionChange]
   );
 
   const handleClear = useCallback(
@@ -167,7 +185,7 @@ const MultiSelect = memo(function MultiSelectCmp({
     filteredOptions,
     highlightedIndex,
     setHighlightedIndex,
-    (o) => handleSelect(o.id),
+    (o) => handleSingleSelect(o.id),
     () => {
       setIsOpen(false);
       setHighlightedIndex(-1);
@@ -222,7 +240,8 @@ const MultiSelect = memo(function MultiSelectCmp({
           label={option.label}
           isSelected={selectedValues.includes(option.id)}
           isHighlighted={highlightedIndex === index}
-          onSelect={handleSelect}
+          onSelect={handleSingleSelect}
+          onToggle={handleToggle}
           data-testid="OptionItem__cb81f7"
         />
       ));
@@ -233,7 +252,7 @@ const MultiSelect = memo(function MultiSelectCmp({
     }
 
     return null;
-  }, [filteredOptions, highlightedIndex, selectedValues, handleSelect, showSkeleton, loading, t]);
+  }, [filteredOptions, highlightedIndex, selectedValues, handleSingleSelect, handleToggle, showSkeleton, loading, t]);
 
   return (
     <div ref={wrapperRef} className="relative w-full font-['Inter']" tabIndex={-1}>
