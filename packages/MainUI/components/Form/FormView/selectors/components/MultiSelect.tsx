@@ -35,7 +35,7 @@ const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
   padding: 0,
   marginRight: "0.625rem",
   "&.Mui-checked": {
-    color: (theme.palette as any).dynamicColor?.main,
+    color: theme.palette.dynamicColor?.main,
   },
 }));
 
