@@ -29,12 +29,15 @@ import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useRecordContext } from "@/hooks/useRecordContext";
-import type { ToolbarButtonMetadata } from "./types";
+import type { ToolbarButtonMetadata, ActionModalResponse } from "./types";
 import { useWindowContext } from "@/contexts/window";
 import type { ActionButton, ActionModalProps } from "@workspaceui/componentlibrary/src/components/ActionModal/types";
 import { COPY_RECORD_PROCESS_ID } from "@/utils/processes/toolbar/constants";
 import { isEmptyArray } from "@/utils/commons";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { getNewTabFormState } from "@/utils/window/utils";
+import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
+import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 
 export const useToolbarConfig = ({
   tabId,
@@ -87,12 +90,14 @@ export const useToolbarConfig = ({
   }, []);
 
   const { tab } = useTabContext();
-  const { activeWindow, clearSelectedRecord, getSelectedRecord } = useWindowContext();
+  const { activeWindow, clearSelectedRecord, getSelectedRecord, setSelectedRecord, setTabFormState } =
+    useWindowContext();
   const { graph } = useSelected();
 
   const selectedMultiple = useSelectedRecords(tab);
   const selectedRecord = useSelectedRecord(tab);
   const { contextString, hasSelectedRecords, contextItems } = useRecordContext();
+  const { triggerParentRefreshes } = useTabRefreshContext();
 
   const selectedRecordId = useMemo(() => {
     if (!activeWindow?.windowIdentifier || !tab) return null;
@@ -216,13 +221,14 @@ export const useToolbarConfig = ({
     const title = t("common.confirm");
     const message = t("modal.cloneConfirmation");
 
-    const handleRequest = async () => {
+    const handleRequest = async (cloneWithChildren: boolean) => {
       setActionModal((prev) => ({ ...prev, isLoading: true }));
 
       const processId = COPY_RECORD_PROCESS_ID;
       const tabId = tab.id;
       const recordId = selectedIds[0];
       const windowId = activeWindow?.windowId;
+      const windowIdentifier = activeWindow?.windowIdentifier;
 
       const options = { method: "POST" };
 
@@ -238,13 +244,41 @@ export const useToolbarConfig = ({
         recordIds: [...selectedIds],
         _entityName: tab.entityName,
         _params: {
-          copyChildren: isComplexClone,
+          copyChildren: cloneWithChildren,
         },
       };
 
       const { ok, data } = await Metadata.kernelClient.post(`?${params}`, payload, options);
+      const { responseActions, records, refreshParent } = data;
 
       setActionModal((prev) => ({ ...prev, isLoading: false, isOpen: false }));
+
+      if (
+        !ok ||
+        responseActions.some((action: ActionModalResponse) => action.showMsgInProcessView?.msgType === "error")
+      ) {
+        showErrorModal(t("status.copyError"), {
+          saveLabel: t("common.close"),
+          secondaryButtonLabel: t("modal.secondaryButtonLabel"),
+        });
+        return;
+      }
+
+      if (refreshParent) {
+        triggerParentRefreshes(tab.tabLevel);
+      }
+
+      if (records.length === 1) {
+        const formMode = FORM_MODES.EDIT;
+        const newRecordId = records[0].id;
+        const newTabFormState = getNewTabFormState(newRecordId, TAB_MODES.FORM, formMode);
+        setSelectedRecord(windowIdentifier, tabId, newRecordId);
+        setTabFormState(windowIdentifier, tabId, newTabFormState);
+        return;
+      }
+
+      onRefresh?.();
+      clearSelectedRecord(windowIdentifier, tabId);
     };
 
     const buttons: ActionButton[] = [];
@@ -253,12 +287,12 @@ export const useToolbarConfig = ({
       buttons.push(
         {
           label: t("common.clone"),
-          onClick: handleRequest,
+          onClick: () => handleRequest(false),
           variant: "primary",
         },
         {
           label: t("common.cloneWithChildren"),
-          onClick: handleRequest,
+          onClick: () => handleRequest(true),
           variant: "primary",
         },
         {
@@ -271,7 +305,7 @@ export const useToolbarConfig = ({
       buttons.push(
         {
           label: t("common.trueText"),
-          onClick: handleRequest,
+          onClick: () => handleRequest(true),
           variant: "primary",
         },
         {
@@ -289,7 +323,19 @@ export const useToolbarConfig = ({
       buttons,
       t,
     });
-  }, [tab, selectedIds, t, closeActionModal]);
+  }, [
+    tab,
+    selectedIds,
+    activeWindow,
+    t,
+    closeActionModal,
+    showErrorModal,
+    onRefresh,
+    setSelectedRecord,
+    setTabFormState,
+    triggerParentRefreshes,
+    clearSelectedRecord,
+  ]);
 
   useEffect(() => {
     if (!statusModal.open && isDeleting) {

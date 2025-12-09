@@ -127,6 +127,7 @@ const en = {
     httpError: "HTTP Error: ",
     noRecordsError: "There is no records selected",
     noRecords: "Please create a new record",
+    copyError: "Copy failed! Please try again or contact support.",
   },
   errors: {
     tableError: {
