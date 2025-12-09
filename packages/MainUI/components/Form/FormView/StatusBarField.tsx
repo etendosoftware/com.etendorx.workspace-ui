@@ -41,7 +41,7 @@ export default function StatusBarField({ field }: { field: Field }) {
   };
 
   return (
-    <div className="inline-flex gap-1">
+    <div className="inline-flex gap-1 whitespace-nowrap">
       <label htmlFor={field.hqlName} className="font-semibold">
         {field.name}:
       </label>
