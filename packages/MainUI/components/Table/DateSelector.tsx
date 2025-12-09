@@ -5,6 +5,7 @@ import DateRangeModal from "../../../ComponentLibrary/src/components/RangeDateMo
 import { formatBrowserDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import CalendarIcon from "../../../ComponentLibrary/src/assets/icons/calendar.svg";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useDebouncedCallback } from "./utils/performanceOptimizations";
 
 export interface DateSelectorProps {
   column: Column;
@@ -19,6 +20,11 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [inputValue, setInputValue] = useState("");
   const isFromModalRef = useRef(false);
+
+  // Create a debounced version of the filter change handler
+  const debouncedFilterChange = useDebouncedCallback((value: string) => {
+    onFilterChange(value);
+  }, 500);
 
   // Synchronize inputValue when filterValue changes externally (e.g., from "Use as filter")
   // Also handle clearing when filterValue becomes undefined
@@ -95,7 +101,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
     setInputValue(e.target.value);
     setStartDate(null);
     setEndDate(null);
-    onFilterChange(e.target.value);
+    debouncedFilterChange(e.target.value);
   };
 
   const handleDatePickerClick = () => {
