@@ -32,6 +32,9 @@ import { useRecordContext } from "@/hooks/useRecordContext";
 import type { ToolbarButtonMetadata } from "./types";
 import { useWindowContext } from "@/contexts/window";
 import type { ActionButton, ActionModalProps } from "@workspaceui/componentlibrary/src/components/ActionModal/types";
+import { COPY_RECORD_PROCESS_ID } from "@/utils/processes/toolbar/constants";
+import { isEmptyArray } from "@/utils/commons";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 
 export const useToolbarConfig = ({
   tabId,
@@ -207,16 +210,40 @@ export const useToolbarConfig = ({
   }, [tab, selectedIds, getRecordsToDelete, showConfirmModal, t, deleteRecord, showErrorModal]);
 
   const handleCopyRecord = useCallback(() => {
-    if (!tab) return;
+    if (!tab || !activeWindow || isEmptyArray(selectedIds)) return;
 
     const isComplexClone = tab.obuiappCloneChildren;
-    const title = t("common.confirm"); // Or a specific title if needed
+    const title = t("common.confirm");
     const message = t("modal.cloneConfirmation");
 
     const handleRequest = async () => {
       setActionModal((prev) => ({ ...prev, isLoading: true }));
-      // Simulate request
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      const processId = COPY_RECORD_PROCESS_ID;
+      const tabId = tab.id;
+      const recordId = selectedIds[0];
+      const windowId = activeWindow?.windowId;
+
+      const options = { method: "POST" };
+
+      const params = new URLSearchParams({
+        processId,
+        tabId,
+        recordId,
+        windowId,
+        _action: "com.smf.jobs.defaults.CloneRecords",
+      });
+
+      const payload = {
+        recordIds: [...selectedIds],
+        _entityName: tab.entityName,
+        _params: {
+          copyChildren: isComplexClone,
+        },
+      };
+
+      const { ok, data } = await Metadata.kernelClient.post(`?${params}`, payload, options);
+
       setActionModal((prev) => ({ ...prev, isLoading: false, isOpen: false }));
     };
 
@@ -262,7 +289,7 @@ export const useToolbarConfig = ({
       buttons,
       t,
     });
-  }, [tab, t, closeActionModal]);
+  }, [tab, selectedIds, t, closeActionModal]);
 
   useEffect(() => {
     if (!statusModal.open && isDeleting) {

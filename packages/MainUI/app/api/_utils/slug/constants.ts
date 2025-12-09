@@ -15,4 +15,5 @@ export const SLUGS_METHODS = {
 
 export const URL_MUTATION = {
   COMPUTE_WINDOW: "ComputeWindowActionHandler",
+  CLONE_RECORDS: "CloneRecords",
 };
