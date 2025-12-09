@@ -344,6 +344,15 @@ export class LegacyColumnFilterUtils {
       return String(value);
     }
 
+    if (ColumnFilterUtils.isSelectColumn(column)) {
+      const options = ColumnFilterUtils.getSelectOptions(column);
+      const strValue = String(value).toLowerCase().trim();
+      const matchingOption = options.find((opt) => opt.label.toLowerCase() === strValue);
+      if (matchingOption) {
+        return matchingOption.value;
+      }
+    }
+
     return String(value);
   }
 

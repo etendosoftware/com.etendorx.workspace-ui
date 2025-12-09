@@ -64,20 +64,33 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
     if (onLoadOptions && !isBooleanColumn) onLoadOptions(searchQuery);
 
     if (searchQuery) {
-      onFilterChange([
-        {
-          id: searchQuery,
-          value: searchQuery,
-          label: searchQuery,
-          isTextSearch: true,
-        },
-      ]);
+      // Check if the search query matches an existing option label (e.g. "==Action" -> "Action")
+      // If it matches, use the option's ID/Value instead of the text query.
+      // This is crucial for List/TableDir columns where the Label (displayed) differs from the Value (stored).
+      const cleanQuery = searchQuery.trim();
+      const valueToCheck = cleanQuery.startsWith("==") ? cleanQuery.substring(2) : cleanQuery;
+      
+      const matchingOption = availableOptions.find(
+        (opt) => opt.label.toLowerCase() === valueToCheck.toLowerCase()
+      );
+
+      if (matchingOption) {
+        onFilterChange([matchingOption]);
+      } else {
+        onFilterChange([
+          {
+            id: searchQuery,
+            value: searchQuery,
+            label: searchQuery,
+            isTextSearch: true,
+          },
+        ]);
+      }
     } else {
-      // If search is cleared, revert to empty selection (or should we restore previous selection?
-      // Based on "filter only by what I typed", clearing means no filter).
+      // If search is cleared, revert to empty selection
       onFilterChange([]);
     }
-  }, [onLoadOptions, isBooleanColumn, onFilterChange]);
+  }, [onLoadOptions, isBooleanColumn, onFilterChange, availableOptions]);
 
   const handleLoadMore = () => {
     if (onLoadMoreOptions && ColumnFilterUtils.isTableDirColumn(column) && !isBooleanColumn) {
