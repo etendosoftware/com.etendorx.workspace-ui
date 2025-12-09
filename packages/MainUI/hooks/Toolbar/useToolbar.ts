@@ -25,6 +25,7 @@ import useFormFields from "@/hooks/useFormFields";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { useUserContext } from "@/hooks/useUserContext";
 import type { ProcessButton } from "@/components/ProcessModal/types";
+import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
 
 const toolbarCache = new Map<string, ToolbarButtonMetadata[]>();
 
@@ -97,6 +98,25 @@ export function useToolbar(windowId: string, tabId?: string) {
       setLoading(true);
       setError(null);
       const data = (await Metadata.getToolbar()) as ToolbarButtonMetadata[];
+
+      // Inject TOGGLE_TREE_VIEW if missing and tab has tree view enabled
+      if (tab?.tableTree) {
+        const hasTreeViewButton = data.some((btn) => btn.action === TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW);
+
+        if (!hasTreeViewButton) {
+          data.push({
+            id: "toggle-tree-view-injected",
+            action: TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW,
+            name: "Toggle Tree View",
+            icon: "default", // Using default icon for now
+            seqno: 10, // Place it early in the sequence
+            buttonType: TOOLBAR_BUTTONS_TYPES.TOGGLE as any, // Cast to any to avoid strict type issues if enum mismatch
+            section: "left",
+            active: true,
+          });
+        }
+      }
+
       toolbarCache.set(cacheKey, data);
       setToolbar(data);
     } catch (error) {
