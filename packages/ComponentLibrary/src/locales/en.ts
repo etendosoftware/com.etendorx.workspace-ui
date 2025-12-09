@@ -45,6 +45,8 @@ const en = {
     records: "records",
     version: "Version: ",
     about: "About",
+    clone: "Clone",
+    cloneWithChildren: "Clone With Children",
   },
   forms: {
     sections: {
@@ -181,6 +183,7 @@ const en = {
   },
   modal: {
     secondaryButtonLabel: "Back",
+    cloneConfirmation: "Do you want to clone the selected record?",
   },
   registerModal: {
     descriptionText: "Confirm your shipment and save it in the system. 📝📦",

@@ -44,6 +44,8 @@ const es = {
     records: "registros",
     version: "Versión: ",
     about: "Acerca de",
+    clone: "Clonar",
+    cloneWithChildren: "Clonar con hijos",
   },
   forms: {
     sections: {
@@ -180,6 +182,7 @@ const es = {
   },
   modal: {
     secondaryButtonLabel: "Atrás",
+    cloneConfirmation: "¿Desea clonar el registro seleccionado?",
   },
   registerModal: {
     descriptionText: "Confirma tu envío y guárdalo en el sistema. 📝📦",

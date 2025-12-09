@@ -31,6 +31,7 @@ import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useRecordContext } from "@/hooks/useRecordContext";
 import type { ToolbarButtonMetadata } from "./types";
 import { useWindowContext } from "@/contexts/window";
+import type { ActionButton, ActionModalProps } from "@workspaceui/componentlibrary/src/components/ActionModal/types";
 
 export const useToolbarConfig = ({
   tabId,
@@ -69,6 +70,18 @@ export const useToolbarConfig = ({
   } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [actionModal, setActionModal] = useState<Omit<ActionModalProps, "onClose"> & { isOpen: boolean }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    buttons: [],
+    t,
+  });
+
+  const closeActionModal = useCallback(() => {
+    setActionModal((prev) => ({ ...prev, isOpen: false }));
+  }, []);
 
   const { tab } = useTabContext();
   const { activeWindow, clearSelectedRecord, getSelectedRecord } = useWindowContext();
@@ -193,6 +206,64 @@ export const useToolbarConfig = ({
     }
   }, [tab, selectedIds, getRecordsToDelete, showConfirmModal, t, deleteRecord, showErrorModal]);
 
+  const handleCopyRecord = useCallback(() => {
+    if (!tab) return;
+
+    const isComplexClone = tab.obuiappCloneChildren;
+    const title = t("common.confirm"); // Or a specific title if needed
+    const message = t("modal.cloneConfirmation");
+
+    const handleRequest = async () => {
+      setActionModal((prev) => ({ ...prev, isLoading: true }));
+      // Simulate request
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      setActionModal((prev) => ({ ...prev, isLoading: false, isOpen: false }));
+    };
+
+    const buttons: ActionButton[] = [];
+
+    if (isComplexClone) {
+      buttons.push(
+        {
+          label: t("common.clone"),
+          onClick: handleRequest,
+          variant: "primary",
+        },
+        {
+          label: t("common.cloneWithChildren"),
+          onClick: handleRequest,
+          variant: "primary",
+        },
+        {
+          label: t("common.cancel"),
+          onClick: closeActionModal,
+          variant: "secondary",
+        }
+      );
+    } else {
+      buttons.push(
+        {
+          label: t("common.trueText"),
+          onClick: handleRequest,
+          variant: "primary",
+        },
+        {
+          label: t("common.falseText"),
+          onClick: closeActionModal,
+          variant: "secondary",
+        }
+      );
+    }
+
+    setActionModal({
+      isOpen: true,
+      title,
+      message,
+      buttons,
+      t,
+    });
+  }, [tab, t, closeActionModal]);
+
   useEffect(() => {
     if (!statusModal.open && isDeleting) {
       setIsDeleting(false);
@@ -252,6 +323,9 @@ export const useToolbarConfig = ({
       EXPORT_CSV: async () => {
         await onExportCSV?.();
       },
+      COPY_RECORD: () => {
+        handleCopyRecord();
+      },
     }),
     [
       onBack,
@@ -274,6 +348,7 @@ export const useToolbarConfig = ({
       handleDeleteRecord,
       attachmentAction,
       onExportCSV,
+      handleCopyRecord,
     ]
   );
 
@@ -322,6 +397,8 @@ export const useToolbarConfig = ({
       selectedMultiple,
       selectedIds,
       selectedRecordId,
+      actionModal,
+      closeActionModal,
     }),
     [
       handleAction,
@@ -340,6 +417,8 @@ export const useToolbarConfig = ({
       selectedMultiple,
       selectedIds,
       selectedRecordId,
+      actionModal,
+      closeActionModal,
     ]
   );
 };
