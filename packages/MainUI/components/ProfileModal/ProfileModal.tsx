@@ -46,6 +46,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   currentRole,
   currentOrganization,
   currentWarehouse,
+  currentClient,
   roles,
   changeProfile,
   onSetDefaultConfiguration,
@@ -227,12 +228,32 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const saveConfigurationDefaults = useCallback(
     async (languageChanged: boolean) => {
+      const getClientId = () => {
+        let clientId = "0";
+
+        // If staying on the same role, use the current role's client ID (most reliable)
+        if (selectedRole?.value === currentRole?.id) {
+          clientId = currentRole?.client || currentClient?.id || "0";
+        } else {
+          const role = roles.find((r) => r.id === selectedRole?.value);
+          clientId = role?.client || currentClient?.id || "0";
+        }
+
+        if (clientId === "System") {
+          return "0";
+        }
+        return clientId;
+      };
+
+      const clientId = getClientId();
+
       if (saveAsDefault) {
         await onSetDefaultConfiguration({
           defaultRole: selectedRole?.value,
           defaultWarehouse: selectedWarehouse?.value,
           organization: selectedOrg?.value,
           language: selectedLanguage?.id,
+          client: clientId,
         });
       } else if (languageChanged) {
         // If language changed but saveAsDefault is false, we still want to persist the language choice
@@ -243,6 +264,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           defaultWarehouse: currentWarehouse?.id,
           organization: currentOrganization?.id,
           language: selectedLanguage?.id,
+          client: currentClient?.id,
         });
       }
     },
@@ -256,6 +278,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       currentRole,
       currentWarehouse,
       currentOrganization,
+      currentClient,
+      roles,
     ]
   );
 
