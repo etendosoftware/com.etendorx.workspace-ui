@@ -81,7 +81,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   const selectedRecord = useSelectedRecord(tab);
-  const selectedRecords = useSelectedRecords(tab);
+  const selectedRecords = useSelectedRecords(tab) || [];
   const hasParentTab = !!tab?.parentTabId;
   const parentId = parentRecord?.id?.toString();
   const isTreeNodeView = tab?.tableTree;
@@ -393,16 +393,18 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         onError={handleCompleteRefresh}
         data-testid="ProcessDefinitionModal__a2dd07"
       />
-      <ActionModal
-        isOpen={actionModal.isOpen}
-        title={actionModal.title}
-        message={actionModal.message}
-        buttons={actionModal.buttons}
-        onClose={closeActionModal}
-        isLoading={actionModal.isLoading}
-        t={t}
-        data-testid="ActionModal__a2dd07"
-      />
+      {actionModal.isOpen && (
+        <ActionModal
+          isOpen={actionModal.isOpen}
+          title={actionModal.title}
+          message={actionModal.message}
+          buttons={actionModal.buttons}
+          onClose={closeActionModal}
+          isLoading={actionModal.isLoading}
+          t={t}
+          data-testid="ActionModal__a2dd07"
+        />
+      )}
     </>
   );
 };
