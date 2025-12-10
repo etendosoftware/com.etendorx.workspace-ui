@@ -159,7 +159,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
     localStorage.removeItem("currentInfo");
     localStorage.removeItem("currentWarehouse");
     localStorage.removeItem("currentLanguage");
-  }, [INITIAL_PROFILE, setToken]);
+    localStorage.removeItem("language");
+    setLanguage(null);
+  }, [INITIAL_PROFILE, setToken, setLanguage]);
 
   const changeProfile = useCallback(
     async (params: { role?: string; client?: string; organization?: string; warehouse?: string }) => {

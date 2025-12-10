@@ -46,6 +46,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   currentRole,
   currentOrganization,
   currentWarehouse,
+  currentClient,
   roles,
   changeProfile,
   onSetDefaultConfiguration,
@@ -199,68 +200,124 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     setAnchorEl(null);
   }, []);
 
-  const handleSave = useCallback(async () => {
-    if (currentSection === "profile") {
-      try {
-        const params: { role?: string; organization?: string; warehouse?: string } = {};
+  const getProfileUpdates = useCallback(() => {
+    const params: { role?: string; organization?: string; warehouse?: string } = {};
 
-        if (selectedRole && selectedRole.value !== currentRole?.id) {
-          params.role = selectedRole.value;
+    if (selectedRole && selectedRole.value !== currentRole?.id) {
+      params.role = selectedRole.value;
+    }
+
+    if (selectedOrg && selectedOrg.value !== currentOrganization?.id) {
+      params.organization = selectedOrg.value;
+    }
+
+    if (selectedWarehouse && selectedWarehouse.value !== currentWarehouse?.id) {
+      params.warehouse = selectedWarehouse.value;
+
+      const newWarehouse = {
+        id: selectedWarehouse.id,
+        title: selectedWarehouse.title,
+        value: selectedWarehouse.value,
+      };
+      setSelectedWarehouse(newWarehouse);
+      localStorage.setItem("currentWarehouse", JSON.stringify(newWarehouse));
+    }
+
+    return params;
+  }, [selectedRole, currentRole, selectedOrg, currentOrganization, selectedWarehouse, currentWarehouse]);
+
+  const saveConfigurationDefaults = useCallback(
+    async (languageChanged: boolean) => {
+      const getClientId = () => {
+        let clientId = "0";
+
+        // If staying on the same role, use the current role's client ID (most reliable)
+        if (selectedRole?.value === currentRole?.id) {
+          clientId = currentRole?.client || currentClient?.id || "0";
+        } else {
+          const role = roles.find((r) => r.id === selectedRole?.value);
+          clientId = role?.client || currentClient?.id || "0";
         }
 
-        if (selectedOrg && selectedOrg.value !== currentOrganization?.id) {
-          params.organization = selectedOrg.value;
+        if (clientId === "System") {
+          return "0";
         }
+        return clientId;
+      };
 
-        if (selectedWarehouse && selectedWarehouse.value !== currentWarehouse?.id) {
-          params.warehouse = selectedWarehouse.value;
+      const clientId = getClientId();
 
-          const newWarehouse = {
-            id: selectedWarehouse.id,
-            title: selectedWarehouse.title,
-            value: selectedWarehouse.value,
-          };
-          setSelectedWarehouse(newWarehouse);
-          localStorage.setItem("currentWarehouse", JSON.stringify(newWarehouse));
-        }
-
-        if (Object.keys(params).length > 0) {
-          await changeProfile(params);
-        }
-
-        if (selectedLanguage && selectedLanguage.value !== language) {
-          onLanguageChange(selectedLanguage.value as Language);
-        }
-
-        if (saveAsDefault) {
-          await onSetDefaultConfiguration({
-            defaultRole: selectedRole?.value,
-            defaultWarehouse: selectedWarehouse?.value,
-            organization: selectedOrg?.value,
-            language: selectedLanguage?.id,
-          });
-        }
-        cleanWindowState();
-        handleClose();
-      } catch (error) {
-        logger.warn("Error changing role, warehouse, or saving default configuration:", error);
+      if (saveAsDefault) {
+        await onSetDefaultConfiguration({
+          defaultRole: selectedRole?.value,
+          defaultWarehouse: selectedWarehouse?.value,
+          organization: selectedOrg?.value,
+          language: selectedLanguage?.id,
+          client: clientId,
+        });
+      } else if (languageChanged) {
+        // If language changed but saveAsDefault is false, we still want to persist the language choice
+        // so the backend serves the correct localized content on next load.
+        // We use the current values for others to avoid changing them if they weren't meant to be defaults.
+        await onSetDefaultConfiguration({
+          defaultRole: currentRole?.id,
+          defaultWarehouse: currentWarehouse?.id,
+          organization: currentOrganization?.id,
+          language: selectedLanguage?.id,
+          client: currentClient?.id && currentClient.id !== "System" ? currentClient.id : "0",
+        });
       }
+    },
+    [
+      saveAsDefault,
+      onSetDefaultConfiguration,
+      selectedRole,
+      selectedWarehouse,
+      selectedOrg,
+      selectedLanguage,
+      currentRole,
+      currentWarehouse,
+      currentOrganization,
+      currentClient,
+      roles,
+    ]
+  );
+
+  const handleSave = useCallback(async () => {
+    if (currentSection !== "profile") return;
+
+    try {
+      const params = getProfileUpdates();
+
+      if (Object.keys(params).length > 0) {
+        await changeProfile(params);
+      }
+
+      const languageChanged = selectedLanguage && selectedLanguage.value !== language;
+
+      await saveConfigurationDefaults(!!languageChanged);
+
+      cleanWindowState();
+      handleClose();
+
+      if (languageChanged) {
+        // Force a hard reload to ensure all metadata and cached resources are refreshed with the new language
+        onLanguageChange(selectedLanguage?.value as Language);
+        window.location.reload();
+      }
+    } catch (error) {
+      logger.warn("Error changing role, warehouse, or saving default configuration:", error);
     }
   }, [
     currentSection,
-    selectedRole,
-    currentRole?.id,
-    selectedOrg,
-    currentOrganization?.id,
-    selectedWarehouse,
-    currentWarehouse?.id,
+    getProfileUpdates,
+    changeProfile,
     selectedLanguage,
     language,
-    saveAsDefault,
+    saveConfigurationDefaults,
+    cleanWindowState,
     handleClose,
-    changeProfile,
     onLanguageChange,
-    onSetDefaultConfiguration,
     logger,
   ]);
 

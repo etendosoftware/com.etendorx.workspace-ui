@@ -18,14 +18,25 @@
 export class CacheStore {
   private duration: number;
   private storage: Storage | undefined;
+  private prefix: string;
 
-  constructor(duration: number) {
+  constructor(duration: number, prefix: string = "") {
     if (duration <= 0) {
       throw new Error("Duration must be a positive number.");
     }
 
     this.duration = duration;
     this.storage = typeof window !== "undefined" ? window.localStorage : undefined;
+    this.prefix = prefix;
+  }
+
+  /**
+   * Generates the prefixed key for storage.
+   * @param id - The original identifier.
+   * @returns The prefixed key.
+   */
+  private getKey(id: string): string {
+    return `${this.prefix}${id}`;
   }
 
   /**
@@ -35,7 +46,8 @@ export class CacheStore {
    */
   public get<T = unknown>(id: string): T | null {
     try {
-      const item = this.storage?.getItem(id);
+      const key = this.getKey(id);
+      const item = this.storage?.getItem(key);
 
       if (!item) return null;
 
@@ -62,7 +74,8 @@ export class CacheStore {
    */
   public set(id: string, value: unknown): this {
     try {
-      this.storage?.setItem(id, JSON.stringify(this.createStoredItem(value)));
+      const key = this.getKey(id);
+      this.storage?.setItem(key, JSON.stringify(this.createStoredItem(value)));
     } catch (e) {
       if (e instanceof DOMException && e.name === "QuotaExceededError") {
         this.handleStorageQuotaError();
@@ -79,7 +92,25 @@ export class CacheStore {
    * @param id - The identifier of the value to delete.
    */
   public delete(id: string): void {
-    this.storage?.removeItem(id);
+    const key = this.getKey(id);
+    this.storage?.removeItem(key);
+  }
+
+  /**
+   * Clears all values from the storage that match the prefix.
+   */
+  public clear(): void {
+    if (!this.storage) return;
+
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < this.storage.length; i++) {
+      const key = this.storage.key(i);
+      if (key && key.startsWith(this.prefix)) {
+        keysToRemove.push(key);
+      }
+    }
+
+    keysToRemove.forEach((key) => this.storage?.removeItem(key));
   }
 
   /**

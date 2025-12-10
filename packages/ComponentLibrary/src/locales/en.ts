@@ -449,6 +449,40 @@ const en = {
       "December",
     ],
   },
+  configuration: {
+    quickSetup: "Quick Setup",
+    viewAllSettings: "View all settings",
+    themes: {
+      title: "Theme",
+      light: "Light",
+      dark: "Dark",
+      automatic: "Automatic",
+    },
+    tableDensity: {
+      title: "Table Density",
+      compact: "Compact",
+      standard: "Standard",
+      comfortable: "Comfortable",
+    },
+    commonToolbarButtons: {
+      title: "Common Toolbar Buttons",
+      icon: "Icon",
+      text: "Text",
+      iconAndText: "Icon and Text",
+    },
+    specificToolbarButtons: {
+      title: "Specific Toolbar Buttons",
+      icon: "Icon",
+      text: "Text",
+      iconAndText: "Icon and Text",
+    },
+    interfaceScale: {
+      title: "Interface scale",
+      small: "Small",
+      default: "Default",
+      large: "Large",
+    },
+  },
 };
 
 export default en;

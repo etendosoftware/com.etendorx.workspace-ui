@@ -454,6 +454,40 @@ const es = {
       "Diciembre",
     ],
   },
+  configuration: {
+    quickSetup: "Configuración Rápida",
+    viewAllSettings: "Ver todos los ajustes",
+    themes: {
+      title: "Tema",
+      light: "Claro",
+      dark: "Oscuro",
+      automatic: "Automático",
+    },
+    tableDensity: {
+      title: "Densidad de Tabla",
+      compact: "Compacto",
+      standard: "Estándar",
+      comfortable: "Cómodo",
+    },
+    commonToolbarButtons: {
+      title: "Botones Comunes de Barra de Herramientas",
+      icon: "Icono",
+      text: "Texto",
+      iconAndText: "Icono y Texto",
+    },
+    specificToolbarButtons: {
+      title: "Botones Específicos de Barra de Herramientas",
+      icon: "Icono",
+      text: "Texto",
+      iconAndText: "Icono y Texto",
+    },
+    interfaceScale: {
+      title: "Escala de Interfaz",
+      small: "Pequeña",
+      default: "Por Defecto",
+      large: "Grande",
+    },
+  },
 };
 
 export default es;
