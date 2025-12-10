@@ -1910,7 +1910,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       enableColumnActions: false,
       enableResizing: true,
       enablePinning: false, // Disable user pinning control
-      columnDefType: 'display' as const,
+      columnDefType: "display" as const,
       referencedTabId: null,
       Cell: ({ row }: { row: MRT_Row<EntityData> }) => (
         <ActionsColumnCell
@@ -2382,7 +2382,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     getRowCanExpand: handleGetRowCanExpand,
     initialState: {
       ...initialState,
-      columnPinning: { left: ['mrt-row-select', COLUMN_NAMES.ACTIONS] },
+      columnPinning: { left: ["mrt-row-select", COLUMN_NAMES.ACTIONS] },
     },
     renderDetailPanel: undefined,
     onExpandedChange: handleExpandedChange,
