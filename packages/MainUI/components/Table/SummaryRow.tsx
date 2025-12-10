@@ -28,19 +28,36 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({
 
     if (!tableContainer || !rowContainer) return;
 
+    // Find any element with overflow-x
+    const allDivs = tableContainer.querySelectorAll('div');
+    let scrollableElement: HTMLElement | null = null;
+    
+    allDivs.forEach((div) => {
+      const style = window.getComputedStyle(div);
+      if (style.overflowX === 'auto' || style.overflowX === 'scroll') {
+        if (!scrollableElement) {
+          scrollableElement = div as HTMLElement;
+        }
+      }
+    });
+    
+    if (!scrollableElement) {
+      scrollableElement = tableContainer;
+    }
+
     const handleScroll = () => {
       if (rowContainer) {
-        rowContainer.scrollLeft = tableContainer.scrollLeft;
+        rowContainer.scrollLeft = scrollableElement!.scrollLeft;
       }
     };
 
-    tableContainer.addEventListener("scroll", handleScroll);
-
+    scrollableElement.addEventListener("scroll", handleScroll);
+    
     // Initial sync
     handleScroll();
 
     return () => {
-      tableContainer.removeEventListener("scroll", handleScroll);
+      scrollableElement!.removeEventListener("scroll", handleScroll);
     };
   }, [tableContainerRef]);
 
@@ -77,16 +94,17 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({
         return (
           <div
             key={column.id}
-            className="flex items-center px-4 py-2 flex-shrink-0 border-r border-gray-200 last:border-r-0"
+            className="flex items-center px-4 py-2 flex-shrink-0 border-r border-gray-200 last:border-r-0 overflow-hidden"
             style={{
               width: width,
               minWidth: width,
               maxWidth: width,
-            }}>
+            }}
+          >
             {summaryType && (
-              <div className="flex items-center font-bold text-xs">
-                <span className="mr-2 text-(--color-neutral-60) uppercase">{summaryType}:</span>
-                <span className="text-(--color-neutral-90)">{displayValue}</span>
+              <div className="flex items-center font-bold text-xs overflow-hidden w-full">
+                 <span className="mr-2 text-(--color-neutral-60) uppercase flex-shrink-0">{summaryType}:</span>
+                 <span className="text-(--color-neutral-90) truncate">{displayValue}</span>
               </div>
             )}
           </div>
