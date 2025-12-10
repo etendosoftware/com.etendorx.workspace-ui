@@ -28,8 +28,8 @@ interface HeaderContextMenuProps {
   onClose: () => void;
   column: MRT_Column<EntityData> | null;
   onSetSummary: (columnId: string, type: SummaryType) => void;
-  onRemoveSummary: () => void;
-  activeSummary: { columnId: string; type: SummaryType } | null;
+  onRemoveSummary: (columnId: string) => void;
+  activeSummary: Record<string, SummaryType>;
 }
 
 export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({
@@ -68,11 +68,11 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({
   };
 
   const handleRemoveSummary = () => {
-    onRemoveSummary();
+    onRemoveSummary(columnId);
     onClose();
   };
 
-  const isSummaryActiveOnThisColumn = activeSummary?.columnId === columnId;
+  const isSummaryActiveOnThisColumn = Boolean(activeSummary[columnId]);
 
   return (
     <Menu anchorEl={anchorEl} onClose={onClose} className="rounded-xl" data-testid="HeaderMenu__summary">

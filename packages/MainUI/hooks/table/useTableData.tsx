@@ -95,7 +95,7 @@ interface UseTableDataReturn {
   ) => Promise<void>;
   isImplicitFilterApplied: boolean;
   tableColumnFilters: MRT_ColumnFiltersState;
-  fetchSummary: (columnId: string, summaryType: string) => Promise<SummaryResult | null>;
+  fetchSummary: (summaries: Record<string, string>) => Promise<Record<string, number | string> | null>;
 }
 
 export const useTableData = ({
@@ -804,9 +804,25 @@ export const useTableData = ({
 
   // Fetch summary data
   const fetchSummary = useCallback(
-    async (columnId: string, summaryType: string): Promise<SummaryResult | null> => {
-      const column = baseColumns.find((col) => col.columnName === columnId || col.id === columnId);
-      if (!column) {
+    async (summaries: Record<string, string>): Promise<Record<string, number | string> | null> => {
+      if (Object.keys(summaries).length === 0) {
+        return null;
+      }
+
+      // Map column IDs to their backend names (columnName or id)
+      const summaryRequest: Record<string, string> = {};
+      const columnMapping: Record<string, string> = {}; // backendName -> originalId
+
+      Object.entries(summaries).forEach(([colId, type]) => {
+        const column = baseColumns.find((col) => col.columnName === colId || col.id === colId);
+        if (column) {
+          const backendName = column.columnName || column.id;
+          summaryRequest[backendName] = type;
+          columnMapping[backendName] = colId;
+        }
+      });
+
+      if (Object.keys(summaryRequest).length === 0) {
         return null;
       }
 
@@ -815,9 +831,7 @@ export const useTableData = ({
       const { sortBy, pageSize, ...cleanQuery } = query;
       const summaryQuery = {
         ...cleanQuery,
-        _summary: JSON.stringify({
-          [column.columnName || column.id]: summaryType,
-        }),
+        _summary: JSON.stringify(summaryRequest),
         _noCount: true,
         _startRow: 0,
         _endRow: 1,
@@ -839,10 +853,17 @@ export const useTableData = ({
         };
 
         if (response.ok && response.data?.response?.data && response.data.response.data.length > 0) {
-          const result = response.data.response.data[0];
-          // The backend returns the summary result in a field named after the column
-          const value = result[column.columnName || column.id];
-          return { value };
+          const resultData = response.data.response.data[0];
+          const results: Record<string, number | string> = {};
+
+          // Map backend results back to original column IDs
+          Object.entries(columnMapping).forEach(([backendName, originalId]) => {
+            if (resultData[backendName] !== undefined) {
+              results[originalId] = resultData[backendName];
+            }
+          });
+
+          return results;
         }
         return null;
       } catch (error) {
