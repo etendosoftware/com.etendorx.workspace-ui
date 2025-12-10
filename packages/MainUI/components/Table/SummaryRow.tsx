@@ -1,8 +1,7 @@
 import React, { useEffect, useRef } from "react";
-import { type MRT_TableInstance, type MRT_Column } from "material-react-table";
+import { type MRT_TableInstance } from "material-react-table";
 import { type EntityData } from "@workspaceui/api-client/src/api/types";
 import { type SummaryType } from "./HeaderContextMenu";
-import { useTranslation } from "@/hooks/useTranslation";
 
 interface SummaryRowProps {
   table: MRT_TableInstance<EntityData>;
@@ -19,7 +18,6 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({
   isSummaryLoading,
   tableContainerRef,
 }) => {
-  const { t } = useTranslation();
   const rowRef = useRef<HTMLDivElement>(null);
   const visibleColumns = table.getVisibleLeafColumns();
 
@@ -49,8 +47,6 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({
   if (Object.keys(summaryState).length === 0) {
     return null;
   }
-
-  // console.log("Rendering SummaryRow", { summaryState, visibleColumns: visibleColumns.length });
 
   return (
     <div
