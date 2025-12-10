@@ -45,6 +45,8 @@ const en = {
     records: "records",
     version: "Version: ",
     about: "About",
+    clone: "Clone",
+    cloneWithChildren: "Clone With Children",
   },
   forms: {
     sections: {
@@ -125,6 +127,7 @@ const en = {
     httpError: "HTTP Error: ",
     noRecordsError: "There is no records selected",
     noRecords: "Please create a new record",
+    copyError: "Copy failed! Please try again or contact support.",
   },
   errors: {
     tableError: {
@@ -181,6 +184,7 @@ const en = {
   },
   modal: {
     secondaryButtonLabel: "Back",
+    cloneConfirmation: "Do you want to clone the selected record?",
   },
   registerModal: {
     descriptionText: "Confirm your shipment and save it in the system. 📝📦",
