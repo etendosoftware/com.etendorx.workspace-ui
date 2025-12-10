@@ -650,7 +650,7 @@ export const TableDirCellEditor = React.memo(TableDirCellEditorComponent, (prevP
     prevProps.value === nextProps.value &&
     prevProps.hasError === nextProps.hasError &&
     prevProps.disabled === nextProps.disabled &&
-    prevProps.field?.name === nextProps.field?.name &&
+    prevProps.field === nextProps.field &&
     prevProps.shouldAutoFocus === nextProps.shouldAutoFocus
   );
 });
