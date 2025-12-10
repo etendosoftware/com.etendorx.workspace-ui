@@ -28,6 +28,11 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({
 
     if (!tableContainer || !rowContainer) return;
 
+    // Don't set up scroll if no summaries are active
+    if (Object.keys(summaryState).length === 0) {
+      return;
+    }
+
     let scrollableElement: HTMLElement | null = null;
     let handleScroll: (() => void) | null = null;
 
@@ -59,7 +64,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({
 
       // Initial sync
       handleScroll();
-    }, 100);
+    }, 300);
 
     return () => {
       clearTimeout(timeoutId);
@@ -67,7 +72,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({
         scrollableElement.removeEventListener("scroll", handleScroll);
       }
     };
-  }, [tableContainerRef, table]);
+  }, [tableContainerRef, table, summaryState]);
 
   if (Object.keys(summaryState).length === 0) {
     return null;
