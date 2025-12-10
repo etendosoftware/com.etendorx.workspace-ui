@@ -80,7 +80,8 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * - Dynamic filtering based on parent-child relationships
    */
   const groupedTabs = useMemo(() => {
-    return windowData ? groupTabsByLevel(windowData) : [];
+    const groups = windowData ? groupTabsByLevel(windowData) : [];
+    return groups.filter((group) => group && group.length > 0);
   }, [windowData]);
 
   /**

@@ -31,6 +31,12 @@ import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useRecordContext } from "@/hooks/useRecordContext";
 import type { ToolbarButtonMetadata } from "./types";
 import { useWindowContext } from "@/contexts/window";
+import type { ActionButton, ActionModalProps } from "@workspaceui/componentlibrary/src/components/ActionModal/types";
+import { isEmptyArray } from "@/utils/commons";
+import { getNewTabFormState } from "@/utils/window/utils";
+import { copyRecordRequest, handleCopyRecordResponse } from "@/utils/processes/toolbar/utils";
+import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
+import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 
 export const useToolbarConfig = ({
   tabId,
@@ -70,13 +76,27 @@ export const useToolbarConfig = ({
 
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [actionModal, setActionModal] = useState<Omit<ActionModalProps, "onClose"> & { isOpen: boolean }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    buttons: [],
+    t,
+  });
+
+  const closeActionModal = useCallback(() => {
+    setActionModal((prev) => ({ ...prev, isOpen: false }));
+  }, []);
+
   const { tab } = useTabContext();
-  const { activeWindow, clearSelectedRecord, getSelectedRecord } = useWindowContext();
+  const { activeWindow, clearSelectedRecord, getSelectedRecord, setSelectedRecord, setTabFormState } =
+    useWindowContext();
   const { graph } = useSelected();
 
   const selectedMultiple = useSelectedRecords(tab);
   const selectedRecord = useSelectedRecord(tab);
   const { contextString, hasSelectedRecords, contextItems } = useRecordContext();
+  const { triggerParentRefreshes } = useTabRefreshContext();
 
   const selectedRecordId = useMemo(() => {
     if (!activeWindow?.windowIdentifier || !tab) return null;
@@ -202,6 +222,107 @@ export const useToolbarConfig = ({
       logger.error("Error al copiar URL al portapapeles:", error);
     }
   }, []);
+  const handleCopyRecord = useCallback(() => {
+    if (!tab || !activeWindow || isEmptyArray(selectedIds)) return;
+
+    const isComplexClone = tab.obuiappCloneChildren;
+    const title = t("common.confirm");
+    const message = t("modal.cloneConfirmation");
+
+    const handleRequest = async (cloneWithChildren: boolean) => {
+      setActionModal((prev) => ({ ...prev, isLoading: true }));
+      const windowIdentifier = activeWindow?.windowIdentifier;
+
+      const { ok, data } = await copyRecordRequest(tab, selectedIds, activeWindow.windowId, cloneWithChildren);
+
+      setActionModal((prev) => ({ ...prev, isLoading: false, isOpen: false }));
+      onRefresh?.();
+
+      handleCopyRecordResponse({
+        ok,
+        data,
+        onError: () => {
+          showErrorModal(t("status.copyError"), {
+            saveLabel: t("common.close"),
+            secondaryButtonLabel: t("modal.secondaryButtonLabel"),
+          });
+        },
+        onRefreshParent: () => {
+          triggerParentRefreshes(tab.tabLevel);
+        },
+        onSingleRecord: (newRecordId) => {
+          const formMode = FORM_MODES.EDIT;
+          const newTabFormState = getNewTabFormState(newRecordId, TAB_MODES.FORM, formMode);
+          setSelectedRecord(windowIdentifier, tabId, newRecordId);
+          setTabFormState(windowIdentifier, tabId, newTabFormState);
+        },
+        onMultipleRecords: () => {
+          clearSelectedRecord(windowIdentifier, tabId);
+        },
+      });
+    };
+
+    const buttons: ActionButton[] = [];
+
+    if (isComplexClone) {
+      buttons.push(
+        {
+          id: "clone",
+          label: t("common.clone"),
+          onClick: () => handleRequest(false),
+          variant: "primary",
+        },
+        {
+          id: "cloneWithChildren",
+          label: t("common.cloneWithChildren"),
+          onClick: () => handleRequest(true),
+          variant: "primary",
+        },
+        {
+          id: "cancel",
+          label: t("common.cancel"),
+          onClick: closeActionModal,
+          variant: "secondary",
+        }
+      );
+    } else {
+      buttons.push(
+        {
+          id: "true",
+          label: t("common.trueText"),
+          onClick: () => handleRequest(true),
+          variant: "primary",
+        },
+        {
+          id: "false",
+          label: t("common.falseText"),
+          onClick: closeActionModal,
+          variant: "secondary",
+        }
+      );
+    }
+
+    setActionModal({
+      isOpen: true,
+      title,
+      message,
+      buttons,
+      t,
+    });
+  }, [
+    tab,
+    selectedIds,
+    activeWindow,
+    t,
+    closeActionModal,
+    showErrorModal,
+    onRefresh,
+    setSelectedRecord,
+    setTabFormState,
+    triggerParentRefreshes,
+    clearSelectedRecord,
+    tabId,
+  ]);
 
   useEffect(() => {
     if (!statusModal.open && isDeleting) {
@@ -263,7 +384,9 @@ export const useToolbarConfig = ({
         await onExportCSV?.();
       },
       SHARE_LINK: () => {
-        onShareLink();
+        onShareLink()},
+      COPY_RECORD: () => {
+        handleCopyRecord();
       },
     }),
     [
@@ -288,6 +411,7 @@ export const useToolbarConfig = ({
       attachmentAction,
       onExportCSV,
       onShareLink,
+      handleCopyRecord
     ]
   );
 
@@ -336,6 +460,8 @@ export const useToolbarConfig = ({
       selectedMultiple,
       selectedIds,
       selectedRecordId,
+      actionModal,
+      closeActionModal,
     }),
     [
       handleAction,
@@ -354,6 +480,8 @@ export const useToolbarConfig = ({
       selectedMultiple,
       selectedIds,
       selectedRecordId,
+      actionModal,
+      closeActionModal,
     ]
   );
 };

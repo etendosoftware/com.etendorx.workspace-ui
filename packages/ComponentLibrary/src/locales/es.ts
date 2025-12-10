@@ -44,6 +44,8 @@ const es = {
     records: "registros",
     version: "Versión: ",
     about: "Acerca de",
+    clone: "Clonar",
+    cloneWithChildren: "Clonar con hijos",
   },
   forms: {
     sections: {
@@ -124,6 +126,7 @@ const es = {
     httpError: "Error HTTP: ",
     noRecordsError: "No hay registros seleccionados",
     noRecords: "Por favor, crea un nuevo registro",
+    copyError: "¡Copiado erróneo! Inténtelo nuevamente o contáctese con soporte.",
   },
   errors: {
     tableError: {
@@ -180,6 +183,7 @@ const es = {
   },
   modal: {
     secondaryButtonLabel: "Atrás",
+    cloneConfirmation: "¿Desea clonar el registro seleccionado?",
   },
   registerModal: {
     descriptionText: "Confirma tu envío y guárdalo en el sistema. 📝📦",

@@ -22,7 +22,7 @@ import Base64Icon from "@workspaceui/componentlibrary/src/components/Base64Icon"
 import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
 import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
 import type { SaveButtonState } from "@/contexts/ToolbarContext";
-import type { ISession } from "@workspaceui/api-client/src/api/types";
+import type { ISession, Tab } from "@workspaceui/api-client/src/api/types";
 
 const isBase64Image = (str: string): boolean => {
   try {
@@ -52,6 +52,7 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: "toolbar-button-attachment",
   [TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV]: "toolbar-button-export-csv",
   [TOOLBAR_BUTTONS_ACTIONS.SHARE_LINK]: "toolbar-button-share-link",
+  [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: "toolbar-button-copy-record"
 } as const;
 
 export const DefaultIcon = () => <span className="icon-base64" style={{ fontSize: "1rem" }}>✣</span>;
@@ -127,7 +128,6 @@ export const createButtonByType = ({
   onAction,
   isFormView,
   hasFormChanges,
-  hasSelectedRecord,
   hasParentRecordSelected,
   isCopilotInstalled,
   saveButtonState,
@@ -135,12 +135,13 @@ export const createButtonByType = ({
   showFilterTooltip,
   showShareLinkTooltip,
   t,
+  tab,
+  selectedRecordsLength,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
   isFormView: boolean;
   hasFormChanges: boolean;
-  hasSelectedRecord: boolean;
   hasParentRecordSelected: boolean;
   isCopilotInstalled?: boolean;
   saveButtonState?: SaveButtonState;
@@ -148,7 +149,9 @@ export const createButtonByType = ({
   showFilterTooltip?: boolean;
   showShareLinkTooltip?: boolean;
   t?: TranslateFunction;
-}): ToolbarButton => {
+  tab: Tab;
+  selectedRecordsLength: number;
+}) => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
   const baseConfig: ToolbarButton = {
@@ -189,6 +192,7 @@ export const createButtonByType = ({
   });
 
   const getDisableConfig = (): Partial<ToolbarButton> => {
+    const hasSelectedRecord = selectedRecordsLength > 0;
     const actionHandlers = {
       [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: () => buildDisableConfig(!(isFormView || hasSelectedRecord)),
       [TOOLBAR_BUTTONS_ACTIONS.DELETE]: () => buildDisableConfig(!hasSelectedRecord),
@@ -202,6 +206,11 @@ export const createButtonByType = ({
           ? saveButtonState.isCalloutLoading || saveButtonState.isSaving
           : false;
         return buildDisableConfig(baseDisabled || additionalDisabled);
+      },
+      [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: () => {
+        const isCloneEnabled = tab?.obuiappShowCloneButton;
+        const isSingleSelection = hasSelectedRecord;
+        return buildDisableConfig(!isCloneEnabled || !isSingleSelection);
       },
     };
 
@@ -276,7 +285,6 @@ export const getButtonStyles = (button: ToolbarButtonMetadata) => {
 interface ButtonConfig {
   isFormView: boolean;
   hasFormChanges: boolean;
-  hasSelectedRecord: boolean;
   hasParentRecordSelected: boolean;
   saveButtonState?: SaveButtonState;
   isCopilotInstalled?: boolean;
@@ -285,6 +293,8 @@ interface ButtonConfig {
   showFilterTooltip?: boolean;
   showShareLinkTooltip?: boolean;
   t?: TranslateFunction;
+  tab: Tab;
+  selectedRecordsLength: number;
 }
 
 /**
@@ -301,7 +311,6 @@ const createSectionButtons = (
       onAction,
       isFormView: config.isFormView,
       hasFormChanges: config.hasFormChanges,
-      hasSelectedRecord: config.hasSelectedRecord,
       hasParentRecordSelected: config.hasParentRecordSelected,
       saveButtonState: config.saveButtonState,
       isCopilotInstalled: config.isCopilotInstalled,
@@ -309,6 +318,8 @@ const createSectionButtons = (
       showFilterTooltip: config.showFilterTooltip,
       showShareLinkTooltip: config.showShareLinkTooltip,
       t: config.t,
+      tab: config.tab,
+      selectedRecordsLength: config.selectedRecordsLength,
     });
 
     // Apply button-specific styles if available
@@ -318,7 +329,7 @@ const createSectionButtons = (
     }
 
     // Add badge for ATTACHMENT button only when a record is selected
-    if (button.action === TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT && config.session && config.hasSelectedRecord) {
+    if (button.action === TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT && config.session && config.selectedRecordsLength > 0) {
       const attachmentCount = config.session._attachmentCount;
       if (attachmentCount && Number.parseInt(String(attachmentCount)) > 0) {
         toolbarButton.badgeContent = String(attachmentCount);
@@ -344,7 +355,6 @@ interface ToolbarSectionsConfig {
   isFormView: boolean;
   isTreeNodeView?: boolean;
   hasFormChanges?: boolean;
-  hasSelectedRecord?: boolean;
   hasParentRecordSelected?: boolean;
   isCopilotInstalled?: boolean;
   saveButtonState?: SaveButtonState;
@@ -353,6 +363,8 @@ interface ToolbarSectionsConfig {
   showFilterTooltip?: boolean;
   showShareLinkTooltip?: boolean;
   t?: TranslateFunction;
+  tab: Tab;
+  selectedRecordsLength: number;
 }
 
 export const getToolbarSections = ({
@@ -361,7 +373,6 @@ export const getToolbarSections = ({
   isFormView,
   isTreeNodeView,
   hasFormChanges = false,
-  hasSelectedRecord = false,
   hasParentRecordSelected = false,
   isCopilotInstalled = false,
   saveButtonState,
@@ -370,6 +381,8 @@ export const getToolbarSections = ({
   showFilterTooltip = false,
   showShareLinkTooltip = false,
   t,
+  tab,
+  selectedRecordsLength,
 }: ToolbarSectionsConfig): {
   leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
@@ -381,7 +394,6 @@ export const getToolbarSections = ({
   const buttonConfig: ButtonConfig = {
     isFormView,
     hasFormChanges,
-    hasSelectedRecord,
     hasParentRecordSelected,
     saveButtonState,
     isCopilotInstalled,
@@ -389,7 +401,9 @@ export const getToolbarSections = ({
     isImplicitFilterApplied,
     showFilterTooltip,
     showShareLinkTooltip,
-    t,
+    tab,
+    selectedRecordsLength,
+    t
   };
 
   return {

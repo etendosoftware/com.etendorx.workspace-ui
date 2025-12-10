@@ -15,27 +15,22 @@
  *************************************************************************
  */
 
-export const TOOLBAR_BUTTONS_ACTIONS = {
-  NEW: "NEW",
-  SAVE: "SAVE",
-  REFRESH: "REFRESH",
-  CANCEL: "CANCEL",
-  DELETE: "DELETE",
-  FIND: "FIND",
-  FILTER: "FILTER",
-  COPILOT: "COPILOT",
-  COLUMN_FILTERS: "COLUMN_FILTERS",
-  TOGGLE_TREE_VIEW: "TOGGLE_TREE_VIEW",
-  ATTACHMENT: "ATTACHMENT",
-  EXPORT_CSV: "EXPORT_CSV",
-  SHARE_LINK: "SHARE_LINK",
-  COPY_RECORD: "COPY_RECORD"
-};
+import type { TranslateFunction } from "../../locales/types";
 
-export const TOOLBAR_BUTTONS_TYPES = {
-  ACTION: "ACTION",
-  DROPDOWN: "DROPDOWN",
-  MODAL: "MODAL",
-  TOGGLE: "TOGGLE",
-  CUSTOM: "CUSTOM",
-};
+export interface ActionButton {
+  id: string;
+  label: string;
+  onClick: () => void;
+  variant?: "primary" | "secondary" | "danger";
+  disabled?: boolean;
+}
+
+export interface ActionModalProps {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  buttons: ActionButton[];
+  onClose: () => void;
+  isLoading?: boolean;
+  t: TranslateFunction;
+}
