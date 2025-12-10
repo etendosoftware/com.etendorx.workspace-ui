@@ -18,6 +18,7 @@
 import type { TranslateFunction } from "../../locales/types";
 
 export interface ActionButton {
+  id: string;
   label: string;
   onClick: () => void;
   variant?: "primary" | "secondary" | "danger";

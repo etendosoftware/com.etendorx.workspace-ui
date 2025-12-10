@@ -60,7 +60,7 @@ const ActionModal: React.FC<ActionModalProps> = ({
 
         {/* Footer */}
         <div className="flex justify-end gap-3 rounded-b-xl border-t border-gray-200 bg-[var(--color-baseline-10)] p-4">
-          {buttons.map((button, index) => {
+          {buttons.map((button) => {
             const getButtonClass = () => {
               switch (button.variant) {
                 case "primary":
@@ -74,7 +74,7 @@ const ActionModal: React.FC<ActionModalProps> = ({
 
             return (
               <button
-                key={index}
+                key={button.id}
                 type="button"
                 onClick={button.onClick}
                 disabled={button.disabled || isLoading}

@@ -35,8 +35,8 @@ describe("ActionModal", () => {
 
   it("renders buttons correctly", () => {
     const buttons = [
-      { label: "Button 1", onClick: jest.fn(), variant: "primary" as const },
-      { label: "Button 2", onClick: jest.fn(), variant: "secondary" as const },
+      { id: "button1", label: "Button 1", onClick: jest.fn(), variant: "primary" as const },
+      { id: "button2", label: "Button 2", onClick: jest.fn(), variant: "secondary" as const },
     ];
     render(<ActionModal {...defaultProps} buttons={buttons} />);
     expect(screen.getByText("Button 1")).toBeInTheDocument();
@@ -45,20 +45,20 @@ describe("ActionModal", () => {
 
   it("calls button onClick handler when clicked", () => {
     const mockOnClick = jest.fn();
-    const buttons = [{ label: "Action Button", onClick: mockOnClick, variant: "primary" as const }];
+    const buttons = [{ id: "button1", label: "Action Button", onClick: mockOnClick, variant: "primary" as const }];
     render(<ActionModal {...defaultProps} buttons={buttons} />);
     fireEvent.click(screen.getByText("Action Button"));
     expect(mockOnClick).toHaveBeenCalledTimes(1);
   });
 
   it("shows loading overlay when isLoading is true", () => {
-    const { container } = render(<ActionModal {...defaultProps} isLoading={true} />);
+    render(<ActionModal {...defaultProps} isLoading={true} />);
     const closeButton = screen.getByLabelText("common.close");
     expect(closeButton).toBeDisabled();
   });
 
   it("disables buttons when isLoading is true", () => {
-    const buttons = [{ label: "Action Button", onClick: jest.fn(), variant: "primary" as const }];
+    const buttons = [{ id: "button1", label: "Action Button", onClick: jest.fn(), variant: "primary" as const }];
     render(<ActionModal {...defaultProps} buttons={buttons} isLoading={true} />);
     expect(screen.getByText("Action Button")).toBeDisabled();
   });

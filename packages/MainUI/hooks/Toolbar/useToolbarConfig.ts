@@ -258,16 +258,19 @@ export const useToolbarConfig = ({
     if (isComplexClone) {
       buttons.push(
         {
+          id: "clone",
           label: t("common.clone"),
           onClick: () => handleRequest(false),
           variant: "primary",
         },
         {
+          id: "cloneWithChildren",
           label: t("common.cloneWithChildren"),
           onClick: () => handleRequest(true),
           variant: "primary",
         },
         {
+          id: "cancel",
           label: t("common.cancel"),
           onClick: closeActionModal,
           variant: "secondary",
@@ -276,11 +279,13 @@ export const useToolbarConfig = ({
     } else {
       buttons.push(
         {
+          id: "true",
           label: t("common.trueText"),
           onClick: () => handleRequest(true),
           variant: "primary",
         },
         {
+          id: "false",
           label: t("common.falseText"),
           onClick: closeActionModal,
           variant: "secondary",
