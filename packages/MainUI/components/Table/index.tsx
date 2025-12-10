@@ -113,8 +113,6 @@ import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
 
-
-
 type RowProps = (props: {
   isDetailPanel?: boolean;
   row: MRT_Row<EntityData>;

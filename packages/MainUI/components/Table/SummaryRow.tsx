@@ -35,7 +35,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({
     };
 
     tableContainer.addEventListener("scroll", handleScroll);
-    
+
     // Initial sync
     handleScroll();
 
@@ -55,20 +55,19 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({
       style={{
         // Match the table width logic if needed, but usually flex + widths works
         minWidth: "100%",
-      }}
-    >
+      }}>
       {visibleColumns.map((column) => {
         const columnId = column.id;
         const summaryType = summaryState[columnId];
         const result = summaryResult[columnId];
-        
+
         // Get width from column definition
         const width = column.getSize();
-        
+
         let displayValue: React.ReactNode = null;
 
         if (summaryType) {
-           if (isSummaryLoading) {
+          if (isSummaryLoading) {
             displayValue = "Loading...";
           } else if (result !== null && result !== undefined) {
             displayValue = result;
@@ -83,12 +82,11 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({
               width: width,
               minWidth: width,
               maxWidth: width,
-            }}
-          >
+            }}>
             {summaryType && (
               <div className="flex items-center font-bold text-xs">
-                 <span className="mr-2 text-(--color-neutral-60) uppercase">{summaryType}:</span>
-                 <span className="text-(--color-neutral-90)">{displayValue}</span>
+                <span className="mr-2 text-(--color-neutral-60) uppercase">{summaryType}:</span>
+                <span className="text-(--color-neutral-90)">{displayValue}</span>
               </div>
             )}
           </div>
