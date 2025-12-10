@@ -115,7 +115,7 @@
 .toolbar-button-column-filters:hover .icon-base64,
 .toolbar-button-toggle-tree-view:hover .icon-base64,
 .toolbar-button-attachment:hover .icon-base64,
-toolbar-button-copy-record:hover .icon-base64 {
+.toolbar-button-copy-record:hover .icon-base64 {
   filter: brightness(1000%);
   opacity: 1;
 }
