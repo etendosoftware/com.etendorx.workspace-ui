@@ -103,6 +103,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   // State for temporary filter tooltip
   const [showFilterTooltip, setShowFilterTooltip] = useState(false);
+  const [showShareLinkTooltip, setShowShareLinkTooltip] = useState(false);
 
   // Check if any child tab is fully expanded
   const isChildTabExpanded = useMemo(() => {
@@ -249,13 +250,26 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const handleCloseStatusModal = useCallback(() => setActiveModal(null), []);
 
+  const handleActionWithTooltip = useCallback(
+    (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => {
+      if (action === "SHARE_LINK") {
+        setShowShareLinkTooltip(true);
+        setTimeout(() => {
+          setShowShareLinkTooltip(false);
+        }, 2000);
+      }
+      handleAction(action, button, event);
+    },
+    [handleAction]
+  );
+
   const toolbarConfig = useMemo(() => {
     const hasSelectedRecord = !!selectedRecord?.id;
     const hasParentRecordSelected = !hasParentTab || selectedParentItems.length === 1;
 
     const baseConfig = getToolbarSections({
       buttons: buttons as ToolbarButtonMetadata[],
-      onAction: handleAction,
+      onAction: handleActionWithTooltip,
       isFormView: isFormView,
       isTreeNodeView: isTreeNodeView,
       hasFormChanges: hasFormChanges,
@@ -266,6 +280,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       session: session,
       isImplicitFilterApplied: isImplicitFilterApplied,
       showFilterTooltip: showFilterTooltip,
+      showShareLinkTooltip: showShareLinkTooltip,
       t: t,
     });
 
@@ -293,7 +308,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     selectedRecord?.id,
     processButtons.length,
     t,
-    handleAction,
+    handleActionWithTooltip,
     handleMenuToggle,
     anchorEl,
     hasParentTab,
@@ -305,6 +320,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     session,
     isImplicitFilterApplied,
     showFilterTooltip,
+    showShareLinkTooltip,
   ]);
 
   if (loading) {

@@ -193,6 +193,16 @@ export const useToolbarConfig = ({
     }
   }, [tab, selectedIds, getRecordsToDelete, showConfirmModal, t, deleteRecord, showErrorModal]);
 
+  const onShareLink = useCallback(async () => {
+    try {
+      const currentUrl = window.location.href;
+      await navigator.clipboard.writeText(currentUrl);
+      logger.info("URL copiada al portapapeles:", currentUrl);
+    } catch (error) {
+      logger.error("Error al copiar URL al portapapeles:", error);
+    }
+  }, []);
+
   useEffect(() => {
     if (!statusModal.open && isDeleting) {
       setIsDeleting(false);
@@ -252,6 +262,9 @@ export const useToolbarConfig = ({
       EXPORT_CSV: async () => {
         await onExportCSV?.();
       },
+      SHARE_LINK: () => {
+        onShareLink();
+      },
     }),
     [
       onBack,
@@ -274,6 +287,7 @@ export const useToolbarConfig = ({
       handleDeleteRecord,
       attachmentAction,
       onExportCSV,
+      onShareLink,
     ]
   );
 
