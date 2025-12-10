@@ -21,7 +21,7 @@ import type { DefaultConfiguration } from "./types";
 const DEFAULT_CONFIG = {
   language: "192",
   role: "0",
-  client: "System",
+  client: "0",
   organization: "0",
   warehouse: "0",
   default: "true",

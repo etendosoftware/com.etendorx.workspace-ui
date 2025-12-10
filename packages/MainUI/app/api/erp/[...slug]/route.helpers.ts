@@ -52,9 +52,9 @@ export function rewriteHtmlResourceUrls(html: string, baseUrl?: string): string 
   }
 
   // Rewrite relative paths that reference Etendo resources (e.g., ../web/, ../../web/)
-  rewritten = rewritten.replace(/(href|src)="(\.\.\/)+web\//gi, `$1="${targetUrl}/web/`);
-  rewritten = rewritten.replace(/(href|src)="(\.\.\/)+org\.openbravo\./gi, `$1="${targetUrl}/org.openbravo.`);
-  rewritten = rewritten.replace(/(href|src)="(\.\.\/)+ad_forms\//gi, `$1="${targetUrl}/ad_forms/`);
+  rewritten = rewritten.replace(/(href|src)="(\.\.\/)*web\//gi, `$1="${targetUrl}/web/`);
+  rewritten = rewritten.replace(/(href|src)="(\.\.\/)*org\.openbravo\./gi, `$1="${targetUrl}/org.openbravo.`);
+  rewritten = rewritten.replace(/(href|src)="(\.\.\/)*ad_forms\//gi, `$1="${targetUrl}/ad_forms/`);
 
   // Rewrite absolute paths (e.g., /web/, /org.openbravo., /ad_forms/)
   // These need to go through the backend, not Next.js
