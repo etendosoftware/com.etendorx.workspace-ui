@@ -265,6 +265,8 @@ export interface Tab {
   hqlfilterclause: string;
   hqlwhereclause: string;
   sQLWhereClause: string;
+  hqlorderbyclause?: string;
+  sQLOrderByClause?: string;
   module: string;
   parentTabId?: string;
   table$_identifier?: string;
