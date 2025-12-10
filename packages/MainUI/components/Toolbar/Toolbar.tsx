@@ -401,6 +401,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         onClose={closeActionModal}
         isLoading={actionModal.isLoading}
         t={t}
+        data-testid="ActionModal__a2dd07"
       />
     </>
   );
