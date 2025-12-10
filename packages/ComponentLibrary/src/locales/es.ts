@@ -198,6 +198,7 @@ const es = {
       refresh: "Actualizar",
       implicitFilterOn: "Filtros aplicados. Click para quitar filtros",
       implicitFilterOff: "Filtros desactivados. Click para aplicar filtros",
+      copy: "¡Copiado!",
     },
     selection: {
       single: "Elemento selecccionado",

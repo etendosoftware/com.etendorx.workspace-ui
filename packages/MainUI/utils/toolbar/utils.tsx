@@ -259,7 +259,7 @@ export const createButtonByType = ({
   }
 
   if (button.action === TOOLBAR_BUTTONS_ACTIONS.SHARE_LINK && showShareLinkTooltip) {
-    finalConfig.tooltip = "Copy!";
+    finalConfig.tooltip = t ? t("table.tooltips.copy") : "Copy!";
     finalConfig.forceTooltipOpen = true;
   }
 

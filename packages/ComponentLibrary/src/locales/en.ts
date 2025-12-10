@@ -199,6 +199,7 @@ const en = {
       refresh: "Refresh",
       implicitFilterOn: "Filters applied. Click to remove filters",
       implicitFilterOff: "Filters deactivated. Click to apply filters",
+      copy: "Copy!",
     },
     selection: {
       single: "Element selected",
