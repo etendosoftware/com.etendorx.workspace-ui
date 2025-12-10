@@ -264,7 +264,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           defaultWarehouse: currentWarehouse?.id,
           organization: currentOrganization?.id,
           language: selectedLanguage?.id,
-          client: (currentClient?.id && currentClient.id !== "System" ? currentClient.id : "0"),
+          client: currentClient?.id && currentClient.id !== "System" ? currentClient.id : "0",
         });
       }
     },
