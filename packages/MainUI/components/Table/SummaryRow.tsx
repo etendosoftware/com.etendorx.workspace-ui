@@ -34,17 +34,17 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({
     // Small delay to ensure DOM is fully rendered
     const timeoutId = setTimeout(() => {
       // Find any element with overflow-x
-      const allDivs = tableContainer.querySelectorAll('div');
-      
+      const allDivs = tableContainer.querySelectorAll("div");
+
       allDivs.forEach((div) => {
         const style = window.getComputedStyle(div);
-        if (style.overflowX === 'auto' || style.overflowX === 'scroll') {
+        if (style.overflowX === "auto" || style.overflowX === "scroll") {
           if (!scrollableElement) {
             scrollableElement = div as HTMLElement;
           }
         }
       });
-      
+
       if (!scrollableElement) {
         scrollableElement = tableContainer;
       }
@@ -56,7 +56,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({
       };
 
       scrollableElement.addEventListener("scroll", handleScroll);
-      
+
       // Initial sync
       handleScroll();
     }, 100);
@@ -107,12 +107,11 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({
               width: width,
               minWidth: width,
               maxWidth: width,
-            }}
-          >
+            }}>
             {summaryType && (
               <div className="flex items-center font-bold text-xs overflow-hidden w-full">
-                 <span className="mr-2 text-(--color-neutral-60) uppercase flex-shrink-0">{summaryType}:</span>
-                 <span className="text-(--color-neutral-90) truncate">{displayValue}</span>
+                <span className="mr-2 text-(--color-neutral-60) uppercase flex-shrink-0">{summaryType}:</span>
+                <span className="text-(--color-neutral-90) truncate">{displayValue}</span>
               </div>
             )}
           </div>
