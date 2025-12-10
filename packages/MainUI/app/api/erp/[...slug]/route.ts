@@ -110,7 +110,7 @@ function isMutationRoute(slug: string, method: string): boolean {
  * @returns true if this is a mutation URL that should not be cached
  */
 function isMutationUrl(url: string): boolean {
-  return url.includes(URL_MUTATION.COMPUTE_WINDOW);
+  return url.includes(URL_MUTATION.COMPUTE_WINDOW) || url.includes(URL_MUTATION.CLONE_RECORDS);
 }
 
 /**

@@ -236,15 +236,39 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       setIsFocused(true);
     }, []);
 
-    const handleDisplayInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-      setDisplayValue(e.target.value);
-    }, []);
+    const handleDisplayInputChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = e.target.value;
+        setDisplayValue(newValue);
+
+        // Attempt to autocomplete the date as the user types
+        const date = autocompleteDate(newValue, datePlaceholder);
+        if (date) {
+          // Check if the input has at least 3 parts (Day, Month, Year)
+          // This prevents triggering on "1" (Day only) or "10/10" (Day/Month only)
+          // which are valid via autocomplete but likely incomplete during typing.
+          const parts = newValue.trim().split(/[\/\.\-]/);
+          if (parts.length < 3) {
+            return;
+          }
+
+          const isoDate = date.toISOString().split("T")[0];
+          // If we have a valid date, update the hidden input
+          // This will trigger handleHiddenDateChange -> props.onChange -> callout
+          if (hiddenDateInputRef.current && hiddenDateInputRef.current.value !== isoDate) {
+            setNativeInputValue(isoDate);
+          }
+        }
+      },
+      [datePlaceholder, setNativeInputValue]
+    );
 
     const handleHiddenDateChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
         props.onChange?.(e);
         // Also update display value immediately if picked from calendar
-        if (e.target.value) {
+        // But NOT if we are typing (isFocused), to avoid disrupting user input
+        if (e.target.value && !isFocused) {
           setDisplayValue(formatClassicDate(e.target.value, false));
         }
       },

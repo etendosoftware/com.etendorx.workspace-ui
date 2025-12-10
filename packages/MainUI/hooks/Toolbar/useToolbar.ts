@@ -26,6 +26,9 @@ import { compileExpression } from "@/components/Form/FormView/selectors/BaseSele
 import { useUserContext } from "@/hooks/useUserContext";
 import type { ProcessButton } from "@/components/ProcessModal/types";
 
+// NOTE: this need a fix in the future
+// Save the same toolbar for the same windowId using the windowIdentifier
+// This is a problem because save multiple instances of the same toolbar
 const toolbarCache = new Map<string, ToolbarButtonMetadata[]>();
 
 /**
