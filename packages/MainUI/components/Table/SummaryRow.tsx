@@ -28,38 +28,46 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({
 
     if (!tableContainer || !rowContainer) return;
 
-    // Find any element with overflow-x
-    const allDivs = tableContainer.querySelectorAll('div');
     let scrollableElement: HTMLElement | null = null;
-    
-    allDivs.forEach((div) => {
-      const style = window.getComputedStyle(div);
-      if (style.overflowX === 'auto' || style.overflowX === 'scroll') {
-        if (!scrollableElement) {
-          scrollableElement = div as HTMLElement;
+    let handleScroll: (() => void) | null = null;
+
+    // Small delay to ensure DOM is fully rendered
+    const timeoutId = setTimeout(() => {
+      // Find any element with overflow-x
+      const allDivs = tableContainer.querySelectorAll('div');
+      
+      allDivs.forEach((div) => {
+        const style = window.getComputedStyle(div);
+        if (style.overflowX === 'auto' || style.overflowX === 'scroll') {
+          if (!scrollableElement) {
+            scrollableElement = div as HTMLElement;
+          }
         }
+      });
+      
+      if (!scrollableElement) {
+        scrollableElement = tableContainer;
       }
-    });
-    
-    if (!scrollableElement) {
-      scrollableElement = tableContainer;
-    }
 
-    const handleScroll = () => {
-      if (rowContainer) {
-        rowContainer.scrollLeft = scrollableElement!.scrollLeft;
-      }
-    };
+      handleScroll = () => {
+        if (rowContainer && scrollableElement) {
+          rowContainer.scrollLeft = scrollableElement.scrollLeft;
+        }
+      };
 
-    scrollableElement.addEventListener("scroll", handleScroll);
-    
-    // Initial sync
-    handleScroll();
+      scrollableElement.addEventListener("scroll", handleScroll);
+      
+      // Initial sync
+      handleScroll();
+    }, 100);
 
     return () => {
-      scrollableElement!.removeEventListener("scroll", handleScroll);
+      clearTimeout(timeoutId);
+      if (scrollableElement && handleScroll) {
+        scrollableElement.removeEventListener("scroll", handleScroll);
+      }
     };
-  }, [tableContainerRef]);
+  }, [tableContainerRef, table]);
 
   if (Object.keys(summaryState).length === 0) {
     return null;
