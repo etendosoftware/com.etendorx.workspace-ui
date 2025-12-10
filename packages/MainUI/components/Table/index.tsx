@@ -2400,7 +2400,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     renderEmptyRowsFallback,
   });
 
-  useTableSelection(tab, records, table.getState().rowSelection, handleTableSelectionChange);
+  useTableSelection(tab, displayRecords, table.getState().rowSelection, handleTableSelectionChange);
 
   // Initialize keyboard navigation manager - use a ref to avoid dependency issues
   const keyboardManagerRef = useRef<KeyboardNavigationManager | null>(null);
