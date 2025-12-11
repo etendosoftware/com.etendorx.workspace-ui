@@ -80,6 +80,7 @@ export const FAVICON_BADGE_COLOR_ITEMS = [
   { id: "favicon-badge-pink", color: "#D81B60", label: "Pink" },
   { id: "favicon-badge-purple", color: "#8E24AA", label: "Purple" },
   { id: "favicon-badge-blue", color: "#1E88E5", label: "Blue" },
+  { id: "favicon-badge-navy", color: "#1A237E", label: "Navy" },
   { id: "favicon-badge-cyan", color: "#00ACC1", label: "Cyan" },
   { id: "favicon-badge-teal", color: "#00897B", label: "Teal" },
   { id: "favicon-badge-green", color: "#43A047", label: "Green" },

@@ -497,6 +497,7 @@ const es = {
       pink: "Rosa",
       purple: "Morado",
       blue: "Azul",
+      navy: "Azul Marino",
       cyan: "Cian",
       teal: "Verde Azulado",
       green: "Verde",

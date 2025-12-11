@@ -16,6 +16,8 @@
  */
 
 import SettingIcon from "@workspaceui/componentlibrary/src/assets/icons/settings.svg";
+import CircleFilledIcon from "@workspaceui/componentlibrary/src/assets/icons/circle-filled.svg";
+import CircleIcon from "@workspaceui/componentlibrary/src/assets/icons/circle.svg";
 import {
   SECTION_THEME_ID,
   SECTION_TABLE_DENSITY_ID,
@@ -31,25 +33,15 @@ import {
   FAVICON_BADGE_COLOR_ITEMS,
 } from "@workspaceui/componentlibrary/src/components/ConfigurationModal/constants";
 
-// Generate a colored circle SVG as data URI for the favicon badge selector
+// Create a colored circle icon for the favicon badge selector
 const createColorCircle = (color: string | null) => {
   if (!color) {
-    // "None" option: show a circle with a diagonal line through it
-    return `data:image/svg+xml,${encodeURIComponent(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-        <circle cx="16" cy="16" r="14" fill="none" stroke="#9CA3AF" stroke-width="2"/>
-        <line x1="6" y1="6" x2="26" y2="26" stroke="#9CA3AF" stroke-width="2"/>
-      </svg>`
-    )}`;
+    return <CircleIcon fill="#9CA3AF" width="2rem" height="2rem" />;
   }
-  return `data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-      <circle cx="16" cy="16" r="14" fill="${color}" stroke="#fff" stroke-width="2"/>
-    </svg>`
-  )}`;
+  return <CircleFilledIcon fill={color} width="2rem" height="2rem" />;
 };
 
-// Map color items to include the generated img
+// Map color items to include the colored CircleIcon
 const FAVICON_BADGE_ITEMS_WITH_IMG = FAVICON_BADGE_COLOR_ITEMS.map((item) => ({
   ...item,
   img: createColorCircle(item.color),
@@ -69,6 +61,7 @@ export const modalConfig = {
       items: THEME_ITEMS,
       selectedItem: 0,
       isDisabled: true,
+      itemsPerRow: 3,
     },
     {
       id: SECTION_TABLE_DENSITY_ID,
@@ -76,6 +69,7 @@ export const modalConfig = {
       items: TABLE_DENSITY_ITEMS,
       selectedItem: 0,
       isDisabled: true,
+      itemsPerRow: 3,
     },
     {
       id: SECTION_COMMON_TOOLBAR_BUTTONS_ID,
@@ -83,6 +77,7 @@ export const modalConfig = {
       items: COMMON_TOOLBAR_BUTTONS_ITEMS,
       selectedItem: 0,
       isDisabled: true,
+      itemsPerRow: 3,
     },
     {
       id: SECTION_SPECIFIC_TOOLBAR_BUTTONS_ID,
@@ -90,6 +85,7 @@ export const modalConfig = {
       items: SPECIFIC_TOOLBAR_BUTTONS_ITEMS,
       selectedItem: 0,
       isDisabled: true,
+      itemsPerRow: 3,
     },
     {
       id: SECTION_DENSITY_ID,
@@ -97,6 +93,7 @@ export const modalConfig = {
       items: INTERFACE_SCALE_ITEMS,
       selectedItem: 1,
       isDisabled: false,
+      itemsPerRow: 3,
     },
     {
       id: SECTION_FAVICON_BADGE_ID,
@@ -104,6 +101,7 @@ export const modalConfig = {
       items: FAVICON_BADGE_ITEMS_WITH_IMG,
       selectedItem: 0,
       isDisabled: false,
+      itemsPerRow: 4,
     },
   ],
   onChangeSelect: console.log,

@@ -492,6 +492,7 @@ const en = {
       pink: "Pink",
       purple: "Purple",
       blue: "Blue",
+      navy: "Navy",
       cyan: "Cyan",
       teal: "Teal",
       green: "Green",

@@ -29,6 +29,7 @@ export interface ISection {
   items: SectionItem[];
   selectedItem: number;
   isDisabled?: boolean;
+  itemsPerRow: number;
 }
 
 export interface OptionSelectedProps {

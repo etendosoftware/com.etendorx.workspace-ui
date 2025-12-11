@@ -23,6 +23,7 @@ import { useTranslation } from "../../hooks/useTranslation";
 import type {
   OptionSelectedProps,
   ISection,
+  SectionItem,
 } from "@workspaceui/componentlibrary/src/components/ConfigurationModal/types";
 import {
   SECTION_DENSITY_ID,
@@ -51,7 +52,7 @@ const ConfigurationSection: React.FC = () => {
   const config = useMemo(() => {
     const translatedSections = modalConfig.sections.map((section) => {
       let name = section.name;
-      let items = section.items;
+      let items: SectionItem[] = section.items;
 
       if (section.id === SECTION_THEME_ID) {
         name = t("configuration.themes.title");
