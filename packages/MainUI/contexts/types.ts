@@ -35,7 +35,7 @@ export type Language = "en_US" | "es_ES";
 export interface LanguageContextType {
   language: Language | null;
   prevLanguage: Language | null;
-  setLanguage: (lang: Language) => void;
+  setLanguage: (lang: Language | null) => void;
   setLabels: React.Dispatch<React.SetStateAction<Labels>>;
   getFlag: (language?: Language | null) => string;
   getLabel: (key: string) => string;

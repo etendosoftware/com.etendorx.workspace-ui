@@ -1,6 +1,9 @@
 {
   "110": {
-    "url": "/ad_forms/GenerateShipmentsmanual.html",
+    "url": "/security/Menu.html",
+    "paramUrl": "/ad_forms/GenerateShipmentsmanual.html",
+    "noprefs": "true",
+    "hideMenu": "true",
     "command": "DEFAULT"
   }
 }

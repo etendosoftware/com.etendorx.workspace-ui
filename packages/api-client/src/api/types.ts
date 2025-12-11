@@ -265,11 +265,15 @@ export interface Tab {
   hqlfilterclause: string;
   hqlwhereclause: string;
   sQLWhereClause: string;
+  hqlorderbyclause?: string;
+  sQLOrderByClause?: string;
   module: string;
   parentTabId?: string;
   table$_identifier?: string;
   window$_identifier?: string;
-  tableTree?: boolean;
+  tableTree?: boolean | string;
+  obuiappShowCloneButton?: boolean;
+  obuiappCloneChildren?: boolean;
 }
 
 export interface WindowMetadata {

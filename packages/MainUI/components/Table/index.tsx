@@ -1966,24 +1966,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       return column;
     });
 
-    const firstColumn = { ...modifiedColumns[0] };
-    const originalFirstCell = firstColumn.Cell;
-
-    if (shouldUseTreeMode) {
-      firstColumn.size = 300;
-      firstColumn.minSize = 250;
-      firstColumn.maxSize = 500;
-    }
-
-    firstColumn.Cell = ({
-      renderedCellValue,
-      row,
-      table,
-    }: { renderedCellValue: React.ReactNode; row: MRT_Row<EntityData>; table: MRT_TableInstance<EntityData> }) =>
-      renderFirstColumnCell({ renderedCellValue, row, table, originalCell: originalFirstCell, shouldUseTreeMode });
-
-    modifiedColumns[0] = firstColumn;
-
     // Add actions column as the first column
     const actionsColumn = {
       id: COLUMN_NAMES.ACTIONS,
@@ -2000,6 +1982,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       enableGlobalFilter: false,
       enableColumnActions: false,
       enableResizing: true,
+      enablePinning: false, // Disable user pinning control
+      columnDefType: "display" as const,
       referencedTabId: null,
       Cell: ({ row }: { row: MRT_Row<EntityData> }) => (
         <ActionsColumnCell
@@ -2014,15 +1998,29 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       ),
     };
 
-    // Insert actions column at the beginning (after tree/expand column if present)
-    // Check if first column is the tree expand column
-    if (shouldUseTreeMode && modifiedColumns[0]?.id === modifiedColumns[0]?.accessorKey) {
-      // If tree mode, insert after the expand column (position 1)
-      modifiedColumns.splice(1, 0, actionsColumn);
-    } else {
-      // Otherwise, insert at the very beginning
-      modifiedColumns.unshift(actionsColumn);
+    // Insert actions column at the very beginning
+    modifiedColumns.unshift(actionsColumn);
+
+    // Now apply tree rendering to the SECOND column (first data column, after actions)
+    // This is index 1 after inserting actions at index 0
+    const firstDataColumnIndex = 1;
+    const firstDataColumn = { ...modifiedColumns[firstDataColumnIndex] };
+    const originalFirstCell = firstDataColumn.Cell;
+
+    if (shouldUseTreeMode) {
+      firstDataColumn.size = 300;
+      firstDataColumn.minSize = 250;
+      firstDataColumn.maxSize = 500;
     }
+
+    firstDataColumn.Cell = ({
+      renderedCellValue,
+      row,
+      table,
+    }: { renderedCellValue: React.ReactNode; row: MRT_Row<EntityData>; table: MRT_TableInstance<EntityData> }) =>
+      renderFirstColumnCell({ renderedCellValue, row, table, originalCell: originalFirstCell, shouldUseTreeMode });
+
+    modifiedColumns[firstDataColumnIndex] = firstDataColumn;
 
     return modifiedColumns;
   }, [
@@ -2444,6 +2442,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     muiTablePaperProps,
     muiTableHeadCellProps: muiTableHeadCellPropsWithContextMenu,
     muiTableBodyCellProps,
+    defaultColumn: {
+      minSize: 60,
+    },
     displayColumnDefOptions,
     muiTableBodyProps,
     layoutMode: "semantic",
@@ -2466,7 +2467,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     enableExpanding: shouldUseTreeMode,
     paginateExpandedRows: false,
     getRowCanExpand: handleGetRowCanExpand,
-    initialState,
+    initialState: {
+      ...initialState,
+      columnPinning: { left: ["mrt-row-select", COLUMN_NAMES.ACTIONS] },
+    },
     renderDetailPanel: undefined,
     onExpandedChange: handleExpandedChange,
     state: tableState,
@@ -2481,11 +2485,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     enableColumnActions: true,
     manualFiltering: true,
     enableColumnOrdering: true,
+    enableColumnPinning: true,
     renderEmptyRowsFallback,
     enableTableFooter: false,
   });
 
-  useTableSelection(tab, records, table.getState().rowSelection, handleTableSelectionChange);
+  useTableSelection(tab, displayRecords, table.getState().rowSelection, handleTableSelectionChange);
 
   // Initialize keyboard navigation manager - use a ref to avoid dependency issues
   const keyboardManagerRef = useRef<KeyboardNavigationManager | null>(null);
