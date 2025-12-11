@@ -855,7 +855,8 @@ export const useTableData = ({
 
       // For text/date columns (primitives), use handleDateTextFilterChange to store as string
       // This ensures TextFilter receives the value correctly
-      const isTextOrDateColumn = !isBooleanOrYesNo && !ColumnFilterUtils.isTableDirColumn(column) && !ColumnFilterUtils.isSelectColumn(column);
+      const isTextOrDateColumn =
+        !isBooleanOrYesNo && !ColumnFilterUtils.isTableDirColumn(column) && !ColumnFilterUtils.isSelectColumn(column);
       if (isTextOrDateColumn) {
         handleDateTextFilterChange(column.columnName || columnId, String(filterValue));
       } else {
