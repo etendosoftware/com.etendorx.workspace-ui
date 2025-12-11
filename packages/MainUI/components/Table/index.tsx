@@ -648,7 +648,38 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     });
   }, []);
 
+  // Keep fetchSummary in a ref to use in effects without causing infinite loops
+  const fetchSummaryRef = useRef(fetchSummary);
+  useLayoutEffect(() => {
+    fetchSummaryRef.current = fetchSummary;
+  }, [fetchSummary]);
 
+  // Load summary when state or filters change
+  useEffect(() => {
+    const loadSummary = async () => {
+      if (Object.keys(summaryState).length === 0) {
+        setSummaryResult({});
+        return;
+      }
+
+      setIsSummaryLoading(true);
+      try {
+        const result = await fetchSummaryRef.current(summaryState);
+        if (result) {
+          setSummaryResult(result);
+        } else {
+          setSummaryResult({});
+        }
+      } catch (error) {
+        logger.error("Error loading summary:", error);
+        setSummaryResult({});
+      } finally {
+        setIsSummaryLoading(false);
+      }
+    };
+
+    loadSummary();
+  }, [summaryState]);
 
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<HTMLElement | null>(null);
   const [hasInitialColumnVisibility, setHasInitialColumnVisibility] = useState<boolean>(false);
