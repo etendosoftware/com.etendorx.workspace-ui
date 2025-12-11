@@ -35,6 +35,7 @@ import { parseUrlState, getWindowName } from "@/utils/recovery/urlStateParser";
 import { calculateHierarchy } from "@/utils/recovery/hierarchyCalculator";
 import { reconstructState } from "@/utils/recovery/stateReconstructor";
 import type { WindowMetadata } from "@workspaceui/api-client/src/api/types";
+import type { WindowRecoveryInfo } from "@/utils/window/constants";
 import { createMockTab, createMockWindowMetadata } from "@/utils/tests/mockHelpers";
 
 // Mock dependencies
@@ -143,9 +144,16 @@ const mockConsole = (method: "error" | "warn" | "log" = "error") => {
 
 const renderHookAndWait = async () => {
   const hookResult = renderHook(() => useGlobalUrlStateRecovery());
-  await waitFor(() => {
-    expect(hookResult.result.current.isRecoveryLoading).toBe(false);
-  });
+
+  // Wait for the recovery loading state to complete
+  // Include timeout to prevent infinite blocking
+  await waitFor(
+    () => {
+      expect(hookResult.result.current.isRecoveryLoading).toBe(false);
+    },
+    { timeout: 5000 } // 5 second timeout to prevent hanging tests
+  );
+
   return hookResult;
 };
 

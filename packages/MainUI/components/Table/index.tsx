@@ -2875,6 +2875,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
         summaryResult={summaryResult}
         isSummaryLoading={isSummaryLoading}
         tableContainerRef={tableContainerRef as React.RefObject<HTMLDivElement>}
+        data-testid="SummaryRow__8ca888"
       />
       <ColumnVisibilityMenu
         anchorEl={columnMenuAnchor}
