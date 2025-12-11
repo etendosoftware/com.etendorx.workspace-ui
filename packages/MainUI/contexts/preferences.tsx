@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 
 const FAVICON_BADGE_KEY = "settings.favicon_badge";
 const BASE_FAVICON_PATH = "/favicon.ico";
@@ -25,7 +25,7 @@ export const usePreferences = () => {
  * Updates the favicon link tag in the document head
  */
 const updateFaviconLink = (newUrl: string) => {
-  let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
+  let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
   if (!link) {
     link = document.createElement("link");
     link.rel = "icon";
@@ -114,9 +114,10 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     img.src = BASE_FAVICON_PATH;
   }, [faviconColor, isInitialized]);
 
-  return (
-    <PreferencesContext.Provider value={{ customFaviconColor: faviconColor, setCustomFaviconColor }}>
-      {children}
-    </PreferencesContext.Provider>
+  const value = useMemo(
+    () => ({ customFaviconColor: faviconColor, setCustomFaviconColor }),
+    [faviconColor, setCustomFaviconColor]
   );
+
+  return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;
 };

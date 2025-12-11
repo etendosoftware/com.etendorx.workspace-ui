@@ -83,7 +83,7 @@ export default async function RootLayout({
         <RuntimeConfigProvider data-testid="RuntimeConfigProvider__ba7569">
           <ApiProviderWrapper data-testid="ApiProviderWrapper__ba7569">
             <ThemeProvider data-testid="ThemeProvider__ba7569">
-              <PreferencesProvider>
+              <PreferencesProvider data-testid="PreferencesProvider__ba7569">
                 <LanguageProvider data-testid="LanguageProvider__ba7569">
                   <UserProvider data-testid="UserProvider__ba7569">
                     <DatasourceProvider data-testid="DatasourceProvider__ba7569">

@@ -36,9 +36,9 @@ import {
 // Create a colored circle icon for the favicon badge selector
 const createColorCircle = (color: string | null) => {
   if (!color) {
-    return <CircleIcon fill="#9CA3AF" width="2rem" height="2rem" />;
+    return <CircleIcon fill="#9CA3AF" width="2rem" height="2rem" data-testid="CircleIcon__e5f973" />;
   }
-  return <CircleFilledIcon fill={color} width="2rem" height="2rem" />;
+  return <CircleFilledIcon fill={color} width="2rem" height="2rem" data-testid="CircleFilledIcon__e5f973" />;
 };
 
 // Map color items to include the colored CircleIcon
