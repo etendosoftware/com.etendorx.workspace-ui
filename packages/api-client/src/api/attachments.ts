@@ -77,8 +77,13 @@ export async function createAttachment(params: CreateAttachmentParams): Promise<
 
     // Note: Do NOT add "Description: " prefix here - the backend metadata system adds it automatically
     if (params.description) {
-      url += `&description=${encodeURIComponent(params.description)}`;
+      // Send as both URL param (for fallback) and FormData to be robust
+      const encodedDesc = encodeURIComponent(params.description);
+      url += `&description=${encodedDesc}`;
+      formData.append("description", params.description);
     }
+    
+    console.log("[Attachment] Creating attachment:", { url, description: params.description });
 
     const response = await client.post(url, formData);
 
@@ -105,16 +110,18 @@ export async function editAttachment(params: EditAttachmentParams): Promise<void
   const client = Metadata.client;
 
   try {
-    const url = `${ATTACHMENT_SERVLET_ENDPOINT}?command=EDIT&tabId=${params.tabId}&attachmentId=${params.attachmentId}`;
-
-    // Send description in request body as JSON
-    // Note: Do NOT add "Description: " prefix here - the backend metadata system adds it automatically
-    const body: { description?: string } = {};
+    let url = `${ATTACHMENT_SERVLET_ENDPOINT}?command=EDIT&tabId=${params.tabId}&attachmentId=${params.attachmentId}`;
+    
+    // Pass description as query parameter to leverage backend fallback mechanism
+    // This avoids issues with JSON body parsing
     if (params.description !== undefined) {
-      body.description = params.description;
+       const encodedDesc = encodeURIComponent(params.description);
+       url += `&description=${encodedDesc}`;
     }
+    
+    console.log("[Attachment] Editing attachment:", { url, description: params.description });
 
-    const response = await client.post(url, body);
+    const response = await client.post(url, {});
 
     if (!response.ok) {
       const errorData = response.data as { error?: string };

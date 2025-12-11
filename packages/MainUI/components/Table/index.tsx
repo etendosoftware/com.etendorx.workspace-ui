@@ -2496,6 +2496,31 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
 
   useTableSelection(tab, displayRecords, table.getState().rowSelection, handleTableSelectionChange);
 
+  // Use ref for table to prevent infinite loop of registrations
+  const tableRef = useRef(table);
+  tableRef.current = table;
+
+  // Register attachment action for toolbar to handle interactions from TableView
+  useEffect(() => {
+    if (registerAttachmentAction && isVisible) {
+      registerAttachmentAction(() => {
+        const currentSelection = tableRef.current.getState().rowSelection;
+        // Filter keys where value is true to ensure valid selection
+        const selectedIds = Object.keys(currentSelection).filter((key) => currentSelection[key]);
+
+        if (selectedIds.length === 1) {
+          const recordId = selectedIds[0];
+          setShouldOpenAttachmentModal(true);
+          setRecordId(recordId);
+        } else if (selectedIds.length === 0) {
+          showErrorModal(t("status.selectRecordError"));
+        } else {
+          showErrorModal(t("status.selectSingleRecordError"));
+        }
+      });
+    }
+  }, [registerAttachmentAction, setShouldOpenAttachmentModal, setRecordId, showErrorModal, t, isVisible]);
+
   // Initialize keyboard navigation manager - use a ref to avoid dependency issues
   const keyboardManagerRef = useRef<KeyboardNavigationManager | null>(null);
 

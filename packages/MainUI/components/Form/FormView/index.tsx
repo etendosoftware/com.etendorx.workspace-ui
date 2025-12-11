@@ -161,10 +161,10 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   // Register attachment action for toolbar button
   useEffect(() => {
-    if (registerAttachmentAction) {
+    if (registerAttachmentAction && recordId) {
       registerAttachmentAction(() => setOpenAttachmentModal(true));
     }
-  }, [registerAttachmentAction]);
+  }, [registerAttachmentAction, recordId]);
 
   // Open attachment modal when flag is set (from table navigation)
   useEffect(() => {

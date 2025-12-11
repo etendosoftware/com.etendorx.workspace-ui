@@ -161,7 +161,7 @@ export function FormFields({
         return (
           <div key={sectionId} ref={handleSectionRef(id)} data-section-id={sectionId}>
             <Collapsible
-              title={group.identifier}
+              title={group.identifier === "More Information" ? t("forms.sections.moreInformation") : group.identifier}
               isExpanded={isSectionExpanded(id)}
               sectionId={sectionId}
               icon={getIconForGroup(group.identifier)}
@@ -179,7 +179,7 @@ export function FormFields({
       {/* Notes Section */}
       <div ref={handleSectionRef("notes_group")} data-section-id="notes_group">
         <Collapsible
-          title={noteCount > 0 ? `Notes (${noteCount})` : "Notes"}
+          title={noteCount > 0 ? `${t("forms.notes.title")} (${noteCount})` : t("forms.notes.title")}
           isExpanded={isSectionExpanded("notes_group")}
           sectionId="notes_group"
           icon={<NoteIcon data-testid="NoteIcon__38e4a6" />}
@@ -205,7 +205,7 @@ export function FormFields({
       {/* Attachments Section */}
       <div ref={handleSectionRef("attachments_group")} data-section-id="attachments_group">
         <Collapsible
-          title={attachmentCount > 0 ? `Attachments (${attachmentCount})` : "Attachments"}
+          title={attachmentCount > 0 ? `${t("forms.attachments.title")} (${attachmentCount})` : t("forms.attachments.title")}
           isExpanded={isSectionExpanded("attachments_group")}
           sectionId="attachments_group"
           icon={<AttachmentIcon data-testid="AttachmentIcon__attachments" />}
