@@ -22,18 +22,27 @@ import {
   useClickOutside,
   type Option,
 } from "@/utils/selectorUtils";
+import { Checkbox, styled } from "@mui/material";
 import Image from "next/image";
 import { memo, useCallback, useMemo, useRef, useState, useEffect } from "react";
-import checkIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/check-circle-filled.svg?url";
+
 import ChevronDown from "../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import closeIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/x.svg?url";
 import { useTranslation } from "@/hooks/useTranslation";
 import { DropdownPortal } from "./DropdownPortal";
 import { useDebouncedCallback } from "../../../../Table/utils/performanceOptimizations";
 
+const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
+  padding: 0,
+  marginRight: "0.625rem",
+  "&.Mui-checked": {
+    color: theme.palette.dynamicColor?.main,
+  },
+}));
+
 const FOCUS_STYLES = "focus:outline-none focus:ring-2 focus:ring-dynamic-light";
 const BASE_TRANSITION = "transition-colors outline-none";
-const LIST_ITEM_BASE = "px-4 py-3 text-sm";
+const LIST_ITEM_BASE = "px-4 py-2 text-sm";
 const TEXT_MUTED = "text-baseline-60";
 const ICON_SIZE = "w-5 h-5";
 const HOVER_TEXT_COLOR = "hover:text-baseline-80";
@@ -60,31 +69,34 @@ const OptionItem = memo(
     isSelected,
     isHighlighted,
     onSelect,
+    onToggle,
   }: {
     id: string;
     label: string;
     isSelected: boolean;
     isHighlighted: boolean;
     onSelect: (id: string) => void;
+    onToggle: (id: string) => void;
   }) => (
     <li
       aria-selected={isSelected}
       onClick={() => onSelect(id)}
       onKeyDown={(e) => handleKeyboardActivation(e, () => onSelect(id))}
-      className={`${LIST_ITEM_BASE} cursor-pointer flex items-center justify-between ${FOCUS_STYLES} 
+      className={`${LIST_ITEM_BASE} cursor-pointer flex items-center ${FOCUS_STYLES} 
         ${isHighlighted ? "bg-baseline-10" : ""} 
         ${isSelected ? "bg-baseline-10 font-medium" : ""} hover:bg-baseline-10`}>
-      <span className={`truncate mr-2 ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>{label}</span>
-      {isSelected && (
-        <Image
-          src={checkIconUrl}
-          alt="Selected Item"
-          className="fade-in-left flex-shrink-0"
-          height={16}
-          width={16}
-          data-testid="Image__cb81f7"
-        />
-      )}
+      <CustomCheckbox
+        size="small"
+        checked={isSelected}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle(id);
+        }}
+        className="mr-2"
+        disableRipple
+        data-testid="CustomCheckbox__cb81f7"
+      />
+      <span className={`truncate ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>{label}</span>
     </li>
   )
 );
@@ -115,9 +127,12 @@ const MultiSelect = memo(function MultiSelectCmp({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const portalRef = useRef<HTMLDivElement>(null);
 
-  const handleOnSearch = useCallback((term: string) => {
-    onSearch?.(term);
-  }, [onSearch]);
+  const handleOnSearch = useCallback(
+    (term: string) => {
+      onSearch?.(term);
+    },
+    [onSearch]
+  );
 
   // Debounce the search callback
   const debouncedSearch = useDebouncedCallback(handleOnSearch, 500);
@@ -129,17 +144,17 @@ const MultiSelect = memo(function MultiSelectCmp({
       // Extract the last part of the logical expression
       const parts = searchTerm.split(/ OR | or /);
       const lastPart = parts[parts.length - 1] || "";
-      
+
       // If the last part starts with ==, do not filter the dropdown
       if (lastPart.trim().startsWith("==")) {
         return internalOptions;
       }
-      
-      // Remove '==' prefix if present (though the above check handles the == case, 
+
+      // Remove '==' prefix if present (though the above check handles the == case,
       // we might want to support filtering if they type "==SomeText" but usually == implies exact match selection)
       // Based on requirement: "si se pone por ejemplo ==ETMETA_Cancel no deberia filtrar por a lista dentro del selector"
       // So if it starts with ==, we show all options.
-      
+
       termToFilter = lastPart.trim();
     }
     return internalOptions.filter((o) => o.label.toLowerCase().includes(termToFilter.toLowerCase()));
@@ -156,50 +171,24 @@ const MultiSelect = memo(function MultiSelectCmp({
     return `${selectedLabels.length} selected`;
   }, [selectedLabels, placeholder]);
 
-  const handleSelect = useCallback(
+  const handleToggle = useCallback(
     (id: string) => {
-      if (enableTextFilterLogic) {
-        const option = internalOptions.find((o) => o.id === id);
-        if (option) {
-          const label = option.label;
-          // Escape special characters in label for regex
-          const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const token = `==${label}`;
-          
-          // Check if the current search term ends with a logical operator
-          // This allows users to build queries like "==A OR ==B" by typing " OR " and then selecting B
-          // But if they just select B without typing an operator, it replaces the current value (Single Select behavior)
-          const hasTrailingOperator = /\s+(OR|AND|\||&)\s*$/i.test(searchTerm);
-
-          if (hasTrailingOperator) {
-             setSearchTerm(`${searchTerm}${token}`);
-             debouncedSearch(`${searchTerm}${token}`);
-          } else {
-             setSearchTerm(token);
-             debouncedSearch(token);
-          }
-          
-          // Keep dropdown open if we appended (building query), close if we replaced (selection done)?
-          // User said "si selecciono por segunda vez... intercambiar". 
-          // If I replace, I probably want to see the result.
-          // Let's close it to mimic single select feel if we replaced.
-          if (!hasTrailingOperator) {
-            setIsOpen(false);
-          }
-          setHighlightedIndex(-1);
-          // Don't call onSelectionChange, rely on text search
-        }
-      } else {
-        const newSelection = selectedValues.includes(id)
-          ? selectedValues.filter((v) => v !== id)
-          : [...selectedValues, id];
-        onSelectionChange(newSelection);
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-        setSearchTerm("");
-      }
+      const newSelection = selectedValues.includes(id)
+        ? selectedValues.filter((v) => v !== id)
+        : [...selectedValues, id];
+      onSelectionChange(newSelection);
     },
-    [selectedValues, onSelectionChange, enableTextFilterLogic, internalOptions, searchTerm, debouncedSearch]
+    [selectedValues, onSelectionChange]
+  );
+
+  const handleSingleSelect = useCallback(
+    (id: string) => {
+      onSelectionChange([id]);
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+      setSearchTerm("");
+    },
+    [onSelectionChange]
   );
 
   const handleClear = useCallback(
@@ -226,18 +215,21 @@ const MultiSelect = memo(function MultiSelectCmp({
     });
   }, [onFocus]);
 
-  const handleInputClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsOpen(true);
-    setIsFetchingInitial(true);
-    onFocus?.();
-  }, [onFocus]);
+  const handleInputClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setIsOpen(true);
+      setIsFetchingInitial(true);
+      onFocus?.();
+    },
+    [onFocus]
+  );
 
   const handleKeyDown = useKeyboardNavigation(
     filteredOptions,
     highlightedIndex,
     setHighlightedIndex,
-    (o) => handleSelect(o.id),
+    (o) => handleSingleSelect(o.id),
     () => {
       setIsOpen(false);
       setHighlightedIndex(-1);
@@ -250,8 +242,6 @@ const MultiSelect = memo(function MultiSelectCmp({
     () => setIsOpen(false),
     clickOutsideRefs as React.RefObject<HTMLElement>[]
   );
-
-
 
   const handleSetSearchTerm = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -299,7 +289,8 @@ const MultiSelect = memo(function MultiSelectCmp({
           label={option.label}
           isSelected={selectedValues.includes(option.id)}
           isHighlighted={highlightedIndex === index}
-          onSelect={handleSelect}
+          onSelect={handleSingleSelect}
+          onToggle={handleToggle}
           data-testid="OptionItem__cb81f7"
         />
       ));
@@ -310,7 +301,7 @@ const MultiSelect = memo(function MultiSelectCmp({
     }
 
     return null;
-  }, [filteredOptions, highlightedIndex, selectedValues, handleSelect, showSkeleton, loading, t]);
+  }, [filteredOptions, highlightedIndex, selectedValues, handleSingleSelect, handleToggle, showSkeleton, loading, t]);
 
   return (
     <div ref={wrapperRef} className="relative w-full font-['Inter']" tabIndex={-1}>
@@ -327,7 +318,9 @@ const MultiSelect = memo(function MultiSelectCmp({
           onClick={handleInputClick}
           placeholder={displayText}
           className={`w-full bg-transparent outline-none text-sm truncate max-w-[calc(100%-40px)] ${
-            selectedLabels.length && !searchTerm ? "text-baseline-90 font-medium placeholder-baseline-90" : "text-baseline-90 placeholder-baseline-50"
+            selectedLabels.length && !searchTerm
+              ? "text-baseline-90 font-medium placeholder-baseline-90"
+              : "text-baseline-90 placeholder-baseline-50"
           }`}
         />
         <div className="flex items-center flex-shrink-0 ml-2">

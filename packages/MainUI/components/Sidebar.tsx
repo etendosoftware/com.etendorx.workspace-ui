@@ -30,6 +30,9 @@ interface ExtendedMenu extends Menu {
 
 interface FormData {
   url: string;
+  paramUrl: string;
+  noprefs: string;
+  hideMenu: string;
   command: string;
 }
 
@@ -49,15 +52,19 @@ const buildFormUrl = (formId: string, token: string | null, baseUrl: string): st
   if (!formData) {
     return null;
   }
+
+  const { url, paramUrl, noprefs, hideMenu, command } = formData;
+
   const params = new URLSearchParams({
-    noprefs: "true",
-    hideMenu: "true",
-    Command: formData.command,
+    noprefs,
+    hideMenu,
+    Command: command,
   });
+
   if (token) {
     params.append("token", token);
   }
-  return `${baseUrl}${formData.url}?${params.toString()}`;
+  return `${baseUrl}${API_IFRAME_FORWARD_PATH}${url}?url=${paramUrl}&${params.toString()}`;
 };
 
 const buildProcessDefinitionUrl = (processDefId: string, token: string | null, baseUrl: string): string => {
@@ -257,6 +264,7 @@ export default function Sidebar() {
       setPendingWindowId(undefined);
     }
   }, [currentWindowId, pendingWindowId]);
+
   return (
     <>
       <Drawer

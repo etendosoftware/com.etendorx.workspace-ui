@@ -459,6 +459,7 @@ jest.mock("material-react-table", () => ({
         columnVisibility: {},
         expanded: {},
       }),
+      getVisibleLeafColumns: jest.fn(() => []),
       getRowModel: () => ({
         rows: (options.data?.map((item: TData, index: number) => ({
           id: index,

@@ -29,7 +29,7 @@ export class Metadata {
   public static client = new Client();
   public static kernelClient = new Client();
   public static datasourceServletClient = new Client();
-  private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
+  private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION, "etendo_metadata_");
   private static currentRoleId: string | null = null;
   public static loginClient = new Client();
   private static language: string | null = null;
@@ -48,6 +48,12 @@ export class Metadata {
   }
 
   public static setLanguage(value: string) {
+    const cachedLang = Metadata.cache.get<string>("current_language");
+    if (cachedLang !== value) {
+      Metadata.cache.clear();
+      Metadata.cache.set("current_language", value);
+    }
+
     Metadata.language = value;
 
     for (const client of [Metadata.client, Metadata.kernelClient, Metadata.datasourceServletClient]) {

@@ -55,9 +55,11 @@ export function useTreeModeMetadata(tab: Tab) {
       try {
         const fullTabData = await Metadata.getTab(tab.id);
 
-        if (fullTabData && ("treeId" in fullTabData || "adTreeId" in fullTabData)) {
+        if (fullTabData && ("treeId" in fullTabData || "adTreeId" in fullTabData || "tableTree" in fullTabData)) {
           const adTreeId =
-            (fullTabData as Record<string, unknown>).treeId || (fullTabData as Record<string, unknown>).adTreeId;
+            (fullTabData as unknown as Record<string, unknown>).treeId ||
+            (fullTabData as unknown as Record<string, unknown>).adTreeId ||
+            (fullTabData as unknown as Record<string, unknown>).tableTree;
           const entityId = getEntityIdFromTab(tab.entityName, tab.id);
           treeMetadata = {
             supportsTreeMode: true,
@@ -283,7 +285,7 @@ function checkForTreePatterns(entityName: string, tableName: string): string | n
 }
 
 function hasTreeConfiguration(tabData: Tab): boolean {
-  const treeProps = ["treeId", "adTreeId", "tree_id", "ad_tree_id"];
+  const treeProps = ["treeId", "adTreeId", "tree_id", "ad_tree_id", "tableTree"];
 
   for (const prop of treeProps) {
     if (prop in tabData && (tabData as unknown as Record<string, unknown>)[prop]) {

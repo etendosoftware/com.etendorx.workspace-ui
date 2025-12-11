@@ -44,6 +44,8 @@ const es = {
     records: "registros",
     version: "Versión: ",
     about: "Acerca de",
+    clone: "Clonar",
+    cloneWithChildren: "Clonar con hijos",
   },
   forms: {
     sections: {
@@ -124,6 +126,7 @@ const es = {
     httpError: "Error HTTP: ",
     noRecordsError: "No hay registros seleccionados",
     noRecords: "Por favor, crea un nuevo registro",
+    copyError: "¡Copiado erróneo! Inténtelo nuevamente o contáctese con soporte.",
   },
   errors: {
     tableError: {
@@ -180,6 +183,7 @@ const es = {
   },
   modal: {
     secondaryButtonLabel: "Atrás",
+    cloneConfirmation: "¿Desea clonar el registro seleccionado?",
   },
   registerModal: {
     descriptionText: "Confirma tu envío y guárdalo en el sistema. 📝📦",
@@ -231,6 +235,15 @@ const es = {
     insertRow: "Insertar Fila",
     actions: {
       createRecordInGrid: "Crear Registro en Grilla",
+    },
+    setSummaryFunction: "Establecer función de resumen",
+    removeSummaryFunction: "Eliminar función de resumen",
+    summary: {
+      min: "Mín",
+      max: "Máx",
+      count: "Recuento",
+      sum: "Suma",
+      avg: "Promedio",
     },
   },
   navigation: {
@@ -452,6 +465,40 @@ const es = {
       "Noviembre",
       "Diciembre",
     ],
+  },
+  configuration: {
+    quickSetup: "Configuración Rápida",
+    viewAllSettings: "Ver todos los ajustes",
+    themes: {
+      title: "Tema",
+      light: "Claro",
+      dark: "Oscuro",
+      automatic: "Automático",
+    },
+    tableDensity: {
+      title: "Densidad de Tabla",
+      compact: "Compacto",
+      standard: "Estándar",
+      comfortable: "Cómodo",
+    },
+    commonToolbarButtons: {
+      title: "Botones Comunes de Barra de Herramientas",
+      icon: "Icono",
+      text: "Texto",
+      iconAndText: "Icono y Texto",
+    },
+    specificToolbarButtons: {
+      title: "Botones Específicos de Barra de Herramientas",
+      icon: "Icono",
+      text: "Texto",
+      iconAndText: "Icono y Texto",
+    },
+    interfaceScale: {
+      title: "Escala de Interfaz",
+      small: "Pequeña",
+      default: "Por Defecto",
+      large: "Grande",
+    },
   },
 };
 

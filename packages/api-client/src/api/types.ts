@@ -271,7 +271,9 @@ export interface Tab {
   parentTabId?: string;
   table$_identifier?: string;
   window$_identifier?: string;
-  tableTree?: boolean;
+  tableTree?: boolean | string;
+  obuiappShowCloneButton?: boolean;
+  obuiappCloneChildren?: boolean;
 }
 
 export interface WindowMetadata {

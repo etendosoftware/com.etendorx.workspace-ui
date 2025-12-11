@@ -45,6 +45,8 @@ const en = {
     records: "records",
     version: "Version: ",
     about: "About",
+    clone: "Clone",
+    cloneWithChildren: "Clone With Children",
   },
   forms: {
     sections: {
@@ -125,6 +127,7 @@ const en = {
     httpError: "HTTP Error: ",
     noRecordsError: "There is no records selected",
     noRecords: "Please create a new record",
+    copyError: "Copy failed! Please try again or contact support.",
   },
   errors: {
     tableError: {
@@ -181,6 +184,7 @@ const en = {
   },
   modal: {
     secondaryButtonLabel: "Back",
+    cloneConfirmation: "Do you want to clone the selected record?",
   },
   registerModal: {
     descriptionText: "Confirm your shipment and save it in the system. 📝📦",
@@ -232,6 +236,15 @@ const en = {
     insertRow: "Insert Row",
     actions: {
       createRecordInGrid: "Create Record in Grid",
+    },
+    setSummaryFunction: "Set summary function",
+    removeSummaryFunction: "Remove summary function",
+    summary: {
+      min: "Min",
+      max: "Max",
+      count: "Count",
+      sum: "Sum",
+      avg: "Avg",
     },
   },
   navigation: {
@@ -447,6 +460,40 @@ const en = {
       "November",
       "December",
     ],
+  },
+  configuration: {
+    quickSetup: "Quick Setup",
+    viewAllSettings: "View all settings",
+    themes: {
+      title: "Theme",
+      light: "Light",
+      dark: "Dark",
+      automatic: "Automatic",
+    },
+    tableDensity: {
+      title: "Table Density",
+      compact: "Compact",
+      standard: "Standard",
+      comfortable: "Comfortable",
+    },
+    commonToolbarButtons: {
+      title: "Common Toolbar Buttons",
+      icon: "Icon",
+      text: "Text",
+      iconAndText: "Icon and Text",
+    },
+    specificToolbarButtons: {
+      title: "Specific Toolbar Buttons",
+      icon: "Icon",
+      text: "Text",
+      iconAndText: "Icon and Text",
+    },
+    interfaceScale: {
+      title: "Interface scale",
+      small: "Small",
+      default: "Default",
+      large: "Large",
+    },
   },
 };
 
