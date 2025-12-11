@@ -48,6 +48,10 @@ interface UseTableDataParams {
   onLoadMoreFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
 }
 
+export interface SummaryResult {
+  value: number | string;
+}
+
 interface UseTableDataReturn {
   // Data
   displayRecords: EntityData[];
@@ -91,6 +95,7 @@ interface UseTableDataReturn {
   ) => Promise<void>;
   isImplicitFilterApplied: boolean;
   tableColumnFilters: MRT_ColumnFiltersState;
+  fetchSummary: (summaries: Record<string, string>) => Promise<Record<string, number | string> | null>;
 }
 
 export const useTableData = ({
@@ -861,6 +866,78 @@ export const useTableData = ({
     ]
   );
 
+  // Fetch summary data
+  const fetchSummary = useCallback(
+    async (summaries: Record<string, string>): Promise<Record<string, number | string> | null> => {
+      if (Object.keys(summaries).length === 0) {
+        return null;
+      }
+
+      // Map column IDs to their backend names (columnName or id)
+      const summaryRequest: Record<string, string> = {};
+      const columnMapping: Record<string, string> = {}; // backendName -> originalId
+
+      Object.entries(summaries).forEach(([colId, type]) => {
+        const column = baseColumns.find((col) => col.columnName === colId || col.id === colId);
+        if (column) {
+          const backendName = column.columnName || column.id;
+          summaryRequest[backendName] = type;
+          columnMapping[backendName] = colId;
+        }
+      });
+
+      if (Object.keys(summaryRequest).length === 0) {
+        return null;
+      }
+
+      // Use the same query params as the main grid but add summary params
+      // Explicitly remove sortBy and pageSize to prevent the backend from returning sorted records instead of the summary
+      const { sortBy, pageSize, ...cleanQuery } = query;
+      const summaryQuery = {
+        ...cleanQuery,
+        _summary: JSON.stringify(summaryRequest),
+        _noCount: true,
+        _startRow: 0,
+        _endRow: 1,
+        _operationType: "fetch",
+        _textMatchStyle: "substring",
+        _noActiveFilter: true,
+        _className: "OBViewDataSource",
+        Constants_FIELDSEPARATOR: "$",
+        Constants_IDENTIFIER: "_identifier",
+      };
+
+      console.log("Summary Query:", JSON.stringify(summaryQuery, null, 2));
+
+      try {
+        const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
+        const response = (await datasource.get(treeEntity, summaryQuery)) as {
+          ok: boolean;
+          data: { response?: { data?: any[] } };
+        };
+
+        if (response.ok && response.data?.response?.data && response.data.response.data.length > 0) {
+          const resultData = response.data.response.data[0];
+          const results: Record<string, number | string> = {};
+
+          // Map backend results back to original column IDs
+          Object.entries(columnMapping).forEach(([backendName, originalId]) => {
+            if (resultData[backendName] !== undefined) {
+              results[originalId] = resultData[backendName];
+            }
+          });
+
+          return results;
+        }
+        return null;
+      } catch (error) {
+        console.error("❌ Exception fetching summary:", error);
+        return null;
+      }
+    },
+    [query, treeEntity, baseColumns]
+  );
+
   return {
     // Data
     displayRecords,
@@ -892,8 +969,9 @@ export const useTableData = ({
     refetch,
     removeRecordLocally,
     applyQuickFilter,
-    isImplicitFilterApplied: isImplicitFilterApplied ?? false,
+    isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
     tableColumnFilters,
+    fetchSummary,
     hasMoreRecords,
   };
 };

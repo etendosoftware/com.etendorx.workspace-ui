@@ -237,6 +237,15 @@ const en = {
     actions: {
       createRecordInGrid: "Create Record in Grid",
     },
+    setSummaryFunction: "Set summary function",
+    removeSummaryFunction: "Remove summary function",
+    summary: {
+      min: "Min",
+      max: "Max",
+      count: "Count",
+      sum: "Sum",
+      avg: "Avg",
+    },
   },
   navigation: {
     common: {

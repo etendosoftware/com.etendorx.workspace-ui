@@ -68,6 +68,7 @@ import { ACTION_FORM_INITIALIZATION, MODE_CHANGE } from "@/utils/hooks/useFormIn
 import { COLUMN_NAMES } from "./constants";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { CellContextMenu } from "./CellContextMenu";
+import { HeaderContextMenu, type SummaryType } from "./HeaderContextMenu";
 import { RecordCounterBar } from "@workspaceui/componentlibrary/src/components";
 import type {
   EditingRowsState,
@@ -80,6 +81,7 @@ import type {
 } from "./types/inlineEditing";
 import { createEditingRowStateUtils, getMergedRowData } from "./utils/editingRowUtils";
 import { ActionsColumn } from "./ActionsColumn";
+import { SummaryRow } from "./SummaryRow";
 import { validateFieldRealTime } from "./utils/validationUtils";
 import { getFieldReference, buildPayloadByInputName } from "@/utils";
 import { useUserContext } from "@/hooks/useUserContext";
@@ -600,9 +602,84 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     refetch,
     removeRecordLocally,
     applyQuickFilter,
+    fetchSummary,
   } = useTableData({
     isTreeMode,
   });
+
+  // Summary State
+  const [summaryState, setSummaryState] = useState<Record<string, SummaryType>>({});
+  const [summaryResult, setSummaryResult] = useState<Record<string, number | string>>({});
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [headerContextMenuAnchor, setHeaderContextMenuAnchor] = useState<HTMLElement | null>(null);
+  const [headerContextMenuColumn, setHeaderContextMenuColumn] = useState<MRT_Column<EntityData> | null>(null);
+
+  const handleHeaderContextMenu = useCallback(
+    (event: React.MouseEvent<HTMLElement>, column: MRT_Column<EntityData>) => {
+      event.preventDefault();
+      setHeaderContextMenuAnchor(event.currentTarget);
+      setHeaderContextMenuColumn(column);
+    },
+    []
+  );
+
+  const handleCloseHeaderContextMenu = useCallback(() => {
+    setHeaderContextMenuAnchor(null);
+    setHeaderContextMenuColumn(null);
+  }, []);
+
+  const handleSetSummary = useCallback((columnId: string, type: SummaryType) => {
+    setSummaryState((prev) => ({
+      ...prev,
+      [columnId]: type,
+    }));
+  }, []);
+
+  const handleRemoveSummary = useCallback((columnId: string) => {
+    setSummaryState((prev) => {
+      const newState = { ...prev };
+      delete newState[columnId];
+      return newState;
+    });
+    setSummaryResult((prev) => {
+      const newState = { ...prev };
+      delete newState[columnId];
+      return newState;
+    });
+  }, []);
+
+  // Keep fetchSummary in a ref to use in effects without causing infinite loops
+  const fetchSummaryRef = useRef(fetchSummary);
+  useLayoutEffect(() => {
+    fetchSummaryRef.current = fetchSummary;
+  }, [fetchSummary]);
+
+  // Load summary when state or filters change
+  useEffect(() => {
+    const loadSummary = async () => {
+      if (Object.keys(summaryState).length === 0) {
+        setSummaryResult({});
+        return;
+      }
+
+      setIsSummaryLoading(true);
+      try {
+        const result = await fetchSummaryRef.current(summaryState);
+        if (result) {
+          setSummaryResult(result);
+        } else {
+          setSummaryResult({});
+        }
+      } catch (error) {
+        logger.error("Error loading summary:", error);
+        setSummaryResult({});
+      } finally {
+        setIsSummaryLoading(false);
+      }
+    };
+
+    loadSummary();
+  }, [summaryState]);
 
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<HTMLElement | null>(null);
   const [hasInitialColumnVisibility, setHasInitialColumnVisibility] = useState<boolean>(false);
@@ -1967,6 +2044,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     loadTableDirOptions,
     isLoadingTableDirOptions,
     renderFirstColumnCell,
+    summaryState,
+    summaryResult,
+    isSummaryLoading,
   ]);
 
   // Helper function to check if a row is being edited
@@ -2217,10 +2297,20 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     [sx.tableHeadCell]
   );
 
+  const muiTableHeadCellPropsWithContextMenu = useCallback(
+    ({ column, table }: { column: MRT_Column<EntityData>; table: MRT_TableInstance<EntityData> }) => ({
+      sx: {
+        ...sx.tableHeadCell,
+      },
+      onContextMenu: (e: React.MouseEvent<HTMLElement>) => handleHeaderContextMenu(e, column),
+    }),
+    [sx.tableHeadCell, handleHeaderContextMenu]
+  );
+
   const muiTableContainerProps = useMemo(
     () => ({
       ref: tableContainerRef,
-      sx: { flex: 1, height: "100%", maxHeight: "100%" },
+      sx: { flex: 1, maxHeight: "100%" },
       onScroll: fetchMoreOnBottomReached,
     }),
     [fetchMoreOnBottomReached]
@@ -2354,7 +2444,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
 
   const table = useMaterialReactTable<EntityData>({
     muiTablePaperProps,
-    muiTableHeadCellProps,
+    muiTableHeadCellProps: muiTableHeadCellPropsWithContextMenu,
     muiTableBodyCellProps,
     defaultColumn: {
       minSize: 60,
@@ -2373,6 +2463,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     muiTableContainerProps,
     enablePagination: false,
     enableStickyHeader: true,
+    enableStickyFooter: false,
     enableColumnVirtualization: true,
     enableRowVirtualization: canUseVirtualScrollingWithEditing(editingRows, effectiveRecords.length),
     enableTopToolbar: false,
@@ -2400,6 +2491,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     enableColumnOrdering: true,
     enableColumnPinning: true,
     renderEmptyRowsFallback,
+    enableTableFooter: false,
   });
 
   useTableSelection(tab, displayRecords, table.getState().rowSelection, handleTableSelectionChange);
@@ -2778,10 +2870,17 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
         labels={counterLabels}
         data-testid="RecordCounterBar__8ca888"
       />
-
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
         <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
       </div>
+      <SummaryRow
+        table={table}
+        summaryState={summaryState}
+        summaryResult={summaryResult}
+        isSummaryLoading={isSummaryLoading}
+        tableContainerRef={tableContainerRef as React.RefObject<HTMLDivElement>}
+        data-testid="SummaryRow__8ca888"
+      />
       <ColumnVisibilityMenu
         anchorEl={columnMenuAnchor}
         onClose={handleCloseColumnMenu}
@@ -2834,6 +2933,15 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
         errorMessage={statusModal.errorMessage}
         isDeleteSuccess={statusModal.isDeleteSuccess}
         data-testid="StatusModal__8ca888"
+      />
+      <HeaderContextMenu
+        anchorEl={headerContextMenuAnchor}
+        onClose={handleCloseHeaderContextMenu}
+        column={headerContextMenuColumn}
+        onSetSummary={handleSetSummary}
+        onRemoveSummary={handleRemoveSummary}
+        activeSummary={summaryState}
+        data-testid="HeaderContextMenu__8ca888"
       />
     </div>
   );

@@ -61,6 +61,17 @@ export const useGlobalUrlStateRecovery = () => {
   // Guard to prevent duplicate recovery on mount or re-renders
   // Reset via triggerRecovery() when programmatically adding windows
   const hasRun = useRef(false);
+  // Track if component is mounted to prevent state updates after unmount
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+      // Reset hasRun on unmount to allow recovery to run again on remount
+      // This is important for tests where components unmount and remount
+      hasRun.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     // Skip if no URL params or recovery already completed
@@ -68,6 +79,7 @@ export const useGlobalUrlStateRecovery = () => {
     hasRun.current = true;
 
     const recoverAllWindows = async () => {
+      if (!isMounted.current) return;
       setIsRecoveryLoading(true);
       setRecoveryError(null);
       try {
@@ -76,7 +88,7 @@ export const useGlobalUrlStateRecovery = () => {
 
         // No windows to recover - common on initial app load
         if (recoveryDataList.length === 0) {
-          setIsRecoveryLoading(false);
+          if (isMounted.current) setIsRecoveryLoading(false);
           return;
         }
 
@@ -143,12 +155,16 @@ export const useGlobalUrlStateRecovery = () => {
         // Wait for all windows to complete recovery
         const windows = await Promise.all(windowPromises);
 
-        setRecoveredWindows(windows);
-        setIsRecoveryLoading(false);
+        if (isMounted.current) {
+          setRecoveredWindows(windows);
+          setIsRecoveryLoading(false);
+        }
       } catch (error) {
         console.error("Global recovery failed", error);
-        setRecoveryError("Failed to recover windows");
-        setIsRecoveryLoading(false);
+        if (isMounted.current) {
+          setRecoveryError("Failed to recover windows");
+          setIsRecoveryLoading(false);
+        }
       }
     };
 
