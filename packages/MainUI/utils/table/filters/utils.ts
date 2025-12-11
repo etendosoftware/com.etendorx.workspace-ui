@@ -46,9 +46,9 @@ export const getTextFilterValue = (
 
   if (!currentFilter) return undefined;
 
-  // If value is FilterOption[], extract the value from the first option
+  // If value is FilterOption[], return undefined as they are handled separately
   if (isFilterOptionArray(currentFilter.value)) {
-    return currentFilter.value[0]?.value ? String(currentFilter.value[0].value) : undefined;
+    return undefined;
   }
 
   // For text/date filters, return as string

@@ -309,11 +309,7 @@ export class LegacyColumnFilterUtils {
   }
 
   static isBooleanField(column: Column): boolean {
-    return (
-      column.type === "boolean" ||
-      column.column?._identifier === "YesNo" ||
-      column.column?.reference === "20"
-    );
+    return column.type === "boolean" || column.column?._identifier === "YesNo" || column.column?.reference === "20";
   }
 
   static formatValueForType(value: unknown, column: Column): FormattedValue {
