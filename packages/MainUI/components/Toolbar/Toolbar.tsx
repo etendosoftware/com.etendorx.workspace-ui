@@ -84,7 +84,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const selectedRecords = useSelectedRecords(tab) || [];
   const hasParentTab = !!tab?.parentTabId;
   const parentId = parentRecord?.id?.toString();
-  const isTreeNodeView = tab?.tableTree;
+  const isTreeNodeView = tab?.tableTree ? true : undefined;
 
   const {
     handleAction,

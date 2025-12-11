@@ -100,6 +100,7 @@ export function useToolbar(windowId: string, tabId?: string) {
       setLoading(true);
       setError(null);
       const data = (await Metadata.getToolbar()) as ToolbarButtonMetadata[];
+
       toolbarCache.set(cacheKey, data);
       setToolbar(data);
     } catch (error) {

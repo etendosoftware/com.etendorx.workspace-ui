@@ -237,6 +237,15 @@ const es = {
     actions: {
       createRecordInGrid: "Crear Registro en Grilla",
     },
+    setSummaryFunction: "Establecer función de resumen",
+    removeSummaryFunction: "Eliminar función de resumen",
+    summary: {
+      min: "Mín",
+      max: "Máx",
+      count: "Recuento",
+      sum: "Suma",
+      avg: "Promedio",
+    },
   },
   navigation: {
     common: {
