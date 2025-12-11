@@ -490,6 +490,20 @@ const es = {
       default: "Por Defecto",
       large: "Grande",
     },
+    faviconBadge: {
+      title: "Color de Favicon",
+      none: "Ninguno",
+      red: "Rojo",
+      pink: "Rosa",
+      purple: "Morado",
+      blue: "Azul",
+      cyan: "Cian",
+      teal: "Verde Azulado",
+      green: "Verde",
+      orange: "Naranja",
+      brown: "Marrón",
+      gray: "Gris",
+    },
   },
 };
 

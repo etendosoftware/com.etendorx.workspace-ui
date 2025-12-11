@@ -22,12 +22,38 @@ import {
   SECTION_COMMON_TOOLBAR_BUTTONS_ID,
   SECTION_SPECIFIC_TOOLBAR_BUTTONS_ID,
   SECTION_DENSITY_ID,
+  SECTION_FAVICON_BADGE_ID,
   INTERFACE_SCALE_ITEMS,
   THEME_ITEMS,
   TABLE_DENSITY_ITEMS,
   COMMON_TOOLBAR_BUTTONS_ITEMS,
   SPECIFIC_TOOLBAR_BUTTONS_ITEMS,
+  FAVICON_BADGE_COLOR_ITEMS,
 } from "@workspaceui/componentlibrary/src/components/ConfigurationModal/constants";
+
+// Generate a colored circle SVG as data URI for the favicon badge selector
+const createColorCircle = (color: string | null) => {
+  if (!color) {
+    // "None" option: show a circle with a diagonal line through it
+    return `data:image/svg+xml,${encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <circle cx="16" cy="16" r="14" fill="none" stroke="#9CA3AF" stroke-width="2"/>
+        <line x1="6" y1="6" x2="26" y2="26" stroke="#9CA3AF" stroke-width="2"/>
+      </svg>`
+    )}`;
+  }
+  return `data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+      <circle cx="16" cy="16" r="14" fill="${color}" stroke="#fff" stroke-width="2"/>
+    </svg>`
+  )}`;
+};
+
+// Map color items to include the generated img
+const FAVICON_BADGE_ITEMS_WITH_IMG = FAVICON_BADGE_COLOR_ITEMS.map((item) => ({
+  ...item,
+  img: createColorCircle(item.color),
+}));
 
 export const modalConfig = {
   icon: <SettingIcon data-testid="SettingIcon__e5f973" />,
@@ -70,6 +96,13 @@ export const modalConfig = {
       name: "Interface scale",
       items: INTERFACE_SCALE_ITEMS,
       selectedItem: 1,
+      isDisabled: false,
+    },
+    {
+      id: SECTION_FAVICON_BADGE_ID,
+      name: "Favicon Badge",
+      items: FAVICON_BADGE_ITEMS_WITH_IMG,
+      selectedItem: 0,
       isDisabled: false,
     },
   ],

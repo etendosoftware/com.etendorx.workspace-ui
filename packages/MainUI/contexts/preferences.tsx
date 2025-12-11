@@ -97,7 +97,6 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     // If no color, restore original favicon
     if (!faviconColor) {
-      console.log("No favicon color, restoring original favicon");
       updateFaviconLink(BASE_FAVICON_PATH);
       return;
     }

@@ -33,14 +33,18 @@ import {
   SECTION_TABLE_DENSITY_ID,
   SECTION_COMMON_TOOLBAR_BUTTONS_ID,
   SECTION_SPECIFIC_TOOLBAR_BUTTONS_ID,
+  SECTION_FAVICON_BADGE_ID,
+  FAVICON_BADGE_COLOR_ITEMS,
 } from "@workspaceui/componentlibrary/src/components/ConfigurationModal/constants";
 import { useLocalStorage } from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
 import { DENSITY_KEY } from "@/utils/accessibility/constants";
+import { usePreferences } from "@/contexts/preferences";
 
 const DENSITY_STYLES_OPTIONS = { small: "small-scale", default: "default-scale", large: "large-scale" };
 
 const ConfigurationSection: React.FC = () => {
   const { t } = useTranslation();
+  const { customFaviconColor, setCustomFaviconColor } = usePreferences();
   const [density, setDensity] = useLocalStorage(DENSITY_KEY, "");
   const [sections, setSections] = useState<ISection[]>([]);
 
@@ -92,6 +96,15 @@ const ConfigurationSection: React.FC = () => {
             label: t(`configuration.interfaceScale.${key}` as any),
           };
         });
+      } else if (section.id === SECTION_FAVICON_BADGE_ID) {
+        name = t("configuration.faviconBadge.title");
+        items = items.map((item) => {
+          const key = item.id.replace("favicon-badge-", "");
+          return {
+            ...item,
+            label: t(`configuration.faviconBadge.${key}` as any),
+          };
+        });
       }
 
       return { ...section, name, items };
@@ -121,10 +134,18 @@ const ConfigurationSection: React.FC = () => {
           selectedItem: selectedItemsIndex === -1 ? 1 : selectedItemsIndex,
         };
       }
+      if (section.id === SECTION_FAVICON_BADGE_ID) {
+        // Find selected item based on current favicon color
+        const selectedIndex = FAVICON_BADGE_COLOR_ITEMS.findIndex((item) => item.color === customFaviconColor);
+        return {
+          ...section,
+          selectedItem: selectedIndex === -1 ? 0 : selectedIndex,
+        };
+      }
       return section;
     });
     setSections(initializedSections);
-  }, [density, config]);
+  }, [density, config, customFaviconColor]);
 
   const handleSelectOption = (optionSelected: OptionSelectedProps) => {
     const { sectionId, id: optionSelectedId } = optionSelected;
@@ -151,6 +172,14 @@ const ConfigurationSection: React.FC = () => {
         document.cookie = `${DENSITY_KEY}=${encodeURIComponent(newStyle)}; path=/; max-age=${maxAge}`;
       } catch (_) {
         // no-op
+      }
+    }
+
+    // Handle favicon badge color selection
+    if (sectionId === SECTION_FAVICON_BADGE_ID) {
+      const selectedColorItem = FAVICON_BADGE_COLOR_ITEMS.find((item) => item.id === optionSelectedId);
+      if (selectedColorItem) {
+        setCustomFaviconColor(selectedColorItem.color);
       }
     }
   };

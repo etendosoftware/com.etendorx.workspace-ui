@@ -485,6 +485,20 @@ const en = {
       default: "Default",
       large: "Large",
     },
+    faviconBadge: {
+      title: "Favicon Badge",
+      none: "None",
+      red: "Red",
+      pink: "Pink",
+      purple: "Purple",
+      blue: "Blue",
+      cyan: "Cyan",
+      teal: "Teal",
+      green: "Green",
+      orange: "Orange",
+      brown: "Brown",
+      gray: "Gray",
+    },
   },
 };
 
