@@ -648,34 +648,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     });
   }, []);
 
-  // Fetch summary when state or filters change
-  useEffect(() => {
-    const loadSummary = async () => {
-      if (Object.keys(summaryState).length === 0) {
-        setSummaryResult({});
-        return;
-      }
 
-      setIsSummaryLoading(true);
-      console.log("Fetching summary for:", summaryState);
-      try {
-        const result = await fetchSummary(summaryState);
-        console.log("Summary result:", result);
-        if (result) {
-          setSummaryResult(result);
-        } else {
-          setSummaryResult({});
-        }
-      } catch (error) {
-        console.error("Error loading summary:", error);
-        setSummaryResult({});
-      } finally {
-        setIsSummaryLoading(false);
-      }
-    };
-
-    loadSummary();
-  }, [summaryState, tableColumnFilters, fetchSummary]);
 
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<HTMLElement | null>(null);
   const [hasInitialColumnVisibility, setHasInitialColumnVisibility] = useState<boolean>(false);

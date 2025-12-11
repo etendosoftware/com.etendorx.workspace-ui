@@ -297,6 +297,7 @@ jest.mock("material-react-table", () => ({
       sorting: [],
       pagination: { pageIndex: 0, pageSize: 10 },
     }),
+    getVisibleLeafColumns: jest.fn(() => []),
     setColumnFilters: jest.fn(),
     setColumnVisibility: jest.fn(),
     setSorting: jest.fn(),
