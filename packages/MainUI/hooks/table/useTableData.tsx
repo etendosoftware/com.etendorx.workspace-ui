@@ -853,11 +853,20 @@ export const useTableData = ({
         setFilterOptions(columnId, [...existingOptions, filterOption], false, false);
       }
 
-      await handleColumnFilterChange(columnId, [filterOption]);
+      // For text/date columns (primitives), use handleDateTextFilterChange to store as string
+      // This ensures TextFilter receives the value correctly
+      const isTextOrDateColumn = !isBooleanOrYesNo && !ColumnFilterUtils.isTableDirColumn(column) && !ColumnFilterUtils.isSelectColumn(column);
+      if (isTextOrDateColumn) {
+        handleDateTextFilterChange(column.columnName || columnId, String(filterValue));
+      } else {
+        // For dropdown filters (boolean, TableDir, Select), use handleColumnFilterChange
+        await handleColumnFilterChange(columnId, [filterOption]);
+      }
     },
     [
       baseColumns,
       handleColumnFilterChange,
+      handleDateTextFilterChange,
       setFilterOptions,
       advancedColumnFilters,
       setColumnFilters,
