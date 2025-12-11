@@ -52,6 +52,7 @@ const ConfigurationSection: React.FC = () => {
   const config = useMemo(() => {
     const translatedSections = modalConfig.sections.map((section) => {
       let name = section.name;
+      let info: string | undefined = undefined;
       let items: SectionItem[] = section.items;
 
       if (section.id === SECTION_THEME_ID) {
@@ -88,6 +89,7 @@ const ConfigurationSection: React.FC = () => {
         });
       } else if (section.id === SECTION_DENSITY_ID) {
         name = t("configuration.interfaceScale.title");
+        info = t("configuration.interfaceScale.info");
         items = items.map((item) => {
           let key = "default";
           if (item.id === SMALL_INTERFACE_SCALE_ID) key = "small";
@@ -99,6 +101,7 @@ const ConfigurationSection: React.FC = () => {
         });
       } else if (section.id === SECTION_FAVICON_BADGE_ID) {
         name = t("configuration.faviconBadge.title");
+        info = t("configuration.faviconBadge.info");
         items = items.map((item) => {
           const key = item.id.replace("favicon-badge-", "");
           return {
@@ -108,7 +111,7 @@ const ConfigurationSection: React.FC = () => {
         });
       }
 
-      return { ...section, name, items };
+      return { ...section, name, info, items };
     });
 
     return {

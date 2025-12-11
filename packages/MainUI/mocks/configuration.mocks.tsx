@@ -36,9 +36,9 @@ import {
 // Create a colored circle icon for the favicon badge selector
 const createColorCircle = (color: string | null) => {
   if (!color) {
-    return <CircleIcon fill="#9CA3AF" width="2rem" height="2rem" data-testid="CircleIcon__e5f973" />;
+    return <CircleIcon fill="#9CA3AF" width="1.5rem" height="1.5rem" data-testid="CircleIcon__e5f973" />;
   }
-  return <CircleFilledIcon fill={color} width="2rem" height="2rem" data-testid="CircleFilledIcon__e5f973" />;
+  return <CircleFilledIcon fill={color} width="1.5rem" height="1.5rem" data-testid="CircleFilledIcon__e5f973" />;
 };
 
 // Map color items to include the colored CircleIcon
@@ -61,7 +61,6 @@ export const modalConfig = {
       items: THEME_ITEMS,
       selectedItem: 0,
       isDisabled: true,
-      itemsPerRow: 3,
     },
     {
       id: SECTION_TABLE_DENSITY_ID,
@@ -69,7 +68,6 @@ export const modalConfig = {
       items: TABLE_DENSITY_ITEMS,
       selectedItem: 0,
       isDisabled: true,
-      itemsPerRow: 3,
     },
     {
       id: SECTION_COMMON_TOOLBAR_BUTTONS_ID,
@@ -77,7 +75,6 @@ export const modalConfig = {
       items: COMMON_TOOLBAR_BUTTONS_ITEMS,
       selectedItem: 0,
       isDisabled: true,
-      itemsPerRow: 3,
     },
     {
       id: SECTION_SPECIFIC_TOOLBAR_BUTTONS_ID,
@@ -85,7 +82,6 @@ export const modalConfig = {
       items: SPECIFIC_TOOLBAR_BUTTONS_ITEMS,
       selectedItem: 0,
       isDisabled: true,
-      itemsPerRow: 3,
     },
     {
       id: SECTION_DENSITY_ID,
@@ -93,7 +89,11 @@ export const modalConfig = {
       items: INTERFACE_SCALE_ITEMS,
       selectedItem: 1,
       isDisabled: false,
-      itemsPerRow: 3,
+      displayOptions: {
+        itemsPerRow: 3,
+        hideRadioButton: true,
+        hideItemLabel: true,
+      },
     },
     {
       id: SECTION_FAVICON_BADGE_ID,
@@ -101,7 +101,11 @@ export const modalConfig = {
       items: FAVICON_BADGE_ITEMS_WITH_IMG,
       selectedItem: 0,
       isDisabled: false,
-      itemsPerRow: 4,
+      displayOptions: {
+        itemsPerRow: 6,
+        hideRadioButton: true,
+        hideItemLabel: true,
+      },
     },
   ],
   onChangeSelect: console.log,

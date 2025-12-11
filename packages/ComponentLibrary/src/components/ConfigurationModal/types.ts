@@ -18,33 +18,64 @@
 import type { MenuProps } from "@mui/material";
 
 export interface SectionItem {
+  /** Option unique identifier */
   id: string;
+  /** Option image */
   img: string | React.ReactNode;
+  /** Option label */
   label?: string;
 }
 
-export interface ISection {
-  id: string;
-  name: string;
-  items: SectionItem[];
-  selectedItem: number;
-  isDisabled?: boolean;
+export interface SectionDisplayOptions {
+  /** Number of items to display per row */
   itemsPerRow: number;
+  /** Hide the radio button selection indicator */
+  hideRadioButton?: boolean;
+  /** Hide the item label text */
+  hideItemLabel?: boolean;
+}
+
+export interface ISection {
+  /** Section unique identifier */
+  id: string;
+  /** Section name */
+  name: string;
+  /** Section items */
+  items: SectionItem[];
+  /** Selected item index */
+  selectedItem: number;
+  /** Section is disabled */
+  isDisabled?: boolean;
+  /** Info text to display in tooltip */
+  info?: string;
+  /** Display options for section UI customization */
+  displayOptions?: SectionDisplayOptions;
 }
 
 export interface OptionSelectedProps {
+  /** Option unique identifier */
   id: string;
+  /** Section unique identifier */
   sectionId: string;
+  /** Section index */
   sectionIndex: number;
+  /** Image index */
   imageIndex: number;
 }
 
 export interface IConfigurationModalProps extends Omit<MenuProps, "open" | "title"> {
+  /** Button icon */
   icon?: React.ReactNode;
+  /** Modal title */
   title?: { icon?: string | React.ReactNode; label?: string };
+  /** Tooltip for the button */
   tooltipButtonProfile?: string;
+  /** Link title */
   linkTitle?: { url?: string; label?: string };
+  /** Sections to display */
   sections?: ISection[];
+  /** Modal open state */
   open?: boolean;
+  /** Callback function when an option is selected */
   onChangeSelect?: (optionSelected: OptionSelectedProps) => void;
 }
