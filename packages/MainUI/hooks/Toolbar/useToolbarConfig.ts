@@ -213,6 +213,15 @@ export const useToolbarConfig = ({
     }
   }, [tab, selectedIds, getRecordsToDelete, showConfirmModal, t, deleteRecord, showErrorModal]);
 
+  const onShareLink = useCallback(async () => {
+    try {
+      const currentUrl = window.location.href;
+      await navigator.clipboard.writeText(currentUrl);
+      logger.info("Sharable link copied to clipboard");
+    } catch (error) {
+      logger.error("Error copying URL to clipboard:", error);
+    }
+  }, []);
   const handleCopyRecord = useCallback(() => {
     if (!tab || !activeWindow || isEmptyArray(selectedIds)) return;
 
@@ -374,6 +383,9 @@ export const useToolbarConfig = ({
       EXPORT_CSV: async () => {
         await onExportCSV?.();
       },
+      SHARE_LINK: () => {
+        onShareLink();
+      },
       COPY_RECORD: () => {
         handleCopyRecord();
       },
@@ -399,6 +411,7 @@ export const useToolbarConfig = ({
       handleDeleteRecord,
       attachmentAction,
       onExportCSV,
+      onShareLink,
       handleCopyRecord,
     ]
   );

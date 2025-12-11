@@ -51,10 +51,15 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW]: "toolbar-button-toggle-tree-view",
   [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: "toolbar-button-attachment",
   [TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV]: "toolbar-button-export-csv",
+  [TOOLBAR_BUTTONS_ACTIONS.SHARE_LINK]: "toolbar-button-share-link",
   [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: "toolbar-button-copy-record",
 } as const;
 
-export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
+export const DefaultIcon = () => (
+  <span className="icon-base64" style={{ fontSize: "1rem" }}>
+    ✣
+  </span>
+);
 
 export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }) => {
   if (!iconKey) return <DefaultIcon data-testid="DefaultIcon__5aeccd" />;
@@ -67,7 +72,11 @@ export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }
     return <Base64Icon src={`data:image/png;base64,${iconKey}`} data-testid="Base64Icon__5aeccd" />;
   }
 
-  return <span style={{ fontSize: "0.75rem", fontWeight: "bold" }}>{iconKey}</span>;
+  return (
+    <span className="icon-base64" style={{ fontSize: "0.75rem", fontWeight: "bold" }}>
+      {iconKey}
+    </span>
+  );
 };
 
 const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMetadata[] => {
@@ -132,6 +141,7 @@ export const createButtonByType = ({
   saveButtonState,
   isImplicitFilterApplied,
   showFilterTooltip,
+  showShareLinkTooltip,
   t,
   tab,
   selectedRecordsLength,
@@ -145,6 +155,7 @@ export const createButtonByType = ({
   saveButtonState?: SaveButtonState;
   isImplicitFilterApplied?: boolean;
   showFilterTooltip?: boolean;
+  showShareLinkTooltip?: boolean;
   t?: TranslateFunction;
   tab: Tab;
   selectedRecordsLength: number;
@@ -196,7 +207,6 @@ export const createButtonByType = ({
       [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () => buildDisableConfig(!hasSelectedRecord || !isCopilotInstalled),
       [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: () => buildDisableConfig(!hasSelectedRecord),
       [TOOLBAR_BUTTONS_ACTIONS.NEW]: () => buildDisableConfig(!hasParentRecordSelected),
-      [TOOLBAR_BUTTONS_ACTIONS.REFRESH]: () => buildDisableConfig(!hasParentRecordSelected),
       [TOOLBAR_BUTTONS_ACTIONS.SAVE]: () => {
         const baseDisabled = !isFormView || !hasFormChanges || !hasParentRecordSelected;
         const additionalDisabled = saveButtonState
@@ -264,6 +274,11 @@ export const createButtonByType = ({
     finalConfig.forceTooltipOpen = true;
   }
 
+  if (button.action === TOOLBAR_BUTTONS_ACTIONS.SHARE_LINK && showShareLinkTooltip) {
+    finalConfig.tooltip = t ? t("table.tooltips.copy") : "Copy!";
+    finalConfig.forceTooltipOpen = true;
+  }
+
   return finalConfig;
 };
 
@@ -283,6 +298,7 @@ interface ButtonConfig {
   session?: ISession;
   isImplicitFilterApplied?: boolean;
   showFilterTooltip?: boolean;
+  showShareLinkTooltip?: boolean;
   t?: TranslateFunction;
   tab: Tab;
   selectedRecordsLength: number;
@@ -307,6 +323,7 @@ const createSectionButtons = (
       isCopilotInstalled: config.isCopilotInstalled,
       isImplicitFilterApplied: config.isImplicitFilterApplied,
       showFilterTooltip: config.showFilterTooltip,
+      showShareLinkTooltip: config.showShareLinkTooltip,
       t: config.t,
       tab: config.tab,
       selectedRecordsLength: config.selectedRecordsLength,
@@ -351,6 +368,7 @@ interface ToolbarSectionsConfig {
   session?: ISession;
   isImplicitFilterApplied?: boolean;
   showFilterTooltip?: boolean;
+  showShareLinkTooltip?: boolean;
   t?: TranslateFunction;
   tab: Tab;
   selectedRecordsLength: number;
@@ -368,6 +386,7 @@ export const getToolbarSections = ({
   session = {},
   isImplicitFilterApplied = false,
   showFilterTooltip = false,
+  showShareLinkTooltip = false,
   t,
   tab,
   selectedRecordsLength,
@@ -388,6 +407,7 @@ export const getToolbarSections = ({
     session,
     isImplicitFilterApplied,
     showFilterTooltip,
+    showShareLinkTooltip,
     tab,
     selectedRecordsLength,
     t,
