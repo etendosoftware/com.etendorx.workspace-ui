@@ -217,9 +217,9 @@ export const useToolbarConfig = ({
     try {
       const currentUrl = window.location.href;
       await navigator.clipboard.writeText(currentUrl);
-      logger.info("URL copiada al portapapeles:", currentUrl);
+      logger.info("Sharable link copied to clipboard");
     } catch (error) {
-      logger.error("Error al copiar URL al portapapeles:", error);
+      logger.error("Error copying URL to clipboard:", error);
     }
   }, []);
   const handleCopyRecord = useCallback(() => {
