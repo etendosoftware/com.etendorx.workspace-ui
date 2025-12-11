@@ -110,8 +110,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     img.onerror = (e) => {
       console.warn("Failed to load base favicon for badge overlay", e);
     };
-    // Add cache buster to ensure fresh load
-    img.src = BASE_FAVICON_PATH;
+    // Add a cache buster to the favicon URL to ensure browsers always fetch the latest version.
+    img.src = `${BASE_FAVICON_PATH}?v=${Date.now()}`;
   }, [faviconColor, isInitialized]);
 
   const value = useMemo(
