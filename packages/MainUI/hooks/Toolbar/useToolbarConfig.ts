@@ -384,7 +384,8 @@ export const useToolbarConfig = ({
         await onExportCSV?.();
       },
       SHARE_LINK: () => {
-        onShareLink()},
+        onShareLink();
+      },
       COPY_RECORD: () => {
         handleCopyRecord();
       },
@@ -411,7 +412,7 @@ export const useToolbarConfig = ({
       attachmentAction,
       onExportCSV,
       onShareLink,
-      handleCopyRecord
+      handleCopyRecord,
     ]
   );
 

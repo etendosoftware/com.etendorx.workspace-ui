@@ -52,10 +52,14 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: "toolbar-button-attachment",
   [TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV]: "toolbar-button-export-csv",
   [TOOLBAR_BUTTONS_ACTIONS.SHARE_LINK]: "toolbar-button-share-link",
-  [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: "toolbar-button-copy-record"
+  [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: "toolbar-button-copy-record",
 } as const;
 
-export const DefaultIcon = () => <span className="icon-base64" style={{ fontSize: "1rem" }}>✣</span>;
+export const DefaultIcon = () => (
+  <span className="icon-base64" style={{ fontSize: "1rem" }}>
+    ✣
+  </span>
+);
 
 export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }) => {
   if (!iconKey) return <DefaultIcon data-testid="DefaultIcon__5aeccd" />;
@@ -68,7 +72,11 @@ export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }
     return <Base64Icon src={`data:image/png;base64,${iconKey}`} data-testid="Base64Icon__5aeccd" />;
   }
 
-  return <span className="icon-base64" style={{ fontSize: "0.75rem", fontWeight: "bold" }}>{iconKey}</span>;
+  return (
+    <span className="icon-base64" style={{ fontSize: "0.75rem", fontWeight: "bold" }}>
+      {iconKey}
+    </span>
+  );
 };
 
 const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMetadata[] => {
@@ -403,7 +411,7 @@ export const getToolbarSections = ({
     showShareLinkTooltip,
     tab,
     selectedRecordsLength,
-    t
+    t,
   };
 
   return {
