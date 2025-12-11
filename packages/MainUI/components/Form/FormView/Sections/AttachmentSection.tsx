@@ -312,11 +312,9 @@ const AttachmentSection = ({
         id="attachment-file-input"
         data-testid="Input__attachments_file"
       />
-
       {isLoading && isSectionExpanded && (
         <Typography data-testid="Typography__attachments_loading">{t("common.loading")}</Typography>
       )}
-
       {isSectionExpanded && (
         <div className="flex flex-col gap-4 mt-2" data-testid="Div__attachments_container">
           {/* Attachments and Actions Row */}
@@ -361,7 +359,12 @@ const AttachmentSection = ({
                 onClick={() => setShowDownloadAllConfirmation(true)}
                 className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm cursor-pointer min-w-fit whitespace-nowrap"
                 data-testid="Button__attachments_download_all_chip">
-                <DownloadIcon width={14} height={14} fill={theme.palette.text.secondary} />
+                <DownloadIcon
+                  width={14}
+                  height={14}
+                  fill={theme.palette.text.secondary}
+                  data-testid="DownloadIcon__ce37c8"
+                />
                 <span className="text-sm font-medium text-gray-700">{t("forms.attachments.downloadAll")}</span>
               </button>
 
@@ -370,7 +373,7 @@ const AttachmentSection = ({
                 onClick={() => setShowDeleteAllConfirmation(true)}
                 className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 bg-white border border-red-200 hover:bg-red-50 transition-colors shadow-sm cursor-pointer min-w-fit whitespace-nowrap"
                 data-testid="Button__attachments_remove_all_chip">
-                <TrashIcon width={14} height={14} fill={theme.palette.error.main} />
+                <TrashIcon width={14} height={14} fill={theme.palette.error.main} data-testid="TrashIcon__ce37c8" />
                 <span className="text-sm font-medium text-red-700">{t("forms.attachments.removeAll")}</span>
               </button>
             </div>
@@ -397,26 +400,26 @@ const AttachmentSection = ({
                 }}
                 className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm bg-transparent border-none cursor-pointer"
                 data-testid="Button__import_url">
-                <LinkIcon width={16} height={16} fill="currentColor" />
+                <LinkIcon width={16} height={16} fill="currentColor" data-testid="LinkIcon__ce37c8" />
                 <span>{t("forms.attachments.importFromUrl")}</span>
               </button>
             </div>
 
             {/* Upload Icon top right */}
             <div className="absolute top-4 right-4 text-gray-400">
-              <UploadIcon width={20} height={20} fill="currentColor" />
+              <UploadIcon width={20} height={20} fill="currentColor" data-testid="UploadIcon__ce37c8" />
             </div>
 
             {/* Center Content */}
             <div className="flex flex-col items-center gap-3 mt-6">
               <div className="p-3 bg-white rounded-full shadow-sm">
-                <FilePlusIcon width={32} height={32} fill="#6B7280" />
+                <FilePlusIcon width={32} height={32} fill="#6B7280" data-testid="FilePlusIcon__ce37c8" />
               </div>
               <div className="text-center">
-                <Typography variant="body1" className="font-medium text-gray-700">
+                <Typography variant="body1" className="font-medium text-gray-700" data-testid="Typography__ce37c8">
                   {t("forms.attachments.dropZoneText")}
                 </Typography>
-                <Typography variant="caption" className="text-blue-500 mt-1 block">
+                <Typography variant="caption" className="text-blue-500 mt-1 block" data-testid="Typography__ce37c8">
                   {t("forms.attachments.maxSizeText")}
                 </Typography>
               </div>
@@ -424,7 +427,6 @@ const AttachmentSection = ({
           </div>
         </div>
       )}
-
       {/* Add Attachment Modal */}
       <Modal
         open={isAddModalOpen}
@@ -451,13 +453,17 @@ const AttachmentSection = ({
             <span className="block text-sm font-medium text-gray-700">{t("forms.attachments.selectedFile")}</span>
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
               <div className="p-2 bg-white rounded border border-gray-200">
-                <AttachmentIcon width={24} height={24} fill="#6B7280" />
+                <AttachmentIcon width={24} height={24} fill="#6B7280" data-testid="AttachmentIcon__ce37c8" />
               </div>
               <div className="flex-1 min-w-0">
-                <Typography variant="body2" className="font-medium text-gray-900 truncate" title={selectedFile?.name}>
+                <Typography
+                  variant="body2"
+                  className="font-medium text-gray-900 truncate"
+                  title={selectedFile?.name}
+                  data-testid="Typography__ce37c8">
                   {selectedFile?.name || t("forms.attachments.noFileSelected")}
                 </Typography>
-                <Typography variant="caption" className="text-gray-500">
+                <Typography variant="caption" className="text-gray-500" data-testid="Typography__ce37c8">
                   {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : ""}
                 </Typography>
               </div>
@@ -505,7 +511,6 @@ const AttachmentSection = ({
           </IconButton>
         </div>
       </Modal>
-
       {/* Preview Attachment Modal */}
       {previewAttachment && (
         <Modal
@@ -649,7 +654,6 @@ const AttachmentSection = ({
           </div>
         </Modal>
       )}
-
       {/* Delete Confirmation */}
       <ConfirmModal
         open={!!showDeleteConfirmation}

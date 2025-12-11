@@ -205,7 +205,9 @@ export function FormFields({
       {/* Attachments Section */}
       <div ref={handleSectionRef("attachments_group")} data-section-id="attachments_group">
         <Collapsible
-          title={attachmentCount > 0 ? `${t("forms.attachments.title")} (${attachmentCount})` : t("forms.attachments.title")}
+          title={
+            attachmentCount > 0 ? `${t("forms.attachments.title")} (${attachmentCount})` : t("forms.attachments.title")
+          }
           isExpanded={isSectionExpanded("attachments_group")}
           sectionId="attachments_group"
           icon={<AttachmentIcon data-testid="AttachmentIcon__attachments" />}

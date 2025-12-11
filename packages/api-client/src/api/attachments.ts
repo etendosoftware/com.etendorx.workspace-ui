@@ -82,7 +82,7 @@ export async function createAttachment(params: CreateAttachmentParams): Promise<
       url += `&description=${encodedDesc}`;
       formData.append("description", params.description);
     }
-    
+
     console.log("[Attachment] Creating attachment:", { url, description: params.description });
 
     const response = await client.post(url, formData);
@@ -111,14 +111,14 @@ export async function editAttachment(params: EditAttachmentParams): Promise<void
 
   try {
     let url = `${ATTACHMENT_SERVLET_ENDPOINT}?command=EDIT&tabId=${params.tabId}&attachmentId=${params.attachmentId}`;
-    
+
     // Pass description as query parameter to leverage backend fallback mechanism
     // This avoids issues with JSON body parsing
     if (params.description !== undefined) {
-       const encodedDesc = encodeURIComponent(params.description);
-       url += `&description=${encodedDesc}`;
+      const encodedDesc = encodeURIComponent(params.description);
+      url += `&description=${encodedDesc}`;
     }
-    
+
     console.log("[Attachment] Editing attachment:", { url, description: params.description });
 
     const response = await client.post(url, {});

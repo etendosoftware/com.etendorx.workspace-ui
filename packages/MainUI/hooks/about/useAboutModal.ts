@@ -1,12 +1,16 @@
 import { useUserContext } from "../useUserContext";
+import { useRuntimeConfig } from "../../contexts/RuntimeConfigContext";
 
 const ABOUT_URL_ENDPOINT = "/ad_forms/about.html?IsPopUpCall=1";
 
 export function useAboutModal() {
   const { token } = useUserContext();
+  const { config } = useRuntimeConfig();
 
-  // Route through Next.js API to ensure proper charset handling
-  const aboutUrl = `/api/erp/meta/legacy${ABOUT_URL_ENDPOINT}&token=${token}`;
+  const publicHost = config?.etendoClassicHost || "";
+
+  // Point directly to classic URL to avoid unnecessary routing through Next.js
+  const aboutUrl = publicHost ? `${publicHost}${ABOUT_URL_ENDPOINT}&token=${token}` : "";
 
   return {
     aboutUrl,

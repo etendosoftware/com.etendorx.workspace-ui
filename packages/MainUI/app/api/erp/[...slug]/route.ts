@@ -2,10 +2,7 @@ import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
 import { getErpAuthHeaders } from "../../_utils/forwardConfig";
-import { SLUGS_CATEGORIES, SLUGS_METHODS, URL_MUTATION } from "@/app/api/_utils/slug/constants";
-import { detectCharset, isBinaryContentType, rewriteHtmlResourceUrls, createHtmlResponse } from "./route.helpers";
-
-type requestBody = string | ReadableStream<Uint8Array> | undefined;
+import { SLUGS_CATEGORIES, SLUGS_METHODS } from "@/app/api/_utils/slug/constants";
 
 // Custom error class for ERP requests
 class ErpRequestError extends Error {
@@ -37,6 +34,8 @@ const getCachedErpData = unstable_cache(
     const slugContainsCopilot = slug.includes(SLUGS_CATEGORIES.COPILOT);
     if (slugContainsCopilot) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
+    } else if (slug.startsWith(SLUGS_CATEGORIES.UTILITY)) {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else if (slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else {
@@ -126,7 +125,7 @@ function buildErpHeaders(
   userToken: string,
   request: Request,
   method: string,
-  requestBody: requestBody,
+  requestBody: string | ReadableStream<Uint8Array> | undefined,
   contentType: string,
   slug?: string
 ): Record<string, string> {
@@ -160,6 +159,27 @@ function buildErpHeaders(
   return headers;
 }
 
+// Helper: Detect charset from Content-Type header
+function detectCharset(contentType: string | null): string {
+  if (!contentType) {
+    return "iso-8859-1"; // Default for Tomcat legacy servlets
+  }
+  const charsetMatch = contentType.match(/charset=([^\s;]+)/i);
+  return charsetMatch ? charsetMatch[1].toLowerCase() : "iso-8859-1";
+}
+
+// Helper: Check if response is binary file
+function isBinaryContentType(contentType: string): boolean {
+  return (
+    contentType.includes("application/octet-stream") ||
+    contentType.includes("application/zip") ||
+    contentType.includes("image/") ||
+    contentType.includes("video/") ||
+    contentType.includes("audio/") ||
+    contentType.includes("application/pdf")
+  );
+}
+
 /**
  * Handles mutation requests (non-cached) to the ERP system
  * @param erpUrl - Target ERP URL
@@ -172,7 +192,7 @@ async function handleMutationRequest(
   erpUrl: string,
   method: string,
   headers: Record<string, string>,
-  requestBody: requestBody
+  requestBody: string | ReadableStream<Uint8Array> | undefined
 ): Promise<unknown> {
   const fetchOptions: RequestInit = {
     method,
@@ -207,11 +227,6 @@ async function handleMutationRequest(
     return { stream: response.body, headers: response.headers };
   }
 
-  // Check if response is HTML (for iframes like About modal)
-  if (responseContentType?.toLowerCase().includes("text/html")) {
-    return { htmlContent: response };
-  }
-
   // Check if response is a binary file (for downloads)
   if (responseContentType && isBinaryContentType(responseContentType)) {
     return { binaryFile: response };
@@ -222,13 +237,23 @@ async function handleMutationRequest(
   const encoding = detectCharset(responseContentType);
   const responseText = new TextDecoder(encoding).decode(responseBuffer);
 
-  // Fallback: Check if response body looks like HTML (when Content-Type is missing)
+  // Check if response is HTML (with proper encoding detection already applied)
   if (
+    responseContentType?.toLowerCase().includes("text/html") ||
     responseText.trim().toLowerCase().startsWith("<html") ||
     responseText.trim().toLowerCase().startsWith("<!doctype html")
   ) {
-    const rewrittenHtml = rewriteHtmlResourceUrls(responseText);
-    const htmlResponse = createHtmlResponse(rewrittenHtml, response);
+    // Return HTML with proper charset in headers
+    const htmlHeaders = new Headers(response.headers);
+    const contentType = htmlHeaders.get("content-type") || "text/html";
+    if (!contentType.includes("charset")) {
+      htmlHeaders.set("Content-Type", `${contentType}; charset=UTF-8`);
+    }
+    const htmlResponse = new Response(responseText, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: htmlHeaders,
+    });
     return { htmlContent: htmlResponse };
   }
 
@@ -301,6 +326,8 @@ function buildErpUrl(slug: string, requestUrl: string): string {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.COPILOT)) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
+  } else if (slug.startsWith(SLUGS_CATEGORIES.UTILITY)) {
+    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
   }
@@ -362,7 +389,7 @@ async function fetchErpData({
   requestBody: string | ReadableStream<Uint8Array> | undefined;
   contentType: string;
 }): Promise<unknown> {
-  if (isMutationRoute(slug, method) || isMutationUrl(erpUrl)) {
+  if (isMutationRoute(slug, method)) {
     const headers = buildErpHeaders(userToken, request, method, requestBody, contentType, slug);
     return handleMutationRequest(erpUrl, method, headers, requestBody);
   }
