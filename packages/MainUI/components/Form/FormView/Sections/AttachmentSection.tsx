@@ -84,11 +84,7 @@ const AttachmentSection = ({
   // Sync external openAddModal prop with internal state
   useEffect(() => {
     if (openAddModal) {
-      if (fileInputRef.current) {
-        fileInputRef.current.click();
-      } else {
-        setIsAddModalOpen(true);
-      }
+      setIsAddModalOpen(true);
     }
   }, [openAddModal]);
 
@@ -316,7 +312,7 @@ const AttachmentSection = ({
         id="attachment-file-input"
         data-testid="Input__attachments_file"
       />
-      
+
       {isLoading && isSectionExpanded && (
         <Typography data-testid="Typography__attachments_loading">{t("common.loading")}</Typography>
       )}
@@ -325,7 +321,9 @@ const AttachmentSection = ({
         <div className="flex flex-col gap-4 mt-2" data-testid="Div__attachments_container">
           {/* Attachments and Actions Row */}
           {attachments.length > 0 && (
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 px-1" data-testid="Div__attachments_scrollable_container">
+            <div
+              className="flex items-center gap-2 overflow-x-auto pb-2 px-1"
+              data-testid="Div__attachments_scrollable_container">
               {/* Attachment Tags */}
               {attachments.map((attachment) => (
                 <div
@@ -386,13 +384,9 @@ const AttachmentSection = ({
             onClick={() => fileInputRef.current?.click()}
             className={`
               relative flex flex-col items-center justify-center p-8 rounded-xl border-2 border-dashed transition-all cursor-pointer min-h-[160px]
-              ${isDragging 
-                ? "border-blue-500 bg-blue-50" 
-                : "border-blue-300 bg-[#F0F5FF]"
-              }
+              ${isDragging ? "border-blue-500 bg-blue-50" : "border-blue-300 bg-[#F0F5FF]"}
             `}
-            data-testid="Div__attachments_dropzone"
-          >
+            data-testid="Div__attachments_dropzone">
             {/* Import from URL Button */}
             <div className="absolute top-4 left-4">
               <button
@@ -402,8 +396,7 @@ const AttachmentSection = ({
                   console.log("Import from URL clicked");
                 }}
                 className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm bg-transparent border-none cursor-pointer"
-                data-testid="Button__import_url"
-              >
+                data-testid="Button__import_url">
                 <LinkIcon width={16} height={16} fill="currentColor" />
                 <span>{t("forms.attachments.importFromUrl")}</span>
               </button>
@@ -411,13 +404,13 @@ const AttachmentSection = ({
 
             {/* Upload Icon top right */}
             <div className="absolute top-4 right-4 text-gray-400">
-               <UploadIcon width={20} height={20} fill="currentColor" />
+              <UploadIcon width={20} height={20} fill="currentColor" />
             </div>
 
             {/* Center Content */}
             <div className="flex flex-col items-center gap-3 mt-6">
               <div className="p-3 bg-white rounded-full shadow-sm">
-                <FilePlusIcon width={32} height={32} fill="#6B7280" /> 
+                <FilePlusIcon width={32} height={32} fill="#6B7280" />
               </div>
               <div className="text-center">
                 <Typography variant="body1" className="font-medium text-gray-700">
@@ -457,23 +450,23 @@ const AttachmentSection = ({
           <div className="flex flex-col gap-2">
             <span className="block text-sm font-medium text-gray-700">{t("forms.attachments.selectedFile")}</span>
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-               <div className="p-2 bg-white rounded border border-gray-200">
-                  <AttachmentIcon width={24} height={24} fill="#6B7280" />
-               </div>
-               <div className="flex-1 min-w-0">
-                 <Typography variant="body2" className="font-medium text-gray-900 truncate" title={selectedFile?.name}>
-                    {selectedFile?.name || t("forms.attachments.noFileSelected")}
-                 </Typography>
-                 <Typography variant="caption" className="text-gray-500">
-                    {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : ""}
-                 </Typography>
-               </div>
-               <IconButton
+              <div className="p-2 bg-white rounded border border-gray-200">
+                <AttachmentIcon width={24} height={24} fill="#6B7280" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <Typography variant="body2" className="font-medium text-gray-900 truncate" title={selectedFile?.name}>
+                  {selectedFile?.name || t("forms.attachments.noFileSelected")}
+                </Typography>
+                <Typography variant="caption" className="text-gray-500">
+                  {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : ""}
+                </Typography>
+              </div>
+              <IconButton
                 onClick={() => fileInputRef.current?.click()}
                 className="text-blue-600 hover:bg-blue-50 p-2 text-sm font-medium"
                 data-testid="IconButton__change_file">
-                  {t("common.change")}
-               </IconButton>
+                {t("common.change")}
+              </IconButton>
             </div>
           </div>
 
@@ -491,10 +484,22 @@ const AttachmentSection = ({
           <IconButton
             onClick={handleAddAttachment}
             disabled={!selectedFile || isLoading}
-            className="w-full justify-center border border-gray-300 mt-4 p-2 gap-2 bg-blue-600 hover:opacity-90 text-white rounded-md transition-opacity"
+            className={`w-full justify-center border border-gray-300 mt-4 p-2 gap-2 rounded-md transition-opacity ${
+              !selectedFile || isLoading
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-blue-600 hover:opacity-90 text-white"
+            }`}
             data-testid="IconButton__attachments_submit">
-            <UploadIcon width={16} height={16} fill="white" data-testid="UploadIcon__ce37c8" />
-            <Typography variant="body1" className="ml-2 text-white" data-testid="Typography__ce37c8">
+            <UploadIcon
+              width={16}
+              height={16}
+              fill={!selectedFile || isLoading ? "#6B7280" : "white"}
+              data-testid="UploadIcon__ce37c8"
+            />
+            <Typography
+              variant="body1"
+              className={`ml-2 ${!selectedFile || isLoading ? "text-gray-500" : "text-white"}`}
+              data-testid="Typography__ce37c8">
               {t("forms.attachments.uploadButton")}
             </Typography>
           </IconButton>

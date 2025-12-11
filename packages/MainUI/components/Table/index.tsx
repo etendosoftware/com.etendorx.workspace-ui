@@ -2821,29 +2821,39 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     });
   }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown]);
 
-  // Register attachment action to navigate to FormView
+  // Register attachment action for toolbar to handle interactions from TableView
   useEffect(() => {
-    if (registerAttachmentAction && activeWindow?.windowId && tab) {
+    logger.info("[Table] Attachment action effect triggered", { isVisible, hasRegisterFn: !!registerAttachmentAction });
+
+    // Only register the attachment action when the table is visible
+    if (registerAttachmentAction && isVisible) {
+      logger.info("[Table] Registering attachment action");
       registerAttachmentAction(() => {
-        const selectedRecordId = getSelectedRecord(activeWindow.windowId, tab.id);
-        if (selectedRecordId) {
-          // Set flag to open attachment modal
+        logger.info("[Table] Attachment action triggered");
+        const currentSelection = table.getState().rowSelection;
+        const selectedIds = Object.keys(currentSelection);
+
+        if (selectedIds.length === 1) {
+          const recordId = selectedIds[0];
+          logger.info("[Table] Navigating to FormView with recordId:", recordId);
           setShouldOpenAttachmentModal(true);
-          // Navigate to FormView
-          setRecordId(selectedRecordId);
+          setRecordId(recordId);
+        } else if (selectedIds.length === 0) {
+          showErrorModal(t("status.selectRecordError"));
         } else {
-          logger.warn("No record selected for attachment action");
+          showErrorModal(t("status.selectSingleRecordError"));
         }
       });
     }
-  }, [
-    registerAttachmentAction,
-    activeWindow?.windowId,
-    tab,
-    getSelectedRecord,
-    setRecordId,
-    setShouldOpenAttachmentModal,
-  ]);
+
+    return () => {
+      // Clean up the attachment action when table becomes invisible or unmounts
+      logger.info("[Table] Cleanup attachment action", { isVisible });
+      if (registerAttachmentAction && isVisible) {
+        registerAttachmentAction(undefined);
+      }
+    };
+  }, [registerAttachmentAction, table, setShouldOpenAttachmentModal, setRecordId, showErrorModal, t, isVisible]);
 
   if (error) {
     return (
