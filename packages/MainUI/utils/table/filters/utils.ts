@@ -46,7 +46,7 @@ export const getTextFilterValue = (
 
   if (!currentFilter) return undefined;
 
-  // If value is FilterOption[], it's a dropdown filter - return undefined (handled separately)
+  // If value is FilterOption[], return undefined as they are handled separately
   if (isFilterOptionArray(currentFilter.value)) {
     return undefined;
   }
