@@ -29,6 +29,7 @@ import { MetadataStoreProvider } from "@/contexts/metadataStore";
 import { MetadataSynchronizer } from "@/contexts/metadata";
 import WindowProvider from "@/contexts/window";
 import { RuntimeConfigProvider } from "@/contexts/RuntimeConfigContext";
+import { PreferencesProvider } from "@/contexts/preferences";
 import Layout from "@/components/layout";
 import { DENSITY_KEY } from "@/utils/accessibility/constants";
 
@@ -82,20 +83,22 @@ export default async function RootLayout({
         <RuntimeConfigProvider data-testid="RuntimeConfigProvider__ba7569">
           <ApiProviderWrapper data-testid="ApiProviderWrapper__ba7569">
             <ThemeProvider data-testid="ThemeProvider__ba7569">
-              <LanguageProvider data-testid="LanguageProvider__ba7569">
-                <UserProvider data-testid="UserProvider__ba7569">
-                  <DatasourceProvider data-testid="DatasourceProvider__ba7569">
-                    <MetadataStoreProvider data-testid="MetadataStoreProvider__ba7569">
-                      <WindowProvider data-testid="WindowProvider__ba7569">
-                        <MetadataSynchronizer data-testid="MetadataSynchronizer__ba7569" />
-                        <LoadingProvider data-testid="LoadingProvider__ba7569">
-                          <Layout data-testid="Layout__ba7569">{children}</Layout>
-                        </LoadingProvider>
-                      </WindowProvider>
-                    </MetadataStoreProvider>
-                  </DatasourceProvider>
-                </UserProvider>
-              </LanguageProvider>
+              <PreferencesProvider data-testid="PreferencesProvider__ba7569">
+                <LanguageProvider data-testid="LanguageProvider__ba7569">
+                  <UserProvider data-testid="UserProvider__ba7569">
+                    <DatasourceProvider data-testid="DatasourceProvider__ba7569">
+                      <MetadataStoreProvider data-testid="MetadataStoreProvider__ba7569">
+                        <WindowProvider data-testid="WindowProvider__ba7569">
+                          <MetadataSynchronizer data-testid="MetadataSynchronizer__ba7569" />
+                          <LoadingProvider data-testid="LoadingProvider__ba7569">
+                            <Layout data-testid="Layout__ba7569">{children}</Layout>
+                          </LoadingProvider>
+                        </WindowProvider>
+                      </MetadataStoreProvider>
+                    </DatasourceProvider>
+                  </UserProvider>
+                </LanguageProvider>
+              </PreferencesProvider>
             </ThemeProvider>
           </ApiProviderWrapper>
         </RuntimeConfigProvider>

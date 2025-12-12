@@ -16,18 +16,36 @@
  */
 
 import SettingIcon from "@workspaceui/componentlibrary/src/assets/icons/settings.svg";
+import CircleFilledIcon from "@workspaceui/componentlibrary/src/assets/icons/circle-filled.svg";
+import CircleIcon from "@workspaceui/componentlibrary/src/assets/icons/circle.svg";
 import {
   SECTION_THEME_ID,
   SECTION_TABLE_DENSITY_ID,
   SECTION_COMMON_TOOLBAR_BUTTONS_ID,
   SECTION_SPECIFIC_TOOLBAR_BUTTONS_ID,
   SECTION_DENSITY_ID,
+  SECTION_FAVICON_BADGE_ID,
   INTERFACE_SCALE_ITEMS,
   THEME_ITEMS,
   TABLE_DENSITY_ITEMS,
   COMMON_TOOLBAR_BUTTONS_ITEMS,
   SPECIFIC_TOOLBAR_BUTTONS_ITEMS,
+  FAVICON_BADGE_COLOR_ITEMS,
 } from "@workspaceui/componentlibrary/src/components/ConfigurationModal/constants";
+
+// Create a colored circle icon for the favicon badge selector
+const createColorCircle = (color: string | null) => {
+  if (!color) {
+    return <CircleIcon fill="#9CA3AF" width="1.5rem" height="1.5rem" data-testid="CircleIcon__e5f973" />;
+  }
+  return <CircleFilledIcon fill={color} width="1.5rem" height="1.5rem" data-testid="CircleFilledIcon__e5f973" />;
+};
+
+// Map color items to include the colored CircleIcon
+const FAVICON_BADGE_ITEMS_WITH_IMG = FAVICON_BADGE_COLOR_ITEMS.map((item) => ({
+  ...item,
+  img: createColorCircle(item.color),
+}));
 
 export const modalConfig = {
   icon: <SettingIcon data-testid="SettingIcon__e5f973" />,
@@ -71,6 +89,23 @@ export const modalConfig = {
       items: INTERFACE_SCALE_ITEMS,
       selectedItem: 1,
       isDisabled: false,
+      displayOptions: {
+        itemsPerRow: 3,
+        hideRadioButton: true,
+        hideItemLabel: true,
+      },
+    },
+    {
+      id: SECTION_FAVICON_BADGE_ID,
+      name: "Favicon Badge",
+      items: FAVICON_BADGE_ITEMS_WITH_IMG,
+      selectedItem: 0,
+      isDisabled: false,
+      displayOptions: {
+        itemsPerRow: 6,
+        hideRadioButton: true,
+        hideItemLabel: true,
+      },
     },
   ],
   onChangeSelect: console.log,
