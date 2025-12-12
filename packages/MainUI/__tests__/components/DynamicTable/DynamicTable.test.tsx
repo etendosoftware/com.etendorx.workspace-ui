@@ -1,8 +1,9 @@
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import type React from "react";
 import DynamicTable from "../../../components/Table";
+import { renderWithTheme as render } from "../../../test-utils/test-theme-provider";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type {
   MRT_Row,

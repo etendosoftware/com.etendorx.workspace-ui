@@ -68,6 +68,10 @@ export function FormFields({
     useFormViewContext();
   const { t } = useTranslation();
 
+  // Get record identifier from form data
+  const formData = watch();
+  const recordIdentifier = formData?._identifier as string | undefined;
+
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Update local noteCount when initialNoteCount changes
@@ -222,6 +226,7 @@ export function FormFields({
             showErrorModal={showErrorModal}
             openAddModal={openAttachmentModal}
             onAddModalClose={onAttachmentModalClose}
+            recordIdentifier={recordIdentifier}
             data-testid="AttachmentSection__attachments"
           />
         </Collapsible>

@@ -3,7 +3,9 @@ import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
 import { getErpAuthHeaders } from "../../_utils/forwardConfig";
 import { SLUGS_CATEGORIES, SLUGS_METHODS } from "@/app/api/_utils/slug/constants";
+import { detectCharset, isBinaryContentType } from "./route.helpers";
 
+type requestBody = string | ReadableStream<Uint8Array> | undefined;
 // Custom error class for ERP requests
 class ErpRequestError extends Error {
   public readonly status: number;
@@ -104,14 +106,6 @@ function isMutationRoute(slug: string, method: string): boolean {
   );
 }
 
-/** Determines if a URL should bypass caching (mutations or non-GET requests)
- * @param url - The full request URL
- * @returns true if this is a mutation URL that should not be cached
- */
-function isMutationUrl(url: string): boolean {
-  return url.includes(URL_MUTATION.COMPUTE_WINDOW) || url.includes(URL_MUTATION.CLONE_RECORDS);
-}
-
 /**
  * Builds headers for ERP requests including auth and CSRF tokens
  * @param userToken - Bearer token for authentication
@@ -125,7 +119,7 @@ function buildErpHeaders(
   userToken: string,
   request: Request,
   method: string,
-  requestBody: string | ReadableStream<Uint8Array> | undefined,
+  requestBody: requestBody,
   contentType: string,
   slug?: string
 ): Record<string, string> {
@@ -157,27 +151,6 @@ function buildErpHeaders(
   }
 
   return headers;
-}
-
-// Helper: Detect charset from Content-Type header
-function detectCharset(contentType: string | null): string {
-  if (!contentType) {
-    return "iso-8859-1"; // Default for Tomcat legacy servlets
-  }
-  const charsetMatch = contentType.match(/charset=([^\s;]+)/i);
-  return charsetMatch ? charsetMatch[1].toLowerCase() : "iso-8859-1";
-}
-
-// Helper: Check if response is binary file
-function isBinaryContentType(contentType: string): boolean {
-  return (
-    contentType.includes("application/octet-stream") ||
-    contentType.includes("application/zip") ||
-    contentType.includes("image/") ||
-    contentType.includes("video/") ||
-    contentType.includes("audio/") ||
-    contentType.includes("application/pdf")
-  );
 }
 
 /**

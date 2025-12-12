@@ -18,7 +18,7 @@
 import { Box, Link } from "@mui/material";
 import { useStyle } from "../styles";
 import type { FieldLabelProps } from "../types";
-import React from "react";
+import type React from "react";
 
 export const FieldLabel: React.FC<FieldLabelProps> = ({
   isEntityReference,

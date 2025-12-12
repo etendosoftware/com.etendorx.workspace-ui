@@ -161,19 +161,15 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   // Register attachment action for toolbar button
   useEffect(() => {
-    logger.info("[FormView] Registering attachment action");
     if (registerAttachmentAction) {
       registerAttachmentAction(() => {
-        logger.info("[FormView] Attachment action triggered - opening modal");
         setOpenAttachmentModal((prev) => {
-          logger.info("[FormView] setOpenAttachmentModal: prev =", prev, "next = true");
           return true;
         });
       });
     }
 
     return () => {
-      logger.info("[FormView] Cleaning up attachment action");
       if (registerAttachmentAction) {
         registerAttachmentAction(undefined);
       }
@@ -183,9 +179,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   // Open attachment modal when flag is set (from table navigation)
   useEffect(() => {
     if (shouldOpenAttachmentModal) {
-      logger.info("[FormView] shouldOpenAttachmentModal flag detected - opening modal from Table navigation");
       setOpenAttachmentModal((prev) => {
-        logger.info("[FormView] setOpenAttachmentModal from Table: prev =", prev, "next = true");
         return true;
       });
       // Reset flag after using it
@@ -194,9 +188,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   }, [shouldOpenAttachmentModal, setShouldOpenAttachmentModal]);
 
   // Log openAttachmentModal state changes
-  useEffect(() => {
-    logger.info("[FormView] openAttachmentModal state changed to:", openAttachmentModal);
-  }, [openAttachmentModal]);
+  useEffect(() => {}, [openAttachmentModal]);
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} data-testid="Info__1a0853" />,

@@ -5,27 +5,7 @@
  * Note: HTML rewriting functions were removed as the About modal now loads directly from Classic
  */
 
-// Helper functions are now inline in route.ts for simplicity
-// We test them by duplicating the logic here to ensure correctness
-
-function detectCharset(contentType: string | null): string {
-  if (!contentType) {
-    return "iso-8859-1"; // Default for Tomcat legacy servlets
-  }
-  const charsetMatch = contentType.match(/charset=([^\s;]+)/i);
-  return charsetMatch ? charsetMatch[1].toLowerCase() : "iso-8859-1";
-}
-
-function isBinaryContentType(contentType: string): boolean {
-  return (
-    contentType.includes("application/octet-stream") ||
-    contentType.includes("application/zip") ||
-    contentType.includes("image/") ||
-    contentType.includes("video/") ||
-    contentType.includes("audio/") ||
-    contentType.includes("application/pdf")
-  );
-}
+import { detectCharset, isBinaryContentType } from "../route.helpers";
 
 describe("ERP route helper functions", () => {
   describe("detectCharset", () => {
