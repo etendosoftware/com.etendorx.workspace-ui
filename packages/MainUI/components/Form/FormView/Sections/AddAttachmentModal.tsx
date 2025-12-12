@@ -123,15 +123,17 @@ export const AddAttachmentModal = ({
             {/* Preview Section */}
             {previewUrl && (
               <div className="mb-3 flex justify-center bg-white rounded border border-gray-100 overflow-hidden max-h-[200px]">
-                {selectedFile?.type.startsWith("image/") ? (
+                {selectedFile?.type.startsWith("image/") && (
                   <img src={previewUrl} alt="Preview" className="max-h-[200px] max-w-full object-contain" />
-                ) : selectedFile?.type === "application/pdf" ? (
+                )}
+
+                {selectedFile?.type === "application/pdf" && (
                   <div className="w-full flex items-center justify-center h-[100px] bg-gray-100 text-gray-400">
                     <Typography variant="caption" data-testid="Typography__746543">
                       PDF Preview
                     </Typography>
                   </div>
-                ) : null}
+                )}
               </div>
             )}
 

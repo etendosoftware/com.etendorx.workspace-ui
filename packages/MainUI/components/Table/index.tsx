@@ -112,7 +112,6 @@ import { globalCalloutManager } from "@/services/callouts";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import "./styles/inlineEditing.css";
-import "./styles/rowDragOver.css";
 import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 

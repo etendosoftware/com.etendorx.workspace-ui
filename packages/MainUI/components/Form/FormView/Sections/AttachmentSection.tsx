@@ -531,21 +531,25 @@ const AttachmentSection = ({
             <div className="space-y-3">
               {/* Preview Content */}
               <div className="flex justify-center bg-gray-100 rounded-lg overflow-hidden min-h-[200px] items-center border border-gray-200">
-                {isPreviewLoading ? (
+                {isPreviewLoading && (
                   <Typography className="text-gray-500" data-testid="Typography__ce37c8">
                     {t("common.loading")}
                   </Typography>
-                ) : previewUrl ? (
-                  isImagePreview ? (
-                    <img
-                      src={previewUrl}
-                      alt={previewAttachment.name}
-                      className="max-h-[400px] max-w-full object-contain"
-                    />
-                  ) : (
-                    <iframe src={previewUrl} className="w-full h-[500px] border-none" title={previewAttachment.name} />
-                  )
-                ) : (
+                )}
+
+                {!isPreviewLoading && previewUrl && isImagePreview && (
+                  <img
+                    src={previewUrl}
+                    alt={previewAttachment.name}
+                    className="max-h-[400px] max-w-full object-contain"
+                  />
+                )}
+
+                {!isPreviewLoading && previewUrl && !isImagePreview && (
+                  <iframe src={previewUrl} className="w-full h-[500px] border-none" title={previewAttachment.name} />
+                )}
+
+                {!isPreviewLoading && !previewUrl && (
                   <div className="flex flex-col items-center p-8 text-gray-400">
                     <AttachmentIcon width={48} height={48} fill="currentColor" data-testid="AttachmentIcon__ce37c8" />
                     <Typography className="mt-2" data-testid="Typography__ce37c8">

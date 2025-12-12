@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import React from "react";
+import type React from "react";
 import { render as rtlRender, type RenderOptions } from "@testing-library/react";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import { theme } from "@workspaceui/componentlibrary/src/theme";
