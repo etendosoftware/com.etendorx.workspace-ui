@@ -265,7 +265,13 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   }, [params, fetch]);
 
   return useMemo(
-    () => ({ error, formInitialization, loading, refetch }) as useFormInitialization,
-    [error, formInitialization, loading, refetch]
+    () =>
+      ({
+        error,
+        formInitialization,
+        loading: loading || recordLoading,
+        refetch,
+      }) as useFormInitialization,
+    [error, formInitialization, loading, recordLoading, refetch]
   );
 }
