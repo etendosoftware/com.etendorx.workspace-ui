@@ -674,34 +674,35 @@ export const useTableData = ({
   }, [tabFormState]);
 
   /** Initialize implicit filter state */
+  /** Initialize implicit filter state */
   useEffect(() => {
-    // Only run this logic once on mount/initialization
     if (!hasInitializedDirectLink.current) {
       const windowIdentifier = activeWindow?.windowIdentifier;
-
-      // For direct links to form view, set ID filter and mark as initialized
-      // ONLY mark as direct link if we've NEVER been in grid mode (true direct link from URL)
-      if (hasSelectedRecord && tabFormState?.mode === "form") {
+      
+      const initializeDirectLink = () => {
         if (isImplicitFilterApplied !== false) {
           setIsImplicitFilterApplied(false);
         }
 
-        // Only set ID filter and mark as direct link if this is truly a direct link
-        // (never been in grid mode - came directly from URL)
         if (!hasBeenInGridMode.current && tabFormState?.recordId && windowIdentifier) {
           const currentIdFilter = tableColumnFilters.find((f) => f.id === "id");
           if (currentIdFilter?.value !== tabFormState.recordId) {
             setTableColumnFilters([{ id: "id", value: tabFormState.recordId }]);
           }
-
-          // Mark in window context that this tab was initialized with a direct link
           setTabInitializedWithDirectLink(windowIdentifier, tab.id, true);
         }
-
         hasInitializedDirectLink.current = true;
-      } else if (isImplicitFilterApplied === undefined) {
+      };
+
+      const initializeDefault = () => {
         setIsImplicitFilterApplied(initialIsFilterApplied);
         hasInitializedDirectLink.current = true;
+      };
+
+      if (hasSelectedRecord && tabFormState?.mode === "form") {
+        initializeDirectLink();
+      } else if (isImplicitFilterApplied === undefined) {
+        initializeDefault();
       }
     }
   }, [
