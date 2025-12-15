@@ -407,7 +407,6 @@ jest.mock("@workspaceui/api-client/src/hooks/useColumnFilterData", () => ({
 
 // Mock useTableData helper functions
 
-
 // Mock for capturing row props from the table
 const capturedRowProps: {
   onClick?: React.MouseEventHandler<Element>;
