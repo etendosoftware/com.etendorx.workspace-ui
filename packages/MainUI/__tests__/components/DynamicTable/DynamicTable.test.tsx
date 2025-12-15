@@ -50,6 +50,7 @@ interface MockTableInstance<TData extends MRT_RowData> {
   };
   resetRowSelection: () => void;
   setRowSelection: (selection: Record<string, boolean>) => void;
+  getVisibleLeafColumns: () => any[];
 }
 
 // Mock all the contexts and hooks
@@ -202,6 +203,8 @@ const mockMultiWindowURL = {
   clearTabFormState: jest.fn(),
   getTabFormState: jest.fn(),
   clearChildrenSelections: jest.fn(),
+  getTabInitializedWithDirectLink: jest.fn().mockReturnValue(false),
+  setTabInitializedWithDirectLink: jest.fn(),
 };
 
 const mockUserContext = {
@@ -401,6 +404,8 @@ jest.mock("@workspaceui/api-client/src/hooks/useColumnFilterData", () => ({
     fetchFilterOptions: jest.fn().mockResolvedValue([]),
   }),
 }));
+
+// Mock useTableData helper functions
 
 // Mock for capturing row props from the table
 const capturedRowProps: {
