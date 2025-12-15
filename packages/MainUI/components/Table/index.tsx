@@ -503,6 +503,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
 
   const savedScrollTop = useRef<number>(0);
   const isRestoringScroll = useRef<boolean>(false);
+  const isManualSelection = useRef<boolean>(false);
 
   // Restore scroll position when table becomes visible
   useEffect(() => {
@@ -2091,10 +2092,19 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       const recordExists = records?.some((record: EntityData) => String(record.id) === currentURLSelection);
 
       if (recordExists) {
+        // Only reset scroll flag if this was NOT a manual selection
+        // This prevents jumping when the user manually clicks a row
+        if (!isManualSelection.current) {
+          hasScrolledToSelection.current = false;
+        } else {
+          // Reset the manual selection flag for next time
+          isManualSelection.current = false;
+        }
       } else {
         logger.warn(`[URLNavigation] URL navigation to invalid record: ${currentURLSelection}`);
+        // Always try to scroll if we navigated to a record that doesn't exist (might load later)
+        hasScrolledToSelection.current = false;
       }
-      hasScrolledToSelection.current = false;
     }
 
     if (currentURLSelection) {
@@ -2164,6 +2174,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
 
           // Set a new timeout for single click action
           const timeout = setTimeout(() => {
+            isManualSelection.current = true;
             if (event.ctrlKey || event.metaKey) {
               row.toggleSelected();
             } else {
@@ -2492,6 +2503,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     enableColumnPinning: true,
     renderEmptyRowsFallback,
     enableTableFooter: false,
+    // @ts-ignore
+    autoResetRowSelection: false,
   });
 
   useTableSelection(tab, displayRecords, table.getState().rowSelection, handleTableSelectionChange);
@@ -2545,18 +2558,24 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
 
       if (selectedIndex >= 0 && tableContainerRef.current) {
         try {
-          if (tableContainerRef.current) {
-            const containerElement = tableContainerRef.current;
+          // Use the virtualizer to scroll to the index - this handles variable row heights and prevents drift
+          // @ts-ignore - rowVirtualizer is available in the table instance but might be missing from types
+          if (table.rowVirtualizer) {
+            // @ts-ignore
+            table.rowVirtualizer.scrollToIndex(selectedIndex, { align: "center", behavior: "smooth" });
+          } else {
+            // Fallback for when virtualizer is not ready (should be rare)
+            if (tableContainerRef.current) {
+              const containerElement = tableContainerRef.current;
+              const estimatedRowHeight = 40; // Approximate row height
+              const headerHeight = 75; // Approximate header height
+              const scrollTop = selectedIndex * estimatedRowHeight - containerElement.clientHeight / 2 + headerHeight;
 
-            const estimatedRowHeight = 40; // Approximate row height
-            const headerHeight = 75; // Approximate header height
-            const scrollTop = selectedIndex * estimatedRowHeight - containerElement.clientHeight / 2 + headerHeight;
-
-            // Scroll to the calculated position synchronously after DOM updates
-            containerElement.scrollTo({
-              top: Math.max(0, scrollTop),
-              behavior: "smooth",
-            });
+              containerElement.scrollTo({
+                top: Math.max(0, scrollTop),
+                behavior: "smooth",
+              });
+            }
           }
         } catch (error) {
           logger.error(`[TableScroll] Error scrolling to selected record: ${error}`);
