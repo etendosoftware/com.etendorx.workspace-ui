@@ -170,7 +170,19 @@ const Menu = ({ anchorEl, onClose, children, className = "", offsetX = 0, offset
 // SELECT COMPONENT
 // ============================================
 
-const Select = ({ options, value, onChange, placeholder = "Seleccionar...", disabled = false, searchable = true, size = "normal" }) => {
+interface SelectProps {
+  options: { id: string; label: string; color?: string }[];
+  value: any;
+  onChange: (value: any) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  searchable?: boolean;
+  size?: "normal" | "small";
+  onSearch?: (term: string) => void;
+  onFocus?: () => void;
+}
+
+const Select = ({ options, value, onChange, placeholder = "Seleccionar...", disabled = false, searchable = true, size = "normal", onSearch = undefined, onFocus = undefined }: SelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -179,7 +191,10 @@ const Select = ({ options, value, onChange, placeholder = "Seleccionar...", disa
   const listRef = useRef(null);
 
   const selectedOption = options.find((opt) => opt.id === value);
-  const filteredOptions = useMemo(() => options.filter((opt) => opt.label.toLowerCase().includes(searchTerm.toLowerCase())), [options, searchTerm]);
+  const filteredOptions = useMemo(() => {
+    if (onSearch) return options;
+    return options.filter((opt) => opt.label.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [options, searchTerm, onSearch]);
 
   const handleSelect = (optionId) => {
     onChange(optionId);
@@ -199,6 +214,7 @@ const Select = ({ options, value, onChange, placeholder = "Seleccionar...", disa
   };
 
   useEffect(() => { if (isOpen && searchInputRef.current && searchable) searchInputRef.current.focus(); }, [isOpen, searchable]);
+  useEffect(() => { if (isOpen && onFocus) onFocus(); }, [isOpen, onFocus]);
 
   const sizeClasses = size === "small" ? "h-8 px-2 text-xs" : "h-10 px-3 text-sm";
 
@@ -226,8 +242,8 @@ const Select = ({ options, value, onChange, placeholder = "Seleccionar...", disa
             : "bg-gray-50 border-gray-300 hover:border-gray-400 hover:bg-gray-100"
         }`}
       >
-        {showAsTag ? (
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colorClasses[selectedOption.color] || colorClasses.gray}`}>
+        {showAsTag && selectedOption?.color ? (
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colorClasses[selectedOption.color as keyof typeof colorClasses] || colorClasses.gray}`}>
             {selectedOption.label}
           </span>
         ) : (
@@ -245,7 +261,10 @@ const Select = ({ options, value, onChange, placeholder = "Seleccionar...", disa
               ref={searchInputRef}
               type="text"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                onSearch?.(e.target.value);
+              }}
               onKeyDown={handleKeyDown}
               placeholder="Buscar..."
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
@@ -261,7 +280,7 @@ const Select = ({ options, value, onChange, placeholder = "Seleccionar...", disa
               className={`px-4 py-2.5 text-sm cursor-pointer flex items-center justify-between ${highlightedIndex === idx ? "bg-gray-50" : ""} ${value === opt.id ? "bg-gray-50 font-medium" : ""} hover:bg-gray-50`}
             >
               {opt.color ? (
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colorClasses[opt.color] || colorClasses.gray}`}>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colorClasses[opt.color as keyof typeof colorClasses] || colorClasses.gray}`}>
                   {opt.label}
                 </span>
               ) : (
@@ -296,13 +315,23 @@ const getOperatorsForType = (type) => {
 // FILTER CONDITION ROW (inside a group)
 // ============================================
 
-const FilterConditionRow = memo(({ condition, columns, isFirst, onUpdate, onDelete, size = "small" }) => {
+interface FilterConditionRowProps {
+  condition: any;
+  columns: any[];
+  isFirst: boolean;
+  onUpdate: (id: string, updates: any) => void;
+  onDelete: (id: string) => void;
+  size?: "small" | "normal";
+  onLoadOptions?: (columnId: string, searchQuery: string) => void;
+}
+
+const FilterConditionRow = memo(({ condition, columns, isFirst, onUpdate, onDelete, size = "small", onLoadOptions }: FilterConditionRowProps) => {
   const selectedColumn = columns.find((c) => c.id === condition.column);
   const operators = selectedColumn ? getOperatorsForType(selectedColumn.type) : [];
   const columnOptions = columns.map((c) => ({ id: c.id, label: c.label }));
   const logicalOptions = [{ id: "AND", label: "Y" }, { id: "OR", label: "O" }];
   const valueOptions = selectedColumn?.options || [];
-  const showValueSelect = selectedColumn?.type === "select" && valueOptions.length > 0;
+  const showValueSelect = selectedColumn?.type === "select";
   const hideValueInput = ["is_empty", "is_not_empty", "is_true", "is_false", "today", "this_week", "this_month"].includes(condition.operator);
 
   const inputSizeClasses = size === "small" ? "h-8 px-2 text-xs" : "h-10 px-3 text-sm";
@@ -359,6 +388,8 @@ const FilterConditionRow = memo(({ condition, columns, isFirst, onUpdate, onDele
             placeholder="Valor"
             disabled={!condition.operator}
             size={size}
+            onSearch={onLoadOptions ? (val) => onLoadOptions(condition.column, val) : undefined}
+            onFocus={onLoadOptions ? () => onLoadOptions(condition.column, "") : undefined}
           />
         ) : (
           <input
@@ -393,14 +424,35 @@ const FilterConditionRow = memo(({ condition, columns, isFirst, onUpdate, onDele
 // SIMPLE FILTER ROW (top level condition)
 // ============================================
 
-const FilterRow = memo(({ condition, columns, isFirst, onUpdate, onDelete }) => {
+interface FilterRowProps {
+  condition: any;
+  columns: any[];
+  isFirst: boolean;
+  onUpdate: (id: string, updates: any) => void;
+  onDelete: (id: string) => void;
+  onLoadOptions?: (columnId: string, searchQuery: string) => void;
+}
+
+const FilterRow = memo(({ condition, columns, isFirst, onUpdate, onDelete, onLoadOptions }: FilterRowProps) => {
   const selectedColumn = columns.find((c) => c.id === condition.column);
   const operators = selectedColumn ? getOperatorsForType(selectedColumn.type) : [];
   const columnOptions = columns.map((c) => ({ id: c.id, label: c.label }));
   const logicalOptions = [{ id: "AND", label: "Y" }, { id: "OR", label: "O" }];
   const valueOptions = selectedColumn?.options || [];
-  const showValueSelect = selectedColumn?.type === "select" && valueOptions.length > 0;
+  const showValueSelect = selectedColumn?.type === "select";
   const hideValueInput = ["is_empty", "is_not_empty", "is_true", "is_false", "today", "this_week", "this_month"].includes(condition.operator);
+
+  const handleSearch = useCallback((val: string) => {
+    if (onLoadOptions && condition.column) {
+      onLoadOptions(condition.column, val);
+    }
+  }, [onLoadOptions, condition.column]);
+
+  const handleFocus = useCallback(() => {
+    if (onLoadOptions && condition.column) {
+      onLoadOptions(condition.column, "");
+    }
+  }, [onLoadOptions, condition.column]);
 
   return (
     <div className="flex items-center gap-3 py-2">
@@ -450,6 +502,8 @@ const FilterRow = memo(({ condition, columns, isFirst, onUpdate, onDelete }) => 
             onChange={(v) => onUpdate(condition.id, { value: v })}
             placeholder="Valor"
             disabled={!condition.operator}
+            onSearch={onLoadOptions ? handleSearch : undefined}
+            onFocus={onLoadOptions ? handleFocus : undefined}
           />
         ) : (
           <input
@@ -484,7 +538,19 @@ const FilterRow = memo(({ condition, columns, isFirst, onUpdate, onDelete }) => 
 // FILTER GROUP (as a row with nested conditions)
 // ============================================
 
-const FilterGroup = ({ group, isFirst, columns, onUpdate, onDelete, onUpdateCondition, onDeleteCondition, onAddCondition }) => {
+interface FilterGroupProps {
+  group: any;
+  isFirst: boolean;
+  columns: any[];
+  onUpdate: (id: string, updates: any) => void;
+  onDelete: (id: string) => void;
+  onUpdateCondition: (groupId: string, conditionId: string, updates: any) => void;
+  onDeleteCondition: (groupId: string, conditionId: string) => void;
+  onAddCondition: (groupId: string) => void;
+  onLoadOptions?: (columnId: string, searchQuery: string) => void;
+}
+
+const FilterGroup = ({ group, isFirst, columns, onUpdate, onDelete, onUpdateCondition, onDeleteCondition, onAddCondition, onLoadOptions }: FilterGroupProps) => {
   const logicalOptions = [{ id: "AND", label: "Y" }, { id: "OR", label: "O" }];
 
   return (
@@ -530,6 +596,7 @@ const FilterGroup = ({ group, isFirst, columns, onUpdate, onDelete, onUpdateCond
             onUpdate={(condId, updates) => onUpdateCondition(group.id, condId, updates)}
             onDelete={(condId) => onDeleteCondition(group.id, condId)}
             size="small"
+            onLoadOptions={onLoadOptions}
           />
         ))}
 
@@ -560,7 +627,18 @@ const FilterGroup = ({ group, isFirst, columns, onUpdate, onDelete, onUpdateCond
 // TABLE FILTER MAIN COMPONENT
 // ============================================
 
-const TableFilter = ({ columns, onApplyFilters, onSaveFilter, onClear, savedFilters = [], onLoadSavedFilter, onAIFilter }) => {
+interface TableFilterProps {
+  columns: any[];
+  onApplyFilters: (filters: any[]) => void;
+  onSaveFilter?: (name: string, filters: any[]) => void;
+  onClear?: () => void;
+  savedFilters?: any[];
+  onLoadSavedFilter?: (filter: any) => void;
+  onAIFilter?: () => void;
+  onLoadOptions?: (columnId: string, searchQuery: string) => void;
+}
+
+const TableFilter = ({ columns, onApplyFilters, onSaveFilter, onClear, savedFilters = [], onLoadSavedFilter, onAIFilter, onLoadOptions }: TableFilterProps) => {
   const [activeTab, setActiveTab] = useState("advanced");
   
   const genId = () => Math.random().toString(36).substr(2, 9);
@@ -775,6 +853,7 @@ const TableFilter = ({ columns, onApplyFilters, onSaveFilter, onClear, savedFilt
                     isFirst={index === 0}
                     onUpdate={handleUpdateCondition}
                     onDelete={handleDeleteCondition}
+                    onLoadOptions={onLoadOptions}
                   />
                 );
               } else {
@@ -789,6 +868,7 @@ const TableFilter = ({ columns, onApplyFilters, onSaveFilter, onClear, savedFilt
                     onUpdateCondition={handleUpdateGroupCondition}
                     onDeleteCondition={handleDeleteGroupCondition}
                     onAddCondition={handleAddGroupCondition}
+                    onLoadOptions={onLoadOptions}
                   />
                 );
               }

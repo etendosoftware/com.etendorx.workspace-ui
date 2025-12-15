@@ -34,6 +34,7 @@ export interface TableState {
   sorting: MRT_SortingState;
   order: string[];
   isImplicitFilterApplied: boolean | undefined;
+  advancedCriteria?: any;
 }
 
 export interface NavigationState {

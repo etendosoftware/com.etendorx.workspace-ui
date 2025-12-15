@@ -31,7 +31,14 @@ import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { getNewTabFormState, isFormView } from "@/utils/window/utils";
 import { useWindowContext } from "@/contexts/window";
-import TableFilter from "@workspaceui/componentlibrary/src/components/AdvancedFiltersModal";
+import { TableFilter } from "@workspaceui/componentlibrary/src/components/AdvancedFiltersModal";
+import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
+import {
+  loadSelectFilterOptions,
+  loadTableDirFilterOptions,
+} from "@/utils/columnFilterHelpers";
+import { parseColumns } from "@/utils/tableColumns";
+import { ColumnFilterUtils, type FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import Modal from "@/components/Modal";
 
 /**
@@ -103,9 +110,13 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     setTabFormState,
     clearChildrenSelections,
     getTableState,
+    setTableImplicitFilterApplied,
+    setTableAdvancedCriteria,
   } = useWindowContext();
   const { registerActions, onRefresh } = useToolbarContext();
   const { graph } = useSelected();
+  const { fetchFilterOptions } = useColumnFilterData();
+  const [columnOptions, setColumnOptions] = useState<Record<string, FilterOption[]>>({});
   const { registerRefresh, unregisterRefresh } = useTabRefreshContext();
   const [toggle, setToggle] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -249,28 +260,154 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   const handleApplyFilters = useCallback((filters: any[]) => {
     console.log("Applied filters:", filters);
+    
+    // Helper to map operators
+    const mapOperator = (op: string) => {
+      switch (op) {
+        case "equals": return "equals";
+        case "not_equals": return "notEqual";
+        case "contains": return "iContains";
+        case "not_contains": return "notContains";
+        case "starts_with": return "startsWith";
+        case "ends_with": return "endsWith";
+        case "is_empty": return "isNull";
+        case "is_not_empty": return "notNull";
+        case "greater_than": return "greaterThan";
+        case "less_than": return "lessThan";
+        case "greater_or_equal": return "greaterOrEqual";
+        case "less_or_equal": return "lessOrEqual";
+        case "is_true": return "equals";
+        case "is_false": return "equals";
+        case "before": return "lessThan";
+        case "after": return "greaterThan";
+        default: return "iContains";
+      }
+    };
+
+    // Helper to convert value
+    const convertValue = (val: any, op: string) => {
+      if (op === "is_true") return true;
+      if (op === "is_false") return false;
+      return val;
+    };
+
+    // Recursive function to convert filter items to criteria
+    const convertItem = (item: any): any => {
+      if (item.type === "condition") {
+        return {
+          fieldName: item.column,
+          operator: mapOperator(item.operator),
+          value: convertValue(item.value, item.operator),
+        };
+      } else if (item.type === "group") {
+        return {
+          operator: item.logicalOperator.toLowerCase(),
+          criteria: item.conditions.map((c: any) => ({
+             fieldName: c.column,
+             operator: mapOperator(c.operator),
+             value: convertValue(c.value, c.operator),
+          })),
+        };
+      }
+      return null;
+    };
+
+    const criteria = filters.map(convertItem).filter(Boolean);
+    
+    // Update table state with new criteria
+    // We assume implicit AND for top-level items
+    const advancedCriteria = {
+      _constructor: "AdvancedCriteria",
+      operator: "and",
+      criteria,
+    };
+
+    if (windowIdentifier) {
+      setTableAdvancedCriteria(windowIdentifier, tab.id, advancedCriteria);
+    }
+    console.log("Converted Criteria:", advancedCriteria);
+
     setShowAdvancedFilters(false);
+  }, [windowIdentifier, tab.id, setTableAdvancedCriteria]);
+
+  const handleSetFilterOptions = useCallback((columnId: string, options: FilterOption[], hasMore: boolean, append: boolean) => {
+    setColumnOptions((prev) => ({
+      ...prev,
+      [columnId]: append ? [...(prev[columnId] || []), ...options] : options,
+    }));
   }, []);
 
-  const filterColumns = useMemo<any[]>(() => {
+  const parsedColumns = useMemo(() => {
     if (!tab.fields) return [];
-    
-    return Object.entries(tab.fields)
-      .filter(([key]) => !["_editLink", "mrt-row-select", "actions"].includes(key))
-      .map(([key, field]: [string, any]) => {
-        let type: any["type"] = "string";
-        if (field.type === "number" || field.type === "quantity") type = "number";
-        else if (field.type === "date" || field.type === "datetime") type = "date";
-        else if (field.type === "boolean") type = "boolean";
-        else if (field.reference) type = "select"; // Simplified assumption
+    // We need to cast to any because Tab.fields is Record<string, unknown> but parseColumns expects Field[]
+    return parseColumns(Object.values(tab.fields) as any[]);
+  }, [tab.fields]);
+
+  const handleLoadOptions = useCallback(
+    async (columnId: string, searchQuery: string) => {
+      const column = parsedColumns.find((col) => col.id === columnId || col.columnName === columnId);
+      if (!column) return;
+
+
+
+      if (ColumnFilterUtils.isTableDirColumn(column)) {
+        await loadTableDirFilterOptions({
+          column,
+          columnId,
+          searchQuery,
+          tabId: tab.id,
+          entityName: tab.entityName,
+          fetchFilterOptions,
+          setFilterOptions: handleSetFilterOptions,
+        });
+      } else if (ColumnFilterUtils.supportsDropdownFilter(column)) {
+        loadSelectFilterOptions(column, columnId, searchQuery, handleSetFilterOptions);
+      }
+    },
+    [parsedColumns, tab.id, tab.entityName, fetchFilterOptions, handleSetFilterOptions]
+  );
+
+  const filterColumns = useMemo<any[]>(() => {
+    if (!parsedColumns.length || !windowIdentifier) return [];
+
+    const tableState = getTableState(windowIdentifier, tab.id) || {};
+    const { visibility: tableColumnVisibility = {} } = tableState;
+
+    return parsedColumns
+      .filter((col) => {
+        if (["_editLink", "mrt-row-select", "actions"].includes(col.id)) return false;
+
+        // Determine visibility
+        // 1. Default from metadata
+        let isVisible = col.showInGridView !== false;
+
+        // 2. User override from table state (uses header/label as key)
+        if (col.header && tableColumnVisibility[col.header] !== undefined) {
+          isVisible = tableColumnVisibility[col.header];
+        }
+
+        return isVisible;
+      })
+      .map((col) => {
+        let type: "string" | "number" | "date" | "boolean" | "select" = "string";
+
+        if (ColumnFilterUtils.supportsDropdownFilter(col)) {
+          type = "select";
+        } else {
+          const fieldType = String(col.type);
+          if (["number", "quantity", "integer", "amount"].includes(fieldType)) type = "number";
+          else if (["date", "datetime"].includes(fieldType)) type = "date";
+          else if (["boolean", "yesno"].includes(fieldType)) type = "boolean";
+        }
 
         return {
-          id: key,
-          label: field.label || key,
+          id: col.id,
+          label: col.header || col.id,
           type,
+          options: columnOptions[col.id] || [],
         };
       });
-  }, [tab.fields]);
+  }, [parsedColumns, windowIdentifier, getTableState, tab.id, columnOptions]);
 
   /**
    * Builds field metadata array matching SmartClient format
@@ -828,6 +965,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
             <TableFilter
               columns={filterColumns}
               onApplyFilters={handleApplyFilters}
+              onSaveFilter={() => {}}
+              onClear={() => {}}
+              onLoadSavedFilter={() => {}}
+              onAIFilter={() => {}}
+              onLoadOptions={handleLoadOptions}
             />
           </div>
         </div>

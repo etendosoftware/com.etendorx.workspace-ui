@@ -94,7 +94,7 @@ const ListSelector = ({ parameter }: { parameter: ProcessParameter }) => {
         className={`absolute z-10 mt-1 w-full bg-white border border-baseline-20 rounded shadow-lg max-h-60 overflow-y-auto origin-top transition-all duration-200 ${open ? "opacity-100 scale-y-100 pointer-events-auto" : "opacity-0 scale-y-0 pointer-events-none"}`}
         style={{ transformOrigin: "top" }}>
         {parameter.refList.map((option) => (
-          <SelectOption option={option} onClick={handleSelect} key={option.id} data-testid="SelectOption__695fe2" />
+          Option option={option} onClick={handleSelect} key={option.id} data-testid="SelectOption__695fe2" />
         ))}
       </div>
     </div>
