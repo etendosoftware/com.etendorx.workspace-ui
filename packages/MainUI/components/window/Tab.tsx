@@ -24,13 +24,15 @@ import { FormView } from "@/components/Form/FormView";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { AttachmentProvider } from "@/contexts/AttachmentContext";
 import type { TabLevelProps } from "@/components/window/types";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { getNewTabFormState, isFormView } from "@/utils/window/utils";
 import { useWindowContext } from "@/contexts/window";
+import TableFilter from "@workspaceui/componentlibrary/src/components/AdvancedFiltersModal";
+import Modal from "@/components/Modal";
 
 /**
  * Validates if a child tab can open FormView based on parent selection in context
@@ -106,6 +108,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const { graph } = useSelected();
   const { registerRefresh, unregisterRefresh } = useTabRefreshContext();
   const [toggle, setToggle] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const lastParentSelectionRef = useRef<Map<string, string | undefined>>(new Map());
 
   const windowIdentifier = activeWindow?.windowIdentifier;
@@ -239,6 +242,35 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       setToggle((prev) => !prev);
     }
   }, [windowIdentifier]);
+
+  const handleAdvancedFilters = useCallback(() => {
+    setShowAdvancedFilters(true);
+  }, []);
+
+  const handleApplyFilters = useCallback((filters: any[]) => {
+    console.log("Applied filters:", filters);
+    setShowAdvancedFilters(false);
+  }, []);
+
+  const filterColumns = useMemo<any[]>(() => {
+    if (!tab.fields) return [];
+    
+    return Object.entries(tab.fields)
+      .filter(([key]) => !["_editLink", "mrt-row-select", "actions"].includes(key))
+      .map(([key, field]: [string, any]) => {
+        let type: any["type"] = "string";
+        if (field.type === "number" || field.type === "quantity") type = "number";
+        else if (field.type === "date" || field.type === "datetime") type = "date";
+        else if (field.type === "boolean") type = "boolean";
+        else if (field.reference) type = "select"; // Simplified assumption
+
+        return {
+          id: key,
+          label: field.label || key,
+          type,
+        };
+      });
+  }, [tab.fields]);
 
   /**
    * Builds field metadata array matching SmartClient format
@@ -687,10 +719,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       back: handleBack,
       treeView: handleTreeView,
       exportCSV: handleExportCSV,
+      advancedFilters: handleAdvancedFilters,
     };
 
     registerActions(actions);
-  }, [registerActions, handleNew, handleBack, handleTreeView, handleExportCSV, tab.id]);
+  }, [registerActions, handleNew, handleBack, handleTreeView, handleExportCSV, handleAdvancedFilters, tab.id]);
 
   /**
    * Clear selection when creating a new record
@@ -789,6 +822,16 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
           />
         </AttachmentProvider>
       </div>
+      <Modal open={showAdvancedFilters} onClose={() => setShowAdvancedFilters(false)}>
+        <div className="flex items-center justify-center min-h-screen p-4">
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <TableFilter
+              columns={filterColumns}
+              onApplyFilters={handleApplyFilters}
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

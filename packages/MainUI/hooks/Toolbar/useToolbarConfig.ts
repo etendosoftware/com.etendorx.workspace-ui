@@ -72,6 +72,7 @@ export const useToolbarConfig = ({
     onToggleTreeView,
     attachmentAction,
     onExportCSV,
+    onAdvancedFilters,
   } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
@@ -389,6 +390,9 @@ export const useToolbarConfig = ({
       COPY_RECORD: () => {
         handleCopyRecord();
       },
+      ADVANCED_FILTERS: () => {
+        onAdvancedFilters?.();
+      },
     }),
     [
       onBack,
@@ -413,6 +417,7 @@ export const useToolbarConfig = ({
       onExportCSV,
       onShareLink,
       handleCopyRecord,
+      onAdvancedFilters,
     ]
   );
 

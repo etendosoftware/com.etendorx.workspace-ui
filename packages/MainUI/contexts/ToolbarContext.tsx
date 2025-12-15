@@ -83,6 +83,10 @@ type ToolbarActions = {
    *                   used for positioning dropdown/popover filters
    */
   columnFilters: (buttonRef?: HTMLElement | null) => void;
+  /**
+   * Open the Advanced Filters modal.
+   */
+  advancedFilters: () => void;
 };
 
 type ToolbarContextType = {
@@ -93,6 +97,7 @@ type ToolbarContextType = {
   onFilter: () => void;
   onExportCSV: () => Promise<void>;
   onToggleTreeView: () => void;
+  onAdvancedFilters: () => void;
   onColumnFilters: (buttonRef?: HTMLElement | null) => void;
   registerActions: (actions: Partial<ToolbarActions>) => void;
   saveButtonState: SaveButtonState;
@@ -116,6 +121,7 @@ const initialState: ToolbarActions = {
   columnFilters: () => {},
   treeView: () => {},
   exportCSV: async () => {},
+  advancedFilters: () => {},
 };
 
 const ToolbarContext = createContext<ToolbarContextType>({
@@ -126,6 +132,7 @@ const ToolbarContext = createContext<ToolbarContextType>({
   onFilter: () => {},
   onExportCSV: async () => {},
   onToggleTreeView: () => {},
+  onAdvancedFilters: () => {},
   onColumnFilters: () => {},
   registerActions: () => {},
   saveButtonState: {
@@ -173,6 +180,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       filter: onFilter,
       exportCSV: onExportCSV,
       columnFilters: onColumnFilters,
+      advancedFilters: onAdvancedFilters,
     },
     setActions,
   ] = useState<ToolbarActions>(initialState);
@@ -236,6 +244,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       onExportCSV,
       onColumnFilters,
       onToggleTreeView,
+      onAdvancedFilters,
       registerActions,
       saveButtonState,
       setSaveButtonState,
@@ -257,6 +266,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       onExportCSV,
       onColumnFilters,
       onToggleTreeView,
+      onAdvancedFilters,
       registerActions,
       saveButtonState,
       formViewRefetch,

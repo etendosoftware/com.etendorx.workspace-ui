@@ -53,6 +53,7 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV]: "toolbar-button-export-csv",
   [TOOLBAR_BUTTONS_ACTIONS.SHARE_LINK]: "toolbar-button-share-link",
   [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: "toolbar-button-copy-record",
+  [TOOLBAR_BUTTONS_ACTIONS.ADVANCED_FILTERS]: "toolbar-button-advanced-filters",
 } as const;
 
 export const DefaultIcon = () => (
