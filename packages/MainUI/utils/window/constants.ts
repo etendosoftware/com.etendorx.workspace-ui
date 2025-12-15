@@ -47,6 +47,7 @@ export interface TabState {
   form: TabFormState;
   level: number;
   selectedRecord?: string;
+  initializedWithDirectLink?: boolean;
 }
 
 export interface WindowState {
