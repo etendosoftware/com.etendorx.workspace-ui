@@ -2540,7 +2540,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
   useLayoutEffect(() => {
     const windowId = activeWindow?.windowId;
     const windowIdentifier = activeWindow?.windowIdentifier;
-    
+
     if (!windowId || windowId !== tab.window || !displayRecords || !windowIdentifier) {
       return;
     }
@@ -2552,7 +2552,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
 
     const scrollToIndex = (index: number) => {
       if (!tableContainerRef.current) return;
-      
+
       try {
         // Use the virtualizer to scroll to the index - this handles variable row heights and prevents drift
         // @ts-ignore - rowVirtualizer is available in the table instance but might be missing from types

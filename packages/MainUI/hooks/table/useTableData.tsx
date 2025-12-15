@@ -678,7 +678,7 @@ export const useTableData = ({
   useEffect(() => {
     if (!hasInitializedDirectLink.current) {
       const windowIdentifier = activeWindow?.windowIdentifier;
-      
+
       const initializeDirectLink = () => {
         if (isImplicitFilterApplied !== false) {
           setIsImplicitFilterApplied(false);
