@@ -2299,15 +2299,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     [sx.tablePaper, tableAriaAttributes]
   );
 
-  const muiTableHeadCellProps = useMemo(
-    () => ({
-      sx: {
-        ...sx.tableHeadCell,
-      },
-    }),
-    [sx.tableHeadCell]
-  );
-
   const muiTableHeadCellPropsWithContextMenu = useCallback(
     ({ column, table }: { column: MRT_Column<EntityData>; table: MRT_TableInstance<EntityData> }) => ({
       sx: {
