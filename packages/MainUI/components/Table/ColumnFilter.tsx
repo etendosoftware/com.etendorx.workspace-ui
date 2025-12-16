@@ -1,5 +1,5 @@
 import type React from "react";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import {
   ColumnFilterUtils,
@@ -78,15 +78,17 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
     { id: "false", label: t("common.falseText"), value: "false" },
   ];
 
-  const availableOptions = isBooleanColumn
-    ? booleanOptions
-    : (filterState?.availableOptions || [])
-        .filter((option) => !option.isTextSearch)
-        .map((option) => ({
-          id: option.id,
-          label: option.label,
-          value: option.value ?? option.id,
-        }));
+  const availableOptions = useMemo(() => {
+    return isBooleanColumn
+      ? booleanOptions
+      : (filterState?.availableOptions || [])
+          .filter((option) => !option.isTextSearch)
+          .map((option) => ({
+            id: option.id,
+            label: option.label,
+            value: option.value ?? option.id,
+          }));
+  }, [isBooleanColumn, filterState?.availableOptions]);
 
   // Treat boolean columns the same as LIST columns: use filterState?.selectedOptions directly
   const selectedValues = (filterState?.selectedOptions || [])
