@@ -259,8 +259,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, []);
 
   const handleApplyFilters = useCallback((filters: any[]) => {
-    console.log("Applied filters:", filters);
-    
     // Helper to map operators
     const mapOperator = (op: string) => {
       switch (op) {
@@ -295,14 +293,17 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     const convertItem = (item: any): any => {
       if (item.type === "condition") {
         return {
+          _constructor: "AdvancedCriteria",
           fieldName: item.column,
           operator: mapOperator(item.operator),
           value: convertValue(item.value, item.operator),
         };
       } else if (item.type === "group") {
         return {
+          _constructor: "AdvancedCriteria",
           operator: item.logicalOperator.toLowerCase(),
           criteria: item.conditions.map((c: any) => ({
+             _constructor: "AdvancedCriteria",
              fieldName: c.column,
              operator: mapOperator(c.operator),
              value: convertValue(c.value, c.operator),
@@ -325,7 +326,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     if (windowIdentifier) {
       setTableAdvancedCriteria(windowIdentifier, tab.id, advancedCriteria);
     }
-    console.log("Converted Criteria:", advancedCriteria);
 
     setShowAdvancedFilters(false);
   }, [windowIdentifier, tab.id, setTableAdvancedCriteria]);
@@ -400,11 +400,12 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
           else if (["boolean", "yesno"].includes(fieldType)) type = "boolean";
         }
 
+        const id = col.columnName || col.id;
         return {
-          id: col.id,
+          id,
           label: col.header || col.id,
           type,
-          options: columnOptions[col.id] || [],
+          options: columnOptions[id] || [],
         };
       });
   }, [parsedColumns, windowIdentifier, getTableState, tab.id, columnOptions]);

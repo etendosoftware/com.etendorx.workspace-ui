@@ -427,11 +427,15 @@ export const useTableData = ({
 
     // Apply advanced criteria
     if (advancedCriteria) {
-      if (options.criteria) {
+            if (options.criteria) {
+        // @ts-ignore - advancedCriteria is compatible with Criteria
         options.criteria.push(advancedCriteria);
       } else {
+        // @ts-ignore - advancedCriteria is compatible with Criteria
         options.criteria = [advancedCriteria];
       }
+    } else {
+      console.log("useTableData: No advancedCriteria found");
     }
 
     // Apply sorting
