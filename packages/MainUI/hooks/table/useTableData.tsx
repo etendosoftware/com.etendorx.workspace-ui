@@ -344,7 +344,7 @@ export const useTableData = ({
 
     // 3. Field Level: Identifier
     const identifierFields = fields.filter((field) => {
-      const col = field.column as any;
+      const col = field.column;
       if (!col) return false;
       // Check both boolean true and string "true" values
       return (
