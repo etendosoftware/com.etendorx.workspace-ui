@@ -19,33 +19,36 @@
 
 import useDisplayLogic from "@/hooks/useDisplayLogic";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import type { ProcessButton, ProcessActionButton, ProcessDefinitionButton } from "../../ProcessModal/types";
 import { isProcessActionButton } from "../../ProcessModal/types";
 import type { ProcessMenuProps } from "../types";
-import type { EntityData, RefListField } from "@workspaceui/api-client/src/api/types";
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
 
-const getManualProcessButtonName = (button: ProcessActionButton, selectedRecord: EntityData | undefined) => {
-  if (!selectedRecord) {
+/**
+ * Resolves the display name for a process action button based on the selected record's state.
+ *
+ * Some buttons have dynamic names defined in `buttonRefList` that map to specific
+ * record property values (e.g., "Complete" vs "Reactivate" based on document status).
+ *
+ * @param button - The process action button with optional refList configuration
+ * @param selectedRecord - The currently selected record to derive the name from
+ * @returns The resolved button label, or the default button name if no match is found
+ */
+const getManualProcessButtonName = (button: ProcessActionButton, selectedRecord: EntityData | undefined): string => {
+  const refListOptions = button.buttonRefList;
+
+  // Early return if no record or no dynamic name options configured
+  if (!selectedRecord || !refListOptions) {
     return button.name;
   }
 
-  const buttonNames = button.buttonRefList;
+  const recordValue = selectedRecord[button.hqlName];
+  // NOTE: legacy condition to handle "--" value
+  const formattedRecordValue = recordValue === "--" ? "CL" : recordValue;
+  const matchingOption = refListOptions.find((option) => option.value === formattedRecordValue);
 
-  if (!buttonNames) {
-    return button.name;
-  }
-
-  const buttonProperty = button.hqlName;
-  const recordPropertyValue = selectedRecord[buttonProperty];
-
-  const buttonName = buttonNames.find((buttonName: RefListField) => buttonName.value === recordPropertyValue);
-
-  if (!buttonName) {
-    return button.name;
-  }
-
-  return buttonName.label;
+  return matchingOption?.label ?? button.name;
 };
 
 interface ProcessMenuItemProps {
@@ -63,7 +66,8 @@ interface ProcessDefinitionMenuItemProps {
 
 const ProcessMenuItem = ({ button, onProcessClick, disabled, selectedRecord }: ProcessMenuItemProps) => {
   const isDisplayed = useDisplayLogic({ field: button });
-  const buttonName = getManualProcessButtonName(button, selectedRecord);
+
+  const buttonName = useMemo(() => getManualProcessButtonName(button, selectedRecord), [button, selectedRecord]);
 
   const handleClick = useCallback(() => {
     onProcessClick(button);
