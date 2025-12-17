@@ -105,7 +105,7 @@ export const AddAttachmentModal = ({
         id="modal-attachment-file-input"
         data-testid="Input__modal_attachments_file"
       />
-      <div className="space-y-4 max-h-[30rem]">
+      <div className="space-y-4">
         {/* Record Identifier Section */}
         {recordIdentifier && (
           <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
@@ -123,13 +123,13 @@ export const AddAttachmentModal = ({
           <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
             {/* Preview Section */}
             {previewUrl && (
-              <div className="mb-3 flex justify-center bg-white rounded border border-gray-100 overflow-hidden max-h-[200px]">
+              <div className="mb-3 flex justify-center bg-white rounded border border-gray-100 overflow-hidden h-[150px]">
                 {selectedFile?.type.startsWith("image/") && (
-                  <img src={previewUrl} alt="Preview" className="max-h-[200px] max-w-full object-contain" />
+                  <img src={previewUrl} alt="Preview" className="max-h-full max-w-full object-contain" />
                 )}
 
                 {selectedFile?.type === "application/pdf" && (
-                  <div className="w-full flex items-center justify-center h-[100px] bg-gray-100 text-gray-400">
+                  <div className="w-full flex items-center justify-center h-full bg-gray-100 text-gray-400">
                     <Typography variant="caption" data-testid="Typography__746543">
                       PDF Preview
                     </Typography>

@@ -30,17 +30,17 @@ describe("useAboutModal", () => {
     const { result } = renderHook(() => useAboutModal());
 
     expect(result.current).toEqual({
-      aboutUrl: "http://localhost:8080/etendo/ad_forms/about.html?IsPopUpCall=1&token=abc123",
+      aboutUrl: "/api/erp/ad_forms/about.html?IsPopUpCall=1&token=abc123",
     });
   });
 
-  it("should return empty string when etendoClassicHost is not available", () => {
+  it("should return proxy URL even when etendoClassicHost is not available", () => {
     mockedUseUserContext.mockReturnValue({ token: "abc123" });
     mockedUseRuntimeConfig.mockReturnValue({ config: {} });
 
     const { result } = renderHook(() => useAboutModal());
 
-    expect(result.current.aboutUrl).toBe("");
+    expect(result.current.aboutUrl).toBe("/api/erp/ad_forms/about.html?IsPopUpCall=1&token=abc123");
   });
 
   it("should handle undefined token correctly", () => {
@@ -51,8 +51,6 @@ describe("useAboutModal", () => {
 
     const { result } = renderHook(() => useAboutModal());
 
-    expect(result.current.aboutUrl).toBe(
-      "http://localhost:8080/etendo/ad_forms/about.html?IsPopUpCall=1&token=undefined"
-    );
+    expect(result.current.aboutUrl).toBe("/api/erp/ad_forms/about.html?IsPopUpCall=1&token=undefined");
   });
 });

@@ -526,7 +526,7 @@ const AttachmentSection = ({
           tittleHeader={previewAttachment.name}
           descriptionText={t("forms.attachments.previewModalDescription")}
           data-testid="Modal__attachments_preview">
-          <div className="flex flex-col gap-4 max-h-[30rem]" onClick={(e) => e.stopPropagation()}>
+          <div className="flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-4 text-sm text-gray-500 bg-gray-50 rounded-lg p-3 border border-gray-200">
               <div className="flex items-center gap-2">
                 <span className="font-medium text-gray-700">{t("forms.attachments.createdBy")}:</span>
@@ -538,7 +538,7 @@ const AttachmentSection = ({
 
             <div className="space-y-3 ">
               {/* Preview Content */}
-              <div className="flex justify-center bg-gray-100 rounded-lg overflow-hidden min-h-[200px] items-center border border-gray-200">
+              <div className="flex justify-center bg-gray-100 rounded-lg overflow-hidden h-[350px] items-center border border-gray-200">
                 {isPreviewLoading && (
                   <Typography className="text-gray-500" data-testid="Typography__ce37c8">
                     {t("common.loading")}
@@ -546,11 +546,7 @@ const AttachmentSection = ({
                 )}
 
                 {!isPreviewLoading && previewUrl && isImagePreview && (
-                  <img
-                    src={previewUrl}
-                    alt={previewAttachment.name}
-                    className="max-h-[400px] max-w-full object-contain"
-                  />
+                  <img src={previewUrl} alt={previewAttachment.name} className="max-h-full max-w-full object-contain" />
                 )}
 
                 {!isPreviewLoading && previewUrl && !isImagePreview && (

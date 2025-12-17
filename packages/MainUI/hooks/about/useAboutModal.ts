@@ -9,8 +9,8 @@ export function useAboutModal() {
 
   const publicHost = config?.etendoClassicHost || "";
 
-  // Point directly to classic URL to avoid unnecessary routing through Next.js
-  const aboutUrl = publicHost ? `${publicHost}${ABOUT_URL_ENDPOINT}&token=${token}` : "";
+  // Point to Next.js API proxy to handle authentication/session validation
+  const aboutUrl = `/api/erp${ABOUT_URL_ENDPOINT}&token=${token}`;
 
   return {
     aboutUrl,

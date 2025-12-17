@@ -24,6 +24,7 @@ import FolderIcon from "@workspaceui/componentlibrary/src/assets/icons/folder.sv
 import Info from "@workspaceui/componentlibrary/src/assets/icons/info.svg";
 import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
+import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
 import { FormMode, type EntityData, type EntityValue } from "@workspaceui/api-client/src/api/types";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import useFormFields from "@/hooks/useFormFields";
@@ -54,6 +55,7 @@ const iconMap: Record<string, React.ReactElement> = {
   Dimensions: <FolderIcon data-testid="FolderIcon__1a0853" />,
   "Linked Items": <LinkIcon data-testid="LinkIcon__1a0853" />,
   Notes: <NoteIcon data-testid="NoteIcon__1a0853" />,
+  Attachments: <AttachmentIcon data-testid="AttachmentIcon__1a0853" />,
 };
 
 /**
