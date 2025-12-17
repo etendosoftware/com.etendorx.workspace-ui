@@ -20,18 +20,50 @@
 import useDisplayLogic from "@/hooks/useDisplayLogic";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import { useCallback } from "react";
-import type { ProcessButton } from "../../ProcessModal/types";
+import type { ProcessButton, ProcessActionButton, ProcessDefinitionButton } from "../../ProcessModal/types";
 import { isProcessActionButton } from "../../ProcessModal/types";
 import type { ProcessMenuProps } from "../types";
+import type { EntityData, RefListField } from "@workspaceui/api-client/src/api/types";
+
+const getManualProcessButtonName = (button: ProcessActionButton, selectedRecord: EntityData | undefined) => {
+  if (!selectedRecord) {
+    return button.name;
+  }
+
+  const buttonNames = button.buttonRefList;
+
+  if (!buttonNames) {
+    return button.name;
+  }
+
+  const buttonProperty = button.hqlName;
+  const recordPropertyValue = selectedRecord[buttonProperty];
+
+  const buttonName = buttonNames.find((buttonName: RefListField) => buttonName.value === recordPropertyValue);
+
+  if (!buttonName) {
+    return button.name;
+  }
+
+  return buttonName.label;
+};
 
 interface ProcessMenuItemProps {
-  button: ProcessButton;
+  button: ProcessActionButton;
+  onProcessClick: (button: ProcessButton) => void;
+  disabled: boolean;
+  selectedRecord: EntityData | undefined;
+}
+
+interface ProcessDefinitionMenuItemProps {
+  button: ProcessDefinitionButton;
   onProcessClick: (button: ProcessButton) => void;
   disabled: boolean;
 }
 
-const ProcessMenuItem = ({ button, onProcessClick, disabled }: ProcessMenuItemProps) => {
+const ProcessMenuItem = ({ button, onProcessClick, disabled, selectedRecord }: ProcessMenuItemProps) => {
   const isDisplayed = useDisplayLogic({ field: button });
+  const buttonName = getManualProcessButtonName(button, selectedRecord);
 
   const handleClick = useCallback(() => {
     onProcessClick(button);
@@ -51,14 +83,14 @@ const ProcessMenuItem = ({ button, onProcessClick, disabled }: ProcessMenuItemPr
           handleClick();
         }
       }}>
-      {button.name}
+      {buttonName}
     </div>
   );
 };
 
 ProcessMenuItem.displayName = "ProcessMenuItem";
 
-const ProcessDefinitionMenuItem = ({ button, onProcessClick, disabled }: ProcessMenuItemProps) => {
+const ProcessDefinitionMenuItem = ({ button, onProcessClick, disabled }: ProcessDefinitionMenuItemProps) => {
   const isDisplayed = useDisplayLogic({ field: button as ProcessButton });
 
   const handleClick = useCallback(() => {
@@ -100,6 +132,7 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
               key={`${button.id}-${index}`}
               button={button}
               onProcessClick={onProcessClick}
+              selectedRecord={selectedRecord}
               disabled={!selectedRecord}
               data-testid="ProcessMenuItem__541926"
             />

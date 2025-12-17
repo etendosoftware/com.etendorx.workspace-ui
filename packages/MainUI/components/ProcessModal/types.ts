@@ -17,7 +17,7 @@
 
 import type { ProcessConfigResponse } from "@/hooks/datasource/useProcessDatasourceConfig";
 import type { EntityData, EntityValue, ProcessParameter, Tab } from "@workspaceui/api-client/src/api/types";
-import type { Field, ProcessAction } from "@workspaceui/api-client/src/api/types";
+import type { Field, ProcessAction, RefListField } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Row, MRT_RowData, MRT_TableBodyRowProps, MRT_TableInstance } from "material-react-table";
 import type { GridSelectionUpdater, GridSelectionStructure } from "./ProcessDefinitionModal";
 
@@ -41,6 +41,7 @@ export interface ProcessDefinitionButton extends BaseProcessButton {
 }
 
 export interface ProcessActionButton extends BaseProcessButton {
+  buttonRefList: RefListField[];
   processAction: ProcessAction;
 }
 
