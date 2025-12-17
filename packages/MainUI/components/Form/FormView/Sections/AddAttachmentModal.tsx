@@ -92,6 +92,7 @@ export const AddAttachmentModal = ({
       open={open}
       onClose={onClose}
       onCancel={onClose}
+      width={500}
       HeaderIcon={AttachmentIcon}
       tittleHeader={t("forms.attachments.addAttachmentModalTitle")}
       descriptionText={t("forms.attachments.addAttachmentModalDescription")}
@@ -104,7 +105,7 @@ export const AddAttachmentModal = ({
         id="modal-attachment-file-input"
         data-testid="Input__modal_attachments_file"
       />
-      <div className="space-y-4">
+      <div className="space-y-4 max-h-[30rem]">
         {/* Record Identifier Section */}
         {recordIdentifier && (
           <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">

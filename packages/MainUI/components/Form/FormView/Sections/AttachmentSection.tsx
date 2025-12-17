@@ -149,7 +149,14 @@ const AttachmentSection = ({
           tabId,
           recordId,
         });
-        const url = window.URL.createObjectURL(blob);
+
+        // Ensure proper MIME type for PDF files to allow browser preview
+        let finalBlob = blob;
+        if (isPdf) {
+          finalBlob = new Blob([blob], { type: "application/pdf" });
+        }
+
+        const url = window.URL.createObjectURL(finalBlob);
         setPreviewUrl(url);
       } catch (error) {
         console.error("Failed to load preview:", error);
@@ -506,6 +513,7 @@ const AttachmentSection = ({
       {previewAttachment && (
         <Modal
           open={!!previewAttachment}
+          width={500}
           onClose={() => {
             setPreviewAttachment(null);
             setIsEditingInPreview(false);
@@ -518,7 +526,7 @@ const AttachmentSection = ({
           tittleHeader={previewAttachment.name}
           descriptionText={t("forms.attachments.previewModalDescription")}
           data-testid="Modal__attachments_preview">
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 max-h-[30rem]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-4 text-sm text-gray-500 bg-gray-50 rounded-lg p-3 border border-gray-200">
               <div className="flex items-center gap-2">
                 <span className="font-medium text-gray-700">{t("forms.attachments.createdBy")}:</span>
@@ -528,7 +536,7 @@ const AttachmentSection = ({
               <div>{new Date(previewAttachment.creationDate).toLocaleDateString()}</div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 ">
               {/* Preview Content */}
               <div className="flex justify-center bg-gray-100 rounded-lg overflow-hidden min-h-[200px] items-center border border-gray-200">
                 {isPreviewLoading && (
@@ -546,7 +554,7 @@ const AttachmentSection = ({
                 )}
 
                 {!isPreviewLoading && previewUrl && !isImagePreview && (
-                  <iframe src={previewUrl} className="w-full h-[500px] border-none" title={previewAttachment.name} />
+                  <embed src={previewUrl} type="application/pdf" className="w-full h-full border-none" />
                 )}
 
                 {!isPreviewLoading && !previewUrl && (
