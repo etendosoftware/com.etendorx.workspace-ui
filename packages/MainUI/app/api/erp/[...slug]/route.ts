@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
 import { getErpAuthHeaders } from "../../_utils/forwardConfig";
-import { SLUGS_CATEGORIES, SLUGS_METHODS } from "@/app/api/_utils/slug/constants";
+import { SLUGS_CATEGORIES, SLUGS_METHODS, URL_MUTATION } from "@/app/api/_utils/slug/constants";
 import { detectCharset, isBinaryContentType } from "./route.helpers";
 
 type requestBody = string | ReadableStream<Uint8Array> | undefined;
@@ -104,6 +104,14 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.startsWith(SLUGS_CATEGORIES.LEGACY) || // Legacy servlets need session cookies
     method !== "GET"
   );
+}
+
+/** Determines if a URL should bypass caching (mutations or non-GET requests)
+ * @param url - The full request URL
+ * @returns true if this is a mutation URL that should not be cached
+ */
+function isMutationUrl(url: string): boolean {
+  return url.includes(URL_MUTATION.COMPUTE_WINDOW) || url.includes(URL_MUTATION.CLONE_RECORDS);
 }
 
 /**
@@ -362,7 +370,7 @@ async function fetchErpData({
   requestBody: string | ReadableStream<Uint8Array> | undefined;
   contentType: string;
 }): Promise<unknown> {
-  if (isMutationRoute(slug, method)) {
+  if (isMutationRoute(slug, method) || isMutationUrl(erpUrl)) {
     const headers = buildErpHeaders(userToken, request, method, requestBody, contentType, slug);
     return handleMutationRequest(erpUrl, method, headers, requestBody);
   }
