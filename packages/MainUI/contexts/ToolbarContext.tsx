@@ -83,6 +83,11 @@ type ToolbarActions = {
    *                   used for positioning dropdown/popover filters
    */
   columnFilters: (buttonRef?: HTMLElement | null) => void;
+
+  /**
+   * Print the current document.
+   */
+  printDocument: () => Promise<void>;
 };
 
 type ToolbarContextType = {
@@ -94,6 +99,7 @@ type ToolbarContextType = {
   onExportCSV: () => Promise<void>;
   onToggleTreeView: () => void;
   onColumnFilters: (buttonRef?: HTMLElement | null) => void;
+  onPrintDocument: () => Promise<void>;
   registerActions: (actions: Partial<ToolbarActions>) => void;
   saveButtonState: SaveButtonState;
   setSaveButtonState: React.Dispatch<React.SetStateAction<SaveButtonState>>;
@@ -116,6 +122,7 @@ const initialState: ToolbarActions = {
   columnFilters: () => {},
   treeView: () => {},
   exportCSV: async () => {},
+  printDocument: async () => {},
 };
 
 const ToolbarContext = createContext<ToolbarContextType>({
@@ -127,6 +134,7 @@ const ToolbarContext = createContext<ToolbarContextType>({
   onExportCSV: async () => {},
   onToggleTreeView: () => {},
   onColumnFilters: () => {},
+  onPrintDocument: async () => {},
   registerActions: () => {},
   saveButtonState: {
     isCalloutLoading: false,
@@ -173,6 +181,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       filter: onFilter,
       exportCSV: onExportCSV,
       columnFilters: onColumnFilters,
+      printDocument: onPrintDocument,
     },
     setActions,
   ] = useState<ToolbarActions>(initialState);
@@ -236,6 +245,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       onExportCSV,
       onColumnFilters,
       onToggleTreeView,
+      onPrintDocument,
       registerActions,
       saveButtonState,
       setSaveButtonState,

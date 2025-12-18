@@ -76,9 +76,13 @@ export function createHtmlResponse(html: string, originalResponse: Response): Re
   if (!htmlHeaders.has("content-type")) {
     htmlHeaders.set("Content-Type", "text/html");
   }
+
+  // Use standard status text to avoid "Parse Error: Expected HTTP/"
+  const validStatusText = originalResponse.status === 200 ? "OK" : "Error";
+
   return new Response(html, {
     status: originalResponse.status,
-    statusText: originalResponse.statusText,
+    statusText: validStatusText,
     headers: htmlHeaders,
   });
 }

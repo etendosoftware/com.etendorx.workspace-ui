@@ -30,6 +30,7 @@ import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useRecordContext } from "@/hooks/useRecordContext";
 import type { ToolbarButtonMetadata } from "./types";
+import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
 import { useWindowContext } from "@/contexts/window";
 import type { ActionButton, ActionModalProps } from "@workspaceui/componentlibrary/src/components/ActionModal/types";
 import { isEmptyArray } from "@/utils/commons";
@@ -72,6 +73,7 @@ export const useToolbarConfig = ({
     onToggleTreeView,
     attachmentAction,
     onExportCSV,
+    onPrintDocument,
   } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
@@ -386,8 +388,11 @@ export const useToolbarConfig = ({
       SHARE_LINK: () => {
         onShareLink();
       },
-      COPY_RECORD: () => {
+      [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: () => {
         handleCopyRecord();
+      },
+      [TOOLBAR_BUTTONS_ACTIONS.PRINT_DOCUMENT]: async () => {
+        await onPrintDocument?.();
       },
     }),
     [
@@ -413,6 +418,7 @@ export const useToolbarConfig = ({
       onExportCSV,
       onShareLink,
       handleCopyRecord,
+      onPrintDocument,
     ]
   );
 

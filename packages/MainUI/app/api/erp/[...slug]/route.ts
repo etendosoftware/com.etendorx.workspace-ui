@@ -3,10 +3,9 @@ import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
 import { getErpAuthHeaders } from "../../_utils/forwardConfig";
 import { SLUGS_CATEGORIES, SLUGS_METHODS, URL_MUTATION } from "@/app/api/_utils/slug/constants";
-import { detectCharset, isBinaryContentType, rewriteHtmlResourceUrls, createHtmlResponse } from "./route.helpers";
+import { detectCharset, isBinaryContentType, createHtmlResponse, rewriteHtmlResourceUrls } from "./route.helpers";
 
 type requestBody = string | ReadableStream<Uint8Array> | undefined;
-
 // Custom error class for ERP requests
 class ErpRequestError extends Error {
   public readonly status: number;
@@ -37,7 +36,11 @@ const getCachedErpData = unstable_cache(
     const slugContainsCopilot = slug.includes(SLUGS_CATEGORIES.COPILOT);
     if (slugContainsCopilot) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
+    } else if (slug.startsWith(SLUGS_CATEGORIES.UTILITY)) {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else if (slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
+    } else if (slug.includes(SLUGS_METHODS.PRINT) || slug.includes(SLUGS_METHODS.PRINT_REPORTS) || slug.includes(SLUGS_METHODS.PRINT_OPTIONS)) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
@@ -47,10 +50,18 @@ const getCachedErpData = unstable_cache(
       erpUrl += queryParams;
     }
 
+    // Get ERP auth headers including Cookie from sessionStore
+    const authHeaders = getErpAuthHeaders(userToken);
+
     const headers: Record<string, string> = {
       Authorization: `Bearer ${userToken}`,
       Accept: slugContainsCopilot ? "text/event-stream" : "application/json",
     };
+
+    // Add Cookie header if available (includes JSESSIONID from sessionStore)
+    if (authHeaders.cookieHeader) {
+      headers.Cookie = authHeaders.cookieHeader;
+    }
 
     if (method !== "GET" && body) {
       headers["Content-Type"] = contentType;
@@ -97,10 +108,18 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.includes(SLUGS_METHODS.CREATE) ||
     slug.includes(SLUGS_METHODS.UPDATE) ||
     slug.includes(SLUGS_METHODS.DELETE) ||
+    slug.includes(SLUGS_METHODS.PRINT) ||
+    slug.includes(SLUGS_METHODS.PRINT_REPORTS) ||
+    slug.includes(SLUGS_METHODS.PRINT_OPTIONS) ||
     slug.includes(SLUGS_CATEGORIES.COPILOT) || // All copilot routes should bypass cache for real-time data
     slug.startsWith(SLUGS_CATEGORIES.NOTES) || // Notes servlet needs session cookies
     slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || // Attachments servlet needs session cookies and multipart/form-data
     slug.startsWith(SLUGS_CATEGORIES.LEGACY) || // Legacy servlets need session cookies
+    // Static resources and direct handling
+    slug.startsWith("web/") ||
+    slug.startsWith("ad_forms/") ||
+    slug.startsWith("org.openbravo") ||
+    slug.startsWith("etendo/") ||
     method !== "GET"
   );
 }
@@ -136,6 +155,9 @@ function buildErpHeaders(
     acceptHeader = "text/event-stream";
   } else if (slug?.startsWith(SLUGS_CATEGORIES.LEGACY)) {
     acceptHeader = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
+  } else if (slug?.includes(SLUGS_METHODS.PRINT) || slug?.includes(SLUGS_METHODS.PRINT_REPORTS) || slug?.includes(SLUGS_METHODS.PRINT_OPTIONS)) {
+    // Print endpoints return HTML
+    acceptHeader = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7";
   }
 
   const headers: Record<string, string> = {
@@ -207,11 +229,6 @@ async function handleMutationRequest(
     return { stream: response.body, headers: response.headers };
   }
 
-  // Check if response is HTML (for iframes like About modal)
-  if (responseContentType?.toLowerCase().includes("text/html")) {
-    return { htmlContent: response };
-  }
-
   // Check if response is a binary file (for downloads)
   if (responseContentType && isBinaryContentType(responseContentType)) {
     return { binaryFile: response };
@@ -222,13 +239,28 @@ async function handleMutationRequest(
   const encoding = detectCharset(responseContentType);
   const responseText = new TextDecoder(encoding).decode(responseBuffer);
 
-  // Fallback: Check if response body looks like HTML (when Content-Type is missing)
+  // Check if response is HTML (with proper encoding detection already applied)
   if (
+    responseContentType?.toLowerCase().includes("text/html") ||
     responseText.trim().toLowerCase().startsWith("<html") ||
     responseText.trim().toLowerCase().startsWith("<!doctype html")
   ) {
-    const rewrittenHtml = rewriteHtmlResourceUrls(responseText);
+    // Rewrite HTML to inject <base> tag pointing to ETENDO_CLASSIC_HOST
+    // This allows relative paths on the client to resolve directly to the backend
+    // Rewrite HTML to inject <base> tag pointing to ETENDO_CLASSIC_HOST
+    // This allows relative paths on the client to resolve directly to the backend
+    const rewrittenHtml = rewriteHtmlResourceUrls(
+      responseText,
+      process.env.ETENDO_CLASSIC_HOST || process.env.ETENDO_CLASSIC_URL
+    );
     const htmlResponse = createHtmlResponse(rewrittenHtml, response);
+
+    // For PrinterReports, also return Set-Cookie header so client can extract JSESSIONID
+    const setCookie = response.headers.get("set-cookie");
+    if (setCookie) {
+      htmlResponse.headers.set("set-cookie", setCookie);
+    }
+
     return { htmlContent: htmlResponse };
   }
 
@@ -301,6 +333,19 @@ function buildErpUrl(slug: string, requestUrl: string): string {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.COPILOT)) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
+  } else if (slug.includes(SLUGS_METHODS.PRINT) || slug.includes(SLUGS_METHODS.PRINT_REPORTS) || slug.includes(SLUGS_METHODS.PRINT_OPTIONS)) {
+    // Print servlet uses direct mapping (e.g., /orders/print.html, /businessUtility/PrinterReports.html, or /orders/PrintOptions.html)
+    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
+  } else if (
+    slug.startsWith("web/") ||
+    slug.startsWith("ad_forms/") ||
+    slug.startsWith("org.openbravo") ||
+    slug.startsWith("etendo/")
+  ) {
+    // Direct mapping for static resources and other classic paths
+    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
+  } else if (slug.startsWith(SLUGS_CATEGORIES.UTILITY)) {
+    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
   }
@@ -420,9 +465,12 @@ function handleHtmlContentResponse(data: { htmlContent: Response }): Response {
     headers.set("Content-Type", `${contentType}; charset=UTF-8`);
   }
 
+  // Use standard status text to avoid "Parse Error: Expected HTTP/"
+  const validStatusText = htmlContent.status === 200 ? "OK" : "Error";
+
   return new Response(htmlContent.body, {
     status: htmlContent.status,
-    statusText: htmlContent.statusText,
+    statusText: validStatusText,
     headers,
   });
 }
