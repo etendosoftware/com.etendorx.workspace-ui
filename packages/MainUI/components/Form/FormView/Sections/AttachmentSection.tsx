@@ -451,7 +451,6 @@ const AttachmentSection = ({
             }}
             className="relative flex flex-col items-center justify-center p-8 rounded-xl border-2 border-dashed transition-all cursor-pointer min-h-[160px]"
             data-testid="Div__attachments_dropzone">
-
             {/* Upload Icon top right */}
             <div className="absolute top-4 right-4 text-gray-400">
               <UploadIcon width={20} height={20} fill="currentColor" data-testid="UploadIcon__ce37c8" />
