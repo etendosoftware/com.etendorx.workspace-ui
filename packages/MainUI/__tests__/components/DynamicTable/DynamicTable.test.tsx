@@ -1,8 +1,9 @@
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import type React from "react";
 import DynamicTable from "../../../components/Table";
+import { renderWithTheme as render } from "../../../test-utils/test-theme-provider";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type {
   MRT_Row,
@@ -50,6 +51,7 @@ interface MockTableInstance<TData extends MRT_RowData> {
   };
   resetRowSelection: () => void;
   setRowSelection: (selection: Record<string, boolean>) => void;
+  getVisibleLeafColumns: () => any[];
 }
 
 // Mock all the contexts and hooks
@@ -202,6 +204,8 @@ const mockMultiWindowURL = {
   clearTabFormState: jest.fn(),
   getTabFormState: jest.fn(),
   clearChildrenSelections: jest.fn(),
+  getTabInitializedWithDirectLink: jest.fn().mockReturnValue(false),
+  setTabInitializedWithDirectLink: jest.fn(),
 };
 
 const mockUserContext = {
@@ -401,6 +405,8 @@ jest.mock("@workspaceui/api-client/src/hooks/useColumnFilterData", () => ({
     fetchFilterOptions: jest.fn().mockResolvedValue([]),
   }),
 }));
+
+// Mock useTableData helper functions
 
 // Mock for capturing row props from the table
 const capturedRowProps: {

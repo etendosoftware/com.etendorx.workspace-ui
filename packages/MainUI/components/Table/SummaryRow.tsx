@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from "react";
-import { type MRT_TableInstance } from "material-react-table";
-import { type EntityData } from "@workspaceui/api-client/src/api/types";
-import { type SummaryType } from "./HeaderContextMenu";
+import type React from "react";
+import { useEffect, useRef } from "react";
+import type { MRT_TableInstance } from "material-react-table";
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import type { SummaryType } from "./HeaderContextMenu";
 
 interface SummaryRowProps {
   table: MRT_TableInstance<EntityData>;

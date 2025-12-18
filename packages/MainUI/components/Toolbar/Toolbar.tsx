@@ -69,7 +69,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
-  const { saveButtonState, isImplicitFilterApplied } = useToolbarContext();
+  const { saveButtonState, isImplicitFilterApplied, isAdvancedFilterApplied } = useToolbarContext();
   const { buttons, processButtons, loading, refetch } = useToolbar(windowId, tab?.id);
   const { graph } = useSelected();
   const { activeWindow, getTabFormState, clearChildrenSelections } = useWindowContext();
@@ -288,6 +288,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       tab: tab,
       selectedRecordsLength: selectedRecordsLength,
       t: t,
+      isAdvancedFilterApplied: isAdvancedFilterApplied,
     });
 
     const config = {
@@ -329,6 +330,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     isImplicitFilterApplied,
     showFilterTooltip,
     showShareLinkTooltip,
+    isAdvancedFilterApplied,
   ]);
 
   if (loading) {

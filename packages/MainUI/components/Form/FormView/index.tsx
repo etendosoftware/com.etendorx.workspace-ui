@@ -24,6 +24,7 @@ import FolderIcon from "@workspaceui/componentlibrary/src/assets/icons/folder.sv
 import Info from "@workspaceui/componentlibrary/src/assets/icons/info.svg";
 import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
+import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
 import { FormMode, type EntityData, type EntityValue } from "@workspaceui/api-client/src/api/types";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import useFormFields from "@/hooks/useFormFields";
@@ -54,6 +55,7 @@ const iconMap: Record<string, React.ReactElement> = {
   Dimensions: <FolderIcon data-testid="FolderIcon__1a0853" />,
   "Linked Items": <LinkIcon data-testid="LinkIcon__1a0853" />,
   Notes: <NoteIcon data-testid="NoteIcon__1a0853" />,
+  Attachments: <AttachmentIcon data-testid="AttachmentIcon__1a0853" />,
 };
 
 /**
@@ -162,18 +164,33 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   // Register attachment action for toolbar button
   useEffect(() => {
     if (registerAttachmentAction) {
-      registerAttachmentAction(() => setOpenAttachmentModal(true));
+      registerAttachmentAction(() => {
+        setOpenAttachmentModal((prev) => {
+          return true;
+        });
+      });
     }
+
+    return () => {
+      if (registerAttachmentAction) {
+        registerAttachmentAction(undefined);
+      }
+    };
   }, [registerAttachmentAction]);
 
   // Open attachment modal when flag is set (from table navigation)
   useEffect(() => {
     if (shouldOpenAttachmentModal) {
-      setOpenAttachmentModal(true);
+      setOpenAttachmentModal((prev) => {
+        return true;
+      });
       // Reset flag after using it
       setShouldOpenAttachmentModal(false);
     }
   }, [shouldOpenAttachmentModal, setShouldOpenAttachmentModal]);
+
+  // Log openAttachmentModal state changes
+  useEffect(() => {}, [openAttachmentModal]);
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} data-testid="Info__1a0853" />,
@@ -282,18 +299,30 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    *
    * Dependencies: availableFormData, tab.id, stableReset
    */
+  const lastInitializedDataRef = useRef<string>("");
+
   useEffect(() => {
     // If we are in a "hidden" state (empty recordId and not NEW mode), just reset and return
     // This prevents unnecessary initialization logic and potential loops
     if (!currentRecordId && currentMode !== FormMode.NEW) {
       stableReset({}, { keepDirty: false });
       setIsFormInitializing(false);
+      lastInitializedDataRef.current = "";
       return;
     }
 
-    if (!availableFormData) {
+    if (!availableFormData || loadingFormInitialization) {
       return;
     }
+
+    // Prevent resetting if the data hasn't actually changed
+    // This safeguards against spurious re-renders or upstream reference changes
+    // that would otherwise overwrite user edits or callout results
+    const currentDataString = JSON.stringify(availableFormData);
+    if (lastInitializedDataRef.current === currentDataString) {
+      return;
+    }
+    lastInitializedDataRef.current = currentDataString;
 
     setIsFormInitializing(true);
     const processedData = processFormData(availableFormData);
@@ -311,7 +340,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         globalCalloutManager.resume();
       }, 100); // Delay to allow all values to settle before enabling callouts
     });
-  }, [availableFormData, tab.id, stableReset]);
+  }, [availableFormData, tab.id, stableReset, loadingFormInitialization, currentRecordId, currentMode]);
 
   /**
    * Update graph selection when navigating to a different record

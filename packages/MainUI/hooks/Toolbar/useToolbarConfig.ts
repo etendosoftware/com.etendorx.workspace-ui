@@ -390,8 +390,8 @@ export const useToolbarConfig = ({
       COPY_RECORD: () => {
         handleCopyRecord();
       },
-      ADVANCED_FILTERS: () => {
-        onAdvancedFilters?.();
+      ADVANCED_FILTERS: (event?: React.MouseEvent<HTMLElement>) => {
+        onAdvancedFilters?.(event?.currentTarget);
       },
     }),
     [

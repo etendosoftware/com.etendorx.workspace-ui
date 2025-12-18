@@ -33,13 +33,11 @@ import { getNewTabFormState, isFormView } from "@/utils/window/utils";
 import { useWindowContext } from "@/contexts/window";
 import { TableFilter } from "@workspaceui/componentlibrary/src/components/AdvancedFiltersModal";
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
-import {
-  loadSelectFilterOptions,
-  loadTableDirFilterOptions,
-} from "@/utils/columnFilterHelpers";
+import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
 import { parseColumns } from "@/utils/tableColumns";
 import { ColumnFilterUtils, type FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
-import Modal from "@/components/Modal";
+import Menu from "@workspaceui/componentlibrary/src/components/Menu";
+import { useTranslation } from "@/hooks/useTranslation";
 
 /**
  * Validates if a child tab can open FormView based on parent selection in context
@@ -110,16 +108,17 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     setTabFormState,
     clearChildrenSelections,
     getTableState,
-    setTableImplicitFilterApplied,
     setTableAdvancedCriteria,
   } = useWindowContext();
-  const { registerActions, onRefresh } = useToolbarContext();
+  const { registerActions, onRefresh, setIsAdvancedFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
   const { fetchFilterOptions } = useColumnFilterData();
   const [columnOptions, setColumnOptions] = useState<Record<string, FilterOption[]>>({});
   const { registerRefresh, unregisterRefresh } = useTabRefreshContext();
   const [toggle, setToggle] = useState(false);
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [advancedFiltersAnchor, setAdvancedFiltersAnchor] = useState<HTMLElement | null>(null);
+  const [advancedFilters, setAdvancedFilters] = useState<any[]>([]);
+  const { t } = useTranslation();
   const lastParentSelectionRef = useRef<Map<string, string | undefined>>(new Map());
 
   const windowIdentifier = activeWindow?.windowIdentifier;
@@ -254,88 +253,116 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
   }, [windowIdentifier]);
 
-  const handleAdvancedFilters = useCallback(() => {
-    setShowAdvancedFilters(true);
-  }, []);
-
-  const handleApplyFilters = useCallback((filters: any[]) => {
-    // Helper to map operators
-    const mapOperator = (op: string) => {
-      switch (op) {
-        case "equals": return "equals";
-        case "not_equals": return "notEqual";
-        case "contains": return "iContains";
-        case "not_contains": return "notContains";
-        case "starts_with": return "startsWith";
-        case "ends_with": return "endsWith";
-        case "is_empty": return "isNull";
-        case "is_not_empty": return "notNull";
-        case "greater_than": return "greaterThan";
-        case "less_than": return "lessThan";
-        case "greater_or_equal": return "greaterOrEqual";
-        case "less_or_equal": return "lessOrEqual";
-        case "is_true": return "equals";
-        case "is_false": return "equals";
-        case "before": return "lessThan";
-        case "after": return "greaterThan";
-        default: return "iContains";
-      }
-    };
-
-    // Helper to convert value
-    const convertValue = (val: any, op: string) => {
-      if (op === "is_true") return true;
-      if (op === "is_false") return false;
-      return val;
-    };
-
-    // Recursive function to convert filter items to criteria
-    const convertItem = (item: any): any => {
-      if (item.type === "condition") {
-        return {
-          _constructor: "AdvancedCriteria",
-          fieldName: item.column,
-          operator: mapOperator(item.operator),
-          value: convertValue(item.value, item.operator),
-        };
-      } else if (item.type === "group") {
-        return {
-          _constructor: "AdvancedCriteria",
-          operator: item.logicalOperator.toLowerCase(),
-          criteria: item.conditions.map((c: any) => ({
-             _constructor: "AdvancedCriteria",
-             fieldName: c.column,
-             operator: mapOperator(c.operator),
-             value: convertValue(c.value, c.operator),
-          })),
-        };
-      }
-      return null;
-    };
-
-    const criteria = filters.map(convertItem).filter(Boolean);
-    
-    // Update table state with new criteria
-    // We assume implicit AND for top-level items
-    const advancedCriteria = {
-      _constructor: "AdvancedCriteria",
-      operator: "and",
-      criteria,
-    };
-
-    if (windowIdentifier) {
-      setTableAdvancedCriteria(windowIdentifier, tab.id, advancedCriteria);
+  const handleAdvancedFilters = useCallback((anchorEl?: HTMLElement) => {
+    if (anchorEl) {
+      setAdvancedFiltersAnchor(anchorEl);
     }
-
-    setShowAdvancedFilters(false);
-  }, [windowIdentifier, tab.id, setTableAdvancedCriteria]);
-
-  const handleSetFilterOptions = useCallback((columnId: string, options: FilterOption[], hasMore: boolean, append: boolean) => {
-    setColumnOptions((prev) => ({
-      ...prev,
-      [columnId]: append ? [...(prev[columnId] || []), ...options] : options,
-    }));
   }, []);
+
+  const handleApplyFilters = useCallback(
+    (filters: any[]) => {
+      // Helper to map operators
+      const mapOperator = (op: string) => {
+        switch (op) {
+          case "equals":
+            return "equals";
+          case "not_equals":
+            return "notEqual";
+          case "contains":
+            return "iContains";
+          case "not_contains":
+            return "notContains";
+          case "starts_with":
+            return "startsWith";
+          case "ends_with":
+            return "endsWith";
+          case "is_empty":
+            return "isNull";
+          case "is_not_empty":
+            return "notNull";
+          case "greater_than":
+            return "greaterThan";
+          case "less_than":
+            return "lessThan";
+          case "greater_or_equal":
+            return "greaterOrEqual";
+          case "less_or_equal":
+            return "lessOrEqual";
+          case "is_true":
+            return "equals";
+          case "is_false":
+            return "equals";
+          case "before":
+            return "lessThan";
+          case "after":
+            return "greaterThan";
+          default:
+            return "iContains";
+        }
+      };
+
+      // Helper to convert value
+      const convertValue = (val: any, op: string) => {
+        if (op === "is_true") return true;
+        if (op === "is_false") return false;
+        return val;
+      };
+
+      // Recursive function to convert filter items to criteria
+      const convertItem = (item: any): any => {
+        if (item.type === "condition") {
+          return {
+            _constructor: "AdvancedCriteria",
+            fieldName: item.column,
+            operator: mapOperator(item.operator),
+            value: convertValue(item.value, item.operator),
+          };
+        }
+        if (item.type === "group") {
+          return {
+            _constructor: "AdvancedCriteria",
+            operator: item.logicalOperator.toLowerCase(),
+            criteria: item.conditions.map((c: any) => ({
+              _constructor: "AdvancedCriteria",
+              fieldName: c.column,
+              operator: mapOperator(c.operator),
+              value: convertValue(c.value, c.operator),
+            })),
+          };
+        }
+        return null;
+      };
+
+      const criteria = filters.map(convertItem).filter(Boolean);
+
+      // Update table state with new criteria
+      // We assume implicit AND for top-level items
+      const advancedCriteria = {
+        _constructor: "AdvancedCriteria",
+        operator: "and",
+        criteria,
+      };
+
+      if (windowIdentifier) {
+        setTableAdvancedCriteria(windowIdentifier, tab.id, advancedCriteria);
+      }
+
+      setAdvancedFilters(filters);
+      setIsAdvancedFilterApplied(filters.length > 0);
+      setAdvancedFiltersAnchor(null);
+    },
+    [windowIdentifier, tab.id, setTableAdvancedCriteria, setIsAdvancedFilterApplied]
+  );
+
+  const handleSetFilterOptions = useCallback(
+    (columnId: string, options: FilterOption[], _hasMore: boolean, append: boolean) => {
+      setColumnOptions((prev) => ({
+        ...prev,
+        [columnId]: append ? [...(prev[columnId] || []), ...options] : options,
+      }));
+    },
+    []
+  );
 
   const parsedColumns = useMemo(() => {
     if (!tab.fields) return [];
@@ -347,8 +374,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     async (columnId: string, searchQuery: string) => {
       const column = parsedColumns.find((col) => col.id === columnId || col.columnName === columnId);
       if (!column) return;
-
-
 
       if (ColumnFilterUtils.isTableDirColumn(column)) {
         await loadTableDirFilterOptions({
@@ -956,25 +981,24 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
             setRecordId={handleSetRecordId}
             onRecordSelection={handleRecordSelection}
             isVisible={!shouldShowForm}
+            areFiltersDisabled={advancedFilters.length > 0}
             data-testid="DynamicTable__5893c8"
           />
         </AttachmentProvider>
       </div>
-      <Modal open={showAdvancedFilters} onClose={() => setShowAdvancedFilters(false)}>
-        <div className="flex items-center justify-center min-h-screen p-4">
-          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <TableFilter
-              columns={filterColumns}
-              onApplyFilters={handleApplyFilters}
-              onSaveFilter={() => {}}
-              onClear={() => {}}
-              onLoadSavedFilter={() => {}}
-              onAIFilter={() => {}}
-              onLoadOptions={handleLoadOptions}
-            />
-          </div>
-        </div>
-      </Modal>
+      <Menu
+        anchorEl={advancedFiltersAnchor}
+        onClose={() => setAdvancedFiltersAnchor(null)}
+        className="w-[800px] max-w-[90vw] max-h-[80vh] overflow-y-auto"
+        offsetY={8}>
+        <TableFilter
+          columns={filterColumns}
+          onApplyFilters={handleApplyFilters}
+          onLoadOptions={handleLoadOptions}
+          initialFilters={advancedFilters}
+          t={(k: string) => t(k as any)}
+        />
+      </Menu>
     </div>
   );
 }

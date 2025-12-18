@@ -20,7 +20,7 @@ export class CacheStore {
   private storage: Storage | undefined;
   private prefix: string;
 
-  constructor(duration: number, prefix: string = "") {
+  constructor(duration: number, prefix = "") {
     if (duration <= 0) {
       throw new Error("Duration must be a positive number.");
     }

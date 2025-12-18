@@ -119,7 +119,6 @@ const MultiSelect = memo(function MultiSelectCmp({
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const [internalOptions, setInternalOptions] = useState<MultiSelectOption[]>([]);
   const [isFetchingInitial, setIsFetchingInitial] = useState(false);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -147,7 +146,7 @@ const MultiSelect = memo(function MultiSelectCmp({
 
       // If the last part starts with ==, do not filter the dropdown
       if (lastPart.trim().startsWith("==")) {
-        return internalOptions;
+        return options;
       }
 
       // Remove '==' prefix if present (though the above check handles the == case,
@@ -157,12 +156,12 @@ const MultiSelect = memo(function MultiSelectCmp({
 
       termToFilter = lastPart.trim();
     }
-    return internalOptions.filter((o) => o.label.toLowerCase().includes(termToFilter.toLowerCase()));
-  }, [internalOptions, searchTerm, enableTextFilterLogic]);
+    return options.filter((o) => o.label.toLowerCase().includes(termToFilter.toLowerCase()));
+  }, [options, searchTerm, enableTextFilterLogic]);
 
   const selectedLabels = useMemo(
-    () => internalOptions.filter((o) => selectedValues.includes(o.id)).map((o) => o.label),
-    [internalOptions, selectedValues]
+    () => options.filter((o) => selectedValues.includes(o.id)).map((o) => o.label),
+    [options, selectedValues]
   );
 
   const displayText = useMemo(() => {
@@ -261,7 +260,6 @@ const MultiSelect = memo(function MultiSelectCmp({
 
   // Actualizar opciones cuando llegan props
   useEffect(() => {
-    setInternalOptions(options);
     if (options.length > 0 && !loading) setIsFetchingInitial(false);
   }, [options, loading]);
 
