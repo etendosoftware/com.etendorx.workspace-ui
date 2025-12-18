@@ -205,14 +205,12 @@ const MultiSelect = memo(function MultiSelectCmp({
   );
 
   const handleClick = useCallback(() => {
-    setIsOpen((prev) => {
-      if (!prev) {
-        setIsFetchingInitial(true);
-        onFocus?.();
-      }
-      return !prev;
-    });
-  }, [onFocus]);
+    if (!isOpen) {
+      setIsFetchingInitial(true);
+      onFocus?.();
+    }
+    setIsOpen(!isOpen);
+  }, [isOpen, onFocus]);
 
   const handleInputClick = useCallback(
     (e: React.MouseEvent) => {

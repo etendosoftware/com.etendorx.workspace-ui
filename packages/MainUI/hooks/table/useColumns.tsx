@@ -246,7 +246,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
               // Reconstruct complete filter state from persisted data
               return reconstructFilterState(column, currentFilter, availableOptions, filterState);
-            }, []);
+            }, [tableColumnFilters, column, isBooleanColumn, filterState, t]);
 
             return (
               <ColumnFilter
