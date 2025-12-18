@@ -231,20 +231,22 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
           ...columnConfig,
           enableColumnFilter: true,
           Filter: () => {
-            // Get current persisted filter
-            const currentFilter = tableColumnFilters?.find((f) => f.id === column.id || f.id === column.columnName);
+            const effectiveFilterState = useMemo(() => {
+              // Get current persisted filter
+              const currentFilter = tableColumnFilters?.find((f) => f.id === column.id || f.id === column.columnName);
 
-            // Boolean options for boolean columns
-            const booleanOptions: FilterOption[] = [
-              { id: "true", label: t("common.trueText"), value: "true" },
-              { id: "false", label: t("common.falseText"), value: "false" },
-            ];
+              // Boolean options for boolean columns
+              const booleanOptions: FilterOption[] = [
+                { id: "true", label: t("common.trueText"), value: "true" },
+                { id: "false", label: t("common.falseText"), value: "false" },
+              ];
 
-            // Get available options based on column type
-            const availableOptions = getAvailableOptions(column, isBooleanColumn, filterState, booleanOptions);
+              // Get available options based on column type
+              const availableOptions = getAvailableOptions(column, isBooleanColumn, filterState, booleanOptions);
 
-            // Reconstruct complete filter state from persisted data
-            const effectiveFilterState = reconstructFilterState(column, currentFilter, availableOptions, filterState);
+              // Reconstruct complete filter state from persisted data
+              return reconstructFilterState(column, currentFilter, availableOptions, filterState);
+            }, []);
 
             return (
               <ColumnFilter
