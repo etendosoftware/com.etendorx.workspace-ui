@@ -451,20 +451,6 @@ const AttachmentSection = ({
             }}
             className="relative flex flex-col items-center justify-center p-8 rounded-xl border-2 border-dashed transition-all cursor-pointer min-h-[160px]"
             data-testid="Div__attachments_dropzone">
-            {/* Import from URL Button */}
-            <div className="absolute top-4 left-4">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // TODO: Implement import from URL functionality
-                }}
-                className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm bg-transparent border-none cursor-pointer"
-                data-testid="Button__import_url">
-                <LinkIcon width={16} height={16} fill="currentColor" data-testid="LinkIcon__ce37c8" />
-                <span>{t("forms.attachments.importFromUrl")}</span>
-              </button>
-            </div>
 
             {/* Upload Icon top right */}
             <div className="absolute top-4 right-4 text-gray-400">
