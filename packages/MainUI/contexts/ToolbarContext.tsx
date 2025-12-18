@@ -21,6 +21,7 @@ import { createContext, useContext, useState, useCallback, useMemo, useEffect } 
 import { globalCalloutManager } from "@/services/callouts";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { useTabContext } from "@/contexts/tab";
+import { logger } from "@/utils/logger";
 
 /**
  * Save button state management interface
@@ -100,7 +101,7 @@ type ToolbarContextType = {
   formViewRefetch?: () => Promise<void>;
   registerFormViewRefetch?: (refetch: () => Promise<void>) => void;
   attachmentAction?: () => void;
-  registerAttachmentAction?: (action: () => void) => void;
+  registerAttachmentAction?: (action: (() => void) | undefined) => void;
   shouldOpenAttachmentModal: boolean;
   setShouldOpenAttachmentModal: (open: boolean) => void;
   isImplicitFilterApplied: boolean;
@@ -159,8 +160,14 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
     setFormViewRefetch(() => refetch);
   }, []);
 
-  const registerAttachmentAction = useCallback((action: () => void) => {
-    setAttachmentAction(() => action);
+  const registerAttachmentAction = useCallback((action: (() => void) | undefined) => {
+    if (action) {
+      logger.info("[ToolbarContext] Registering attachment action");
+      setAttachmentAction(() => action);
+    } else {
+      logger.info("[ToolbarContext] Clearing attachment action");
+      setAttachmentAction(undefined);
+    }
   }, []);
 
   const [

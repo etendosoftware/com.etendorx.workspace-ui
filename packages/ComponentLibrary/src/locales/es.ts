@@ -46,6 +46,7 @@ const es = {
     about: "Acerca de",
     clone: "Clonar",
     cloneWithChildren: "Clonar con hijos",
+    change: "Cambiar",
   },
   forms: {
     sections: {
@@ -53,6 +54,7 @@ const es = {
       audit: "Auditoría",
       linkedItems: "Artículos Asociados",
       notes: "Notas",
+      moreInformation: "Más Información",
       noCategories: "No hay categorias disponibles",
       selectCategory: "Por favor selecciona una categoría",
     },
@@ -100,6 +102,10 @@ const es = {
       errorDownloadingAttachment: "Error al descargar el adjunto",
       errorDownloadingAllAttachments: "Error al descargar todos los adjuntos",
       missingOrganization: "Se requiere el ID de organización",
+      importFromUrl: "Importar desde URL",
+      dropZoneText: "Arrastre y suelte o haga clic para elegir archivos",
+      maxSizeText: "Tamaño máximo del archivo: 10 MB",
+      noFileSelected: "Ningún archivo seleccionado",
     },
     statusBar: {
       closeRecord: "Cerrar registro",
@@ -119,6 +125,7 @@ const es = {
     deleteConfirmation: "¿Estás seguro de que quieres eliminar",
     multipleDeleteConfirmation: "¿Estás seguro de que quieres eliminar los registros seleccionados?",
     selectRecordError: "Por favor, selecciona un registro primero",
+    selectSingleRecordError: "Por favor, selecciona solo un registro",
     saveSuccess: "{{entityType}} ha sido guardado correctamente",
     saveError: "Error al guardar el registro",
     noIdError: "No se puede borrar un registro sin identificador",

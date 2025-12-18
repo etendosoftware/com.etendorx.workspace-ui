@@ -27,6 +27,7 @@ import {
 } from "material-react-table";
 import type { ColumnFiltersState, SortingState, ExpandedState, Updater } from "@tanstack/react-table";
 import { useStyle } from "./styles";
+import "./styles/rowDragOver.css";
 import type {
   EntityData,
   GridProps,
@@ -55,8 +56,12 @@ import CircleFilledIcon from "../../../ComponentLibrary/src/assets/icons/circle-
 import ChevronUp from "../../../ComponentLibrary/src/assets/icons/chevron-up.svg";
 import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check.svg";
+import { AddAttachmentModal } from "../Form/FormView/Sections/AddAttachmentModal";
+import { createAttachment } from "@workspaceui/api-client/src/api/attachments";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useTableData } from "@/hooks/table/useTableData";
 import { isEmptyObject } from "@/utils/commons";
+import { useUserContext } from "@/hooks/useUserContext";
 import {
   getDisplayColumnDefOptions,
   getMUITableBodyCellProps,
@@ -84,7 +89,6 @@ import { ActionsColumn } from "./ActionsColumn";
 import { SummaryRow } from "./SummaryRow";
 import { validateFieldRealTime } from "./utils/validationUtils";
 import { getFieldReference, buildPayloadByInputName } from "@/utils";
-import { useUserContext } from "@/hooks/useUserContext";
 import { useTableConfirmation } from "./hooks/useTableConfirmation";
 import { useInlineTableDirOptions } from "./hooks/useInlineTableDirOptions";
 import { useInlineEditInitialization } from "./hooks/useInlineEditInitialization";
@@ -109,6 +113,7 @@ import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadat
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import "./styles/inlineEditing.css";
 import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
+import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
@@ -576,6 +581,18 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
+  // Hook for drag & drop file attachments on table rows
+  const handleFileDrop = useCallback((files: File[], record: EntityData) => {
+    if (files.length > 0) {
+      setDropUploadState({
+        isOpen: true,
+        file: files[0],
+        recordId: String(record.id),
+        recordIdentifier: record._identifier as string | undefined,
+      });
+    }
+  }, []);
+
   // Debug: Compare baseColumns with rawColumns from parseColumns
 
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -614,6 +631,19 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
   const [headerContextMenuAnchor, setHeaderContextMenuAnchor] = useState<HTMLElement | null>(null);
   const [headerContextMenuColumn, setHeaderContextMenuColumn] = useState<MRT_Column<EntityData> | null>(null);
+
+  const [dropUploadState, setDropUploadState] = useState<{
+    isOpen: boolean;
+    file: File | null;
+    recordId: string | null;
+    recordIdentifier?: string;
+  }>({
+    isOpen: false,
+    file: null,
+    recordId: null,
+    recordIdentifier: undefined,
+  });
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleHeaderContextMenu = useCallback(
     (event: React.MouseEvent<HTMLElement>, column: MRT_Column<EntityData>) => {
@@ -719,6 +749,85 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     () => createEditingRowStateUtils(editingRowsRef, setEditingRows),
     [] // Empty deps - only create once, functions use ref for current value
   );
+
+  // State for drop zone overlay
+  const [dropTargetState, setDropTargetState] = useState<{
+    rect: DOMRect;
+    recordId: string;
+  } | null>(null);
+
+  // State for pending selection after upload
+  const [pendingSelectionId, setPendingSelectionId] = useState<string | null>(null);
+
+  const handleTableUpload = async (file: File, description: string) => {
+    if (!dropUploadState.recordId) return;
+
+    setIsUploading(true);
+    try {
+      const orgId = session["#AD_Org_ID"] || session.adOrgId;
+
+      if (!orgId) {
+        throw new Error("Organization ID not found in session");
+      }
+
+      await createAttachment({
+        recordId: dropUploadState.recordId,
+        tabId: tabId,
+        file: file,
+        inpDocumentOrg: orgId as string,
+        description: description,
+      });
+
+      // Fetch ONLY the updated record to avoid full table reload
+      try {
+        const response = (await datasource.get(tab.entityName, {
+          windowId: tab.window,
+          tabId: tabId,
+          criteria: [{ fieldName: "id", value: dropUploadState.recordId, operator: "equals" }],
+          pageSize: 1,
+          _operationType: "fetch",
+          _noCount: true,
+        })) as { data: { response: { data: EntityData[] } } };
+
+        if (response.data?.response?.data?.[0]) {
+          const updatedRecord = response.data.response.data[0];
+          // Patch the record into the view using optimistic updates
+          setOptimisticRecords((prev) => {
+            const filtered = prev.filter((r) => String(r.id) !== dropUploadState.recordId);
+            return [...filtered, updatedRecord];
+          });
+        }
+      } catch (fetchError) {
+        console.error("[Table] Single record fetch failed:", fetchError);
+        logger.warn("[Table] Failed to refresh single record, falling back to full refetch", fetchError);
+        await refetch();
+      }
+
+      // Set pending selection to highlight the row
+      setPendingSelectionId(dropUploadState.recordId);
+
+      // Close modal and reset state
+      setDropUploadState({
+        isOpen: false,
+        file: null,
+        recordId: null,
+        recordIdentifier: undefined,
+      });
+
+      // Show success message (optional)
+      // showSuccessModal(t("forms.attachments.uploadSuccess"));
+    } catch (error) {
+      logger.error("[Table] Error uploading attachment:", error);
+      showErrorModal(t("forms.attachments.errorAddingAttachment"));
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const { getRowDropZoneProps } = useRowDropZone({
+    onFileDrop: handleFileDrop,
+    onDragStateChange: setDropTargetState,
+  });
 
   // Optimistic updates state - tracks pending updates for immediate UI feedback
   const [optimisticRecords, setOptimisticRecords] = useState<EntityData[]>([]);
@@ -2237,6 +2346,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
           setRecordId(record.id);
         },
 
+        // Merge drag & drop handlers for file attachments
+        ...getRowDropZoneProps(record as EntityData),
+
         sx: {
           ...(isSelected && {
             ...sx.rowSelected,
@@ -2247,7 +2359,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
         table,
       };
     },
-    [graph, setRecordId, sx.rowSelected, tab, editingRowUtils]
+    [graph, setRecordId, sx.rowSelected, tab, editingRowUtils, getRowDropZoneProps]
   );
 
   const renderEmptyRowsFallback = useCallback(
@@ -2498,7 +2610,32 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     autoResetRowSelection: false,
   });
 
-  useTableSelection(tab, displayRecords, table.getState().rowSelection, handleTableSelectionChange);
+  useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange);
+
+  // Use ref for table to prevent infinite loop of registrations
+  const tableRef = useRef(table);
+  tableRef.current = table;
+
+  // Register attachment action for toolbar to handle interactions from TableView
+  useEffect(() => {
+    if (registerAttachmentAction && isVisible) {
+      registerAttachmentAction(() => {
+        const currentSelection = tableRef.current.getState().rowSelection;
+        // Filter keys where value is true to ensure valid selection
+        const selectedIds = Object.keys(currentSelection).filter((key) => currentSelection[key]);
+
+        if (selectedIds.length === 1) {
+          const recordId = selectedIds[0];
+          setShouldOpenAttachmentModal(true);
+          setRecordId(recordId);
+        } else if (selectedIds.length === 0) {
+          showErrorModal(t("status.selectRecordError"));
+        } else {
+          showErrorModal(t("status.selectSingleRecordError"));
+        }
+      });
+    }
+  }, [registerAttachmentAction, setShouldOpenAttachmentModal, setRecordId, showErrorModal, t, isVisible]);
 
   // Initialize keyboard navigation manager - use a ref to avoid dependency issues
   const keyboardManagerRef = useRef<KeyboardNavigationManager | null>(null);
@@ -2810,29 +2947,51 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     });
   }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown]);
 
-  // Register attachment action to navigate to FormView
+  // Register attachment action for toolbar to handle interactions from TableView
   useEffect(() => {
-    if (registerAttachmentAction && activeWindow?.windowId && tab) {
+    logger.info("[Table] Attachment action effect triggered", { isVisible, hasRegisterFn: !!registerAttachmentAction });
+
+    // Only register the attachment action when the table is visible
+    if (registerAttachmentAction && isVisible) {
+      logger.info("[Table] Registering attachment action");
       registerAttachmentAction(() => {
-        const selectedRecordId = getSelectedRecord(activeWindow.windowId, tab.id);
-        if (selectedRecordId) {
-          // Set flag to open attachment modal
+        logger.info("[Table] Attachment action triggered");
+        const currentSelection = table.getState().rowSelection;
+        const selectedIds = Object.keys(currentSelection);
+
+        if (selectedIds.length === 1) {
+          const recordId = selectedIds[0];
+          logger.info("[Table] Navigating to FormView with recordId:", recordId);
           setShouldOpenAttachmentModal(true);
-          // Navigate to FormView
-          setRecordId(selectedRecordId);
+          setRecordId(recordId);
+        } else if (selectedIds.length === 0) {
+          showErrorModal(t("status.selectRecordError"));
         } else {
-          logger.warn("No record selected for attachment action");
+          showErrorModal(t("status.selectSingleRecordError"));
         }
       });
     }
-  }, [
-    registerAttachmentAction,
-    activeWindow?.windowId,
-    tab,
-    getSelectedRecord,
-    setRecordId,
-    setShouldOpenAttachmentModal,
-  ]);
+
+    return () => {
+      // Clean up the attachment action when table becomes invisible or unmounts
+      logger.info("[Table] Cleanup attachment action", { isVisible });
+      if (registerAttachmentAction && isVisible) {
+        registerAttachmentAction(undefined);
+      }
+    };
+  }, [registerAttachmentAction, table, setShouldOpenAttachmentModal, setRecordId, showErrorModal, t, isVisible]);
+
+  // Apply pending selection after data refresh
+  useEffect(() => {
+    if (pendingSelectionId && table && !loading && !isUploading) {
+      // Small timeout to ensure data is fully loaded in MRT
+      const timer = setTimeout(() => {
+        table.setRowSelection({ [pendingSelectionId]: true });
+        setPendingSelectionId(null);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [pendingSelectionId, table, loading, isUploading]);
 
   if (error) {
     return (
@@ -2957,6 +3116,37 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
         activeSummary={summaryState}
         data-testid="HeaderContextMenu__8ca888"
       />
+      <AddAttachmentModal
+        open={dropUploadState.isOpen}
+        onClose={() =>
+          setDropUploadState({
+            isOpen: false,
+            file: null,
+            recordId: null,
+            recordIdentifier: undefined,
+          })
+        }
+        onUpload={handleTableUpload}
+        initialFile={dropUploadState.file}
+        isLoading={isUploading}
+        recordIdentifier={dropUploadState.recordIdentifier}
+        data-testid="AddAttachmentModal__8ca888"
+      />
+      {/* Visual Overlay for Drop Zone */}
+      {dropTargetState && (
+        <div
+          className="drop-target-overlay"
+          style={{
+            position: "fixed",
+            top: dropTargetState.rect.top,
+            left: dropTargetState.rect.left,
+            width: dropTargetState.rect.width,
+            height: dropTargetState.rect.height,
+            pointerEvents: "none", // Ensure drops fall through to the row
+            zIndex: 9999,
+          }}
+        />
+      )}
     </div>
   );
 };

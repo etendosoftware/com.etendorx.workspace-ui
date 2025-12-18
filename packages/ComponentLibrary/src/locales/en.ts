@@ -47,6 +47,7 @@ const en = {
     about: "About",
     clone: "Clone",
     cloneWithChildren: "Clone With Children",
+    change: "Change",
   },
   forms: {
     sections: {
@@ -54,6 +55,7 @@ const en = {
       audit: "Audit",
       linkedItems: "Linked Items",
       notes: "Notes",
+      moreInformation: "More Information",
       noCategories: "No Categories Available",
       selectCategory: "Please select a category",
     },
@@ -101,6 +103,10 @@ const en = {
       errorDownloadingAttachment: "Failed to download attachment",
       errorDownloadingAllAttachments: "Failed to download all attachments",
       missingOrganization: "Organization ID is required",
+      importFromUrl: "Import from URL",
+      dropZoneText: "Drag and drop or click to choose files",
+      maxSizeText: "Maximum file size: 10 MB",
+      noFileSelected: "No file selected",
     },
     statusBar: {
       closeRecord: "Close Record",
@@ -120,6 +126,7 @@ const en = {
     deleteConfirmation: "Are you sure you want to delete",
     multipleDeleteConfirmation: "Are you sure you want to delete the selected",
     selectRecordError: "Please select a record first",
+    selectSingleRecordError: "Please select only one record",
     saveSuccess: "{{entityType}} has been saved successfully",
     saveError: "Error saving record",
     noIdError: "Cannot delete a record without ID",

@@ -3,10 +3,9 @@ import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
 import { getErpAuthHeaders } from "../../_utils/forwardConfig";
 import { SLUGS_CATEGORIES, SLUGS_METHODS, URL_MUTATION } from "@/app/api/_utils/slug/constants";
-import { detectCharset, isBinaryContentType, rewriteHtmlResourceUrls, createHtmlResponse } from "./route.helpers";
+import { detectCharset, isBinaryContentType, createHtmlResponse, rewriteHtmlResourceUrls } from "./route.helpers";
 
 type requestBody = string | ReadableStream<Uint8Array> | undefined;
-
 // Custom error class for ERP requests
 class ErpRequestError extends Error {
   public readonly status: number;
@@ -37,6 +36,8 @@ const getCachedErpData = unstable_cache(
     const slugContainsCopilot = slug.includes(SLUGS_CATEGORIES.COPILOT);
     if (slugContainsCopilot) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
+    } else if (slug.startsWith(SLUGS_CATEGORIES.UTILITY)) {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else if (slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else {
@@ -92,6 +93,12 @@ const getCachedErpData = unstable_cache(
  * @param method - HTTP method
  * @returns true if this is a mutation route that should not be cached
  */
+/**
+ * Determines if a route should bypass caching (mutations or non-GET requests)
+ * @param slug - The API slug path
+ * @param method - HTTP method
+ * @returns true if this is a mutation route that should not be cached
+ */
 function isMutationRoute(slug: string, method: string): boolean {
   return (
     slug.includes(SLUGS_METHODS.CREATE) ||
@@ -101,6 +108,11 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.startsWith(SLUGS_CATEGORIES.NOTES) || // Notes servlet needs session cookies
     slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || // Attachments servlet needs session cookies and multipart/form-data
     slug.startsWith(SLUGS_CATEGORIES.LEGACY) || // Legacy servlets need session cookies
+    // Static resources and direct handling
+    slug.startsWith("web/") ||
+    slug.startsWith("ad_forms/") ||
+    slug.startsWith("org.openbravo") ||
+    slug.startsWith("etendo/") ||
     method !== "GET"
   );
 }
@@ -207,11 +219,6 @@ async function handleMutationRequest(
     return { stream: response.body, headers: response.headers };
   }
 
-  // Check if response is HTML (for iframes like About modal)
-  if (responseContentType?.toLowerCase().includes("text/html")) {
-    return { htmlContent: response };
-  }
-
   // Check if response is a binary file (for downloads)
   if (responseContentType && isBinaryContentType(responseContentType)) {
     return { binaryFile: response };
@@ -222,12 +229,20 @@ async function handleMutationRequest(
   const encoding = detectCharset(responseContentType);
   const responseText = new TextDecoder(encoding).decode(responseBuffer);
 
-  // Fallback: Check if response body looks like HTML (when Content-Type is missing)
+  // Check if response is HTML (with proper encoding detection already applied)
   if (
+    responseContentType?.toLowerCase().includes("text/html") ||
     responseText.trim().toLowerCase().startsWith("<html") ||
     responseText.trim().toLowerCase().startsWith("<!doctype html")
   ) {
-    const rewrittenHtml = rewriteHtmlResourceUrls(responseText);
+    // Rewrite HTML to inject <base> tag pointing to ETENDO_CLASSIC_HOST
+    // This allows relative paths on the client to resolve directly to the backend
+    // Rewrite HTML to inject <base> tag pointing to ETENDO_CLASSIC_HOST
+    // This allows relative paths on the client to resolve directly to the backend
+    const rewrittenHtml = rewriteHtmlResourceUrls(
+      responseText,
+      process.env.ETENDO_CLASSIC_HOST || process.env.ETENDO_CLASSIC_URL
+    );
     const htmlResponse = createHtmlResponse(rewrittenHtml, response);
     return { htmlContent: htmlResponse };
   }
@@ -301,6 +316,16 @@ function buildErpUrl(slug: string, requestUrl: string): string {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.COPILOT)) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
+  } else if (
+    slug.startsWith("web/") ||
+    slug.startsWith("ad_forms/") ||
+    slug.startsWith("org.openbravo") ||
+    slug.startsWith("etendo/")
+  ) {
+    // Direct mapping for static resources and other classic paths
+    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
+  } else if (slug.startsWith(SLUGS_CATEGORIES.UTILITY)) {
+    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
   }
