@@ -132,7 +132,7 @@ export const CellEditorFactory = React.memo(CellEditorFactoryComponent, (prevPro
     prevProps.disabled === nextProps.disabled &&
     prevProps.rowId === nextProps.rowId &&
     prevProps.columnId === nextProps.columnId &&
-    prevProps.field?.name === nextProps.field?.name &&
+    prevProps.field === nextProps.field &&
     prevProps.field?.isMandatory === nextProps.field?.isMandatory
   );
 });

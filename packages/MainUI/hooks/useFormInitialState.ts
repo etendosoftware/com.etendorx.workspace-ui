@@ -57,7 +57,7 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
 
     const processedParentData = { ...parentData };
 
-    return { ...acc, ...processedParentData };
+    return { ...processedParentData, ...acc };
   }, [fieldsByColumnName, formInitialization, parentData]);
 
   return initialState;

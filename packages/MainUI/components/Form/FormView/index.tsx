@@ -299,18 +299,30 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    *
    * Dependencies: availableFormData, tab.id, stableReset
    */
+  const lastInitializedDataRef = useRef<string>("");
+
   useEffect(() => {
     // If we are in a "hidden" state (empty recordId and not NEW mode), just reset and return
     // This prevents unnecessary initialization logic and potential loops
     if (!currentRecordId && currentMode !== FormMode.NEW) {
       stableReset({}, { keepDirty: false });
       setIsFormInitializing(false);
+      lastInitializedDataRef.current = "";
       return;
     }
 
-    if (!availableFormData) {
+    if (!availableFormData || loadingFormInitialization) {
       return;
     }
+
+    // Prevent resetting if the data hasn't actually changed
+    // This safeguards against spurious re-renders or upstream reference changes
+    // that would otherwise overwrite user edits or callout results
+    const currentDataString = JSON.stringify(availableFormData);
+    if (lastInitializedDataRef.current === currentDataString) {
+      return;
+    }
+    lastInitializedDataRef.current = currentDataString;
 
     setIsFormInitializing(true);
     const processedData = processFormData(availableFormData);
@@ -328,7 +340,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         globalCalloutManager.resume();
       }, 100); // Delay to allow all values to settle before enabling callouts
     });
-  }, [availableFormData, tab.id, stableReset]);
+  }, [availableFormData, tab.id, stableReset, loadingFormInitialization, currentRecordId, currentMode]);
 
   /**
    * Update graph selection when navigating to a different record

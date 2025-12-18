@@ -30,7 +30,7 @@ export const TableDirSelector = ({
 
   return (
     <Select
-      name={field.hqlName}
+      name={field.hqlName || field.columnName || field.name}
       options={options}
       onFocus={refetch}
       onSearch={search}
