@@ -337,6 +337,19 @@ const Select = ({
 // OPERATORS
 // ============================================
 
+const getInputTypeHelper = (selectedColumn: any): string => {
+  if (selectedColumn?.type === "number") return "number";
+  if (selectedColumn?.type === "date") return "date";
+  return "text";
+};
+
+const getInputClassesHelper = (isDisabled: boolean, baseClasses: string): string => {
+  if (isDisabled) {
+    return `${baseClasses} bg-gray-50 border-gray-200 border-dotted cursor-not-allowed`;
+  }
+  return `${baseClasses} bg-gray-50 border-gray-300 hover:border-gray-400 focus:bg-blue-50 focus:border-blue-600 focus:outline-none`;
+};
+
 const getOperatorsForType = (type: string, t: (key: string) => string) => {
   const base = [
     { id: "equals", label: `= ${t("advancedFilters.operators.equals")}` },
@@ -423,20 +436,6 @@ const FilterConditionRow = memo(
 
     const inputSizeClasses = size === "small" ? "h-8 px-2 text-xs" : "h-10 px-3 text-sm";
 
-    const getInputType = () => {
-      if (selectedColumn?.type === "number") return "number";
-      if (selectedColumn?.type === "date") return "date";
-      return "text";
-    };
-
-    const getInputClasses = () => {
-      const baseClasses = `w-full rounded-t border-0 border-b-2 transition-all ${inputSizeClasses}`;
-      if (!condition.operator) {
-        return `${baseClasses} bg-gray-50 border-gray-200 border-dotted cursor-not-allowed`;
-      }
-      return `${baseClasses} bg-gray-50 border-gray-300 hover:border-gray-400 focus:bg-blue-50 focus:border-blue-600 focus:outline-none`;
-    };
-
     const getEmptyInputClasses = () => {
       return `bg-gray-100 rounded-t border-b-2 border-gray-200 border-dotted ${size === "small" ? "h-8" : "h-10"}`;
     };
@@ -459,14 +458,15 @@ const FilterConditionRow = memo(
           />
         );
       }
+      const inputBaseClasses = `w-full rounded-t border-0 border-b-2 transition-all ${inputSizeClasses}`;
       return (
         <input
-          type={getInputType()}
+          type={getInputTypeHelper(selectedColumn)}
           value={condition.value}
           onChange={(e) => onUpdate(condition.id, { value: e.target.value })}
           disabled={!condition.operator}
           placeholder={t("advancedFilters.value")}
-          className={getInputClasses()}
+          className={getInputClassesHelper(!condition.operator, inputBaseClasses)}
         />
       );
     };
@@ -578,20 +578,6 @@ const FilterRow = memo(({ condition, columns, isFirst, onUpdate, onDelete, onLoa
     }
   }, [onLoadOptions, condition.column]);
 
-  const getInputType = () => {
-    if (selectedColumn?.type === "number") return "number";
-    if (selectedColumn?.type === "date") return "date";
-    return "text";
-  };
-
-  const getInputClasses = () => {
-    const baseClasses = "w-full h-10 px-3 text-sm rounded-t border-0 border-b-2 transition-all";
-    if (!condition.operator) {
-      return `${baseClasses} bg-gray-50 border-gray-200 border-dotted cursor-not-allowed`;
-    }
-    return `${baseClasses} bg-gray-50 border-gray-300 hover:border-gray-400 focus:bg-blue-50 focus:border-blue-600 focus:outline-none`;
-  };
-
   const renderValueInput = () => {
     if (hideValueInput) {
       return <div className="h-10 bg-gray-100 rounded-t border-b-2 border-gray-200 border-dotted" />;
@@ -609,14 +595,15 @@ const FilterRow = memo(({ condition, columns, isFirst, onUpdate, onDelete, onLoa
         />
       );
     }
+    const inputBaseClasses = "w-full h-10 px-3 text-sm rounded-t border-0 border-b-2 transition-all";
     return (
       <input
-        type={getInputType()}
+        type={getInputTypeHelper(selectedColumn)}
         value={condition.value}
         onChange={(e) => onUpdate(condition.id, { value: e.target.value })}
         disabled={!condition.operator}
         placeholder={t("advancedFilters.value")}
-        className={getInputClasses()}
+        className={getInputClassesHelper(!condition.operator, inputBaseClasses)}
       />
     );
   };
@@ -819,19 +806,17 @@ const TableFilter = ({ columns, onApplyFilters, onClear, onLoadOptions, initialF
     return [{ type: "condition", ...createEmptyCondition() }];
   });
 
-  // Count valid filters
+  const countConditionValidFilters = (conditions: any[]): number => {
+    return conditions.filter((c) => c.column && c.operator).length;
+  };
+
   const countValidFilters = (): number => {
-    let count = 0;
-    for (const item of items) {
+    return items.reduce((count, item) => {
       if (item.type === "condition") {
-        if (item.column && item.operator) count++;
-      } else if (item.type === "group") {
-        for (const c of item.conditions) {
-          if (c.column && c.operator) count++;
-        }
+        return count + (item.column && item.operator ? 1 : 0);
       }
-    }
-    return count;
+      return count + countConditionValidFilters(item.conditions);
+    }, 0);
   };
 
   const validFilterCount = countValidFilters();
