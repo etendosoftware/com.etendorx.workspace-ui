@@ -33,3 +33,4 @@ app.log
 
 # Nextjs Turbo
 .turbo/
+packages/MainUI/next-env.d.ts
