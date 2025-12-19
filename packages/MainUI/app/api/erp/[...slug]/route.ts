@@ -38,7 +38,11 @@ const getCachedErpData = unstable_cache(
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
     } else if (slug.startsWith(SLUGS_CATEGORIES.UTILITY)) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
-    } else if (slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
+    } else if (
+      slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) ||
+      slug.startsWith(SLUGS_CATEGORIES.NOTES) ||
+      slug.includes(SLUGS_CATEGORIES.INFO)
+    ) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
@@ -107,6 +111,7 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.includes(SLUGS_CATEGORIES.COPILOT) || // All copilot routes should bypass cache for real-time data
     slug.startsWith(SLUGS_CATEGORIES.NOTES) || // Notes servlet needs session cookies
     slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || // Attachments servlet needs session cookies and multipart/form-data
+    slug.includes(SLUGS_CATEGORIES.INFO) || // Info servlets (e.g., AttributeSetInstance) need session cookies
     slug.startsWith(SLUGS_CATEGORIES.LEGACY) || // Legacy servlets need session cookies
     // Static resources and direct handling
     slug.startsWith("web/") ||
@@ -306,8 +311,12 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 // Helper: Build ERP URL
 function buildErpUrl(slug: string, requestUrl: string): string {
   let erpUrl: string;
-  if (slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
-    // Attachments servlet uses direct mapping (e.g., /attachments)
+  if (
+    slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) ||
+    slug.startsWith(SLUGS_CATEGORIES.NOTES) ||
+    slug.includes(SLUGS_CATEGORIES.INFO)
+  ) {
+    // Attachments/Notes/Info servlets use direct mapping (e.g., /attachments, /etendo//info/...)
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.LEGACY)) {
     // Legacy servlets use direct mapping (e.g., /meta/legacy/ad_forms/about.html)

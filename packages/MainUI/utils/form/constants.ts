@@ -62,6 +62,9 @@ export const FIELD_REFERENCE_CODES = {
   LOCATION_21: "21",
   SELECT_30: "30",
 
+  // Product Attribute reference
+  PATTRIBUTE: "35",
+
   // Advanced numeric types
   DECIMAL: "800008",
 

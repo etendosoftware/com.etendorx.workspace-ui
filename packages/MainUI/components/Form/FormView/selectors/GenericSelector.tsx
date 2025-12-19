@@ -30,6 +30,7 @@ import { PasswordSelector } from "./PasswordSelector";
 import { TableDirSelector } from "./TableDirSelector";
 import DatetimeSelector from "./DatetimeSelector";
 import LocationSelector from "./LocationSelector";
+import AttributeSetInstanceSelector from "./AttributeSetInstanceSelector";
 
 export type GenericSelectorProps = {
   field: Field;
@@ -75,6 +76,14 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         return <LocationSelector field={field} isReadOnly={isReadOnly} data-testid="LocationSelector__6e80fa" />;
       }
       return <SelectSelector field={field} isReadOnly={isReadOnly} data-testid="SelectSelector__6e80fa" />;
+    case FIELD_REFERENCE_CODES.PATTRIBUTE:
+      return (
+        <AttributeSetInstanceSelector
+          field={field}
+          isReadOnly={isReadOnly}
+          data-testid="AttributeSetInstanceSelector__6e80fa"
+        />
+      );
     case FIELD_REFERENCE_CODES.DECIMAL:
     case FIELD_REFERENCE_CODES.NUMERIC:
     case FIELD_REFERENCE_CODES.RATE:
