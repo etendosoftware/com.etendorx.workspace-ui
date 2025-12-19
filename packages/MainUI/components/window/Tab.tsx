@@ -1000,13 +1000,15 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         anchorEl={advancedFiltersAnchor}
         onClose={() => setAdvancedFiltersAnchor(null)}
         className="w-[800px] max-w-[90vw] max-h-[80vh] overflow-y-auto"
-        offsetY={8}>
+        offsetY={8}
+        data-testid="Menu__5893c8">
         <TableFilter
           columns={filterColumns}
           onApplyFilters={handleApplyFilters}
           onLoadOptions={handleLoadOptions}
           initialFilters={advancedFilters}
           t={(k: string) => t(k as any)}
+          data-testid="TableFilter__5893c8"
         />
       </Menu>
     </div>
