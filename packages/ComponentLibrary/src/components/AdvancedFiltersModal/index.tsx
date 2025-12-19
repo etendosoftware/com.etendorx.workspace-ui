@@ -230,6 +230,18 @@ const Select = ({
     red: "bg-red-100 text-red-700",
   };
 
+  const getTriggerStateClasses = () => {
+    if (disabled) return "bg-gray-50 border-gray-200 border-dotted cursor-not-allowed opacity-60";
+    if (isOpen) return "bg-blue-50 border-blue-600 text-blue-600";
+    return "bg-gray-50 border-gray-300 hover:border-gray-400 hover:bg-gray-100";
+  };
+
+  const getLabelTextClasses = () => {
+    const sizeClass = size === "small" ? "text-xs" : "text-sm";
+    if (!selectedOption) return `${sizeClass} text-gray-400`;
+    return `${sizeClass} ${isOpen ? "text-blue-600 font-medium" : "text-gray-800 font-medium"}`;
+  };
+
   return (
     <>
       <div
@@ -242,21 +254,14 @@ const Select = ({
           }
         }}
         tabIndex={disabled ? -1 : 0}
-        className={`relative flex items-center justify-between rounded-t border-0 border-b-2 transition-all cursor-pointer select-none ${sizeClasses} ${
-          disabled
-            ? "bg-gray-50 border-gray-200 border-dotted cursor-not-allowed opacity-60"
-            : isOpen
-              ? "bg-blue-50 border-blue-600 text-blue-600"
-              : "bg-gray-50 border-gray-300 hover:border-gray-400 hover:bg-gray-100"
-        }`}>
+        className={`relative flex items-center justify-between rounded-t border-0 border-b-2 transition-all cursor-pointer select-none ${sizeClasses} ${getTriggerStateClasses()}`}>
         {showAsTag && selectedOption?.color ? (
           <span
             className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colorClasses[selectedOption.color as keyof typeof colorClasses] || colorClasses.gray}`}>
             {selectedOption.label}
           </span>
         ) : (
-          <span
-            className={`truncate pr-2 ${size === "small" ? "text-xs" : "text-sm"} ${selectedOption ? (isOpen ? "text-blue-600 font-medium" : "text-gray-800 font-medium") : "text-gray-400"}`}>
+          <span className={`truncate pr-2 ${getLabelTextClasses()}`}>
             {selectedOption?.label || placeholder}
           </span>
         )}
@@ -418,6 +423,54 @@ const FilterConditionRow = memo(
 
     const inputSizeClasses = size === "small" ? "h-8 px-2 text-xs" : "h-10 px-3 text-sm";
 
+    const getInputType = () => {
+      if (selectedColumn?.type === "number") return "number";
+      if (selectedColumn?.type === "date") return "date";
+      return "text";
+    };
+
+    const getInputClasses = () => {
+      const baseClasses = `w-full rounded-t border-0 border-b-2 transition-all ${inputSizeClasses}`;
+      if (!condition.operator) {
+        return `${baseClasses} bg-gray-50 border-gray-200 border-dotted cursor-not-allowed`;
+      }
+      return `${baseClasses} bg-gray-50 border-gray-300 hover:border-gray-400 focus:bg-blue-50 focus:border-blue-600 focus:outline-none`;
+    };
+
+    const getEmptyInputClasses = () => {
+      return `bg-gray-100 rounded-t border-b-2 border-gray-200 border-dotted ${size === "small" ? "h-8" : "h-10"}`;
+    };
+
+    const renderValueInput = () => {
+      if (hideValueInput) {
+        return <div className={getEmptyInputClasses()} />;
+      }
+      if (showValueSelect) {
+        return (
+          <Select
+            options={valueOptions}
+            value={condition.value}
+            onChange={(v) => onUpdate(condition.id, { value: v })}
+            placeholder={t("advancedFilters.value")}
+            disabled={!condition.operator}
+            size={size}
+            onSearch={onLoadOptions ? (val) => onLoadOptions(condition.column, val) : undefined}
+            onFocus={onLoadOptions ? () => onLoadOptions(condition.column, "") : undefined}
+          />
+        );
+      }
+      return (
+        <input
+          type={getInputType()}
+          value={condition.value}
+          onChange={(e) => onUpdate(condition.id, { value: e.target.value })}
+          disabled={!condition.operator}
+          placeholder={t("advancedFilters.value")}
+          className={getInputClasses()}
+        />
+      );
+    };
+
     return (
       <div className="flex items-center gap-2 py-1.5">
         {/* Logical Operator / "Donde" */}
@@ -460,35 +513,7 @@ const FilterConditionRow = memo(
 
         {/* Value */}
         <div className="flex-1 min-w-[90px]">
-          {hideValueInput ? (
-            <div
-              className={`bg-gray-100 rounded-t border-b-2 border-gray-200 border-dotted ${size === "small" ? "h-8" : "h-10"}`}
-            />
-          ) : showValueSelect ? (
-            <Select
-              options={valueOptions}
-              value={condition.value}
-              onChange={(v) => onUpdate(condition.id, { value: v })}
-              placeholder={t("advancedFilters.value")}
-              disabled={!condition.operator}
-              size={size}
-              onSearch={onLoadOptions ? (val) => onLoadOptions(condition.column, val) : undefined}
-              onFocus={onLoadOptions ? () => onLoadOptions(condition.column, "") : undefined}
-            />
-          ) : (
-            <input
-              type={selectedColumn?.type === "number" ? "number" : selectedColumn?.type === "date" ? "date" : "text"}
-              value={condition.value}
-              onChange={(e) => onUpdate(condition.id, { value: e.target.value })}
-              disabled={!condition.operator}
-              placeholder={t("advancedFilters.value")}
-              className={`w-full rounded-t border-0 border-b-2 transition-all ${inputSizeClasses} ${
-                !condition.operator
-                  ? "bg-gray-50 border-gray-200 border-dotted cursor-not-allowed"
-                  : "bg-gray-50 border-gray-300 hover:border-gray-400 focus:bg-blue-50 focus:border-blue-600 focus:outline-none"
-              }`}
-            />
-          )}
+          {renderValueInput()}
         </div>
 
         {/* Delete */}
@@ -553,6 +578,49 @@ const FilterRow = memo(({ condition, columns, isFirst, onUpdate, onDelete, onLoa
     }
   }, [onLoadOptions, condition.column]);
 
+  const getInputType = () => {
+    if (selectedColumn?.type === "number") return "number";
+    if (selectedColumn?.type === "date") return "date";
+    return "text";
+  };
+
+  const getInputClasses = () => {
+    const baseClasses = "w-full h-10 px-3 text-sm rounded-t border-0 border-b-2 transition-all";
+    if (!condition.operator) {
+      return `${baseClasses} bg-gray-50 border-gray-200 border-dotted cursor-not-allowed`;
+    }
+    return `${baseClasses} bg-gray-50 border-gray-300 hover:border-gray-400 focus:bg-blue-50 focus:border-blue-600 focus:outline-none`;
+  };
+
+  const renderValueInput = () => {
+    if (hideValueInput) {
+      return <div className="h-10 bg-gray-100 rounded-t border-b-2 border-gray-200 border-dotted" />;
+    }
+    if (showValueSelect) {
+      return (
+        <Select
+          options={valueOptions}
+          value={condition.value}
+          onChange={(v) => onUpdate(condition.id, { value: v })}
+          placeholder={t("advancedFilters.value")}
+          disabled={!condition.operator}
+          onSearch={onLoadOptions ? handleSearch : undefined}
+          onFocus={onLoadOptions ? handleFocus : undefined}
+        />
+      );
+    }
+    return (
+      <input
+        type={getInputType()}
+        value={condition.value}
+        onChange={(e) => onUpdate(condition.id, { value: e.target.value })}
+        disabled={!condition.operator}
+        placeholder={t("advancedFilters.value")}
+        className={getInputClasses()}
+      />
+    );
+  };
+
   return (
     <div className="flex items-center gap-3 py-2">
       {/* Logical Operator / "Donde" */}
@@ -592,32 +660,7 @@ const FilterRow = memo(({ condition, columns, isFirst, onUpdate, onDelete, onLoa
 
       {/* Value */}
       <div className="flex-1 min-w-[120px]">
-        {hideValueInput ? (
-          <div className="h-10 bg-gray-100 rounded-t border-b-2 border-gray-200 border-dotted" />
-        ) : showValueSelect ? (
-          <Select
-            options={valueOptions}
-            value={condition.value}
-            onChange={(v) => onUpdate(condition.id, { value: v })}
-            placeholder={t("advancedFilters.value")}
-            disabled={!condition.operator}
-            onSearch={onLoadOptions ? handleSearch : undefined}
-            onFocus={onLoadOptions ? handleFocus : undefined}
-          />
-        ) : (
-          <input
-            type={selectedColumn?.type === "number" ? "number" : selectedColumn?.type === "date" ? "date" : "text"}
-            value={condition.value}
-            onChange={(e) => onUpdate(condition.id, { value: e.target.value })}
-            disabled={!condition.operator}
-            placeholder={t("advancedFilters.value")}
-            className={`w-full h-10 px-3 text-sm rounded-t border-0 border-b-2 transition-all ${
-              !condition.operator
-                ? "bg-gray-50 border-gray-200 border-dotted cursor-not-allowed"
-                : "bg-gray-50 border-gray-300 hover:border-gray-400 focus:bg-blue-50 focus:border-blue-600 focus:outline-none"
-            }`}
-          />
-        )}
+        {renderValueInput()}
       </div>
 
       {/* Delete */}
@@ -890,29 +933,20 @@ const TableFilter = ({ columns, onApplyFilters, onClear, onLoadOptions, initialF
     setItems([{ type: "condition", ...createEmptyCondition() }]);
   };
 
+  const processFilterItem = (item: any): any => {
+    if (item.type === "condition") {
+      return item.column && item.operator ? { type: "condition", ...item } : null;
+    }
+    const validConditions = item.conditions.filter((c: any) => c.column && c.operator);
+    return validConditions.length > 0 ? { ...item, conditions: validConditions } : null;
+  };
+
   // Apply filters
   const handleApply = (): void => {
-    const result = items
-      .map((item) => {
-        if (item.type === "condition") {
-          if (item.column && item.operator) {
-            return { type: "condition", ...item };
-          }
-          return null;
-        }
-        const validConditions = item.conditions.filter((c: any) => c.column && c.operator);
-        if (validConditions.length > 0) {
-          return { ...item, conditions: validConditions };
-        }
-        return null;
-      })
-      .filter(Boolean);
-
-    // If no filters remain after clearing, execute the onClear callback
+    const result = items.map(processFilterItem).filter(Boolean);
     if (result.length === 0) {
       onClear?.();
     }
-
     onApplyFilters(result);
   };
 
