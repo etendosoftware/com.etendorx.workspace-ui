@@ -74,12 +74,7 @@ interface WindowContextI {
     isApplied: boolean,
     tabLevel?: number
   ) => void;
-  setTableAdvancedCriteria: (
-    windowIdentifier: string,
-    tabId: string,
-    criteria: any,
-    tabLevel?: number
-  ) => void;
+  setTableAdvancedCriteria: (windowIdentifier: string, tabId: string, criteria: any, tabLevel?: number) => void;
   setNavigationActiveLevels: (windowIdentifier: string, activeLevels: number[]) => void;
   setNavigationActiveTabsByLevel: (windowIdentifier: string, activeTabsByLevel: Map<number, string>) => void;
   setWindowActive: ({

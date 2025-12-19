@@ -253,16 +253,16 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
   }, [windowIdentifier]);
 
-  const handleAdvancedFilters = useCallback((anchorEl?: HTMLElement) => {
+  const handleAdvancedFilters = useCallback((anchorEl?: HTMLElement): void => {
     if (anchorEl) {
       setAdvancedFiltersAnchor(anchorEl);
     }
   }, []);
 
   const handleApplyFilters = useCallback(
-    (filters: any[]) => {
+    (filters: any[]): void => {
       // Helper to map operators
-      const mapOperator = (op: string) => {
+      const mapOperator = (op: string): string => {
         switch (op) {
           case "equals":
             return "equals";
@@ -302,7 +302,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       };
 
       // Helper to convert value
-      const convertValue = (val: any, op: string) => {
+      const convertValue = (val: any, op: string): any => {
         if (op === "is_true") return true;
         if (op === "is_false") return false;
         return val;
@@ -355,7 +355,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   );
 
   const handleSetFilterOptions = useCallback(
-    (columnId: string, options: FilterOption[], _hasMore: boolean, append: boolean) => {
+    (columnId: string, options: FilterOption[], _hasMore: boolean, append: boolean): void => {
       setColumnOptions((prev) => ({
         ...prev,
         [columnId]: append ? [...(prev[columnId] || []), ...options] : options,
@@ -371,7 +371,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, [tab.fields]);
 
   const handleLoadOptions = useCallback(
-    async (columnId: string, searchQuery: string) => {
+    async (columnId: string, searchQuery: string): Promise<void> => {
       const column = parsedColumns.find((col) => col.id === columnId || col.columnName === columnId);
       if (!column) return;
 
@@ -439,7 +439,17 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
    * Builds field metadata array matching SmartClient format
    */
   const buildFieldsArray = useCallback(
-    (orderedFieldNames: string[], visibility: Record<string, boolean>, fields: Record<string, unknown> | undefined) => {
+    (
+      orderedFieldNames: string[],
+      visibility: Record<string, boolean>,
+      fields: Record<string, unknown> | undefined
+    ): Array<{
+      name: string;
+      visible?: boolean;
+      frozen?: boolean;
+      width?: number;
+      autoFitWidth?: boolean;
+    }> => {
       const fieldsArray: Array<{
         name: string;
         visible?: boolean;
@@ -483,7 +493,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
    * Format: ({field:"[...]",sort:"(...))",hilite:null,group:{groupByFields:"",groupingModes:{}},filterClause:null,summaryFunctions:{}})
    */
   const buildViewState = useCallback(
-    (fieldsArray: Array<Record<string, unknown>>, sorting: Array<{ id: string; desc: boolean }>) => {
+    (fieldsArray: Array<Record<string, unknown>>, sorting: Array<{ id: string; desc: boolean }>): string => {
       const fieldJson = JSON.stringify(fieldsArray);
 
       let sortJson: string;
@@ -602,7 +612,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   /**
    * Downloads CSV file to client
    */
-  const downloadCSVFile = useCallback((csvContent: string) => {
+  const downloadCSVFile = useCallback((csvContent: string): void => {
     if (!csvContent.trim()) {
       throw new Error("No data to export");
     }
@@ -628,7 +638,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   /**
    * Validates export prerequisites
    */
-  const validateExportData = useCallback(() => {
+  const validateExportData = useCallback((): void => {
     if (!tab?.entityName) {
       throw new Error("Entity name not found");
     }
@@ -761,7 +771,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     [extractErrorFromResponse, tryExtractCSVFromDataObject, tryExtractCSVFromTopLevel]
   );
 
-  const handleExportCSV = useCallback(async () => {
+  const handleExportCSV = useCallback(async (): Promise<void> => {
     try {
       validateExportData();
 

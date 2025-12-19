@@ -1,14 +1,20 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import FilterIconSVG from "../../assets/icons/filter.svg";
+import ChevronDownIconSVG from "../../assets/icons/chevron-down.svg";
+import TrashIconSVG from "../../assets/icons/trash.svg";
+import PlusIconSVG from "../../assets/icons/plus.svg";
+import RefreshIconSVG from "../../assets/icons/refresh-cw.svg";
+import CheckIconSVG from "../../assets/icons/check.svg";
 
 // ============================================
 // HOOKS
 // ============================================
 
-const useClickOutside = (ref, handler) => {
+const useClickOutside = (ref: React.RefObject<any>, handler: () => void): void => {
   useEffect(() => {
-    const listener = (event) => {
-      if (!ref.current || ref.current.contains(event.target)) return;
+    const listener = (event: MouseEvent | TouchEvent) => {
+      if (!ref.current || ref.current.contains(event.target as Node)) return;
       handler();
     };
     document.addEventListener("mousedown", listener);
@@ -20,66 +26,20 @@ const useClickOutside = (ref, handler) => {
   }, [ref, handler]);
 };
 
-const useEscapeKey = (handler) => {
+const useEscapeKey = (handler: () => void): void => {
   useEffect(() => {
-    const listener = (e) => e.key === "Escape" && handler();
+    const listener = (e: KeyboardEvent) => e.key === "Escape" && handler();
     document.addEventListener("keydown", listener);
     return () => document.removeEventListener("keydown", listener);
   }, [handler]);
 };
 
-const useWindowResize = (handler) => {
+const useWindowResize = (handler: () => void): void => {
   useEffect(() => {
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, [handler]);
 };
-
-// ============================================
-// ICONS
-// ============================================
-
-const FilterIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-  </svg>
-);
-
-
-
-const ChevronDownIcon = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
-);
-
-const TrashIcon = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-  </svg>
-);
-
-const PlusIcon = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19" />
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-
-const RefreshIcon = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="23 4 23 10 17 10" />
-    <polyline points="1 20 1 14 7 14" />
-    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-  </svg>
-);
-
-const CheckIcon = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-  </svg>
-);
 
 // ============================================
 // MENU COMPONENT
@@ -133,19 +93,28 @@ const Menu = ({ anchorEl, onClose, children, className = "", offsetX = 0, offset
   }, [anchorEl, offsetX, offsetY]);
 
   useEffect(() => {
-    if (!anchorEl) { setVisible(false); return; }
-    const timer = setTimeout(() => { calculatePosition(); setVisible(true); }, 0);
+    if (!anchorEl) {
+      setVisible(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      calculatePosition();
+      setVisible(true);
+    }, 0);
     return () => clearTimeout(timer);
   }, [anchorEl, calculatePosition]);
-
-
 
   const handleClose = () => {
     setVisible(false);
     timeoutRef.current = setTimeout(() => onClose(), 150);
   };
 
-  useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
+  useEffect(
+    () => () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    },
+    []
+  );
 
   useClickOutside(menuRef, handleClose);
   useEscapeKey(handleClose);
@@ -164,8 +133,7 @@ const Menu = ({ anchorEl, onClose, children, className = "", offsetX = 0, offset
         visibility: visible ? "visible" : "hidden",
         boxShadow: "0 4px 16px rgba(0, 0, 0, 0.12)",
         minWidth: anchorEl.offsetWidth,
-      }}
-    >
+      }}>
       {children}
     </div>,
     document.body
@@ -188,7 +156,17 @@ interface SelectProps {
   onFocus?: () => void;
 }
 
-const Select = ({ options, value, onChange, placeholder = "Seleccionar...", disabled = false, searchable = true, size = "normal", onSearch = undefined, onFocus = undefined }: SelectProps) => {
+const Select = ({
+  options,
+  value,
+  onChange,
+  placeholder = "Seleccionar...",
+  disabled = false,
+  searchable = true,
+  size = "normal",
+  onSearch = undefined,
+  onFocus = undefined,
+}: SelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -212,15 +190,32 @@ const Select = ({ options, value, onChange, placeholder = "Seleccionar...", disa
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen) return;
     switch (e.key) {
-      case "ArrowDown": e.preventDefault(); setHighlightedIndex((p) => (p < filteredOptions.length - 1 ? p + 1 : 0)); break;
-      case "ArrowUp": e.preventDefault(); setHighlightedIndex((p) => (p > 0 ? p - 1 : filteredOptions.length - 1)); break;
-      case "Enter": e.preventDefault(); if (highlightedIndex >= 0 && filteredOptions[highlightedIndex]) handleSelect(filteredOptions[highlightedIndex].id); break;
-      case "Escape": setIsOpen(false); setSearchTerm(""); break;
+      case "ArrowDown":
+        e.preventDefault();
+        setHighlightedIndex((p) => (p < filteredOptions.length - 1 ? p + 1 : 0));
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setHighlightedIndex((p) => (p > 0 ? p - 1 : filteredOptions.length - 1));
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (highlightedIndex >= 0 && filteredOptions[highlightedIndex])
+          handleSelect(filteredOptions[highlightedIndex].id);
+        break;
+      case "Escape":
+        setIsOpen(false);
+        setSearchTerm("");
+        break;
     }
   };
 
-  useEffect(() => { if (isOpen && searchInputRef.current && searchable) searchInputRef.current.focus(); }, [isOpen, searchable]);
-  useEffect(() => { if (isOpen && onFocus) onFocus(); }, [isOpen, onFocus]);
+  useEffect(() => {
+    if (isOpen && searchInputRef.current && searchable) searchInputRef.current.focus();
+  }, [isOpen, searchable]);
+  useEffect(() => {
+    if (isOpen && onFocus) onFocus();
+  }, [isOpen, onFocus]);
 
   const sizeClasses = size === "small" ? "h-8 px-2 text-xs" : "h-10 px-3 text-sm";
 
@@ -240,27 +235,44 @@ const Select = ({ options, value, onChange, placeholder = "Seleccionar...", disa
       <div
         ref={triggerRef}
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !disabled) { e.preventDefault(); setIsOpen(!isOpen); } }}
+        onKeyDown={(e) => {
+          if ((e.key === "Enter" || e.key === " ") && !disabled) {
+            e.preventDefault();
+            setIsOpen(!isOpen);
+          }
+        }}
         tabIndex={disabled ? -1 : 0}
         className={`relative flex items-center justify-between rounded-t border-0 border-b-2 transition-all cursor-pointer select-none ${sizeClasses} ${
-          disabled ? "bg-gray-50 border-gray-200 border-dotted cursor-not-allowed opacity-60"
-            : isOpen ? "bg-blue-50 border-blue-600 text-blue-600"
-            : "bg-gray-50 border-gray-300 hover:border-gray-400 hover:bg-gray-100"
-        }`}
-      >
+          disabled
+            ? "bg-gray-50 border-gray-200 border-dotted cursor-not-allowed opacity-60"
+            : isOpen
+              ? "bg-blue-50 border-blue-600 text-blue-600"
+              : "bg-gray-50 border-gray-300 hover:border-gray-400 hover:bg-gray-100"
+        }`}>
         {showAsTag && selectedOption?.color ? (
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colorClasses[selectedOption.color as keyof typeof colorClasses] || colorClasses.gray}`}>
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colorClasses[selectedOption.color as keyof typeof colorClasses] || colorClasses.gray}`}>
             {selectedOption.label}
           </span>
         ) : (
-          <span className={`truncate pr-2 ${size === "small" ? "text-xs" : "text-sm"} ${selectedOption ? (isOpen ? "text-blue-600 font-medium" : "text-gray-800 font-medium") : "text-gray-400"}`}>
+          <span
+            className={`truncate pr-2 ${size === "small" ? "text-xs" : "text-sm"} ${selectedOption ? (isOpen ? "text-blue-600 font-medium" : "text-gray-800 font-medium") : "text-gray-400"}`}>
             {selectedOption?.label || placeholder}
           </span>
         )}
-        <ChevronDownIcon className={`w-3 h-3 flex-shrink-0 transition-transform ${isOpen ? "rotate-180 text-blue-600" : "text-gray-400"}`} />
+        <ChevronDownIconSVG
+          className={`w-3 h-3 flex-shrink-0 transition-transform ${isOpen ? "rotate-180 text-blue-600" : "text-gray-400"}`}
+        />
       </div>
 
-      <Menu anchorEl={isOpen ? triggerRef.current : null} onClose={() => { setIsOpen(false); setSearchTerm(""); }} offsetY={4} className="py-1">
+      <Menu
+        anchorEl={isOpen ? triggerRef.current : null}
+        onClose={() => {
+          setIsOpen(false);
+          setSearchTerm("");
+        }}
+        offsetY={4}
+        className="py-1">
         {searchable && (
           <div className="p-2 border-b border-gray-100">
             <input
@@ -277,24 +289,39 @@ const Select = ({ options, value, onChange, placeholder = "Seleccionar...", disa
             />
           </div>
         )}
-        <ul ref={listRef} className="max-h-48 overflow-y-auto">
-          {filteredOptions.length > 0 ? filteredOptions.map((opt, idx) => (
-            <li
-              key={opt.id}
-              onClick={() => handleSelect(opt.id)}
-              onMouseEnter={() => setHighlightedIndex(idx)}
-              className={`px-4 py-2.5 text-sm cursor-pointer flex items-center justify-between ${highlightedIndex === idx ? "bg-gray-50" : ""} ${value === opt.id ? "bg-gray-50 font-medium" : ""} hover:bg-gray-50`}
-            >
-              {opt.color ? (
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colorClasses[opt.color as keyof typeof colorClasses] || colorClasses.gray}`}>
-                  {opt.label}
-                </span>
-              ) : (
-                <span className={value === opt.id ? "text-gray-900" : "text-gray-700"}>{opt.label}</span>
-              )}
-              {value === opt.id && <CheckIcon className="w-4 h-4 text-blue-600 flex-shrink-0 ml-2" />}
-            </li>
-          )) : <li className="px-4 py-3 text-sm text-gray-400">No se encontraron opciones</li>}
+        <ul ref={listRef} className="max-h-48 overflow-y-auto list-none m-0 p-0">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((opt, idx) => (
+              <li key={opt.id} className="block">
+                <button
+                  type="button"
+                  aria-selected={value === opt.id}
+                  onClick={() => handleSelect(opt.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleSelect(opt.id);
+                    }
+                  }}
+                  onMouseEnter={() => setHighlightedIndex(idx)}
+                  className={`w-full text-left px-4 py-2.5 text-sm cursor-pointer flex items-center justify-between ${highlightedIndex === idx ? "bg-gray-50" : ""} ${value === opt.id ? "bg-gray-50 font-medium" : ""} hover:bg-gray-50 border-none bg-transparent`}>
+                  {opt.color ? (
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colorClasses[opt.color as keyof typeof colorClasses] || colorClasses.gray}`}>
+                      {opt.label}
+                    </span>
+                  ) : (
+                    <span className={value === opt.id ? "text-gray-900" : "text-gray-700"}>{opt.label}</span>
+                  )}
+                  {value === opt.id && (
+                    <CheckIconSVG className="w-4 h-4 text-blue-600 flex-shrink-0 ml-2 fill-(--color-dynamic-main) group-hover:fill-(--color-dynamic-main)" />
+                  )}
+                </button>
+              </li>
+            ))
+          ) : (
+            <li className="px-4 py-3 text-sm text-gray-400">No se encontraron opciones</li>
+          )}
         </ul>
       </Menu>
     </>
@@ -306,14 +333,50 @@ const Select = ({ options, value, onChange, placeholder = "Seleccionar...", disa
 // ============================================
 
 const getOperatorsForType = (type: string, t: (key: string) => string) => {
-  const base = [{ id: "equals", label: `= ${t("advancedFilters.operators.equals")}` }, { id: "not_equals", label: `≠ ${t("advancedFilters.operators.not_equals")}` }];
+  const base = [
+    { id: "equals", label: `= ${t("advancedFilters.operators.equals")}` },
+    { id: "not_equals", label: `≠ ${t("advancedFilters.operators.not_equals")}` },
+  ];
   switch (type) {
-    case "string": return [...base, { id: "contains", label: t("advancedFilters.operators.contains") }, { id: "not_contains", label: t("advancedFilters.operators.not_contains") }, { id: "starts_with", label: t("advancedFilters.operators.starts_with") }, { id: "ends_with", label: t("advancedFilters.operators.ends_with") }, { id: "is_empty", label: t("advancedFilters.operators.is_empty") }, { id: "is_not_empty", label: t("advancedFilters.operators.is_not_empty") }];
-    case "number": return [...base, { id: "greater_than", label: `> ${t("advancedFilters.operators.greater_than")}` }, { id: "less_than", label: `< ${t("advancedFilters.operators.less_than")}` }, { id: "greater_or_equal", label: `≥ ${t("advancedFilters.operators.greater_or_equal")}` }, { id: "less_or_equal", label: `≤ ${t("advancedFilters.operators.less_or_equal")}` }];
-    case "date": return [...base, { id: "before", label: t("advancedFilters.operators.before") }, { id: "after", label: t("advancedFilters.operators.after") }, { id: "today", label: t("advancedFilters.operators.today") }, { id: "this_week", label: t("advancedFilters.operators.this_week") }, { id: "this_month", label: t("advancedFilters.operators.this_month") }];
-    case "boolean": return [{ id: "is_true", label: t("advancedFilters.operators.is_true") }, { id: "is_false", label: t("advancedFilters.operators.is_false") }];
-    case "select": return [{ id: "equals", label: `= ${t("advancedFilters.operators.equals")}` }, { id: "not_equals", label: `≠ ${t("advancedFilters.operators.not_equals")}` }];
-    default: return base;
+    case "string":
+      return [
+        ...base,
+        { id: "contains", label: t("advancedFilters.operators.contains") },
+        { id: "not_contains", label: t("advancedFilters.operators.not_contains") },
+        { id: "starts_with", label: t("advancedFilters.operators.starts_with") },
+        { id: "ends_with", label: t("advancedFilters.operators.ends_with") },
+        { id: "is_empty", label: t("advancedFilters.operators.is_empty") },
+        { id: "is_not_empty", label: t("advancedFilters.operators.is_not_empty") },
+      ];
+    case "number":
+      return [
+        ...base,
+        { id: "greater_than", label: `> ${t("advancedFilters.operators.greater_than")}` },
+        { id: "less_than", label: `< ${t("advancedFilters.operators.less_than")}` },
+        { id: "greater_or_equal", label: `≥ ${t("advancedFilters.operators.greater_or_equal")}` },
+        { id: "less_or_equal", label: `≤ ${t("advancedFilters.operators.less_or_equal")}` },
+      ];
+    case "date":
+      return [
+        ...base,
+        { id: "before", label: t("advancedFilters.operators.before") },
+        { id: "after", label: t("advancedFilters.operators.after") },
+        { id: "today", label: t("advancedFilters.operators.today") },
+        { id: "this_week", label: t("advancedFilters.operators.this_week") },
+        { id: "this_month", label: t("advancedFilters.operators.this_month") },
+      ];
+    case "boolean":
+      return [
+        { id: "is_true", label: t("advancedFilters.operators.is_true") },
+        { id: "is_false", label: t("advancedFilters.operators.is_false") },
+      ];
+    case "select":
+      return [
+        { id: "equals", label: `= ${t("advancedFilters.operators.equals")}` },
+        { id: "not_equals", label: `≠ ${t("advancedFilters.operators.not_equals")}` },
+      ];
+    default:
+      return base;
   }
 };
 
@@ -332,100 +395,114 @@ interface FilterConditionRowProps {
   t: (key: string) => string;
 }
 
-const FilterConditionRow = memo(({ condition, columns, isFirst, onUpdate, onDelete, size = "small", onLoadOptions, t }: FilterConditionRowProps) => {
-  const selectedColumn = columns.find((c) => c.id === condition.column);
-  const operators = selectedColumn ? getOperatorsForType(selectedColumn.type, t) : [];
-  const columnOptions = columns.map((c) => ({ id: c.id, label: c.label }));
-  const logicalOptions = [{ id: "AND", label: t("advancedFilters.operators.and") }, { id: "OR", label: t("advancedFilters.operators.or") }];
-  const valueOptions = selectedColumn?.options || [];
-  const showValueSelect = selectedColumn?.type === "select";
-  const hideValueInput = ["is_empty", "is_not_empty", "is_true", "is_false", "today", "this_week", "this_month"].includes(condition.operator);
+const FilterConditionRow = memo(
+  ({ condition, columns, isFirst, onUpdate, onDelete, size = "small", onLoadOptions, t }: FilterConditionRowProps) => {
+    const selectedColumn = columns.find((c) => c.id === condition.column);
+    const operators = selectedColumn ? getOperatorsForType(selectedColumn.type, t) : [];
+    const columnOptions = columns.map((c) => ({ id: c.id, label: c.label }));
+    const logicalOptions = [
+      { id: "AND", label: t("advancedFilters.operators.and") },
+      { id: "OR", label: t("advancedFilters.operators.or") },
+    ];
+    const valueOptions = selectedColumn?.options || [];
+    const showValueSelect = selectedColumn?.type === "select";
+    const hideValueInput = [
+      "is_empty",
+      "is_not_empty",
+      "is_true",
+      "is_false",
+      "today",
+      "this_week",
+      "this_month",
+    ].includes(condition.operator);
 
-  const inputSizeClasses = size === "small" ? "h-8 px-2 text-xs" : "h-10 px-3 text-sm";
+    const inputSizeClasses = size === "small" ? "h-8 px-2 text-xs" : "h-10 px-3 text-sm";
 
-  return (
-    <div className="flex items-center gap-2 py-1.5">
-      {/* Logical Operator / "Donde" */}
-      <div className="w-14 flex-shrink-0">
-        {isFirst ? (
-          <span className="text-xs text-gray-500 font-medium">{t("advancedFilters.where")}</span>
-        ) : (
+    return (
+      <div className="flex items-center gap-2 py-1.5">
+        {/* Logical Operator / "Donde" */}
+        <div className="w-14 flex-shrink-0">
+          {isFirst ? (
+            <span className="text-xs text-gray-500 font-medium">{t("advancedFilters.where")}</span>
+          ) : (
+            <Select
+              options={logicalOptions}
+              value={condition.logicalOperator}
+              onChange={(v) => onUpdate(condition.id, { logicalOperator: v })}
+              searchable={false}
+              size="small"
+            />
+          )}
+        </div>
+
+        {/* Column */}
+        <div className="flex-1 min-w-[90px]">
           <Select
-            options={logicalOptions}
-            value={condition.logicalOperator}
-            onChange={(v) => onUpdate(condition.id, { logicalOperator: v })}
-            searchable={false}
-            size="small"
-          />
-        )}
-      </div>
-
-      {/* Column */}
-      <div className="flex-1 min-w-[90px]">
-        <Select
-          options={columnOptions}
-          value={condition.column}
-          onChange={(v) => onUpdate(condition.id, { column: v, operator: "", value: "" })}
-          placeholder={t("advancedFilters.column")}
-          size={size}
-        />
-      </div>
-
-      {/* Operator */}
-      <div className="flex-1 min-w-[90px]">
-        <Select
-          options={operators}
-          value={condition.operator}
-          onChange={(v) => onUpdate(condition.id, { operator: v })}
-          placeholder={t("advancedFilters.condition")}
-          disabled={!condition.column}
-          size={size}
-        />
-      </div>
-
-      {/* Value */}
-      <div className="flex-1 min-w-[90px]">
-        {hideValueInput ? (
-          <div className={`bg-gray-100 rounded-t border-b-2 border-gray-200 border-dotted ${size === "small" ? "h-8" : "h-10"}`} />
-        ) : showValueSelect ? (
-          <Select
-            options={valueOptions}
-            value={condition.value}
-            onChange={(v) => onUpdate(condition.id, { value: v })}
-            placeholder={t("advancedFilters.value")}
-            disabled={!condition.operator}
+            options={columnOptions}
+            value={condition.column}
+            onChange={(v) => onUpdate(condition.id, { column: v, operator: "", value: "" })}
+            placeholder={t("advancedFilters.column")}
             size={size}
-            onSearch={onLoadOptions ? (val) => onLoadOptions(condition.column, val) : undefined}
-            onFocus={onLoadOptions ? () => onLoadOptions(condition.column, "") : undefined}
           />
-        ) : (
-          <input
-            type={selectedColumn?.type === "number" ? "number" : selectedColumn?.type === "date" ? "date" : "text"}
-            value={condition.value}
-            onChange={(e) => onUpdate(condition.id, { value: e.target.value })}
-            disabled={!condition.operator}
-            placeholder={t("advancedFilters.value")}
-            className={`w-full rounded-t border-0 border-b-2 transition-all ${inputSizeClasses} ${
-              !condition.operator
-                ? "bg-gray-50 border-gray-200 border-dotted cursor-not-allowed"
-                : "bg-gray-50 border-gray-300 hover:border-gray-400 focus:bg-blue-50 focus:border-blue-600 focus:outline-none"
-            }`}
-          />
-        )}
-      </div>
+        </div>
 
-      {/* Delete */}
-      <button
-        type="button"
-        onClick={() => onDelete(condition.id)}
-        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
-        aria-label="Eliminar"
-      >
-        <TrashIcon className="w-3.5 h-3.5" />
-      </button>
-    </div>
-  );
-});
+        {/* Operator */}
+        <div className="flex-1 min-w-[90px]">
+          <Select
+            options={operators}
+            value={condition.operator}
+            onChange={(v) => onUpdate(condition.id, { operator: v })}
+            placeholder={t("advancedFilters.condition")}
+            disabled={!condition.column}
+            size={size}
+          />
+        </div>
+
+        {/* Value */}
+        <div className="flex-1 min-w-[90px]">
+          {hideValueInput ? (
+            <div
+              className={`bg-gray-100 rounded-t border-b-2 border-gray-200 border-dotted ${size === "small" ? "h-8" : "h-10"}`}
+            />
+          ) : showValueSelect ? (
+            <Select
+              options={valueOptions}
+              value={condition.value}
+              onChange={(v) => onUpdate(condition.id, { value: v })}
+              placeholder={t("advancedFilters.value")}
+              disabled={!condition.operator}
+              size={size}
+              onSearch={onLoadOptions ? (val) => onLoadOptions(condition.column, val) : undefined}
+              onFocus={onLoadOptions ? () => onLoadOptions(condition.column, "") : undefined}
+            />
+          ) : (
+            <input
+              type={selectedColumn?.type === "number" ? "number" : selectedColumn?.type === "date" ? "date" : "text"}
+              value={condition.value}
+              onChange={(e) => onUpdate(condition.id, { value: e.target.value })}
+              disabled={!condition.operator}
+              placeholder={t("advancedFilters.value")}
+              className={`w-full rounded-t border-0 border-b-2 transition-all ${inputSizeClasses} ${
+                !condition.operator
+                  ? "bg-gray-50 border-gray-200 border-dotted cursor-not-allowed"
+                  : "bg-gray-50 border-gray-300 hover:border-gray-400 focus:bg-blue-50 focus:border-blue-600 focus:outline-none"
+              }`}
+            />
+          )}
+        </div>
+
+        {/* Delete */}
+        <button
+          type="button"
+          onClick={() => onDelete(condition.id)}
+          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+          aria-label="Eliminar">
+          <TrashIconSVG className="w-3.5 h-3.5 fill-(--color-dynamic-main) group-hover:fill-(--color-dynamic-main)" />
+        </button>
+      </div>
+    );
+  }
+);
 
 // ============================================
 // SIMPLE FILTER ROW (top level condition)
@@ -445,16 +522,30 @@ const FilterRow = memo(({ condition, columns, isFirst, onUpdate, onDelete, onLoa
   const selectedColumn = columns.find((c) => c.id === condition.column);
   const operators = selectedColumn ? getOperatorsForType(selectedColumn.type, t) : [];
   const columnOptions = columns.map((c) => ({ id: c.id, label: c.label }));
-  const logicalOptions = [{ id: "AND", label: t("advancedFilters.operators.and") }, { id: "OR", label: t("advancedFilters.operators.or") }];
+  const logicalOptions = [
+    { id: "AND", label: t("advancedFilters.operators.and") },
+    { id: "OR", label: t("advancedFilters.operators.or") },
+  ];
   const valueOptions = selectedColumn?.options || [];
   const showValueSelect = selectedColumn?.type === "select";
-  const hideValueInput = ["is_empty", "is_not_empty", "is_true", "is_false", "today", "this_week", "this_month"].includes(condition.operator);
+  const hideValueInput = [
+    "is_empty",
+    "is_not_empty",
+    "is_true",
+    "is_false",
+    "today",
+    "this_week",
+    "this_month",
+  ].includes(condition.operator);
 
-  const handleSearch = useCallback((val: string) => {
-    if (onLoadOptions && condition.column) {
-      onLoadOptions(condition.column, val);
-    }
-  }, [onLoadOptions, condition.column]);
+  const handleSearch = useCallback(
+    (val: string) => {
+      if (onLoadOptions && condition.column) {
+        onLoadOptions(condition.column, val);
+      }
+    },
+    [onLoadOptions, condition.column]
+  );
 
   const handleFocus = useCallback(() => {
     if (onLoadOptions && condition.column) {
@@ -465,7 +556,7 @@ const FilterRow = memo(({ condition, columns, isFirst, onUpdate, onDelete, onLoa
   return (
     <div className="flex items-center gap-3 py-2">
       {/* Logical Operator / "Donde" */}
-      <div className="w-16 flex-shrink-0">
+      <div className="w-20 flex-shrink-0">
         {isFirst ? (
           <span className="text-sm text-gray-600 font-medium">{t("advancedFilters.where")}</span>
         ) : (
@@ -534,9 +625,8 @@ const FilterRow = memo(({ condition, columns, isFirst, onUpdate, onDelete, onLoa
         type="button"
         onClick={() => onDelete(condition.id)}
         className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
-        aria-label="Eliminar"
-      >
-        <TrashIcon className="w-4 h-4" />
+        aria-label="Eliminar">
+        <TrashIconSVG className="w-4 h-4 fill-(--color-dynamic-main) group-hover:fill-(--color-dynamic-main)" />
       </button>
     </div>
   );
@@ -559,13 +649,27 @@ interface FilterGroupProps {
   t: (key: string) => string;
 }
 
-const FilterGroup = ({ group, isFirst, columns, onUpdate, onDelete, onUpdateCondition, onDeleteCondition, onAddCondition, onLoadOptions, t }: FilterGroupProps) => {
-  const logicalOptions = [{ id: "AND", label: t("advancedFilters.operators.and") }, { id: "OR", label: t("advancedFilters.operators.or") }];
+const FilterGroup = ({
+  group,
+  isFirst,
+  columns,
+  onUpdate,
+  onDelete,
+  onUpdateCondition,
+  onDeleteCondition,
+  onAddCondition,
+  onLoadOptions,
+  t,
+}: FilterGroupProps) => {
+  const logicalOptions = [
+    { id: "AND", label: t("advancedFilters.operators.and") },
+    { id: "OR", label: t("advancedFilters.operators.or") },
+  ];
 
   return (
     <div className="flex gap-3 py-2">
       {/* Logical Operator for the group row */}
-      <div className="w-16 flex-shrink-0 pt-2">
+      <div className="w-20 flex-shrink-0 pt-2">
         {isFirst ? (
           <span className="text-sm text-gray-600 font-medium">{t("advancedFilters.where")}</span>
         ) : (
@@ -584,19 +688,25 @@ const FilterGroup = ({ group, isFirst, columns, onUpdate, onDelete, onUpdateCond
         <div className="flex items-center gap-2 pb-2 mb-2 border-b border-gray-200">
           <div className="w-14 flex-shrink-0" />
           <div className="flex-1 min-w-[90px]">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("advancedFilters.column")}</span>
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              {t("advancedFilters.column")}
+            </span>
           </div>
           <div className="flex-1 min-w-[90px]">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("advancedFilters.condition")}</span>
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              {t("advancedFilters.condition")}
+            </span>
           </div>
           <div className="flex-1 min-w-[90px]">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("advancedFilters.value")}</span>
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              {t("advancedFilters.value")}
+            </span>
           </div>
           <div className="w-8 flex-shrink-0" />
         </div>
 
         {/* Conditions inside group */}
-        {group.conditions.map((cond, idx) => (
+        {group.conditions.map((cond: any, idx: number) => (
           <FilterConditionRow
             key={cond.id}
             condition={cond}
@@ -614,9 +724,9 @@ const FilterGroup = ({ group, isFirst, columns, onUpdate, onDelete, onUpdateCond
         <button
           type="button"
           onClick={() => onAddCondition(group.id)}
-          className="flex items-center gap-1 mt-2 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
-        >
-          {t("advancedFilters.addCondition")} <PlusIcon className="w-3 h-3" />
+          className="flex items-center gap-1 mt-2 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors">
+          {t("advancedFilters.addCondition")}{" "}
+          <PlusIconSVG className="w-3 h-3 fill-(--color-dynamic-main) group-hover:fill-(--color-dynamic-main)" />
         </button>
       </div>
 
@@ -625,9 +735,8 @@ const FilterGroup = ({ group, isFirst, columns, onUpdate, onDelete, onUpdateCond
         type="button"
         onClick={() => onDelete(group.id)}
         className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0 self-start mt-1"
-        aria-label="Eliminar grupo"
-      >
-        <TrashIcon className="w-4 h-4" />
+        aria-label="Eliminar grupo">
+        <TrashIconSVG className="w-4 h-4 fill-(--color-dynamic-main) group-hover:fill-(--color-dynamic-main)" />
       </button>
     </div>
   );
@@ -647,10 +756,17 @@ interface TableFilterProps {
 }
 
 const TableFilter = ({ columns, onApplyFilters, onClear, onLoadOptions, initialFilters, t }: TableFilterProps) => {
-  const [activeTab, setActiveTab] = useState("advanced");
-  
-  const genId = () => Math.random().toString(36).substr(2, 9);
-  const createEmptyCondition = () => ({ id: genId(), column: "", operator: "", value: "", logicalOperator: "AND" });
+  const genId = (): string =>
+    Array.from(crypto.getRandomValues(new Uint8Array(6)))
+      .map((b) => b.toString(36))
+      .join("");
+  const createEmptyCondition = (): {
+    id: string;
+    column: string;
+    operator: string;
+    value: string;
+    logicalOperator: string;
+  } => ({ id: genId(), column: "", operator: "", value: "", logicalOperator: "AND" });
 
   // Items can be either conditions or groups
   const [items, setItems] = useState(() => {
@@ -661,131 +777,142 @@ const TableFilter = ({ columns, onApplyFilters, onClear, onLoadOptions, initialF
   });
 
   // Count valid filters
-  const countValidFilters = () => {
+  const countValidFilters = (): number => {
     let count = 0;
-    items.forEach(item => {
+    for (const item of items) {
       if (item.type === "condition") {
         if (item.column && item.operator) count++;
       } else if (item.type === "group") {
-        item.conditions.forEach(c => {
+        for (const c of item.conditions) {
           if (c.column && c.operator) count++;
-        });
+        }
       }
-    });
+    }
     return count;
   };
 
   const validFilterCount = countValidFilters();
 
   // Add a simple condition
-  const handleAddCondition = () => {
-    setItems(prev => [...prev, { type: "condition", ...createEmptyCondition() }]);
+  const handleAddCondition = (): void => {
+    setItems((prev) => [...prev, { type: "condition", ...createEmptyCondition() }]);
   };
 
   // Add a group
-  const handleAddGroup = () => {
-    setItems(prev => [...prev, {
-      type: "group",
-      id: genId(),
-      logicalOperator: "AND",
-      conditions: [createEmptyCondition()]
-    }]);
+  const handleAddGroup = (): void => {
+    setItems((prev) => [
+      ...prev,
+      {
+        type: "group",
+        id: genId(),
+        logicalOperator: "AND",
+        conditions: [createEmptyCondition()],
+      },
+    ]);
   };
 
   // Update a top-level condition
-  const handleUpdateCondition = (id, updates) => {
-    setItems(prev => prev.map(item => 
-      item.type === "condition" && item.id === id ? { ...item, ...updates } : item
-    ));
+  const handleUpdateCondition = (id: string, updates: any): void => {
+    setItems((prev) =>
+      prev.map((item) => (item.type === "condition" && item.id === id ? { ...item, ...updates } : item))
+    );
   };
 
   // Delete a top-level condition
-  const handleDeleteCondition = (id) => {
-    setItems(prev => {
-      const updated = prev.filter(item => !(item.type === "condition" && item.id === id));
+  const handleDeleteCondition = (id: string): void => {
+    setItems((prev) => {
+      const updated = prev.filter((item) => !(item.type === "condition" && item.id === id));
       if (updated.length === 0) return [{ type: "condition", ...createEmptyCondition() }];
       return updated;
     });
   };
 
   // Update a group
-  const handleUpdateGroup = (id, updates) => {
-    setItems(prev => prev.map(item =>
-      item.type === "group" && item.id === id ? { ...item, ...updates } : item
-    ));
+  const handleUpdateGroup = (id: string, updates: any): void => {
+    setItems((prev) => prev.map((item) => (item.type === "group" && item.id === id ? { ...item, ...updates } : item)));
   };
 
   // Delete a group
-  const handleDeleteGroup = (id) => {
-    setItems(prev => {
-      const updated = prev.filter(item => !(item.type === "group" && item.id === id));
+  const handleDeleteGroup = (id: string): void => {
+    setItems((prev) => {
+      const updated = prev.filter((item) => !(item.type === "group" && item.id === id));
       if (updated.length === 0) return [{ type: "condition", ...createEmptyCondition() }];
       return updated;
     });
   };
 
   // Update condition inside a group
-  const handleUpdateGroupCondition = (groupId, conditionId, updates) => {
-    setItems(prev => prev.map(item => {
-      if (item.type === "group" && item.id === groupId) {
-        return {
-          ...item,
-          conditions: item.conditions.map(c => c.id === conditionId ? { ...c, ...updates } : c)
-        };
-      }
-      return item;
-    }));
+  const handleUpdateGroupCondition = (groupId: string, conditionId: string, updates: any): void => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.type === "group" && item.id === groupId) {
+          return {
+            ...item,
+            conditions: item.conditions.map((c: any) => (c.id === conditionId ? { ...c, ...updates } : c)),
+          };
+        }
+        return item;
+      })
+    );
   };
 
   // Delete condition inside a group
-  const handleDeleteGroupCondition = (groupId, conditionId) => {
-    setItems(prev => prev.map(item => {
-      if (item.type === "group" && item.id === groupId) {
-        const newConditions = item.conditions.filter(c => c.id !== conditionId);
-        // If no conditions left, keep at least one empty
-        if (newConditions.length === 0) {
-          return { ...item, conditions: [createEmptyCondition()] };
+  const handleDeleteGroupCondition = (groupId: string, conditionId: string): void => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.type === "group" && item.id === groupId) {
+          const newConditions = item.conditions.filter((c: any) => c.id !== conditionId);
+          // If no conditions left, keep at least one empty
+          if (newConditions.length === 0) {
+            return { ...item, conditions: [createEmptyCondition()] };
+          }
+          return { ...item, conditions: newConditions };
         }
-        return { ...item, conditions: newConditions };
-      }
-      return item;
-    }));
+        return item;
+      })
+    );
   };
 
   // Add condition inside a group
-  const handleAddGroupCondition = (groupId) => {
-    setItems(prev => prev.map(item => {
-      if (item.type === "group" && item.id === groupId) {
-        return { ...item, conditions: [...item.conditions, createEmptyCondition()] };
-      }
-      return item;
-    }));
+  const handleAddGroupCondition = (groupId: string): void => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.type === "group" && item.id === groupId) {
+          return { ...item, conditions: [...item.conditions, createEmptyCondition()] };
+        }
+        return item;
+      })
+    );
   };
 
-  // Clear all
-  const handleClearAll = () => {
+  // Clear all - only clears the UI, execution happens on Apply
+  const handleClearAll = (): void => {
     setItems([{ type: "condition", ...createEmptyCondition() }]);
   };
 
   // Apply filters
-  const handleApply = () => {
+  const handleApply = (): void => {
     const result = items
-      .map(item => {
+      .map((item) => {
         if (item.type === "condition") {
           if (item.column && item.operator) {
             return { type: "condition", ...item };
           }
           return null;
-        } else {
-          const validConditions = item.conditions.filter(c => c.column && c.operator);
-          if (validConditions.length > 0) {
-            return { ...item, conditions: validConditions };
-          }
-          return null;
         }
+        const validConditions = item.conditions.filter((c: any) => c.column && c.operator);
+        if (validConditions.length > 0) {
+          return { ...item, conditions: validConditions };
+        }
+        return null;
       })
       .filter(Boolean);
-    
+
+    // If no filters remain after clearing, execute the onClear callback
+    if (result.length === 0) {
+      onClear?.();
+    }
+
     onApplyFilters(result);
   };
 
@@ -793,102 +920,105 @@ const TableFilter = ({ columns, onApplyFilters, onClear, onLoadOptions, initialF
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden font-sans">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div
-            onClick={() => setActiveTab("advanced")}
-            className={"flex items-center gap-2  py-2 text-sm font-medium rounded-md transition-all"}>
-            <FilterIcon className="w-4 h-4" />
-            {t("advancedFilters.title")}
-          </div>
+        <div className={"flex items-center gap-2  py-2 text-sm font-medium rounded-md transition-all"}>
+          <FilterIconSVG className="w-4 h-4 fill-(--color-dynamic-main) group-hover:fill-(--color-dynamic-main)" />
+          {t("advancedFilters.title")}
+        </div>
       </div>
 
       {/* Content */}
       <div className="p-4">
-          {/* Headers */}
-          <div className="flex items-center gap-3 pb-2 mb-2">
-            <div className="w-16 flex-shrink-0" />
-            <div className="flex-1 min-w-[120px]">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t("advancedFilters.column")}</span>
-            </div>
-            <div className="flex-1 min-w-[120px]">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t("advancedFilters.condition")}</span>
-            </div>
-            <div className="flex-1 min-w-[120px]">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t("advancedFilters.value")}</span>
-            </div>
-            <div className="w-10 flex-shrink-0" />
+        {/* Headers */}
+        <div className="flex items-center gap-3 pb-2 mb-2">
+          <div className="w-20 flex-shrink-0" />
+          <div className="flex-1 min-w-[120px]">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              {t("advancedFilters.column")}
+            </span>
           </div>
-
-          {/* Filter Items (conditions and groups) */}
-          <div className="space-y-1">
-            {items.map((item, index) => {
-              if (item.type === "condition") {
-                return (
-                  <FilterRow
-                    key={item.id}
-                    condition={item}
-                    columns={columns}
-                    isFirst={index === 0}
-                    onUpdate={handleUpdateCondition}
-                    onDelete={handleDeleteCondition}
-                    onLoadOptions={onLoadOptions}
-                    t={t}
-                  />
-                );
-              } else {
-                return (
-                  <FilterGroup
-                    key={item.id}
-                    group={item}
-                    isFirst={index === 0}
-                    columns={columns}
-                    onUpdate={handleUpdateGroup}
-                    onDelete={handleDeleteGroup}
-                    onUpdateCondition={handleUpdateGroupCondition}
-                    onDeleteCondition={handleDeleteGroupCondition}
-                    onAddCondition={handleAddGroupCondition}
-                    onLoadOptions={onLoadOptions}
-                    t={t}
-                  />
-                );
-              }
-            })}
+          <div className="flex-1 min-w-[120px]">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              {t("advancedFilters.condition")}
+            </span>
           </div>
-
-          {/* Add buttons */}
-          <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-100">
-            <button
-              type="button"
-              onClick={handleAddCondition}
-              className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-            >
-              {t("advancedFilters.addCondition")} <PlusIcon className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={handleAddGroup}
-              className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-            >
-              {t("advancedFilters.addGroup")} <PlusIcon className="w-4 h-4" />
-            </button>
+          <div className="flex-1 min-w-[120px]">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              {t("advancedFilters.value")}
+            </span>
           </div>
+          <div className="w-10 flex-shrink-0" />
         </div>
-      
+
+        {/* Filter Items (conditions and groups) */}
+        <div className="space-y-1">
+          {items.map((item, index) => {
+            if (item.type === "condition") {
+              return (
+                <FilterRow
+                  key={item.id}
+                  condition={item}
+                  columns={columns}
+                  isFirst={index === 0}
+                  onUpdate={handleUpdateCondition}
+                  onDelete={handleDeleteCondition}
+                  onLoadOptions={onLoadOptions}
+                  t={t}
+                />
+              );
+            }
+            return (
+              <FilterGroup
+                key={item.id}
+                group={item}
+                isFirst={index === 0}
+                columns={columns}
+                onUpdate={handleUpdateGroup}
+                onDelete={handleDeleteGroup}
+                onUpdateCondition={handleUpdateGroupCondition}
+                onDeleteCondition={handleDeleteGroupCondition}
+                onAddCondition={handleAddGroupCondition}
+                onLoadOptions={onLoadOptions}
+                t={t}
+              />
+            );
+          })}
+        </div>
+
+        {/* Add buttons */}
+        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={handleAddCondition}
+            className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
+            {t("advancedFilters.addCondition")}{" "}
+            <PlusIconSVG className="w-4 h-4 fill-(--color-dynamic-main) group-hover:fill-(--color-dynamic-main)" />
+          </button>
+          <button
+            type="button"
+            onClick={handleAddGroup}
+            className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
+            {t("advancedFilters.addGroup")}{" "}
+            <PlusIconSVG className="w-4 h-4 fill-(--color-dynamic-main) group-hover:fill-(--color-dynamic-main)" />
+          </button>
+        </div>
+      </div>
 
       {/* Footer */}
       <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-100">
         <button
           type="button"
           onClick={handleClearAll}
-          className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-        >
-          {t("advancedFilters.clearAll")} <RefreshIcon className="w-4 h-4" />
+          className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
+          {t("advancedFilters.clearAll")}{" "}
+          <RefreshIconSVG className="w-4 h-4 fill-(--color-dynamic-main) group-hover:fill-(--color-dynamic-main)" />
         </button>
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleApply}
-            className={`px-5 py-2 text-sm font-medium rounded-lg transition-colors bg-blue-600 text-white hover:bg-blue-700`}
-          >
+            className={
+              "px-5 py-2 text-sm font-medium rounded-lg transition-colors bg-(--color-dynamic-main) text-white hover:bg-blue-700"
+            }>
             {t("advancedFilters.applyFilters")} {validFilterCount > 0 && `(${validFilterCount})`}
           </button>
         </div>
@@ -902,65 +1032,72 @@ const TableFilter = ({ columns, onApplyFilters, onClear, onLoadOptions, initialF
 // ============================================
 
 export default function App() {
-  const [appliedFilters, setAppliedFilters] = useState([]);
+  const [appliedFilters, setAppliedFilters] = useState<any[]>([]);
   const [showToast, setShowToast] = useState(false);
 
   const columns = [
-    { id: "organization", label: "Organización", type: "select", options: [
-      { id: "fab_espana", label: "F&B España - Reg..." },
-      { id: "fab_mexico", label: "F&B México" },
-      { id: "fab_usa", label: "F&B USA" },
-    ]},
-    { id: "doc_status", label: "Estado Doc.", type: "select", options: [
-      { id: "registered", label: "Registrado", color: "green" },
-      { id: "draft", label: "Borrador", color: "yellow" },
-      { id: "cancelled", label: "Cancelado", color: "red" },
-    ]},
-    { id: "doc_type", label: "Doc. Transacción", type: "select", options: [
-      { id: "order", label: "Orden estándar" },
-      { id: "invoice", label: "Factura de venta" },
-      { id: "delivery", label: "Entrega" },
-    ]},
+    {
+      id: "organization",
+      label: "Organización",
+      type: "select",
+      options: [
+        { id: "fab_espana", label: "F&B España - Reg..." },
+        { id: "fab_mexico", label: "F&B México" },
+        { id: "fab_usa", label: "F&B USA" },
+      ],
+    },
+    {
+      id: "doc_status",
+      label: "Estado Doc.",
+      type: "select",
+      options: [
+        { id: "registered", label: "Registrado", color: "green" },
+        { id: "draft", label: "Borrador", color: "yellow" },
+        { id: "cancelled", label: "Cancelado", color: "red" },
+      ],
+    },
+    {
+      id: "doc_type",
+      label: "Doc. Transacción",
+      type: "select",
+      options: [
+        { id: "order", label: "Orden estándar" },
+        { id: "invoice", label: "Factura de venta" },
+        { id: "delivery", label: "Entrega" },
+      ],
+    },
     { id: "name", label: "Nombre", type: "string" },
     { id: "amount", label: "Monto", type: "number" },
     { id: "date", label: "Fecha", type: "date" },
   ];
 
-  const handleApply = (filters) => {
+  const handleApply = (filters: any[]): void => {
     setAppliedFilters(filters);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
     console.log("Filtros aplicados:", filters);
   };
 
-
-
   return (
-      <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto">
+      <TableFilter columns={columns} onApplyFilters={handleApply} onClear={() => setAppliedFilters([])} t={(k) => k} />
 
-        <TableFilter
-          columns={columns}
-          onApplyFilters={handleApply}
-          onClear={() => setAppliedFilters([])}
-          t={(k) => k}
-        />
+      {appliedFilters.length > 0 && (
+        <div className="mt-6 p-4 bg-white rounded-xl border border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Filtros aplicados:</h3>
+          <pre className="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg overflow-auto max-h-64">
+            {JSON.stringify(appliedFilters, null, 2)}
+          </pre>
+        </div>
+      )}
 
-        {appliedFilters.length > 0 && (
-          <div className="mt-6 p-4 bg-white rounded-xl border border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Filtros aplicados:</h3>
-            <pre className="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg overflow-auto max-h-64">
-              {JSON.stringify(appliedFilters, null, 2)}
-            </pre>
-          </div>
-        )}
-
-        {showToast && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2">
-            <CheckIcon className="w-4 h-4" />
-            Filtros aplicados correctamente
-          </div>
-        )}
-      </div>
+      {showToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2">
+          <CheckIconSVG className="w-4 h-4 fill-(--color-dynamic-main) group-hover:fill-(--color-dynamic-main)" />
+          Filtros aplicados correctamente
+        </div>
+      )}
+    </div>
   );
 }
-export {TableFilter}
+export { TableFilter };

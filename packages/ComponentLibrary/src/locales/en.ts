@@ -536,7 +536,7 @@ const en = {
     saveFilter: "Save filter",
     applyFilters: "Apply filters",
     noSavedFilters: "No saved filters",
-    where:"Where",
+    where: "Where",
     operators: {
       equals: "Equals",
       not_equals: "Not equals",

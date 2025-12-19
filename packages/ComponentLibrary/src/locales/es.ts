@@ -536,7 +536,7 @@ const es = {
     saveFilter: "Guardar filtro",
     applyFilters: "Aplicar filtros",
     noSavedFilters: "No hay filtros guardados",
-    where:"Donde",
+    where: "Donde",
     operators: {
       equals: "Es igual a",
       not_equals: "No es igual a",

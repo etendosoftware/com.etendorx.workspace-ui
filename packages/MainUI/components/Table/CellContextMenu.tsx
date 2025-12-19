@@ -37,6 +37,7 @@ interface CellContextMenuProps {
   onNewRecord?: () => void;
   canEdit?: boolean;
   isRowEditing?: boolean;
+  areFiltersDisabled?: boolean;
 }
 
 interface FilterValues {
@@ -133,6 +134,7 @@ export const CellContextMenu: React.FC<CellContextMenuProps> = ({
   onNewRecord,
   canEdit = false,
   isRowEditing = false,
+  areFiltersDisabled = false,
 }) => {
   const { t } = useTranslation();
 
@@ -254,21 +256,23 @@ export const CellContextMenu: React.FC<CellContextMenuProps> = ({
                   data-testid="insert-row-menu-item">
                   {t("table.insertRow")}
                 </div>
-                <div className="border-t border-(--color-transparent-neutral-30) my-2" />
+                {!areFiltersDisabled && <div className="border-t border-(--color-transparent-neutral-30) my-2" />}
               </>
             )}
-            <div
-              onClick={handleUseAsFilter}
-              className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleUseAsFilter();
-                }
-              }}
-              data-testid="use-as-filter-menu-item">
-              {t("table.useAsFilter")}
-            </div>
+            {!areFiltersDisabled && (
+              <div
+                onClick={handleUseAsFilter}
+                className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleUseAsFilter();
+                  }
+                }}
+                data-testid="use-as-filter-menu-item">
+                {t("table.useAsFilter")}
+              </div>
+            )}
           </>
         )}
       </div>

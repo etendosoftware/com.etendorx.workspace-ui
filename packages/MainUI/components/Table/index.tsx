@@ -501,7 +501,13 @@ interface DynamicTableProps {
   areFiltersDisabled?: boolean;
 }
 
-const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVisible = true, areFiltersDisabled = false }: DynamicTableProps) => {
+const DynamicTable = ({
+  setRecordId,
+  onRecordSelection,
+  isTreeMode = true,
+  isVisible = true,
+  areFiltersDisabled = false,
+}: DynamicTableProps) => {
   const { sx } = useStyle();
   const { t } = useTranslation();
   const { graph } = useSelected();
@@ -3073,6 +3079,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
         onNewRecord={handleContextMenuNewRecord}
         canEdit={true}
         isRowEditing={contextMenu.row ? editingRowUtils.isRowEditing(String(contextMenu.row.original.id)) : false}
+        areFiltersDisabled={areFiltersDisabled}
         data-testid="CellContextMenu__8ca888"
       />
       <StatusModal

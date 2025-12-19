@@ -429,7 +429,7 @@ export const useTableData = ({
 
     // Apply advanced criteria
     if (advancedCriteria) {
-            if (options.criteria) {
+      if (options.criteria) {
         // @ts-ignore - advancedCriteria is compatible with Criteria
         options.criteria.push(advancedCriteria);
       } else {

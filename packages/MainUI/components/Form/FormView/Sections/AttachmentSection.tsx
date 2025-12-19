@@ -24,7 +24,6 @@ import EditIcon from "@workspaceui/componentlibrary/src/assets/icons/edit-3.svg"
 import TrashIcon from "@workspaceui/componentlibrary/src/assets/icons/trash.svg";
 import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
 import UploadIcon from "@workspaceui/componentlibrary/src/assets/icons/upload.svg";
-import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import FilePlusIcon from "@workspaceui/componentlibrary/src/assets/icons/file-plus.svg";
 import CheckIcon from "@workspaceui/componentlibrary/src/assets/icons/check.svg";
 import XIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
@@ -451,21 +450,6 @@ const AttachmentSection = ({
             }}
             className="relative flex flex-col items-center justify-center p-8 rounded-xl border-2 border-dashed transition-all cursor-pointer min-h-[160px]"
             data-testid="Div__attachments_dropzone">
-            {/* Import from URL Button */}
-            <div className="absolute top-4 left-4">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // TODO: Implement import from URL functionality
-                }}
-                className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm bg-transparent border-none cursor-pointer"
-                data-testid="Button__import_url">
-                <LinkIcon width={16} height={16} fill="currentColor" data-testid="LinkIcon__ce37c8" />
-                <span>{t("forms.attachments.importFromUrl")}</span>
-              </button>
-            </div>
-
             {/* Upload Icon top right */}
             <div className="absolute top-4 right-4 text-gray-400">
               <UploadIcon width={20} height={20} fill="currentColor" data-testid="UploadIcon__ce37c8" />
