@@ -261,9 +261,7 @@ const Select = ({
             {selectedOption.label}
           </span>
         ) : (
-          <span className={`truncate pr-2 ${getLabelTextClasses()}`}>
-            {selectedOption?.label || placeholder}
-          </span>
+          <span className={`truncate pr-2 ${getLabelTextClasses()}`}>{selectedOption?.label || placeholder}</span>
         )}
         <ChevronDownIconSVG
           className={`w-3 h-3 flex-shrink-0 transition-transform ${isOpen ? "rotate-180 text-blue-600" : "text-gray-400"}`}
@@ -512,9 +510,7 @@ const FilterConditionRow = memo(
         </div>
 
         {/* Value */}
-        <div className="flex-1 min-w-[90px]">
-          {renderValueInput()}
-        </div>
+        <div className="flex-1 min-w-[90px]">{renderValueInput()}</div>
 
         {/* Delete */}
         <button
@@ -646,9 +642,7 @@ const FilterRow = memo(({ condition, columns, isFirst, onUpdate, onDelete, onLoa
       </div>
 
       {/* Value */}
-      <div className="flex-1 min-w-[120px]">
-        {renderValueInput()}
-      </div>
+      <div className="flex-1 min-w-[120px]">{renderValueInput()}</div>
 
       {/* Delete */}
       <button
