@@ -258,8 +258,10 @@ const MultiSelect = memo(function MultiSelectCmp({
 
   // Actualizar opciones cuando llegan props
   useEffect(() => {
-    if (options.length > 0 && !loading) setIsFetchingInitial(false);
-  }, [options, loading]);
+    if (options.length > 0 && !loading && isFetchingInitial) {
+      setIsFetchingInitial(false);
+    }
+  }, [options, loading, isFetchingInitial]);
 
   const showSkeleton = isFetchingInitial && loading;
 
