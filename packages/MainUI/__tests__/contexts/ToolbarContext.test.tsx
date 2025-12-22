@@ -19,6 +19,7 @@ import { render, act } from "@testing-library/react";
 import { ToolbarProvider, useToolbarContext } from "@/contexts/ToolbarContext";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { useTabContext } from "@/contexts/tab";
+import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 
 // Mock dependencies
@@ -32,6 +33,8 @@ const mockUseTabContext = useTabContext as jest.MockedFunction<typeof useTabCont
 describe("ToolbarContext - Save Wrapping", () => {
   let contextValue: ReturnType<typeof useToolbarContext>;
   const mockTriggerParentRefreshes = jest.fn();
+  const mockTriggerRefresh = jest.fn();
+  const mockTriggerCurrentRefresh = jest.fn();
   const mockTab: Tab = {
     id: "test-tab",
     tabLevel: 2,
@@ -63,6 +66,8 @@ describe("ToolbarContext - Save Wrapping", () => {
       registerRefresh: jest.fn(),
       unregisterRefresh: jest.fn(),
       triggerParentRefreshes: mockTriggerParentRefreshes,
+      triggerCurrentRefresh: mockTriggerCurrentRefresh,
+      triggerRefresh: mockTriggerRefresh,
     });
 
     mockUseTabContext.mockReturnValue({
@@ -87,7 +92,7 @@ describe("ToolbarContext - Save Wrapping", () => {
     jest.clearAllMocks();
   });
 
-  it("should wrap onSave to trigger parent refreshes after successful save", async () => {
+  it("should wrap onSave to trigger table refresh and parent refreshes after successful save", async () => {
     renderWithProviders();
 
     const mockSave = jest.fn().mockResolvedValue(undefined);
@@ -103,10 +108,13 @@ describe("ToolbarContext - Save Wrapping", () => {
     });
 
     expect(mockSave).toHaveBeenCalledWith(false);
+    // Should trigger table refresh for current level
+    expect(mockTriggerRefresh).toHaveBeenCalledWith(2, REFRESH_TYPES.TABLE);
+    // Should trigger parent refreshes
     expect(mockTriggerParentRefreshes).toHaveBeenCalledWith(2);
   });
 
-  it("should not trigger parent refreshes if save fails", async () => {
+  it("should not trigger refreshes if save fails", async () => {
     renderWithProviders();
 
     const saveError = new Error("Save failed");
@@ -123,10 +131,11 @@ describe("ToolbarContext - Save Wrapping", () => {
     ).rejects.toThrow("Save failed");
 
     expect(mockSave).toHaveBeenCalledWith(false);
+    expect(mockTriggerRefresh).not.toHaveBeenCalled();
     expect(mockTriggerParentRefreshes).not.toHaveBeenCalled();
   });
 
-  it("should not trigger parent refreshes for level 0 tabs", async () => {
+  it("should not trigger parent refreshes for level 0 tabs but still trigger table refresh", async () => {
     const level0Tab = { ...mockTab, tabLevel: 0 };
 
     renderWithProviders(level0Tab);
@@ -142,14 +151,38 @@ describe("ToolbarContext - Save Wrapping", () => {
     });
 
     expect(mockSave).toHaveBeenCalledWith(false);
+    // Should still trigger table refresh for level 0
+    expect(mockTriggerRefresh).toHaveBeenCalledWith(0, REFRESH_TYPES.TABLE);
+    // Should NOT trigger parent refreshes for level 0
     expect(mockTriggerParentRefreshes).not.toHaveBeenCalled();
   });
 
   it("should handle missing tab context gracefully", async () => {
-    // Create a mock tab with tabLevel 0 to avoid triggering parent refresh
-    const nullLevelTab = { ...mockTab, tabLevel: 0 };
+    // Create a tab with undefined tabLevel to test handling
+    mockUseTabRefreshContext.mockReturnValue({
+      registerRefresh: jest.fn(),
+      unregisterRefresh: jest.fn(),
+      triggerParentRefreshes: mockTriggerParentRefreshes,
+      triggerCurrentRefresh: mockTriggerCurrentRefresh,
+      triggerRefresh: mockTriggerRefresh,
+    });
 
-    renderWithProviders(nullLevelTab);
+    mockUseTabContext.mockReturnValue({
+      tab: undefined as unknown as Tab,
+      record: null,
+      parentTab: null,
+      parentRecord: null,
+      parentRecords: null,
+      hasFormChanges: false,
+      markFormAsChanged: jest.fn(),
+      resetFormChanges: jest.fn(),
+    });
+
+    render(
+      <ToolbarProvider>
+        <TestComponent />
+      </ToolbarProvider>
+    );
 
     const mockSave = jest.fn().mockResolvedValue(undefined);
 
@@ -162,6 +195,8 @@ describe("ToolbarContext - Save Wrapping", () => {
     });
 
     expect(mockSave).toHaveBeenCalledWith(false);
+    // Should not trigger any refreshes when tab is undefined
+    expect(mockTriggerRefresh).not.toHaveBeenCalled();
     expect(mockTriggerParentRefreshes).not.toHaveBeenCalled();
   });
 });
