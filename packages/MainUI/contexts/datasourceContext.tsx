@@ -32,6 +32,10 @@ interface DatasourceContextValue {
   getHasMoreRecords: (tabId: string) => boolean;
   registerFetchMore: (tabId: string, fetchMore: () => void) => void;
   fetchMoreRecords: (tabId: string) => void;
+  registerUpdateRecord: (tabId: string, updateFn: (recordId: string, record: EntityData) => void) => void;
+  updateRecordInDatasource: (tabId: string, record: EntityData) => void;
+  registerAddRecord: (tabId: string, addFn: (record: EntityData) => void) => void;
+  addRecordToDatasource: (tabId: string, record: EntityData) => void;
 }
 
 const DatasourceContext = createContext<DatasourceContextValue | undefined>(undefined);
@@ -43,6 +47,9 @@ export function DatasourceProvider({ children }: { children: ReactNode }) {
   const recordsGettersRef = useRef<Record<string, () => EntityData[]>>({});
   const hasMoreRecordsGettersRef = useRef<Record<string, () => boolean>>({});
   const fetchMoreFunctionsRef = useRef<Record<string, () => void>>({});
+  // New refs for in-place record update
+  const updateRecordFunctionsRef = useRef<Record<string, (recordId: string, record: EntityData) => void>>({});
+  const addRecordFunctionsRef = useRef<Record<string, (record: EntityData) => void>>({});
 
   const registerRefetchFunction = useCallback((tabId: string, refetchFunction: () => void) => {
     refetchFunctionsRef.current[tabId] = refetchFunction;
@@ -105,6 +112,35 @@ export function DatasourceProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Register function to update a record in-place
+  const registerUpdateRecord = useCallback(
+    (tabId: string, updateFn: (recordId: string, record: EntityData) => void) => {
+      updateRecordFunctionsRef.current[tabId] = updateFn;
+    },
+    []
+  );
+
+  // Update a record in the datasource (calls registered function)
+  const updateRecordInDatasource = useCallback((tabId: string, record: EntityData) => {
+    const updateFn = updateRecordFunctionsRef.current[tabId];
+    if (updateFn && record.id) {
+      updateFn(String(record.id), record);
+    }
+  }, []);
+
+  // Register function to add a record
+  const registerAddRecord = useCallback((tabId: string, addFn: (record: EntityData) => void) => {
+    addRecordFunctionsRef.current[tabId] = addFn;
+  }, []);
+
+  // Add a record to the datasource (calls registered function)
+  const addRecordToDatasource = useCallback((tabId: string, record: EntityData) => {
+    const addFn = addRecordFunctionsRef.current[tabId];
+    if (addFn) {
+      addFn(record);
+    }
+  }, []);
+
   const value = useMemo(
     () => ({
       registerDatasource,
@@ -118,6 +154,11 @@ export function DatasourceProvider({ children }: { children: ReactNode }) {
       getHasMoreRecords,
       registerFetchMore,
       fetchMoreRecords,
+      //In-place record update functions
+      registerUpdateRecord,
+      updateRecordInDatasource,
+      registerAddRecord,
+      addRecordToDatasource,
     }),
     [
       registerDatasource,
@@ -131,6 +172,10 @@ export function DatasourceProvider({ children }: { children: ReactNode }) {
       getHasMoreRecords,
       registerFetchMore,
       fetchMoreRecords,
+      registerUpdateRecord,
+      updateRecordInDatasource,
+      registerAddRecord,
+      addRecordToDatasource,
     ]
   );
 

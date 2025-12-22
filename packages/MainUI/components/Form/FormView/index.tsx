@@ -100,7 +100,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const { resetFormChanges, parentTab } = useTabContext();
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
     useToolbarContext();
-  const { refetchDatasource, registerRefetchFunction } = useDatasourceContext();
+  const { refetchDatasource, registerRefetchFunction, updateRecordInDatasource, addRecordToDatasource } =
+    useDatasourceContext();
   const { registerRefresh } = useTabRefreshContext();
 
   // Sync currentMode and currentRecordId with props when they change (e.g., navigating to a different record)
@@ -510,6 +511,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
       resetFormChanges();
 
+      // Update the record in the Table's datasource in-place
+      // This ensures the table shows updated data without losing pagination state
+      if (currentMode === FormMode.NEW) {
+        addRecordToDatasource(tab.id, data);
+      } else {
+        updateRecordInDatasource(tab.id, data);
+      }
+
       // Refresh parent tab datasource if this is a child tab
       if (parentTab) {
         refetchDatasource(parentTab.id);
@@ -526,6 +535,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       resetFormChanges,
       parentTab,
       refetchDatasource,
+      updateRecordInDatasource,
+      addRecordToDatasource,
       refetch,
     ]
   );

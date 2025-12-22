@@ -86,6 +86,8 @@ interface UseTableDataReturn {
   fetchMore: () => void;
   refetch: () => Promise<void>;
   removeRecordLocally: ((id: string) => void) | null;
+  updateRecordLocally: (recordId: string, updatedRecord: EntityData) => void;
+  addRecordLocally: (newRecord: EntityData) => void;
   hasMoreRecords: boolean;
   applyQuickFilter: (
     columnId: string,
@@ -468,7 +470,17 @@ export const useTableData = ({
   }, [rawColumns]);
 
   // Use datasource hook
-  const { fetchMore, records, removeRecordLocally, error, refetch, loading, hasMoreRecords } = useDatasource({
+  const {
+    fetchMore,
+    records,
+    removeRecordLocally,
+    updateRecordLocally,
+    addRecordLocally,
+    error,
+    refetch,
+    loading,
+    hasMoreRecords,
+  } = useDatasource({
     entity: treeEntity,
     params: query,
     columns: stableDatasourceColumns,
@@ -1049,6 +1061,8 @@ export const useTableData = ({
     fetchMore,
     refetch,
     removeRecordLocally,
+    updateRecordLocally,
+    addRecordLocally,
     applyQuickFilter,
     isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
     tableColumnFilters,

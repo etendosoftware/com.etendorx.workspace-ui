@@ -559,6 +559,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     registerRecordsGetter,
     registerHasMoreRecordsGetter,
     registerFetchMore,
+    registerUpdateRecord,
+    registerAddRecord,
   } = useDatasourceContext();
   const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal } = useToolbarContext();
   const { activeWindow, getSelectedRecord, getTabFormState } = useWindowContext();
@@ -622,6 +624,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     fetchMore,
     refetch,
     removeRecordLocally,
+    updateRecordLocally,
+    addRecordLocally,
     applyQuickFilter,
     fetchSummary,
   } = useTableData({
@@ -2923,6 +2927,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       registerFetchMore(tabId, fetchMore);
     }
 
+    // Register in-place record update functions for FormView save integration
+    registerUpdateRecord(tabId, updateRecordLocally);
+    registerAddRecord(tabId, addRecordLocally);
+
     return () => {
       unregisterDatasource(tabId);
     };
@@ -2935,6 +2943,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     registerRecordsGetter,
     registerHasMoreRecordsGetter,
     registerFetchMore,
+    registerUpdateRecord,
+    registerAddRecord,
+    updateRecordLocally,
+    addRecordLocally,
     refetch,
     records,
     hasMoreRecords,
