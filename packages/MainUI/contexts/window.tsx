@@ -74,6 +74,7 @@ interface WindowContextI {
     isApplied: boolean,
     tabLevel?: number
   ) => void;
+  setTableAdvancedCriteria: (windowIdentifier: string, tabId: string, criteria: any, tabLevel?: number) => void;
   setNavigationActiveLevels: (windowIdentifier: string, activeLevels: number[]) => void;
   setNavigationActiveTabsByLevel: (windowIdentifier: string, activeTabsByLevel: Map<number, string>) => void;
   setWindowActive: ({
@@ -305,6 +306,15 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     (windowIdentifier: string, tabId: string, isApplied: boolean, tabLevel = 0) => {
       setState((prevState: WindowContextState) =>
         updateTableProperty(prevState, windowIdentifier, tabId, "isImplicitFilterApplied", isApplied, tabLevel)
+      );
+    },
+    []
+  );
+
+  const setTableAdvancedCriteria = useCallback(
+    (windowIdentifier: string, tabId: string, criteria: any, tabLevel = 0) => {
+      setState((prevState: WindowContextState) =>
+        updateTableProperty(prevState, windowIdentifier, tabId, "advancedCriteria", criteria, tabLevel)
       );
     },
     []
@@ -773,6 +783,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setTableSorting,
       setTableOrder,
       setTableImplicitFilterApplied,
+      setTableAdvancedCriteria,
       setNavigationActiveLevels,
       setNavigationActiveTabsByLevel,
       setWindowActive,
@@ -820,6 +831,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setTableSorting,
       setTableOrder,
       setTableImplicitFilterApplied,
+      setTableAdvancedCriteria,
       setNavigationActiveLevels,
       setNavigationActiveTabsByLevel,
       setWindowActive,

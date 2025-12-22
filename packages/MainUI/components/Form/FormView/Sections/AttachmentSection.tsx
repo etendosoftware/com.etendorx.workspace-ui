@@ -24,7 +24,6 @@ import EditIcon from "@workspaceui/componentlibrary/src/assets/icons/edit-3.svg"
 import TrashIcon from "@workspaceui/componentlibrary/src/assets/icons/trash.svg";
 import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
 import UploadIcon from "@workspaceui/componentlibrary/src/assets/icons/upload.svg";
-import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import FilePlusIcon from "@workspaceui/componentlibrary/src/assets/icons/file-plus.svg";
 import CheckIcon from "@workspaceui/componentlibrary/src/assets/icons/check.svg";
 import XIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
