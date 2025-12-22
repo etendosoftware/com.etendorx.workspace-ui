@@ -22,6 +22,7 @@ import { globalCalloutManager } from "@/services/callouts";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
+import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 
 /**
  * Save button state management interface
@@ -186,20 +187,26 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
 
   // Access tab context for level information and refresh context for parent coordination
   const { tab } = useTabContext();
-  const { triggerParentRefreshes } = useTabRefreshContext();
+  const { triggerParentRefreshes, triggerRefresh } = useTabRefreshContext();
 
-  // Wrapped onSave that includes parent refresh logic
+  // Wrapped onSave that includes parent refresh logic and table refresh
   const wrappedOnSave = useCallback(
     async (showModal: boolean) => {
       // Execute original save operation first
       await originalOnSave(showModal);
+
+      // Trigger table refresh for current level to ensure table data is updated
+      // when returning from FormView to TableView
+      if (tab?.tabLevel !== undefined) {
+        await triggerRefresh(tab.tabLevel, REFRESH_TYPES.TABLE);
+      }
 
       // If save succeeded and this tab has parents, trigger parent refreshes
       if (tab?.tabLevel && tab.tabLevel > 0) {
         await triggerParentRefreshes(tab.tabLevel);
       }
     },
-    [originalOnSave, tab?.tabLevel, triggerParentRefreshes]
+    [originalOnSave, tab?.tabLevel, triggerParentRefreshes, triggerRefresh]
   );
 
   // Event-based callout monitoring

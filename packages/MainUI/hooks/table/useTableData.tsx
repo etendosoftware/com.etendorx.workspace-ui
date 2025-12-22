@@ -958,14 +958,14 @@ export const useTableData = ({
       const summaryRequest: Record<string, string> = {};
       const columnMapping: Record<string, string> = {}; // backendName -> originalId
 
-      Object.entries(summaries).forEach(([colId, type]) => {
+      for (const [colId, type] of Object.entries(summaries)) {
         const column = baseColumns.find((col) => col.columnName === colId || col.id === colId);
         if (column) {
           const backendName = column.columnName || column.id;
           summaryRequest[backendName] = type;
           columnMapping[backendName] = colId;
         }
-      });
+      }
 
       if (Object.keys(summaryRequest).length === 0) {
         return null;
@@ -1002,11 +1002,11 @@ export const useTableData = ({
           const results: Record<string, number | string> = {};
 
           // Map backend results back to original column IDs
-          Object.entries(columnMapping).forEach(([backendName, originalId]) => {
+          for (const [backendName, originalId] of Object.entries(columnMapping)) {
             if (resultData[backendName] !== undefined) {
               results[originalId] = resultData[backendName];
             }
-          });
+          }
 
           return results;
         }

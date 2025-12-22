@@ -102,9 +102,9 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     clearChildrenSelections,
     getTableState,
   } = useWindowContext();
-  const { registerActions, onRefresh } = useToolbarContext();
+  const { registerActions } = useToolbarContext();
   const { graph } = useSelected();
-  const { registerRefresh, unregisterRefresh } = useTabRefreshContext();
+  const { unregisterRefresh } = useTabRefreshContext();
   const [toggle, setToggle] = useState(false);
   const lastParentSelectionRef = useRef<Map<string, string | undefined>>(new Map());
 
@@ -672,14 +672,12 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   ]);
 
   useEffect(() => {
-    // Register this tab's refresh callback
-    registerRefresh(tab.tabLevel, onRefresh);
-
+    // Cleanup all refresh callbacks for this level on unmount
+    // Individual components (Table, FormView) register their own refresh with type
     return () => {
-      // Cleanup on unmount
       unregisterRefresh(tab.tabLevel);
     };
-  }, [tab.tabLevel, onRefresh, registerRefresh, unregisterRefresh]);
+  }, [tab.tabLevel, unregisterRefresh]);
 
   useEffect(() => {
     const actions = {

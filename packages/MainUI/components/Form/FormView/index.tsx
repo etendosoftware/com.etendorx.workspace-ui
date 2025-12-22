@@ -48,6 +48,8 @@ import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useRecordNavigation } from "@/hooks/useRecordNavigation";
 import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
 import { useWindowContext } from "@/contexts/window";
+import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
@@ -99,6 +101,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
     useToolbarContext();
   const { refetchDatasource, registerRefetchFunction } = useDatasourceContext();
+  const { registerRefresh } = useTabRefreshContext();
 
   // Sync currentMode and currentRecordId with props when they change (e.g., navigating to a different record)
   useEffect(() => {
@@ -161,11 +164,17 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     registerRefetchFunction(tab.id, refreshRecordAndSession);
   }, [registerFormViewRefetch, refreshRecordAndSession, registerRefetchFunction, tab.id]);
 
+  // Register form's refresh function with TabRefreshContext
+  // This allows the form refresh to be triggered alongside table refresh
+  useEffect(() => {
+    registerRefresh(tab.tabLevel, REFRESH_TYPES.FORM, refreshRecordAndSession);
+  }, [tab.tabLevel, registerRefresh, refreshRecordAndSession]);
+
   // Register attachment action for toolbar button
   useEffect(() => {
     if (registerAttachmentAction) {
       registerAttachmentAction(() => {
-        setOpenAttachmentModal((prev) => {
+        setOpenAttachmentModal(() => {
           return true;
         });
       });
@@ -181,16 +190,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   // Open attachment modal when flag is set (from table navigation)
   useEffect(() => {
     if (shouldOpenAttachmentModal) {
-      setOpenAttachmentModal((prev) => {
+      setOpenAttachmentModal(() => {
         return true;
       });
       // Reset flag after using it
       setShouldOpenAttachmentModal(false);
     }
   }, [shouldOpenAttachmentModal, setShouldOpenAttachmentModal]);
-
-  // Log openAttachmentModal state changes
-  useEffect(() => {}, [openAttachmentModal]);
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} data-testid="Info__1a0853" />,
