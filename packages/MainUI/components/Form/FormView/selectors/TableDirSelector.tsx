@@ -16,7 +16,7 @@
  */
 
 import type { Field } from "@workspaceui/api-client/src/api/types";
-import Select from "@/components/Form/FormView/selectors/components/Select";
+import Select from "@/components/Form/FormView/selectors/components/Select/Select";
 import { useTableDirDatasource } from "@/hooks/datasource/useTableDirDatasource";
 import { useSelectFieldOptions } from "@/hooks/useSelectFieldOptions";
 

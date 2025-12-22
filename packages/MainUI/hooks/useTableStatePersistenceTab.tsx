@@ -28,6 +28,8 @@ interface UseTableStatePersistenceTabReturn {
   tableColumnSorting: MRT_SortingState;
   tableColumnOrder: string[];
   isImplicitFilterApplied: boolean | undefined;
+
+  advancedCriteria?: any;
   activeLevels: number[];
   activeTabsByLevel: Map<number, string>;
 
@@ -37,6 +39,7 @@ interface UseTableStatePersistenceTabReturn {
   setTableColumnSorting: React.Dispatch<React.SetStateAction<MRT_SortingState>>;
   setTableColumnOrder: React.Dispatch<React.SetStateAction<string[]>>;
   setIsImplicitFilterApplied: (value: boolean) => void;
+  setAdvancedCriteria: (criteria: any) => void;
   setActiveLevel: (level: number, expand?: boolean) => void;
   setActiveTabsByLevel: (tab?: Tab) => void;
 }
@@ -58,6 +61,7 @@ export const useTableStatePersistenceTab = ({
     setTableSorting,
     setTableOrder,
     setTableImplicitFilterApplied,
+    setTableAdvancedCriteria,
     setNavigationActiveLevels,
     setNavigationActiveTabsByLevel,
   } = useWindowContext();
@@ -117,6 +121,13 @@ export const useTableStatePersistenceTab = ({
     [windowIdentifier, tabId, tabLevel, setTableImplicitFilterApplied]
   );
 
+  const setAdvancedCriteria = useCallback(
+    (criteria: any) => {
+      setTableAdvancedCriteria(windowIdentifier, tabId, criteria, tabLevel);
+    },
+    [windowIdentifier, tabId, tabLevel, setTableAdvancedCriteria]
+  );
+
   const setActiveLevel = useCallback(
     (level: number, expand?: boolean) => {
       const currentActiveLevels = getNavigationState(windowIdentifier).activeLevels;
@@ -146,6 +157,7 @@ export const useTableStatePersistenceTab = ({
     tableColumnSorting: currentTableState.sorting,
     tableColumnOrder: currentTableState.order,
     isImplicitFilterApplied: currentTableState.isImplicitFilterApplied,
+    advancedCriteria: currentTableState.advancedCriteria,
     activeLevels: currentNavigationState.activeLevels,
     activeTabsByLevel: currentNavigationState.activeTabsByLevel,
 
@@ -155,6 +167,7 @@ export const useTableStatePersistenceTab = ({
     setTableColumnSorting,
     setTableColumnOrder,
     setIsImplicitFilterApplied,
+    setAdvancedCriteria,
     setActiveLevel,
     setActiveTabsByLevel,
   };

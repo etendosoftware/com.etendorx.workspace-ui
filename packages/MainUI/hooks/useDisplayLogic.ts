@@ -30,7 +30,7 @@ interface UseDisplayLogicProps {
 
 export default function useDisplayLogic({ field, values }: UseDisplayLogicProps) {
   const { session } = useUserContext();
-  const { tab, record } = useTabContext();
+  const { tab, record, parentRecord } = useTabContext();
 
   const formContext = useFormContext();
   const formValues = formContext?.watch?.();
@@ -47,12 +47,15 @@ export default function useDisplayLogic({ field, values }: UseDisplayLogicProps)
     const compiledExpr = compileExpression(field.displayLogicExpression);
 
     try {
-      const currentValues = values || formValues || record;
-      return compiledExpr(session, currentValues);
+      const currentValues = { ...parentRecord, ...record, ...formValues, ...values };
+      const result = compiledExpr(session, currentValues);
+
+      return result;
     } catch (error) {
+      console.error(`[DisplayLogic Error] Field: ${field.name}`, error);
       return logger.error("Unexpected error", error);
     }
-  }, [field.displayLogicExpression, field.displayed, formValues, record, session, tab, values]);
+  }, [field.displayLogicExpression, field.displayed, formValues, record, session, tab, values, parentRecord]);
 
   return isDisplayed;
 }

@@ -134,6 +134,7 @@ export const useTableData = ({
     setTableColumnOrder,
     setIsImplicitFilterApplied,
     tableColumnSorting,
+    advancedCriteria,
   } = useTableStatePersistenceTab({
     windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: tab.id,
@@ -242,25 +243,30 @@ export const useTableData = ({
       // Set loading state before fetching data
       await loadFilterOptions(columnId, searchQuery);
 
-      if (ColumnFilterUtils.isSelectColumn(column)) {
-        return loadSelectFilterOptions(column, columnId, searchQuery, setFilterOptions);
-      }
-
+      // Handle TableDir columns (backend search)
       if (ColumnFilterUtils.isTableDirColumn(column)) {
         return loadTableDirFilterOptions({
           column,
           columnId,
           searchQuery,
           tabId: tab.id,
-          entityName: treeEntity,
-          fetchFilterOptions,
+          entityName: tab.entityName,
+          fetchFilterOptions: async (colId, query) => {
+            await loadFilterOptions(colId, query);
+            return [];
+          },
           setFilterOptions,
         });
       }
 
+      // Handle Select/List columns (static or reference)
+      if (ColumnFilterUtils.supportsDropdownFilter(column)) {
+        return loadSelectFilterOptions(column, columnId, searchQuery, setFilterOptions);
+      }
+
       return [];
     },
-    [rawColumns, fetchFilterOptions, setFilterOptions, loadFilterOptions, tab.id, treeEntity]
+    [tab.fields, tab.id, tab.entityName, loadFilterOptions, setFilterOptions]
   );
 
   const handleLoadMoreFilterOptions = useCallback(
@@ -423,6 +429,19 @@ export const useTableData = ({
       options.criteria = [{ fieldName, value, operator }];
     }
 
+    // Apply advanced criteria
+    if (advancedCriteria) {
+      if (options.criteria) {
+        // @ts-ignore - advancedCriteria is compatible with Criteria
+        options.criteria.push(advancedCriteria);
+      } else {
+        // @ts-ignore - advancedCriteria is compatible with Criteria
+        options.criteria = [advancedCriteria];
+      }
+    } else {
+      console.log("useTableData: No advancedCriteria found");
+    }
+
     // Apply sorting
     if (tableColumnSorting?.length > 0) {
       applySortToOptions(options, tableColumnSorting[0]);
@@ -439,6 +458,7 @@ export const useTableData = ({
     parentId,
     language,
     tableColumnSorting,
+    advancedCriteria,
     getDefaultSort,
     getParentFieldName,
     applySortToOptions,
