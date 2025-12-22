@@ -100,6 +100,7 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
     params.append("inpmAttributesetId", attributeSetId);
     params.append("IsPopUpCall", "1");
     params.append("isSOTrx", isSOTrx);
+    params.append("Command", "DISPLAY");
     if (token) {
       params.append("token", token);
     }
@@ -119,21 +120,7 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
 
   const handleIframeLoad = useCallback(() => {
     setIframeLoading(false);
-    
-      // After the first load (session initialization), trigger the display command
-    if (iframeUrl && iframeUrl.includes("IsPopUpCall=1") && !iframeUrl.includes("Command=DISPLAY")) {
-      // Add a small delay to ensure session is set
-      setTimeout(() => {
-        const currentUrl = new URL(iframeUrl, window.location.origin);
-        const displayParams = new URLSearchParams(currentUrl.search);
-        displayParams.set("Command", "DISPLAY");
-
-        const displayUrl = `${currentUrl.pathname}?${displayParams.toString()}`;
-        setIframeUrl(displayUrl);
-        setIframeLoading(true);
-      }, 100);
-    }
-  }, [iframeUrl]);
+  }, []);
 
   // Listen for messages from the iframe
   useEffect(() => {
