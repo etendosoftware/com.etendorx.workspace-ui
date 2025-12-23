@@ -33,6 +33,7 @@ import { getNewTabFormState, isFormView } from "@/utils/window/utils";
 import { useWindowContext } from "@/contexts/window";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
+import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { extractJSessionId } from "@/app/api/_utils/sessionRecovery";
 
 /**
@@ -110,6 +111,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const { registerRefresh, unregisterRefresh } = useTabRefreshContext();
   const { token } = useUserContext();
   const selectedRecord = useSelectedRecord(tab);
+  const selectedRecords = useSelectedRecords(tab);
   const [toggle, setToggle] = useState(false);
   const [isIframeOpen, setIsIframeOpen] = useState(false);
   const [iframeUrl, setIframeUrl] = useState("");
@@ -247,53 +249,12 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
   }, [windowIdentifier]);
 
-  // /**
-  //  * Calls PrinterReports.html to validate/prepare print parameters before generating the PDF
-  //  * DEPRECATED: Now using PrintOptions.html directly
-  //  */
-  // const callPrinterReports = useCallback(
-  //   async (recordData: Record<string, unknown>) => {
-  //     if (!token) {
-  //       throw new Error("Authorization token not found");
-  //     }
 
-  //     // Build form data from record parameters
-  //     const formData = new URLSearchParams();
-
-  //     // Add all record parameters
-  //     for (const [key, value] of Object.entries(recordData)) {
-  //       if (value !== null && value !== undefined) {
-  //         formData.append(key, String(value));
-  //       }
-  //     }
-
-  //     // Make POST request to PrinterReports.html
-  //     const response = await fetch("/api/erp/businessUtility/PrinterReports.html?IsPopUpCall=1", {
-  //       method: "POST",
-  //       headers: {
-  //         Authorization: `Bearer ${token}`,
-  //         "Content-Type": "application/x-www-form-urlencoded",
-  //         Accept:
-  //           "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-  //       },
-  //       credentials: "include",
-  //       body: formData.toString(),
-  //     });
-
-  //     if (!response.ok) {
-  //       throw new Error(`PrinterReports validation failed: ${response.status} ${response.statusText}`);
-  //     }
-
-  //     return response;
-  //   },
-  //   [token]
-  // );
-
-  const handlePrintDocument = useCallback(async () => {
+  const handlePrintRecord = useCallback(async () => {
     try {
       // Validate prerequisites
-      if (!selectedRecordId || selectedRecordId === NEW_RECORD_ID) {
-        console.warn("No record selected for printing");
+      if (selectedRecords.length === 0) {
+        console.warn("No records selected for printing");
         return;
       }
 
@@ -301,207 +262,46 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         throw new Error("Authorization token not found. Please log in again.");
       }
 
-      if (!windowIdentifier) {
-        throw new Error("Window context not found");
-      }
+      const selectedIds = selectedRecords.map((r) => r.id);
+      const baseUrl = process.env.NEXT_PUBLIC_ETENDO_CLASSIC_HOST || "";
+      const url = `${baseUrl}/sws/com.etendoerp.etendorx.print?tabId=${tab.id}&recordId=${JSON.stringify(selectedIds)}`;
 
-      if (!selectedRecord) {
-        throw new Error("Selected record data not available");
-      }
-
-      // Build hardcoded record parameters for PrinterReports validation
-      const recordParams: Record<string, unknown> = {
-        Command: "DEFAULT",
-        inppdfpath: "etendo/orders/print.html",
-        inphiddenkey: "inpcOrderId",
-        inpdirectprint: "N",
-        inpButtonType: "printButton",
-        inpcReturnReasonId: "undefined",
-        inprmPickfromshipment: "",
-        inprmReceivematerials: "",
-        inprmCreateinvoice: "",
-        inptotallines: "2.04",
-        inpadUserId: "undefined",
-        inpcDoctypeId: "0",
-        inpsoResStatus: "",
-        inpemAprmAddpayment: "N",
-        inpdocaction: "AP",
-        inpcopyfrom: "N",
-        inpcopyfrompo: "N",
-        inpdeliveryviarule: "P",
-        inpmShipperId: "null",
-        inpdeliveryrule: "A",
-        inpfreightcostrule: "I",
-        inpfreightamt: "0.00",
-        inpisdiscountprinted: "N",
-        inppriorityrule: "5",
-        inpcCampaignId: "undefined",
-        inpchargeamt: "0.00",
-        inpcChargeId: "undefined",
-        inpcActivityId: "undefined",
-        inpadOrgtrxId: "undefined",
-        inpcalculatePromotions: "N",
-        inprmAddorphanline: "",
-        inpconvertquotation: "",
-        inpcRejectReasonId: "undefined",
-        inpvaliduntil: "null",
-        inpreplacementorderId: "null",
-        inpcancelandreplace: "N",
-        inppaymentstatus: "undefined",
-        inpconfirmcancelandreplace: "N",
-        inpemEtblkcBulkcompletion: "N",
-        inpcOrderId: selectedRecordId,
-        inpadClientId: "23C59575B9CF467C9620760EB255B389",
-        inpisactive: "Y",
-        inpisinvoiced: "N",
-        inpisprinted: "N",
-        inpdateacct: "null",
-        inpprocessing: "N",
-        inpprocessed: "N",
-        inpdateprinted: "null",
-        inpissotrx: "Y",
-        inppaymentrule: "P",
-        inpposted: "N",
-        inpistaxincluded: "",
-        inpisselected: "N",
-        inpdropshipUserId: "undefined",
-        inpdropshipBpartnerId: "undefined",
-        inpdropshipLocationId: "undefined",
-        inpisselfservice: "N",
-        inpgeneratetemplate: "N",
-        inpdeliverynotes: "undefined",
-        inpcIncotermsId: "undefined",
-        inpincotermsdescription: "undefined",
-        C_Order_ID: selectedRecordId,
-        inpadOrgId: "7BABA5FF80494CAFA54DEBD22EC46F01",
-        inpcDoctypetargetId: "6EC4290580E9454DA24A4EA3E59EBD68",
-        inpdocumentno: "1000000",
-        inpdateordered: "13-12-2025",
-        inpcBpartnerId: "B3ABB0B4AFEA4541AC1E29891D496079",
-        inpcBpartnerLocationId: "AE7263454E1C48CD80DABBCCBFE831DD",
-        inpmPricelistId: "8366EAF1EDF442A98377D74A199084A8",
-        inpdatepromised: "29-09-2025",
-        inpfinPaymentmethodId: "15263EF498404ED3BEA2077023A4B68C",
-        inpcPaymenttermId: "66BA1164A7394344BB9CD1A6ECEED05D",
-        inpmWarehouseId: "9CF98A18BC754B99998E421F91C5FE12",
-        inpinvoicerule: "D",
-        inpporeference: "undefined",
-        inpsalesrepId: "undefined",
-        inpdescription: "undefined",
-        inpbilltoId: "AE7263454E1C48CD80DABBCCBFE831DD",
-        inpdeliveryLocationId: "undefined",
-        inpquotationId: "",
-        inpcancelledorderId: "null",
-        inpreplacedorderId: "null",
-        inpiscancelled: "N",
-        inpbpartnerExtref: "null",
-        inpcProjectId: "",
-        inpcCostcenterId: "",
-        inpaAssetId: "",
-        inpuser1Id: "",
-        inpuser2Id: "",
-        inpdocstatus: "DR",
-        inpgrandtotal: "2.04",
-        inpcCurrencyId: "100",
-        inpdeliverystatus: "0",
-        inpinvoicestatus: "0",
-        inpisdelivered: "N",
-        inpTabId: "186",
-        inpwindowId: "143",
-        inpTableId: "259",
-        inpkeyColumnId: "C_Order_ID",
-        keyProperty: "id",
-        inpKeyName: "inpcOrderId",
-        keyColumnName: "C_Order_ID",
-        keyPropertyType: "_id_13",
-        inphiddenvalue: selectedRecordId,
-      };
-
-      // Step 1: Call PrinterReports.html to validate/prepare
-      const printerReportsFormData = new URLSearchParams();
-      for (const [key, value] of Object.entries(recordParams)) {
-        if (value !== null && value !== undefined) {
-          printerReportsFormData.append(key, String(value));
-        }
-      }
-
-      console.log("Step 1: Calling PrinterReports.html...");
-      const printerReportsResponse = await fetch("/api/erp/businessUtility/PrinterReports.html?IsPopUpCall=1", {
-        method: "POST",
+      const response = await fetch(url, {
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-          Accept:
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         },
-        credentials: "include",
-        body: printerReportsFormData.toString(),
-      });
-      console.log("PrinterReports response status:", printerReportsResponse.status);
-
-      // Extract JSESSIONID from PrinterReports response
-      const jsessionId = extractJSessionId(printerReportsResponse);
-      console.log("Extracted JSESSIONID from PrinterReports:", jsessionId);
-
-      // Step 2: Call PrintOptions.html with hardcoded parameters
-      console.log("Step 2: Calling PrintOptions.html...");
-      const printOptionsFormData = new URLSearchParams();
-      printOptionsFormData.append("Command", "ARCHIVE");
-      printOptionsFormData.append("IsPopUpCall", "1");
-      printOptionsFormData.append("inpLastFieldChanged", "");
-      printOptionsFormData.append("inpKey", "");
-      printOptionsFormData.append("inpwindowId", "");
-      printOptionsFormData.append("inpTabId", "");
-      printOptionsFormData.append("inpDocumentId", "('D307587ACBA0450C8EC2C9F379CC6592')");
-      printOptionsFormData.append("draftDocumentIds", "");
-
-      // Build headers for PrintOptions with JSESSIONID if extracted
-      const printOptionsHeaders: Record<string, string> = {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Cache-Control": "no-cache",
-        Pragma: "no-cache",
-        Origin: "http://localhost:8080",
-        Referer: "http://localhost:8080/etendo/orders/print.html?Commnad=PDF&IsPopUpCall=1",
-        "Upgrade-Insecure-Requests": "1",
-      };
-
-      // Combine JSESSIONID from PrinterReports with other cookies
-      // Note: cookies: "include" will be sent by fetch, but Path=/etendo might prevent it
-      // So we manually add JSESSIONID extracted from PrinterReports response
-      if (jsessionId) {
-        printOptionsHeaders.Cookie = `JSESSIONID=${jsessionId}`;
-        console.log("Using JSESSIONID in PrintOptions request:", jsessionId);
-      }
-
-      const printResponse = await fetch("/api/erp/orders/PrintOptions.html", {
-        method: "POST",
-        headers: printOptionsHeaders,
-        credentials: "include", // Include cookies for session
-        body: printOptionsFormData.toString(),
       });
 
-      if (!printResponse.ok) {
-        throw new Error(`Print request failed: ${printResponse.status} ${printResponse.statusText}`);
+      if (!response.ok) {
+        throw new Error(`Print request failed: ${response.status} ${response.statusText}`);
       }
 
-      // Get the response as HTML text
-      const html = await printResponse.text();
-
-      // Create a blob from the HTML
-      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
-      setIframeUrl(blobUrl);
-      setIsIframeOpen(true);
+
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      // Try to get filename from content-disposition if available
+      const contentDisposition = response.headers.get("content-disposition");
+      let fileName = "document.pdf";
+      if (contentDisposition && contentDisposition.indexOf("filename=") !== -1) {
+        fileName = contentDisposition.split("filename=")[1].replace(/"/g, "");
+      }
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+      }, 100);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-      console.error("Print Document Error:", errorMessage, error);
+      console.error("Print Record Error:", errorMessage, error);
       throw new Error(`Print failed: ${errorMessage}`);
     }
-  }, [selectedRecordId, token, windowIdentifier, selectedRecord]);
+  }, [selectedRecords, token, tab.id]);
 
   /**
    * Builds field metadata array matching SmartClient format
@@ -950,11 +750,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       back: handleBack,
       treeView: handleTreeView,
       exportCSV: handleExportCSV,
-      printDocument: handlePrintDocument,
+      printRecord: handlePrintRecord,
     };
 
     registerActions(actions);
-  }, [registerActions, handleNew, handleBack, handleTreeView, handleExportCSV, handlePrintDocument, tab.id]);
+  }, [registerActions, handleNew, handleBack, handleTreeView, handleExportCSV, handlePrintRecord, tab.id]);
 
   /**
    * Clear selection when creating a new record

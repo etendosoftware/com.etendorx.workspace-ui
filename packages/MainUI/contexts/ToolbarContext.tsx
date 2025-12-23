@@ -88,6 +88,11 @@ type ToolbarActions = {
    * Print the current document.
    */
   printDocument: () => Promise<void>;
+
+  /**
+   * Print the current record.
+   */
+  printRecord: () => Promise<void>;
 };
 
 type ToolbarContextType = {
@@ -100,6 +105,7 @@ type ToolbarContextType = {
   onToggleTreeView: () => void;
   onColumnFilters: (buttonRef?: HTMLElement | null) => void;
   onPrintDocument: () => Promise<void>;
+  onPrintRecord: () => Promise<void>;
   registerActions: (actions: Partial<ToolbarActions>) => void;
   saveButtonState: SaveButtonState;
   setSaveButtonState: React.Dispatch<React.SetStateAction<SaveButtonState>>;
@@ -123,6 +129,7 @@ const initialState: ToolbarActions = {
   treeView: () => {},
   exportCSV: async () => {},
   printDocument: async () => {},
+  printRecord: async () => {},
 };
 
 const ToolbarContext = createContext<ToolbarContextType>({
@@ -135,6 +142,7 @@ const ToolbarContext = createContext<ToolbarContextType>({
   onToggleTreeView: () => {},
   onColumnFilters: () => {},
   onPrintDocument: async () => {},
+  onPrintRecord: async () => {},
   registerActions: () => {},
   saveButtonState: {
     isCalloutLoading: false,
@@ -182,6 +190,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       exportCSV: onExportCSV,
       columnFilters: onColumnFilters,
       printDocument: onPrintDocument,
+      printRecord: onPrintRecord,
     },
     setActions,
   ] = useState<ToolbarActions>(initialState);
@@ -246,6 +255,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       onColumnFilters,
       onToggleTreeView,
       onPrintDocument,
+      onPrintRecord,
       registerActions,
       saveButtonState,
       setSaveButtonState,
@@ -267,6 +277,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       onExportCSV,
       onColumnFilters,
       onToggleTreeView,
+      onPrintRecord,
       registerActions,
       saveButtonState,
       formViewRefetch,

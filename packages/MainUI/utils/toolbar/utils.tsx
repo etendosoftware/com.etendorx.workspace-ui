@@ -54,6 +54,7 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.SHARE_LINK]: "toolbar-button-share-link",
   [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: "toolbar-button-copy-record",
   [TOOLBAR_BUTTONS_ACTIONS.PRINT_DOCUMENT]: "toolbar-button-print-document",
+  [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: "toolbar-button-print-record",
 } as const;
 
 export const DefaultIcon = () => (
@@ -221,6 +222,7 @@ export const createButtonByType = ({
         return buildDisableConfig(!isCloneEnabled || !isSingleSelection);
       },
       [TOOLBAR_BUTTONS_ACTIONS.PRINT_DOCUMENT]: () => buildDisableConfig(!hasSelectedRecord),
+      [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: () => buildDisableConfig(!hasSelectedRecord),
     };
 
     const handler = actionHandlers[button.action];

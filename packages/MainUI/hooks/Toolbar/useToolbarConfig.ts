@@ -74,6 +74,7 @@ export const useToolbarConfig = ({
     attachmentAction,
     onExportCSV,
     onPrintDocument,
+    onPrintRecord,
   } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
@@ -394,6 +395,9 @@ export const useToolbarConfig = ({
       [TOOLBAR_BUTTONS_ACTIONS.PRINT_DOCUMENT]: async () => {
         await onPrintDocument?.();
       },
+      [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: async () => {
+        await onPrintRecord?.();
+      },
     }),
     [
       onBack,
@@ -419,6 +423,7 @@ export const useToolbarConfig = ({
       onShareLink,
       handleCopyRecord,
       onPrintDocument,
+      onPrintRecord,
     ]
   );
 
