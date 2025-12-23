@@ -115,6 +115,16 @@ export function useDatasource({
     setRecords((prevRecords) => prevRecords.filter((record) => String(record.id) !== recordId));
   }, []);
 
+  // Update a specific record in-place by ID
+  const updateRecordLocally = useCallback((recordId: string, updatedRecord: EntityData) => {
+    setRecords((prevRecords) => prevRecords.map((record) => (String(record.id) === recordId ? updatedRecord : record)));
+  }, []);
+
+  // Add a new record at the beginning of the array
+  const addRecordLocally = useCallback((newRecord: EntityData) => {
+    setRecords((prevRecords) => [newRecord, ...prevRecords]);
+  }, []);
+
   const fetchMore = useCallback(() => {
     setPage((prev) => prev + 1);
   }, []);
@@ -264,6 +274,8 @@ export function useDatasource({
     loaded,
     activeColumnFilters,
     removeRecordLocally,
+    updateRecordLocally,
+    addRecordLocally,
     refetch,
     hasMoreRecords,
   };

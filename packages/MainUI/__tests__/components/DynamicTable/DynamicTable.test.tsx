@@ -72,6 +72,10 @@ const mockDatasourceContext = {
   getHasMoreRecords: jest.fn(() => false),
   registerFetchMore: jest.fn(),
   fetchMoreRecords: jest.fn(),
+  registerUpdateRecord: jest.fn(),
+  updateRecordInDatasource: jest.fn(),
+  registerAddRecord: jest.fn(),
+  addRecordToDatasource: jest.fn(),
 };
 
 const mockToolbarContext = {
@@ -363,6 +367,8 @@ const mockDatasourceHook: {
   fetchMore: jest.Mock;
   records: EntityData[];
   removeRecordLocally: jest.Mock;
+  updateRecordLocally: jest.Mock;
+  addRecordLocally: jest.Mock;
   error: Error | null;
   refetch: jest.Mock;
   loading: boolean;
@@ -371,6 +377,8 @@ const mockDatasourceHook: {
   fetchMore: jest.fn(),
   records: [],
   removeRecordLocally: jest.fn(),
+  updateRecordLocally: jest.fn(),
+  addRecordLocally: jest.fn(),
   error: null,
   refetch: jest.fn(),
   loading: false,

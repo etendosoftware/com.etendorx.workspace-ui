@@ -46,6 +46,8 @@ import useTableSelection from "@/hooks/useTableSelection";
 import { ErrorDisplay } from "../ErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
+import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useSelected } from "@/hooks/useSelected";
 import { useWindowContext } from "@/contexts/window";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
@@ -564,10 +566,13 @@ const DynamicTable = ({
     registerRecordsGetter,
     registerHasMoreRecordsGetter,
     registerFetchMore,
+    registerUpdateRecord,
+    registerAddRecord,
   } = useDatasourceContext();
   const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal } = useToolbarContext();
   const { activeWindow, getSelectedRecord, getTabFormState } = useWindowContext();
   const { tab, parentTab, parentRecord } = useTabContext();
+  const { registerRefresh } = useTabRefreshContext();
 
   // Hook for fetching form initialization data when entering edit mode
   const { fetchInitialData } = useInlineEditInitialization({ tab });
@@ -626,6 +631,8 @@ const DynamicTable = ({
     fetchMore,
     refetch,
     removeRecordLocally,
+    updateRecordLocally,
+    addRecordLocally,
     applyQuickFilter,
     fetchSummary,
   } = useTableData({
@@ -2419,7 +2426,7 @@ const DynamicTable = ({
   );
 
   const muiTableHeadCellPropsWithContextMenu = useCallback(
-    ({ column, table }: { column: MRT_Column<EntityData>; table: MRT_TableInstance<EntityData> }) => ({
+    ({ column }: { column: MRT_Column<EntityData>; table: MRT_TableInstance<EntityData> }) => ({
       sx: {
         ...sx.tableHeadCell,
       },
@@ -2927,6 +2934,10 @@ const DynamicTable = ({
       registerFetchMore(tabId, fetchMore);
     }
 
+    // Register in-place record update functions for FormView save integration
+    registerUpdateRecord(tabId, updateRecordLocally);
+    registerAddRecord(tabId, addRecordLocally);
+
     return () => {
       unregisterDatasource(tabId);
     };
@@ -2939,6 +2950,10 @@ const DynamicTable = ({
     registerRecordsGetter,
     registerHasMoreRecordsGetter,
     registerFetchMore,
+    registerUpdateRecord,
+    registerAddRecord,
+    updateRecordLocally,
+    addRecordLocally,
     refetch,
     records,
     hasMoreRecords,
@@ -2953,6 +2968,12 @@ const DynamicTable = ({
       columnFilters: toggleColumnsDropdown,
     });
   }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown]);
+
+  // Register table's refetch function with TabRefreshContext
+  // This allows triggering table refresh after save operations in FormView
+  useEffect(() => {
+    registerRefresh(tab.tabLevel, REFRESH_TYPES.TABLE, refetch);
+  }, [tab.tabLevel, registerRefresh, refetch]);
 
   // Register attachment action for toolbar to handle interactions from TableView
   useEffect(() => {

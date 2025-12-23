@@ -202,7 +202,6 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
   const { tab } = useTabContext();
   const { triggerParentRefreshes } = useTabRefreshContext();
 
-  // Wrapped onSave that includes parent refresh logic
   const wrappedOnSave = useCallback(
     async (showModal: boolean) => {
       // Execute original save operation first

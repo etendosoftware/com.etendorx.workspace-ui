@@ -110,11 +110,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     getTableState,
     setTableAdvancedCriteria,
   } = useWindowContext();
-  const { registerActions, onRefresh, setIsAdvancedFilterApplied } = useToolbarContext();
+  const { registerActions, setIsAdvancedFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
+  const { unregisterRefresh } = useTabRefreshContext();
   const { fetchFilterOptions } = useColumnFilterData();
   const [columnOptions, setColumnOptions] = useState<Record<string, FilterOption[]>>({});
-  const { registerRefresh, unregisterRefresh } = useTabRefreshContext();
   const [toggle, setToggle] = useState(false);
   const [advancedFiltersAnchor, setAdvancedFiltersAnchor] = useState<HTMLElement | null>(null);
   const [advancedFilters, setAdvancedFilters] = useState<any[]>([]);
@@ -877,14 +877,12 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   ]);
 
   useEffect(() => {
-    // Register this tab's refresh callback
-    registerRefresh(tab.tabLevel, onRefresh);
-
+    // Cleanup all refresh callbacks for this level on unmount
+    // Individual components (Table, FormView) register their own refresh with type
     return () => {
-      // Cleanup on unmount
       unregisterRefresh(tab.tabLevel);
     };
-  }, [tab.tabLevel, onRefresh, registerRefresh, unregisterRefresh]);
+  }, [tab.tabLevel, unregisterRefresh]);
 
   useEffect(() => {
     const actions = {

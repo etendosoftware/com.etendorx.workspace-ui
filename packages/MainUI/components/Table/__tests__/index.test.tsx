@@ -49,6 +49,8 @@ jest.mock("@/contexts/datasourceContext", () => ({
     registerRecordsGetter: jest.fn(),
     registerHasMoreRecordsGetter: jest.fn(),
     registerFetchMore: jest.fn(),
+    registerUpdateRecord: jest.fn(),
+    registerAddRecord: jest.fn(),
   }),
 }));
 
@@ -203,6 +205,8 @@ jest.mock("@/hooks/table/useTableData", () => ({
     fetchMore: jest.fn(),
     refetch: jest.fn(),
     removeRecordLocally: jest.fn(),
+    updateRecordLocally: jest.fn(),
+    addRecordLocally: jest.fn(),
     applyQuickFilter: jest.fn(),
   }),
 }));
