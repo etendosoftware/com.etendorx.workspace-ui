@@ -5,8 +5,7 @@ import { logger } from "@/utils/logger";
 
 export async function revalidateDopoProcess() {
   try {
-    revalidateTag("datasource");
-    revalidateTag("default");
+    revalidateTag("datasource", "default");
     revalidatePath("/window");
     logger.debug?.("Cache revalidated after client-side process execution");
     return { success: true };
