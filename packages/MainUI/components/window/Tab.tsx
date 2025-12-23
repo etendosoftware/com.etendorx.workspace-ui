@@ -250,7 +250,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
   }, [windowIdentifier]);
 
-
   const handlePrintRecord = useCallback(async () => {
     try {
       // Validate prerequisites
@@ -266,7 +265,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       console.log("handlePrintRecord called", {
         selectedRecordsCount: selectedRecords.length,
         PRINT_MULTIPLE_RECORDS,
-        publicHost: config?.etendoClassicHost
+        publicHost: config?.etendoClassicHost,
       });
 
       const publicHost = config?.etendoClassicHost || "";
@@ -878,7 +877,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
             data-testid="DynamicTable__5893c8"
           />
         </AttachmentProvider>
-      </div>     
+      </div>
     </div>
   );
 }

@@ -43,4 +43,3 @@ export const TOOLBAR_BUTTONS_TYPES = {
 };
 
 export const PRINT_MULTIPLE_RECORDS = false;
-
