@@ -2,15 +2,33 @@ import { render, fireEvent, waitFor, type RenderResult } from "@testing-library/
 import ProcessDefinitionModal from "../ProcessDefinitionModal";
 import { executeProcess } from "@/app/actions/process";
 
-// Mock the server action
+// Mock global fetch
+global.fetch = jest.fn().mockResolvedValue({
+  ok: true,
+  json: () => Promise.resolve({ response: { status: 0, data: [], responseActions: [] } }),
+  text: () => Promise.resolve(""),
+} as Response);
+
+jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
+  Metadata: {
+    getProcess: jest.fn().mockResolvedValue({ id: "TEST_PROCESS_ID" }),
+  },
+}));
+
+// Mock the server action (not used in this path anymore but kept for safety)
 jest.mock("@/app/actions/process", () => ({
   executeProcess: jest.fn(),
+}));
+
+jest.mock("@/app/actions/revalidate", () => ({
+  revalidateDopoProcess: jest.fn(),
 }));
 
 // Mock the user context to provide a token
 const mockUseUserContext = jest.fn(() => ({
   token: "test-auth-token-123",
   session: { userId: "test-user" },
+  getCsrfToken: () => "mock-csrf-token",
 }));
 
 jest.mock("@/hooks/useUserContext", () => ({
@@ -142,24 +160,22 @@ const clickExecuteButton = async (container: RenderResult): Promise<void> => {
   fireEvent.click(executeButton);
 };
 
-const expectExecuteProcessCall = (expectedToken: string) => {
-  return expect(mockExecuteProcess).toHaveBeenCalledWith(
-    "TEST_PROCESS_ID",
+const expectFetchCall = (expectedToken: string) => {
+  expect(global.fetch).toHaveBeenCalledWith(
+    expect.stringContaining("/api/erp/org.openbravo.client.kernel"),
     expect.objectContaining({
-      _buttonValue: "DONE",
-      _params: expect.any(Object),
-      _entityName: "TestEntity",
-      windowId: "test-window",
-    }),
-    expectedToken,
-    "test-window", // windowId parameter
-    undefined, // reportId parameter
-    "com.test.TestProcess" // actionHandler parameter
+      method: "POST",
+      headers: expect.objectContaining({
+        Authorization: `Bearer ${expectedToken}`,
+        "X-CSRF-Token": "mock-csrf-token",
+      }),
+    })
   );
 };
 
 describe("ProcessDefinitionModal token handling", () => {
   const mockButton = {
+    processId: "TEST_PROCESS_ID",
     processDefinition: {
       id: "TEST_PROCESS_ID",
       name: "Test Process",
@@ -167,9 +183,9 @@ describe("ProcessDefinitionModal token handling", () => {
       javaClassName: "com.test.TestProcess",
       parameters: {},
       onLoad: null,
-      onProcess: "function onProcess(context) { return { success: true }; }",
+      onProcess: null,
     },
-  };
+  } as any;
 
   const renderModal = (options: RenderModalOptions = {}): RenderResult => {
     const { onClose = jest.fn(), onSuccess = jest.fn() } = options;
@@ -187,7 +203,7 @@ describe("ProcessDefinitionModal token handling", () => {
     await clickExecuteButton(container);
 
     await waitFor(() => {
-      expectExecuteProcessCall("test-auth-token-123"); // This is the key assertion - token must be passed
+      expectFetchCall("test-auth-token-123");
     });
   });
 
@@ -197,7 +213,7 @@ describe("ProcessDefinitionModal token handling", () => {
     await clickExecuteButton(container);
 
     await waitFor(() => {
-      expectExecuteProcessCall("test-auth-token-123"); // Token is properly passed
+      expectFetchCall("test-auth-token-123");
     });
   });
 

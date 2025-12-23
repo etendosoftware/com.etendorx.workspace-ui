@@ -58,12 +58,10 @@ export async function executeProcess(
     const headerStore = await headers();
     // Prepare a mock request object with headers to satisfy getErpAuthHeaders signature
     const mockRequest = {
-      headers: headerStore
+      headers: headerStore,
     } as unknown as Request;
 
     const { cookieHeader, csrfToken: resolvedCsrfToken } = getErpAuthHeaders(mockRequest, token, csrfToken);
-
-    logger.debug?.(`executeProcess auth: Cookie length: ${cookieHeader?.length || 0}. CSRF Token provided: ${!!resolvedCsrfToken}`);
 
     const response = await fetch(apiUrl, {
       method: "POST",

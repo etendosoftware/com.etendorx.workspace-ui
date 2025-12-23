@@ -161,7 +161,7 @@ function WindowReferenceGrid({
     };
 
     const applyParameters = () => {
-       // 1. Merge defaults and current values into a single map
+      // 1. Merge defaults and current values into a single map
       const mergedParams: Record<string, EntityValue> = {};
 
       // Apply defaults
@@ -195,8 +195,8 @@ function WindowReferenceGrid({
 
         const matchingParameter = Object.values(parameters).find((param) => param.name === key);
         if (matchingParameter) {
-           const fieldName = matchingParameter.dBColumnName || key;
-           options[fieldName] = finalValue;
+          const fieldName = matchingParameter.dBColumnName || key;
+          options[fieldName] = finalValue;
         }
       }
     };
@@ -225,7 +225,7 @@ function WindowReferenceGrid({
 
     applyDynamicKeys();
     applyParameters();
-    
+
     const criteria = buildCriteria();
 
     if (criteria.length > 0) {

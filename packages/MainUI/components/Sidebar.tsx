@@ -93,9 +93,9 @@ const mapMenuToProcessDefinitionButton = (item: ExtendedMenu): ProcessDefinition
   // We prioritize processDefinitionId as it is specific to this item type
   // Fallback to processId or item.id
   const targetProcessId = item.processDefinitionId || item.processId || item.id;
-  
+
   if (item.type === "ProcessDefinition") {
-     console.log("[Sidebar] mapping ProcessDefinition item:", item);
+    console.log("[Sidebar] mapping ProcessDefinition item:", item);
   }
 
   // Create a minimal ProcessDefinitionButton structure
