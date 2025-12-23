@@ -104,7 +104,8 @@
 .toolbar-button-attachment .icon-base64,
 .toolbar-button-print-record .icon-base64,
 .toolbar-button-share-link .icon-base64,
-.toolbar-button-copy-record .icon-base64 {
+.toolbar-button-copy-record .icon-base64,
+.toolbar-button-advanced-filters .icon-base64 {
   opacity: 1;
 }
 
@@ -119,7 +120,8 @@
 .toolbar-button-attachment:hover .icon-base64,
 .toolbar-button-print-record:hover .icon-base64,
 .toolbar-button-share-link:hover .icon-base64,
-.toolbar-button-copy-record:hover .icon-base64 {
+.toolbar-button-copy-record:hover .icon-base64,
+.toolbar-button-advanced-filters:hover .icon-base64 {
   filter: brightness(0) invert(1);
   opacity: 1;
 }
@@ -146,7 +148,8 @@
 .toolbar-button-attachment:disabled .icon-base64,
 .toolbar-button-print-record:disabled .icon-base64,
 .toolbar-button-share-link:disabled .icon-base64,
-.toolbar-button-copy-record:disabled .icon-base64 {
+.toolbar-button-copy-record:disabled .icon-base64,
+.toolbar-button-advanced-filters:disabled .icon-base64 {
   filter: grayscale(100%);
   opacity: 0.3;
 }

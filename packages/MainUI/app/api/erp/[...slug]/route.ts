@@ -40,8 +40,6 @@ const getCachedErpData = unstable_cache(
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else if (slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
-    } else if (slug.includes(SLUGS_METHODS.PRINT) || slug.includes(SLUGS_METHODS.PRINT_REPORTS) || slug.includes(SLUGS_METHODS.PRINT_OPTIONS)) {
-      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
     }
@@ -103,14 +101,17 @@ const getCachedErpData = unstable_cache(
  * @param method - HTTP method
  * @returns true if this is a mutation route that should not be cached
  */
+/**
+ * Determines if a route should bypass caching (mutations or non-GET requests)
+ * @param slug - The API slug path
+ * @param method - HTTP method
+ * @returns true if this is a mutation route that should not be cached
+ */
 function isMutationRoute(slug: string, method: string): boolean {
   return (
     slug.includes(SLUGS_METHODS.CREATE) ||
     slug.includes(SLUGS_METHODS.UPDATE) ||
     slug.includes(SLUGS_METHODS.DELETE) ||
-    slug.includes(SLUGS_METHODS.PRINT) ||
-    slug.includes(SLUGS_METHODS.PRINT_REPORTS) ||
-    slug.includes(SLUGS_METHODS.PRINT_OPTIONS) ||
     slug.includes(SLUGS_CATEGORIES.COPILOT) || // All copilot routes should bypass cache for real-time data
     slug.startsWith(SLUGS_CATEGORIES.NOTES) || // Notes servlet needs session cookies
     slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || // Attachments servlet needs session cookies and multipart/form-data
@@ -155,9 +156,6 @@ function buildErpHeaders(
     acceptHeader = "text/event-stream";
   } else if (slug?.startsWith(SLUGS_CATEGORIES.LEGACY)) {
     acceptHeader = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
-  } else if (slug?.includes(SLUGS_METHODS.PRINT) || slug?.includes(SLUGS_METHODS.PRINT_REPORTS) || slug?.includes(SLUGS_METHODS.PRINT_OPTIONS)) {
-    // Print endpoints return HTML
-    acceptHeader = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7";
   }
 
   const headers: Record<string, string> = {
@@ -333,9 +331,6 @@ function buildErpUrl(slug: string, requestUrl: string): string {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.COPILOT)) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
-  } else if (slug.includes(SLUGS_METHODS.PRINT) || slug.includes(SLUGS_METHODS.PRINT_REPORTS) || slug.includes(SLUGS_METHODS.PRINT_OPTIONS)) {
-    // Print servlet uses direct mapping (e.g., /orders/print.html, /businessUtility/PrinterReports.html, or /orders/PrintOptions.html)
-    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (
     slug.startsWith("web/") ||
     slug.startsWith("ad_forms/") ||

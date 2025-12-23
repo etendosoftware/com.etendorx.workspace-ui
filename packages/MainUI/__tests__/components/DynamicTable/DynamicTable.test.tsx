@@ -1,8 +1,9 @@
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import type React from "react";
 import DynamicTable from "../../../components/Table";
+import { renderWithTheme as render } from "../../../test-utils/test-theme-provider";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type {
   MRT_Row,
@@ -71,6 +72,10 @@ const mockDatasourceContext = {
   getHasMoreRecords: jest.fn(() => false),
   registerFetchMore: jest.fn(),
   fetchMoreRecords: jest.fn(),
+  registerUpdateRecord: jest.fn(),
+  updateRecordInDatasource: jest.fn(),
+  registerAddRecord: jest.fn(),
+  addRecordToDatasource: jest.fn(),
 };
 
 const mockToolbarContext = {
@@ -362,6 +367,8 @@ const mockDatasourceHook: {
   fetchMore: jest.Mock;
   records: EntityData[];
   removeRecordLocally: jest.Mock;
+  updateRecordLocally: jest.Mock;
+  addRecordLocally: jest.Mock;
   error: Error | null;
   refetch: jest.Mock;
   loading: boolean;
@@ -370,6 +377,8 @@ const mockDatasourceHook: {
   fetchMore: jest.fn(),
   records: [],
   removeRecordLocally: jest.fn(),
+  updateRecordLocally: jest.fn(),
+  addRecordLocally: jest.fn(),
   error: null,
   refetch: jest.fn(),
   loading: false,

@@ -73,8 +73,8 @@ export const useToolbarConfig = ({
     onToggleTreeView,
     attachmentAction,
     onExportCSV,
-    onPrintDocument,
     onPrintRecord,
+    onAdvancedFilters,
   } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
@@ -392,11 +392,11 @@ export const useToolbarConfig = ({
       [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: () => {
         handleCopyRecord();
       },
-      [TOOLBAR_BUTTONS_ACTIONS.PRINT_DOCUMENT]: async () => {
-        await onPrintDocument?.();
-      },
       [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: async () => {
         await onPrintRecord?.();
+      },
+      [TOOLBAR_BUTTONS_ACTIONS.ADVANCED_FILTERS]: (event?: React.MouseEvent<HTMLElement>) => {
+        onAdvancedFilters?.(event?.currentTarget);
       },
     }),
     [
@@ -422,8 +422,8 @@ export const useToolbarConfig = ({
       onExportCSV,
       onShareLink,
       handleCopyRecord,
-      onPrintDocument,
       onPrintRecord,
+      onAdvancedFilters,
     ]
   );
 

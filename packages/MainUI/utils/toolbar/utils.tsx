@@ -53,8 +53,8 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV]: "toolbar-button-export-csv",
   [TOOLBAR_BUTTONS_ACTIONS.SHARE_LINK]: "toolbar-button-share-link",
   [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: "toolbar-button-copy-record",
-  [TOOLBAR_BUTTONS_ACTIONS.PRINT_DOCUMENT]: "toolbar-button-print-document",
   [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: "toolbar-button-print-record",
+  [TOOLBAR_BUTTONS_ACTIONS.ADVANCED_FILTERS]: "toolbar-button-advanced-filters",
 } as const;
 
 export const DefaultIcon = () => (
@@ -147,6 +147,7 @@ export const createButtonByType = ({
   t,
   tab,
   selectedRecordsLength,
+  isAdvancedFilterApplied,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
@@ -161,6 +162,7 @@ export const createButtonByType = ({
   t?: TranslateFunction;
   tab: Tab;
   selectedRecordsLength: number;
+  isAdvancedFilterApplied?: boolean;
 }) => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
@@ -221,7 +223,6 @@ export const createButtonByType = ({
         const isSingleSelection = hasSelectedRecord;
         return buildDisableConfig(!isCloneEnabled || !isSingleSelection);
       },
-      [TOOLBAR_BUTTONS_ACTIONS.PRINT_DOCUMENT]: () => buildDisableConfig(!hasSelectedRecord),
       [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: () => buildDisableConfig(!hasSelectedRecord),
     };
 
@@ -260,6 +261,9 @@ export const createButtonByType = ({
 
   const getPressedConfig = (): Partial<ToolbarButton> => {
     if (button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER && isImplicitFilterApplied) {
+      return { isPressed: true };
+    }
+    if (button.action === TOOLBAR_BUTTONS_ACTIONS.ADVANCED_FILTERS && isAdvancedFilterApplied) {
       return { isPressed: true };
     }
     return {};
@@ -306,6 +310,7 @@ interface ButtonConfig {
   t?: TranslateFunction;
   tab: Tab;
   selectedRecordsLength: number;
+  isAdvancedFilterApplied?: boolean;
 }
 
 /**
@@ -331,6 +336,7 @@ const createSectionButtons = (
       t: config.t,
       tab: config.tab,
       selectedRecordsLength: config.selectedRecordsLength,
+      isAdvancedFilterApplied: config.isAdvancedFilterApplied,
     });
 
     // Apply button-specific styles if available
@@ -376,6 +382,7 @@ interface ToolbarSectionsConfig {
   t?: TranslateFunction;
   tab: Tab;
   selectedRecordsLength: number;
+  isAdvancedFilterApplied?: boolean;
 }
 
 export const getToolbarSections = ({
@@ -394,6 +401,8 @@ export const getToolbarSections = ({
   t,
   tab,
   selectedRecordsLength,
+
+  isAdvancedFilterApplied = false,
 }: ToolbarSectionsConfig): {
   leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
@@ -415,6 +424,7 @@ export const getToolbarSections = ({
     tab,
     selectedRecordsLength,
     t,
+    isAdvancedFilterApplied,
   };
 
   return {

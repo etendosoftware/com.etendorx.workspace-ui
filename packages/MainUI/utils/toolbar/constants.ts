@@ -28,10 +28,10 @@ export const TOOLBAR_BUTTONS_ACTIONS = {
   TOGGLE_TREE_VIEW: "TOGGLE_TREE_VIEW",
   ATTACHMENT: "ATTACHMENT",
   EXPORT_CSV: "EXPORT_CSV",
-  PRINT_DOCUMENT: "PRINT_DOCUMENT",
   PRINT_RECORD: "PRINT_RECORD",
   SHARE_LINK: "SHARE_LINK",
   COPY_RECORD: "COPY_RECORD",
+  ADVANCED_FILTERS: "ADVANCED_FILTERS",
 };
 
 export const TOOLBAR_BUTTONS_TYPES = {
@@ -43,4 +43,13 @@ export const TOOLBAR_BUTTONS_TYPES = {
 };
 
 export const PRINT_MULTIPLE_RECORDS = true;
+/**
+ * Types of refresh callbacks that can be registered with TabRefreshContext.
+ * Used to distinguish between table and form refresh functions.
+ */
+export const REFRESH_TYPES = {
+  TABLE: "table",
+  FORM: "form",
+} as const;
 
+export type RefreshType = (typeof REFRESH_TYPES)[keyof typeof REFRESH_TYPES];

@@ -23,6 +23,7 @@ import type { TabItem } from "@workspaceui/componentlibrary/src/components/Prima
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import { useFormViewContext } from "./contexts/FormViewContext";
 import StatusBar from "./StatusBar";
+import { useTranslation } from "@/hooks/useTranslation";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import type { StatusModalState } from "@workspaceui/componentlibrary/src/components/StatusModal/types";
 import type { NavigationState } from "@/hooks/useRecordNavigation";
@@ -56,16 +57,18 @@ export function FormHeader({
     [theme.palette.baselineColor.neutral]
   );
 
+  const { t } = useTranslation();
+
   const tabs: TabItem[] = useMemo(() => {
     return groups.map(([id, group]) => ({
       id: String(id || "_main"),
       icon: getIconForGroup(group.identifier),
-      label: group.identifier,
+      label: group.identifier === "More Information" ? t("forms.sections.moreInformation") : group.identifier,
       fill: theme.palette.baselineColor.neutral[80],
       hoverFill: theme.palette.baselineColor.neutral[0],
       showInTab: true,
     }));
-  }, [groups, getIconForGroup, theme.palette.baselineColor.neutral]);
+  }, [groups, getIconForGroup, theme.palette.baselineColor.neutral, t]);
 
   return (
     <>
