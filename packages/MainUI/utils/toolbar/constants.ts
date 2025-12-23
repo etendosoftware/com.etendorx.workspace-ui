@@ -42,5 +42,5 @@ export const TOOLBAR_BUTTONS_TYPES = {
   CUSTOM: "CUSTOM",
 };
 
-export const PRINT_MULTIPLE_RECORDS = false;
+export const PRINT_MULTIPLE_RECORDS = true;
 
