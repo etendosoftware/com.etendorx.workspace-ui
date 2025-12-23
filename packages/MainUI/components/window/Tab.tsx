@@ -24,7 +24,7 @@ import { FormView } from "@/components/Form/FormView";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { AttachmentProvider } from "@/contexts/AttachmentContext";
 import type { TabLevelProps } from "@/components/window/types";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils/url/constants";
@@ -36,6 +36,13 @@ import { useUserContext } from "@/hooks/useUserContext";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
+import { TableFilter } from "@workspaceui/componentlibrary/src/components/AdvancedFiltersModal";
+import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
+import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
+import { parseColumns } from "@/utils/tableColumns";
+import { ColumnFilterUtils, type FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import Menu from "@workspaceui/componentlibrary/src/components/Menu";
+import { useTranslation } from "@/hooks/useTranslation";
 
 /**
  * Validates if a child tab can open FormView based on parent selection in context
@@ -107,15 +114,21 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     setTabFormState,
     clearChildrenSelections,
     getTableState,
+    setTableAdvancedCriteria,
   } = useWindowContext();
-  const { registerActions, onRefresh } = useToolbarContext();
+  const { registerActions, setIsAdvancedFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
   const { registerRefresh, unregisterRefresh } = useTabRefreshContext();
   const { token } = useUserContext();
   const selectedRecord = useSelectedRecord(tab);
   const selectedRecords = useSelectedRecords(tab);
+  const { fetchFilterOptions } = useColumnFilterData();
+  const [columnOptions, setColumnOptions] = useState<Record<string, FilterOption[]>>({});
   const [toggle, setToggle] = useState(false);
   const [iframeUrl, setIframeUrl] = useState("");
+  const [advancedFiltersAnchor, setAdvancedFiltersAnchor] = useState<HTMLElement | null>(null);
+  const [advancedFilters, setAdvancedFilters] = useState<any[]>([]);
+  const { t } = useTranslation();
   const lastParentSelectionRef = useRef<Map<string, string | undefined>>(new Map());
 
   const windowIdentifier = activeWindow?.windowIdentifier;
@@ -326,13 +339,204 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       console.error("Print Record Error:", errorMessage, error);
       throw new Error(`Print failed: ${errorMessage}`);
     }
-  }, [selectedRecords, token, tab.id]);
+  }, [selectedRecords, token, tab.id, config?.etendoClassicHost]);
+  const handleAdvancedFilters = useCallback((anchorEl?: HTMLElement): void => {
+    if (anchorEl) {
+      setAdvancedFiltersAnchor(anchorEl);
+    }
+  }, []);
+
+  const handleApplyFilters = useCallback(
+    (filters: any[]): void => {
+      // Helper to map operators
+      const mapOperator = (op: string): string => {
+        switch (op) {
+          case "equals":
+            return "equals";
+          case "not_equals":
+            return "notEqual";
+          case "contains":
+            return "iContains";
+          case "not_contains":
+            return "notContains";
+          case "starts_with":
+            return "startsWith";
+          case "ends_with":
+            return "endsWith";
+          case "is_empty":
+            return "isNull";
+          case "is_not_empty":
+            return "notNull";
+          case "greater_than":
+            return "greaterThan";
+          case "less_than":
+            return "lessThan";
+          case "greater_or_equal":
+            return "greaterOrEqual";
+          case "less_or_equal":
+            return "lessOrEqual";
+          case "is_true":
+            return "equals";
+          case "is_false":
+            return "equals";
+          case "before":
+            return "lessThan";
+          case "after":
+            return "greaterThan";
+          default:
+            return "iContains";
+        }
+      };
+
+      // Helper to convert value
+      const convertValue = (val: any, op: string): any => {
+        if (op === "is_true") return true;
+        if (op === "is_false") return false;
+        return val;
+      };
+
+      // Recursive function to convert filter items to criteria
+      const convertItem = (item: any): any => {
+        if (item.type === "condition") {
+          return {
+            _constructor: "AdvancedCriteria",
+            fieldName: item.column,
+            operator: mapOperator(item.operator),
+            value: convertValue(item.value, item.operator),
+          };
+        }
+        if (item.type === "group") {
+          return {
+            _constructor: "AdvancedCriteria",
+            operator: item.logicalOperator.toLowerCase(),
+            criteria: item.conditions.map((c: any) => ({
+              _constructor: "AdvancedCriteria",
+              fieldName: c.column,
+              operator: mapOperator(c.operator),
+              value: convertValue(c.value, c.operator),
+            })),
+          };
+        }
+        return null;
+      };
+
+      const criteria = filters.map(convertItem).filter(Boolean);
+
+      // Update table state with new criteria
+      // We assume implicit AND for top-level items
+      const advancedCriteria = {
+        _constructor: "AdvancedCriteria",
+        operator: "and",
+        criteria,
+      };
+
+      if (windowIdentifier) {
+        setTableAdvancedCriteria(windowIdentifier, tab.id, advancedCriteria);
+      }
+
+      setAdvancedFilters(filters);
+      setIsAdvancedFilterApplied(filters.length > 0);
+      setAdvancedFiltersAnchor(null);
+    },
+    [windowIdentifier, tab.id, setTableAdvancedCriteria, setIsAdvancedFilterApplied]
+  );
+
+  const handleSetFilterOptions = useCallback(
+    (columnId: string, options: FilterOption[], _hasMore: boolean, append: boolean): void => {
+      setColumnOptions((prev) => ({
+        ...prev,
+        [columnId]: append ? [...(prev[columnId] || []), ...options] : options,
+      }));
+    },
+    []
+  );
+
+  const parsedColumns = useMemo(() => {
+    if (!tab.fields) return [];
+    // We need to cast to any because Tab.fields is Record<string, unknown> but parseColumns expects Field[]
+    return parseColumns(Object.values(tab.fields) as any[]);
+  }, [tab.fields]);
+
+  const handleLoadOptions = useCallback(
+    async (columnId: string, searchQuery: string): Promise<void> => {
+      const column = parsedColumns.find((col) => col.id === columnId || col.columnName === columnId);
+      if (!column) return;
+
+      if (ColumnFilterUtils.isTableDirColumn(column)) {
+        await loadTableDirFilterOptions({
+          column,
+          columnId,
+          searchQuery,
+          tabId: tab.id,
+          entityName: tab.entityName,
+          fetchFilterOptions,
+          setFilterOptions: handleSetFilterOptions,
+        });
+      } else if (ColumnFilterUtils.supportsDropdownFilter(column)) {
+        loadSelectFilterOptions(column, columnId, searchQuery, handleSetFilterOptions);
+      }
+    },
+    [parsedColumns, tab.id, tab.entityName, fetchFilterOptions, handleSetFilterOptions]
+  );
+
+  const filterColumns = useMemo<any[]>(() => {
+    if (!parsedColumns.length || !windowIdentifier) return [];
+
+    const tableState = getTableState(windowIdentifier, tab.id) || {};
+    const { visibility: tableColumnVisibility = {} } = tableState;
+
+    return parsedColumns
+      .filter((col) => {
+        if (["_editLink", "mrt-row-select", "actions"].includes(col.id)) return false;
+
+        // Determine visibility
+        // 1. Default from metadata
+        let isVisible = col.showInGridView !== false;
+
+        // 2. User override from table state (uses header/label as key)
+        if (col.header && tableColumnVisibility[col.header] !== undefined) {
+          isVisible = tableColumnVisibility[col.header];
+        }
+
+        return isVisible;
+      })
+      .map((col) => {
+        let type: "string" | "number" | "date" | "boolean" | "select" = "string";
+
+        if (ColumnFilterUtils.supportsDropdownFilter(col)) {
+          type = "select";
+        } else {
+          const fieldType = String(col.type);
+          if (["number", "quantity", "integer", "amount"].includes(fieldType)) type = "number";
+          else if (["date", "datetime"].includes(fieldType)) type = "date";
+          else if (["boolean", "yesno"].includes(fieldType)) type = "boolean";
+        }
+
+        const id = col.columnName || col.id;
+        return {
+          id,
+          label: col.header || col.id,
+          type,
+          options: columnOptions[id] || [],
+        };
+      });
+  }, [parsedColumns, windowIdentifier, getTableState, tab.id, columnOptions]);
 
   /**
    * Builds field metadata array matching SmartClient format
    */
   const buildFieldsArray = useCallback(
-    (orderedFieldNames: string[], visibility: Record<string, boolean>, fields: Record<string, unknown> | undefined) => {
+    (
+      orderedFieldNames: string[],
+      visibility: Record<string, boolean>,
+      fields: Record<string, unknown> | undefined
+    ): Array<{
+      name: string;
+      visible?: boolean;
+      frozen?: boolean;
+      width?: number;
+      autoFitWidth?: boolean;
+    }> => {
       const fieldsArray: Array<{
         name: string;
         visible?: boolean;
@@ -376,7 +580,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
    * Format: ({field:"[...]",sort:"(...))",hilite:null,group:{groupByFields:"",groupingModes:{}},filterClause:null,summaryFunctions:{}})
    */
   const buildViewState = useCallback(
-    (fieldsArray: Array<Record<string, unknown>>, sorting: Array<{ id: string; desc: boolean }>) => {
+    (fieldsArray: Array<Record<string, unknown>>, sorting: Array<{ id: string; desc: boolean }>): string => {
       const fieldJson = JSON.stringify(fieldsArray);
 
       let sortJson: string;
@@ -495,7 +699,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   /**
    * Downloads CSV file to client
    */
-  const downloadCSVFile = useCallback((csvContent: string) => {
+  const downloadCSVFile = useCallback((csvContent: string): void => {
     if (!csvContent.trim()) {
       throw new Error("No data to export");
     }
@@ -521,7 +725,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   /**
    * Validates export prerequisites
    */
-  const validateExportData = useCallback(() => {
+  const validateExportData = useCallback((): void => {
     if (!tab?.entityName) {
       throw new Error("Entity name not found");
     }
@@ -654,7 +858,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     [extractErrorFromResponse, tryExtractCSVFromDataObject, tryExtractCSVFromTopLevel]
   );
 
-  const handleExportCSV = useCallback(async () => {
+  const handleExportCSV = useCallback(async (): Promise<void> => {
     try {
       validateExportData();
 
@@ -760,14 +964,12 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   ]);
 
   useEffect(() => {
-    // Register this tab's refresh callback
-    registerRefresh(tab.tabLevel, onRefresh);
-
+    // Cleanup all refresh callbacks for this level on unmount
+    // Individual components (Table, FormView) register their own refresh with type
     return () => {
-      // Cleanup on unmount
       unregisterRefresh(tab.tabLevel);
     };
-  }, [tab.tabLevel, onRefresh, registerRefresh, unregisterRefresh]);
+  }, [tab.tabLevel, unregisterRefresh]);
 
   useEffect(() => {
     const actions = {
@@ -775,11 +977,21 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       back: handleBack,
       treeView: handleTreeView,
       exportCSV: handleExportCSV,
+      advancedFilters: handleAdvancedFilters,
       printRecord: handlePrintRecord,
     };
 
     registerActions(actions);
-  }, [registerActions, handleNew, handleBack, handleTreeView, handleExportCSV, handlePrintRecord, tab.id]);
+  }, [
+    registerActions,
+    handleNew,
+    handleBack,
+    handleTreeView,
+    handleExportCSV,
+    handleAdvancedFilters,
+    handlePrintRecord,
+    tab.id,
+  ]);
 
   /**
    * Clear selection when creating a new record
@@ -874,10 +1086,26 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
             setRecordId={handleSetRecordId}
             onRecordSelection={handleRecordSelection}
             isVisible={!shouldShowForm}
+            areFiltersDisabled={advancedFilters.length > 0}
             data-testid="DynamicTable__5893c8"
           />
         </AttachmentProvider>
       </div>
+      <Menu
+        anchorEl={advancedFiltersAnchor}
+        onClose={() => setAdvancedFiltersAnchor(null)}
+        className="w-[800px] max-w-[90vw] max-h-[80vh] overflow-y-auto"
+        offsetY={8}
+        data-testid="Menu__5893c8">
+        <TableFilter
+          columns={filterColumns}
+          onApplyFilters={handleApplyFilters}
+          onLoadOptions={handleLoadOptions}
+          initialFilters={advancedFilters}
+          t={(k: string) => t(k as any)}
+          data-testid="TableFilter__5893c8"
+        />
+      </Menu>
     </div>
   );
 }

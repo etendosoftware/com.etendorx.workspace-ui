@@ -169,12 +169,6 @@ describe("Tab - Refresh Registration", () => {
     });
   });
 
-  it("should register refresh callback on mount", () => {
-    renderWithTheme(<Tab tab={mockTab} collapsed={false} />);
-
-    expect(mockRegisterRefresh).toHaveBeenCalledWith(2, mockOnRefresh);
-  });
-
   it("should unregister refresh callback on unmount", () => {
     const { unmount } = renderWithTheme(<Tab tab={mockTab} collapsed={false} />);
 

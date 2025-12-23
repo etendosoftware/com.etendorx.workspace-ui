@@ -101,6 +101,12 @@ const getCachedErpData = unstable_cache(
  * @param method - HTTP method
  * @returns true if this is a mutation route that should not be cached
  */
+/**
+ * Determines if a route should bypass caching (mutations or non-GET requests)
+ * @param slug - The API slug path
+ * @param method - HTTP method
+ * @returns true if this is a mutation route that should not be cached
+ */
 function isMutationRoute(slug: string, method: string): boolean {
   return (
     slug.includes(SLUGS_METHODS.CREATE) ||

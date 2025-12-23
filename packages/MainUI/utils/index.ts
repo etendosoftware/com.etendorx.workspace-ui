@@ -135,9 +135,12 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
 
 export const parseDynamicExpression = (expr: string) => {
   // Transform @field_name@ syntax to valid JavaScript references
-  const expr0 = expr.replace(/@([a-zA-Z_]\w*)@/g, (_, fieldName) => {
+  let expr0 = expr.replace(/@([a-zA-Z_]\w*)@/g, (_, fieldName) => {
     return `(currentValues["${fieldName}"] || context["${fieldName}"])`;
   });
+
+  // Transform legacy Etendo/OB '!' comparison to '!=' (e.g., @Col@!'Y' -> ...!='Y')
+  expr0 = expr0.replace(/!'/g, "!='");
 
   // Transform Etendo comparison operators to JavaScript
   // Convert single = to == for comparison (avoiding conflicts with assignment)

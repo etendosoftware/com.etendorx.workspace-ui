@@ -15,7 +15,8 @@
  *************************************************************************
  */
 
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { MRT_Column } from "material-react-table";

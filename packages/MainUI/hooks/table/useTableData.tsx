@@ -86,6 +86,8 @@ interface UseTableDataReturn {
   fetchMore: () => void;
   refetch: () => Promise<void>;
   removeRecordLocally: ((id: string) => void) | null;
+  updateRecordLocally: (recordId: string, updatedRecord: EntityData) => void;
+  addRecordLocally: (newRecord: EntityData) => void;
   hasMoreRecords: boolean;
   applyQuickFilter: (
     columnId: string,
@@ -132,6 +134,7 @@ export const useTableData = ({
     setTableColumnOrder,
     setIsImplicitFilterApplied,
     tableColumnSorting,
+    advancedCriteria,
   } = useTableStatePersistenceTab({
     windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: tab.id,
@@ -240,25 +243,30 @@ export const useTableData = ({
       // Set loading state before fetching data
       await loadFilterOptions(columnId, searchQuery);
 
-      if (ColumnFilterUtils.isSelectColumn(column)) {
-        return loadSelectFilterOptions(column, columnId, searchQuery, setFilterOptions);
-      }
-
+      // Handle TableDir columns (backend search)
       if (ColumnFilterUtils.isTableDirColumn(column)) {
         return loadTableDirFilterOptions({
           column,
           columnId,
           searchQuery,
           tabId: tab.id,
-          entityName: treeEntity,
-          fetchFilterOptions,
+          entityName: tab.entityName,
+          fetchFilterOptions: async (colId, query) => {
+            await loadFilterOptions(colId, query);
+            return [];
+          },
           setFilterOptions,
         });
       }
 
+      // Handle Select/List columns (static or reference)
+      if (ColumnFilterUtils.supportsDropdownFilter(column)) {
+        return loadSelectFilterOptions(column, columnId, searchQuery, setFilterOptions);
+      }
+
       return [];
     },
-    [rawColumns, fetchFilterOptions, setFilterOptions, loadFilterOptions, tab.id, treeEntity]
+    [tab.fields, tab.id, tab.entityName, loadFilterOptions, setFilterOptions]
   );
 
   const handleLoadMoreFilterOptions = useCallback(
@@ -344,7 +352,7 @@ export const useTableData = ({
 
     // 3. Field Level: Identifier
     const identifierFields = fields.filter((field) => {
-      const col = field.column as any;
+      const col = field.column;
       if (!col) return false;
       // Check both boolean true and string "true" values
       return (
@@ -421,6 +429,19 @@ export const useTableData = ({
       options.criteria = [{ fieldName, value, operator }];
     }
 
+    // Apply advanced criteria
+    if (advancedCriteria) {
+      if (options.criteria) {
+        // @ts-ignore - advancedCriteria is compatible with Criteria
+        options.criteria.push(advancedCriteria);
+      } else {
+        // @ts-ignore - advancedCriteria is compatible with Criteria
+        options.criteria = [advancedCriteria];
+      }
+    } else {
+      console.log("useTableData: No advancedCriteria found");
+    }
+
     // Apply sorting
     if (tableColumnSorting?.length > 0) {
       applySortToOptions(options, tableColumnSorting[0]);
@@ -437,6 +458,7 @@ export const useTableData = ({
     parentId,
     language,
     tableColumnSorting,
+    advancedCriteria,
     getDefaultSort,
     getParentFieldName,
     applySortToOptions,
@@ -468,7 +490,17 @@ export const useTableData = ({
   }, [rawColumns]);
 
   // Use datasource hook
-  const { fetchMore, records, removeRecordLocally, error, refetch, loading, hasMoreRecords } = useDatasource({
+  const {
+    fetchMore,
+    records,
+    removeRecordLocally,
+    updateRecordLocally,
+    addRecordLocally,
+    error,
+    refetch,
+    loading,
+    hasMoreRecords,
+  } = useDatasource({
     entity: treeEntity,
     params: query,
     columns: stableDatasourceColumns,
@@ -958,14 +990,14 @@ export const useTableData = ({
       const summaryRequest: Record<string, string> = {};
       const columnMapping: Record<string, string> = {}; // backendName -> originalId
 
-      Object.entries(summaries).forEach(([colId, type]) => {
+      for (const [colId, type] of Object.entries(summaries)) {
         const column = baseColumns.find((col) => col.columnName === colId || col.id === colId);
         if (column) {
           const backendName = column.columnName || column.id;
           summaryRequest[backendName] = type;
           columnMapping[backendName] = colId;
         }
-      });
+      }
 
       if (Object.keys(summaryRequest).length === 0) {
         return null;
@@ -1002,11 +1034,11 @@ export const useTableData = ({
           const results: Record<string, number | string> = {};
 
           // Map backend results back to original column IDs
-          Object.entries(columnMapping).forEach(([backendName, originalId]) => {
+          for (const [backendName, originalId] of Object.entries(columnMapping)) {
             if (resultData[backendName] !== undefined) {
               results[originalId] = resultData[backendName];
             }
-          });
+          }
 
           return results;
         }
@@ -1049,6 +1081,8 @@ export const useTableData = ({
     fetchMore,
     refetch,
     removeRecordLocally,
+    updateRecordLocally,
+    addRecordLocally,
     applyQuickFilter,
     isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
     tableColumnFilters,

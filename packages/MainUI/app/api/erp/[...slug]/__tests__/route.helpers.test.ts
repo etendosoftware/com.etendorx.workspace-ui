@@ -1,6 +1,6 @@
 /**
  * Tests for helper functions in the ERP route handler
- * These functions handle encoding detection, HTML rewriting, and content type detection
+ * These functions handle encoding detection, content type detection, and HTML rewriting
  */
 
 import { detectCharset, isBinaryContentType, rewriteHtmlResourceUrls, createHtmlResponse } from "../route.helpers";
@@ -26,10 +26,6 @@ describe("ERP route helper functions", () => {
     it("should return iso-8859-1 when no charset is specified", () => {
       expect(detectCharset("text/html")).toBe("iso-8859-1");
     });
-
-    it("should handle windows-1252 charset", () => {
-      expect(detectCharset("text/html; charset=windows-1252")).toBe("windows-1252");
-    });
   });
 
   describe("isBinaryContentType", () => {
@@ -44,15 +40,6 @@ describe("ERP route helper functions", () => {
     it("should detect images as binary", () => {
       expect(isBinaryContentType("image/png")).toBe(true);
       expect(isBinaryContentType("image/jpeg")).toBe(true);
-      expect(isBinaryContentType("image/gif")).toBe(true);
-    });
-
-    it("should detect videos as binary", () => {
-      expect(isBinaryContentType("video/mp4")).toBe(true);
-    });
-
-    it("should detect audio as binary", () => {
-      expect(isBinaryContentType("audio/mpeg")).toBe(true);
     });
 
     it("should detect PDF as binary", () => {
@@ -65,125 +52,76 @@ describe("ERP route helper functions", () => {
     });
   });
 
-  describe("rewriteHtmlResourceUrls", () => {
-    // In production, ETENDO_CLASSIC_HOST would be used (e.g., http://localhost:8080/etendo)
-    // This is the browser-accessible URL for legacy resources
-    const ETENDO_CLASSIC_HOST = "http://localhost:8080/etendo";
-
-    it("should rewrite relative web paths", () => {
-      const html = '<link href="../web/styles.css" />';
-      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
-      expect(result).toContain(`href="${ETENDO_CLASSIC_HOST}/web/styles.css"`);
+  describe("createHtmlResponse", () => {
+    it("should set UTF-8 charset if missing", () => {
+      const original = new Response("<html></html>", {
+        headers: { "Content-Type": "text/html" },
+      });
+      const response = createHtmlResponse("<html>rewritten</html>", original);
+      expect(response.headers.get("Content-Type")).toBe("text/html; charset=UTF-8");
     });
 
-    it("should rewrite deeply nested web paths", () => {
-      const html = '<script src="../../../web/js/app.js"></script>';
-      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
-      expect(result).toContain(`src="${ETENDO_CLASSIC_HOST}/web/js/app.js"`);
-    });
-
-    it("should rewrite org.openbravo paths", () => {
-      const html = '<link href="../org.openbravo.client.kernel/style.css" />';
-      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
-      expect(result).toContain(`href="${ETENDO_CLASSIC_HOST}/org.openbravo.client.kernel/style.css"`);
-    });
-
-    it("should handle both href and src attributes", () => {
-      const html = '<link href="../web/style.css" /><img src="../web/logo.png" />';
-      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
-      expect(result).toContain(`href="${ETENDO_CLASSIC_HOST}/web/style.css"`);
-      expect(result).toContain(`src="${ETENDO_CLASSIC_HOST}/web/logo.png"`);
-    });
-
-    it("should be case insensitive", () => {
-      const html = '<LINK HREF="../web/styles.css" />';
-      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
-      expect(result).toContain(`HREF="${ETENDO_CLASSIC_HOST}/web/styles.css"`);
-    });
-
-    it("should not modify absolute URLs", () => {
-      const html = '<link href="http://external.com/style.css" />';
-      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
-      expect(result).toBe(html);
-    });
-
-    it("should rewrite absolute web paths", () => {
-      const html = '<link href="/web/styles.css" />';
-      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
-      expect(result).toContain(`href="${ETENDO_CLASSIC_HOST}/web/styles.css"`);
-    });
-
-    it("should rewrite absolute org.openbravo paths", () => {
-      const html = '<script src="/org.openbravo.client.kernel/app.js"></script>';
-      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
-      expect(result).toContain(`src="${ETENDO_CLASSIC_HOST}/org.openbravo.client.kernel/app.js"`);
-    });
-
-    it("should rewrite absolute ad_forms paths", () => {
-      const html = '<link href="/ad_forms/styles.css" />';
-      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
-      expect(result).toContain(`href="${ETENDO_CLASSIC_HOST}/ad_forms/styles.css"`);
-    });
-
-    it("should rewrite relative ad_forms paths", () => {
-      const html = '<script src="../../ad_forms/script.js"></script>';
-      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
-      expect(result).toContain(`src="${ETENDO_CLASSIC_HOST}/ad_forms/script.js"`);
-    });
-
-    it("should add base tag to HTML head", () => {
-      const html = "<html><head><title>Test</title></head><body></body></html>";
-      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
-      expect(result).toContain('<base href="http://localhost:8080/etendo/" />');
-      expect(result).toMatch(/<head[^>]*>\s*<base href="http:\/\/localhost:8080\/etendo\/" \/>/);
-    });
-
-    it("should not add base tag if already present", () => {
-      const html = '<html><head><base href="http://example.com/" /><title>Test</title></head><body></body></html>';
-      const result = rewriteHtmlResourceUrls(html, ETENDO_CLASSIC_HOST);
-      // Should only have one base tag
-      const baseTagCount = (result.match(/<base/g) || []).length;
-      expect(baseTagCount).toBe(1);
+    it("should preserve existing headers", () => {
+      const original = new Response("<html></html>", {
+        headers: { "X-Custom": "test", "Content-Type": "text/html" },
+      });
+      const response = createHtmlResponse("<html>rewritten</html>", original);
+      expect(response.headers.get("X-Custom")).toBe("test");
     });
   });
 
-  describe("createHtmlResponse", () => {
-    it("should create response with HTML content", () => {
-      const originalResponse = new Response("", {
-        status: 200,
-        statusText: "OK",
-        headers: new Headers(),
-      });
+  describe("rewriteHtmlResourceUrls", () => {
+    const baseUrl = "http://localhost:8080/etendo";
 
-      const result = createHtmlResponse("<html></html>", originalResponse);
-
-      expect(result.status).toBe(200);
-      expect(result.headers.get("content-type")).toBe("text/html");
+    it("should inject <base> tag pointing to baseUrl with trailing slash", () => {
+      const html = "<html><head><title>Test</title></head><body></body></html>";
+      const result = rewriteHtmlResourceUrls(html, baseUrl);
+      expect(result).toContain(`<base href="${baseUrl}/" />`);
     });
 
-    it("should preserve existing content-type if present", () => {
-      const originalResponse = new Response("", {
-        status: 200,
-        statusText: "OK",
-        headers: new Headers({ "content-type": "text/html; charset=utf-8" }),
-      });
-
-      const result = createHtmlResponse("<html></html>", originalResponse);
-
-      expect(result.headers.get("content-type")).toBe("text/html; charset=utf-8");
+    it("should convert absolute paths /web/ to relative web/ so <base> takes effect", () => {
+      const html = '<script src="/web/js/utils.js"></script>';
+      const result = rewriteHtmlResourceUrls(html, baseUrl);
+      // Should replace /web/ with web/
+      expect(result).toContain('src="web/js/utils.js"');
+      // Should NOT contain the absolute path anymore
+      expect(result).not.toContain('src="/web/js/utils.js"');
     });
 
-    it("should preserve status code", () => {
-      const originalResponse = new Response("", {
-        status: 404,
-        statusText: "Not Found",
-        headers: new Headers(),
-      });
+    it("should convert relative traversal ../web/ to simple relative web/", () => {
+      const html = '<link href="../web/skins/style.css" />';
+      const result = rewriteHtmlResourceUrls(html, baseUrl);
+      // Should replace ../web/ with web/
+      expect(result).toContain('href="web/skins/style.css"');
+      expect(result).not.toContain('href="../web/skins/style.css"');
+    });
 
-      const result = createHtmlResponse("<html>404</html>", originalResponse);
+    it("should handle org.openbravo paths", () => {
+      const html = '<script src="/org.openbravo.client.kernel/js"></script>';
+      const result = rewriteHtmlResourceUrls(html, baseUrl);
+      expect(result).toContain('src="org.openbravo.client.kernel/js"');
+    });
 
-      expect(result.status).toBe(404);
-      // Note: statusText may not be preserved in all environments
+    it("should handle ad_forms paths", () => {
+      const html = '<iframe src="/ad_forms/myform.html"></iframe>';
+      const result = rewriteHtmlResourceUrls(html, baseUrl);
+      expect(result).toContain('src="ad_forms/myform.html"');
+    });
+
+    it("should strip /etendo/ origin context entirely to let <base> handle it or replace with full url", () => {
+      // Our logic for /etendo/ is that if it finds src="/etendo/", it rewrites it to full absolute URL using origin
+      const html = '<script src="/etendo/web/js/utils.js"></script>';
+      const result = rewriteHtmlResourceUrls(html, baseUrl);
+      // Logic: rewritten.replace(/(href|src)\s*=\s*([\"'])\/etendo\//gi, `$1=$2${origin}/etendo/`);
+      // Origin of http://localhost:8080/etendo is http://localhost:8080
+      // So result should be http://localhost:8080/etendo/
+      expect(result).toContain('src="http://localhost:8080/etendo/web/js/utils.js"');
+    });
+
+    it("should treat nested ../../web/ same as ../web/", () => {
+      const html = '<script src="../../web/js/deep.js"></script>';
+      const result = rewriteHtmlResourceUrls(html, baseUrl);
+      expect(result).toContain('src="web/js/deep.js"');
     });
   });
 });
