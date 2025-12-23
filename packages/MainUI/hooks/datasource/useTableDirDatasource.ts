@@ -41,7 +41,7 @@ export const useTableDirDatasource = ({
 }: UseTableDirDatasourceParams) => {
   const { getValues, watch } = useFormContext();
   const { tab, parentRecord } = useTabContext();
-  const windowId = tab.window;
+  const windowId = tab?.window;
   const [records, setRecords] = useState<Record<string, string>[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();
@@ -55,7 +55,7 @@ export const useTableDirDatasource = ({
   const parentData = useFormParent(FieldName.INPUT_NAME);
 
   const invoiceContext: Record<string, EntityValue> = useMemo(() => {
-    if (!isProductField && !parentRecord && !tab?.fields) {
+    if ((!isProductField && !parentRecord) || !tab?.fields) {
       return FALLBACK_RESULT;
     }
 
@@ -83,7 +83,7 @@ export const useTableDirDatasource = ({
       const formValues: Record<string, EntityValue> = {};
 
       for (const [key, value] of Object.entries(formData)) {
-        const currentField = tab.fields[key];
+        const currentField = tab?.fields?.[key];
         const inputName = currentField?.inputName || key;
 
         formValues[inputName] = transformValueToClassicFormat(value);
@@ -91,7 +91,7 @@ export const useTableDirDatasource = ({
 
       return formValues;
     },
-    [tab.fields]
+    [tab?.fields]
   );
 
   interface BaseBody {
@@ -292,7 +292,7 @@ export const useTableDirDatasource = ({
   const fetch = useCallback(
     async (_currentValue: typeof value, reset = false, search = "") => {
       try {
-        if (!field || !tab) return;
+        if (!field) return;
 
         // Prevent duplicate fetches when called rapidly (e.g., double onFocus events)
         if (fetchInProgressRef.current) {
