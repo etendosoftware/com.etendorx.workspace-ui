@@ -33,7 +33,6 @@ import { PRINT_MULTIPLE_RECORDS } from "@/utils/toolbar/constants";
 import { getNewTabFormState, isFormView } from "@/utils/window/utils";
 import { useWindowContext } from "@/contexts/window";
 import { useUserContext } from "@/hooks/useUserContext";
-import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
 import { TableFilter } from "@workspaceui/componentlibrary/src/components/AdvancedFiltersModal";
