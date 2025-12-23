@@ -516,6 +516,65 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
    * Used for processes that require grid record selection
    * Calls servlet with selected grid records and process-specific data
    */
+  /**
+   * Common execution logic for Java-based processes (Window Reference & Direct Java)
+   */
+  const executeJavaProcess = useCallback(
+    async (payload: any, logContext = "process") => {
+      try {
+        const baseUrl = "/api/erp/org.openbravo.client.kernel";
+        const queryParams = new URLSearchParams();
+        if (processId) queryParams.set("processId", processId);
+        if (tab?.window) queryParams.set("windowId", tab.window.toString());
+        if (javaClassName) queryParams.set("_action", javaClassName);
+
+        const apiUrl = `${baseUrl}?${queryParams.toString()}`;
+
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            Authorization: `Bearer ${token}`,
+            "X-CSRF-Token": getCsrfToken(),
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || "Execution failed");
+        }
+
+        let resultData = null;
+        try {
+          resultData = await response.json();
+        } catch {}
+
+        const res: ExecuteProcessResult = {
+          success: true,
+          data: resultData,
+        };
+
+        const parsedResult = parseProcessResponse(res);
+        setResult(parsedResult);
+
+        if (parsedResult.success) {
+          await revalidateDopoProcess();
+          setShouldTriggerSuccess(true);
+        }
+      } catch (error) {
+        logger.warn(`Error executing ${logContext}:`, error);
+        setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
+      }
+    },
+    [processId, tab?.window, javaClassName, token, getCsrfToken, parseProcessResponse, revalidateDopoProcess]
+  );
+
+  /**
+   * Executes processes with window reference parameters
+   * Used for processes that require grid record selection
+   * Calls servlet with selected grid records and process-specific data
+   */
   const handleWindowReferenceExecute = useCallback(
     async (actionValue?: string) => {
       // Allow execution without tab context when opened from sidebar
@@ -523,68 +582,24 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         return;
       }
       startTransition(async () => {
-        try {
-          const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
-          const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
+        const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+        const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
 
-          // Build base payload
-          const payload: Record<string, unknown> = {
-            recordIds: record?.id ? [record.id] : [],
-            _buttonValue: actionValue || "DONE",
-            _params: {
-              ...mapKeysWithDefaults({ ...form.getValues(), ...gridSelection }),
-              ...buttonParams,
-            },
-            _entityName: tab?.entityName || "",
-            windowId: tab?.window || "",
-            ...buildProcessSpecificFields(processId),
-            ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
-          };
+        // Build base payload
+        const payload: Record<string, unknown> = {
+          recordIds: record?.id ? [record.id] : [],
+          _buttonValue: actionValue || "DONE",
+          _params: {
+            ...mapKeysWithDefaults({ ...form.getValues(), ...gridSelection }),
+            ...buttonParams,
+          },
+          _entityName: tab?.entityName || "",
+          windowId: tab?.window || "",
+          ...buildProcessSpecificFields(processId),
+          ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
+        };
 
-          const baseUrl = "/api/erp/org.openbravo.client.kernel";
-          const queryParams = new URLSearchParams();
-          queryParams.set("processId", processId);
-          if (tab?.window) queryParams.set("windowId", tab.window.toString());
-          if (javaClassName) queryParams.set("_action", javaClassName);
-
-          const apiUrl = `${baseUrl}?${queryParams.toString()}`;
-
-          const response = await fetch(apiUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json;charset=UTF-8",
-              Authorization: `Bearer ${token}`,
-              "X-CSRF-Token": getCsrfToken(),
-            },
-            body: JSON.stringify(payload),
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText || "Execution failed");
-          }
-
-          let resultData = null;
-          try {
-            resultData = await response.json();
-          } catch {}
-
-          const res: ExecuteProcessResult = {
-            success: true,
-            data: resultData,
-          };
-
-          const parsedResult = parseProcessResponse(res);
-          setResult(parsedResult);
-
-          if (parsedResult.success) {
-            await revalidateDopoProcess();
-            setShouldTriggerSuccess(true);
-          }
-        } catch (error) {
-          logger.warn("Error executing process:", error);
-          setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
-        }
+        await executeJavaProcess(payload, "process");
       });
     },
     [
@@ -592,14 +607,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       processId,
       form,
       gridSelection,
-      token,
-      javaClassName,
-      parseProcessResponse,
+      parameters, // Added parameters dependency
       record,
       buildProcessSpecificFields,
       buildWindowSpecificFields,
-      getCsrfToken,
-      revalidateDopoProcess,
+      executeJavaProcess,
     ]
   );
 
@@ -619,84 +631,31 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       const extraKey = windowConfig ? { [windowConfig.key]: windowConfig.value(record) } : {};
 
       startTransition(async () => {
-        try {
-          // Client-side execution to ensure JSESSIONID cookie is sent
-          // Target specific kernel slug to ensure proxy mutation logic (cookie forwarding) triggers
-          const baseUrl = "/api/erp/org.openbravo.client.kernel";
-          const queryParams = new URLSearchParams();
-          queryParams.set("processId", processId);
-          if (tab?.window) queryParams.set("windowId", tab.window.toString());
-          if (javaClassName) queryParams.set("_action", javaClassName);
+        const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+        const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
 
-          const apiUrl = `${baseUrl}?${queryParams.toString()}`;
+        const payload = {
+          _buttonValue: actionValue || "DONE",
+          _params: {
+            ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues }),
+            ...gridSelection, // Include grid selection if present (e.g. orderGrid)
+            ...buttonParams,
+          },
+        };
 
-          const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
-          const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
-
-          const payload = {
-            _buttonValue: actionValue || "DONE",
-            _params: {
-              ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues }),
-              ...gridSelection, // Include grid selection if present (e.g. orderGrid)
-              ...buttonParams,
-            },
-          };
-
-          const response = await fetch(apiUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json;charset=UTF-8",
-              Authorization: `Bearer ${token}`,
-              "X-CSRF-Token": getCsrfToken(),
-            },
-            body: JSON.stringify(payload),
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText || "Execution failed");
-          }
-
-          let resultData = null;
-          try {
-            resultData = await response.json();
-          } catch {}
-
-          const res: ExecuteProcessResult = {
-            success: true,
-            data: resultData,
-          };
-
-          const parsedResult = parseProcessResponse(res);
-          setResult(parsedResult);
-
-          if (parsedResult.success) {
-            // Trigger server-side revalidation
-            await revalidateDopoProcess();
-            setShouldTriggerSuccess(true);
-          }
-        } catch (error) {
-          logger.warn("Error executing direct Java process:", error);
-          setResult({
-            success: false,
-            error: error instanceof Error ? error.message : "Unknown error",
-          });
-        }
+        await executeJavaProcess(payload, "direct Java process");
       });
     },
     [
-      tab,
       processId,
       javaClassName,
       windowId,
       record,
       recordValues,
       form,
-      token,
-      parseProcessResponse,
-      getCsrfToken,
-      buildProcessSpecificFields,
       gridSelection,
+      parameters, // Added parameters dependency
+      executeJavaProcess,
     ]
   );
 
