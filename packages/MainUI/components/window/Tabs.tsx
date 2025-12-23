@@ -18,7 +18,7 @@
 // @data-testid-ignore
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useState, useTransition, useEffect } from "react";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
@@ -42,6 +42,27 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
   const [expand, setExpanded] = useState(false);
   const [customHeight, setCustomHeight] = useState(50);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (initialActiveTab) {
+      // Only reset if the initialActiveTab is actually different and valid
+      if (initialActiveTab.id !== current.id && tabs.some((t) => t.id === initialActiveTab.id)) {
+        setCurrent(initialActiveTab);
+        setActiveTabId(initialActiveTab.id);
+      } else if (!tabs.some((t) => t.id === current.id)) {
+        // If current tab is no longer in the list (e.g. filtered out), fall back to first
+        const fallback = tabs[0];
+        setCurrent(fallback);
+        setActiveTabId(fallback.id);
+      }
+    } else {
+      // Logic for when no initial active tab is provided but list changed
+      if (!tabs.some((t) => t.id === current.id)) {
+        setCurrent(tabs[0]);
+        setActiveTabId(tabs[0].id);
+      }
+    }
+  }, [initialActiveTab, tabs]); // dependency on tabs ensures re-eval when filter changes
 
   const { activeWindow } = useWindowContext();
   const { activeLevels, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({

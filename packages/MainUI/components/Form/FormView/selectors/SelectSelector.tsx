@@ -17,7 +17,7 @@
 
 // @data-testid-ignore
 import type { Field } from "@workspaceui/api-client/src/api/types";
-import Select from "./components/Select";
+import Select from "./components/Select/Select";
 import { useSelectFieldOptions } from "@/hooks/useSelectFieldOptions";
 import { useTableDirDatasource } from "@/hooks/datasource/useTableDirDatasource";
 

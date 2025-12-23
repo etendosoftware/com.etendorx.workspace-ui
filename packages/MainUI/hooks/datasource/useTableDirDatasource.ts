@@ -199,14 +199,16 @@ export const useTableDirDatasource = ({
         },
       ];
 
-      if (isProduct) {
-        const productCriteria = PRODUCT_SELECTOR_DEFAULTS.SEARCH_FIELDS.map((fieldName) => ({
-          fieldName,
-          operator: "iContains",
-          value: search,
-        }));
-        return { dummyId, criteria: [...baseCriteria, ...productCriteria] };
-      }
+      // Build product criteria if applicable
+      const productCriteria = isProduct
+        ? PRODUCT_SELECTOR_DEFAULTS.SEARCH_FIELDS.map((fieldName) => ({
+            fieldName,
+            operator: "iContains",
+            value: search,
+          }))
+        : [];
+
+      // Build TableDir criteria
       const searchFields = [];
       if (field.selector?.displayField) {
         searchFields.push(field.selector.displayField);
@@ -224,7 +226,8 @@ export const useTableDirDatasource = ({
         value: search,
       }));
 
-      return { dummyId, criteria: [...baseCriteria, ...tableDirCriteria] };
+      // Combine all criteria
+      return { dummyId, criteria: [...baseCriteria, ...productCriteria, ...tableDirCriteria] };
     },
     [field.selector]
   );

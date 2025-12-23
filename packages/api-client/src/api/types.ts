@@ -256,6 +256,8 @@ export interface Tab {
   name: string;
   title: string;
   parentColumns: string[];
+  displayLogicExpression?: string;
+  displayLogic?: string;
   id: string;
   table: string;
   entityName: string;

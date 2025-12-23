@@ -46,6 +46,8 @@ import useTableSelection from "@/hooks/useTableSelection";
 import { ErrorDisplay } from "../ErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
+import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useSelected } from "@/hooks/useSelected";
 import { useWindowContext } from "@/contexts/window";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
@@ -498,9 +500,16 @@ interface DynamicTableProps {
   onRecordSelection?: (recordId: string) => void;
   isTreeMode?: boolean;
   isVisible?: boolean;
+  areFiltersDisabled?: boolean;
 }
 
-const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVisible = true }: DynamicTableProps) => {
+const DynamicTable = ({
+  setRecordId,
+  onRecordSelection,
+  isTreeMode = true,
+  isVisible = true,
+  areFiltersDisabled = false,
+}: DynamicTableProps) => {
   const { sx } = useStyle();
   const { t } = useTranslation();
   const { graph } = useSelected();
@@ -557,10 +566,13 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     registerRecordsGetter,
     registerHasMoreRecordsGetter,
     registerFetchMore,
+    registerUpdateRecord,
+    registerAddRecord,
   } = useDatasourceContext();
   const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal } = useToolbarContext();
   const { activeWindow, getSelectedRecord, getTabFormState } = useWindowContext();
   const { tab, parentTab, parentRecord } = useTabContext();
+  const { registerRefresh } = useTabRefreshContext();
 
   // Hook for fetching form initialization data when entering edit mode
   const { fetchInitialData } = useInlineEditInitialization({ tab });
@@ -619,6 +631,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     fetchMore,
     refetch,
     removeRecordLocally,
+    updateRecordLocally,
+    addRecordLocally,
     applyQuickFilter,
     fetchSummary,
   } = useTableData({
@@ -2412,7 +2426,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
   );
 
   const muiTableHeadCellPropsWithContextMenu = useCallback(
-    ({ column, table }: { column: MRT_Column<EntityData>; table: MRT_TableInstance<EntityData> }) => ({
+    ({ column }: { column: MRT_Column<EntityData>; table: MRT_TableInstance<EntityData> }) => ({
       sx: {
         ...sx.tableHeadCell,
       },
@@ -2597,7 +2611,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     onSortingChange: handleSortingChange,
     onColumnOrderChange: handleMRTColumnOrderChange,
     getRowId,
-    enableColumnFilters: true,
+    enableColumnFilters: !areFiltersDisabled,
     enableSorting: true,
     enableColumnResizing: true,
     enableColumnActions: true,
@@ -2920,6 +2934,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       registerFetchMore(tabId, fetchMore);
     }
 
+    // Register in-place record update functions for FormView save integration
+    registerUpdateRecord(tabId, updateRecordLocally);
+    registerAddRecord(tabId, addRecordLocally);
+
     return () => {
       unregisterDatasource(tabId);
     };
@@ -2932,6 +2950,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     registerRecordsGetter,
     registerHasMoreRecordsGetter,
     registerFetchMore,
+    registerUpdateRecord,
+    registerAddRecord,
+    updateRecordLocally,
+    addRecordLocally,
     refetch,
     records,
     hasMoreRecords,
@@ -2946,6 +2968,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       columnFilters: toggleColumnsDropdown,
     });
   }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown]);
+
+  // Register table's refetch function with TabRefreshContext
+  // This allows triggering table refresh after save operations in FormView
+  useEffect(() => {
+    registerRefresh(tab.tabLevel, REFRESH_TYPES.TABLE, refetch);
+  }, [tab.tabLevel, registerRefresh, refetch]);
 
   // Register attachment action for toolbar to handle interactions from TableView
   useEffect(() => {
@@ -3072,6 +3100,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
         onNewRecord={handleContextMenuNewRecord}
         canEdit={true}
         isRowEditing={contextMenu.row ? editingRowUtils.isRowEditing(String(contextMenu.row.original.id)) : false}
+        areFiltersDisabled={areFiltersDisabled}
         data-testid="CellContextMenu__8ca888"
       />
       <StatusModal

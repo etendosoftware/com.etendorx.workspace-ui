@@ -69,8 +69,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
-  const { saveButtonState, isImplicitFilterApplied } = useToolbarContext();
-  const { buttons, processButtons, loading, refetch } = useToolbar(windowId, tab?.id);
+  const { buttons, processButtons, loading, refetch: refetchToolbar } = useToolbar(windowId, tab?.id);
+  const { saveButtonState, isImplicitFilterApplied, isAdvancedFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
   const { activeWindow, getTabFormState, clearChildrenSelections } = useWindowContext();
   const { executeProcess } = useProcessExecution();
@@ -102,7 +102,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     closeActionModal,
   } = useToolbarConfig({ windowId, tabId: tab?.id, parentId, isFormView });
 
-  const { handleProcessClick } = useProcessButton(executeProcess, refetch);
+  const { handleProcessClick } = useProcessButton(executeProcess, refetchToolbar);
   const { formViewRefetch } = useToolbarContext();
 
   // State for temporary filter tooltip
@@ -233,14 +233,14 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     }
 
     Metadata.clearToolbarCache();
-    await refetch();
+    await refetchToolbar();
 
     if (childTabIdsInFormView.length > 0 && windowIdentifier) {
       clearChildrenSelections(windowIdentifier, childTabIdsInFormView);
     }
   }, [
     graph,
-    refetch,
+    refetchToolbar,
     refetchDatasource,
     tab,
     isFormView,
@@ -288,6 +288,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       tab: tab,
       selectedRecordsLength: selectedRecordsLength,
       t: t,
+      isAdvancedFilterApplied: isAdvancedFilterApplied,
     });
 
     const config = {
@@ -329,6 +330,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     isImplicitFilterApplied,
     showFilterTooltip,
     showShareLinkTooltip,
+    isAdvancedFilterApplied,
   ]);
 
   if (loading) {
