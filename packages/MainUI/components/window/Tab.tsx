@@ -115,7 +115,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const selectedRecord = useSelectedRecord(tab);
   const selectedRecords = useSelectedRecords(tab);
   const [toggle, setToggle] = useState(false);
-  const [isIframeOpen, setIsIframeOpen] = useState(false);
   const [iframeUrl, setIframeUrl] = useState("");
   const lastParentSelectionRef = useRef<Map<string, string | undefined>>(new Map());
 
@@ -879,30 +878,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
             data-testid="DynamicTable__5893c8"
           />
         </AttachmentProvider>
-      </div>
-
-      {isIframeOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-11/12 h-5/6 flex flex-col">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h2 className="text-lg font-semibold">Print Preview</h2>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsIframeOpen(false);
-                  if (iframeUrl) {
-                    URL.revokeObjectURL(iframeUrl);
-                  }
-                  setIframeUrl("");
-                }}
-                className="text-gray-600 hover:text-gray-900 font-bold text-xl">
-                ×
-              </button>
-            </div>
-            <iframe src={iframeUrl} className="flex-1 w-full h-full" title="Print Preview" />
-          </div>
-        </div>
-      )}
+      </div>     
     </div>
   );
 }
