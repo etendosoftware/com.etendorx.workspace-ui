@@ -143,6 +143,7 @@ export interface Field {
   readOnlyLogicExpression?: string;
   isReadOnly: boolean;
   isDisplayed: boolean;
+  gridPosition?: number;
   sequenceNumber: number;
   isUpdatable: boolean;
   description: string;

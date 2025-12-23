@@ -36,7 +36,9 @@ import { useSelected } from "@/hooks/useSelected";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserContext } from "@/hooks/useUserContext";
 import { executeProcess, type ExecuteProcessResult } from "@/app/actions/process";
+import { revalidateDopoProcess } from "@/app/actions/revalidate"; // Import revalidation action
 import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
+import { BUTTON_LIST_REFERENCE_ID } from "@/utils/processes/definition/constants";
 import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
@@ -155,24 +157,43 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const { t } = useTranslation();
   const { graph } = useSelected();
   const { tab, record } = useTabContext();
-  const { session, token } = useUserContext();
+  const { session, token, getCsrfToken } = useUserContext();
 
-  const { onProcess, onLoad } = button.processDefinition;
-  const processId = button.processDefinition.id;
-  const javaClassName = button.processDefinition.javaClassName;
+  const [processDefinition, setProcessDefinition] = useState(button.processDefinition);
+  const { onProcess, onLoad } = processDefinition;
+  const processId = processDefinition.id;
+  const javaClassName = processDefinition.javaClassName;
 
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
+  const [loadingMetadata, setLoadingMetadata] = useState(false);
   const [gridSelection, setGridSelection] = useState<GridSelectionStructure>({});
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
 
   // NEW: autoSelectConfig state to hold declarative selection instructions OR backward-compatible _gridSelection
   const [autoSelectConfig, setAutoSelectConfig] = useState<AutoSelectConfig | null>(null);
   const [autoSelectApplied, setAutoSelectApplied] = useState(false);
+  const [availableButtons, setAvailableButtons] = useState<Array<{ value: string; label: string }>>([]);
 
-  const selectedRecords = graph.getSelectedMultiple(tab);
+  useEffect(() => {
+    const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+
+    if (buttonListParam && buttonListParam.refList) {
+      setAvailableButtons(
+        buttonListParam.refList.map((item) => ({
+          value: item.value,
+          label: item.label,
+        }))
+      );
+    } else {
+      setAvailableButtons([]);
+    }
+  }, [parameters]);
+
+  // Handle case when modal is opened from sidebar (no tab context)
+  const selectedRecords = useMemo(() => (tab ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
   const firstWindowReferenceParam = useMemo(() => {
     return Object.values(parameters).find((param) => param.reference === WINDOW_REFERENCE_ID);
   }, [parameters]);
@@ -187,8 +208,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [record, tab?.fields]);
 
   const hasWindowReference = useMemo(() => {
-    return Object.values(parameters).some((param) => param.reference === WINDOW_REFERENCE_ID) || javaClassName;
-  }, [javaClassName, parameters]);
+    return Object.values(parameters).some((param) => param.reference === WINDOW_REFERENCE_ID);
+  }, [parameters]);
 
   const {
     fetchConfig,
@@ -211,7 +232,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     processId: processId || "",
     windowId: windowId || "",
     recordId: record?.id ? String(record.id) : undefined, // Convert EntityValue to string
-    enabled: !!processId && !!windowId && open, // Only fetch when modal is open
+    // Allow loading process defaults even without windowId (when opened from sidebar)
+    enabled: !!processId && open,
     record: record || undefined, // Pass complete record data
     tab: tab || undefined, // Pass tab metadata
   });
@@ -232,7 +254,20 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   // Combined form data: record values + process defaults (similar to FormView pattern)
   const availableFormData = useMemo(() => {
-    if (!record || !tab) return {};
+    // If no record or tab (e.g. sidebar process), just use the defaults
+    if (!record || !tab) {
+       const combined = { ...initialState };
+       
+       // Still need to convert dates for specific parameters
+       const parametersList = Object.values(parameters);
+       for (const param of parametersList) {
+          const isDateField = param.reference && isDateReference(param.reference);
+          if (isDateField) {
+            convertParameterDateFields(combined, param);
+          }
+       }
+       return combined;
+    }
 
     // Build base payload with system context fields
     const basePayload = buildProcessPayload(record, tab, {}, {});
@@ -259,7 +294,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [record, tab, initialState, parameters]);
 
   const form = useForm({
-    defaultValues: availableFormData,
+    defaultValues: availableFormData as any,
     mode: "onChange",
   });
 
@@ -283,7 +318,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     enabled: open && !loading && !initializationLoading,
   });
 
-  // Combine loading states: initialization and callouts (do not include internal param-loading)
+  // DEBUG: Monitor callout triggers
+  useEffect(() => {
+     if (!loading && !initializationLoading) {
+         // logger.warn(`[ProcessDebug] Callouts enabled for process ${processId}`);
+     }
+  }, [loading, initializationLoading, processId]);
 
   // NOTE: globalCalloutManager.isCalloutRunning() not working correctly
   // const isDataLoading = Boolean(
@@ -291,6 +331,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   // );
 
   // If initialization failed, keep the button disabled until user action
+
   const initializationBlocksSubmit = Boolean(initializationError);
   // Check if there are mandatory parameters without value in the form
   // Only validate after initial loading is complete
@@ -344,7 +385,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
     setResult(null);
     setLoading(true);
-    setParameters(button.processDefinition.parameters);
+    setParameters(processDefinition.parameters);
     setShouldTriggerSuccess(false);
     onClose();
   }, [button.processDefinition.parameters, isPending, onClose]);
@@ -359,13 +400,23 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
     setResult(null);
     setLoading(true);
-    setParameters(button.processDefinition.parameters);
+    setParameters(processDefinition.parameters);
     setShouldTriggerSuccess(false);
     onClose();
   }, [button.processDefinition.parameters, isPending, onClose, shouldTriggerSuccess, onSuccess]);
 
   const extractMessageFromProcessView = useCallback((res: ExecuteProcessResult) => {
-    const msgView = res.data?.responseActions?.[0]?.showMsgInProcessView;
+    const data = res.data;
+    const responseActions =
+      data?.responseActions ||
+      data?.response?.responseActions ||
+      data?.response?.data?.responseActions;
+
+    if (!Array.isArray(responseActions)) return null;
+
+    const actionWithMsg = responseActions.find((action: any) => action.showMsgInProcessView);
+    const msgView = actionWithMsg?.showMsgInProcessView;
+
     if (!msgView) return null;
 
     return {
@@ -375,6 +426,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, []);
 
   const extractMessageFromData = useCallback((res: ExecuteProcessResult) => {
+    // Handle nested response error structure
+    if (res.data?.response?.error) {
+      return {
+        message: res.data.response.error.message,
+        messageType: "error",
+      };
+    }
+
     if (res.data && typeof res.data === "object" && "text" in res.data) {
       return {
         message: res.data.text,
@@ -463,38 +522,70 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
    * Used for processes that require grid record selection
    * Calls servlet with selected grid records and process-specific data
    */
-  const handleWindowReferenceExecute = useCallback(async () => {
-    if (!tab || !processId) {
-      return;
-    }
-    startTransition(async () => {
-      try {
-        // Build base payload
-        const payload: Record<string, unknown> = {
-          recordIds: record?.id ? [record.id] : [],
-          _buttonValue: "DONE",
-          _params: {
-            ...mapKeysWithDefaults({ ...form.getValues(), ...gridSelection }),
-          },
-          _entityName: tab.entityName,
-          windowId: tab.window,
+  const handleWindowReferenceExecute = useCallback(
+    async (actionValue?: string) => {
+      // Allow execution without tab context when opened from sidebar
+      if (!processId) {
+        return;
+      }
+      startTransition(async () => {
+        try {
+          const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+          const buttonParams =
+            buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
+
+          // Build base payload
+          const payload: Record<string, unknown> = {
+            recordIds: record?.id ? [record.id] : [],
+            _buttonValue: actionValue || "DONE",
+            _params: {
+              ...mapKeysWithDefaults({ ...form.getValues(), ...gridSelection }),
+              ...buttonParams,
+            },
+          _entityName: tab?.entityName || "",
+          windowId: tab?.window || "",
           ...buildProcessSpecificFields(processId),
-          ...(tab.window ? buildWindowSpecificFields(tab.window) : {}),
+          ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
         };
 
-        const res = await executeProcess(
-          processId,
-          payload,
-          token || "",
-          tab.window?.toString(),
-          undefined,
-          javaClassName
-        );
+        const baseUrl = "/api/erp/org.openbravo.client.kernel"; 
+        const queryParams = new URLSearchParams();
+        queryParams.set("processId", processId);
+        if (tab?.window) queryParams.set("windowId", tab.window.toString());
+        if (javaClassName) queryParams.set("_action", javaClassName);
 
-        const parsedResult = parseProcessResponse(res);
+        const apiUrl = `${baseUrl}?${queryParams.toString()}`;
+
+         const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+             "Content-Type": "application/json;charset=UTF-8",
+             Authorization: `Bearer ${token}`,
+             "X-CSRF-Token": getCsrfToken(),
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+           const errorText = await response.text();
+           throw new Error(errorText || "Execution failed");
+        }
+
+        let resultData = null;
+        try {
+           resultData = await response.json();
+        } catch {}
+
+        const res: ExecuteProcessResult = {
+           success: true,
+           data: resultData
+        };
+
+         const parsedResult = parseProcessResponse(res);
         setResult(parsedResult);
 
         if (parsedResult.success) {
+          await revalidateDopoProcess();
           setShouldTriggerSuccess(true);
         }
       } catch (error) {
@@ -513,6 +604,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     record,
     buildProcessSpecificFields,
     buildWindowSpecificFields,
+    getCsrfToken,
+    revalidateDopoProcess,
   ]);
 
   /**
@@ -520,40 +613,72 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
    * Used for processes that have javaClassName but no onProcess function
    * Bypasses client-side JavaScript execution and calls servlet directly
    */
-  const handleDirectJavaProcessExecute = useCallback(async () => {
-    if (!tab || !processId || !javaClassName) {
-      return;
-    }
+  const handleDirectJavaProcessExecute = useCallback(
+    async (actionValue?: string) => {
+      // Allow execution without tab context when opened from sidebar
+      if (!processId || !javaClassName) {
+        return;
+      }
 
-    const windowConfig = WINDOW_SPECIFIC_KEYS[windowId];
+    const windowConfig = windowId ? WINDOW_SPECIFIC_KEYS[windowId] : null;
     const extraKey = windowConfig ? { [windowConfig.key]: windowConfig.value(record) } : {};
 
-    startTransition(async () => {
+      startTransition(async () => {
       try {
+        // Client-side execution to ensure JSESSIONID cookie is sent
+        // Target specific kernel slug to ensure proxy mutation logic (cookie forwarding) triggers
+        const baseUrl = "/api/erp/org.openbravo.client.kernel"; 
+        const queryParams = new URLSearchParams();
+        queryParams.set("processId", processId);
+        if (tab?.window) queryParams.set("windowId", tab.window.toString());
+        if (javaClassName) queryParams.set("_action", javaClassName);
+
+        const apiUrl = `${baseUrl}?${queryParams.toString()}`;
+
+         const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+         const buttonParams =
+           buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
+
         const payload = {
-          recordIds: record?.id ? [record.id] : [],
-          _buttonValue: "DONE",
-          _params: {},
-          _entityName: tab.entityName,
-          ...extraKey,
-          ...recordValues,
-          ...form.getValues(),
-          windowId: tab.window,
+          _buttonValue: actionValue || "DONE",
+          _params: {
+            ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues }),
+            ...gridSelection, // Include grid selection if present (e.g. orderGrid)
+            ...buttonParams,
+          },
         };
 
-        const res = await executeProcess(
-          processId,
-          payload,
-          token || "",
-          tab.window?.toString(),
-          undefined,
-          javaClassName
-        );
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+             "Content-Type": "application/json;charset=UTF-8",
+             Authorization: `Bearer ${token}`,
+             "X-CSRF-Token": getCsrfToken(),
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+           const errorText = await response.text();
+           throw new Error(errorText || "Execution failed");
+        }
+
+        let resultData = null;
+        try {
+           resultData = await response.json();
+        } catch {}
+
+        const res: ExecuteProcessResult = {
+           success: true,
+           data: resultData
+        };
 
         const parsedResult = parseProcessResponse(res);
         setResult(parsedResult);
 
         if (parsedResult.success) {
+          // Trigger server-side revalidation
+          await revalidateDopoProcess();
           setShouldTriggerSuccess(true);
         }
       } catch (error) {
@@ -564,7 +689,20 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         });
       }
     });
-  }, [tab, processId, javaClassName, windowId, record, recordValues, form, token, parseProcessResponse]);
+  }, [
+    tab,
+    processId,
+    javaClassName,
+    windowId,
+    record,
+    recordValues,
+    form,
+    token,
+    parseProcessResponse,
+    getCsrfToken,
+    buildProcessSpecificFields,
+    gridSelection,
+  ]);
 
   /**
    * Main process execution handler - routes to appropriate execution method
@@ -574,17 +712,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
    * 2. Direct Java Process (javaClassName exists, no onProcess)
    * 3. String Function Process (onProcess exists)
    */
-  const handleExecute = useCallback(async () => {
-    if (hasWindowReference) {
-      await handleWindowReferenceExecute();
-      return;
-    }
+  const handleExecute = useCallback(
+    async (actionValue?: string) => {
+      if (hasWindowReference) {
+        await handleWindowReferenceExecute(actionValue);
+        return;
+      }
 
-    // If process has javaClassName but no onProcess, execute directly via servlet
-    if (!onProcess && javaClassName && tab) {
-      await handleDirectJavaProcessExecute();
-      return;
-    }
+      // If process has javaClassName but no onProcess, execute directly via servlet
+      if (!onProcess && javaClassName) {
+        await handleDirectJavaProcessExecute(actionValue);
+        return;
+      }
 
     if (!onProcess || !tab) {
       return;
@@ -603,8 +742,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       );
 
       const stringFunctionPayload = {
-        _buttonValue: "DONE",
-        buttonValue: "DONE",
+        _buttonValue: actionValue || "DONE",
+        buttonValue: actionValue || "DONE",
         windowId: tab.window,
         entityName: tab.entityName,
         recordIds: selectedRecords?.map((r) => r.id),
@@ -677,6 +816,52 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       });
     }
   }, [initializationError, hasInitialData, processId, initialState, logicFields, filterExpressions]);
+
+  // Load process definition metadata when opened from sidebar (parameters are empty)
+  useEffect(() => {
+    const loadProcessMetadata = async () => {
+      // Check if parameters are empty (opened from sidebar)
+      const hasParameters = Object.keys(button.processDefinition.parameters).length > 0;
+      if (!open || hasParameters || !processId || loadingMetadata) {
+        return;
+      }
+
+      try {
+        setLoadingMetadata(true);
+        setLoading(true);
+
+        // Fetch process definition metadata using the new /meta/process endpoint
+        const response = await Metadata.client.post(`meta/process/${processId}`);
+
+        if (response.ok && response.data) {
+          const processData = response.data;
+
+          // Update parameters from the loaded metadata
+          if (processData.parameters) {
+            setParameters(processData.parameters);
+            logger.debug("Process metadata loaded successfully", {
+              processId,
+              paramCount: Object.keys(processData.parameters).length,
+            });
+          }
+
+          // Also update other process definition properties if needed
+          // The modal will use these updated values
+          setProcessDefinition((prev) => ({
+            ...prev,
+            ...processData,
+            parameters: processData.parameters || prev.parameters,
+          }));
+        }
+      } catch (error) {
+        logger.warn("Error loading process metadata:", error);
+      } finally {
+        setLoadingMetadata(false);
+      }
+    };
+
+    loadProcessMetadata();
+  }, [open, processId, button.processDefinition.parameters]);
 
   useEffect(() => {
     if (open) {
@@ -985,9 +1170,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             processConfigLoading={processConfigLoading}
             processConfigError={processConfigError}
             recordValues={recordValues}
+            currentValues={formValues}
             data-testid="WindowReferenceGrid__761503"
           />
         );
+      } else if (parameter.reference === BUTTON_LIST_REFERENCE_ID) {
+        // Skip button list parameters in the form body
+        continue;
       } else {
         selectors.push(
           <ProcessParameterSelector
@@ -1068,15 +1257,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-auto p-4">
-                  <div className={`relative ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
-                    <div
-                      className={`absolute inset-0 flex items-center pointer-events-none justify-center bg-white ${
-                        (loading || initializationLoading) && !result ? "opacity-100" : "opacity-0"
-                      }`}>
-                      <Loading data-testid="Loading__761503" />
-                    </div>
-                    <div className={(loading || initializationLoading) && !result ? "opacity-0" : "opacity-100"}>
+                <div className="flex-1 overflow-auto p-4 min-h-[12rem]">
+                  <div className={`relative h-full ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
+                    {(loading || initializationLoading) && !result && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10 transition-opacity duration-200">
+                        <Loading data-testid="Loading__761503" />
+                      </div>
+                    )}
+                    <div className="h-full">
                       {result && !result.success && renderResponse()}
                       {renderParameters()}
                     </div>
@@ -1096,17 +1284,32 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                     </Button>
                   )}
 
-                  {!result && (
-                    <Button
-                      variant="filled"
-                      size="large"
-                      onClick={handleExecute}
-                      disabled={Boolean(isActionButtonDisabled)}
-                      startIcon={getActionButtonContent().icon}
-                      className="w-49"
-                      data-testid="ExecuteButton__761503">
-                      {getActionButtonContent().text}
-                    </Button>
+                  {!result && availableButtons.length > 0 ? (
+                    availableButtons.map((btn) => (
+                      <Button
+                        key={btn.value}
+                        variant="filled"
+                        size="large"
+                        onClick={() => handleExecute(btn.value)}
+                        disabled={Boolean(isActionButtonDisabled)}
+                        className="w-49"
+                        data-testid={`ExecuteButton_${btn.value}__761503`}>
+                        {btn.label}
+                      </Button>
+                    ))
+                  ) : (
+                    !result && (
+                      <Button
+                        variant="filled"
+                        size="large"
+                        onClick={() => handleExecute()}
+                        disabled={Boolean(isActionButtonDisabled)}
+                        startIcon={getActionButtonContent().icon}
+                        className="w-49"
+                        data-testid="ExecuteButton__761503">
+                        {getActionButtonContent().text}
+                      </Button>
+                    )
                   )}
 
                   {result && !result.success && (

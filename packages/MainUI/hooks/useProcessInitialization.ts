@@ -22,12 +22,18 @@ const buildProcessInitializationParams = ({
 }: {
   processId: string;
   windowId?: string;
-}): URLSearchParams =>
-  new URLSearchParams({
+}): URLSearchParams => {
+  const params = new URLSearchParams({
     processId,
-    windowId: windowId ?? "",
     _action: "org.openbravo.client.application.process.DefaultsProcessActionHandler",
   });
+
+  if (windowId) {
+    params.append("windowId", windowId);
+  }
+
+  return params;
+};
 
 const fetchProcessInitialization = async (
   params: URLSearchParams,
@@ -144,7 +150,7 @@ export function useProcessInitialization({
           payload = {
             ...contextData,
             processId,
-            windowId: windowId || "",
+            windowId: windowId || null,
             recordId: recordId || "",
             _requestType: "defaults",
             _timestamp: Date.now().toString(),

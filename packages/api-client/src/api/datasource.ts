@@ -127,37 +127,31 @@ export class Datasource {
       isImplicitFilterApplied: options.isImplicitFilterApplied ? "true" : "false",
     };
     const formatKey = (key: string): string => {
-      const specialKeys = new Set([
-        "ad_org_id",
-        "c_currency_id",
-        "issotrx",
-        "received_from",
-        "c_currency_to_id",
-        "exportAs",
-        "exportToFile",
-        // CSV export parameters that should not have underscore prefix added
-        "_dataSource",
-        "_operationType",
-        "_noCount",
-        "_extraProperties",
-        "_textMatchStyle",
-        "_UTCOffsetMiliseconds",
-        "_constructor",
-        "_sortBy",
-        "_startRow",
-        "_startRow",
-        "_endRow",
-        "_summary",
-        "_noActiveFilter",
-        "_className",
-        "Constants_FIELDSEPARATOR",
-        "Constants_IDENTIFIER",
-        "viewState",
-        "operator",
-        "criteria",
+      const keysToPrefix = new Set([
+        "dataSource",
+        "operationType",
+        "noCount",
+        "extraProperties",
+        "textMatchStyle",
+        "UTCOffsetMiliseconds",
+        "constructor",
+        "sortBy",
+        "startRow",
+        "endRow",
+        "summary",
+        "noActiveFilter",
+        "className",
+        "componentId",
+        "org",
+        "sqlWhere",
+        "isPickAndEdit",
       ]);
 
-      return specialKeys.has(key) || isWrappedWithAt(key) ? key : `_${key}`;
+      if (keysToPrefix.has(key)) {
+        return `_${key}`;
+      }
+
+      return key;
     };
 
     const formatValue = (value: unknown) => (Array.isArray(value) ? value.join(",") : String(value));

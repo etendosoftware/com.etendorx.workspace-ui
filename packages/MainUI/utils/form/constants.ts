@@ -67,6 +67,9 @@ export const FIELD_REFERENCE_CODES = {
 
   // Rate type
   RATE: "800019",
+
+  // Button reference
+  BUTTON: "28",
 } as const;
 
 /**

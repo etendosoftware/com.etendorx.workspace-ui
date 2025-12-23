@@ -160,12 +160,15 @@ function buildErpHeaders(
   }
 
   // Use the combined ERP auth headers (cookie + CSRF token)
-  const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
+  // Check for X-CSRF-Token in the incoming request headers first
+  const requestCsrfToken = request.headers.get("X-CSRF-Token") || request.headers.get("x-csrf-token");
+  const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken, requestCsrfToken);
 
   if (cookieHeader) {
     headers.Cookie = cookieHeader;
   }
   if (csrfToken) {
+    // Some endpoints expect X-CSRF-Token, others just CSRF-Token or X-Csrf-Token
     headers["X-CSRF-Token"] = csrfToken;
   }
 
