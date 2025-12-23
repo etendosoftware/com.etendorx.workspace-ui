@@ -41,3 +41,6 @@ export const TOOLBAR_BUTTONS_TYPES = {
   TOGGLE: "TOGGLE",
   CUSTOM: "CUSTOM",
 };
+
+export const PRINT_MULTIPLE_RECORDS = false;
+

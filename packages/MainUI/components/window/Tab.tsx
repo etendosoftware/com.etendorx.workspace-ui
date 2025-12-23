@@ -29,12 +29,13 @@ import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { PRINT_MULTIPLE_RECORDS } from "@/utils/toolbar/constants";
 import { getNewTabFormState, isFormView } from "@/utils/window/utils";
 import { useWindowContext } from "@/contexts/window";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
-import { extractJSessionId } from "@/app/api/_utils/sessionRecovery";
+import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
 
 /**
  * Validates if a child tab can open FormView based on parent selection in context
@@ -94,6 +95,7 @@ const handleEditRecordFormState = (
 };
 
 export function Tab({ tab, collapsed }: TabLevelProps) {
+  const { config } = useRuntimeConfig();
   const { window } = useMetadataContext();
   const {
     activeWindow,
@@ -262,16 +264,41 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         throw new Error("Authorization token not found. Please log in again.");
       }
 
-      const selectedIds = selectedRecords.map((r) => r.id);
-      const baseUrl = process.env.NEXT_PUBLIC_ETENDO_CLASSIC_HOST || "";
-      const url = `${baseUrl}/sws/com.etendoerp.etendorx.print?tabId=${tab.id}&recordId=${JSON.stringify(selectedIds)}`;
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      console.log("handlePrintRecord called", {
+        selectedRecordsCount: selectedRecords.length,
+        PRINT_MULTIPLE_RECORDS,
+        publicHost: config?.etendoClassicHost
       });
+
+      const publicHost = config?.etendoClassicHost || "";
+      const selectedIds = selectedRecords.map((r) => r.id);
+      const endpoint = `${publicHost}/sws/com.etendoerp.etendorx.print`;
+
+      let response: Response;
+
+      if (PRINT_MULTIPLE_RECORDS) {
+        // Multiple Mode: POST with JSON body
+        response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            tabId: tab.id,
+            recordId: selectedIds,
+          }),
+        });
+      } else {
+        // Singular Mode: GET with query parameters
+        const url = `${endpoint}?tabId=${tab.id}&recordId=${String(selectedIds[0])}`;
+        response = await fetch(url, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
 
       if (!response.ok) {
         throw new Error(`Print request failed: ${response.status} ${response.statusText}`);
