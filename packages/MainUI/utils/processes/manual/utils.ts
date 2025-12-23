@@ -139,6 +139,8 @@ export function mapKeysWithDefaults(source: SourceObject): TargetObject {
     "Action Regarding Document": { target: "document_action", default: null },
     "Converted Amount": { target: "converted_amount", default: null },
     "Deposit To": { target: "fin_financial_account_id", default: null },
+    "Invoice Date": { target: "invoiceDate", default: null },
+    "Lines Include Taxes": { target: "linesIncludeTaxes", default: false },
   };
 
   const result: TargetObject = {};

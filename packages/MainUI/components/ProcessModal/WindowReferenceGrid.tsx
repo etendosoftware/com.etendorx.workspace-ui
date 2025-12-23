@@ -58,6 +58,7 @@ function WindowReferenceGrid({
   processConfigLoading,
   processConfigError,
   recordValues,
+  currentValues, // Accept current form values
 }: WindowReferenceGridProps) {
   const { t } = useTranslation();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -159,23 +160,43 @@ function WindowReferenceGrid({
       }
     };
 
-    const applyStableProcessDefaults = () => {
-      if (!stableProcessDefaults || Object.keys(stableProcessDefaults).length === 0) return;
+    const applyParameters = () => {
+       // 1. Merge defaults and current values into a single map
+      const mergedParams: Record<string, EntityValue> = {};
 
-      for (const [key, value] of Object.entries(stableProcessDefaults)) {
-        const actualValue =
-          typeof value === "object" && value !== null && "value" in value
-            ? (value as { value: EntityValue }).value
-            : (value as EntityValue);
+      // Apply defaults
+      if (stableProcessDefaults && Object.keys(stableProcessDefaults).length > 0) {
+        for (const [key, value] of Object.entries(stableProcessDefaults)) {
+          const actualValue =
+            typeof value === "object" && value !== null && "value" in value
+              ? (value as { value: EntityValue }).value
+              : (value as EntityValue);
+          mergedParams[key] = actualValue;
+        }
+      }
 
-        const matchingParameter = Object.values(parameters).find((param) => param.name === key);
-        const datasourceFieldName = matchingParameter?.dBColumnName || key;
+      // Apply current values (overrides defaults)
+      if (currentValues && Object.keys(currentValues).length > 0) {
+        for (const [key, value] of Object.entries(currentValues)) {
+          if (value !== undefined && value !== null) {
+            mergedParams[key] = value as EntityValue;
+          }
+        }
+      }
 
-        options[datasourceFieldName] = actualValue;
-
+      // 2. Process merged parameters
+      for (const [key, finalValue] of Object.entries(mergedParams)) {
+        // If it's a mapped system key, apply to options
         if (defaultKeys && key in defaultKeys) {
           const defaultKey = defaultKeys[key as keyof typeof defaultKeys];
-          options[defaultKey] = actualValue;
+          options[defaultKey] = finalValue;
+          continue;
+        }
+
+        const matchingParameter = Object.values(parameters).find((param) => param.name === key);
+        if (matchingParameter) {
+           const fieldName = matchingParameter.dBColumnName || key;
+           options[fieldName] = finalValue;
         }
       }
     };
@@ -203,8 +224,8 @@ function WindowReferenceGrid({
     };
 
     applyDynamicKeys();
-    applyStableProcessDefaults();
-
+    applyParameters();
+    
     const criteria = buildCriteria();
 
     if (criteria.length > 0) {
@@ -221,15 +242,19 @@ function WindowReferenceGrid({
     stableProcessDefaults,
     stableFilterExpressions,
     recordValues?.inpadClientId,
-    recordValues?.inpcBpartnerId,
     recordValues?.inpmPricelistId,
     recordValues?.inpcCurrencyId,
     parameters,
+    // Use stable JSON stringified values for dependency to prevent infinite loops
+    JSON.stringify(currentValues),
   ]);
 
   const fields = useMemo(() => {
     if (stableWindowReferenceTab?.fields) {
-      return Object.values(stableWindowReferenceTab.fields);
+      const allFields = Object.values(stableWindowReferenceTab.fields);
+      return allFields
+        .filter((f) => f.displayed && f.showInGridView)
+        .sort((a, b) => (a.gridPosition || 0) - (b.gridPosition || 0));
     }
     return [];
   }, [stableWindowReferenceTab]);
@@ -291,16 +316,23 @@ function WindowReferenceGrid({
     }
 
     // Fix hqlName ONLY if it's a display name (contains spaces or starts with uppercase)
-    // Some processes have correct hqlName (camelCase like 'organization')
-    // Others have incorrect hqlName (display name like 'Organization' or 'Order No.')
+    // Also filter by visibility and sort by gridPosition (with sequenceNumber fallback) to ensure correct order
+    const sortedAndFilteredEntries = Object.entries(stableWindowReferenceTab.fields)
+      .filter(([_, field]) => field.displayed && field.showInGridView)
+      .sort(([, fieldA], [, fieldB]) => {
+        const posA = fieldA.gridPosition ?? fieldA.sequenceNumber ?? 0;
+        const posB = fieldB.gridPosition ?? fieldB.sequenceNumber ?? 0;
+        return posA - posB;
+      });
+
     const correctedFields = Object.fromEntries(
-      Object.entries(stableWindowReferenceTab.fields).map(([key, field]) => {
+      sortedAndFilteredEntries.map(([key, field]) => {
         // Check if hqlName looks like a display name (has spaces, starts with uppercase, etc)
         const isDisplayName =
           field.hqlName.includes(" ") || field.hqlName.includes(".") || /^[A-Z]/.test(field.hqlName);
 
-        // Only correct if it's a display name, otherwise keep original
-        const actualColumnName = isDisplayName ? field.column?._identifier || key || field.hqlName : field.hqlName;
+        // Only correct if it's a display name. Prioritize 'key' (property name) as it matches API response keys most reliably.
+        const actualColumnName = isDisplayName ? key || field.column?._identifier || field.hqlName : field.hqlName;
 
         return [
           key,
@@ -364,8 +396,26 @@ function WindowReferenceGrid({
       };
     });
 
-    return columnsWithFilters;
-  }, [columnsFromHook, rawColumns]);
+    // Sort the final columns based on gridPosition
+    // We access the original fields from stableWindowReferenceTab
+    const sortedColumns = columnsWithFilters.sort((a: Column, b: Column) => {
+      // Find field definition for column A
+      const fieldA = Object.values(stableWindowReferenceTab?.fields || {}).find(
+        (f) => f.name === a.header || f.hqlName === a.columnName
+      );
+      // Find field definition for column B
+      const fieldB = Object.values(stableWindowReferenceTab?.fields || {}).find(
+        (f) => f.name === b.header || f.hqlName === b.columnName
+      );
+
+      const posA = fieldA?.gridPosition ?? fieldA?.sequenceNumber ?? 0;
+      const posB = fieldB?.gridPosition ?? fieldB?.sequenceNumber ?? 0;
+
+      return posA - posB;
+    });
+
+    return sortedColumns;
+  }, [columnsFromHook, rawColumns, stableWindowReferenceTab]);
 
   const shouldSkipFetch = !isDataReady || processConfigLoading || !entityName;
 

@@ -121,6 +121,11 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
     parameter.dBColumnName?.endsWith("_readonly_logic") ||
     parameter.dBColumnName?.endsWith("_display_logic");
 
+  // Don't render Button type parameters (used for defining process actions "Done", "Cancel" etc)
+  if (parameter.reference === "28") {
+    return null;
+  }
+
   if (!isDisplayed && !isAuxiliaryLogicField) {
     return null;
   }

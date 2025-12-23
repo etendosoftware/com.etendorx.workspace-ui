@@ -169,6 +169,7 @@ export interface WindowReferenceGridProps {
   processConfigLoading: boolean;
   processConfigError: Error | null;
   recordValues: RecordValues | null;
+  currentValues?: Record<string, unknown>; // Current form values for dynamic filtering
 }
 
 export type RowProps = (props: {
