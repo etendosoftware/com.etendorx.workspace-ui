@@ -118,14 +118,12 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   } = useWindowContext();
   const { registerActions, setIsAdvancedFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
-  const { registerRefresh, unregisterRefresh } = useTabRefreshContext();
+  const { unregisterRefresh } = useTabRefreshContext();
   const { token } = useUserContext();
-  const selectedRecord = useSelectedRecord(tab);
   const selectedRecords = useSelectedRecords(tab);
   const { fetchFilterOptions } = useColumnFilterData();
   const [columnOptions, setColumnOptions] = useState<Record<string, FilterOption[]>>({});
   const [toggle, setToggle] = useState(false);
-  const [iframeUrl, setIframeUrl] = useState("");
   const [advancedFiltersAnchor, setAdvancedFiltersAnchor] = useState<HTMLElement | null>(null);
   const [advancedFilters, setAdvancedFilters] = useState<any[]>([]);
   const { t } = useTranslation();
