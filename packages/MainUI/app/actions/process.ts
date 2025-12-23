@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 import { logger } from "@/utils/logger";
 import { getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
 

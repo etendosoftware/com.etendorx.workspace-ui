@@ -35,10 +35,14 @@ import { useProcessInitializationState } from "@/hooks/useProcessInitialState";
 import { useSelected } from "@/hooks/useSelected";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserContext } from "@/hooks/useUserContext";
-import { executeProcess, type ExecuteProcessResult } from "@/app/actions/process";
+import { type ExecuteProcessResult } from "@/app/actions/process";
 import { revalidateDopoProcess } from "@/app/actions/revalidate"; // Import revalidation action
 import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
-import { BUTTON_LIST_REFERENCE_ID } from "@/utils/processes/definition/constants";
+import {
+  BUTTON_LIST_REFERENCE_ID,
+  PROCESS_DEFINITION_DATA,
+  WINDOW_SPECIFIC_KEYS,
+} from "@/utils/processes/definition/constants";
 import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
@@ -54,7 +58,6 @@ import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
-import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";

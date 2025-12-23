@@ -161,36 +161,42 @@ function WindowReferenceGrid({
     };
 
     const applyParameters = () => {
-      // 1. Merge defaults and current values into a single map
-      const mergedParams: Record<string, EntityValue> = {};
+      // Helper to process defaults
+      const getProcessedDefaults = () => {
+        if (!stableProcessDefaults) return {};
+        return Object.entries(stableProcessDefaults).reduce(
+          (acc, [key, value]) => {
+            acc[key] =
+              typeof value === "object" && value !== null && "value" in value
+                ? (value as { value: EntityValue }).value
+                : (value as EntityValue);
+            return acc;
+          },
+          {} as Record<string, EntityValue>
+        );
+      };
 
-      // Apply defaults
-      if (stableProcessDefaults && Object.keys(stableProcessDefaults).length > 0) {
-        for (const [key, value] of Object.entries(stableProcessDefaults)) {
-          const actualValue =
-            typeof value === "object" && value !== null && "value" in value
-              ? (value as { value: EntityValue }).value
-              : (value as EntityValue);
-          mergedParams[key] = actualValue;
-        }
-      }
+      // Helper to process current values
+      const getProcessedCurrentValues = () => {
+        if (!currentValues) return {};
+        return Object.entries(currentValues).reduce(
+          (acc, [key, value]) => {
+            if (value !== undefined && value !== null) {
+              acc[key] = value as EntityValue;
+            }
+            return acc;
+          },
+          {} as Record<string, EntityValue>
+        );
+      };
 
-      // Apply current values (overrides defaults)
-      if (currentValues && Object.keys(currentValues).length > 0) {
-        for (const [key, value] of Object.entries(currentValues)) {
-          if (value !== undefined && value !== null) {
-            mergedParams[key] = value as EntityValue;
-          }
-        }
-      }
-
-      // 2. Process merged parameters
-      for (const [key, finalValue] of Object.entries(mergedParams)) {
+      // Helper to apply a single parameter to options
+      const applySingleParameter = (key: string, finalValue: EntityValue) => {
         // If it's a mapped system key, apply to options
         if (defaultKeys && key in defaultKeys) {
           const defaultKey = defaultKeys[key as keyof typeof defaultKeys];
           options[defaultKey] = finalValue;
-          continue;
+          return;
         }
 
         const matchingParameter = Object.values(parameters).find((param) => param.name === key);
@@ -198,7 +204,15 @@ function WindowReferenceGrid({
           const fieldName = matchingParameter.dBColumnName || key;
           options[fieldName] = finalValue;
         }
-      }
+      };
+
+      // 1. Merge defaults and current values
+      const mergedParams = { ...getProcessedDefaults(), ...getProcessedCurrentValues() };
+
+      // 2. Process merged parameters
+      Object.entries(mergedParams).forEach(([key, finalValue]) => {
+        applySingleParameter(key, finalValue);
+      });
     };
 
     const buildCriteria = (): Array<{ fieldName: string; operator: string; value: EntityValue }> => {
