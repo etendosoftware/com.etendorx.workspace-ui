@@ -38,7 +38,14 @@ export const SubTabsSwitch = ({
         collapsed ? onClick(current) : onClose();
       }}
       className="flex items-center justify-between px-2 py-2 bg-(--color-transparent-neutral-5) max-h-[2.75rem]">
-      <div>
+      <div 
+        className="flex overflow-x-auto flex-nowrap scroll-smooth"
+        style={{
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(0, 0, 0, 0.3) transparent',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
         {tabs.map((tab) => (
           <TabButton
             key={tab.id}
