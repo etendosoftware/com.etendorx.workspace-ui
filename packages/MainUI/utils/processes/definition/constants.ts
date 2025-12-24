@@ -119,3 +119,8 @@ export const WINDOW_SPECIFIC_KEYS: Record<string, WindowDefinition> = {
     value: (record) => record?.id || null,
   },
 };
+
+export const PROCESS_TYPES = {
+  PROCESS_DEFINITION: "process-definition",
+  REPORT_AND_PROCESS: "report-and-process",
+} as const;

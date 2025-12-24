@@ -38,7 +38,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import type { ExecuteProcessResult } from "@/app/actions/process";
 import { revalidateDopoProcess } from "@/app/actions/revalidate"; // Import revalidation action
 import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
-import { BUTTON_LIST_REFERENCE_ID } from "@/utils/processes/definition/constants";
+import { BUTTON_LIST_REFERENCE_ID, PROCESS_TYPES } from "@/utils/processes/definition/constants";
 import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
@@ -153,7 +153,7 @@ const convertParameterDateFields = (combined: Record<string, unknown>, param: Pr
  * @param props.onSuccess - Optional callback when process completes successfully
  * @returns JSX.Element Modal component with process execution interface
  */
-function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
+function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
   const { graph } = useSelected();
   const { tab, record } = useTabContext();
@@ -833,7 +833,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setLoading(true);
 
         // Fetch process definition metadata using the new /meta/process endpoint
-        const response = await Metadata.client.post(`meta/process/${processId}`);
+        const slug = type === PROCESS_TYPES.PROCESS_DEFINITION ? "meta/process" : "meta/report-and-process";
+        const response = await Metadata.client.post(`${slug}/${processId}`);
 
         if (response.ok && response.data) {
           const processData = response.data;
@@ -863,7 +864,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     };
 
     loadProcessMetadata();
-  }, [open, processId, button.processDefinition.parameters]);
+  }, [open, processId, button.processDefinition.parameters, type]);
 
   useEffect(() => {
     if (open) {
