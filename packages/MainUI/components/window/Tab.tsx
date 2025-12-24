@@ -600,8 +600,22 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       }
 
       // Add sorting parameter if present
+      // The sorting id might be the display name or field name, try both
       if (sorting.length > 0) {
-        params._sortBy = sorting[0].id;
+        const sortColumnId = sorting[0].id;
+        // Try to find field by name or by matching the column name
+        const sortField = fieldsArray.find((field) => {
+          const fieldName = field.name as string;
+          // Check if sortColumnId matches field name directly
+          if (fieldName === sortColumnId) return true;
+          // Check if sortColumnId matches the field's columnName property
+          const fieldObj = tab.fields[fieldName];
+          return fieldObj?.columnName === sortColumnId || fieldObj?.name === sortColumnId;
+        });
+        
+        if (sortField) {
+          params._sortBy = sortField.name as string;
+        }
       }
 
       return params;
