@@ -170,14 +170,10 @@ const createFieldWithData = (
 };
 
 /**
- * Props for EditableCellContent component
+ * Shared props for cell editing context
+ * Contains common editing-related dependencies used across cell components
  */
-interface EditableCellContentProps {
-  rowId: string;
-  fieldKey: string;
-  columnName: string;
-  editingData: EditingRowData;
-  fieldMapping: { fieldType: FieldType; field: Field };
+interface CellEditingContextProps {
   initialFocusCell: { rowId: string; columnName: string } | null;
   session: Record<string, unknown> | undefined;
   editingRowUtils: EditingRowStateUtils;
@@ -197,6 +193,18 @@ interface EditableCellContentProps {
     rowValues?: Record<string, unknown>
   ) => Promise<RefListField[]>;
   isLoadingTableDirOptions: (fieldName: string) => boolean;
+}
+
+/**
+ * Props for EditableCellContent component
+ * Extends CellEditingContextProps with cell-specific props
+ */
+interface EditableCellContentProps extends CellEditingContextProps {
+  rowId: string;
+  fieldKey: string;
+  columnName: string;
+  editingData: EditingRowData;
+  fieldMapping: { fieldType: FieldType; field: Field };
 }
 
 /**
@@ -329,8 +337,9 @@ const ActionsColumnCell: React.FC<ActionsColumnCellProps> = ({
 /**
  * Props for DataColumnCell component
  * Handles both editing and display modes for data columns
+ * Extends CellEditingContextProps with column-specific props
  */
-interface DataColumnCellProps {
+interface DataColumnCellProps extends CellEditingContextProps {
   renderedCellValue: React.ReactNode;
   row: MRT_Row<EntityData>;
   table: MRT_TableInstance<EntityData>;
@@ -340,26 +349,7 @@ interface DataColumnCellProps {
     row: MRT_Row<EntityData>;
     table: MRT_TableInstance<EntityData>;
   }) => React.ReactNode;
-  editingRowUtils: EditingRowStateUtils;
   columnFieldMappings: Map<string, { fieldType: FieldType; field: Field }>;
-  initialFocusCell: { rowId: string; columnName: string } | null;
-  session: Record<string, unknown> | undefined;
-  keyboardNavigationManager: KeyboardNavigationManager | null;
-  handleCellValueChange: (
-    rowId: string,
-    fieldKey: string,
-    value: unknown,
-    optionData?: Record<string, unknown>,
-    field?: Field
-  ) => void;
-  validateFieldOnBlur: (rowId: string, fieldKey: string) => void;
-  setInitialFocusCell: (cell: { rowId: string; columnName: string } | null) => void;
-  loadTableDirOptions: (
-    field: Field,
-    searchQuery?: string,
-    rowValues?: Record<string, unknown>
-  ) => Promise<RefListField[]>;
-  isLoadingTableDirOptions: (fieldName: string) => boolean;
 }
 
 /**
