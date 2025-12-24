@@ -326,6 +326,116 @@ const ActionsColumnCell: React.FC<ActionsColumnCellProps> = ({
   );
 };
 
+/**
+ * Props for DataColumnCell component
+ * Handles both editing and display modes for data columns
+ */
+interface DataColumnCellProps {
+  renderedCellValue: React.ReactNode;
+  row: MRT_Row<EntityData>;
+  table: MRT_TableInstance<EntityData>;
+  col: Column;
+  originalCell?: (props: {
+    renderedCellValue: React.ReactNode;
+    row: MRT_Row<EntityData>;
+    table: MRT_TableInstance<EntityData>;
+  }) => React.ReactNode;
+  editingRowUtils: EditingRowStateUtils;
+  columnFieldMappings: Map<string, { fieldType: FieldType; field: Field }>;
+  initialFocusCell: { rowId: string; columnName: string } | null;
+  session: Record<string, unknown> | undefined;
+  keyboardNavigationManager: KeyboardNavigationManager | null;
+  handleCellValueChange: (
+    rowId: string,
+    fieldKey: string,
+    value: unknown,
+    optionData?: Record<string, unknown>,
+    field?: Field
+  ) => void;
+  validateFieldOnBlur: (rowId: string, fieldKey: string) => void;
+  setInitialFocusCell: (cell: { rowId: string; columnName: string } | null) => void;
+  loadTableDirOptions: (
+    field: Field,
+    searchQuery?: string,
+    rowValues?: Record<string, unknown>
+  ) => Promise<RefListField[]>;
+  isLoadingTableDirOptions: (fieldName: string) => boolean;
+}
+
+/**
+ * Data column cell component
+ * Extracted from inline Cell definition to prevent component remounts
+ * Handles both editing mode (with EditableCellContent) and display mode
+ */
+const DataColumnCell: React.FC<DataColumnCellProps> = ({
+  renderedCellValue,
+  row,
+  table,
+  col,
+  originalCell,
+  editingRowUtils,
+  columnFieldMappings,
+  initialFocusCell,
+  session,
+  keyboardNavigationManager,
+  handleCellValueChange,
+  validateFieldOnBlur,
+  setInitialFocusCell,
+  loadTableDirOptions,
+  isLoadingTableDirOptions,
+}) => {
+  const rowId = String(row.original.id);
+  const isEditing = editingRowUtils.isRowEditing(rowId);
+  const fieldKey = col.columnName || col.name;
+
+  // If this row is being edited, render the appropriate cell editor
+  if (isEditing && col.name !== COLUMN_NAMES.ACTIONS) {
+    const editingData = editingRowUtils.getEditingRowData(rowId);
+    if (!editingData) return <>{renderedCellValue}</>;
+
+    const fieldMapping = columnFieldMappings.get(col.name);
+    if (!fieldMapping) return <>{renderedCellValue}</>;
+
+    return (
+      <EditableCellContent
+        rowId={rowId}
+        fieldKey={fieldKey}
+        columnName={col.name}
+        editingData={editingData}
+        fieldMapping={fieldMapping}
+        initialFocusCell={initialFocusCell}
+        session={session}
+        editingRowUtils={editingRowUtils}
+        keyboardNavigationManager={keyboardNavigationManager}
+        handleCellValueChange={handleCellValueChange}
+        validateFieldOnBlur={validateFieldOnBlur}
+        setInitialFocusCell={setInitialFocusCell}
+        loadTableDirOptions={loadTableDirOptions}
+        isLoadingTableDirOptions={isLoadingTableDirOptions}
+        data-testid="EditableCellContent__8ca888"
+      />
+    );
+  }
+
+  // For non-editing cells, check if we should show identifier instead of UUID
+  const identifierKey = `${fieldKey}$_identifier`;
+  const identifier = row.original[identifierKey];
+
+  if (identifier && typeof identifier === "string" && typeof renderedCellValue === "string") {
+    if (originalCell && typeof originalCell === "function") {
+      return <>{originalCell({ renderedCellValue: identifier, row, table })}</>;
+    }
+    return <div className="table-cell-content">{identifier}</div>;
+  }
+
+  // Preserve original rendering logic and formatting
+  if (originalCell && typeof originalCell === "function") {
+    return <>{originalCell({ renderedCellValue, row, table })}</>;
+  }
+
+  return <div className="table-cell-content">{renderedCellValue}</div>;
+};
+
 const getRowId = (row: EntityData) => String(row.id);
 
 // Helper function to convert Column to FieldType using existing utilities
@@ -2009,6 +2119,22 @@ const DynamicTable = ({
     []
   );
 
+  // Stable Cell renderer for actions column - extracted to prevent component remounts
+  const renderActionsColumnCell = useCallback(
+    ({ row }: { row: MRT_Row<EntityData> }) => (
+      <ActionsColumnCell
+        row={row}
+        editingRowUtils={editingRowUtils}
+        handleEditRow={handleEditRow}
+        handleSaveRow={handleSaveRow}
+        handleCancelRow={handleCancelRow}
+        setRecordId={setRecordId}
+        data-testid="ActionsColumnCell__8ca888"
+      />
+    ),
+    [editingRowUtils, handleEditRow, handleSaveRow, handleCancelRow, setRecordId]
+  );
+
   // Use optimistic records if available, otherwise use display records
   // Merge optimistic updates with base records while preserving sort order and table features
   const effectiveRecords = useMemo(() => {
@@ -2027,9 +2153,16 @@ const DynamicTable = ({
 
     const modifiedColumns = baseColumns.map((col: Column) => {
       const column = { ...col };
-      const originalCell = column.Cell;
+      const originalCell = column.Cell as
+        | ((props: {
+            renderedCellValue: React.ReactNode;
+            row: MRT_Row<EntityData>;
+            table: MRT_TableInstance<EntityData>;
+          }) => React.ReactNode)
+        | undefined;
 
       // Override cell rendering to support inline editing while preserving existing formatting
+      // Using DataColumnCell component instead of inline function to prevent remounts
       column.Cell = ({
         renderedCellValue,
         row,
@@ -2038,58 +2171,26 @@ const DynamicTable = ({
         renderedCellValue: React.ReactNode;
         row: MRT_Row<EntityData>;
         table: MRT_TableInstance<EntityData>;
-      }) => {
-        const rowId = String(row.original.id);
-        const isEditing = editingRowUtils.isRowEditing(rowId);
-        const fieldKey = col.columnName || col.name;
-
-        // If this row is being edited, render the appropriate cell editor
-        if (isEditing && col.name !== COLUMN_NAMES.ACTIONS) {
-          const editingData = editingRowUtils.getEditingRowData(rowId);
-          if (!editingData) return renderedCellValue;
-
-          const fieldMapping = columnFieldMappings.get(col.name);
-          if (!fieldMapping) return renderedCellValue;
-
-          return (
-            <EditableCellContent
-              rowId={rowId}
-              fieldKey={fieldKey}
-              columnName={col.name}
-              editingData={editingData}
-              fieldMapping={fieldMapping}
-              initialFocusCell={initialFocusCell}
-              session={session}
-              editingRowUtils={editingRowUtils}
-              keyboardNavigationManager={keyboardNavigationManager}
-              handleCellValueChange={handleCellValueChange}
-              validateFieldOnBlur={validateFieldOnBlur}
-              setInitialFocusCell={setInitialFocusCell}
-              loadTableDirOptions={loadTableDirOptions}
-              isLoadingTableDirOptions={isLoadingTableDirOptions}
-              data-testid="EditableCellContent__8ca888"
-            />
-          );
-        }
-
-        // For non-editing cells, check if we should show identifier instead of UUID
-        const identifierKey = `${fieldKey}$_identifier`;
-        const identifier = row.original[identifierKey];
-
-        if (identifier && typeof identifier === "string" && typeof renderedCellValue === "string") {
-          if (originalCell && typeof originalCell === "function") {
-            return originalCell({ renderedCellValue: identifier, row, table });
-          }
-          return <div className="table-cell-content">{identifier}</div>;
-        }
-
-        // Preserve original rendering logic and formatting
-        if (originalCell && typeof originalCell === "function") {
-          return originalCell({ renderedCellValue, row, table });
-        }
-
-        return <div className="table-cell-content">{renderedCellValue}</div>;
-      };
+      }) => (
+        <DataColumnCell
+          renderedCellValue={renderedCellValue}
+          row={row}
+          table={table}
+          col={col}
+          originalCell={originalCell}
+          editingRowUtils={editingRowUtils}
+          columnFieldMappings={columnFieldMappings}
+          initialFocusCell={initialFocusCell}
+          session={session}
+          keyboardNavigationManager={keyboardNavigationManager}
+          handleCellValueChange={handleCellValueChange}
+          validateFieldOnBlur={validateFieldOnBlur}
+          setInitialFocusCell={setInitialFocusCell}
+          loadTableDirOptions={loadTableDirOptions}
+          isLoadingTableDirOptions={isLoadingTableDirOptions}
+          data-testid="DataColumnCell__8ca888"
+        />
+      );
 
       return column;
     });
@@ -2113,17 +2214,7 @@ const DynamicTable = ({
       enablePinning: false, // Disable user pinning control
       columnDefType: "display" as const,
       referencedTabId: null,
-      Cell: ({ row }: { row: MRT_Row<EntityData> }) => (
-        <ActionsColumnCell
-          row={row}
-          editingRowUtils={editingRowUtils}
-          handleEditRow={handleEditRow}
-          handleSaveRow={handleSaveRow}
-          handleCancelRow={handleCancelRow}
-          setRecordId={setRecordId}
-          data-testid="ActionsColumnCell__8ca888"
-        />
-      ),
+      Cell: renderActionsColumnCell,
     };
 
     // Insert actions column at the very beginning
@@ -2155,10 +2246,7 @@ const DynamicTable = ({
     baseColumns,
     shouldUseTreeMode,
     editingRowUtils,
-    handleEditRow,
-    handleSaveRow,
-    handleCancelRow,
-    setRecordId,
+    renderActionsColumnCell,
     columnFieldMappings,
     initialFocusCell,
     session,
@@ -2168,9 +2256,6 @@ const DynamicTable = ({
     loadTableDirOptions,
     isLoadingTableDirOptions,
     renderFirstColumnCell,
-    summaryState,
-    summaryResult,
-    isSummaryLoading,
   ]);
 
   // Helper function to check if a row is being edited
