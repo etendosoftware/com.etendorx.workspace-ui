@@ -21,7 +21,8 @@ import formsData from "../utils/processes/forms/data.json";
 import { useRuntimeConfig } from "../contexts/RuntimeConfigContext";
 import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 import ProcessDefinitionModal from "./ProcessModal/ProcessDefinitionModal";
-import type { ProcessDefinitionButton } from "./ProcessModal/types";
+import type { ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
+import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 
 interface ExtendedMenu extends Menu {
   processDefinitionId?: string;
@@ -81,11 +82,15 @@ const isProcessDefinitionMenuItem = (item: ExtendedMenu): boolean => {
   return item.type === "ProcessDefinition" && !!item.id;
 };
 
+const isReportAndProcessMenuItem = (item: ExtendedMenu): boolean => {
+  return item.type === "Process" && !!item.id;
+};
+
 /**
  * Maps a Menu item to a ProcessDefinitionButton structure for the ProcessDefinitionModal
  */
 const mapMenuToProcessDefinitionButton = (item: ExtendedMenu): ProcessDefinitionButton | null => {
-  if (!isProcessDefinitionMenuItem(item)) {
+  if (!isProcessDefinitionMenuItem(item) && !isReportAndProcessMenuItem(item)) {
     return null;
   }
 
@@ -93,9 +98,9 @@ const mapMenuToProcessDefinitionButton = (item: ExtendedMenu): ProcessDefinition
   // We prioritize processDefinitionId as it is specific to this item type
   // Fallback to processId or item.id
   const targetProcessId = item.processDefinitionId || item.processId || item.id;
-  
+
   if (item.type === "ProcessDefinition") {
-     console.log("[Sidebar] mapping ProcessDefinition item:", item);
+    console.log("[Sidebar] mapping ProcessDefinition item:", item);
   }
 
   // Create a minimal ProcessDefinitionButton structure
@@ -200,6 +205,7 @@ export default function Sidebar() {
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
     useState<ProcessDefinitionButton | null>(null);
+  const [processType, setProcessType] = useState<ProcessType>("");
 
   const { config } = useRuntimeConfig();
 
@@ -237,9 +243,16 @@ export default function Sidebar() {
       const extendedItem = item as ExtendedMenu;
 
       // Check if this is a ProcessDefinition item that should use the new modal
-      if (isProcessDefinitionMenuItem(extendedItem)) {
+      const isReportAndProcessMenuItemRes = isReportAndProcessMenuItem(extendedItem);
+      const isProcessDefinitionMenuItemRes = isProcessDefinitionMenuItem(extendedItem);
+      const isProcessMenuItem = isReportAndProcessMenuItemRes || isProcessDefinitionMenuItemRes;
+
+      if (isProcessMenuItem) {
         const processButton = mapMenuToProcessDefinitionButton(extendedItem);
         if (processButton) {
+          setProcessType(
+            isProcessDefinitionMenuItemRes ? PROCESS_TYPES.PROCESS_DEFINITION : PROCESS_TYPES.REPORT_AND_PROCESS
+          );
           setSelectedProcessDefinitionButton(processButton);
           setShowProcessDefinitionModal(true);
           return;
@@ -352,6 +365,7 @@ export default function Sidebar() {
       />
       <ProcessIframeModal {...processIframeModal} data-testid="ProcessIframeModal__sidebar" />
       <ProcessDefinitionModal
+        type={processType}
         open={showProcessDefinitionModal}
         onClose={handleCloseProcessDefinitionModal}
         button={selectedProcessDefinitionButton}

@@ -53,6 +53,7 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { TAB_MODES } from "@/utils/url/constants";
 import { useWindowContext } from "@/contexts/window";
 import ActionModal from "@workspaceui/componentlibrary/src/components/ActionModal";
+import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
@@ -404,6 +405,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         data-testid="ProcessIframeModal__a2dd07"
       />
       <ProcessDefinitionModal
+        type={PROCESS_TYPES.PROCESS_DEFINITION}
         open={showProcessDefinitionModal}
         onClose={handleCloseProcessDefinitionModal}
         button={selectedProcessDefinitionButton}
