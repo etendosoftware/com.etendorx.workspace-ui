@@ -612,7 +612,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
           const fieldObj = tab.fields[fieldName];
           return fieldObj?.columnName === sortColumnId || fieldObj?.name === sortColumnId;
         });
-        
+
         if (sortField) {
           params._sortBy = sortField.name as string;
         }
