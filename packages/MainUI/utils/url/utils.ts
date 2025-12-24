@@ -1,123 +1,185 @@
-import {
-  FORM_MODES,
-  TAB_MODES,
-  type FormMode,
-  type TabMode,
-  type TabFormState,
-  type SelectedRecord,
-} from "@/utils/url/constants";
+import { URL_PREFIXS } from "@/utils/url/constants";
+import type { WindowState, WindowRecoveryInfo } from "@/utils/window/constants";
 
 /**
- * Determines if a tab should be displayed in form view mode based on its state and parent context.
- * A tab is considered to be in form view when all three conditions are met:
- * - Current mode is explicitly set to FORM
- * - A valid record ID is present
- * - Parent tab has a selection in the URL (establishing context)
+ * Builds URL parameters for multiple windows based on their current state.
+ * Generates URL parameters with indexed format for each window, including the deepest tab
+ * that has both a selected record and tab identifier.
  *
- * @param params - Configuration object containing:
- *   - currentMode: The current display mode of the tab
- *   - recordId: The ID of the record being displayed
- *   - parentHasSelectionInURL: Whether the parent tab has a selection in URL parameters
- * @returns True if the tab should be displayed in form view, false otherwise
+ * @param windows - Array of WindowState objects to encode into URL parameters
+ * @returns URL parameter string with indexed window, tab, and record identifiers
+ *
+ * @example
+ * // With 2 windows: first has no records, second has deepest tab at level 1
+ * const windows = [
+ *   { windowIdentifier: "143", tabs: {} },
+ *   { windowIdentifier: "144", tabs: {
+ *     "tab1": { level: 0, selectedRecord: "rec1" },
+ *     "tab2": { level: 1, selectedRecord: "rec2" }
+ *   }}
+ * ];
+ * const params = buildWindowsUrlParams(windows);
+ * // Returns: "wi_0=143&wi_1=144&ti_1=tab2&ri_1=rec2"
  */
-export const isFormView = ({
-  currentMode,
-  recordId,
-  parentHasSelectionInURL,
-}: { currentMode: string; recordId: string; parentHasSelectionInURL: boolean }) => {
-  return currentMode === TAB_MODES.FORM && !!recordId && parentHasSelectionInURL;
+export const buildWindowsUrlParams = (windows: WindowState[]): string => {
+  const params = new URLSearchParams();
+
+  windows.forEach((window, index) => {
+    // Always add window identifier
+    params.set(`${URL_PREFIXS.WINDOW_IDENTIFIER}_${index}`, window.windowIdentifier);
+
+    // Find the tab with highest level that has both tabId and selectedRecord
+    const tabEntries = Object.entries(window.tabs);
+    const tabsWithRecordsForms = tabEntries.filter(
+      ([_, tabState]) => tabState.selectedRecord && tabState.form.recordId
+    );
+
+    if (tabsWithRecordsForms.length > 0) {
+      // Find the tab with the highest level (deepest)
+      const deepestTab = tabsWithRecordsForms.reduce((prev, current) => {
+        const [_prevTabId, prevTabState] = prev;
+        const [_currentTabId, currentTabState] = current;
+
+        return currentTabState.level > prevTabState.level ? current : prev;
+      });
+
+      const [deepestTabId, deepestTabState] = deepestTab;
+
+      // Add tab and record to URL
+      params.set(`${URL_PREFIXS.TAB_IDENTIFIER}_${index}`, deepestTabId);
+      params.set(`${URL_PREFIXS.RECORD_IDENTIFIER}_${index}`, deepestTabState.selectedRecord || "");
+    }
+  });
+
+  return params.toString();
 };
 
 /**
- * Generates a unique window identifier by appending a timestamp to the window ID.
- * This allows multiple instances of the same window type to exist simultaneously
- * in the multi-window navigation system. The timestamp ensures uniqueness across
- * browser sessions and prevents identifier collisions.
- *
- * @param windowId - The base window ID (business entity identifier)
- * @returns A unique window identifier in the format "windowId_timestamp"
+ * Extracts recovery information for all windows from URL parameters
  */
-export const getNewWindowIdentifier = (windowId: string) => {
-  return `${windowId}_${Date.now()}`;
+export const parseWindowRecoveryData = (searchParams: URLSearchParams): WindowRecoveryInfo[] => {
+  const recoveryData: WindowRecoveryInfo[] = [];
+
+  // Extract window identifiers
+  searchParams.forEach((value, key) => {
+    if (key.startsWith(URL_PREFIXS.WINDOW_IDENTIFIER)) {
+      const index = key.split("_")[1];
+      const tabId = searchParams.get(`${URL_PREFIXS.TAB_IDENTIFIER}_${index}`);
+      const recordId = searchParams.get(`${URL_PREFIXS.RECORD_IDENTIFIER}_${index}`);
+
+      recoveryData.push({
+        windowIdentifier: value,
+        tabId: tabId || undefined,
+        recordId: recordId || undefined,
+        hasRecoveryData: !!(tabId && recordId),
+      });
+    }
+  });
+
+  return recoveryData;
 };
 
 /**
- * Converts a single SelectedRecord object into a Record mapping format.
- * Creates a key-value pair where the tab ID becomes the key and record ID becomes the value.
- * Returns undefined if either tabId or recordId is missing, ensuring data integrity.
- *
- * @param selectedRecord - Object containing tabId and recordId for a single selection
- * @returns Record mapping tabId to recordId, or undefined if inputs are invalid
+ * Validates URL parameter consistency for recovery
  */
-export const generateSelectedRecord = ({ recordId, tabId }: SelectedRecord): Record<string, string> | undefined => {
-  if (!tabId || !recordId) return;
-  return {
-    [tabId]: recordId,
-  };
+export const validateRecoveryParameters = (recoveryInfo: WindowRecoveryInfo): boolean => {
+  // Both tabId and recordId must be present together, or neither
+  return (!recoveryInfo.tabId && !recoveryInfo.recordId) || (!!recoveryInfo.tabId && !!recoveryInfo.recordId);
 };
 
 /**
- * Converts an array of SelectedRecord objects into a unified Record mapping.
- * Processes multiple tab selections and combines them into a single object
- * where each key is a tab ID and each value is the corresponding record ID.
- * Automatically filters out invalid records (those that return undefined from generateSelectedRecord).
- *
- * @param records - Array of SelectedRecord objects to process
- * @returns Record object mapping tab IDs to record IDs for all valid selections
+ * Cleans invalid recovery parameters from URL
  */
-export const generateSelectedRecords = (records: SelectedRecord[]): Record<string, string> => {
-  const result: Record<string, string> = {};
-  for (const record of records) {
-    Object.assign(result, generateSelectedRecord(record));
+export const cleanInvalidRecoveryParams = (searchParams: URLSearchParams): URLSearchParams => {
+  const cleanParams = new URLSearchParams(searchParams);
+  const recoveryData = parseWindowRecoveryData(searchParams);
+
+  recoveryData.forEach((info, index) => {
+    if (!validateRecoveryParameters(info)) {
+      // Remove inconsistent parameters
+      cleanParams.delete(`${URL_PREFIXS.TAB_IDENTIFIER}_${index}`);
+      cleanParams.delete(`${URL_PREFIXS.RECORD_IDENTIFIER}_${index}`);
+    }
+  });
+
+  return cleanParams;
+};
+
+/**
+ * Removes all recovery parameters from URL
+ */
+export const removeRecoveryParameters = (searchParams: URLSearchParams): URLSearchParams => {
+  const cleanParams = new URLSearchParams();
+
+  searchParams.forEach((value, key) => {
+    const isRecoveryParam =
+      key.startsWith(URL_PREFIXS.WINDOW_IDENTIFIER) ||
+      key.startsWith(URL_PREFIXS.TAB_IDENTIFIER) ||
+      key.startsWith(URL_PREFIXS.RECORD_IDENTIFIER);
+
+    if (!isRecoveryParam) {
+      cleanParams.set(key, value);
+    }
+  });
+
+  return cleanParams;
+};
+
+/**
+ * Removes parameters for specific window index
+ */
+export const removeWindowParameters = (searchParams: URLSearchParams, windowIndex: number): URLSearchParams => {
+  const cleanParams = new URLSearchParams(searchParams);
+
+  cleanParams.delete(`${URL_PREFIXS.WINDOW_IDENTIFIER}_${windowIndex}`);
+  cleanParams.delete(`${URL_PREFIXS.TAB_IDENTIFIER}_${windowIndex}`);
+  cleanParams.delete(`${URL_PREFIXS.RECORD_IDENTIFIER}_${windowIndex}`);
+
+  return cleanParams;
+};
+
+/**
+ * Appends a new window to existing URL parameters.
+ *
+ * Reads current URL parameters and adds a new window at the next available index.
+ * The WindowProvider's useEffect will later reconstruct the complete URL from state,
+ * ensuring all windows are properly synchronized.
+ *
+ * @param currentParams - Current URLSearchParams from the browser
+ * @param newWindow - Object containing the new window's information
+ * @returns Complete URL parameter string with new window appended
+ *
+ * @example
+ * const currentParams = new URLSearchParams("wi_0=143_1000&ti_0=BPartnerTab&ri_0=1000001");
+ * const newWindow = {
+ *   windowIdentifier: "144_2000",
+ *   tabId: "LocationTab",
+ *   recordId: "2000015"
+ * };
+ * const params = appendWindowToUrl(currentParams, newWindow);
+ * // Returns: "wi_0=143_1000&ti_0=BPartnerTab&ri_0=1000001&wi_1=144_2000&ti_1=LocationTab&ri_1=2000015"
+ */
+export const appendWindowToUrl = (
+  currentParams: URLSearchParams,
+  newWindow: {
+    windowIdentifier: string;
+    tabId: string;
+    recordId: string;
   }
-  return result;
-};
+): string => {
+  // Clone current parameters to avoid mutation
+  const params = new URLSearchParams(currentParams);
 
-/**
- * Converts a single tab form state configuration into a Record mapping format.
- * Creates a key-value pair where the tab ID becomes the key and the TabFormState becomes the value.
- * Applies default values for mode (FORM) and formMode (EDIT) when not explicitly provided.
- * Returns empty object if either tabId or recordId is missing, ensuring data integrity.
- *
- * @param config - Object containing:
- *   - tabId: The identifier of the tab
- *   - tabFormState: The form state configuration (recordId, mode, formMode)
- * @returns Record mapping tabId to TabFormState, or empty object if inputs are invalid
- */
-export const generateTabFormState = ({
-  tabId,
-  tabFormState,
-}: { tabId: string; tabFormState: TabFormState }): Record<string, TabFormState> => {
-  const { recordId, mode, formMode } = tabFormState;
-  if (!tabId || !recordId) return {};
-  const defaultMode = mode ?? TAB_MODES.FORM;
-  const defaultFormMode = formMode ?? FORM_MODES?.EDIT;
-  return {
-    [tabId]: {
-      recordId,
-      mode: defaultMode as TabMode,
-      formMode: defaultFormMode as FormMode,
-    },
-  };
-};
-
-/**
- * Converts an array of tab form state configurations into a unified Record mapping.
- * Processes multiple tab form states and combines them into a single object
- * where each key is a tab ID and each value is the corresponding TabFormState.
- * Automatically filters out invalid configurations (those that return empty objects from generateTabFormState).
- *
- * @param tabFormStates - Array of objects containing tabId and tabFormState configurations
- * @returns Record object mapping tab IDs to TabFormState objects for all valid configurations
- */
-export const generateTabFormStates = (
-  tabFormStates: { tabId: string; tabFormState: TabFormState }[]
-): Record<string, TabFormState> => {
-  const result: Record<string, TabFormState> = {};
-
-  for (const { tabId, tabFormState } of tabFormStates) {
-    Object.assign(result, generateTabFormState({ tabId, tabFormState }));
+  // Find the next available index by counting existing window identifiers
+  let nextIndex = 0;
+  while (params.has(`${URL_PREFIXS.WINDOW_IDENTIFIER}_${nextIndex}`)) {
+    nextIndex++;
   }
 
-  return result;
+  // Add new window at the next index
+  params.set(`${URL_PREFIXS.WINDOW_IDENTIFIER}_${nextIndex}`, newWindow.windowIdentifier);
+  params.set(`${URL_PREFIXS.TAB_IDENTIFIER}_${nextIndex}`, newWindow.tabId);
+  params.set(`${URL_PREFIXS.RECORD_IDENTIFIER}_${nextIndex}`, newWindow.recordId);
+
+  return params.toString();
 };

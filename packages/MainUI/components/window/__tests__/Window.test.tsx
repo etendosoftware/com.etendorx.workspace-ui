@@ -19,7 +19,7 @@
  * @fileoverview Unit tests for Window component with windowIdentifier prop
  *
  * Tests the Window component implementation changes for multi-window instance isolation:
- * - Component interface updates to receive windowIdentifier prop
+ * - Component interface updates to receive window prop
  * - Proper prop passing to SelectedProvider
  * - TypeScript validation for required props
  */
@@ -27,6 +27,7 @@
 import { render, screen } from "@testing-library/react";
 import Window from "../Window";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
+import type { WindowState } from "@/utils/window/constants";
 
 // Mock all required contexts and hooks with controllable behavior
 const mockMetadataContext = {
@@ -67,6 +68,44 @@ jest.mock("../../../hooks/useMetadataContext", () => ({
 jest.mock("../../../hooks/useTranslation", () => ({
   useTranslation: () => ({
     t: (key: string) => key, // Simple pass-through for translation keys
+  }),
+}));
+
+// Mock useGlobalUrlStateRecovery hook
+jest.mock("../../../hooks/useGlobalUrlStateRecovery", () => ({
+  useGlobalUrlStateRecovery: () => ({
+    isRecoveryLoading: false,
+    recoveryError: null,
+    recoveredWindows: [],
+  }),
+}));
+
+// Mock useWindowContext hook
+jest.mock("../../../contexts/window", () => ({
+  useWindowContext: () => ({
+    activeWindow: null,
+    windows: [],
+    setSelectedRecord: jest.fn(),
+    clearSelectedRecord: jest.fn(),
+    getSelectedRecord: jest.fn(() => undefined),
+    getTabFormState: jest.fn(() => undefined),
+    clearChildrenSelections: jest.fn(),
+    setSelectedRecordAndClearChildren: jest.fn(),
+    addWindow: jest.fn(),
+    removeWindow: jest.fn(),
+    updateWindow: jest.fn(),
+    setActiveWindow: jest.fn(),
+    getAllWindows: jest.fn(() => []),
+    getActiveWindow: jest.fn(() => null),
+    getWindow: jest.fn(() => undefined),
+    addTab: jest.fn(),
+    removeTab: jest.fn(),
+    updateTab: jest.fn(),
+    getTab: jest.fn(() => undefined),
+    setTabFormState: jest.fn(),
+    clearTabFormState: jest.fn(),
+    isRecoveryLoading: false,
+    setIsRecoveryLoading: jest.fn(),
   }),
 }));
 
@@ -115,6 +154,30 @@ jest.mock("../../../components/loading", () => ({
   default: () => <div data-testid="loading-component">Loading...</div>,
 }));
 
+// Helper function to create window state
+const createWindowState = (windowId: string, windowIdentifier: string, initialized = true): WindowState => ({
+  windowId,
+  windowIdentifier,
+  isActive: true,
+  order: 1,
+  selectedRecords: {},
+  tabFormStates: {},
+  title: "Test Window",
+  initialized,
+});
+
+// Helper to verify SelectedProvider attributes
+const expectProviderAttributes = (
+  provider: HTMLElement,
+  expected: { windowId: string; windowIdentifier: string; tabsCount?: string }
+) => {
+  expect(provider).toHaveAttribute("data-window-id", expected.windowId);
+  expect(provider).toHaveAttribute("data-window-identifier", expected.windowIdentifier);
+  if (expected.tabsCount !== undefined) {
+    expect(provider).toHaveAttribute("data-tabs-count", expected.tabsCount);
+  }
+};
+
 describe("Window Component Multi-Window Instance Support", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -151,30 +214,37 @@ describe("Window Component Multi-Window Instance Support", () => {
   });
 
   describe("Component Interface Updates", () => {
-    it("should accept both windowId and windowIdentifier props", () => {
+    it("should accept window prop with windowId and windowIdentifier", () => {
+      const window = createWindowState("TestWindow", "TestWindow_123456789");
+
       expect(() => {
-        render(<Window windowId="TestWindow" windowIdentifier="TestWindow_123456789" />);
+        render(<Window window={window} />);
       }).not.toThrow();
 
       expect(screen.getByTestId("selected-provider")).toBeInTheDocument();
     });
 
     it("should pass windowIdentifier to SelectedProvider", () => {
-      render(<Window windowId="TestWindow" windowIdentifier="TestWindow_123456789" />);
+      const window = createWindowState("TestWindow", "TestWindow_123456789");
+      render(<Window window={window} />);
 
-      const selectedProvider = screen.getByTestId("selected-provider");
-      expect(selectedProvider).toHaveAttribute("data-window-identifier", "TestWindow_123456789");
+      expectProviderAttributes(screen.getByTestId("selected-provider"), {
+        windowId: "TestWindow",
+        windowIdentifier: "TestWindow_123456789",
+      });
     });
 
     it("should pass windowId to SelectedProvider for metadata operations", () => {
-      render(<Window windowId="TestWindow" windowIdentifier="TestWindow_123456789" />);
+      const window = createWindowState("TestWindow", "TestWindow_123456789");
+      render(<Window window={window} />);
 
       const selectedProvider = screen.getByTestId("selected-provider");
       expect(selectedProvider).toHaveAttribute("data-window-id", "TestWindow");
     });
 
     it("should pass tabs from window metadata to SelectedProvider", () => {
-      render(<Window windowId="TestWindow" windowIdentifier="TestWindow_123456789" />);
+      const window = createWindowState("TestWindow", "TestWindow_123456789");
+      render(<Window window={window} />);
 
       const selectedProvider = screen.getByTestId("selected-provider");
       expect(selectedProvider).toHaveAttribute("data-tabs-count", "1");
@@ -182,32 +252,17 @@ describe("Window Component Multi-Window Instance Support", () => {
   });
 
   describe("Props Validation", () => {
-    it("should handle missing windowIdentifier gracefully in TypeScript", () => {
-      // This test ensures TypeScript compilation catches missing props
-      // @ts-expect-error - Testing TypeScript validation
-      const renderWithMissingProp = () => render(<Window windowId="TestWindow" />);
-
-      // TypeScript should prevent this from compiling
-      // In runtime, we expect the component to handle it gracefully
-      expect(renderWithMissingProp).toBeDefined();
-    });
-
-    it("should handle missing windowId gracefully in TypeScript", () => {
-      // @ts-expect-error - Testing TypeScript validation
-      const renderWithMissingProp = () => render(<Window windowIdentifier="TestWindow_123" />);
-
-      // TypeScript should prevent this from compiling
-      expect(renderWithMissingProp).toBeDefined();
-    });
-
     it("should work with different windowIdentifier formats", () => {
       const identifiers = ["TestWindow_123456789", "ProductWindow_987654321", "CustomerWindow_111222333"];
 
       for (const identifier of identifiers) {
-        const { unmount } = render(<Window windowId="TestWindow" windowIdentifier={identifier} />);
+        const window = createWindowState("TestWindow", identifier);
+        const { unmount } = render(<Window window={window} />);
 
-        const selectedProvider = screen.getByTestId("selected-provider");
-        expect(selectedProvider).toHaveAttribute("data-window-identifier", identifier);
+        expectProviderAttributes(screen.getByTestId("selected-provider"), {
+          windowId: "TestWindow",
+          windowIdentifier: identifier,
+        });
 
         unmount();
       }
@@ -216,7 +271,8 @@ describe("Window Component Multi-Window Instance Support", () => {
 
   describe("Component Hierarchy and Integration", () => {
     it("should render TabsContainer when window data is available", () => {
-      render(<Window windowId="TestWindow" windowIdentifier="TestWindow_123456789" />);
+      const window = createWindowState("TestWindow", "TestWindow_123456789");
+      render(<Window window={window} />);
 
       expect(screen.getByTestId("tabs-container")).toBeInTheDocument();
     });
@@ -230,7 +286,8 @@ describe("Window Component Multi-Window Instance Support", () => {
         loadWindowData: jest.fn().mockResolvedValue({}),
       });
 
-      render(<Window windowId="TestWindow" windowIdentifier="TestWindow_123456789" />);
+      const window = createWindowState("TestWindow", "TestWindow_123456789");
+      render(<Window window={window} />);
 
       expect(screen.getByTestId("loading-component")).toBeInTheDocument();
     });
@@ -251,7 +308,8 @@ describe("Window Component Multi-Window Instance Support", () => {
         loadWindowData: jest.fn().mockResolvedValue({}),
       });
 
-      render(<Window windowId="TestWindow" windowIdentifier="TestWindow_123456789" />);
+      const window = createWindowState("TestWindow", "TestWindow_123456789");
+      render(<Window window={window} />);
 
       expect(screen.getByTestId("error-display")).toBeInTheDocument();
       expect(screen.getByTestId("error-display")).toHaveAttribute("data-title", "Test error message");
@@ -260,37 +318,39 @@ describe("Window Component Multi-Window Instance Support", () => {
 
   describe("Component Interface Requirements", () => {
     it("should maintain prop passing chain through component hierarchy", () => {
-      render(<Window windowId="TestWindow" windowIdentifier="TestWindow_123456789" />);
+      const window = createWindowState("TestWindow", "TestWindow_123456789");
+      render(<Window window={window} />);
 
-      // Verify the complete prop passing chain
-      const selectedProvider = screen.getByTestId("selected-provider");
-
-      // Both windowId and windowIdentifier should be passed
-      expect(selectedProvider).toHaveAttribute("data-window-id", "TestWindow");
-      expect(selectedProvider).toHaveAttribute("data-window-identifier", "TestWindow_123456789");
-
-      // Tabs should be passed from metadata
-      expect(selectedProvider).toHaveAttribute("data-tabs-count", "1");
+      expectProviderAttributes(screen.getByTestId("selected-provider"), {
+        windowId: "TestWindow",
+        windowIdentifier: "TestWindow_123456789",
+        tabsCount: "1",
+      });
     });
 
     it("should support multiple instances with different identifiers", () => {
-      // First instance
-      const { unmount: unmount1 } = render(<Window windowId="TestWindow" windowIdentifier="TestWindow_instance1" />);
+      const window1 = createWindowState("TestWindow", "TestWindow_instance1");
+      const { unmount: unmount1 } = render(<Window window={window1} />);
 
-      let selectedProvider = screen.getByTestId("selected-provider");
-      expect(selectedProvider).toHaveAttribute("data-window-identifier", "TestWindow_instance1");
+      expectProviderAttributes(screen.getByTestId("selected-provider"), {
+        windowId: "TestWindow",
+        windowIdentifier: "TestWindow_instance1",
+      });
 
       unmount1();
 
-      // Second instance
-      render(<Window windowId="TestWindow" windowIdentifier="TestWindow_instance2" />);
+      const window2 = createWindowState("TestWindow", "TestWindow_instance2");
+      render(<Window window={window2} />);
 
-      selectedProvider = screen.getByTestId("selected-provider");
-      expect(selectedProvider).toHaveAttribute("data-window-identifier", "TestWindow_instance2");
+      expectProviderAttributes(screen.getByTestId("selected-provider"), {
+        windowId: "TestWindow",
+        windowIdentifier: "TestWindow_instance2",
+      });
     });
 
     it("should use correct testid format for component identification", () => {
-      render(<Window windowId="TestWindow" windowIdentifier="TestWindow_123456789" />);
+      const window = createWindowState("TestWindow", "TestWindow_123456789");
+      render(<Window window={window} />);
 
       // SelectedProvider should have the expected testid format
       const selectedProvider = screen.getByTestId("selected-provider");
@@ -301,7 +361,6 @@ describe("Window Component Multi-Window Instance Support", () => {
     });
 
     it("should handle complex window metadata structures", () => {
-      // Set complex window data
       Object.assign(mockMetadataContext, {
         error: null,
         loading: false,
@@ -333,12 +392,14 @@ describe("Window Component Multi-Window Instance Support", () => {
         loadWindowData: jest.fn().mockResolvedValue({}),
       });
 
-      render(<Window windowId="ComplexWindow" windowIdentifier="ComplexWindow_complex123" />);
+      const window = createWindowState("ComplexWindow", "ComplexWindow_complex123");
+      render(<Window window={window} />);
 
-      const selectedProvider = screen.getByTestId("selected-provider");
-      expect(selectedProvider).toHaveAttribute("data-tabs-count", "3");
-      expect(selectedProvider).toHaveAttribute("data-window-id", "ComplexWindow");
-      expect(selectedProvider).toHaveAttribute("data-window-identifier", "ComplexWindow_complex123");
+      expectProviderAttributes(screen.getByTestId("selected-provider"), {
+        windowId: "ComplexWindow",
+        windowIdentifier: "ComplexWindow_complex123",
+        tabsCount: "3",
+      });
     });
   });
 });

@@ -72,3 +72,10 @@ export interface ToolbarResponse {
   windowId: string;
   isNew: boolean;
 }
+
+export interface ActionModalResponse {
+  showMsgInProcessView: {
+    msgType: string;
+    msg: string;
+  };
+}

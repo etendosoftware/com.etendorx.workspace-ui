@@ -40,7 +40,6 @@ export function isDebugManualProcesses(): boolean {
 export function enableCalloutDebugging(): void {
   if (typeof window !== "undefined") {
     window.localStorage.setItem("DEBUG_CALLOUTS", "true");
-    console.log("🐛 Callout debugging enabled. Refresh the page to see callout logs.");
   }
 }
 
@@ -48,7 +47,6 @@ export function enableCalloutDebugging(): void {
 export function disableCalloutDebugging(): void {
   if (typeof window !== "undefined") {
     window.localStorage.removeItem("DEBUG_CALLOUTS");
-    console.log("🐛 Callout debugging disabled.");
   }
 }
 

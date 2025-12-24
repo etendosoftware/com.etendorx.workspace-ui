@@ -16,13 +16,13 @@
  */
 
 import { useState, useEffect } from "react";
-import type { Tab } from "@workspaceui/api-client/src/api/types";
+import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import type { GraphEventListener } from "@/data/graph";
 import { useSelected } from "./useSelected";
 
 export const useSelectedRecord = (tab?: Tab) => {
   const { graph } = useSelected();
-  const [selected, setSelected] = useState(graph.getSelected(tab));
+  const [selected, setSelected] = useState<EntityData | undefined>(graph.getSelected(tab));
 
   useEffect(() => {
     if (!tab) return;

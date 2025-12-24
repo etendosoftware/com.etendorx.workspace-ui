@@ -16,15 +16,15 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { Box, Grid, Typography, TextField, useTheme } from "@mui/material";
+import { Box, Typography, TextField, useTheme } from "@mui/material";
 import Modal from "@workspaceui/componentlibrary/src/components/BasicModal";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
-import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus-circle.svg";
 import DownloadIcon from "@workspaceui/componentlibrary/src/assets/icons/download.svg";
 import EditIcon from "@workspaceui/componentlibrary/src/assets/icons/edit-3.svg";
 import TrashIcon from "@workspaceui/componentlibrary/src/assets/icons/trash.svg";
 import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
 import UploadIcon from "@workspaceui/componentlibrary/src/assets/icons/upload.svg";
+import FilePlusIcon from "@workspaceui/componentlibrary/src/assets/icons/file-plus.svg";
 import CheckIcon from "@workspaceui/componentlibrary/src/assets/icons/check.svg";
 import XIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
@@ -40,6 +40,7 @@ import {
 } from "@workspaceui/api-client/src/api/attachments";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserContext } from "@/hooks/useUserContext";
+import { AddAttachmentModal } from "./AddAttachmentModal";
 
 interface AttachmentSectionProps {
   recordId: string;
@@ -50,6 +51,7 @@ interface AttachmentSectionProps {
   showErrorModal?: (message: string) => void;
   openAddModal?: boolean;
   onAddModalClose?: () => void;
+  recordIdentifier?: string;
 }
 
 const AttachmentSection = ({
@@ -61,6 +63,7 @@ const AttachmentSection = ({
   showErrorModal,
   openAddModal = false,
   onAddModalClose,
+  recordIdentifier,
 }: AttachmentSectionProps) => {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -76,8 +79,13 @@ const AttachmentSection = ({
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
   const [isEditingInPreview, setIsEditingInPreview] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const hasLoadedAttachmentsRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Preview Loop State
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
   // Sync external openAddModal prop with internal state
   useEffect(() => {
@@ -116,12 +124,83 @@ const AttachmentSection = ({
     }
   }, [isSectionExpanded, recordId, tabId, initialAttachmentCount, t, showErrorModal]);
 
-  console.debug(attachments);
+  // Preview Fetch Effect
+  useEffect(() => {
+    if (!previewAttachment) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const loadPreview = async () => {
+      const fileName = previewAttachment.name.toLowerCase();
+      const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/.test(fileName);
+      const isPdf = /\.pdf$/.test(fileName);
+
+      if (!isImage && !isPdf) {
+        setPreviewUrl(null);
+        return;
+      }
+
+      setIsPreviewLoading(true);
+      try {
+        const blob = await downloadAttachment({
+          attachmentId: previewAttachment.id,
+          tabId,
+          recordId,
+        });
+
+        // Ensure proper MIME type for PDF files to allow browser preview
+        let finalBlob = blob;
+        if (isPdf) {
+          finalBlob = new Blob([blob], { type: "application/pdf" });
+        }
+
+        const url = window.URL.createObjectURL(finalBlob);
+        setPreviewUrl(url);
+      } catch (error) {
+        console.error("Failed to load preview:", error);
+      } finally {
+        setIsPreviewLoading(false);
+      }
+    };
+
+    loadPreview();
+
+    // Cleanup function
+    return () => {
+      if (previewUrl) {
+        window.URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewAttachment, tabId, recordId]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
+      setIsAddModalOpen(true);
+    }
+    // Reset inputs value to allow selecting same file again
+    event.target.value = "";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      setSelectedFile(files[0]);
+      setIsAddModalOpen(true);
     }
   };
 
@@ -130,22 +209,12 @@ const AttachmentSection = ({
 
     setIsLoading(true);
     try {
-      // Get organization ID from session or user context
-      // Priority: session["#AD_Org_ID"] (current role org) > session.adOrgId > currentOrganization.id
-      // Note: "#AD_Org_ID" is set by the backend and represents the current role's organization
       const orgId = session["#AD_Org_ID"] || session.adOrgId || currentOrganization?.id;
 
       if (!orgId) {
         throw new Error("Organization ID not found in session or user context");
       }
 
-      console.debug("AttachmentSection: Creating attachment with organization:", orgId, {
-        sessionOrgId: session["#AD_Org_ID"],
-        adOrgId: session.adOrgId,
-        currentOrganizationId: currentOrganization?.id,
-      });
-
-      // Build params object
       const params: {
         recordId: string;
         tabId: string;
@@ -170,13 +239,9 @@ const AttachmentSection = ({
       setNewDescription("");
       onAttachmentsChange();
 
-      // Close modal and reset file input
       setIsAddModalOpen(false);
       if (onAddModalClose) {
         onAddModalClose();
-      }
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
       }
     } catch (error) {
       console.error("Failed to add attachment:", error);
@@ -293,184 +358,146 @@ const AttachmentSection = ({
     }
   };
 
+  const isImagePreview =
+    previewUrl && previewAttachment && /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(previewAttachment.name);
+
   return (
     <Box data-testid="Box__attachments_section">
+      <input
+        ref={fileInputRef}
+        type="file"
+        onChange={handleFileSelect}
+        className="hidden"
+        id="attachment-file-input"
+        data-testid="Input__attachments_file"
+      />
       {isLoading && isSectionExpanded && (
         <Typography data-testid="Typography__attachments_loading">{t("common.loading")}</Typography>
       )}
       {isSectionExpanded && (
-        <Grid container spacing={1} data-testid="Grid__attachments_container" marginTop={1}>
-          {/* Add Attachment Button */}
-          <Grid item xs={4} md={2} data-testid="Grid__attachments_add">
-            <IconButton
-              data-testid="IconButton__attachments_add"
-              className="p-2 space-x-1.5"
-              onClick={() => setIsAddModalOpen(true)}>
-              <PlusIcon fill={theme.palette.baselineColor.neutral[80]} data-testid="PlusIcon__ce37c8" />
-              <Typography variant="body1" data-testid="Typography__ce37c8">
-                {t("forms.attachments.addAttachment")}
-              </Typography>
-            </IconButton>
-          </Grid>
-
-          {/* Download All Button */}
+        <div className="flex flex-col gap-4 mt-2" data-testid="Div__attachments_container">
+          {/* Attachments and Actions Row */}
           {attachments.length > 0 && (
-            <Grid item xs={4} md={2} data-testid="Grid__attachments_download_all">
-              <IconButton
-                data-testid="IconButton__attachments_download_all"
-                className="p-2 space-x-1.5"
-                onClick={() => setShowDownloadAllConfirmation(true)}>
-                <DownloadIcon fill={theme.palette.baselineColor.neutral[80]} data-testid="DownloadIcon__ce37c8" />
-                <Typography variant="body1" data-testid="Typography__ce37c8">
-                  {t("forms.attachments.downloadAll")}
-                </Typography>
-              </IconButton>
-            </Grid>
+            <div
+              className="flex items-center gap-2 overflow-x-auto pb-2 px-1"
+              data-testid="Div__attachments_scrollable_container">
+              {/* Attachment Tags */}
+              {attachments.map((attachment) => (
+                <div
+                  key={attachment.id}
+                  className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors shadow-sm min-w-fit"
+                  data-testid={`Box__attachment_tag_${attachment.id}`}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreviewAttachment(attachment);
+                    }}
+                    className="border-none bg-transparent cursor-pointer p-0 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors flex items-center gap-2 whitespace-nowrap"
+                    data-testid={`Button__attachment_name_${attachment.id}`}>
+                    {/* Add a generic file icon here if desired */}
+                    {attachment.name}
+                  </button>
+                  <div className="flex items-center gap-0.5 ml-1 border-l pl-1 border-gray-300">
+                    <IconButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDeleteConfirmation(attachment.id);
+                      }}
+                      disabled={isLoading}
+                      className="p-1 h-6 w-6 m-0"
+                      data-testid={`IconButton__delete_${attachment.id}`}>
+                      <TrashIcon width={14} height={14} data-testid="TrashIcon__ce37c8" />
+                    </IconButton>
+                  </div>
+                </div>
+              ))}
+
+              {/* Action Buttons styled as chips */}
+              <button
+                type="button"
+                onClick={() => setShowDownloadAllConfirmation(true)}
+                className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm cursor-pointer min-w-fit whitespace-nowrap"
+                data-testid="Button__attachments_download_all_chip">
+                <DownloadIcon
+                  width={14}
+                  height={14}
+                  fill={theme.palette.text.secondary}
+                  data-testid="DownloadIcon__ce37c8"
+                />
+                <span className="text-sm font-medium text-gray-700">{t("forms.attachments.downloadAll")}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowDeleteAllConfirmation(true)}
+                className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 bg-white border border-red-200 hover:bg-red-50 transition-colors shadow-sm cursor-pointer min-w-fit whitespace-nowrap"
+                data-testid="Button__attachments_remove_all_chip">
+                <TrashIcon width={14} height={14} fill={theme.palette.error.main} data-testid="TrashIcon__ce37c8" />
+                <span className="text-sm font-medium text-red-700">{t("forms.attachments.removeAll")}</span>
+              </button>
+            </div>
           )}
 
-          {/* Remove All Button */}
-          {attachments.length > 0 && (
-            <Grid item xs={4} md={2} data-testid="Grid__attachments_remove_all">
-              <IconButton
-                data-testid="IconButton__attachments_remove_all"
-                className="p-2 space-x-1.5"
-                onClick={() => setShowDeleteAllConfirmation(true)}>
-                <TrashIcon fill={theme.palette.error.main} data-testid="TrashIcon__ce37c8" />
-                <Typography variant="body1" data-testid="Typography__ce37c8">
-                  {t("forms.attachments.removeAll")}
+          {/* Dropzone */}
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              borderColor: isDragging ? theme.palette.dynamicColor.main : "#93C5FD",
+              backgroundColor: isDragging ? `${theme.palette.dynamicColor.main}15` : "#F0F5FF",
+            }}
+            className="relative flex flex-col items-center justify-center p-8 rounded-xl border-2 border-dashed transition-all cursor-pointer min-h-[160px]"
+            data-testid="Div__attachments_dropzone">
+            {/* Upload Icon top right */}
+            <div className="absolute top-4 right-4 text-gray-400">
+              <UploadIcon width={20} height={20} fill="currentColor" data-testid="UploadIcon__ce37c8" />
+            </div>
+
+            {/* Center Content */}
+            <div className="flex flex-col items-center gap-3 mt-6">
+              <div className="p-3 bg-white rounded-full shadow-sm">
+                <FilePlusIcon width={32} height={32} fill="#6B7280" data-testid="FilePlusIcon__ce37c8" />
+              </div>
+              <div className="text-center">
+                <Typography variant="body1" className="font-medium text-gray-700" data-testid="Typography__ce37c8">
+                  {t("forms.attachments.dropZoneText")}
                 </Typography>
-              </IconButton>
-            </Grid>
-          )}
-        </Grid>
+                <Typography variant="caption" className="text-blue-500 mt-1 block" data-testid="Typography__ce37c8">
+                  {t("forms.attachments.maxSizeText")}
+                </Typography>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
       {/* Add Attachment Modal */}
-      <Modal
+      <AddAttachmentModal
         open={isAddModalOpen}
         onClose={() => {
           setIsAddModalOpen(false);
+          setSelectedFile(null);
+          setNewDescription("");
           if (onAddModalClose) {
             onAddModalClose();
           }
         }}
-        onCancel={() => {
-          setIsAddModalOpen(false);
-          if (onAddModalClose) {
-            onAddModalClose();
-          }
+        onUpload={async (file: File, description: string) => {
+          setNewDescription(description);
+          setSelectedFile(file);
+          await handleAddAttachment();
         }}
-        HeaderIcon={AttachmentIcon}
-        tittleHeader={t("forms.attachments.addAttachmentModalTitle")}
-        descriptionText={t("forms.attachments.addAttachmentModalDescription")}
-        data-testid="Modal__attachments_add">
-        <div className="space-y-4">
-          {/* Custom File Input Button */}
-          <div className="flex flex-col gap-2">
-            <span className="block text-sm font-medium text-gray-700">{t("forms.attachments.chooseFile")}</span>
-            <div className="flex flex-col gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                onChange={handleFileSelect}
-                className="hidden"
-                id="attachment-file-input"
-                data-testid="Input__attachments_file"
-              />
-              <IconButton
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full justify-center border border-gray-300 hover:border-transparent p-2 gap-2"
-                data-testid="IconButton__choose_file">
-                <AttachmentIcon width={20} height={20} data-testid="AttachmentIcon__ce37c8" />
-                <Typography variant="body1" className="ml-2" data-testid="Typography__ce37c8">
-                  {selectedFile ? t("forms.attachments.changeFile") : t("forms.attachments.selectFile")}
-                </Typography>
-              </IconButton>
-              {selectedFile && (
-                <div className="text-sm text-gray-600 text-center px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
-                  <Typography
-                    variant="body2"
-                    className="truncate"
-                    title={selectedFile.name}
-                    data-testid="Typography__ce37c8">
-                    {selectedFile.name}
-                  </Typography>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Description Field */}
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            value={newDescription}
-            onChange={(e) => setNewDescription(e.target.value)}
-            placeholder={t("forms.attachments.descriptionPlaceholder")}
-            label={t("forms.attachments.description")}
-            data-testid="TextField__attachments_description"
-          />
-
-          {/* Upload Button */}
-          <IconButton
-            onClick={handleAddAttachment}
-            disabled={!selectedFile || isLoading}
-            className="w-full justify-center border border-gray-300 hover:border-transparent mt-4 p-2 gap-2"
-            data-testid="IconButton__attachments_submit">
-            <UploadIcon width={16} height={16} data-testid="UploadIcon__ce37c8" />
-            <Typography variant="body1" className="ml-2" data-testid="Typography__ce37c8">
-              {t("forms.attachments.uploadButton")}
-            </Typography>
-          </IconButton>
-        </div>
-      </Modal>
-      {/* Attachment Tags */}
-      {isSectionExpanded && attachments.length > 0 && (
-        <div className="my-4 flex flex-wrap gap-2" data-testid="Box__attachments_tags">
-          {attachments.map((attachment) => (
-            <div
-              key={attachment.id}
-              className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors shadow-sm"
-              data-testid={`Box__attachment_tag_${attachment.id}`}>
-              <button
-                type="button"
-                onClick={() => {
-                  setPreviewAttachment(attachment);
-                }}
-                className="border-none bg-transparent cursor-pointer p-0 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-                data-testid={`Button__attachment_name_${attachment.id}`}>
-                {attachment.name}
-              </button>
-              <div className="flex items-center gap-0.5 ml-1">
-                <IconButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDownloadAttachment(attachment.id, attachment.name);
-                  }}
-                  disabled={isLoading}
-                  className="hover:bg-gray-200 rounded-full p-1"
-                  data-testid={`IconButton__download_${attachment.id}`}>
-                  <DownloadIcon width={16} height={16} data-testid="DownloadIcon__ce37c8" />
-                </IconButton>
-                <IconButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowDeleteConfirmation(attachment.id);
-                  }}
-                  disabled={isLoading}
-                  className="hover:bg-red-50 rounded-full p-1"
-                  data-testid={`IconButton__delete_${attachment.id}`}>
-                  <TrashIcon width={16} height={16} fill="#EF4444" data-testid="TrashIcon__ce37c8" />
-                </IconButton>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+        initialFile={selectedFile}
+        isLoading={isLoading}
+        recordIdentifier={recordIdentifier}
+        data-testid="AddAttachmentModal__ce37c8"
+      />
       {/* Preview Attachment Modal */}
       {previewAttachment && (
         <Modal
           open={!!previewAttachment}
+          width={500}
           onClose={() => {
             setPreviewAttachment(null);
             setIsEditingInPreview(false);
@@ -483,8 +510,7 @@ const AttachmentSection = ({
           tittleHeader={previewAttachment.name}
           descriptionText={t("forms.attachments.previewModalDescription")}
           data-testid="Modal__attachments_preview">
-          <div className="flex flex-col gap-4">
-            {/* Metadata */}
+          <div className="flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-4 text-sm text-gray-500 bg-gray-50 rounded-lg p-3 border border-gray-200">
               <div className="flex items-center gap-2">
                 <span className="font-medium text-gray-700">{t("forms.attachments.createdBy")}:</span>
@@ -494,8 +520,33 @@ const AttachmentSection = ({
               <div>{new Date(previewAttachment.creationDate).toLocaleDateString()}</div>
             </div>
 
-            {/* Description Section */}
-            <div className="space-y-3">
+            <div className="space-y-3 ">
+              {/* Preview Content */}
+              <div className="flex justify-center bg-gray-100 rounded-lg overflow-hidden h-[350px] items-center border border-gray-200">
+                {isPreviewLoading && (
+                  <Typography className="text-gray-500" data-testid="Typography__ce37c8">
+                    {t("common.loading")}
+                  </Typography>
+                )}
+
+                {!isPreviewLoading && previewUrl && isImagePreview && (
+                  <img src={previewUrl} alt={previewAttachment.name} className="max-h-full max-w-full object-contain" />
+                )}
+
+                {!isPreviewLoading && previewUrl && !isImagePreview && (
+                  <embed src={previewUrl} type="application/pdf" className="w-full h-full border-none" />
+                )}
+
+                {!isPreviewLoading && !previewUrl && (
+                  <div className="flex flex-col items-center p-8 text-gray-400">
+                    <AttachmentIcon width={48} height={48} fill="currentColor" data-testid="AttachmentIcon__ce37c8" />
+                    <Typography className="mt-2" data-testid="Typography__ce37c8">
+                      Preview not available
+                    </Typography>
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-semibold text-gray-700">{t("forms.attachments.description")}</h3>
                 {!isEditingInPreview && (
@@ -583,8 +634,6 @@ const AttachmentSection = ({
                 </p>
               )}
             </div>
-
-            {/* Action Buttons */}
             <div className="flex gap-2 pt-2 border-t border-gray-200">
               <IconButton
                 onClick={() => handleDownloadAttachment(previewAttachment.id, previewAttachment.name)}

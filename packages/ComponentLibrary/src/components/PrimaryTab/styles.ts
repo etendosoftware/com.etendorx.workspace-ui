@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { type CSSProperties, useMemo } from "react";
+import { useMemo } from "react";
 import { type SxProps, type Theme, useTheme } from "@mui/material";
 
 export const tabIndicatorProps = { style: { display: "none" } };
@@ -47,7 +47,7 @@ export const useStyle = () => {
           marginLeft: "0.25rem",
           padding: "0.5rem",
         },
-      } as { [key: string]: CSSProperties },
+      } as Record<string, SxProps<Theme>>,
       sx: {
         tabs: {
           minHeight: "3rem",

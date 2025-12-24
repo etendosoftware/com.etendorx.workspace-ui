@@ -63,6 +63,7 @@ const Navigation: React.FC = () => {
     currentOrganization,
     profile,
     currentWarehouse,
+    currentClient,
     changeProfile,
     roles,
     languages,
@@ -292,6 +293,7 @@ const Navigation: React.FC = () => {
           userEmail={profile.email}
           userPhotoUrl={profile.image}
           data-testid="ProfileModal__120cc9"
+          currentClient={currentClient}
         />
       </Nav>
       <CopilotPopup

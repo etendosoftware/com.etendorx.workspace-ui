@@ -95,7 +95,7 @@ const IconButtonWithText = ({
   customTextStyles,
   ref,
   ...rest
-}: IconButtonWithTextProps): JSX.Element => {
+}: IconButtonWithTextProps): React.ReactElement => {
   const DEFAULT_STYLES = `
     transition
     duration-400

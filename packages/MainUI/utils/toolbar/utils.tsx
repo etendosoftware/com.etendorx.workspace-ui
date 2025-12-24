@@ -16,12 +16,13 @@
  */
 
 import type { OrganizedSections, ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
+import type { TranslateFunction } from "@/hooks/types";
 import type React from "react";
 import Base64Icon from "@workspaceui/componentlibrary/src/components/Base64Icon";
 import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
 import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
 import type { SaveButtonState } from "@/contexts/ToolbarContext";
-import type { ISession } from "@workspaceui/api-client/src/api/types";
+import type { ISession, Tab } from "@workspaceui/api-client/src/api/types";
 
 const isBase64Image = (str: string): boolean => {
   try {
@@ -49,9 +50,17 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.COLUMN_FILTERS]: "toolbar-button-column-filters",
   [TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW]: "toolbar-button-toggle-tree-view",
   [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: "toolbar-button-attachment",
+  [TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV]: "toolbar-button-export-csv",
+  [TOOLBAR_BUTTONS_ACTIONS.SHARE_LINK]: "toolbar-button-share-link",
+  [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: "toolbar-button-copy-record",
+  [TOOLBAR_BUTTONS_ACTIONS.ADVANCED_FILTERS]: "toolbar-button-advanced-filters",
 } as const;
 
-export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
+export const DefaultIcon = () => (
+  <span className="icon-base64" style={{ fontSize: "1rem" }}>
+    ✣
+  </span>
+);
 
 export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }) => {
   if (!iconKey) return <DefaultIcon data-testid="DefaultIcon__5aeccd" />;
@@ -64,7 +73,11 @@ export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }
     return <Base64Icon src={`data:image/png;base64,${iconKey}`} data-testid="Base64Icon__5aeccd" />;
   }
 
-  return <span style={{ fontSize: "0.75rem", fontWeight: "bold" }}>{iconKey}</span>;
+  return (
+    <span className="icon-base64" style={{ fontSize: "0.75rem", fontWeight: "bold" }}>
+      {iconKey}
+    </span>
+  );
 };
 
 const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMetadata[] => {
@@ -124,22 +137,32 @@ export const createButtonByType = ({
   onAction,
   isFormView,
   hasFormChanges,
-  hasSelectedRecord,
   hasParentRecordSelected,
   isCopilotInstalled,
   saveButtonState,
   isImplicitFilterApplied,
+  showFilterTooltip,
+  showShareLinkTooltip,
+  t,
+  tab,
+  selectedRecordsLength,
+  isAdvancedFilterApplied,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
   isFormView: boolean;
   hasFormChanges: boolean;
-  hasSelectedRecord: boolean;
   hasParentRecordSelected: boolean;
   isCopilotInstalled?: boolean;
   saveButtonState?: SaveButtonState;
   isImplicitFilterApplied?: boolean;
-}): ToolbarButton => {
+  showFilterTooltip?: boolean;
+  showShareLinkTooltip?: boolean;
+  t?: TranslateFunction;
+  tab: Tab;
+  selectedRecordsLength: number;
+  isAdvancedFilterApplied?: boolean;
+}) => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
   const baseConfig: ToolbarButton = {
@@ -180,19 +203,24 @@ export const createButtonByType = ({
   });
 
   const getDisableConfig = (): Partial<ToolbarButton> => {
+    const hasSelectedRecord = selectedRecordsLength > 0;
     const actionHandlers = {
       [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: () => buildDisableConfig(!(isFormView || hasSelectedRecord)),
       [TOOLBAR_BUTTONS_ACTIONS.DELETE]: () => buildDisableConfig(!hasSelectedRecord),
       [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () => buildDisableConfig(!hasSelectedRecord || !isCopilotInstalled),
       [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: () => buildDisableConfig(!hasSelectedRecord),
       [TOOLBAR_BUTTONS_ACTIONS.NEW]: () => buildDisableConfig(!hasParentRecordSelected),
-      [TOOLBAR_BUTTONS_ACTIONS.REFRESH]: () => buildDisableConfig(!hasParentRecordSelected),
       [TOOLBAR_BUTTONS_ACTIONS.SAVE]: () => {
         const baseDisabled = !isFormView || !hasFormChanges || !hasParentRecordSelected;
         const additionalDisabled = saveButtonState
           ? saveButtonState.isCalloutLoading || saveButtonState.isSaving
           : false;
         return buildDisableConfig(baseDisabled || additionalDisabled);
+      },
+      [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: () => {
+        const isCloneEnabled = tab?.obuiappShowCloneButton;
+        const isSingleSelection = hasSelectedRecord;
+        return buildDisableConfig(!isCloneEnabled || !isSingleSelection);
       },
     };
 
@@ -233,16 +261,31 @@ export const createButtonByType = ({
     if (button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER && isImplicitFilterApplied) {
       return { isPressed: true };
     }
+    if (button.action === TOOLBAR_BUTTONS_ACTIONS.ADVANCED_FILTERS && isAdvancedFilterApplied) {
+      return { isPressed: true };
+    }
     return {};
   };
 
-  return {
+  const finalConfig = {
     ...baseConfig,
     ...getIconTextConfig(),
     ...getDisableConfig(),
     ...getClickConfig(),
     ...getPressedConfig(),
   };
+
+  if (button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER && showFilterTooltip) {
+    finalConfig.tooltip = t ? t("table.tooltips.filterActive") : "(Filtro activado)";
+    finalConfig.forceTooltipOpen = true;
+  }
+
+  if (button.action === TOOLBAR_BUTTONS_ACTIONS.SHARE_LINK && showShareLinkTooltip) {
+    finalConfig.tooltip = t ? t("table.tooltips.copy") : "Copy!";
+    finalConfig.forceTooltipOpen = true;
+  }
+
+  return finalConfig;
 };
 
 export const getButtonStyles = (button: ToolbarButtonMetadata) => {
@@ -255,12 +298,17 @@ export const getButtonStyles = (button: ToolbarButtonMetadata) => {
 interface ButtonConfig {
   isFormView: boolean;
   hasFormChanges: boolean;
-  hasSelectedRecord: boolean;
   hasParentRecordSelected: boolean;
   saveButtonState?: SaveButtonState;
   isCopilotInstalled?: boolean;
   session?: ISession;
   isImplicitFilterApplied?: boolean;
+  showFilterTooltip?: boolean;
+  showShareLinkTooltip?: boolean;
+  t?: TranslateFunction;
+  tab: Tab;
+  selectedRecordsLength: number;
+  isAdvancedFilterApplied?: boolean;
 }
 
 /**
@@ -277,11 +325,16 @@ const createSectionButtons = (
       onAction,
       isFormView: config.isFormView,
       hasFormChanges: config.hasFormChanges,
-      hasSelectedRecord: config.hasSelectedRecord,
       hasParentRecordSelected: config.hasParentRecordSelected,
       saveButtonState: config.saveButtonState,
       isCopilotInstalled: config.isCopilotInstalled,
       isImplicitFilterApplied: config.isImplicitFilterApplied,
+      showFilterTooltip: config.showFilterTooltip,
+      showShareLinkTooltip: config.showShareLinkTooltip,
+      t: config.t,
+      tab: config.tab,
+      selectedRecordsLength: config.selectedRecordsLength,
+      isAdvancedFilterApplied: config.isAdvancedFilterApplied,
     });
 
     // Apply button-specific styles if available
@@ -291,7 +344,7 @@ const createSectionButtons = (
     }
 
     // Add badge for ATTACHMENT button only when a record is selected
-    if (button.action === TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT && config.session && config.hasSelectedRecord) {
+    if (button.action === TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT && config.session && config.selectedRecordsLength > 0) {
       const attachmentCount = config.session._attachmentCount;
       if (attachmentCount && Number.parseInt(String(attachmentCount)) > 0) {
         toolbarButton.badgeContent = String(attachmentCount);
@@ -317,12 +370,17 @@ interface ToolbarSectionsConfig {
   isFormView: boolean;
   isTreeNodeView?: boolean;
   hasFormChanges?: boolean;
-  hasSelectedRecord?: boolean;
   hasParentRecordSelected?: boolean;
   isCopilotInstalled?: boolean;
   saveButtonState?: SaveButtonState;
   session?: ISession;
   isImplicitFilterApplied?: boolean;
+  showFilterTooltip?: boolean;
+  showShareLinkTooltip?: boolean;
+  t?: TranslateFunction;
+  tab: Tab;
+  selectedRecordsLength: number;
+  isAdvancedFilterApplied?: boolean;
 }
 
 export const getToolbarSections = ({
@@ -331,12 +389,18 @@ export const getToolbarSections = ({
   isFormView,
   isTreeNodeView,
   hasFormChanges = false,
-  hasSelectedRecord = false,
   hasParentRecordSelected = false,
   isCopilotInstalled = false,
   saveButtonState,
   session = {},
   isImplicitFilterApplied = false,
+  showFilterTooltip = false,
+  showShareLinkTooltip = false,
+  t,
+  tab,
+  selectedRecordsLength,
+
+  isAdvancedFilterApplied = false,
 }: ToolbarSectionsConfig): {
   leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
@@ -348,12 +412,17 @@ export const getToolbarSections = ({
   const buttonConfig: ButtonConfig = {
     isFormView,
     hasFormChanges,
-    hasSelectedRecord,
     hasParentRecordSelected,
     saveButtonState,
     isCopilotInstalled,
     session,
     isImplicitFilterApplied,
+    showFilterTooltip,
+    showShareLinkTooltip,
+    tab,
+    selectedRecordsLength,
+    t,
+    isAdvancedFilterApplied,
   };
 
   return {

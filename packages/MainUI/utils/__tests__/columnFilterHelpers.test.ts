@@ -127,7 +127,7 @@ describe("columnFilterHelpers", () => {
   });
 
   describe("loadTableDirFilterOptions", () => {
-    it("should load TABLEDIR options with datasourceId (uses distinct values path)", async () => {
+    it("should load TABLEDIR options with datasourceId (uses distinct values approach)", async () => {
       const mockColumn = createTableDirColumn({
         id: "organization",
         columnName: "organization",
@@ -145,6 +145,7 @@ describe("columnFilterHelpers", () => {
       });
 
       expect(result).toEqual(mockData);
+      // When column has datasourceId, needsDistinctValues returns true, uses entityName and columnName
       expect(mockFetchFilterOptions).toHaveBeenCalledWith(
         "SalesOrder",
         undefined,
@@ -157,7 +158,7 @@ describe("columnFilterHelpers", () => {
       expect(mockSetFilterOptions).toHaveBeenCalledWith("organization", mockData, false, false);
     });
 
-    it("should load TABLEDIR options with referencedEntity (uses selector path)", async () => {
+    it("should load TABLEDIR options with referencedEntity (uses distinct values approach)", async () => {
       const mockColumn = createTableDirColumn({
         id: "businessPartner",
         columnName: "businessPartner",
@@ -178,6 +179,7 @@ describe("columnFilterHelpers", () => {
       });
 
       expect(result).toEqual(mockData);
+      // When column has referencedEntity, needsDistinctValues returns true, uses entityName and columnName
       expect(mockFetchFilterOptions).toHaveBeenCalledWith(
         "SalesOrder",
         undefined,
@@ -204,6 +206,7 @@ describe("columnFilterHelpers", () => {
         pageSize: 10,
       });
 
+      // Column has datasourceId, so uses distinct values approach
       expect(mockFetchFilterOptions).toHaveBeenCalledWith(
         "SalesOrder",
         undefined,

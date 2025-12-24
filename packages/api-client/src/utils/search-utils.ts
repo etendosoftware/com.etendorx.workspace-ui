@@ -308,6 +308,10 @@ export class LegacyColumnFilterUtils {
     return false;
   }
 
+  static isBooleanField(column: Column): boolean {
+    return column.type === "boolean" || column.column?._identifier === "YesNo" || column.column?.reference === "20";
+  }
+
   static formatValueForType(value: unknown, column: Column): FormattedValue {
     if (value === null || value === undefined || value === "") {
       return null;
@@ -319,6 +323,30 @@ export class LegacyColumnFilterUtils {
         return numValue;
       }
       return null;
+    }
+
+    if (LegacyColumnFilterUtils.isBooleanField(column)) {
+      const strValue = String(value).toLowerCase().trim();
+      if (strValue === "true" || strValue === "yes" || strValue === "si" || strValue === "sí") {
+        return "true";
+      }
+      if (strValue === "false" || strValue === "no") {
+        return "false";
+      }
+      // If it's not a clear boolean value, return as is (might be a partial search?)
+      // But for boolean fields, we usually want exact match or nothing.
+      // Let's return the string so it can be used in "equals" if needed,
+      // but typically boolean filters are strict.
+      return String(value);
+    }
+
+    if (ColumnFilterUtils.isSelectColumn(column)) {
+      const options = ColumnFilterUtils.getSelectOptions(column);
+      const strValue = String(value).toLowerCase().trim();
+      const matchingOption = options.find((opt) => opt.label.toLowerCase() === strValue);
+      if (matchingOption) {
+        return matchingOption.value;
+      }
     }
 
     return String(value);
@@ -464,24 +492,51 @@ export class LegacyColumnFilterUtils {
   private static handleArrayFilter(fieldName: string, values: unknown[], column: Column): BaseCriteria[] {
     if (values.length === 0) return [];
 
+    // Extract actual values from FilterOption objects if present
+    // This supports both new format (FilterOption[]) and legacy format (string[])
+    let isTextSearch = false;
+    const actualValues = values.map((val) => {
+      // If it's a FilterOption object with a value property, extract it
+      if (typeof val === "object" && val !== null && "value" in val) {
+        if ((val as any).isTextSearch) isTextSearch = true;
+        return (val as { value: unknown }).value;
+      }
+      // Otherwise use the value as-is (backward compatibility with string[])
+      return val;
+    });
+
     // For TABLEDIR columns, use the $_identifier field and iEquals operator (like Etendo Classic)
     const actualFieldName = ColumnFilterUtils.isTableDirColumn(column) ? `${fieldName}$_identifier` : fieldName;
 
-    const operator = ColumnFilterUtils.isTableDirColumn(column) ? "iEquals" : "equals";
+    if (isTextSearch && actualValues.length === 1) {
+      const parsed = LegacyColumnFilterUtils.parseLogicalFilter(actualFieldName, String(actualValues[0]), column);
+      if (parsed) {
+        return [parsed as BaseCriteria];
+      }
+    }
 
-    if (values.length === 1) {
+    let operator: "iContains" | "iEquals" | "equals";
+    if (isTextSearch) {
+      operator = "iContains";
+    } else if (ColumnFilterUtils.isTableDirColumn(column)) {
+      operator = "iEquals";
+    } else {
+      operator = "equals";
+    }
+
+    if (actualValues.length === 1) {
       // Single value - direct criteria (no OR wrapper)
       return [
         {
           fieldName: actualFieldName,
           operator,
-          value: String(values[0]),
+          value: String(actualValues[0]),
         },
       ];
     }
 
     // Multiple values - OR criteria
-    const orCriteria = values.map((value) => ({
+    const orCriteria = actualValues.map((value) => ({
       fieldName: actualFieldName,
       operator,
       value: String(value),
@@ -600,6 +655,168 @@ export class LegacyColumnFilterUtils {
     return datePatterns.some((pattern) => pattern.test(value));
   }
 
+  /**
+   * Parses a filter value string into a Criteria object, supporting logical operators:
+   * - OR: '|' or ' or '
+   * - AND: '&' or ' and '
+   * - NOT: '!' (prefix)
+   */
+  private static parseLogicalFilter(
+    fieldName: string,
+    value: string,
+    column: Column
+  ): BaseCriteria | CompositeCriteria | null {
+    const trimmedValue = value.trim();
+    if (!trimmedValue) return null;
+
+    // Try each handler in order
+    const orResult = LegacyColumnFilterUtils.handleOrCondition(fieldName, trimmedValue, column);
+    if (orResult) return orResult;
+
+    const andResult = LegacyColumnFilterUtils.handleAndCondition(fieldName, trimmedValue, column);
+    if (andResult) return andResult;
+
+    const notResult = LegacyColumnFilterUtils.handleNotCondition(fieldName, trimmedValue, column);
+    if (notResult) return notResult;
+
+    const comparisonResult = LegacyColumnFilterUtils.handleComparisonOperators(fieldName, trimmedValue, column);
+    if (comparisonResult) return comparisonResult;
+
+    // Fallback to standard single value filter
+    const result = LegacyColumnFilterUtils.handleSingleValueFilter(fieldName, trimmedValue, column);
+    const finalResult = result.length > 0 ? result[0] : null;
+    return finalResult;
+  }
+
+  private static handleOrCondition(fieldName: string, trimmedValue: string, column: Column): CompositeCriteria | null {
+    // Prevent ReDoS by limiting length
+    if (trimmedValue.length > 2000) return null;
+
+    // Normalize whitespace to single spaces to avoid catastrophic backtracking in regex
+    const normalizedValue = trimmedValue.replace(/\s+/g, " ");
+
+    // Split by '|' or ' or ' (case insensitive)
+    // Since whitespace is normalized, we can use a simple space check
+    const orParts = normalizedValue.split(/\|| or /i);
+
+    if (orParts.length <= 1) return null;
+
+    const criteriaList: BaseCriteria[] = [];
+    for (const part of orParts) {
+      const parsed = LegacyColumnFilterUtils.parseLogicalFilter(fieldName, part, column);
+      if (parsed) {
+        criteriaList.push(parsed as unknown as BaseCriteria);
+      }
+    }
+
+    return criteriaList.length > 0
+      ? {
+          operator: "or",
+          criteria: criteriaList,
+        }
+      : null;
+  }
+
+  private static handleAndCondition(fieldName: string, trimmedValue: string, column: Column): CompositeCriteria | null {
+    // Prevent ReDoS by limiting length
+    if (trimmedValue.length > 2000) return null;
+
+    // Normalize whitespace to single spaces to avoid catastrophic backtracking in regex
+    const normalizedValue = trimmedValue.replace(/\s+/g, " ");
+
+    // Split by '&' or ' and ' (case insensitive)
+    // Since whitespace is normalized, we can use a simple space check
+    const andParts = normalizedValue.split(/&| and /i);
+
+    if (andParts.length <= 1) return null;
+
+    const criteriaList: BaseCriteria[] = [];
+    for (const part of andParts) {
+      const parsed = LegacyColumnFilterUtils.parseLogicalFilter(fieldName, part, column);
+      if (parsed) {
+        criteriaList.push(parsed as unknown as BaseCriteria);
+      }
+    }
+
+    return criteriaList.length > 0
+      ? {
+          operator: "and",
+          criteria: criteriaList,
+        }
+      : null;
+  }
+
+  private static handleNotCondition(fieldName: string, trimmedValue: string, column: Column): BaseCriteria | null {
+    if (!trimmedValue.startsWith("!")) return null;
+
+    const innerValue = trimmedValue.substring(1).trim();
+    const simpleCriteria = LegacyColumnFilterUtils.handleSingleValueFilter(fieldName, innerValue, column);
+
+    if (simpleCriteria.length === 0) return null;
+
+    const base = simpleCriteria[0];
+
+    return {
+      ...base,
+      operator: LegacyColumnFilterUtils.invertOperator(base.operator),
+    };
+  }
+
+  private static invertOperator(operator: string): string {
+    const operatorMap: Record<string, string> = {
+      equals: "notEquals",
+      iContains: "notContains",
+      contains: "notContains",
+      greaterThan: "lessOrEqual",
+      lessThan: "greaterOrEqual",
+      greaterOrEqual: "lessThan",
+      lessOrEqual: "greaterThan",
+    };
+    return operatorMap[operator] || "notEquals";
+  }
+
+  private static handleComparisonOperators(
+    fieldName: string,
+    trimmedValue: string,
+    column: Column
+  ): BaseCriteria | null {
+    const comparisonOperators = [
+      { prefix: ">=", operator: "greaterOrEqual" },
+      { prefix: "<=", operator: "lessOrEqual" },
+      { prefix: ">", operator: "greaterThan" },
+      { prefix: "<", operator: "lessThan" },
+      { prefix: "==", operator: "equals" },
+      { prefix: "=", operator: "equals" },
+    ];
+
+    for (const op of comparisonOperators) {
+      if (trimmedValue.startsWith(op.prefix)) {
+        const val = trimmedValue.substring(op.prefix.length).trim();
+        const finalValue = LegacyColumnFilterUtils.formatAndConvertValue(val, fieldName, column);
+
+        if (finalValue !== null) {
+          return {
+            fieldName,
+            operator: op.operator,
+            value: finalValue,
+          };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  private static formatAndConvertValue(value: string, fieldName: string, column: Column): FormattedValue {
+    let formattedValue = LegacyColumnFilterUtils.formatValueForType(value, column);
+
+    if (formattedValue !== null && LegacyColumnFilterUtils.isDateField(fieldName, column)) {
+      formattedValue = LegacyColumnFilterUtils.convertDateFormatForBackend(String(formattedValue));
+    }
+
+    return formattedValue;
+  }
+
   static createColumnFilterCriteria(columnFilters: MRT_ColumnFiltersState, columns: Column[]): BaseCriteria[] {
     if (!columnFilters.length) return [];
 
@@ -607,43 +824,46 @@ export class LegacyColumnFilterUtils {
 
     for (const filter of columnFilters) {
       const column = columns.find((col) => col.id === filter.id || col.columnName === filter.id);
+      if (!column) continue;
 
-      if (!column) {
-        continue;
-      }
-
-      // Use filterFieldName if available (for WindowReferenceGrid), otherwise use columnName
       const fieldName = (column as any).filterFieldName || column.columnName;
-      if (filter.value === undefined || filter.value === null) {
-        continue;
-      }
+      if (filter.value === undefined || filter.value === null) continue;
 
-      let filterCriteria: BaseCriteria[] = [];
-
-      // Check if it's already a range object
-      if (typeof filter.value === "object" && filter.value !== null && "from" in filter.value && "to" in filter.value) {
-        filterCriteria = LegacyColumnFilterUtils.handleRangeFilter(
-          fieldName,
-          filter.value as { from: FormattedValue; to: FormattedValue },
-          column
-        );
-      } else if (Array.isArray(filter.value)) {
-        // Handle dropdown filters (our new implementation)
-        filterCriteria = LegacyColumnFilterUtils.handleArrayFilter(fieldName, filter.value, column);
-      } else {
-        // Check if it's a date range string (e.g., "2025-11-01 - 2025-11-19" or "2025-11-01 - " for desde only)
-        const dateRange = LegacyColumnFilterUtils.parseDateRangeIfExists(filter.value, column);
-
-        if (dateRange) {
-          filterCriteria = LegacyColumnFilterUtils.handleRangeFilter(fieldName, dateRange, column);
-        } else {
-          filterCriteria = LegacyColumnFilterUtils.handleSingleValueFilter(fieldName, filter.value, column);
-        }
-      }
-
+      const filterCriteria = LegacyColumnFilterUtils.processFilterValue(fieldName, filter.value, column);
       allCriteria.push(...filterCriteria);
     }
 
     return allCriteria;
+  }
+
+  private static processFilterValue(fieldName: string, value: unknown, column: Column): BaseCriteria[] {
+    if (LegacyColumnFilterUtils.isRangeObject(value)) {
+      return LegacyColumnFilterUtils.handleRangeFilter(
+        fieldName,
+        value as { from: FormattedValue; to: FormattedValue },
+        column
+      );
+    }
+
+    if (Array.isArray(value)) {
+      return LegacyColumnFilterUtils.handleArrayFilter(fieldName, value, column);
+    }
+
+    return LegacyColumnFilterUtils.processStringValue(fieldName, value, column);
+  }
+
+  private static isRangeObject(value: unknown): boolean {
+    return typeof value === "object" && value !== null && "from" in value && "to" in value;
+  }
+
+  private static processStringValue(fieldName: string, value: unknown, column: Column): BaseCriteria[] {
+    const dateRange = LegacyColumnFilterUtils.parseDateRangeIfExists(value, column);
+
+    if (dateRange) {
+      return LegacyColumnFilterUtils.handleRangeFilter(fieldName, dateRange, column);
+    }
+
+    const parsed = LegacyColumnFilterUtils.parseLogicalFilter(fieldName, String(value), column);
+    return parsed ? [parsed as BaseCriteria] : [];
   }
 }

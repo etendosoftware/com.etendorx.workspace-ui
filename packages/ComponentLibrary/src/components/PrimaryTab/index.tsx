@@ -81,7 +81,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
             value={tab.id}
             icon={
               showIcon
-                ? React.cloneElement(tab.icon as React.ReactElement, {
+                ? React.cloneElement(tab.icon as React.ReactElement<{ style?: React.CSSProperties }>, {
                     style: {
                       fill: isSelected ? tab.fill : isHovered ? tab.hoverFill : tab.fill,
                       transition: "fill 0.3s",
@@ -132,7 +132,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
               })}>
               <Box sx={sx.iconBox}>
                 {tab.icon &&
-                  React.cloneElement(tab.icon as React.ReactElement, {
+                  React.cloneElement(tab.icon as React.ReactElement<{ style?: React.CSSProperties }>, {
                     style: { fill: tab.fill, flexShrink: 0 },
                   })}
                 <Tooltip title={tab.label}>

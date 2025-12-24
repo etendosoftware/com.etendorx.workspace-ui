@@ -47,6 +47,8 @@ export const compileExpression = (expression: string) => {
 };
 
 const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; formMode?: FormMode }) => {
+  // Field type mapping corrected - reference "10" now properly maps to TEXT
+
   const formMethods = useFormContext();
   const { watch, getValues, setValue, register, formState } = formMethods;
   const { isFormInitializing, isSettingInitialValues, setIsSettingInitialValues } = useFormInitializationContext();
@@ -237,9 +239,13 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     isSettingInitialValues,
     formMode,
     formState.dirtyFields,
+    ready,
   ]);
 
   const runCallout = useCallback(async () => {
+    // Prevent callout execution if component is not ready or data is still loading
+    if (!ready.current) return;
+
     if (isDebugCallouts()) {
       logger.debug(`[Callout] Attempting to run callout for field: ${field.hqlName}`, {
         hasCallout: !!field.column.callout,
@@ -252,6 +258,18 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         isCalloutRunning: globalCalloutManager.isCalloutRunning(),
         isSuppressed: globalCalloutManager.isSuppressed(),
       });
+    }
+
+    if (isFormInitializing || isSettingInitialValues) {
+      if (isDebugCallouts()) {
+        logger.debug(`[Callout] Skipped & Synced (Init): ${field.hqlName}`, {
+          value,
+          isFormInitializing,
+          isSettingInitialValues,
+        });
+      }
+      previousValue.current = value;
+      return;
     }
 
     if (!shouldExecuteCallout()) return;

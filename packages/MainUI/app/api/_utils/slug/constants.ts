@@ -12,3 +12,8 @@ export const SLUGS_METHODS = {
   UPDATE: "update",
   DELETE: "delete",
 };
+
+export const URL_MUTATION = {
+  COMPUTE_WINDOW: "ComputeWindowActionHandler",
+  CLONE_RECORDS: "CloneRecords",
+};

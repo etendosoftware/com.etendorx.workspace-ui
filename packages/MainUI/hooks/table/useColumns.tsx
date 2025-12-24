@@ -1,6 +1,17 @@
 /*
  *************************************************************************
- * useColumns.ts
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
  *************************************************************************
  */
 
@@ -23,6 +34,7 @@ import { useTranslation } from "../useTranslation";
 import { transformColumnWithCustomJs } from "@/utils/customJsColumnTransformer";
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { dateTimeSortingFn, dateSortingFn } from "@/utils/table/sortingFunctions";
+import { getTextFilterValue, getAvailableOptions, reconstructFilterState } from "@/utils/table/filters/utils";
 
 interface UseColumnsOptions {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
@@ -40,25 +52,39 @@ const BOOLEAN_COLUMNS = ["isOfficialHoliday", "isActive", "isPaid", "stocked", "
 const AUDIT_DATE_COLUMNS_WITH_TIME = ["creationDate", "updated"];
 
 /**
- * Gets the current filter value for a column from tableColumnFilters
- * Searches by both column.id and column.columnName for consistency
- */
-const getCurrentFilterValue = (
-  column: Column,
-  tableColumnFilters?: Array<{ id: string; value: unknown }>
-): string | undefined => {
-  const currentFilter = tableColumnFilters?.find((f) => f.id === column.id || f.id === column.columnName);
-  return currentFilter ? String(currentFilter.value) : undefined;
-};
-
-/**
  * Helper to check if column should use date formatting
+ * Checks multiple indicators to ensure date columns are properly detected
  */
 const shouldFormatDateColumn = (column: Column): boolean => {
-  return (
+  // Check column.column.reference (primary check)
+  if (
     column.column?.reference === FIELD_REFERENCE_CODES.DATE ||
-    column.column?.reference === FIELD_REFERENCE_CODES.DATETIME
-  );
+    column.column?.reference === FIELD_REFERENCE_CODES.DATETIME ||
+    column.column?.reference === FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME
+  ) {
+    return true;
+  }
+
+  // Check column.type (FieldType)
+  if (column.type === "date" || column.type === "datetime") {
+    return true;
+  }
+
+  // Check reference identifier
+  if (
+    column.column?.reference$_identifier === "Date" ||
+    column.column?.reference$_identifier === "DateTime" ||
+    column.column?.reference$_identifier === "Absolute DateTime"
+  ) {
+    return true;
+  }
+
+  // Check display type
+  if (column.displayType === "date" || column.displayType === "datetime") {
+    return true;
+  }
+
+  return false;
 };
 
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
@@ -121,8 +147,17 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         const isAuditField = AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName);
         columnConfig = {
           ...columnConfig,
-          Cell: ({ cell }: { cell: MRT_Cell<EntityData, unknown> }) => {
-            const value = cell?.getValue();
+          Cell: ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: { original: EntityData } }) => {
+            // Try to get value from cell first, then fallback to row data
+            let value = cell?.getValue();
+
+            // If cell.getValue() returns undefined, try getting from row.original directly
+            if (value === undefined || value === null) {
+              const rowData = row.original;
+              // Try both hqlName and name to find the value
+              value = rowData[column.columnName] ?? rowData[column.name];
+            }
+
             // Only format if the value is a string with valid date format
             // This prevents formatting non-date values that are incorrectly marked as date type
             if (typeof value === "string" && value) {
@@ -141,8 +176,9 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
       // Reference columns with navigation
       if (isReference) {
-        const windowId = column.referencedWindowId;
-        const windowIdentifier = column._identifier;
+        const windowId = column.referencedWindowId || "";
+        const columnTitle = column.name;
+        const referencedTabId = column.referencedTabId || "";
         columnConfig = {
           ...columnConfig,
           Cell: ({ row, cell }: { row: { original: EntityData }; cell: MRT_Cell<EntityData, unknown> }) => {
@@ -157,14 +193,31 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                       recordData?.[column.columnName as keyof EntityData] ||
                       ""
                   );
+
             return (
               <button
                 type="button"
                 tabIndex={0}
                 aria-label="Navigate to referenced window"
                 className="bg-transparent border-none p-0 text-(--color-dynamic-main) hover:underline text-left"
-                onClick={(e) => handleClickRedirect(e, windowId, windowIdentifier, String(selectedRecordId ?? ""))}
-                onKeyDown={(e) => handleKeyDownRedirect(e, windowId, windowIdentifier, String(selectedRecordId ?? ""))}>
+                onClick={(e) => {
+                  handleClickRedirect({
+                    e,
+                    windowId,
+                    windowTitle: columnTitle,
+                    referencedTabId,
+                    selectedRecordId: String(selectedRecordId ?? ""),
+                  });
+                }}
+                onKeyDown={(e) =>
+                  handleKeyDownRedirect({
+                    e,
+                    windowId,
+                    windowTitle: columnTitle,
+                    referencedTabId,
+                    selectedRecordId: String(selectedRecordId ?? ""),
+                  })
+                }>
                 {displayValue}
               </button>
             );
@@ -177,26 +230,45 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         columnConfig = {
           ...columnConfig,
           enableColumnFilter: true,
-          Filter: () => (
-            <ColumnFilter
-              column={column}
-              filterState={filterState}
-              onFilterChange={(selectedOptions: FilterOption[]) => onColumnFilter(column.id, selectedOptions)}
-              onLoadOptions={(searchQuery?: string) => onLoadFilterOptions(column.id, searchQuery)}
-              onLoadMoreOptions={
-                onLoadMoreFilterOptions
-                  ? (searchQuery?: string) => onLoadMoreFilterOptions(column.id, searchQuery)
-                  : undefined
-              }
-              data-testid="ColumnFilter__46c09c"
-            />
-          ),
+          Filter: () => {
+            const effectiveFilterState = useMemo(() => {
+              // Get current persisted filter
+              const currentFilter = tableColumnFilters?.find((f) => f.id === column.id || f.id === column.columnName);
+
+              // Boolean options for boolean columns
+              const booleanOptions: FilterOption[] = [
+                { id: "true", label: t("common.trueText"), value: "true" },
+                { id: "false", label: t("common.falseText"), value: "false" },
+              ];
+
+              // Get available options based on column type
+              const availableOptions = getAvailableOptions(column, isBooleanColumn, filterState, booleanOptions);
+
+              // Reconstruct complete filter state from persisted data
+              return reconstructFilterState(column, currentFilter, availableOptions, filterState);
+            }, [tableColumnFilters, column, isBooleanColumn, filterState, t]);
+
+            return (
+              <ColumnFilter
+                column={column}
+                filterState={effectiveFilterState}
+                onFilterChange={(selectedOptions: FilterOption[]) => onColumnFilter(column.id, selectedOptions)}
+                onLoadOptions={(searchQuery?: string) => onLoadFilterOptions(column.id, searchQuery)}
+                onLoadMoreOptions={
+                  onLoadMoreFilterOptions
+                    ? (searchQuery?: string) => onLoadMoreFilterOptions(column.id, searchQuery)
+                    : undefined
+                }
+                data-testid="ColumnFilter__46c09c"
+              />
+            );
+          },
         };
       }
 
       // Enable DateSelector for date columns
       if (isDateColumn && !supportsDropdownFilter) {
-        const currentFilterValue = getCurrentFilterValue(column, tableColumnFilters);
+        const currentFilterValue = getTextFilterValue(column, tableColumnFilters);
 
         columnConfig = {
           ...columnConfig,
@@ -218,7 +290,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
       // Enable default text filtering for columns without specialized filters
       if (!supportsDropdownFilter && !isDateColumn && onDateTextFilterChange) {
-        const currentFilterValue = getCurrentFilterValue(column, tableColumnFilters);
+        const currentFilterValue = getTextFilterValue(column, tableColumnFilters);
 
         columnConfig = {
           ...columnConfig,

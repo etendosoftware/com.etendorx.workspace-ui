@@ -21,6 +21,7 @@ import { createContext, useContext, useState, useCallback, useMemo, useEffect } 
 import { globalCalloutManager } from "@/services/callouts";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { useTabContext } from "@/contexts/tab";
+import { logger } from "@/utils/logger";
 
 /**
  * Save button state management interface
@@ -72,11 +73,21 @@ type ToolbarActions = {
   treeView: () => void;
 
   /**
+   * Export the current data to CSV format.
+   * Exports selected records or all visible records depending on context.
+   */
+  exportCSV: () => Promise<void>;
+
+  /**
    * Open or toggle column filters for table views.
    * @param buttonRef - Optional reference to the button element that triggered the action,
    *                   used for positioning dropdown/popover filters
    */
   columnFilters: (buttonRef?: HTMLElement | null) => void;
+  /**
+   * Open the Advanced Filters modal.
+   */
+  advancedFilters: (anchorEl?: HTMLElement) => void;
 };
 
 type ToolbarContextType = {
@@ -85,7 +96,9 @@ type ToolbarContextType = {
   onNew: () => void;
   onBack: () => void;
   onFilter: () => void;
+  onExportCSV: () => Promise<void>;
   onToggleTreeView: () => void;
+  onAdvancedFilters: (anchorEl?: HTMLElement) => void;
   onColumnFilters: (buttonRef?: HTMLElement | null) => void;
   registerActions: (actions: Partial<ToolbarActions>) => void;
   saveButtonState: SaveButtonState;
@@ -93,11 +106,13 @@ type ToolbarContextType = {
   formViewRefetch?: () => Promise<void>;
   registerFormViewRefetch?: (refetch: () => Promise<void>) => void;
   attachmentAction?: () => void;
-  registerAttachmentAction?: (action: () => void) => void;
+  registerAttachmentAction?: (action: (() => void) | undefined) => void;
   shouldOpenAttachmentModal: boolean;
   setShouldOpenAttachmentModal: (open: boolean) => void;
   isImplicitFilterApplied: boolean;
   setIsImplicitFilterApplied: React.Dispatch<React.SetStateAction<boolean>>;
+  isAdvancedFilterApplied: boolean;
+  setIsAdvancedFilterApplied: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 const initialState: ToolbarActions = {
@@ -108,6 +123,8 @@ const initialState: ToolbarActions = {
   filter: () => {},
   columnFilters: () => {},
   treeView: () => {},
+  exportCSV: async () => {},
+  advancedFilters: () => {},
 };
 
 const ToolbarContext = createContext<ToolbarContextType>({
@@ -116,7 +133,9 @@ const ToolbarContext = createContext<ToolbarContextType>({
   onNew: () => {},
   onBack: () => {},
   onFilter: () => {},
+  onExportCSV: async () => {},
   onToggleTreeView: () => {},
+  onAdvancedFilters: () => {},
   onColumnFilters: () => {},
   registerActions: () => {},
   saveButtonState: {
@@ -130,6 +149,8 @@ const ToolbarContext = createContext<ToolbarContextType>({
   setShouldOpenAttachmentModal: () => {},
   isImplicitFilterApplied: false,
   setIsImplicitFilterApplied: () => {},
+  isAdvancedFilterApplied: false,
+  setIsAdvancedFilterApplied: () => {},
 } as ToolbarContextType);
 
 export const useToolbarContext = () => useContext(ToolbarContext);
@@ -138,7 +159,9 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
   const [formViewRefetch, setFormViewRefetch] = useState<(() => Promise<void>) | undefined>();
   const [attachmentAction, setAttachmentAction] = useState<(() => void) | undefined>();
   const [shouldOpenAttachmentModal, setShouldOpenAttachmentModal] = useState(false);
+
   const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState(false);
+  const [isAdvancedFilterApplied, setIsAdvancedFilterApplied] = useState(false);
   const [saveButtonState, setSaveButtonState] = useState<SaveButtonState>({
     isCalloutLoading: false,
     hasValidationErrors: false,
@@ -150,8 +173,14 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
     setFormViewRefetch(() => refetch);
   }, []);
 
-  const registerAttachmentAction = useCallback((action: () => void) => {
-    setAttachmentAction(() => action);
+  const registerAttachmentAction = useCallback((action: (() => void) | undefined) => {
+    if (action) {
+      logger.info("[ToolbarContext] Registering attachment action");
+      setAttachmentAction(() => action);
+    } else {
+      logger.info("[ToolbarContext] Clearing attachment action");
+      setAttachmentAction(undefined);
+    }
   }, []);
 
   const [
@@ -162,7 +191,9 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       save: originalOnSave, // Original save function from registered actions
       back: onBack,
       filter: onFilter,
+      exportCSV: onExportCSV,
       columnFilters: onColumnFilters,
+      advancedFilters: onAdvancedFilters,
     },
     setActions,
   ] = useState<ToolbarActions>(initialState);
@@ -171,7 +202,6 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
   const { tab } = useTabContext();
   const { triggerParentRefreshes } = useTabRefreshContext();
 
-  // Wrapped onSave that includes parent refresh logic
   const wrappedOnSave = useCallback(
     async (showModal: boolean) => {
       // Execute original save operation first
@@ -223,8 +253,10 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       onNew,
       onBack,
       onFilter,
+      onExportCSV,
       onColumnFilters,
       onToggleTreeView,
+      onAdvancedFilters,
       registerActions,
       saveButtonState,
       setSaveButtonState,
@@ -236,6 +268,8 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       setShouldOpenAttachmentModal,
       isImplicitFilterApplied,
       setIsImplicitFilterApplied,
+      isAdvancedFilterApplied,
+      setIsAdvancedFilterApplied,
     }),
     [
       wrappedOnSave,
@@ -243,8 +277,10 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       onNew,
       onBack,
       onFilter,
+      onExportCSV,
       onColumnFilters,
       onToggleTreeView,
+      onAdvancedFilters,
       registerActions,
       saveButtonState,
       formViewRefetch,
@@ -253,6 +289,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       registerAttachmentAction,
       shouldOpenAttachmentModal,
       isImplicitFilterApplied,
+      isAdvancedFilterApplied,
     ]
   );
 

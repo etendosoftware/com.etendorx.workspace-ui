@@ -21,7 +21,9 @@ import IconButton from "../IconButton";
 import ChevronDownIcon from "../../assets/icons/chevron-down.svg";
 import ChevronUpIcon from "../../assets/icons/chevron-up.svg";
 import ChevronRightIcon from "../../assets/icons/chevron-right.svg";
-import type { Organization } from "@workspaceui/storybook/src/stories/Components/Table/types";
+// type Organization = any;
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+type Organization = any;
 
 interface CustomExpandButtonProps {
   row: MRT_Row<Organization>;

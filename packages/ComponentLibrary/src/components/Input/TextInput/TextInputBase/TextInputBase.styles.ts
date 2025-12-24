@@ -31,9 +31,6 @@ export const useStyle = () => {
     () =>
       ({
         styles: {
-          inputAdornment: {
-            paddingY: "4px",
-          },
           inputStyle: {
             padding: "0.25rem 0",
             fontSize: "14px",
@@ -44,6 +41,9 @@ export const useStyle = () => {
         } as { [key: string]: React.CSSProperties },
 
         sx: {
+          inputAdornment: {
+            paddingY: "4px",
+          },
           inputBase: {
             "& .MuiInput-underline:before": {
               borderBottomWidth: "1px",

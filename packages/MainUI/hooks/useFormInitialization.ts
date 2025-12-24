@@ -24,7 +24,7 @@ import {
   type Tab,
   type Field,
 } from "@workspaceui/api-client/src/api/types";
-import { useCallback, useMemo, useReducer, useEffect } from "react";
+import { useCallback, useMemo, useReducer, useEffect, useRef } from "react";
 import { FieldName } from "./types";
 import useFormParent from "./useFormParent";
 import { useUserContext } from "./useUserContext";
@@ -97,20 +97,22 @@ export type useFormInitialization = State & {
 export function useFormInitialization({ tab, mode, recordId }: FormInitializationParams): useFormInitialization {
   const { setSession, setSessionSyncLoading } = useUserContext();
   const { parentRecord: parent } = useTabContext();
-  const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, initialState);
   const { error, formInitialization, loading } = state;
   const parentData = useFormParent(FieldName.INPUT_NAME);
   const parentId = parent?.id?.toString();
+  const fetchInProgressRef = useRef(false);
+  const lastFetchParamsRef = useRef<string | null>(null);
 
   const { record, loading: recordLoading } = useCurrentRecord({
     tab: tab,
     recordId: recordId,
   });
 
-  const params = useMemo(
-    () => (tab ? buildFormInitializationParams({ tab, mode, recordId, parentId }) : null),
-    [tab, mode, recordId, parentId]
-  );
+  const params = useMemo(() => {
+    const result = tab ? buildFormInitializationParams({ tab, mode, recordId, parentId }) : null;
+    return result;
+  }, [tab, mode, recordId, parentId]);
 
   /**
    * Main fetch function that orchestrates the form initialization process
@@ -218,8 +220,22 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     // Wait for record to finish loading before initializing form
     // This ensures audit fields are available when enrichWithAuditFields is called
     if (params && !recordLoading) {
+      // Create unique key for current params to track if we already fetched with these
+      // Use params.toString() instead of JSON.stringify because URLSearchParams serializes to {}
+      const paramsKey = params.toString();
+
+      // Prevent duplicate fetches for the same parameters
+      if (fetchInProgressRef.current || lastFetchParamsRef.current === paramsKey) {
+        return;
+      }
+
+      fetchInProgressRef.current = true;
+      lastFetchParamsRef.current = paramsKey;
+
       dispatch({ type: "FETCH_START" });
-      fetch();
+      fetch().finally(() => {
+        fetchInProgressRef.current = false;
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params, recordLoading]);
@@ -235,12 +251,27 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
    */
   const refetch = useCallback(async () => {
     if (!params) return;
+
+    // Reset tracking to allow refetch even with same params
+    lastFetchParamsRef.current = null;
+    fetchInProgressRef.current = true;
+
     dispatch({ type: "FETCH_START" });
-    await fetch();
+    try {
+      await fetch();
+    } finally {
+      fetchInProgressRef.current = false;
+    }
   }, [params, fetch]);
 
   return useMemo(
-    () => ({ error, formInitialization, loading, refetch }) as useFormInitialization,
-    [error, formInitialization, loading, refetch]
+    () =>
+      ({
+        error,
+        formInitialization,
+        loading: loading || recordLoading,
+        refetch,
+      }) as useFormInitialization,
+    [error, formInitialization, loading, recordLoading, refetch]
   );
 }

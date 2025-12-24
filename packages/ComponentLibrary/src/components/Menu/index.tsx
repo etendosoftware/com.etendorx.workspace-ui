@@ -81,7 +81,7 @@ const Menu: React.FC<DropdownMenuProps> = ({
   const [visible, setVisible] = useState(false);
 
   const menuRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mutationObserverRef = useRef<MutationObserver | null>(null);
 
   const adjustHorizontalPosition = (anchorRect: DOMRect, menuWidth: number, offsetX = 0) => {
@@ -217,7 +217,7 @@ const Menu: React.FC<DropdownMenuProps> = ({
     };
   }, []);
 
-  useClickOutside(menuRef, handleClose);
+  useClickOutside(menuRef as React.RefObject<HTMLElement>, handleClose);
   useEscapeKey(handleClose);
   useWindowResize(calculatePosition);
 

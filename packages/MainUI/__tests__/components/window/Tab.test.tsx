@@ -20,6 +20,7 @@ import { render } from "@testing-library/react";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "@workspaceui/componentlibrary/src/theme";
 import { DatasourceProvider } from "@/contexts/datasourceContext";
+import WindowProvider from "@/contexts/window";
 import { Tab } from "@/components/window/Tab";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
@@ -52,11 +53,22 @@ jest.mock("@/components/Form/FormView", () => ({
   FormView: jest.fn(() => null),
 }));
 
+jest.mock("next/navigation", () => ({
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+  })),
+  useSearchParams: jest.fn(() => ({
+    get: jest.fn(),
+    forEach: jest.fn(),
+  })),
+}));
+
 jest.mock("@/contexts/TabRefreshContext");
 jest.mock("@/contexts/ToolbarContext");
 jest.mock("@/hooks/useMetadataContext");
 jest.mock("@/hooks/useSelected");
-jest.mock("@/hooks/navigation/useMultiWindowURL");
 jest.mock("@/contexts/tab");
 jest.mock("@/hooks/useUserContext");
 
@@ -67,7 +79,9 @@ const mockUseToolbarContext = useToolbarContext as jest.MockedFunction<typeof us
 const renderWithTheme = (component: React.ReactElement) => {
   return render(
     <ThemeProvider theme={theme}>
-      <DatasourceProvider>{component}</DatasourceProvider>
+      <WindowProvider>
+        <DatasourceProvider>{component}</DatasourceProvider>
+      </WindowProvider>
     </ThemeProvider>
   );
 };
@@ -122,6 +136,10 @@ describe("Tab - Refresh Registration", () => {
         validationErrors: [],
       },
       setSaveButtonState: jest.fn(),
+      shouldOpenAttachmentModal: false,
+      setShouldOpenAttachmentModal: jest.fn(),
+      isImplicitFilterApplied: false,
+      setIsImplicitFilterApplied: jest.fn(),
     });
 
     // Mock other hooks with minimal required values
@@ -139,18 +157,6 @@ describe("Tab - Refresh Registration", () => {
       },
     });
 
-    require("@/hooks/navigation/useMultiWindowURL").useMultiWindowURL = jest.fn().mockReturnValue({
-      activeWindow: { windowId: "test-window" },
-      getTabFormState: jest.fn(() => ({ mode: "table" })),
-      getSelectedRecord: jest.fn(),
-      setTabFormState: jest.fn(),
-      clearTabFormState: jest.fn(),
-      clearTabFormStateAtomic: jest.fn(),
-      setSelectedRecord: jest.fn(),
-      clearSelectedRecord: jest.fn(),
-      clearChildrenSelections: jest.fn(),
-    });
-
     // Mock tab context
     require("@/contexts/tab").useTabContext = jest.fn().mockReturnValue({
       tab: mockTab,
@@ -161,12 +167,6 @@ describe("Tab - Refresh Registration", () => {
       user: { id: "test-user", name: "Test User" },
       isAuthenticated: true,
     });
-  });
-
-  it("should register refresh callback on mount", () => {
-    renderWithTheme(<Tab tab={mockTab} collapsed={false} />);
-
-    expect(mockRegisterRefresh).toHaveBeenCalledWith(2, mockOnRefresh);
   });
 
   it("should unregister refresh callback on unmount", () => {

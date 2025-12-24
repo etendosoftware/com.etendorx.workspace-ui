@@ -31,6 +31,7 @@ export function useClickOutside(ref: React.RefObject<HTMLElement>, handler: (eve
       // Ignore if click is inside the ref element or if ref contains the focused element
       if (!ref.current || ref.current.contains(target)) return;
       if (ref.current.contains(document.activeElement)) return;
+      if ((target as Element).closest?.(".etendo-ignore-click-outside")) return;
       handler(event);
     };
     document.addEventListener("mousedown", listener);

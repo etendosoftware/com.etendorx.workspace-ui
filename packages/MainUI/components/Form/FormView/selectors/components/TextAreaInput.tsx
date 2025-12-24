@@ -84,6 +84,9 @@ export const TextAreaInput = ({
   const currentValue = props.value ?? "";
   const showClear = showClearButton && !!currentValue && !isDisabled;
 
+  // Separate value from other props to ensure it's never null
+  const { value: _, ...restProps } = props;
+
   return (
     <div className="w-full font-['Inter'] font-medium">
       {label && (
@@ -111,7 +114,8 @@ export const TextAreaInput = ({
           onChange={handleChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          {...props}
+          value={currentValue}
+          {...restProps}
         />
 
         {showClear && (

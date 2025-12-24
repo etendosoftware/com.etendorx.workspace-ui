@@ -71,7 +71,7 @@ export default function StatusBar({
     <div
       data-testid="status-bar-container"
       className="h-10 flex items-center justify-between bg-gray-100/50 shadow px-3 py-2 rounded-xl">
-      <div className="flex gap-4 text-sm">
+      <div className="flex gap-4 text-sm overflow-x-auto whitespace-nowrap min-w-0 scrollbar-hide">
         {Object.entries(fields).map(([key, field]) => (
           <StatusBarField key={key} field={field} data-testid="StatusBarField__cfc328" />
         ))}

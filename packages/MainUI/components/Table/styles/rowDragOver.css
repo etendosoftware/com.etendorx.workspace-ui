@@ -1,0 +1,25 @@
+/**
+ * Styles for drag & drop visual overlay
+ */
+
+.drop-target-overlay {
+  background-color: rgba(0, 74, 202, 0.2) !important;
+  outline: 1px solid #004aca !important;
+  outline-offset: -3px !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.1s ease-out !important;
+  animation: dragOverPulse 1.2s ease-in-out infinite;
+}
+
+/* Add a subtle animation when dragging over */
+@keyframes dragOverPulse {
+  0%,
+  100% {
+    outline-color: #004aca;
+    background-color: rgba(0, 74, 202, 0.2);
+  }
+  50% {
+    outline-color: #2f7cff;
+    background-color: rgba(0, 74, 202, 0.25);
+  }
+}

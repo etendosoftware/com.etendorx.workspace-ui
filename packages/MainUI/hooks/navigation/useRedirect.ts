@@ -16,135 +16,81 @@
  */
 
 import { useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
-import { useMetadataContext } from "@/hooks/useMetadataContext";
-import { isLinkedLabelOpenInForm } from "@/utils/prefs";
+import { useWindowContext } from "@/contexts/window";
+import { getNewWindowIdentifier, createDefaultTabState } from "@/utils/window/utils";
+import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
+import type { TabState } from "@/utils/window/constants";
+
+interface HandleActionProps {
+  windowId: string;
+  windowTitle: string;
+  referencedTabId: string;
+  selectedRecordId?: string;
+  tabLevel?: number;
+}
+
+interface HandleClickRedirectProps {
+  e: React.MouseEvent;
+  windowId: string;
+  windowTitle: string;
+  referencedTabId: string;
+  selectedRecordId?: string;
+  tabLevel?: number;
+}
+
+interface HandleKeyDownRedirectProps {
+  e: React.KeyboardEvent;
+  windowId: string;
+  windowTitle: string;
+  referencedTabId: string;
+  selectedRecordId?: string;
+  tabLevel?: number;
+}
 
 export const useRedirect = () => {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { openWindow, buildURL, getNextOrder, windows, openWindowAndSelect } = useMultiWindowURL();
-  const { getWindowMetadata, loadWindowData } = useMetadataContext();
-
-  const createBaseWindow = useCallback(
-    (windowId: string, windowIdentifier?: string) => ({
-      windowId,
-      window_identifier: windowIdentifier || windowId,
-      isActive: true,
-      order: getNextOrder(windows),
-      title: windowIdentifier || windowId,
-      selectedRecords: {},
-      tabFormStates: {},
-    }),
-    [getNextOrder, windows]
-  );
-
-  const handleRecordSelection = useCallback(
-    async (
-      windowId: string,
-      windowIdentifier: string | undefined,
-      selectedRecordId: string,
-      isInWindowRoute: boolean
-    ) => {
-      let targetTabId: string | undefined;
-      const meta = getWindowMetadata(windowId) || (await loadWindowData(windowId).catch(() => undefined));
-
-      if (meta?.tabs?.length) {
-        const rootTab = meta.tabs.find((t) => t.tabLevel === 0) || meta.tabs[0];
-        targetTabId = rootTab?.id;
-      }
-
-      if (isInWindowRoute) {
-        if (targetTabId) {
-          openWindowAndSelect(windowId, {
-            selection: {
-              tabId: targetTabId,
-              recordId: selectedRecordId,
-              openForm: isLinkedLabelOpenInForm(),
-            },
-          });
-        } else {
-          openWindow(windowId);
-        }
-        return;
-      }
-
-      const baseWindow = createBaseWindow(windowId, windowId); // Use windowId as identifier for URL params
-      if (windowIdentifier) {
-        baseWindow.title = windowIdentifier; // Use windowIdentifier as display title
-      }
-      if (targetTabId) {
-        baseWindow.selectedRecords = { [targetTabId]: selectedRecordId };
-        if (isLinkedLabelOpenInForm()) {
-          baseWindow.tabFormStates = {
-            [targetTabId]: {
-              recordId: selectedRecordId,
-              mode: "form",
-              formMode: "edit",
-            },
-          };
-        }
-      }
-
-      const targetURL = buildURL([baseWindow]);
-      router.push(targetURL);
-    },
-    [getWindowMetadata, loadWindowData, openWindowAndSelect, openWindow, createBaseWindow, buildURL, router]
-  );
+  const { setWindowActive } = useWindowContext();
 
   const handleAction = useCallback(
-    async (windowId: string | undefined, windowIdentifier: string | undefined, selectedRecordId?: string) => {
+    async ({ windowId, windowTitle, referencedTabId, selectedRecordId, tabLevel = 0 }: HandleActionProps) => {
       if (!windowId) {
         console.warn("No windowId found");
         return;
       }
 
-      const isInWindowRoute = pathname.includes("window");
-
-      if (selectedRecordId) {
-        await handleRecordSelection(windowId, windowIdentifier, selectedRecordId, isInWindowRoute);
-        return;
-      }
-
-      // Default behavior (no preselection)
-      if (isInWindowRoute) {
-        openWindow(windowId);
-        return;
-      }
-
-      const newWindow = createBaseWindow(windowId, windowIdentifier);
-      const targetURL = buildURL([newWindow]);
-      router.push(targetURL);
+      const newWindowIdentifier = getNewWindowIdentifier(windowId);
+      const defaultTabState = createDefaultTabState(tabLevel);
+      const tabs = {
+        [referencedTabId]: {
+          ...defaultTabState,
+          form: {
+            recordId: selectedRecordId,
+            mode: TAB_MODES.FORM,
+            formMode: FORM_MODES.EDIT,
+          },
+          selectedRecord: selectedRecordId,
+        } as TabState,
+      };
+      const windowData = { title: windowTitle, tabs };
+      setWindowActive({ windowIdentifier: newWindowIdentifier, windowData });
     },
-    [router, pathname, handleRecordSelection, openWindow, createBaseWindow, buildURL]
+    [setWindowActive]
   );
 
   const handleClickRedirect = useCallback(
-    (
-      e: React.MouseEvent,
-      windowId: string | undefined,
-      windowIdentifier: string | undefined,
-      selectedRecordId?: string
-    ) => {
+    ({ e, windowId, windowTitle, referencedTabId, selectedRecordId, tabLevel }: HandleClickRedirectProps) => {
       e.stopPropagation();
       e.preventDefault();
-      handleAction(windowId, windowIdentifier, selectedRecordId);
+      handleAction({ windowId, windowTitle, referencedTabId, selectedRecordId, tabLevel });
     },
     [handleAction]
   );
 
   const handleKeyDownRedirect = useCallback(
-    (
-      e: React.KeyboardEvent,
-      windowId: string | undefined,
-      windowIdentifier: string | undefined,
-      selectedRecordId?: string
-    ) => {
+    ({ e, windowId, windowTitle, referencedTabId, selectedRecordId, tabLevel }: HandleKeyDownRedirectProps) => {
       e.stopPropagation();
       e.preventDefault();
       if (e.key === "Enter" || e.key === " ") {
-        handleAction(windowId, windowIdentifier, selectedRecordId);
+        handleAction({ windowId, windowTitle, referencedTabId, selectedRecordId, tabLevel });
       }
     },
     [handleAction]

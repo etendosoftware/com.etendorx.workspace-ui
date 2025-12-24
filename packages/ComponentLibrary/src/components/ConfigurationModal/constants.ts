@@ -70,3 +70,21 @@ export const INTERFACE_SCALE_ITEMS = [
   { img: InterfaceScaleDefaultUrl, id: DEFAULT_INTERFACE_SCALE_ID, label: "Default" },
   { img: InterfaceScaleLargeUrl, id: LARGE_INTERFACE_SCALE_ID, label: "Large" },
 ];
+
+export const SECTION_FAVICON_BADGE_ID = "faviconBadge";
+
+// 10 colors that contrast well with #fad614 (Etendo yellow) + None option
+export const FAVICON_BADGE_COLOR_ITEMS = [
+  { id: "favicon-badge-none", color: null, label: "None" },
+  { id: "favicon-badge-red", color: "#E53935", label: "Red" },
+  { id: "favicon-badge-pink", color: "#D81B60", label: "Pink" },
+  { id: "favicon-badge-purple", color: "#8E24AA", label: "Purple" },
+  { id: "favicon-badge-blue", color: "#1E88E5", label: "Blue" },
+  { id: "favicon-badge-navy", color: "#1A237E", label: "Navy" },
+  { id: "favicon-badge-cyan", color: "#00ACC1", label: "Cyan" },
+  { id: "favicon-badge-teal", color: "#00897B", label: "Teal" },
+  { id: "favicon-badge-green", color: "#43A047", label: "Green" },
+  { id: "favicon-badge-orange", color: "#FB8C00", label: "Orange" },
+  { id: "favicon-badge-brown", color: "#6D4C41", label: "Brown" },
+  { id: "favicon-badge-gray", color: "#757575", label: "Gray" },
+];

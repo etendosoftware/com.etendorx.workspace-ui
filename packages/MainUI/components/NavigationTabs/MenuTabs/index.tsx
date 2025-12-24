@@ -17,10 +17,9 @@
 
 // @data-testid-ignore
 "use client";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { useWindowContext } from "@/contexts/window";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import MenuItem from "@/components/NavigationTabs/MenuTabs/MenuItem";
-import { useMetadataContext } from "@/hooks/useMetadataContext";
 
 interface MenuTabsProps {
   anchorEl: HTMLElement | null;
@@ -29,8 +28,7 @@ interface MenuTabsProps {
 }
 
 export default function MenuTabs({ anchorEl, onClose, onSelect }: MenuTabsProps) {
-  const { windows } = useMultiWindowURL();
-  const { getWindowTitle } = useMetadataContext();
+  const { windows } = useWindowContext();
 
   return (
     <Menu anchorEl={anchorEl} onClose={onClose} data-testid={`Menu__${windows[0]?.windowId ?? "8b7d80"}`}>
@@ -41,7 +39,7 @@ export default function MenuTabs({ anchorEl, onClose, onSelect }: MenuTabsProps)
         }}>
         {windows.map((window) => {
           const windowId = window.windowId;
-          const title = window.title || getWindowTitle?.(window.windowId);
+          const title = window.title || "Loading...";
           const isActive = window.isActive;
           return (
             <MenuItem

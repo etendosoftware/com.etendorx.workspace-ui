@@ -21,17 +21,8 @@ export const getDisplayColumnDefOptions = ({ shouldUseTreeMode }: { shouldUseTre
         },
       },
       "mrt-row-select": {
-        size: 0,
-        muiTableHeadCellProps: {
-          sx: {
-            display: "none",
-          },
-        },
-        muiTableBodyCellProps: {
-          sx: {
-            display: "none",
-          },
-        },
+        size: 60,
+        // Checkboxes visible in tree mode
       },
     };
   }
@@ -49,6 +40,10 @@ export const getDisplayColumnDefOptions = ({ shouldUseTreeMode }: { shouldUseTre
         },
       },
     },
+    "mrt-row-select": {
+      size: 60,
+      // Checkboxes visible in normal mode
+    },
   };
 };
 
@@ -65,13 +60,15 @@ export const getMUITableBodyCellProps = ({
   column: MRT_Column<EntityData>;
   row: MRT_Row<EntityData>;
 }): SxProps<Theme> => {
-  const firstColumnId = columns[0]?.id;
-  const isFirstColumn = column.id === firstColumnId;
+  // In tree mode, apply indentation to the SECOND column (first data column, after Actions)
+  // This is index 1 because Actions is at index 0
+  const treeIndentColumnId = columns[1]?.id;
+  const isTreeIndentColumn = column.id === treeIndentColumnId;
   const paddingLeft = `${12 + ((row.original.__level as number) || 0) * 16}px`;
 
   const baseStyle = sx.tableBodyCell || {};
 
-  if (shouldUseTreeMode && isFirstColumn) {
+  if (shouldUseTreeMode && isTreeIndentColumn) {
     return {
       ...baseStyle,
       paddingLeft: paddingLeft,

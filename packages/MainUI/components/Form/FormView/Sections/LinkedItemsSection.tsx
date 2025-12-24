@@ -16,11 +16,14 @@
  */
 
 import { useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import LinkedItems from "@workspaceui/componentlibrary/src/components/LinkedItems";
 import { fetchLinkedItemCategories, fetchLinkedItems } from "@workspaceui/api-client/src/api/linkedItems";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { useWindowContext } from "@/contexts/window";
 import type { LinkedItem } from "@workspaceui/api-client/src/api/types";
 import { useTranslation } from "@/hooks/useTranslation";
+import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { appendWindowToUrl } from "@/utils/url/utils";
 
 interface LinkedItemsSectionProps {
   tabId: string;
@@ -28,10 +31,11 @@ interface LinkedItemsSectionProps {
   recordId: string;
 }
 
-export const LinkedItemsSection = ({ tabId, entityName, recordId }: LinkedItemsSectionProps) => {
-  const { openWindow } = useMultiWindowURL();
+export const LinkedItemsSection = ({ entityName, recordId }: LinkedItemsSectionProps) => {
   const { t } = useTranslation();
-  const { activeWindow } = useMultiWindowURL();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { activeWindow, triggerRecovery, isRecoveryLoading } = useWindowContext();
 
   const handleFetchCategories = useCallback(
     async (params: { windowId: string; entityName: string; recordId: string }) => {
@@ -54,26 +58,57 @@ export const LinkedItemsSection = ({ tabId, entityName, recordId }: LinkedItemsS
     []
   );
 
+  /**
+   * Handles click on a linked item to open it in a new window.
+   * Uses URL-driven recovery approach to leverage existing recovery system.
+   *
+   * Flow:
+   * 1. Prevents multiple clicks during recovery (loading guard)
+   * 2. Generates new window identifier with timestamp
+   * 3. Resets recovery guard to allow re-execution
+   * 4. Appends new window parameters to URL
+   * 5. Updates browser URL to trigger recovery
+   * 6. Recovery system reconstructs complete window state
+   *
+   * @param item - Linked item containing window, tab, and record information
+   */
   const handleItemClick = useCallback(
     (item: LinkedItem) => {
-      const currentRecord = {
-        tabId: tabId,
-        recordId: recordId,
-      };
-      const newRecord = {
-        tabId: item.adTabId,
-        recordId: item.id,
-      };
-      const selectedRecords = [currentRecord, newRecord];
-      const tabFormStates = [
-        {
-          tabId: newRecord.tabId,
-          tabFormState: { recordId: newRecord.recordId },
-        },
-      ];
-      openWindow(item.adWindowId, item.adMenuName, selectedRecords, tabFormStates);
+      // Guard: Prevent multiple rapid clicks during recovery
+      if (isRecoveryLoading) {
+        return;
+      }
+
+      // Generate unique window identifier
+      const newWindowIdentifier = getNewWindowIdentifier(item.adWindowId);
+
+      // Extract tab and record information
+      const newTabId = item.adTabId;
+      const newRecordId = item.id;
+
+      // Trigger recovery mechanism (resets hasRun guard)
+      triggerRecovery();
+
+      // Build new URL with appended window (uses current URL params)
+      const newUrlParams = appendWindowToUrl(searchParams, {
+        windowIdentifier: newWindowIdentifier,
+        tabId: newTabId,
+        recordId: newRecordId,
+      });
+
+      // Update URL to trigger recovery
+      const newUrl = `window?${newUrlParams}`;
+      router.replace(newUrl);
+
+      // Note: Recovery system will handle:
+      // - Fetching window metadata
+      // - Calculating tab hierarchy
+      // - Reconstructing parent selections
+      // - Setting window as active
+      // - Showing loading state
+      // Then WindowProvider's useEffect will rebuild complete URL from state
     },
-    [tabId, recordId, openWindow]
+    [searchParams, triggerRecovery, router, isRecoveryLoading]
   );
 
   return (

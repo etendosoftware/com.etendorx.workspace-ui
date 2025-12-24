@@ -27,7 +27,7 @@ import { EMPTY_ARRAY } from "@/utils/defaults";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
 import type React from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useProcessButton } from "../../hooks/Toolbar/useProcessButton";
 import { useProcessExecution } from "../../hooks/Toolbar/useProcessExecution";
 import { useToolbar } from "../../hooks/Toolbar/useToolbar";
@@ -50,8 +50,9 @@ import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { TAB_MODES } from "@/utils/url/constants";
+import { useWindowContext } from "@/contexts/window";
+import ActionModal from "@workspaceui/componentlibrary/src/components/ActionModal";
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
@@ -68,10 +69,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
-  const { saveButtonState, isImplicitFilterApplied } = useToolbarContext();
-  const { buttons, processButtons, loading, refetch } = useToolbar(windowId, tab?.id);
+  const { buttons, processButtons, loading, refetch: refetchToolbar } = useToolbar(windowId, tab?.id);
+  const { saveButtonState, isImplicitFilterApplied, isAdvancedFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
-  const { activeWindow, getTabFormState, clearChildrenSelections } = useMultiWindowURL();
+  const { activeWindow, getTabFormState, clearChildrenSelections } = useWindowContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { isSessionSyncLoading, isCopilotInstalled, session } = useUserContext();
@@ -80,9 +81,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   const selectedRecord = useSelectedRecord(tab);
+  const selectedRecords = useSelectedRecords(tab) || [];
   const hasParentTab = !!tab?.parentTabId;
   const parentId = parentRecord?.id?.toString();
-  const isTreeNodeView = tab?.tableTree;
+  const isTreeNodeView = tab?.tableTree ? true : undefined;
 
   const {
     handleAction,
@@ -96,10 +98,43 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     handleConfirm,
     handleCancelConfirm,
     hideStatusModal,
+    actionModal,
+    closeActionModal,
   } = useToolbarConfig({ windowId, tabId: tab?.id, parentId, isFormView });
 
-  const { handleProcessClick } = useProcessButton(executeProcess, refetch);
+  const { handleProcessClick } = useProcessButton(executeProcess, refetchToolbar);
   const { formViewRefetch } = useToolbarContext();
+
+  // State for temporary filter tooltip
+  const [showFilterTooltip, setShowFilterTooltip] = useState(false);
+  const [showShareLinkTooltip, setShowShareLinkTooltip] = useState(false);
+
+  // Check if any child tab is fully expanded
+  const isChildTabExpanded = useMemo(() => {
+    if (!activeWindow || !tab?.id) return false;
+    const navigationState = activeWindow.navigation;
+    // If we are in a parent tab (level 0) and there is an active tab in level 1, it means a child is expanded/visible
+    return navigationState.activeLevels.includes(1) && navigationState.activeTabsByLevel.has(1);
+  }, [activeWindow, tab?.id]);
+
+  // Manage temporary filter tooltip visibility
+  useEffect(() => {
+    // Do not show tooltip if a child tab is expanded/visible
+    if (isChildTabExpanded) {
+      setShowFilterTooltip(false);
+      return;
+    }
+
+    if (isImplicitFilterApplied) {
+      setShowFilterTooltip(true);
+      const timer = setTimeout(() => {
+        setShowFilterTooltip(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+
+    setShowFilterTooltip(false);
+  }, [isImplicitFilterApplied, isChildTabExpanded]);
 
   const handleMenuToggle = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -179,7 +214,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     const childTabIdsInFormView: string[] = [];
 
     const hasChildTabs = childTabs && childTabs.length > 0;
-    const windowIdentifier = activeWindow?.window_identifier;
+    const windowIdentifier = activeWindow?.windowIdentifier;
 
     if (hasChildTabs && windowIdentifier) {
       childTabIdsInFormView.push(...processChildTabsInFormView(childTabs, windowIdentifier));
@@ -198,14 +233,14 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     }
 
     Metadata.clearToolbarCache();
-    await refetch();
+    await refetchToolbar();
 
     if (childTabIdsInFormView.length > 0 && windowIdentifier) {
       clearChildrenSelections(windowIdentifier, childTabIdsInFormView);
     }
   }, [
     graph,
-    refetch,
+    refetchToolbar,
     refetchDatasource,
     tab,
     isFormView,
@@ -219,22 +254,41 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const handleCloseStatusModal = useCallback(() => setActiveModal(null), []);
 
+  const handleActionWithTooltip = useCallback(
+    (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => {
+      if (action === "SHARE_LINK") {
+        setShowShareLinkTooltip(true);
+        setTimeout(() => {
+          setShowShareLinkTooltip(false);
+        }, 2000);
+      }
+      handleAction(action, button, event);
+    },
+    [handleAction]
+  );
+
   const toolbarConfig = useMemo(() => {
     const hasSelectedRecord = !!selectedRecord?.id;
+    const selectedRecordsLength = selectedRecords.length;
     const hasParentRecordSelected = !hasParentTab || selectedParentItems.length === 1;
 
     const baseConfig = getToolbarSections({
       buttons: buttons as ToolbarButtonMetadata[],
-      onAction: handleAction,
+      onAction: handleActionWithTooltip,
       isFormView: isFormView,
       isTreeNodeView: isTreeNodeView,
       hasFormChanges: hasFormChanges,
-      hasSelectedRecord: hasSelectedRecord,
       hasParentRecordSelected: hasParentRecordSelected,
       isCopilotInstalled: isCopilotInstalled,
       saveButtonState: saveButtonState,
       session: session,
       isImplicitFilterApplied: isImplicitFilterApplied,
+      showFilterTooltip: showFilterTooltip,
+      showShareLinkTooltip: showShareLinkTooltip,
+      tab: tab,
+      selectedRecordsLength: selectedRecordsLength,
+      t: t,
+      isAdvancedFilterApplied: isAdvancedFilterApplied,
     });
 
     const config = {
@@ -256,12 +310,14 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     return config;
   }, [
     buttons,
+    tab,
     isTreeNodeView,
     isFormView,
     selectedRecord?.id,
+    selectedRecords,
     processButtons.length,
     t,
-    handleAction,
+    handleActionWithTooltip,
     handleMenuToggle,
     anchorEl,
     hasParentTab,
@@ -272,6 +328,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     isCopilotInstalled,
     session,
     isImplicitFilterApplied,
+    showFilterTooltip,
+    showShareLinkTooltip,
+    isAdvancedFilterApplied,
   ]);
 
   if (loading) {
@@ -352,6 +411,18 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         onError={handleCompleteRefresh}
         data-testid="ProcessDefinitionModal__a2dd07"
       />
+      {actionModal.isOpen && (
+        <ActionModal
+          isOpen={actionModal.isOpen}
+          title={actionModal.title}
+          message={actionModal.message}
+          buttons={actionModal.buttons}
+          onClose={closeActionModal}
+          isLoading={actionModal.isLoading}
+          t={t}
+          data-testid="ActionModal__a2dd07"
+        />
+      )}
     </>
   );
 };

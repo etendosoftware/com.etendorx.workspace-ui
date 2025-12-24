@@ -17,6 +17,7 @@
 
 import type { SxProps, Theme } from "@mui/material";
 import type { ProcessButton } from "../ProcessModal/types";
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
 
 export const IconSize = "1rem";
 
@@ -73,7 +74,7 @@ export interface ProcessMenuProps {
   onClose: () => void;
   processButtons: ProcessButton[];
   onProcessClick: (button: ProcessButton) => void;
-  selectedRecord: unknown | undefined;
+  selectedRecord: EntityData | undefined;
 }
 
 export interface BasicToolbarButton {
@@ -95,6 +96,7 @@ export interface ToolbarButton extends BasicToolbarButton {
   anchorEl?: HTMLElement | null;
   badgeContent?: number | string;
   isPressed?: boolean;
+  forceTooltipOpen?: boolean;
 }
 
 export interface ProcessAvailableButton extends BasicToolbarButton {
