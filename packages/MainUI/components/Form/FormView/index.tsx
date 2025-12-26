@@ -24,13 +24,13 @@ import FolderIcon from "@workspaceui/componentlibrary/src/assets/icons/folder.sv
 import Info from "@workspaceui/componentlibrary/src/assets/icons/info.svg";
 import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
+import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
 import { FormMode, type EntityData, type EntityValue } from "@workspaceui/api-client/src/api/types";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import useFormFields from "@/hooks/useFormFields";
 import { useFormInitialState } from "@/hooks/useFormInitialState";
 import { useFormInitialization } from "@/hooks/useFormInitialization";
 import { useSelected } from "@/hooks/useSelected";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { FormInitializationProvider } from "@/contexts/FormInitializationContext";
 import { globalCalloutManager } from "@/services/callouts";
@@ -47,6 +47,9 @@ import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useRecordNavigation } from "@/hooks/useRecordNavigation";
 import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
+import { useWindowContext } from "@/contexts/window";
+import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
@@ -54,6 +57,7 @@ const iconMap: Record<string, React.ReactElement> = {
   Dimensions: <FolderIcon data-testid="FolderIcon__1a0853" />,
   "Linked Items": <LinkIcon data-testid="LinkIcon__1a0853" />,
   Notes: <NoteIcon data-testid="NoteIcon__1a0853" />,
+  Attachments: <AttachmentIcon data-testid="AttachmentIcon__1a0853" />,
 };
 
 /**
@@ -84,16 +88,30 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const [selectedTab, setSelectedTab] = useState<string>("");
   const [isFormInitializing, setIsFormInitializing] = useState(false);
   const [openAttachmentModal, setOpenAttachmentModal] = useState(false);
+  const [currentMode, setCurrentMode] = useState<FormMode>(mode);
+  const [currentRecordId, setCurrentRecordId] = useState<string | undefined>(recordId);
+  const [waitingForRefetch, setWaitingForRefetch] = useState<string | null>(null);
 
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   const { graph } = useSelected();
-  const { activeWindow, getSelectedRecord, setSelectedRecord, setSelectedRecordAndClearChildren } = useMultiWindowURL();
+  const { activeWindow, setSelectedRecord, getSelectedRecord, setSelectedRecordAndClearChildren } = useWindowContext();
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
   const { resetFormChanges, parentTab } = useTabContext();
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
     useToolbarContext();
-  const { refetchDatasource, registerRefetchFunction } = useDatasourceContext();
+  const { refetchDatasource, registerRefetchFunction, updateRecordInDatasource, addRecordToDatasource } =
+    useDatasourceContext();
+  const { registerRefresh } = useTabRefreshContext();
+
+  // Sync currentMode and currentRecordId with props when they change (e.g., navigating to a different record)
+  useEffect(() => {
+    setCurrentMode(mode);
+  }, [mode]);
+
+  useEffect(() => {
+    setCurrentRecordId(recordId);
+  }, [recordId]);
 
   const {
     formInitialization,
@@ -101,24 +119,33 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     loading: loadingFormInitialization,
   } = useFormInitialization({
     tab,
-    mode: mode,
-    recordId,
+    mode: currentMode,
+    recordId: currentRecordId,
   });
   const initialState = useFormInitialState(formInitialization) || undefined;
+
+  // Effect to detect when form initialization completes after save
+  useEffect(() => {
+    if (waitingForRefetch && !loadingFormInitialization && currentRecordId === waitingForRefetch) {
+      // Form initialization has completed for the newly saved record
+      setWaitingForRefetch(null);
+      setIsFormInitializing(false);
+    }
+  }, [waitingForRefetch, loadingFormInitialization, currentRecordId]);
 
   const refreshRecordAndSession = useCallback(async () => {
     if (!recordId || recordId === NEW_RECORD_ID) return;
 
     try {
-      const result = await datasource.get(tab.entityName, {
+      const result = (await datasource.get(tab.entityName, {
         criteria: [{ fieldName: "id", operator: "equals", value: recordId }],
         windowId: tab.window,
         tabId: tab.id,
         pageSize: 1,
-      });
+      })) as { data: { response?: { data?: EntityData[] } } };
 
       const responseData = result.data.response?.data;
-      if (responseData?.length > 0) {
+      if (responseData && responseData.length > 0) {
         const updatedRecord = responseData[0];
 
         graph.setSelected(tab, updatedRecord);
@@ -138,17 +165,35 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     registerRefetchFunction(tab.id, refreshRecordAndSession);
   }, [registerFormViewRefetch, refreshRecordAndSession, registerRefetchFunction, tab.id]);
 
+  // Register form's refresh function with TabRefreshContext
+  // This allows the form refresh to be triggered alongside table refresh
+  useEffect(() => {
+    registerRefresh(tab.tabLevel, REFRESH_TYPES.FORM, refreshRecordAndSession);
+  }, [tab.tabLevel, registerRefresh, refreshRecordAndSession]);
+
   // Register attachment action for toolbar button
   useEffect(() => {
     if (registerAttachmentAction) {
-      registerAttachmentAction(() => setOpenAttachmentModal(true));
+      registerAttachmentAction(() => {
+        setOpenAttachmentModal(() => {
+          return true;
+        });
+      });
     }
+
+    return () => {
+      if (registerAttachmentAction) {
+        registerAttachmentAction(undefined);
+      }
+    };
   }, [registerAttachmentAction]);
 
   // Open attachment modal when flag is set (from table navigation)
   useEffect(() => {
     if (shouldOpenAttachmentModal) {
-      setOpenAttachmentModal(true);
+      setOpenAttachmentModal(() => {
+        return true;
+      });
       // Reset flag after using it
       setShouldOpenAttachmentModal(false);
     }
@@ -197,7 +242,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * @returns EntityData object representing current record or null if no record
    */
   const record = useMemo(() => {
-    const windowIdentifier = activeWindow?.window_identifier;
+    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowIdentifier) return null;
 
     if (recordId === NEW_RECORD_ID) return null;
@@ -217,7 +262,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     }
 
     return null;
-  }, [activeWindow?.window_identifier, getSelectedRecord, tab, recordId, graph]);
+  }, [activeWindow?.windowIdentifier, getSelectedRecord, tab, recordId, graph]);
 
   /**
    * Merges record data with form initialization data to create complete form state.
@@ -230,7 +275,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     return { ...record, ...initialState };
   }, [record, initialState]);
 
-  const { fields, groups } = useFormFields(tab, recordId, mode, true, availableFormData);
+  const { fields, groups } = useFormFields(tab, currentRecordId, currentMode, true, availableFormData);
 
   const formMethods = useForm({ defaultValues: availableFormData as EntityData });
   const { reset, setValue, formState, ...form } = formMethods;
@@ -261,8 +306,30 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    *
    * Dependencies: availableFormData, tab.id, stableReset
    */
+  const lastInitializedDataRef = useRef<string>("");
+
   useEffect(() => {
-    if (!availableFormData) return;
+    // If we are in a "hidden" state (empty recordId and not NEW mode), just reset and return
+    // This prevents unnecessary initialization logic and potential loops
+    if (!currentRecordId && currentMode !== FormMode.NEW) {
+      stableReset({}, { keepDirty: false });
+      setIsFormInitializing(false);
+      lastInitializedDataRef.current = "";
+      return;
+    }
+
+    if (!availableFormData || loadingFormInitialization) {
+      return;
+    }
+
+    // Prevent resetting if the data hasn't actually changed
+    // This safeguards against spurious re-renders or upstream reference changes
+    // that would otherwise overwrite user edits or callout results
+    const currentDataString = JSON.stringify(availableFormData);
+    if (lastInitializedDataRef.current === currentDataString) {
+      return;
+    }
+    lastInitializedDataRef.current = currentDataString;
 
     setIsFormInitializing(true);
     const processedData = processFormData(availableFormData);
@@ -280,7 +347,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         globalCalloutManager.resume();
       }, 100); // Delay to allow all values to settle before enabling callouts
     });
-  }, [availableFormData, tab.id, stableReset]);
+  }, [availableFormData, tab.id, stableReset, loadingFormInitialization, currentRecordId, currentMode]);
 
   /**
    * Update graph selection when navigating to a different record
@@ -403,26 +470,54 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    */
   const onSuccess = useCallback(
     async (data: EntityData, showModal: boolean) => {
-      setIsFormInitializing(true);
-      if (mode === FormMode.EDIT) {
-        reset({ ...initialState, ...data });
-      } else {
-        setRecordId(String(data.id));
+      // Clear only the cache for this specific entity to get fresh data
+      // This is more targeted than clearing the entire cache
+      datasource.clearCacheForEntity(tab.entityName);
+      if (parentTab) {
+        datasource.clearCacheForEntity(parentTab.entityName);
       }
-      setTimeout(() => setIsFormInitializing(false), 50);
+
+      setIsFormInitializing(true);
 
       graph.setSelected(tab, data);
       graph.setSelectedMultiple(tab, [data]);
 
-      const windowIdentifier = activeWindow?.window_identifier;
+      const windowIdentifier = activeWindow?.windowIdentifier;
       if (windowIdentifier) {
         setSelectedRecord(windowIdentifier, tab.id, String(data.id));
       }
+
+      const newRecordId = String(data.id);
+
+      if (currentMode === FormMode.NEW) {
+        // For new records, change to EDIT mode with the new record ID first
+        setCurrentMode(FormMode.EDIT);
+        setCurrentRecordId(newRecordId);
+        setRecordId(newRecordId); // Also update parent state
+
+        // Set flag to wait for automatic refetch to complete
+        setWaitingForRefetch(newRecordId);
+        // The useEffect will clear waitingForRefetch and set isFormInitializing to false
+        // when the refetch completes
+      } else {
+        // For EDIT mode, manually refetch to get updated calculated fields
+        await refetch();
+        setIsFormInitializing(false);
+      }
+
       if (showModal) {
         showSuccessModal("Saved");
       }
 
       resetFormChanges();
+
+      // Update the record in the Table's datasource in-place
+      // This ensures the table shows updated data without losing pagination state
+      if (currentMode === FormMode.NEW) {
+        addRecordToDatasource(tab.id, data);
+      } else {
+        updateRecordInDatasource(tab.id, data);
+      }
 
       // Refresh parent tab datasource if this is a child tab
       if (parentTab) {
@@ -430,18 +525,19 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       }
     },
     [
-      mode,
+      currentMode,
       graph,
       tab,
-      activeWindow?.window_identifier,
+      activeWindow?.windowIdentifier,
       showSuccessModal,
-      reset,
-      initialState,
       setRecordId,
       setSelectedRecord,
       resetFormChanges,
       parentTab,
       refetchDatasource,
+      updateRecordInDatasource,
+      addRecordToDatasource,
+      refetch,
     ]
   );
 
@@ -461,7 +557,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const { save, loading } = useFormAction({
     windowMetadata,
     tab,
-    mode,
+    mode: currentMode,
     onSuccess,
     onError,
     initialState,
@@ -510,8 +606,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
       // Use atomic update to change parent selection and clear all children in one operation
       // This forces children to return to table view even if they were in FormView
-      if (activeWindow?.window_identifier && childIds.length > 0) {
-        setSelectedRecordAndClearChildren(activeWindow.window_identifier, tab.id, newRecordId, childIds);
+      if (activeWindow?.windowIdentifier && childIds.length > 0) {
+        setSelectedRecordAndClearChildren(activeWindow.windowIdentifier, tab.id, newRecordId, childIds);
 
         // Also clear the graph selection for all children to ensure they reset completely
         for (const child of children ?? []) {
@@ -549,7 +645,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     () => ({
       window: windowMetadata,
       tab,
-      mode,
+      mode: currentMode,
       recordId,
       setRecordId,
       expandedSections,
@@ -567,7 +663,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     [
       windowMetadata,
       tab,
-      mode,
+      currentMode,
       recordId,
       setRecordId,
       expandedSections,
@@ -609,7 +705,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
             <FormFields
               tab={tab}
-              mode={mode}
+              mode={currentMode}
               groups={groups}
               loading={isLoading}
               recordId={recordId ?? ""}

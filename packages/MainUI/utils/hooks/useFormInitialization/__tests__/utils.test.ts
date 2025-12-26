@@ -124,7 +124,7 @@ describe("FormInitialization Utils - SessionMode Support", () => {
         inpkeyColumnId: "test_column",
         keyColumnName: "test_column",
         _entityName: "TestEntity",
-        inpwindowId: "test-window",
+        inpwindowId: "TestWindow",
       });
 
       // Verify getFieldsToAdd is not called for SETSESSION mode
@@ -144,7 +144,7 @@ describe("FormInitialization Utils - SessionMode Support", () => {
         inpkeyColumnId: "test_column",
         keyColumnName: "test_column",
         _entityName: "TestEntity",
-        inpwindowId: "test-window",
+        inpwindowId: "TestWindow",
         additionalField: "additionalValue",
       });
 
@@ -164,7 +164,7 @@ describe("FormInitialization Utils - SessionMode Support", () => {
         inpkeyColumnId: "test_column",
         keyColumnName: "test_column",
         _entityName: "TestEntity",
-        inpwindowId: "test-window",
+        inpwindowId: "TestWindow",
       });
     });
 

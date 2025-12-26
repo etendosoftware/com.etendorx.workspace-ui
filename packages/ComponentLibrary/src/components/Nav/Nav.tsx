@@ -17,6 +17,7 @@
 
 "use client";
 
+import { Box } from "@mui/material";
 import type React from "react";
 import { type ReactNode, useCallback, useState } from "react";
 import RightButtons from "./RigthComponents/RightButtons";
@@ -34,8 +35,8 @@ const Nav: React.FC<NavProps> = ({ children, searchDisabled = true, title }) => 
   const handleVoiceClick = useCallback(() => alert("Voice activated"), []);
 
   return (
-    <nav style={styles.NavStyles}>
-      <div style={styles.LeftItems} title={title}>
+    <Box component="nav" sx={styles.NavStyles}>
+      <Box sx={styles.LeftItems} title={title}>
         <SearchInputWithVoice
           value={value}
           setValue={setValue}
@@ -43,11 +44,11 @@ const Nav: React.FC<NavProps> = ({ children, searchDisabled = true, title }) => 
           onVoiceClick={handleVoiceClick}
           disabled={searchDisabled}
         />
-      </div>
-      <div style={styles.RightItems}>
+      </Box>
+      <Box sx={styles.RightItems}>
         <RightButtons>{children}</RightButtons>
-      </div>
-    </nav>
+      </Box>
+    </Box>
   );
 };
 

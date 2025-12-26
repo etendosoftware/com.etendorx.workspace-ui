@@ -25,7 +25,7 @@ import ColorCell from "@/components/Table/Cells/ColorCell";
 import { logger } from "@/utils/logger";
 import { CircularProgress } from "@mui/material";
 
-const renderCellContent = (result: unknown): JSX.Element => {
+const renderCellContent = (result: unknown): React.ReactElement => {
   if (isColorString(result)) {
     return <ColorCell color={result as string} data-testid="ColorCell__af261f" />;
   }

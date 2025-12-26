@@ -8,6 +8,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+    "types": ["jest", "@testing-library/jest-dom", "node"],
     "jsx": "react-jsx",
 
     "strict": true,

@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
@@ -45,6 +45,8 @@ interface UseCurrentRecordReturn {
 export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): UseCurrentRecordReturn => {
   const [record, setRecord] = useState<Record<string, Field>>({});
   const [loading, setLoading] = useState(false);
+  const fetchInProgressRef = useRef(false);
+  const lastFetchParamsRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!tab || !recordId || recordId === NEW_RECORD_ID) {
@@ -53,11 +55,21 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
       return;
     }
 
+    // Create unique key for current fetch params
+    const paramsKey = `${tab.entityName}-${tab.window}-${tab.id}-${recordId}`;
+
+    // Prevent duplicate fetches for the same parameters
+    if (fetchInProgressRef.current || lastFetchParamsRef.current === paramsKey) {
+      return;
+    }
+
     let cancelled = false;
 
     const fetchRecord = async () => {
       if (cancelled) return;
 
+      fetchInProgressRef.current = true;
+      lastFetchParamsRef.current = paramsKey;
       setLoading(true);
 
       try {
@@ -85,6 +97,7 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
       } finally {
         if (!cancelled) {
           setLoading(false);
+          fetchInProgressRef.current = false;
         }
       }
     };
@@ -93,8 +106,9 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
 
     return () => {
       cancelled = true;
+      fetchInProgressRef.current = false;
     };
-  }, [tab?.entityName, tab?.window, tab?.id, recordId, tab]);
+  }, [tab?.entityName, tab?.window, tab?.id, recordId]);
 
   return {
     record,

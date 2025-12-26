@@ -17,9 +17,9 @@
 
 import { useCallback, useMemo } from "react";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useSelected } from "@/hooks/useSelected";
 import { logger } from "@/utils/logger";
+import { useWindowContext } from "@/contexts/window";
 
 interface StateReconciliationOptions {
   records: EntityData[];
@@ -95,7 +95,7 @@ const reconcileBothSelections = (urlSelectedId: string, tableSelectionIds: strin
  * Handles conflicts that may arise when URL and table selections become out of sync.
  */
 export const useStateReconciliation = ({ records, tab, windowId, currentWindowId }: StateReconciliationOptions) => {
-  const { setSelectedRecord, clearSelectedRecord, getSelectedRecord } = useMultiWindowURL();
+  const { clearSelectedRecord, setSelectedRecord, getSelectedRecord } = useWindowContext();
   const { graph } = useSelected();
 
   /**

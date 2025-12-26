@@ -22,6 +22,7 @@ import type {
   CurrentOrganization,
   CurrentRole,
   CurrentWarehouse,
+  CurrentClient,
   LoginResponse,
   SessionResponse,
 } from "@workspaceui/api-client/src/api/types";
@@ -95,6 +96,7 @@ export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps
   currentRole: CurrentRole | undefined;
   currentWarehouse: CurrentWarehouse | undefined;
   currentOrganization: CurrentOrganization | undefined;
+  currentClient: CurrentClient | undefined; // Added currentClient
   roles: SessionResponse["roles"];
   logger: Logger;
   onLanguageChange: (e: Language) => void;

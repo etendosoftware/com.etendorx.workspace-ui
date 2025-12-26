@@ -24,7 +24,7 @@ import type {
   MRT_ColumnFiltersState,
 } from "@workspaceui/api-client/src/api/types";
 import { LegacyColumnFilterUtils, SearchUtils } from "@workspaceui/api-client/src/utils/search-utils";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const loadData = async (
   entity: string,
@@ -110,8 +110,19 @@ export function useDatasource({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
   const [hasMoreRecords, setHasMoreRecords] = useState(true);
+  const fetchInProgressRef = useRef(false);
   const removeRecordLocally = useCallback((recordId: string) => {
     setRecords((prevRecords) => prevRecords.filter((record) => String(record.id) !== recordId));
+  }, []);
+
+  // Update a specific record in-place by ID
+  const updateRecordLocally = useCallback((recordId: string, updatedRecord: EntityData) => {
+    setRecords((prevRecords) => prevRecords.map((record) => (String(record.id) === recordId ? updatedRecord : record)));
+  }, []);
+
+  // Add a new record at the beginning of the array
+  const addRecordLocally = useCallback((newRecord: EntityData) => {
+    setRecords((prevRecords) => [newRecord, ...prevRecords]);
   }, []);
 
   const fetchMore = useCallback(() => {
@@ -135,6 +146,18 @@ export function useDatasource({
     return LegacyColumnFilterUtils.createColumnFilterCriteria(activeColumnFilters, columns);
   }, [activeColumnFilters, columns]);
 
+  // Memoize treeOptions to prevent unnecessary reference changes
+  const memoizedTreeOptions = useMemo(
+    () => treeOptions,
+    [
+      treeOptions?.isTreeMode,
+      treeOptions?.windowId,
+      treeOptions?.tabId,
+      treeOptions?.referencedTableId,
+      treeOptions?.parentId,
+    ]
+  );
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const queryParams = useMemo(() => {
     const baseCriteria = params.criteria || ([] as any[]);
@@ -152,22 +175,36 @@ export function useDatasource({
       allCriteria = [...allCriteria, ...(columnFilterCriteria as any[])];
     }
 
+    const filterById = columnFilterCriteria.find((criteria) => criteria.fieldName === "id");
+    const hasIdFilter = Boolean(filterById);
+    const idParams = hasIdFilter ? { targetRecordId: filterById?.value, directNavigation: true } : {};
+
     const finalParams = {
       ...params,
+      ...idParams,
       criteria: allCriteria,
       isImplicitFilterApplied,
       noActiveFilter: true,
     };
 
     return finalParams;
-  }, [params, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied]);
+  }, [params, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, activeColumnFilters]);
 
   const fetchData = useCallback(
     async (targetPage: number = page) => {
+      // Prevent duplicate fetches
+      if (fetchInProgressRef.current) {
+        return;
+      }
+
+      fetchInProgressRef.current = true;
       const safePageSize = pageSize ?? 1000;
 
       try {
-        const { ok, data } = await loadData(entity, targetPage, safePageSize, queryParams, treeOptions);
+        const { ok, data } = (await loadData(entity, targetPage, safePageSize, queryParams, memoizedTreeOptions)) as {
+          ok: boolean;
+          data: { response: { data: EntityData[] } };
+        };
 
         if (!(ok && data.response.data)) {
           throw data;
@@ -185,9 +222,19 @@ export function useDatasource({
         }
       } finally {
         setLoading(false);
+        fetchInProgressRef.current = false;
       }
     },
-    [entity, page, pageSize, queryParams, treeOptions, isImplicitFilterApplied]
+    [
+      entity,
+      page,
+      pageSize,
+      queryParams,
+      memoizedTreeOptions,
+      isImplicitFilterApplied,
+      searchQuery,
+      setIsImplicitFilterApplied,
+    ]
   );
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -204,7 +251,7 @@ export function useDatasource({
     setLoading(true);
 
     fetchData();
-  }, [entity, page, pageSize, queryParams, skip, treeOptions, isImplicitFilterApplied]);
+  }, [entity, page, pageSize, queryParams, skip, memoizedTreeOptions, isImplicitFilterApplied]);
 
   useEffect(() => {
     reinit();
@@ -227,6 +274,8 @@ export function useDatasource({
     loaded,
     activeColumnFilters,
     removeRecordLocally,
+    updateRecordLocally,
+    addRecordLocally,
     refetch,
     hasMoreRecords,
   };

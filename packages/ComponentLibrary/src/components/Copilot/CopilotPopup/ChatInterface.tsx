@@ -34,6 +34,8 @@ interface ChatContentProps {
   onSendMessage: (message: string, files?: File[]) => void;
   contextItems: ContextItem[];
   onRemoveContext?: (id: string) => void;
+  currentMessage: string;
+  onMessageChange: (message: string) => void;
   translations: {
     messageList: ChatInterfaceProps["translations"]["messageList"];
     messageInput: ChatInterfaceProps["translations"]["messageInput"];
@@ -49,6 +51,8 @@ const ChatContent: React.FC<ChatContentProps> = ({
   onSendMessage,
   contextItems,
   onRemoveContext,
+  currentMessage,
+  onMessageChange,
   translations,
 }) => (
   <>
@@ -68,6 +72,8 @@ const ChatContent: React.FC<ChatContentProps> = ({
       disabled={isLoading}
       contextItems={contextItems}
       onRemoveContext={onRemoveContext}
+      message={currentMessage}
+      onMessageChange={onMessageChange}
       translations={{
         placeholder: translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder,
         selectedRegisters: translations.selectedRegisters,
@@ -97,6 +103,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   translations,
 }) => {
   const [showConversations, setShowConversations] = useState(true);
+  const [currentMessage, setCurrentMessage] = useState("");
+
   let parsedAssistants: IAssistant[] = [];
   if (typeof assistants === "string") {
     try {
@@ -120,7 +128,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setShowConversations(newShowState);
 
     if (newShowState && onLoadConversations) {
-      console.log("Loading conversations for assistant:", selectedAssistant);
       onLoadConversations();
     }
   };
@@ -188,6 +195,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           onSendMessage={onSendMessage}
           contextItems={contextItems}
           onRemoveContext={onRemoveContext}
+          currentMessage={currentMessage}
+          onMessageChange={setCurrentMessage}
           translations={{
             messageList: translations.messageList,
             messageInput: translations.messageInput,
@@ -248,6 +257,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           onSendMessage={onSendMessage}
           contextItems={contextItems}
           onRemoveContext={onRemoveContext}
+          currentMessage={currentMessage}
+          onMessageChange={setCurrentMessage}
           translations={{
             messageList: translations.messageList,
             messageInput: translations.messageInput,

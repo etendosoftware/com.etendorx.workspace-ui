@@ -76,6 +76,8 @@ export const loadTableDirFilterOptions = async ({
     let options: FilterOption[] = [];
 
     if (ColumnFilterUtils.needsDistinctValues(column)) {
+      // Use distinct values approach for fields that need to filter by table records
+      // This queries the main datasource with _distinct to get unique values of this field from actual table data
       const currentDatasource = entityName;
       const tabIdStr = tabId;
       const distinctField = column.columnName;
@@ -90,6 +92,7 @@ export const loadTableDirFilterOptions = async ({
         offset
       );
     } else {
+      // Fallback to selector/datasource approach for fields without a referenced entity
       const selectorDefinitionId = column.selectorDefinitionId as string | undefined;
       const datasourceId = column.datasourceId || column.referencedEntity;
 

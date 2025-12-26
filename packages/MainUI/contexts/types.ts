@@ -35,7 +35,7 @@ export type Language = "en_US" | "es_ES";
 export interface LanguageContextType {
   language: Language | null;
   prevLanguage: Language | null;
-  setLanguage: (lang: Language) => void;
+  setLanguage: (lang: Language | null) => void;
   setLabels: React.Dispatch<React.SetStateAction<Labels>>;
   getFlag: (language?: Language | null) => string;
   getLabel: (key: string) => string;
@@ -102,12 +102,9 @@ export interface IMetadataContext {
   error?: Error;
   groupedTabs: Etendo.Tab[][];
   tabs: Record<string, Tab>;
-  refetch: () => Promise<Etendo.WindowMetadata>;
   removeRecord: (tabId: string, recordId: string) => void;
-  emptyWindowDataName: () => void;
   loadWindowData: (windowId: string) => Promise<Etendo.WindowMetadata>;
   getWindowMetadata: (windowId: string) => Etendo.WindowMetadata | undefined;
-  getWindowTitle: (windowId: string) => string;
   isWindowLoading: (windowId: string) => boolean;
   getWindowError: (windowId: string) => Error | undefined;
   windowsData: Record<string, Etendo.WindowMetadata>;

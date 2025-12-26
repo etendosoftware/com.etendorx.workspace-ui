@@ -5,6 +5,7 @@ import DateRangeModal from "../../../ComponentLibrary/src/components/RangeDateMo
 import { formatBrowserDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import CalendarIcon from "../../../ComponentLibrary/src/assets/icons/calendar.svg";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useDebouncedCallback } from "./utils/performanceOptimizations";
 
 export interface DateSelectorProps {
   column: Column;
@@ -20,6 +21,11 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
   const [inputValue, setInputValue] = useState("");
   const isFromModalRef = useRef(false);
 
+  // Create a debounced version of the filter change handler
+  const debouncedFilterChange = useDebouncedCallback((value: string) => {
+    onFilterChange(value);
+  }, 500);
+
   // Synchronize inputValue when filterValue changes externally (e.g., from "Use as filter")
   // Also handle clearing when filterValue becomes undefined
   // Parse and format the filterValue from state properly
@@ -33,6 +39,19 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
 
     // Only reformat and add "from"/"to" labels if it comes from the modal
     if (!isFromModalRef.current) {
+      // Check for ISO date format (YYYY-MM-DD) which comes from "Use as filter"
+      const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (isoDateRegex.test(filterValue)) {
+        const [year, month, day] = filterValue.split("-").map(Number);
+        const date = new Date(year, month - 1, day);
+        if (!isNaN(date.getTime())) {
+          setInputValue(formatBrowserDate(date));
+          setStartDate(date);
+          setEndDate(null);
+          return;
+        }
+      }
+
       setInputValue(filterValue);
       return;
     }
@@ -82,7 +101,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ column, onFilterChan
     setInputValue(e.target.value);
     setStartDate(null);
     setEndDate(null);
-    onFilterChange(e.target.value);
+    debouncedFilterChange(e.target.value);
   };
 
   const handleDatePickerClick = () => {

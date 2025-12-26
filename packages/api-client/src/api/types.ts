@@ -150,6 +150,13 @@ export interface Field {
   processDefinition?: ProcessDefinition;
   processAction?: ProcessAction;
   etmetaCustomjs?: string | null;
+  /**
+   * Indicates if this field contains the parent record ID in a hierarchical tab structure.
+   * Used during URL state recovery to traverse from child records up to parent records.
+   * The field KEY (not the value of this property) is used to access the parent record ID
+   * from the child record's data (e.g., record["cBpartnerId"]).
+   */
+  isParentRecordProperty?: boolean;
 }
 
 export interface Option<T extends string = string> {
@@ -179,6 +186,7 @@ export interface Column {
   [key: string]: unknown;
   fieldId?: string;
   customJs?: string | null;
+  referencedTabId: string | null;
 }
 
 export interface MappedField {
@@ -247,6 +255,8 @@ export interface Tab {
   name: string;
   title: string;
   parentColumns: string[];
+  displayLogicExpression?: string;
+  displayLogic?: string;
   id: string;
   table: string;
   entityName: string;
@@ -257,11 +267,15 @@ export interface Tab {
   hqlfilterclause: string;
   hqlwhereclause: string;
   sQLWhereClause: string;
+  hqlorderbyclause?: string;
+  sQLOrderByClause?: string;
   module: string;
   parentTabId?: string;
   table$_identifier?: string;
   window$_identifier?: string;
-  tableTree?: boolean;
+  tableTree?: boolean | string;
+  obuiappShowCloneButton?: boolean;
+  obuiappCloneChildren?: boolean;
 }
 
 export interface WindowMetadata {

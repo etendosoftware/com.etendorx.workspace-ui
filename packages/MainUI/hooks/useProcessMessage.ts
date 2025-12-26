@@ -19,7 +19,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
 import { useCallback } from "react";
 import { useUserContext } from "./useUserContext";
-import { useRuntimeConfig } from "./useRuntimeConfig";
+import { useRuntimeConfig } from "../contexts/RuntimeConfigContext";
 
 export interface ProcessMessage {
   text: string;

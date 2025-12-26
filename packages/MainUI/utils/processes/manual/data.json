@@ -106,5 +106,11 @@
     "command": "BUTTONProcCreate103",
     "inpkeyColumnId": "M_PriceList_Version_ID",
     "keyColumnName": "M_PriceList_Version_ID"
+  },
+  "2689": {
+    "url": "/PhysicalInventory/Header_Edition.html",
+    "command": "BUTTONProcessing107",
+    "inpkeyColumnId": "M_Inventory_ID",
+    "keyColumnName": "M_Inventory_ID"
   }
 }

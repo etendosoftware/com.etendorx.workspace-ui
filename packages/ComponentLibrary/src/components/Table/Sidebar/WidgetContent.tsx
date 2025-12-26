@@ -19,7 +19,12 @@ import { Box, Grid, Typography } from "@mui/material";
 import { useStyle } from "../styles";
 import IconButton from "../../IconButton";
 import InformationIcon from "../../../assets/icons/info.svg";
-import type { ContentGridProps, Widget } from "@workspaceui/storybook/src/stories/Components/Table/types";
+// type ContentGridProps = any;
+// type Widget = any;
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+type ContentGridProps = any;
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+type Widget = any;
 
 const WidgetComponent: React.FC<Widget> = ({
   title,
@@ -64,7 +69,7 @@ const ContentGrid: React.FC<ContentGridProps> = ({ widgets }) => {
   return (
     <Box sx={sx.gridContainer}>
       <Grid container columnSpacing="0.75rem">
-        {widgets.map((widget) => (
+        {widgets.map((widget: any) => (
           <Grid item key={widget.id} xs={getGridSize(widget.size)}>
             <WidgetComponent {...widget} />
           </Grid>

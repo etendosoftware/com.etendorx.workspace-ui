@@ -23,10 +23,13 @@ import Collapsible from "@/components/Form/Collapsible";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import { useFormViewContext } from "./contexts/FormViewContext";
 import { useRef, useEffect, useState } from "react";
+import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
 import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
 import NoteSection from "./Sections/noteSection";
 import AttachmentSection from "./Sections/AttachmentSection";
+import LinkedItemsSection from "./Sections/LinkedItemsSection";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface FormFieldsProps {
   tab: Tab;
@@ -63,6 +66,11 @@ export function FormFields({
   const [attachmentCount, setAttachmentCount] = useState(initialAttachmentCount);
   const { expandedSections, selectedTab, handleSectionRef, handleAccordionChange, isSectionExpanded, getIconForGroup } =
     useFormViewContext();
+  const { t } = useTranslation();
+
+  // Get record identifier from form data
+  const formData = watch();
+  const recordIdentifier = formData?._identifier as string | undefined;
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -107,6 +115,7 @@ export function FormFields({
     }
   }, [openAttachmentModal, handleAccordionChange, isSectionExpanded]);
 
+  /** Scroll to selected tab */
   useEffect(() => {
     if (selectedTab && containerRef.current) {
       const sectionRefs = containerRef.current.querySelectorAll("[data-section-id]");
@@ -156,7 +165,7 @@ export function FormFields({
         return (
           <div key={sectionId} ref={handleSectionRef(id)} data-section-id={sectionId}>
             <Collapsible
-              title={group.identifier}
+              title={group.identifier === "More Information" ? t("forms.sections.moreInformation") : group.identifier}
               isExpanded={isSectionExpanded(id)}
               sectionId={sectionId}
               icon={getIconForGroup(group.identifier)}
@@ -174,7 +183,7 @@ export function FormFields({
       {/* Notes Section */}
       <div ref={handleSectionRef("notes_group")} data-section-id="notes_group">
         <Collapsible
-          title={noteCount > 0 ? `Notes (${noteCount})` : "Notes"}
+          title={noteCount > 0 ? `${t("forms.notes.title")} (${noteCount})` : t("forms.notes.title")}
           isExpanded={isSectionExpanded("notes_group")}
           sectionId="notes_group"
           icon={<NoteIcon data-testid="NoteIcon__38e4a6" />}
@@ -200,7 +209,9 @@ export function FormFields({
       {/* Attachments Section */}
       <div ref={handleSectionRef("attachments_group")} data-section-id="attachments_group">
         <Collapsible
-          title={attachmentCount > 0 ? `Attachments (${attachmentCount})` : "Attachments"}
+          title={
+            attachmentCount > 0 ? `${t("forms.attachments.title")} (${attachmentCount})` : t("forms.attachments.title")
+          }
           isExpanded={isSectionExpanded("attachments_group")}
           sectionId="attachments_group"
           icon={<AttachmentIcon data-testid="AttachmentIcon__attachments" />}
@@ -215,7 +226,25 @@ export function FormFields({
             showErrorModal={showErrorModal}
             openAddModal={openAttachmentModal}
             onAddModalClose={onAttachmentModalClose}
+            recordIdentifier={recordIdentifier}
             data-testid="AttachmentSection__attachments"
+          />
+        </Collapsible>
+      </div>
+      {/* Linked Items Section */}
+      <div ref={handleSectionRef("linked-items")} data-section-id="linked-items">
+        <Collapsible
+          title={t("forms.sections.linkedItems")}
+          isExpanded={isSectionExpanded("linked-items")}
+          sectionId="linked-items"
+          icon={<LinkIcon data-testid="LinkIcon__linkeditems" />}
+          onToggle={(isOpen: boolean) => handleAccordionChange("linked-items", isOpen)}
+          data-testid="Collapsible__linkeditems">
+          <LinkedItemsSection
+            tabId={tab.id}
+            entityName={tab.entityName}
+            recordId={recordId}
+            data-testid="LinkedItemsSection__38e4a6"
           />
         </Collapsible>
       </div>

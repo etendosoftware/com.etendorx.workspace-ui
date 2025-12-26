@@ -17,7 +17,7 @@
 
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { buildPayloadByInputName } from "@/utils";
 import { FieldName, type UseTableDirDatasourceParams } from "../types";
@@ -27,8 +27,8 @@ import {
   PRODUCT_SELECTOR_DEFAULTS,
   TABLEDIR_SELECTOR_DEFAULTS,
   INVOICE_FIELD_MAPPINGS,
-  FORM_VALUE_MAPPINGS,
 } from "./constants";
+import { transformValueToClassicFormat } from "@/utils/datasourceUtils";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 const FALLBACK_RESULT: Record<string, EntityValue> = {} as Record<string, EntityValue>;
@@ -49,6 +49,7 @@ export const useTableDirDatasource = ({
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const value = watch(field.hqlName);
+  const fetchInProgressRef = useRef(false);
 
   const isProductField = field.column.reference === REFERENCE_IDS.PRODUCT;
   const parentData = useFormParent(FieldName.INPUT_NAME);
@@ -84,17 +85,8 @@ export const useTableDirDatasource = ({
       for (const [key, value] of Object.entries(formData)) {
         const currentField = tab.fields[key];
         const inputName = currentField?.inputName || key;
-        const stringValue = String(value);
 
-        const isISODate = /^\d{4}-\d{2}-\d{2}$/.test(stringValue);
-
-        const formattedValue = isISODate ? stringValue.split("-").reverse().join("-") : stringValue;
-
-        const safeValue = Object.prototype.hasOwnProperty.call(FORM_VALUE_MAPPINGS, formattedValue)
-          ? FORM_VALUE_MAPPINGS[formattedValue as keyof typeof FORM_VALUE_MAPPINGS]
-          : formattedValue;
-
-        formValues[inputName] = safeValue;
+        formValues[inputName] = transformValueToClassicFormat(value);
       }
 
       return formValues;
@@ -207,14 +199,16 @@ export const useTableDirDatasource = ({
         },
       ];
 
-      if (isProduct) {
-        const productCriteria = PRODUCT_SELECTOR_DEFAULTS.SEARCH_FIELDS.map((fieldName) => ({
-          fieldName,
-          operator: "iContains",
-          value: search,
-        }));
-        return { dummyId, criteria: [...baseCriteria, ...productCriteria] };
-      }
+      // Build product criteria if applicable
+      const productCriteria = isProduct
+        ? PRODUCT_SELECTOR_DEFAULTS.SEARCH_FIELDS.map((fieldName) => ({
+            fieldName,
+            operator: "iContains",
+            value: search,
+          }))
+        : [];
+
+      // Build TableDir criteria
       const searchFields = [];
       if (field.selector?.displayField) {
         searchFields.push(field.selector.displayField);
@@ -232,7 +226,8 @@ export const useTableDirDatasource = ({
         value: search,
       }));
 
-      return { dummyId, criteria: [...baseCriteria, ...tableDirCriteria] };
+      // Combine all criteria
+      return { dummyId, criteria: [...baseCriteria, ...productCriteria, ...tableDirCriteria] };
     },
     [field.selector]
   );
@@ -299,6 +294,12 @@ export const useTableDirDatasource = ({
       try {
         if (!field || !tab) return;
 
+        // Prevent duplicate fetches when called rapidly (e.g., double onFocus events)
+        if (fetchInProgressRef.current) {
+          return;
+        }
+
+        fetchInProgressRef.current = true;
         setLoading(true);
 
         if (reset) {
@@ -332,6 +333,7 @@ export const useTableDirDatasource = ({
         setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
         setLoading(false);
+        fetchInProgressRef.current = false;
       }
     },
     [field, tab, currentPage, pageSize, initialPageSize, buildRequestBody, applySearchCriteria, processApiResponse]

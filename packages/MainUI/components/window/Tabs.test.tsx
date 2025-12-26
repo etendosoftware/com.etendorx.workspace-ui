@@ -1,4 +1,55 @@
 import { render, screen } from "@testing-library/react";
+import TabsComponent from "./Tabs";
+import WindowProvider from "@/contexts/window";
+
+/**
+ * Test helpers
+ */
+
+// Mock Next.js navigation hooks
+const mockReplace = jest.fn();
+const mockSearchParams = new URLSearchParams();
+
+const createMockRouter = () => ({
+  replace: mockReplace,
+  push: jest.fn(),
+  back: jest.fn(),
+  forward: jest.fn(),
+  refresh: jest.fn(),
+  prefetch: jest.fn(),
+});
+
+const createMockTabs = (count = 2) =>
+  Array.from({ length: count }, (_, i) => ({
+    id: `t${i + 1}`,
+    name: `Tab ${i + 1}`,
+    tabLevel: i + 1,
+  })) as any[];
+
+const setupWindowParams = (windowId = "window1") => {
+  mockSearchParams.set(`w_${windowId}`, "active");
+  mockSearchParams.set(`wi_${windowId}`, windowId);
+  mockSearchParams.set(`o_${windowId}`, "1");
+};
+
+const clearSearchParams = () => {
+  Array.from(mockSearchParams.keys()).forEach((key) => mockSearchParams.delete(key));
+};
+
+const renderTabsComponent = (tabs: any[]) => {
+  const TabsAsAny = TabsComponent as any;
+  return render(
+    <WindowProvider>
+      <TabsAsAny tabs={tabs} />
+    </WindowProvider>
+  );
+};
+
+jest.mock("next/navigation", () => ({
+  useRouter: () => createMockRouter(),
+  useSearchParams: () => mockSearchParams,
+  usePathname: () => "/window",
+}));
 
 // Mock subcomponents to reduce rendering complexity
 jest.mock("@/components/window/SubTabsSwitch", () => ({
@@ -27,10 +78,6 @@ jest.mock("@/hooks/useSelected", () => ({
   useSelected: () => ({ activeLevels: [1], setActiveLevel: jest.fn() }),
 }));
 
-jest.mock("@/hooks/navigation/useMultiWindowURL", () => ({
-  useMultiWindowURL: () => ({ activeWindow: null }),
-}));
-
 jest.mock("@/hooks/useTableStatePersistenceTab", () => ({
   useTableStatePersistenceTab: () => ({
     activeLevels: [1],
@@ -38,27 +85,25 @@ jest.mock("@/hooks/useTableStatePersistenceTab", () => ({
   }),
 }));
 
-// Spy on useTransition to force pending state
 // Force React.useTransition to always be pending
 jest.mock("react", () => {
   const actual = jest.requireActual("react");
   return { ...actual, useTransition: () => [true, (cb: any) => cb()] };
 });
 
-import TabsComponent from "./Tabs";
-
 describe("Tabs - pending state skeleton", () => {
-  const tabs = [
-    { id: "t1", name: "Tab 1", tabLevel: 1 },
-    { id: "t2", name: "Tab 2", tabLevel: 2 },
-  ] as any[];
+  const tabs = createMockTabs();
+
+  beforeEach(() => {
+    mockReplace.mockClear();
+    clearSearchParams();
+    setupWindowParams();
+  });
 
   it("renders skeleton content when transition is pending", () => {
-    const TabsAsAny = TabsComponent as any;
-    render(<TabsAsAny tabs={tabs} />);
+    renderTabsComponent(tabs);
 
     expect(screen.getByTestId("tab-container")).toBeInTheDocument();
-    // When pending, the skeleton container with animate-pulse should be present
     const skeleton = document.querySelector(".animate-pulse");
     expect(skeleton).toBeInTheDocument();
   });

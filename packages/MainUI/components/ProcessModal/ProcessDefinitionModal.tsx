@@ -40,6 +40,22 @@ import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
 import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { FormProvider, useForm, useFormState } from "react-hook-form";
+import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
+import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
+import Modal from "../Modal";
+import Loading from "../loading";
+import WindowReferenceGrid from "./WindowReferenceGrid";
+import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
+import Button from "../../../ComponentLibrary/src/components/Button/Button";
+import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
+import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
+import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
+import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
+import { useProcessCallouts } from "./callouts/useProcessCallouts";
 
 // Date field reference codes for conversion
 const DATE_REFERENCE_CODES = [
@@ -58,22 +74,6 @@ const isDateReference = (reference: string): boolean => {
     reference.toLowerCase().includes("time")
   );
 };
-import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
-import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { FormProvider, useForm, useFormState } from "react-hook-form";
-import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
-import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
-import Modal from "../Modal";
-import Loading from "../loading";
-import WindowReferenceGrid from "./WindowReferenceGrid";
-import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
-import Button from "../../../ComponentLibrary/src/components/Button/Button";
-import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
-import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
-import type { Tab, ProcessParameter } from "@workspaceui/api-client/src/api/types";
-import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
-import { useProcessCallouts } from "./callouts/useProcessCallouts";
 
 /** Fallback object for record values when no record context exists */
 export const FALLBACK_RESULT = {};
@@ -83,8 +83,8 @@ const WINDOW_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW;
 
 export type GridSelectionStructure = {
   [entityName: string]: {
-    _selection: unknown[];
-    _allRows: unknown[];
+    _selection: EntityData[];
+    _allRows: EntityData[];
   };
 };
 
@@ -723,10 +723,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             setGridSelection((prev) => {
               const next = { ...prev };
               for (const [key, ids] of Object.entries(safeResult._gridSelection as Record<string, string[]>)) {
-                // keep existing _allRows if present, but overwrite _selection with ids array
+                // keep existing _allRows if present, but overwrite _selection with EntityData array
                 next[key] = {
                   ...(next[key] || { _selection: [], _allRows: [] }),
-                  _selection: Array.isArray(ids) ? ids.map((id) => String(id)) : [],
+                  _selection: Array.isArray(ids)
+                    ? ids.map(
+                        (id) =>
+                          ({
+                            id: String(id),
+                          }) as EntityData
+                      )
+                    : [],
                 };
               }
               return next;
@@ -798,7 +805,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         for (const [tableKey, ids] of Object.entries(autoSelectConfig._gridSelection || {})) {
           next[tableKey] = {
             ...(next[tableKey] || { _selection: [], _allRows: [] }),
-            _selection: Array.isArray(ids) ? ids.map((id) => String(id)) : [],
+            _selection: Array.isArray(ids)
+              ? ids.map(
+                  (id) =>
+                    ({
+                      id: String(id),
+                    }) as EntityData
+                )
+              : [],
           };
         }
         return next;
@@ -941,8 +955,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     if (result) return null;
 
     const parametersList = Object.values(parameters);
-    const windowReferences: JSX.Element[] = [];
-    const selectors: JSX.Element[] = [];
+    const windowReferences: React.ReactElement[] = [];
+    const selectors: React.ReactElement[] = [];
 
     // Separate window references from selectors
     for (const parameter of parametersList) {

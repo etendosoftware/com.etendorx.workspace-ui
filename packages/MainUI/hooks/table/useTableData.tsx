@@ -15,6 +15,7 @@
  *************************************************************************
  */
 
+import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import type {
   MRT_ColumnFiltersState,
@@ -28,8 +29,8 @@ import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filt
 import { useSearch } from "../../contexts/searchContext";
 import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
+import { useWindowContext } from "../../contexts/window";
 import { useToolbarContext } from "../../contexts/ToolbarContext";
-import { useMultiWindowURL } from "../navigation/useMultiWindowURL";
 import { useTableStatePersistenceTab } from "../useTableStatePersistenceTab";
 import { useTreeModeMetadata } from "../useTreeModeMetadata";
 import { useDatasource } from "../useDatasource";
@@ -45,6 +46,10 @@ interface UseTableDataParams {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
   onLoadFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   onLoadMoreFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
+}
+
+export interface SummaryResult {
+  value: number | string;
 }
 
 interface UseTableDataReturn {
@@ -81,6 +86,8 @@ interface UseTableDataReturn {
   fetchMore: () => void;
   refetch: () => Promise<void>;
   removeRecordLocally: ((id: string) => void) | null;
+  updateRecordLocally: (recordId: string, updatedRecord: EntityData) => void;
+  addRecordLocally: (newRecord: EntityData) => void;
   hasMoreRecords: boolean;
   applyQuickFilter: (
     columnId: string,
@@ -88,6 +95,9 @@ interface UseTableDataReturn {
     filterValue: string | number,
     filterLabel: string
   ) => Promise<void>;
+  isImplicitFilterApplied: boolean;
+  tableColumnFilters: MRT_ColumnFiltersState;
+  fetchSummary: (summaries: Record<string, string>) => Promise<Record<string, number | string> | null>;
 }
 
 export const useTableData = ({
@@ -104,12 +114,14 @@ export const useTableData = ({
   const [prevShouldUseTreeMode, setPrevShouldUseTreeMode] = useState<boolean | null>(null);
 
   const expandedRef = useRef<MRT_ExpandedState>({});
+  const hasBeenInGridMode = useRef<boolean>(false);
 
   // Contexts and hooks
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
-  const { activeWindow } = useMultiWindowURL();
+  const { activeWindow, getTabFormState, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink } =
+    useWindowContext();
   const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
 
   const {
@@ -121,13 +133,24 @@ export const useTableData = ({
     setTableColumnSorting,
     setTableColumnOrder,
     setIsImplicitFilterApplied,
-  } = useTableStatePersistenceTab({ windowIdentifier: activeWindow?.window_identifier || "", tabId: tab.id });
+    tableColumnSorting,
+    advancedCriteria,
+  } = useTableStatePersistenceTab({
+    windowIdentifier: activeWindow?.windowIdentifier || "",
+    tabId: tab.id,
+    tabLevel: tab.tabLevel,
+  });
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
   // Computed values
   const parentId = String(parentRecord?.id ?? "");
   const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
   const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
+
+  const tabFormState = activeWindow?.windowIdentifier
+    ? getTabFormState(activeWindow.windowIdentifier, tab.id)
+    : undefined;
+  const hasSelectedRecord = !!tabFormState?.recordId && tabFormState.recordId !== NEW_RECORD_ID;
 
   // Parse columns
   const rawColumns = useMemo(() => {
@@ -158,11 +181,13 @@ export const useTableData = ({
     async (columnId: string, selectedOptions: FilterOption[]) => {
       setColumnFilter(columnId, selectedOptions);
 
+      // Store complete FilterOption[] to preserve id, label, and value
+      // This allows proper reconstruction of filter state when switching windows
       const mrtFilter =
         selectedOptions.length > 0
           ? {
               id: columnId,
-              value: selectedOptions.map((opt) => opt.value),
+              value: selectedOptions,
             }
           : null;
 
@@ -218,25 +243,30 @@ export const useTableData = ({
       // Set loading state before fetching data
       await loadFilterOptions(columnId, searchQuery);
 
-      if (ColumnFilterUtils.isSelectColumn(column)) {
-        return loadSelectFilterOptions(column, columnId, searchQuery, setFilterOptions);
-      }
-
+      // Handle TableDir columns (backend search)
       if (ColumnFilterUtils.isTableDirColumn(column)) {
         return loadTableDirFilterOptions({
           column,
           columnId,
           searchQuery,
           tabId: tab.id,
-          entityName: treeEntity,
-          fetchFilterOptions,
+          entityName: tab.entityName,
+          fetchFilterOptions: async (colId, query) => {
+            await loadFilterOptions(colId, query);
+            return [];
+          },
           setFilterOptions,
         });
       }
 
+      // Handle Select/List columns (static or reference)
+      if (ColumnFilterUtils.supportsDropdownFilter(column)) {
+        return loadSelectFilterOptions(column, columnId, searchQuery, setFilterOptions);
+      }
+
       return [];
     },
-    [rawColumns, fetchFilterOptions, setFilterOptions, loadFilterOptions, tab.id, treeEntity]
+    [tab.fields, tab.id, tab.entityName, loadFilterOptions, setFilterOptions]
   );
 
   const handleLoadMoreFilterOptions = useCallback(
@@ -285,32 +315,109 @@ export const useTableData = ({
   });
 
   // Build query
-  const query: DatasourceOptions = useMemo(() => {
-    // Find the correct parent column by matching referencedEntity with parentTab.entityName
-    let fieldName = "id";
+  // Helper to determine default sort
+  const getDefaultSort = useCallback(() => {
+    if (!tab) return null;
 
-    if (Array.isArray(tab?.parentColumns) && tab.parentColumns.length > 0) {
-      if (parentTab) {
-        // Try to find the field that references the parent tab's entity
-        const matchingField = tab.parentColumns.find((colName) => {
-          const field = tab.fields[colName];
-          return field?.referencedEntity === parentTab.entityName;
-        });
+    // 1. Tab Level: Order By Clause
+    const orderByClause = tab.hqlorderbyclause || tab.sQLOrderByClause;
+    if (orderByClause) {
+      const parts = orderByClause.trim().split(/\s+/);
+      const fieldName = parts[0];
+      const desc = parts.length > 1 && parts[1].toUpperCase() === "DESC";
 
-        fieldName = matchingField || tab.parentColumns[0] || "id";
-      } else {
-        // No parent tab, use first column as fallback
-        fieldName = tab.parentColumns[0] || "id";
-      }
+      // Try to find the field to get its UI ID (name)
+      const field = Object.values(tab.fields).find(
+        (f) => f.hqlName === fieldName || f.columnName === fieldName || f.name === fieldName
+      );
+
+      return {
+        id: field?.name ?? fieldName,
+        desc,
+      };
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fields = Object.values(tab.fields) as any[];
+
+    // 2. Field Level: Record Sort No
+    const sortNoFields = fields.filter((f) => f.recordSortNo != null);
+    if (sortNoFields.length > 0) {
+      sortNoFields.sort((a, b) => a.recordSortNo - b.recordSortNo);
+      return {
+        id: sortNoFields[0].name,
+        desc: false,
+      };
+    }
+
+    // 3. Field Level: Identifier
+    const identifierFields = fields.filter((field) => {
+      const col = field.column;
+      if (!col) return false;
+      // Check both boolean true and string "true" values
+      return (
+        col?.isIdentifier === true ||
+        col?.isIdentifier === "true" ||
+        col?.identifier === true ||
+        col?.identifier === "true"
+      );
+    });
+
+    if (identifierFields.length > 0) {
+      const sortedIdentifierFields = identifierFields.toSorted(
+        (a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0)
+      );
+      const identifierField = sortedIdentifierFields[0];
+      return {
+        id: identifierField.name,
+        desc: false,
+      };
+    }
+
+    return null;
+  }, [tab]);
+
+  // Helper to find parent field name
+  const getParentFieldName = useCallback(() => {
+    if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
+      return "id";
+    }
+
+    if (!parentTab) {
+      return tab.parentColumns[0] || "id";
+    }
+
+    const matchingField = tab.parentColumns.find((colName) => {
+      const field = tab.fields[colName];
+      return field?.referencedEntity === parentTab.entityName;
+    });
+
+    return matchingField || tab.parentColumns[0] || "id";
+  }, [tab.parentColumns, tab.fields, parentTab]);
+
+  // Helper to apply sort options to query
+  const applySortToOptions = useCallback(
+    (options: DatasourceOptions, sort: ReturnType<typeof getDefaultSort>) => {
+      if (!sort) return;
+
+      const field = Object.values(tab.fields).find((f) => f.name === sort.id);
+      const sortField = field?.hqlName || sort.id;
+
+      options.sortBy = sort.desc ? `-${sortField}` : sortField;
+      options.isSorting = true;
+    },
+    [tab.fields]
+  );
+
+  const query: DatasourceOptions = useMemo(() => {
+    const fieldName = getParentFieldName();
     const value = parentId;
     const operator = "equals";
 
     const options: DatasourceOptions = {
       windowId: tab.window,
       tabId: tab.id,
-      isImplicitFilterApplied: initialIsFilterApplied,
+      isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
       pageSize: 100,
     };
 
@@ -319,30 +426,42 @@ export const useTableData = ({
     }
 
     if (value && value !== "" && value !== undefined) {
-      options.criteria = [
-        {
-          fieldName,
-          value,
-          operator,
-        },
-      ];
+      options.criteria = [{ fieldName, value, operator }];
+    }
+
+    // Apply advanced criteria
+    if (advancedCriteria) {
+      if (options.criteria) {
+        // @ts-ignore - advancedCriteria is compatible with Criteria
+        options.criteria.push(advancedCriteria);
+      } else {
+        // @ts-ignore - advancedCriteria is compatible with Criteria
+        options.criteria = [advancedCriteria];
+      }
+    } else {
+      console.log("useTableData: No advancedCriteria found");
+    }
+
+    // Apply sorting
+    if (tableColumnSorting?.length > 0) {
+      applySortToOptions(options, tableColumnSorting[0]);
+    } else {
+      applySortToOptions(options, getDefaultSort());
     }
 
     return options;
   }, [
-    tab.parentColumns,
     tab.window,
     tab.id,
     initialIsFilterApplied,
-    tab.name,
-    tab.tabLevel,
-    tab.parentTabId,
-    tab.entityName,
-    tab.fields,
+    isImplicitFilterApplied,
     parentId,
-    parentRecord?.id,
-    parentTab,
     language,
+    tableColumnSorting,
+    advancedCriteria,
+    getDefaultSort,
+    getParentFieldName,
+    applySortToOptions,
   ]);
 
   // Tree options
@@ -371,7 +490,17 @@ export const useTableData = ({
   }, [rawColumns]);
 
   // Use datasource hook
-  const { fetchMore, records, removeRecordLocally, error, refetch, loading, hasMoreRecords } = useDatasource({
+  const {
+    fetchMore,
+    records,
+    removeRecordLocally,
+    updateRecordLocally,
+    addRecordLocally,
+    error,
+    refetch,
+    loading,
+    hasMoreRecords,
+  } = useDatasource({
     entity: treeEntity,
     params: query,
     columns: stableDatasourceColumns,
@@ -423,7 +552,10 @@ export const useTableData = ({
           referencedTableId: childTreeOptions.referencedTableId,
         };
 
-        const response = await datasource.get(treeEntity, processedParams);
+        const response = (await datasource.get(treeEntity, processedParams)) as {
+          ok: boolean;
+          data: { response?: { data?: EntityData[] } };
+        };
 
         if (response.ok && response.data?.response?.data) {
           const childNodes = response.data.response.data;
@@ -563,17 +695,136 @@ export const useTableData = ({
     setIsImplicitFilterApplied(false);
   }, [isImplicitFilterApplied, setIsImplicitFilterApplied, handleMRTColumnFiltersChange]);
 
+  const hasInitializedDirectLink = useRef(false);
+
+  /** Track when tab is in grid mode */
+  useEffect(() => {
+    const isGridMode = !tabFormState || tabFormState.mode !== "form";
+    if (isGridMode && !hasBeenInGridMode.current) {
+      hasBeenInGridMode.current = true;
+    }
+  }, [tabFormState]);
+
+  /** Initialize implicit filter state */
   /** Initialize implicit filter state */
   useEffect(() => {
-    if (isImplicitFilterApplied === undefined) {
-      setIsImplicitFilterApplied(initialIsFilterApplied);
+    if (!hasInitializedDirectLink.current) {
+      const windowIdentifier = activeWindow?.windowIdentifier;
+
+      const initializeDirectLink = () => {
+        if (isImplicitFilterApplied !== false) {
+          setIsImplicitFilterApplied(false);
+        }
+
+        if (!hasBeenInGridMode.current && tabFormState?.recordId && windowIdentifier) {
+          const currentIdFilter = tableColumnFilters.find((f) => f.id === "id");
+          if (currentIdFilter?.value !== tabFormState.recordId) {
+            setTableColumnFilters([{ id: "id", value: tabFormState.recordId }]);
+          }
+          setTabInitializedWithDirectLink(windowIdentifier, tab.id, true);
+        }
+        hasInitializedDirectLink.current = true;
+      };
+
+      const initializeDefault = () => {
+        setIsImplicitFilterApplied(initialIsFilterApplied);
+        hasInitializedDirectLink.current = true;
+      };
+
+      if (hasSelectedRecord && tabFormState?.mode === "form") {
+        initializeDirectLink();
+      } else if (isImplicitFilterApplied === undefined) {
+        initializeDefault();
+      }
     }
-  }, [initialIsFilterApplied, isImplicitFilterApplied, setIsImplicitFilterApplied]);
+  }, [
+    initialIsFilterApplied,
+    isImplicitFilterApplied,
+    setIsImplicitFilterApplied,
+    hasSelectedRecord,
+    tabFormState,
+    setTableColumnFilters,
+    tableColumnFilters,
+    activeWindow,
+    tab.id,
+    setTabInitializedWithDirectLink,
+  ]);
+
+  /** Clear ID filter when returning to grid mode from manual navigation */
+  useEffect(() => {
+    const windowIdentifier = activeWindow?.windowIdentifier;
+    if (!windowIdentifier) return;
+
+    // If we are NOT in form mode (meaning we are in grid/table mode)
+    const isGridMode = !tabFormState || tabFormState.mode !== "form";
+
+    if (isGridMode) {
+      const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
+      const wasInitializedWithDirectLink = getTabInitializedWithDirectLink(windowIdentifier, tab.id);
+
+      // Only clear the ID filter if we did NOT initialize with a direct link
+      // This preserves the filter for direct link scenarios while clearing it for manual navigation
+      if (hasIdFilter && !wasInitializedWithDirectLink) {
+        setTableColumnFilters((prev) => prev.filter((f) => f.id !== "id"));
+
+        // Restore implicit filters if they were initially applied and are currently disabled
+        if (initialIsFilterApplied && isImplicitFilterApplied === false) {
+          setIsImplicitFilterApplied(true);
+        }
+      }
+    }
+  }, [
+    tabFormState,
+    tableColumnFilters,
+    setTableColumnFilters,
+    initialIsFilterApplied,
+    isImplicitFilterApplied,
+    setIsImplicitFilterApplied,
+    activeWindow,
+    tab.id,
+    getTabInitializedWithDirectLink,
+  ]);
+
+  /** Detect manual filter removal and clear direct link flag */
+  useEffect(() => {
+    const windowIdentifier = activeWindow?.windowIdentifier;
+    if (!windowIdentifier) return;
+
+    const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
+    const wasInitializedWithDirectLink = getTabInitializedWithDirectLink(windowIdentifier, tab.id);
+
+    // If the ID filter was removed manually and we had marked this as a direct link,
+    // clear the direct link flag so future navigation behaves like manual navigation
+    if (!hasIdFilter && wasInitializedWithDirectLink) {
+      setTabInitializedWithDirectLink(windowIdentifier, tab.id, false);
+    }
+  }, [tableColumnFilters, activeWindow, tab.id, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink]);
+
+  // Clear filters when parent selection changes
+  // This ensures that if we were filtering by a specific ID (e.g. from direct link),
+  // changing the parent record will reset the view to show all child records for the new parent
+  const prevParentIdRef = useRef<string | undefined>(parentRecord?.id ? String(parentRecord.id) : undefined);
+
+  useEffect(() => {
+    // Only clear filters if the parent ID has actually CHANGED from a previous valid ID
+    // This prevents clearing filters on initial load when the parent ID is first set
+    if (parentRecord?.id && prevParentIdRef.current && parentRecord.id !== prevParentIdRef.current) {
+      const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
+      if (hasIdFilter) {
+        setTableColumnFilters([]);
+        setIsImplicitFilterApplied(true);
+      }
+    }
+    // Update ref for next render
+    prevParentIdRef.current = parentRecord?.id ? String(parentRecord.id) : undefined;
+  }, [parentRecord?.id, setTableColumnFilters, setIsImplicitFilterApplied, tableColumnFilters]);
 
   /** Sync implicit filter state with toolbar context */
   useEffect(() => {
-    setToolbarFilterApplied(isImplicitFilterApplied ?? false);
-  }, [isImplicitFilterApplied, setToolbarFilterApplied]);
+    const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
+    const isFiltered = (isImplicitFilterApplied ?? false) || hasIdFilter;
+    setToolbarFilterApplied(isFiltered);
+  }, [isImplicitFilterApplied, tableColumnFilters, setToolbarFilterApplied]);
 
   /** Clear advanced column filters when table filters are cleared */
   useEffect(() => {
@@ -634,6 +885,23 @@ export const useTableData = ({
     setTableColumnVisibility(initialVisibility);
   }, [tab.fields, tableColumnVisibility, setTableColumnVisibility]);
 
+  // Initialize default sorting
+  useEffect(() => {
+    // Only initialize if there's no current sorting
+    if (tableColumnSorting.length === 0 && tab.fields) {
+      const defaultSort = getDefaultSort();
+
+      if (defaultSort) {
+        setTableColumnSorting([
+          {
+            id: defaultSort.id,
+            desc: defaultSort.desc,
+          },
+        ]);
+      }
+    }
+  }, [tab.fields, tableColumnSorting.length, setTableColumnSorting, getDefaultSort]);
+
   // Apply quick filter from context menu
   const applyQuickFilter = useCallback(
     async (columnId: string, filterId: string, filterValue: string | number, filterLabel: string) => {
@@ -688,17 +956,99 @@ export const useTableData = ({
         setFilterOptions(columnId, [...existingOptions, filterOption], false, false);
       }
 
-      await handleColumnFilterChange(columnId, [filterOption]);
+      // For text/date columns (primitives), use handleDateTextFilterChange to store as string
+      // This ensures TextFilter receives the value correctly
+      const isTextOrDateColumn =
+        !isBooleanOrYesNo && !ColumnFilterUtils.isTableDirColumn(column) && !ColumnFilterUtils.isSelectColumn(column);
+      if (isTextOrDateColumn) {
+        handleDateTextFilterChange(column.columnName || columnId, String(filterValue));
+      } else {
+        // For dropdown filters (boolean, TableDir, Select), use handleColumnFilterChange
+        await handleColumnFilterChange(columnId, [filterOption]);
+      }
     },
     [
       baseColumns,
       handleColumnFilterChange,
+      handleDateTextFilterChange,
       setFilterOptions,
       advancedColumnFilters,
       setColumnFilters,
       setTableColumnFilters,
       onColumnFilter,
     ]
+  );
+
+  // Fetch summary data
+  const fetchSummary = useCallback(
+    async (summaries: Record<string, string>): Promise<Record<string, number | string> | null> => {
+      if (Object.keys(summaries).length === 0) {
+        return null;
+      }
+
+      // Map column IDs to their backend names (columnName or id)
+      const summaryRequest: Record<string, string> = {};
+      const columnMapping: Record<string, string> = {}; // backendName -> originalId
+
+      for (const [colId, type] of Object.entries(summaries)) {
+        const column = baseColumns.find((col) => col.columnName === colId || col.id === colId);
+        if (column) {
+          const backendName = column.columnName || column.id;
+          summaryRequest[backendName] = type;
+          columnMapping[backendName] = colId;
+        }
+      }
+
+      if (Object.keys(summaryRequest).length === 0) {
+        return null;
+      }
+
+      // Use the same query params as the main grid but add summary params
+      // Explicitly remove sortBy and pageSize to prevent the backend from returning sorted records instead of the summary
+      const { sortBy, pageSize, ...cleanQuery } = query;
+      const summaryQuery = {
+        ...cleanQuery,
+        _summary: JSON.stringify(summaryRequest),
+        _noCount: true,
+        _startRow: 0,
+        _endRow: 1,
+        _operationType: "fetch",
+        _textMatchStyle: "substring",
+        _noActiveFilter: true,
+        _className: "OBViewDataSource",
+        Constants_FIELDSEPARATOR: "$",
+        Constants_IDENTIFIER: "_identifier",
+      };
+
+      console.log("Summary Query:", JSON.stringify(summaryQuery, null, 2));
+
+      try {
+        const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
+        const response = (await datasource.get(treeEntity, summaryQuery)) as {
+          ok: boolean;
+          data: { response?: { data?: any[] } };
+        };
+
+        if (response.ok && response.data?.response?.data && response.data.response.data.length > 0) {
+          const resultData = response.data.response.data[0];
+          const results: Record<string, number | string> = {};
+
+          // Map backend results back to original column IDs
+          for (const [backendName, originalId] of Object.entries(columnMapping)) {
+            if (resultData[backendName] !== undefined) {
+              results[originalId] = resultData[backendName];
+            }
+          }
+
+          return results;
+        }
+        return null;
+      } catch (error) {
+        console.error("❌ Exception fetching summary:", error);
+        return null;
+      }
+    },
+    [query, treeEntity, baseColumns]
   );
 
   return {
@@ -731,7 +1081,12 @@ export const useTableData = ({
     fetchMore,
     refetch,
     removeRecordLocally,
+    updateRecordLocally,
+    addRecordLocally,
     applyQuickFilter,
+    isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
+    tableColumnFilters,
+    fetchSummary,
     hasMoreRecords,
   };
 };

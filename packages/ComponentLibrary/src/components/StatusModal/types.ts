@@ -43,6 +43,8 @@ export interface StatusModalProps {
   secondaryButtonLabel?: string;
   onClose?: () => void;
   onAfterClose?: () => void;
+  onSave?: () => void;
+  onCancel?: () => void;
   isDeleteSuccess?: boolean;
   open?: boolean;
 }

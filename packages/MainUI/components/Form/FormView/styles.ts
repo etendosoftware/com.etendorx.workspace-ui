@@ -43,12 +43,7 @@ export const useStyle = (): StylesType => {
           marginLeft: theme.spacing(1.5),
           marginRight: theme.spacing(2),
         },
-        labelWrapper: {
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: "100%",
-        },
+
         labelText: {
           fontSize: "0.875rem",
           whiteSpace: "nowrap",
@@ -68,6 +63,12 @@ export const useStyle = (): StylesType => {
         },
       },
       sx: {
+        labelWrapper: {
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+        },
         linkStyles: {
           fontSize: "0.875rem",
           fontWeight: "600",

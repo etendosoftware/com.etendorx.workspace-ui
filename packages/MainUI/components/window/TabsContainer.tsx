@@ -17,16 +17,20 @@
 
 "use client";
 
-import { useMemo, useCallback, useEffect, useState } from "react";
+import { useMemo, useCallback } from "react";
 import Tabs from "@/components/window/Tabs";
 import AppBreadcrumb from "@/components/Breadcrums";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
-import { useSelected } from "@/hooks/useSelected";
+import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
 import { shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
+import { useWindowContext } from "@/contexts/window";
+import { useSelectedRecord } from "@/hooks/useSelectedRecord";
+import { useUserContext } from "@/hooks/useUserContext";
+import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
+import { logger } from "@/utils/logger";
 
 /**
  * TabsContainer Component
@@ -46,16 +50,140 @@ import { TabRefreshProvider } from "@/contexts/TabRefreshContext";
  *
  * @param windowData - Complete window metadata including tab definitions from Etendo Classic backend
  */
-export default function TabsContainer({ windowData }: { windowData: Etendo.WindowMetadata }) {
-  /**
-   * Flag to track if initial level loading from URL state has completed.
-   */
-  const [activeLevelsLoaded, setActiveLevelsLoaded] = useState<boolean>(false);
+/**
+ * Component responsible for rendering a group of tabs and filtering them based on Display Logic.
+ * This component is necessary to use hooks (useSelectedRecord, useUserContext)
+ * needed for evaluating logic against the parent record.
+ */
+const TabsGroupRenderer = ({
+  tabs,
+  activeParentTab,
+  isTopGroup,
+  getActiveTabForLevel,
+}: {
+  tabs: Tab[];
+  activeParentTab: Tab | null;
+  isTopGroup: boolean;
+  getActiveTabForLevel: (level: number) => Tab | null;
+}) => {
+  const { session } = useUserContext();
+  // Fetch the record of the parent tab to evaluate THIS level's tabs
+  const parentRecord = useSelectedRecord(activeParentTab || undefined);
 
+  // FETCH GRANDPARENT CONTEXT to verify PARENT'S visibility (Cascading Hide)
+  // If the parent tab itself is hidden (by its own display logc), we must hide these children
+  // (even if there is a "ghost" selection in the parent).
+  const currentLevel = tabs[0].tabLevel;
+  const grandParentLevel = currentLevel - 2;
+  const grandParentTab = currentLevel > 1 ? getActiveTabForLevel(grandParentLevel) : null;
+  // Verify Parent Visibility against Grandparent Record
+  const grandParentRecord = useSelectedRecord(grandParentTab || undefined);
+
+  const isParentVisible = useMemo(() => {
+    if (!activeParentTab) return true;
+    const expression = activeParentTab.displayLogicExpression || activeParentTab.displayLogic;
+    if (!expression) return true;
+
+    // Use Proxy for Case-Insensitive Context (Same robust logic)
+    const baseContext = {
+      ...(grandParentTab || {}),
+      ...(grandParentRecord || {}),
+    };
+    const context = new Proxy(baseContext, {
+      get: (target, prop: string) => {
+        if (prop in target) return target[prop as keyof typeof target];
+        const lowerProp = prop.toLowerCase();
+        const foundKey = Object.keys(target).find((k) => k.toLowerCase() === lowerProp);
+        return foundKey ? target[foundKey as keyof typeof target] : undefined;
+      },
+    });
+
+    try {
+      const compiledExpr = compileExpression(expression);
+      // We assume global session variables are handled by session arg
+      return compiledExpr(session, context);
+    } catch (error) {
+      // If critical error in parent check, default to visible to avoid blocking UI unnecessarily?
+      // Or hidden? Standard is 'false' on error in basic useDisplayLogic.
+      // We'll stick to true to be less disruptive unless sure.
+      return true;
+    }
+  }, [activeParentTab, grandParentRecord, grandParentTab, session]);
+
+  const filteredTabs = useMemo(() => {
+    // 1. Cascade Check: If Parent is hidden, Children are hidden.
+    if (!isParentVisible) {
+      return [];
+    }
+
+    // 2. Standard Check: If Parent Record is missing (and required), default hide?
+    // (Optional: if (!parentRecord?.id && currentLevel > 0) return []; )
+
+    // 3. Filter current tabs
+    const baseContext = {
+      ...(activeParentTab || {}), // Metadata (lowest priority)
+      ...(parentRecord || {}), // Record Data (highest priority)
+    };
+
+    const context = new Proxy(baseContext, {
+      get: (target, prop: string) => {
+        // 1. Direct match (fast path)
+        if (prop in target) {
+          return target[prop as keyof typeof target];
+        }
+
+        // 2. Case-insensitive match (generic fallback)
+        const lowerProp = prop.toLowerCase();
+        const foundKey = Object.keys(target).find((k) => k.toLowerCase() === lowerProp);
+
+        if (foundKey) {
+          return target[foundKey as keyof typeof target];
+        }
+
+        return undefined;
+      },
+    });
+
+    return tabs.filter((tab) => {
+      const expression = tab.displayLogicExpression || tab.displayLogic;
+
+      if (!expression) {
+        return true;
+      }
+
+      try {
+        const compiledExpr = compileExpression(expression);
+        const result = compiledExpr(session, context);
+        return result;
+      } catch (error) {
+        logger.error(`Error evaluating display logic for tab ${tab.name}:`, error);
+        return false; // Hide on error
+      }
+    });
+  }, [tabs, parentRecord, session, activeParentTab, isParentVisible]); // added isParentVisible dependency
+
+  if (filteredTabs.length === 0) {
+    return null;
+  }
+
+  const initialActiveTab = getActiveTabForLevel(tabs[0].tabLevel);
+
+  return (
+    <Tabs
+      key={filteredTabs[0].id}
+      tabs={filteredTabs}
+      isTopGroup={isTopGroup}
+      initialActiveTab={initialActiveTab ?? undefined}
+      data-testid="Tabs__895626"
+    />
+  );
+};
+
+export default function TabsContainer({ windowData }: { windowData: Etendo.WindowMetadata }) {
   /**
    * Multi-window navigation hook providing access to current window state.
    */
-  const { activeWindow } = useMultiWindowURL();
+  const { activeWindow } = useWindowContext();
 
   /**
    * Graph-based tab hierarchy management system with navigation state.
@@ -67,7 +195,10 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * - setActiveTabsByLevel: Function to update active tab selection per level
    * - graph: Hierarchical tab structure
    */
-  const { graph, activeLevels, activeTabsByLevel, setActiveLevel, setActiveTabsByLevel } = useSelected();
+  const { activeLevels, activeTabsByLevel } = useTableStatePersistenceTab({
+    windowIdentifier: activeWindow?.windowIdentifier || "",
+    tabId: "",
+  });
 
   /**
    * Memoized tab grouping by hierarchical levels.
@@ -82,21 +213,9 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * - Dynamic filtering based on parent-child relationships
    */
   const groupedTabs = useMemo(() => {
-    return windowData ? groupTabsByLevel(windowData) : [];
+    const groups = windowData ? groupTabsByLevel(windowData) : [];
+    return groups.filter((group) => group && group.length > 0);
   }, [windowData]);
-
-  /**
-   * Callback to handle tab selection changes within a level.
-   *
-   * Purpose: Updates the activeTabsByLevel mapping when user selects different tab
-   * Triggers: Navigation state persistence and potential child tab filtering updates
-   */
-  const handleTabChange = useCallback(
-    (tab: Tab) => {
-      setActiveTabsByLevel(tab);
-    },
-    [setActiveTabsByLevel]
-  );
 
   /**
    * Determines which tab should be active for a given hierarchical level.
@@ -179,74 +298,6 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
     (tabs) => tabs.length > 0 && activeLevels.includes(tabs[0].tabLevel)
   );
 
-  /**
-   * Session restoration effect for active tab levels and tab selections.
-   *
-   * This effect runs once during component initialization to restore navigation state
-   * from URL parameters or saved session data. It coordinates with useMultiWindowURL
-   * to determine the appropriate tab levels to activate based on previously saved form states.
-   *
-   * Enhanced Process:
-   * 1. Checks if initial loading has already completed (prevents multiple executions)
-   * 2. Retrieves tabFormStates and selectedRecords from the active window URL state
-   * 3. Extracts tab IDs from form states and selected records
-   * 4. Calculates navigation depth based on the position of the last form state in selected records
-   * 5. Uses expand mode to set levels directly without navigation logic
-   * 6. Resets tab-by-level mapping for clean state or restores based on calculated depth
-   * 7. Marks loading as complete to prevent interference with user navigation
-   *
-   * Key improvements:
-   * - Uses selectedRecords order to determine proper navigation level
-   * - Maintains activeTabsByLevel state consistency during restoration
-   * - Handles edge cases where form states and selected records may be misaligned
-   *
-   * This ensures users return to their previous navigation context when:
-   * - Refreshing the page
-   * - Navigating back to a previously opened window
-   * - Restoring from bookmarked URLs
-   *
-   * Dependencies:
-   * - activeWindow: Contains tabFormStates and selectedRecords from URL
-   * - activeLevelsLoaded: Prevents multiple restoration attempts
-   * - windowData?.tabs: Available tabs for clearing selections
-   * - graph: Tab hierarchy for clearing dependent selections
-   * - setActiveLevel: Navigation state control function
-   */
-  useEffect(() => {
-    // Early return: Skip if already loaded or function not available
-    if (activeLevelsLoaded || !setActiveLevel) return;
-
-    // Extract window state data including both form states and selected records
-    const { tabFormStates, selectedRecords, windowId } = activeWindow || {};
-    const formStatesIds = tabFormStates ? Object.keys(tabFormStates) : [];
-
-    // Handle window with no saved form states - reset to clean state
-    if (windowId && formStatesIds.length === 0) {
-      setActiveLevel(0);
-      setActiveTabsByLevel();
-      const tabs = windowData?.tabs || [];
-      for (const tab of tabs) {
-        graph.clearSelected(tab);
-        graph.clearSelectedMultiple(tab);
-      }
-      setActiveLevelsLoaded(true);
-      return;
-    }
-
-    // Calculate navigation depth based on form state position in selected records
-    const lastFormStateId = formStatesIds.length > 0 ? formStatesIds[formStatesIds.length - 1] : null;
-    const selectedRecordsIds = selectedRecords ? Object.keys(selectedRecords) : [];
-    const lastFormStateIndex = lastFormStateId ? selectedRecordsIds.indexOf(lastFormStateId) : -1;
-
-    // Handle window with saved form states - restore navigation depth
-    if (lastFormStateIndex > 0) {
-      setActiveLevel(lastFormStateIndex, true); // Use expand mode for direct restoration
-    }
-
-    // Mark as loaded to prevent subsequent executions
-    setActiveLevelsLoaded(true);
-  }, [activeWindow, activeLevelsLoaded, windowData?.tabs, graph, setActiveLevel, setActiveTabsByLevel]);
-
   // Loading state: Show skeleton UI while window metadata is being fetched
   if (!windowData) {
     return (
@@ -266,14 +317,22 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
           if (tabs.length === 0) return null;
 
           const isTopGroup = index === firstExpandedIndex && firstExpandedIndex !== -1;
+          const currentLevel = tabs[0].tabLevel;
+
+          // Determine the active parent tab
+          // For level 0, there is no parent (null)
+          // For level > 0, get the active tab of the previous level
+          const parentLevel = currentLevel - 1;
+          const activeParentTab = currentLevel > 0 ? getActiveTabForLevel(parentLevel) : null;
 
           return (
-            <Tabs
+            <TabsGroupRenderer
               key={tabs[0].id}
               tabs={tabs}
+              activeParentTab={activeParentTab}
               isTopGroup={isTopGroup}
-              onTabChange={handleTabChange}
-              data-testid="Tabs__895626"
+              getActiveTabForLevel={getActiveTabForLevel}
+              data-testid="TabsGroupRenderer__895626"
             />
           );
         })}

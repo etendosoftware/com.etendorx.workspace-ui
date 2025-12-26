@@ -25,11 +25,11 @@ import type React from "react";
 import { ROUTE_IDS } from "../constants/breadcrumb";
 import { useMetadataContext } from "../hooks/useMetadataContext";
 import { useTranslation } from "../hooks/useTranslation";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { useCurrentRecord } from "@/hooks/useCurrentRecord";
+import { useWindowContext } from "@/contexts/window";
 
 interface BreadcrumbProps {
   allTabs: Tab[][];
@@ -39,7 +39,7 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { t } = useTranslation();
   const pathname = usePathname();
   const { window, windowId, windowIdentifier } = useMetadataContext();
-  const { navigateToHome, clearTabFormState, getTabFormState } = useMultiWindowURL();
+  const { activeWindow, getTabFormState, clearTabFormState, setAllWindowsInactive } = useWindowContext();
   const { graph } = useSelected();
 
   const allTabsFormatted = useMemo(() => allTabs.flat(), [allTabs]);
@@ -61,19 +61,9 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     return tab;
   }, [allTabsFormatted, windowId, window]);
 
-  const tabFormState = useMemo(() => {
-    if (!currentTab) return undefined;
-
-    return (
-      getTabFormState(currentTab.window, currentTab.id) ||
-      getTabFormState(windowId || "", currentTab.id) ||
-      getTabFormState(currentTab.window$_identifier || currentTab.window, currentTab.id)
-    );
-  }, [currentTab, windowId, getTabFormState]);
-
   const currentRecordId = useMemo(() => {
-    return tabFormState?.recordId || (graph?.getSelected?.(currentTab)?.[0] as string) || "";
-  }, [tabFormState, graph, currentTab]);
+    return activeWindow?.tabs[currentTab?.id || ""]?.selectedRecord;
+  }, [activeWindow, currentTab?.id]);
 
   const { record } = useCurrentRecord({
     tab: currentTab,
@@ -142,8 +132,8 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   ]);
 
   const handleHomeClick = useCallback(() => {
-    navigateToHome();
-  }, [navigateToHome]);
+    setAllWindowsInactive();
+  }, [setAllWindowsInactive]);
 
   return (
     <div className="w-full h-8">

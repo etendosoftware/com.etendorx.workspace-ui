@@ -18,33 +18,55 @@
 // @data-testid-ignore
 "use client";
 
-import { useCallback, useState, useEffect, useTransition } from "react";
+import { useCallback, useState, useTransition, useEffect } from "react";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
 import { SubTabsSwitch } from "@/components/window/SubTabsSwitch";
 import { Tab } from "@/components/window/Tab";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { useWindowContext } from "@/contexts/window";
 import TabContextProvider from "@/contexts/tab";
 import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHandle";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 
 interface ExtendedTabsProps extends TabsProps {
   isTopGroup?: boolean;
-  onTabChange?: (tab: TabType) => void;
 }
 
-export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }: ExtendedTabsProps) {
-  const [current, setCurrent] = useState(tabs[0]);
+export default function TabsComponent({ tabs, isTopGroup = false, initialActiveTab }: ExtendedTabsProps) {
+  const initialTab = initialActiveTab && tabs.some((t) => t.id === initialActiveTab.id) ? initialActiveTab : tabs[0];
+
+  const [current, setCurrent] = useState(initialTab);
   // Visual active tab id updates immediately for instant feedback
-  const [activeTabId, setActiveTabId] = useState(tabs[0].id);
+  const [activeTabId, setActiveTabId] = useState(initialTab.id);
   const [expand, setExpanded] = useState(false);
   const [customHeight, setCustomHeight] = useState(50);
   const [isPending, startTransition] = useTransition();
 
-  const { activeWindow } = useMultiWindowURL();
-  const { activeLevels, setActiveLevel } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.window_identifier || "",
+  useEffect(() => {
+    if (initialActiveTab) {
+      // Only reset if the initialActiveTab is actually different and valid
+      if (initialActiveTab.id !== current.id && tabs.some((t) => t.id === initialActiveTab.id)) {
+        setCurrent(initialActiveTab);
+        setActiveTabId(initialActiveTab.id);
+      } else if (!tabs.some((t) => t.id === current.id)) {
+        // If current tab is no longer in the list (e.g. filtered out), fall back to first
+        const fallback = tabs[0];
+        setCurrent(fallback);
+        setActiveTabId(fallback.id);
+      }
+    } else {
+      // Logic for when no initial active tab is provided but list changed
+      if (!tabs.some((t) => t.id === current.id)) {
+        setCurrent(tabs[0]);
+        setActiveTabId(tabs[0].id);
+      }
+    }
+  }, [initialActiveTab, tabs]); // dependency on tabs ensures re-eval when filter changes
+
+  const { activeWindow } = useWindowContext();
+  const { activeLevels, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
+    windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: "",
   });
 
@@ -61,9 +83,12 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
         setCustomHeight(50);
         setCurrent(tab);
         setActiveLevel(tab.tabLevel);
+
+        // Update the active tab mapping for this level so child tab filtering works correctly
+        setActiveTabsByLevel(tab);
       });
     },
-    [setActiveLevel, startTransition]
+    [setActiveLevel, startTransition, setActiveTabsByLevel]
   );
 
   const handleDoubleClick = useCallback(
@@ -75,9 +100,12 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
         setCurrent(tab);
         setExpanded(newExpand);
         setActiveLevel(tab.tabLevel, newExpand);
+
+        // Update the active tab mapping for this level
+        setActiveTabsByLevel(tab);
       });
     },
-    [expand, setActiveLevel, startTransition]
+    [expand, setActiveLevel, startTransition, setActiveTabsByLevel]
   );
 
   const handleHeightChange = useCallback((height: number) => {
@@ -121,12 +149,6 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
 
     return subTabsSwitch;
   };
-
-  useEffect(() => {
-    if (onTabChange && current) {
-      onTabChange(current);
-    }
-  }, [current, onTabChange]);
 
   return (
     <TabContainer

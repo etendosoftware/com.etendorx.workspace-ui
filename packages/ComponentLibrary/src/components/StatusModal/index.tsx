@@ -21,6 +21,7 @@ import { Modal } from "..";
 import { statusConfig } from "./states";
 import { useStyle } from "./styles";
 import type { StatusModalProps } from "./types";
+import CheckIcon from "../../assets/icons/check.svg";
 
 const StatusModal: React.FC<StatusModalProps> = ({
   statusText,
@@ -30,6 +31,8 @@ const StatusModal: React.FC<StatusModalProps> = ({
   secondaryButtonLabel,
   onClose,
   onAfterClose,
+  onSave,
+  onCancel,
   isDeleteSuccess,
   open = true,
 }) => {
@@ -62,10 +65,11 @@ const StatusModal: React.FC<StatusModalProps> = ({
       saveButtonLabel={!isDeleteSuccess ? saveLabel : undefined}
       secondaryButtonLabel={secondaryLabel}
       backgroundGradient={backgroundGradient}
-      onSave={handleClose}
+      onSave={onSave || handleClose}
       onAfterClose={handleAfterClose}
-      onCancel={handleClose}
+      onCancel={onCancel || handleClose}
       onClose={handleClose}
+      SaveIcon={CheckIcon}
       buttons={isDeleteSuccess ? null : undefined}>
       <Box sx={sx.statusModalContainer}>
         <Box

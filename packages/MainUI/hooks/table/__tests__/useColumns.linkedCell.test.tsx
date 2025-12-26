@@ -6,10 +6,22 @@ const keySpy = jest.fn();
 
 jest.mock("@/hooks/navigation/useRedirect", () => ({
   useRedirect: () => ({
-    handleClickRedirect: (e: any, windowId?: string, windowIdentifier?: string, selectedRecordId?: string) =>
-      clickSpy(e, windowId, windowIdentifier, selectedRecordId),
-    handleKeyDownRedirect: (e: any, windowId?: string, windowIdentifier?: string, selectedRecordId?: string) =>
-      keySpy(e, windowId, windowIdentifier, selectedRecordId),
+    handleClickRedirect: (props: {
+      e: any;
+      windowId?: string;
+      windowTitle?: string;
+      referencedTabId?: string;
+      selectedRecordId?: string;
+      tabLevel?: number;
+    }) => clickSpy(props),
+    handleKeyDownRedirect: (props: {
+      e: any;
+      windowId?: string;
+      windowTitle?: string;
+      referencedTabId?: string;
+      selectedRecordId?: string;
+      tabLevel?: number;
+    }) => keySpy(props),
   }),
 }));
 
@@ -47,9 +59,10 @@ describe("useColumns - reference cell links carry record id", () => {
     fireEvent.click(screen.getByRole("button", { name: /navigate to referenced window/i }));
 
     expect(clickSpy).toHaveBeenCalledTimes(1);
-    const [_e, windowId, windowIdentifier, selectedRecordId] = clickSpy.mock.calls[0];
-    expect(windowId).toBe("W9");
-    expect(selectedRecordId).toBe("R77");
-    expect(typeof windowIdentifier).toBe("string");
+    const callArgs = clickSpy.mock.calls[0][0];
+    expect(callArgs.windowId).toBe("W9");
+    expect(callArgs.selectedRecordId).toBe("R77");
+    expect(callArgs.windowTitle).toBeDefined();
+    expect(callArgs.referencedTabId).toBeDefined();
   });
 });

@@ -30,9 +30,15 @@ const MessageInput: React.FC<MessageInputProps> = ({
   disabled = false,
   contextItems = [],
   onRemoveContext,
+  message: externalMessage,
+  onMessageChange: externalOnMessageChange,
   translations,
 }) => {
-  const [message, setMessage] = useState("");
+  const [internalMessage, setInternalMessage] = useState("");
+
+  // Use external state if provided, otherwise use internal state
+  const message = externalMessage !== undefined ? externalMessage : internalMessage;
+  const setMessage = externalOnMessageChange || setInternalMessage;
 
   const handleVoiceClick = useCallback(() => alert("Voice activated"), []);
 
@@ -41,7 +47,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
       onSendMessage(message.trim());
       setMessage("");
     }
-  }, [message, disabled, onSendMessage]);
+  }, [message, disabled, onSendMessage, setMessage]);
 
   const handleKeyPress = useCallback(
     (e: React.KeyboardEvent) => {

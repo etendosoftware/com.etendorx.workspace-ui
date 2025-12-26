@@ -19,8 +19,9 @@
 
 import Graph from "@/data/graph";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
-import { createContext, useCallback, useMemo, useState } from "react";
-import { getNewActiveLevels, getNewActiveTabsByLevel } from "@/utils/table/utils";
+import { createContext, useEffect, useMemo } from "react";
+import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
+import { useWindowContext } from "@/contexts/window";
 
 /**
  * Context interface for managing tab selection and navigation state.
@@ -34,14 +35,6 @@ import { getNewActiveLevels, getNewActiveTabsByLevel } from "@/utils/table/utils
 interface SelectedContext {
   /** Graph data structure containing the hierarchical relationship between tabs */
   graph: Graph<Tab>;
-  /** Array of currently active tab levels */
-  activeLevels: number[];
-  /** Function to set active level for tab navigation */
-  setActiveLevel: (level: number, expand?: boolean) => void;
-  /** Map of active tab by level */
-  activeTabsByLevel: Map<number, string>;
-  /** Function to set active tab by level */
-  setActiveTabsByLevel: (tab?: Tab) => void;
 }
 
 /**
@@ -79,38 +72,44 @@ const windowGraphCache = new Map<string, Graph<Tab>>();
 export const SelectedProvider = ({
   children,
   tabs,
+  // biome-ignore lint/correctness/noUnusedVariables: Keep windowId for potential metadata operations
   windowId,
   windowIdentifier,
 }: React.PropsWithChildren<{
   tabs: Tab[];
   windowId: string;
-  windowIdentifier?: string;
+  windowIdentifier: string;
 }>) => {
   /**
-   * Active navigation levels state.
-   * Tracks which tab levels are currently visible in the hierarchy.
+   * Window context providing form state management and navigation initialization.
    */
-  const [activeLevels, setActiveLevels] = useState<number[]>([0]);
+  const { getTabFormState, getSelectedRecord, getNavigationInitialized, setNavigationInitialized } = useWindowContext();
 
   /**
-   * Active tabs by level state.
-   * Tracks which tab is active at each level for proper child tab filtering.
+   * Navigation state persistence hook for the current window.
+   *
+   * Manages:
+   * - setActiveLevel: Function to change visible navigation levels
+   * - setActiveTabsByLevel: Function to update active tab selection per level
+   *
+   * Persistence: State survives window switches and page refreshes
    */
-  const [activeTabsByLevel, setActiveTabsByLevelState] = useState<Map<number, string>>(new Map());
+  const { setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
+    windowIdentifier: windowIdentifier,
+    tabId: "",
+  });
 
   /**
    * Memoized graph instance with caching strategy.
    *
-   * Creates or retrieves a Graph instance from the global cache based on windowIdentifier.
-   * Uses windowIdentifier as the cache key to support multiple instances of the same window.
-   * Falls back to windowId if windowIdentifier is not provided.
+   * Creates or retrieves a Graph instance from the global cache based on the cache key.
    * The graph represents the hierarchical relationship between tabs and manages selection state.
    *
    * Dependency on `tabs` ensures graph is recreated when tab structure changes,
    * which is necessary for maintaining consistency with the current tab configuration.
    */
   const graph = useMemo(() => {
-    const cacheKey = windowIdentifier || windowId;
+    const cacheKey = windowIdentifier;
     if (!windowGraphCache.has(cacheKey)) {
       windowGraphCache.set(cacheKey, new Graph<Tab>(tabs));
     }
@@ -119,31 +118,80 @@ export const SelectedProvider = ({
       throw new Error(`Failed to retrieve graph for cache key: ${cacheKey}`);
     }
     return cachedGraph;
-  }, [windowId, windowIdentifier, tabs]);
+  }, [windowIdentifier, tabs]);
 
   /**
-   * Updates active navigation levels based on user interaction.
+   * Session restoration effect for active tab levels and tab selections.
    *
-   * Algorithm:
-   * 1. If expand is true, set only the current level (collapse all others)
-   * 2. Otherwise, calculate new levels based on current maxLevel and new level
-   * 3. Keep two consecutive levels visible (e.g., [0,1] or [1,2])
+   * This effect runs once during component initialization to restore navigation state
+   * from context-stored form states and selected records. It coordinates with useMultiWindowURL
+   * to determine the appropriate tab levels to activate based on previously saved form states.
+   *
+   * Enhanced Process:
+   * 1. Checks if initial loading has already completed (prevents multiple executions)
+   * 2. Retrieves selected records from context for the current window
+   * 3. Gets form states from window context for all available tabs
+   * 4. Calculates navigation depth based on the position of the last form state in selected records
+   * 5. Uses expand mode to set levels directly without navigation logic
+   * 6. Resets tab-by-level mapping for clean state or restores based on calculated depth
+   * 7. Marks loading as complete to prevent interference with user navigation
+   *
+   * This ensures users return to their previous navigation context when:
+   * - Refreshing the page
+   * - Navigating back to a previously opened window
+   * - Restoring from bookmarked URLs
+   *
    */
-  const setActiveLevel = useCallback((level: number, expand?: boolean) => {
-    setActiveLevels((prev) => getNewActiveLevels(prev, level, expand));
-  }, []);
+  useEffect(() => {
+    // Early return: Skip if already loaded or function not available
+    if (getNavigationInitialized(windowIdentifier) || !setActiveLevel || !getTabFormState) return;
 
-  /**
-   * Updates active tab by level.
-   * Stores which tab is selected at each hierarchy level.
-   */
-  const setActiveTabsByLevel = useCallback((tab?: Tab) => {
-    if (!tab) {
-      setActiveTabsByLevelState(new Map());
+    if (!windowIdentifier) return;
+
+    // Get form states from context for all available tabs
+    const formStateTabIds = tabs
+      .map((tab) => tab.id)
+      .filter((tabId) => getTabFormState(windowIdentifier, tabId) !== undefined);
+
+    // Handle window with no saved form states - reset to clean state
+    if (formStateTabIds.length === 0) {
+      setActiveLevel(0);
+      setActiveTabsByLevel();
+      for (const tab of tabs) {
+        graph.clearSelected(tab);
+        graph.clearSelectedMultiple(tab);
+      }
+      setNavigationInitialized(windowIdentifier, true);
       return;
     }
-    setActiveTabsByLevelState((prev) => getNewActiveTabsByLevel(prev, tab.tabLevel, tab.id));
-  }, []);
+
+    // Get selected records from context for all tabs to determine navigation depth
+    const selectedRecordTabIds = tabs
+      .map((tab) => tab.id)
+      .filter((tabId) => getSelectedRecord(windowIdentifier, tabId) !== undefined);
+
+    // Calculate navigation depth based on form state position in selected records
+    const lastFormStateTabId = formStateTabIds.length > 0 ? formStateTabIds[formStateTabIds.length - 1] : null;
+    const lastFormStateIndex = lastFormStateTabId ? selectedRecordTabIds.indexOf(lastFormStateTabId) : -1;
+
+    // Handle window with saved form states - restore navigation depth
+    if (lastFormStateIndex > 0) {
+      setActiveLevel(lastFormStateIndex, true); // Use expand mode for direct restoration
+    }
+
+    // Mark as loaded to prevent subsequent executions
+    setNavigationInitialized(windowIdentifier, true);
+  }, [
+    windowIdentifier,
+    tabs,
+    graph,
+    setActiveLevel,
+    setActiveTabsByLevel,
+    getTabFormState,
+    getSelectedRecord,
+    getNavigationInitialized,
+    setNavigationInitialized,
+  ]);
 
   /**
    * Memoized context value to prevent unnecessary re-renders of consuming components.
@@ -151,19 +199,16 @@ export const SelectedProvider = ({
    * The context provides access to:
    * - graph: The hierarchical tab structure and selection management
    * - activeLevels: Current navigation state (array of active levels)
+   * - activeTabsByLevel: Map of level -> tabId for precise tab tracking
+   * - setActiveTabsByLevel: Function to update the level-to-tab mapping
    * - setActiveLevel: Navigation control function for level management
-   * - activeTabsByLevel: Map of active tab ID by hierarchy level
-   * - setActiveTabsByLevel: Function to update active tab by level
+   * - clearAllStates: State reset function for complete context cleanup
    */
   const value = useMemo<SelectedContext>(
     () => ({
       graph,
-      activeLevels,
-      setActiveLevel,
-      activeTabsByLevel,
-      setActiveTabsByLevel,
     }),
-    [graph, activeLevels, setActiveLevel, activeTabsByLevel, setActiveTabsByLevel]
+    [graph]
   );
 
   return <SelectContext.Provider value={value}>{children}</SelectContext.Provider>;

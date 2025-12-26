@@ -74,9 +74,9 @@ export const useStyle = (): StylesType => {
   );
 
   const getColoredIcon = (icon: ReactElement, customTextColor?: string): ReactElement => {
-    return React.cloneElement(icon, {
+    return React.cloneElement(icon as React.ReactElement<{ style?: CSSProperties }>, {
       style: {
-        ...icon.props.style,
+        ...(icon.props as { style?: CSSProperties }).style,
         color: self.getTextColor(customTextColor),
         width: "1rem",
         height: "1rem",

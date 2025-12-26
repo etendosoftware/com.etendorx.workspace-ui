@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, type RefObject } from "react";
 import useDebounce from "@/hooks/useDebounce";
 
 export interface Option {
@@ -40,20 +40,35 @@ export const useKeyboardNavigation = <T extends Element = Element>(
   );
 };
 
-export const useClickOutside = (wrapperRef: React.RefObject<HTMLDivElement>, setIsOpen: (isOpen: boolean) => void) => {
+export const useClickOutside = (
+  wrapperRef: RefObject<HTMLDivElement>,
+  setIsOpen: (isOpen: boolean) => void,
+  additionalRefs?: RefObject<HTMLElement>[]
+) => {
   const handleClickOutside = useCallback(
     (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+      const target = event.target as Node;
+
+      // If click is inside the main wrapper, ignore
+      if (wrapperRef.current?.contains(target)) return;
+
+      // If click is inside any of the additional refs (e.g., portal content), ignore
+      if (additionalRefs && additionalRefs.length > 0) {
+        for (const ref of additionalRefs) {
+          if (ref?.current?.contains(target)) return;
+        }
       }
+
+      // Otherwise, close
+      setIsOpen(false);
     },
-    [wrapperRef, setIsOpen]
+    [wrapperRef, setIsOpen, additionalRefs]
   );
 
   useEffect(() => {
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside, true);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside, true);
     };
   }, [handleClickOutside]);
 
