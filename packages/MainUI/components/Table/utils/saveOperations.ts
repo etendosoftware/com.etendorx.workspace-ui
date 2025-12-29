@@ -389,7 +389,7 @@ function prepareSaveData(
   // For new records, always remove the temporary ID
   if (saveOperation.isNew || shouldRemoveId) {
     const { id, id$_identifier: idIdentifier, ...valuesWithoutId } = processedValues;
-    processedValues = valuesWithoutId as EntityData;
+    processedValues = valuesWithoutId;
 
     if (processedOriginalData) {
       const { id: originalId, id$_identifier: originalIdIdentifier, ...originalWithoutId } = processedOriginalData;
