@@ -199,35 +199,33 @@ export const useTableDirDatasource = ({
         },
       ];
 
-      // Build product criteria if applicable
-      const productCriteria = isProduct
-        ? PRODUCT_SELECTOR_DEFAULTS.SEARCH_FIELDS.map((fieldName) => ({
-            fieldName,
-            operator: "iContains",
-            value: search,
-          }))
-        : [];
+      const searchFields: string[] = [];
 
-      // Build TableDir criteria
-      const searchFields = [];
-      if (field.selector?.displayField) {
-        searchFields.push(field.selector.displayField);
-      }
+      // 1. Prioritize Selector Configuration
       if (field.selector?.extraSearchFields) {
         searchFields.push(...field.selector.extraSearchFields.split(",").map((f) => f.trim()));
       }
-      if (searchFields.length === 0) {
-        searchFields.push(...TABLEDIR_SELECTOR_DEFAULTS.SEARCH_FIELDS);
+
+      if (field.selector?.displayField && !searchFields.includes(field.selector.displayField)) {
+        searchFields.push(field.selector.displayField);
       }
 
-      const tableDirCriteria = searchFields.map((fieldName) => ({
+      // 2. Fallbacks if no fields defined in selector
+      if (searchFields.length === 0) {
+        if (isProduct) {
+          searchFields.push(...PRODUCT_SELECTOR_DEFAULTS.SEARCH_FIELDS);
+        } else {
+          searchFields.push(...TABLEDIR_SELECTOR_DEFAULTS.SEARCH_FIELDS);
+        }
+      }
+
+      const searchCriteria = searchFields.map((fieldName) => ({
         fieldName,
         operator: "iContains",
         value: search,
       }));
 
-      // Combine all criteria
-      return { dummyId, criteria: [...baseCriteria, ...productCriteria, ...tableDirCriteria] };
+      return { dummyId, criteria: [...baseCriteria, ...searchCriteria] };
     },
     [field.selector]
   );

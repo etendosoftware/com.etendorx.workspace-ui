@@ -406,9 +406,15 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     const responseActions =
       data?.responseActions || data?.response?.responseActions || data?.response?.data?.responseActions;
 
-    if (!Array.isArray(responseActions)) return null;
+    if (!responseActions) return null;
 
-    const actionWithMsg = responseActions.find((action: any) => action.showMsgInProcessView);
+    let actionWithMsg;
+    if (Array.isArray(responseActions)) {
+      actionWithMsg = responseActions.find((action: any) => action.showMsgInProcessView);
+    } else if (typeof responseActions === "object") {
+      actionWithMsg = responseActions;
+    }
+
     const msgView = actionWithMsg?.showMsgInProcessView;
 
     if (!msgView) return null;
@@ -570,6 +576,24 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     [processId, tab?.window, javaClassName, token, getCsrfToken, parseProcessResponse, revalidateDopoProcess]
   );
 
+  const getMappedFormValues = useCallback(() => {
+    const rawValues = form.getValues();
+    const mappedValues: Record<string, any> = {};
+    const paramMap = new Map<string, string>();
+
+    Object.values(parameters).forEach((p: any) => {
+      if (p.name && p.dBColumnName) {
+        paramMap.set(p.name, p.dBColumnName);
+      }
+    });
+
+    for (const [key, value] of Object.entries(rawValues)) {
+      const mappedKey = paramMap.get(key) || key;
+      mappedValues[mappedKey] = value;
+    }
+    return mappedValues;
+  }, [form, parameters]);
+
   /**
    * Executes processes with window reference parameters
    * Used for processes that require grid record selection
@@ -590,7 +614,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           recordIds: record?.id ? [record.id] : [],
           _buttonValue: actionValue || "DONE",
           _params: {
-            ...mapKeysWithDefaults({ ...form.getValues(), ...gridSelection }),
+            ...mapKeysWithDefaults({ ...getMappedFormValues(), ...gridSelection }),
             ...buttonParams,
           },
           _entityName: tab?.entityName || "",
@@ -605,13 +629,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     [
       tab,
       processId,
-      form,
       gridSelection,
-      parameters, // Added parameters dependency
+      parameters,
       record,
       buildProcessSpecificFields,
       buildWindowSpecificFields,
       executeJavaProcess,
+      getMappedFormValues,
     ]
   );
 
@@ -637,7 +661,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         const payload = {
           _buttonValue: actionValue || "DONE",
           _params: {
-            ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues }),
+            ...mapKeysWithDefaults({ ...getMappedFormValues(), ...extraKey, ...recordValues }),
             ...gridSelection, // Include grid selection if present (e.g. orderGrid)
             ...buttonParams,
           },
@@ -652,10 +676,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       windowId,
       record,
       recordValues,
-      form,
       gridSelection,
-      parameters, // Added parameters dependency
+      parameters,
       executeJavaProcess,
+      getMappedFormValues,
     ]
   );
 
@@ -669,6 +693,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
    */
   const handleExecute = useCallback(
     async (actionValue?: string) => {
+      setResult(null);
       if (hasWindowReference) {
         await handleWindowReferenceExecute(actionValue);
         return;
@@ -1094,7 +1119,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, []);
 
   const renderParameters = () => {
-    if (result) return null;
+    if (result?.success) return null;
 
     const parametersList = Object.values(parameters);
     const windowReferences: React.ReactElement[] = [];
@@ -1102,6 +1127,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
     // Separate window references from selectors
     for (const parameter of parametersList) {
+      // Skip inactive parameters
+      // @ts-ignore
+      if (parameter.active === false) {
+        continue;
+      }
+
       if (parameter.reference === WINDOW_REFERENCE_ID) {
         const parameterTab = getTabForParameter(parameter);
         const parameterEntityName = parameterTab?.entityName || "";
@@ -1231,7 +1262,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
                 {/* Footer */}
                 <div className="flex gap-3 justify-end mx-3 my-3">
-                  {!result && !isPending && (
+                  {(!result || !result.success) && !isPending && (
                     <Button
                       variant="outlined"
                       size="large"
@@ -1242,7 +1273,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                     </Button>
                   )}
 
-                  {!result && availableButtons.length > 0
+                  {(!result || !result.success) && availableButtons.length > 0
                     ? availableButtons.map((btn) => (
                         <Button
                           key={btn.value}
@@ -1255,7 +1286,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                           {btn.label}
                         </Button>
                       ))
-                    : !result && (
+                    : (!result || !result.success) && (
                         <Button
                           variant="filled"
                           size="large"
@@ -1267,17 +1298,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                           {getActionButtonContent().text}
                         </Button>
                       )}
-
-                  {result && !result.success && (
-                    <Button
-                      variant="outlined"
-                      size="large"
-                      onClick={handleClose}
-                      className="w-49"
-                      data-testid="CloseResultButton__761503">
-                      {t("common.close")}
-                    </Button>
-                  )}
                 </div>
               </div>
             </div>
