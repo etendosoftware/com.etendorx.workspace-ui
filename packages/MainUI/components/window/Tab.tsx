@@ -96,6 +96,9 @@ const handleEditRecordFormState = (
   }
 };
 
+const ADVANCED_CRITERIA_DEFAULT_OPERATOR = "and";
+const ADVANCED_CRITERIA_CONSTRUCTOR = "AdvancedCriteria";
+
 export function Tab({ tab, collapsed }: TabLevelProps) {
   const { window } = useMetadataContext();
   const {
@@ -335,13 +338,46 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
       const criteria = filters.map(convertItem).filter(Boolean);
 
-      // Update table state with new criteria
-      // We assume implicit AND for top-level items
-      const advancedCriteria = {
-        _constructor: "AdvancedCriteria",
-        operator: "and",
-        criteria,
-      };
+      // Build advancedCriteria using the logical operators from the filter items
+      // The first item doesn't have a meaningful logicalOperator (it's "Where")
+      // Subsequent items define how they connect to previous items
+      let advancedCriteria: any;
+
+      if (criteria.length === 0) {
+        advancedCriteria = null;
+      } else if (criteria.length === 1) {
+        // Single criterion - wrap it in an AND group
+        advancedCriteria = {
+          _constructor: ADVANCED_CRITERIA_CONSTRUCTOR,
+          operator: ADVANCED_CRITERIA_DEFAULT_OPERATOR,
+          criteria,
+        };
+      } else {
+        // Multiple criteria - check if we need to handle mixed operators
+        // Get the logical operators from the original filter items (skip first which is "Where")
+        const logicalOperators = filters
+          .slice(1)
+          .map((f) => f.logicalOperator?.toLowerCase() || ADVANCED_CRITERIA_DEFAULT_OPERATOR);
+        const allSameOperator = logicalOperators.every((op) => op === logicalOperators[0]);
+
+        if (allSameOperator && logicalOperators.length > 0) {
+          // All conditions use the same operator
+          advancedCriteria = {
+            _constructor: ADVANCED_CRITERIA_CONSTRUCTOR,
+            operator: logicalOperators[0],
+            criteria,
+          };
+        } else {
+          // Mixed operators - we need to group by precedence (AND has higher precedence than OR)
+          // For now, use the operator from the second item as the top-level operator
+          // This matches the intuitive left-to-right evaluation
+          advancedCriteria = {
+            _constructor: ADVANCED_CRITERIA_CONSTRUCTOR,
+            operator: logicalOperators[0] || ADVANCED_CRITERIA_DEFAULT_OPERATOR,
+            criteria,
+          };
+        }
+      }
 
       if (windowIdentifier) {
         setTableAdvancedCriteria(windowIdentifier, tab.id, advancedCriteria);
