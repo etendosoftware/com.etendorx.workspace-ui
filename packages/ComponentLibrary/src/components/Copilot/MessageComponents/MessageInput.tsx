@@ -12,15 +12,15 @@
  * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
  * All Rights Reserved.
  * Contributor(s): Futit Services S.L.
+ * All Rights Reserved.
  *************************************************************************
  */
 
-import { useCallback, useState } from "react";
-import { InputAdornment } from "@mui/material";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Send from "../../../assets/icons/send.svg";
 import AttachFile from "../../../assets/icons/paperclip.svg";
+import MicIcon from "../../../assets/icons/mic.svg";
 import IconButton from "../../IconButton";
-import { SearchInputWithVoice } from "../..";
 import ContextPreview from "../ContextPreview";
 import type { MessageInputProps } from "../types";
 
@@ -35,6 +35,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
   translations,
 }) => {
   const [internalMessage, setInternalMessage] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Use external state if provided, otherwise use internal state
   const message = externalMessage !== undefined ? externalMessage : internalMessage;
@@ -46,6 +48,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
     if (message.trim() && !disabled) {
       onSendMessage(message.trim());
       setMessage("");
+      // Reset height after sending
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
     }
   }, [message, disabled, onSendMessage, setMessage]);
 
@@ -59,8 +65,20 @@ const MessageInput: React.FC<MessageInputProps> = ({
     [handleSend]
   );
 
+  const adjustHeight = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`; // Max height approx 4-5 lines
+    }
+  }, []);
+
+  useEffect(() => {
+    adjustHeight();
+  }, [message, adjustHeight]);
+
   return (
-    <div className="px-2 pb-1">
+    <div className="px-2 pb-1 w-full">
       <ContextPreview
         contextItems={contextItems}
         onRemoveContext={onRemoveContext || (() => {})}
@@ -69,31 +87,57 @@ const MessageInput: React.FC<MessageInputProps> = ({
           selectedRegisters: translations?.selectedRegisters || "",
         }}
       />
-      <SearchInputWithVoice
-        value={message}
-        setValue={setMessage}
-        placeholder={translations?.placeholder || placeholder}
-        disabled={disabled}
-        maxRows={4}
-        onKeyDown={handleKeyPress}
-        rightIcon={true}
-        onVoiceClick={handleVoiceClick}
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton disabled className="[&>svg]:text-[1.25rem]">
-                <AttachFile />
-              </IconButton>
-              <IconButton
-                className="[&>svg]:text-[1.25rem] pr-0.5"
-                onClick={handleSend}
-                disabled={disabled || !message.trim()}>
-                <Send />
-              </IconButton>
-            </InputAdornment>
-          ),
-        }}
-      />
+      <div
+        className={`
+          flex items-end gap-2 p-2 rounded-2xl border bg-white transition-colors duration-200
+          ${
+            isFocused
+              ? "border-[#002f5c]" // Focus color (using a deep blue similar to the screenshot)
+              : "border-gray-300"
+          }
+           ${disabled ? "opacity-60 bg-gray-50 cursor-not-allowed" : ""}
+        `}>
+        <textarea
+          ref={textareaRef}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyPress}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder={translations?.placeholder || placeholder}
+          disabled={disabled}
+          rows={1}
+          className="w-full resize-none border-none outline-none bg-transparent text-sm text-gray-800 placeholder-gray-400 py-2 pl-2 max-h-[120px] overflow-y-auto"
+          style={{ minHeight: "24px" }}
+        />
+
+        <div className="flex items-center gap-1 pb-0.5 shrink-0">
+          <IconButton
+            disabled
+            className="text-gray-400 hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+            <AttachFile className="w-5 h-5" />
+          </IconButton>
+
+          <IconButton
+            onClick={handleSend}
+            disabled={disabled || !message.trim()}
+            className={`
+               rounded-full w-8 h-8 flex items-center justify-center transition-colors
+              ${!disabled && message.trim() ? "text-[#002f5c] hover:bg-blue-50" : "text-gray-300"}
+            `}>
+            <Send className="w-5 h-5" />
+          </IconButton>
+
+          <div className="w-px h-5 bg-gray-300 mx-1" />
+
+          <IconButton
+            onClick={handleVoiceClick}
+            disabled
+            className="text-gray-500 hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+            <MicIcon className="w-5 h-5" />
+          </IconButton>
+        </div>
+      </div>
     </div>
   );
 };
