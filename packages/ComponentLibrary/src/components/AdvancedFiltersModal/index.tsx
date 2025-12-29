@@ -1088,7 +1088,6 @@ export default function App() {
     setAppliedFilters(filters);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
-    console.log("Filtros aplicados:", filters);
   };
 
   return (
