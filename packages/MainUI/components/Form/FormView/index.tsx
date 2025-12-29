@@ -353,7 +353,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     // that would otherwise overwrite user edits or callout results
     const currentDataString = JSON.stringify(availableFormData);
     if (lastInitializedDataRef.current === currentDataString) {
-      // console.log("[FormView] Data matches last init, skipping");
       return;
     }
     lastInitializedDataRef.current = currentDataString;
