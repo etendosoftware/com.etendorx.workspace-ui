@@ -30,6 +30,7 @@ const createRecentItem = (item: Menu, getTranslatedName?: (item: Menu) => string
   name: getItemName(item, getTranslatedName),
   windowId: item.type === "Window" ? (item.windowId ?? item.id) : item.id,
   type: item.type ?? "Window",
+  processUrl: item.processUrl,
 });
 
 const updateItemsWithTranslations = (

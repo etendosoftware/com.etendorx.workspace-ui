@@ -14,6 +14,7 @@ import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { buildEtendoClassicBookmarkUrl } from "@/utils/url/utils";
 import { useWindowContext } from "@/contexts/window";
 import ProcessIframeModal from "./ProcessModal/Iframe";
 import type { ProcessIframeModalProps } from "./ProcessModal/types";
@@ -110,6 +111,10 @@ const getManualProcessConfig = (
   return null;
 };
 
+const getManualProcessUrl = (item: ExtendedMenu): string | null => {
+  return item.processUrl || null;
+};
+
 /**
  * Version component that displays the current application version in the sidebar footer.
  * Renders the version information with internationalization support.
@@ -189,6 +194,14 @@ export default function Sidebar() {
           size: processConfig.size,
           onClose: () => setProcessIframeModal({ isOpen: false }),
         });
+        return;
+      }
+
+      // Handle ProcessManual items - open in Etendo Classic
+      const processUrl = getManualProcessUrl(item);
+      if (item.type === "ProcessManual" && processUrl) {
+        const classicUrl = buildEtendoClassicBookmarkUrl(ETENDO_BASE_URL, processUrl, item.name);
+        window.open(classicUrl, "_blank");
         return;
       }
 
