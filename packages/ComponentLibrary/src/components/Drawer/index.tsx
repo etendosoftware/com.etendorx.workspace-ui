@@ -110,6 +110,7 @@ const Drawer: React.FC<DrawerProps> = ({
   const setRecentlyViewedRef = useCallback((ref: RecentlyViewedHandler) => {
     drawerRefs.current.recentlyViewedHandler = ref;
   }, []);
+
   return (
     <ResizeHandle
       initialWidth={drawerWidth}

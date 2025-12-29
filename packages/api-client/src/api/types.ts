@@ -309,6 +309,7 @@ export interface Menu {
   isSearchResult?: boolean;
   path?: string[];
   fullPath?: string;
+  processUrl?: string;
 }
 
 export enum Action {

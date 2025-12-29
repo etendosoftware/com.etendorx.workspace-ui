@@ -183,3 +183,93 @@ export const appendWindowToUrl = (
 
   return params.toString();
 };
+
+/**
+ * Bookmark tab configuration for Etendo Classic navigation.
+ */
+interface EtendoBookmarkTab {
+  viewId: string;
+  params: Record<string, string | boolean>;
+}
+
+/**
+ * Serializes a value in Etendo Classic bookmark format.
+ * - Keys without quotes
+ * - Strings wrapped in __ (double underscore)
+ * - Booleans and numbers as-is
+ */
+const serializeEtendoValue = (value: unknown): string => {
+  if (value === null || value === undefined) {
+    return "null";
+  }
+  if (typeof value === "boolean" || typeof value === "number") {
+    return String(value);
+  }
+  if (typeof value === "string") {
+    return `__${value}__`;
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(serializeEtendoValue).join(",")}]`;
+  }
+  if (typeof value === "object") {
+    const entries = Object.entries(value)
+      .map(([k, v]) => `${k}:${serializeEtendoValue(v)}`)
+      .join(",");
+    return `{${entries}}`;
+  }
+  return String(value);
+};
+
+/**
+ * Encodes a string for Etendo Classic URL format.
+ * Uses encodeURIComponent but keeps :, , and / unencoded.
+ */
+const encodeEtendoBookmark = (serialized: string): string => {
+  return encodeURIComponent(serialized).replace(/%3A/g, ":").replace(/%2C/g, ",").replace(/%2F/g, "/");
+};
+
+/**
+ * Builds a complete Etendo Classic URL with bookmark navigation.
+ *
+ * Creates a URL that opens Etendo Classic with multiple tabs:
+ * - First tab: Workspace (OBMyOpenbravoImplementation)
+ * - Second tab: Classic window with the specified process URL
+ *
+ * @param baseUrl - The base Etendo Classic URL (e.g., "http://localhost:8080/etendo")
+ * @param processUrl - The process URL path (e.g., "/ad_actionButton/ExpenseSOrder.html")
+ * @param tabTitle - The title to display on the second tab
+ * @returns Complete URL with encoded bookmark hash
+ *
+ * @example
+ * buildEtendoClassicBookmarkUrl(
+ *   "http://localhost:8080/etendo",
+ *   "/ad_actionButton/ExpenseSOrder.html",
+ *   "Create Sales Orders"
+ * );
+ * // Returns: http://localhost:8080/etendo/#%7Bst:1,bm:%5B...%5D%7D
+ */
+export const buildEtendoClassicBookmarkUrl = (baseUrl: string, processUrl: string, tabTitle: string): string => {
+  const workspaceTab: EtendoBookmarkTab = {
+    viewId: "OBMyOpenbravoImplementation",
+    params: { myOB: true, canClose: false, tabTitle: "Workspace" },
+  };
+
+  const processTab: EtendoBookmarkTab = {
+    viewId: "OBClassicWindow",
+    params: {
+      obManualURL: processUrl,
+      command: "DEFAULT",
+      tabTitle: tabTitle,
+    },
+  };
+
+  const bookmarkData = {
+    st: 1,
+    bm: [workspaceTab, processTab],
+  };
+
+  const serialized = serializeEtendoValue(bookmarkData);
+  const encoded = encodeEtendoBookmark(serialized);
+
+  return `${baseUrl}/#${encoded}`;
+};
