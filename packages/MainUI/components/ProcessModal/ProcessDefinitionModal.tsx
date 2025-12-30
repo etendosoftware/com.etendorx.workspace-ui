@@ -797,6 +797,77 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     ]
   );
 
+  /**
+   * Handler for REPORT_AND_PROCESS type execution with polling
+   * 1. Execute process via POST -> returns pInstanceId
+   * 2. Poll status every 3s until isProcessing is false
+   */
+  const handleReportProcessExecute = useCallback(async () => {
+    startTransition(async () => {
+      try {
+        const formValues = form.getValues();
+        const formParameters = buildPayloadByInputName(formValues, {});
+
+        // Step 1: Execute process
+        const response = await fetch("/api/process/report-and-process", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            processId: button.processDefinition.id,
+            parameters: formParameters,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          setResult({ success: false, error: errorData.error || "Process execution failed" });
+          return;
+        }
+
+        const { pInstanceId } = await response.json();
+
+        // Step 2: Poll for completion every 3 seconds
+        const pollStatus = async (): Promise<void> => {
+          const statusRes = await fetch(`/api/process/report-and-process/${pInstanceId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!statusRes.ok) {
+            setResult({ success: false, error: "Failed to check process status" });
+            return;
+          }
+
+          const status = await statusRes.json();
+
+          if (status.isProcessing) {
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+            await pollStatus();
+            return;
+          }
+
+          // Process completed
+          const success = status.result === 1;
+          setResult({
+            success,
+            error: success ? undefined : status.errorMsg,
+          });
+
+          if (success) {
+            setShouldTriggerSuccess(true);
+          }
+        };
+
+        await pollStatus();
+      } catch (error) {
+        logger.error("Report process execution error:", error);
+        setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
+      }
+    });
+  }, [form, button.processDefinition.id, token]);
+
   useEffect(() => {
     if (open && hasWindowReference) {
       const loadConfig = async () => {
@@ -1287,7 +1358,33 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
                 {/* Footer */}
                 <div className="flex gap-3 justify-end mx-3 my-3">
-                  {!result && !isPending && (
+                  {/* REPORT_AND_PROCESS type: always show Cancel + Execute */}
+                  {type === PROCESS_TYPES.REPORT_AND_PROCESS && !result && (
+                    <>
+                      <Button
+                        variant="outlined"
+                        size="large"
+                        onClick={handleClose}
+                        disabled={isPending}
+                        className="w-49"
+                        data-testid="CancelButton__761503">
+                        {t("common.cancel")}
+                      </Button>
+                      <Button
+                        variant="filled"
+                        size="large"
+                        onClick={handleReportProcessExecute}
+                        disabled={Boolean(isActionButtonDisabled)}
+                        startIcon={getActionButtonContent().icon}
+                        className="w-49"
+                        data-testid="ExecuteReportButton__761503">
+                        {getActionButtonContent().text}
+                      </Button>
+                    </>
+                  )}
+
+                  {/* Other process types: existing logic */}
+                  {type !== PROCESS_TYPES.REPORT_AND_PROCESS && !result && !isPending && (
                     <Button
                       variant="outlined"
                       size="large"
@@ -1298,31 +1395,32 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                     </Button>
                   )}
 
-                  {!result && availableButtons.length > 0
-                    ? availableButtons.map((btn) => (
-                        <Button
-                          key={btn.value}
-                          variant="filled"
-                          size="large"
-                          onClick={() => handleExecute(btn.value)}
-                          disabled={Boolean(isActionButtonDisabled)}
-                          className="w-49"
-                          data-testid={`ExecuteButton_${btn.value}__761503`}>
-                          {btn.label}
-                        </Button>
-                      ))
-                    : !result && (
-                        <Button
-                          variant="filled"
-                          size="large"
-                          onClick={() => handleExecute()}
-                          disabled={Boolean(isActionButtonDisabled)}
-                          startIcon={getActionButtonContent().icon}
-                          className="w-49"
-                          data-testid="ExecuteButton__761503">
-                          {getActionButtonContent().text}
-                        </Button>
-                      )}
+                  {type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
+                    (!result && availableButtons.length > 0
+                      ? availableButtons.map((btn) => (
+                          <Button
+                            key={btn.value}
+                            variant="filled"
+                            size="large"
+                            onClick={() => handleExecute(btn.value)}
+                            disabled={Boolean(isActionButtonDisabled)}
+                            className="w-49"
+                            data-testid={`ExecuteButton_${btn.value}__761503`}>
+                            {btn.label}
+                          </Button>
+                        ))
+                      : !result && (
+                          <Button
+                            variant="filled"
+                            size="large"
+                            onClick={() => handleExecute()}
+                            disabled={Boolean(isActionButtonDisabled)}
+                            startIcon={getActionButtonContent().icon}
+                            className="w-49"
+                            data-testid="ExecuteButton__761503">
+                            {getActionButtonContent().text}
+                          </Button>
+                        ))}
 
                   {result && !result.success && (
                     <Button

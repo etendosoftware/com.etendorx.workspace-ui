@@ -102,6 +102,27 @@ export const sanitizeValue = (value: unknown, field?: Field) => {
   return safeValue;
 };
 
+/**
+ * Converts form values to API payload using field inputName mappings.
+ *
+ * Transforms form data from field-centric names (hqlName, columnName)
+ * to the inputName format expected by Etendo ERP backend APIs.
+ *
+ * ## Transformations:
+ * - Maps field values to corresponding `field.inputName` key
+ * - Converts `documentAction` → `DocAction`
+ * - Sanitizes boolean values to Y/N format
+ * - Handles numeric field conversions
+ *
+ * @param values - Form values record (key: field identifier, value: field value)
+ * @param fields - Optional field definitions for inputName lookup and type conversion
+ * @returns Record with inputName keys ready for API submission, or null if no values
+ *
+ * @example
+ * const formValues = { businessPartner: "123", isActive: true };
+ * const payload = buildPayloadByInputName(formValues, tabFields);
+ * // Returns: { inpcBpartnerId: "123", inpisactive: "Y" }
+ */
 export const buildPayloadByInputName = (values?: Record<string, unknown> | null, fields?: Record<string, Field>) => {
   if (!values) return null;
 
