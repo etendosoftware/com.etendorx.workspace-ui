@@ -16,10 +16,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { extractBearerToken } from "@/lib/auth";
 import { getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
-
-function normalizeBaseUrl(url: string | undefined): string {
-  return url?.endsWith("/") ? url.slice(0, -1) : url || "";
-}
+import { normalizeBaseUrl, handleErpResponse, handleApiError } from "@/app/api/_utils/process/utils";
 
 export interface ProcessStatusResponse {
   pInstanceId: string;
@@ -55,24 +52,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (cookieHeader) headers.Cookie = cookieHeader;
     if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
 
-    console.log("headers: ", headers);
-
-    // Backend requires processId in body even for GET request
     const response = await fetch(erpUrl, {
       method: "GET",
       headers,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Process status check failed: ${response.status} ${response.statusText}. ${errorText}`);
-      return NextResponse.json({ success: false, error: errorText }, { status: response.status });
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
+    return handleErpResponse(response, "Process status check failed");
   } catch (error) {
-    console.error("Process status check error:", error);
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return handleApiError(error, "Process status check error");
   }
 }

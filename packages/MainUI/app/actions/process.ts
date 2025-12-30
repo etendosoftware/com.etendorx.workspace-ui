@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 import { logger } from "@/utils/logger";
 import { getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
 
@@ -58,12 +58,14 @@ export async function executeProcess(
     const headerStore = await headers();
     // Prepare a mock request object with headers to satisfy getErpAuthHeaders signature
     const mockRequest = {
-      headers: headerStore
+      headers: headerStore,
     } as unknown as Request;
 
     const { cookieHeader, csrfToken: resolvedCsrfToken } = getErpAuthHeaders(mockRequest, token, csrfToken);
 
-    logger.debug?.(`executeProcess auth: Cookie length: ${cookieHeader?.length || 0}. CSRF Token provided: ${!!resolvedCsrfToken}`);
+    logger.debug?.(
+      `executeProcess auth: Cookie length: ${cookieHeader?.length || 0}. CSRF Token provided: ${!!resolvedCsrfToken}`
+    );
 
     const response = await fetch(apiUrl, {
       method: "POST",

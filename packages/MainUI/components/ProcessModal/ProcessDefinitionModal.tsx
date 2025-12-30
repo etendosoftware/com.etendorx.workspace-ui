@@ -38,7 +38,12 @@ import { useUserContext } from "@/hooks/useUserContext";
 import type { ExecuteProcessResult } from "@/app/actions/process";
 import { revalidateDopoProcess } from "@/app/actions/revalidate"; // Import revalidation action
 import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
-import { BUTTON_LIST_REFERENCE_ID, PROCESS_TYPES } from "@/utils/processes/definition/constants";
+import {
+  BUTTON_LIST_REFERENCE_ID,
+  PROCESS_TYPES,
+  PROCESS_DEFINITION_DATA,
+  WINDOW_SPECIFIC_KEYS,
+} from "@/utils/processes/definition/constants";
 import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
@@ -56,7 +61,6 @@ import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
-import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
@@ -331,20 +335,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     enabled: open && !loading && !initializationLoading,
   });
 
-  // DEBUG: Monitor callout triggers
-  useEffect(() => {
-    if (!loading && !initializationLoading) {
-      // logger.warn(`[ProcessDebug] Callouts enabled for process ${processId}`);
-    }
-  }, [loading, initializationLoading, processId]);
-
-  // NOTE: globalCalloutManager.isCalloutRunning() not working correctly
-  // const isDataLoading = Boolean(
-  //   initializationLoading || !globalCalloutManager.arePendingCalloutsEmpty() // || globalCalloutManager.isCalloutRunning()
-  // );
-
-  // If initialization failed, keep the button disabled until user action
-
   const initializationBlocksSubmit = Boolean(initializationError);
   // Check if there are mandatory parameters without value in the form
   // Only validate after initial loading is complete
@@ -529,6 +519,83 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   );
 
   /**
+   * Builds the API URL for process execution
+   */
+  const buildProcessApiUrl = useCallback(
+    (currentProcessId: string): string => {
+      const baseUrl = "/api/erp/org.openbravo.client.kernel";
+      const queryParams = new URLSearchParams();
+      queryParams.set("processId", currentProcessId);
+      if (tab?.window) queryParams.set("windowId", tab.window.toString());
+      if (javaClassName) queryParams.set("_action", javaClassName);
+      return `${baseUrl}?${queryParams.toString()}`;
+    },
+    [tab?.window, javaClassName]
+  );
+
+  /**
+   * Extracts button list parameters from action value
+   */
+  const getButtonListParams = useCallback(
+    (actionValue?: string): Record<string, string> => {
+      const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+      return buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
+    },
+    [parameters]
+  );
+
+  /**
+   * Executes an HTTP request to the process API and returns the response
+   */
+  const executeProcessRequest = useCallback(
+    async (apiUrl: string, payload: Record<string, unknown>): Promise<Response> => {
+      return fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json;charset=UTF-8",
+          Authorization: `Bearer ${token}`,
+          "X-CSRF-Token": getCsrfToken(),
+        },
+        body: JSON.stringify(payload),
+      });
+    },
+    [token, getCsrfToken]
+  );
+
+  /**
+   * Handles the response from process execution and updates state accordingly
+   */
+  const handleProcessResult = useCallback(
+    async (response: Response, _errorContext: string): Promise<void> => {
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Execution failed");
+      }
+
+      let resultData = null;
+      try {
+        resultData = await response.json();
+      } catch {
+        // Response might not be JSON
+      }
+
+      const res: ExecuteProcessResult = {
+        success: true,
+        data: resultData,
+      };
+
+      const parsedResult = parseProcessResponse(res);
+      setResult(parsedResult);
+
+      if (parsedResult.success) {
+        await revalidateDopoProcess();
+        setShouldTriggerSuccess(true);
+      }
+    },
+    [parseProcessResponse]
+  );
+
+  /**
    * Executes processes with window reference parameters
    * Used for processes that require grid record selection
    * Calls servlet with selected grid records and process-specific data
@@ -541,8 +608,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       }
       startTransition(async () => {
         try {
-          const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
-          const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
+          const buttonParams = getButtonListParams(actionValue);
 
           // Build base payload
           const payload: Record<string, unknown> = {
@@ -558,46 +624,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
           };
 
-          const baseUrl = "/api/erp/org.openbravo.client.kernel";
-          const queryParams = new URLSearchParams();
-          queryParams.set("processId", processId);
-          if (tab?.window) queryParams.set("windowId", tab.window.toString());
-          if (javaClassName) queryParams.set("_action", javaClassName);
-
-          const apiUrl = `${baseUrl}?${queryParams.toString()}`;
-
-          const response = await fetch(apiUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json;charset=UTF-8",
-              Authorization: `Bearer ${token}`,
-              "X-CSRF-Token": getCsrfToken(),
-            },
-            body: JSON.stringify(payload),
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText || "Execution failed");
-          }
-
-          let resultData = null;
-          try {
-            resultData = await response.json();
-          } catch {}
-
-          const res: ExecuteProcessResult = {
-            success: true,
-            data: resultData,
-          };
-
-          const parsedResult = parseProcessResponse(res);
-          setResult(parsedResult);
-
-          if (parsedResult.success) {
-            await revalidateDopoProcess();
-            setShouldTriggerSuccess(true);
-          }
+          const apiUrl = buildProcessApiUrl(processId);
+          const response = await executeProcessRequest(apiUrl, payload);
+          await handleProcessResult(response, "Error executing process");
         } catch (error) {
           logger.warn("Error executing process:", error);
           setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
@@ -609,14 +638,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       processId,
       form,
       gridSelection,
-      token,
-      javaClassName,
-      parseProcessResponse,
       record,
       buildProcessSpecificFields,
       buildWindowSpecificFields,
-      getCsrfToken,
-      revalidateDopoProcess,
+      buildProcessApiUrl,
+      getButtonListParams,
+      executeProcessRequest,
+      handleProcessResult,
     ]
   );
 
@@ -637,18 +665,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
       startTransition(async () => {
         try {
-          // Client-side execution to ensure JSESSIONID cookie is sent
-          // Target specific kernel slug to ensure proxy mutation logic (cookie forwarding) triggers
-          const baseUrl = "/api/erp/org.openbravo.client.kernel";
-          const queryParams = new URLSearchParams();
-          queryParams.set("processId", processId);
-          if (tab?.window) queryParams.set("windowId", tab.window.toString());
-          if (javaClassName) queryParams.set("_action", javaClassName);
-
-          const apiUrl = `${baseUrl}?${queryParams.toString()}`;
-
-          const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
-          const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
+          const apiUrl = buildProcessApiUrl(processId);
+          const buttonParams = getButtonListParams(actionValue);
 
           const payload = {
             _buttonValue: actionValue || "DONE",
@@ -659,39 +677,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             },
           };
 
-          const response = await fetch(apiUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json;charset=UTF-8",
-              Authorization: `Bearer ${token}`,
-              "X-CSRF-Token": getCsrfToken(),
-            },
-            body: JSON.stringify(payload),
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText || "Execution failed");
-          }
-
-          let resultData = null;
-          try {
-            resultData = await response.json();
-          } catch {}
-
-          const res: ExecuteProcessResult = {
-            success: true,
-            data: resultData,
-          };
-
-          const parsedResult = parseProcessResponse(res);
-          setResult(parsedResult);
-
-          if (parsedResult.success) {
-            // Trigger server-side revalidation
-            await revalidateDopoProcess();
-            setShouldTriggerSuccess(true);
-          }
+          const response = await executeProcessRequest(apiUrl, payload);
+          await handleProcessResult(response, "Error executing direct Java process");
         } catch (error) {
           logger.warn("Error executing direct Java process:", error);
           setResult({
@@ -702,18 +689,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       });
     },
     [
-      tab,
       processId,
       javaClassName,
       windowId,
       record,
       recordValues,
       form,
-      token,
-      parseProcessResponse,
-      getCsrfToken,
-      buildProcessSpecificFields,
       gridSelection,
+      buildProcessApiUrl,
+      getButtonListParams,
+      executeProcessRequest,
+      handleProcessResult,
     ]
   );
 
@@ -1265,7 +1251,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             data-testid="WindowReferenceGrid__761503"
           />
         );
-      } else if (parameter.reference === BUTTON_LIST_REFERENCE_ID) {
       } else {
         selectors.push(
           <ProcessParameterSelector

@@ -16,10 +16,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { extractBearerToken } from "@/lib/auth";
 import { getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
-
-function normalizeBaseUrl(url: string | undefined): string {
-  return url?.endsWith("/") ? url.slice(0, -1) : url || "";
-}
+import { normalizeBaseUrl, handleErpResponse, handleApiError } from "@/app/api/_utils/process/utils";
 
 export interface ReportProcessRequest {
   processId: string;
@@ -63,16 +60,8 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Report process execution failed: ${response.status} ${response.statusText}. ${errorText}`);
-      return NextResponse.json({ success: false, error: errorText }, { status: response.status });
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
+    return handleErpResponse(response, "Report process execution failed");
   } catch (error) {
-    console.error("Report process execution error:", error);
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return handleApiError(error, "Report process execution error");
   }
 }

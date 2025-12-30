@@ -16,12 +16,11 @@ import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces"
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { useWindowContext } from "@/contexts/window";
 import ProcessIframeModal from "./ProcessModal/Iframe";
-import type { ProcessIframeModalProps } from "./ProcessModal/types";
+import type { ProcessIframeModalProps, ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
 import formsData from "../utils/processes/forms/data.json";
 import { useRuntimeConfig } from "../contexts/RuntimeConfigContext";
 import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 import ProcessDefinitionModal from "./ProcessModal/ProcessDefinitionModal";
-import type { ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 
 interface ExtendedMenu extends Menu {
