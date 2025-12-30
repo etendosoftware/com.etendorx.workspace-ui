@@ -295,37 +295,43 @@ export const useTableDirDatasource = ({
     [pageSize, records]
   );
 
+  /**
+   * Handles search/filter for static options without making API calls
+   */
+  const handleStaticOptionsSearch = useCallback(
+    (search: string) => {
+      if (!staticOptions) return;
+
+      const filteredRecords = search
+        ? staticOptions.filter((opt) => opt.name.toLowerCase().includes(search.toLowerCase()))
+        : staticOptions;
+
+      setRecords(filteredRecords.map((opt) => ({ id: opt.id, _identifier: opt.name })));
+    },
+    [staticOptions]
+  );
+
   const fetch = useCallback(
     async (_currentValue: typeof value, reset = false, search = "") => {
-      // Skip fetch if static options are provided
+      // Handle static options separately (no API call needed)
       if (hasStaticOptions) {
-        if (search && staticOptions) {
-          // For search, filter static options client-side
-          const filtered = staticOptions.filter((opt) => opt.name.toLowerCase().includes(search.toLowerCase()));
-          setRecords(filtered.map((opt) => ({ id: opt.id, _identifier: opt.name })));
-        } else if (staticOptions) {
-          // Reset to all static options
-          setRecords(staticOptions.map((opt) => ({ id: opt.id, _identifier: opt.name })));
-        }
+        handleStaticOptionsSearch(search);
         return;
       }
 
+      if (!field || fetchInProgressRef.current) {
+        return;
+      }
+
+      fetchInProgressRef.current = true;
+      setLoading(true);
+
+      if (reset) {
+        setCurrentPage(0);
+        setHasMore(true);
+      }
+
       try {
-        if (!field) return;
-
-        // Prevent duplicate fetches when called rapidly (e.g., double onFocus events)
-        if (fetchInProgressRef.current) {
-          return;
-        }
-
-        fetchInProgressRef.current = true;
-        setLoading(true);
-
-        if (reset) {
-          setCurrentPage(0);
-          setHasMore(true);
-        }
-
         const startRow = reset ? 0 : currentPage * pageSize;
         const endRow = reset ? initialPageSize : startRow + pageSize;
 
@@ -344,11 +350,9 @@ export const useTableDirDatasource = ({
         processApiResponse(data, reset);
       } catch (err) {
         logger.warn(err);
-
         if (reset) {
           setRecords([]);
         }
-
         setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
         setLoading(false);
@@ -357,7 +361,6 @@ export const useTableDirDatasource = ({
     },
     [
       field,
-      tab,
       currentPage,
       pageSize,
       initialPageSize,
@@ -365,7 +368,7 @@ export const useTableDirDatasource = ({
       applySearchCriteria,
       processApiResponse,
       hasStaticOptions,
-      staticOptions,
+      handleStaticOptionsSearch,
     ]
   );
 

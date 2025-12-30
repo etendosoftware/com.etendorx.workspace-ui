@@ -43,6 +43,39 @@ const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
 
 /**
+ * Extracts the actual value from a wrapped value object or returns the value directly
+ */
+function extractActualValue(value: unknown): EntityValue {
+  if (typeof value === "object" && value !== null && "value" in value) {
+    return (value as { value: EntityValue }).value;
+  }
+  return value as EntityValue;
+}
+
+/**
+ * Merges default values into the params object
+ */
+function mergeDefaultsIntoParams(defaults: Record<string, unknown>, mergedParams: Record<string, EntityValue>): void {
+  for (const [key, value] of Object.entries(defaults)) {
+    mergedParams[key] = extractActualValue(value);
+  }
+}
+
+/**
+ * Merges current values into the params object, overriding defaults
+ */
+function mergeCurrentValuesIntoParams(
+  currentValues: Record<string, unknown>,
+  mergedParams: Record<string, EntityValue>
+): void {
+  for (const [key, value] of Object.entries(currentValues)) {
+    if (value !== undefined && value !== null) {
+      mergedParams[key] = value as EntityValue;
+    }
+  }
+}
+
+/**
  * WindowReferenceGrid Component
  * Displays a grid of referenced records that can be selected
  */
@@ -161,42 +194,30 @@ function WindowReferenceGrid({
     };
 
     const applyParameters = () => {
-       // 1. Merge defaults and current values into a single map
+      // 1. Merge defaults and current values into a single map
       const mergedParams: Record<string, EntityValue> = {};
 
-      // Apply defaults
+      // Apply defaults using helper function
       if (stableProcessDefaults && Object.keys(stableProcessDefaults).length > 0) {
-        for (const [key, value] of Object.entries(stableProcessDefaults)) {
-          const actualValue =
-            typeof value === "object" && value !== null && "value" in value
-              ? (value as { value: EntityValue }).value
-              : (value as EntityValue);
-          mergedParams[key] = actualValue;
-        }
+        mergeDefaultsIntoParams(stableProcessDefaults, mergedParams);
       }
 
-      // Apply current values (overrides defaults)
+      // Apply current values (overrides defaults) using helper function
       if (currentValues && Object.keys(currentValues).length > 0) {
-        for (const [key, value] of Object.entries(currentValues)) {
-          if (value !== undefined && value !== null) {
-            mergedParams[key] = value as EntityValue;
-          }
-        }
+        mergeCurrentValuesIntoParams(currentValues, mergedParams);
       }
 
       // 2. Process merged parameters
       for (const [key, finalValue] of Object.entries(mergedParams)) {
         // If it's a mapped system key, apply to options
         if (defaultKeys && key in defaultKeys) {
-          const defaultKey = defaultKeys[key as keyof typeof defaultKeys];
-          options[defaultKey] = finalValue;
+          options[defaultKeys[key as keyof typeof defaultKeys]] = finalValue;
           continue;
         }
 
         const matchingParameter = Object.values(parameters).find((param) => param.name === key);
         if (matchingParameter) {
-           const fieldName = matchingParameter.dBColumnName || key;
-           options[fieldName] = finalValue;
+          options[matchingParameter.dBColumnName || key] = finalValue;
         }
       }
     };
@@ -225,7 +246,7 @@ function WindowReferenceGrid({
 
     applyDynamicKeys();
     applyParameters();
-    
+
     const criteria = buildCriteria();
 
     if (criteria.length > 0) {
