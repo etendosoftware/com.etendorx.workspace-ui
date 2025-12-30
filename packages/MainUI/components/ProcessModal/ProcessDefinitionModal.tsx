@@ -44,6 +44,7 @@ import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
 import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
+import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { FormProvider, useForm, useFormState } from "react-hook-form";
@@ -806,9 +807,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     startTransition(async () => {
       try {
         const formValues = form.getValues();
-        const formParameters = buildPayloadByInputName(formValues, {});
+        const formParameters = buildProcessParameters(formValues, parameters);
 
-        // Step 1: Execute process
+        // Execute process
         const response = await fetch("/api/process/report-and-process", {
           method: "POST",
           headers: {
@@ -829,7 +830,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
         const { pInstanceId } = await response.json();
 
-        // Step 2: Poll for completion every 3 seconds
+        // Poll for completion every 3 seconds
         const pollStatus = async (): Promise<void> => {
           const statusRes = await fetch(`/api/process/report-and-process/${pInstanceId}`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -866,7 +867,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
     });
-  }, [form, button.processDefinition.id, token]);
+  }, [form, button.processDefinition.id, token, parameters]);
 
   useEffect(() => {
     if (open && hasWindowReference) {
