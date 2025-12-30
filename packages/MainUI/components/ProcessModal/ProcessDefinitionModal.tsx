@@ -853,6 +853,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           const success = status.result === 1;
           setResult({
             success,
+            data: status.errorMsg,
             error: success ? undefined : status.errorMsg,
           });
 
@@ -1178,9 +1179,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     const msgTitle = isSuccessMessage ? t("process.completedSuccessfully") : t("process.processError");
     let msgText: string;
     if (isSuccessMessage) {
-      msgText = typeof result.data === "string" ? (result.data as string) : t("process.completedSuccessfully");
+      msgText =
+        typeof result.data === "string"
+          ? (result.data as string)
+          : result.data?.msgText || result.data?.message || t("process.completedSuccessfully");
     } else {
-      msgText = result.error || t("errors.internalServerError.title");
+      msgText = result.error || result.data?.msgText || result.data?.message || t("errors.internalServerError.title");
     }
 
     const displayText = msgText.replace(/<br\s*\/?>/gi, "\n");
@@ -1460,13 +1464,20 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                 <h4 className="font-medium text-xl text-center text-(--color-success-main)">
                   {t("process.completedSuccessfully")}
                 </h4>
-                {result?.data &&
-                  typeof result.data === "string" &&
-                  result.data !== t("process.completedSuccessfully") && (
+                {(() => {
+                  const msg =
+                    typeof result?.data === "string"
+                      ? result.data
+                      : result?.data?.msgText || result?.data?.message || result?.error;
+
+                  if (!msg || msg === t("process.completedSuccessfully")) return null;
+
+                  return (
                     <p className="text-sm text-center text-(--color-transparent-neutral-80) whitespace-pre-line">
-                      {result.data.replace(/<br\s*\/?>/gi, "\n")}
+                      {String(msg).replace(/<br\s*\/?>/gi, "\n")}
                     </p>
-                  )}
+                  );
+                })()}
               </div>
               <Button
                 variant="filled"
