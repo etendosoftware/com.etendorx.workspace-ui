@@ -43,6 +43,7 @@ import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
+import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { FormProvider, useForm, useFormState } from "react-hook-form";
@@ -259,6 +260,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     if (!record || !tab) {
       const combined = { ...initialState };
 
+      // Evaluate defaultValue expressions for parameters that don't have API defaults
+      const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined);
+      Object.assign(combined, evaluatedDefaults);
+
       // Still need to convert dates for specific parameters
       const parametersList = Object.values(parameters);
       for (const param of parametersList) {
@@ -278,6 +283,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       ...initialState,
     };
 
+    // Evaluate defaultValue expressions for parameters that don't have API defaults
+    const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined);
+    Object.assign(combined, evaluatedDefaults);
+
     // Convert date fields to ISO format for all parameters
     // This ensures date inputs display values correctly regardless of source (record or defaults)
     const parametersList = Object.values(parameters);
@@ -292,7 +301,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     }
 
     return combined;
-  }, [record, tab, initialState, parameters]);
+  }, [record, tab, initialState, parameters, session]);
 
   const form = useForm({
     defaultValues: availableFormData as any,
@@ -300,7 +309,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   });
 
   useEffect(() => {
-    if (hasInitialData && Object.keys(availableFormData).length > 0) {
+    // Reset form when we have initial data from API OR when we have evaluated default values
+    const hasFormData = Object.keys(availableFormData).length > 0;
+    if ((hasInitialData || hasFormData) && hasFormData) {
       form.reset(availableFormData);
     }
   }, [hasInitialData, availableFormData, form, initialState]);

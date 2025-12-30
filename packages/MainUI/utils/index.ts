@@ -133,9 +133,43 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
   );
 };
 
+/**
+ * Transforms Etendo dynamic expression syntax to valid JavaScript code.
+ *
+ * This function converts Etendo/OB expression syntax used in displayLogic,
+ * readOnlyLogic, and defaultValue fields into executable JavaScript expressions.
+ *
+ * ## Supported Transformations:
+ *
+ * ### Field References (`@field@` syntax)
+ * - `@fieldName@` → `(currentValues["fieldName"] || context["fieldName"])`
+ * - `@#AD_Org_ID@` → `(currentValues["#AD_Org_ID"] || context["#AD_Org_ID"])` (session variables)
+ * - `@$C_Currency_ID@` → `(currentValues["$C_Currency_ID"] || context["$C_Currency_ID"])` (special context)
+ *
+ * ### Comparison Operators
+ * - `@field@!'Y'` → `...!='Y'` (legacy negation syntax)
+ * - `@field@='Y'` → `...=='Y'` (single = converted to ==)
+ *
+ * ### Legacy OB Utilities
+ * - `OB.Utilities.getValue(obj, 'prop')` → `obj["prop"]`
+ *
+ * @param expr - The Etendo expression string to transform
+ * @returns JavaScript expression string ready for Function() compilation
+ *
+ * @example
+ * // Field reference
+ * parseDynamicExpression("@isActive@='Y'")
+ * // Returns: '(currentValues["isActive"] || context["isActive"])=="Y"'
+ *
+ * @example
+ * // Session variable with # prefix
+ * parseDynamicExpression("@#AD_Org_ID@")
+ * // Returns: '(currentValues["#AD_Org_ID"] || context["#AD_Org_ID"])'
+ */
 export const parseDynamicExpression = (expr: string) => {
   // Transform @field_name@ syntax to valid JavaScript references
-  let expr0 = expr.replace(/@([a-zA-Z_]\w*)@/g, (_, fieldName) => {
+  // Supports: @fieldName@, @#sessionVar@, @$contextVar@
+  let expr0 = expr.replace(/@([#$]?[a-zA-Z_]\w*)@/g, (_, fieldName) => {
     return `(currentValues["${fieldName}"] || context["${fieldName}"])`;
   });
 
