@@ -4,7 +4,8 @@ import { logger } from "@/utils/logger";
 import { buildProcessPayload } from "@/utils";
 import type { EntityValue, Tab } from "@workspaceui/api-client/src/api/types";
 import type { ProcessDefaultsResponse } from "@/components/ProcessModal/types/ProcessParameterExtensions";
-import { WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
+import { PROCESS_TYPES, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
+import type { ProcessType } from "@/components/ProcessModal/types";
 
 export interface ProcessInitializationParams {
   processId: string;
@@ -14,6 +15,7 @@ export interface ProcessInitializationParams {
   // Add record and tab for complete payload building
   record?: Record<string, unknown>;
   tab?: Tab;
+  type: ProcessType;
 }
 
 const buildProcessInitializationParams = ({
@@ -73,7 +75,8 @@ type State =
 type Action =
   | { type: "FETCH_START" }
   | { type: "FETCH_SUCCESS"; payload: ProcessDefaultsResponse }
-  | { type: "FETCH_ERROR"; payload: Error };
+  | { type: "FETCH_ERROR"; payload: Error }
+  | { type: "SKIP" };
 
 const initialState: State = {
   loading: true,
@@ -89,6 +92,12 @@ const reducer = (state: State, action: Action): State => {
       return { loading: false, error: null, processInitialization: action.payload };
     case "FETCH_ERROR":
       return { loading: false, error: action.payload, processInitialization: state.processInitialization };
+    case "SKIP":
+      return {
+        loading: false,
+        error: null,
+        processInitialization: { defaults: {}, filterExpressions: {}, refreshParent: false },
+      };
     default:
       return state;
   }
@@ -109,6 +118,7 @@ export function useProcessInitialization({
   enabled = true,
   record,
   tab,
+  type,
 }: ProcessInitializationParams): UseProcessInitialization {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { error, processInitialization, loading } = state;
@@ -185,12 +195,17 @@ export function useProcessInitialization({
     [params, enabled, fetch]
   );
 
-  // Auto-fetch on mount if enabled
+  // Auto-fetch on mount if enabled and type is process_definition
+  // For other types, skip loading and set empty defaults
   useMemo(() => {
+    if (type !== PROCESS_TYPES.PROCESS_DEFINITION) {
+      dispatch({ type: "SKIP" });
+      return;
+    }
     if (enabled && params) {
       fetch();
     }
-  }, [enabled, params, fetch]);
+  }, [enabled, params, fetch, type]);
 
   return useMemo(
     () => ({ error, processInitialization, loading, refetch }) as UseProcessInitialization,

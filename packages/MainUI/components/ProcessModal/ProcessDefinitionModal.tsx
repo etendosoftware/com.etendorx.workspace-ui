@@ -236,6 +236,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     enabled: !!processId && open,
     record: record || undefined, // Pass complete record data
     tab: tab || undefined, // Pass tab metadata
+    type,
   });
 
   // Process form initial state (similar to useFormInitialState)
