@@ -38,11 +38,17 @@ export const useTableDirDatasource = ({
   pageSize = 75,
   initialPageSize = 75,
   isProcessModal = false,
+  staticOptions,
 }: UseTableDirDatasourceParams) => {
+  // If static options are provided, use them instead of fetching
+  const hasStaticOptions = staticOptions !== undefined;
+
   const { getValues, watch } = useFormContext();
   const { tab, parentRecord } = useTabContext();
   const windowId = tab?.window;
-  const [records, setRecords] = useState<Record<string, string>[]>([]);
+  const [records, setRecords] = useState<Record<string, string>[]>(
+    hasStaticOptions ? staticOptions.map((opt) => ({ id: opt.id, _identifier: opt.name })) : []
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();
   const [currentPage, setCurrentPage] = useState(0);
@@ -291,6 +297,19 @@ export const useTableDirDatasource = ({
 
   const fetch = useCallback(
     async (_currentValue: typeof value, reset = false, search = "") => {
+      // Skip fetch if static options are provided
+      if (hasStaticOptions) {
+        if (search && staticOptions) {
+          // For search, filter static options client-side
+          const filtered = staticOptions.filter((opt) => opt.name.toLowerCase().includes(search.toLowerCase()));
+          setRecords(filtered.map((opt) => ({ id: opt.id, _identifier: opt.name })));
+        } else if (staticOptions) {
+          // Reset to all static options
+          setRecords(staticOptions.map((opt) => ({ id: opt.id, _identifier: opt.name })));
+        }
+        return;
+      }
+
       try {
         if (!field) return;
 
@@ -336,7 +355,18 @@ export const useTableDirDatasource = ({
         fetchInProgressRef.current = false;
       }
     },
-    [field, tab, currentPage, pageSize, initialPageSize, buildRequestBody, applySearchCriteria, processApiResponse]
+    [
+      field,
+      tab,
+      currentPage,
+      pageSize,
+      initialPageSize,
+      buildRequestBody,
+      applySearchCriteria,
+      processApiResponse,
+      hasStaticOptions,
+      staticOptions,
+    ]
   );
 
   const search = useCallback(
