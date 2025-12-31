@@ -28,6 +28,8 @@ export const FIELD_REFERENCE_CODES = {
 
   // Product reference to datasource
   PRODUCT: "95E2A8B50A254B2AAE6774B8C2F28120",
+  // Generic Selector reference
+  SELECTOR: "95E2A8B50A254B2AAE6774B8C2F28120",
 
   // Window reference
   WINDOW: "FF80818132D8F0F30132D9BC395D0038",

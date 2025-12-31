@@ -35,7 +35,7 @@ import { useProcessInitializationState } from "@/hooks/useProcessInitialState";
 import { useSelected } from "@/hooks/useSelected";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserContext } from "@/hooks/useUserContext";
-import { type ExecuteProcessResult } from "@/app/actions/process";
+import type { ExecuteProcessResult } from "@/app/actions/process";
 import { revalidateDopoProcess } from "@/app/actions/revalidate"; // Import revalidation action
 import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
 import {
@@ -172,8 +172,26 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
-  const [gridSelection, setGridSelection] = useState<GridSelectionStructure>({});
+
+  const [gridSelection, setGridSelectionInternal] = useState<GridSelectionStructure>({});
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
+
+  // Wrapper to log all gridSelection changes
+  const setGridSelection = useCallback((updater: GridSelectionUpdater) => {
+    setGridSelectionInternal((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      logger.debug("[PROCESS_DEBUG] gridSelection changed:", {
+        prevKeys: Object.keys(prev),
+        nextKeys: Object.keys(next),
+        changes: Object.entries(next).map(([name, data]) => ({
+          name,
+          selectionCount: data._selection?.length || 0,
+          allRowsCount: data._allRows?.length || 0,
+        })),
+      });
+      return next;
+    });
+  }, []);
 
   // NEW: autoSelectConfig state to hold declarative selection instructions OR backward-compatible _gridSelection
   const [autoSelectConfig, setAutoSelectConfig] = useState<AutoSelectConfig | null>(null);
@@ -303,9 +321,42 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   useEffect(() => {
     if (hasInitialData && Object.keys(availableFormData).length > 0) {
+      logger.debug("[PROCESS_DEBUG] Resetting form with availableFormData:", {
+        keys: Object.keys(availableFormData),
+        hasGrids: Object.keys(availableFormData).some(k =>
+          k === 'order_invoice' || k === 'credit_to_use' || k === 'glitem'
+        ),
+        sample: JSON.stringify(availableFormData).substring(0, 300),
+      });
       form.reset(availableFormData);
     }
   }, [hasInitialData, availableFormData, form, initialState]);
+
+  // Initialize gridSelection from filterExpressions
+  // This dynamically creates grid structures based on what the backend returns
+  // Dependencies include 'open' to reset on each modal open
+  useEffect(() => {
+    if (open && filterExpressions && Object.keys(filterExpressions).length > 0) {
+      const initialGrids: GridSelectionStructure = {};
+
+      // Create empty grid structure for each key in filterExpressions
+      for (const gridName of Object.keys(filterExpressions)) {
+        initialGrids[gridName] = {
+          _selection: [],
+          _allRows: [],
+        };
+      }
+
+      setGridSelection(initialGrids);
+      logger.debug("[PROCESS_DEBUG] Initialized gridSelection from filterExpressions:", {
+        gridNames: Object.keys(initialGrids),
+        filterExpressions,
+      });
+    } else if (!open) {
+      // Reset gridSelection when modal closes
+      setGridSelection({});
+    }
+  }, [open, filterExpressions, setGridSelection]);
 
   // Reactive view into form state (submitting)
   const { isSubmitting } = useFormState({ control: form.control });
@@ -595,6 +646,51 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [form, parameters]);
 
   /**
+   * Prepares grids for payload
+   * Includes all grids that were initialized, but cleans up their structure:
+   * - Grids with selections keep both _selection and _allRows
+   * - Grids without selections get empty arrays to satisfy backend expectations
+   */
+  const getPopulatedGrids = useCallback(() => {
+    const populated: GridSelectionStructure = {};
+
+    logger.debug("[PROCESS_DEBUG] getPopulatedGrids - Input gridSelection:", {
+      gridNames: Object.keys(gridSelection),
+      details: Object.entries(gridSelection).map(([name, data]) => ({
+        name,
+        selectionCount: data._selection?.length || 0,
+        allRowsCount: data._allRows?.length || 0,
+      })),
+    });
+
+    for (const [gridName, gridData] of Object.entries(gridSelection)) {
+      // Include all grids that exist in gridSelection
+      // If no selection, send empty arrays to prevent backend errors
+      if (gridData._selection && gridData._selection.length > 0) {
+        // Grid has selections - include full data
+        populated[gridName] = gridData;
+      } else {
+        // Grid has no selections - send empty structure
+        populated[gridName] = {
+          _selection: [],
+          _allRows: gridData._allRows || [],
+        };
+      }
+    }
+
+    logger.debug("[PROCESS_DEBUG] getPopulatedGrids - Output populated grids:", {
+      gridNames: Object.keys(populated),
+      details: Object.entries(populated).map(([name, data]) => ({
+        name,
+        selectionCount: data._selection?.length || 0,
+        allRowsLength: data._allRows?.length || 0,
+      })),
+    });
+
+    return populated;
+  }, [gridSelection]);
+
+  /**
    * Executes processes with window reference parameters
    * Used for processes that require grid record selection
    * Calls servlet with selected grid records and process-specific data
@@ -609,12 +705,30 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
         const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
 
+        // Only include grids that have data
+        const populatedGrids = getPopulatedGrids();
+
+        logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Before building payload:", {
+          formValuesKeys: Object.keys(form.getValues()),
+          populatedGridsKeys: Object.keys(populatedGrids),
+        });
+
+        const formValues = form.getValues();
+        const mappedValues = mapKeysWithDefaults({ ...formValues, ...populatedGrids });
+
+        logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - After mapKeysWithDefaults:", {
+          mappedValuesKeys: Object.keys(mappedValues),
+          hasGridsInMapped: Object.keys(mappedValues).some(k =>
+            k === 'order_invoice' || k === 'credit_to_use' || k === 'glitem'
+          ),
+        });
+
         // Build base payload
         const payload: Record<string, unknown> = {
           recordIds: record?.id ? [record.id] : [],
           _buttonValue: actionValue || "DONE",
           _params: {
-            ...mapKeysWithDefaults({ ...getMappedFormValues(), ...gridSelection }),
+            ...mappedValues,
             ...buttonParams,
           },
           _entityName: tab?.entityName || "",
@@ -623,19 +737,37 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
         };
 
+        const params = payload._params as Record<string, unknown>;
+        logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Final payload:", {
+          payloadKeys: Object.keys(payload),
+          paramsKeys: Object.keys(params),
+          gridsInParams: Object.keys(params).filter(k =>
+            k === 'order_invoice' || k === 'credit_to_use' || k === 'glitem'
+          ),
+          orderInvoiceStructure: params.order_invoice ? {
+            hasSelection: !!(params.order_invoice as any)._selection,
+            selectionLength: ((params.order_invoice as any)._selection || []).length,
+            hasAllRows: !!(params.order_invoice as any)._allRows,
+            allRowsLength: ((params.order_invoice as any)._allRows || []).length,
+            fullStructure: JSON.stringify(params.order_invoice).substring(0, 300),
+          } : 'NOT PRESENT',
+          payloadSample: JSON.stringify(payload).substring(0, 500),
+        });
+
         await executeJavaProcess(payload, "process");
       });
     },
     [
       tab,
       processId,
-      gridSelection,
       parameters,
       record,
       buildProcessSpecificFields,
       buildWindowSpecificFields,
       executeJavaProcess,
       getMappedFormValues,
+      initialState,
+      getPopulatedGrids,
     ]
   );
 
@@ -658,11 +790,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
         const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
 
+        // Only include grids that have data
+        const populatedGrids = getPopulatedGrids();
+
         const payload = {
           _buttonValue: actionValue || "DONE",
           _params: {
-            ...mapKeysWithDefaults({ ...getMappedFormValues(), ...extraKey, ...recordValues }),
-            ...gridSelection, // Include grid selection if present (e.g. orderGrid)
+            ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues, ...populatedGrids }),
             ...buttonParams,
           },
         };
@@ -676,10 +810,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       windowId,
       record,
       recordValues,
-      gridSelection,
       parameters,
       executeJavaProcess,
       getMappedFormValues,
+      initialState,
+      getPopulatedGrids,
     ]
   );
 
@@ -850,18 +985,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       setResult(null);
       setParameters(button.processDefinition.parameters);
 
-      // Initialize grid selection structure with empty arrays for all window reference parameters
-      const initialGridSelection: GridSelectionStructure = {};
-      for (const param of Object.values(button.processDefinition.parameters)) {
-        if (param.reference === WINDOW_REFERENCE_ID) {
-          initialGridSelection[param.dBColumnName] = {
-            _selection: [],
-            _allRows: [],
-          };
-        }
-      }
+      // Grid selection initialization is now handled by the filterExpressions effect (lines 338-359)
+      // This ensures dynamic initialization based on backend response
 
-      setGridSelection(initialGridSelection);
       // clear any previous auto select when opening
       setAutoSelectConfig(null);
       setAutoSelectApplied(false);
@@ -1121,7 +1247,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const renderParameters = () => {
     if (result?.success) return null;
 
-    const parametersList = Object.values(parameters);
+    // Sort parameters by sequence number
+    const parametersList = Object.values(parameters).sort(
+      (a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0)
+    );
     const windowReferences: React.ReactElement[] = [];
     const selectors: React.ReactElement[] = [];
 
