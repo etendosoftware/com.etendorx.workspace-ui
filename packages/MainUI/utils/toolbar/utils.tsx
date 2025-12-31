@@ -23,6 +23,7 @@ import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
 import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
 import type { SaveButtonState } from "@/contexts/ToolbarContext";
 import type { ISession, Tab } from "@workspaceui/api-client/src/api/types";
+import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
 
 const isBase64Image = (str: string): boolean => {
   try {
@@ -41,7 +42,7 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.SAVE]:
     "toolbar-button-save bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 py-1 pl-3 pr-5 disabled:bg-[var(--color-baseline-100)] disabled:opacity-20 disabled:text-[var(--color-baseline-0)]",
   [TOOLBAR_BUTTONS_ACTIONS.REFRESH]:
-    "toolbar-button-refresh border-1 border-[var(--color-transparent-neutral-20)] h-8 w-8 hover:border-none hover:bg-[var(--color-etendo-dark)] hover:text-[var(--color-baseline-80)]",
+    "toolbar-button-refresh border-1 border-[var(--color-transparent-neutral-20)] h-8 w-8 hover:border-none hover:bg-[var(--color-dynamic-main)] hover:text-[var(--color-baseline-0)]",
   [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: "toolbar-button-cancel",
   [TOOLBAR_BUTTONS_ACTIONS.DELETE]: "toolbar-button-delete",
   [TOOLBAR_BUTTONS_ACTIONS.FIND]: "toolbar-button-find",
@@ -98,16 +99,9 @@ const isVisibleButton = (button: ToolbarButtonMetadata, isFormView: boolean, isT
 
   const isFindButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FIND;
   const isSaveButtonInNonFormView = !isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE;
-  const isCreateButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW;
   const isFilterButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER;
   const isToggleTreeView = !isTreeNodeView && button.action === TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW;
-  return (
-    !isFindButtonInFormView &&
-    !isSaveButtonInNonFormView &&
-    !isCreateButtonInFormView &&
-    !isFilterButtonInFormView &&
-    !isToggleTreeView
-  );
+  return !isFindButtonInFormView && !isSaveButtonInNonFormView && !isFilterButtonInFormView && !isToggleTreeView;
 };
 
 export const organizeButtonsBySection = (
@@ -167,7 +161,12 @@ export const createButtonByType = ({
 
   const baseConfig: ToolbarButton = {
     key: buttonKey,
-    icon: <IconComponent iconKey={button.icon} data-testid="IconComponent__5aeccd" />,
+    icon:
+      isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW ? (
+        <PlusIcon className="w-4 h-4" data-testid="PlusIcon__5aeccd" />
+      ) : (
+        <IconComponent iconKey={button.icon} data-testid="IconComponent__5aeccd" />
+      ),
     tooltip: button.name,
     disabled: !button.active,
     height: IconSize,
@@ -179,6 +178,10 @@ export const createButtonByType = ({
     const showIconTextFor = [TOOLBAR_BUTTONS_ACTIONS.NEW, TOOLBAR_BUTTONS_ACTIONS.SAVE];
 
     if (showIconTextFor.includes(button.action)) {
+      if (button.action === TOOLBAR_BUTTONS_ACTIONS.NEW && isFormView) {
+        return {};
+      }
+
       if (button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE && saveButtonState?.isCalloutLoading) {
         return { iconText: "Loading callouts..." };
       }
@@ -288,7 +291,10 @@ export const createButtonByType = ({
   return finalConfig;
 };
 
-export const getButtonStyles = (button: ToolbarButtonMetadata) => {
+export const getButtonStyles = (button: ToolbarButtonMetadata, isFormView?: boolean) => {
+  if (isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW) {
+    return "toolbar-button-new-form bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 rounded-full flex items-center justify-center hover:bg-[var(--color-dynamic-main)] disabled:opacity-20 aspect-square p-0";
+  }
   return BUTTON_STYLES[button.action as keyof typeof BUTTON_STYLES];
 };
 
@@ -338,7 +344,7 @@ const createSectionButtons = (
     });
 
     // Apply button-specific styles if available
-    const styles = getButtonStyles(button);
+    const styles = getButtonStyles(button, config.isFormView);
     if (styles) {
       toolbarButton.className = toolbarButton.className ? `${toolbarButton.className} ${styles}` : styles;
     }
