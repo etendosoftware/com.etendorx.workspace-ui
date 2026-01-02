@@ -58,6 +58,124 @@ import { getFieldReference } from "@/utils";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 
+// Helper to construct payload for loadOptions
+const constructPayload = (
+  field: any,
+  tabId: string | undefined,
+  effectiveRecordValues: any,
+  session: any,
+  parameters: any,
+  isSelector: boolean,
+  selectorId: string | undefined
+) => {
+  const payload: any = {
+    _startRow: "0",
+    _endRow: "75",
+    _operationType: "fetch",
+    moduleId: field.module,
+    windowId: tabId,
+    tabId: field.tab || tabId,
+    inpTabId: field.tab || tabId,
+    inpwindowId: tabId,
+    inpTableId: field.column?.table,
+    initiatorField: field.hqlName,
+    _constructor: "AdvancedCriteria",
+    _OrExpression: "true",
+    operator: "or",
+    _org: effectiveRecordValues?.inpadOrgId || session.adOrgId,
+    // Specific for pick and execute processes
+    inpPickAndExecuteTableId: effectiveRecordValues?.inpTableId,
+    ...effectiveRecordValues,
+  };
+
+  // Add parameter values using their DBColumnName
+  if (parameters) {
+    Object.values(parameters).forEach((param: any) => {
+      const paramValue = effectiveRecordValues?.[param.name];
+      if (paramValue !== undefined && paramValue !== null && param.dBColumnName) {
+        payload[param.dBColumnName] = paramValue;
+      }
+    });
+  }
+
+  if (isSelector && field.selector) {
+    payload._noCount = "true";
+    if (field.selector.filterClass) payload.filterClass = field.selector.filterClass;
+    if (field.selector._selectedProperties) payload._selectedProperties = field.selector._selectedProperties;
+    if (field.selector._selectorDefinitionId) payload._selectorDefinitionId = field.selector._selectorDefinitionId;
+    if (field.selector._extraProperties) payload._extraProperties = field.selector._extraProperties;
+    if (field.selector._sortBy) payload._sortBy = field.selector._sortBy;
+  } else if (isSelector) {
+    // Fallback for selectors without detailed metadata
+    payload._noCount = "true";
+    if (selectorId) payload._selectorDefinitionId = selectorId;
+  } else {
+    payload._textMatchStyle = "substring";
+  }
+
+  return payload;
+};
+
+// Helper to fetch options from datasource
+const fetchOptionsFromDatasource = async (apiUrl: string, payload: any, searchQuery?: string) => {
+  const params = new URLSearchParams();
+
+  // Add base payload
+  Object.keys(payload).forEach((key) => {
+    // Filter out undefined/null and objects (except criteria which we handle separately if needed)
+    if (payload[key] !== undefined && payload[key] !== null && typeof payload[key] !== "object") {
+      params.append(key, String(payload[key]));
+    }
+  });
+
+  // Basic search criteria
+  const criteria: any[] = [];
+  if (searchQuery) {
+    criteria.push({
+      fieldName: "name", // Default, but useTableDirDatasource checks extraSearchFields
+      operator: "iContains",
+      value: searchQuery,
+    });
+  }
+
+  // Properly serialize criteria if it exists
+  if (criteria.length > 0) {
+    params.append(
+      "criteria",
+      JSON.stringify({
+        fieldName: "_dummy",
+        operator: "equals",
+        value: new Date().getTime(),
+        _constructor: "AdvancedCriteria",
+        criteria: criteria,
+      })
+    );
+  }
+
+  if (searchQuery) {
+    params.append("_sortBy", "_identifier");
+  }
+
+  const fullUrl = `${apiUrl}?${params.toString()}`;
+
+  const response = await datasource.client.request(fullUrl, {
+    method: "GET",
+  });
+
+  return response.data;
+};
+
+// Helper to map response
+const mapResponseToOptions = (data: any) => {
+  const responseData = data.response?.data || data.data || [];
+  return responseData.map((item: any) => ({
+    id: item.id,
+    value: item.id,
+    label: item._identifier || item.name || item.id,
+    ...item,
+  }));
+};
+
 // Extracted Editor Component
 const GridCellEditor = ({
   cell,
@@ -112,141 +230,28 @@ const GridCellEditor = ({
   const loadOptions = async (field: any, searchQuery?: string) => {
     try {
       // Logic based on useTableDirDatasource
-      const fieldRef = field.column?.reference || (field as any).reference;
+      const fieldRef = field.column?.reference || field.reference;
       const isSelector = fieldRef === FIELD_REFERENCE_CODES.SELECTOR || fieldRef === FIELD_REFERENCE_CODES.PRODUCT;
       const selectorId = field.selector?._selectorDefinitionId;
       const datasourceName = field.selector?.datasourceName;
 
-      // Determine base URL and body
-      // If we have a specific datasource name (New UI Selectors), use it
-      // Otherwise fallback to legacy Generic DataSource
+      // Determine base URL
       const apiUrl = datasourceName
         ? `/api/datasource/${datasourceName}`
         : `/sws/com.etendorx.das.legacy.utils/datasource/${field.columnName || field.name}`;
 
-      const criteria: any[] = [];
+      const payload = constructPayload(
+        field,
+        tabId,
+        effectiveRecordValues,
+        session,
+        parameters,
+        isSelector,
+        selectorId
+      );
 
-      // Basic search criteria
-      if (searchQuery) {
-        criteria.push({
-          fieldName: "name", // Default, but useTableDirDatasource checks extraSearchFields
-          operator: "iContains",
-          value: searchQuery,
-        });
-      }
-
-      // Construct payload similar to useTableDirDatasource
-      const payload: any = {
-        _startRow: "0",
-        _endRow: "75",
-        _operationType: "fetch",
-        moduleId: field.module,
-        windowId: tabId,
-        tabId: field.tab || tabId,
-        inpTabId: field.tab || tabId,
-        inpwindowId: tabId,
-        inpTableId: field.column?.table,
-        initiatorField: field.hqlName,
-        _constructor: "AdvancedCriteria",
-        _OrExpression: "true",
-        operator: "or",
-        _org: effectiveRecordValues?.inpadOrgId || session.adOrgId,
-        // Specific for pick and execute processes
-        inpPickAndExecuteTableId: effectiveRecordValues?.inpTableId,
-        ...effectiveRecordValues,
-      };
-
-      // Add parameter values using their DBColumnName
-      if (parameters) {
-        Object.values(parameters).forEach((param: any) => {
-          const paramValue = effectiveRecordValues?.[param.name];
-          if (paramValue !== undefined && paramValue !== null && param.dBColumnName) {
-            payload[param.dBColumnName] = paramValue;
-          }
-        });
-      }
-
-      if (isSelector && field.selector) {
-        payload._noCount = "true";
-
-        if (field.selector.filterClass) {
-          payload.filterClass = field.selector.filterClass;
-        }
-        if (field.selector._selectedProperties) {
-          payload._selectedProperties = field.selector._selectedProperties;
-        }
-        if (field.selector._selectorDefinitionId) {
-          payload._selectorDefinitionId = field.selector._selectorDefinitionId;
-        }
-        if (field.selector._extraProperties) {
-          payload._extraProperties = field.selector._extraProperties;
-        }
-        if (field.selector._sortBy) {
-          payload._sortBy = field.selector._sortBy;
-        }
-      } else if (isSelector) {
-        // Fallback for selectors without detailed metadata
-        payload._noCount = "true";
-        if (selectorId) {
-          payload._selectorDefinitionId = selectorId;
-        }
-      } else {
-        payload._textMatchStyle = "substring";
-      }
-
-      const params = new URLSearchParams();
-
-      // Add base payload
-      Object.keys(payload).forEach((key) => {
-        // Filter out undefined/null and objects (except criteria which we handle separately if needed)
-        if (payload[key] !== undefined && payload[key] !== null && typeof payload[key] !== "object") {
-          params.append(key, String(payload[key]));
-        }
-      });
-
-      // Properly serialize criteria if it exists
-      if (criteria.length > 0) {
-        // For legacy/standard datasources, criteria often goes as JSON string in 'criteria' param
-        // But AdvancedCriteria usually expects _constructor etc.
-        // We will append individual criteria parts if using AdvancedCriteria structure in basics
-        // Or just standard criteria param
-        params.append(
-          "criteria",
-          JSON.stringify({
-            fieldName: "_dummy",
-            operator: "equals",
-            value: new Date().getTime(),
-            _constructor: "AdvancedCriteria",
-            criteria: criteria,
-          })
-        );
-      } else {
-        // dummy criteria to satisfy some backend requirements if needed, or just skip
-      }
-
-      if (searchQuery) {
-        params.append("_sortBy", "_identifier");
-      }
-
-      // Use datasource client if available (or fetch with auth)
-      const fullUrl = `${apiUrl}?${params.toString()}`;
-
-      // Switch to POST if generic legacy supports it, but standard GET usually for these selectors unless huge params
-      // Using RequestInit compatible structure
-      const response = await datasource.client.request(fullUrl, {
-        method: "GET",
-        // Headers like Authorization are handled by the client
-      });
-
-      const data = response.data;
-      const responseData = data.response?.data || data.data || [];
-
-      return responseData.map((item: any) => ({
-        id: item.id,
-        value: item.id,
-        label: item._identifier || item.name || item.id,
-        ...item,
-      }));
+      const data = await fetchOptionsFromDatasource(apiUrl, payload, searchQuery);
+      return mapResponseToOptions(data);
     } catch (e) {
       console.error("Error loading options", e);
       return [];
@@ -269,6 +274,27 @@ const GridCellEditor = ({
         data-testid="CellEditorFactory__ce8544"
       />
     </div>
+  );
+};
+
+const createGridCellEditorRenderer = (
+  col: any,
+  fields: any[],
+  tabId: string | undefined,
+  effectiveRecordValues: any,
+  parameters: any
+) => {
+  return ({ cell, row }: { cell: any; row: any }) => (
+    <GridCellEditor
+      cell={cell}
+      row={row}
+      col={col}
+      fields={fields}
+      tabId={tabId}
+      effectiveRecordValues={effectiveRecordValues}
+      parameters={parameters}
+      data-testid="GridCellEditor__ce8544"
+    />
   );
 };
 
@@ -786,18 +812,7 @@ function WindowReferenceGrid({
 
           return true;
         },
-        Edit: ({ cell, row }: { cell: any; row: any }) => (
-          <GridCellEditor
-            cell={cell}
-            row={row}
-            col={col}
-            fields={fields}
-            tabId={tabId}
-            effectiveRecordValues={effectiveRecordValues}
-            parameters={parameters}
-            data-testid="GridCellEditor__ce8544"
-          />
-        ),
+        Edit: createGridCellEditorRenderer(col, fields, tabId, effectiveRecordValues, parameters),
       };
     });
 
@@ -833,7 +848,7 @@ function WindowReferenceGrid({
     if (externalSelection.length > 0) {
       const newRowSelection: MRT_RowSelectionState = {};
       for (const item of externalSelection) {
-        const itemId = String((item as EntityData).id);
+        const itemId = String(item.id);
         newRowSelection[itemId] = true;
       }
       setRowSelection(newRowSelection);
@@ -1013,8 +1028,8 @@ function WindowReferenceGrid({
         const generateUUID = () => {
           return "xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx"
             .replace(/[xy]/g, function (c) {
-              var r = (Math.random() * 16) | 0,
-                v = c == "x" ? r : (r & 0x3) | 0x8;
+              const r = (Math.random() * 16) | 0;
+              const v = c == "x" ? r : (r & 0x3) | 0x8;
               return v.toString(16);
             })
             .toUpperCase();
