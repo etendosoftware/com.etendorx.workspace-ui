@@ -479,7 +479,7 @@ function WindowReferenceGrid({
           } else if (recordValue === "N") {
             options[key] = false;
           } else {
-            options[key] = recordValue || "";
+            options[key] = (recordValue as any) || "";
           }
         } else if (typeof value === "boolean") {
           options[key] = value;
@@ -543,7 +543,7 @@ function WindowReferenceGrid({
       Object.values(parameters).forEach((param: any) => {
         const paramValue = effectiveRecordValues[param.name];
         if (paramValue !== undefined && param.dBColumnName) {
-          options[param.dBColumnName] = paramValue;
+          options[param.dBColumnName] = paramValue as any;
         }
       });
     };
