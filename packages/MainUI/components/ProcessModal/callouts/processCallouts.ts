@@ -75,29 +75,20 @@ export type ProcessCalloutsConfig = Record<string, ProcessCallout[]>;
  * ]
  * ```
  */
+// Helper to create callout config for Add Payment
+const createAddPaymentCallout = (triggerField: string): ProcessCallout => ({
+  triggerField,
+  execute: (v, f, g) => calculateAddPayment(v, f, g, triggerField),
+});
+
 export const PROCESS_CALLOUTS: ProcessCalloutsConfig = {
   // Callout for aprm_orderinvoice entity - Sum outstandingAmount to expected_payment
   [ADD_PAYMENT_ORDER_PROCESS_ID]: [
-    {
-      triggerField: "_internalGridSelectionTrigger",
-      execute: (v, f, g) => calculateAddPayment(v, f, g, "_internalGridSelectionTrigger"),
-    },
-    {
-      triggerField: "actual_payment",
-      execute: (v, f, g) => calculateAddPayment(v, f, g, "actual_payment"),
-    },
-    {
-      triggerField: "amount_gl_items",
-      execute: (v, f, g) => calculateAddPayment(v, f, g, "amount_gl_items"),
-    },
-    {
-      triggerField: "used_credit",
-      execute: (v, f, g) => calculateAddPayment(v, f, g, "used_credit"),
-    },
-    {
-      triggerField: "generateCredit",
-      execute: (v, f, g) => calculateAddPayment(v, f, g, "generateCredit"),
-    },
+    createAddPaymentCallout("_internalGridSelectionTrigger"),
+    createAddPaymentCallout("actual_payment"),
+    createAddPaymentCallout("amount_gl_items"),
+    createAddPaymentCallout("used_credit"),
+    createAddPaymentCallout("generateCredit"),
   ],
 };
 

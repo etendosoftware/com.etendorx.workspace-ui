@@ -58,6 +58,293 @@ import { getFieldReference } from "@/utils";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 
+// Extracted Editor Component
+const GridCellEditor = ({
+  cell,
+  row,
+  col,
+  fields,
+  tabId,
+  effectiveRecordValues,
+  parameters,
+}: {
+  cell: any;
+  row: any;
+  col: any;
+  fields: any[];
+  tabId: string | undefined;
+  effectiveRecordValues: any;
+  parameters: any;
+}) => {
+  const { session } = useUserContext();
+
+  // Find matched field definition
+  const matchingField =
+    fields.find((f) => f.name === col.header) ||
+    fields.find((f) => f.columnName === col.columnName) ||
+    (col.columnName.endsWith("_ID") ? fields.find((f) => f.columnName === col.columnName) : undefined);
+
+  if (!matchingField) {
+    return null; // Return null instead of undefined for React component
+  }
+
+  // Robustly resolve reference code, checking both column and field level
+  const reference = matchingField.column?.reference || (matchingField as any).reference;
+  const fieldType = getFieldReference(reference);
+
+  const handleChange = (newValue: any, selectedOption?: any) => {
+    row.original[col.columnName] = newValue;
+
+    // Identifier update logic for TableDir/Search
+    if (
+      selectedOption &&
+      (fieldType === FieldType.TABLEDIR ||
+        fieldType === FieldType.SEARCH ||
+        reference === FIELD_REFERENCE_CODES.PRODUCT ||
+        reference === FIELD_REFERENCE_CODES.SELECTOR)
+    ) {
+      const identifierKey = `${col.columnName}$_identifier`;
+      row.original[identifierKey] = selectedOption.label || selectedOption._identifier;
+    }
+    cell.row._valuesCache[cell.column.id] = newValue;
+  };
+
+  const loadOptions = async (field: any, searchQuery?: string) => {
+    try {
+      // Logic based on useTableDirDatasource
+      const fieldRef = field.column?.reference || (field as any).reference;
+      const isSelector = fieldRef === FIELD_REFERENCE_CODES.SELECTOR || fieldRef === FIELD_REFERENCE_CODES.PRODUCT;
+      const selectorId = field.selector?._selectorDefinitionId;
+      const datasourceName = field.selector?.datasourceName;
+
+      // Determine base URL and body
+      // If we have a specific datasource name (New UI Selectors), use it
+      // Otherwise fallback to legacy Generic DataSource
+      const apiUrl = datasourceName
+        ? `/api/datasource/${datasourceName}`
+        : `/sws/com.etendorx.das.legacy.utils/datasource/${field.columnName || field.name}`;
+
+      const criteria: any[] = [];
+
+      // Basic search criteria
+      if (searchQuery) {
+        criteria.push({
+          fieldName: "name", // Default, but useTableDirDatasource checks extraSearchFields
+          operator: "iContains",
+          value: searchQuery,
+        });
+      }
+
+      // Construct payload similar to useTableDirDatasource
+      const payload: any = {
+        _startRow: "0",
+        _endRow: "75",
+        _operationType: "fetch",
+        moduleId: field.module,
+        windowId: tabId,
+        tabId: field.tab || tabId,
+        inpTabId: field.tab || tabId,
+        inpwindowId: tabId,
+        inpTableId: field.column?.table,
+        initiatorField: field.hqlName,
+        _constructor: "AdvancedCriteria",
+        _OrExpression: "true",
+        operator: "or",
+        _org: effectiveRecordValues?.inpadOrgId || session.adOrgId,
+        // Specific for pick and execute processes
+        inpPickAndExecuteTableId: effectiveRecordValues?.inpTableId,
+        ...effectiveRecordValues,
+      };
+
+      // Add parameter values using their DBColumnName
+      if (parameters) {
+        Object.values(parameters).forEach((param: any) => {
+          const paramValue = effectiveRecordValues?.[param.name];
+          if (paramValue !== undefined && paramValue !== null && param.dBColumnName) {
+            payload[param.dBColumnName] = paramValue;
+          }
+        });
+      }
+
+      if (isSelector && field.selector) {
+        payload._noCount = "true";
+
+        if (field.selector.filterClass) {
+          payload.filterClass = field.selector.filterClass;
+        }
+        if (field.selector._selectedProperties) {
+          payload._selectedProperties = field.selector._selectedProperties;
+        }
+        if (field.selector._selectorDefinitionId) {
+          payload._selectorDefinitionId = field.selector._selectorDefinitionId;
+        }
+        if (field.selector._extraProperties) {
+          payload._extraProperties = field.selector._extraProperties;
+        }
+        if (field.selector._sortBy) {
+          payload._sortBy = field.selector._sortBy;
+        }
+      } else if (isSelector) {
+        // Fallback for selectors without detailed metadata
+        payload._noCount = "true";
+        if (selectorId) {
+          payload._selectorDefinitionId = selectorId;
+        }
+      } else {
+        payload._textMatchStyle = "substring";
+      }
+
+      const params = new URLSearchParams();
+
+      // Add base payload
+      Object.keys(payload).forEach((key) => {
+        // Filter out undefined/null and objects (except criteria which we handle separately if needed)
+        if (payload[key] !== undefined && payload[key] !== null && typeof payload[key] !== "object") {
+          params.append(key, String(payload[key]));
+        }
+      });
+
+      // Properly serialize criteria if it exists
+      if (criteria.length > 0) {
+        // For legacy/standard datasources, criteria often goes as JSON string in 'criteria' param
+        // But AdvancedCriteria usually expects _constructor etc.
+        // We will append individual criteria parts if using AdvancedCriteria structure in basics
+        // Or just standard criteria param
+        params.append(
+          "criteria",
+          JSON.stringify({
+            fieldName: "_dummy",
+            operator: "equals",
+            value: new Date().getTime(),
+            _constructor: "AdvancedCriteria",
+            criteria: criteria,
+          })
+        );
+      } else {
+        // dummy criteria to satisfy some backend requirements if needed, or just skip
+      }
+
+      if (searchQuery) {
+        params.append("_sortBy", "_identifier");
+      }
+
+      // Use datasource client if available (or fetch with auth)
+      const fullUrl = `${apiUrl}?${params.toString()}`;
+
+      // Switch to POST if generic legacy supports it, but standard GET usually for these selectors unless huge params
+      // Using RequestInit compatible structure
+      const response = await datasource.client.request(fullUrl, {
+        method: "GET",
+        // Headers like Authorization are handled by the client
+      });
+
+      const data = response.data;
+      const responseData = data.response?.data || data.data || [];
+
+      return responseData.map((item: any) => ({
+        id: item.id,
+        value: item.id,
+        label: item._identifier || item.name || item.id,
+        ...item,
+      }));
+    } catch (e) {
+      console.error("Error loading options", e);
+      return [];
+    }
+  };
+
+  return (
+    <div className="w-full min-w-[200px]">
+      <CellEditorFactory
+        fieldType={fieldType}
+        value={cell.getValue()}
+        onChange={handleChange}
+        field={{ ...matchingField, type: fieldType }}
+        rowId={row.id}
+        columnId={cell.column.id}
+        loadOptions={loadOptions}
+        disabled={false}
+        hasError={false}
+        onBlur={() => {}}
+        data-testid="CellEditorFactory__ce8544"
+      />
+    </div>
+  );
+};
+
+// Helper to resolve parent context ID
+const resolveParentContextId = (
+  dbName: string,
+  effectiveRecordValues: any,
+  currentValues: any
+): { parentContextId: string | undefined; contextDocNo: string | undefined } => {
+  // Helper: convert DB_NAME to inpDbName (camelCase)
+  const toCamel = (s: string) => {
+    return s
+      .toLowerCase()
+      .replace(/_([a-z])/g, (g) => g[1].toUpperCase())
+      .replace(/_id$/, "Id");
+  };
+  const inpName = `inp${toCamel(dbName)}`;
+
+  // Potential keys to find the ID
+  const keysToCheck = [
+    dbName,
+    inpName,
+    `inp${dbName}`, // simple prefix
+  ];
+
+  // Specific mapping for Add Payment 'order_invoice' generic parameter
+  const isOrderInvoiceGrid = ["order_invoice", "C_Order_ID", "C_Invoice_ID"].includes(dbName);
+
+  if (isOrderInvoiceGrid) {
+    keysToCheck.push("C_Order_ID", "C_Invoice_ID", "inpcOrderId", "inpcInvoiceId");
+  }
+
+  let parentContextId: string | undefined;
+
+  // Search in effective values
+  for (const k of keysToCheck) {
+    const val = effectiveRecordValues?.[k] || currentValues?.[k];
+    if (val && typeof val === "string") {
+      // Relaxed length check for debugging, usually 32 uuid
+      if (val.length === 32) {
+        parentContextId = val;
+        break;
+      }
+    }
+  }
+
+  // Also retrieve Document No from context for fallback matching
+  const contextDocNo = effectiveRecordValues?.["inpdocumentno"] || currentValues?.["inpdocumentno"];
+
+  return { parentContextId, contextDocNo };
+};
+
+// Helper to find valid matching record in grid
+const findMatchingRecord = (
+  rawRecords: any[],
+  parentContextId: string | undefined,
+  contextDocNo: string | undefined
+) => {
+  if (!rawRecords || rawRecords.length === 0) return undefined;
+
+  return rawRecords.find(
+    (r: any) =>
+      (parentContextId &&
+        (r.id === parentContextId ||
+          r.order === parentContextId ||
+          r.c_order_id === parentContextId ||
+          r.salesOrder === parentContextId ||
+          r.invoice === parentContextId ||
+          r.c_invoice_id === parentContextId ||
+          r.c_order_id?._identifier === parentContextId)) || // Edge case
+      (contextDocNo &&
+        typeof contextDocNo === "string" &&
+        (r.salesOrderNo === contextDocNo || r.invoiceNo === contextDocNo || r.documentNo === contextDocNo))
+  );
+};
+
 function WindowReferenceGrid({
   parameter,
   parameters,
@@ -73,6 +360,8 @@ function WindowReferenceGrid({
   currentValues,
 }: WindowReferenceGridProps) {
   const { t } = useTranslation();
+  // ... rest of component
+
   const contentRef = useRef<HTMLDivElement>(null);
   const { loading: tabLoading, error: tabError } = useTab(windowReferenceTab?.id);
 
@@ -90,7 +379,7 @@ function WindowReferenceGrid({
     [recordValues, currentValues]
   );
 
-  const [validationErrors, setValidationErrors] = useState<Record<string, string | undefined>>({});
+  const [_validationErrors, setValidationErrors] = useState<Record<string, string | undefined>>({});
   const { user, session, currentClient } = useUserContext();
 
   const [isDataReady, setIsDataReady] = useState(false);
@@ -256,69 +545,75 @@ function WindowReferenceGrid({
     parameters,
   ]);
 
+  // Helper to determine ACCT_DIMENSION_DISPLAY for specific columns
+  const getAcctDimensionDisplay = useCallback(
+    (columnName: string) => {
+      if (!currentClient) return "";
+
+      // Generic logic to map column name to client property
+      // e.g. C_BPartner_ID -> bpartnerAcctdimBreakdown
+
+      // 1. Remove _ID suffix (case insensitive)
+      let key = columnName.replace(/_ID$/i, "");
+      // 2. Remove C_ or M_ prefix (case insensitive) if present
+      key = key.replace(/^[CM]_/i, "");
+
+      const propName = `${key.toLowerCase()}AcctdimBreakdown`;
+      // Check if property exists on currentClient
+      const isActive = (currentClient as any)[propName];
+
+      return isActive === true ? "Y" : "";
+    },
+    [currentClient]
+  );
+
+  const isFieldVisible = useCallback(
+    (field: any) => {
+      if (field.isActive === false) return false;
+      if (field.displayed === false) return false;
+      if (field.showInGridView === false) return false;
+
+      const accVal = getAcctDimensionDisplay(field.columnName) || "";
+
+      const context = {
+        ...user,
+        ...session,
+        ...recordValues,
+        ACCT_DIMENSION_DISPLAY: accVal,
+      };
+
+      // Evaluate Display Logic
+      if (field.displayLogicExpression) {
+        try {
+          const compiledExpr = compileExpression(field.displayLogicExpression);
+          if (!compiledExpr(session, context)) return false;
+        } catch (e) {
+          console.warn(`Error evaluating display logic for field ${field.name}`, e);
+        }
+      }
+
+      // Evaluate Grid Display Logic (if present)
+      const gridLogic = field.gridDisplayLogic;
+      if (gridLogic) {
+        try {
+          const compiledExpr = compileExpression(gridLogic);
+          if (!compiledExpr(session, context)) return false;
+        } catch (e) {
+          console.warn(`Error evaluating grid display logic for field ${field.name}`, e);
+        }
+      }
+
+      return true;
+    },
+    [getAcctDimensionDisplay, user, session, recordValues]
+  );
+
   const fields = useMemo(() => {
     if (stableWindowReferenceTab?.fields) {
-      return Object.values(stableWindowReferenceTab.fields).filter((f) => {
-        const field = f;
-        if (field.isActive === false) return false;
-        if (field.displayed === false) return false;
-        if (field.showInGridView === false) return false;
-
-        // Helper to determine ACCT_DIMENSION_DISPLAY for specific columns
-        const getAcctDimensionDisplay = (columnName: string) => {
-          if (!currentClient) return "";
-
-          // Generic logic to map column name to client property
-          // e.g. C_BPartner_ID -> bpartnerAcctdimBreakdown
-
-          // 1. Remove _ID suffix (case insensitive)
-          let key = columnName.replace(/_ID$/i, "");
-          // 2. Remove C_ or M_ prefix (case insensitive) if present
-          key = key.replace(/^[CM]_/i, "");
-
-          const propName = `${key.toLowerCase()}AcctdimBreakdown`;
-          // Check if property exists on currentClient
-          const isActive = (currentClient as any)[propName];
-
-          return isActive === true ? "Y" : "";
-        };
-
-        const accVal = getAcctDimensionDisplay(field.columnName) || "";
-
-        const context = {
-          ...user,
-          ...session,
-          ...recordValues,
-          ACCT_DIMENSION_DISPLAY: accVal,
-        };
-
-        // Evaluate Display Logic
-        if (field.displayLogicExpression) {
-          try {
-            const compiledExpr = compileExpression(field.displayLogicExpression);
-            if (!compiledExpr(session, context)) return false;
-          } catch (e) {
-            console.warn(`Error evaluating display logic for field ${field.name}`, e);
-          }
-        }
-
-        // Evaluate Grid Display Logic (if present)
-        // Check for common property names for grid display logic
-        const gridLogic = field.gridDisplayLogic;
-        if (gridLogic) {
-          try {
-            const compiledExpr = compileExpression(gridLogic);
-            if (!compiledExpr(session, context)) return false;
-          } catch (e) {
-            console.warn(`Error evaluating grid display logic for field ${field.name}`, e);
-          }
-        }
-
-        return true;
-      });
+      return Object.values(stableWindowReferenceTab.fields).filter((f) => isFieldVisible(f));
     }
     return [];
-  }, [stableWindowReferenceTab, user, session, recordValues, currentClient]);
+  }, [stableWindowReferenceTab, isFieldVisible]);
 
   // Parse raw columns with fix for WindowReferenceGrid
   const rawColumns = useMemo(() => {
@@ -381,57 +676,7 @@ function WindowReferenceGrid({
     // Others have incorrect hqlName (display name like 'Organization' or 'Order No.')
     const correctedFields = Object.fromEntries(
       Object.entries(stableWindowReferenceTab.fields)
-        .filter(([_, f]) => {
-          const field = f;
-          if (field.isActive === false) return false;
-          if (field.displayed === false) return false;
-          if (field.showInGridView === false) return false;
-
-          // Helper to determine ACCT_DIMENSION_DISPLAY for specific columns
-          const getAcctDimensionDisplay = (columnName: string) => {
-            if (!currentClient) return "";
-
-            // Generic logic to map column name to client property
-            let key = columnName.replace(/_ID$/i, "");
-            key = key.replace(/^[CM]_/i, "");
-
-            const propName = `${key.toLowerCase()}AcctdimBreakdown`;
-            // Check if property exists on currentClient
-            const isActive = (currentClient as any)[propName];
-
-            return isActive === true ? "Y" : "";
-          };
-
-          const context = {
-            ...user,
-            ...session,
-            ...recordValues,
-            ACCT_DIMENSION_DISPLAY: getAcctDimensionDisplay(field.columnName) || "",
-          };
-
-          // Evaluate Display Logic
-          if (field.displayLogicExpression) {
-            try {
-              const compiledExpr = compileExpression(field.displayLogicExpression);
-              if (!compiledExpr(session, context)) return false;
-            } catch (e) {
-              console.warn(`Error evaluating display logic for field ${field.name}`, e);
-            }
-          }
-
-          // Evaluate Grid Display Logic
-          const gridLogic = field.gridDisplayLogic;
-          if (gridLogic) {
-            try {
-              const compiledExpr = compileExpression(gridLogic);
-              if (!compiledExpr(session, context)) return false;
-            } catch (e) {
-              console.warn(`Error evaluating grid display logic for field ${field.name}`, e);
-            }
-          }
-
-          return true;
-        })
+        .filter(([_, f]) => isFieldVisible(f))
         .map(([key, field]) => {
           // Check if hqlName looks like a display name (has spaces, starts with uppercase, etc)
           const isDisplayName =
@@ -455,7 +700,7 @@ function WindowReferenceGrid({
       id: stableWindowReferenceTab.id || tabId,
       fields: correctedFields,
     } as Tab;
-  }, [stableWindowReferenceTab, tabId]);
+  }, [stableWindowReferenceTab, tabId, isFieldVisible]);
 
   // Get columns with filter handlers using useColumns
   // Pass options as stable reference to avoid re-creating columns unnecessarily
@@ -501,7 +746,7 @@ function WindowReferenceGrid({
           muiTableBodyCellEditTextFieldProps: ({ cell }: { cell: any }) => {
             // Helper to determine if column is boolean-like
             const isBoolean =
-              (columnConfig as any).type === "boolean" ||
+              columnConfig.type === "boolean" ||
               columnConfig.column?.reference === "20" ||
               columnConfig.column?._identifier === "YesNo" ||
               ["Y", "N"].includes(String(cell.getValue()));
@@ -534,223 +779,25 @@ function WindowReferenceGrid({
         enableEditing: () => {
           // Basic read-only check based on field definition
           // Ideally this should use field.readOnly or similar prop if available
-          const isReadOnly = (columnConfig as any).readOnly || (columnConfig as any).isReadOnly;
+          const isReadOnly = columnConfig.readOnly || columnConfig.isReadOnly;
           if (isReadOnly) return false;
 
           if (columnConfig.columnName === "id" || columnConfig.columnName.includes("identifier")) return false;
 
           return true;
         },
-        Edit: ({ cell, row, table }: { cell: any; row: any; table: any }) => {
-          const { session } = useUserContext();
-
-          // Find matched field definition
-          const matchingField =
-            fields.find((f) => f.name === col.header) ||
-            fields.find((f) => f.columnName === col.columnName) ||
-            (col.columnName.endsWith("_ID") ? fields.find((f) => f.columnName === col.columnName) : undefined);
-
-          if (!matchingField) {
-            console.debug("Debug Reference Grid: No matching field found for column", col.columnName);
-            return undefined;
-          }
-
-          // Robustly resolve reference code, checking both column and field level
-          const reference = matchingField.column?.reference || (matchingField as any).reference;
-          const fieldType = getFieldReference(reference);
-
-          console.debug("Debug Reference Grid:", {
-            columnName: col.columnName,
-            header: col.header,
-            matchingField: matchingField.name,
-            reference,
-            fieldType,
-            isTableDir: fieldType === FieldType.TABLEDIR,
-            isProduct: reference === FIELD_REFERENCE_CODES.PRODUCT,
-            isSelector: reference === FIELD_REFERENCE_CODES.SELECTOR,
-            fieldRefObj: (matchingField as any).reference,
-            colRefObj: matchingField.column?.reference,
-          });
-
-          const handleChange = (newValue: any, selectedOption?: any) => {
-            row.original[col.columnName] = newValue;
-
-            // Identifier update logic for TableDir/Search
-            if (
-              selectedOption &&
-              (fieldType === FieldType.TABLEDIR ||
-                fieldType === FieldType.SEARCH ||
-                reference === FIELD_REFERENCE_CODES.PRODUCT ||
-                reference === FIELD_REFERENCE_CODES.SELECTOR)
-            ) {
-              const identifierKey = `${col.columnName}$_identifier`;
-              row.original[identifierKey] = selectedOption.label || selectedOption._identifier;
-            }
-            cell.row._valuesCache[cell.column.id] = newValue;
-          };
-
-          const loadOptions = async (field: any, searchQuery?: string) => {
-            try {
-              // Logic based on useTableDirDatasource
-              const fieldRef = field.column?.reference || (field as any).reference;
-              const isSelector =
-                fieldRef === FIELD_REFERENCE_CODES.SELECTOR || fieldRef === FIELD_REFERENCE_CODES.PRODUCT;
-              const selectorId = field.selector?._selectorDefinitionId;
-              const datasourceName = field.selector?.datasourceName;
-
-              // Determine base URL and body
-              // If we have a specific datasource name (New UI Selectors), use it
-              // Otherwise fallback to legacy Generic DataSource
-              const apiUrl = datasourceName
-                ? `/api/datasource/${datasourceName}`
-                : `/sws/com.etendorx.das.legacy.utils/datasource/${field.columnName || field.name}`;
-
-              const criteria: any[] = [];
-
-              // Basic search criteria
-              if (searchQuery) {
-                criteria.push({
-                  fieldName: "name", // Default, but useTableDirDatasource checks extraSearchFields
-                  operator: "iContains",
-                  value: searchQuery,
-                });
-              }
-
-              // Construct payload similar to useTableDirDatasource
-              const payload: any = {
-                _startRow: "0",
-                _endRow: "75",
-                _operationType: "fetch",
-                moduleId: field.module,
-                windowId: tabId,
-                tabId: field.tab || tabId,
-                inpTabId: field.tab || tabId,
-                inpwindowId: tabId,
-                inpTableId: field.column?.table,
-                initiatorField: field.hqlName,
-                _constructor: "AdvancedCriteria",
-                _OrExpression: "true",
-                operator: "or",
-                _org: effectiveRecordValues?.inpadOrgId || session.adOrgId,
-                // Specific for pick and execute processes
-                inpPickAndExecuteTableId: effectiveRecordValues?.inpTableId,
-                ...effectiveRecordValues,
-              };
-
-              // Add parameter values using their DBColumnName
-              if (parameters) {
-                Object.values(parameters).forEach((param: any) => {
-                  const paramValue = effectiveRecordValues?.[param.name];
-                  if (paramValue !== undefined && paramValue !== null && param.dBColumnName) {
-                    payload[param.dBColumnName] = paramValue;
-                  }
-                });
-              }
-
-              if (isSelector && field.selector) {
-                payload._noCount = "true";
-
-                if (field.selector.filterClass) {
-                  payload.filterClass = field.selector.filterClass;
-                }
-                if (field.selector._selectedProperties) {
-                  payload._selectedProperties = field.selector._selectedProperties;
-                }
-                if (field.selector._selectorDefinitionId) {
-                  payload._selectorDefinitionId = field.selector._selectorDefinitionId;
-                }
-                if (field.selector._extraProperties) {
-                  payload._extraProperties = field.selector._extraProperties;
-                }
-                if (field.selector._sortBy) {
-                  payload._sortBy = field.selector._sortBy;
-                }
-              } else if (isSelector) {
-                // Fallback for selectors without detailed metadata
-                payload._noCount = "true";
-                if (selectorId) {
-                  payload._selectorDefinitionId = selectorId;
-                }
-              } else {
-                payload._textMatchStyle = "substring";
-              }
-
-              const params = new URLSearchParams();
-
-              // Add base payload
-              Object.keys(payload).forEach((key) => {
-                // Filter out undefined/null and objects (except criteria which we handle separately if needed)
-                if (payload[key] !== undefined && payload[key] !== null && typeof payload[key] !== "object") {
-                  params.append(key, String(payload[key]));
-                }
-              });
-
-              // Properly serialize criteria if it exists
-              if (criteria.length > 0) {
-                // For legacy/standard datasources, criteria often goes as JSON string in 'criteria' param
-                // But AdvancedCriteria usually expects _constructor etc.
-                // We will append individual criteria parts if using AdvancedCriteria structure in basics
-                // Or just standard criteria param
-                params.append(
-                  "criteria",
-                  JSON.stringify({
-                    fieldName: "_dummy",
-                    operator: "equals",
-                    value: new Date().getTime(),
-                    _constructor: "AdvancedCriteria",
-                    criteria: criteria,
-                  })
-                );
-              } else {
-                // dummy criteria to satisfy some backend requirements if needed, or just skip
-              }
-
-              if (searchQuery) {
-                params.append("_sortBy", "_identifier");
-              }
-
-              // Use datasource client if available (or fetch with auth)
-              const fullUrl = `${apiUrl}?${params.toString()}`;
-
-              // Switch to POST if generic legacy supports it, but standard GET usually for these selectors unless huge params
-              // Using RequestInit compatible structure
-              const response = await datasource.client.request(fullUrl, {
-                method: "GET",
-                // Headers like Authorization are handled by the client
-              });
-
-              const data = response.data;
-              const responseData = data.response?.data || data.data || [];
-
-              return responseData.map((item: any) => ({
-                id: item.id,
-                value: item.id,
-                label: item._identifier || item.name || item.id,
-                ...item,
-              }));
-            } catch (e) {
-              console.error("Error loading options", e);
-              return [];
-            }
-          };
-
-          return (
-            <div className="w-full min-w-[200px]">
-              <CellEditorFactory
-                fieldType={fieldType}
-                value={cell.getValue()}
-                onChange={handleChange}
-                field={{ ...matchingField, type: fieldType }}
-                rowId={row.id}
-                columnId={cell.column.id}
-                loadOptions={loadOptions}
-                disabled={false}
-                hasError={false}
-                onBlur={() => {}}
-              />
-            </div>
-          );
-        },
+        Edit: ({ cell, row }: { cell: any; row: any }) => (
+          <GridCellEditor
+            cell={cell}
+            row={row}
+            col={col}
+            fields={fields}
+            tabId={tabId}
+            effectiveRecordValues={effectiveRecordValues}
+            parameters={parameters}
+            data-testid="GridCellEditor__ce8544"
+          />
+        ),
       };
     });
 
@@ -797,103 +844,47 @@ function WindowReferenceGrid({
     // 2. Default/Parent Context Selection Logic (Initialization Only)
     // Only run this if we haven't successfully initialized selection yet
     if (!autoSelectInit.current) {
-      // Try to resolve the parent record ID from context vars
-      const dbName = parameter.dBColumnName;
-
-      // Helper: convert DB_NAME to inpDbName (camelCase)
-      const toCamel = (s: string) => {
-        return s
-          .toLowerCase()
-          .replace(/_([a-z])/g, (g) => g[1].toUpperCase())
-          .replace(/_id$/, "Id");
-      };
-      const inpName = `inp${toCamel(dbName)}`;
-
-      // Potential keys to find the ID
-      const keysToCheck = [
-        dbName,
-        inpName,
-        `inp${dbName}`, // simple prefix
-      ];
-
-      // Specific mapping for Add Payment 'order_invoice' generic parameter
-      // We only want to check for Order/Invoice context IDs if this IS the Order/Invoice grid.
-      // This prevents other grids (like 'credit_to_use') from auto-selecting the Order ID incorrectly.
-      const isOrderInvoiceGrid = ["order_invoice", "C_Order_ID", "C_Invoice_ID"].includes(dbName);
-
-      if (isOrderInvoiceGrid) {
-        keysToCheck.push("C_Order_ID", "C_Invoice_ID", "inpcOrderId", "inpcInvoiceId");
-      }
-
-      let parentContextId: string | undefined;
-      let matchedKey: string | undefined;
-
-      // Search in effective values
-      for (const k of keysToCheck) {
-        const val = effectiveRecordValues?.[k] || currentValues?.[k];
-        if (val && typeof val === "string") {
-          // Relaxed length check for debugging, usually 32 uuid
-          if (val.length === 32) {
-            parentContextId = val;
-            matchedKey = k;
-            break;
-          }
-        }
-      }
-
-      // Also retrieve Document No from context for fallback matching (when FK UUIDs are missing in grid)
-      const contextDocNo = effectiveRecordValues?.["inpdocumentno"] || currentValues?.["inpdocumentno"];
+      const { parentContextId, contextDocNo } = resolveParentContextId(
+        parameter.dBColumnName,
+        effectiveRecordValues,
+        currentValues
+      );
 
       if (parentContextId || contextDocNo) {
         // 3. Notify Parent & Select Visual Row
         // We MUST wait for records to load to match the context (Order) to the specific Grid Row (Schedule)
-        if (rawRecords && rawRecords.length > 0) {
-          // The grid rows might be Payment Schedules, while context ID is Order/Invoice ID.
-          // We need to check if the record contains the Context ID in one of its FK fields,
-          // OR if the Document No matches (common fallback).
-          const fullRecord = rawRecords.find(
-            (r: any) =>
-              (parentContextId &&
-                (r.id === parentContextId ||
-                  r.order === parentContextId ||
-                  r.c_order_id === parentContextId ||
-                  r.salesOrder === parentContextId ||
-                  r.invoice === parentContextId ||
-                  r.c_invoice_id === parentContextId ||
-                  r.c_order_id?._identifier === parentContextId)) || // Edge case
-              (contextDocNo &&
-                typeof contextDocNo === "string" &&
-                (r.salesOrderNo === contextDocNo || r.invoiceNo === contextDocNo || r.documentNo === contextDocNo))
-          );
+        const fullRecord = findMatchingRecord(rawRecords, parentContextId, contextDocNo);
 
-          if (fullRecord) {
-            const recordId = String(fullRecord.id);
-            // CRITICAL: Select the ID of the record we FOUND, not the Context ID.
-            setRowSelection({ [recordId]: true });
+        if (fullRecord) {
+          const recordId = String(fullRecord.id);
+          // CRITICAL: Select the ID of the record we FOUND, not the Context ID.
+          setRowSelection({ [recordId]: true });
 
-            setTimeout(() => {
-              if (onSelectionChange) {
-                // Use updater function to preserve other grids in gridSelection
-                onSelectionChange((prev: GridSelectionStructure) => ({
-                  ...prev,
-                  [parameter.dBColumnName]: {
-                    _selection: [fullRecord],
-                    _allRows: rawRecords,
-                  },
-                }));
-              }
-            }, 0);
-            autoSelectInit.current = true;
-          }
+          setTimeout(() => {
+            if (onSelectionChange) {
+              // Use updater function to preserve other grids in gridSelection
+              onSelectionChange((prev: GridSelectionStructure) => ({
+                ...prev,
+                [parameter.dBColumnName]: {
+                  _selection: [fullRecord],
+                  _allRows: rawRecords, // Provide context
+                },
+              }));
+            }
+          }, 0);
+          autoSelectInit.current = true;
         }
       }
-      /* 
-           NOTE: Optimistic selection using 'parentContextId' is removed because in Master-Detail cases
-           (Order -> Schedules), the IDs do not match, so checking the Order UUID visually does nothing.
-           We must wait for 'rawRecords' to find the correct Schedule UUID.
-        */
     }
-  }, [gridSelection, parameter.dBColumnName, effectiveRecordValues, rawRecords]);
+  }, [
+    gridSelection,
+    parameter.dBColumnName, // stable
+    effectiveRecordValues,
+    currentValues,
+    rawRecords,
+    onSelectionChange,
+    parameter, // less stable but needed
+  ]);
 
   // Stabilize records reference using JSON comparison to prevent unnecessary re-renders
   const recordsStringRef = useRef<string>("");
@@ -1094,7 +1085,7 @@ function WindowReferenceGrid({
               type="button"
               onClick={() => props.table.setCreatingRow(true)}
               className="flex items-center gap-1.5 px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-colors cursor-pointer">
-              <PlusIcon className="w-4 h-4" />
+              <PlusIcon className="w-4 h-4" data-testid="PlusIcon__ce8544" />
               {/* @ts-ignore */}
               <span>{t("common.new")}</span>
             </button>
