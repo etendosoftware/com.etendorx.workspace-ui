@@ -21,15 +21,12 @@ import type { EntityData, EntityValue, Column, Tab } from "@workspaceui/api-clie
 import {
   MaterialReactTable,
   useMaterialReactTable,
-  type MRT_ColumnDef,
   type MRT_RowSelectionState,
   type MRT_ColumnFiltersState,
   type MRT_TableOptions,
   type MRT_Row,
   type MRT_TopToolbarProps,
 } from "material-react-table";
-import { Box, Button, IconButton, Tooltip } from "@mui/material";
-import RefreshIcon from "@mui/icons-material/Refresh";
 import { useDatasource } from "@/hooks/useDatasource";
 import { useGridColumnFilters } from "@/hooks/table/useGridColumnFilters";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
@@ -43,13 +40,13 @@ import { tableStyles } from "./styles";
 import type { WindowReferenceGridProps } from "./types";
 import { PROCESS_DEFINITION_DATA } from "@/utils/processes/definition/constants";
 import type { GridSelectionStructure } from "./ProcessDefinitionModal";
+import PlusIcon from "../../../ComponentLibrary/src/assets/icons/plus.svg";
+import { saveRecord } from "../Table/utils/saveOperations";
+import type { SaveOperation } from "../Table/types/inlineEditing";
+import { useUserContext } from "@/hooks/useUserContext";
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
-import PlusIcon from "../../../ComponentLibrary/src/assets/icons/plus.svg";
-import { createSaveOperation, saveRecord } from "../Table/utils/saveOperations";
-import type { SaveOperation } from "../Table/types/inlineEditing";
-import { useUserContext } from "@/hooks/useUserContext";
 
 /**
  * WindowReferenceGrid Component
@@ -262,7 +259,7 @@ function WindowReferenceGrid({
   const fields = useMemo(() => {
     if (stableWindowReferenceTab?.fields) {
       return Object.values(stableWindowReferenceTab.fields).filter((f) => {
-        const field = f as any;
+        const field = f;
         if (field.isActive === false) return false;
         if (field.displayed === false) return false;
         if (field.showInGridView === false) return false;
@@ -277,17 +274,13 @@ function WindowReferenceGrid({
           // 1. Remove _ID suffix (case insensitive)
           let key = columnName.replace(/_ID$/i, "");
           // 2. Remove C_ or M_ prefix (case insensitive) if present
-          key = key.replace(/^(?:C|M)_/i, "");
+          key = key.replace(/^[CM]_/i, "");
 
           const propName = `${key.toLowerCase()}AcctdimBreakdown`;
           // Check if property exists on currentClient
           const isActive = (currentClient as any)[propName];
 
-          if (typeof isActive === "boolean") {
-            return isActive ? "Y" : "";
-          }
-
-          return "";
+          return isActive === true ? "Y" : "";
         };
 
         const accVal = getAcctDimensionDisplay(field.columnName) || "";
@@ -311,8 +304,7 @@ function WindowReferenceGrid({
 
         // Evaluate Grid Display Logic (if present)
         // Check for common property names for grid display logic
-        const gridLogic =
-          field.gridDisplayLogic || field.displayLogicGrid || field.displayLogicForGrid || field.displayLogicForColumn;
+        const gridLogic = field.gridDisplayLogic;
         if (gridLogic) {
           try {
             const compiledExpr = compileExpression(gridLogic);
@@ -390,7 +382,7 @@ function WindowReferenceGrid({
     const correctedFields = Object.fromEntries(
       Object.entries(stableWindowReferenceTab.fields)
         .filter(([_, f]) => {
-          const field = f as any;
+          const field = f;
           if (field.isActive === false) return false;
           if (field.displayed === false) return false;
           if (field.showInGridView === false) return false;
@@ -401,16 +393,13 @@ function WindowReferenceGrid({
 
             // Generic logic to map column name to client property
             let key = columnName.replace(/_ID$/i, "");
-            key = key.replace(/^(?:C|M)_/i, "");
+            key = key.replace(/^[CM]_/i, "");
 
             const propName = `${key.toLowerCase()}AcctdimBreakdown`;
+            // Check if property exists on currentClient
             const isActive = (currentClient as any)[propName];
 
-            if (typeof isActive === "boolean") {
-              return isActive ? "Y" : "";
-            }
-
-            return "";
+            return isActive === true ? "Y" : "";
           };
 
           const context = {
@@ -431,11 +420,7 @@ function WindowReferenceGrid({
           }
 
           // Evaluate Grid Display Logic
-          const gridLogic =
-            field.gridDisplayLogic ||
-            field.displayLogicGrid ||
-            field.displayLogicForGrid ||
-            field.displayLogicForColumn;
+          const gridLogic = field.gridDisplayLogic;
           if (gridLogic) {
             try {
               const compiledExpr = compileExpression(gridLogic);
@@ -762,7 +747,6 @@ function WindowReferenceGrid({
                 disabled={false}
                 hasError={false}
                 onBlur={() => {}}
-                data-testid="CellEditorFactory__ce8544"
               />
             </div>
           );
@@ -782,6 +766,7 @@ function WindowReferenceGrid({
     refetch,
     hasMoreRecords,
     fetchMore,
+    addRecordLocally,
   } = useDatasource({
     entity: String(entityName),
     params: datasourceOptions,
@@ -920,11 +905,14 @@ function WindowReferenceGrid({
       recordsStringRef.current = recordsString;
       stableRecordsRef.current = rawRecords || [];
     }
+    // If we have no records but we are in a 'local' grid mode (e.g. glitem) we might want to start empty
+    // But stable records is just rawRecords.
     return stableRecordsRef.current;
   }, [rawRecords]);
 
   // Populate _allRows when records are loaded
   useEffect(() => {
+    // For glitem, we want to allow empty lists initially
     if (!records) return;
 
     onSelectionChange((prev: GridSelectionStructure) => ({
@@ -1026,6 +1014,40 @@ function WindowReferenceGrid({
       if (!stableWindowReferenceTab) return;
 
       const newValues = { ...values };
+
+      // Special logic for G/L Items (and potentially others in the future)
+      // These should be saved LOCALLY to the grid, not sent to the backend immediately.
+      if (parameter.dBColumnName === "glitem") {
+        // Generate a pseudo-UUID
+        const generateUUID = () => {
+          return "xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx"
+            .replace(/[xy]/g, function (c) {
+              var r = (Math.random() * 16) | 0,
+                v = c == "x" ? r : (r & 0x3) | 0x8;
+              return v.toString(16);
+            })
+            .toUpperCase();
+        };
+
+        const newId = generateUUID();
+        const newRecord = {
+          id: newId,
+          ...newValues,
+        };
+
+        // Add to local datasource
+        addRecordLocally(newRecord);
+
+        // Auto-select the new record (so it's included in the payload)
+        setRowSelection((prev) => ({
+          ...prev,
+          [newId]: true,
+        }));
+
+        table.setCreatingRow(null);
+        return;
+      }
+
       // Ensure generic boolean/date conversion if needed
       // Calling generic save operation
       const saveOperation: SaveOperation = {
@@ -1058,7 +1080,7 @@ function WindowReferenceGrid({
         console.error(e);
       }
     },
-    [stableWindowReferenceTab, user, refetch]
+    [stableWindowReferenceTab, user, refetch, parameter.dBColumnName, addRecordLocally]
   );
 
   const renderTopToolbar = useCallback(
@@ -1072,7 +1094,7 @@ function WindowReferenceGrid({
               type="button"
               onClick={() => props.table.setCreatingRow(true)}
               className="flex items-center gap-1.5 px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-colors cursor-pointer">
-              <PlusIcon className="w-4 h-4" data-testid="PlusIcon__ce8544" />
+              <PlusIcon className="w-4 h-4" />
               {/* @ts-ignore */}
               <span>{t("common.new")}</span>
             </button>
