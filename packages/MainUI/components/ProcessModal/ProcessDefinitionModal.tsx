@@ -168,6 +168,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const javaClassName = processDefinition.javaClassName;
 
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
+  console.debug("parameters", parameters, processDefinition);
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
@@ -179,7 +180,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   // Wrapper to log all gridSelection changes
   const setGridSelection = useCallback((updater: GridSelectionUpdater) => {
     setGridSelectionInternal((prev) => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
+      const next = typeof updater === "function" ? updater(prev) : updater;
       logger.debug("[PROCESS_DEBUG] gridSelection changed:", {
         prevKeys: Object.keys(prev),
         nextKeys: Object.keys(next),
@@ -323,8 +324,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     if (hasInitialData && Object.keys(availableFormData).length > 0) {
       logger.debug("[PROCESS_DEBUG] Resetting form with availableFormData:", {
         keys: Object.keys(availableFormData),
-        hasGrids: Object.keys(availableFormData).some(k =>
-          k === 'order_invoice' || k === 'credit_to_use' || k === 'glitem'
+        hasGrids: Object.keys(availableFormData).some(
+          (k) => k === "order_invoice" || k === "credit_to_use" || k === "glitem"
         ),
         sample: JSON.stringify(availableFormData).substring(0, 300),
       });
@@ -718,8 +719,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
         logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - After mapKeysWithDefaults:", {
           mappedValuesKeys: Object.keys(mappedValues),
-          hasGridsInMapped: Object.keys(mappedValues).some(k =>
-            k === 'order_invoice' || k === 'credit_to_use' || k === 'glitem'
+          hasGridsInMapped: Object.keys(mappedValues).some(
+            (k) => k === "order_invoice" || k === "credit_to_use" || k === "glitem"
           ),
         });
 
@@ -741,16 +742,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Final payload:", {
           payloadKeys: Object.keys(payload),
           paramsKeys: Object.keys(params),
-          gridsInParams: Object.keys(params).filter(k =>
-            k === 'order_invoice' || k === 'credit_to_use' || k === 'glitem'
+          gridsInParams: Object.keys(params).filter(
+            (k) => k === "order_invoice" || k === "credit_to_use" || k === "glitem"
           ),
-          orderInvoiceStructure: params.order_invoice ? {
-            hasSelection: !!(params.order_invoice as any)._selection,
-            selectionLength: ((params.order_invoice as any)._selection || []).length,
-            hasAllRows: !!(params.order_invoice as any)._allRows,
-            allRowsLength: ((params.order_invoice as any)._allRows || []).length,
-            fullStructure: JSON.stringify(params.order_invoice).substring(0, 300),
-          } : 'NOT PRESENT',
+          orderInvoiceStructure: params.order_invoice
+            ? {
+                hasSelection: !!(params.order_invoice as any)._selection,
+                selectionLength: ((params.order_invoice as any)._selection || []).length,
+                hasAllRows: !!(params.order_invoice as any)._allRows,
+                allRowsLength: ((params.order_invoice as any)._allRows || []).length,
+                fullStructure: JSON.stringify(params.order_invoice).substring(0, 300),
+              }
+            : "NOT PRESENT",
           payloadSample: JSON.stringify(payload).substring(0, 500),
         });
 
@@ -793,7 +796,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         // Only include grids that have data
         const populatedGrids = getPopulatedGrids();
 
+        // Determine record IDs to send
+        // Prioritize explicit selection, fall back to current record contex
+        let recordIds: string[] = [];
+        if (selectedRecords && selectedRecords.length > 0) {
+          recordIds = selectedRecords.map((r) => String(r.id));
+        } else if (record?.id) {
+          recordIds = [String(record.id)];
+        }
+
         const payload = {
+          recordIds,
           _buttonValue: actionValue || "DONE",
           _params: {
             ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues, ...populatedGrids }),
@@ -809,6 +822,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       javaClassName,
       windowId,
       record,
+      selectedRecords,
       recordValues,
       parameters,
       executeJavaProcess,
