@@ -307,6 +307,8 @@ const MultiSelect = memo(function MultiSelectCmp({
     return null;
   }, [filteredOptions, highlightedIndex, selectedValues, handleSingleSelect, handleToggle, showSkeleton, loading, t]);
 
+  const inputPlaceholder = !isReadOnly || selectedLabels.length > 0 ? displayText : "";
+
   return (
     <div
       ref={wrapperRef}
@@ -323,7 +325,7 @@ const MultiSelect = memo(function MultiSelectCmp({
           onChange={handleSetSearchTerm}
           onKeyDown={handleKeyDown}
           onClick={handleInputClick}
-          placeholder={!isReadOnly ? displayText : selectedLabels.length > 0 ? displayText : ""}
+          placeholder={inputPlaceholder}
           readOnly={isReadOnly}
           className={`w-full bg-transparent outline-none text-sm truncate max-w-[calc(100%-40px)] ${
             selectedLabels.length && !searchTerm
