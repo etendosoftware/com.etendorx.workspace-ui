@@ -121,7 +121,6 @@ const MultiSelect = memo(function MultiSelectCmp({
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const [internalOptions, setInternalOptions] = useState<MultiSelectOption[]>([]);
   const [isFetchingInitial, setIsFetchingInitial] = useState(false);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -149,7 +148,7 @@ const MultiSelect = memo(function MultiSelectCmp({
 
       // If the last part starts with ==, do not filter the dropdown
       if (lastPart.trim().startsWith("==")) {
-        return internalOptions;
+        return options;
       }
 
       // Remove '==' prefix if present (though the above check handles the == case,
@@ -159,12 +158,12 @@ const MultiSelect = memo(function MultiSelectCmp({
 
       termToFilter = lastPart.trim();
     }
-    return internalOptions.filter((o) => o.label.toLowerCase().includes(termToFilter.toLowerCase()));
-  }, [internalOptions, searchTerm, enableTextFilterLogic]);
+    return options.filter((o) => o.label.toLowerCase().includes(termToFilter.toLowerCase()));
+  }, [options, searchTerm, enableTextFilterLogic]);
 
   const selectedLabels = useMemo(
-    () => internalOptions.filter((o) => selectedValues.includes(o.id)).map((o) => o.label),
-    [internalOptions, selectedValues]
+    () => options.filter((o) => selectedValues.includes(o.id)).map((o) => o.label),
+    [options, selectedValues]
   );
 
   const displayText = useMemo(() => {
@@ -265,9 +264,10 @@ const MultiSelect = memo(function MultiSelectCmp({
 
   // Actualizar opciones cuando llegan props
   useEffect(() => {
-    setInternalOptions(options);
-    if (options.length > 0 && !loading) setIsFetchingInitial(false);
-  }, [options, loading]);
+    if (options.length > 0 && !loading && isFetchingInitial) {
+      setIsFetchingInitial(false);
+    }
+  }, [options, loading, isFetchingInitial]);
 
   const showSkeleton = isFetchingInitial && loading;
 
@@ -308,7 +308,10 @@ const MultiSelect = memo(function MultiSelectCmp({
   }, [filteredOptions, highlightedIndex, selectedValues, handleSingleSelect, handleToggle, showSkeleton, loading, t]);
 
   return (
-    <div ref={wrapperRef} className={`relative w-full font-['Inter'] ${isReadOnly ? "pointer-events-none" : ""}`} tabIndex={-1}>
+    <div
+      ref={wrapperRef}
+      className={`relative w-full font-['Inter'] ${isReadOnly ? "pointer-events-none" : ""}`}
+      tabIndex={-1}>
       <div
         onClick={handleClick}
         className={`w-full flex items-center justify-between py-2 h-10 border-b ${isReadOnly ? "border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) cursor-not-allowed" : "border-baseline-10 hover:border-baseline-100 cursor-pointer hover:border-baseline-60"} ${FOCUS_STYLES} 
@@ -320,7 +323,7 @@ const MultiSelect = memo(function MultiSelectCmp({
           onChange={handleSetSearchTerm}
           onKeyDown={handleKeyDown}
           onClick={handleInputClick}
-          placeholder={!isReadOnly ? displayText : (selectedLabels.length > 0 ? displayText : "")}
+          placeholder={!isReadOnly ? displayText : selectedLabels.length > 0 ? displayText : ""}
           readOnly={isReadOnly}
           className={`w-full bg-transparent outline-none text-sm truncate max-w-[calc(100%-40px)] ${
             selectedLabels.length && !searchTerm

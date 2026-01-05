@@ -267,6 +267,8 @@ export default function useTableSelection(
     }
   }, [windowIdentifier, tab.id, getSelectedRecord]);
 
+  const previousSelectedRecordsRef = useRef<EntityData[]>([]);
+
   /**
    * Main effect for handling table selection changes and synchronization.
    *
@@ -299,14 +301,23 @@ export default function useTableSelection(
 
     // 4. Detect changes (ignore order changes)
     const currentSelectionIds = selectedRecords.map((r) => String(r.id));
-    const hasSelectionChanged = !compareArraysAlphabetically(currentSelectionIds, previousSelectionRef.current);
+    const hasSelectionIdChanged = !compareArraysAlphabetically(currentSelectionIds, previousSelectionRef.current);
 
-    if (!hasSelectionChanged) {
+    // Check if the actual record objects have changed (e.g. updated data/attachments)
+    // This assumes that data updates result in new object references (immutability)
+    const hasRecordContentChanged =
+      selectedRecords.length === previousSelectedRecordsRef.current.length &&
+      selectedRecords.some((record, index) => record !== previousSelectedRecordsRef.current[index]);
+
+    const shouldUpdate = hasSelectionIdChanged || hasRecordContentChanged;
+
+    if (!shouldUpdate) {
       return;
     }
 
-    // Update the ref with the new selection for next comparison
+    // Update the refs with the new selection for next comparison
     previousSelectionRef.current = currentSelectionIds;
+    previousSelectedRecordsRef.current = selectedRecords;
 
     // 5. Synchronize to Context (Immediate)
     if (selectedRecords.length === 1) {

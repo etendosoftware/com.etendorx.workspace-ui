@@ -86,6 +86,8 @@ interface UseTableDataReturn {
   fetchMore: () => void;
   refetch: () => Promise<void>;
   removeRecordLocally: ((id: string) => void) | null;
+  updateRecordLocally: (recordId: string, updatedRecord: EntityData) => void;
+  addRecordLocally: (newRecord: EntityData) => void;
   hasMoreRecords: boolean;
   applyQuickFilter: (
     columnId: string,
@@ -112,12 +114,14 @@ export const useTableData = ({
   const [prevShouldUseTreeMode, setPrevShouldUseTreeMode] = useState<boolean | null>(null);
 
   const expandedRef = useRef<MRT_ExpandedState>({});
+  const hasBeenInGridMode = useRef<boolean>(false);
 
   // Contexts and hooks
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
-  const { activeWindow, getTabFormState } = useWindowContext();
+  const { activeWindow, getTabFormState, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink } =
+    useWindowContext();
   const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
 
   const {
@@ -130,6 +134,7 @@ export const useTableData = ({
     setTableColumnOrder,
     setIsImplicitFilterApplied,
     tableColumnSorting,
+    advancedCriteria,
   } = useTableStatePersistenceTab({
     windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: tab.id,
@@ -238,10 +243,7 @@ export const useTableData = ({
       // Set loading state before fetching data
       await loadFilterOptions(columnId, searchQuery);
 
-      if (ColumnFilterUtils.isSelectColumn(column)) {
-        return loadSelectFilterOptions(column, columnId, searchQuery, setFilterOptions);
-      }
-
+      // Handle TableDir columns (backend search)
       if (ColumnFilterUtils.isTableDirColumn(column)) {
         return loadTableDirFilterOptions({
           column,
@@ -252,6 +254,11 @@ export const useTableData = ({
           fetchFilterOptions,
           setFilterOptions,
         });
+      }
+
+      // Handle Select/List columns (static or reference)
+      if (ColumnFilterUtils.supportsDropdownFilter(column)) {
+        return loadSelectFilterOptions(column, columnId, searchQuery, setFilterOptions);
       }
 
       return [];
@@ -342,7 +349,7 @@ export const useTableData = ({
 
     // 3. Field Level: Identifier
     const identifierFields = fields.filter((field) => {
-      const col = field.column as any;
+      const col = field.column;
       if (!col) return false;
       // Check both boolean true and string "true" values
       return (
@@ -419,6 +426,19 @@ export const useTableData = ({
       options.criteria = [{ fieldName, value, operator }];
     }
 
+    // Apply advanced criteria
+    if (advancedCriteria) {
+      if (options.criteria) {
+        // @ts-ignore - advancedCriteria is compatible with Criteria
+        options.criteria.push(advancedCriteria);
+      } else {
+        // @ts-ignore - advancedCriteria is compatible with Criteria
+        options.criteria = [advancedCriteria];
+      }
+    } else {
+      console.log("useTableData: No advancedCriteria found");
+    }
+
     // Apply sorting
     if (tableColumnSorting?.length > 0) {
       applySortToOptions(options, tableColumnSorting[0]);
@@ -435,6 +455,7 @@ export const useTableData = ({
     parentId,
     language,
     tableColumnSorting,
+    advancedCriteria,
     getDefaultSort,
     getParentFieldName,
     applySortToOptions,
@@ -466,7 +487,17 @@ export const useTableData = ({
   }, [rawColumns]);
 
   // Use datasource hook
-  const { fetchMore, records, removeRecordLocally, error, refetch, loading, hasMoreRecords } = useDatasource({
+  const {
+    fetchMore,
+    records,
+    removeRecordLocally,
+    updateRecordLocally,
+    addRecordLocally,
+    error,
+    refetch,
+    loading,
+    hasMoreRecords,
+  } = useDatasource({
     entity: treeEntity,
     params: query,
     columns: stableDatasourceColumns,
@@ -663,28 +694,44 @@ export const useTableData = ({
 
   const hasInitializedDirectLink = useRef(false);
 
+  /** Track when tab is in grid mode */
+  useEffect(() => {
+    const isGridMode = !tabFormState || tabFormState.mode !== "form";
+    if (isGridMode && !hasBeenInGridMode.current) {
+      hasBeenInGridMode.current = true;
+    }
+  }, [tabFormState]);
+
+  /** Initialize implicit filter state */
   /** Initialize implicit filter state */
   useEffect(() => {
-    // Only run this logic once on mount/initialization
     if (!hasInitializedDirectLink.current) {
-      // If we are entering directly to a record (Form View), disable implicit filters
-      // Only apply this if we are actually in Form View (mode === 'form')
-      // This prevents parent tabs (which have selectedRecord but are in TABLE mode) from being affected
-      if (hasSelectedRecord && tabFormState?.mode === "form") {
+      const windowIdentifier = activeWindow?.windowIdentifier;
+
+      const initializeDirectLink = () => {
         if (isImplicitFilterApplied !== false) {
           setIsImplicitFilterApplied(false);
         }
-        // Filter to the selected record
-        if (tabFormState?.recordId) {
+
+        if (!hasBeenInGridMode.current && tabFormState?.recordId && windowIdentifier) {
           const currentIdFilter = tableColumnFilters.find((f) => f.id === "id");
           if (currentIdFilter?.value !== tabFormState.recordId) {
             setTableColumnFilters([{ id: "id", value: tabFormState.recordId }]);
           }
+          setTabInitializedWithDirectLink(windowIdentifier, tab.id, true);
         }
         hasInitializedDirectLink.current = true;
-      } else if (isImplicitFilterApplied === undefined) {
+      };
+
+      const initializeDefault = () => {
         setIsImplicitFilterApplied(initialIsFilterApplied);
         hasInitializedDirectLink.current = true;
+      };
+
+      if (hasSelectedRecord && tabFormState?.mode === "form") {
+        initializeDirectLink();
+      } else if (isImplicitFilterApplied === undefined) {
+        initializeDefault();
       }
     }
   }, [
@@ -695,7 +742,60 @@ export const useTableData = ({
     tabFormState,
     setTableColumnFilters,
     tableColumnFilters,
+    activeWindow,
+    tab.id,
+    setTabInitializedWithDirectLink,
   ]);
+
+  /** Clear ID filter when returning to grid mode from manual navigation */
+  useEffect(() => {
+    const windowIdentifier = activeWindow?.windowIdentifier;
+    if (!windowIdentifier) return;
+
+    // If we are NOT in form mode (meaning we are in grid/table mode)
+    const isGridMode = !tabFormState || tabFormState.mode !== "form";
+
+    if (isGridMode) {
+      const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
+      const wasInitializedWithDirectLink = getTabInitializedWithDirectLink(windowIdentifier, tab.id);
+
+      // Only clear the ID filter if we did NOT initialize with a direct link
+      // This preserves the filter for direct link scenarios while clearing it for manual navigation
+      if (hasIdFilter && !wasInitializedWithDirectLink) {
+        setTableColumnFilters((prev) => prev.filter((f) => f.id !== "id"));
+
+        // Restore implicit filters if they were initially applied and are currently disabled
+        if (initialIsFilterApplied && isImplicitFilterApplied === false) {
+          setIsImplicitFilterApplied(true);
+        }
+      }
+    }
+  }, [
+    tabFormState,
+    tableColumnFilters,
+    setTableColumnFilters,
+    initialIsFilterApplied,
+    isImplicitFilterApplied,
+    setIsImplicitFilterApplied,
+    activeWindow,
+    tab.id,
+    getTabInitializedWithDirectLink,
+  ]);
+
+  /** Detect manual filter removal and clear direct link flag */
+  useEffect(() => {
+    const windowIdentifier = activeWindow?.windowIdentifier;
+    if (!windowIdentifier) return;
+
+    const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
+    const wasInitializedWithDirectLink = getTabInitializedWithDirectLink(windowIdentifier, tab.id);
+
+    // If the ID filter was removed manually and we had marked this as a direct link,
+    // clear the direct link flag so future navigation behaves like manual navigation
+    if (!hasIdFilter && wasInitializedWithDirectLink) {
+      setTabInitializedWithDirectLink(windowIdentifier, tab.id, false);
+    }
+  }, [tableColumnFilters, activeWindow, tab.id, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink]);
 
   // Clear filters when parent selection changes
   // This ensures that if we were filtering by a specific ID (e.g. from direct link),
@@ -887,14 +987,14 @@ export const useTableData = ({
       const summaryRequest: Record<string, string> = {};
       const columnMapping: Record<string, string> = {}; // backendName -> originalId
 
-      Object.entries(summaries).forEach(([colId, type]) => {
+      for (const [colId, type] of Object.entries(summaries)) {
         const column = baseColumns.find((col) => col.columnName === colId || col.id === colId);
         if (column) {
           const backendName = column.columnName || column.id;
           summaryRequest[backendName] = type;
           columnMapping[backendName] = colId;
         }
-      });
+      }
 
       if (Object.keys(summaryRequest).length === 0) {
         return null;
@@ -931,11 +1031,11 @@ export const useTableData = ({
           const results: Record<string, number | string> = {};
 
           // Map backend results back to original column IDs
-          Object.entries(columnMapping).forEach(([backendName, originalId]) => {
+          for (const [backendName, originalId] of Object.entries(columnMapping)) {
             if (resultData[backendName] !== undefined) {
               results[originalId] = resultData[backendName];
             }
-          });
+          }
 
           return results;
         }
@@ -978,6 +1078,8 @@ export const useTableData = ({
     fetchMore,
     refetch,
     removeRecordLocally,
+    updateRecordLocally,
+    addRecordLocally,
     applyQuickFilter,
     isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
     tableColumnFilters,

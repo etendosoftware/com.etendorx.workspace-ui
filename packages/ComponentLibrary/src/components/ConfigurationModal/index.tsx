@@ -15,10 +15,11 @@
  *************************************************************************
  */
 
-import { Link } from "@mui/material";
+import { Link, Tooltip } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import RadioButtonIcon from "../../assets/icons/radio-button.svg";
 import CircleIcon from "../../assets/icons/circle.svg";
+import InfoIcon from "../../assets/icons/info.svg";
 import type { IConfigurationModalProps, ISection } from "./types";
 import "./style.css";
 import IconButton from "../IconButton";
@@ -112,33 +113,58 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
             {linkTitle?.label}
           </Link>
         </div>
-        <div className="p-2 gap-2 bg-[var(--color-baseline-10)]">
-          {sectionsState.map((section, sectionIndex) => (
-            <div
-              key={sectionIndex}
-              className="py-3 px-4 flex flex-col gap-3 bg-[var(--color-baseline-0)] border border-[var(--color-transparent-neutral-10)] rounded-xl">
-              <div className="text-sm font-medium text-[var(--color-baseline-90)]">{section.name}</div>
-              <div className="w-full h-full flex flex-row gap-3">
-                {section.items.map(({ id, label, img }, imageIndex) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => handleImageClick(sectionIndex, imageIndex)}
-                    className={`relative p-3 pt-12 flex flex-col gap-2 bg-[var(--color-baseline-0)] rounded-xl overflow-hidden hover:border-[var(--color-baseline-90)] transition-colors duration-250 ease-in-out box-border ${isSelected(section.selectedItem, imageIndex) ? "bg-[var(--color-dynamic-contrast-text)] border-2 border-[var(--color-etendo-main)]" : "border border-[var(--color-transparent-neutral-10)]"}`}>
-                    <div className="absolute top-0 left-0 h-12 w-12 flex items-center justify-center">
-                      {isSelected(section.selectedItem, imageIndex) ? (
-                        <RadioButtonIcon width="1.5rem" height="1.5rem" fill="var(--color-dynamic-main)" />
-                      ) : (
-                        <CircleIcon width="1.5rem" height="1.5rem" fill="var(--color-baseline-70)" />
+        <div className="flex flex-col p-2 gap-2 bg-[var(--color-baseline-10)]">
+          {sectionsState.map((section, sectionIndex) => {
+            const itemsPerRow = section.displayOptions?.itemsPerRow ?? 3;
+            const hideRadioButton = section.displayOptions?.hideRadioButton ?? false;
+            const hideItemLabel = section.displayOptions?.hideItemLabel ?? false;
+            const isBasicItem = hideRadioButton && hideItemLabel;
+
+            return (
+              <div
+                key={sectionIndex}
+                className="py-3 px-4 flex flex-col gap-3 bg-[var(--color-baseline-0)] border border-[var(--color-transparent-neutral-10)] rounded-xl">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-medium text-[var(--color-baseline-90)]">{section.name}</span>
+                  {section.info && (
+                    <Tooltip title={section.info} arrow placement="top">
+                      <span className="flex items-center">
+                        <InfoIcon width="1rem" height="1rem" fill="var(--color-baseline-60)" />
+                      </span>
+                    </Tooltip>
+                  )}
+                </div>
+                <div
+                  className="w-full h-full flex flex-row flex-wrap gap-3"
+                  style={{ maxWidth: "calc(4 * 5rem + 3 * 0.75rem)" }}>
+                  {section.items.map(({ id, label, img }, imageIndex) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => handleImageClick(sectionIndex, imageIndex)}
+                      className={`relative ${hideRadioButton ? "p-3" : "p-3 pt-12"} flex flex-col gap-2 bg-[var(--color-baseline-0)] rounded-xl overflow-hidden hover:border-[var(--color-baseline-90)] transition-colors duration-250 ease-in-out box-border ${isBasicItem ? "items-center justify-center" : ""} ${isSelected(section.selectedItem, imageIndex) ? "bg-[var(--color-dynamic-contrast-text)] border-2 border-[var(--color-etendo-main)]" : "border border-[var(--color-transparent-neutral-10)]"}`}
+                      style={{
+                        flex: `0 0 calc((100% - ${(itemsPerRow - 1) * 0.75}rem) / ${itemsPerRow})`,
+                      }}>
+                      {!hideRadioButton && (
+                        <div className="absolute top-0 left-0 h-12 w-12 flex items-center justify-center">
+                          {isSelected(section.selectedItem, imageIndex) ? (
+                            <RadioButtonIcon width="1.5rem" height="1.5rem" fill="var(--color-dynamic-main)" />
+                          ) : (
+                            <CircleIcon width="1.5rem" height="1.5rem" fill="var(--color-baseline-70)" />
+                          )}
+                        </div>
                       )}
-                    </div>
-                    <IconRenderer icon={img} />
-                    <span className="text-sm font-medium text-[var(--color-baseline-100)] text-left">{label}</span>
-                  </button>
-                ))}
+                      <IconRenderer icon={img} />
+                      {!hideItemLabel && (
+                        <span className="text-sm font-medium text-[var(--color-baseline-100)] text-left">{label}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Menu>
     </>

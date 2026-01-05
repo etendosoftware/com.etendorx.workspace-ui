@@ -44,7 +44,7 @@ export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | nul
     const parentEntityLower = activeParentTab.entityName?.toLowerCase() || "";
     const parentTableName = activeParentTab.table$_identifier?.toLowerCase() || "";
 
-    return tab.parentColumns.some((parentColumn) => {
+    const hasMatch = tab.parentColumns.some((parentColumn) => {
       const columnLower = parentColumn.toLowerCase();
 
       const normalizedColumn = columnLower.replace(/_id$/, "").replace(/[_-]/g, "");
@@ -64,6 +64,11 @@ export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | nul
         normalizedTable.includes(normalizedColumn)
       );
     });
+
+    if (!hasMatch) {
+      return false;
+    }
+    return true;
   }
 
   return false;

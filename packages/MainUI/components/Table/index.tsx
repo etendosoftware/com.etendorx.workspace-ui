@@ -27,6 +27,7 @@ import {
 } from "material-react-table";
 import type { ColumnFiltersState, SortingState, ExpandedState, Updater } from "@tanstack/react-table";
 import { useStyle } from "./styles";
+import "./styles/rowDragOver.css";
 import type {
   EntityData,
   GridProps,
@@ -45,6 +46,8 @@ import useTableSelection from "@/hooks/useTableSelection";
 import { ErrorDisplay } from "../ErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
+import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useSelected } from "@/hooks/useSelected";
 import { useWindowContext } from "@/contexts/window";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
@@ -55,8 +58,12 @@ import CircleFilledIcon from "../../../ComponentLibrary/src/assets/icons/circle-
 import ChevronUp from "../../../ComponentLibrary/src/assets/icons/chevron-up.svg";
 import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check.svg";
+import { AddAttachmentModal } from "../Form/FormView/Sections/AddAttachmentModal";
+import { createAttachment } from "@workspaceui/api-client/src/api/attachments";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useTableData } from "@/hooks/table/useTableData";
 import { isEmptyObject } from "@/utils/commons";
+import { useUserContext } from "@/hooks/useUserContext";
 import {
   getDisplayColumnDefOptions,
   getMUITableBodyCellProps,
@@ -84,7 +91,6 @@ import { ActionsColumn } from "./ActionsColumn";
 import { SummaryRow } from "./SummaryRow";
 import { validateFieldRealTime } from "./utils/validationUtils";
 import { getFieldReference, buildPayloadByInputName } from "@/utils";
-import { useUserContext } from "@/hooks/useUserContext";
 import { useTableConfirmation } from "./hooks/useTableConfirmation";
 import { useInlineTableDirOptions } from "./hooks/useInlineTableDirOptions";
 import { useInlineEditInitialization } from "./hooks/useInlineEditInitialization";
@@ -109,6 +115,7 @@ import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadat
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import "./styles/inlineEditing.css";
 import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
+import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
@@ -163,14 +170,10 @@ const createFieldWithData = (
 };
 
 /**
- * Props for EditableCellContent component
+ * Shared props for cell editing context
+ * Contains common editing-related dependencies used across cell components
  */
-interface EditableCellContentProps {
-  rowId: string;
-  fieldKey: string;
-  columnName: string;
-  editingData: EditingRowData;
-  fieldMapping: { fieldType: FieldType; field: Field };
+interface CellEditingContextProps {
   initialFocusCell: { rowId: string; columnName: string } | null;
   session: Record<string, unknown> | undefined;
   editingRowUtils: EditingRowStateUtils;
@@ -190,6 +193,18 @@ interface EditableCellContentProps {
     rowValues?: Record<string, unknown>
   ) => Promise<RefListField[]>;
   isLoadingTableDirOptions: (fieldName: string) => boolean;
+}
+
+/**
+ * Props for EditableCellContent component
+ * Extends CellEditingContextProps with cell-specific props
+ */
+interface EditableCellContentProps extends CellEditingContextProps {
+  rowId: string;
+  fieldKey: string;
+  columnName: string;
+  editingData: EditingRowData;
+  fieldMapping: { fieldType: FieldType; field: Field };
 }
 
 /**
@@ -317,6 +332,98 @@ const ActionsColumnCell: React.FC<ActionsColumnCellProps> = ({
       data-testid="ActionsColumn__8ca888"
     />
   );
+};
+
+/**
+ * Props for DataColumnCell component
+ * Handles both editing and display modes for data columns
+ * Extends CellEditingContextProps with column-specific props
+ */
+interface DataColumnCellProps extends CellEditingContextProps {
+  renderedCellValue: React.ReactNode;
+  row: MRT_Row<EntityData>;
+  table: MRT_TableInstance<EntityData>;
+  col: Column;
+  originalCell?: (props: {
+    renderedCellValue: React.ReactNode;
+    row: MRT_Row<EntityData>;
+    table: MRT_TableInstance<EntityData>;
+  }) => React.ReactNode;
+  columnFieldMappings: Map<string, { fieldType: FieldType; field: Field }>;
+}
+
+/**
+ * Data column cell component
+ * Extracted from inline Cell definition to prevent component remounts
+ * Handles both editing mode (with EditableCellContent) and display mode
+ */
+const DataColumnCell: React.FC<DataColumnCellProps> = ({
+  renderedCellValue,
+  row,
+  table,
+  col,
+  originalCell,
+  editingRowUtils,
+  columnFieldMappings,
+  initialFocusCell,
+  session,
+  keyboardNavigationManager,
+  handleCellValueChange,
+  validateFieldOnBlur,
+  setInitialFocusCell,
+  loadTableDirOptions,
+  isLoadingTableDirOptions,
+}) => {
+  const rowId = String(row.original.id);
+  const isEditing = editingRowUtils.isRowEditing(rowId);
+  const fieldKey = col.columnName || col.name;
+
+  // If this row is being edited, render the appropriate cell editor
+  if (isEditing && col.name !== COLUMN_NAMES.ACTIONS) {
+    const editingData = editingRowUtils.getEditingRowData(rowId);
+    if (!editingData) return <>{renderedCellValue}</>;
+
+    const fieldMapping = columnFieldMappings.get(col.name);
+    if (!fieldMapping) return <>{renderedCellValue}</>;
+
+    return (
+      <EditableCellContent
+        rowId={rowId}
+        fieldKey={fieldKey}
+        columnName={col.name}
+        editingData={editingData}
+        fieldMapping={fieldMapping}
+        initialFocusCell={initialFocusCell}
+        session={session}
+        editingRowUtils={editingRowUtils}
+        keyboardNavigationManager={keyboardNavigationManager}
+        handleCellValueChange={handleCellValueChange}
+        validateFieldOnBlur={validateFieldOnBlur}
+        setInitialFocusCell={setInitialFocusCell}
+        loadTableDirOptions={loadTableDirOptions}
+        isLoadingTableDirOptions={isLoadingTableDirOptions}
+        data-testid="EditableCellContent__8ca888"
+      />
+    );
+  }
+
+  // For non-editing cells, check if we should show identifier instead of UUID
+  const identifierKey = `${fieldKey}$_identifier`;
+  const identifier = row.original[identifierKey];
+
+  if (identifier && typeof identifier === "string" && typeof renderedCellValue === "string") {
+    if (originalCell && typeof originalCell === "function") {
+      return <>{originalCell({ renderedCellValue: identifier, row, table })}</>;
+    }
+    return <div className="table-cell-content">{identifier}</div>;
+  }
+
+  // Preserve original rendering logic and formatting
+  if (originalCell && typeof originalCell === "function") {
+    return <>{originalCell({ renderedCellValue, row, table })}</>;
+  }
+
+  return <div className="table-cell-content">{renderedCellValue}</div>;
 };
 
 const getRowId = (row: EntityData) => String(row.id);
@@ -493,9 +600,16 @@ interface DynamicTableProps {
   onRecordSelection?: (recordId: string) => void;
   isTreeMode?: boolean;
   isVisible?: boolean;
+  areFiltersDisabled?: boolean;
 }
 
-const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVisible = true }: DynamicTableProps) => {
+const DynamicTable = ({
+  setRecordId,
+  onRecordSelection,
+  isTreeMode = true,
+  isVisible = true,
+  areFiltersDisabled = false,
+}: DynamicTableProps) => {
   const { sx } = useStyle();
   const { t } = useTranslation();
   const { graph } = useSelected();
@@ -503,6 +617,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
 
   const savedScrollTop = useRef<number>(0);
   const isRestoringScroll = useRef<boolean>(false);
+  const isManualSelection = useRef<boolean>(false);
 
   // Restore scroll position when table becomes visible
   useEffect(() => {
@@ -551,10 +666,13 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     registerRecordsGetter,
     registerHasMoreRecordsGetter,
     registerFetchMore,
+    registerUpdateRecord,
+    registerAddRecord,
   } = useDatasourceContext();
   const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal } = useToolbarContext();
   const { activeWindow, getSelectedRecord, getTabFormState } = useWindowContext();
   const { tab, parentTab, parentRecord } = useTabContext();
+  const { registerRefresh } = useTabRefreshContext();
 
   // Hook for fetching form initialization data when entering edit mode
   const { fetchInitialData } = useInlineEditInitialization({ tab });
@@ -574,6 +692,18 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     });
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  // Hook for drag & drop file attachments on table rows
+  const handleFileDrop = useCallback((files: File[], record: EntityData) => {
+    if (files.length > 0) {
+      setDropUploadState({
+        isOpen: true,
+        file: files[0],
+        recordId: String(record.id),
+        recordIdentifier: record._identifier as string | undefined,
+      });
+    }
+  }, []);
 
   // Debug: Compare baseColumns with rawColumns from parseColumns
 
@@ -601,6 +731,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     fetchMore,
     refetch,
     removeRecordLocally,
+    updateRecordLocally,
+    addRecordLocally,
     applyQuickFilter,
     fetchSummary,
   } = useTableData({
@@ -613,6 +745,19 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
   const [headerContextMenuAnchor, setHeaderContextMenuAnchor] = useState<HTMLElement | null>(null);
   const [headerContextMenuColumn, setHeaderContextMenuColumn] = useState<MRT_Column<EntityData> | null>(null);
+
+  const [dropUploadState, setDropUploadState] = useState<{
+    isOpen: boolean;
+    file: File | null;
+    recordId: string | null;
+    recordIdentifier?: string;
+  }>({
+    isOpen: false,
+    file: null,
+    recordId: null,
+    recordIdentifier: undefined,
+  });
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleHeaderContextMenu = useCallback(
     (event: React.MouseEvent<HTMLElement>, column: MRT_Column<EntityData>) => {
@@ -718,6 +863,85 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     () => createEditingRowStateUtils(editingRowsRef, setEditingRows),
     [] // Empty deps - only create once, functions use ref for current value
   );
+
+  // State for drop zone overlay
+  const [dropTargetState, setDropTargetState] = useState<{
+    rect: DOMRect;
+    recordId: string;
+  } | null>(null);
+
+  // State for pending selection after upload
+  const [pendingSelectionId, setPendingSelectionId] = useState<string | null>(null);
+
+  const handleTableUpload = async (file: File, description: string) => {
+    if (!dropUploadState.recordId) return;
+
+    setIsUploading(true);
+    try {
+      const orgId = session["#AD_Org_ID"] || session.adOrgId;
+
+      if (!orgId) {
+        throw new Error("Organization ID not found in session");
+      }
+
+      await createAttachment({
+        recordId: dropUploadState.recordId,
+        tabId: tabId,
+        file: file,
+        inpDocumentOrg: orgId as string,
+        description: description,
+      });
+
+      // Fetch ONLY the updated record to avoid full table reload
+      try {
+        const response = (await datasource.get(tab.entityName, {
+          windowId: tab.window,
+          tabId: tabId,
+          criteria: [{ fieldName: "id", value: dropUploadState.recordId, operator: "equals" }],
+          pageSize: 1,
+          _operationType: "fetch",
+          _noCount: true,
+        })) as { data: { response: { data: EntityData[] } } };
+
+        if (response.data?.response?.data?.[0]) {
+          const updatedRecord = response.data.response.data[0];
+          // Patch the record into the view using optimistic updates
+          setOptimisticRecords((prev) => {
+            const filtered = prev.filter((r) => String(r.id) !== dropUploadState.recordId);
+            return [...filtered, updatedRecord];
+          });
+        }
+      } catch (fetchError) {
+        console.error("[Table] Single record fetch failed:", fetchError);
+        logger.warn("[Table] Failed to refresh single record, falling back to full refetch", fetchError);
+        await refetch();
+      }
+
+      // Set pending selection to highlight the row
+      setPendingSelectionId(dropUploadState.recordId);
+
+      // Close modal and reset state
+      setDropUploadState({
+        isOpen: false,
+        file: null,
+        recordId: null,
+        recordIdentifier: undefined,
+      });
+
+      // Show success message (optional)
+      // showSuccessModal(t("forms.attachments.uploadSuccess"));
+    } catch (error) {
+      logger.error("[Table] Error uploading attachment:", error);
+      showErrorModal(t("forms.attachments.errorAddingAttachment"));
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const { getRowDropZoneProps } = useRowDropZone({
+    onFileDrop: handleFileDrop,
+    onDragStateChange: setDropTargetState,
+  });
 
   // Optimistic updates state - tracks pending updates for immediate UI feedback
   const [optimisticRecords, setOptimisticRecords] = useState<EntityData[]>([]);
@@ -1885,6 +2109,100 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     []
   );
 
+  // Stable Cell renderer for actions column - extracted to prevent component remounts
+  const renderActionsColumnCell = useCallback(
+    ({ row }: { row: MRT_Row<EntityData> }) => (
+      <ActionsColumnCell
+        row={row}
+        editingRowUtils={editingRowUtils}
+        handleEditRow={handleEditRow}
+        handleSaveRow={handleSaveRow}
+        handleCancelRow={handleCancelRow}
+        setRecordId={setRecordId}
+        data-testid="ActionsColumnCell__8ca888"
+      />
+    ),
+    [editingRowUtils, handleEditRow, handleSaveRow, handleCancelRow, setRecordId]
+  );
+
+  // Stable Cell renderer for data columns - reads column metadata from column object
+  // This avoids creating new inline functions in the columns useMemo
+  const renderDataColumnCell = useCallback(
+    ({
+      renderedCellValue,
+      row,
+      table,
+      column,
+    }: {
+      renderedCellValue: React.ReactNode;
+      row: MRT_Row<EntityData>;
+      table: MRT_TableInstance<EntityData>;
+      column: MRT_Column<EntityData>;
+    }) => {
+      // Access column metadata stored during column mapping
+      // Cast through unknown first to satisfy TypeScript's overlap check
+      const columnDef = column.columnDef as unknown as Column & {
+        _originalCell?: (props: {
+          renderedCellValue: React.ReactNode;
+          row: MRT_Row<EntityData>;
+          table: MRT_TableInstance<EntityData>;
+        }) => React.ReactNode;
+        _columnRef: Column;
+        _shouldUseTreeMode?: boolean;
+      };
+      const col = columnDef._columnRef;
+      const originalCell = columnDef._originalCell;
+      const shouldUseTreeMode = columnDef._shouldUseTreeMode ?? false;
+
+      // Create the base cell content using DataColumnCell
+      const cellContent = (
+        <DataColumnCell
+          renderedCellValue={renderedCellValue}
+          row={row}
+          table={table}
+          col={col}
+          originalCell={originalCell}
+          editingRowUtils={editingRowUtils}
+          columnFieldMappings={columnFieldMappings}
+          initialFocusCell={initialFocusCell}
+          session={session}
+          keyboardNavigationManager={keyboardNavigationManager}
+          handleCellValueChange={handleCellValueChange}
+          validateFieldOnBlur={validateFieldOnBlur}
+          setInitialFocusCell={setInitialFocusCell}
+          loadTableDirOptions={loadTableDirOptions}
+          isLoadingTableDirOptions={isLoadingTableDirOptions}
+          data-testid="DataColumnCell__8ca888"
+        />
+      );
+
+      // For the first data column with tree mode, wrap content with tree view controls
+      if (shouldUseTreeMode) {
+        return renderFirstColumnCell({
+          renderedCellValue: cellContent,
+          row,
+          table,
+          originalCell: undefined, // Already handled by DataColumnCell
+          shouldUseTreeMode,
+        });
+      }
+
+      return cellContent;
+    },
+    [
+      editingRowUtils,
+      columnFieldMappings,
+      initialFocusCell,
+      session,
+      keyboardNavigationManager,
+      handleCellValueChange,
+      validateFieldOnBlur,
+      loadTableDirOptions,
+      isLoadingTableDirOptions,
+      renderFirstColumnCell,
+    ]
+  );
+
   // Use optimistic records if available, otherwise use display records
   // Merge optimistic updates with base records while preserving sort order and table features
   const effectiveRecords = useMemo(() => {
@@ -1903,69 +2221,21 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
 
     const modifiedColumns = baseColumns.map((col: Column) => {
       const column = { ...col };
-      const originalCell = column.Cell;
+      const originalCell = column.Cell as
+        | ((props: {
+            renderedCellValue: React.ReactNode;
+            row: MRT_Row<EntityData>;
+            table: MRT_TableInstance<EntityData>;
+          }) => React.ReactNode)
+        | undefined;
 
-      // Override cell rendering to support inline editing while preserving existing formatting
-      column.Cell = ({
-        renderedCellValue,
-        row,
-        table,
-      }: {
-        renderedCellValue: React.ReactNode;
-        row: MRT_Row<EntityData>;
-        table: MRT_TableInstance<EntityData>;
-      }) => {
-        const rowId = String(row.original.id);
-        const isEditing = editingRowUtils.isRowEditing(rowId);
-        const fieldKey = col.columnName || col.name;
+      // Store metadata on the column for the stable Cell renderer to access
+      // This avoids creating new inline functions on each useMemo recalculation
+      (column as Column & { _originalCell?: typeof originalCell; _columnRef: Column })._originalCell = originalCell;
+      (column as Column & { _columnRef: Column })._columnRef = col;
 
-        // If this row is being edited, render the appropriate cell editor
-        if (isEditing && col.name !== COLUMN_NAMES.ACTIONS) {
-          const editingData = editingRowUtils.getEditingRowData(rowId);
-          if (!editingData) return renderedCellValue;
-
-          const fieldMapping = columnFieldMappings.get(col.name);
-          if (!fieldMapping) return renderedCellValue;
-
-          return (
-            <EditableCellContent
-              rowId={rowId}
-              fieldKey={fieldKey}
-              columnName={col.name}
-              editingData={editingData}
-              fieldMapping={fieldMapping}
-              initialFocusCell={initialFocusCell}
-              session={session}
-              editingRowUtils={editingRowUtils}
-              keyboardNavigationManager={keyboardNavigationManager}
-              handleCellValueChange={handleCellValueChange}
-              validateFieldOnBlur={validateFieldOnBlur}
-              setInitialFocusCell={setInitialFocusCell}
-              loadTableDirOptions={loadTableDirOptions}
-              isLoadingTableDirOptions={isLoadingTableDirOptions}
-              data-testid="EditableCellContent__8ca888"
-            />
-          );
-        }
-
-        // For non-editing cells, check if we should show identifier instead of UUID
-        const identifierKey = `${fieldKey}$_identifier`;
-        const identifier = row.original[identifierKey];
-
-        if (identifier && typeof identifier === "string" && typeof renderedCellValue === "string") {
-          if (originalCell && typeof originalCell === "function") {
-            return originalCell({ renderedCellValue: identifier, row, table });
-          }
-          return <div className="table-cell-content">{identifier}</div>;
-        }
-
-        // Preserve original rendering logic and formatting
-        if (originalCell && typeof originalCell === "function") {
-          return originalCell({ renderedCellValue, row, table });
-        }
-
-        return <div className="table-cell-content">{renderedCellValue}</div>;
-      };
+      // Use stable callback reference instead of inline function
+      column.Cell = renderDataColumnCell;
 
       return column;
     });
@@ -1989,17 +2259,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       enablePinning: false, // Disable user pinning control
       columnDefType: "display" as const,
       referencedTabId: null,
-      Cell: ({ row }: { row: MRT_Row<EntityData> }) => (
-        <ActionsColumnCell
-          row={row}
-          editingRowUtils={editingRowUtils}
-          handleEditRow={handleEditRow}
-          handleSaveRow={handleSaveRow}
-          handleCancelRow={handleCancelRow}
-          setRecordId={setRecordId}
-          data-testid="ActionsColumnCell__8ca888"
-        />
-      ),
+      Cell: renderActionsColumnCell,
     };
 
     // Insert actions column at the very beginning
@@ -2009,7 +2269,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     // This is index 1 after inserting actions at index 0
     const firstDataColumnIndex = 1;
     const firstDataColumn = { ...modifiedColumns[firstDataColumnIndex] };
-    const originalFirstCell = firstDataColumn.Cell;
 
     if (shouldUseTreeMode) {
       firstDataColumn.size = 300;
@@ -2017,37 +2276,13 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       firstDataColumn.maxSize = 500;
     }
 
-    firstDataColumn.Cell = ({
-      renderedCellValue,
-      row,
-      table,
-    }: { renderedCellValue: React.ReactNode; row: MRT_Row<EntityData>; table: MRT_TableInstance<EntityData> }) =>
-      renderFirstColumnCell({ renderedCellValue, row, table, originalCell: originalFirstCell, shouldUseTreeMode });
+    // Store tree mode flag on the column for the stable renderer to access
+    (firstDataColumn as Column & { _shouldUseTreeMode: boolean })._shouldUseTreeMode = shouldUseTreeMode;
 
     modifiedColumns[firstDataColumnIndex] = firstDataColumn;
 
     return modifiedColumns;
-  }, [
-    baseColumns,
-    shouldUseTreeMode,
-    editingRowUtils,
-    handleEditRow,
-    handleSaveRow,
-    handleCancelRow,
-    setRecordId,
-    columnFieldMappings,
-    initialFocusCell,
-    session,
-    keyboardNavigationManager,
-    handleCellValueChange,
-    validateFieldOnBlur,
-    loadTableDirOptions,
-    isLoadingTableDirOptions,
-    renderFirstColumnCell,
-    summaryState,
-    summaryResult,
-    isSummaryLoading,
-  ]);
+  }, [baseColumns, shouldUseTreeMode, renderActionsColumnCell, renderDataColumnCell]);
 
   // Helper function to check if a row is being edited
 
@@ -2091,10 +2326,19 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       const recordExists = records?.some((record: EntityData) => String(record.id) === currentURLSelection);
 
       if (recordExists) {
+        // Only reset scroll flag if this was NOT a manual selection
+        // This prevents jumping when the user manually clicks a row
+        if (!isManualSelection.current) {
+          hasScrolledToSelection.current = false;
+        } else {
+          // Reset the manual selection flag for next time
+          isManualSelection.current = false;
+        }
       } else {
         logger.warn(`[URLNavigation] URL navigation to invalid record: ${currentURLSelection}`);
+        // Always try to scroll if we navigated to a record that doesn't exist (might load later)
+        hasScrolledToSelection.current = false;
       }
-      hasScrolledToSelection.current = false;
     }
 
     if (currentURLSelection) {
@@ -2164,6 +2408,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
 
           // Set a new timeout for single click action
           const timeout = setTimeout(() => {
+            isManualSelection.current = true;
             if (event.ctrlKey || event.metaKey) {
               row.toggleSelected();
             } else {
@@ -2226,6 +2471,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
           setRecordId(record.id);
         },
 
+        // Merge drag & drop handlers for file attachments
+        ...getRowDropZoneProps(record as EntityData),
+
         sx: {
           ...(isSelected && {
             ...sx.rowSelected,
@@ -2236,7 +2484,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
         table,
       };
     },
-    [graph, setRecordId, sx.rowSelected, tab, editingRowUtils]
+    [graph, setRecordId, sx.rowSelected, tab, editingRowUtils, getRowDropZoneProps]
   );
 
   const renderEmptyRowsFallback = useCallback(
@@ -2288,17 +2536,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     [sx.tablePaper, tableAriaAttributes]
   );
 
-  const muiTableHeadCellProps = useMemo(
-    () => ({
-      sx: {
-        ...sx.tableHeadCell,
-      },
-    }),
-    [sx.tableHeadCell]
-  );
-
   const muiTableHeadCellPropsWithContextMenu = useCallback(
-    ({ column, table }: { column: MRT_Column<EntityData>; table: MRT_TableInstance<EntityData> }) => ({
+    ({ column }: { column: MRT_Column<EntityData>; table: MRT_TableInstance<EntityData> }) => ({
       sx: {
         ...sx.tableHeadCell,
       },
@@ -2483,7 +2722,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     onSortingChange: handleSortingChange,
     onColumnOrderChange: handleMRTColumnOrderChange,
     getRowId,
-    enableColumnFilters: true,
+    enableColumnFilters: !areFiltersDisabled,
     enableSorting: true,
     enableColumnResizing: true,
     enableColumnActions: true,
@@ -2492,9 +2731,36 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     enableColumnPinning: true,
     renderEmptyRowsFallback,
     enableTableFooter: false,
+    // @ts-ignore
+    autoResetRowSelection: false,
   });
 
-  useTableSelection(tab, displayRecords, table.getState().rowSelection, handleTableSelectionChange);
+  useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange);
+
+  // Use ref for table to prevent infinite loop of registrations
+  const tableRef = useRef(table);
+  tableRef.current = table;
+
+  // Register attachment action for toolbar to handle interactions from TableView
+  useEffect(() => {
+    if (registerAttachmentAction && isVisible) {
+      registerAttachmentAction(() => {
+        const currentSelection = tableRef.current.getState().rowSelection;
+        // Filter keys where value is true to ensure valid selection
+        const selectedIds = Object.keys(currentSelection).filter((key) => currentSelection[key]);
+
+        if (selectedIds.length === 1) {
+          const recordId = selectedIds[0];
+          setShouldOpenAttachmentModal(true);
+          setRecordId(recordId);
+        } else if (selectedIds.length === 0) {
+          showErrorModal(t("status.selectRecordError"));
+        } else {
+          showErrorModal(t("status.selectSingleRecordError"));
+        }
+      });
+    }
+  }, [registerAttachmentAction, setShouldOpenAttachmentModal, setRecordId, showErrorModal, t, isVisible]);
 
   // Initialize keyboard navigation manager - use a ref to avoid dependency issues
   const keyboardManagerRef = useRef<KeyboardNavigationManager | null>(null);
@@ -2527,6 +2793,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
   useLayoutEffect(() => {
     const windowId = activeWindow?.windowId;
     const windowIdentifier = activeWindow?.windowIdentifier;
+
     if (!windowId || windowId !== tab.window || !displayRecords || !windowIdentifier) {
       return;
     }
@@ -2536,6 +2803,32 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       return;
     }
 
+    const scrollToIndex = (index: number) => {
+      if (!tableContainerRef.current) return;
+
+      try {
+        // Use the virtualizer to scroll to the index - this handles variable row heights and prevents drift
+        // @ts-ignore - rowVirtualizer is available in the table instance but might be missing from types
+        if (table.rowVirtualizer) {
+          // @ts-ignore
+          table.rowVirtualizer.scrollToIndex(index, { align: "center", behavior: "smooth" });
+        } else {
+          // Fallback for when virtualizer is not ready (should be rare)
+          const containerElement = tableContainerRef.current;
+          const estimatedRowHeight = 40; // Approximate row height
+          const headerHeight = 75; // Approximate header height
+          const scrollTop = index * estimatedRowHeight - containerElement.clientHeight / 2 + headerHeight;
+
+          containerElement.scrollTo({
+            top: Math.max(0, scrollTop),
+            behavior: "smooth",
+          });
+        }
+      } catch (error) {
+        logger.error(`[TableScroll] Error scrolling to selected record: ${error}`);
+      }
+    };
+
     // Always mark as scrolled after first attempt, regardless of whether scroll was needed
     if (!hasScrolledToSelection.current && displayRecords.length > 0) {
       hasScrolledToSelection.current = true;
@@ -2543,25 +2836,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       // Find the index of the selected record in the display records
       const selectedIndex = displayRecords.findIndex((record: EntityData) => String(record.id) === urlSelectedId);
 
-      if (selectedIndex >= 0 && tableContainerRef.current) {
-        try {
-          if (tableContainerRef.current) {
-            const containerElement = tableContainerRef.current;
-
-            const estimatedRowHeight = 40; // Approximate row height
-            const headerHeight = 75; // Approximate header height
-            const scrollTop = selectedIndex * estimatedRowHeight - containerElement.clientHeight / 2 + headerHeight;
-
-            // Scroll to the calculated position synchronously after DOM updates
-            containerElement.scrollTo({
-              top: Math.max(0, scrollTop),
-              behavior: "smooth",
-            });
-          }
-        } catch (error) {
-          logger.error(`[TableScroll] Error scrolling to selected record: ${error}`);
-        }
-      } else {
+      if (selectedIndex >= 0) {
+        scrollToIndex(selectedIndex);
       }
     }
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, displayRecords, table]);
@@ -2769,6 +3045,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
       registerFetchMore(tabId, fetchMore);
     }
 
+    // Register in-place record update functions for FormView save integration
+    registerUpdateRecord(tabId, updateRecordLocally);
+    registerAddRecord(tabId, addRecordLocally);
+
     return () => {
       unregisterDatasource(tabId);
     };
@@ -2781,6 +3061,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     registerRecordsGetter,
     registerHasMoreRecordsGetter,
     registerFetchMore,
+    registerUpdateRecord,
+    registerAddRecord,
+    updateRecordLocally,
+    addRecordLocally,
     refetch,
     records,
     hasMoreRecords,
@@ -2796,29 +3080,57 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
     });
   }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown]);
 
-  // Register attachment action to navigate to FormView
+  // Register table's refetch function with TabRefreshContext
+  // This allows triggering table refresh after save operations in FormView
   useEffect(() => {
-    if (registerAttachmentAction && activeWindow?.windowId && tab) {
+    registerRefresh(tab.tabLevel, REFRESH_TYPES.TABLE, refetch);
+  }, [tab.tabLevel, registerRefresh, refetch]);
+
+  // Register attachment action for toolbar to handle interactions from TableView
+  useEffect(() => {
+    logger.info("[Table] Attachment action effect triggered", { isVisible, hasRegisterFn: !!registerAttachmentAction });
+
+    // Only register the attachment action when the table is visible
+    if (registerAttachmentAction && isVisible) {
+      logger.info("[Table] Registering attachment action");
       registerAttachmentAction(() => {
-        const selectedRecordId = getSelectedRecord(activeWindow.windowId, tab.id);
-        if (selectedRecordId) {
-          // Set flag to open attachment modal
+        logger.info("[Table] Attachment action triggered");
+        const currentSelection = table.getState().rowSelection;
+        const selectedIds = Object.keys(currentSelection);
+
+        if (selectedIds.length === 1) {
+          const recordId = selectedIds[0];
+          logger.info("[Table] Navigating to FormView with recordId:", recordId);
           setShouldOpenAttachmentModal(true);
-          // Navigate to FormView
-          setRecordId(selectedRecordId);
+          setRecordId(recordId);
+        } else if (selectedIds.length === 0) {
+          showErrorModal(t("status.selectRecordError"));
         } else {
-          logger.warn("No record selected for attachment action");
+          showErrorModal(t("status.selectSingleRecordError"));
         }
       });
     }
-  }, [
-    registerAttachmentAction,
-    activeWindow?.windowId,
-    tab,
-    getSelectedRecord,
-    setRecordId,
-    setShouldOpenAttachmentModal,
-  ]);
+
+    return () => {
+      // Clean up the attachment action when table becomes invisible or unmounts
+      logger.info("[Table] Cleanup attachment action", { isVisible });
+      if (registerAttachmentAction && isVisible) {
+        registerAttachmentAction(undefined);
+      }
+    };
+  }, [registerAttachmentAction, table, setShouldOpenAttachmentModal, setRecordId, showErrorModal, t, isVisible]);
+
+  // Apply pending selection after data refresh
+  useEffect(() => {
+    if (pendingSelectionId && table && !loading && !isUploading) {
+      // Small timeout to ensure data is fully loaded in MRT
+      const timer = setTimeout(() => {
+        table.setRowSelection({ [pendingSelectionId]: true });
+        setPendingSelectionId(null);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [pendingSelectionId, table, loading, isUploading]);
 
   if (error) {
     return (
@@ -2899,6 +3211,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
         onNewRecord={handleContextMenuNewRecord}
         canEdit={true}
         isRowEditing={contextMenu.row ? editingRowUtils.isRowEditing(String(contextMenu.row.original.id)) : false}
+        areFiltersDisabled={areFiltersDisabled}
         data-testid="CellContextMenu__8ca888"
       />
       <StatusModal
@@ -2943,6 +3256,37 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true, isVis
         activeSummary={summaryState}
         data-testid="HeaderContextMenu__8ca888"
       />
+      <AddAttachmentModal
+        open={dropUploadState.isOpen}
+        onClose={() =>
+          setDropUploadState({
+            isOpen: false,
+            file: null,
+            recordId: null,
+            recordIdentifier: undefined,
+          })
+        }
+        onUpload={handleTableUpload}
+        initialFile={dropUploadState.file}
+        isLoading={isUploading}
+        recordIdentifier={dropUploadState.recordIdentifier}
+        data-testid="AddAttachmentModal__8ca888"
+      />
+      {/* Visual Overlay for Drop Zone */}
+      {dropTargetState && (
+        <div
+          className="drop-target-overlay"
+          style={{
+            position: "fixed",
+            top: dropTargetState.rect.top,
+            left: dropTargetState.rect.left,
+            width: dropTargetState.rect.width,
+            height: dropTargetState.rect.height,
+            pointerEvents: "none", // Ensure drops fall through to the row
+            zIndex: 9999,
+          }}
+        />
+      )}
     </div>
   );
 };

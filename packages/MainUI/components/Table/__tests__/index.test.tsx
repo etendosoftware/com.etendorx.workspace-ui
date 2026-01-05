@@ -29,9 +29,10 @@
  */
 
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import DynamicTable from "../index";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
+import { renderWithTheme as render } from "../../../test-utils/test-theme-provider";
 
 // Mock all the context providers and hooks
 jest.mock("@/hooks/useTranslation", () => ({
@@ -48,6 +49,8 @@ jest.mock("@/contexts/datasourceContext", () => ({
     registerRecordsGetter: jest.fn(),
     registerHasMoreRecordsGetter: jest.fn(),
     registerFetchMore: jest.fn(),
+    registerUpdateRecord: jest.fn(),
+    registerAddRecord: jest.fn(),
   }),
 }));
 
@@ -202,6 +205,8 @@ jest.mock("@/hooks/table/useTableData", () => ({
     fetchMore: jest.fn(),
     refetch: jest.fn(),
     removeRecordLocally: jest.fn(),
+    updateRecordLocally: jest.fn(),
+    addRecordLocally: jest.fn(),
     applyQuickFilter: jest.fn(),
   }),
 }));

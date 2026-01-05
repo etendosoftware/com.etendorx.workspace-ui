@@ -74,6 +74,7 @@ interface WindowContextI {
     isApplied: boolean,
     tabLevel?: number
   ) => void;
+  setTableAdvancedCriteria: (windowIdentifier: string, tabId: string, criteria: any, tabLevel?: number) => void;
   setNavigationActiveLevels: (windowIdentifier: string, activeLevels: number[]) => void;
   setNavigationActiveTabsByLevel: (windowIdentifier: string, activeTabsByLevel: Map<number, string>) => void;
   setWindowActive: ({
@@ -107,6 +108,10 @@ interface WindowContextI {
   // Navigation initialization management
   getNavigationInitialized: (windowIdentifier: string) => boolean;
   setNavigationInitialized: (windowIdentifier: string, initialized: boolean) => void;
+
+  // Tab direct link initialization tracking
+  getTabInitializedWithDirectLink: (windowIdentifier: string, tabId: string) => boolean;
+  setTabInitializedWithDirectLink: (windowIdentifier: string, tabId: string, initialized: boolean) => void;
 
   // Recovery state management
   /** Loading indicator for URL-driven window recovery (true during recovery process) */
@@ -301,6 +306,15 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     (windowIdentifier: string, tabId: string, isApplied: boolean, tabLevel = 0) => {
       setState((prevState: WindowContextState) =>
         updateTableProperty(prevState, windowIdentifier, tabId, "isImplicitFilterApplied", isApplied, tabLevel)
+      );
+    },
+    []
+  );
+
+  const setTableAdvancedCriteria = useCallback(
+    (windowIdentifier: string, tabId: string, criteria: any, tabLevel = 0) => {
+      setState((prevState: WindowContextState) =>
+        updateTableProperty(prevState, windowIdentifier, tabId, "advancedCriteria", criteria, tabLevel)
       );
     },
     []
@@ -613,6 +627,43 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     );
   }, []);
 
+  const getTabInitializedWithDirectLink = useCallback(
+    (windowIdentifier: string, tabId: string): boolean => {
+      if (!state[windowIdentifier] || !state[windowIdentifier].tabs[tabId]) {
+        return false;
+      }
+      return state[windowIdentifier].tabs[tabId].initializedWithDirectLink || false;
+    },
+    [state]
+  );
+
+  const setTabInitializedWithDirectLink = useCallback(
+    (windowIdentifier: string, tabId: string, initialized: boolean) => {
+      setState((prevState: WindowContextState) => {
+        // Validate window and tab exist
+        if (!prevState[windowIdentifier]?.tabs[tabId]) {
+          return prevState;
+        }
+
+        // Create deep copy with proper immutability at all levels
+        return {
+          ...prevState,
+          [windowIdentifier]: {
+            ...prevState[windowIdentifier],
+            tabs: {
+              ...prevState[windowIdentifier].tabs,
+              [tabId]: {
+                ...prevState[windowIdentifier].tabs[tabId],
+                initializedWithDirectLink: initialized,
+              },
+            },
+          },
+        };
+      });
+    },
+    []
+  );
+
   const cleanState = useCallback(() => {
     setState({});
   }, []);
@@ -732,6 +783,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setTableSorting,
       setTableOrder,
       setTableImplicitFilterApplied,
+      setTableAdvancedCriteria,
       setNavigationActiveLevels,
       setNavigationActiveTabsByLevel,
       setWindowActive,
@@ -753,6 +805,9 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
       getNavigationInitialized,
       setNavigationInitialized,
+
+      getTabInitializedWithDirectLink,
+      setTabInitializedWithDirectLink,
 
       cleanupWindow,
       cleanState,
@@ -776,6 +831,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setTableSorting,
       setTableOrder,
       setTableImplicitFilterApplied,
+      setTableAdvancedCriteria,
       setNavigationActiveLevels,
       setNavigationActiveTabsByLevel,
       setWindowActive,

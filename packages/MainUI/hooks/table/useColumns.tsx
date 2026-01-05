@@ -231,6 +231,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
           ...columnConfig,
           enableColumnFilter: true,
           Filter: () => {
+            // const effectiveFilterState =
             // Get current persisted filter
             const currentFilter = tableColumnFilters?.find((f) => f.id === column.id || f.id === column.columnName);
 

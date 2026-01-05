@@ -114,6 +114,15 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     return result;
   }, [tab, mode, recordId, parentId]);
 
+  useEffect(() => {
+    if (recordId === "new") {
+      fetchInProgressRef.current = false;
+      lastFetchParamsRef.current = null;
+      // Clear potentially stale initialization data immediately
+      dispatch({ type: "FETCH_START" });
+    }
+  }, [recordId]);
+
   /**
    * Main fetch function that orchestrates the form initialization process
    *
@@ -265,7 +274,13 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   }, [params, fetch]);
 
   return useMemo(
-    () => ({ error, formInitialization, loading, refetch }) as useFormInitialization,
-    [error, formInitialization, loading, refetch]
+    () =>
+      ({
+        error,
+        formInitialization,
+        loading: loading || recordLoading,
+        refetch,
+      }) as useFormInitialization,
+    [error, formInitialization, loading, recordLoading, refetch]
   );
 }

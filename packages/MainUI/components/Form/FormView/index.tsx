@@ -24,6 +24,7 @@ import FolderIcon from "@workspaceui/componentlibrary/src/assets/icons/folder.sv
 import Info from "@workspaceui/componentlibrary/src/assets/icons/info.svg";
 import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
+import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
 import { FormMode, type EntityData, type EntityValue } from "@workspaceui/api-client/src/api/types";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import useFormFields from "@/hooks/useFormFields";
@@ -47,6 +48,8 @@ import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useRecordNavigation } from "@/hooks/useRecordNavigation";
 import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
 import { useWindowContext } from "@/contexts/window";
+import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
@@ -54,6 +57,7 @@ const iconMap: Record<string, React.ReactElement> = {
   Dimensions: <FolderIcon data-testid="FolderIcon__1a0853" />,
   "Linked Items": <LinkIcon data-testid="LinkIcon__1a0853" />,
   Notes: <NoteIcon data-testid="NoteIcon__1a0853" />,
+  Attachments: <AttachmentIcon data-testid="AttachmentIcon__1a0853" />,
 };
 
 /**
@@ -64,14 +68,30 @@ const iconMap: Record<string, React.ReactElement> = {
  * @param data - Raw form data with potential undefined values
  * @returns Processed form data with undefined values converted to empty strings
  */
-const processFormData = (data: Record<string, EntityValue>): Record<string, EntityValue> => {
+const processFormData = (
+  data: Record<string, EntityValue>,
+  fields?: Record<string, any>
+): Record<string, EntityValue> => {
   const processedData = { ...data };
 
+  // Ensure all undefined values in data are set to empty string
   for (const key of Object.keys(processedData)) {
     const value = processedData[key];
     if (typeof value === "undefined") {
       processedData[key] = "";
     }
+  }
+
+  // If fields definition is provided, ensure all fields are present with at least empty string
+  // This forces controlled inputs to clear visually when resetting the form
+  if (fields) {
+    Object.values(fields).forEach((field: any) => {
+      // Use hqlName if available (standard for form fields), fallback to other identifiers
+      const key = field.hqlName || field.columnName || field.name;
+      if (key && processedData[key] === undefined) {
+        processedData[key] = "";
+      }
+    });
   }
 
   return processedData;
@@ -96,7 +116,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const { resetFormChanges, parentTab } = useTabContext();
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
     useToolbarContext();
-  const { refetchDatasource, registerRefetchFunction } = useDatasourceContext();
+  const { refetchDatasource, registerRefetchFunction, updateRecordInDatasource, addRecordToDatasource } =
+    useDatasourceContext();
+  const { registerRefresh } = useTabRefreshContext();
 
   // Sync currentMode and currentRecordId with props when they change (e.g., navigating to a different record)
   useEffect(() => {
@@ -117,6 +139,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     recordId: currentRecordId,
   });
   const initialState = useFormInitialState(formInitialization) || undefined;
+
+  // Debug: Log when formInitialization changes
+  useEffect(() => {}, [formInitialization, currentRecordId]);
 
   // Effect to detect when form initialization completes after save
   useEffect(() => {
@@ -159,17 +184,35 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     registerRefetchFunction(tab.id, refreshRecordAndSession);
   }, [registerFormViewRefetch, refreshRecordAndSession, registerRefetchFunction, tab.id]);
 
+  // Register form's refresh function with TabRefreshContext
+  // This allows the form refresh to be triggered alongside table refresh
+  useEffect(() => {
+    registerRefresh(tab.tabLevel, REFRESH_TYPES.FORM, refreshRecordAndSession);
+  }, [tab.tabLevel, registerRefresh, refreshRecordAndSession]);
+
   // Register attachment action for toolbar button
   useEffect(() => {
     if (registerAttachmentAction) {
-      registerAttachmentAction(() => setOpenAttachmentModal(true));
+      registerAttachmentAction(() => {
+        setOpenAttachmentModal(() => {
+          return true;
+        });
+      });
     }
+
+    return () => {
+      if (registerAttachmentAction) {
+        registerAttachmentAction(undefined);
+      }
+    };
   }, [registerAttachmentAction]);
 
   // Open attachment modal when flag is set (from table navigation)
   useEffect(() => {
     if (shouldOpenAttachmentModal) {
-      setOpenAttachmentModal(true);
+      setOpenAttachmentModal(() => {
+        return true;
+      });
       // Reset flag after using it
       setShouldOpenAttachmentModal(false);
     }
@@ -219,26 +262,28 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    */
   const record = useMemo(() => {
     const windowIdentifier = activeWindow?.windowIdentifier;
+
     if (!windowIdentifier) return null;
 
-    if (recordId === NEW_RECORD_ID) return null;
+    if (currentRecordId === NEW_RECORD_ID) {
+      return null;
+    }
 
     const selectedRecordId = getSelectedRecord(windowIdentifier, tab.id);
-    if (selectedRecordId && selectedRecordId === recordId) {
+    if (selectedRecordId && selectedRecordId === currentRecordId) {
       const graphRecord = graph.getSelected(tab);
-      if (graphRecord && String(graphRecord.id) === recordId) {
+      if (graphRecord && String(graphRecord.id) === currentRecordId) {
         return graphRecord;
       }
-
       return { id: selectedRecordId } as EntityData;
     }
 
-    if (recordId && recordId !== NEW_RECORD_ID) {
-      return { id: recordId } as EntityData;
+    if (currentRecordId && currentRecordId !== NEW_RECORD_ID) {
+      return { id: currentRecordId } as EntityData;
     }
 
     return null;
-  }, [activeWindow?.windowIdentifier, getSelectedRecord, tab, recordId, graph]);
+  }, [activeWindow?.windowIdentifier, getSelectedRecord, tab, currentRecordId, graph]);
 
   /**
    * Merges record data with form initialization data to create complete form state.
@@ -248,8 +293,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * @returns Combined form data object ready for form initialization
    */
   const availableFormData = useMemo(() => {
+    // Explicitly handle NEW record case to avoid merging old record data
+    if (currentRecordId === NEW_RECORD_ID) {
+      return { ...initialState };
+    }
+
     return { ...record, ...initialState };
-  }, [record, initialState]);
+  }, [record, initialState, currentRecordId]);
 
   const { fields, groups } = useFormFields(tab, currentRecordId, currentMode, true, availableFormData);
 
@@ -282,21 +332,33 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    *
    * Dependencies: availableFormData, tab.id, stableReset
    */
+  const lastInitializedDataRef = useRef<string>("");
+
   useEffect(() => {
     // If we are in a "hidden" state (empty recordId and not NEW mode), just reset and return
     // This prevents unnecessary initialization logic and potential loops
     if (!currentRecordId && currentMode !== FormMode.NEW) {
       stableReset({}, { keepDirty: false });
       setIsFormInitializing(false);
+      lastInitializedDataRef.current = "";
       return;
     }
 
-    if (!availableFormData) {
+    if (!availableFormData || loadingFormInitialization) {
       return;
     }
+
+    // Prevent resetting if the data hasn't actually changed
+    // This safeguards against spurious re-renders or upstream reference changes
+    // that would otherwise overwrite user edits or callout results
+    const currentDataString = JSON.stringify(availableFormData);
+    if (lastInitializedDataRef.current === currentDataString) {
+      return;
+    }
+    lastInitializedDataRef.current = currentDataString;
 
     setIsFormInitializing(true);
-    const processedData = processFormData(availableFormData);
+    const processedData = processFormData(availableFormData, tab.fields);
 
     // Suppress callouts during initial value setting to prevent cascading changes
     globalCalloutManager.suppress();
@@ -311,7 +373,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         globalCalloutManager.resume();
       }, 100); // Delay to allow all values to settle before enabling callouts
     });
-  }, [availableFormData, tab.id, stableReset]);
+  }, [availableFormData, tab.id, stableReset, loadingFormInitialization, currentRecordId, currentMode]);
 
   /**
    * Update graph selection when navigating to a different record
@@ -475,6 +537,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
       resetFormChanges();
 
+      // Update the record in the Table's datasource in-place
+      // This ensures the table shows updated data without losing pagination state
+      if (currentMode === FormMode.NEW) {
+        addRecordToDatasource(tab.id, data);
+      } else {
+        updateRecordInDatasource(tab.id, data);
+      }
+
       // Refresh parent tab datasource if this is a child tab
       if (parentTab) {
         refetchDatasource(parentTab.id);
@@ -491,6 +561,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       resetFormChanges,
       parentTab,
       refetchDatasource,
+      updateRecordInDatasource,
+      addRecordToDatasource,
       refetch,
     ]
   );
@@ -588,6 +660,27 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     fetchMore,
   });
 
+  const handleNewRecord = useCallback(() => {
+    setCurrentMode(FormMode.NEW);
+    setCurrentRecordId(NEW_RECORD_ID);
+    setRecordId(NEW_RECORD_ID); // This prop update might be async/delayed
+
+    if (activeWindow?.windowIdentifier) {
+      setSelectedRecord(activeWindow.windowIdentifier, tab.id, NEW_RECORD_ID);
+      graph.clearSelected(tab);
+      graph.clearSelectedMultiple(tab);
+    }
+    resetFormChanges();
+  }, [activeWindow?.windowIdentifier, graph, resetFormChanges, setRecordId, setSelectedRecord, tab]);
+
+  useEffect(() => {}, [recordId]);
+
+  useEffect(() => {}, [currentRecordId]);
+
+  useEffect(() => {}, [mode]);
+
+  useEffect(() => {}, [currentMode]);
+
   /**
    * Context value object containing all form view state and handlers.
    * Provides centralized access to form view functionality for child components
@@ -675,7 +768,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
             <FormActions
               tab={tab}
-              setRecordId={setRecordId}
+              onNew={handleNewRecord}
               refetch={refetch}
               onSave={handleSave}
               showErrorModal={showErrorModal}

@@ -34,6 +34,7 @@ export interface TableState {
   sorting: MRT_SortingState;
   order: string[];
   isImplicitFilterApplied: boolean | undefined;
+  advancedCriteria?: any;
 }
 
 export interface NavigationState {
@@ -47,6 +48,7 @@ export interface TabState {
   form: TabFormState;
   level: number;
   selectedRecord?: string;
+  initializedWithDirectLink?: boolean;
 }
 
 export interface WindowState {
