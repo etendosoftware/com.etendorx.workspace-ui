@@ -58,6 +58,39 @@ import { getFieldReference } from "@/utils";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 
+const applyParameters = (payload: any, parameters: any, effectiveRecordValues: any) => {
+  if (parameters) {
+    Object.values(parameters).forEach((param: any) => {
+      const paramValue = effectiveRecordValues?.[param.name];
+      if (paramValue !== undefined && paramValue !== null && param.dBColumnName) {
+        payload[param.dBColumnName] = paramValue;
+      }
+    });
+  }
+};
+
+const applySelectorConfig = (payload: any, isSelector: boolean, field: any, selectorId: string | undefined) => {
+  if (isSelector) {
+    payload._noCount = "true";
+    if (field.selector) {
+      const selectorProps = [
+        "filterClass",
+        "_selectedProperties",
+        "_selectorDefinitionId",
+        "_extraProperties",
+        "_sortBy",
+      ];
+      selectorProps.forEach((prop) => {
+        if (field.selector[prop]) payload[prop] = field.selector[prop];
+      });
+    } else if (selectorId) {
+      payload._selectorDefinitionId = selectorId;
+    }
+  } else {
+    payload._textMatchStyle = "substring";
+  }
+};
+
 // Helper to construct payload for loadOptions
 const constructPayload = (
   field: any,
@@ -88,30 +121,8 @@ const constructPayload = (
     ...effectiveRecordValues,
   };
 
-  // Add parameter values using their DBColumnName
-  if (parameters) {
-    Object.values(parameters).forEach((param: any) => {
-      const paramValue = effectiveRecordValues?.[param.name];
-      if (paramValue !== undefined && paramValue !== null && param.dBColumnName) {
-        payload[param.dBColumnName] = paramValue;
-      }
-    });
-  }
-
-  if (isSelector && field.selector) {
-    payload._noCount = "true";
-    if (field.selector.filterClass) payload.filterClass = field.selector.filterClass;
-    if (field.selector._selectedProperties) payload._selectedProperties = field.selector._selectedProperties;
-    if (field.selector._selectorDefinitionId) payload._selectorDefinitionId = field.selector._selectorDefinitionId;
-    if (field.selector._extraProperties) payload._extraProperties = field.selector._extraProperties;
-    if (field.selector._sortBy) payload._sortBy = field.selector._sortBy;
-  } else if (isSelector) {
-    // Fallback for selectors without detailed metadata
-    payload._noCount = "true";
-    if (selectorId) payload._selectorDefinitionId = selectorId;
-  } else {
-    payload._textMatchStyle = "substring";
-  }
+  applyParameters(payload, parameters, effectiveRecordValues);
+  applySelectorConfig(payload, isSelector, field, selectorId);
 
   return payload;
 };
@@ -1026,6 +1037,11 @@ function WindowReferenceGrid({
       if (parameter.dBColumnName === "glitem") {
         // Generate a pseudo-UUID
         const generateUUID = () => {
+          // Use crypto.randomUUID if available for better entropy and collision resistance
+          if (typeof crypto !== "undefined" && crypto.randomUUID) {
+            return crypto.randomUUID().replace(/-/g, "").toUpperCase();
+          }
+          // Fallback for environments where crypto is not available
           return "xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx"
             .replace(/[xy]/g, function (c) {
               const r = (Math.random() * 16) | 0;
