@@ -17,6 +17,7 @@
 
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { UseFormReturn } from "react-hook-form";
+import { ADD_PAYMENT_ORDER_PROCESS_ID } from "@/utils/processes/definition/constants";
 
 /**
  * Grid selection structure type
@@ -74,43 +75,190 @@ export type ProcessCalloutsConfig = Record<string, ProcessCallout[]>;
  * ]
  * ```
  */
+// Helper to create callout config for Add Payment
+const createAddPaymentCallout = (triggerField: string): ProcessCallout => ({
+  triggerField,
+  execute: (v, f, g) => calculateAddPayment(v, f, g, triggerField),
+});
+
 export const PROCESS_CALLOUTS: ProcessCalloutsConfig = {
   // Callout for aprm_orderinvoice entity - Sum outstandingAmount to expected_payment
-  "9BED7889E1034FE68BD85D5D16857320": [
-    {
-      triggerField: "_internalGridSelectionTrigger",
-      execute: async (_formValues, _form, gridSelection) => {
-        // Get all selected records from aprm_orderinvoice grid
-        const selectedRecords = Object.values(gridSelection || {}).flatMap((selection) => selection._selection);
-
-        if (selectedRecords.length === 0) {
-          return {
-            expected_payment: "",
-            Expected_Payment: "",
-            expectedPayment: "",
-            "Expected Payment": "",
-          };
-        }
-
-        // Sum outstandingAmount from selected records
-        const total = selectedRecords.reduce((sum, record) => {
-          const amount = Number(record.outstandingAmount) || 0;
-          return sum + amount;
-        }, 0);
-
-        const totalStr = total.toFixed(2);
-
-        // Try multiple possible field name variations
-        return {
-          expected_payment: totalStr,
-          Expected_Payment: totalStr,
-          expectedPayment: totalStr,
-          "Expected Payment": totalStr,
-        };
-      },
-    },
+  [ADD_PAYMENT_ORDER_PROCESS_ID]: [
+    createAddPaymentCallout("_internalGridSelectionTrigger"),
+    createAddPaymentCallout("actual_payment"),
+    createAddPaymentCallout("amount_gl_items"),
+    createAddPaymentCallout("used_credit"),
+    createAddPaymentCallout("generateCredit"),
   ],
 };
+
+/**
+ * Main calculation logic for Add Payment process
+ */
+// Helper functions (extracted to module scope)
+
+const getNum = (val: unknown): number => {
+  if (typeof val === "number") return val;
+  if (typeof val === "string") return Number.parseFloat(val.replace(/,/g, "")) || 0;
+  return 0;
+};
+
+const getBool = (val: unknown): boolean => {
+  if (typeof val === "boolean") return val;
+  if (val === "true" || val === "Y" || val === "y") return true;
+  return false;
+};
+
+const calculateRecordTotals = (selectedRecords: any[]) => {
+  let totalOutstanding = 0;
+  let totalAmountInvOrds = 0;
+
+  for (const record of selectedRecords) {
+    if (!record) continue;
+    const outstanding = getNum(record.outstandingAmount);
+    const rawAmount = record.amount;
+
+    let amount = 0;
+    if (rawAmount !== undefined && rawAmount !== null) {
+      amount = getNum(rawAmount);
+    }
+
+    if (amount === 0 && outstanding !== 0) {
+      amount = outstanding;
+    }
+
+    totalOutstanding += outstanding;
+    totalAmountInvOrds += amount;
+  }
+
+  return { totalOutstanding, totalAmountInvOrds };
+};
+
+const calculateRefinedActualPayment = (
+  issotrx: boolean,
+  total: number,
+  generateCredit: number,
+  usedCredit: number,
+  currentActualPayment: number
+): number => {
+  let actualPayment = currentActualPayment;
+
+  if (!issotrx) {
+    // Payment Out: Auto-calculate Actual Payment to match Total (minus credit)
+    let actPaymentCalc = total + generateCredit;
+
+    if (usedCredit > 0) {
+      actPaymentCalc = usedCredit >= actPaymentCalc ? 0 : actPaymentCalc - usedCredit;
+    }
+    actualPayment = actPaymentCalc;
+  } else {
+    // Payment In (Receipt)
+    // Only auto-fill if currently empty/zero.
+    if (actualPayment === 0 && total > 0) {
+      actualPayment = total;
+    }
+  }
+  return actualPayment;
+};
+
+/**
+ * Main calculation logic for Add Payment process
+ */
+export async function calculateAddPayment(
+  _formValues: Record<string, unknown>,
+  _form: any,
+  gridSelection?: GridSelectionStructure,
+  triggerField?: string
+): Promise<Record<string, unknown>> {
+  // Internal helper for this specific scope's value retrieval priority
+  const getValue = (keys: string[]): unknown => {
+    for (const key of keys) {
+      if (_formValues[key] !== undefined) return _formValues[key];
+    }
+    if (_form && typeof _form.getValues === "function") {
+      for (const key of keys) {
+        const val = _form.getValues(key);
+        if (val !== undefined) return val;
+      }
+    }
+    return undefined;
+  };
+
+  // Extract basic values
+  let issotrx = getBool(_formValues.issotrx) || getBool(_formValues.isSOTrx) || getBool(_formValues.inpissotrx);
+  const trxtype = _formValues.trxtype as string;
+  // Default to Receipt if RCIN and not set
+  if (!issotrx && trxtype === "RCIN") {
+    issotrx = true;
+  }
+
+  const glItemsTotal = getNum(getValue(["amount_gl_items", "amountGlItems", "AmountGlItems"]));
+  const usedCredit = getNum(getValue(["used_credit", "usedCredit", "UsedCredit"]));
+  const generateCredit = getNum(getValue(["generateCredit", "generate_credit", "GenerateCredit"]));
+  const currentActualPayment = getNum(
+    getValue(["actual_payment", "actualPayment", "ActualPayment", "inpactual_payment"])
+  );
+
+  // Grid calculations
+  const selectedRecords = Object.values(gridSelection || {}).flatMap((selection) => selection._selection || []);
+  const { totalOutstanding, totalAmountInvOrds } = calculateRecordTotals(selectedRecords);
+
+  // Derived values
+  const expectedPayment = totalOutstanding;
+  const amountInvOrds = totalAmountInvOrds;
+  const total = amountInvOrds + glItemsTotal;
+
+  // Actual Payment Calculation
+  const actualPayment = calculateRefinedActualPayment(issotrx, total, generateCredit, usedCredit, currentActualPayment);
+
+  // Differences
+  const differenceVal = actualPayment + usedCredit - total;
+  const difference = Math.round(differenceVal * 100) / 100;
+
+  const expectedDifferenceVal = expectedPayment + usedCredit - amountInvOrds;
+  let expectedDifference = Math.round(expectedDifferenceVal * 100) / 100;
+
+  if (expectedDifference === 0) {
+    expectedDifference = difference;
+  }
+
+  // Formatting
+  const fmt = (n: number) => n.toFixed(2);
+
+  console.debug("Callout Calc:", { issotrx, total, actualPayment, difference, expectedDifference });
+
+  return {
+    expected_payment: fmt(expectedPayment),
+    Expected_Payment: fmt(expectedPayment),
+    expectedPayment: fmt(expectedPayment),
+    "Expected Payment": fmt(expectedPayment),
+
+    amount_inv_ords: fmt(amountInvOrds),
+    amountInvOrds: fmt(amountInvOrds),
+    AmountInvOrds: fmt(amountInvOrds),
+    "Amount on Invoices and/or Orders": fmt(amountInvOrds),
+
+    total: fmt(total),
+    Total: fmt(total),
+    TOTAL: fmt(total),
+
+    actual_payment: fmt(actualPayment),
+    actualPayment: fmt(actualPayment),
+    ActualPayment: fmt(actualPayment),
+    "Actual Payment": fmt(actualPayment),
+
+    difference: fmt(difference),
+    Difference: fmt(difference),
+
+    expectedDifference: fmt(expectedDifference),
+    ExpectedDifference: fmt(expectedDifference),
+    expected_difference: fmt(expectedDifference),
+    "There is a difference of": fmt(expectedDifference),
+
+    overpayment_action: difference > 0 ? "CR" : "",
+    overpayment_action_display_logic: difference > 0 ? "Y" : "N",
+  };
+}
 
 /**
  * Get callouts for a specific process

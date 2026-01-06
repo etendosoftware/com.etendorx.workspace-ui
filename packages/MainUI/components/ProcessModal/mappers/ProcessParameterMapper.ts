@@ -36,6 +36,8 @@ export class ProcessParameterMapper {
       startnewline: false,
       showInGridView: false,
       isDisplayed: true,
+      isActive: true,
+      gridDisplayLogic: parameter.gridDisplayLogic || "",
       isUpdatable: true,
       sequenceNumber: 0,
 

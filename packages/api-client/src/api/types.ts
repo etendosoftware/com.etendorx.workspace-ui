@@ -143,6 +143,7 @@ export interface Field {
   readOnlyLogicExpression?: string;
   isReadOnly: boolean;
   isDisplayed: boolean;
+  gridPosition?: number;
   sequenceNumber: number;
   isUpdatable: boolean;
   description: string;
@@ -150,6 +151,8 @@ export interface Field {
   processDefinition?: ProcessDefinition;
   processAction?: ProcessAction;
   etmetaCustomjs?: string | null;
+  isActive: boolean;
+  gridDisplayLogic: string;
   /**
    * Indicates if this field contains the parent record ID in a hierarchical tab structure.
    * Used during URL state recovery to traverse from child records up to parent records.

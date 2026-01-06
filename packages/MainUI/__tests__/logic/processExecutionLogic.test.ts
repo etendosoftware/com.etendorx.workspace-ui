@@ -117,6 +117,40 @@ describe("Process Execution Core Logic", () => {
       });
     });
 
+    it("should handle responseActions as an object (map)", () => {
+      const mockResponse = {
+        data: {
+          responseActions: {
+            showMsgInProcessView: {
+              severity: "error",
+              msgType: "error",
+              msgTitle: "Error",
+              msgText: "Synchronization error: JSONObject not found",
+            },
+            retryExecution: true,
+          },
+        },
+      };
+
+      let processedResponse;
+
+      const responseActions = mockResponse?.data?.responseActions;
+      if (responseActions) {
+        if (Array.isArray(responseActions)) {
+          processedResponse = responseActions.find((action: any) => action.showMsgInProcessView)?.showMsgInProcessView;
+        } else if (typeof responseActions === "object") {
+          processedResponse = responseActions.showMsgInProcessView;
+        }
+      }
+
+      expect(processedResponse).toEqual({
+        severity: "error",
+        msgType: "error",
+        msgTitle: "Error",
+        msgText: "Synchronization error: JSONObject not found",
+      });
+    });
+
     it("should use message format when responseActions not available", () => {
       const mockResponse = {
         data: {

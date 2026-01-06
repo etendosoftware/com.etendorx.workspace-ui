@@ -127,7 +127,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
         return;
       }
 
-      setIsLoadingDynamicOptions(true);
+      setIsLoadingDynamicOptions(true); // Re-enable loading state
       try {
         const loadedOptions = await loadOptionsFn(field, "");
         setDynamicOptions(loadedOptions);
@@ -566,6 +566,7 @@ const TableDirCellEditorComponent: React.FC<CellEditorProps> = ({
         onClose={handleMenuClose}
         className="min-w-[200px] max-h-60 overflow-hidden"
         offsetY={4}
+        style={{ zIndex: 9999 }} // Force high z-index to appear above modal
         data-testid={"Menu__" + field.id}>
         <div className="p-2">
           <input
