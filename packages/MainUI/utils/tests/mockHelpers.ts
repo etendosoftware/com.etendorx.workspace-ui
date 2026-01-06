@@ -397,6 +397,8 @@ export const createMockField = (overrides: Partial<Field> = {}): Field => ({
   type: "string",
   field: [],
   refList: [],
+  isActive: true,
+  gridDisplayLogic: "",
   ...overrides,
 });
 

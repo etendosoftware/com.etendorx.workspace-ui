@@ -33,6 +33,7 @@ export const getFieldReference = (reference?: string): FieldType => {
       return FieldType.TEXT;
     case FIELD_REFERENCE_CODES.TABLE_DIR_19:
     case FIELD_REFERENCE_CODES.PRODUCT:
+    case FIELD_REFERENCE_CODES.SELECTOR:
     case FIELD_REFERENCE_CODES.TABLE_DIR_18:
       return FieldType.TABLEDIR;
     case FIELD_REFERENCE_CODES.DATE:

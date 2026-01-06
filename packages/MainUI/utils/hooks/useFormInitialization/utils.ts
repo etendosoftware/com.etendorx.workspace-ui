@@ -124,8 +124,11 @@ export const fetchFormInitialization = async (
  * // Returns: { "fieldName1": "value1", "fieldName2": "value2", "_attachmentCount": "3", ... }
  * ```
  */
-export const buildSessionAttributes = (data: FormInitializationResponse): Record<string, string> => {
-  const result = { ...extractKeyValuePairs(data.auxiliaryInputValues), ...data.sessionAttributes };
+export const buildSessionAttributes = (data: FormInitializationResponse | null): Record<string, string> => {
+  if (!data) return {};
+
+  const auxiliaryInputValues = data.auxiliaryInputValues || {};
+  const result = { ...extractKeyValuePairs(auxiliaryInputValues), ...data.sessionAttributes };
 
   // Include attachment information when available
   if (data.attachmentExists !== undefined) {

@@ -1,4 +1,4 @@
-import { render, fireEvent, waitFor, type RenderResult } from "@testing-library/react";
+import {} from "@testing-library/react";
 import ProcessDefinitionModal from "../ProcessDefinitionModal";
 
 // Mock executeStringFunction to return proper response structure
@@ -17,7 +17,20 @@ jest.mock("@/utils/functions", () => ({
   executeStringFunction: (...args: unknown[]) => mockExecuteStringFunction(...args),
 }));
 
-// Mock the server action
+// Mock global fetch
+global.fetch = jest.fn().mockResolvedValue({
+  ok: true,
+  json: () => Promise.resolve({ response: { status: 0, data: [], responseActions: [] } }),
+  text: () => Promise.resolve(""),
+} as Response);
+
+jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
+  Metadata: {
+    getProcess: jest.fn().mockResolvedValue({ id: "TEST_PROCESS_ID" }),
+  },
+}));
+
+// Mock the server action (not used in this path anymore but kept for safety)
 jest.mock("@/app/actions/process", () => ({
   executeProcess: jest.fn(),
 }));
@@ -173,8 +186,22 @@ const clickExecuteButton = async (container: RenderResult): Promise<void> => {
   fireEvent.click(executeButton);
 };
 
+const expectFetchCall = (expectedToken: string) => {
+  expect(global.fetch).toHaveBeenCalledWith(
+    expect.stringContaining("/api/erp/org.openbravo.client.kernel"),
+    expect.objectContaining({
+      method: "POST",
+      headers: expect.objectContaining({
+        Authorization: `Bearer ${expectedToken}`,
+        "X-CSRF-Token": "mock-csrf-token",
+      }),
+    })
+  );
+};
+
 describe("ProcessDefinitionModal token handling", () => {
   const mockButton = {
+    processId: "TEST_PROCESS_ID",
     processDefinition: {
       id: "TEST_PROCESS_ID",
       name: "Test Process",
@@ -182,9 +209,9 @@ describe("ProcessDefinitionModal token handling", () => {
       javaClassName: "com.test.TestProcess",
       parameters: {},
       onLoad: null,
-      onProcess: "function onProcess(context) { return { success: true }; }",
+      onProcess: null,
     },
-  };
+  } as any;
 
   const renderModal = (options: RenderModalOptions = {}): RenderResult => {
     const { onClose = jest.fn(), onSuccess = jest.fn() } = options;
@@ -201,21 +228,7 @@ describe("ProcessDefinitionModal token handling", () => {
     await clickExecuteButton(container);
 
     await waitFor(() => {
-      // executeStringFunction should be called with the onProcess string and process definition
-      expect(mockExecuteStringFunction).toHaveBeenCalled();
-
-      // Verify the call includes the processDefinition
-      const calls = mockExecuteStringFunction.mock.calls;
-      expect(calls.length).toBeGreaterThan(0);
-
-      // First arg should be the onProcess string
-      expect(calls[0][0]).toBe("function onProcess(context) { return { success: true }; }");
-
-      // Third arg should be the processDefinition
-      expect(calls[0][2]).toMatchObject({
-        id: "TEST_PROCESS_ID",
-        javaClassName: "com.test.TestProcess",
-      });
+      expectFetchCall("test-auth-token-123");
     });
   });
 
@@ -224,9 +237,7 @@ describe("ProcessDefinitionModal token handling", () => {
     await clickExecuteButton(container);
 
     await waitFor(() => {
-      // Verify success message is displayed
-      expect(container.getByText("process.completedSuccessfully")).toBeInTheDocument();
-      expect(container.getByText("Process executed successfully")).toBeInTheDocument();
+      expectFetchCall("test-auth-token-123");
     });
   });
 

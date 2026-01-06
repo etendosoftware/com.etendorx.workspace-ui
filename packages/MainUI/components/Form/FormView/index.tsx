@@ -68,14 +68,30 @@ const iconMap: Record<string, React.ReactElement> = {
  * @param data - Raw form data with potential undefined values
  * @returns Processed form data with undefined values converted to empty strings
  */
-const processFormData = (data: Record<string, EntityValue>): Record<string, EntityValue> => {
+const processFormData = (
+  data: Record<string, EntityValue>,
+  fields?: Record<string, any>
+): Record<string, EntityValue> => {
   const processedData = { ...data };
 
+  // Ensure all undefined values in data are set to empty string
   for (const key of Object.keys(processedData)) {
     const value = processedData[key];
     if (typeof value === "undefined") {
       processedData[key] = "";
     }
+  }
+
+  // If fields definition is provided, ensure all fields are present with at least empty string
+  // This forces controlled inputs to clear visually when resetting the form
+  if (fields) {
+    Object.values(fields).forEach((field: any) => {
+      // Use hqlName if available (standard for form fields), fallback to other identifiers
+      const key = field.hqlName || field.columnName || field.name;
+      if (key && processedData[key] === undefined) {
+        processedData[key] = "";
+      }
+    });
   }
 
   return processedData;
@@ -123,6 +139,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     recordId: currentRecordId,
   });
   const initialState = useFormInitialState(formInitialization) || undefined;
+
+  // Debug: Log when formInitialization changes
+  useEffect(() => {}, [formInitialization, currentRecordId]);
 
   // Effect to detect when form initialization completes after save
   useEffect(() => {
@@ -243,26 +262,28 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    */
   const record = useMemo(() => {
     const windowIdentifier = activeWindow?.windowIdentifier;
+
     if (!windowIdentifier) return null;
 
-    if (recordId === NEW_RECORD_ID) return null;
+    if (currentRecordId === NEW_RECORD_ID) {
+      return null;
+    }
 
     const selectedRecordId = getSelectedRecord(windowIdentifier, tab.id);
-    if (selectedRecordId && selectedRecordId === recordId) {
+    if (selectedRecordId && selectedRecordId === currentRecordId) {
       const graphRecord = graph.getSelected(tab);
-      if (graphRecord && String(graphRecord.id) === recordId) {
+      if (graphRecord && String(graphRecord.id) === currentRecordId) {
         return graphRecord;
       }
-
       return { id: selectedRecordId } as EntityData;
     }
 
-    if (recordId && recordId !== NEW_RECORD_ID) {
-      return { id: recordId } as EntityData;
+    if (currentRecordId && currentRecordId !== NEW_RECORD_ID) {
+      return { id: currentRecordId } as EntityData;
     }
 
     return null;
-  }, [activeWindow?.windowIdentifier, getSelectedRecord, tab, recordId, graph]);
+  }, [activeWindow?.windowIdentifier, getSelectedRecord, tab, currentRecordId, graph]);
 
   /**
    * Merges record data with form initialization data to create complete form state.
@@ -272,8 +293,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * @returns Combined form data object ready for form initialization
    */
   const availableFormData = useMemo(() => {
+    // Explicitly handle NEW record case to avoid merging old record data
+    if (currentRecordId === NEW_RECORD_ID) {
+      return { ...initialState };
+    }
+
     return { ...record, ...initialState };
-  }, [record, initialState]);
+  }, [record, initialState, currentRecordId]);
 
   const { fields, groups } = useFormFields(tab, currentRecordId, currentMode, true, availableFormData);
 
@@ -332,7 +358,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     lastInitializedDataRef.current = currentDataString;
 
     setIsFormInitializing(true);
-    const processedData = processFormData(availableFormData);
+    const processedData = processFormData(availableFormData, tab.fields);
 
     // Suppress callouts during initial value setting to prevent cascading changes
     globalCalloutManager.suppress();
@@ -634,6 +660,27 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     fetchMore,
   });
 
+  const handleNewRecord = useCallback(() => {
+    setCurrentMode(FormMode.NEW);
+    setCurrentRecordId(NEW_RECORD_ID);
+    setRecordId(NEW_RECORD_ID); // This prop update might be async/delayed
+
+    if (activeWindow?.windowIdentifier) {
+      setSelectedRecord(activeWindow.windowIdentifier, tab.id, NEW_RECORD_ID);
+      graph.clearSelected(tab);
+      graph.clearSelectedMultiple(tab);
+    }
+    resetFormChanges();
+  }, [activeWindow?.windowIdentifier, graph, resetFormChanges, setRecordId, setSelectedRecord, tab]);
+
+  useEffect(() => {}, [recordId]);
+
+  useEffect(() => {}, [currentRecordId]);
+
+  useEffect(() => {}, [mode]);
+
+  useEffect(() => {}, [currentMode]);
+
   /**
    * Context value object containing all form view state and handlers.
    * Provides centralized access to form view functionality for child components
@@ -721,7 +768,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
             <FormActions
               tab={tab}
-              setRecordId={setRecordId}
+              onNew={handleNewRecord}
               refetch={refetch}
               onSave={handleSave}
               showErrorModal={showErrorModal}

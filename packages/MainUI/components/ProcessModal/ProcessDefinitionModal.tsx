@@ -40,7 +40,6 @@ import { revalidateDopoProcess } from "@/app/actions/revalidate"; // Import reva
 import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
 import {
   BUTTON_LIST_REFERENCE_ID,
-  PROCESS_TYPES,
   PROCESS_DEFINITION_DATA,
   WINDOW_SPECIFIC_KEYS,
 } from "@/utils/processes/definition/constants";
@@ -48,8 +47,6 @@ import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
-import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
-import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { FormProvider, useForm, useFormState } from "react-hook-form";
@@ -159,7 +156,7 @@ const convertParameterDateFields = (combined: Record<string, unknown>, param: Pr
  * @param props.onSuccess - Optional callback when process completes successfully
  * @returns JSX.Element Modal component with process execution interface
  */
-function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type }: ProcessDefinitionModalContentProps) {
+function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
   const { graph } = useSelected();
   const { tab, record } = useTabContext();
@@ -171,12 +168,31 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const javaClassName = processDefinition.javaClassName;
 
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
+  console.debug("parameters", parameters, processDefinition);
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
-  const [gridSelection, setGridSelection] = useState<GridSelectionStructure>({});
+
+  const [gridSelection, setGridSelectionInternal] = useState<GridSelectionStructure>({});
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
+
+  // Wrapper to log all gridSelection changes
+  const setGridSelection = useCallback((updater: GridSelectionUpdater) => {
+    setGridSelectionInternal((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      logger.debug("[PROCESS_DEBUG] gridSelection changed:", {
+        prevKeys: Object.keys(prev),
+        nextKeys: Object.keys(next),
+        changes: Object.entries(next).map(([name, data]) => ({
+          name,
+          selectionCount: data._selection?.length || 0,
+          allRowsCount: data._allRows?.length || 0,
+        })),
+      });
+      return next;
+    });
+  }, []);
 
   // NEW: autoSelectConfig state to hold declarative selection instructions OR backward-compatible _gridSelection
   const [autoSelectConfig, setAutoSelectConfig] = useState<AutoSelectConfig | null>(null);
@@ -186,7 +202,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   useEffect(() => {
     const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
 
-    if (buttonListParam?.refList) {
+    if (buttonListParam && buttonListParam.refList) {
       setAvailableButtons(
         buttonListParam.refList.map((item) => ({
           value: item.value,
@@ -242,7 +258,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     enabled: !!processId && open,
     record: record || undefined, // Pass complete record data
     tab: tab || undefined, // Pass tab metadata
-    type,
   });
 
   // Process form initial state (similar to useFormInitialState)
@@ -265,10 +280,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     if (!record || !tab) {
       const combined = { ...initialState };
 
-      // Evaluate defaultValue expressions for parameters that don't have API defaults
-      const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined);
-      Object.assign(combined, evaluatedDefaults);
-
       // Still need to convert dates for specific parameters
       const parametersList = Object.values(parameters);
       for (const param of parametersList) {
@@ -288,10 +299,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       ...initialState,
     };
 
-    // Evaluate defaultValue expressions for parameters that don't have API defaults
-    const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined);
-    Object.assign(combined, evaluatedDefaults);
-
     // Convert date fields to ISO format for all parameters
     // This ensures date inputs display values correctly regardless of source (record or defaults)
     const parametersList = Object.values(parameters);
@@ -306,7 +313,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     }
 
     return combined;
-  }, [record, tab, initialState, parameters, session]);
+  }, [record, tab, initialState, parameters]);
 
   const form = useForm({
     defaultValues: availableFormData as any,
@@ -314,12 +321,43 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   });
 
   useEffect(() => {
-    // Reset form when we have initial data from API OR when we have evaluated default values
-    const hasFormData = Object.keys(availableFormData).length > 0;
-    if ((hasInitialData || hasFormData) && hasFormData) {
+    if (hasInitialData && Object.keys(availableFormData).length > 0) {
+      logger.debug("[PROCESS_DEBUG] Resetting form with availableFormData:", {
+        keys: Object.keys(availableFormData),
+        hasGrids: Object.keys(availableFormData).some(
+          (k) => k === "order_invoice" || k === "credit_to_use" || k === "glitem"
+        ),
+        sample: JSON.stringify(availableFormData).substring(0, 300),
+      });
       form.reset(availableFormData);
     }
   }, [hasInitialData, availableFormData, form, initialState]);
+
+  // Initialize gridSelection from filterExpressions
+  // This dynamically creates grid structures based on what the backend returns
+  // Dependencies include 'open' to reset on each modal open
+  useEffect(() => {
+    if (open && filterExpressions && Object.keys(filterExpressions).length > 0) {
+      const initialGrids: GridSelectionStructure = {};
+
+      // Create empty grid structure for each key in filterExpressions
+      for (const gridName of Object.keys(filterExpressions)) {
+        initialGrids[gridName] = {
+          _selection: [],
+          _allRows: [],
+        };
+      }
+
+      setGridSelection(initialGrids);
+      logger.debug("[PROCESS_DEBUG] Initialized gridSelection from filterExpressions:", {
+        gridNames: Object.keys(initialGrids),
+        filterExpressions,
+      });
+    } else if (!open) {
+      // Reset gridSelection when modal closes
+      setGridSelection({});
+    }
+  }, [open, filterExpressions, setGridSelection]);
 
   // Reactive view into form state (submitting)
   const { isSubmitting } = useFormState({ control: form.control });
@@ -334,6 +372,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     gridSelection,
     enabled: open && !loading && !initializationLoading,
   });
+
+  // NOTE: globalCalloutManager.isCalloutRunning() not working correctly
+  // const isDataLoading = Boolean(
+  //   initializationLoading || !globalCalloutManager.arePendingCalloutsEmpty() // || globalCalloutManager.isCalloutRunning()
+  // );
+
+  // If initialization failed, keep the button disabled until user action
 
   const initializationBlocksSubmit = Boolean(initializationError);
   // Check if there are mandatory parameters without value in the form
@@ -413,9 +458,15 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     const responseActions =
       data?.responseActions || data?.response?.responseActions || data?.response?.data?.responseActions;
 
-    if (!Array.isArray(responseActions)) return null;
+    if (!responseActions) return null;
 
-    const actionWithMsg = responseActions.find((action: any) => action.showMsgInProcessView);
+    let actionWithMsg;
+    if (Array.isArray(responseActions)) {
+      actionWithMsg = responseActions.find((action: any) => action.showMsgInProcessView);
+    } else if (typeof responseActions === "object") {
+      actionWithMsg = responseActions;
+    }
+
     const msgView = actionWithMsg?.showMsgInProcessView;
 
     if (!msgView) return null;
@@ -519,81 +570,126 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   );
 
   /**
-   * Builds the API URL for process execution
+   * Executes processes with window reference parameters
+   * Used for processes that require grid record selection
+   * Calls servlet with selected grid records and process-specific data
    */
-  const buildProcessApiUrl = useCallback(
-    (currentProcessId: string): string => {
-      const baseUrl = "/api/erp/org.openbravo.client.kernel";
-      const queryParams = new URLSearchParams();
-      queryParams.set("processId", currentProcessId);
-      if (tab?.window) queryParams.set("windowId", tab.window.toString());
-      if (javaClassName) queryParams.set("_action", javaClassName);
-      return `${baseUrl}?${queryParams.toString()}`;
-    },
-    [tab?.window, javaClassName]
-  );
-
   /**
-   * Extracts button list parameters from action value
+   * Common execution logic for Java-based processes (Window Reference & Direct Java)
    */
-  const getButtonListParams = useCallback(
-    (actionValue?: string): Record<string, string> => {
-      const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
-      return buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
-    },
-    [parameters]
-  );
-
-  /**
-   * Executes an HTTP request to the process API and returns the response
-   */
-  const executeProcessRequest = useCallback(
-    async (apiUrl: string, payload: Record<string, unknown>): Promise<Response> => {
-      return fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json;charset=UTF-8",
-          Authorization: `Bearer ${token}`,
-          "X-CSRF-Token": getCsrfToken(),
-        },
-        body: JSON.stringify(payload),
-      });
-    },
-    [token, getCsrfToken]
-  );
-
-  /**
-   * Handles the response from process execution and updates state accordingly
-   */
-  const handleProcessResult = useCallback(
-    async (response: Response, _errorContext: string): Promise<void> => {
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Execution failed");
-      }
-
-      let resultData = null;
+  const executeJavaProcess = useCallback(
+    async (payload: any, logContext = "process") => {
       try {
-        resultData = await response.json();
-      } catch {
-        // Response might not be JSON
-      }
+        const baseUrl = "/api/erp/org.openbravo.client.kernel";
+        const queryParams = new URLSearchParams();
+        if (processId) queryParams.set("processId", processId);
+        if (tab?.window) queryParams.set("windowId", tab.window.toString());
+        if (javaClassName) queryParams.set("_action", javaClassName);
 
-      const res: ExecuteProcessResult = {
-        success: true,
-        data: resultData,
-      };
+        const apiUrl = `${baseUrl}?${queryParams.toString()}`;
 
-      const parsedResult = parseProcessResponse(res);
-      setResult(parsedResult);
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            Authorization: `Bearer ${token}`,
+            "X-CSRF-Token": getCsrfToken(),
+          },
+          body: JSON.stringify(payload),
+        });
 
-      if (parsedResult.success) {
-        await revalidateDopoProcess();
-        setShouldTriggerSuccess(true);
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || "Execution failed");
+        }
+
+        let resultData = null;
+        try {
+          resultData = await response.json();
+        } catch {}
+
+        const res: ExecuteProcessResult = {
+          success: true,
+          data: resultData,
+        };
+
+        const parsedResult = parseProcessResponse(res);
+        setResult(parsedResult);
+
+        if (parsedResult.success) {
+          await revalidateDopoProcess();
+          setShouldTriggerSuccess(true);
+        }
+      } catch (error) {
+        logger.warn(`Error executing ${logContext}:`, error);
+        setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
     },
-    [parseProcessResponse]
+    [processId, tab?.window, javaClassName, token, getCsrfToken, parseProcessResponse, revalidateDopoProcess]
   );
+
+  const getMappedFormValues = useCallback(() => {
+    const rawValues = form.getValues();
+    const mappedValues: Record<string, any> = {};
+    const paramMap = new Map<string, string>();
+
+    Object.values(parameters).forEach((p: any) => {
+      if (p.name && p.dBColumnName) {
+        paramMap.set(p.name, p.dBColumnName);
+      }
+    });
+
+    for (const [key, value] of Object.entries(rawValues)) {
+      const mappedKey = paramMap.get(key) || key;
+      mappedValues[mappedKey] = value;
+    }
+    return mappedValues;
+  }, [form, parameters]);
+
+  /**
+   * Prepares grids for payload
+   * Includes all grids that were initialized, but cleans up their structure:
+   * - Grids with selections keep both _selection and _allRows
+   * - Grids without selections get empty arrays to satisfy backend expectations
+   */
+  const getPopulatedGrids = useCallback(() => {
+    const populated: GridSelectionStructure = {};
+
+    logger.debug("[PROCESS_DEBUG] getPopulatedGrids - Input gridSelection:", {
+      gridNames: Object.keys(gridSelection),
+      details: Object.entries(gridSelection).map(([name, data]) => ({
+        name,
+        selectionCount: data._selection?.length || 0,
+        allRowsCount: data._allRows?.length || 0,
+      })),
+    });
+
+    for (const [gridName, gridData] of Object.entries(gridSelection)) {
+      // Include all grids that exist in gridSelection
+      // If no selection, send empty arrays to prevent backend errors
+      if (gridData._selection && gridData._selection.length > 0) {
+        // Grid has selections - include full data
+        populated[gridName] = gridData;
+      } else {
+        // Grid has no selections - send empty structure
+        populated[gridName] = {
+          _selection: [],
+          _allRows: gridData._allRows || [],
+        };
+      }
+    }
+
+    logger.debug("[PROCESS_DEBUG] getPopulatedGrids - Output populated grids:", {
+      gridNames: Object.keys(populated),
+      details: Object.entries(populated).map(([name, data]) => ({
+        name,
+        selectionCount: data._selection?.length || 0,
+        allRowsLength: data._allRows?.length || 0,
+      })),
+    });
+
+    return populated;
+  }, [gridSelection]);
 
   /**
    * Executes processes with window reference parameters
@@ -607,44 +703,74 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         return;
       }
       startTransition(async () => {
-        try {
-          const buttonParams = getButtonListParams(actionValue);
+        const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+        const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
 
-          // Build base payload
-          const payload: Record<string, unknown> = {
-            recordIds: record?.id ? [record.id] : [],
-            _buttonValue: actionValue || "DONE",
-            _params: {
-              ...mapKeysWithDefaults({ ...form.getValues(), ...gridSelection }),
-              ...buttonParams,
-            },
-            _entityName: tab?.entityName || "",
-            windowId: tab?.window || "",
-            ...buildProcessSpecificFields(processId),
-            ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
-          };
+        // Only include grids that have data
+        const populatedGrids = getPopulatedGrids();
 
-          const apiUrl = buildProcessApiUrl(processId);
-          const response = await executeProcessRequest(apiUrl, payload);
-          await handleProcessResult(response, "Error executing process");
-        } catch (error) {
-          logger.warn("Error executing process:", error);
-          setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
-        }
+        logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Before building payload:", {
+          formValuesKeys: Object.keys(form.getValues()),
+          populatedGridsKeys: Object.keys(populatedGrids),
+        });
+
+        const formValues = form.getValues();
+        const mappedValues = mapKeysWithDefaults({ ...formValues, ...populatedGrids });
+
+        logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - After mapKeysWithDefaults:", {
+          mappedValuesKeys: Object.keys(mappedValues),
+          hasGridsInMapped: Object.keys(mappedValues).some(
+            (k) => k === "order_invoice" || k === "credit_to_use" || k === "glitem"
+          ),
+        });
+
+        // Build base payload
+        const payload: Record<string, unknown> = {
+          recordIds: record?.id ? [record.id] : [],
+          _buttonValue: actionValue || "DONE",
+          _params: {
+            ...mappedValues,
+            ...buttonParams,
+          },
+          _entityName: tab?.entityName || "",
+          windowId: tab?.window || "",
+          ...buildProcessSpecificFields(processId),
+          ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
+        };
+
+        const params = payload._params as Record<string, unknown>;
+        logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Final payload:", {
+          payloadKeys: Object.keys(payload),
+          paramsKeys: Object.keys(params),
+          gridsInParams: Object.keys(params).filter(
+            (k) => k === "order_invoice" || k === "credit_to_use" || k === "glitem"
+          ),
+          orderInvoiceStructure: params.order_invoice
+            ? {
+                hasSelection: !!(params.order_invoice as any)._selection,
+                selectionLength: ((params.order_invoice as any)._selection || []).length,
+                hasAllRows: !!(params.order_invoice as any)._allRows,
+                allRowsLength: ((params.order_invoice as any)._allRows || []).length,
+                fullStructure: JSON.stringify(params.order_invoice).substring(0, 300),
+              }
+            : "NOT PRESENT",
+          payloadSample: JSON.stringify(payload).substring(0, 500),
+        });
+
+        await executeJavaProcess(payload, "process");
       });
     },
     [
       tab,
       processId,
-      form,
-      gridSelection,
+      parameters,
       record,
       buildProcessSpecificFields,
       buildWindowSpecificFields,
-      buildProcessApiUrl,
-      getButtonListParams,
-      executeProcessRequest,
-      handleProcessResult,
+      executeJavaProcess,
+      getMappedFormValues,
+      initialState,
+      getPopulatedGrids,
     ]
   );
 
@@ -664,28 +790,31 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       const extraKey = windowConfig ? { [windowConfig.key]: windowConfig.value(record) } : {};
 
       startTransition(async () => {
-        try {
-          const apiUrl = buildProcessApiUrl(processId);
-          const buttonParams = getButtonListParams(actionValue);
+        const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+        const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
 
-          const payload = {
-            _buttonValue: actionValue || "DONE",
-            _params: {
-              ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues }),
-              ...gridSelection, // Include grid selection if present (e.g. orderGrid)
-              ...buttonParams,
-            },
-          };
+        // Only include grids that have data
+        const populatedGrids = getPopulatedGrids();
 
-          const response = await executeProcessRequest(apiUrl, payload);
-          await handleProcessResult(response, "Error executing direct Java process");
-        } catch (error) {
-          logger.warn("Error executing direct Java process:", error);
-          setResult({
-            success: false,
-            error: error instanceof Error ? error.message : "Unknown error",
-          });
+        // Determine record IDs to send
+        // Prioritize explicit selection, fall back to current record contex
+        let recordIds: string[] = [];
+        if (selectedRecords && selectedRecords.length > 0) {
+          recordIds = selectedRecords.map((r) => String(r.id));
+        } else if (record?.id) {
+          recordIds = [String(record.id)];
         }
+
+        const payload = {
+          recordIds,
+          _buttonValue: actionValue || "DONE",
+          _params: {
+            ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues, ...populatedGrids }),
+            ...buttonParams,
+          },
+        };
+
+        await executeJavaProcess(payload, "direct Java process");
       });
     },
     [
@@ -693,13 +822,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       javaClassName,
       windowId,
       record,
+      selectedRecords,
       recordValues,
-      form,
-      gridSelection,
-      buildProcessApiUrl,
-      getButtonListParams,
-      executeProcessRequest,
-      handleProcessResult,
+      parameters,
+      executeJavaProcess,
+      getMappedFormValues,
+      initialState,
+      getPopulatedGrids,
     ]
   );
 
@@ -713,6 +842,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
    */
   const handleExecute = useCallback(
     async (actionValue?: string) => {
+      setResult(null);
       if (hasWindowReference) {
         await handleWindowReferenceExecute(actionValue);
         return;
@@ -784,78 +914,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     ]
   );
 
-  /**
-   * Handler for REPORT_AND_PROCESS type execution with polling
-   * 1. Execute process via POST -> returns pInstanceId
-   * 2. Poll status every 3s until isProcessing is false
-   */
-  const handleReportProcessExecute = useCallback(async () => {
-    startTransition(async () => {
-      try {
-        const formValues = form.getValues();
-        const formParameters = buildProcessParameters(formValues, parameters);
-
-        // Execute process
-        const response = await fetch("/api/process/report-and-process", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            processId: button.processDefinition.id,
-            parameters: formParameters,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          setResult({ success: false, error: errorData.error || "Process execution failed" });
-          return;
-        }
-
-        const { pInstanceId } = await response.json();
-
-        // Poll for completion every 3 seconds
-        const pollStatus = async (): Promise<void> => {
-          const statusRes = await fetch(`/api/process/report-and-process/${pInstanceId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (!statusRes.ok) {
-            setResult({ success: false, error: "Failed to check process status" });
-            return;
-          }
-
-          const status = await statusRes.json();
-
-          if (status.isProcessing) {
-            await new Promise((resolve) => setTimeout(resolve, 3000));
-            await pollStatus();
-            return;
-          }
-
-          // Process completed
-          const success = status.result === 1;
-          setResult({
-            success,
-            data: status.errorMsg,
-            error: success ? undefined : status.errorMsg,
-          });
-
-          if (success) {
-            setShouldTriggerSuccess(true);
-          }
-        };
-
-        await pollStatus();
-      } catch (error) {
-        logger.error("Report process execution error:", error);
-        setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
-      }
-    });
-  }, [form, button.processDefinition.id, token, parameters]);
-
   useEffect(() => {
     if (open && hasWindowReference) {
       const loadConfig = async () => {
@@ -904,8 +962,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         setLoading(true);
 
         // Fetch process definition metadata using the new /meta/process endpoint
-        const slug = type === PROCESS_TYPES.PROCESS_DEFINITION ? "meta/process" : "meta/report-and-process";
-        const response = await Metadata.client.post(`${slug}/${processId}`);
+        const response = await Metadata.client.post(`meta/process/${processId}`);
 
         if (response.ok && response.data) {
           const processData = response.data;
@@ -935,25 +992,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     };
 
     loadProcessMetadata();
-  }, [open, processId, button.processDefinition.parameters, type]);
+  }, [open, processId, button.processDefinition.parameters]);
 
   useEffect(() => {
     if (open) {
       setResult(null);
       setParameters(button.processDefinition.parameters);
 
-      // Initialize grid selection structure with empty arrays for all window reference parameters
-      const initialGridSelection: GridSelectionStructure = {};
-      for (const param of Object.values(button.processDefinition.parameters)) {
-        if (param.reference === WINDOW_REFERENCE_ID) {
-          initialGridSelection[param.dBColumnName] = {
-            _selection: [],
-            _allRows: [],
-          };
-        }
-      }
+      // Grid selection initialization is now handled by the filterExpressions effect (lines 338-359)
+      // This ensures dynamic initialization based on backend response
 
-      setGridSelection(initialGridSelection);
       // clear any previous auto select when opening
       setAutoSelectConfig(null);
       setAutoSelectApplied(false);
@@ -1165,12 +1213,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     const msgTitle = isSuccessMessage ? t("process.completedSuccessfully") : t("process.processError");
     let msgText: string;
     if (isSuccessMessage) {
-      msgText =
-        typeof result.data === "string"
-          ? (result.data as string)
-          : result.data?.msgText || result.data?.message || t("process.completedSuccessfully");
+      msgText = typeof result.data === "string" ? (result.data as string) : t("process.completedSuccessfully");
     } else {
-      msgText = result.error || result.data?.msgText || result.data?.message || t("errors.internalServerError.title");
+      msgText = result.error || t("errors.internalServerError.title");
     }
 
     const displayText = msgText.replace(/<br\s*\/?>/gi, "\n");
@@ -1214,14 +1259,23 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   }, []);
 
   const renderParameters = () => {
-    if (result) return null;
+    if (result?.success) return null;
 
-    const parametersList = Object.values(parameters);
+    // Sort parameters by sequence number
+    const parametersList = Object.values(parameters).sort(
+      (a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0)
+    );
     const windowReferences: React.ReactElement[] = [];
     const selectors: React.ReactElement[] = [];
 
     // Separate window references from selectors
     for (const parameter of parametersList) {
+      // Skip inactive parameters
+      // @ts-ignore
+      if (parameter.active === false) {
+        continue;
+      }
+
       if (parameter.reference === WINDOW_REFERENCE_ID) {
         const parameterTab = getTabForParameter(parameter);
         const parameterEntityName = parameterTab?.entityName || "";
@@ -1251,6 +1305,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             data-testid="WindowReferenceGrid__761503"
           />
         );
+      } else if (parameter.reference === BUTTON_LIST_REFERENCE_ID) {
+        // Skip button list parameters in the form body
+        continue;
       } else {
         selectors.push(
           <ProcessParameterSelector
@@ -1348,33 +1405,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
                 {/* Footer */}
                 <div className="flex gap-3 justify-end mx-3 my-3">
-                  {/* REPORT_AND_PROCESS type: always show Cancel + Execute */}
-                  {type === PROCESS_TYPES.REPORT_AND_PROCESS && !result && (
-                    <>
-                      <Button
-                        variant="outlined"
-                        size="large"
-                        onClick={handleClose}
-                        disabled={isPending}
-                        className="w-49"
-                        data-testid="CancelButton__761503">
-                        {t("common.cancel")}
-                      </Button>
-                      <Button
-                        variant="filled"
-                        size="large"
-                        onClick={handleReportProcessExecute}
-                        disabled={Boolean(isActionButtonDisabled)}
-                        startIcon={getActionButtonContent().icon}
-                        className="w-49"
-                        data-testid="ExecuteReportButton__761503">
-                        {getActionButtonContent().text}
-                      </Button>
-                    </>
-                  )}
-
-                  {/* Other process types: existing logic */}
-                  {type !== PROCESS_TYPES.REPORT_AND_PROCESS && !result && !isPending && (
+                  {(!result || !result.success) && !isPending && (
                     <Button
                       variant="outlined"
                       size="large"
@@ -1385,43 +1416,31 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                     </Button>
                   )}
 
-                  {type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
-                    (!result && availableButtons.length > 0
-                      ? availableButtons.map((btn) => (
-                          <Button
-                            key={btn.value}
-                            variant="filled"
-                            size="large"
-                            onClick={() => handleExecute(btn.value)}
-                            disabled={Boolean(isActionButtonDisabled)}
-                            className="w-49"
-                            data-testid={`ExecuteButton_${btn.value}__761503`}>
-                            {btn.label}
-                          </Button>
-                        ))
-                      : !result && (
-                          <Button
-                            variant="filled"
-                            size="large"
-                            onClick={() => handleExecute()}
-                            disabled={Boolean(isActionButtonDisabled)}
-                            startIcon={getActionButtonContent().icon}
-                            className="w-49"
-                            data-testid="ExecuteButton__761503">
-                            {getActionButtonContent().text}
-                          </Button>
-                        ))}
-
-                  {result && !result.success && (
-                    <Button
-                      variant="outlined"
-                      size="large"
-                      onClick={handleClose}
-                      className="w-49"
-                      data-testid="CloseResultButton__761503">
-                      {t("common.close")}
-                    </Button>
-                  )}
+                  {(!result || !result.success) && availableButtons.length > 0
+                    ? availableButtons.map((btn) => (
+                        <Button
+                          key={btn.value}
+                          variant="filled"
+                          size="large"
+                          onClick={() => handleExecute(btn.value)}
+                          disabled={Boolean(isActionButtonDisabled)}
+                          className="w-49"
+                          data-testid={`ExecuteButton_${btn.value}__761503`}>
+                          {btn.label}
+                        </Button>
+                      ))
+                    : (!result || !result.success) && (
+                        <Button
+                          variant="filled"
+                          size="large"
+                          onClick={() => handleExecute()}
+                          disabled={Boolean(isActionButtonDisabled)}
+                          startIcon={getActionButtonContent().icon}
+                          className="w-49"
+                          data-testid="ExecuteButton__761503">
+                          {getActionButtonContent().text}
+                        </Button>
+                      )}
                 </div>
               </div>
             </div>
@@ -1449,20 +1468,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                 <h4 className="font-medium text-xl text-center text-(--color-success-main)">
                   {t("process.completedSuccessfully")}
                 </h4>
-                {(() => {
-                  const msg =
-                    typeof result?.data === "string"
-                      ? result.data
-                      : result?.data?.msgText || result?.data?.message || result?.error;
-
-                  if (!msg || msg === t("process.completedSuccessfully")) return null;
-
-                  return (
+                {result?.data &&
+                  typeof result.data === "string" &&
+                  result.data !== t("process.completedSuccessfully") && (
                     <p className="text-sm text-center text-(--color-transparent-neutral-80) whitespace-pre-line">
-                      {String(msg).replace(/<br\s*\/?>/gi, "\n")}
+                      {result.data.replace(/<br\s*\/?>/gi, "\n")}
                     </p>
-                  );
-                })()}
+                  )}
               </div>
               <Button
                 variant="filled"

@@ -249,11 +249,11 @@ export default function Sidebar() {
       if (isProcessMenuItem) {
         const processButton = mapMenuToProcessDefinitionButton(extendedItem);
         if (processButton) {
+          setSelectedProcessDefinitionButton(processButton);
+          setShowProcessDefinitionModal(true);
           setProcessType(
             isProcessDefinitionMenuItemRes ? PROCESS_TYPES.PROCESS_DEFINITION : PROCESS_TYPES.REPORT_AND_PROCESS
           );
-          setSelectedProcessDefinitionButton(processButton);
-          setShowProcessDefinitionModal(true);
           return;
         }
       }
