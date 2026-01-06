@@ -94,6 +94,7 @@ export function useProcessCallouts({ processId, form, gridSelection, enabled = t
 
   /**
    * Check for field changes and trigger callouts
+   * Also handles initial execution when modal opens with pre-existing data
    */
   useEffect(() => {
     if (!enabled || callouts.length === 0 || isExecutingRef.current) {

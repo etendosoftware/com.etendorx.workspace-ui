@@ -581,6 +581,8 @@ const columnToFieldForEditor = (column: Column): Field => {
     processDefinition: undefined,
     processAction: undefined,
     etmetaCustomjs: column.customJs || null,
+    isActive: true,
+    gridDisplayLogic: "",
   } as Field;
 
   // Limit cache size to prevent memory leaks

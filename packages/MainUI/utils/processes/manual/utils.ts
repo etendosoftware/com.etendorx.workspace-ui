@@ -135,10 +135,14 @@ export function mapKeysWithDefaults(source: SourceObject): TargetObject {
     DOCBASETYPE: { target: "DOCBASETYPE", default: "ARR" },
     inpadOrgId: { target: "ad_org_id", default: null },
     converted_amount: { target: "conversion_rate", default: 0 },
+    conversion_rate: { target: "conversion_rate", default: 0 },
     "Payment Document No": { target: "payment_documentno", default: null },
     "Action Regarding Document": { target: "document_action", default: null },
     "Converted Amount": { target: "converted_amount", default: null },
     "Deposit To": { target: "fin_financial_account_id", default: null },
+    "Invoice Date": { target: "invoiceDate", default: null },
+    "Lines Include Taxes": { target: "linesIncludeTaxes", default: false },
+    overpayment_action: { target: "overpayment_action", default: null },
   };
 
   const result: TargetObject = {};

@@ -5,6 +5,16 @@ jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
 }));
 
+jest.mock("next/headers", () => ({
+  headers: jest.fn().mockResolvedValue(new Headers()),
+  cookies: jest.fn().mockReturnValue({ getAll: () => [] }),
+}));
+
+jest.mock("next/headers", () => ({
+  headers: jest.fn().mockResolvedValue(new Headers()),
+  cookies: jest.fn().mockReturnValue({ getAll: () => [] }),
+}));
+
 jest.mock("@/utils/logger", () => ({
   logger: {
     info: jest.fn(),

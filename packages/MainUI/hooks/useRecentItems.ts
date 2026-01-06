@@ -25,11 +25,17 @@ const getItemName = (menuItem: Menu, getTranslatedName?: (item: Menu) => string)
   return getTranslatedName?.(menuItem) ?? menuItem._identifier ?? menuItem.name ?? "";
 };
 
-const createRecentItem = (item: Menu, getTranslatedName?: (item: Menu) => string): RecentItem => ({
+const createRecentItem = (
+  item: Menu & Record<string, any>,
+  getTranslatedName?: (item: Menu) => string
+): RecentItem & Record<string, any> => ({
   id: item.id,
   name: getItemName(item, getTranslatedName),
   windowId: item.type === "Window" ? (item.windowId ?? item.id) : item.id,
   type: item.type ?? "Window",
+  // Store these IDs if they exist so they're available when restoring from cache
+  processId: item.processId,
+  processDefinitionId: item.processDefinitionId,
   processUrl: item.processUrl,
   isModalProcess: item.isModalProcess,
 });
