@@ -750,6 +750,8 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     }
 
     if (windows.length === 0) {
+      // If no windows exist, navigate to home
+      router.replace("");
       return;
     }
 
