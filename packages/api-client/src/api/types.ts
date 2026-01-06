@@ -310,6 +310,7 @@ export interface Menu {
   path?: string[];
   fullPath?: string;
   processUrl?: string;
+  isModalProcess?: boolean;
 }
 
 export enum Action {

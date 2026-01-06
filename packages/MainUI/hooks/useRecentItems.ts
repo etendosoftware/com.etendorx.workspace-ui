@@ -31,6 +31,7 @@ const createRecentItem = (item: Menu, getTranslatedName?: (item: Menu) => string
   windowId: item.type === "Window" ? (item.windowId ?? item.id) : item.id,
   type: item.type ?? "Window",
   processUrl: item.processUrl,
+  isModalProcess: item.isModalProcess,
 });
 
 const updateItemsWithTranslations = (
