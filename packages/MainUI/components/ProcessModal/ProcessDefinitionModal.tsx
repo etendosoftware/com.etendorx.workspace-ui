@@ -42,6 +42,7 @@ import {
   BUTTON_LIST_REFERENCE_ID,
   PROCESS_DEFINITION_DATA,
   WINDOW_SPECIFIC_KEYS,
+  PROCESS_TYPES,
 } from "@/utils/processes/definition/constants";
 import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
@@ -61,6 +62,8 @@ import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, R
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
+import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
+import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
 
 // Date field reference codes for conversion
 const DATE_REFERENCE_CODES = [
@@ -156,7 +159,7 @@ const convertParameterDateFields = (combined: Record<string, unknown>, param: Pr
  * @param props.onSuccess - Optional callback when process completes successfully
  * @returns JSX.Element Modal component with process execution interface
  */
-function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
+function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
   const { graph } = useSelected();
   const { tab, record } = useTabContext();
@@ -258,6 +261,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     enabled: !!processId && open,
     record: record || undefined, // Pass complete record data
     tab: tab || undefined, // Pass tab metadata
+    type,
   });
 
   // Process form initial state (similar to useFormInitialState)
@@ -280,6 +284,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     if (!record || !tab) {
       const combined = { ...initialState };
 
+      // Evaluate defaultValue expressions for parameters that don't have API defaults
+      const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined);
+      Object.assign(combined, evaluatedDefaults);
+
       // Still need to convert dates for specific parameters
       const parametersList = Object.values(parameters);
       for (const param of parametersList) {
@@ -299,6 +307,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       ...initialState,
     };
 
+    // Evaluate defaultValue expressions for parameters that don't have API defaults
+    const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined);
+    Object.assign(combined, evaluatedDefaults);
+
     // Convert date fields to ISO format for all parameters
     // This ensures date inputs display values correctly regardless of source (record or defaults)
     const parametersList = Object.values(parameters);
@@ -313,7 +325,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     }
 
     return combined;
-  }, [record, tab, initialState, parameters]);
+  }, [record, tab, initialState, parameters, session]);
 
   const form = useForm({
     defaultValues: availableFormData as any,
@@ -329,7 +341,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         ),
         sample: JSON.stringify(availableFormData).substring(0, 300),
       });
-      form.reset(availableFormData);
+      const hasFormData = Object.keys(availableFormData).length > 0;
+      if ((hasInitialData || hasFormData) && hasFormData) {
+        form.reset(availableFormData);
+      }
     }
   }, [hasInitialData, availableFormData, form, initialState]);
 
@@ -914,6 +929,78 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     ]
   );
 
+  /**
+   * Handler for REPORT_AND_PROCESS type execution with polling
+   * 1. Execute process via POST -> returns pInstanceId
+   * 2. Poll status every 3s until isProcessing is false
+   */
+  const handleReportProcessExecute = useCallback(async () => {
+    startTransition(async () => {
+      try {
+        const formValues = form.getValues();
+        const formParameters = buildProcessParameters(formValues, parameters);
+
+        // Execute process
+        const response = await fetch("/api/process/report-and-process", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            processId: button.processDefinition.id,
+            parameters: formParameters,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          setResult({ success: false, error: errorData.error || "Process execution failed" });
+          return;
+        }
+
+        const { pInstanceId } = await response.json();
+
+        // Poll for completion every 3 seconds
+        const pollStatus = async (): Promise<void> => {
+          const statusRes = await fetch(`/api/process/report-and-process/${pInstanceId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!statusRes.ok) {
+            setResult({ success: false, error: "Failed to check process status" });
+            return;
+          }
+
+          const status = await statusRes.json();
+
+          if (status.isProcessing) {
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+            await pollStatus();
+            return;
+          }
+
+          // Process completed
+          const success = status.result === 1;
+          setResult({
+            success,
+            data: status.errorMsg,
+            error: success ? undefined : status.errorMsg,
+          });
+
+          if (success) {
+            setShouldTriggerSuccess(true);
+          }
+        };
+
+        await pollStatus();
+      } catch (error) {
+        logger.error("Report process execution error:", error);
+        setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
+      }
+    });
+  }, [form, button.processDefinition.id, token, parameters]);
+
   useEffect(() => {
     if (open && hasWindowReference) {
       const loadConfig = async () => {
@@ -962,7 +1049,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setLoading(true);
 
         // Fetch process definition metadata using the new /meta/process endpoint
-        const response = await Metadata.client.post(`meta/process/${processId}`);
+        const slug = type === PROCESS_TYPES.PROCESS_DEFINITION ? "meta/process" : "meta/report-and-process";
+        const response = await Metadata.client.post(`${slug}/${processId}`);
 
         if (response.ok && response.data) {
           const processData = response.data;
@@ -992,7 +1080,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     };
 
     loadProcessMetadata();
-  }, [open, processId, button.processDefinition.parameters]);
+  }, [open, processId, button.processDefinition.parameters, type]);
 
   useEffect(() => {
     if (open) {
@@ -1213,9 +1301,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     const msgTitle = isSuccessMessage ? t("process.completedSuccessfully") : t("process.processError");
     let msgText: string;
     if (isSuccessMessage) {
-      msgText = typeof result.data === "string" ? (result.data as string) : t("process.completedSuccessfully");
+      msgText =
+        typeof result.data === "string"
+          ? (result.data as string)
+          : result.data?.msgText || result.data?.message || t("process.completedSuccessfully");
     } else {
-      msgText = result.error || t("errors.internalServerError.title");
+      msgText = result.error || result.data?.msgText || result.data?.message || t("errors.internalServerError.title");
     }
 
     const displayText = msgText.replace(/<br\s*\/?>/gi, "\n");
@@ -1305,9 +1396,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             data-testid="WindowReferenceGrid__761503"
           />
         );
-      } else if (parameter.reference === BUTTON_LIST_REFERENCE_ID) {
-        // Skip button list parameters in the form body
-        continue;
       } else {
         selectors.push(
           <ProcessParameterSelector
@@ -1405,7 +1493,33 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
                 {/* Footer */}
                 <div className="flex gap-3 justify-end mx-3 my-3">
-                  {(!result || !result.success) && !isPending && (
+                  {/* REPORT_AND_PROCESS type: always show Cancel + Execute */}
+                  {type === PROCESS_TYPES.REPORT_AND_PROCESS && !result && (
+                    <>
+                      <Button
+                        variant="outlined"
+                        size="large"
+                        onClick={handleClose}
+                        disabled={isPending}
+                        className="w-49"
+                        data-testid="CancelButton__761503">
+                        {t("common.cancel")}
+                      </Button>
+                      <Button
+                        variant="filled"
+                        size="large"
+                        onClick={handleReportProcessExecute}
+                        disabled={Boolean(isActionButtonDisabled)}
+                        startIcon={getActionButtonContent().icon}
+                        className="w-49"
+                        data-testid="ExecuteReportButton__761503">
+                        {getActionButtonContent().text}
+                      </Button>
+                    </>
+                  )}
+
+                  {/* Other process types: existing logic */}
+                  {type !== PROCESS_TYPES.REPORT_AND_PROCESS && (!result || !result.success) && !isPending && (
                     <Button
                       variant="outlined"
                       size="large"
@@ -1416,31 +1530,32 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                     </Button>
                   )}
 
-                  {(!result || !result.success) && availableButtons.length > 0
-                    ? availableButtons.map((btn) => (
-                        <Button
-                          key={btn.value}
-                          variant="filled"
-                          size="large"
-                          onClick={() => handleExecute(btn.value)}
-                          disabled={Boolean(isActionButtonDisabled)}
-                          className="w-49"
-                          data-testid={`ExecuteButton_${btn.value}__761503`}>
-                          {btn.label}
-                        </Button>
-                      ))
-                    : (!result || !result.success) && (
-                        <Button
-                          variant="filled"
-                          size="large"
-                          onClick={() => handleExecute()}
-                          disabled={Boolean(isActionButtonDisabled)}
-                          startIcon={getActionButtonContent().icon}
-                          className="w-49"
-                          data-testid="ExecuteButton__761503">
-                          {getActionButtonContent().text}
-                        </Button>
-                      )}
+                  {type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
+                    ((!result || !result.success) && availableButtons.length > 0
+                      ? availableButtons.map((btn) => (
+                          <Button
+                            key={btn.value}
+                            variant="filled"
+                            size="large"
+                            onClick={() => handleExecute(btn.value)}
+                            disabled={Boolean(isActionButtonDisabled)}
+                            className="w-49"
+                            data-testid={`ExecuteButton_${btn.value}__761503`}>
+                            {btn.label}
+                          </Button>
+                        ))
+                      : !result && (
+                          <Button
+                            variant="filled"
+                            size="large"
+                            onClick={() => handleExecute()}
+                            disabled={Boolean(isActionButtonDisabled)}
+                            startIcon={getActionButtonContent().icon}
+                            className="w-49"
+                            data-testid="ExecuteButton__761503">
+                            {getActionButtonContent().text}
+                          </Button>
+                        ))}
                 </div>
               </div>
             </div>
@@ -1468,13 +1583,20 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                 <h4 className="font-medium text-xl text-center text-(--color-success-main)">
                   {t("process.completedSuccessfully")}
                 </h4>
-                {result?.data &&
-                  typeof result.data === "string" &&
-                  result.data !== t("process.completedSuccessfully") && (
+                {(() => {
+                  const msg =
+                    typeof result?.data === "string"
+                      ? result.data
+                      : result?.data?.msgText || result?.data?.message || result?.error;
+
+                  if (!msg || msg === t("process.completedSuccessfully")) return null;
+
+                  return (
                     <p className="text-sm text-center text-(--color-transparent-neutral-80) whitespace-pre-line">
-                      {result.data.replace(/<br\s*\/?>/gi, "\n")}
+                      {String(msg).replace(/<br\s*\/?>/gi, "\n")}
                     </p>
-                  )}
+                  );
+                })()}
               </div>
               <Button
                 variant="filled"
