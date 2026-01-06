@@ -229,31 +229,28 @@ const encodeEtendoBookmark = (serialized: string): string => {
 };
 
 /**
- * Builds a complete Etendo Classic URL with bookmark navigation.
+ * Builds a complete Etendo Classic URL using bookmark navigation.
  *
- * Creates a URL that opens Etendo Classic with multiple tabs:
- * - First tab: Workspace (OBMyOpenbravoImplementation)
- * - Second tab: Classic window with the specified process URL
+ * The generated URL:
+ * - Opens Etendo Classic
+ * - Restores multiple tabs via bookmark hash
+ * - Optionally enables "kiosk mode" via query params
  *
- * @param baseUrl - The base Etendo Classic URL (e.g., "http://localhost:8080/etendo")
- * @param processUrl - The process URL path (e.g., "/ad_actionButton/ExpenseSOrder.html")
- * @param tabTitle - The title to display on the second tab
- * @returns Complete URL with encoded bookmark hash
+ * Kiosk mode:
+ * - kiosk=true hides both Top Navigation and Tab Bar
+ * - Must be defined BEFORE the hash (#)
  *
- * @example
- * buildEtendoClassicBookmarkUrl(
- *   "http://localhost:8080/etendo",
- *   "/ad_actionButton/ExpenseSOrder.html",
- *   "Create Sales Orders"
- * );
- * // Returns: http://localhost:8080/etendo/#%7Bst:1,bm:%5B...%5D%7D
+ * @param baseUrl - Base Etendo Classic URL (e.g. http://localhost:8080/etendo)
+ * @param processUrl - Manual process URL (e.g. /ad_actionButton/ExpenseSOrder.html)
+ * @param tabTitle - Title shown on the process tab
+ * @param kioskMode - Enables kiosk UI restrictions when true
  */
-export const buildEtendoClassicBookmarkUrl = (baseUrl: string, processUrl: string, tabTitle: string): string => {
-  const workspaceTab: EtendoBookmarkTab = {
-    viewId: "OBMyOpenbravoImplementation",
-    params: { myOB: true, canClose: false, tabTitle: "Workspace" },
-  };
-
+export const buildEtendoClassicBookmarkUrl = (
+  baseUrl: string,
+  processUrl: string,
+  tabTitle: string,
+  kioskMode: boolean
+): string => {
   const processTab: EtendoBookmarkTab = {
     viewId: "OBClassicWindow",
     params: {
@@ -265,11 +262,14 @@ export const buildEtendoClassicBookmarkUrl = (baseUrl: string, processUrl: strin
 
   const bookmarkData = {
     st: 1,
-    bm: [workspaceTab, processTab],
+    bm: [processTab],
   };
 
   const serialized = serializeEtendoValue(bookmarkData);
   const encoded = encodeEtendoBookmark(serialized);
 
-  return `${baseUrl}/#${encoded}`;
+  // Base URL + optional kiosk flag (must be before #)
+  const baseWithFlags = kioskMode ? `${baseUrl}?kiosk=true` : baseUrl;
+
+  return `${baseWithFlags}/#${encoded}`;
 };

@@ -200,7 +200,7 @@ export default function Sidebar() {
       // Handle ProcessManual items - open in Etendo Classic
       const processUrl = getManualProcessUrl(item);
       if (item.type === "ProcessManual" && processUrl) {
-        const classicUrl = buildEtendoClassicBookmarkUrl(ETENDO_BASE_URL, processUrl, item.name);
+        const classicUrl = buildEtendoClassicBookmarkUrl(ETENDO_BASE_URL, processUrl, item.name, true);
         window.open(classicUrl, "_blank");
         return;
       }
