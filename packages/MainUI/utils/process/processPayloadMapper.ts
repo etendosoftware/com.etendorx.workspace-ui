@@ -25,49 +25,106 @@ import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
  * toInputName("ad_org_id") // Returns: "inpadOrgId"
  * toInputName("c_order_id") // Returns: "inpcOrderId"
  */
-export function toInputName(dBColumnName: string): string {
+export const toInputName = (dBColumnName: string): string => {
   const camelCased = dBColumnName
     .toLowerCase()
     .split("_")
     .map((part, i) => (i === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1)))
     .join("");
   return `inp${camelCased}`;
-}
+};
+
+/**
+ * Creates a mapping from parameter name to database column name.
+ *
+ * @param parameters - The process parameters definition.
+ * @returns A map where the key is the parameter name and the value is the DB column name.
+ */
+const createParamNameMapping = (parameters: Record<string, ProcessParameter>): Map<string, string> => {
+  const mapping = new Map<string, string>();
+  for (const param of Object.values(parameters)) {
+    if (param.dBColumnName) {
+      mapping.set(param.name, param.dBColumnName);
+    }
+  }
+  return mapping;
+};
+
+/**
+ * Determines if a key should be ignored in the payload construction.
+ * Keys ending with "_data" are typically metadata and should be excluded.
+ *
+ * @param key - The key to check.
+ * @returns True if the key should be ignored, false otherwise.
+ */
+const shouldIgnoreKey = (key: string): boolean => {
+  return key.endsWith("_data");
+};
+
+/**
+ * Resolves the final key name for the payload.
+ * It tries to find a mapped DB column name; otherwise, it returns the original key.
+ *
+ * @param key - The original key from the form values.
+ * @param mapping - The mapping from parameter name to DB column name.
+ * @returns The resolved key name.
+ */
+const resolveKey = (key: string, mapping: Map<string, string>): string => {
+  return mapping.get(key) || key;
+};
+
+/**
+ * Transforms the value based on specific business rules.
+ * - Empty strings are converted to null.
+ * - Boolean values are converted to "Y" (true) or "N" (false).
+ *
+ * @param value - The value to transform.
+ * @returns The transformed value.
+ */
+const transformValue = (value: unknown): unknown => {
+  if (value === "") {
+    return null;
+  }
+  if (typeof value === "boolean") {
+    return value ? "Y" : "N";
+  }
+  return value;
+};
 
 /**
  * Maps form values to API payload using process parameter metadata.
  *
  * Form values are keyed by parameter.name (display name like "Invoice Organization").
- * API expects inputName format (like "inpadOrgId").
+ * API expects dBColumnName format (like "AD_Org_ID").
+ * Keys ending in "_data" are ignored.
  *
  * @param formValues - Form values keyed by parameter.name
  * @param parameters - ProcessParameters record for mapping
- * @returns Record with inputName keys
+ * @returns Record with dBColumnName keys
  *
  * @example
  * buildProcessParameters(
- *   { "Invoice Organization": "xxx" },
- *   { "Invoice Organization": { name: "Invoice Organization", dBColumnName: "ad_org_id", ... } }
+ *   { "Invoice Organization": "xxx", "Invoice Organization_data": "..." },
+ *   { "Invoice Organization": { name: "Invoice Organization", dBColumnName: "AD_Org_ID", ... } }
  * )
- * // Returns: { "inpadOrgId": "xxx" }
+ * // Returns: { "AD_Org_ID": "xxx" }
  */
-export function buildProcessParameters(
+export const buildProcessParameters = (
   formValues: Record<string, unknown>,
   parameters: Record<string, ProcessParameter>
-): Record<string, unknown> {
-  // Create mapping: name → inputName
-  const nameToInputName = new Map<string, string>();
-  for (const param of Object.values(parameters)) {
-    if (param.dBColumnName) {
-      nameToInputName.set(param.name, toInputName(param.dBColumnName));
-    }
-  }
-
+): Record<string, unknown> => {
+  const nameToDbColumnName = createParamNameMapping(parameters);
   const result: Record<string, unknown> = {};
+
   for (const [key, value] of Object.entries(formValues)) {
-    const inputName = nameToInputName.get(key) || key;
-    // Convert empty strings to undefined
-    result[inputName] = value === "" ? undefined : value;
+    if (shouldIgnoreKey(key)) {
+      continue;
+    }
+
+    const finalKey = resolveKey(key, nameToDbColumnName);
+    const finalValue = transformValue(value);
+
+    result[finalKey] = finalValue;
   }
   return result;
-}
+};
