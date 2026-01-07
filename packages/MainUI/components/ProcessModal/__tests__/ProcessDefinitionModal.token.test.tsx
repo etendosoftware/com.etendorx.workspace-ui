@@ -1,4 +1,4 @@
-import {} from "@testing-library/react";
+import { render, fireEvent, waitFor, type RenderResult } from "@testing-library/react";
 import ProcessDefinitionModal from "../ProcessDefinitionModal";
 
 // Mock executeStringFunction to return proper response structure
@@ -193,7 +193,7 @@ const expectFetchCall = (expectedToken: string) => {
       method: "POST",
       headers: expect.objectContaining({
         Authorization: `Bearer ${expectedToken}`,
-        "X-CSRF-Token": "mock-csrf-token",
+        "X-CSRF-Token": "test-csrf-token",
       }),
     })
   );
