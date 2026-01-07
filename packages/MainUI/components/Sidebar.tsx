@@ -268,21 +268,15 @@ export default function Sidebar() {
       const processUrl = getManualProcessUrl(item);
       if ((item.type === "ProcessManual" || item.type === "Report") && processUrl) {
         const classicUrl = buildEtendoClassicBookmarkUrl(ETENDO_BASE_URL, processUrl, item.name, true);
-        // Open in modal
+        // Open in js modal
         if (item.isModalProcess) {
-          setProcessIframeModal({
-            isOpen: true,
-            url: classicUrl,
-            title: extendedItem.name,
-            tabId: "",
-            size: "default",
-            onClose: () => setProcessIframeModal({ isOpen: false }),
-          });
+          window.open(classicUrl, "Test", "width=950,height=700");
           return;
         }
 
         // Fallback: Open in new tab
         window.open(classicUrl, "_blank");
+        return;
       }
 
       const windowId = item.windowId ?? "";
