@@ -5,6 +5,7 @@ export const SLUGS_CATEGORIES = {
   ATTACHMENTS: "attachments",
   SWS: "sws",
   LEGACY: "meta/legacy",
+  OPENBRAVO_KERNEL: "org.openbravo.client.kernel",
 };
 
 export const SLUGS_METHODS = {
