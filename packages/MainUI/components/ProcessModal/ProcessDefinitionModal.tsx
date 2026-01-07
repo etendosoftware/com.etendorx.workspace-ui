@@ -1491,7 +1491,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                 {/* Footer */}
                 <div className="flex gap-3 justify-end mx-3 my-3">
                   {/* REPORT_AND_PROCESS type: always show Cancel + Execute */}
-                  {type === PROCESS_TYPES.REPORT_AND_PROCESS && !result && (
+                  {type === PROCESS_TYPES.REPORT_AND_PROCESS && (!result || !result.success) && (
                     <>
                       <Button
                         variant="outlined"
