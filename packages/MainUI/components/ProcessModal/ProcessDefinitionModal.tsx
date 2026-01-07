@@ -171,7 +171,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const javaClassName = processDefinition.javaClassName;
 
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
-  console.debug("parameters", parameters, processDefinition);
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
@@ -333,7 +332,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   });
 
   useEffect(() => {
-    if (hasInitialData && Object.keys(availableFormData).length > 0) {
+    const hasFormData = Object.keys(availableFormData).length > 0;
+    if (hasFormData) {
       logger.debug("[PROCESS_DEBUG] Resetting form with availableFormData:", {
         keys: Object.keys(availableFormData),
         hasGrids: Object.keys(availableFormData).some(
@@ -341,12 +341,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         ),
         sample: JSON.stringify(availableFormData).substring(0, 300),
       });
-      const hasFormData = Object.keys(availableFormData).length > 0;
-      if ((hasInitialData || hasFormData) && hasFormData) {
-        form.reset(availableFormData);
-      }
+      form.reset(availableFormData);
     }
-  }, [hasInitialData, availableFormData, form, initialState]);
+  }, [availableFormData, form]);
 
   // Initialize gridSelection from filterExpressions
   // This dynamically creates grid structures based on what the backend returns
