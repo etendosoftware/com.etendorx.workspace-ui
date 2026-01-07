@@ -330,21 +330,6 @@ export const useTableDirDatasource = ({
       }
 
       try {
-        if (!field) return;
-
-        // Prevent duplicate fetches when called rapidly (e.g., double onFocus events)
-        if (fetchInProgressRef.current) {
-          return;
-        }
-
-        fetchInProgressRef.current = true;
-        setLoading(true);
-
-        if (reset) {
-          setCurrentPage(0);
-          setHasMore(true);
-        }
-
         const startRow = reset ? 0 : currentPage * pageSize;
         const endRow = reset ? initialPageSize : startRow + pageSize;
 
