@@ -198,6 +198,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const [autoSelectConfig, setAutoSelectConfig] = useState<AutoSelectConfig | null>(null);
   const [autoSelectApplied, setAutoSelectApplied] = useState(false);
   const [availableButtons, setAvailableButtons] = useState<Array<{ value: string; label: string }>>([]);
+  const [reportButtons, setReportButtons] = useState<Array<{ action: string; label: string; type: string }>>([]);
 
   useEffect(() => {
     const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
@@ -213,6 +214,28 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       setAvailableButtons([]);
     }
   }, [parameters]);
+
+  useEffect(() => {
+    const reportDefinition = processDefinition.reportDefinition;
+    if (!reportDefinition) {
+      setReportButtons([]);
+      return;
+    }
+
+    const buttons: Array<{ action: string; label: string; type: string }> = [];
+
+    if (reportDefinition.htmlTemplate) {
+      buttons.push({ action: "HTML", label: t("common.view"), type: "html" });
+    }
+    if (reportDefinition.pdfTemplate) {
+      buttons.push({ action: "PDF", label: t("common.exportToPdf"), type: "pdf" });
+    }
+    if (reportDefinition.xlsTemplate) {
+      buttons.push({ action: "XLS", label: t("common.exportToExcel"), type: "xls" });
+    }
+
+    setReportButtons(buttons);
+  }, [processDefinition.reportDefinition, t]);
 
   // Handle case when modal is opened from sidebar (no tab context)
   const selectedRecords = useMemo(() => (tab ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
@@ -585,6 +608,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         if (processId) queryParams.set("processId", processId);
         if (tab?.window) queryParams.set("windowId", tab.window.toString());
         if (javaClassName) queryParams.set("_action", javaClassName);
+        // Try to get reportId from reportDefinition.id, then processDefinition.reportId, then fallback to processId
+        const reportId = processDefinition.reportDefinition?.id || processDefinition.reportId || (processDefinition.reportDefinition ? processId : null);
+        if (reportId) {
+          queryParams.set("reportId", reportId);
+        }
 
         const apiUrl = `${baseUrl}?${queryParams.toString()}`;
 
@@ -625,7 +653,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
     },
-    [processId, tab?.window, javaClassName, token, getCsrfToken, parseProcessResponse, revalidateDopoProcess]
+    [processId, tab?.window, javaClassName, token, getCsrfToken, parseProcessResponse, revalidateDopoProcess, processDefinition]
   );
 
   const getMappedFormValues = useCallback(() => {
@@ -1416,8 +1444,22 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                     </Button>
                   )}
 
-                  {(!result || !result.success) && availableButtons.length > 0
-                    ? availableButtons.map((btn) => (
+                  {(!result || !result.success) && reportButtons.length > 0
+                    ? reportButtons.map((btn) => (
+                        <Button
+                          key={btn.action}
+                          variant="filled"
+                          size="large"
+                          onClick={() => handleExecute(btn.action)}
+                          disabled={Boolean(isActionButtonDisabled)}
+                          className="w-49"
+                          data-testid={`ReportButton_${btn.action}__761503`}>
+                          {btn.label}
+                        </Button>
+                      ))
+                    : (!result || !result.success) &&
+                      availableButtons.length > 0 &&
+                      availableButtons.map((btn) => (
                         <Button
                           key={btn.value}
                           variant="filled"
@@ -1428,19 +1470,20 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                           data-testid={`ExecuteButton_${btn.value}__761503`}>
                           {btn.label}
                         </Button>
-                      ))
-                    : (!result || !result.success) && (
-                        <Button
-                          variant="filled"
-                          size="large"
-                          onClick={() => handleExecute()}
-                          disabled={Boolean(isActionButtonDisabled)}
-                          startIcon={getActionButtonContent().icon}
-                          className="w-49"
-                          data-testid="ExecuteButton__761503">
-                          {getActionButtonContent().text}
-                        </Button>
-                      )}
+                      ))}
+
+                  {(!result || !result.success) && reportButtons.length === 0 && availableButtons.length === 0 && (
+                    <Button
+                      variant="filled"
+                      size="large"
+                      onClick={() => handleExecute()}
+                      disabled={Boolean(isActionButtonDisabled)}
+                      startIcon={getActionButtonContent().icon}
+                      className="w-49"
+                      data-testid="ExecuteButton__761503">
+                      {getActionButtonContent().text}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

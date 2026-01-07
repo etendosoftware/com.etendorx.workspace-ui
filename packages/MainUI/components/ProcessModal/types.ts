@@ -137,6 +137,15 @@ export type ListOption = { id: string; label: string; value: string };
 
 export type ProcessParameters = Record<string, ProcessParameter>;
 
+export interface ReportDefinition {
+  id?: string;
+  pdfTemplate?: string;
+  xlsTemplate?: string;
+  htmlTemplate?: string;
+  usePdfAsXlsTemplate?: boolean;
+  usePdfAsHtmlTemplate?: boolean;
+}
+
 export interface ProcessDefinition extends Record<string, unknown> {
   id: string;
   name: string;
@@ -145,6 +154,8 @@ export interface ProcessDefinition extends Record<string, unknown> {
   parameters: ProcessParameters;
   onLoad: string;
   onProcess: string;
+  reportDefinition?: ReportDefinition;
+  reportId?: string;
 }
 export interface ResponseMessage {
   msgText: string;
