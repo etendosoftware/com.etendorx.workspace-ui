@@ -754,16 +754,6 @@ function WindowReferenceGrid({
       } as Tab;
     }
 
-    // Fix hqlName ONLY if it's a display name (contains spaces or starts with uppercase)
-    // Also filter by visibility and sort by gridPosition (with sequenceNumber fallback) to ensure correct order
-    const sortedAndFilteredEntries = Object.entries(stableWindowReferenceTab.fields)
-      .filter(([_, field]) => field.displayed && field.showInGridView)
-      .sort(([, fieldA], [, fieldB]) => {
-        const posA = fieldA.gridPosition ?? fieldA.sequenceNumber ?? 0;
-        const posB = fieldB.gridPosition ?? fieldB.sequenceNumber ?? 0;
-        return posA - posB;
-      });
-
     const correctedFields = Object.fromEntries(
       Object.entries(stableWindowReferenceTab.fields)
         .filter(([_, f]) => isFieldVisible(f))
