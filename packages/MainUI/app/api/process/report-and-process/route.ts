@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     const body: ReportProcessRequest = await request.json();
     const baseUrl = normalizeBaseUrl(process.env.ETENDO_CLASSIC_URL);
-    const erpUrl = `${baseUrl}/sws/com.etendoerp.metadata.meta/process`;
+    const erpUrl = `${baseUrl}/sws/com.etendoerp.metadata.meta/process-execution`;
 
     const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
     const headers: Record<string, string> = {

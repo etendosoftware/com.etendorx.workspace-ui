@@ -42,7 +42,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { pInstanceId } = await params;
 
     const baseUrl = normalizeBaseUrl(process.env.ETENDO_CLASSIC_URL);
-    const erpUrl = `${baseUrl}/sws/com.etendoerp.metadata.meta/process/status/${pInstanceId}`;
+    const erpUrl = `${baseUrl}/sws/com.etendoerp.metadata.meta/process-execution/status/${pInstanceId}`;
 
     const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
     const headers: Record<string, string> = {
