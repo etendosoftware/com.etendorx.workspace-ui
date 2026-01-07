@@ -874,6 +874,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           _buttonValue: actionValue || "DONE",
           buttonValue: actionValue || "DONE",
           windowId: tab.window,
+          tabId: tab?.id || tabId || "",
           entityName: tab.entityName,
           recordIds: selectedRecords?.map((r) => r.id),
           ...completePayload, // Use complete payload instead of just form values
@@ -906,6 +907,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       onProcess,
       javaClassName,
       tab,
+      tabId,
       record,
       initialState,
       button.processDefinition,
@@ -1018,7 +1020,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         if (onLoad && tab) {
           const result = await executeStringFunction(onLoad, { Metadata }, button.processDefinition, {
             selectedRecords,
-            tabId,
+            tabId: tab.id || "",
           });
 
           // If result is undefined/null, skip
@@ -1089,7 +1091,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     };
 
     fetchOptions();
-  }, [button.processDefinition, onLoad, open, selectedRecords, tab, tabId]);
+  }, [button.processDefinition, onLoad, open, selectedRecords, tab, setGridSelection]);
 
   /**
    * NEW useEffect:
