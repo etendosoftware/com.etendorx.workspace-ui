@@ -266,7 +266,7 @@ export default function Sidebar() {
 
       // Handle ProcessManual items - open in Etendo Classic
       const processUrl = getManualProcessUrl(item);
-      if (item.type === "ProcessManual" && processUrl) {
+      if ((item.type === "ProcessManual" || item.type === "Report") && processUrl) {
         const classicUrl = buildEtendoClassicBookmarkUrl(ETENDO_BASE_URL, processUrl, item.name, true);
         // Open in modal
         if (item.isModalProcess) {
