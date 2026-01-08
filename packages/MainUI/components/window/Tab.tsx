@@ -281,7 +281,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         publicHost: config?.etendoClassicHost,
       });
 
-      // Always use POST with recordId as array
+      // Always use POST with parameters array containing recordId objects
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -290,7 +290,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         },
         body: JSON.stringify({
           tabId: tab.id,
-          recordId: selectedIds,
+          parameters: selectedIds.map((id) => ({ recordId: id })),
+          docType: "PDF",
         }),
       });
 
