@@ -171,6 +171,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const processId = processDefinition.id;
   const javaClassName = processDefinition.javaClassName;
 
+  console.debug("ProcessDefinitionModalContent", processDefinition);
+
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -192,15 +194,15 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const [autoSelectApplied, setAutoSelectApplied] = useState(false);
   const [availableButtons, setAvailableButtons] = useState<Array<{ value: string; label: string }>>([]);
 
-  // Register PayScript DSL if available in process definition
-  useEffect(() => {
-    if (processDefinition.id) {
-       const def = processDefinition as any;
-       const dsl = def.etmetaPayscriptLogic || def.emPayscriptLogic || def.em_payscript_logic || def.emEtmetaOnprocess || def.em_etmeta_onprocess;
-       if (dsl) {
-          registerPayScriptDSL(processDefinition.id, dsl);
-       }
-    }
+  // Register PayScript DSL if available in process definition 
+  useEffect(() => { 
+    if (processDefinition.id) { 
+       const def = processDefinition as any; 
+       const dsl = def.etmetaPayscriptLogic || def.emPayscriptLogic || def.em_payscript_logic || def.emEtmetaOnprocess || def.em_etmeta_onprocess; 
+       if (dsl) { 
+          registerPayScriptDSL(processDefinition.id, dsl); 
+       } 
+    } 
   }, [processDefinition]);
 
   useEffect(() => {

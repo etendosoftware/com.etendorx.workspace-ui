@@ -13,6 +13,3 @@ export type {
   UsePayScriptEngineOptions,
   UsePayScriptEngineReturn,
 } from "./hooks/usePayScriptEngine";
-
-// Rules
-export { AddPaymentRulesGeneric } from "./rules/AddPaymentRulesGeneric";

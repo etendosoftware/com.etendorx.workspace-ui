@@ -18,11 +18,7 @@
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { UseFormReturn } from "react-hook-form";
 import { ADD_PAYMENT_ORDER_PROCESS_ID } from "@/utils/processes/definition/constants";
-import { genericPayScriptCallout, registerPayScriptRules } from "./genericPayScriptCallout";
-import { AddPaymentRulesGeneric } from "@/payscript/rules/AddPaymentRulesGeneric";
-
-// Register PayScript rules for processes
-registerPayScriptRules(ADD_PAYMENT_ORDER_PROCESS_ID, AddPaymentRulesGeneric);
+import { genericPayScriptCallout } from "./genericPayScriptCallout";
 
 /**
  * Grid selection structure type
