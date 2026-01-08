@@ -1473,7 +1473,7 @@ const DynamicTable = ({
           }
         } catch (error) {
           // Silently ignore if element was already removed
-          console.debug("[handleCloseContextMenu] Element already removed:", error);
+          // Performance: Debug log removed
         }
       }
 

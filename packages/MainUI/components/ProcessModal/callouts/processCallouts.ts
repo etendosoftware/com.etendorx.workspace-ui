@@ -18,6 +18,11 @@
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { UseFormReturn } from "react-hook-form";
 import { ADD_PAYMENT_ORDER_PROCESS_ID } from "@/utils/processes/definition/constants";
+import { genericPayScriptCallout, registerPayScriptRules } from "./genericPayScriptCallout";
+import { AddPaymentRulesGeneric } from "@/payscript/rules/AddPaymentRulesGeneric";
+
+// Register PayScript rules for processes
+registerPayScriptRules(ADD_PAYMENT_ORDER_PROCESS_ID, AddPaymentRulesGeneric);
 
 /**
  * Grid selection structure type
@@ -75,25 +80,38 @@ export type ProcessCalloutsConfig = Record<string, ProcessCallout[]>;
  * ]
  * ```
  */
-// Helper to create callout config for Add Payment
-const createAddPaymentCallout = (triggerField: string): ProcessCallout => ({
+// Helper to create generic PayScript callout config
+const createPayScriptCallout = (triggerField: string): ProcessCallout => ({
   triggerField,
-  execute: (v, f, g) => calculateAddPayment(v, f, g, triggerField),
+  execute: genericPayScriptCallout,
 });
 
 export const PROCESS_CALLOUTS: ProcessCalloutsConfig = {
-  // Callout for aprm_orderinvoice entity - Sum outstandingAmount to expected_payment
+  // Generic PayScript-based callout for Add Payment process
+  // No process-specific adapter needed - rules are registered above
   [ADD_PAYMENT_ORDER_PROCESS_ID]: [
-    createAddPaymentCallout("_internalGridSelectionTrigger"),
-    createAddPaymentCallout("actual_payment"),
-    createAddPaymentCallout("amount_gl_items"),
-    createAddPaymentCallout("used_credit"),
-    createAddPaymentCallout("generateCredit"),
+    createPayScriptCallout("_internalGridSelectionTrigger"),
+    createPayScriptCallout("actual_payment"),
+    createPayScriptCallout("amount_gl_items"),
+    createPayScriptCallout("used_credit"),
+    createPayScriptCallout("generateCredit"),
   ],
 };
 
 /**
- * Main calculation logic for Add Payment process
+ * ============================================================================
+ * LEGACY CODE - DEPRECATED
+ * ============================================================================
+ * The following code is the old imperative implementation of Add Payment logic.
+ * It has been replaced by the PayScript declarative engine (see addPaymentPayScript.ts).
+ * This code is kept for reference and backwards compatibility testing only.
+ * DO NOT USE FOR NEW IMPLEMENTATIONS.
+ * ============================================================================
+ */
+
+/**
+ * @deprecated Use PayScript-based addPaymentPayScriptCallout instead
+ * Main calculation logic for Add Payment process (LEGACY)
  */
 // Helper functions (extracted to module scope)
 
@@ -162,7 +180,8 @@ const calculateRefinedActualPayment = (
 };
 
 /**
- * Main calculation logic for Add Payment process
+ * @deprecated Use addPaymentPayScriptCallout instead
+ * Main calculation logic for Add Payment process (LEGACY)
  */
 export async function calculateAddPayment(
   _formValues: Record<string, unknown>,
@@ -225,7 +244,6 @@ export async function calculateAddPayment(
   // Formatting
   const fmt = (n: number) => n.toFixed(2);
 
-  console.debug("Callout Calc:", { issotrx, total, actualPayment, difference, expectedDifference });
 
   return {
     expected_payment: fmt(expectedPayment),

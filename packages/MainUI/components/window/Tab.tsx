@@ -951,7 +951,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         throw new Error("No response from server");
       }
 
-      console.log("CSV Export Response:", response);
+      // Performance: Debug log removed
 
       const respObj = response as unknown as Record<string, unknown>;
       if (respObj.__error) {
@@ -965,7 +965,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         throw new Error(`CSV export backend error: ${backendError}`);
       }
 
-      console.log("Final CSV content length:", csvContent.length);
+      // Performance: Debug log removed
 
       if (!csvContent || csvContent.trim().length === 0) {
         console.error(
