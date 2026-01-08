@@ -267,7 +267,13 @@ export default function Sidebar() {
       // Handle ProcessManual items - open in Etendo Classic
       const processUrl = getManualProcessUrl(item);
       if ((item.type === "ProcessManual" || item.type === "Report") && processUrl) {
-        const classicUrl = buildEtendoClassicBookmarkUrl(ETENDO_BASE_URL, processUrl, item.name, true);
+        const classicUrl = buildEtendoClassicBookmarkUrl({
+          baseUrl: ETENDO_BASE_URL,
+          processUrl,
+          tabTitle: item.name,
+          token: token,
+          kioskMode: true,
+        });
         // Open in js modal
         if (item.isModalProcess) {
           window.open(classicUrl, "Test", "width=950,height=700");

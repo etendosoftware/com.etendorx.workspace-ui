@@ -1,5 +1,6 @@
 import { URL_PREFIXS } from "@/utils/url/constants";
 import type { WindowState, WindowRecoveryInfo } from "@/utils/window/constants";
+import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 
 /**
  * Builds URL parameters for multiple windows based on their current state.
@@ -229,12 +230,45 @@ const encodeEtendoBookmark = (serialized: string): string => {
 };
 
 /**
+ * Extracts the context path from a base URL.
+ * For example: "http://localhost:8080/etendo" -> "/etendo"
+ *
+ * @param baseUrl - The base URL to extract context from
+ * @returns The context path with leading slash
+ */
+const extractContextPath = (baseUrl: string): string => {
+  // Remove trailing slash if present
+  const cleanUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+  // Find the last slash and extract everything after it
+  const lastSlashIndex = cleanUrl.lastIndexOf("/");
+  if (lastSlashIndex === -1) {
+    return "";
+  }
+  return cleanUrl.substring(lastSlashIndex);
+};
+
+/**
+ * Builds the legacy location URL for the redirect endpoint.
+ * This is the destination URL that will be encoded in the location parameter.
+ *
+ * @param contextPath - The context path (e.g., "/etendo")
+ * @param encoded - The encoded bookmark data
+ * @param kioskMode - Whether to include kiosk mode flag
+ * @returns The location URL ready to be encoded
+ */
+const buildLocationUrl = (contextPath: string, encoded: string, kioskMode: boolean): string => {
+  const kioskParam = kioskMode ? "?kiosk=true" : "";
+  return `${contextPath}/${kioskParam}#${encoded}`;
+};
+
+/**
  * Builds a complete Etendo Classic URL using bookmark navigation.
  *
  * The generated URL:
- * - Opens Etendo Classic
- * - Restores multiple tabs via bookmark hash
- * - Optionally enables "kiosk mode" via query params
+ * - When token is provided: Uses redirect endpoint with location and token params
+ *   Format: {baseUrl}{API_IFRAME_FORWARD_PATH}/redirect?location={encodedLocation}&token={token}
+ * - When token is null: Returns legacy URL format
+ *   Format: {baseUrl}[?kiosk=true]/#encoded_bookmark
  *
  * Kiosk mode:
  * - kiosk=true hides both Top Navigation and Tab Bar
@@ -244,13 +278,21 @@ const encodeEtendoBookmark = (serialized: string): string => {
  * @param processUrl - Manual process URL (e.g. /ad_actionButton/ExpenseSOrder.html)
  * @param tabTitle - Title shown on the process tab
  * @param kioskMode - Enables kiosk UI restrictions when true
+ * @param token - JWT token for authentication. If null, returns legacy URL format
  */
-export const buildEtendoClassicBookmarkUrl = (
-  baseUrl: string,
-  processUrl: string,
-  tabTitle: string,
-  kioskMode: boolean
-): string => {
+export const buildEtendoClassicBookmarkUrl = ({
+  baseUrl,
+  processUrl,
+  tabTitle,
+  kioskMode,
+  token,
+}: {
+  baseUrl: string;
+  processUrl: string;
+  tabTitle: string;
+  kioskMode: boolean;
+  token: string | null;
+}): string => {
   const processTab: EtendoBookmarkTab = {
     viewId: "OBClassicWindow",
     params: {
@@ -268,8 +310,21 @@ export const buildEtendoClassicBookmarkUrl = (
   const serialized = serializeEtendoValue(bookmarkData);
   const encoded = encodeEtendoBookmark(serialized);
 
-  // Base URL + optional kiosk flag (must be before #)
-  const baseWithFlags = kioskMode ? `${baseUrl}?kiosk=true` : baseUrl;
+  // If no token, return legacy URL format
+  if (!token) {
+    const baseWithFlags = kioskMode ? `${baseUrl}?kiosk=true` : baseUrl;
+    return `${baseWithFlags}/#${encoded}`;
+  }
 
-  return `${baseWithFlags}/#${encoded}`;
+  // Extract context path from baseUrl (e.g., "/etendo" from "http://localhost:8080/etendo")
+  const contextPath = extractContextPath(baseUrl);
+
+  // Build the location URL (destination after redirect)
+  const locationUrl = buildLocationUrl(contextPath, encoded, kioskMode);
+
+  // Encode the location URL for use as query parameter
+  const encodedLocation = encodeURIComponent(locationUrl);
+
+  // Build the final redirect URL
+  return `${baseUrl}${API_IFRAME_FORWARD_PATH}/redirect?location=${encodedLocation}&token=${token}`;
 };
