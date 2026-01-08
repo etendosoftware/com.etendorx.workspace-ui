@@ -240,7 +240,6 @@ export async function calculateAddPayment(
   // Formatting
   const fmt = (n: number) => n.toFixed(2);
 
-
   return {
     expected_payment: fmt(expectedPayment),
     Expected_Payment: fmt(expectedPayment),

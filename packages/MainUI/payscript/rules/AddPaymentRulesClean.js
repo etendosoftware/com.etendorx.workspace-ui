@@ -18,7 +18,7 @@ export const AddPaymentRulesGeneric = {
     const conversionRate = util.valNum("conversion_rate", "conversionRate", "finPaymentRate") || 1;
     const currencyPrecision = util.valNum("currency_precision", "currencyPrecision") || 2;
     const bslamount = util.valNum("bslamount", "bslAmount", "bankStatementLineAmount");
-    
+
     const receivedFrom = util.valStr("received_from", "receivedFrom", "c_bpartner_id");
     const overpaymentAction = util.valStr("overpayment_action", "overpaymentAction");
     const currencyId = util.valStr("currency_id", "currencyId", "c_currency_id");
@@ -35,27 +35,27 @@ export const AddPaymentRulesGeneric = {
 
     const creditItems = util.getGridItems(["paymentAmount", "outstandingAmount"], ["credit_to_use"]);
     let usedCreditCalculated = util.num(0);
-    
+
     if (creditItems.length > 0) {
-        for (const item of creditItems) {
-            const pAmt = util.num(item.paymentAmount);
-            if (pAmt.eq(0)) {
-                item.paymentAmount = item.outstandingAmount;
-            }
+      for (const item of creditItems) {
+        const pAmt = util.num(item.paymentAmount);
+        if (pAmt.eq(0)) {
+          item.paymentAmount = item.outstandingAmount;
         }
-        usedCreditCalculated = util.sum(creditItems, "paymentAmount");
+      }
+      usedCreditCalculated = util.sum(creditItems, "paymentAmount");
     } else {
-        usedCreditCalculated = util.num(usedCreditValue || 0);
+      usedCreditCalculated = util.num(usedCreditValue || 0);
     }
-    
+
     const finalUsedCredit = usedCreditCalculated;
     const totalOutstanding = util.sum(invoices, "outstandingAmount");
-    
+
     if (invoices.length > 0) {
-        const totalToDistribute = util.num(actualPayment || 0).plus(finalUsedCredit);
-        util.distributeAmount(invoices, totalToDistribute);
+      const totalToDistribute = util.num(actualPayment || 0).plus(finalUsedCredit);
+      util.distributeAmount(invoices, totalToDistribute);
     }
-    
+
     const amountInvOrds = util.sum(invoices, "amount");
 
     const amountGLItems = glItems.reduce((total, item) => {
@@ -150,8 +150,8 @@ export const AddPaymentRulesGeneric = {
         amountGLItems: amountGLItems.toNumber(),
         usedCredit: usedCredit.toNumber(),
       },
-      
-      order_invoice: invoices, 
+
+      order_invoice: invoices,
       credit_to_use: creditItems,
     };
   },
@@ -161,11 +161,11 @@ export const AddPaymentRulesGeneric = {
 
     const actualPayment = util.valNum("actual_payment", "actualPayment", "ActualPayment");
     const overpaymentAction = util.valStr("overpayment_action", "overpaymentAction");
-    
+
     // Safely access computed properties. In JS result `computed` is just the object returned above.
-    const _comp = computed._computed || {};  
+    const _comp = computed._computed || {};
     const total = typeof computed.total === "string" ? Number.parseFloat(computed.total) : computed.total || 0;
-    
+
     const actualBD = util.num(actualPayment);
     const totalBD = util.num(total);
 
@@ -189,17 +189,17 @@ export const AddPaymentRulesGeneric = {
 
     const invoices = computed.order_invoice || [];
     for (const invoice of invoices) {
-       const amt = util.num(invoice.amount);
-       const out = util.num(invoice.outstandingAmount);
-       if (amt.minus(out).gt(0.01)) {
-           validations.push({
-               id: "AMOUNT_EXCEEDS_OUTSTANDING",
-               isValid: false,
-               message: "APRM_JSMOREAMOUTALLOCATED",
-               severity: "error",
-               context: { id: invoice.id }
-           });
-       }
+      const amt = util.num(invoice.amount);
+      const out = util.num(invoice.outstandingAmount);
+      if (amt.minus(out).gt(0.01)) {
+        validations.push({
+          id: "AMOUNT_EXCEEDS_OUTSTANDING",
+          isValid: false,
+          message: "APRM_JSMOREAMOUTALLOCATED",
+          severity: "error",
+          context: { id: invoice.id },
+        });
+      }
     }
 
     return validations;

@@ -48,7 +48,12 @@ export interface UtilType {
   // biome-ignore lint/suspicious/noExplicitAny: Returns generic grid items with dynamic fields
   getGridItems: (fieldsToParse?: string[], gridNames?: string[]) => any[];
   // biome-ignore lint/suspicious/noExplicitAny: Generic distribution logic
-  distributeAmount: (items: any[], totalAmount: number | BigNumber, amountField?: string, outstandingField?: string) => any[];
+  distributeAmount: (
+    items: any[],
+    totalAmount: number | BigNumber,
+    amountField?: string,
+    outstandingField?: string
+  ) => any[];
 }
 
 /**
@@ -126,7 +131,7 @@ const createUtil = (context: Record<string, any>): UtilType => {
       for (const [gridName, entityData] of Object.entries(gridSelection)) {
         // Filter by grid name if specified
         if (gridNames.length > 0 && !gridNames.includes(gridName)) {
-            continue;
+          continue;
         }
 
         const selection = (entityData as any)?._selection || [];
@@ -150,39 +155,44 @@ const createUtil = (context: Record<string, any>): UtilType => {
       return allItems;
     },
     // Generic logic to distribute an amount across a list of items
-    distributeAmount: (items: any[], totalAmount: number | BigNumber, amountField = "amount", outstandingField = "outstandingAmount") => {
-        let remaining = new BigNumber(totalAmount);
-        
-        // 1. Subtract amounts already allocated (manual edits)
-        for (const item of items) {
-            const currentAmt = parseNum(item[amountField]);
-            if (currentAmt !== 0) {
-                remaining = remaining.minus(currentAmt);
-            }
-        }
+    distributeAmount: (
+      items: any[],
+      totalAmount: number | BigNumber,
+      amountField = "amount",
+      outstandingField = "outstandingAmount"
+    ) => {
+      let remaining = new BigNumber(totalAmount);
 
-        // 2. Distribute remaining amount to items with 0 amount
-        if (remaining.gt(0)) {
-            for (const item of items) {
-                const currentAmt = parseNum(item[amountField]);
-                if (currentAmt === 0) {
-                    const outstanding = parseNum(item[outstandingField]);
-                    // Logic: take min(outstanding, remaining)
-                    // Assuming positive context for now
-                    let alloc = 0;
-                    if (outstanding > 0) {
-                         alloc = remaining.gt(outstanding) ? outstanding : remaining.toNumber();
-                    }
-                    
-                    if (alloc > 0) {
-                        item[amountField] = alloc;
-                        remaining = remaining.minus(alloc);
-                    }
-                }
-            }
+      // 1. Subtract amounts already allocated (manual edits)
+      for (const item of items) {
+        const currentAmt = parseNum(item[amountField]);
+        if (currentAmt !== 0) {
+          remaining = remaining.minus(currentAmt);
         }
-        return items;
-    }
+      }
+
+      // 2. Distribute remaining amount to items with 0 amount
+      if (remaining.gt(0)) {
+        for (const item of items) {
+          const currentAmt = parseNum(item[amountField]);
+          if (currentAmt === 0) {
+            const outstanding = parseNum(item[outstandingField]);
+            // Logic: take min(outstanding, remaining)
+            // Assuming positive context for now
+            let alloc = 0;
+            if (outstanding > 0) {
+              alloc = remaining.gt(outstanding) ? outstanding : remaining.toNumber();
+            }
+
+            if (alloc > 0) {
+              item[amountField] = alloc;
+              remaining = remaining.minus(alloc);
+            }
+          }
+        }
+      }
+      return items;
+    },
   };
 };
 

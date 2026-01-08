@@ -194,15 +194,20 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const [autoSelectApplied, setAutoSelectApplied] = useState(false);
   const [availableButtons, setAvailableButtons] = useState<Array<{ value: string; label: string }>>([]);
 
-  // Register PayScript DSL if available in process definition 
-  useEffect(() => { 
-    if (processDefinition.id) { 
-       const def = processDefinition as any; 
-       const dsl = def.etmetaPayscriptLogic || def.emPayscriptLogic || def.em_payscript_logic || def.emEtmetaOnprocess || def.em_etmeta_onprocess; 
-       if (dsl) { 
-          registerPayScriptDSL(processDefinition.id, dsl); 
-       } 
-    } 
+  // Register PayScript DSL if available in process definition
+  useEffect(() => {
+    if (processDefinition.id) {
+      const def = processDefinition as any;
+      const dsl =
+        def.etmetaPayscriptLogic ||
+        def.emPayscriptLogic ||
+        def.em_payscript_logic ||
+        def.emEtmetaOnprocess ||
+        def.em_etmeta_onprocess;
+      if (dsl) {
+        registerPayScriptDSL(processDefinition.id, dsl);
+      }
+    }
   }, [processDefinition]);
 
   useEffect(() => {
@@ -309,11 +314,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     const basePayload = buildProcessPayload(record, tab, {}, {});
 
     logger.debug("[PROCESS_DEBUG] Building availableFormData:", {
-        hasRecord: !!record,
-        hasTab: !!tab,
-        initialStateKeys: initialState ? Object.keys(initialState) : 'null',
-        basePayloadKeys: basePayload ? Object.keys(basePayload) : 'null',
-        top5BasePayload: basePayload ? Object.keys(basePayload).slice(0,5) : [],
+      hasRecord: !!record,
+      hasTab: !!tab,
+      initialStateKeys: initialState ? Object.keys(initialState) : "null",
+      basePayloadKeys: basePayload ? Object.keys(basePayload) : "null",
+      top5BasePayload: basePayload ? Object.keys(basePayload).slice(0, 5) : [],
     });
 
     const combined = {
@@ -398,22 +403,25 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const formValues = form.watch();
 
   // Handle grid updates from callouts (e.g. modified amounts)
-  const handleGridUpdate = useCallback((gridName: string, data: unknown) => {
-    if (!Array.isArray(data)) return;
-    
-    setGridSelection((prev) => {
-      const currentGrid = prev[gridName] || { _selection: [], _allRows: [] };
-      // The engine returns the updated list of SELECTED items with their calculated values.
-      // We explicitly replace the _selection with this new authoritative list.
-      return {
-        ...prev,
-        [gridName]: {
-          ...currentGrid,
-          _selection: data as any[],
-        },
-      };
-    });
-  }, [setGridSelection]);
+  const handleGridUpdate = useCallback(
+    (gridName: string, data: unknown) => {
+      if (!Array.isArray(data)) return;
+
+      setGridSelection((prev) => {
+        const currentGrid = prev[gridName] || { _selection: [], _allRows: [] };
+        // The engine returns the updated list of SELECTED items with their calculated values.
+        // We explicitly replace the _selection with this new authoritative list.
+        return {
+          ...prev,
+          [gridName]: {
+            ...currentGrid,
+            _selection: data as any[],
+          },
+        };
+      });
+    },
+    [setGridSelection]
+  );
 
   // Process callouts - execute when form values change
   useProcessCallouts({
@@ -452,22 +460,22 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       if (p.defaultValue) {
         return false;
       }
-      
+
       const fieldName = p.name;
       const dbColumnName = p.dBColumnName;
-      
+
       // Try to find the value by multiple possible keys
       let fieldValue = formValues[fieldName as keyof typeof formValues] as unknown;
-      
+
       // If not found by name, try dBColumnName
-      if ((fieldValue === undefined) && dbColumnName) {
-         fieldValue = formValues[dbColumnName as keyof typeof formValues] as unknown;
+      if (fieldValue === undefined && dbColumnName) {
+        fieldValue = formValues[dbColumnName as keyof typeof formValues] as unknown;
       }
 
       // Check if the field is actually registered in the form
       const isRegisteredByName = fieldName in formValues;
-      const isRegisteredByDBColumn = dbColumnName && (dbColumnName in formValues);
-      
+      const isRegisteredByDBColumn = dbColumnName && dbColumnName in formValues;
+
       const fieldIsRegistered = isRegisteredByName || isRegisteredByDBColumn;
 
       // Only validate fields that are actually registered in the form
@@ -482,14 +490,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         fieldValue === undefined ||
         fieldValue === "" ||
         (Array.isArray(fieldValue) && fieldValue.length === 0);
-        
+
       // Check display logic from PayScript engine
       // logicFields keys are formatted as "parameterName.property" e.g. "overpayment_action.display"
       if (logicFields && dbColumnName) {
-         const isHidden = logicFields[`${dbColumnName}.display`] === false;
-         if (isHidden) {
-            return false;
-         }
+        const isHidden = logicFields[`${dbColumnName}.display`] === false;
+        if (isHidden) {
+          return false;
+        }
       }
 
       // Block if mandatory field is empty
@@ -784,12 +792,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           formValuesKeys: Object.keys(form.getValues()),
           populatedGridsKeys: Object.keys(populatedGrids),
         });
-        
+
         logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Record Context:", {
-             recordId: record?.id,
-             recordValuesKeys: recordValues ? Object.keys(recordValues) : 'null',
-             tabId: tab?.id,
-             processId
+          recordId: record?.id,
+          recordValuesKeys: recordValues ? Object.keys(recordValues) : "null",
+          tabId: tab?.id,
+          processId,
         });
 
         const formValues = form.getValues();
@@ -1572,29 +1580,37 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   };
 
   // Debug disabled state
-  const missingMandatoryParams = Object.values(parameters).filter((param) => {
-    // @ts-ignore
-    if (!param.mandatory || param.active === false) return false;
-    if (param.defaultValue) return false;
+  const missingMandatoryParams = Object.values(parameters)
+    .filter((param) => {
+      // @ts-ignore
+      if (!param.mandatory || param.active === false) return false;
+      if (param.defaultValue) return false;
 
-    const formValues = form.getValues();
-    const fieldName = param.name;
-    const dbColumnName = param.dBColumnName;
-    
-    let fieldValue = formValues[fieldName as keyof typeof formValues] as unknown;
-    if (fieldValue === undefined && dbColumnName) {
-         fieldValue = formValues[dbColumnName as keyof typeof formValues] as unknown;
-    }
-    
-    const isRegisteredByName = fieldName in formValues;
-    const isRegisteredByDBColumn = dbColumnName && (dbColumnName in formValues);
-    const fieldIsRegistered = isRegisteredByName || isRegisteredByDBColumn;
+      const formValues = form.getValues();
+      const fieldName = param.name;
+      const dbColumnName = param.dBColumnName;
 
-    if (!fieldIsRegistered) return false;
+      let fieldValue = formValues[fieldName as keyof typeof formValues] as unknown;
+      if (fieldValue === undefined && dbColumnName) {
+        fieldValue = formValues[dbColumnName as keyof typeof formValues] as unknown;
+      }
 
-    if (fieldValue === undefined || fieldValue === null || fieldValue === "" || (Array.isArray(fieldValue) && fieldValue.length === 0)) return true;
-    return false;
-  }).map(p => p.name);
+      const isRegisteredByName = fieldName in formValues;
+      const isRegisteredByDBColumn = dbColumnName && dbColumnName in formValues;
+      const fieldIsRegistered = isRegisteredByName || isRegisteredByDBColumn;
+
+      if (!fieldIsRegistered) return false;
+
+      if (
+        fieldValue === undefined ||
+        fieldValue === null ||
+        fieldValue === "" ||
+        (Array.isArray(fieldValue) && fieldValue.length === 0)
+      )
+        return true;
+      return false;
+    })
+    .map((p) => p.name);
 
   const isActionButtonDisabled =
     isPending ||

@@ -24,23 +24,23 @@ export const mapFormValuesToContext = (
   const nameToDbMap = new Map<string, string>();
   for (const param of paramsList) {
     if (param.name && param.dBColumnName && param.name !== param.dBColumnName) {
-        nameToDbMap.set(param.name, param.dBColumnName);
+      nameToDbMap.set(param.name, param.dBColumnName);
     }
   }
 
   for (const [key, value] of Object.entries(formValues)) {
     // 1. Try to map using parameter name
     const dbColumnName = nameToDbMap.get(key);
-    
+
     // Use mapped name if available, otherwise keep original key
     // This preserves keys that don't match parameters (like internal flags)
     // AND keys where name == dBColumnName
     const contextKey = dbColumnName || key;
     context[contextKey] = value;
-    
+
     // Also include the original key if it was mapped, just in case DSL expects the name
     if (dbColumnName && contextKey !== key) {
-        context[key] = value;
+      context[key] = value;
     }
   }
 
@@ -62,27 +62,27 @@ export const mapUpdatesToFormFields = (
 
   // Create a map of dbColumnName -> name
   const dbToNameMap = new Map<string, string>();
-  
-    // Also map common variations that DSL might output
-    for (const param of paramsList) {
-        if (!param.name) continue;
 
-        // Map DB Column Name -> Name
-        if (param.dBColumnName) {
-            dbToNameMap.set(param.dBColumnName, param.name);
-            // Also lowercase version of db column
-            dbToNameMap.set(param.dBColumnName.toLowerCase(), param.name);
-        }
+  // Also map common variations that DSL might output
+  for (const param of paramsList) {
+    if (!param.name) continue;
 
-        // Map Name itself (if DSL outputs Name) -> Name
-        dbToNameMap.set(param.name, param.name);
-        
-        // Map common variations to Name
-        // e.g. "AmountInvOrds" -> "Amount on Invoices..."
-        // This relies on the fact that we can't easily guess the variation,
-        // but we can try to match if the DSL outputs exact matches of what it thinks the key is.
-        // But the robust way is relying on dBColumnName.
+    // Map DB Column Name -> Name
+    if (param.dBColumnName) {
+      dbToNameMap.set(param.dBColumnName, param.name);
+      // Also lowercase version of db column
+      dbToNameMap.set(param.dBColumnName.toLowerCase(), param.name);
     }
+
+    // Map Name itself (if DSL outputs Name) -> Name
+    dbToNameMap.set(param.name, param.name);
+
+    // Map common variations to Name
+    // e.g. "AmountInvOrds" -> "Amount on Invoices..."
+    // This relies on the fact that we can't easily guess the variation,
+    // but we can try to match if the DSL outputs exact matches of what it thinks the key is.
+    // But the robust way is relying on dBColumnName.
+  }
 
   for (const [key, value] of Object.entries(updates)) {
     // Try to find the parameter name for this key
@@ -91,24 +91,24 @@ export const mapUpdatesToFormFields = (
 
     // 2. If not found, try case-insensitive match against dbColumnNames if exact match failed
     if (!formFieldName) {
-        const lowerKey = key.toLowerCase();
-        formFieldName = dbToNameMap.get(lowerKey);
+      const lowerKey = key.toLowerCase();
+      formFieldName = dbToNameMap.get(lowerKey);
     }
 
     if (formFieldName) {
-        formUpdates[formFieldName] = value;
-        // ALSO keep the original key (dbColumnName) if it's different
-        // This is CRITICAL for Display Logic expressions that might reference the DB name
-        if (formFieldName !== key) {
-             formUpdates[key] = value;
-        }
-    } else {
-        // If no mapping found, pass it through
-        // This might be an internal field or already correct
+      formUpdates[formFieldName] = value;
+      // ALSO keep the original key (dbColumnName) if it's different
+      // This is CRITICAL for Display Logic expressions that might reference the DB name
+      if (formFieldName !== key) {
         formUpdates[key] = value;
+      }
+    } else {
+      // If no mapping found, pass it through
+      // This might be an internal field or already correct
+      formUpdates[key] = value;
     }
   }
-  
+
   return formUpdates;
 };
 
@@ -118,11 +118,8 @@ export const mapUpdatesToFormFields = (
  * @param parameters - Dictionary of process parameters
  * @returns The DB Column Name if found, otherwise the original field name
  */
-export const getDbColumnName = (
-    fieldName: string,
-    parameters: Record<string, ProcessParameter>
-): string => {
-    const paramsList = Object.values(parameters);
-    const param = paramsList.find(p => p.name === fieldName);
-    return param?.dBColumnName || fieldName;
-}
+export const getDbColumnName = (fieldName: string, parameters: Record<string, ProcessParameter>): string => {
+  const paramsList = Object.values(parameters);
+  const param = paramsList.find((p) => p.name === fieldName);
+  return param?.dBColumnName || fieldName;
+};

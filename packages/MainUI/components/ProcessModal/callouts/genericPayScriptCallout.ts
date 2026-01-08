@@ -158,24 +158,27 @@ export function registerPayScriptDSL(processId: string, dslCode: string): void {
     // This regex matches `export const VarName =` optionally with typescript type specificacion
     let cleanCode = dslCode
       .replace(/import\s+.*;(?:\r\n|\r|\n)/g, "")
-      .replace(/export\s+const\s+\w+(\s*:\s*\w+)?\s*=\s*/, "") 
+      .replace(/export\s+const\s+\w+(\s*:\s*\w+)?\s*=\s*/, "")
       .trim();
 
     // Remove trailing semicolon if present
     if (cleanCode.endsWith(";")) {
       cleanCode = cleanCode.slice(0, -1);
     }
-    
+
     // Attempt basic type stripping if it looks like TS
     // This is a naive stripper but works for simple cases, and specifically checks for '=>' to avoid breaking non-arrow functions
-    if (dslCode.includes("=>") && (dslCode.includes(": any") || dslCode.includes("as any") || dslCode.includes("as const"))) {
-        cleanCode = cleanCode
-             .replace(/as\s+any/g, "")
-             .replace(/as\s+const/g, "")
-             // Remove function argument types: (n: any) -> (n)
-             .replace(/\(\s*([a-zA-Z0-9_]+)\s*:\s*[a-zA-Z0-9_\[\]<>]+\s*\)/g, "($1)") 
-             // Remove explicit return types: ): void => -> ) =>
-             .replace(/\)\s*:\s*[a-zA-Z0-9_\[\]<>]+\s*=>/g, ") =>");
+    if (
+      dslCode.includes("=>") &&
+      (dslCode.includes(": any") || dslCode.includes("as any") || dslCode.includes("as const"))
+    ) {
+      cleanCode = cleanCode
+        .replace(/as\s+any/g, "")
+        .replace(/as\s+const/g, "")
+        // Remove function argument types: (n: any) -> (n)
+        .replace(/\(\s*([a-zA-Z0-9_]+)\s*:\s*[a-zA-Z0-9_\[\]<>]+\s*\)/g, "($1)")
+        // Remove explicit return types: ): void => -> ) =>
+        .replace(/\)\s*:\s*[a-zA-Z0-9_\[\]<>]+\s*=>/g, ") =>");
     }
 
     // Evaluate
@@ -185,12 +188,12 @@ export function registerPayScriptDSL(processId: string, dslCode: string): void {
     const rules = createRules();
 
     if (rules && typeof rules === "object") {
-        // Ensure ID matches
-        const rulesWithId = { ...rules, id: processId };
-        registerPayScriptRules(processId, rulesWithId);
-        logger.debug(`[PayScript] Successfully registered DSL for process: ${processId}`);
+      // Ensure ID matches
+      const rulesWithId = { ...rules, id: processId };
+      registerPayScriptRules(processId, rulesWithId);
+      logger.debug(`[PayScript] Successfully registered DSL for process: ${processId}`);
     } else {
-        logger.warn(`[PayScript] Parsed DSL is not an object for process: ${processId}`);
+      logger.warn(`[PayScript] Parsed DSL is not an object for process: ${processId}`);
     }
   } catch (error) {
     logger.error(`[PayScript] Failed to parse DSL for process ${processId}:`, error);

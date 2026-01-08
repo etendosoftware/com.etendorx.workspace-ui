@@ -21,11 +21,7 @@ import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { getProcessCallouts } from "./processCallouts";
 import type { GridSelectionStructure as ModalGridSelectionStructure } from "../ProcessDefinitionModal";
 import { logger } from "@/utils/logger";
-import {
-  getDbColumnName,
-  mapFormValuesToContext,
-  mapUpdatesToFormFields,
-} from "../utils/processParameterMapping";
+import { getDbColumnName, mapFormValuesToContext, mapUpdatesToFormFields } from "../utils/processParameterMapping";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 
 /**
@@ -99,27 +95,27 @@ export function useProcessCallouts({
         // Apply updates to the form or grid
         for (const [field, value] of Object.entries(mappedUpdates)) {
           // Find the parameter that corresponds to this field name
-          const parameter = parameters && Object.values(parameters).find(p => p.name === field);
-          
+          const parameter = parameters && Object.values(parameters).find((p) => p.name === field);
+
           // Check if this field corresponds to a grid parameter
           const isGridParameter = parameter && parameter.reference === FIELD_REFERENCE_CODES.WINDOW;
 
           // We also need to handle 'order_invoice' explicitly if mapping missing or specific key usage
           // The most robust way is to check if we have an onGridUpdate handler AND if the value looks like grid data (array)
           // EXCEPTION: _validations is an array but it is form metadata, not a grid
-          const isArrayData = Array.isArray(value) && field !== '_validations';
-          
+          const isArrayData = Array.isArray(value) && field !== "_validations";
+
           if (onGridUpdate && (isGridParameter || isArrayData)) {
-              // Use dBColumnName for grid updates if available (WindowReferenceGrid uses dBColumnName as key)
-              // fallback to field name if not found
-              const gridKey = parameter?.dBColumnName || field;
-              onGridUpdate(gridKey, value);
+            // Use dBColumnName for grid updates if available (WindowReferenceGrid uses dBColumnName as key)
+            // fallback to field name if not found
+            const gridKey = parameter?.dBColumnName || field;
+            onGridUpdate(gridKey, value);
           } else {
-              form.setValue(field, value, {
-                shouldValidate: true,
-                shouldDirty: true,
-                shouldTouch: true,
-              });
+            form.setValue(field, value, {
+              shouldValidate: true,
+              shouldDirty: true,
+              shouldTouch: true,
+            });
           }
         }
 

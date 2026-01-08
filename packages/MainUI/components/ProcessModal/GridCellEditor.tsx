@@ -241,7 +241,7 @@ const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validation
 
   // Generate unique IDs for accessibility
   const fieldId = `grid-cell-${row.id}-${col.columnName}`;
-  
+
   // Validation state
   const hasError = !!validationError;
   const rawErrorMessage = validationError?.message;
@@ -273,15 +273,16 @@ const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validation
  * Memoized version of GridCellEditor
  * Only re-renders when cell value or row/column identity changes
  * Context values (effectiveRecordValues, parameters) are handled via refs internally
- * 
+ *
  * We also compare validationError to trigger re-render on new errors
  */
 export const GridCellEditor = memo(GridCellEditorBase, (prevProps, nextProps) => {
   return (
+    // Important! Re-render if validation status changes
     prevProps.cell.getValue() === nextProps.cell.getValue() &&
     prevProps.row.id === nextProps.row.id &&
     prevProps.col.columnName === nextProps.col.columnName &&
-    prevProps.validationError === nextProps.validationError // Important! Re-render if validation status changes
+    prevProps.validationError === nextProps.validationError
   );
 });
 

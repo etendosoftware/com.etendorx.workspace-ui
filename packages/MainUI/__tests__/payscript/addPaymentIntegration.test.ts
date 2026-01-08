@@ -1,9 +1,10 @@
+import * as fs from "fs";
+import * as path from "path";
 import { describe, expect, it, beforeAll } from "@jest/globals";
 import {
   genericPayScriptCallout,
-  registerPayScriptRules,
+  registerPayScriptDSL,
 } from "../../components/ProcessModal/callouts/genericPayScriptCallout";
-import { AddPaymentRulesGeneric } from "../../payscript/rules/AddPaymentRulesGeneric";
 import type { GridSelectionStructure } from "../../components/ProcessModal/callouts/processCallouts";
 
 const TEST_PROCESS_ID = "800166"; // Add Payment process ID
@@ -15,8 +16,13 @@ describe("Add Payment PayScript Integration", () => {
   } as any;
 
   beforeAll(() => {
-    // Register rules before tests
-    registerPayScriptRules(TEST_PROCESS_ID, AddPaymentRulesGeneric);
+    // Read the Clean JS Rules file as a string (simulating DB retrieval)
+    // We navigate from __tests__/payscript/ to payscript/rules/
+    const rulesPath = path.join(__dirname, "../../payscript/rules/AddPaymentRulesClean.js");
+    const dslContent = fs.readFileSync(rulesPath, "utf-8");
+
+    // Register using the DSL parser
+    registerPayScriptDSL(TEST_PROCESS_ID, dslContent);
   });
 
   describe("genericPayScriptCallout with AddPaymentRules", () => {
@@ -27,7 +33,7 @@ describe("Add Payment PayScript Integration", () => {
       };
 
       const gridSelection: GridSelectionStructure = {
-        invoices: {
+        order_invoice: {
           _selection: [
             { id: "1", outstandingAmount: 500, amount: 500 },
             { id: "2", outstandingAmount: 300, amount: 300 },
@@ -59,7 +65,7 @@ describe("Add Payment PayScript Integration", () => {
       };
 
       const gridSelection: GridSelectionStructure = {
-        invoices: {
+        order_invoice: {
           _selection: [] as any[],
           _allRows: [],
         },
@@ -82,7 +88,7 @@ describe("Add Payment PayScript Integration", () => {
       };
 
       const gridSelection: GridSelectionStructure = {
-        invoices: {
+        order_invoice: {
           _selection: [
             { id: "1", outstandingAmount: 600, amount: 600 },
             { id: "2", outstandingAmount: 300, amount: 300 },
@@ -114,7 +120,7 @@ describe("Add Payment PayScript Integration", () => {
       };
 
       const gridSelection: GridSelectionStructure = {
-        invoices: {
+        order_invoice: {
           _selection: [{ id: "1", outstandingAmount: 500, amount: 500 }] as any[],
           _allRows: [],
         },
@@ -137,7 +143,7 @@ describe("Add Payment PayScript Integration", () => {
       };
 
       const gridSelection: GridSelectionStructure = {
-        invoices: {
+        order_invoice: {
           _selection: [{ id: "1", outstandingAmount: 500, amount: 500 }] as any[],
           _allRows: [],
         },
@@ -161,7 +167,7 @@ describe("Add Payment PayScript Integration", () => {
       };
 
       const gridSelection: GridSelectionStructure = {
-        invoices: {
+        order_invoice: {
           _selection: [{ id: "1", outstandingAmount: 500, amount: 500 }] as any[],
           _allRows: [],
         },
@@ -186,7 +192,7 @@ describe("Add Payment PayScript Integration", () => {
       };
 
       const gridSelection: GridSelectionStructure = {
-        invoices: {
+        order_invoice: {
           _selection: [] as any[],
           _allRows: [],
         },
@@ -209,7 +215,7 @@ describe("Add Payment PayScript Integration", () => {
       };
 
       const gridSelection: GridSelectionStructure = {
-        invoices: {
+        order_invoice: {
           _selection: [{ id: "1", outstandingAmount: 500, amount: 500 }] as any[],
           _allRows: [],
         },
@@ -247,7 +253,7 @@ describe("Add Payment PayScript Integration", () => {
       };
 
       const gridSelection: GridSelectionStructure = {
-        invoices: {
+        order_invoice: {
           _selection: [{ id: "1", outstandingAmount: 500, amount: 500 }] as any[],
           _allRows: [],
         },
@@ -274,7 +280,7 @@ describe("Add Payment PayScript Integration", () => {
       };
 
       const gridSelection: GridSelectionStructure = {
-        invoices: {
+        order_invoice: {
           _selection: [
             { id: "1", outstandingAmount: 500, amount: 500 },
             { id: "2", outstandingAmount: 300, amount: 300 },
