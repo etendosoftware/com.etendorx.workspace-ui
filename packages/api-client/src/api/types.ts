@@ -796,7 +796,13 @@ export type ProcessParameter = {
   readOnlyLogicExpression?: string;
   reference: string;
   window?: WindowMetadata; // This type is for process that have defined a window reference
+  selector?: SelectorInfo;
 } & Record<string, string>;
+
+export interface SelectorInfo extends Record<string, unknown> {
+  datasourceName?: string;
+  response?: Array<{ id: string; name: string; [key: string]: unknown }>;
+}
 
 export type ProcessParameters = Record<string, ProcessParameter>;
 

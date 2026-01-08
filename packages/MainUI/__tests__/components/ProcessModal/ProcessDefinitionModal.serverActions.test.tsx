@@ -20,7 +20,31 @@ jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
 // Mock server action
 const mockExecuteProcess = jest.fn();
 jest.mock("@/app/actions/process", () => ({
-  executeProcess: (...args: any[]) => (mockExecuteProcess as any)(...args),
+  executeProcess: (...args: unknown[]) => mockExecuteProcess(...args),
+}));
+
+// Mock the revalidate server action (next/cache is not available in Jest)
+jest.mock("@/app/actions/revalidate", () => ({
+  revalidateDopoProcess: jest.fn().mockResolvedValue({ success: true }),
+}));
+
+// Mock executeStringFunction
+jest.mock("@/utils/functions", () => ({
+  executeStringFunction: jest.fn().mockResolvedValue({
+    responseActions: [
+      {
+        showMsgInProcessView: {
+          msgType: "success",
+          msgText: "Process executed successfully",
+        },
+      },
+    ],
+  }),
+}));
+
+// Mock useProcessCallouts hook
+jest.mock("@/components/ProcessModal/callouts/useProcessCallouts", () => ({
+  useProcessCallouts: jest.fn(),
 }));
 
 jest.mock("@/app/actions/revalidate", () => ({
@@ -31,6 +55,11 @@ jest.mock("@/app/actions/revalidate", () => ({
 jest.mock("@/utils/processes/definition/constants", () => ({
   PROCESS_DEFINITION_DATA: {},
   WINDOW_SPECIFIC_KEYS: {},
+  PROCESS_TYPES: {
+    PROCESS_DEFINITION: "process-definition",
+    REPORT_AND_PROCESS: "report-and-process",
+  },
+  BUTTON_LIST_REFERENCE_ID: "FF80818132F94B500132F9575619000A",
 }));
 
 // Minimal mocks for heavy dependencies
@@ -89,7 +118,7 @@ jest.mock("@/components/ProcessModal/WindowReferenceGrid", () => ({
 
 jest.mock("@/components/Modal", () => ({
   __esModule: true,
-  default: ({ children }: any) => <div>{children}</div>,
+  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 jest.mock("@/components/loading", () => ({
@@ -118,6 +147,18 @@ jest.mock("@workspaceui/componentlibrary/src/components/Button/Button", () => ({
       {children}
     </button>
   ),
+}));
+
+jest.mock("react-hook-form", () => ({
+  FormProvider: ({ children }: { children: React.ReactNode }) => children,
+  useForm: () => ({
+    getValues: () => ({}),
+    setValue: jest.fn(),
+    watch: () => ({}),
+    control: {},
+    reset: jest.fn(),
+  }),
+  useFormState: (_: { control?: unknown } = {}) => ({ isValid: true, isSubmitting: false }),
 }));
 
 describe("ProcessDefinitionModal - Server Actions path", () => {
