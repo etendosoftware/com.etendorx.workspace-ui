@@ -94,7 +94,7 @@ const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMeta
   });
 };
 
-const isVisibleButton = (button: ToolbarButtonMetadata, isFormView: boolean, isTreeNodeView?: boolean) => {
+const isVisibleButton = (button: ToolbarButtonMetadata, isFormView: boolean, isTreeNodeView?: boolean, tab?: Tab) => {
   if (!button.active) return false;
 
   const isFindButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FIND;
@@ -102,23 +102,26 @@ const isVisibleButton = (button: ToolbarButtonMetadata, isFormView: boolean, isT
   const isCreateButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW;
   const isFilterButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER;
   const isToggleTreeView = !isTreeNodeView && button.action === TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW;
+  const isPrintButtonWithoutProcess = button.action === TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD && !tab?.process;
   return (
     !isFindButtonInFormView &&
     !isSaveButtonInNonFormView &&
     !isCreateButtonInFormView &&
     !isFilterButtonInFormView &&
-    !isToggleTreeView
+    !isToggleTreeView &&
+    !isPrintButtonWithoutProcess
   );
 };
 
 export const organizeButtonsBySection = (
   buttons: ToolbarButtonMetadata[],
   isFormView: boolean,
-  isTreeNodeView?: boolean
+  isTreeNodeView?: boolean,
+  tab?: Tab
 ): OrganizedSections => {
   const sections: OrganizedSections = { left: [], center: [], right: [] };
 
-  const visibleButtons = buttons.filter((button) => isVisibleButton(button, isFormView, isTreeNodeView));
+  const visibleButtons = buttons.filter((button) => isVisibleButton(button, isFormView, isTreeNodeView, tab));
 
   for (const button of visibleButtons) {
     if (button.section && sections[button.section]) {
@@ -408,7 +411,7 @@ export const getToolbarSections = ({
   centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   rightSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
 } => {
-  const organizedButtons = organizeButtonsBySection(buttons, isFormView, isTreeNodeView);
+  const organizedButtons = organizeButtonsBySection(buttons, isFormView, isTreeNodeView, tab);
 
   // Shared configuration object to avoid parameter repetition
   const buttonConfig: ButtonConfig = {
