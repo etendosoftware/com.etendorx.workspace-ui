@@ -1,4 +1,4 @@
-import { calculateAddPayment, GridSelectionStructure } from "./processCallouts";
+import { calculateAddPayment, type GridSelectionStructure } from "./processCallouts";
 
 describe("calculateAddPayment", () => {
   const mockForm = {

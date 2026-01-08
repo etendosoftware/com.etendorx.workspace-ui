@@ -19,7 +19,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useFormValidation } from "@/hooks/useFormValidation";
-import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { useTabContext } from "@/contexts/tab";
 import { globalCalloutManager } from "@/services/callouts";
 import { logger } from "@/utils/logger";
