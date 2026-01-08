@@ -17,7 +17,6 @@
 
 import { Client, type Interceptor } from "./client";
 import type { DatasourceParams } from "./types";
-import { isWrappedWithAt } from "../utils/datasource/utils";
 
 export class Datasource {
   private static instance: Datasource;

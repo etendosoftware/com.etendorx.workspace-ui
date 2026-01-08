@@ -12,6 +12,8 @@
  * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
  * All Rights Reserved.
  * Contributor(s): Futit Services S.L.
+ *
+ * Note: Unused variables (registerRefresh, selectedRecord, iframeUrl) removed in ETP-3000
  *************************************************************************
  */
 
