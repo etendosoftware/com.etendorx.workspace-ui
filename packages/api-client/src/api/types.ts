@@ -312,6 +312,8 @@ export interface Menu {
   isSearchResult?: boolean;
   path?: string[];
   fullPath?: string;
+  processUrl?: string;
+  isModalProcess?: boolean;
 }
 
 export enum Action {
