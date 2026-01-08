@@ -52,6 +52,7 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
     if (!tab || !recordId || recordId === NEW_RECORD_ID) {
       setRecord({});
       setLoading(false);
+      lastFetchParamsRef.current = null; // Prepare for next valid fetch
       return;
     }
 

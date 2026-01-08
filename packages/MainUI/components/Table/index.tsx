@@ -170,14 +170,10 @@ const createFieldWithData = (
 };
 
 /**
- * Props for EditableCellContent component
+ * Shared props for cell editing context
+ * Contains common editing-related dependencies used across cell components
  */
-interface EditableCellContentProps {
-  rowId: string;
-  fieldKey: string;
-  columnName: string;
-  editingData: EditingRowData;
-  fieldMapping: { fieldType: FieldType; field: Field };
+interface CellEditingContextProps {
   initialFocusCell: { rowId: string; columnName: string } | null;
   session: Record<string, unknown> | undefined;
   editingRowUtils: EditingRowStateUtils;
@@ -197,6 +193,18 @@ interface EditableCellContentProps {
     rowValues?: Record<string, unknown>
   ) => Promise<RefListField[]>;
   isLoadingTableDirOptions: (fieldName: string) => boolean;
+}
+
+/**
+ * Props for EditableCellContent component
+ * Extends CellEditingContextProps with cell-specific props
+ */
+interface EditableCellContentProps extends CellEditingContextProps {
+  rowId: string;
+  fieldKey: string;
+  columnName: string;
+  editingData: EditingRowData;
+  fieldMapping: { fieldType: FieldType; field: Field };
 }
 
 /**
@@ -324,6 +332,98 @@ const ActionsColumnCell: React.FC<ActionsColumnCellProps> = ({
       data-testid="ActionsColumn__8ca888"
     />
   );
+};
+
+/**
+ * Props for DataColumnCell component
+ * Handles both editing and display modes for data columns
+ * Extends CellEditingContextProps with column-specific props
+ */
+interface DataColumnCellProps extends CellEditingContextProps {
+  renderedCellValue: React.ReactNode;
+  row: MRT_Row<EntityData>;
+  table: MRT_TableInstance<EntityData>;
+  col: Column;
+  originalCell?: (props: {
+    renderedCellValue: React.ReactNode;
+    row: MRT_Row<EntityData>;
+    table: MRT_TableInstance<EntityData>;
+  }) => React.ReactNode;
+  columnFieldMappings: Map<string, { fieldType: FieldType; field: Field }>;
+}
+
+/**
+ * Data column cell component
+ * Extracted from inline Cell definition to prevent component remounts
+ * Handles both editing mode (with EditableCellContent) and display mode
+ */
+const DataColumnCell: React.FC<DataColumnCellProps> = ({
+  renderedCellValue,
+  row,
+  table,
+  col,
+  originalCell,
+  editingRowUtils,
+  columnFieldMappings,
+  initialFocusCell,
+  session,
+  keyboardNavigationManager,
+  handleCellValueChange,
+  validateFieldOnBlur,
+  setInitialFocusCell,
+  loadTableDirOptions,
+  isLoadingTableDirOptions,
+}) => {
+  const rowId = String(row.original.id);
+  const isEditing = editingRowUtils.isRowEditing(rowId);
+  const fieldKey = col.columnName || col.name;
+
+  // If this row is being edited, render the appropriate cell editor
+  if (isEditing && col.name !== COLUMN_NAMES.ACTIONS) {
+    const editingData = editingRowUtils.getEditingRowData(rowId);
+    if (!editingData) return <>{renderedCellValue}</>;
+
+    const fieldMapping = columnFieldMappings.get(col.name);
+    if (!fieldMapping) return <>{renderedCellValue}</>;
+
+    return (
+      <EditableCellContent
+        rowId={rowId}
+        fieldKey={fieldKey}
+        columnName={col.name}
+        editingData={editingData}
+        fieldMapping={fieldMapping}
+        initialFocusCell={initialFocusCell}
+        session={session}
+        editingRowUtils={editingRowUtils}
+        keyboardNavigationManager={keyboardNavigationManager}
+        handleCellValueChange={handleCellValueChange}
+        validateFieldOnBlur={validateFieldOnBlur}
+        setInitialFocusCell={setInitialFocusCell}
+        loadTableDirOptions={loadTableDirOptions}
+        isLoadingTableDirOptions={isLoadingTableDirOptions}
+        data-testid="EditableCellContent__8ca888"
+      />
+    );
+  }
+
+  // For non-editing cells, check if we should show identifier instead of UUID
+  const identifierKey = `${fieldKey}$_identifier`;
+  const identifier = row.original[identifierKey];
+
+  if (identifier && typeof identifier === "string" && typeof renderedCellValue === "string") {
+    if (originalCell && typeof originalCell === "function") {
+      return <>{originalCell({ renderedCellValue: identifier, row, table })}</>;
+    }
+    return <div className="table-cell-content">{identifier}</div>;
+  }
+
+  // Preserve original rendering logic and formatting
+  if (originalCell && typeof originalCell === "function") {
+    return <>{originalCell({ renderedCellValue, row, table })}</>;
+  }
+
+  return <div className="table-cell-content">{renderedCellValue}</div>;
 };
 
 const getRowId = (row: EntityData) => String(row.id);
@@ -481,6 +581,8 @@ const columnToFieldForEditor = (column: Column): Field => {
     processDefinition: undefined,
     processAction: undefined,
     etmetaCustomjs: column.customJs || null,
+    isActive: true,
+    gridDisplayLogic: "",
   } as Field;
 
   // Limit cache size to prevent memory leaks
@@ -2009,6 +2111,100 @@ const DynamicTable = ({
     []
   );
 
+  // Stable Cell renderer for actions column - extracted to prevent component remounts
+  const renderActionsColumnCell = useCallback(
+    ({ row }: { row: MRT_Row<EntityData> }) => (
+      <ActionsColumnCell
+        row={row}
+        editingRowUtils={editingRowUtils}
+        handleEditRow={handleEditRow}
+        handleSaveRow={handleSaveRow}
+        handleCancelRow={handleCancelRow}
+        setRecordId={setRecordId}
+        data-testid="ActionsColumnCell__8ca888"
+      />
+    ),
+    [editingRowUtils, handleEditRow, handleSaveRow, handleCancelRow, setRecordId]
+  );
+
+  // Stable Cell renderer for data columns - reads column metadata from column object
+  // This avoids creating new inline functions in the columns useMemo
+  const renderDataColumnCell = useCallback(
+    ({
+      renderedCellValue,
+      row,
+      table,
+      column,
+    }: {
+      renderedCellValue: React.ReactNode;
+      row: MRT_Row<EntityData>;
+      table: MRT_TableInstance<EntityData>;
+      column: MRT_Column<EntityData>;
+    }) => {
+      // Access column metadata stored during column mapping
+      // Cast through unknown first to satisfy TypeScript's overlap check
+      const columnDef = column.columnDef as unknown as Column & {
+        _originalCell?: (props: {
+          renderedCellValue: React.ReactNode;
+          row: MRT_Row<EntityData>;
+          table: MRT_TableInstance<EntityData>;
+        }) => React.ReactNode;
+        _columnRef: Column;
+        _shouldUseTreeMode?: boolean;
+      };
+      const col = columnDef._columnRef;
+      const originalCell = columnDef._originalCell;
+      const shouldUseTreeMode = columnDef._shouldUseTreeMode ?? false;
+
+      // Create the base cell content using DataColumnCell
+      const cellContent = (
+        <DataColumnCell
+          renderedCellValue={renderedCellValue}
+          row={row}
+          table={table}
+          col={col}
+          originalCell={originalCell}
+          editingRowUtils={editingRowUtils}
+          columnFieldMappings={columnFieldMappings}
+          initialFocusCell={initialFocusCell}
+          session={session}
+          keyboardNavigationManager={keyboardNavigationManager}
+          handleCellValueChange={handleCellValueChange}
+          validateFieldOnBlur={validateFieldOnBlur}
+          setInitialFocusCell={setInitialFocusCell}
+          loadTableDirOptions={loadTableDirOptions}
+          isLoadingTableDirOptions={isLoadingTableDirOptions}
+          data-testid="DataColumnCell__8ca888"
+        />
+      );
+
+      // For the first data column with tree mode, wrap content with tree view controls
+      if (shouldUseTreeMode) {
+        return renderFirstColumnCell({
+          renderedCellValue: cellContent,
+          row,
+          table,
+          originalCell: undefined, // Already handled by DataColumnCell
+          shouldUseTreeMode,
+        });
+      }
+
+      return cellContent;
+    },
+    [
+      editingRowUtils,
+      columnFieldMappings,
+      initialFocusCell,
+      session,
+      keyboardNavigationManager,
+      handleCellValueChange,
+      validateFieldOnBlur,
+      loadTableDirOptions,
+      isLoadingTableDirOptions,
+      renderFirstColumnCell,
+    ]
+  );
+
   // Use optimistic records if available, otherwise use display records
   // Merge optimistic updates with base records while preserving sort order and table features
   const effectiveRecords = useMemo(() => {
@@ -2027,69 +2223,21 @@ const DynamicTable = ({
 
     const modifiedColumns = baseColumns.map((col: Column) => {
       const column = { ...col };
-      const originalCell = column.Cell;
+      const originalCell = column.Cell as
+        | ((props: {
+            renderedCellValue: React.ReactNode;
+            row: MRT_Row<EntityData>;
+            table: MRT_TableInstance<EntityData>;
+          }) => React.ReactNode)
+        | undefined;
 
-      // Override cell rendering to support inline editing while preserving existing formatting
-      column.Cell = ({
-        renderedCellValue,
-        row,
-        table,
-      }: {
-        renderedCellValue: React.ReactNode;
-        row: MRT_Row<EntityData>;
-        table: MRT_TableInstance<EntityData>;
-      }) => {
-        const rowId = String(row.original.id);
-        const isEditing = editingRowUtils.isRowEditing(rowId);
-        const fieldKey = col.columnName || col.name;
+      // Store metadata on the column for the stable Cell renderer to access
+      // This avoids creating new inline functions on each useMemo recalculation
+      (column as Column & { _originalCell?: typeof originalCell; _columnRef: Column })._originalCell = originalCell;
+      (column as Column & { _columnRef: Column })._columnRef = col;
 
-        // If this row is being edited, render the appropriate cell editor
-        if (isEditing && col.name !== COLUMN_NAMES.ACTIONS) {
-          const editingData = editingRowUtils.getEditingRowData(rowId);
-          if (!editingData) return renderedCellValue;
-
-          const fieldMapping = columnFieldMappings.get(col.name);
-          if (!fieldMapping) return renderedCellValue;
-
-          return (
-            <EditableCellContent
-              rowId={rowId}
-              fieldKey={fieldKey}
-              columnName={col.name}
-              editingData={editingData}
-              fieldMapping={fieldMapping}
-              initialFocusCell={initialFocusCell}
-              session={session}
-              editingRowUtils={editingRowUtils}
-              keyboardNavigationManager={keyboardNavigationManager}
-              handleCellValueChange={handleCellValueChange}
-              validateFieldOnBlur={validateFieldOnBlur}
-              setInitialFocusCell={setInitialFocusCell}
-              loadTableDirOptions={loadTableDirOptions}
-              isLoadingTableDirOptions={isLoadingTableDirOptions}
-              data-testid="EditableCellContent__8ca888"
-            />
-          );
-        }
-
-        // For non-editing cells, check if we should show identifier instead of UUID
-        const identifierKey = `${fieldKey}$_identifier`;
-        const identifier = row.original[identifierKey];
-
-        if (identifier && typeof identifier === "string" && typeof renderedCellValue === "string") {
-          if (originalCell && typeof originalCell === "function") {
-            return originalCell({ renderedCellValue: identifier, row, table });
-          }
-          return <div className="table-cell-content">{identifier}</div>;
-        }
-
-        // Preserve original rendering logic and formatting
-        if (originalCell && typeof originalCell === "function") {
-          return originalCell({ renderedCellValue, row, table });
-        }
-
-        return <div className="table-cell-content">{renderedCellValue}</div>;
-      };
+      // Use stable callback reference instead of inline function
+      column.Cell = renderDataColumnCell;
 
       return column;
     });
@@ -2113,17 +2261,7 @@ const DynamicTable = ({
       enablePinning: false, // Disable user pinning control
       columnDefType: "display" as const,
       referencedTabId: null,
-      Cell: ({ row }: { row: MRT_Row<EntityData> }) => (
-        <ActionsColumnCell
-          row={row}
-          editingRowUtils={editingRowUtils}
-          handleEditRow={handleEditRow}
-          handleSaveRow={handleSaveRow}
-          handleCancelRow={handleCancelRow}
-          setRecordId={setRecordId}
-          data-testid="ActionsColumnCell__8ca888"
-        />
-      ),
+      Cell: renderActionsColumnCell,
     };
 
     // Insert actions column at the very beginning
@@ -2133,7 +2271,6 @@ const DynamicTable = ({
     // This is index 1 after inserting actions at index 0
     const firstDataColumnIndex = 1;
     const firstDataColumn = { ...modifiedColumns[firstDataColumnIndex] };
-    const originalFirstCell = firstDataColumn.Cell;
 
     if (shouldUseTreeMode) {
       firstDataColumn.size = 300;
@@ -2141,37 +2278,13 @@ const DynamicTable = ({
       firstDataColumn.maxSize = 500;
     }
 
-    firstDataColumn.Cell = ({
-      renderedCellValue,
-      row,
-      table,
-    }: { renderedCellValue: React.ReactNode; row: MRT_Row<EntityData>; table: MRT_TableInstance<EntityData> }) =>
-      renderFirstColumnCell({ renderedCellValue, row, table, originalCell: originalFirstCell, shouldUseTreeMode });
+    // Store tree mode flag on the column for the stable renderer to access
+    (firstDataColumn as Column & { _shouldUseTreeMode: boolean })._shouldUseTreeMode = shouldUseTreeMode;
 
     modifiedColumns[firstDataColumnIndex] = firstDataColumn;
 
     return modifiedColumns;
-  }, [
-    baseColumns,
-    shouldUseTreeMode,
-    editingRowUtils,
-    handleEditRow,
-    handleSaveRow,
-    handleCancelRow,
-    setRecordId,
-    columnFieldMappings,
-    initialFocusCell,
-    session,
-    keyboardNavigationManager,
-    handleCellValueChange,
-    validateFieldOnBlur,
-    loadTableDirOptions,
-    isLoadingTableDirOptions,
-    renderFirstColumnCell,
-    summaryState,
-    summaryResult,
-    isSummaryLoading,
-  ]);
+  }, [baseColumns, shouldUseTreeMode, renderActionsColumnCell, renderDataColumnCell]);
 
   // Helper function to check if a row is being edited
 

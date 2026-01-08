@@ -253,6 +253,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       setLoginErrorText,
       loginErrorDescription,
       setLoginErrorDescription,
+      getCsrfToken: () => (session as any).csrfToken || localStorage.getItem("csrfToken") || "",
     }),
     [
       login,

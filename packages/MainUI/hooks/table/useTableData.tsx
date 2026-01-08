@@ -250,11 +250,8 @@ export const useTableData = ({
           columnId,
           searchQuery,
           tabId: tab.id,
-          entityName: tab.entityName,
-          fetchFilterOptions: async (colId, query) => {
-            await loadFilterOptions(colId, query);
-            return [];
-          },
+          entityName: treeEntity,
+          fetchFilterOptions,
           setFilterOptions,
         });
       }
@@ -266,7 +263,7 @@ export const useTableData = ({
 
       return [];
     },
-    [tab.fields, tab.id, tab.entityName, loadFilterOptions, setFilterOptions]
+    [rawColumns, fetchFilterOptions, setFilterOptions, loadFilterOptions, tab.id, treeEntity]
   );
 
   const handleLoadMoreFilterOptions = useCallback(

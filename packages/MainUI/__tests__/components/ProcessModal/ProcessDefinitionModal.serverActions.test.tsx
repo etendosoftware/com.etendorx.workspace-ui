@@ -1,11 +1,30 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import ProcessDefinitionModal from "@/components/ProcessModal/ProcessDefinitionModal";
+import { revalidateDopoProcess } from "@/app/actions/revalidate";
+
+// Mock global fetch
+global.fetch = jest.fn().mockResolvedValue({
+  ok: true,
+  json: () => Promise.resolve({ success: true, data: {} }),
+  text: () => Promise.resolve(""),
+  headers: new Headers(),
+} as Response);
+
+jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
+  Metadata: {
+    getProcess: jest.fn().mockResolvedValue({ id: "P123" }),
+  },
+}));
 
 // Mock server action
 const mockExecuteProcess = jest.fn();
 jest.mock("@/app/actions/process", () => ({
   executeProcess: (...args: any[]) => (mockExecuteProcess as any)(...args),
+}));
+
+jest.mock("@/app/actions/revalidate", () => ({
+  revalidateDopoProcess: jest.fn(),
 }));
 
 // Mock the process definition constants
@@ -36,7 +55,7 @@ jest.mock("@/hooks/useSelected", () => ({
 }));
 
 jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: () => ({ session: {}, token: "mock-token" }),
+  useUserContext: () => ({ session: {}, token: "mock-token", getCsrfToken: () => "mock-csrf-token" }),
 }));
 
 jest.mock("@/hooks/datasource/useProcessDatasourceConfig", () => ({
@@ -103,7 +122,7 @@ jest.mock("@workspaceui/componentlibrary/src/components/Button/Button", () => ({
 
 describe("ProcessDefinitionModal - Server Actions path", () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    jest.clearAllMocks();
   });
 
   const button = {
@@ -129,5 +148,44 @@ describe("ProcessDefinitionModal - Server Actions path", () => {
 
     // Verify loading indicator is present (synchronously)
     expect(screen.getByTestId("loading")).toBeInTheDocument();
+  });
+
+  it("executes process via fetch and revalidates on success", async () => {
+    render(<ProcessDefinitionModal open={true} onClose={jest.fn()} button={button} />);
+
+    // Wait for the button to be available (loading to finish)
+    // Our mocks return loading: false for hooks, so it should be immediate,
+    // but the component has some internal state loading.
+    // The "Execute" button has testid="ExecuteButton__761503"
+
+    // We need to wait for internal loading state to settle if any
+    const executeBtn = await screen.findByTestId("ExecuteButton__761503");
+    expect(executeBtn).toBeInTheDocument();
+
+    // Ensure it's not disabled (wait if needed)
+    await waitFor(() => expect(executeBtn).not.toBeDisabled());
+
+    await act(async () => {
+      fireEvent.click(executeBtn);
+    });
+
+    // Check if fetch was called with correct URL and headers
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/erp/org.openbravo.client.kernel"),
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({
+            Authorization: "Bearer mock-token",
+            "X-CSRF-Token": "mock-csrf-token",
+          }),
+        })
+      );
+    });
+
+    // Check if revalidate action was called
+    await waitFor(() => {
+      expect(revalidateDopoProcess).toHaveBeenCalled();
+    });
   });
 });
