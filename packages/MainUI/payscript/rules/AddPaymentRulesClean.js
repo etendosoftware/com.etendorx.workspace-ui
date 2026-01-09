@@ -40,7 +40,6 @@ export const AddPaymentRulesGeneric = (() => {
     compute: (_context, util) => {
       const actualPayment = util.valNum("actual_payment", "actualPayment", "ActualPayment");
       const invoices = util.getGridItems(["amount", "outstandingAmount"], ["order_invoice"]);
-      const isSOTrx = resolveIsSOTrx(util);
 
       const amountGLItemsValue = util.valNum("amount_gl_items", "amountGlItems", "AmountGlItems");
       const usedCreditValue = util.valNum("used_credit", "usedCredit", "UsedCredit");

@@ -175,8 +175,11 @@ const ReadOnlyCellRenderer = ({ renderedCellValue }: any) => (
 );
 
 // Stable renderer for interactive cells
-const InteractiveGridCellRenderer = ({ row, cell, column, dbColumnName }: any) => {
+const InteractiveGridCellRenderer = ({ row, cell, column }: any) => {
   const isSelected = row.getIsSelected();
+  // Get dbColumnName from column definition (passed via custom property)
+  const dbColumnName = column.columnDef?.dbColumnName;
+
   // glItems are always local/editable
   const isAlwaysEditable = dbColumnName === "glitem";
 
@@ -194,6 +197,41 @@ const InteractiveGridCellRenderer = ({ row, cell, column, dbColumnName }: any) =
   return cell.getValue();
 };
 
+const updateLocalRecordFromSelection = (record: EntityData, selectionItem: any): EntityData | null => {
+  let updated = false;
+  let newRecord = { ...record };
+
+  if (selectionItem.amount !== undefined && selectionItem.amount !== newRecord.amount) {
+    newRecord.amount = selectionItem.amount;
+    updated = true;
+  }
+  if (selectionItem.paymentAmount !== undefined && selectionItem.paymentAmount !== newRecord.paymentAmount) {
+    newRecord.paymentAmount = selectionItem.paymentAmount;
+    updated = true;
+  }
+
+  if (updated) {
+    return { ...newRecord, ...selectionItem };
+  }
+  return null;
+};
+
+const resetLocalRecordFields = (record: EntityData): EntityData | null => {
+  let changed = false;
+  let newRecord = { ...record };
+
+  if (newRecord.amount !== undefined && newRecord.amount !== 0) {
+    newRecord.amount = 0;
+    changed = true;
+  }
+  if (newRecord.paymentAmount !== undefined && newRecord.paymentAmount !== 0) {
+    newRecord.paymentAmount = 0;
+    changed = true;
+  }
+
+  return changed ? newRecord : null;
+};
+
 // Logic extracted to reduce cognitive complexity of useEffect
 const syncGridSelectionToLocalRecords = (
   externalSelection: any[],
@@ -205,40 +243,19 @@ const syncGridSelectionToLocalRecords = (
   const selectionMap = new Map(externalSelection.map((s: any) => [String(s.id), s]));
 
   for (let i = 0; i < newRecords.length; i++) {
-    let record = newRecords[i];
-    const recordId = String(record.id);
-    const update = selectionMap.get(recordId);
+    const record = newRecords[i];
+    const selectionItem = selectionMap.get(String(record.id));
 
-    if (update) {
-      // CASE 1: Item is in selection (and potentially updated by engine)
-      let updated = false;
-      if (update.amount !== undefined && update.amount !== record.amount) {
-        record = { ...record, amount: update.amount };
-        updated = true;
-      }
-      if (update.paymentAmount !== undefined && update.paymentAmount !== record.paymentAmount) {
-        record = { ...record, paymentAmount: update.paymentAmount };
-        updated = true;
-      }
-      // Merge other potential fields
+    if (selectionItem) {
+      const updated = updateLocalRecordFromSelection(record, selectionItem);
       if (updated) {
-        newRecords[i] = { ...record, ...update }; // merge rest
+        newRecords[i] = updated;
         hasChanges = true;
       }
     } else {
-      // CASE 2: Item is NOT in selection.
-      // Reset amount AND paymentAmount to 0
-      let changed = false;
-      if (record.amount !== undefined && record.amount !== 0) {
-        record = { ...record, amount: 0 };
-        changed = true;
-      }
-      if (record.paymentAmount !== undefined && record.paymentAmount !== 0) {
-        record = { ...record, paymentAmount: 0 };
-        changed = true;
-      }
-      if (changed) {
-        newRecords[i] = record;
+      const reset = resetLocalRecordFields(record);
+      if (reset) {
+        newRecords[i] = reset;
         hasChanges = true;
       }
     }
@@ -869,18 +886,11 @@ const WindowReferenceGrid = ({
         // This matches user request: "puts you in edit mode immediately"
         // Use stable static component for editing
         Edit: StableGridCellEditorRenderer,
+        // Pass context via column definition
+        dbColumnName: parameter.dBColumnName,
         // For display (Cell), only show editor if row is selected OR for specific grids like glItem
         // Otherwise use default display
-        // biome-ignore lint/suspicious/noExplicitAny: MRT Cell context is complex to type perfectly here
-        Cell: ({ row, cell, column }: { row: any; cell: any; column: any }) => (
-          <InteractiveGridCellRenderer
-            row={row}
-            cell={cell}
-            column={column}
-            dbColumnName={parameter.dBColumnName}
-            data-testid="InteractiveGridCellRenderer__ce8544"
-          />
-        ),
+        Cell: InteractiveGridCellRenderer,
       };
     });
 

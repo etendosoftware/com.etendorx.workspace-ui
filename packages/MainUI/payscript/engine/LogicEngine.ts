@@ -102,6 +102,24 @@ const processGridRow = (row: any, fieldsToParse: string[]) => {
   return cleanRow;
 };
 
+// Helper for distributeAmount to process a single item
+const distributeToItem = (
+  item: any,
+  remaining: BigNumber,
+  amountField: string,
+  outstandingField: string
+): BigNumber => {
+  const currentAmt = parseNum(item[amountField]);
+  if (currentAmt !== 0) return remaining;
+
+  const outstanding = parseNum(item[outstandingField]);
+  if (outstanding <= 0) return remaining;
+
+  const alloc = remaining.gt(outstanding) ? outstanding : remaining.toNumber();
+  item[amountField] = alloc;
+  return remaining.minus(alloc);
+};
+
 /**
  * Factory to create a context-aware utility object.
  */
@@ -146,25 +164,23 @@ const createUtil = (context: Record<string, any>): UtilType => {
       return false;
     },
     getGridItems: (fieldsToParse: string[] = [], gridNames: string[] = []) => {
-      const gridSelection = context._gridSelection || {};
+      const gridSelection: any = context._gridSelection || {};
       const allItems: any[] = [];
 
       // biome-ignore lint/complexity/noForEach: Iterating map entries
-      Object.entries(gridSelection).forEach(([gridName, entityData]) => {
+      Object.entries(gridSelection).forEach(([gridName, entityData]: [string, any]) => {
         // Filter by grid name if specified
         if (gridNames.length > 0 && !gridNames.includes(gridName)) {
           return;
         }
 
-        const selection = (entityData as any)?._selection || [];
-        // console.log(`[getGridItems] grid: ${gridName}, selection len: ${selection.length}`);
+        const selection = entityData?._selection || [];
         if (Array.isArray(selection)) {
           // Process rows using helper to reduce nesting
           const processedRows = selection.map((row) => processGridRow(row, fieldsToParse));
           allItems.push(...processedRows);
         }
       });
-      // console.log(`[getGridItems] returning ${allItems.length} items`);
       return allItems;
     },
     // Generic logic to distribute an amount across a list of items
@@ -182,16 +198,7 @@ const createUtil = (context: Record<string, any>): UtilType => {
         for (const item of items) {
           // Skip if already allocated or no remaining funds
           if (remaining.lte(0)) break;
-
-          const currentAmt = parseNum(item[amountField]);
-          if (currentAmt === 0) {
-            const outstanding = parseNum(item[outstandingField]);
-            if (outstanding > 0) {
-              const alloc = remaining.gt(outstanding) ? outstanding : remaining.toNumber();
-              item[amountField] = alloc;
-              remaining = remaining.minus(alloc);
-            }
-          }
+          remaining = distributeToItem(item, remaining, amountField, outstandingField);
         }
       }
       return items;

@@ -176,9 +176,9 @@ export function registerPayScriptDSL(processId: string, dslCode: string): void {
         .replace(/as\s+any/g, "")
         .replace(/as\s+const/g, "")
         // Remove function argument types: (n: any) -> (n)
-        .replace(/\(\s*([a-zA-Z0-9_]+)\s*:\s*[a-zA-Z0-9_\[\]<>]+\s*\)/g, "($1)")
+        .replace(/\(\s*(\w+)\s*:\s*[\w\[\]<>]+\s*\)/g, "($1)")
         // Remove explicit return types: ): void => -> ) =>
-        .replace(/\)\s*:\s*[a-zA-Z0-9_\[\]<>]+\s*=>/g, ") =>");
+        .replace(/\)\s*:\s*[\w\[\]<>]+\s*=>/g, ") =>");
     }
 
     // Evaluate
