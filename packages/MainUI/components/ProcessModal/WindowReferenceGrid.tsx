@@ -743,6 +743,7 @@ function WindowReferenceGrid({
       entityName: entityName ? String(entityName) : undefined,
       setAppliedTableFilters,
       setColumnFilters,
+      isImplicitFilterApplied: false,
     });
 
   // Create a minimal tab object for useColumns with corrected field hqlNames
