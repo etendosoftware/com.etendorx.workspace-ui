@@ -6,7 +6,7 @@
  */
 
 import { executeLogic } from "../engine/LogicEngine";
-import { AddPaymentRulesGeneric } from "../rules/AddPaymentRulesGeneric";
+import { AddPaymentRulesGeneric } from "../rules/AddPaymentRulesClean";
 
 /**
  * Example 1: Basic execution with form values
@@ -27,7 +27,7 @@ export function basicExample() {
     _processId: "APRM_ADD_PAYMENT",
   };
 
-  const result = executeLogic(AddPaymentRulesGeneric, context);
+  const result = executeLogic(AddPaymentRulesGeneric as any, context);
 
   if (result.success) {
     console.log("✓ Execution successful");
@@ -61,7 +61,7 @@ export function multicurrencyExample() {
     },
   };
 
-  const result = executeLogic(AddPaymentRulesGeneric, context);
+  const result = executeLogic(AddPaymentRulesGeneric as any, context);
 
   console.log("Multicurrency result:", {
     total: result.computed?.total,
@@ -87,7 +87,7 @@ export function overpaymentExample() {
     },
   };
 
-  const result = executeLogic(AddPaymentRulesGeneric, context);
+  const result = executeLogic(AddPaymentRulesGeneric as any, context);
 
   console.log("Overpayment scenario:", {
     difference: result.computed?.difference,
@@ -115,7 +115,7 @@ export function glItemsExample() {
     },
   };
 
-  const result = executeLogic(AddPaymentRulesGeneric, context);
+  const result = executeLogic(AddPaymentRulesGeneric as any, context);
 
   console.log("GL Items scenario:", {
     total: result.computed?.total,
@@ -142,7 +142,7 @@ export function validationExample() {
     },
   };
 
-  const result = executeLogic(AddPaymentRulesGeneric, context);
+  const result = executeLogic(AddPaymentRulesGeneric as any, context);
 
   console.log("Validation errors:", result.validations);
 
