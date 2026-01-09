@@ -426,7 +426,7 @@ const WindowReferenceGrid = ({
             options[param.dBColumnName] = paramValue as any;
           }
         }
-      }
+      });
     };
 
     applyDynamicKeys();

@@ -352,8 +352,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     mode: "onChange",
   });
 
-
-
   useEffect(() => {
     const hasFormData = Object.keys(availableFormData).length > 0;
     if (hasFormData) {
@@ -371,7 +369,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   // Initialize gridSelection from filterExpressions
   // This dynamically creates grid structures based on what the backend returns
   // Dependencies include 'open' to reset on each modal open
-
 
   useEffect(() => {
     if (open && filterExpressions && Object.keys(filterExpressions).length > 0) {
@@ -1075,11 +1072,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   // Register PayScript DSL if available in process definition
   useEffect(() => {
     if (processDefinition.id) {
-       const def = processDefinition as any;
-       const dsl = def.etmetaPayscriptLogic || def.emPayscriptLogic || def.em_payscript_logic || def.emEtmetaOnprocess || def.em_etmeta_onprocess;
-       if (dsl) {
-          registerPayScriptDSL(processDefinition.id, dsl);
-       }
+      const def = processDefinition as any;
+      const dsl =
+        def.etmetaPayscriptLogic ||
+        def.emPayscriptLogic ||
+        def.em_payscript_logic ||
+        def.emEtmetaOnprocess ||
+        def.em_etmeta_onprocess;
+      if (dsl) {
+        registerPayScriptDSL(processDefinition.id, dsl);
+      }
     }
   }, [processDefinition]);
 
@@ -1105,11 +1107,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   // Register PayScript DSL if available in process definition
   useEffect(() => {
     if (processDefinition.id) {
-       const def = processDefinition as any;
-       const dsl = def.etmetaPayscriptLogic || def.emPayscriptLogic || def.em_payscript_logic || def.emEtmetaOnprocess || def.em_etmeta_onprocess;
-       if (dsl) {
-          registerPayScriptDSL(processDefinition.id, dsl);
-       }
+      const def = processDefinition as any;
+      const dsl =
+        def.etmetaPayscriptLogic ||
+        def.emPayscriptLogic ||
+        def.em_payscript_logic ||
+        def.emEtmetaOnprocess ||
+        def.em_etmeta_onprocess;
+      if (dsl) {
+        registerPayScriptDSL(processDefinition.id, dsl);
+      }
     }
   }, [processDefinition]);
 
@@ -1132,11 +1139,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   // Register PayScript DSL if available in process definition
   useEffect(() => {
     if (processDefinition.id) {
-       const def = processDefinition as any;
-       const dsl = def.etmetaPayscriptLogic || def.emPayscriptLogic || def.em_payscript_logic || def.emEtmetaOnprocess || def.em_etmeta_onprocess;
-       if (dsl) {
-          registerPayScriptDSL(processDefinition.id, dsl);
-       }
+      const def = processDefinition as any;
+      const dsl =
+        def.etmetaPayscriptLogic ||
+        def.emPayscriptLogic ||
+        def.em_payscript_logic ||
+        def.emEtmetaOnprocess ||
+        def.em_etmeta_onprocess;
+      if (dsl) {
+        registerPayScriptDSL(processDefinition.id, dsl);
+      }
     }
   }, [processDefinition]);
 
@@ -1189,11 +1201,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   // Register PayScript DSL if available in process definition
   useEffect(() => {
     if (processDefinition.id) {
-       const def = processDefinition as any;
-       const dsl = def.etmetaPayscriptLogic || def.emPayscriptLogic || def.em_payscript_logic || def.emEtmetaOnprocess || def.em_etmeta_onprocess;
-       if (dsl) {
-          registerPayScriptDSL(processDefinition.id, dsl);
-       }
+      const def = processDefinition as any;
+      const dsl =
+        def.etmetaPayscriptLogic ||
+        def.emPayscriptLogic ||
+        def.em_payscript_logic ||
+        def.emEtmetaOnprocess ||
+        def.em_etmeta_onprocess;
+      if (dsl) {
+        registerPayScriptDSL(processDefinition.id, dsl);
+      }
     }
   }, [processDefinition]);
 
@@ -1214,11 +1231,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   // Register PayScript DSL if available in process definition
   useEffect(() => {
     if (processDefinition.id) {
-       const def = processDefinition as any;
-       const dsl = def.etmetaPayscriptLogic || def.emPayscriptLogic || def.em_payscript_logic || def.emEtmetaOnprocess || def.em_etmeta_onprocess;
-       if (dsl) {
-          registerPayScriptDSL(processDefinition.id, dsl);
-       }
+      const def = processDefinition as any;
+      const dsl =
+        def.etmetaPayscriptLogic ||
+        def.emPayscriptLogic ||
+        def.em_payscript_logic ||
+        def.emEtmetaOnprocess ||
+        def.em_etmeta_onprocess;
+      if (dsl) {
+        registerPayScriptDSL(processDefinition.id, dsl);
+      }
     }
   }, [processDefinition]);
 
@@ -1318,11 +1340,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   // Register PayScript DSL if available in process definition
   useEffect(() => {
     if (processDefinition.id) {
-       const def = processDefinition as any;
-       const dsl = def.etmetaPayscriptLogic || def.emPayscriptLogic || def.em_payscript_logic || def.emEtmetaOnprocess || def.em_etmeta_onprocess;
-       if (dsl) {
-          registerPayScriptDSL(processDefinition.id, dsl);
-       }
+      const def = processDefinition as any;
+      const dsl =
+        def.etmetaPayscriptLogic ||
+        def.emPayscriptLogic ||
+        def.em_payscript_logic ||
+        def.emEtmetaOnprocess ||
+        def.em_etmeta_onprocess;
+      if (dsl) {
+        registerPayScriptDSL(processDefinition.id, dsl);
+      }
     }
   }, [processDefinition]);
 
