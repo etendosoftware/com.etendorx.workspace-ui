@@ -290,6 +290,7 @@ export interface WindowMetadata {
   properties: WindowMetadataProperties;
   tabs: Tab[];
   window$_identifier: string;
+  windowType?: string;
 }
 
 export interface RecordPayload extends Record<string, string> {
