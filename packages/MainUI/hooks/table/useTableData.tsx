@@ -300,7 +300,16 @@ export const useTableData = ({
         isImplicitFilterApplied,
       });
     },
-    [rawColumns, fetchFilterOptions, setFilterOptions, loadMoreFilterOptions, tab.id, treeEntity, advancedColumnFilters, isImplicitFilterApplied]
+    [
+      rawColumns,
+      fetchFilterOptions,
+      setFilterOptions,
+      loadMoreFilterOptions,
+      tab.id,
+      treeEntity,
+      advancedColumnFilters,
+      isImplicitFilterApplied,
+    ]
   );
 
   // Get columns with filter handlers

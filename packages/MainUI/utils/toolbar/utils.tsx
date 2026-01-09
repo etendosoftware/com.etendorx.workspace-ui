@@ -95,12 +95,7 @@ const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMeta
   });
 };
 
-const isVisibleButton = (
-  button: ToolbarButtonMetadata,
-  isFormView: boolean,
-  isTreeNodeView?: boolean,
-  tab?: Tab,
-) => {
+const isVisibleButton = (button: ToolbarButtonMetadata, isFormView: boolean, isTreeNodeView?: boolean, tab?: Tab) => {
   if (!button.active) return false;
 
   const isFindButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FIND;
@@ -108,8 +103,7 @@ const isVisibleButton = (
   const isFilterButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER;
   const isToggleTreeView = !isTreeNodeView && button.action === TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW;
   const isPrintButtonInTransactionWindow =
-    button.action === TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD &&
-    !tab?.process$_identifier?.includes("Print");
+    button.action === TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD && !tab?.process$_identifier?.includes("Print");
 
   return (
     !isFindButtonInFormView &&
@@ -124,13 +118,11 @@ export const organizeButtonsBySection = (
   buttons: ToolbarButtonMetadata[],
   isFormView: boolean,
   isTreeNodeView?: boolean,
-  tab?: Tab,
+  tab?: Tab
 ): OrganizedSections => {
   const sections: OrganizedSections = { left: [], center: [], right: [] };
 
-  const visibleButtons = buttons.filter((button) =>
-    isVisibleButton(button, isFormView, isTreeNodeView, tab)
-  );
+  const visibleButtons = buttons.filter((button) => isVisibleButton(button, isFormView, isTreeNodeView, tab));
 
   for (const button of visibleButtons) {
     if (button.section && sections[button.section]) {
