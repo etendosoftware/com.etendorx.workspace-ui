@@ -26,10 +26,10 @@ import {
   type MRT_TableOptions,
   type MRT_Row,
   type MRT_TopToolbarProps,
+  type MRT_ColumnDef,
 } from "material-react-table";
 import { useDatasource } from "@/hooks/useDatasource";
 import { useGridColumnFilters } from "@/hooks/table/useGridColumnFilters";
-import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useColumns } from "@/hooks/table/useColumns";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -38,12 +38,14 @@ import EmptyState from "../Table/EmptyState";
 import Loading from "../loading";
 import { tableStyles } from "./styles";
 import type { WindowReferenceGridProps } from "./types";
-import { PROCESS_DEFINITION_DATA } from "@/utils/processes/definition/constants";
 import type { GridSelectionStructure } from "./ProcessDefinitionModal";
 import PlusIcon from "../../../ComponentLibrary/src/assets/icons/plus.svg";
 import { saveRecord } from "../Table/utils/saveOperations";
 import type { SaveOperation } from "../Table/types/inlineEditing";
 import { useUserContext } from "@/hooks/useUserContext";
+import { GridCellEditor } from "./GridCellEditor";
+import { WindowReferenceGridProvider, useWindowReferenceGridContext } from "./WindowReferenceGridContext";
+import { getFieldReference } from "@/utils";
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
@@ -85,258 +87,33 @@ function mergeCurrentValuesIntoParams(
  * WindowReferenceGrid Component
  * Displays a grid of referenced records that can be selected
  */
-// Editor component removed in favor of CellEditorFactory logic inside WindowReferenceGrid
-import { CellEditorFactory } from "../Table/CellEditors";
-import { getFieldReference } from "@/utils";
-import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
-import { FieldType } from "@workspaceui/api-client/src/api/types";
 
-const applyParameters = (payload: any, parameters: any, effectiveRecordValues: any) => {
-  if (parameters) {
-    Object.values(parameters).forEach((param: any) => {
-      const paramValue = effectiveRecordValues?.[param.name];
-      if (paramValue !== undefined && paramValue !== null && param.dBColumnName) {
-        payload[param.dBColumnName] = paramValue;
-      }
-    });
-  }
-};
+// Stable renderer component that consumes context instead of closures
+// detailed props type would be better but simple any works for MRT contract here
+const StableGridCellEditorRenderer = ({ cell, row, column }: any) => {
+  const { fieldsRef, handleRecordChangeRef, validations } = useWindowReferenceGridContext();
 
-const applySelectorConfig = (payload: any, isSelector: boolean, field: any, selectorId: string | undefined) => {
-  if (isSelector) {
-    payload._noCount = "true";
-    if (field.selector) {
-      const selectorProps = [
-        "filterClass",
-        "_selectedProperties",
-        "_selectorDefinitionId",
-        "_extraProperties",
-        "_sortBy",
-      ];
-      selectorProps.forEach((prop) => {
-        if (field.selector[prop]) payload[prop] = field.selector[prop];
-      });
-    } else if (selectorId) {
-      payload._selectorDefinitionId = selectorId;
+  // Check for validation errors for this row
+  // We try to match by row.id in validation context, or fallback to generic logic if needed
+  const validationError = validations?.find((v: any) => {
+    if (!v.isValid && v.context) {
+      // Check if validation context matches this row
+      if (v.context.id === row.original.id) return true;
+      if (v.context.rowId === row.original.id) return true;
     }
-  } else {
-    payload._textMatchStyle = "substring";
-  }
-};
-
-// Helper to construct payload for loadOptions
-const constructPayload = (
-  field: any,
-  tabId: string | undefined,
-  effectiveRecordValues: any,
-  session: any,
-  parameters: any,
-  isSelector: boolean,
-  selectorId: string | undefined
-) => {
-  const payload: any = {
-    _startRow: "0",
-    _endRow: "75",
-    _operationType: "fetch",
-    moduleId: field.module,
-    windowId: tabId,
-    tabId: field.tab || tabId,
-    inpTabId: field.tab || tabId,
-    inpwindowId: tabId,
-    inpTableId: field.column?.table,
-    initiatorField: field.hqlName,
-    _constructor: "AdvancedCriteria",
-    _OrExpression: "true",
-    operator: "or",
-    _org: effectiveRecordValues?.inpadOrgId || session.adOrgId,
-    // Specific for pick and execute processes
-    inpPickAndExecuteTableId: effectiveRecordValues?.inpTableId,
-    ...effectiveRecordValues,
-  };
-
-  applyParameters(payload, parameters, effectiveRecordValues);
-  applySelectorConfig(payload, isSelector, field, selectorId);
-
-  return payload;
-};
-
-// Helper to fetch options from datasource
-const fetchOptionsFromDatasource = async (apiUrl: string, payload: any, searchQuery?: string) => {
-  const params = new URLSearchParams();
-
-  // Add base payload
-  Object.keys(payload).forEach((key) => {
-    // Filter out undefined/null and objects (except criteria which we handle separately if needed)
-    if (payload[key] !== undefined && payload[key] !== null && typeof payload[key] !== "object") {
-      params.append(key, String(payload[key]));
-    }
+    return false;
   });
 
-  // Basic search criteria
-  const criteria: any[] = [];
-  if (searchQuery) {
-    criteria.push({
-      fieldName: "name", // Default, but useTableDirDatasource checks extraSearchFields
-      operator: "iContains",
-      value: searchQuery,
-    });
-  }
-
-  // Properly serialize criteria if it exists
-  if (criteria.length > 0) {
-    params.append(
-      "criteria",
-      JSON.stringify({
-        fieldName: "_dummy",
-        operator: "equals",
-        value: new Date().getTime(),
-        _constructor: "AdvancedCriteria",
-        criteria: criteria,
-      })
-    );
-  }
-
-  if (searchQuery) {
-    params.append("_sortBy", "_identifier");
-  }
-
-  const fullUrl = `${apiUrl}?${params.toString()}`;
-
-  const response = await datasource.client.request(fullUrl, {
-    method: "GET",
-  });
-
-  return response.data;
-};
-
-// Helper to map response
-const mapResponseToOptions = (data: any) => {
-  const responseData = data.response?.data || data.data || [];
-  return responseData.map((item: any) => ({
-    id: item.id,
-    value: item.id,
-    label: item._identifier || item.name || item.id,
-    ...item,
-  }));
-};
-
-// Extracted Editor Component
-const GridCellEditor = ({
-  cell,
-  row,
-  col,
-  fields,
-  tabId,
-  effectiveRecordValues,
-  parameters,
-}: {
-  cell: any;
-  row: any;
-  col: any;
-  fields: any[];
-  tabId: string | undefined;
-  effectiveRecordValues: any;
-  parameters: any;
-}) => {
-  const { session } = useUserContext();
-
-  // Find matched field definition
-  const matchingField =
-    fields.find((f) => f.name === col.header) ||
-    fields.find((f) => f.columnName === col.columnName) ||
-    (col.columnName.endsWith("_ID") ? fields.find((f) => f.columnName === col.columnName) : undefined);
-
-  if (!matchingField) {
-    return null; // Return null instead of undefined for React component
-  }
-
-  // Robustly resolve reference code, checking both column and field level
-  const reference = matchingField.column?.reference || (matchingField as any).reference;
-  const fieldType = getFieldReference(reference);
-
-  const handleChange = (newValue: any, selectedOption?: any) => {
-    row.original[col.columnName] = newValue;
-
-    // Identifier update logic for TableDir/Search
-    if (
-      selectedOption &&
-      (fieldType === FieldType.TABLEDIR ||
-        fieldType === FieldType.SEARCH ||
-        reference === FIELD_REFERENCE_CODES.PRODUCT ||
-        reference === FIELD_REFERENCE_CODES.SELECTOR)
-    ) {
-      const identifierKey = `${col.columnName}$_identifier`;
-      row.original[identifierKey] = selectedOption.label || selectedOption._identifier;
-    }
-    cell.row._valuesCache[cell.column.id] = newValue;
-  };
-
-  const loadOptions = async (field: any, searchQuery?: string) => {
-    try {
-      // Logic based on useTableDirDatasource
-      const fieldRef = field.column?.reference || field.reference;
-      const isSelector = fieldRef === FIELD_REFERENCE_CODES.SELECTOR || fieldRef === FIELD_REFERENCE_CODES.PRODUCT;
-      const selectorId = field.selector?._selectorDefinitionId;
-      const datasourceName = field.selector?.datasourceName;
-
-      // Determine base URL
-      const apiUrl = datasourceName
-        ? `/api/datasource/${datasourceName}`
-        : `/sws/com.etendorx.das.legacy.utils/datasource/${field.columnName || field.name}`;
-
-      const payload = constructPayload(
-        field,
-        tabId,
-        effectiveRecordValues,
-        session,
-        parameters,
-        isSelector,
-        selectorId
-      );
-
-      const data = await fetchOptionsFromDatasource(apiUrl, payload, searchQuery);
-      return mapResponseToOptions(data);
-    } catch (e) {
-      console.error("Error loading options", e);
-      return [];
-    }
-  };
-
+  // GridCellEditor expects 'col' with columnName.
+  // column.columnDef usually has what we populated in useMemo columns.
   return (
-    <div className="w-full min-w-[200px]">
-      <CellEditorFactory
-        fieldType={fieldType}
-        value={cell.getValue()}
-        onChange={handleChange}
-        field={{ ...matchingField, type: fieldType }}
-        rowId={row.id}
-        columnId={cell.column.id}
-        loadOptions={loadOptions}
-        disabled={false}
-        hasError={false}
-        onBlur={() => {}}
-        data-testid="CellEditorFactory__ce8544"
-      />
-    </div>
-  );
-};
-
-const createGridCellEditorRenderer = (
-  col: any,
-  fields: any[],
-  tabId: string | undefined,
-  effectiveRecordValues: any,
-  parameters: any
-) => {
-  return ({ cell, row }: { cell: any; row: any }) => (
     <GridCellEditor
       cell={cell}
       row={row}
-      col={col}
-      fields={fields}
-      tabId={tabId}
-      effectiveRecordValues={effectiveRecordValues}
-      parameters={parameters}
+      col={column.columnDef}
+      fields={fieldsRef.current}
+      onRecordChange={handleRecordChangeRef.current || undefined}
+      validationError={validationError}
       data-testid="GridCellEditor__ce8544"
     />
   );
@@ -391,6 +168,105 @@ const resolveParentContextId = (
   return { parentContextId, contextDocNo };
 };
 
+// Stable renderer for read-only cells
+const ReadOnlyCellRenderer = ({ renderedCellValue }: any) => (
+  <span className="text-gray-700 block truncate" title={String(renderedCellValue ?? "")}>
+    {renderedCellValue}
+  </span>
+);
+
+// Stable renderer for interactive cells
+const InteractiveGridCellRenderer = ({ row, cell, column }: any) => {
+  const isSelected = row.getIsSelected();
+  // Get dbColumnName from column definition (passed via custom property)
+  const dbColumnName = column.columnDef?.dbColumnName;
+
+  // glItems are always local/editable
+  const isAlwaysEditable = dbColumnName === "glitem";
+
+  if (isSelected || isAlwaysEditable) {
+    return (
+      <StableGridCellEditorRenderer
+        row={row}
+        cell={cell}
+        column={column}
+        data-testid="StableGridCellEditorRenderer__ce8544"
+      />
+    );
+  }
+
+  return cell.getValue();
+};
+
+const updateLocalRecordFromSelection = (record: EntityData, selectionItem: any): EntityData | null => {
+  let updated = false;
+  let newRecord = { ...record };
+
+  if (selectionItem.amount !== undefined && selectionItem.amount !== newRecord.amount) {
+    newRecord.amount = selectionItem.amount;
+    updated = true;
+  }
+  if (selectionItem.paymentAmount !== undefined && selectionItem.paymentAmount !== newRecord.paymentAmount) {
+    newRecord.paymentAmount = selectionItem.paymentAmount;
+    updated = true;
+  }
+
+  if (updated) {
+    return { ...newRecord, ...selectionItem };
+  }
+  return null;
+};
+
+const resetLocalRecordFields = (record: EntityData): EntityData | null => {
+  let changed = false;
+  let newRecord = { ...record };
+
+  if (newRecord.amount !== undefined && newRecord.amount !== 0) {
+    newRecord.amount = 0;
+    changed = true;
+  }
+  if (newRecord.paymentAmount !== undefined && newRecord.paymentAmount !== 0) {
+    newRecord.paymentAmount = 0;
+    changed = true;
+  }
+
+  return changed ? newRecord : null;
+};
+
+// Logic extracted to reduce cognitive complexity of useEffect
+const syncGridSelectionToLocalRecords = (
+  externalSelection: any[],
+  localRecords: EntityData[],
+  setLocalRecords: (records: EntityData[]) => void
+) => {
+  let hasChanges = false;
+  const newRecords = [...localRecords];
+  const selectionMap = new Map(externalSelection.map((s: any) => [String(s.id), s]));
+
+  for (let i = 0; i < newRecords.length; i++) {
+    const record = newRecords[i];
+    const selectionItem = selectionMap.get(String(record.id));
+
+    if (selectionItem) {
+      const updated = updateLocalRecordFromSelection(record, selectionItem);
+      if (updated) {
+        newRecords[i] = updated;
+        hasChanges = true;
+      }
+    } else {
+      const reset = resetLocalRecordFields(record);
+      if (reset) {
+        newRecords[i] = reset;
+        hasChanges = true;
+      }
+    }
+  }
+
+  if (hasChanges) {
+    setLocalRecords(newRecords);
+  }
+};
+
 // Helper to find valid matching record in grid
 const findMatchingRecord = (
   rawRecords: any[],
@@ -415,20 +291,34 @@ const findMatchingRecord = (
   );
 };
 
-function WindowReferenceGrid({
+// Local type for datasource params
+interface DatasourceParams {
+  processId?: string;
+  tabId?: string;
+  windowId?: string;
+  ad_org_id?: any;
+  ad_client_id?: any;
+  orderBy?: string;
+  criteria?: any;
+  [key: string]: any;
+}
+
+const WindowReferenceGrid = ({
   parameter,
-  parameters,
-  onSelectionChange,
-  gridSelection,
   tabId,
+  currentValues, // passed from ProcessDefinitionModal
+  fields,
+  gridSelection,
+  onSelectionChange,
+  parameters,
+  // Added back missing props
   entityName,
   windowReferenceTab,
   processConfig,
   processConfigLoading,
   processConfigError,
   recordValues,
-  currentValues,
-}: WindowReferenceGridProps) {
+}: WindowReferenceGridProps) => {
   const { t } = useTranslation();
   // ... rest of component
 
@@ -451,6 +341,22 @@ function WindowReferenceGrid({
 
   const [_validationErrors, setValidationErrors] = useState<Record<string, string | undefined>>({});
   const { user, session, currentClient } = useUserContext();
+
+  const effectiveRecordValuesRef = useRef(effectiveRecordValues);
+  const parametersRef = useRef(parameters);
+  const validationsRef = useRef<any[]>((effectiveRecordValues?._validations as unknown as any[]) || []);
+  // Sync refs ensures GridCellEditor has latest values without triggering re-render via Context
+  useEffect(() => {
+    effectiveRecordValuesRef.current = effectiveRecordValues;
+    parametersRef.current = parameters;
+    validationsRef.current = (effectiveRecordValues?._validations as unknown as any[]) || [];
+  }, [effectiveRecordValues, parameters]);
+
+  // Get validations array for context (to trigger updates)
+  const validations = useMemo(() => {
+    // biome-ignore lint/suspicious/noExplicitAny: explicit cast
+    return (effectiveRecordValues?._validations as unknown as any[]) || [];
+  }, [effectiveRecordValues]);
 
   const [isDataReady, setIsDataReady] = useState(false);
 
@@ -493,42 +399,45 @@ function WindowReferenceGrid({
       const timer = setTimeout(() => {
         setIsDataReady(true);
       }, 100);
-
       return () => clearTimeout(timer);
     }
   }, [processConfigLoading, processConfig]);
 
-  const datasourceOptions = useMemo(() => {
-    const processId = processConfig?.processId;
-    const currentOptionData = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
-    const defaultKeys = currentOptionData?.defaultKeys;
-    const dynamicKeys = currentOptionData?.dynamicKeys;
-    const staticOptions = currentOptionData?.staticOptions;
+  // Stabilize effectiveRecordValues to prevent unnecessary re-fetches
+  const stableRecordValues = useMemo(() => effectiveRecordValues, [JSON.stringify(effectiveRecordValues)]);
 
-    const options: Record<string, EntityValue> = {
-      ...staticOptions,
-      tabId: parameter.tab || tabId,
-      pageSize: PAGE_SIZE,
+  const datasourceOptions = useMemo(() => {
+    const options: DatasourceParams = {};
+    // Restore legacy behavior: property tabId is vital for backend context resolution
+    // If parameter.tab is missing, use the component's tabId prop (which usually holds the WindowID in process context)
+    options.tabId = parameter.tab || tabId;
+
+    if (processConfig?.processId) {
+      options.processId = processConfig.processId;
+    }
+
+    if (tabId) {
+      options.windowId = tabId;
+    }
+
+    // Apply filters and context
+    // This logic mimics verifyInput in SmartClient
+    // We need to support:
+    // 1. Explicit Validation Logic (displayLogic/readOnlyLogic often implies data dependencies) - handled by Callouts mostly
+    // 2. Default Values (passed from ProcessDefinitionModal)
+    // 3. Grid Filters (passed from ProcessDefinitionModal)
+
+    const defaultKeys = {
+      inpadOrgId: "ad_org_id",
+      inpadClientId: "ad_client_id",
     };
 
     const applyDynamicKeys = () => {
-      if (!dynamicKeys || !effectiveRecordValues) return;
+      if (!stableRecordValues) return;
 
-      for (const [key, value] of Object.entries(dynamicKeys)) {
-        if (typeof value === "string") {
-          const recordValue = effectiveRecordValues[value];
-
-          if (recordValue === "Y") {
-            options[key] = true;
-          } else if (recordValue === "N") {
-            options[key] = false;
-          } else {
-            options[key] = (recordValue as any) || "";
-          }
-        } else if (typeof value === "boolean") {
-          options[key] = value;
-        }
-      }
+      // Standard env variables
+      if (stableRecordValues.inpadOrgId) options.ad_org_id = stableRecordValues.inpadOrgId;
+      if (stableRecordValues.inpadClientId) options.ad_client_id = stableRecordValues.inpadClientId;
     };
 
     const applyParameters = () => {
@@ -589,15 +498,51 @@ function WindowReferenceGrid({
       });
     };
 
-    const applyRecordValues = () => {
-      if (!parameters || !effectiveRecordValues) return;
+    // Build set of valid column names for this grid to filter params
+    const validColumnNames = new Set<string>();
+    if (stableWindowReferenceTab?.fields) {
+      Object.values(stableWindowReferenceTab.fields).forEach((f: any) => {
+        if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
+        // also add hqlName if different
+        if (f.hqlName) validColumnNames.add(f.hqlName.toLowerCase());
+      });
+    }
+    // Also add prop fields if any
+    if (fields) {
+      fields.forEach((f: any) => {
+        if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
+        if (f.name) validColumnNames.add(f.name.toLowerCase());
+      });
+    }
+    // Add standard context keys that imply filtering
+    [
+      "c_bpartner_id",
+      "m_product_id",
+      "c_project_id",
+      "c_campaign_id",
+      "c_activity_id",
+      "user1_id",
+      "user2_id",
+      "ad_org_id",
+      "ad_client_id",
+      "trxtype",
+      "issotrx",
+      "transaction_type",
+    ].forEach((k) => validColumnNames.add(k));
 
-      for (const param of Object.values(parameters) as any[]) {
+    const applyRecordValues = () => {
+      if (!parameters || !stableRecordValues) return;
+
+      Object.values(parameters).forEach((param: any) => {
         const paramValue = effectiveRecordValues[param.name];
+        // Only include parameter if it matches a column in the grid OR is a standard ID
         if (paramValue !== undefined && param.dBColumnName) {
-          options[param.dBColumnName] = paramValue as any;
+          const lowerKey = param.dBColumnName.toLowerCase();
+          if (validColumnNames.has(lowerKey)) {
+            options[param.dBColumnName] = paramValue as any;
+          }
         }
-      }
+      });
     };
 
     applyDynamicKeys();
@@ -622,10 +567,13 @@ function WindowReferenceGrid({
     recordValues?.inpadClientId,
     recordValues?.inpmPricelistId,
     recordValues?.inpcCurrencyId,
-    effectiveRecordValues, // Depend on merged values
+    stableRecordValues, // Using stabilized reference
     parameters,
     // Use stable JSON stringified values for dependency to prevent infinite loops
     JSON.stringify(currentValues),
+    // Add dependencies for column validation
+    stableWindowReferenceTab,
+    fields,
   ]);
 
   // Helper to determine ACCT_DIMENSION_DISPLAY for specific columns
@@ -691,28 +639,63 @@ function WindowReferenceGrid({
     [getAcctDimensionDisplay, user, session, recordValues]
   );
 
-  const fields = useMemo(() => {
-    if (stableWindowReferenceTab?.fields) {
-      return Object.values(stableWindowReferenceTab.fields).filter((f) => isFieldVisible(f));
-    }
-    return [];
-  }, [stableWindowReferenceTab, isFieldVisible]);
+  // Filter fields based on visibility logic (displayLogic & gridDisplayLogic)
+  // Use a stringified version of the result to ensure referential stability
+  // This prevents 'rawColumns' and 'columns' from regenerating on every 'recordValues' change
+  // if the ACTUAL set of visible columns hasn't changed.
+  const visibleFieldsFromTab = useMemo(() => {
+    if (!stableWindowReferenceTab?.fields) return [];
 
-  // Parse raw columns with fix for WindowReferenceGrid
+    const visibleFields = Object.values(stableWindowReferenceTab.fields).filter((f: any) => isFieldVisible(f));
+
+    // Parse the filtered fields
+    const parsed = visibleFields.map((field: any) => ({
+      ...field,
+      // Ensure hqlName is consistent for grid columns
+      hqlName: field.columnName || field.hqlName,
+      label: field.name,
+    }));
+    return parsed;
+  }, [stableWindowReferenceTab?.fields, isFieldVisible]); // isFieldVisible changes often, but we check result below
+
+  // Stablize the array reference
+  const stableVisibleFields = useMemo(() => {
+    return visibleFieldsFromTab;
+  }, [JSON.stringify(visibleFieldsFromTab.map((f: any) => f.id))]); // Only update if IDs change
+
+  // Compute raw columns from fields
   const rawColumns = useMemo(() => {
-    if (fields.length > 0) {
-      const { parseColumns } = require("@/utils/tableColumns");
-      const parsed = parseColumns(fields);
+    // Only use parsed fields for columns, fallback to provided fields prop if empty
+    if (stableVisibleFields.length > 0) {
+      // Map back to column structure expected by SmartClient-like grids
+      const enriched = stableVisibleFields.map((field: any) => ({
+        id: field.id,
+        header: field.name || field.columnName,
+        accessorKey: field.columnName,
+        columnName: field.columnName,
+        type: getFieldReference(field.reference || field.column?.reference),
+        // Important properties for column setup
+        canHide: true,
+        enableColumnFilter: true,
+        enableSorting: true,
+        ...field,
+        // Match with passed prop fields to ensure we have all metadata
+        // Note: 'fields' prop comes from ProcessDefinitionModal which might have different enrichment
+      }));
+      return enriched;
+    }
 
-      // Add filterFieldName to each column for backend filtering
-      // This is needed because some processes have hqlName as display names
-      const enriched = parsed.map((col: Column) => {
-        const matchingField = fields.find((f) => f.name === col.header);
+    // Use fields prop passed to component (legacy path)
+    // This path is for when fields are passed directly, not from stableWindowReferenceTab
+    if (fields && fields.length > 0) {
+      // Assuming 'fields' is a prop or another source
+      // Create column definitions from Fields
+      const enriched = fields.map((col: any) => {
+        // Find matching field definition if possible
+        const matchingField = fields.find((f) => f.id === col.id);
+        const isDisplayName = !col.columnName || col.columnName === col.header; // Simplified check
 
         // For filtering, we need to check if hqlName is a display name
-        const isDisplayName =
-          col.columnName.includes(" ") || col.columnName.includes(".") || /^[A-Z]/.test(col.columnName);
-
         // If hqlName is a display name, use the key from fields (camelCase property name)
         // Otherwise, use hqlName as-is
         const filterFieldName = isDisplayName
@@ -794,7 +777,25 @@ function WindowReferenceGrid({
     [handleColumnFilterChange, handleLoadFilterOptions, handleLoadMoreFilterOptions, advancedColumnFilters]
   );
 
+  const finalFields = useMemo(() => {
+    return stableVisibleFields.length > 0 ? stableVisibleFields : fields || [];
+  }, [stableVisibleFields, fields]);
+
+  // Use refs for fields and handler to pass to context
+  const fieldsRef = useRef(finalFields);
+  useEffect(() => {
+    fieldsRef.current = finalFields;
+  }, [finalFields]);
+
+  // We already have handleRecordChangeRef from line 612!
+  // But line 612 ref is internal to the hook logic. We need to expose it.
+  // Actually, we can just pass handleRecordChangeRef (the one defined at 612) to the context.
+
   const columnsFromHook = useColumns(mockTab, columnOptions);
+
+  // handleRecordChange is defined later using refs for stability
+  // We use a ref to expose it to columns if needed before definition (though unlikely with current flow)
+  const handleRecordChangeRef = useRef<((row: any, changes: any) => void) | null>(null);
 
   const columns = useMemo(() => {
     const finalColumns = columnsFromHook.length > 0 ? columnsFromHook : rawColumns;
@@ -866,7 +867,15 @@ function WindowReferenceGrid({
 
           return true;
         },
-        Edit: createGridCellEditorRenderer(col, fields, tabId, effectiveRecordValues, parameters),
+        // Use custom editor for both display (Cell) and editing (Edit) to ensure "always edit" feel
+        // This matches user request: "puts you in edit mode immediately"
+        // Use stable static component for editing
+        Edit: StableGridCellEditorRenderer,
+        // Pass context via column definition
+        dbColumnName: parameter.dBColumnName,
+        // For display (Cell), only show editor if row is selected OR for specific grids like glItem
+        // Otherwise use default display
+        Cell: InteractiveGridCellRenderer,
       };
     });
 
@@ -974,19 +983,43 @@ function WindowReferenceGrid({
   ]);
 
   // Stabilize records reference using JSON comparison to prevent unnecessary re-renders
-  const recordsStringRef = useRef<string>("");
-  const stableRecordsRef = useRef<EntityData[]>([]);
+  const [localRecords, setLocalRecords] = useState<EntityData[]>([]);
+  const rawRecordsStringRef = useRef<string>("");
 
-  const records = useMemo(() => {
-    const recordsString = JSON.stringify(rawRecords || []);
-    if (recordsString !== recordsStringRef.current) {
-      recordsStringRef.current = recordsString;
-      stableRecordsRef.current = rawRecords || [];
+  // Sync with datasource (rawRecords)
+  useEffect(() => {
+    // Only update if rawRecords actually changed content
+    const rawString = JSON.stringify(rawRecords || []);
+    if (rawString !== rawRecordsStringRef.current) {
+      rawRecordsStringRef.current = rawString;
+      setLocalRecords(rawRecords || []);
     }
-    // If we have no records but we are in a 'local' grid mode (e.g. glitem) we might want to start empty
-    // But stable records is just rawRecords.
-    return stableRecordsRef.current;
   }, [rawRecords]);
+
+  // Ref to track last processed selection to prevent redundant updates
+  const lastSelectionStringRef = useRef<string>("");
+
+  // Sync with external updates via gridSelection (e.g. Callouts modifying data)
+  useEffect(() => {
+    // When PayScript engine runs, it returns the *updated selection* in gridSelection.
+    const gridData = gridSelection[parameter.dBColumnName];
+    // Only process if we have a valid selection array (even empty)
+    if (!gridData || !gridData._selection || !localRecords.length) return;
+
+    const externalSelection = gridData._selection;
+
+    // OPTIMIZATION: Check if selection actually changed for THIS grid
+    // We include amounts in the check because engine updates amounts. Also check paymentAmount.
+    const selectionString = JSON.stringify(externalSelection.map((s: any) => `${s.id}-${s.amount}-${s.paymentAmount}`));
+    if (selectionString === lastSelectionStringRef.current) {
+      return;
+    }
+    lastSelectionStringRef.current = selectionString;
+
+    syncGridSelectionToLocalRecords(externalSelection, localRecords, setLocalRecords);
+  }, [gridSelection, parameter.dBColumnName]); // localRecords omitted to prevent cycle
+
+  const records = localRecords;
 
   // Populate _allRows when records are loaded
   useEffect(() => {
@@ -1030,19 +1063,47 @@ function WindowReferenceGrid({
     (updaterOrValue: MRT_RowSelectionState | ((prev: MRT_RowSelectionState) => MRT_RowSelectionState)) => {
       const newSelection = typeof updaterOrValue === "function" ? updaterOrValue(rowSelection) : updaterOrValue;
 
+      // 1. Prepare new records state first to ensure synchronous consistency
+      let recordsChanged = false;
+      const newRecords = records.map((record) => {
+        const recordId = String(record.id);
+        const isSelected = newSelection[recordId];
+
+        // Aggressively reset amount to 0 if deselected, regardless of current value
+        // Also handle 'paymentAmount' field which is used by Credit grid in Classic
+        if (!isSelected) {
+          let changed = false;
+          if (record.amount !== undefined && record.amount !== 0) {
+            record = { ...record, amount: 0 };
+            changed = true;
+          }
+          if (record.paymentAmount !== undefined && record.paymentAmount !== 0) {
+            record = { ...record, paymentAmount: 0 };
+            changed = true;
+          }
+          if (changed) recordsChanged = true;
+        }
+        return record;
+      });
+
+      // 2. Update local state if needed
+      if (recordsChanged) {
+        setLocalRecords(newRecords);
+      }
       setRowSelection(newSelection);
 
-      const selectedItems = records.filter((record) => {
+      // 3. Calculate selected subset from the NEW records
+      const selectedItems = newRecords.filter((record) => {
         const recordId = String(record.id);
         return newSelection[recordId];
       });
 
-      // Update with the new structure
+      // 4. Propagate to parent with the updated (zeroed) records
       onSelectionChange((prev: GridSelectionStructure) => ({
         ...prev,
         [parameter.dBColumnName]: {
           _selection: selectedItems,
-          _allRows: records,
+          _allRows: newRecords,
         },
       }));
     },
@@ -1062,7 +1123,41 @@ function WindowReferenceGrid({
   }, [onSelectionChange, parameter.dBColumnName, records]);
 
   const handleRowClick = useCallback(
-    (row: MRT_Row<EntityData>) => {
+    (row: MRT_Row<EntityData>, event?: React.MouseEvent) => {
+      // Prevent toggling selection if clicking on an interactive element
+      const target = event?.target as HTMLElement;
+      if (target) {
+        // Check if clicking inside interactive elements or their children (e.g. SVG inside Button)
+        if (
+          target.closest("input") ||
+          target.closest("select") ||
+          target.closest("textarea") ||
+          target.closest("button") ||
+          target.isContentEditable
+        ) {
+          return;
+        }
+
+        // Check for specific roles often used in complex UI components
+        const role = target.getAttribute("role");
+        if (role === "combobox" || role === "listbox" || role === "option" || role === "button") {
+          return;
+        }
+
+        // Broad check for MUI and generic interactive wrappers
+        if (
+          target.closest(".MuiInputBase-root") ||
+          target.closest(".etendo-input-wrapper") ||
+          target.closest(".MuiFormControl-root") ||
+          target.closest(".MuiAutocomplete-root") ||
+          target.closest('[role="combobox"]') ||
+          target.closest(".react-select__control") ||
+          target.closest(".etendo-combobox")
+        ) {
+          return;
+        }
+      }
+
       setRowSelection((prev) => {
         const newSelection = { ...prev };
         newSelection[row.id] = !newSelection[row.id];
@@ -1088,10 +1183,11 @@ function WindowReferenceGrid({
   );
 
   const handleCreateRow = useCallback(
-    async ({ values, table }: any) => {
+    async ({ values, table, row }: any) => {
       if (!stableWindowReferenceTab) return;
 
-      const newValues = { ...values };
+      // Merge values: explicit edits (row.original) take precedence over MRT tracked values
+      const newValues = { ...values, ...(row?.original || {}) };
 
       // Special logic for G/L Items (and potentially others in the future)
       // These should be saved LOCALLY to the grid, not sent to the backend immediately.
@@ -1118,6 +1214,7 @@ function WindowReferenceGrid({
           ...newValues,
         };
 
+        // Add to local datasource
         // Add to local datasource
         addRecordLocally(newRecord);
 
@@ -1166,6 +1263,205 @@ function WindowReferenceGrid({
     [stableWindowReferenceTab, user, refetch, parameter.dBColumnName, addRecordLocally]
   );
 
+  const handleSaveRow = useCallback(
+    async ({ values, row, table }: any) => {
+      // Check if this record is local (should be in localRecords)
+      // glitem records are always local
+      const isLocal = parameter.dBColumnName === "glitem" || localRecords.some((r) => String(r.id) === String(row.id));
+
+      if (isLocal) {
+        // IMPORTANT: Since we use custom Cell Editors that modify row.original directly (via handleChange),
+        // the 'values' object passed by MRT might NOT contain the latest changes if MRT didn't detect them.
+        // We MUST use row.original which our editors updated.
+        // We ignore 'values' entirely because it might be stale or contain default garbage.
+        const newValues = { ...row.original };
+
+        // Update local state
+        setLocalRecords((prev) => prev.map((r) => (String(r.id) === String(row.id) ? { ...r, ...newValues } : r)));
+
+        // Also update gridSelection if the row is currently selected, to keep process payload in sync
+        if (rowSelection[row.id]) {
+          onSelectionChange((prev: GridSelectionStructure) => {
+            const currentSelection = prev[parameter.dBColumnName]?._selection || [];
+            // Update the item in the selection array
+            const updatedSelection = currentSelection.map((item) =>
+              String(item.id) === String(row.id) ? { ...item, ...newValues } : item
+            );
+
+            return {
+              ...prev,
+              [parameter.dBColumnName]: {
+                ...prev[parameter.dBColumnName],
+                _selection: updatedSelection,
+                // We also update _allRows just in case, though it usually mirrors localRecords which we just updated via props?
+                // No, localRecords is state here. Syncing _allRows is good practice.
+                _allRows:
+                  prev[parameter.dBColumnName]?._allRows?.map((item) =>
+                    String(item.id) === String(row.id) ? { ...item, ...newValues } : item
+                  ) || [],
+              },
+            };
+          });
+        }
+
+        table.setEditingRow(null);
+        return;
+      }
+
+      // If NOT local, we might need to handle backend update logic, but for now we focus on fixing the glitem revert issue.
+      table.setEditingRow(null);
+    },
+    [localRecords, parameter.dBColumnName, rowSelection, onSelectionChange]
+  );
+
+  const handleAddNewRecord = useCallback(() => {
+    // Logic for adding new empty record to localRecords directly
+    const generateUUID = () => {
+      // Distinct implementation for local temporary records
+      const timestamp = Date.now().toString(36);
+      const randomPart = Math.random().toString(36).substring(2, 10);
+      return `local_${timestamp}_${randomPart}`.toUpperCase();
+    };
+
+    const newId = generateUUID();
+    const newRecord = {
+      id: newId,
+    };
+
+    // Add to local datasource
+    addRecordLocally(newRecord);
+
+    // Auto-select
+    setRowSelection((prev) => ({
+      ...prev,
+      [newId]: true,
+    }));
+  }, [addRecordLocally]);
+
+  // Refs for state accessed in handlers to allow stable handler identity
+  const localRecordsRef = useRef(localRecords);
+  const rowSelectionRef = useRef(rowSelection);
+  // Ensure refs are always up to date
+  useEffect(() => {
+    localRecordsRef.current = localRecords;
+    rowSelectionRef.current = rowSelection;
+  }, [localRecords, rowSelection]);
+
+  // Stable handler using refs
+  const handleRecordChange = useCallback(
+    (row: any, changes: any) => {
+      const records = localRecordsRef.current;
+      const selection = rowSelectionRef.current;
+
+      if (parameter.dBColumnName !== "glitem" && !records.some((r) => String(r.id) === String(row.id))) return;
+
+      // Update state (trigger re-render)
+      setLocalRecords((prev) => prev.map((r) => (String(r.id) === String(row.id) ? { ...r, ...changes } : r)));
+
+      // Update selection if selected (read from ref)
+      if (selection[row.id]) {
+        onSelectionChange((prev: GridSelectionStructure) => {
+          const currentSelection = prev[parameter.dBColumnName]?._selection || [];
+          const updatedSelection = currentSelection.map((item) =>
+            String(item.id) === String(row.id) ? { ...item, ...changes } : item
+          );
+          return {
+            ...prev,
+            [parameter.dBColumnName]: {
+              ...prev[parameter.dBColumnName],
+              _selection: updatedSelection,
+              _allRows:
+                prev[parameter.dBColumnName]?._allRows?.map((item) =>
+                  String(item.id) === String(row.id) ? { ...item, ...changes } : item
+                ) || [],
+            },
+          };
+        });
+      }
+    },
+    [parameter.dBColumnName, onSelectionChange]
+  ); // Dependencies are now minimal and stable
+
+  // Update the ref exposed to context
+  useEffect(() => {
+    handleRecordChangeRef.current = handleRecordChange;
+  }, [handleRecordChange]);
+
+  useEffect(() => {
+    handleRecordChangeRef.current = handleRecordChange;
+  }, [handleRecordChange]);
+
+  // Context value for GridCellEditor components (defined here to capture handleRecordChangeRef)
+  const gridContextValue = useMemo(
+    () => ({
+      effectiveRecordValuesRef,
+      parametersRef,
+      fieldsRef,
+      handleRecordChangeRef,
+      validationsRef,
+      validations,
+      session,
+      tabId,
+    }),
+    [tabId, session, validations]
+  );
+
+  const finalColumns = useMemo(() => {
+    const windowReferenceTab = parameter.window?.tabs?.[0];
+    let fields: any[] = [];
+    if (windowReferenceTab?.fields) {
+      if (Array.isArray(windowReferenceTab.fields)) {
+        fields = windowReferenceTab.fields;
+      } else {
+        fields = Object.values(windowReferenceTab.fields);
+      }
+    }
+
+    return columns
+      .filter((c) => c.id !== "actions")
+      .map((col) => {
+        // Identify if column corresponds to a Read-Only field
+        let isReadOnly = false;
+        if (fields.length > 0) {
+          const colDef = col as MRT_ColumnDef<EntityData>;
+          const field = fields.find((f: any) => {
+            if (colDef.accessorKey) {
+              if (f.columnName === colDef.accessorKey) return true;
+              if (f.inpColumnName === colDef.accessorKey) return true;
+              if (f.hqlName === colDef.accessorKey) return true;
+            }
+            if (col.header && f.name === col.header) return true;
+            return false;
+          });
+
+          if (field) {
+            // Check explicit metadata
+            if (field.readOnly === true || field.isReadOnly === true || field.uIPattern === "RO") {
+              isReadOnly = true;
+            }
+          }
+        }
+
+        const newCol: any = {
+          ...col,
+          enableEditing: isReadOnly ? false : col.enableEditing,
+          onRecordChange: handleRecordChange,
+        };
+
+        if (isReadOnly) {
+          // For Read-Only fields, override the Cell renderer
+          newCol.Cell = ReadOnlyCellRenderer;
+          // Ensure Edit component is removed so it cannot be triggered
+          newCol.Edit = undefined;
+        } else if (!newCol.Cell) {
+          // If no cell renderer set (and not read-only), ensure we use our interactive one for consistency
+          // Note: columns usually have default or custom cell renderers set in useColumns or earlier logic
+        }
+
+        return newCol;
+      });
+  }, [columns, handleRecordChange, parameter.window]);
+
   const renderTopToolbar = useCallback(
     (props: MRT_TopToolbarProps<EntityData>) => {
       const selectedCount = props.table.getSelectedRowModel().rows.length;
@@ -1175,8 +1471,14 @@ function WindowReferenceGrid({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => props.table.setCreatingRow(true)}
-              className="flex items-center gap-1.5 px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-colors cursor-pointer">
+              onClick={() => {
+                if (parameter.dBColumnName === "glitem") {
+                  handleAddNewRecord();
+                } else {
+                  props.table.setCreatingRow(true);
+                }
+              }}
+              className="hidden flex items-center gap-1.5 px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-colors cursor-pointer">
               <PlusIcon className="w-4 h-4" data-testid="PlusIcon__ce8544" />
               {/* @ts-ignore */}
               <span>{t("common.new")}</span>
@@ -1232,7 +1534,7 @@ function WindowReferenceGrid({
       },
       muiTableBodyRowProps: ({ row }) => {
         return {
-          onClick: () => handleRowClick(row),
+          onClick: (event) => handleRowClick(row, event),
           className: rowSelection[row.id]
             ? "bg-blue-50 hover:bg-blue-100 cursor-pointer"
             : "hover:bg-gray-50 cursor-pointer",
@@ -1258,7 +1560,7 @@ function WindowReferenceGrid({
       enableSorting: true,
       enableColumnActions: true,
       manualFiltering: true,
-      columns,
+      columns: finalColumns, // Use modified columns with handler
       data: records || [],
       getRowId: (row) => String(row.id),
       renderTopToolbar,
@@ -1280,16 +1582,62 @@ function WindowReferenceGrid({
       },
       onRowSelectionChange: handleRowSelection,
       onColumnFiltersChange: handleMRTColumnFiltersChange,
-      enableEditing: true,
+      enableEditing: (row) => {
+        // Robust check for row editability based on field metadata
+        const hasEditableField = finalColumns.some((col) => {
+          if (col.id === "mrt-row-actions" || col.id === "mrt-row-select") return false;
+
+          // Check explicit enableEditing flag
+          if (col.enableEditing === false) return false;
+
+          // Find corresponding field in tab definition
+          // windowReferenceTab.fields can be an array or object map depending on context
+          // Determine fields array for validation
+          let fields: any[] = [];
+          if (windowReferenceTab?.fields) {
+            if (Array.isArray(windowReferenceTab.fields)) {
+              fields = windowReferenceTab.fields;
+            } else {
+              fields = Object.values(windowReferenceTab.fields);
+            }
+          }
+
+          const field = fields.find(
+            (f: any) =>
+              f.columnName === col.accessorKey ||
+              f.inpColumnName === col.accessorKey ||
+              f.hqlName === col.accessorKey || // Matches property name like 'businessPartner'
+              f.name === col.header
+          );
+
+          if (!field) {
+            // If we can't find field metadata, assume it follows col.enableEditing
+            // Default to false for unknown text columns to prevent "fake" editing of labels
+            return col.enableEditing === true;
+          }
+
+          // Check Read Only status
+          // @ts-ignore
+          if (field.readOnly === true || field.isReadOnly === true || field.uIPattern === "RO") {
+            return false;
+          }
+
+          return true; // Found at least one editable field
+        });
+
+        return hasEditableField;
+      },
       createDisplayMode: "row",
-      editDisplayMode: "row",
-      enableRowActions: true,
+      editDisplayMode: "cell",
+      enableRowActions: false, // Ensure this is false to hide the actions column
       positionActionsColumn: "first",
       onCreatingRowSave: handleCreateRow,
       onCreatingRowCancel: () => setValidationErrors({}),
+      onEditingRowSave: handleSaveRow, // Handle standard row saves
+      onEditingRowCancel: () => setValidationErrors({}),
     }),
     [
-      columns,
+      finalColumns,
       records,
       rowSelection,
       columnFilters,
@@ -1299,6 +1647,8 @@ function WindowReferenceGrid({
       handleRowSelection,
       handleMRTColumnFiltersChange,
       handleRowClick,
+      handleCreateRow,
+      handleSaveRow,
     ]
   );
 
@@ -1329,22 +1679,23 @@ function WindowReferenceGrid({
     );
   }
 
-  // Only show EmptyState if there are no fields (configuration error)
-  // If there are fields but no records, show the table with empty state inside
-  // This allows users to clear filters even when no results are found
-  if (fields.length === 0 && !tabLoading) {
+  // Only show EmptyState if there are no columns (configuration error)
+  // If there are columns but no records, show the table with empty state inside
+  if ((!columns || columns.length === 0) && !tabLoading && !processConfigLoading) {
     return <EmptyState maxWidth={MAX_WIDTH} data-testid="EmptyState__ce8544" />;
   }
 
   return (
-    <div
-      className={`flex flex-col w-full overflow-hidden max-h-4xl h-full transition duration-100 ${
-        datasourceLoading ? "opacity-40 cursor-wait cursor-to-children" : "opacity-100"
-      }`}
-      ref={contentRef}>
-      <MaterialReactTable table={table} data-testid="MaterialReactTable__ce8544" />
-    </div>
+    <WindowReferenceGridProvider value={gridContextValue} data-testid="WindowReferenceGridProvider__ce8544">
+      <div
+        className={`flex flex-col w-full overflow-hidden max-h-4xl h-full transition duration-100 ${
+          datasourceLoading ? "opacity-40 cursor-wait cursor-to-children" : "opacity-100"
+        }`}
+        ref={contentRef}>
+        <MaterialReactTable table={table} data-testid="MaterialReactTable__ce8544" />
+      </div>
+    </WindowReferenceGridProvider>
   );
-}
+};
 
 export default WindowReferenceGrid;
