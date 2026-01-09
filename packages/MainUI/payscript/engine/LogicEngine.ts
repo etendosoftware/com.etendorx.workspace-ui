@@ -69,6 +69,39 @@ export interface PayScriptRules {
   validate?: (context: Record<string, any>, computed: Record<string, any>, util: UtilType) => Validation[];
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: Accepts any value type for numeric parsing
+const parseNum = (val: any): number => {
+  if (typeof val === "number") return val;
+  if (val instanceof BigNumber) return val.toNumber();
+  if (typeof val === "string") {
+    const clean = val.replace(/,/g, "");
+    const parsed = Number.parseFloat(clean);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
+
+// Helper for distributeAmount to calculate initial remaining amount
+const calculateRemainingAmount = (items: any[], totalAmount: BigNumber, amountField: string): BigNumber => {
+  return items.reduce((acc, item) => {
+    const currentAmt = parseNum(item[amountField]);
+    return currentAmt !== 0 ? acc.minus(currentAmt) : acc;
+  }, totalAmount);
+};
+
+// Helper for getGridItems to process a single row
+const processGridRow = (row: any, fieldsToParse: string[]) => {
+  const cleanRow = { ...row };
+  for (const field of fieldsToParse) {
+    if (cleanRow[field] !== undefined) {
+      cleanRow[field] = parseNum(cleanRow[field]);
+    }
+  }
+  cleanRow.selected = true;
+  cleanRow.obSelected = true;
+  return cleanRow;
+};
+
 /**
  * Factory to create a context-aware utility object.
  */
@@ -82,18 +115,6 @@ const createUtil = (context: Record<string, any>): UtilType => {
       if (context[inpKey] !== undefined && context[inpKey] !== null) return context[inpKey];
     }
     return undefined;
-  };
-
-  // biome-ignore lint/suspicious/noExplicitAny: Accepts any value type for numeric parsing
-  const parseNum = (val: any): number => {
-    if (typeof val === "number") return val;
-    if (val instanceof BigNumber) return val.toNumber();
-    if (typeof val === "string") {
-      const clean = val.replace(/,/g, "");
-      const parsed = Number.parseFloat(clean);
-      return Number.isNaN(parsed) ? 0 : parsed;
-    }
-    return 0;
   };
 
   return {
@@ -128,30 +149,22 @@ const createUtil = (context: Record<string, any>): UtilType => {
       const gridSelection = context._gridSelection || {};
       const allItems: any[] = [];
 
-      for (const [gridName, entityData] of Object.entries(gridSelection)) {
+      // biome-ignore lint/complexity/noForEach: Iterating map entries
+      Object.entries(gridSelection).forEach(([gridName, entityData]) => {
         // Filter by grid name if specified
         if (gridNames.length > 0 && !gridNames.includes(gridName)) {
-          continue;
+          return;
         }
 
         const selection = (entityData as any)?._selection || [];
+        // console.log(`[getGridItems] grid: ${gridName}, selection len: ${selection.length}`);
         if (Array.isArray(selection)) {
-          for (const row of selection) {
-            const cleanRow = { ...row };
-
-            for (const field of fieldsToParse) {
-              if (cleanRow[field] !== undefined) {
-                cleanRow[field] = parseNum(cleanRow[field]);
-              }
-            }
-
-            cleanRow.selected = true;
-            cleanRow.obSelected = true;
-
-            allItems.push(cleanRow);
-          }
+          // Process rows using helper to reduce nesting
+          const processedRows = selection.map((row) => processGridRow(row, fieldsToParse));
+          allItems.push(...processedRows);
         }
-      }
+      });
+      // console.log(`[getGridItems] returning ${allItems.length} items`);
       return allItems;
     },
     // Generic logic to distribute an amount across a list of items
@@ -161,30 +174,20 @@ const createUtil = (context: Record<string, any>): UtilType => {
       amountField = "amount",
       outstandingField = "outstandingAmount"
     ) => {
-      let remaining = new BigNumber(totalAmount);
-
-      // 1. Subtract amounts already allocated (manual edits)
-      for (const item of items) {
-        const currentAmt = parseNum(item[amountField]);
-        if (currentAmt !== 0) {
-          remaining = remaining.minus(currentAmt);
-        }
-      }
+      // 1. Calculate remaining amount after checking manual allocations
+      let remaining = calculateRemainingAmount(items, new BigNumber(totalAmount), amountField);
 
       // 2. Distribute remaining amount to items with 0 amount
       if (remaining.gt(0)) {
         for (const item of items) {
+          // Skip if already allocated or no remaining funds
+          if (remaining.lte(0)) break;
+
           const currentAmt = parseNum(item[amountField]);
           if (currentAmt === 0) {
             const outstanding = parseNum(item[outstandingField]);
-            // Logic: take min(outstanding, remaining)
-            // Assuming positive context for now
-            let alloc = 0;
             if (outstanding > 0) {
-              alloc = remaining.gt(outstanding) ? outstanding : remaining.toNumber();
-            }
-
-            if (alloc > 0) {
+              const alloc = remaining.gt(outstanding) ? outstanding : remaining.toNumber();
               item[amountField] = alloc;
               remaining = remaining.minus(alloc);
             }

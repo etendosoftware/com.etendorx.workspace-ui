@@ -168,12 +168,8 @@ const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validation
     fields.find((f) => f.columnName === col.columnName) ||
     (col.columnName.endsWith("_ID") ? fields.find((f) => f.columnName === col.columnName) : undefined);
 
-  if (!matchingField) {
-    return null;
-  }
-
-  // Resolve reference code
-  const reference = matchingField.column?.reference || (matchingField as any).reference;
+  // Resolve reference code safely
+  const reference = matchingField?.column?.reference || (matchingField as any)?.reference;
   const fieldType = getFieldReference(reference);
 
   const handleChange = useCallback(
@@ -236,8 +232,12 @@ const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validation
         return [];
       }
     },
-    [tabId, session]
+    [tabId, session, effectiveRecordValuesRef, parametersRef]
   );
+
+  if (!matchingField) {
+    return null;
+  }
 
   // Generate unique IDs for accessibility
   const fieldId = `grid-cell-${row.id}-${col.columnName}`;

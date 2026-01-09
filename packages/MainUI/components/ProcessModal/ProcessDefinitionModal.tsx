@@ -412,7 +412,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           ...prev,
           [gridName]: {
             ...currentGrid,
-            _selection: data as any[],
+            _selection: data,
           },
         };
       });
@@ -1605,39 +1605,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       text: t("common.execute"),
     };
   };
-
-  // Debug disabled state
-  const missingMandatoryParams = Object.values(parameters)
-    .filter((param) => {
-      // @ts-ignore
-      if (!param.mandatory || param.active === false) return false;
-      if (param.defaultValue) return false;
-
-      const formValues = form.getValues();
-      const fieldName = param.name;
-      const dbColumnName = param.dBColumnName;
-
-      let fieldValue = formValues[fieldName as keyof typeof formValues] as unknown;
-      if (fieldValue === undefined && dbColumnName) {
-        fieldValue = formValues[dbColumnName as keyof typeof formValues] as unknown;
-      }
-
-      const isRegisteredByName = fieldName in formValues;
-      const isRegisteredByDBColumn = dbColumnName && dbColumnName in formValues;
-      const fieldIsRegistered = isRegisteredByName || isRegisteredByDBColumn;
-
-      if (!fieldIsRegistered) return false;
-
-      if (
-        fieldValue === undefined ||
-        fieldValue === null ||
-        fieldValue === "" ||
-        (Array.isArray(fieldValue) && fieldValue.length === 0)
-      )
-        return true;
-      return false;
-    })
-    .map((p) => p.name);
 
   const isActionButtonDisabled =
     isPending ||

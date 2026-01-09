@@ -154,10 +154,10 @@ export function registerPayScriptDSL(processId: string, dslCode: string): void {
     if (!dslCode || !dslCode.trim()) return;
 
     // 1. Clean up imports and exports
+    // Use a non-greedy, multiline-safe regex to avoid ReDoS and handle multi-line imports
     // We handle specifically the "export const NAME = ..." pattern
-    // This regex matches `export const VarName =` optionally with typescript type specificacion
     let cleanCode = dslCode
-      .replace(/import\s+.*;(?:\r\n|\r|\n)/g, "")
+      .replace(/^\s*import\s+[\s\S]+?;/gm, "")
       .replace(/export\s+const\s+\w+(\s*:\s*\w+)?\s*=\s*/, "")
       .trim();
 
@@ -183,7 +183,9 @@ export function registerPayScriptDSL(processId: string, dslCode: string): void {
 
     // Evaluate
     // We wrap it in return (...) to ensure it's treated as an expression
-    // biome-ignore lint/security/noGlobalEval: Dynamic DSL execution
+    // SECURITY: This relies on 'dslCode' coming from a trusted backend source.
+    // Do not allow end-users to input arbitrary PayScript code here.
+    // biome-ignore lint/security/noGlobalEval: Dynamic DSL execution required for PayScript engine
     const createRules = new Function(`return ${cleanCode}`);
     const rules = createRules();
 

@@ -1,5 +1,4 @@
 import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
-import { logger } from "@/utils/logger";
 
 /**
  * Utility to map form values (using parameter names) to context values (using DB column names)
