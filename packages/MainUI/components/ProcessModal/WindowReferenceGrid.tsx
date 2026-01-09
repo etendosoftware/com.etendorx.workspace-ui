@@ -26,6 +26,7 @@ import {
   type MRT_TableOptions,
   type MRT_Row,
   type MRT_TopToolbarProps,
+  type MRT_ColumnDef,
 } from "material-react-table";
 import { useDatasource } from "@/hooks/useDatasource";
 import { useGridColumnFilters } from "@/hooks/table/useGridColumnFilters";
@@ -1420,12 +1421,12 @@ const WindowReferenceGrid = ({
         // Identify if column corresponds to a Read-Only field
         let isReadOnly = false;
         if (fields.length > 0) {
-          const colAny = col as any;
+          const colDef = col as MRT_ColumnDef<EntityData>;
           const field = fields.find((f: any) => {
-            if (colAny.accessorKey) {
-              if (f.columnName === colAny.accessorKey) return true;
-              if (f.inpColumnName === colAny.accessorKey) return true;
-              if (f.hqlName === colAny.accessorKey) return true;
+            if (colDef.accessorKey) {
+              if (f.columnName === colDef.accessorKey) return true;
+              if (f.inpColumnName === colDef.accessorKey) return true;
+              if (f.hqlName === colDef.accessorKey) return true;
             }
             if (col.header && f.name === col.header) return true;
             return false;

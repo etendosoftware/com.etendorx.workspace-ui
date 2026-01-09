@@ -1,14 +1,4 @@
 export const AddPaymentRulesGeneric = (() => {
-  // Helper to determine transaction type context
-  const resolveIsSOTrx = (util) => {
-    const trxtype = util.valStr("trxtype");
-    let isSOTrx = util.valBool("issotrx", "isSOTrx");
-    if (!isSOTrx && trxtype === "RCIN") {
-      isSOTrx = true;
-    }
-    return isSOTrx;
-  };
-
   // Helper to calculate used credit from grid items or fallback value
   const calculateUsedCredit = (util, creditItems, usedCreditValue) => {
     if (creditItems.length > 0) {
