@@ -345,7 +345,6 @@ const WindowReferenceGrid = ({
   const effectiveRecordValuesRef = useRef(effectiveRecordValues);
   const parametersRef = useRef(parameters);
   const validationsRef = useRef<any[]>((effectiveRecordValues?._validations as unknown as any[]) || []);
-
   // Sync refs ensures GridCellEditor has latest values without triggering re-render via Context
   useEffect(() => {
     effectiveRecordValuesRef.current = effectiveRecordValues;
@@ -358,21 +357,6 @@ const WindowReferenceGrid = ({
     // biome-ignore lint/suspicious/noExplicitAny: explicit cast
     return (effectiveRecordValues?._validations as unknown as any[]) || [];
   }, [effectiveRecordValues]);
-
-  // Context value for GridCellEditor components
-  const gridContextValue = useMemo(
-    () => ({
-      effectiveRecordValuesRef,
-      parametersRef,
-      fieldsRef,
-      handleRecordChangeRef,
-      validationsRef,
-      validations,
-      session,
-      tabId,
-    }),
-    [tabId, session, validations]
-  ); // effectiveRecordValuesRef and parametersRef are stable refs
 
   const [isDataReady, setIsDataReady] = useState(false);
 
@@ -1403,7 +1387,25 @@ const WindowReferenceGrid = ({
     handleRecordChangeRef.current = handleRecordChange;
   }, [handleRecordChange]);
 
-  // Inject handleRecordChange into columns and enforce Read-Only status
+  useEffect(() => {
+    handleRecordChangeRef.current = handleRecordChange;
+  }, [handleRecordChange]);
+
+  // Context value for GridCellEditor components (defined here to capture handleRecordChangeRef)
+  const gridContextValue = useMemo(
+    () => ({
+      effectiveRecordValuesRef,
+      parametersRef,
+      fieldsRef,
+      handleRecordChangeRef,
+      validationsRef,
+      validations,
+      session,
+      tabId,
+    }),
+    [tabId, session, validations]
+  );
+
   const finalColumns = useMemo(() => {
     const windowReferenceTab = parameter.window?.tabs?.[0];
     let fields: any[] = [];
