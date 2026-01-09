@@ -31,7 +31,8 @@ export const useColumnFilterData = () => {
       limit = 20,
       distinctField?: string,
       tabId?: string,
-      offset = 0
+      offset = 0,
+      isImplicitFilterApplied?: boolean
     ): Promise<FilterOption[]> => {
       try {
         const params: Record<string, unknown> = {
@@ -42,8 +43,12 @@ export const useColumnFilterData = () => {
           dataSource: datasourceId,
         };
 
+        if (isImplicitFilterApplied) {
+          params.isImplicitFilterApplied = true;
+        }
+
         if (distinctField && tabId) {
-          params.distinct = distinctField;
+          params._distinct = distinctField;
           params.tabId = tabId;
           params.operator = "and";
           params._constructor = "AdvancedCriteria";
@@ -63,6 +68,9 @@ export const useColumnFilterData = () => {
               _constructor: "AdvancedCriteria",
             });
           }
+
+          // Optimize payload by requesting only necessary fields
+          params._selectedProperties = `id,${distinctField},${distinctField}$_identifier`;
         } else {
           if (selectorDefinitionId) {
             params.selectorDefinitionId = selectorDefinitionId;

@@ -102,7 +102,16 @@ const isVisibleButton = (button: ToolbarButtonMetadata, isFormView: boolean, isT
   const isSaveButtonInNonFormView = !isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE;
   const isFilterButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER;
   const isToggleTreeView = !isTreeNodeView && button.action === TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW;
-  return !isFindButtonInFormView && !isSaveButtonInNonFormView && !isFilterButtonInFormView && !isToggleTreeView;
+  const isPrintButtonInTransactionWindow =
+    button.action === TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD && !tab?.process$_identifier?.includes("Print");
+
+  return (
+    !isFindButtonInFormView &&
+    !isSaveButtonInNonFormView &&
+    !isFilterButtonInFormView &&
+    !isToggleTreeView &&
+    !isPrintButtonInTransactionWindow
+  );
 };
 
 export const organizeButtonsBySection = (
@@ -143,6 +152,7 @@ export const createButtonByType = ({
   tab,
   selectedRecordsLength,
   isAdvancedFilterApplied,
+  windowType,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
@@ -158,6 +168,7 @@ export const createButtonByType = ({
   tab: Tab;
   selectedRecordsLength: number;
   isAdvancedFilterApplied?: boolean;
+  windowType?: string;
 }) => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
@@ -318,6 +329,7 @@ interface ButtonConfig {
   tab: Tab;
   selectedRecordsLength: number;
   isAdvancedFilterApplied?: boolean;
+  windowType?: string;
 }
 
 /**
@@ -344,6 +356,7 @@ const createSectionButtons = (
       tab: config.tab,
       selectedRecordsLength: config.selectedRecordsLength,
       isAdvancedFilterApplied: config.isAdvancedFilterApplied,
+      windowType: config.windowType,
     });
 
     // Apply button-specific styles if available
@@ -390,6 +403,7 @@ interface ToolbarSectionsConfig {
   tab: Tab;
   selectedRecordsLength: number;
   isAdvancedFilterApplied?: boolean;
+  windowType?: string;
 }
 
 export const getToolbarSections = ({
@@ -408,7 +422,6 @@ export const getToolbarSections = ({
   t,
   tab,
   selectedRecordsLength,
-
   isAdvancedFilterApplied = false,
 }: ToolbarSectionsConfig): {
   leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
