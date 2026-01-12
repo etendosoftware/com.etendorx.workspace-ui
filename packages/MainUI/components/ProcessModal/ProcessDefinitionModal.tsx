@@ -64,6 +64,10 @@ import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
 import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
+import {
+  DEFAULT_BULK_COMPLETION_ONLOAD,
+  isBulkCompletionProcess,
+} from "@/utils/process/bulkCompletionUtils";
 
 // Date field reference codes for conversion
 const DATE_REFERENCE_CODES = [
@@ -275,6 +279,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   } = useProcessInitializationState(
     processInitialization,
     memoizedParameters // Use memoized version to prevent infinite loops
+  );
+
+  const isBulkCompletion = useMemo(
+    () => isBulkCompletionProcess(processDefinition, parameters),
+    [processDefinition, parameters]
   );
 
   // Combined form data: record values + process defaults (similar to FormView pattern)
@@ -817,11 +826,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           recordIds = [String(record.id)];
         }
 
+        const mappedFormValues = getMappedFormValues();
+
         const payload = {
           recordIds,
           _buttonValue: actionValue || "DONE",
           _params: {
-            ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues, ...populatedGrids }),
+            ...mapKeysWithDefaults({ ...recordValues, ...extraKey, ...mappedFormValues, ...populatedGrids }),
             ...buttonParams,
           },
         };
@@ -1102,10 +1113,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       try {
         setLoading(true);
 
-        if (onLoad && tab) {
-          const result = await executeStringFunction(onLoad, { Metadata }, button.processDefinition, {
+        const effectiveOnLoad = onLoad || (isBulkCompletion ? DEFAULT_BULK_COMPLETION_ONLOAD : null);
+
+        if (effectiveOnLoad && tab) {
+          const result = await executeStringFunction(effectiveOnLoad, { Metadata }, button.processDefinition, {
             selectedRecords,
             tabId: tab.id || "",
+            tableId: tab.table || "",
           });
 
           // If result is undefined/null, skip
@@ -1148,7 +1162,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
               if (!newParameters[parameterName]) continue;
 
               try {
-                const newOptions = values as string[];
+                const isArray = Array.isArray(values);
+                const newOptions = isArray ? (values as string[]) : [values as string];
 
                 newParameters[parameterName] = { ...newParameters[parameterName] };
 
@@ -1176,7 +1191,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     };
 
     fetchOptions();
-  }, [button.processDefinition, onLoad, open, selectedRecords, tab, setGridSelection]);
+  }, [button.processDefinition, onLoad, open, selectedRecords, tab, setGridSelection, isBulkCompletion]);
 
   /**
    * NEW useEffect:
@@ -1352,9 +1367,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     if (result?.success) return null;
 
     // Sort parameters by sequence number
-    const parametersList = Object.values(parameters).sort(
+    let parametersList = Object.values(parameters).sort(
       (a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0)
     );
+
+    // If bulk completion, only show DocAction
+    if (isBulkCompletion) {
+      parametersList = parametersList.filter(
+        (p) => p.name === "DocAction" || p.dBColumnName === "DocAction" || p.name === "Document Actionn"
+      );
+    }
+
     const windowReferences: React.ReactElement[] = [];
     const selectors: React.ReactElement[] = [];
 

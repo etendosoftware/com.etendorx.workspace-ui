@@ -122,7 +122,7 @@ export const getParams = ({
 
 export function mapKeysWithDefaults(source: SourceObject): TargetObject {
   const keyMap: KeyMapConfig = {
-    inpporeference: { target: "reference_no", default: null },
+    inpporeference: { target: "POReference", default: "" },
     inpcCurrencyId: { target: "c_currency_id", default: null },
     inpcBpartnerId: { target: "received_from", default: null },
     inpfinPaymentmethodId: { target: "fin_paymentmethod_id", default: null },
@@ -136,8 +136,9 @@ export function mapKeysWithDefaults(source: SourceObject): TargetObject {
     inpadOrgId: { target: "ad_org_id", default: null },
     converted_amount: { target: "conversion_rate", default: 0 },
     conversion_rate: { target: "conversion_rate", default: 0 },
-    "Payment Document No": { target: "payment_documentno", default: null },
     "Action Regarding Document": { target: "document_action", default: null },
+    reference_no: { target: "POReference", default: "" },
+    POReference: { target: "POReference", default: "" },
     "Converted Amount": { target: "converted_amount", default: null },
     "Deposit To": { target: "fin_financial_account_id", default: null },
     "Invoice Date": { target: "invoiceDate", default: null },

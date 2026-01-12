@@ -16,7 +16,8 @@
  */
 
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "../columnFilterHelpers";
-import type { Column, FilterOption } from "@workspaceui/api-client/src/api/types";
+import type { Column } from "@workspaceui/api-client/src/api/types";
+import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 
 // Test helpers and factories
@@ -50,6 +51,7 @@ const createTableDirColumn = (overrides?: Partial<Column>): Column =>
 
 const createFilterOptions = (count: number, prefix = "item"): FilterOption[] =>
   Array.from({ length: count }, (_, i) => ({
+    id: `${prefix}${i}`,
     value: `${prefix}${i}`,
     label: `${prefix.charAt(0).toUpperCase() + prefix.slice(1)} ${i}`,
   }));
@@ -134,8 +136,8 @@ describe("columnFilterHelpers", () => {
         datasourceId: "Organization",
       });
       const mockData = [
-        { value: "org1", label: "Organization 1" },
-        { value: "org2", label: "Organization 2" },
+        { id: "org1", value: "org1", label: "Organization 1" },
+        { id: "org2", value: "org2", label: "Organization 2" },
       ];
 
       const { result, mockFetchFilterOptions, mockSetFilterOptions } = await runLoadTableDirTest({
@@ -168,8 +170,8 @@ describe("columnFilterHelpers", () => {
         datasourceId: undefined,
       });
       const mockData = [
-        { value: "bp1", label: "Partner 1" },
-        { value: "bp2", label: "Partner 2" },
+        { id: "bp1", value: "bp1", label: "Partner 1" },
+        { id: "bp2", value: "bp2", label: "Partner 2" },
       ];
 
       const { result, mockFetchFilterOptions } = await runLoadTableDirTest({
@@ -194,8 +196,8 @@ describe("columnFilterHelpers", () => {
     it("should handle pagination with offset and pageSize", async () => {
       const mockColumn = createTableDirColumn();
       const mockData = [
-        { value: "prod21", label: "Product 21" },
-        { value: "prod22", label: "Product 22" },
+        { id: "prod21", value: "prod21", label: "Product 21" },
+        { id: "prod22", value: "prod22", label: "Product 22" },
       ];
 
       const { mockFetchFilterOptions, mockSetFilterOptions } = await runLoadTableDirTest({
@@ -256,7 +258,7 @@ describe("columnFilterHelpers", () => {
 
     it("should set append to true when offset > 0", async () => {
       const mockColumn = createTableDirColumn();
-      const mockData = [{ value: "prod1", label: "Product 1" }];
+      const mockData = [{ id: "prod1", value: "prod1", label: "Product 1" }];
 
       const { mockSetFilterOptions } = await runLoadTableDirTest({
         column: mockColumn,
