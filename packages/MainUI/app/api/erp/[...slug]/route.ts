@@ -482,8 +482,21 @@ function unauthorizedResponse(): Response {
 async function handleError(error: unknown, params: Promise<{ slug: string[] }>): Promise<Response> {
   const resolvedParams = await params;
   console.error(`API Route /api/erp/${resolvedParams.slug.join("/")} Error:`, error);
-  const errorStatus = error instanceof ErpRequestError ? error.status : 500;
-  return NextResponse.json({ error: "Failed to fetch ERP data" }, { status: errorStatus });
+
+  if (error instanceof ErpRequestError) {
+    return NextResponse.json(
+      {
+        error: error.message,
+        details: error.errorText,
+        status: error.status,
+        statusText: error.statusText,
+      },
+      { status: error.status }
+    );
+  }
+
+  const errorMessage = error instanceof Error ? error.message : "Failed to fetch ERP data";
+  return NextResponse.json({ error: errorMessage }, { status: 500 });
 }
 
 export async function GET(request: Request, context: { params: Promise<{ slug: string[] }> }) {
