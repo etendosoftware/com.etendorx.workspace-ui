@@ -57,6 +57,10 @@ type DropdownMenuProps = {
    * Can be used when the content or layout changes dynamically.
    */
   menuRef?: React.MutableRefObject<{ recalculatePosition: () => void } | null>;
+  /**
+   * Optional styles to override or add to the menu container.
+   */
+  style?: React.CSSProperties;
 };
 
 /**
@@ -76,6 +80,7 @@ const Menu: React.FC<DropdownMenuProps> = ({
   offsetX,
   offsetY,
   menuRef: externalMenuRef,
+  style,
 }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [visible, setVisible] = useState(false);
@@ -234,6 +239,7 @@ const Menu: React.FC<DropdownMenuProps> = ({
           top: position.y,
           left: position.x,
           visibility: visible ? "visible" : "hidden",
+          ...style,
         }}>
         {children}
       </div>,

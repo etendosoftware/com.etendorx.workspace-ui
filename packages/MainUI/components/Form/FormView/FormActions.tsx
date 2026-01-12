@@ -19,7 +19,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useFormValidation } from "@/hooks/useFormValidation";
-import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { useTabContext } from "@/contexts/tab";
 import { globalCalloutManager } from "@/services/callouts";
 import { logger } from "@/utils/logger";
@@ -29,13 +28,13 @@ import { useWindowContext } from "@/contexts/window";
 
 interface FormActionsProps {
   tab: Tab;
-  setRecordId: (recordId: string) => void;
+  onNew: () => void;
   refetch: () => Promise<void>;
   onSave: (showModal: boolean) => Promise<void>;
   showErrorModal: (message: string) => void;
 }
 
-export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal }: FormActionsProps) {
+export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: FormActionsProps) {
   const formContext = useFormContext();
   const { isDirty } = formContext.formState;
 
@@ -166,9 +165,8 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
   }, [activeWindow?.windowIdentifier, clearTabFormState, tab, resetFormChanges]);
 
   const handleNew = useCallback(() => {
-    setRecordId(NEW_RECORD_ID);
-    resetFormChanges();
-  }, [setRecordId, resetFormChanges]);
+    onNew();
+  }, [onNew]);
 
   useEffect(() => {
     const actions = {

@@ -250,12 +250,10 @@ export const useTableData = ({
           columnId,
           searchQuery,
           tabId: tab.id,
-          entityName: tab.entityName,
-          fetchFilterOptions: async (colId, query) => {
-            await loadFilterOptions(colId, query);
-            return [];
-          },
+          entityName: treeEntity,
+          fetchFilterOptions,
           setFilterOptions,
+          isImplicitFilterApplied,
         });
       }
 
@@ -266,7 +264,7 @@ export const useTableData = ({
 
       return [];
     },
-    [tab.fields, tab.id, tab.entityName, loadFilterOptions, setFilterOptions]
+    [rawColumns, fetchFilterOptions, setFilterOptions, loadFilterOptions, tab.id, treeEntity, isImplicitFilterApplied]
   );
 
   const handleLoadMoreFilterOptions = useCallback(
@@ -299,9 +297,19 @@ export const useTableData = ({
         setFilterOptions,
         offset,
         pageSize,
+        isImplicitFilterApplied,
       });
     },
-    [rawColumns, fetchFilterOptions, setFilterOptions, loadMoreFilterOptions, tab.id, treeEntity, advancedColumnFilters]
+    [
+      rawColumns,
+      fetchFilterOptions,
+      setFilterOptions,
+      loadMoreFilterOptions,
+      tab.id,
+      treeEntity,
+      advancedColumnFilters,
+      isImplicitFilterApplied,
+    ]
   );
 
   // Get columns with filter handlers
