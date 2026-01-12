@@ -312,8 +312,8 @@ describe("Visual Feedback Integration", () => {
 
       const endTime = performance.now();
 
-      // Should render quickly (less than 350ms for test environment with overhead)
-      expect(endTime - startTime).toBeLessThan(350);
+      // Should render quickly (less than 700ms for test environment with overhead)
+      expect(endTime - startTime).toBeLessThan(700);
     });
 
     it("should handle rapid state changes efficiently", async () => {

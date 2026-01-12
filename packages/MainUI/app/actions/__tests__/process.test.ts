@@ -1,8 +1,33 @@
 import { executeProcess } from "../../actions/process";
 
+// Mock next/cache
 jest.mock("next/cache", () => ({
   revalidateTag: jest.fn(),
   revalidatePath: jest.fn(),
+}));
+
+// Mock next/headers - headers() returns a ReadonlyHeaders-like object
+const mockHeadersObj = {
+  get: jest.fn().mockReturnValue(null),
+  has: jest.fn().mockReturnValue(false),
+  entries: jest.fn().mockReturnValue([]),
+  keys: jest.fn().mockReturnValue([]),
+  values: jest.fn().mockReturnValue([]),
+  forEach: jest.fn(),
+  [Symbol.iterator]: jest.fn().mockReturnValue([].values()),
+};
+
+jest.mock("next/headers", () => ({
+  headers: jest.fn().mockImplementation(() => Promise.resolve(mockHeadersObj)),
+}));
+
+// Mock sessionStore functions used by getErpAuthHeaders
+jest.mock("@/app/api/_utils/sessionStore", () => ({
+  getErpSessionCookie: jest.fn().mockReturnValue(null),
+  getErpCsrfToken: jest.fn().mockReturnValue(null),
+  setErpSessionCookie: jest.fn(),
+  setErpCsrfToken: jest.fn(),
+  clearErpSessionCookie: jest.fn(),
 }));
 
 jest.mock("@/utils/logger", () => ({
@@ -10,15 +35,24 @@ jest.mock("@/utils/logger", () => ({
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
+    debug: jest.fn(),
   },
 }));
 
 describe("Server Action: executeProcess", () => {
   const OLD_ENV = process.env;
+  let mockFetch: jest.Mock;
 
   beforeEach(() => {
-    jest.resetAllMocks();
-    process.env = { ...OLD_ENV, NEXT_PUBLIC_BASE_URL: "" };
+    jest.clearAllMocks();
+    process.env = { ...OLD_ENV, NEXT_PUBLIC_APP_URL: "http://localhost:3000" };
+
+    // Setup default fetch mock
+    mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true }),
+    });
+    global.fetch = mockFetch;
   });
 
   afterAll(() => {
@@ -26,7 +60,7 @@ describe("Server Action: executeProcess", () => {
   });
 
   it("returns success with JSON body and triggers revalidation", async () => {
-    global.fetch = jest.fn().mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ ok: 1 }),
     });
@@ -36,7 +70,7 @@ describe("Server Action: executeProcess", () => {
   });
 
   it("returns error on non-ok response with text", async () => {
-    global.fetch = jest.fn().mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: false,
       status: 500,
       statusText: "Server Error",
@@ -55,22 +89,16 @@ describe("Server Action: executeProcess", () => {
   });
 
   it("includes Authorization header with Bearer token in request", async () => {
-    const mockFetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: true }),
-    });
-    global.fetch = mockFetch;
-
     await executeProcess("P123", { param: "value" }, "test-auth-token");
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("/api/erp?processId=P123"),
       expect.objectContaining({
         method: "POST",
-        headers: {
+        headers: expect.objectContaining({
           "Content-Type": "application/json;charset=UTF-8",
           Authorization: "Bearer test-auth-token",
-        },
+        }),
         body: JSON.stringify({ param: "value" }),
         credentials: "include",
       })
@@ -78,19 +106,16 @@ describe("Server Action: executeProcess", () => {
   });
 
   it("constructs correct URL for process execution", async () => {
-    const mockFetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: true }),
-    });
-    global.fetch = mockFetch;
-
     await executeProcess("PROCESS123", { data: "test" }, "token");
 
-    expect(mockFetch).toHaveBeenCalledWith("http://localhost:3000/api/erp?processId=PROCESS123", expect.any(Object));
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining("http://localhost:3000/api/erp?processId=PROCESS123"),
+      expect.any(Object)
+    );
   });
 
   it("handles fetch network errors gracefully", async () => {
-    global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
+    mockFetch.mockRejectedValue(new Error("Network error"));
 
     const res = await executeProcess("P123", {}, "token");
     expect(res.success).toBe(false);

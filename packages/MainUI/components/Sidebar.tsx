@@ -14,12 +14,15 @@ import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { buildEtendoClassicBookmarkUrl } from "@/utils/url/utils";
 import { useWindowContext } from "@/contexts/window";
 import ProcessIframeModal from "./ProcessModal/Iframe";
-import type { ProcessIframeModalProps } from "./ProcessModal/types";
+import type { ProcessIframeModalProps, ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
 import formsData from "../utils/processes/forms/data.json";
 import { useRuntimeConfig } from "../contexts/RuntimeConfigContext";
 import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
+import ProcessDefinitionModal from "./ProcessModal/ProcessDefinitionModal";
+import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 
 interface ExtendedMenu extends Menu {
   processDefinitionId?: string;
@@ -67,21 +70,75 @@ const buildFormUrl = (formId: string, token: string | null, baseUrl: string): st
   return `${baseUrl}${API_IFRAME_FORWARD_PATH}${url}?url=${paramUrl}&${params.toString()}`;
 };
 
-const buildProcessDefinitionUrl = (processDefId: string, token: string | null, baseUrl: string): string => {
-  const viewId = `processDefinition_${processDefId}`;
-  const params = new URLSearchParams({ viewId });
-  if (token) {
-    params.append("token", token);
-  }
-  const processPath = "/org.openbravo.client.kernel/OBUIAPP_MainLayout/View";
-  return `${baseUrl}${processPath}?${params.toString()}`;
-};
-
 interface ManualProcessResult {
   url: string;
   size: "default" | "large";
 }
 
+/**
+ * Checks if a menu item is a ProcessDefinition type that should use the new ProcessDefinitionModal
+ */
+const isProcessDefinitionMenuItem = (item: ExtendedMenu): boolean => {
+  return item.type === "ProcessDefinition" && !!item.id;
+};
+
+const isReportAndProcessMenuItem = (item: ExtendedMenu): boolean => {
+  return item.type === "Process" && !!item.id;
+};
+
+/**
+ * Maps a Menu item to a ProcessDefinitionButton structure for the ProcessDefinitionModal
+ */
+const mapMenuToProcessDefinitionButton = (item: ExtendedMenu): ProcessDefinitionButton | null => {
+  if (!isProcessDefinitionMenuItem(item) && !isReportAndProcessMenuItem(item)) {
+    return null;
+  }
+
+  // Determine the correct Process ID to use
+  // We prioritize processDefinitionId as it is specific to this item type
+  // Fallback to processId or item.id
+  const targetProcessId = item.processDefinitionId || item.processId || item.id;
+
+  if (item.type === "ProcessDefinition") {
+    // Performance: Debug log removed
+  }
+
+  // Create a minimal ProcessDefinitionButton structure
+  // The ProcessDefinitionModal will load the full process definition metadata using the ID
+  return {
+    id: item.id,
+    name: item.name,
+    action: "P",
+    enabled: true,
+    visible: true,
+    processId: targetProcessId,
+    buttonText: item.name,
+    processInfo: {
+      loadFunction: "",
+      searchKey: "",
+      clientSideValidation: "",
+      _entityName: "ADProcess",
+      id: targetProcessId,
+      name: item.name,
+      javaClassName: "",
+      parameters: [],
+    },
+    processDefinition: {
+      id: targetProcessId,
+      name: item.name,
+      description: item.description || "",
+      javaClassName: "",
+      parameters: {},
+      onLoad: "",
+      onProcess: "",
+    },
+  } as unknown as ProcessDefinitionButton;
+};
+
+/**
+ * Gets the iframe configuration for legacy manual processes (Process/Form types)
+ * ProcessDefinition types are handled separately via ProcessDefinitionModal
+ */
 const getManualProcessConfig = (
   item: ExtendedMenu,
   token: string | null,
@@ -100,14 +157,12 @@ const getManualProcessConfig = (
     return { url, size: "large" };
   }
 
-  if (item.type === "ProcessDefinition" && item.processDefinitionId) {
-    return {
-      url: buildProcessDefinitionUrl(item.processDefinitionId, token, baseUrl),
-      size: "default",
-    };
-  }
-
+  // ProcessDefinition is no longer handled here - it uses ProcessDefinitionModal
   return null;
+};
+
+const getManualProcessUrl = (item: ExtendedMenu): string | null => {
+  return item.processUrl || null;
 };
 
 /**
@@ -151,6 +206,10 @@ export default function Sidebar() {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [pendingWindowId, setPendingWindowId] = useState<string | undefined>(undefined);
   const [processIframeModal, setProcessIframeModal] = useState<ProcessIframeModalProps>({ isOpen: false });
+  const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
+  const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
+    useState<ProcessDefinitionButton | null>(null);
+  const [processType, setProcessType] = useState<ProcessType>("");
 
   const { config } = useRuntimeConfig();
 
@@ -163,22 +222,48 @@ export default function Sidebar() {
   }, [menu, searchValue, searchIndex]);
 
   /**
+   * Handles closing the ProcessDefinitionModal
+   */
+  const handleCloseProcessDefinitionModal = useCallback(() => {
+    setShowProcessDefinitionModal(false);
+    setSelectedProcessDefinitionButton(null);
+  }, []);
+
+  /**
    * Handles menu item clicks and window navigation.
    *
-   * Manages two navigation scenarios:
-   * 1. When already in window route: Opens/activates window using multi-window system
-   * 2. When in home route: Creates new window and navigates to window route
+   * Manages different navigation scenarios:
+   * 1. ProcessDefinition items: Opens ProcessDefinitionModal (new implementation)
+   * 2. Process/Form items: Opens ProcessIframeModal (legacy implementation)
+   * 3. Window items: Opens/activates window using multi-window system
    *
    * Features optimistic UI updates by immediately setting pendingWindowId
    * for visual feedback before state synchronization completes.
    *
-   * @param item - Menu item that was clicked, must contain windowId
+   * @param item - Menu item that was clicked
    */
   const handleClick = useCallback(
     (item: Menu) => {
       const extendedItem = item as ExtendedMenu;
 
-      // Handle manual processes (Form / ProcessDefinition / Process)
+      // Check if this is a ProcessDefinition item that should use the new modal
+      const isReportAndProcessMenuItemRes = isReportAndProcessMenuItem(extendedItem);
+      const isProcessDefinitionMenuItemRes = isProcessDefinitionMenuItem(extendedItem);
+      const isProcessMenuItem = isReportAndProcessMenuItemRes || isProcessDefinitionMenuItemRes;
+
+      if (isProcessMenuItem) {
+        const processButton = mapMenuToProcessDefinitionButton(extendedItem);
+        if (processButton) {
+          setSelectedProcessDefinitionButton(processButton);
+          setShowProcessDefinitionModal(true);
+          setProcessType(
+            isProcessDefinitionMenuItemRes ? PROCESS_TYPES.PROCESS_DEFINITION : PROCESS_TYPES.REPORT_AND_PROCESS
+          );
+          return;
+        }
+      }
+
+      // Handle legacy manual processes (Form / Process) with iframe
       const processConfig = getManualProcessConfig(extendedItem, token, ETENDO_BASE_URL);
       if (processConfig) {
         setProcessIframeModal({
@@ -189,6 +274,27 @@ export default function Sidebar() {
           size: processConfig.size,
           onClose: () => setProcessIframeModal({ isOpen: false }),
         });
+        return;
+      }
+
+      // Handle ProcessManual items - open in Etendo Classic
+      const processUrl = getManualProcessUrl(item);
+      if ((item.type === "ProcessManual" || item.type === "Report") && processUrl) {
+        const classicUrl = buildEtendoClassicBookmarkUrl({
+          baseUrl: ETENDO_BASE_URL,
+          processUrl,
+          tabTitle: item.name,
+          token: token,
+          kioskMode: true,
+        });
+        // Open in js modal
+        if (item.isModalProcess) {
+          window.open(classicUrl, "Test", "width=950,height=700");
+          return;
+        }
+
+        // Fallback: Open in new tab
+        window.open(classicUrl, "_blank");
         return;
       }
 
@@ -283,6 +389,13 @@ export default function Sidebar() {
         data-testid="Drawer__6c6035"
       />
       <ProcessIframeModal {...processIframeModal} data-testid="ProcessIframeModal__sidebar" />
+      <ProcessDefinitionModal
+        type={processType}
+        open={showProcessDefinitionModal}
+        onClose={handleCloseProcessDefinitionModal}
+        button={selectedProcessDefinitionButton}
+        data-testid="ProcessDefinitionModal__sidebar"
+      />
     </>
   );
 }

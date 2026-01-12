@@ -25,24 +25,36 @@ export interface ILogger {
 
 export class Logger implements ILogger {
   private implementation: ILogger;
+  private enableDebugLogs: boolean;
 
   constructor(implementation: ILogger) {
     this.implementation = implementation;
+    // Disable debug logs by default for performance
+    // Set to true only when actively debugging
+    this.enableDebugLogs = false;
   }
 
   public debug(...data: unknown[]) {
-    this.implementation.debug(...data);
+    if (this.enableDebugLogs) {
+      this.implementation.debug(...data);
+    }
   }
   public info(...data: unknown[]) {
-    this.implementation.info(...data);
+    if (this.enableDebugLogs) {
+      this.implementation.info(...data);
+    }
   }
   public log(...data: unknown[]) {
-    this.implementation.log(...data);
+    if (this.enableDebugLogs) {
+      this.implementation.log(...data);
+    }
   }
   public warn(...data: unknown[]) {
+    // Keep warnings enabled
     this.implementation.warn(...data);
   }
   public error(...data: unknown[]) {
+    // Keep errors enabled
     this.implementation.error(...data);
   }
 }

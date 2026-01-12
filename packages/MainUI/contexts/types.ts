@@ -91,7 +91,10 @@ export interface IUserContext {
   /** Description for login error */
   loginErrorDescription: string;
   /** Setter for login error description */
+  /** Setter for login error description */
   setLoginErrorDescription: React.Dispatch<React.SetStateAction<string>>;
+  /** Returns the current CSRF token from the session */
+  getCsrfToken: () => string;
 }
 
 export interface IMetadataContext {

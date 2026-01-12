@@ -32,13 +32,13 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
 
     const acc = { ...formInitialization.sessionAttributes } as EntityData;
 
-    for (const [key, { value }] of Object.entries(formInitialization.auxiliaryInputValues)) {
+    for (const [key, { value }] of Object.entries(formInitialization.auxiliaryInputValues || {})) {
       const newKey = fieldsByColumnName?.[key]?.hqlName ?? key;
 
       acc[newKey] = value;
     }
 
-    for (const [key, { value, identifier, entries }] of Object.entries(formInitialization.columnValues)) {
+    for (const [key, { value, identifier, entries }] of Object.entries(formInitialization.columnValues || {})) {
       const field = fieldsByColumnName?.[key];
       const newKey = field?.hqlName ?? key;
 

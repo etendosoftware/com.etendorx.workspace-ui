@@ -28,6 +28,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@workspaceui/api-client": "workspace:api-client",
     "@workspaceui/componentlibrary": "workspace:componentlibrary",
+    "bignumber.js": "^9.3.1",
     "clsx": "^2.1.1",
     "event-source-polyfill": "^1.0.31",
     "framer-motion": "^12.10.1",
