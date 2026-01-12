@@ -32,28 +32,14 @@ class ErpRequestError extends Error {
 // Cached function for generic ERP requests
 const getCachedErpData = unstable_cache(
   async (userToken: string, slug: string, method: string, body: string, contentType: string, queryParams = "") => {
-    let erpUrl: string;
-    const slugContainsCopilot = slug.includes(SLUGS_CATEGORIES.COPILOT);
-    if (slugContainsCopilot) {
-      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
-    } else if (slug.startsWith(SLUGS_CATEGORIES.UTILITY)) {
-      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
-    } else if (slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
-      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
-    } else {
-      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
-    }
-
-    if (method === "GET" && queryParams) {
-      erpUrl += queryParams;
-    }
+    const erpUrl = resolveErpUrl(slug, method === "GET" ? queryParams : "");
 
     // Get ERP auth headers including Cookie from sessionStore
     const authHeaders = getErpAuthHeaders(userToken);
 
     const headers: Record<string, string> = {
       Authorization: `Bearer ${userToken}`,
-      Accept: slugContainsCopilot ? "text/event-stream" : "application/json",
+      Accept: slug.includes(SLUGS_CATEGORIES.COPILOT) ? "text/event-stream" : "application/json",
     };
 
     // Add Cookie header if available (includes JSESSIONID from sessionStore)
@@ -71,29 +57,74 @@ const getCachedErpData = unstable_cache(
       body: method === "GET" ? undefined : body,
     });
 
-    if (!response.ok) {
-      // NOTE: Handle ERP request errors
-      // NOTE: use 404 for copilot to indicate not installed, otherwise use the actual response status
-      const defaultResponseStatus = slugContainsCopilot ? 404 : response.status;
-      const errorText = await response.text();
-      throw new ErpRequestError({
-        message: `ERP request failed for slug ${slug}: ${defaultResponseStatus} ${response.statusText}. ${errorText}`,
-        status: defaultResponseStatus,
-        statusText: response.statusText,
-        slug,
-        errorText,
-      });
-    }
-
-    const responseContentType = response.headers.get("content-type");
-    if (responseContentType?.includes("text/event-stream")) {
-      return { stream: response.body, headers: response.headers };
-    }
-
-    return response.json();
+    return processErpResponse(response, slug);
   },
   ["erp_logic_v1"]
 );
+
+/**
+ * Resolves the full ERP URL based on the slug and query parameters.
+ * @param slug - The API slug path
+ * @param queryParams - Optional query parameters
+ * @returns The full ERP URL
+ */
+function resolveErpUrl(slug: string, queryParams: string = ""): string {
+  let erpUrl: string;
+  const classicUrl = process.env.ETENDO_CLASSIC_URL;
+
+  if (slug.includes(SLUGS_CATEGORIES.COPILOT)) {
+    erpUrl = `${classicUrl}/sws/${slug}`;
+  } else if (
+    slug.startsWith(SLUGS_CATEGORIES.UTILITY) ||
+    slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) ||
+    slug.startsWith(SLUGS_CATEGORIES.NOTES) ||
+    slug.startsWith(SLUGS_CATEGORIES.OPENBRAVO_KERNEL) ||
+    slug.startsWith(SLUGS_CATEGORIES.LEGACY) ||
+    slug.startsWith(SLUGS_CATEGORIES.SWS) ||
+    slug.startsWith("web/") ||
+    slug.startsWith("ad_forms/") ||
+    slug.startsWith("org.openbravo") ||
+    slug.startsWith("etendo/")
+  ) {
+    erpUrl = `${classicUrl}/${slug}`;
+  } else {
+    erpUrl = `${classicUrl}/sws/com.etendoerp.metadata.${slug}`;
+  }
+
+  if (queryParams) {
+    erpUrl += queryParams;
+  }
+
+  return erpUrl;
+}
+
+/**
+ * Processes the ERP response, handling errors and streams.
+ * @param response - The fetch response
+ * @param slug - The API slug path
+ * @returns The processed response data
+ */
+async function processErpResponse(response: Response, slug: string) {
+  if (!response.ok) {
+    const slugContainsCopilot = slug.includes(SLUGS_CATEGORIES.COPILOT);
+    const defaultResponseStatus = slugContainsCopilot ? 404 : response.status;
+    const errorText = await response.text();
+    throw new ErpRequestError({
+      message: `ERP request failed for slug ${slug}: ${defaultResponseStatus} ${response.statusText}. ${errorText}`,
+      status: defaultResponseStatus,
+      statusText: response.statusText,
+      slug,
+      errorText,
+    });
+  }
+
+  const responseContentType = response.headers.get("content-type");
+  if (responseContentType?.includes("text/event-stream")) {
+    return { stream: response.body, headers: response.headers };
+  }
+
+  return response.json();
+}
 
 /**
  * Determines if a route should bypass caching (mutations or non-GET requests)
@@ -323,43 +354,8 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 
 // Helper: Build ERP URL
 function buildErpUrl(slug: string, requestUrl: string): string {
-  let erpUrl: string;
-  if (slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
-    // Attachments servlet uses direct mapping (e.g., /attachments)
-    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
-  } else if (slug.startsWith(SLUGS_CATEGORIES.LEGACY)) {
-    // Legacy servlets use direct mapping (e.g., /meta/legacy/ad_forms/about.html)
-    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
-  } else if (slug.startsWith(SLUGS_CATEGORIES.SWS)) {
-    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
-  } else if (slug.startsWith(SLUGS_CATEGORIES.COPILOT)) {
-    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
-  } else if (
-    slug.startsWith("web/") ||
-    slug.startsWith("ad_forms/") ||
-    slug.startsWith("org.openbravo") ||
-    slug.startsWith("etendo/")
-  ) {
-    // Direct mapping for static resources and other classic paths
-    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
-  } else if (slug.startsWith(SLUGS_CATEGORIES.UTILITY)) {
-    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
-  } else {
-    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
-  }
-
   const url = new URL(requestUrl);
-  erpUrl = erpUrl.replace(
-    "sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel",
-    "org.openbravo.client.kernel"
-  );
-  erpUrl = erpUrl.replace("sws/com.etendoerp.metadata.meta/forward", "org.openbravo.client.kernel");
-
-  if (url.search) {
-    erpUrl += url.search;
-  }
-
-  return erpUrl;
+  return resolveErpUrl(slug, url.search);
 }
 
 // Helper: Get request body (preserves binary data for multipart/form-data)
@@ -482,8 +478,21 @@ function unauthorizedResponse(): Response {
 async function handleError(error: unknown, params: Promise<{ slug: string[] }>): Promise<Response> {
   const resolvedParams = await params;
   console.error(`API Route /api/erp/${resolvedParams.slug.join("/")} Error:`, error);
-  const errorStatus = error instanceof ErpRequestError ? error.status : 500;
-  return NextResponse.json({ error: "Failed to fetch ERP data" }, { status: errorStatus });
+
+  if (error instanceof ErpRequestError) {
+    return NextResponse.json(
+      {
+        error: error.message,
+        details: error.errorText,
+        status: error.status,
+        statusText: error.statusText,
+      },
+      { status: error.status }
+    );
+  }
+
+  const errorMessage = error instanceof Error ? error.message : "Failed to fetch ERP data";
+  return NextResponse.json({ error: errorMessage }, { status: 500 });
 }
 
 export async function GET(request: Request, context: { params: Promise<{ slug: string[] }> }) {
