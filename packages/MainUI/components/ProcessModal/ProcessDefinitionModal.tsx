@@ -64,10 +64,7 @@ import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
 import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
-import {
-  DEFAULT_BULK_COMPLETION_ONLOAD,
-  isBulkCompletionProcess,
-} from "@/utils/process/bulkCompletionUtils";
+import { DEFAULT_BULK_COMPLETION_ONLOAD, isBulkCompletionProcess } from "@/utils/process/bulkCompletionUtils";
 import { registerPayScriptDSL } from "./callouts/genericPayScriptCallout";
 
 // Date field reference codes for conversion

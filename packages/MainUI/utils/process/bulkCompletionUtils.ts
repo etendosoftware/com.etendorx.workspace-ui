@@ -55,7 +55,7 @@ export const DEFAULT_BULK_COMPLETION_ONLOAD = `async (process, context) => {
 
 /**
  * Checks if a process should use the default Bulk Completion onLoad logic.
- * 
+ *
  * @param processDefinition - The process definition metadata
  * @param parameters - The process parameters
  * @returns True if the process is a Bulk Completion process without a custom onLoad script
@@ -77,9 +77,7 @@ export const isBulkCompletionProcess = (
 
   // Bulk completion processes typically have a DocAction parameter
   const params = Object.values(parameters) as ProcessParameter[];
-  const hasDocAction = params.some(
-    (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
-  );
+  const hasDocAction = params.some((p) => p.name === "DocAction" || p.dBColumnName === "DocAction");
 
   return hasDocAction;
 };
