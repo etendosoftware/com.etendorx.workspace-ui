@@ -24,8 +24,18 @@ export const TableDirSelector = ({
   field,
   isReadOnly,
   isProcessModal,
-}: { field: Field; isReadOnly: boolean; isProcessModal?: boolean }) => {
-  const { records, loading, refetch, loadMore, hasMore, search } = useTableDirDatasource({ field, isProcessModal });
+  staticOptions,
+}: {
+  field: Field;
+  isReadOnly: boolean;
+  isProcessModal?: boolean;
+  staticOptions?: Array<{ id: string; name: string }>;
+}) => {
+  const { records, loading, refetch, loadMore, hasMore, search } = useTableDirDatasource({
+    field,
+    isProcessModal,
+    staticOptions,
+  });
   const options = useSelectFieldOptions(field, records);
 
   return (

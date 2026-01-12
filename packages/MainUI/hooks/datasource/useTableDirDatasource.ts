@@ -38,11 +38,17 @@ export const useTableDirDatasource = ({
   pageSize = 75,
   initialPageSize = 75,
   isProcessModal = false,
+  staticOptions,
 }: UseTableDirDatasourceParams) => {
+  // If static options are provided, use them instead of fetching
+  const hasStaticOptions = staticOptions !== undefined;
+
   const { getValues, watch } = useFormContext();
   const { tab, parentRecord } = useTabContext();
   const windowId = tab?.window;
-  const [records, setRecords] = useState<Record<string, string>[]>([]);
+  const [records, setRecords] = useState<Record<string, string>[]>(
+    hasStaticOptions ? staticOptions.map((opt) => ({ id: opt.id, _identifier: opt.name })) : []
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();
   const [currentPage, setCurrentPage] = useState(0);
@@ -287,24 +293,43 @@ export const useTableDirDatasource = ({
     [pageSize, records]
   );
 
+  /**
+   * Handles search/filter for static options without making API calls
+   */
+  const handleStaticOptionsSearch = useCallback(
+    (search: string) => {
+      if (!staticOptions) return;
+
+      const filteredRecords = search
+        ? staticOptions.filter((opt) => opt.name.toLowerCase().includes(search.toLowerCase()))
+        : staticOptions;
+
+      setRecords(filteredRecords.map((opt) => ({ id: opt.id, _identifier: opt.name })));
+    },
+    [staticOptions]
+  );
+
   const fetch = useCallback(
     async (_currentValue: typeof value, reset = false, search = "") => {
+      // Handle static options separately (no API call needed)
+      if (hasStaticOptions) {
+        handleStaticOptionsSearch(search);
+        return;
+      }
+
+      if (!field || fetchInProgressRef.current) {
+        return;
+      }
+
+      fetchInProgressRef.current = true;
+      setLoading(true);
+
+      if (reset) {
+        setCurrentPage(0);
+        setHasMore(true);
+      }
+
       try {
-        if (!field) return;
-
-        // Prevent duplicate fetches when called rapidly (e.g., double onFocus events)
-        if (fetchInProgressRef.current) {
-          return;
-        }
-
-        fetchInProgressRef.current = true;
-        setLoading(true);
-
-        if (reset) {
-          setCurrentPage(0);
-          setHasMore(true);
-        }
-
         const startRow = reset ? 0 : currentPage * pageSize;
         const endRow = reset ? initialPageSize : startRow + pageSize;
 
@@ -323,18 +348,26 @@ export const useTableDirDatasource = ({
         processApiResponse(data, reset);
       } catch (err) {
         logger.warn(err);
-
         if (reset) {
           setRecords([]);
         }
-
         setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
         setLoading(false);
         fetchInProgressRef.current = false;
       }
     },
-    [field, tab, currentPage, pageSize, initialPageSize, buildRequestBody, applySearchCriteria, processApiResponse]
+    [
+      field,
+      currentPage,
+      pageSize,
+      initialPageSize,
+      buildRequestBody,
+      applySearchCriteria,
+      processApiResponse,
+      hasStaticOptions,
+      handleStaticOptionsSearch,
+    ]
   );
 
   const search = useCallback(

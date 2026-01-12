@@ -12,6 +12,8 @@
  * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
  * All Rights Reserved.
  * Contributor(s): Futit Services S.L.
+ *
+ * Note: Unused variables (registerRefresh, selectedRecord, iframeUrl) removed in ETP-3000
  *************************************************************************
  */
 
@@ -31,6 +33,9 @@ import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { getNewTabFormState, isFormView } from "@/utils/window/utils";
 import { useWindowContext } from "@/contexts/window";
+import { useUserContext } from "@/hooks/useUserContext";
+import { useSelectedRecords } from "@/hooks/useSelectedRecords";
+import { useRuntimeConfig } from "@/contexts/RuntimeConfigContext";
 import { TableFilter } from "@workspaceui/componentlibrary/src/components/AdvancedFiltersModal";
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
@@ -100,6 +105,7 @@ const ADVANCED_CRITERIA_DEFAULT_OPERATOR = "and";
 const ADVANCED_CRITERIA_CONSTRUCTOR = "AdvancedCriteria";
 
 export function Tab({ tab, collapsed }: TabLevelProps) {
+  const { config } = useRuntimeConfig();
   const { window } = useMetadataContext();
   const {
     activeWindow,
@@ -116,6 +122,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const { registerActions, setIsAdvancedFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
   const { unregisterRefresh } = useTabRefreshContext();
+  const { token } = useUserContext();
+  const selectedRecords = useSelectedRecords(tab);
   const { fetchFilterOptions } = useColumnFilterData();
   const [columnOptions, setColumnOptions] = useState<Record<string, FilterOption[]>>({});
   const [toggle, setToggle] = useState(false);
@@ -256,6 +264,71 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
   }, [windowIdentifier]);
 
+  const handlePrintRecord = useCallback(async () => {
+    try {
+      // Validate prerequisites
+      if (selectedRecords.length === 0) {
+        console.warn("No records selected for printing");
+        return;
+      }
+
+      if (!token) {
+        throw new Error("Authorization token not found. Please log in again.");
+      }
+
+      const publicHost = config?.etendoClassicHost || "";
+      const selectedIds = selectedRecords.map((r) => r.id);
+      const endpoint = `${publicHost}/sws/com.etendoerp.etendorx.print`;
+
+      console.log("handlePrintRecord called", {
+        selectedRecordsCount: selectedRecords.length,
+        selectedIds,
+        publicHost: config?.etendoClassicHost,
+      });
+
+      // Always use POST with parameters array containing recordId objects
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tabId: tab.id,
+          parameters: selectedIds.map((id) => ({ recordId: id })),
+          docType: "PDF",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Print request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      // Try to get filename from content-disposition if available
+      const contentDisposition = response.headers.get("content-disposition");
+      let fileName = "document.pdf";
+      if (contentDisposition && contentDisposition.indexOf("filename=") !== -1) {
+        fileName = contentDisposition.split("filename=")[1].replace(/"/g, "");
+      }
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+      }, 100);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      console.error("Print Record Error:", errorMessage, error);
+      throw new Error(`Print failed: ${errorMessage}`);
+    }
+  }, [selectedRecords, token, tab.id, config?.etendoClassicHost]);
   const handleAdvancedFilters = useCallback((anchorEl?: HTMLElement): void => {
     if (anchorEl) {
       setAdvancedFiltersAnchor(anchorEl);
@@ -636,8 +709,22 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       }
 
       // Add sorting parameter if present
+      // The sorting id might be the display name or field name, try both
       if (sorting.length > 0) {
-        params._sortBy = sorting[0].id;
+        const sortColumnId = sorting[0].id;
+        // Try to find field by name or by matching the column name
+        const sortField = fieldsArray.find((field) => {
+          const fieldName = field.name as string;
+          // Check if sortColumnId matches field name directly
+          if (fieldName === sortColumnId) return true;
+          // Check if sortColumnId matches the field's columnName property
+          const fieldObj = tab.fields[fieldName];
+          return fieldObj?.columnName === sortColumnId || fieldObj?.name === sortColumnId;
+        });
+
+        if (sortField) {
+          params._sortBy = sortField.name as string;
+        }
       }
 
       return params;
@@ -927,10 +1014,20 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       treeView: handleTreeView,
       exportCSV: handleExportCSV,
       advancedFilters: handleAdvancedFilters,
+      printRecord: handlePrintRecord,
     };
 
     registerActions(actions);
-  }, [registerActions, handleNew, handleBack, handleTreeView, handleExportCSV, handleAdvancedFilters, tab.id]);
+  }, [
+    registerActions,
+    handleNew,
+    handleBack,
+    handleTreeView,
+    handleExportCSV,
+    handleAdvancedFilters,
+    handlePrintRecord,
+    tab.id,
+  ]);
 
   /**
    * Clear selection when creating a new record

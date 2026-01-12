@@ -30,6 +30,7 @@ import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useRecordContext } from "@/hooks/useRecordContext";
 import type { ToolbarButtonMetadata } from "./types";
+import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
 import { useWindowContext } from "@/contexts/window";
 import type { ActionButton, ActionModalProps } from "@workspaceui/componentlibrary/src/components/ActionModal/types";
 import { isEmptyArray } from "@/utils/commons";
@@ -72,6 +73,7 @@ export const useToolbarConfig = ({
     onToggleTreeView,
     attachmentAction,
     onExportCSV,
+    onPrintRecord,
     onAdvancedFilters,
   } = useToolbarContext();
 
@@ -387,10 +389,13 @@ export const useToolbarConfig = ({
       SHARE_LINK: () => {
         onShareLink();
       },
-      COPY_RECORD: () => {
+      [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: () => {
         handleCopyRecord();
       },
-      ADVANCED_FILTERS: (event?: React.MouseEvent<HTMLElement>) => {
+      [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: async () => {
+        await onPrintRecord?.();
+      },
+      [TOOLBAR_BUTTONS_ACTIONS.ADVANCED_FILTERS]: (event?: React.MouseEvent<HTMLElement>) => {
         onAdvancedFilters?.(event?.currentTarget);
       },
     }),
@@ -417,6 +422,7 @@ export const useToolbarConfig = ({
       onExportCSV,
       onShareLink,
       handleCopyRecord,
+      onPrintRecord,
       onAdvancedFilters,
     ]
   );

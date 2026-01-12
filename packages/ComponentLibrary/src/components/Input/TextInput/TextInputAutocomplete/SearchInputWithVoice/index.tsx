@@ -61,7 +61,7 @@ const SearchInputWithVoice = ({ onVoiceClick, disabled = false, ...props }: Sear
 
   const wrapperStyle = {
     display: "flex",
-    alignItems: "flex-end",
+    alignItems: "center",
     gap: "0.25rem",
     cursor: disabled ? "not-allowed" : "default",
     pointerEvents: disabled ? "none" : "auto",
@@ -85,18 +85,16 @@ const SearchInputWithVoice = ({ onVoiceClick, disabled = false, ...props }: Sear
   return (
     <Box sx={{ position: "relative" }}>
       <Box sx={wrapperStyle}>
-        <Box sx={{ flex: 1 }}>
-          <TextInputAutoComplete
-            {...props}
-            InputProps={{
-              ...props.InputProps,
-              startAdornment: props.InputProps?.startAdornment || <StartAdornment />,
-              endAdornment: props.InputProps?.endAdornment || <EndAdornment />,
-              sx: { height: "auto", minHeight: "2.5rem", ...props.InputProps?.sx },
-            }}
-            disabled={disabled}
-          />
-        </Box>
+        <TextInputAutoComplete
+          {...props}
+          InputProps={{
+            ...props.InputProps,
+            startAdornment: props.InputProps?.startAdornment || <StartAdornment />,
+            endAdornment: props.InputProps?.endAdornment || <EndAdornment />,
+            style: { height: "2.5rem" },
+          }}
+          disabled={disabled}
+        />
         <Box
           sx={{
             width: "2.5rem",

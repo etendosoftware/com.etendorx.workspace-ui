@@ -279,6 +279,8 @@ export interface Tab {
   tableTree?: boolean | string;
   obuiappShowCloneButton?: boolean;
   obuiappCloneChildren?: boolean;
+  process?: string;
+  process$_identifier?: string;
 }
 
 export interface WindowMetadata {
@@ -312,6 +314,8 @@ export interface Menu {
   isSearchResult?: boolean;
   path?: string[];
   fullPath?: string;
+  processUrl?: string;
+  isModalProcess?: boolean;
 }
 
 export enum Action {
@@ -794,7 +798,13 @@ export type ProcessParameter = {
   readOnlyLogicExpression?: string;
   reference: string;
   window?: WindowMetadata; // This type is for process that have defined a window reference
+  selector?: SelectorInfo;
 } & Record<string, string>;
+
+export interface SelectorInfo extends Record<string, unknown> {
+  datasourceName?: string;
+  response?: Array<{ id: string; name: string; [key: string]: unknown }>;
+}
 
 export type ProcessParameters = Record<string, ProcessParameter>;
 

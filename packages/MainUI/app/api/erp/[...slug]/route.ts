@@ -50,10 +50,18 @@ const getCachedErpData = unstable_cache(
       erpUrl += queryParams;
     }
 
+    // Get ERP auth headers including Cookie from sessionStore
+    const authHeaders = getErpAuthHeaders(userToken);
+
     const headers: Record<string, string> = {
       Authorization: `Bearer ${userToken}`,
       Accept: slugContainsCopilot ? "text/event-stream" : "application/json",
     };
+
+    // Add Cookie header if available (includes JSESSIONID from sessionStore)
+    if (authHeaders.cookieHeader) {
+      headers.Cookie = authHeaders.cookieHeader;
+    }
 
     if (method !== "GET" && body) {
       headers["Content-Type"] = contentType;
@@ -249,6 +257,13 @@ async function handleMutationRequest(
       process.env.ETENDO_CLASSIC_HOST || process.env.ETENDO_CLASSIC_URL
     );
     const htmlResponse = createHtmlResponse(rewrittenHtml, response);
+
+    // For PrinterReports, also return Set-Cookie header so client can extract JSESSIONID
+    const setCookie = response.headers.get("set-cookie");
+    if (setCookie) {
+      htmlResponse.headers.set("set-cookie", setCookie);
+    }
+
     return { htmlContent: htmlResponse };
   }
 
@@ -448,9 +463,12 @@ function handleHtmlContentResponse(data: { htmlContent: Response }): Response {
     headers.set("Content-Type", `${contentType}; charset=UTF-8`);
   }
 
+  // Use standard status text to avoid "Parse Error: Expected HTTP/"
+  const validStatusText = htmlContent.status === 200 ? "OK" : "Error";
+
   return new Response(htmlContent.body, {
     status: htmlContent.status,
-    statusText: htmlContent.statusText,
+    statusText: validStatusText,
     headers,
   });
 }

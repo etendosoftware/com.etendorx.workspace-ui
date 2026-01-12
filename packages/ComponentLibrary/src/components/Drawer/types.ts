@@ -126,6 +126,8 @@ export interface RecentItem {
   name: string;
   windowId: string;
   type: string | "Window" | "Process" | "Report";
+  processUrl?: string;
+  isModalProcess?: boolean;
 }
 
 export interface DrawerHeaderProps {

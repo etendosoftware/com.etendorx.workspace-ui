@@ -49,6 +49,39 @@ const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
 
 /**
+ * Extracts the actual value from a wrapped value object or returns the value directly
+ */
+function extractActualValue(value: unknown): EntityValue {
+  if (typeof value === "object" && value !== null && "value" in value) {
+    return (value as { value: EntityValue }).value;
+  }
+  return value as EntityValue;
+}
+
+/**
+ * Merges default values into the params object
+ */
+function mergeDefaultsIntoParams(defaults: Record<string, unknown>, mergedParams: Record<string, EntityValue>): void {
+  for (const [key, value] of Object.entries(defaults)) {
+    mergedParams[key] = extractActualValue(value);
+  }
+}
+
+/**
+ * Merges current values into the params object, overriding defaults
+ */
+function mergeCurrentValuesIntoParams(
+  currentValues: Record<string, unknown>,
+  mergedParams: Record<string, EntityValue>
+): void {
+  for (const [key, value] of Object.entries(currentValues)) {
+    if (value !== undefined && value !== null) {
+      mergedParams[key] = value as EntityValue;
+    }
+  }
+}
+
+/**
  * WindowReferenceGrid Component
  * Displays a grid of referenced records that can be selected
  */
@@ -498,23 +531,31 @@ function WindowReferenceGrid({
       }
     };
 
-    const applyStableProcessDefaults = () => {
-      if (!stableProcessDefaults || Object.keys(stableProcessDefaults).length === 0) return;
+    const applyParameters = () => {
+      // 1. Merge defaults and current values into a single map
+      const mergedParams: Record<string, EntityValue> = {};
 
-      for (const [key, value] of Object.entries(stableProcessDefaults)) {
-        const actualValue =
-          typeof value === "object" && value !== null && "value" in value
-            ? (value as { value: EntityValue }).value
-            : (value as EntityValue);
+      // Apply defaults using helper function
+      if (stableProcessDefaults && Object.keys(stableProcessDefaults).length > 0) {
+        mergeDefaultsIntoParams(stableProcessDefaults, mergedParams);
+      }
+
+      // Apply current values (overrides defaults) using helper function
+      if (currentValues && Object.keys(currentValues).length > 0) {
+        mergeCurrentValuesIntoParams(currentValues, mergedParams);
+      }
+
+      // 2. Process merged parameters
+      for (const [key, finalValue] of Object.entries(mergedParams)) {
+        // If it's a mapped system key, apply to options
+        if (defaultKeys && key in defaultKeys) {
+          options[defaultKeys[key as keyof typeof defaultKeys]] = finalValue;
+          continue;
+        }
 
         const matchingParameter = Object.values(parameters).find((param) => param.name === key);
-        const datasourceFieldName = matchingParameter?.dBColumnName || key;
-
-        options[datasourceFieldName] = actualValue;
-
-        if (defaultKeys && key in defaultKeys) {
-          const defaultKey = defaultKeys[key as keyof typeof defaultKeys];
-          options[defaultKey] = actualValue;
+        if (matchingParameter) {
+          options[matchingParameter.dBColumnName || key] = finalValue;
         }
       }
     };
@@ -551,16 +592,16 @@ function WindowReferenceGrid({
     const applyRecordValues = () => {
       if (!parameters || !effectiveRecordValues) return;
 
-      Object.values(parameters).forEach((param: any) => {
+      for (const param of Object.values(parameters) as any[]) {
         const paramValue = effectiveRecordValues[param.name];
         if (paramValue !== undefined && param.dBColumnName) {
           options[param.dBColumnName] = paramValue as any;
         }
-      });
+      }
     };
 
     applyDynamicKeys();
-    applyStableProcessDefaults();
+    applyParameters();
     applyRecordValues();
 
     const criteria = buildCriteria();
@@ -578,8 +619,13 @@ function WindowReferenceGrid({
     tabId,
     stableProcessDefaults,
     stableFilterExpressions,
+    recordValues?.inpadClientId,
+    recordValues?.inpmPricelistId,
+    recordValues?.inpcCurrencyId,
     effectiveRecordValues, // Depend on merged values
     parameters,
+    // Use stable JSON stringified values for dependency to prevent infinite loops
+    JSON.stringify(currentValues),
   ]);
 
   // Helper to determine ACCT_DIMENSION_DISPLAY for specific columns
@@ -708,9 +754,6 @@ function WindowReferenceGrid({
       } as Tab;
     }
 
-    // Fix hqlName ONLY if it's a display name (contains spaces or starts with uppercase)
-    // Some processes have correct hqlName (camelCase like 'organization')
-    // Others have incorrect hqlName (display name like 'Organization' or 'Order No.')
     const correctedFields = Object.fromEntries(
       Object.entries(stableWindowReferenceTab.fields)
         .filter(([_, f]) => isFieldVisible(f))
@@ -827,8 +870,26 @@ function WindowReferenceGrid({
       };
     });
 
-    return columnsWithFilters;
-  }, [columnsFromHook, rawColumns]);
+    // Sort the final columns based on gridPosition
+    // We access the original fields from stableWindowReferenceTab
+    const sortedColumns = columnsWithFilters.sort((a: Column, b: Column) => {
+      // Find field definition for column A
+      const fieldA = Object.values(stableWindowReferenceTab?.fields || {}).find(
+        (f) => f.name === a.header || f.hqlName === a.columnName
+      );
+      // Find field definition for column B
+      const fieldB = Object.values(stableWindowReferenceTab?.fields || {}).find(
+        (f) => f.name === b.header || f.hqlName === b.columnName
+      );
+
+      const posA = fieldA?.gridPosition ?? fieldA?.sequenceNumber ?? 0;
+      const posB = fieldB?.gridPosition ?? fieldB?.sequenceNumber ?? 0;
+
+      return posA - posB;
+    });
+
+    return sortedColumns;
+  }, [columnsFromHook, rawColumns, stableWindowReferenceTab]);
 
   const shouldSkipFetch = !isDataReady || processConfigLoading || !entityName;
 
@@ -1043,7 +1104,7 @@ function WindowReferenceGrid({
           }
           // Fallback for environments where crypto is not available
           return "xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx"
-            .replace(/[xy]/g, function (c) {
+            .replace(/[xy]/g, (c) => {
               const r = (Math.random() * 16) | 0;
               const v = c == "x" ? r : (r & 0x3) | 0x8;
               return v.toString(16);

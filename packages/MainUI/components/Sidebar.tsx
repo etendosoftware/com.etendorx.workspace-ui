@@ -14,13 +14,15 @@ import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { buildEtendoClassicBookmarkUrl } from "@/utils/url/utils";
 import { useWindowContext } from "@/contexts/window";
 import ProcessIframeModal from "./ProcessModal/Iframe";
-import type { ProcessIframeModalProps, ProcessDefinitionButton } from "./ProcessModal/types";
+import type { ProcessIframeModalProps, ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
 import formsData from "../utils/processes/forms/data.json";
 import { useRuntimeConfig } from "../contexts/RuntimeConfigContext";
 import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 import ProcessDefinitionModal from "./ProcessModal/ProcessDefinitionModal";
+import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 
 interface ExtendedMenu extends Menu {
   processDefinitionId?: string;
@@ -80,11 +82,15 @@ const isProcessDefinitionMenuItem = (item: ExtendedMenu): boolean => {
   return item.type === "ProcessDefinition" && !!item.id;
 };
 
+const isReportAndProcessMenuItem = (item: ExtendedMenu): boolean => {
+  return item.type === "Process" && !!item.id;
+};
+
 /**
  * Maps a Menu item to a ProcessDefinitionButton structure for the ProcessDefinitionModal
  */
 const mapMenuToProcessDefinitionButton = (item: ExtendedMenu): ProcessDefinitionButton | null => {
-  if (!isProcessDefinitionMenuItem(item)) {
+  if (!isProcessDefinitionMenuItem(item) && !isReportAndProcessMenuItem(item)) {
     return null;
   }
 
@@ -155,6 +161,10 @@ const getManualProcessConfig = (
   return null;
 };
 
+const getManualProcessUrl = (item: ExtendedMenu): string | null => {
+  return item.processUrl || null;
+};
+
 /**
  * Version component that displays the current application version in the sidebar footer.
  * Renders the version information with internationalization support.
@@ -199,6 +209,7 @@ export default function Sidebar() {
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
     useState<ProcessDefinitionButton | null>(null);
+  const [processType, setProcessType] = useState<ProcessType>("");
 
   const { config } = useRuntimeConfig();
 
@@ -236,11 +247,18 @@ export default function Sidebar() {
       const extendedItem = item as ExtendedMenu;
 
       // Check if this is a ProcessDefinition item that should use the new modal
-      if (isProcessDefinitionMenuItem(extendedItem)) {
+      const isReportAndProcessMenuItemRes = isReportAndProcessMenuItem(extendedItem);
+      const isProcessDefinitionMenuItemRes = isProcessDefinitionMenuItem(extendedItem);
+      const isProcessMenuItem = isReportAndProcessMenuItemRes || isProcessDefinitionMenuItemRes;
+
+      if (isProcessMenuItem) {
         const processButton = mapMenuToProcessDefinitionButton(extendedItem);
         if (processButton) {
           setSelectedProcessDefinitionButton(processButton);
           setShowProcessDefinitionModal(true);
+          setProcessType(
+            isProcessDefinitionMenuItemRes ? PROCESS_TYPES.PROCESS_DEFINITION : PROCESS_TYPES.REPORT_AND_PROCESS
+          );
           return;
         }
       }
@@ -256,6 +274,27 @@ export default function Sidebar() {
           size: processConfig.size,
           onClose: () => setProcessIframeModal({ isOpen: false }),
         });
+        return;
+      }
+
+      // Handle ProcessManual items - open in Etendo Classic
+      const processUrl = getManualProcessUrl(item);
+      if ((item.type === "ProcessManual" || item.type === "Report") && processUrl) {
+        const classicUrl = buildEtendoClassicBookmarkUrl({
+          baseUrl: ETENDO_BASE_URL,
+          processUrl,
+          tabTitle: item.name,
+          token: token,
+          kioskMode: true,
+        });
+        // Open in js modal
+        if (item.isModalProcess) {
+          window.open(classicUrl, "Test", "width=950,height=700");
+          return;
+        }
+
+        // Fallback: Open in new tab
+        window.open(classicUrl, "_blank");
         return;
       }
 
@@ -351,6 +390,7 @@ export default function Sidebar() {
       />
       <ProcessIframeModal {...processIframeModal} data-testid="ProcessIframeModal__sidebar" />
       <ProcessDefinitionModal
+        type={processType}
         open={showProcessDefinitionModal}
         onClose={handleCloseProcessDefinitionModal}
         button={selectedProcessDefinitionButton}

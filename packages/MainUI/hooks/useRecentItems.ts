@@ -36,6 +36,8 @@ const createRecentItem = (
   // Store these IDs if they exist so they're available when restoring from cache
   processId: item.processId,
   processDefinitionId: item.processDefinitionId,
+  processUrl: item.processUrl,
+  isModalProcess: item.isModalProcess,
 });
 
 const updateItemsWithTranslations = (

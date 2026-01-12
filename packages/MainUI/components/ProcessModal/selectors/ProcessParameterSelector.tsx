@@ -194,15 +194,19 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
           );
 
         case "tabledir":
-        case "product":
+        case "product": {
+          // Extract static options from selector.response if available
+          const staticOptions = parameter.selector?.response;
           return (
             <TableDirSelector
               field={mappedField}
               isReadOnly={isReadOnly}
               isProcessModal={true}
+              staticOptions={staticOptions}
               data-testid="TableDirSelector__dac06b"
             />
           );
+        }
 
         case "quantity":
           return <QuantitySelector allowNegative={true} field={mappedField} data-testid="QuantitySelector__dac06b" />;
