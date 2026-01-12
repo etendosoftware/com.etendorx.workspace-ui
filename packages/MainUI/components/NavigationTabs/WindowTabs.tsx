@@ -129,7 +129,6 @@ export default function WindowTabs() {
         {visibleWindows.map((window, index) => {
           const title = getTitleForWindow(window, windowsData);
           const isActive = window.isActive;
-          const canClose = visibleWindows.length > 1;
 
           const activeIndex = visibleWindows.findIndex((w) => w.isActive);
           const showSeparator = index !== activeIndex - 1 && index !== activeIndex;
@@ -150,7 +149,6 @@ export default function WindowTabs() {
                 onClose={() => {
                   handleCloseWindow(window);
                 }}
-                canClose={canClose}
                 data-testid="WindowTab__c8117d"
               />
               {showSeparator && index < visibleWindows.length - 1 && (
