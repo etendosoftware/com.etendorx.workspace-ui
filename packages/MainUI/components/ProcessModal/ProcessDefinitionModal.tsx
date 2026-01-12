@@ -68,6 +68,7 @@ import {
   DEFAULT_BULK_COMPLETION_ONLOAD,
   isBulkCompletionProcess,
 } from "@/utils/process/bulkCompletionUtils";
+import { registerPayScriptDSL } from "./callouts/genericPayScriptCallout";
 
 // Date field reference codes for conversion
 const DATE_REFERENCE_CODES = [
@@ -174,6 +175,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const processId = processDefinition.id;
   const javaClassName = processDefinition.javaClassName;
 
+  console.debug("ProcessDefinitionModalContent", processDefinition);
+
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -183,19 +186,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const [gridSelection, setGridSelectionInternal] = useState<GridSelectionStructure>({});
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
 
-  // Wrapper to log all gridSelection changes
   const setGridSelection = useCallback((updater: GridSelectionUpdater) => {
     setGridSelectionInternal((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
-      logger.debug("[PROCESS_DEBUG] gridSelection changed:", {
-        prevKeys: Object.keys(prev),
-        nextKeys: Object.keys(next),
-        changes: Object.entries(next).map(([name, data]) => ({
-          name,
-          selectionCount: data._selection?.length || 0,
-          allRowsCount: data._allRows?.length || 0,
-        })),
-      });
       return next;
     });
   }, []);
@@ -204,6 +197,22 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const [autoSelectConfig, setAutoSelectConfig] = useState<AutoSelectConfig | null>(null);
   const [autoSelectApplied, setAutoSelectApplied] = useState(false);
   const [availableButtons, setAvailableButtons] = useState<Array<{ value: string; label: string }>>([]);
+
+  // Register PayScript DSL if available in process definition
+  useEffect(() => {
+    if (processDefinition.id) {
+      const def = processDefinition as any;
+      const dsl =
+        def.etmetaPayscriptLogic ||
+        def.emPayscriptLogic ||
+        def.em_payscript_logic ||
+        def.emEtmetaOnprocess ||
+        def.em_etmeta_onprocess;
+      if (dsl) {
+        registerPayScriptDSL(processDefinition.id, dsl);
+      }
+    }
+  }, [processDefinition]);
 
   useEffect(() => {
     const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
@@ -290,7 +299,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const availableFormData = useMemo(() => {
     // If no record or tab (e.g. sidebar process), just use the defaults
     if (!record || !tab) {
-      const combined = { ...initialState };
+      const combined = {
+        ...initialState,
+        _processId: processId, // Add process ID for PayScript engine
+      };
 
       // Evaluate defaultValue expressions for parameters that don't have API defaults
       const evaluatedDefaults = evaluateParameterDefaults(parameters, session || {}, combined);
@@ -310,9 +322,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     // Build base payload with system context fields
     const basePayload = buildProcessPayload(record, tab, {}, {});
 
+    logger.debug("[PROCESS_DEBUG] Building availableFormData:", {
+      hasRecord: !!record,
+      hasTab: !!tab,
+      initialStateKeys: initialState ? Object.keys(initialState) : "null",
+      basePayloadKeys: basePayload ? Object.keys(basePayload) : "null",
+      top5BasePayload: basePayload ? Object.keys(basePayload).slice(0, 5) : [],
+    });
+
     const combined = {
       ...basePayload,
       ...initialState,
+      _processId: processId, // Add process ID for PayScript engine
     };
 
     // Evaluate defaultValue expressions for parameters that don't have API defaults
@@ -333,7 +354,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     }
 
     return combined;
-  }, [record, tab, initialState, parameters, session]);
+  }, [record, tab, initialState, parameters, session, processId]);
 
   const form = useForm({
     defaultValues: availableFormData as any,
@@ -357,6 +378,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   // Initialize gridSelection from filterExpressions
   // This dynamically creates grid structures based on what the backend returns
   // Dependencies include 'open' to reset on each modal open
+
   useEffect(() => {
     if (open && filterExpressions && Object.keys(filterExpressions).length > 0) {
       const initialGrids: GridSelectionStructure = {};
@@ -386,12 +408,35 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   // Watch all form values to trigger re-validation when any field changes
   const formValues = form.watch();
 
+  // Handle grid updates from callouts (e.g. modified amounts)
+  const handleGridUpdate = useCallback(
+    (gridName: string, data: unknown) => {
+      if (!Array.isArray(data)) return;
+
+      setGridSelection((prev) => {
+        const currentGrid = prev[gridName] || { _selection: [], _allRows: [] };
+        // The engine returns the updated list of SELECTED items with their calculated values.
+        // We explicitly replace the _selection with this new authoritative list.
+        return {
+          ...prev,
+          [gridName]: {
+            ...currentGrid,
+            _selection: data,
+          },
+        };
+      });
+    },
+    [setGridSelection]
+  );
+
   // Process callouts - execute when form values change
   useProcessCallouts({
     processId: processId || "",
     form,
     gridSelection,
+    parameters,
     enabled: open && !loading && !initializationLoading,
+    onGridUpdate: handleGridUpdate,
   });
 
   // NOTE: globalCalloutManager.isCalloutRunning() not working correctly
@@ -412,7 +457,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
     // Use formValues from watch() to get reactive values
     const willBlock = Object.values(parameters).some((p) => {
-      if (!p.mandatory) {
+      // @ts-ignore
+      if (!p.mandatory || p.active === false) {
         return false;
       }
 
@@ -421,13 +467,22 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         return false;
       }
 
-      // Get the field value from form
-      // IMPORTANT: Fields are registered with parameter.name, not dBColumnName
-      const fieldValue = formValues[p.name as keyof typeof formValues] as unknown;
+      const fieldName = p.name;
+      const dbColumnName = p.dBColumnName;
 
-      // If the field is registered in the form (not undefined in formValues object)
-      // then it means it was rendered and we should validate it
-      const fieldIsRegistered = p.name in formValues;
+      // Try to find the value by multiple possible keys
+      let fieldValue = formValues[fieldName as keyof typeof formValues] as unknown;
+
+      // If not found by name, try dBColumnName
+      if (fieldValue === undefined && dbColumnName) {
+        fieldValue = formValues[dbColumnName as keyof typeof formValues] as unknown;
+      }
+
+      // Check if the field is actually registered in the form
+      const isRegisteredByName = fieldName in formValues;
+      const isRegisteredByDBColumn = dbColumnName && dbColumnName in formValues;
+
+      const fieldIsRegistered = isRegisteredByName || isRegisteredByDBColumn;
 
       // Only validate fields that are actually registered in the form
       // If not registered, it means ProcessParameterSelector didn't render it (displayLogic = false)
@@ -441,6 +496,15 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         fieldValue === undefined ||
         fieldValue === "" ||
         (Array.isArray(fieldValue) && fieldValue.length === 0);
+
+      // Check display logic from PayScript engine
+      // logicFields keys are formatted as "parameterName.property" e.g. "overpayment_action.display"
+      if (logicFields && dbColumnName) {
+        const isHidden = logicFields[`${dbColumnName}.display`] === false;
+        if (isHidden) {
+          return false;
+        }
+      }
 
       // Block if mandatory field is empty
       return isEmpty;
@@ -735,6 +799,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           populatedGridsKeys: Object.keys(populatedGrids),
         });
 
+        logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Record Context:", {
+          recordId: record?.id,
+          recordValuesKeys: recordValues ? Object.keys(recordValues) : "null",
+          tabId: tab?.id,
+          processId,
+        });
+
         const formValues = form.getValues();
         const mappedValues = mapKeysWithDefaults({ ...formValues, ...populatedGrids });
 
@@ -1011,6 +1082,22 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     });
   }, [form, button.processDefinition.id, token, parameters]);
 
+  // Register PayScript DSL if available in process definition
+  useEffect(() => {
+    if (processDefinition.id) {
+      const def = processDefinition as any;
+      const dsl =
+        def.etmetaPayscriptLogic ||
+        def.emPayscriptLogic ||
+        def.em_payscript_logic ||
+        def.emEtmetaOnprocess ||
+        def.em_etmeta_onprocess;
+      if (dsl) {
+        registerPayScriptDSL(processDefinition.id, dsl);
+      }
+    }
+  }, [processDefinition]);
+
   useEffect(() => {
     if (open && hasWindowReference) {
       const loadConfig = async () => {
@@ -1030,6 +1117,22 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   // DefaultsProcessActionHandler integration including mixed types and logic fields
 
   // Handle initialization errors and logging
+  // Register PayScript DSL if available in process definition
+  useEffect(() => {
+    if (processDefinition.id) {
+      const def = processDefinition as any;
+      const dsl =
+        def.etmetaPayscriptLogic ||
+        def.emPayscriptLogic ||
+        def.em_payscript_logic ||
+        def.emEtmetaOnprocess ||
+        def.em_etmeta_onprocess;
+      if (dsl) {
+        registerPayScriptDSL(processDefinition.id, dsl);
+      }
+    }
+  }, [processDefinition]);
+
   useEffect(() => {
     if (initializationError) {
       logger.warn("Process initialization error:", initializationError);
@@ -1046,6 +1149,22 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   }, [initializationError, hasInitialData, processId, initialState, logicFields, filterExpressions]);
 
   // Load process definition metadata when opened from sidebar (parameters are empty)
+  // Register PayScript DSL if available in process definition
+  useEffect(() => {
+    if (processDefinition.id) {
+      const def = processDefinition as any;
+      const dsl =
+        def.etmetaPayscriptLogic ||
+        def.emPayscriptLogic ||
+        def.em_payscript_logic ||
+        def.emEtmetaOnprocess ||
+        def.em_etmeta_onprocess;
+      if (dsl) {
+        registerPayScriptDSL(processDefinition.id, dsl);
+      }
+    }
+  }, [processDefinition]);
+
   useEffect(() => {
     const loadProcessMetadata = async () => {
       // Check if parameters are empty (opened from sidebar)
@@ -1092,6 +1211,22 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     loadProcessMetadata();
   }, [open, processId, button.processDefinition.parameters, type]);
 
+  // Register PayScript DSL if available in process definition
+  useEffect(() => {
+    if (processDefinition.id) {
+      const def = processDefinition as any;
+      const dsl =
+        def.etmetaPayscriptLogic ||
+        def.emPayscriptLogic ||
+        def.em_payscript_logic ||
+        def.emEtmetaOnprocess ||
+        def.em_etmeta_onprocess;
+      if (dsl) {
+        registerPayScriptDSL(processDefinition.id, dsl);
+      }
+    }
+  }, [processDefinition]);
+
   useEffect(() => {
     if (open) {
       setResult(null);
@@ -1105,6 +1240,22 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       setAutoSelectApplied(false);
     }
   }, [button.processDefinition.parameters, open]);
+
+  // Register PayScript DSL if available in process definition
+  useEffect(() => {
+    if (processDefinition.id) {
+      const def = processDefinition as any;
+      const dsl =
+        def.etmetaPayscriptLogic ||
+        def.emPayscriptLogic ||
+        def.em_payscript_logic ||
+        def.emEtmetaOnprocess ||
+        def.em_etmeta_onprocess;
+      if (dsl) {
+        registerPayScriptDSL(processDefinition.id, dsl);
+      }
+    }
+  }, [processDefinition]);
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -1203,6 +1354,22 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
    *  - autoSelectConfig._gridSelection: mapping table -> [ids]
    *  - autoSelectConfig.table + autoSelectConfig.logic: declarative selection
    */
+  // Register PayScript DSL if available in process definition
+  useEffect(() => {
+    if (processDefinition.id) {
+      const def = processDefinition as any;
+      const dsl =
+        def.etmetaPayscriptLogic ||
+        def.emPayscriptLogic ||
+        def.em_payscript_logic ||
+        def.emEtmetaOnprocess ||
+        def.em_etmeta_onprocess;
+      if (dsl) {
+        registerPayScriptDSL(processDefinition.id, dsl);
+      }
+    }
+  }, [processDefinition]);
+
   useEffect(() => {
     if (!autoSelectConfig || autoSelectApplied) return;
 

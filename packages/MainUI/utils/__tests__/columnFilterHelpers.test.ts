@@ -155,7 +155,8 @@ describe("columnFilterHelpers", () => {
         20,
         "organization",
         "tab123",
-        0
+        0,
+        undefined
       );
       expect(mockSetFilterOptions).toHaveBeenCalledWith("organization", mockData, false, false);
     });
@@ -189,7 +190,8 @@ describe("columnFilterHelpers", () => {
         20,
         "businessPartner",
         "tab123",
-        0
+        0,
+        undefined
       );
     });
 
@@ -216,7 +218,8 @@ describe("columnFilterHelpers", () => {
         10,
         "product",
         "tab123",
-        20
+        20,
+        undefined
       );
       expect(mockSetFilterOptions).toHaveBeenCalledWith("product", mockData, false, true);
     });

@@ -253,6 +253,7 @@ export const useTableData = ({
           entityName: treeEntity,
           fetchFilterOptions,
           setFilterOptions,
+          isImplicitFilterApplied,
         });
       }
 
@@ -263,7 +264,7 @@ export const useTableData = ({
 
       return [];
     },
-    [rawColumns, fetchFilterOptions, setFilterOptions, loadFilterOptions, tab.id, treeEntity]
+    [rawColumns, fetchFilterOptions, setFilterOptions, loadFilterOptions, tab.id, treeEntity, isImplicitFilterApplied]
   );
 
   const handleLoadMoreFilterOptions = useCallback(
@@ -296,9 +297,19 @@ export const useTableData = ({
         setFilterOptions,
         offset,
         pageSize,
+        isImplicitFilterApplied,
       });
     },
-    [rawColumns, fetchFilterOptions, setFilterOptions, loadMoreFilterOptions, tab.id, treeEntity, advancedColumnFilters]
+    [
+      rawColumns,
+      fetchFilterOptions,
+      setFilterOptions,
+      loadMoreFilterOptions,
+      tab.id,
+      treeEntity,
+      advancedColumnFilters,
+      isImplicitFilterApplied,
+    ]
   );
 
   // Get columns with filter handlers
