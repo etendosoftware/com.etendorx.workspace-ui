@@ -20,6 +20,7 @@ import ContextPreview from "../ContextPreview";
 import { MESSAGE_ROLES, CONTEXT_CONSTANTS } from "@workspaceui/api-client/src/api/copilot";
 import type { MessageListProps } from "../types";
 import MarkdownMessage from "./MarkdownMessage";
+import AttachFileIcon from "../../../assets/icons/paperclip.svg";
 
 const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading = false, translations }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -28,15 +29,14 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Filter out tool messages that have been followed by another message
+  // Filter out tool and node messages - they should only appear in the loading area
   const filteredMessages = useMemo(() => {
     const result = [];
     for (let i = 0; i < messages.length; i++) {
       const currentMessage = messages[i];
-      const nextMessage = messages[i + 1];
 
-      // Skip tool messages if there's a next message (meaning the tool execution finished)
-      if (currentMessage.role === "tool" && nextMessage) {
+      // Skip all tool/node messages - they're shown as loading indicators
+      if (currentMessage.role === "tool" || currentMessage.role === "node") {
         continue;
       }
 
@@ -45,10 +45,10 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
     return result;
   }, [messages]);
 
-  // Check if the last message is a tool message (showing a loading state)
+  // Check if the last message is a tool/node message (showing a loading state)
   const hasActiveToolMessage = useMemo(() => {
     const lastMessage = messages[messages.length - 1];
-    return lastMessage?.role === "tool";
+    return lastMessage?.role === "tool" || lastMessage?.role === "node";
   }, [messages]);
 
   const hasContextInMessage = useCallback((text: string) => {
@@ -128,6 +128,23 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
               <div className="mb-1">
                 <MarkdownMessage content={displayMessage} />
               </div>
+
+              {/* Attached Files Display */}
+              {message.files && message.files.length > 0 && (
+                <div className="mt-2 mb-2 flex flex-col gap-1">
+                  {message.files.map((file, fileIndex) => (
+                    <div
+                      key={`${message.message_id || index}-file-${fileIndex}`}
+                      className="flex items-center gap-2 text-xs text-blue-600">
+                      <AttachFileIcon className="w-3.5 h-3.5" fill="currentColor" />
+                      <span className="truncate" title={file.name}>
+                        {file.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <span className="text-xs opacity-70">{message.timestamp}</span>
             </div>
           </div>
@@ -139,9 +156,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
           <div className="flex items-center gap-2 p-4 rounded-lg bg-(--color-baseline-0)">
             <div className="spinner-gradient" />
             <span className="text-sm">
-              {hasActiveToolMessage && messages[messages.length - 1]?.text
-                ? messages[messages.length - 1].text
-                : translations?.typing}
+              {hasActiveToolMessage ? messages[messages.length - 1]?.text : translations?.processing}
             </span>
           </div>
         </div>
