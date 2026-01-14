@@ -61,6 +61,7 @@ import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
+import type { SourceObject } from "@/utils/processes/manual/types";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
 import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
@@ -213,7 +214,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   useEffect(() => {
     const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
 
-    if (buttonListParam && buttonListParam.refList) {
+    if (buttonListParam?.refList) {
       setAvailableButtons(
         buttonListParam.refList.map((item) => ({
           value: item.value,
@@ -819,7 +820,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         const formValues = form.getValues();
         // Use buildProcessParameters to properly map parameter names to DB column names
         const mappedFormValues = buildProcessParameters(formValues, parameters);
-        const mappedValues = mapKeysWithDefaults({ ...mappedFormValues, ...populatedGrids });
+        const mappedValues = mapKeysWithDefaults({ ...mappedFormValues, ...populatedGrids } as SourceObject);
 
         logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - After mapKeysWithDefaults:", {
           mappedValuesKeys: Object.keys(mappedValues),
@@ -917,7 +918,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           recordIds,
           _buttonValue: actionValue || "DONE",
           _params: {
-            ...mapKeysWithDefaults({ ...mappedFormValues, ...extraKey, ...recordValues, ...populatedGrids }),
+            ...mapKeysWithDefaults({ ...mappedFormValues, ...extraKey, ...recordValues, ...populatedGrids } as SourceObject),
             ...buttonParams,
           },
         };
