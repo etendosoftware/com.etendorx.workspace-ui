@@ -918,7 +918,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           recordIds,
           _buttonValue: actionValue || "DONE",
           _params: {
-            ...mapKeysWithDefaults({ ...mappedFormValues, ...extraKey, ...recordValues, ...populatedGrids } as SourceObject),
+            ...mapKeysWithDefaults({
+              ...mappedFormValues,
+              ...extraKey,
+              ...recordValues,
+              ...populatedGrids,
+            } as SourceObject),
             ...buttonParams,
           },
         };
