@@ -819,7 +819,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         const formValues = form.getValues();
         // Use buildProcessParameters to properly map parameter names to DB column names
         const mappedFormValues = buildProcessParameters(formValues, parameters);
-        const mappedValues = mapKeysWithDefaults({ ...mappedFormValues, ...populatedGrids } as any);
+        const mappedValues = mapKeysWithDefaults({ ...mappedFormValues, ...populatedGrids });
 
         logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - After mapKeysWithDefaults:", {
           mappedValuesKeys: Object.keys(mappedValues),
@@ -917,7 +917,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           recordIds,
           _buttonValue: actionValue || "DONE",
           _params: {
-            ...mapKeysWithDefaults({ ...mappedFormValues, ...extraKey, ...recordValues, ...populatedGrids } as any),
+            ...mapKeysWithDefaults({ ...mappedFormValues, ...extraKey, ...recordValues, ...populatedGrids }),
             ...buttonParams,
           },
         };

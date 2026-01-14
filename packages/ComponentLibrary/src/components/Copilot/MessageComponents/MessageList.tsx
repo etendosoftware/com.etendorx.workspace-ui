@@ -32,9 +32,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
   // Filter out tool and node messages - they should only appear in the loading area
   const filteredMessages = useMemo(() => {
     const result = [];
-    for (let i = 0; i < messages.length; i++) {
-      const currentMessage = messages[i];
-
+    for (const currentMessage of messages) {
       // Skip all tool/node messages - they're shown as loading indicators
       if (currentMessage.role === "tool" || currentMessage.role === "node") {
         continue;
