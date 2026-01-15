@@ -46,6 +46,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import { GridCellEditor } from "./GridCellEditor";
 import { WindowReferenceGridProvider, useWindowReferenceGridContext } from "./WindowReferenceGridContext";
 import { getFieldReference } from "@/utils";
+import { PROCESS_DEFINITION_DATA } from "../../utils/processes/definition/constants";
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
@@ -438,6 +439,46 @@ const WindowReferenceGrid = ({
       // Standard env variables
       if (stableRecordValues.inpadOrgId) options.ad_org_id = stableRecordValues.inpadOrgId;
       if (stableRecordValues.inpadClientId) options.ad_client_id = stableRecordValues.inpadClientId;
+
+      // Apply dynamic keys from process configuration
+      const processId = processConfig?.processId;
+      if (processId) {
+        const processDef = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+        if (processDef?.dynamicKeys) {
+          for (const [key, value] of Object.entries(processDef.dynamicKeys)) {
+            let payloadKey = key;
+            let contextKey = value as string;
+
+            // Handle both mapping styles:
+            // 1. payloadKey: "@ContextKey@" -> Resolve ContextKey, send as payloadKey
+            // 2. "@PayloadKey@": "contextKey" -> Resolve contextKey, send as @PayloadKey@
+            if (typeof contextKey === "string" && contextKey.startsWith("@") && contextKey.endsWith("@")) {
+              contextKey = contextKey.slice(1, -1);
+            }
+
+            let resolvedValue = stableRecordValues[contextKey] || stableRecordValues[`inp${contextKey}`];
+            if (resolvedValue !== undefined && resolvedValue !== null) {
+              // Convert "Y"/"N" to boolean true/false
+              if (resolvedValue === "Y") {
+                resolvedValue = true;
+              } else if (resolvedValue === "N") {
+                resolvedValue = false;
+              }
+              // Convert numeric strings to numbers (e.g., "102" -> 102, "0" -> 0)
+              else if (
+                typeof resolvedValue === "string" &&
+                resolvedValue !== "" &&
+                !Number.isNaN(Number(resolvedValue)) &&
+                resolvedValue.length < 15 // Avoid converting UUIDs that happen to be numeric
+              ) {
+                resolvedValue = Number(resolvedValue);
+              }
+
+              options[payloadKey] = resolvedValue;
+            }
+          }
+        }
+      }
     };
 
     const applyParameters = () => {
