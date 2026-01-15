@@ -200,7 +200,7 @@ const InteractiveGridCellRenderer = ({ row, cell, column }: any) => {
 
 const updateLocalRecordFromSelection = (record: EntityData, selectionItem: any): EntityData | null => {
   let updated = false;
-  let newRecord = { ...record };
+  const newRecord = { ...record };
 
   if (selectionItem.amount !== undefined && selectionItem.amount !== newRecord.amount) {
     newRecord.amount = selectionItem.amount;
@@ -219,7 +219,7 @@ const updateLocalRecordFromSelection = (record: EntityData, selectionItem: any):
 
 const resetLocalRecordFields = (record: EntityData): EntityData | null => {
   let changed = false;
-  let newRecord = { ...record };
+  const newRecord = { ...record };
 
   if (newRecord.amount !== undefined && newRecord.amount !== 0) {
     newRecord.amount = 0;

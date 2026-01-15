@@ -9,6 +9,7 @@ export interface ExecuteProcessResult<T = any> {
   success: boolean;
   data?: T;
   error?: string;
+  isHtml?: boolean; // Flag to indicate if the message contains HTML content
 }
 
 /**

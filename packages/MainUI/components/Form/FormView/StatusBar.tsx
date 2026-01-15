@@ -41,7 +41,7 @@ export default function StatusBar({
   onNavigatePrevious,
   isNavigating = false,
 }: StatusBarProps) {
-  const [isSaved, setIsSaved] = useState(false);
+  const [saveCounter, setSaveCounter] = useState(0);
   const { t } = useTranslation();
   const { onBack, onSave } = useToolbarContext();
   const { hasFormChanges } = useTabContext();
@@ -51,21 +51,17 @@ export default function StatusBar({
       if (hasFormChanges) {
         await onSave(false);
       }
-      setIsSaved(true);
+      setSaveCounter((prev) => prev + 1);
     } catch (error) {
       console.error("Error saving record", error);
     }
   }, [hasFormChanges, onSave]);
 
   useEffect(() => {
-    if (isSaved) {
+    if (saveCounter > 0) {
       onBack();
     }
-
-    return () => {
-      setIsSaved(false);
-    };
-  }, [isSaved, onBack]);
+  }, [saveCounter, onBack]);
 
   return (
     <div
