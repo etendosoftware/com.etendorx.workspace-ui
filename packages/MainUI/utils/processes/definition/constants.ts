@@ -94,7 +94,7 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
       "@Invoice.currency@": "inpcCurrencyId",
       "@Invoice.salesTransaction@": "inpissotrx",
       "@Invoice.documentType@": "inpcDoctypeId",
-      "@Invoice.paymentComplete@": "inpposted",
+      "@Invoice.paymentComplete@": "inpispaid",
       "@Invoice.client@": "inpadClientId",
       "@Invoice.organization@": "inpadOrgId",
       "@Invoice.id@": "inpcInvoiceId",
