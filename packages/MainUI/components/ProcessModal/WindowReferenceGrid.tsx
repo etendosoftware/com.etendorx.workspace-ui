@@ -477,7 +477,7 @@ const WindowReferenceGrid = ({
     };
 
     const applyProcessDynamicKeys = (processId: string) => {
-      const processDef = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+      const processDef = PROCESS_DEFINITION_DATA[processId];
       if (!processDef?.dynamicKeys) return;
 
       for (const [key, value] of Object.entries(processDef.dynamicKeys)) {
