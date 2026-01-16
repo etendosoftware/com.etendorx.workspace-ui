@@ -2642,6 +2642,7 @@ const DynamicTable = ({
       expanded: expandedState,
       showColumnFilters: true,
       showProgressBars: loading,
+      isLoading: loading,
     }),
     [tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder, expandedState, loading]
   );
