@@ -772,6 +772,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               refetch={refetch}
               onSave={handleSave}
               showErrorModal={showErrorModal}
+              mode={currentMode}
               data-testid="FormActions__1a0853"
             />
           </form>
