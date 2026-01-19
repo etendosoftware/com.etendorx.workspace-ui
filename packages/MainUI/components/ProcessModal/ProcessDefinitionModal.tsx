@@ -57,7 +57,7 @@ import Loading from "../loading";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
-import type { ProcessDefinitionModalContentProps, RecordValues } from "./types";
+import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import type { SourceObject } from "@/utils/processes/manual/types";
@@ -65,6 +65,7 @@ import { useProcessCallouts } from "./callouts/useProcessCallouts";
 import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
 import { registerPayScriptDSL } from "./callouts/genericPayScriptCallout";
+import { executeStringFunction } from "@/utils/functions";
 
 // Date field reference codes for conversion
 const DATE_REFERENCE_CODES = [
