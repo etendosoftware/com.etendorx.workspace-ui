@@ -23,6 +23,10 @@ export const CREATE_LINES_FROM_RECEIPT_ID = "7737CA7330FD49FBA7EBC225E85F2BC9";
 export const LANDED_COST_PROCESS = "96FE01F2F12F45FC8ED4A1978EBD034C";
 export const REACTIVATE_LANDED_COST_PROCESS = "C600DAD457664EFDA6B1AA76931552BA";
 export const CREATE_LINE_ID = "6995A4C2592D434A9E16B71E1694CBCA";
+export const SYNC_SERVER_PROCESS_ID = "A7E842C7B06D460BA37F8AACD41CFA1E";
+export const START_STOP_SERVER_PROCESS_ID = "53F3CA8AE4A34B618454B516DD76BB65";
+export const REQUEST_DOMAIN_PROCESS_ID = "8ACE386EA8B7472A8BF6279D4A019E82";
+export const DELETE_SERVER_PROCESS_ID = "8F6B9719DDAC4B178212599EE62489D8";
 export const BUTTON_LIST_REFERENCE_ID = "FF80818132F94B500132F9575619000A";
 type ProcessDefinition = {
   inpColumnId: string;
@@ -31,6 +35,7 @@ type ProcessDefinition = {
   dynamicKeys: Record<string, unknown>;
   staticOptions: Record<string, unknown>;
   additionalPayloadFields?: string[]; // Fields from recordValues to add to payload
+  skipParamsLevel?: boolean; // If true, parameters are spread at top level instead of inside _params
 };
 
 type WindowDefinition = {
@@ -62,7 +67,13 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
       "@Invoice.documentType@": "inpcDoctypeId",
       "@Invoice.businessPartner@": "inpcBpartnerId",
       "@Invoice.currency@": "inpcCurrencyId",
-      "@Invoice.paymentComplete@": "inpposted",
+      "@Invoice.paymentComplete@": "inpispaid",
+      "@Invoice.client@": "inpadClientId",
+      "@Invoice.organization@": "inpadOrgId",
+      "@Invoice.id@": "inpcInvoiceId",
+      "@Invoice.invoiceDate@": "inpdateinvoiced",
+      "@Invoice.documentStatus@": "inpdocstatus",
+      "@Invoice.totalPaid@": "inptotalpaid",
     },
     staticOptions: {},
   },
@@ -82,6 +93,14 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
       "@Invoice.businessPartner@": "inpcBpartnerId",
       "@Invoice.currency@": "inpcCurrencyId",
       "@Invoice.salesTransaction@": "inpissotrx",
+      "@Invoice.documentType@": "inpcDoctypeId",
+      "@Invoice.paymentComplete@": "inpispaid",
+      "@Invoice.client@": "inpadClientId",
+      "@Invoice.organization@": "inpadOrgId",
+      "@Invoice.id@": "inpcInvoiceId",
+      "@Invoice.invoiceDate@": "inpdateinvoiced",
+      "@Invoice.documentStatus@": "inpdocstatus",
+      "@Invoice.totalPaid@": "inptotalpaid",
     },
     staticOptions: {},
     additionalPayloadFields: ["inpcInvoiceId"],
@@ -110,6 +129,38 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
       c_order_id: "C_Order_ID",
     },
     staticOptions: {},
+  },
+  [SYNC_SERVER_PROCESS_ID]: {
+    inpColumnId: "SMFSCH_Servers_ID",
+    inpPrimaryKeyColumnId: "inpsmfschServersId",
+    defaultKeys: {},
+    dynamicKeys: {},
+    staticOptions: {},
+    skipParamsLevel: true,
+  },
+  [START_STOP_SERVER_PROCESS_ID]: {
+    inpColumnId: "SMFSCH_Servers_ID",
+    inpPrimaryKeyColumnId: "inpsmfschServersId",
+    defaultKeys: {},
+    dynamicKeys: {},
+    staticOptions: {},
+    skipParamsLevel: true,
+  },
+  [REQUEST_DOMAIN_PROCESS_ID]: {
+    inpColumnId: "SMFSCH_Servers_ID",
+    inpPrimaryKeyColumnId: "inpsmfschServersId",
+    defaultKeys: {},
+    dynamicKeys: {},
+    staticOptions: {},
+    skipParamsLevel: true,
+  },
+  [DELETE_SERVER_PROCESS_ID]: {
+    inpColumnId: "SMFSCH_Servers_ID",
+    inpPrimaryKeyColumnId: "inpsmfschServersId",
+    defaultKeys: {},
+    dynamicKeys: {},
+    staticOptions: {},
+    skipParamsLevel: true,
   },
 };
 

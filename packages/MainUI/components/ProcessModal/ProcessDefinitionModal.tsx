@@ -44,7 +44,6 @@ import {
   WINDOW_SPECIFIC_KEYS,
   PROCESS_TYPES,
 } from "@/utils/processes/definition/constants";
-import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
@@ -58,7 +57,7 @@ import Loading from "../loading";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
-import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
+import type { ProcessDefinitionModalContentProps, RecordValues } from "./types";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import type { SourceObject } from "@/utils/processes/manual/types";
@@ -830,20 +829,30 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         });
 
         // Build base payload
+        const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+        const skipParamsLevel = processDefConfig?.skipParamsLevel;
+
         const payload: Record<string, unknown> = {
           recordIds: record?.id ? [record.id] : [],
           _buttonValue: actionValue || "DONE",
-          _params: {
-            ...mappedValues,
-            ...buttonParams,
-          },
+          ...(skipParamsLevel
+            ? {
+                ...mappedValues,
+                ...buttonParams,
+              }
+            : {
+                _params: {
+                  ...mappedValues,
+                  ...buttonParams,
+                },
+              }),
           _entityName: tab?.entityName || "",
           windowId: tab?.window || "",
           ...buildProcessSpecificFields(processId),
           ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
         };
 
-        const params = payload._params as Record<string, unknown>;
+        const params = (skipParamsLevel ? payload : payload._params) as Record<string, unknown>;
         logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Final payload:", {
           payloadKeys: Object.keys(payload),
           paramsKeys: Object.keys(params),
@@ -913,19 +922,29 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         // Use buildProcessParameters to properly map parameter names to DB column names
         const formValues = form.getValues();
         const mappedFormValues = buildProcessParameters(formValues, parameters);
+        const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+        const skipParamsLevel = processDefConfig?.skipParamsLevel;
+        const params = mapKeysWithDefaults({
+          ...mappedFormValues,
+          ...extraKey,
+          ...recordValues,
+          ...populatedGrids,
+        } as SourceObject);
 
         const payload = {
           recordIds,
           _buttonValue: actionValue || "DONE",
-          _params: {
-            ...mapKeysWithDefaults({
-              ...mappedFormValues,
-              ...extraKey,
-              ...recordValues,
-              ...populatedGrids,
-            } as SourceObject),
-            ...buttonParams,
-          },
+          ...(skipParamsLevel
+            ? {
+                ...params,
+                ...buttonParams,
+              }
+            : {
+                _params: {
+                  ...params,
+                  ...buttonParams,
+                },
+              }),
         };
 
         await executeJavaProcess(payload, "direct Java process");

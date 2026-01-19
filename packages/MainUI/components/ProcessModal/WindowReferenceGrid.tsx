@@ -46,6 +46,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import { GridCellEditor } from "./GridCellEditor";
 import { WindowReferenceGridProvider, useWindowReferenceGridContext } from "./WindowReferenceGridContext";
 import { getFieldReference } from "@/utils";
+import { PROCESS_DEFINITION_DATA } from "../../utils/processes/definition/constants";
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
@@ -432,12 +433,67 @@ const WindowReferenceGrid = ({
       inpadClientId: "ad_client_id",
     };
 
+    const convertValueType = (value: unknown): boolean | number | unknown => {
+      if (value === "Y") return true;
+      if (value === "N") return false;
+
+      // Convert numeric strings to numbers (e.g., "102" -> 102, "0" -> 0)
+      if (
+        typeof value === "string" &&
+        value !== "" &&
+        !Number.isNaN(Number(value)) &&
+        value.length < 15 // Avoid converting UUIDs that happen to be numeric
+      ) {
+        return Number(value);
+      }
+
+      return value;
+    };
+
+    const normalizeContextKey = (contextKey: string): string => {
+      if (typeof contextKey === "string" && contextKey.startsWith("@") && contextKey.endsWith("@")) {
+        return contextKey.slice(1, -1);
+      }
+      return contextKey;
+    };
+
+    const resolveContextValue = (contextKey: string): unknown => {
+      return stableRecordValues[contextKey] || stableRecordValues[`inp${contextKey}`];
+    };
+
+    const applyStandardEnvVariables = () => {
+      if (stableRecordValues.inpadOrgId) options.ad_org_id = stableRecordValues.inpadOrgId;
+      if (stableRecordValues.inpadClientId) options.ad_client_id = stableRecordValues.inpadClientId;
+    };
+
+    const processDynamicKey = (key: string, value: unknown) => {
+      const payloadKey = key;
+      const contextKey = normalizeContextKey(value as string);
+
+      const resolvedValue = resolveContextValue(contextKey);
+      if (resolvedValue === undefined || resolvedValue === null) return;
+
+      options[payloadKey] = convertValueType(resolvedValue);
+    };
+
+    const applyProcessDynamicKeys = (processId: string) => {
+      const processDef = PROCESS_DEFINITION_DATA[processId];
+      if (!processDef?.dynamicKeys) return;
+
+      for (const [key, value] of Object.entries(processDef.dynamicKeys)) {
+        processDynamicKey(key, value);
+      }
+    };
+
     const applyDynamicKeys = () => {
       if (!stableRecordValues) return;
 
-      // Standard env variables
-      if (stableRecordValues.inpadOrgId) options.ad_org_id = stableRecordValues.inpadOrgId;
-      if (stableRecordValues.inpadClientId) options.ad_client_id = stableRecordValues.inpadClientId;
+      applyStandardEnvVariables();
+
+      const processId = processConfig?.processId;
+      if (processId) {
+        applyProcessDynamicKeys(processId);
+      }
     };
 
     const applyParameters = () => {
