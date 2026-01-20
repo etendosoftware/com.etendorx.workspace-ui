@@ -290,7 +290,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       selectedRecordsLength: selectedRecordsLength,
       t: t,
       isAdvancedFilterApplied: isAdvancedFilterApplied,
-      windowType: Metadata.getCachedWindow(windowId)?.windowType,
     });
 
     const config = {
