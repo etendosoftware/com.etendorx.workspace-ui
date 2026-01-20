@@ -84,6 +84,16 @@ type ToolbarActions = {
    *                   used for positioning dropdown/popover filters
    */
   columnFilters: (buttonRef?: HTMLElement | null) => void;
+
+  /**
+   * Print the current document.
+   */
+  printDocument: () => Promise<void>;
+
+  /**
+   * Print the current record.
+   */
+  printRecord: () => Promise<void>;
   /**
    * Open the Advanced Filters modal.
    */
@@ -100,6 +110,8 @@ type ToolbarContextType = {
   onToggleTreeView: () => void;
   onAdvancedFilters: (anchorEl?: HTMLElement) => void;
   onColumnFilters: (buttonRef?: HTMLElement | null) => void;
+  onPrintDocument: () => Promise<void>;
+  onPrintRecord: () => Promise<void>;
   registerActions: (actions: Partial<ToolbarActions>) => void;
   saveButtonState: SaveButtonState;
   setSaveButtonState: React.Dispatch<React.SetStateAction<SaveButtonState>>;
@@ -124,6 +136,8 @@ const initialState: ToolbarActions = {
   columnFilters: () => {},
   treeView: () => {},
   exportCSV: async () => {},
+  printDocument: async () => {},
+  printRecord: async () => {},
   advancedFilters: () => {},
 };
 
@@ -137,6 +151,8 @@ const ToolbarContext = createContext<ToolbarContextType>({
   onToggleTreeView: () => {},
   onAdvancedFilters: () => {},
   onColumnFilters: () => {},
+  onPrintDocument: async () => {},
+  onPrintRecord: async () => {},
   registerActions: () => {},
   saveButtonState: {
     isCalloutLoading: false,
@@ -193,6 +209,8 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       filter: onFilter,
       exportCSV: onExportCSV,
       columnFilters: onColumnFilters,
+      printDocument: onPrintDocument,
+      printRecord: onPrintRecord,
       advancedFilters: onAdvancedFilters,
     },
     setActions,
@@ -256,6 +274,8 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       onExportCSV,
       onColumnFilters,
       onToggleTreeView,
+      onPrintDocument,
+      onPrintRecord,
       onAdvancedFilters,
       registerActions,
       saveButtonState,
@@ -280,6 +300,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
       onExportCSV,
       onColumnFilters,
       onToggleTreeView,
+      onPrintRecord,
       onAdvancedFilters,
       registerActions,
       saveButtonState,

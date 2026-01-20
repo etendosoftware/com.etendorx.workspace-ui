@@ -25,7 +25,8 @@ type FetchFilterOptionsFunction = (
   pageSize?: number,
   distinctField?: string,
   tabId?: string,
-  offset?: number
+  offset?: number,
+  isImplicitFilterApplied?: boolean
 ) => Promise<FilterOption[]>;
 
 interface LoadTableDirFilterOptionsParams {
@@ -38,6 +39,7 @@ interface LoadTableDirFilterOptionsParams {
   setFilterOptions: (columnId: string, options: FilterOption[], hasMore: boolean, append: boolean) => void;
   offset?: number;
   pageSize?: number;
+  isImplicitFilterApplied?: boolean;
 }
 
 /**
@@ -71,6 +73,7 @@ export const loadTableDirFilterOptions = async ({
   setFilterOptions,
   offset = 0,
   pageSize = 20,
+  isImplicitFilterApplied,
 }: LoadTableDirFilterOptionsParams): Promise<FilterOption[]> => {
   try {
     let options: FilterOption[] = [];
@@ -89,7 +92,8 @@ export const loadTableDirFilterOptions = async ({
         pageSize,
         distinctField,
         tabIdStr,
-        offset
+        offset,
+        isImplicitFilterApplied
       );
     } else {
       // Fallback to selector/datasource approach for fields without a referenced entity
@@ -104,7 +108,8 @@ export const loadTableDirFilterOptions = async ({
           pageSize,
           undefined,
           undefined,
-          offset
+          offset,
+          isImplicitFilterApplied
         );
       }
     }

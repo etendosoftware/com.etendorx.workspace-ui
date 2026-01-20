@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
 import { getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
+import { normalizeBaseUrl } from "@/app/api/_utils/process/utils";
 
 // Cached function for ERP requests to the base URL (no slug)
 const getCachedErpData = unstable_cache(
@@ -35,12 +36,6 @@ const getCachedErpData = unstable_cache(
   },
   ["erp_base_v1"]
 );
-
-// Helper functions to reduce cognitive complexity
-
-function normalizeBaseUrl(url: string | undefined): string {
-  return url?.endsWith("/") ? url.slice(0, -1) : url || "";
-}
 
 /**
  * Determines if an action should go directly to kernel servlet instead of secure web services
