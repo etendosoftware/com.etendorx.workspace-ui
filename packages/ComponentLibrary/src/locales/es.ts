@@ -384,6 +384,7 @@ const es = {
       contextRecords: "Contexto seleccionado",
       welcomeMessage: "¡Hola! ¿En qué puedo ayudarte hoy?",
       typing: "Escribiendo...",
+      processing: "Procesando...",
     },
     contextPreview: {
       selectedRegisters: " Registros adjuntados",

@@ -540,14 +540,8 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
           }
           // Clear form state only for children that should be cleaned
           clearTabFormState(windowIdentifier, tabId);
-        } else {
-          console.log(`[clearChildrenSelections] Preserving child ${tabId} - currently in FormView`, childState);
         }
       }
-
-      console.log(
-        `[clearChildrenSelections] Cleared children: [${childrenCleaned.join(", ")}] from window ${windowIdentifier}`
-      );
     },
     [state, getTabFormState, getSelectedRecord, clearSelectedRecord, clearTabFormState]
   );

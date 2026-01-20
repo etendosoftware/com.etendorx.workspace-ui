@@ -76,8 +76,8 @@ export const TabButton = ({
 
   const getTabButtonClass = () => {
     const baseTabClass = `
-      px-2 py-1 w-auto border-b-2 font-semibold
-      transition-colors appearance-none
+      px-2 py-1 w-auto min-w-max flex-shrink-0 border-b-2 font-semibold
+      transition-colors appearance-none whitespace-nowrap
       hover:text-(--color-neutral-90) hover:border-b-(--color-neutral-90)
     `;
 
@@ -135,17 +135,15 @@ export const TabButton = ({
   if (!title) return null;
 
   return (
-    <span>
-      <button
-        type="button"
-        onClick={handleClick}
-        onDoubleClick={handleDoubleClick}
-        title={title}
-        aria-label={title}
-        className={baseClass}>
-        {title}
-      </button>
-    </span>
+    <button
+      type="button"
+      onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
+      title={title}
+      aria-label={title}
+      className={baseClass}>
+      {title}
+    </button>
   );
 };
 

@@ -143,6 +143,7 @@ export interface Field {
   readOnlyLogicExpression?: string;
   isReadOnly: boolean;
   isDisplayed: boolean;
+  gridPosition?: number;
   sequenceNumber: number;
   isUpdatable: boolean;
   description: string;
@@ -150,6 +151,8 @@ export interface Field {
   processDefinition?: ProcessDefinition;
   processAction?: ProcessAction;
   etmetaCustomjs?: string | null;
+  isActive: boolean;
+  gridDisplayLogic: string;
   /**
    * Indicates if this field contains the parent record ID in a hierarchical tab structure.
    * Used during URL state recovery to traverse from child records up to parent records.
@@ -276,6 +279,8 @@ export interface Tab {
   tableTree?: boolean | string;
   obuiappShowCloneButton?: boolean;
   obuiappCloneChildren?: boolean;
+  process?: string;
+  process$_identifier?: string;
 }
 
 export interface WindowMetadata {
@@ -285,6 +290,7 @@ export interface WindowMetadata {
   properties: WindowMetadataProperties;
   tabs: Tab[];
   window$_identifier: string;
+  windowType?: string;
 }
 
 export interface RecordPayload extends Record<string, string> {
@@ -309,6 +315,8 @@ export interface Menu {
   isSearchResult?: boolean;
   path?: string[];
   fullPath?: string;
+  processUrl?: string;
+  isModalProcess?: boolean;
 }
 
 export enum Action {
@@ -791,7 +799,13 @@ export type ProcessParameter = {
   readOnlyLogicExpression?: string;
   reference: string;
   window?: WindowMetadata; // This type is for process that have defined a window reference
+  selector?: SelectorInfo;
 } & Record<string, string>;
+
+export interface SelectorInfo extends Record<string, unknown> {
+  datasourceName?: string;
+  response?: Array<{ id: string; name: string; [key: string]: unknown }>;
+}
 
 export type ProcessParameters = Record<string, ProcessParameter>;
 

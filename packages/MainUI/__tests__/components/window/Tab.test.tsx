@@ -15,6 +15,14 @@
  *************************************************************************
  */
 
+// Mock dependencies
+jest.mock("../../../contexts/TabRefreshContext");
+jest.mock("../../../contexts/ToolbarContext");
+jest.mock("../../../hooks/useMetadataContext");
+jest.mock("../../../hooks/useSelected");
+jest.mock("../../../contexts/tab");
+jest.mock("../../../hooks/useUserContext");
+
 import type React from "react";
 import { render } from "@testing-library/react";
 import { ThemeProvider } from "@mui/material/styles";
@@ -26,7 +34,7 @@ import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 
-// Mock dependencies
+// Mock other dependencies
 jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
   revalidateTag: jest.fn(),
@@ -64,13 +72,6 @@ jest.mock("next/navigation", () => ({
     forEach: jest.fn(),
   })),
 }));
-
-jest.mock("@/contexts/TabRefreshContext");
-jest.mock("@/contexts/ToolbarContext");
-jest.mock("@/hooks/useMetadataContext");
-jest.mock("@/hooks/useSelected");
-jest.mock("@/contexts/tab");
-jest.mock("@/hooks/useUserContext");
 
 const mockUseTabRefreshContext = useTabRefreshContext as jest.MockedFunction<typeof useTabRefreshContext>;
 const mockUseToolbarContext = useToolbarContext as jest.MockedFunction<typeof useToolbarContext>;
@@ -114,6 +115,9 @@ describe("Tab - Refresh Registration", () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    // Mock runtime config context
+    // Handled by fallback in RuntimeConfigContext.tsx
+
     mockUseTabRefreshContext.mockReturnValue({
       registerRefresh: mockRegisterRefresh,
       unregisterRefresh: mockUnregisterRefresh,
@@ -150,10 +154,15 @@ describe("Tab - Refresh Registration", () => {
     require("@/hooks/useSelected").useSelected = jest.fn().mockReturnValue({
       graph: {
         clearSelected: jest.fn(),
+        clearSelectedMultiple: jest.fn(),
         getChildren: jest.fn(() => []),
         getParent: jest.fn(() => null),
-        addListener: jest.fn(),
-        removeListener: jest.fn(),
+        addListener: jest.fn().mockReturnThis(),
+        removeListener: jest.fn().mockReturnThis(),
+        getSelected: jest.fn(),
+        getSelectedMultiple: jest.fn(() => []),
+        setSelected: jest.fn(),
+        setSelectedMultiple: jest.fn(),
       },
     });
 
