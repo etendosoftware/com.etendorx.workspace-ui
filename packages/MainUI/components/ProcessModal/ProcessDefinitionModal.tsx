@@ -58,6 +58,7 @@ import Loading from "../loading";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
+import ProcessResultModal from "./ProcessResultModal";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
@@ -1747,53 +1748,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         </Modal>
       )}
       {/* Success Modal - Separate overlay */}
-      {open && result?.success && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60] p-4">
-          <div
-            className="rounded-2xl p-6 shadow-xl max-w-sm w-full relative"
-            style={{ background: "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)" }}>
-            <button
-              type="button"
-              onClick={handleSuccessClose}
-              className="absolute top-4 right-4 p-1 rounded-full hover:bg-white/50 transition-colors"
-              aria-label="Close">
-              <CloseIcon className="w-5 h-5" data-testid="SuccessCloseIcon__761503" />
-            </button>
-            <div className="flex flex-col items-center gap-4">
-              <div className="flex items-center justify-center">
-                <CheckIcon className="w-6 h-6 fill-(--color-success-main)" data-testid="SuccessCheckIcon__761503" />
-              </div>
-              <div>
-                <h4 className="font-medium text-xl text-center text-(--color-success-main)">
-                  {t("process.completedSuccessfully")}
-                </h4>
-                {(() => {
-                  const msg =
-                    typeof result?.data === "string"
-                      ? result.data
-                      : result?.data?.msgText || result?.data?.message || result?.error;
-
-                  if (!msg || msg === t("process.completedSuccessfully")) return null;
-
-                  return (
-                    <p className="text-sm text-center text-(--color-transparent-neutral-80) whitespace-pre-line">
-                      {String(msg).replace(/<br\s*\/?>/gi, "\n")}
-                    </p>
-                  );
-                })()}
-              </div>
-              <Button
-                variant="filled"
-                size="large"
-                onClick={handleSuccessClose}
-                className="w-49"
-                data-testid="SuccessCloseButton__761503">
-                {t("common.close")}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ProcessResultModal
+        open={Boolean(open && result?.success)}
+        success={true}
+        message={
+          typeof result?.data === "string"
+            ? result.data
+            : result?.data?.msgText || result?.data?.message || result?.error || undefined
+        }
+        onClose={handleSuccessClose}
+      />
     </>
   );
 }

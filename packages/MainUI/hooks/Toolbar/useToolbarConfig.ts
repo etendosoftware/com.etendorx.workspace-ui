@@ -16,6 +16,7 @@
  */
 
 import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useUserContext } from "@/hooks/useUserContext";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
 import type { Tab, EntityData } from "@workspaceui/api-client/src/api/types";
@@ -86,6 +87,22 @@ export const useToolbarConfig = ({
     buttons: [],
     t,
   });
+
+  const { token } = useUserContext();
+
+  const [resultModal, setResultModal] = useState<{
+    open: boolean;
+    success: boolean;
+    message?: string;
+    title?: string;
+  }>({
+    open: false,
+    success: false,
+  });
+
+  const closeResultModal = useCallback(() => {
+    setResultModal((prev) => ({ ...prev, open: false }));
+  }, []);
 
   const closeActionModal = useCallback(() => {
     setActionModal((prev) => ({ ...prev, isOpen: false }));
@@ -398,19 +415,71 @@ export const useToolbarConfig = ({
       [TOOLBAR_BUTTONS_ACTIONS.ADVANCED_FILTERS]: (event?: React.MouseEvent<HTMLElement>) => {
         onAdvancedFilters?.(event?.currentTarget);
       },
+      INITIALIZE_RX_SERVICES: async () => {
+        try {
+          const baseUrl = "/api/erp/org.openbravo.client.kernel";
+          const queryParams = new URLSearchParams();
+          queryParams.set("_action", "com.etendoerp.etendorx.actionhandler.InitializeRXServices");
+
+          const apiUrl = `${baseUrl}?${queryParams.toString()}`;
+
+          const response = await fetch(apiUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json;charset=UTF-8",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({}),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || "Execution failed");
+          }
+
+          const result = await response.json();
+
+          const { severity, text, refreshGrid } = result.severity ? result : result.response || result;
+
+          const isSuccess = severity === "success";
+
+          let finalMessage = text;
+          if (finalMessage?.includes("Process completed successfully<br/>")) {
+            finalMessage = finalMessage.replace("Process completed successfully<br/>", "");
+          }
+
+          if (isSuccess && refreshGrid) {
+            finalMessage += `<br/>${t("process.refreshGrid") || "Refresh the grid to see the changes."}`;
+          }
+
+          console.log("finalMessage", finalMessage);
+          console.log("text", text);
+
+          setResultModal({
+            open: true,
+            success: isSuccess,
+            message: finalMessage,
+          });
+
+          if (isSuccess && refreshGrid) {
+            onRefresh?.();
+          }
+        } catch (error) {
+          logger.error("Error initializing RX services:", error);
+          setResultModal({
+            open: true,
+            success: false,
+            message: error instanceof Error ? error.message : "Unknown error",
+          });
+        }
+      },
     }),
     [
       onBack,
       onNew,
       onFilter,
       onSave,
-      tab,
-      selectedIds,
-      selectedMultiple,
-      showConfirmModal,
       t,
-      deleteRecord,
-      showErrorModal,
       onRefresh,
       hasSelectedRecords,
       contextString,
@@ -424,6 +493,7 @@ export const useToolbarConfig = ({
       handleCopyRecord,
       onPrintRecord,
       onAdvancedFilters,
+      token,
     ]
   );
 
@@ -474,6 +544,8 @@ export const useToolbarConfig = ({
       selectedRecordId,
       actionModal,
       closeActionModal,
+      resultModal,
+      closeResultModal,
     }),
     [
       handleAction,
@@ -494,6 +566,8 @@ export const useToolbarConfig = ({
       selectedRecordId,
       actionModal,
       closeActionModal,
+      resultModal,
+      closeResultModal,
     ]
   );
 };
