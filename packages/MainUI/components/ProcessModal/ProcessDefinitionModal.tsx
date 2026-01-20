@@ -44,7 +44,6 @@ import {
   WINDOW_SPECIFIC_KEYS,
   PROCESS_TYPES,
 } from "@/utils/processes/definition/constants";
-import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
@@ -61,11 +60,13 @@ import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
+import type { SourceObject } from "@/utils/processes/manual/types";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
 import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
 import { DEFAULT_BULK_COMPLETION_ONLOAD, isBulkCompletionProcess } from "@/utils/process/bulkCompletionUtils";
 import { registerPayScriptDSL } from "./callouts/genericPayScriptCallout";
+import { executeStringFunction } from "@/utils/functions";
 
 // Date field reference codes for conversion
 const DATE_REFERENCE_CODES = [
@@ -214,7 +215,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   useEffect(() => {
     const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
 
-    if (buttonListParam && buttonListParam.refList) {
+    if (buttonListParam?.refList) {
       setAvailableButtons(
         buttonListParam.refList.map((item) => ({
           value: item.value,
@@ -544,19 +545,33 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
     let actionWithMsg;
     if (Array.isArray(responseActions)) {
-      actionWithMsg = responseActions.find((action: any) => action.showMsgInProcessView);
+      // First try to find showMsgInProcessView, then smartclientSay
+      actionWithMsg = responseActions.find((action: any) => action.showMsgInProcessView || action.smartclientSay);
     } else if (typeof responseActions === "object") {
       actionWithMsg = responseActions;
     }
 
+    // Check for showMsgInProcessView (standard format)
     const msgView = actionWithMsg?.showMsgInProcessView;
+    if (msgView) {
+      return {
+        message: msgView.msgText,
+        messageType: msgView.msgType,
+        isHtml: false,
+      };
+    }
 
-    if (!msgView) return null;
+    // Check for smartclientSay (HTML format)
+    const smartclientSay = actionWithMsg?.smartclientSay;
+    if (smartclientSay?.message) {
+      return {
+        message: smartclientSay.message,
+        messageType: "success", // smartclientSay typically indicates success
+        isHtml: true, // Flag to indicate this is HTML content
+      };
+    }
 
-    return {
-      message: msgView.msgText,
-      messageType: msgView.msgType,
-    };
+    return null;
   }, []);
 
   const extractMessageFromData = useCallback((res: ExecuteProcessResult) => {
@@ -565,6 +580,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       return {
         message: res.data.response.error.message,
         messageType: "error",
+        isHtml: false,
       };
     }
 
@@ -572,6 +588,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       return {
         message: res.data.text,
         messageType: res.data.severity || "success",
+        isHtml: false,
       };
     }
 
@@ -581,24 +598,27 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       return {
         message: potentialMessage.text,
         messageType: potentialMessage.severity || "success",
+        isHtml: false,
       };
     }
 
     return {
       message: potentialMessage,
       messageType: res.data?.msgType || res.data?.messageType || (res.success ? "success" : "error"),
+      isHtml: false,
     };
   }, []);
 
   const parseProcessResponse = useCallback(
     (res: ExecuteProcessResult) => {
       const viewMessage = extractMessageFromProcessView(res);
-      const { message, messageType } = viewMessage || extractMessageFromData(res);
+      const { message, messageType, isHtml } = viewMessage || extractMessageFromData(res);
 
       return {
         success: res.success && messageType === "success",
         data: message,
         error: messageType !== "success" ? message || res.error : undefined,
+        isHtml: isHtml || false, // Pass through the HTML flag
       };
     },
     [extractMessageFromProcessView, extractMessageFromData]
@@ -804,7 +824,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         });
 
         const formValues = form.getValues();
-        const mappedValues = mapKeysWithDefaults({ ...formValues, ...populatedGrids });
+        // Use buildProcessParameters to properly map parameter names to DB column names
+        const mappedFormValues = buildProcessParameters(formValues, parameters);
+        const mappedValues = mapKeysWithDefaults({ ...mappedFormValues, ...populatedGrids } as SourceObject);
 
         logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - After mapKeysWithDefaults:", {
           mappedValuesKeys: Object.keys(mappedValues),
@@ -814,20 +836,30 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         });
 
         // Build base payload
+        const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+        const skipParamsLevel = processDefConfig?.skipParamsLevel;
+
         const payload: Record<string, unknown> = {
           recordIds: record?.id ? [record.id] : [],
           _buttonValue: actionValue || "DONE",
-          _params: {
-            ...mappedValues,
-            ...buttonParams,
-          },
+          ...(skipParamsLevel
+            ? {
+                ...mappedValues,
+                ...buttonParams,
+              }
+            : {
+                _params: {
+                  ...mappedValues,
+                  ...buttonParams,
+                },
+              }),
           _entityName: tab?.entityName || "",
           windowId: tab?.window || "",
           ...buildProcessSpecificFields(processId),
           ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
         };
 
-        const params = payload._params as Record<string, unknown>;
+        const params = (skipParamsLevel ? payload : payload._params) as Record<string, unknown>;
         logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Final payload:", {
           payloadKeys: Object.keys(payload),
           paramsKeys: Object.keys(params),
@@ -894,15 +926,32 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           recordIds = [String(record.id)];
         }
 
-        const mappedFormValues = getMappedFormValues();
+        // Use buildProcessParameters to properly map parameter names to DB column names
+        const formValues = form.getValues();
+        const mappedFormValues = buildProcessParameters(formValues, parameters);
+        const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+        const skipParamsLevel = processDefConfig?.skipParamsLevel;
+        const params = mapKeysWithDefaults({
+          ...mappedFormValues,
+          ...extraKey,
+          ...recordValues,
+          ...populatedGrids,
+        } as SourceObject);
 
         const payload = {
           recordIds,
           _buttonValue: actionValue || "DONE",
-          _params: {
-            ...mapKeysWithDefaults({ ...recordValues, ...extraKey, ...mappedFormValues, ...populatedGrids }),
-            ...buttonParams,
-          },
+          ...(skipParamsLevel
+            ? {
+                ...params,
+                ...buttonParams,
+              }
+            : {
+                _params: {
+                  ...params,
+                  ...buttonParams,
+                },
+              }),
         };
 
         await executeJavaProcess(payload, "direct Java process");
@@ -1487,6 +1536,30 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       msgText = result.error || result.data?.msgText || result.data?.message || t("errors.internalServerError.title");
     }
 
+    // Check if this is HTML content
+    const isHtmlContent = (result as any).isHtml === true;
+
+    // For HTML content, render it directly without text transformations
+    if (isHtmlContent && isSuccessMessage) {
+      return (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="rounded-2xl p-8 shadow-xl w-auto max-w-[95vw] mx-4 max-h-[90vh] overflow-auto">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md">
+                <CheckIcon className="w-10 h-10 fill-green-600" data-testid="SuccessCheckIcon__761503" />
+              </div>
+              <h4 className="font-bold text-xl text-center text-green-800">{msgTitle}</h4>
+              <div
+                className="w-full text-sm"
+                dangerouslySetInnerHTML={{ __html: msgText }}
+                data-testid="HtmlResponseContent__761503"
+              />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     const displayText = msgText.replace(/<br\s*\/?>/gi, "\n");
 
     // Success message styled like the reference image
@@ -1752,7 +1825,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       {open && result?.success && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60] p-4">
           <div
-            className="rounded-2xl p-6 shadow-xl max-w-sm w-full relative"
+            className={`rounded-2xl p-6 shadow-xl relative max-h-[90vh] overflow-auto ${
+              (result as any).isHtml ? "w-auto max-w-[95vw]" : "w-full max-w-sm"
+            }`}
             style={{ background: "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)" }}>
             <button
               type="button"
@@ -1776,6 +1851,19 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                       : result?.data?.msgText || result?.data?.message || result?.error;
 
                   if (!msg || msg === t("process.completedSuccessfully")) return null;
+
+                  // Check if this is HTML content
+                  const isHtmlContent = (result as any).isHtml === true;
+
+                  if (isHtmlContent) {
+                    return (
+                      <div
+                        className="w-full text-sm mt-4"
+                        dangerouslySetInnerHTML={{ __html: String(msg) }}
+                        data-testid="HtmlSuccessContent__761503"
+                      />
+                    );
+                  }
 
                   return (
                     <p className="text-sm text-center text-(--color-transparent-neutral-80) whitespace-pre-line">
