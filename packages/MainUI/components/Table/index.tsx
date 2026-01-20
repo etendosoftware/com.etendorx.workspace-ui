@@ -2490,15 +2490,20 @@ const DynamicTable = ({
   );
 
   const renderEmptyRowsFallback = useCallback(
-    ({ table }: { table: MRT_TableInstance<EntityData> }) => (
-      <EmptyState
-        table={table}
-        onContextMenu={handleTableBodyContextMenu}
-        onInsertRow={handleInsertRow}
-        data-testid="EmptyState__8ca888"
-      />
-    ),
-    [handleTableBodyContextMenu, handleInsertRow]
+    ({ table }: { table: MRT_TableInstance<EntityData> }) => {
+      if (loading) {
+        return null;
+      }
+      return (
+        <EmptyState
+          table={table}
+          onContextMenu={handleTableBodyContextMenu}
+          onInsertRow={handleInsertRow}
+          data-testid="EmptyState__8ca888"
+        />
+      );
+    },
+    [handleTableBodyContextMenu, handleInsertRow, loading]
   );
 
   const fetchMoreOnBottomReached = useCallback(
