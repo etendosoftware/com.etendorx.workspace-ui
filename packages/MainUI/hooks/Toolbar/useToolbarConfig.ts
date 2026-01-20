@@ -439,7 +439,7 @@ export const useToolbarConfig = ({
 
           const result = await response.json();
 
-          const { severity, text, refreshGrid } = result.severity ? result : result.response || result;
+          const { severity, text, refreshGrid } = result.severity ? result : result.message || result;
 
           const isSuccess = severity === "success";
 
@@ -451,9 +451,6 @@ export const useToolbarConfig = ({
           if (isSuccess && refreshGrid) {
             finalMessage += `<br/>${t("process.refreshGrid") || "Refresh the grid to see the changes."}`;
           }
-
-          console.log("finalMessage", finalMessage);
-          console.log("text", text);
 
           setResultModal({
             open: true,
