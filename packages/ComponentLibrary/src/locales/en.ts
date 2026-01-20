@@ -293,8 +293,8 @@ const en = {
   process: {
     confirmationMessage: "Want to execute this process?",
     messageTitle: "Process",
-    completedSuccessfully: "Process completed successfuly",
-    processError: "Error while loading process data",
+    completedSuccessfully: "Process completed successfully",
+    processError: "Process failed",
     refreshGrid: "Refresh the grid to see the changes.",
   },
   drawer: {
