@@ -295,6 +295,7 @@ const en = {
     messageTitle: "Process",
     completedSuccessfully: "Process completed successfuly",
     processError: "Error while loading process data",
+    refreshGrid: "Refresh the grid to see the changes.",
   },
   drawer: {
     recentlyViewed: "Recently Viewed",
