@@ -158,9 +158,13 @@ export function useDatasource({
     ]
   );
 
+  // Stabilize params to prevent unnecessary fetches
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableParams = useMemo(() => params, [JSON.stringify(params)]);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const queryParams = useMemo(() => {
-    const baseCriteria = params.criteria || ([] as any[]);
+    const baseCriteria = stableParams.criteria || ([] as any[]);
     const searchCriteriaArray = (
       searchQuery && columns ? SearchUtils.createSearchCriteria(columns, searchQuery) : []
     ) as any[];
@@ -180,7 +184,7 @@ export function useDatasource({
     const idParams = hasIdFilter ? { targetRecordId: filterById?.value, directNavigation: true } : {};
 
     const finalParams = {
-      ...params,
+      ...stableParams,
       ...idParams,
       criteria: allCriteria,
       isImplicitFilterApplied,
@@ -188,7 +192,7 @@ export function useDatasource({
     };
 
     return finalParams;
-  }, [params, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, activeColumnFilters]);
+  }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, activeColumnFilters]);
 
   const fetchData = useCallback(
     async (targetPage: number = page) => {
@@ -251,7 +255,7 @@ export function useDatasource({
     setLoading(true);
 
     fetchData();
-  }, [entity, page, pageSize, queryParams, skip, memoizedTreeOptions, isImplicitFilterApplied]);
+  }, [entity, page, pageSize, queryParams, skip, memoizedTreeOptions, isImplicitFilterApplied, activeColumnFilters]);
 
   useEffect(() => {
     reinit();

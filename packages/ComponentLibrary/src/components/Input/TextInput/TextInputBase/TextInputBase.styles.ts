@@ -27,6 +27,10 @@ type StylesType = {
 export const useStyle = () => {
   const theme = useTheme();
 
+  const neutral100 = (theme.palette as any)?.baselineColor?.neutral?.[100] || "#000000";
+  const neutral80 = (theme.palette as any)?.baselineColor?.neutral?.[80] || "#555555";
+  const errorMain = (theme.palette as any)?.specificColor?.error?.main || "#f44336";
+
   return useMemo(
     () =>
       ({
@@ -34,7 +38,7 @@ export const useStyle = () => {
           inputStyle: {
             padding: "0.25rem 0",
             fontSize: "14px",
-            color: theme.palette.baselineColor.transparentNeutral[100],
+            color: neutral100,
             fontFamily: "Inter, sans-serif",
             fontWeight: 500,
           },
@@ -50,10 +54,10 @@ export const useStyle = () => {
               borderBottomStyle: "solid",
             },
             "& .MuiInput-underline:hover:before": {
-              borderBottomColor: theme.palette.baselineColor.neutral[80],
+              borderBottomColor: neutral80,
             },
             "& .MuiInput-underline:after": {
-              borderBottomColor: theme.palette.baselineColor.neutral[80],
+              borderBottomColor: neutral80,
             },
             "& .MuiInputBase-input": {
               fontFamily: "Inter, sans-serif",
@@ -72,13 +76,13 @@ export const useStyle = () => {
           font-family: 'Inter', sans-serif;
         }
         .MuiFormLabel-root {
-          color: ${theme.palette.baselineColor.neutral[80]};
+          color: ${neutral80};
         }
         .MuiFormLabel-root.Mui-focused {
-          color: ${theme.palette.baselineColor.neutral[80]};
+          color: ${neutral80};
         }
         .MuiFormLabel-asterisk {
-          color: ${theme.palette.specificColor.error.main};
+          color: ${errorMain};
         }
         #password-input {
           font-size: 14px;
@@ -87,6 +91,6 @@ export const useStyle = () => {
         }
       `,
       }) satisfies StylesType,
-    [theme]
+    [theme, neutral100, neutral80, errorMain]
   );
 };

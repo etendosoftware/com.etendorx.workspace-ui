@@ -227,13 +227,12 @@ export async function recoverFromCsrfError(
         success: true,
         sessionUpdated: true,
       };
-    } else {
-      return {
-        success: false,
-        sessionUpdated: false,
-        error: "Failed to extract or update session from CSRF error response",
-      };
     }
+    return {
+      success: false,
+      sessionUpdated: false,
+      error: "Failed to extract or update session from CSRF error response",
+    };
   } catch (error) {
     logger.error("Error during CSRF recovery:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error during CSRF recovery";

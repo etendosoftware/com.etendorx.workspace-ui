@@ -379,6 +379,7 @@ const en = {
       contextRecords: "Selected Context",
       welcomeMessage: "Hello! How can I help you today?",
       typing: "Typing...",
+      processing: "Processing...",
     },
     contextPreview: {
       selectedRegisters: " Attached register",
