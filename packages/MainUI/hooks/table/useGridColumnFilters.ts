@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import type { MRT_ColumnFiltersState } from "material-react-table";
 import {
@@ -33,6 +33,7 @@ interface UseGridColumnFiltersParams {
   entityName?: string;
   setAppliedTableFilters: React.Dispatch<React.SetStateAction<MRT_ColumnFiltersState>>;
   setColumnFilters: React.Dispatch<React.SetStateAction<MRT_ColumnFiltersState>>;
+  isImplicitFilterApplied?: boolean;
 }
 
 /**
@@ -44,6 +45,7 @@ export const useGridColumnFilters = ({
   entityName,
   setAppliedTableFilters,
   setColumnFilters,
+  isImplicitFilterApplied,
 }: UseGridColumnFiltersParams) => {
   const {
     columnFilters: advancedColumnFilters,
@@ -104,6 +106,7 @@ export const useGridColumnFilters = ({
           entityName,
           fetchFilterOptions,
           setFilterOptions,
+          isImplicitFilterApplied,
         });
       }
 
@@ -111,6 +114,8 @@ export const useGridColumnFilters = ({
     },
     [columns, fetchFilterOptions, setFilterOptions, tabId, entityName]
   );
+
+  const fetchingRefs = useRef<Record<string, boolean>>({});
 
   const handleLoadMoreFilterOptions = useCallback(
     async (columnId: string, searchQuery?: string): Promise<FilterOption[]> => {
@@ -123,26 +128,40 @@ export const useGridColumnFilters = ({
         return [];
       }
 
+      // Prevent duplicate fetches
+      if (fetchingRefs.current[columnId]) {
+        return [];
+      }
+
       const filterState = advancedColumnFilters.find((f: ColumnFilterState) => f.id === columnId);
       const currentPage = filterState?.currentPage || 0;
       const currentSearchQuery = searchQuery || filterState?.searchQuery;
 
-      loadMoreFilterOptions(columnId, currentSearchQuery);
+      fetchingRefs.current[columnId] = true;
 
-      const pageSize = 20;
-      const offset = currentPage * pageSize;
+      try {
+        loadMoreFilterOptions(columnId, currentSearchQuery);
 
-      return loadTableDirFilterOptions({
-        column,
-        columnId,
-        searchQuery: currentSearchQuery,
-        tabId,
-        entityName,
-        fetchFilterOptions,
-        setFilterOptions,
-        offset,
-        pageSize,
-      });
+        const pageSize = 20;
+        // Correct offset calculation: (currentPage + 1) because currentPage is 0-indexed and we want the next page
+        const offset = (currentPage + 1) * pageSize;
+
+        const newOptions = await loadTableDirFilterOptions({
+          column,
+          columnId,
+          searchQuery: currentSearchQuery,
+          tabId,
+          entityName,
+          fetchFilterOptions,
+          setFilterOptions,
+          offset,
+          pageSize,
+          isImplicitFilterApplied,
+        });
+        return newOptions;
+      } finally {
+        fetchingRefs.current[columnId] = false;
+      }
     },
     [columns, fetchFilterOptions, setFilterOptions, loadMoreFilterOptions, tabId, entityName, advancedColumnFilters]
   );

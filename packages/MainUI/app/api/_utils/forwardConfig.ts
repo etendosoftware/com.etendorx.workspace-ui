@@ -54,7 +54,8 @@ export function getCombinedErpCookieHeader(request: Request | NextRequest | null
  */
 export function getErpAuthHeaders(
   requestOrToken?: Request | NextRequest | string | null,
-  maybeToken?: string | null
+  maybeToken?: string | null,
+  overrideCsrf?: string | null
 ): { cookieHeader: string; csrfToken: string | null } {
   // Normalize arguments: allow calling as (request, token) or (token)
   const isRequest = (obj: unknown): obj is Request | NextRequest => {
@@ -74,7 +75,7 @@ export function getErpAuthHeaders(
     : ((requestOrToken as string | null | undefined) ?? null);
 
   const cookieHeader = getCombinedErpCookieHeader(request, token);
-  const csrfToken = token ? getErpCsrfToken(token) : null;
+  const csrfToken = overrideCsrf || (token ? getErpCsrfToken(token) : null);
   return { cookieHeader, csrfToken };
 }
 

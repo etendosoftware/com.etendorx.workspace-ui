@@ -54,6 +54,7 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.EXPORT_CSV]: "toolbar-button-export-csv",
   [TOOLBAR_BUTTONS_ACTIONS.SHARE_LINK]: "toolbar-button-share-link",
   [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: "toolbar-button-copy-record",
+  [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: "toolbar-button-print-record",
   [TOOLBAR_BUTTONS_ACTIONS.ADVANCED_FILTERS]: "toolbar-button-advanced-filters",
 } as const;
 
@@ -94,24 +95,34 @@ const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMeta
   });
 };
 
-const isVisibleButton = (button: ToolbarButtonMetadata, isFormView: boolean, isTreeNodeView?: boolean) => {
+const isVisibleButton = (button: ToolbarButtonMetadata, isFormView: boolean, isTreeNodeView?: boolean, tab?: Tab) => {
   if (!button.active) return false;
 
   const isFindButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FIND;
   const isSaveButtonInNonFormView = !isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE;
   const isFilterButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER;
   const isToggleTreeView = !isTreeNodeView && button.action === TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW;
-  return !isFindButtonInFormView && !isSaveButtonInNonFormView && !isFilterButtonInFormView && !isToggleTreeView;
+  const isPrintButtonInTransactionWindow =
+    button.action === TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD && !tab?.process$_identifier?.includes("Print");
+
+  return (
+    !isFindButtonInFormView &&
+    !isSaveButtonInNonFormView &&
+    !isFilterButtonInFormView &&
+    !isToggleTreeView &&
+    !isPrintButtonInTransactionWindow
+  );
 };
 
 export const organizeButtonsBySection = (
   buttons: ToolbarButtonMetadata[],
   isFormView: boolean,
-  isTreeNodeView?: boolean
+  isTreeNodeView?: boolean,
+  tab?: Tab
 ): OrganizedSections => {
   const sections: OrganizedSections = { left: [], center: [], right: [] };
 
-  const visibleButtons = buttons.filter((button) => isVisibleButton(button, isFormView, isTreeNodeView));
+  const visibleButtons = buttons.filter((button) => isVisibleButton(button, isFormView, isTreeNodeView, tab));
 
   for (const button of visibleButtons) {
     if (button.section && sections[button.section]) {
@@ -141,6 +152,7 @@ export const createButtonByType = ({
   tab,
   selectedRecordsLength,
   isAdvancedFilterApplied,
+  windowType,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
@@ -156,6 +168,7 @@ export const createButtonByType = ({
   tab: Tab;
   selectedRecordsLength: number;
   isAdvancedFilterApplied?: boolean;
+  windowType?: string;
 }) => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
@@ -225,6 +238,7 @@ export const createButtonByType = ({
         const isSingleSelection = hasSelectedRecord;
         return buildDisableConfig(!isCloneEnabled || !isSingleSelection);
       },
+      [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: () => buildDisableConfig(!hasSelectedRecord),
     };
 
     const handler = actionHandlers[button.action];
@@ -315,6 +329,7 @@ interface ButtonConfig {
   tab: Tab;
   selectedRecordsLength: number;
   isAdvancedFilterApplied?: boolean;
+  windowType?: string;
 }
 
 /**
@@ -341,6 +356,7 @@ const createSectionButtons = (
       tab: config.tab,
       selectedRecordsLength: config.selectedRecordsLength,
       isAdvancedFilterApplied: config.isAdvancedFilterApplied,
+      windowType: config.windowType,
     });
 
     // Apply button-specific styles if available
@@ -387,6 +403,7 @@ interface ToolbarSectionsConfig {
   tab: Tab;
   selectedRecordsLength: number;
   isAdvancedFilterApplied?: boolean;
+  windowType?: string;
 }
 
 export const getToolbarSections = ({
@@ -405,14 +422,13 @@ export const getToolbarSections = ({
   t,
   tab,
   selectedRecordsLength,
-
   isAdvancedFilterApplied = false,
 }: ToolbarSectionsConfig): {
   leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   rightSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
 } => {
-  const organizedButtons = organizeButtonsBySection(buttons, isFormView, isTreeNodeView);
+  const organizedButtons = organizeButtonsBySection(buttons, isFormView, isTreeNodeView, tab);
 
   // Shared configuration object to avoid parameter repetition
   const buttonConfig: ButtonConfig = {

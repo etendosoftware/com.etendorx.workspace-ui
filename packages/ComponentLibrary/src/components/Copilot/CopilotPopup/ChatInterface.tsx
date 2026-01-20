@@ -34,6 +34,9 @@ interface ChatContentProps {
   onSendMessage: (message: string, files?: File[]) => void;
   contextItems: ContextItem[];
   onRemoveContext?: (id: string) => void;
+  files?: File[];
+  onFileSelect?: (files: File[]) => void;
+  onRemoveFile?: (index: number) => void;
   currentMessage: string;
   onMessageChange: (message: string) => void;
   translations: {
@@ -51,6 +54,9 @@ const ChatContent: React.FC<ChatContentProps> = ({
   onSendMessage,
   contextItems,
   onRemoveContext,
+  files,
+  onFileSelect,
+  onRemoveFile,
   currentMessage,
   onMessageChange,
   translations,
@@ -72,6 +78,9 @@ const ChatContent: React.FC<ChatContentProps> = ({
       disabled={isLoading}
       contextItems={contextItems}
       onRemoveContext={onRemoveContext}
+      files={files}
+      onFileSelect={onFileSelect}
+      onRemoveFile={onRemoveFile}
       message={currentMessage}
       onMessageChange={onMessageChange}
       translations={{
@@ -96,6 +105,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   isLoadingAssistants = false,
   contextItems = [],
   onRemoveContext,
+  files,
+  onFileSelect,
+  onRemoveFile,
   conversations = [],
   onSelectConversation,
   onLoadConversations,
@@ -195,6 +207,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           onSendMessage={onSendMessage}
           contextItems={contextItems}
           onRemoveContext={onRemoveContext}
+          files={files}
+          onFileSelect={onFileSelect}
+          onRemoveFile={onRemoveFile}
           currentMessage={currentMessage}
           onMessageChange={setCurrentMessage}
           translations={{
@@ -257,6 +272,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           onSendMessage={onSendMessage}
           contextItems={contextItems}
           onRemoveContext={onRemoveContext}
+          files={files}
+          onFileSelect={onFileSelect}
+          onRemoveFile={onRemoveFile}
           currentMessage={currentMessage}
           onMessageChange={setCurrentMessage}
           translations={{

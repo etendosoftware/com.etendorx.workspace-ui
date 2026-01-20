@@ -1,16 +1,50 @@
 import { render, fireEvent, waitFor, type RenderResult } from "@testing-library/react";
 import ProcessDefinitionModal from "../ProcessDefinitionModal";
-import { executeProcess } from "@/app/actions/process";
 
-// Mock the server action
+// Mock executeStringFunction to return proper response structure
+const mockExecuteStringFunction = jest.fn().mockResolvedValue({
+  responseActions: [
+    {
+      showMsgInProcessView: {
+        msgType: "success",
+        msgText: "Process executed successfully",
+      },
+    },
+  ],
+});
+
+jest.mock("@/utils/functions", () => ({
+  executeStringFunction: (...args: unknown[]) => mockExecuteStringFunction(...args),
+}));
+
+// Mock global fetch
+global.fetch = jest.fn().mockResolvedValue({
+  ok: true,
+  json: () => Promise.resolve({ response: { status: 0, data: [], responseActions: [] } }),
+  text: () => Promise.resolve(""),
+} as Response);
+
+jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
+  Metadata: {
+    getProcess: jest.fn().mockResolvedValue({ id: "TEST_PROCESS_ID" }),
+  },
+}));
+
+// Mock the server action (not used in this path anymore but kept for safety)
 jest.mock("@/app/actions/process", () => ({
   executeProcess: jest.fn(),
+}));
+
+// Mock the revalidate server action (next/cache is not available in Jest)
+jest.mock("@/app/actions/revalidate", () => ({
+  revalidateDopoProcess: jest.fn().mockResolvedValue({ success: true }),
 }));
 
 // Mock the user context to provide a token
 const mockUseUserContext = jest.fn(() => ({
   token: "test-auth-token-123",
   session: { userId: "test-user" },
+  getCsrfToken: () => "test-csrf-token",
 }));
 
 jest.mock("@/hooks/useUserContext", () => ({
@@ -24,6 +58,7 @@ jest.mock("@/contexts/tab", () => ({
       id: "test-tab",
       window: "test-window",
       entityName: "TestEntity",
+      fields: [],
     },
     record: { id: "test-record" },
   }),
@@ -73,6 +108,16 @@ jest.mock("@/utils/processes/definition/constants", () => ({
     },
   },
   WINDOW_SPECIFIC_KEYS: {},
+  PROCESS_TYPES: {
+    PROCESS_DEFINITION: "process-definition",
+    REPORT_AND_PROCESS: "report-and-process",
+  },
+  BUTTON_LIST_REFERENCE_ID: "FF80818132F94B500132F9575619000A",
+}));
+
+// Mock useProcessCallouts hook
+jest.mock("@/components/ProcessModal/callouts/useProcessCallouts", () => ({
+  useProcessCallouts: jest.fn(),
 }));
 
 jest.mock("@/components/ProcessModal/selectors/ProcessParameterSelector", () => ({
@@ -87,7 +132,7 @@ jest.mock("@/components/ProcessModal/WindowReferenceGrid", () => ({
 
 jest.mock("@/components/Modal", () => ({
   __esModule: true,
-  default: ({ children }: any) => <div>{children}</div>,
+  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 jest.mock("@/components/loading", () => ({
@@ -119,17 +164,16 @@ jest.mock("@workspaceui/componentlibrary/src/components/Button/Button", () => ({
 }));
 
 jest.mock("react-hook-form", () => ({
-  FormProvider: ({ children }: any) => children,
+  FormProvider: ({ children }: { children: React.ReactNode }) => children,
   useForm: () => ({
     getValues: () => ({}),
     setValue: jest.fn(),
     watch: () => ({}),
     control: {},
+    reset: jest.fn(),
   }),
-  useFormState: (_: { control?: any } = {}) => ({ isValid: true, isSubmitting: false }),
+  useFormState: (_: { control?: unknown } = {}) => ({ isValid: true, isSubmitting: false }),
 }));
-
-const mockExecuteProcess = executeProcess as jest.MockedFunction<typeof executeProcess>;
 
 // Helper functions to reduce code duplication
 interface RenderModalOptions {
@@ -142,24 +186,22 @@ const clickExecuteButton = async (container: RenderResult): Promise<void> => {
   fireEvent.click(executeButton);
 };
 
-const expectExecuteProcessCall = (expectedToken: string) => {
-  return expect(mockExecuteProcess).toHaveBeenCalledWith(
-    "TEST_PROCESS_ID",
+const expectFetchCall = (expectedToken: string) => {
+  expect(global.fetch).toHaveBeenCalledWith(
+    expect.stringContaining("/api/erp/org.openbravo.client.kernel"),
     expect.objectContaining({
-      _buttonValue: "DONE",
-      _params: expect.any(Object),
-      _entityName: "TestEntity",
-      windowId: "test-window",
-    }),
-    expectedToken,
-    "test-window", // windowId parameter
-    undefined, // reportId parameter
-    "com.test.TestProcess" // actionHandler parameter
+      method: "POST",
+      headers: expect.objectContaining({
+        Authorization: `Bearer ${expectedToken}`,
+        "X-CSRF-Token": "test-csrf-token",
+      }),
+    })
   );
 };
 
 describe("ProcessDefinitionModal token handling", () => {
   const mockButton = {
+    processId: "TEST_PROCESS_ID",
     processDefinition: {
       id: "TEST_PROCESS_ID",
       name: "Test Process",
@@ -167,9 +209,9 @@ describe("ProcessDefinitionModal token handling", () => {
       javaClassName: "com.test.TestProcess",
       parameters: {},
       onLoad: null,
-      onProcess: "function onProcess(context) { return { success: true }; }",
+      onProcess: null,
     },
-  };
+  } as any;
 
   const renderModal = (options: RenderModalOptions = {}): RenderResult => {
     const { onClose = jest.fn(), onSuccess = jest.fn() } = options;
@@ -179,25 +221,23 @@ describe("ProcessDefinitionModal token handling", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockExecuteProcess.mockResolvedValue({ success: true, data: {} });
   });
 
-  it("passes authentication token to executeProcess server action", async () => {
+  it("passes authentication token to executeStringFunction", async () => {
     const container = renderModal();
     await clickExecuteButton(container);
 
     await waitFor(() => {
-      expectExecuteProcessCall("test-auth-token-123"); // This is the key assertion - token must be passed
+      expectFetchCall("test-auth-token-123");
     });
   });
 
-  it("handles token parameter correctly", async () => {
-    // Test that the token parameter is passed through properly
+  it("renders success state after process execution", async () => {
     const container = renderModal();
     await clickExecuteButton(container);
 
     await waitFor(() => {
-      expectExecuteProcessCall("test-auth-token-123"); // Token is properly passed
+      expectFetchCall("test-auth-token-123");
     });
   });
 

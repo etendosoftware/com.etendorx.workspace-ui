@@ -35,6 +35,8 @@ export interface CellEditorFactoryProps extends CellEditorProps {
   columnId?: string;
   keyboardNavigationManager?: any; // KeyboardNavigationManager type
   shouldAutoFocus?: boolean; // Controls whether this cell should receive initial focus
+  id?: string; // Unique ID for accessibility
+  name?: string; // Name attribute for form submission and accessibility
 }
 
 /**
