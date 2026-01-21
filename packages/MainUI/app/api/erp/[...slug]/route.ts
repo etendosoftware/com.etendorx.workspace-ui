@@ -29,26 +29,35 @@ class ErpRequestError extends Error {
   }
 }
 
+// Helper to build ERP URL for cached requests
+function buildCachedErpUrl(slug: string, method: string, queryParams: string): string {
+  const baseUrl = process.env.ETENDO_CLASSIC_URL;
+  let erpUrl: string;
+
+  if (slug.includes(SLUGS_CATEGORIES.COPILOT)) {
+    erpUrl = `${baseUrl}/sws/${slug}`;
+  } else if (slug.startsWith(SLUGS_CATEGORIES.UTILITY)) {
+    erpUrl = `${baseUrl}/${slug}`;
+  } else if (slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
+    erpUrl = `${baseUrl}/${slug}`;
+  } else if (slug.startsWith(SLUGS_CATEGORIES.OPENBRAVO_KERNEL)) {
+    erpUrl = `${baseUrl}/${slug}`;
+  } else {
+    erpUrl = `${baseUrl}/sws/com.etendoerp.metadata.${slug}`;
+  }
+
+  if (method === "GET" && queryParams) {
+    erpUrl += queryParams;
+  }
+
+  return erpUrl;
+}
+
 // Cached function for generic ERP requests
 const getCachedErpData = unstable_cache(
   async (userToken: string, slug: string, method: string, body: string, contentType: string, queryParams = "") => {
-    let erpUrl: string;
+    const erpUrl = buildCachedErpUrl(slug, method, queryParams);
     const slugContainsCopilot = slug.includes(SLUGS_CATEGORIES.COPILOT);
-    if (slugContainsCopilot) {
-      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
-    } else if (slug.startsWith(SLUGS_CATEGORIES.UTILITY)) {
-      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
-    } else if (slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
-      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
-    } else if (slug.startsWith(SLUGS_CATEGORIES.OPENBRAVO_KERNEL)) {
-      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
-    } else {
-      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
-    }
-
-    if (method === "GET" && queryParams) {
-      erpUrl += queryParams;
-    }
 
     // Get ERP auth headers including Cookie from sessionStore
     const authHeaders = getErpAuthHeaders(userToken);
