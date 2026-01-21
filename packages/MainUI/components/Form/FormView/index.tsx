@@ -25,7 +25,7 @@ import Info from "@workspaceui/componentlibrary/src/assets/icons/info.svg";
 import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
 import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
-import { FormMode, type EntityData, type EntityValue } from "@workspaceui/api-client/src/api/types";
+import { FormMode, type EntityData, type EntityValue, UIPattern } from "@workspaceui/api-client/src/api/types";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import useFormFields from "@/hooks/useFormFields";
 import { useFormInitialState } from "@/hooks/useFormInitialState";
@@ -85,20 +85,21 @@ const processFormData = (
   // If fields definition is provided, ensure all fields are present with at least empty string
   // This forces controlled inputs to clear visually when resetting the form
   if (fields) {
-    Object.values(fields).forEach((field: any) => {
+    for (const field of Object.values(fields) as any[]) {
       // Use hqlName if available (standard for form fields), fallback to other identifiers
       const key = field.hqlName || field.columnName || field.name;
       if (key && processedData[key] === undefined) {
         processedData[key] = "";
       }
-    });
+    }
   }
 
   return processedData;
 };
 
-export function FormView({ window: windowMetadata, tab, mode, recordId, setRecordId }: FormViewProps) {
+export function FormView({ window: windowMetadata, tab, mode, recordId, setRecordId, uIPattern }: FormViewProps) {
   const theme = useTheme();
+  const isReadOnly = uIPattern === UIPattern.READ_ONLY;
 
   const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
   const [selectedTab, setSelectedTab] = useState<string>("");
@@ -763,6 +764,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               showErrorModal={showErrorModal}
               openAttachmentModal={openAttachmentModal}
               onAttachmentModalClose={() => setOpenAttachmentModal(false)}
+              isReadOnly={isReadOnly}
               data-testid="FormFields__1a0853"
             />
 

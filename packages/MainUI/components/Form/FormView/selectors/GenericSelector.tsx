@@ -62,6 +62,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           field={field}
           min={field.column.minValue}
           max={field.column.maxValue}
+          isReadOnly={isReadOnly}
           data-testid="QuantitySelector__6e80fa"
         />
       );
