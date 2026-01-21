@@ -275,7 +275,7 @@ const MultiSelect = memo(function MultiSelectCmp({
       }
       setTimeout(() => {
         const activeElement = document.activeElement;
-        // Ideally we would check dropdown ID like Select.tsx but useClickOutside handles most cases. 
+        // Ideally we would check dropdown ID like Select.tsx but useClickOutside handles most cases.
         // We add this for Tab navigation out of the input.
         const isInPortal = portalRef.current?.contains(activeElement);
         const isInWrapper = wrapperRef.current?.contains(activeElement);
@@ -324,7 +324,16 @@ const MultiSelect = memo(function MultiSelectCmp({
     }
 
     return null;
-  }, [filteredOptions, highlightedIndex, selectedValues, handleSingleSelect, handleToggle, showSkeleton, showLoading, t]);
+  }, [
+    filteredOptions,
+    highlightedIndex,
+    selectedValues,
+    handleSingleSelect,
+    handleToggle,
+    showSkeleton,
+    showLoading,
+    t,
+  ]);
 
   const inputPlaceholder = !isReadOnly || selectedLabels.length > 0 ? displayText : "";
 
@@ -339,13 +348,12 @@ const MultiSelect = memo(function MultiSelectCmp({
           ${isOpen ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : ""} 
           text-baseline-20 cursor-pointer hover:border-baseline-60 ${BASE_TRANSITION}`}>
         <div
-            className={`w-full text-sm truncate max-w-[calc(100%-40px)] ${
-              selectedLabels.length
-                ? "text-baseline-90 font-medium placeholder-baseline-90"
-                : "text-baseline-50 font-medium placeholder-baseline-50"
-            }`}
-        >
-            {displayText}
+          className={`w-full text-sm truncate max-w-[calc(100%-40px)] ${
+            selectedLabels.length
+              ? "text-baseline-90 font-medium placeholder-baseline-90"
+              : "text-baseline-50 font-medium placeholder-baseline-50"
+          }`}>
+          {displayText}
         </div>
         <div className="flex items-center flex-shrink-0 ml-2">
           {selectedLabels.length > 0 && !isReadOnly && (
@@ -369,12 +377,13 @@ const MultiSelect = memo(function MultiSelectCmp({
         minWidth={256}
         data-testid="DropdownPortal__cb81f7">
         <SearchInput
-            searchTerm={searchTerm}
-            searchInputRef={searchInputRef as React.RefObject<HTMLInputElement>}
-            handleSetSearchTerm={handleSetSearchTerm}
-            handleKeyDown={handleKeyDown}
-            handleSearchBlur={handleSearchBlur}
-            handleFocus={() => {}} 
+          searchTerm={searchTerm}
+          searchInputRef={searchInputRef as React.RefObject<HTMLInputElement>}
+          handleSetSearchTerm={handleSetSearchTerm}
+          handleKeyDown={handleKeyDown}
+          handleSearchBlur={handleSearchBlur}
+          handleFocus={() => {}}
+          data-testid="SearchInput__cb81f7"
         />
         <ul
           ref={listRef}
