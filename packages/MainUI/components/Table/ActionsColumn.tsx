@@ -17,9 +17,8 @@
 
 import type React from "react";
 import type { MRT_Row } from "material-react-table";
-import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import { IconButton } from "@workspaceui/componentlibrary/src/components";
-import { type UIPattern, UIPattern as UIPatternEnum } from "@workspaceui/api-client/src/api/types";
+import { type UIPattern, type EntityData, UIPattern as UIPatternEnum } from "@workspaceui/api-client/src/api/types";
 import { LoadingIndicator } from "./components/LoadingIndicator";
 import { generateAriaAttributes } from "./utils/accessibilityUtils";
 

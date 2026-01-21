@@ -5,7 +5,6 @@ import { useTabContext } from "@/contexts/tab";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useUserContext } from "@/hooks/useUserContext";
 import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
-// import { UIPattern } from "@workspaceui/api-client/src/api/types"; // Avoid import issue
 
 // Mock dependencies
 jest.mock("@workspaceui/api-client/src/api/metadata");
@@ -54,7 +53,7 @@ describe("useToolbar", () => {
   };
 
   it("should return all buttons when uIPattern is undefined (or STANDARD)", async () => {
-    const { result } = setup(undefined);
+    const { result } = setup();
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
