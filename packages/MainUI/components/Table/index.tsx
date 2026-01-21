@@ -2530,10 +2530,11 @@ const DynamicTable = ({
         table={table}
         onContextMenu={handleTableBodyContextMenu}
         onInsertRow={handleInsertRow}
+        uIPattern={uIPattern}
         data-testid="EmptyState__8ca888"
       />
     ),
-    [handleTableBodyContextMenu, handleInsertRow]
+    [handleTableBodyContextMenu, handleInsertRow, uIPattern]
   );
 
   const fetchMoreOnBottomReached = useCallback(

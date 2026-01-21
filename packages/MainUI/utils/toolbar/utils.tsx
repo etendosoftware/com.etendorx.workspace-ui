@@ -323,7 +323,7 @@ export const createButtonByType = ({
 
 export const getButtonStyles = (button: ToolbarButtonMetadata, isFormView?: boolean) => {
   if (isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW) {
-    return "toolbar-button-new-form bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 rounded-full flex items-center justify-center hover:bg-[var(--color-dynamic-main)] disabled:opacity-20 aspect-square p-0";
+    return "toolbar-button-new-form bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 rounded-full flex items-center justify-center hover:bg-[var(--color-dynamic-main)] disabled:bg-[var(--color-baseline-100)] disabled:opacity-20 disabled:text-[var(--color-baseline-0)]";
   }
   return BUTTON_STYLES[button.action as keyof typeof BUTTON_STYLES];
 };
