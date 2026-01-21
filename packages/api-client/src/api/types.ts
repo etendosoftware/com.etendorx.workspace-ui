@@ -252,8 +252,15 @@ export interface WindowMetadataProperties {
   };
 }
 
+export enum UIPattern {
+  READ_ONLY = "RO",
+  EDIT_ONLY = "SR",
+  EDIT_AND_DELETE_ONLY = "ED",
+  STANDARD = "STD",
+}
+
 export interface Tab {
-  uIPattern: "STD" | "SR";
+  uIPattern: UIPattern;
   window: string;
   name: string;
   title: string;
