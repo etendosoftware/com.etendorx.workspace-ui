@@ -172,8 +172,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const processId = processDefinition.id;
   const javaClassName = processDefinition.javaClassName;
 
-  console.debug("ProcessDefinitionModalContent", processDefinition);
-
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -214,7 +212,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   useEffect(() => {
     const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
 
-    if (buttonListParam && buttonListParam.refList) {
+    if (buttonListParam?.refList) {
       setAvailableButtons(
         buttonListParam.refList.map((item) => ({
           value: item.value,
@@ -710,11 +708,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     const mappedValues: Record<string, any> = {};
     const paramMap = new Map<string, string>();
 
-    Object.values(parameters).forEach((p: any) => {
+    for (const p of Object.values(parameters)) {
       if (p.name && p.dBColumnName) {
         paramMap.set(p.name, p.dBColumnName);
       }
-    });
+    }
 
     for (const [key, value] of Object.entries(rawValues)) {
       const mappedKey = paramMap.get(key) || key;
