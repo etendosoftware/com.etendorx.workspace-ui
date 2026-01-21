@@ -605,6 +605,56 @@ interface DynamicTableProps {
   areFiltersDisabled?: boolean;
 }
 
+const getExpandIcon = (canExpand: boolean, isExpanded: boolean) => {
+  if (!canExpand) return null;
+  return isExpanded ? (
+    <ChevronUp height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronUp__8ca888" />
+  ) : (
+    <ChevronDown height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronDown__8ca888" />
+  );
+};
+
+const getHierarchyIcon = (
+  shouldUseTreeMode: boolean,
+  eTMETAIcon: string | undefined,
+  hasChildren: boolean,
+  isExpanded: boolean
+) => {
+  if (!shouldUseTreeMode) return null;
+
+  if (eTMETAIcon) {
+    let svgContent = "";
+    try {
+      svgContent = atob(eTMETAIcon);
+      // Replace black fill with primary blue color to match design system
+      // Also handles specific case where fill is set to black or inherited
+      svgContent = svgContent.replace(/fill="black"/g, 'fill="#004ACA"');
+      // Add logic for paths that might not have fill attribute but rely on default black
+      svgContent = svgContent.replace(/<path(?![^>]*fill=)/g, '<path fill="#004ACA"');
+    } catch (e) {
+      console.error("Error parsing eTMETAIcon SVG", e);
+      svgContent = eTMETAIcon; // Fallback to original if decode fails
+    }
+    const encodedSvg = btoa(svgContent);
+
+    return (
+      <img
+        src={`data:image/svg+xml;base64,${encodedSvg}`}
+        alt=""
+        className="min-w-5 min-h-5 w-5 h-5 object-contain"
+        data-testid="eTMETAIcon__8ca888"
+      />
+    );
+  }
+
+  if (hasChildren) {
+    const Icon = isExpanded ? MinusFolderIcon : PlusFolderFilledIcon;
+    return <Icon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />;
+  }
+
+  return <CircleFilledIcon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />;
+};
+
 const DynamicTable = ({
   setRecordId,
   onRecordSelection,
@@ -2037,50 +2087,8 @@ const DynamicTable = ({
       const eTMETAIcon = row.original.eTMETAIcon as string | undefined;
       const isSummary = row.original.summaryLevel === true;
 
-      let expandIcon: React.ReactNode = null;
-      if (canExpand) {
-        expandIcon = isExpanded ? (
-          <ChevronUp height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronUp__8ca888" />
-        ) : (
-          <ChevronDown height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronDown__8ca888" />
-        );
-      }
-
-      let HierarchyIcon: React.ReactNode = null;
-
-      if (shouldUseTreeMode) {
-        if (eTMETAIcon) {
-          let svgContent = "";
-          try {
-            svgContent = atob(eTMETAIcon);
-            // Replace black fill with primary blue color to match design system
-            // Also handles specific case where fill is set to black or inherited
-            svgContent = svgContent.replace(/fill="black"/g, 'fill="#004ACA"');
-            // Add logic for paths that might not have fill attribute but rely on default black
-            svgContent = svgContent.replace(/<path(?![^>]*fill=)/g, '<path fill="#004ACA"');
-          } catch (e) {
-            console.error("Error parsing eTMETAIcon SVG", e);
-            svgContent = eTMETAIcon; // Fallback to original if decode fails
-          }
-          const encodedSvg = btoa(svgContent);
-
-          HierarchyIcon = (
-            <img
-              src={`data:image/svg+xml;base64,${encodedSvg}`}
-              alt=""
-              className="min-w-5 min-h-5 w-5 h-5 object-contain"
-              data-testid="eTMETAIcon__8ca888"
-            />
-          );
-        } else if (hasChildren) {
-          const Icon = isExpanded ? MinusFolderIcon : PlusFolderFilledIcon;
-          HierarchyIcon = <Icon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />;
-        } else {
-          HierarchyIcon = (
-            <CircleFilledIcon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />
-          );
-        }
-      }
+      const expandIcon = getExpandIcon(canExpand, isExpanded);
+      const HierarchyIcon = getHierarchyIcon(shouldUseTreeMode, eTMETAIcon, hasChildren, isExpanded);
 
       if (shouldUseTreeMode) {
         return (
