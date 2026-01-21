@@ -40,6 +40,8 @@ const getCachedErpData = unstable_cache(
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else if (slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || slug.startsWith(SLUGS_CATEGORIES.NOTES)) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
+    } else if (slug.startsWith(SLUGS_CATEGORIES.OPENBRAVO_KERNEL)) {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
     }
@@ -334,6 +336,9 @@ function buildErpUrl(slug: string, requestUrl: string): string {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.COPILOT)) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
+  } else if (slug.startsWith(SLUGS_CATEGORIES.OPENBRAVO_KERNEL)) {
+    // Openbravo kernel servlet uses direct mapping (no metadata prefix)
+    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (
     slug.startsWith("web/") ||
     slug.startsWith("ad_forms/") ||
@@ -349,11 +354,6 @@ function buildErpUrl(slug: string, requestUrl: string): string {
   }
 
   const url = new URL(requestUrl);
-  erpUrl = erpUrl.replace(
-    "sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel",
-    "org.openbravo.client.kernel"
-  );
-  erpUrl = erpUrl.replace("sws/com.etendoerp.metadata.meta/forward", "org.openbravo.client.kernel");
 
   if (url.search) {
     erpUrl += url.search;
@@ -482,8 +482,21 @@ function unauthorizedResponse(): Response {
 async function handleError(error: unknown, params: Promise<{ slug: string[] }>): Promise<Response> {
   const resolvedParams = await params;
   console.error(`API Route /api/erp/${resolvedParams.slug.join("/")} Error:`, error);
-  const errorStatus = error instanceof ErpRequestError ? error.status : 500;
-  return NextResponse.json({ error: "Failed to fetch ERP data" }, { status: errorStatus });
+
+  if (error instanceof ErpRequestError) {
+    return NextResponse.json(
+      {
+        error: error.message,
+        details: error.errorText,
+        status: error.status,
+        statusText: error.statusText,
+      },
+      { status: error.status }
+    );
+  }
+
+  const errorMessage = error instanceof Error ? error.message : "Failed to fetch ERP data";
+  return NextResponse.json({ error: errorMessage }, { status: 500 });
 }
 
 export async function GET(request: Request, context: { params: Promise<{ slug: string[] }> }) {

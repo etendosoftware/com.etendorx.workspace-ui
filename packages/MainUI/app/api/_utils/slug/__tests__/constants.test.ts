@@ -26,15 +26,20 @@ describe("slug constants", () => {
       expect(SLUGS_CATEGORIES.LEGACY).toBe("meta/legacy");
     });
 
+    it("should have OPENBRAVO_KERNEL category", () => {
+      expect(SLUGS_CATEGORIES.OPENBRAVO_KERNEL).toBe("org.openbravo.client.kernel");
+    });
+
     it("should contain all expected categories", () => {
       const categories = Object.keys(SLUGS_CATEGORIES);
-      expect(categories).toHaveLength(6);
+      expect(categories).toHaveLength(7);
       expect(categories).toContain("COPILOT");
       expect(categories).toContain("UTILITY");
       expect(categories).toContain("NOTES");
       expect(categories).toContain("ATTACHMENTS");
       expect(categories).toContain("SWS");
       expect(categories).toContain("LEGACY");
+      expect(categories).toContain("OPENBRAVO_KERNEL");
     });
   });
 
