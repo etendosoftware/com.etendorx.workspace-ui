@@ -26,6 +26,7 @@ import type {
 import type { DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import { LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { useSearch } from "../../contexts/searchContext";
 import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
@@ -1053,21 +1054,38 @@ export const useTableData = ({
         return null;
       }
 
+      // 1. Convert active column filters to criteria using the standard utility
+      const columnFilterCriteria = LegacyColumnFilterUtils.createColumnFilterCriteria(tableColumnFilters, baseColumns);
+
       // Use the same query params as the main grid but add summary params
       // Explicitly remove sortBy and pageSize to prevent the backend from returning sorted records instead of the summary
       const { sortBy, pageSize, ...cleanQuery } = query;
+
+      // 2. Merge existing criteria with column filter criteria
+      // Ensure we handle both array and potential single object cases for robustness
+      const existingCriteria = Array.isArray(cleanQuery.criteria)
+        ? cleanQuery.criteria
+        : cleanQuery.criteria
+          ? [cleanQuery.criteria]
+          : [];
+
+      const combinedCriteria = [...existingCriteria, ...columnFilterCriteria];
+
       const summaryQuery = {
         ...cleanQuery,
+        criteria: combinedCriteria,
         _summary: JSON.stringify(summaryRequest),
         _noCount: true,
         _startRow: 0,
         _endRow: 1,
         _operationType: "fetch",
         _textMatchStyle: "substring",
-        _noActiveFilter: true,
+        _noActiveFilter: false, // Ensure filters are applied
         _className: "OBViewDataSource",
         Constants_FIELDSEPARATOR: "$",
         Constants_IDENTIFIER: "_identifier",
+        operator: "and",
+        _constructor: "AdvancedCriteria",
       };
 
       console.log("Summary Query:", JSON.stringify(summaryQuery, null, 2));
@@ -1098,7 +1116,7 @@ export const useTableData = ({
         return null;
       }
     },
-    [query, treeEntity, baseColumns]
+    [query, treeEntity, baseColumns, tableColumnFilters]
   );
 
   return {
