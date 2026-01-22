@@ -186,29 +186,55 @@ jest.mock("@workspaceui/api-client/src/hooks/useColumnFilterData", () => ({
   }),
 }));
 
+// Create stable mock functions for useTableData
+const mockFetchSummary = jest.fn().mockResolvedValue({});
+const mockHandleMRTColumnFiltersChange = jest.fn();
+const mockHandleMRTColumnVisibilityChange = jest.fn();
+const mockHandleMRTSortingChange = jest.fn();
+const mockHandleMRTColumnOrderChange = jest.fn();
+const mockHandleMRTExpandChange = jest.fn();
+const mockToggleImplicitFilters = jest.fn();
+const mockFetchMore = jest.fn();
+const mockRefetch = jest.fn().mockResolvedValue(undefined);
+const mockRemoveRecordLocally = jest.fn();
+const mockUpdateRecordLocally = jest.fn();
+const mockAddRecordLocally = jest.fn();
+const mockApplyQuickFilter = jest.fn().mockResolvedValue(undefined);
+
+// Stable records array to avoid reference changes
+const mockRecords: never[] = [];
+const mockColumns: never[] = [];
+
+// Stable mock object for useTableData
+const mockUseTableDataReturn = {
+  displayRecords: mockRecords,
+  records: mockRecords,
+  columns: mockColumns,
+  expanded: {},
+  loading: false,
+  error: null,
+  shouldUseTreeMode: false,
+  hasMoreRecords: false,
+  handleMRTColumnFiltersChange: mockHandleMRTColumnFiltersChange,
+  handleMRTColumnVisibilityChange: mockHandleMRTColumnVisibilityChange,
+  handleMRTSortingChange: mockHandleMRTSortingChange,
+  handleMRTColumnOrderChange: mockHandleMRTColumnOrderChange,
+  handleMRTExpandChange: mockHandleMRTExpandChange,
+  toggleImplicitFilters: mockToggleImplicitFilters,
+  fetchMore: mockFetchMore,
+  refetch: mockRefetch,
+  removeRecordLocally: mockRemoveRecordLocally,
+  updateRecordLocally: mockUpdateRecordLocally,
+  addRecordLocally: mockAddRecordLocally,
+  applyQuickFilter: mockApplyQuickFilter,
+  fetchSummary: mockFetchSummary,
+  isImplicitFilterApplied: false,
+  tableColumnFilters: [],
+  tableColumnVisibility: {},
+};
+
 jest.mock("@/hooks/table/useTableData", () => ({
-  useTableData: () => ({
-    displayRecords: [],
-    records: [],
-    columns: [],
-    expanded: {},
-    loading: false,
-    error: null,
-    shouldUseTreeMode: false,
-    hasMoreRecords: false,
-    handleMRTColumnFiltersChange: jest.fn(),
-    handleMRTColumnVisibilityChange: jest.fn(),
-    handleMRTSortingChange: jest.fn(),
-    handleMRTColumnOrderChange: jest.fn(),
-    handleMRTExpandChange: jest.fn(),
-    toggleImplicitFilters: jest.fn(),
-    fetchMore: jest.fn(),
-    refetch: jest.fn(),
-    removeRecordLocally: jest.fn(),
-    updateRecordLocally: jest.fn(),
-    addRecordLocally: jest.fn(),
-    applyQuickFilter: jest.fn(),
-  }),
+  useTableData: () => mockUseTableDataReturn,
 }));
 
 jest.mock("@/hooks/useTableSelection", () => ({

@@ -26,7 +26,6 @@ import type {
 import type { DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
-import { LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { useSearch } from "../../contexts/searchContext";
 import { useLanguage } from "../../contexts/language";
 import { useTabContext } from "../../contexts/tab";
@@ -41,6 +40,7 @@ import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumn
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
 import type { ExpandedState, Updater } from "@tanstack/react-table";
 import { isEmptyObject } from "@/utils/commons";
+import { mapSummariesToBackend, getSummaryCriteria } from "@/utils/table/utils";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -1033,43 +1033,13 @@ export const useTableData = ({
   // Fetch summary data
   const fetchSummary = useCallback(
     async (summaries: Record<string, string>): Promise<Record<string, number | string> | null> => {
-      if (Object.keys(summaries).length === 0) {
-        return null;
-      }
+      if (Object.keys(summaries).length === 0) return null;
 
-      // Map column IDs to their backend names (columnName or id)
-      const summaryRequest: Record<string, string> = {};
-      const columnMapping: Record<string, string> = {}; // backendName -> originalId
+      const { summaryRequest, columnMapping } = mapSummariesToBackend(summaries, baseColumns);
+      if (Object.keys(summaryRequest).length === 0) return null;
 
-      for (const [colId, type] of Object.entries(summaries)) {
-        const column = baseColumns.find((col) => col.columnName === colId || col.id === colId);
-        if (column) {
-          const backendName = column.columnName || column.id;
-          summaryRequest[backendName] = type;
-          columnMapping[backendName] = colId;
-        }
-      }
-
-      if (Object.keys(summaryRequest).length === 0) {
-        return null;
-      }
-
-      // 1. Convert active column filters to criteria using the standard utility
-      const columnFilterCriteria = LegacyColumnFilterUtils.createColumnFilterCriteria(tableColumnFilters, baseColumns);
-
-      // Use the same query params as the main grid but add summary params
-      // Explicitly remove sortBy and pageSize to prevent the backend from returning sorted records instead of the summary
-      const { sortBy, pageSize, ...cleanQuery } = query;
-
-      // 2. Merge existing criteria with column filter criteria
-      // Ensure we handle both array and potential single object cases for robustness
-      const existingCriteria = Array.isArray(cleanQuery.criteria)
-        ? cleanQuery.criteria
-        : cleanQuery.criteria
-          ? [cleanQuery.criteria]
-          : [];
-
-      const combinedCriteria = [...existingCriteria, ...columnFilterCriteria];
+      const combinedCriteria = getSummaryCriteria(query, tableColumnFilters, baseColumns);
+      const { sortBy: _sortBy, pageSize: _pageSize, ...cleanQuery } = query;
 
       const summaryQuery = {
         ...cleanQuery,
@@ -1080,7 +1050,7 @@ export const useTableData = ({
         _endRow: 1,
         _operationType: "fetch",
         _textMatchStyle: "substring",
-        _noActiveFilter: false, // Ensure filters are applied
+        _noActiveFilter: false,
         _className: "OBViewDataSource",
         Constants_FIELDSEPARATOR: "$",
         Constants_IDENTIFIER: "_identifier",
@@ -1088,31 +1058,25 @@ export const useTableData = ({
         _constructor: "AdvancedCriteria",
       };
 
-      console.log("Summary Query:", JSON.stringify(summaryQuery, null, 2));
-
       try {
         const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
         const response = (await datasource.get(treeEntity, summaryQuery)) as {
           ok: boolean;
-          data: { response?: { data?: any[] } };
+          data: { response?: { data?: Record<string, unknown>[] } };
         };
 
-        if (response.ok && response.data?.response?.data && response.data.response.data.length > 0) {
-          const resultData = response.data.response.data[0];
-          const results: Record<string, number | string> = {};
+        const firstResult = response.ok ? (response.data?.response?.data?.[0] as Record<string, unknown>) : null;
+        if (!firstResult) return null;
 
-          // Map backend results back to original column IDs
-          for (const [backendName, originalId] of Object.entries(columnMapping)) {
-            if (resultData[backendName] !== undefined) {
-              results[originalId] = resultData[backendName];
-            }
+        const results: Record<string, number | string> = {};
+        for (const [backendName, originalId] of Object.entries(columnMapping)) {
+          if (firstResult[backendName] !== undefined) {
+            results[originalId] = firstResult[backendName] as number | string;
           }
-
-          return results;
         }
-        return null;
+        return results;
       } catch (error) {
-        console.error("❌ Exception fetching summary:", error);
+        console.error("Exception fetching summary:", error);
         return null;
       }
     },
