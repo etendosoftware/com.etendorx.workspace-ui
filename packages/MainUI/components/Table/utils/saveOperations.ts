@@ -21,11 +21,7 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { buildQueryString } from "@/utils";
 import { shouldRemoveIdFields } from "@/utils/form/entityConfig";
 import { normalizeDates } from "@/utils/form/normalizeDates";
-import {
-  getPasswordFieldNames,
-  shouldExcludePasswordField,
-  PASSWORD_PLACEHOLDER,
-} from "@/utils/form/constants";
+import { getPasswordFieldNames, shouldExcludePasswordField, PASSWORD_PLACEHOLDER } from "@/utils/form/constants";
 import { logger } from "@/utils/logger";
 import type { SaveOperation, SaveResult, ValidationError, EditingRowData } from "../types/inlineEditing";
 import { getMergedRowData } from "./editingRowUtils";
