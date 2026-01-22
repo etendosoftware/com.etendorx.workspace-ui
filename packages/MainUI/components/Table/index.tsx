@@ -845,13 +845,8 @@ const DynamicTable = ({
     });
   }, []);
 
-  // Keep fetchSummary in a ref to use in effects without causing infinite loops
-  const fetchSummaryRef = useRef(fetchSummary);
-  useLayoutEffect(() => {
-    fetchSummaryRef.current = fetchSummary;
-  }, [fetchSummary]);
-
-  // Load summary when state or filters change
+  // Load summary when state, filters, or data change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: records is needed to trigger re-fetch
   useEffect(() => {
     const loadSummary = async () => {
       if (Object.keys(summaryState).length === 0) {
@@ -861,7 +856,7 @@ const DynamicTable = ({
 
       setIsSummaryLoading(true);
       try {
-        const result = await fetchSummaryRef.current(summaryState);
+        const result = await fetchSummary(summaryState);
         if (result) {
           setSummaryResult(result);
         } else {
@@ -876,7 +871,7 @@ const DynamicTable = ({
     };
 
     loadSummary();
-  }, [summaryState]);
+  }, [summaryState, fetchSummary, records]);
 
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<HTMLElement | null>(null);
   const [hasInitialColumnVisibility, setHasInitialColumnVisibility] = useState<boolean>(false);
