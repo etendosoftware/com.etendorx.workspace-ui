@@ -46,7 +46,12 @@ export default function ProcessResultModal({ open, success, message, title, onCl
                 </p>
               )}
             </div>
-            <Button variant="filled" size="large" onClick={onClose} className="w-49" data-testid="SuccessCloseButton">
+            <Button
+              variant="filled"
+              size="large"
+              onClick={onClose}
+              className="w-49"
+              data-testid="SuccessCloseButton__761503">
               {t("common.close")}
             </Button>
           </div>
