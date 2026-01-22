@@ -18,6 +18,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
+import type { SaveOptions } from "@/contexts/ToolbarContext";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { useTabContext } from "@/contexts/tab";
 import { globalCalloutManager } from "@/services/callouts";
@@ -30,7 +31,7 @@ interface FormActionsProps {
   tab: Tab;
   onNew: () => void;
   refetch: () => Promise<void>;
-  onSave: (showModal: boolean) => Promise<void>;
+  onSave: (options: SaveOptions) => Promise<void>;
   showErrorModal: (message: string) => void;
 }
 
@@ -118,7 +119,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
   }, [isFormInitializing]);
 
   const handleSave = useCallback(
-    async (showModal: boolean) => {
+    async (options: SaveOptions) => {
       try {
         // Set saving state
         setSaveButtonState((prev) => ({ ...prev, isSaving: true }));
@@ -140,7 +141,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
         }
 
         // Proceed with save if validation passes
-        await onSave(showModal);
+        await onSave(options);
       } catch (error) {
         logger.error("Error during save operation:", error);
       } finally {
@@ -177,7 +178,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
     };
 
     registerActions(actions);
-  }, [registerActions, handleSave, onReset, handleBack, handleNew, tab.id]);
+  }, [registerActions, handleSave, onReset, handleBack, handleNew]);
 
   return null;
 }

@@ -25,12 +25,13 @@ import { useUserContext } from "./useUserContext";
 import { normalizeDates } from "@/utils/form/normalizeDates";
 import { DEFAULT_CSRF_TOKEN_ERROR, DEFAULT_ACCESS_TABLE_NO_VIEW_ERROR } from "@/utils/session/constants";
 import { useTranslation } from "./useTranslation";
+import type { SaveOptions } from "@/contexts/ToolbarContext";
 
 export interface UseFormActionParams {
   windowMetadata?: WindowMetadata;
   tab: Tab;
   mode: FormMode;
-  onSuccess: (data: EntityData, showModal: boolean) => void;
+  onSuccess: (data: EntityData, options: SaveOptions) => void | Promise<void>;
   onError: (data: string) => void;
   initialState?: EntityData;
   submit: UseFormHandleSubmit<EntityData>;
@@ -53,7 +54,7 @@ export const useFormAction = ({
   const userId = user?.id;
 
   const execute = useCallback(
-    async (values: EntityData, showModal: boolean) => {
+    async (values: EntityData, saveOptions: SaveOptions) => {
       try {
         setLoading(true);
 
@@ -82,16 +83,16 @@ export const useFormAction = ({
         });
 
         const url = `${tab.entityName}?${queryStringParams}`;
-        const options = {
+        const requestOptions = {
           signal: controller.current.signal,
           method: "POST",
           body: normalizeDates(body) as Record<string, unknown>,
         };
-        const { ok, data } = await Metadata.datasourceServletClient.request(url, options);
+        const { ok, data } = await Metadata.datasourceServletClient.request(url, requestOptions);
 
         if (ok && data?.response?.status === 0 && !controller.current.signal.aborted) {
           setLoading(false);
-          onSuccess?.(data.response.data[0], showModal);
+          onSuccess?.(data.response.data[0], saveOptions);
         } else {
           throw new Error(data.response.error?.message);
         }
@@ -128,7 +129,7 @@ export const useFormAction = ({
     ]
   );
 
-  const save = useCallback((showModal: boolean) => submit((values) => execute(values, showModal))(), [execute, submit]);
+  const save = useCallback((options: SaveOptions) => submit((values) => execute(values, options))(), [execute, submit]);
 
   useEffect(() => {
     const _controller = controller.current;
