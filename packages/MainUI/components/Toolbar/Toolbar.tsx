@@ -434,6 +434,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         title={resultModal.title}
         message={resultModal.message}
         onClose={closeResultModal}
+        data-testid="ProcessResultModal__a2dd07"
       />
     </>
   );

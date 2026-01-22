@@ -1755,6 +1755,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             : result?.data?.msgText || result?.data?.message || result?.error || undefined
         }
         onClose={handleSuccessClose}
+        data-testid="ProcessResultModal__761503"
       />
     </>
   );
