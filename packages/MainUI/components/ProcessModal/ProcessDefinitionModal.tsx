@@ -804,6 +804,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         });
 
         const formValues = form.getValues();
+
+        // Fix: DocAction - copy user selection from parameter.name to dBColumnName
+        const docActionParam = Object.values(parameters).find(
+          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
+        );
+        if (docActionParam) {
+          const userSelection = formValues[docActionParam.name];
+          if (userSelection) {
+            formValues.DocAction = userSelection;
+          }
+        }
+
         const mappedValues = mapKeysWithDefaults({ ...formValues, ...populatedGrids });
 
         logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - After mapKeysWithDefaults:", {
@@ -907,17 +919,32 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
         const skipParamsLevel = processDefConfig?.skipParamsLevel;
 
+        const formValues = form.getValues();
+
+        // Fix: DocAction - copy user selection from parameter.name to dBColumnName
+        const docActionParam = Object.values(parameters).find(
+          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
+        );
+        if (docActionParam) {
+          const userSelection = formValues[docActionParam.name];
+          if (userSelection) {
+            formValues.DocAction = userSelection;
+          }
+        }
+
+        const combinedValues = { ...recordValues, ...formValues, ...extraKey, ...populatedGrids };
+
         const payload = {
           recordIds,
           _buttonValue: actionValue || "DONE",
           ...(skipParamsLevel
             ? {
-                ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues, ...populatedGrids }),
+                ...mapKeysWithDefaults(combinedValues),
                 ...buttonParams,
               }
             : {
                 _params: {
-                  ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues, ...populatedGrids }),
+                  ...mapKeysWithDefaults(combinedValues),
                   ...buttonParams,
                 },
               }),
@@ -968,16 +995,22 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       }
 
       startTransition(async () => {
+        const formValues = form.getValues();
+
         // Build complete payload with all context fields
-        const completePayload = buildProcessPayload(
-          record || {}, // Complete record data (fallback to empty object)
-          tab, // Tab metadata
-          initialState || {}, // Process defaults from server (handle null case)
-          (() => {
-            const formValues = form.getValues();
-            return formValues;
-          })() // User input from form
+        const completePayload = buildProcessPayload(record || {}, tab, initialState || {}, formValues);
+
+        // Fix: DocAction - the form stores user selection under parameter.name (e.g. "Document Action")
+        // but the backend expects it under dBColumnName ("DocAction")
+        const docActionParam = Object.values(parameters).find(
+          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
         );
+        if (docActionParam) {
+          const userSelection = formValues[docActionParam.name];
+          if (userSelection) {
+            (completePayload as Record<string, unknown>).DocAction = userSelection;
+          }
+        }
 
         const stringFunctionPayload = {
           _buttonValue: actionValue || "DONE",
@@ -986,7 +1019,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           tabId: tab?.id || tabId || "",
           entityName: tab.entityName,
           recordIds: selectedRecords?.map((r) => r.id),
-          ...completePayload, // Use complete payload instead of just form values
+          ...completePayload,
         };
 
         try {
@@ -1022,6 +1055,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       button.processDefinition,
       selectedRecords,
       form,
+      parameters,
     ]
   );
 
