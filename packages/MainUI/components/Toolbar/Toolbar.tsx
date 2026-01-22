@@ -42,6 +42,7 @@ import {
   type ProcessResponse,
 } from "../ProcessModal/types";
 import ProcessMenu from "./Menus/ProcessMenu";
+import ProcessResultModal from "../ProcessModal/ProcessResultModal";
 import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar/TopToolbar";
 import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
@@ -101,6 +102,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     hideStatusModal,
     actionModal,
     closeActionModal,
+    resultModal,
+    closeResultModal,
   } = useToolbarConfig({ windowId, tabId: tab?.id, parentId, isFormView });
 
   const { handleProcessClick } = useProcessButton(executeProcess, refetchToolbar);
@@ -290,7 +293,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       selectedRecordsLength: selectedRecordsLength,
       t: t,
       isAdvancedFilterApplied: isAdvancedFilterApplied,
-      windowType: Metadata.getCachedWindow(windowId)?.windowType,
     });
 
     const config = {
@@ -426,6 +428,14 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           data-testid="ActionModal__a2dd07"
         />
       )}
+      <ProcessResultModal
+        open={resultModal.open}
+        success={resultModal.success}
+        title={resultModal.title}
+        message={resultModal.message}
+        onClose={closeResultModal}
+        data-testid="ProcessResultModal__a2dd07"
+      />
     </>
   );
 };
