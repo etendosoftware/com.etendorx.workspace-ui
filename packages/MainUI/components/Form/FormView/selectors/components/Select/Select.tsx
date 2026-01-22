@@ -287,7 +287,9 @@ function SelectCmp({
           onFocus={handleFocus}
           tabIndex={isReadOnly ? -1 : 0}
           className={mainDivClassNames}>
-          <span className={selectedLabelClassNames}>{selectedLabel || (!isReadOnly ? t("form.select.placeholder") : "")}</span>
+          <span className={selectedLabelClassNames}>
+            {selectedLabel || (!isReadOnly ? t("form.select.placeholder") : "")}
+          </span>
           <div className="flex items-center flex-shrink-0 ml-2">
             {shouldShowClearButton && (
               <button
