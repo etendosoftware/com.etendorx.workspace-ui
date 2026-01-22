@@ -25,6 +25,7 @@ import {
   type TableState,
   type NavigationState,
   type WindowContextState,
+  type TabDataCache,
   WINDOW_PROPERTY_NAMES,
   type WindowPropertyName,
 } from "@/utils/window/constants";
@@ -130,6 +131,11 @@ interface WindowContextI {
   // Window management
   cleanupWindow: (windowIdentifier: string) => void;
   cleanState: () => void;
+
+  // Tab data cache management
+  getTabDataCache: (windowIdentifier: string, tabId: string) => TabDataCache | undefined;
+  setTabDataCache: (windowIdentifier: string, tabId: string, cache: TabDataCache, tabLevel?: number) => void;
+  clearTabDataCache: (windowIdentifier: string, tabId: string) => void;
 }
 
 // Context creation
@@ -455,6 +461,58 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     });
   }, []);
 
+  // Tab data cache management
+  const getTabDataCache = useCallback(
+    (windowIdentifier: string, tabId: string): TabDataCache | undefined => {
+      if (!state[windowIdentifier] || !state[windowIdentifier].tabs[tabId]) {
+        return undefined;
+      }
+      return state[windowIdentifier].tabs[tabId].dataCache;
+    },
+    [state]
+  );
+
+  const setTabDataCache = useCallback((windowIdentifier: string, tabId: string, cache: TabDataCache, tabLevel = 0) => {
+    setState((prevState: WindowContextState) => {
+      const tempState = ensureTabExists(prevState, windowIdentifier, tabId, tabLevel);
+
+      return {
+        ...tempState,
+        [windowIdentifier]: {
+          ...tempState[windowIdentifier],
+          tabs: {
+            ...tempState[windowIdentifier].tabs,
+            [tabId]: {
+              ...tempState[windowIdentifier].tabs[tabId],
+              dataCache: cache,
+            },
+          },
+        },
+      };
+    });
+  }, []);
+
+  const clearTabDataCache = useCallback((windowIdentifier: string, tabId: string) => {
+    setState((prevState: WindowContextState) => {
+      if (!prevState[windowIdentifier]?.tabs[tabId]?.dataCache) {
+        return prevState;
+      }
+
+      const { dataCache: _removed, ...tabWithoutCache } = prevState[windowIdentifier].tabs[tabId];
+
+      return {
+        ...prevState,
+        [windowIdentifier]: {
+          ...prevState[windowIdentifier],
+          tabs: {
+            ...prevState[windowIdentifier].tabs,
+            [tabId]: tabWithoutCache,
+          },
+        },
+      };
+    });
+  }, []);
+
   const getSelectedRecord = useCallback(
     (windowIdentifier: string, tabId: string): string | undefined => {
       if (!state[windowIdentifier] || !state[windowIdentifier].tabs[tabId]) {
@@ -540,10 +598,12 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
           }
           // Clear form state only for children that should be cleaned
           clearTabFormState(windowIdentifier, tabId);
+          // Clear data cache when parent selection changes
+          clearTabDataCache(windowIdentifier, tabId);
         }
       }
     },
-    [state, getTabFormState, getSelectedRecord, clearSelectedRecord, clearTabFormState]
+    [state, getTabFormState, getSelectedRecord, clearSelectedRecord, clearTabFormState, clearTabDataCache]
   );
 
   const setSelectedRecordAndClearChildren = useCallback(
@@ -805,6 +865,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
       cleanupWindow,
       cleanState,
+
+      getTabDataCache,
+      setTabDataCache,
+      clearTabDataCache,
     }),
     [
       windows,
@@ -850,6 +914,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
       cleanupWindow,
       cleanState,
+
+      getTabDataCache,
+      setTabDataCache,
+      clearTabDataCache,
     ]
   );
 

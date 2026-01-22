@@ -18,7 +18,7 @@
 // @data-testid-ignore
 "use client";
 
-import { useCallback, useState, useTransition, useEffect } from "react";
+import { useCallback, useState, useTransition, useEffect, useRef } from "react";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
@@ -42,6 +42,14 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
   const [expand, setExpanded] = useState(false);
   const [customHeight, setCustomHeight] = useState(50);
   const [isPending, startTransition] = useTransition();
+
+  // Track visited tabs to enable lazy mounting but keep them mounted once visited
+  const visitedTabsRef = useRef<Set<string>>(new Set([initialTab.id]));
+
+  // Add current tab to visited set when it changes
+  useEffect(() => {
+    visitedTabsRef.current.add(current.id);
+  }, [current.id]);
 
   useEffect(() => {
     if (initialActiveTab) {
@@ -150,6 +158,9 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
     return subTabsSwitch;
   };
 
+  // Get list of tabs that should be rendered (visited tabs that still exist in the tabs array)
+  const tabsToRender = tabs.filter((tab) => visitedTabsRef.current.has(tab.id));
+
   return (
     <TabContainer
       current={current}
@@ -165,9 +176,21 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
           <div className="flex-1 bg-(--color-transparent-neutral-10) rounded-md" />
         </div>
       ) : (
-        <TabContextProvider tab={current} data-testid={`TabContextProvider__${current?.id ?? activeTabId ?? "6fa401"}`}>
-          <Tab tab={current} collapsed={collapsed} data-testid={`Tab__${current?.id ?? activeTabId ?? "6fa401"}`} />
-        </TabContextProvider>
+        <>
+          {tabsToRender.map((tab) => {
+            const isActive = tab.id === current.id;
+            return (
+              <div
+                key={tab.id}
+                className={isActive ? "flex flex-col flex-1 overflow-hidden" : "hidden"}
+                data-testid={`TabWrapper__${tab.id}`}>
+                <TabContextProvider tab={tab} data-testid={`TabContextProvider__${tab.id}`}>
+                  <Tab tab={tab} collapsed={collapsed} data-testid={`Tab__${tab.id}`} />
+                </TabContextProvider>
+              </div>
+            );
+          })}
+        </>
       )}
     </TabContainer>
   );
