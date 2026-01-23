@@ -662,6 +662,11 @@ export interface Warehouse {
   name: string;
 }
 
+interface ToolbarWindow {
+  id: string;
+  name: string;
+}
+
 export interface ToolbarButton {
   id: string;
   name: string;
@@ -675,6 +680,7 @@ export interface ToolbarButton {
   nameKey: string;
   buttonType: string;
   section: string;
+  windows: ToolbarWindow[];
 }
 
 export interface ToolbarMetadata {
