@@ -23,7 +23,12 @@ import {
   type Tab,
   type WindowMetadata,
 } from "@workspaceui/api-client/src/api/types";
-import { FIELD_REFERENCE_CODES } from "./form/constants";
+import {
+  FIELD_REFERENCE_CODES,
+  getPasswordFieldNames,
+  shouldExcludePasswordField,
+  PASSWORD_PLACEHOLDER,
+} from "./form/constants";
 
 export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -256,11 +261,13 @@ export const buildFormPayload = ({
   oldValues,
   mode,
   csrfToken,
+  tab,
 }: {
   values: EntityData;
   oldValues?: EntityData;
   mode: FormMode;
   csrfToken: string;
+  tab?: Tab;
 }) => {
   // Fields that should be excluded from the payload
   const auditFields = ["creationDate", "createdBy", "updated", "updatedBy"];
@@ -268,12 +275,22 @@ export const buildFormPayload = ({
   // When creating a new record (add operation), exclude the id field as well
   const excludedFields = mode === FormMode.NEW ? [...auditFields, "id"] : auditFields;
 
+  // Get password field names to handle them specially
+  const passwordFields = getPasswordFieldNames(tab);
+  const isNewRecord = mode === FormMode.NEW;
+
   const filteredValues = Object.entries(values).reduce((acc, [key, value]) => {
     if (!excludedFields.includes(key)) {
+      // Skip password fields that contain the placeholder value (not modified by user)
+      // This prevents overwriting the actual password when editing other fields
+      if (shouldExcludePasswordField(key, value, passwordFields, isNewRecord)) {
+        return acc;
+      }
+
       acc[key] = value;
-      // If this is a password field, also add password_cleartext
-      if (key === "password" && value) {
-        acc.password_cleartext = value;
+      // If this is a password field with a real value (not placeholder), also add password_cleartext
+      if (passwordFields.has(key) && value && value !== PASSWORD_PLACEHOLDER) {
+        acc[`${key}_cleartext`] = value;
       }
     }
     return acc;
