@@ -100,7 +100,8 @@ export class Metadata {
 
   public static async getToolbar(): Promise<Etendo.ToolbarButton[]> {
     const cached = Metadata.cache.get<Etendo.ToolbarButton[]>("toolbar");
-    if (cached) {
+    const toolbarHasWindowsAttribute = cached?.some((button) => !!button.windows && button.windows.length >= 0);
+    if (cached && toolbarHasWindowsAttribute) {
       return cached;
     }
     return Metadata._getToolbar();

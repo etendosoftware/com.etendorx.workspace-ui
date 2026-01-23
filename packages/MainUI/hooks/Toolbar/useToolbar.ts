@@ -91,7 +91,8 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
     if (!windowIdentifier) return;
 
     const cachedData = toolbarCache.get(cacheKey);
-    if (cachedData) {
+    const toolbarHasWindowsAttribute = cachedData?.some((button) => !!button.windows && button.windows.length >= 0);
+    if (cachedData && toolbarHasWindowsAttribute) {
       setToolbar(cachedData);
       setLoading(false);
       return;
@@ -117,7 +118,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
     const windowId = getWindowIdFromIdentifier(windowIdentifier);
     const filteredButtons =
       toolbar?.filter((button) => {
-        if (button.windows.length === 0) {
+        if (!button.windows || button.windows.length === 0) {
           return true;
         }
         return button.windows.some((window) => window.id === windowId);
