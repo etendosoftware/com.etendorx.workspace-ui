@@ -292,6 +292,46 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     [processDefinition, parameters]
   );
 
+  // Update parameters with dynamic options from onLoad (e.g. Bulk Completion)
+  useEffect(() => {
+    if (!processInitialization?.defaults) return;
+
+    setParameters((prevParams) => {
+      const nextParams = { ...prevParams };
+      let hasChanges = false;
+
+      Object.entries(processInitialization.defaults).forEach(([key, value]) => {
+        // Check if value is an array of options (has value and label)
+        if (
+          Array.isArray(value) &&
+          value.length > 0 &&
+          typeof value[0] === "object" &&
+          "value" in value[0] &&
+          "label" in value[0]
+        ) {
+          // Find parameter by name or dBColumnName
+          const paramEntry = Object.entries(nextParams).find(
+            ([_, p]) => p.name === key || p.dBColumnName === key
+          );
+
+          if (paramEntry) {
+            const [id, param] = paramEntry;
+            // Only update if refList is different
+            if (JSON.stringify(param.refList) !== JSON.stringify(value)) {
+              nextParams[id] = {
+                ...param,
+                refList: value,
+              };
+              hasChanges = true;
+            }
+          }
+        }
+      });
+
+      return hasChanges ? nextParams : prevParams;
+    });
+  }, [processInitialization]);
+
   // Combined form data: record values + process defaults (similar to FormView pattern)
   const availableFormData = useMemo(() => {
     // If no record or tab (e.g. sidebar process), just use the defaults
@@ -361,14 +401,36 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   useEffect(() => {
     const hasFormData = Object.keys(availableFormData).length > 0;
     if (hasFormData) {
+      // Fix values that were stringified arrays (options) in initialState
+      const fixedFormData = { ...availableFormData };
+
+      Object.entries(fixedFormData).forEach(([key, value]) => {
+        if (
+          typeof value === "string" &&
+          value.startsWith("[") &&
+          value.includes('"value":') &&
+          value.includes('"label":')
+        ) {
+          try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].value) {
+              // It's an options array. Set value to the first option (default)
+              fixedFormData[key] = parsed[0].value;
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+      });
+
       logger.debug("[PROCESS_DEBUG] Resetting form with availableFormData:", {
-        keys: Object.keys(availableFormData),
-        hasGrids: Object.keys(availableFormData).some(
+        keys: Object.keys(fixedFormData),
+        hasGrids: Object.keys(fixedFormData).some(
           (k) => k === "order_invoice" || k === "credit_to_use" || k === "glitem"
         ),
-        sample: JSON.stringify(availableFormData).substring(0, 300),
+        sample: JSON.stringify(fixedFormData).substring(0, 300),
       });
-      form.reset(availableFormData);
+      form.reset(fixedFormData, { keepDirty: true });
     }
   }, [availableFormData, form]);
 
@@ -793,6 +855,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
         logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Before building payload:", {
           formValuesKeys: Object.keys(form.getValues()),
+          formValues: form.getValues(), // Log actual values
           populatedGridsKeys: Object.keys(populatedGrids),
         });
 
@@ -912,12 +975,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           _buttonValue: actionValue || "DONE",
           ...(skipParamsLevel
             ? {
-                ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues, ...populatedGrids }),
+                ...mapKeysWithDefaults({ ...extraKey, ...recordValues, ...populatedGrids, ...form.getValues() }),
                 ...buttonParams,
               }
             : {
                 _params: {
-                  ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues, ...populatedGrids }),
+                  ...mapKeysWithDefaults({ ...extraKey, ...recordValues, ...populatedGrids, ...form.getValues() }),
                   ...buttonParams,
                 },
               }),
@@ -973,10 +1036,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           record || {}, // Complete record data (fallback to empty object)
           tab, // Tab metadata
           initialState || {}, // Process defaults from server (handle null case)
-          (() => {
-            const formValues = form.getValues();
-            return formValues;
-          })() // User input from form
+          getMappedFormValues() // User input from form (mapped to DB column names)
         );
 
         const stringFunctionPayload = {
