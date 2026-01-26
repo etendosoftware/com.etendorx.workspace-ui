@@ -108,9 +108,9 @@ export function useDatasource({
   cachedData,
   onCacheUpdate,
 }: UseDatasourceOptions) {
-  const [loading, setLoading] = useState(false);
-  const [loaded, setLoaded] = useState(!!cachedData?.records?.length);
-  const [records, setRecords] = useState<EntityData[]>(cachedData?.records ?? []);
+  const [loading, setLoading] = useState(!skip);
+  const [loaded, setLoaded] = useState(false);
+  const [records, setRecords] = useState<EntityData[]>([]);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [page, setPage] = useState(cachedData?.page ?? 1);
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);

@@ -60,6 +60,7 @@ interface MultiSelectProps {
   placeholder?: string;
   maxHeight?: number;
   enableTextFilterLogic?: boolean;
+  isReadOnly?: boolean;
 }
 
 const OptionItem = memo(
@@ -114,6 +115,7 @@ const MultiSelect = memo(function MultiSelectCmp({
   placeholder = "Select options...",
   maxHeight = 240,
   enableTextFilterLogic = false,
+  isReadOnly = false,
 }: MultiSelectProps) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
@@ -205,21 +207,25 @@ const MultiSelect = memo(function MultiSelectCmp({
   );
 
   const handleClick = useCallback(() => {
-    if (!isOpen) {
-      setIsFetchingInitial(true);
-      onFocus?.();
-    }
-    setIsOpen(!isOpen);
-  }, [isOpen, onFocus]);
+    if (isReadOnly) return;
+    setIsOpen((prev) => {
+      if (!prev) {
+        setIsFetchingInitial(true);
+        onFocus?.();
+      }
+      return !prev;
+    });
+  }, [onFocus, isReadOnly]);
 
   const handleInputClick = useCallback(
     (e: React.MouseEvent) => {
+      if (isReadOnly) return;
       e.stopPropagation();
       setIsOpen(true);
       setIsFetchingInitial(true);
       onFocus?.();
     },
-    [onFocus]
+    [onFocus, isReadOnly]
   );
 
   const handleKeyDown = useKeyboardNavigation(
@@ -301,20 +307,26 @@ const MultiSelect = memo(function MultiSelectCmp({
     return null;
   }, [filteredOptions, highlightedIndex, selectedValues, handleSingleSelect, handleToggle, showSkeleton, loading, t]);
 
+  const inputPlaceholder = !isReadOnly || selectedLabels.length > 0 ? displayText : "";
+
   return (
-    <div ref={wrapperRef} className="relative w-full font-['Inter']" tabIndex={-1}>
+    <div
+      ref={wrapperRef}
+      className={`relative w-full font-['Inter'] ${isReadOnly ? "pointer-events-none" : ""}`}
+      tabIndex={-1}>
       <div
         onClick={handleClick}
-        className={`w-full flex items-center justify-between py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 ${FOCUS_STYLES} 
-          ${isOpen ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : ""} 
-          text-baseline-20 cursor-pointer hover:border-baseline-60 ${BASE_TRANSITION}`}>
+        className={`w-full flex items-center justify-between py-2 h-10 border-b ${isReadOnly ? "border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) cursor-not-allowed" : "border-baseline-10 hover:border-baseline-100 cursor-pointer hover:border-baseline-60"} ${FOCUS_STYLES} 
+          ${isOpen && !isReadOnly ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : ""} 
+          text-baseline-20 ${BASE_TRANSITION}`}>
         <input
           ref={searchInputRef}
           value={searchTerm}
           onChange={handleSetSearchTerm}
           onKeyDown={handleKeyDown}
           onClick={handleInputClick}
-          placeholder={displayText}
+          placeholder={inputPlaceholder}
+          readOnly={isReadOnly}
           className={`w-full bg-transparent outline-none text-sm truncate max-w-[calc(100%-40px)] ${
             selectedLabels.length && !searchTerm
               ? "text-baseline-90 font-medium placeholder-baseline-90"
@@ -322,35 +334,39 @@ const MultiSelect = memo(function MultiSelectCmp({
           }`}
         />
         <div className="flex items-center flex-shrink-0 ml-2">
-          {selectedLabels.length > 0 && (
+          {selectedLabels.length > 0 && !isReadOnly && (
             <button type="button" onClick={handleClear} className={`mr-1 ${TEXT_MUTED} ${HOVER_TEXT_COLOR} rounded`}>
               <Image src={closeIconUrl} alt="Clear" height={16} width={16} data-testid="Image__cb81f7" />
             </button>
           )}
-          <ChevronDown
-            fill="currentColor"
-            className={`${ICON_SIZE} ${TEXT_MUTED} transition-transform ${isOpen ? "rotate-180" : ""}`}
-            data-testid="ChevronDown__cb81f7"
-          />
+          {!isReadOnly && (
+            <ChevronDown
+              fill="currentColor"
+              className={`${ICON_SIZE} ${TEXT_MUTED} transition-transform ${isOpen ? "rotate-180" : ""}`}
+              data-testid="ChevronDown__cb81f7"
+            />
+          )}
         </div>
       </div>
-      <DropdownPortal
-        isOpen={isOpen}
-        triggerRef={wrapperRef as React.RefObject<HTMLElement>}
-        portalRef={portalRef as React.RefObject<HTMLDivElement>}
-        minWidth={256}
-        data-testid="DropdownPortal__cb81f7">
-        <ul
-          ref={listRef}
-          className="overflow-y-auto focus:outline-none mt-1"
-          style={{ maxHeight: `${maxHeight}px` }}
-          onScroll={handleScroll}>
-          {renderedOptions}
-          {loading && hasMore && !showSkeleton && (
-            <li className={`${LIST_ITEM_BASE} ${TEXT_MUTED} text-center`}>{t("multiselect.loadingOptions")}</li>
-          )}
-        </ul>
-      </DropdownPortal>
+      {!isReadOnly && (
+        <DropdownPortal
+          isOpen={isOpen}
+          triggerRef={wrapperRef as React.RefObject<HTMLElement>}
+          portalRef={portalRef as React.RefObject<HTMLDivElement>}
+          minWidth={256}
+          data-testid="DropdownPortal__cb81f7">
+          <ul
+            ref={listRef}
+            className="overflow-y-auto focus:outline-none mt-1"
+            style={{ maxHeight: `${maxHeight}px` }}
+            onScroll={handleScroll}>
+            {renderedOptions}
+            {loading && hasMore && !showSkeleton && (
+              <li className={`${LIST_ITEM_BASE} ${TEXT_MUTED} text-center`}>{t("multiselect.loadingOptions")}</li>
+            )}
+          </ul>
+        </DropdownPortal>
+      )}
     </div>
   );
 });

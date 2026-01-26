@@ -16,7 +16,7 @@
  */
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
 import { type TabFormState, TAB_MODES } from "@/utils/url/constants";
@@ -735,6 +735,17 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     return !activeWindow;
   }, [activeWindow]);
 
+  // Track if initial recovery has been processed to prevent re-applying recovered windows
+  // after user closes them
+  const hasProcessedRecoveryRef = useRef(false);
+
+  // Reset the recovery flag when a new recovery is triggered (isRecoveryLoading becomes true)
+  useEffect(() => {
+    if (isRecoveryLoading) {
+      hasProcessedRecoveryRef.current = false;
+    }
+  }, [isRecoveryLoading]);
+
   /**
    * Initialize state from recovered windows
    *
@@ -742,7 +753,7 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
    * once the global recovery process is complete. This replaces the previous "ghost window"
    * mechanism with a full state initialization.
    *
-   * Execution: Runs when `isRecoveryLoading` becomes false and `recoveredWindows` are available.
+   * Execution: Runs ONCE when `isRecoveryLoading` becomes false and `recoveredWindows` are available.
    *
    * Flow:
    * 1. Waits for global recovery to finish (!isRecoveryLoading)
@@ -751,7 +762,13 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
    * 4. Updates the provider state, effectively "mounting" all windows at once
    */
   useEffect(() => {
+    // Only process recovery once to prevent re-adding windows after user closes them
+    if (hasProcessedRecoveryRef.current) {
+      return;
+    }
+
     if (!isRecoveryLoading && recoveredWindows.length > 0) {
+      hasProcessedRecoveryRef.current = true;
       setState((prevState) => {
         const windowsMap = recoveredWindows.reduce((acc, win) => {
           if (prevState[win.windowIdentifier]) {
@@ -803,12 +820,17 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       return;
     }
 
+    const currentParams = searchParams?.toString() || "";
+
     if (windows.length === 0) {
+      // If no windows exist and we're not already at home, navigate to home
+      if (currentParams) {
+        router.replace("/");
+      }
       return;
     }
 
     const newParams = buildWindowsUrlParams(windows);
-    const currentParams = searchParams?.toString() || "";
 
     // Only update if params have changed to avoid unnecessary navigation
     if (newParams !== currentParams) {

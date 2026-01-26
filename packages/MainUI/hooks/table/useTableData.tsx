@@ -98,6 +98,7 @@ interface UseTableDataReturn {
   ) => Promise<void>;
   isImplicitFilterApplied: boolean;
   tableColumnFilters: MRT_ColumnFiltersState;
+  tableColumnVisibility: MRT_VisibilityState;
   fetchSummary: (summaries: Record<string, string>) => Promise<Record<string, number | string> | null>;
 }
 
@@ -487,7 +488,7 @@ export const useTableData = ({
             isTreeMode: true,
             windowId: tab.window,
             tabId: tab.id,
-            referencedTableId: treeMetadata.referencedTableId || "155",
+            referencedTableId: treeMetadata.referencedTableId,
             parentId: -1,
           }
         : undefined,
@@ -558,7 +559,7 @@ export const useTableData = ({
           isTreeMode: true,
           windowId: tab.window,
           tabId: tab.id,
-          referencedTableId: treeMetadata.referencedTableId || "155",
+          referencedTableId: treeMetadata.referencedTableId,
           parentId: parentId,
         };
 
@@ -605,12 +606,41 @@ export const useTableData = ({
 
   // Build flattened records for tree mode
   const buildFlattenedRecords = useCallback(
-    (
-      parentRecords: EntityData[],
-      expandedState: MRT_ExpandedState,
-      childrenMap: Map<string, EntityData[]>
-    ): EntityData[] => {
+    (records: EntityData[], expandedState: MRT_ExpandedState, childrenMap: Map<string, EntityData[]>): EntityData[] => {
       const result: EntityData[] = [];
+      const recordIds = new Set(records.map((r) => String(r.id)));
+      const localChildren = new Map<string, EntityData[]>();
+      const roots: EntityData[] = [];
+
+      // Partition records into roots and children based on whether their parent is in the list
+      records.forEach((record) => {
+        const pId = record.parentId ? String(record.parentId) : null;
+        if (pId && recordIds.has(pId)) {
+          if (!localChildren.has(pId)) {
+            localChildren.set(pId, []);
+          }
+          localChildren.get(pId)?.push(record);
+        } else {
+          roots.push(record);
+        }
+      });
+
+      const sortRecords = (list: EntityData[]) => {
+        return list.sort((a, b) => {
+          // Compare seqno first
+          if (typeof a.seqno === "number" && typeof b.seqno === "number") {
+            if (a.seqno !== b.seqno) return a.seqno - b.seqno;
+          }
+
+          // Fallback to identifier/name string comparison
+          const nameA = String(a._identifier || a.name || "").toLowerCase();
+          const nameB = String(b._identifier || b.name || "").toLowerCase();
+
+          if (nameA < nameB) return -1;
+          if (nameA > nameB) return 1;
+          return 0;
+        });
+      };
 
       const processNode = (record: EntityData, level = 0, parentTreeId?: string) => {
         const nodeWithLevel = {
@@ -625,16 +655,28 @@ export const useTableData = ({
         const nodeId = String(record.id);
         const isExpanded = typeof expandedState === "object" && expandedState[nodeId];
 
-        if (isExpanded && childrenMap.has(nodeId)) {
-          const children = childrenMap.get(nodeId) || [];
-          for (const childRecord of children) {
+        if (isExpanded) {
+          const fetchedChildren = childrenMap.get(nodeId) || [];
+          const localChildNodes = localChildren.get(nodeId) || [];
+
+          // Merge and deduplicate
+          const combinedChildrenMap = new Map<string, EntityData>();
+          [...fetchedChildren, ...localChildNodes].forEach((child) => {
+            combinedChildrenMap.set(String(child.id), child);
+          });
+
+          const sortedChildren = sortRecords(Array.from(combinedChildrenMap.values()));
+
+          for (const childRecord of sortedChildren) {
             processNode(childRecord, level + 1, nodeId);
           }
         }
       };
 
-      for (const parentRecord of parentRecords) {
-        processNode(parentRecord, 0);
+      const sortedRoots = sortRecords(roots);
+
+      for (const rootRecord of sortedRoots) {
+        processNode(rootRecord, 0);
       }
       return result;
     },
@@ -1127,6 +1169,7 @@ export const useTableData = ({
     applyQuickFilter,
     isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
     tableColumnFilters,
+    tableColumnVisibility,
     fetchSummary,
     hasMoreRecords,
   };
