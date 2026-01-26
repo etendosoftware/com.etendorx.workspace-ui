@@ -24,6 +24,10 @@ export const StringSelector = (props: { field: Field } & React.ComponentProps<ty
   const fieldName = props.field.hqlName;
 
   const currentValue = watch(fieldName);
+
+  console.log("currentValue: ", currentValue);
+  console.log("fieldName:", fieldName);
+
   const handleSetValue = (value: string) => {
     setValue(fieldName, value, { shouldValidate: true });
   };
