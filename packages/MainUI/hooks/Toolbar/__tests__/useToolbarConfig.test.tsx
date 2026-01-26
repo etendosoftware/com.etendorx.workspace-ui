@@ -14,6 +14,7 @@ import { useSearch } from "@/contexts/searchContext";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useDeleteRecord } from "@/hooks/useDeleteRecord";
+import { useUserContext } from "@/hooks/useUserContext";
 
 // Mock dependencies
 jest.mock("@/contexts/tab");
@@ -32,6 +33,7 @@ jest.mock("@/contexts/ToolbarContext");
 jest.mock("@/hooks/useDeleteRecord", () => ({
   useDeleteRecord: jest.fn(),
 }));
+jest.mock("@/hooks/useUserContext");
 jest.mock("@/utils/logger");
 
 describe("useToolbarConfig", () => {
@@ -90,6 +92,7 @@ describe("useToolbarConfig", () => {
     (useMetadataContext as jest.Mock).mockReturnValue({ removeRecord: jest.fn() });
     (useToolbarContext as jest.Mock).mockReturnValue({ onRefresh: mockOnRefresh });
     (useDeleteRecord as jest.Mock).mockReturnValue({ deleteRecord: jest.fn(), loading: false });
+    (useUserContext as jest.Mock).mockReturnValue({ token: "mock-token" });
   });
 
   it("initializes correctly", () => {
@@ -158,6 +161,63 @@ describe("useToolbarConfig", () => {
         true // Assuming simple clone defaults to true for copyChildren in the implementation logic for "Yes"
       );
       expect(handleCopyRecordResponse).toHaveBeenCalled();
+    });
+  });
+
+  describe("INITIALIZE_RX_SERVICES", () => {
+    beforeEach(() => {
+      global.fetch = jest.fn();
+    });
+
+    it("calls the API and opens success modal on success", async () => {
+      const mockResult = {
+        severity: "success",
+        text: "Success message",
+        refreshGrid: true,
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockResult),
+      });
+
+      const { result } = renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+
+      await act(async () => {
+        await result.current.actionHandlers.INITIALIZE_RX_SERVICES();
+      });
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("com.etendoerp.etendorx.actionhandler.InitializeRXServices"),
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({
+            Authorization: "Bearer mock-token",
+          }),
+        })
+      );
+
+      expect(result.current.resultModal.open).toBe(true);
+      expect(result.current.resultModal.success).toBe(true);
+      expect(result.current.resultModal.message).toContain("Success message");
+      expect(mockOnRefresh).toHaveBeenCalled();
+    });
+
+    it("opens error modal on API error", async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        text: () => Promise.resolve("API Error"),
+      });
+
+      const { result } = renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+
+      await act(async () => {
+        await result.current.actionHandlers.INITIALIZE_RX_SERVICES();
+      });
+
+      expect(result.current.resultModal.open).toBe(true);
+      expect(result.current.resultModal.success).toBe(false);
+      expect(result.current.resultModal.message).toBe("API Error");
     });
   });
 });

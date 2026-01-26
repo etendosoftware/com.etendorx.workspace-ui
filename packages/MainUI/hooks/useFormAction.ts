@@ -80,6 +80,7 @@ export const useFormAction = ({
           oldValues: processedInitialState,
           mode,
           csrfToken: userId,
+          tab,
         });
 
         const url = `${tab.entityName}?${queryStringParams}`;
