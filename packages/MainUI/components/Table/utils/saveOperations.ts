@@ -21,6 +21,7 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { buildQueryString } from "@/utils";
 import { shouldRemoveIdFields } from "@/utils/form/entityConfig";
 import { normalizeDates } from "@/utils/form/normalizeDates";
+import { getPasswordFieldNames, shouldExcludePasswordField, PASSWORD_PLACEHOLDER } from "@/utils/form/constants";
 import { logger } from "@/utils/logger";
 import type { SaveOperation, SaveResult, ValidationError, EditingRowData } from "../types/inlineEditing";
 import { getMergedRowData } from "./editingRowUtils";
@@ -65,6 +66,10 @@ function buildSavePayload({
     }
   }
 
+  // Get password field names to handle them specially
+  const passwordFields = getPasswordFieldNames(tab);
+  const isNewRecord = mode === FormMode.NEW;
+
   const filteredValues = Object.entries(values).reduce((acc, [key, value]) => {
     // Skip if excluded field
     if (excludedFields.includes(key)) {
@@ -99,10 +104,16 @@ function buildSavePayload({
       return acc;
     }
 
+    // Skip password fields that contain the placeholder value (not modified by user)
+    // This prevents overwriting the actual password when editing other fields
+    if (shouldExcludePasswordField(key, value, passwordFields, isNewRecord)) {
+      return acc;
+    }
+
     acc[key] = value;
-    // If this is a password field, also add password_cleartext
-    if (key === "password" && value) {
-      acc.password_cleartext = value;
+    // If this is a password field with a real value (not placeholder), also add password_cleartext
+    if (passwordFields.has(key) && value && value !== PASSWORD_PLACEHOLDER) {
+      acc[`${key}_cleartext`] = value;
     }
     return acc;
   }, {} as EntityData);

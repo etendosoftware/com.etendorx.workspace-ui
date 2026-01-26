@@ -25,11 +25,10 @@ interface WindowTabProps {
   isActive: boolean;
   onActivate: () => void;
   onClose: () => void;
-  canClose?: boolean;
   icon?: React.ReactNode;
 }
 
-export default function WindowTab({ title, isActive, onActivate, onClose, canClose = true }: WindowTabProps) {
+export default function WindowTab({ title, isActive, onActivate, onClose }: WindowTabProps) {
   const { t } = useTranslation();
 
   return (
@@ -55,21 +54,19 @@ export default function WindowTab({ title, isActive, onActivate, onClose, canClo
           <FolderIcon className="fill-black" data-testid="FolderIcon__15c554" />
           <span className="flex-1 truncate text-sm font-medium">{title}</span>
         </button>
-        {canClose && (
-          <button
-            type="button"
-            className={`
-             w-5 h-5 flex-shrink-0 rounded-full transition-opacity duration-200
-             hover:bg-gray-300 hover:text-gray-800 flex items-center justify-center
-           `}
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose();
-            }}
-            title={t("primaryTabs.closeWindow")}>
-            <CloseIcon data-testid="CloseIcon__15c554" />
-          </button>
-        )}
+        <button
+          type="button"
+          className={`
+           w-5 h-5 flex-shrink-0 rounded-full transition-opacity duration-200
+           hover:bg-gray-300 hover:text-gray-800 flex items-center justify-center
+         `}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          title={t("primaryTabs.closeWindow")}>
+          <CloseIcon data-testid="CloseIcon__15c554" />
+        </button>
       </div>
     </Tooltip>
   );
