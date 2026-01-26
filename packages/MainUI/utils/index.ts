@@ -137,9 +137,11 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
       const field = fields?.[key];
       let newKey = field?.inputName ?? key;
 
-      // Transform documentAction to DocAction
+      // Transform documentAction to DocAction and inpporeference to POReference
       if (key === "documentAction" || newKey === "documentAction") {
         newKey = "DocAction";
+      } else if (key === "inpporeference" || newKey === "inpporeference") {
+        newKey = "POReference";
       }
 
       // Special handling for known numeric fields when field metadata is not available
