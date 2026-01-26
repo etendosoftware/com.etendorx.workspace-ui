@@ -139,7 +139,7 @@ export function mapKeysWithDefaults(source: SourceObject): TargetObject {
     converted_amount: { target: "conversion_rate", default: 0 },
     conversion_rate: { target: "conversion_rate", default: 0 },
     "Action Regarding Document": { target: "document_action", default: null },
-    reference_no: { target: "POReference", default: "" },
+    reference_no: { target: "reference_no", default: "" },
     POReference: { target: "POReference", default: "" },
     "Converted Amount": { target: "converted_amount", default: null },
     "Deposit To": { target: "fin_financial_account_id", default: null },

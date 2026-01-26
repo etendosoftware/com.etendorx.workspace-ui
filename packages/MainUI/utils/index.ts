@@ -140,12 +140,7 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
       // Transform documentAction to DocAction and inpporeference to POReference
       if (key === "documentAction" || newKey === "documentAction") {
         newKey = "DocAction";
-      } else if (
-        key === "inpporeference" ||
-        newKey === "inpporeference" ||
-        key === "reference_no" ||
-        newKey === "reference_no"
-      ) {
+      } else if (key === "inpporeference" || newKey === "inpporeference") {
         newKey = "POReference";
       }
 
