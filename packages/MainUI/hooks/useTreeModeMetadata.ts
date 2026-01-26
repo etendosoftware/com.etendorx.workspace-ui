@@ -65,7 +65,7 @@ export function useTreeModeMetadata(tab: Tab) {
             supportsTreeMode: true,
             treeEntity: entityId,
             adTreeId: String(adTreeId),
-            referencedTableId: getTableIdFromTableName(tab.table),
+            referencedTableId: getTableIdFromTableName(fullTabData.table || tab.table),
           };
         }
       } catch (metadataError) {
@@ -296,7 +296,7 @@ function hasTreeConfiguration(tabData: Tab): boolean {
   return false;
 }
 
-function getTableIdFromTableName(tableName: string): string {
+function getTableIdFromTableName(tableName: string): string | undefined {
   const tableIds: Record<string, string> = {
     ad_menu: "155",
     ad_org: "155",
@@ -306,13 +306,19 @@ function getTableIdFromTableName(tableName: string): string {
   };
 
   const normalizedTableName = tableName.toLowerCase();
+
+  // If it looks like a UUID, return it as is
+  if (/^[0-9a-f]{32}$/i.test(normalizedTableName)) {
+    return tableName;
+  }
+
   const tableId = tableIds[normalizedTableName];
 
   if (tableId) {
     return tableId;
   }
 
-  return "155";
+  return undefined;
 }
 
 function getEntityIdFromTab(entityName: string, tabId?: string): string {

@@ -25,9 +25,10 @@ import useFormFields from "@/hooks/useFormFields";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { useUserContext } from "@/hooks/useUserContext";
 import type { ProcessButton } from "@/components/ProcessModal/types";
+import { getWindowIdFromIdentifier } from "@/utils/window/utils";
 
 // NOTE: this need a fix in the future
-// Save the same toolbar for the same windowId using the windowIdentifier
+// Save the same toolbar for the same windowIdentifier using the windowIdentifierentifier
 // This is a problem because save multiple instances of the same toolbar
 const toolbarCache = new Map<string, ToolbarButtonMetadata[]>();
 
@@ -42,10 +43,10 @@ const SINGLE_RECORD_ONLY_PROCESSES = new Set([
   "EM_APRM_AddPayment", // Add Payment - processes individual orders, not bulk
 ]);
 
-export function useToolbar(windowId: string, tabId?: string) {
-  const cacheKey = `${windowId}-${tabId || "default"}`;
+export function useToolbar(windowIdentifier: string, tabId?: string) {
+  const cacheKey = `${windowIdentifier}-${tabId || "default"}`;
   const [toolbar, setToolbar] = useState<ToolbarButtonMetadata[] | null>(() => toolbarCache.get(cacheKey) || null);
-  const [loading, setLoading] = useState(!!windowId && !toolbarCache.has(cacheKey));
+  const [loading, setLoading] = useState(!!windowIdentifier && !toolbarCache.has(cacheKey));
   const [error, setError] = useState<Error | null>(null);
 
   const { session } = useUserContext();
@@ -87,10 +88,11 @@ export function useToolbar(windowId: string, tabId?: string) {
   }, [actionFields, selectedItems, session]);
 
   const fetchToolbar = useCallback(async () => {
-    if (!windowId) return;
+    if (!windowIdentifier) return;
 
     const cachedData = toolbarCache.get(cacheKey);
-    if (cachedData) {
+    const toolbarHasWindowsAttribute = cachedData?.some((button) => !!button.windows);
+    if (cachedData && toolbarHasWindowsAttribute) {
       setToolbar(cachedData);
       setLoading(false);
       return;
@@ -110,15 +112,25 @@ export function useToolbar(windowId: string, tabId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [windowId, cacheKey]);
+  }, [windowIdentifier, cacheKey]);
 
-  const buttons: ToolbarButtonMetadata[] = useMemo(() => toolbar ?? [], [toolbar]);
+  const buttons: ToolbarButtonMetadata[] = useMemo(() => {
+    const windowId = getWindowIdFromIdentifier(windowIdentifier);
+    const filteredButtons =
+      toolbar?.filter((button) => {
+        if (!button.windows || button.windows.length === 0) {
+          return true;
+        }
+        return button.windows.some((window) => window.id === windowId);
+      }) ?? [];
+    return filteredButtons;
+  }, [toolbar, windowIdentifier]);
 
   useEffect(() => {
-    if (windowId) {
+    if (windowIdentifier) {
       fetchToolbar();
     }
-  }, [windowId, fetchToolbar]);
+  }, [windowIdentifier, fetchToolbar]);
 
   const clearCache = useCallback(() => {
     toolbarCache.delete(cacheKey);
