@@ -605,6 +605,56 @@ interface DynamicTableProps {
   areFiltersDisabled?: boolean;
 }
 
+const getExpandIcon = (canExpand: boolean, isExpanded: boolean) => {
+  if (!canExpand) return null;
+  return isExpanded ? (
+    <ChevronUp height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronUp__8ca888" />
+  ) : (
+    <ChevronDown height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronDown__8ca888" />
+  );
+};
+
+const getHierarchyIcon = (
+  shouldUseTreeMode: boolean,
+  eTMETAIcon: string | undefined,
+  hasChildren: boolean,
+  isExpanded: boolean
+) => {
+  if (!shouldUseTreeMode) return null;
+
+  if (eTMETAIcon) {
+    let svgContent = "";
+    try {
+      svgContent = atob(eTMETAIcon);
+      // Replace black fill with primary blue color to match design system
+      // Also handles specific case where fill is set to black or inherited
+      svgContent = svgContent.replace(/fill="black"/g, 'fill="#004ACA"');
+      // Add logic for paths that might not have fill attribute but rely on default black
+      svgContent = svgContent.replace(/<path(?![^>]*fill=)/g, '<path fill="#004ACA"');
+    } catch (e) {
+      console.error("Error parsing eTMETAIcon SVG", e);
+      svgContent = eTMETAIcon; // Fallback to original if decode fails
+    }
+    const encodedSvg = btoa(svgContent);
+
+    return (
+      <img
+        src={`data:image/svg+xml;base64,${encodedSvg}`}
+        alt=""
+        className="min-w-5 min-h-5 w-5 h-5 object-contain"
+        data-testid="eTMETAIcon__8ca888"
+      />
+    );
+  }
+
+  if (hasChildren) {
+    const Icon = isExpanded ? MinusFolderIcon : PlusFolderFilledIcon;
+    return <Icon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />;
+  }
+
+  return <CircleFilledIcon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />;
+};
+
 const DynamicTable = ({
   setRecordId,
   onRecordSelection,
@@ -2034,24 +2084,11 @@ const DynamicTable = ({
       const canExpand = shouldUseTreeMode && hasChildren;
       const isExpanded = row.getIsExpanded();
       const isSelected = row.getIsSelected();
+      const eTMETAIcon = row.original.eTMETAIcon as string | undefined;
+      const isSummary = row.original.summaryLevel === true;
 
-      let expandIcon: React.ReactNode = null;
-      if (canExpand) {
-        expandIcon = isExpanded ? (
-          <ChevronUp height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronUp__8ca888" />
-        ) : (
-          <ChevronDown height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronDown__8ca888" />
-        );
-      }
-
-      let HierarchyIcon = null;
-      if (shouldUseTreeMode) {
-        if (hasChildren) {
-          HierarchyIcon = isExpanded ? MinusFolderIcon : PlusFolderFilledIcon;
-        } else {
-          HierarchyIcon = CircleFilledIcon;
-        }
-      }
+      const expandIcon = getExpandIcon(canExpand, isExpanded);
+      const HierarchyIcon = getHierarchyIcon(shouldUseTreeMode, eTMETAIcon, hasChildren, isExpanded);
 
       if (shouldUseTreeMode) {
         return (
@@ -2088,10 +2125,8 @@ const DynamicTable = ({
                 />
               )}
             </div>
-            {HierarchyIcon && (
-              <HierarchyIcon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />
-            )}
-            <span className="flex-1">
+            {HierarchyIcon}
+            <span className={`flex-1 ${isSummary ? "font-bold" : ""}`}>
               {originalCell && typeof originalCell === "function"
                 ? originalCell({ renderedCellValue, row, table })
                 : renderedCellValue}
@@ -2101,7 +2136,7 @@ const DynamicTable = ({
       }
 
       return (
-        <span className="flex-1">
+        <span className={`flex-1 ${isSummary ? "font-bold" : ""}`}>
           {originalCell && typeof originalCell === "function"
             ? originalCell({ renderedCellValue, row, table })
             : renderedCellValue}
@@ -2267,24 +2302,44 @@ const DynamicTable = ({
     // Insert actions column at the very beginning
     modifiedColumns.unshift(actionsColumn);
 
-    // Now apply tree rendering to the SECOND column (first data column, after actions)
-    // This is index 1 after inserting actions at index 0
-    const firstDataColumnIndex = 1;
-    const firstDataColumn = { ...modifiedColumns[firstDataColumnIndex] };
+    // Apply tree rendering to the first DISPLAYED data column
+    // We search for the first column after the actions column (index 0) that is displayed
+    const firstDisplayedDataColumnIndex = modifiedColumns.findIndex((col, index) => {
+      if (index <= 0) return false;
 
-    if (shouldUseTreeMode) {
-      firstDataColumn.size = 300;
-      firstDataColumn.minSize = 250;
-      firstDataColumn.maxSize = 500;
+      // Check column definition visibility
+      if (col.displayed === false) return false;
+
+      // Check current visibility state (if defined)
+      // Check both id and name as they might be used as keys
+      const id = col.id;
+      const name = col.name;
+
+      if (tableColumnVisibility) {
+        if (name && tableColumnVisibility[name] === false) return false;
+        if (id && tableColumnVisibility[id] === false) return false;
+      }
+
+      return true;
+    });
+
+    if (firstDisplayedDataColumnIndex !== -1) {
+      const firstDataColumn = { ...modifiedColumns[firstDisplayedDataColumnIndex] };
+
+      if (shouldUseTreeMode) {
+        firstDataColumn.size = 300;
+        firstDataColumn.minSize = 250;
+        firstDataColumn.maxSize = 500;
+      }
+
+      // Store tree mode flag on the column for the stable renderer to access
+      (firstDataColumn as Column & { _shouldUseTreeMode: boolean })._shouldUseTreeMode = shouldUseTreeMode;
+
+      modifiedColumns[firstDisplayedDataColumnIndex] = firstDataColumn;
     }
 
-    // Store tree mode flag on the column for the stable renderer to access
-    (firstDataColumn as Column & { _shouldUseTreeMode: boolean })._shouldUseTreeMode = shouldUseTreeMode;
-
-    modifiedColumns[firstDataColumnIndex] = firstDataColumn;
-
     return modifiedColumns;
-  }, [baseColumns, shouldUseTreeMode, renderActionsColumnCell, renderDataColumnCell]);
+  }, [baseColumns, shouldUseTreeMode, renderActionsColumnCell, renderDataColumnCell, tableColumnVisibility]);
 
   // Helper function to check if a row is being edited
 
@@ -2735,6 +2790,7 @@ const DynamicTable = ({
     enableColumnResizing: true,
     enableColumnActions: true,
     manualFiltering: true,
+    manualSorting: true,
     enableColumnOrdering: true,
     enableColumnPinning: true,
     renderEmptyRowsFallback,

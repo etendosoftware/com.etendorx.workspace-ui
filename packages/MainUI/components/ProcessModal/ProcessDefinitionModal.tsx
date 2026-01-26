@@ -57,6 +57,7 @@ import Loading from "../loading";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
+import ProcessResultModal from "./ProcessResultModal";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
@@ -171,8 +172,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const { onProcess, onLoad } = processDefinition;
   const processId = processDefinition.id;
   const javaClassName = processDefinition.javaClassName;
-
-  console.debug("ProcessDefinitionModalContent", processDefinition);
 
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
@@ -729,11 +728,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     const mappedValues: Record<string, any> = {};
     const paramMap = new Map<string, string>();
 
-    Object.values(parameters).forEach((p: any) => {
+    for (const p of Object.values(parameters)) {
       if (p.name && p.dBColumnName) {
         paramMap.set(p.name, p.dBColumnName);
       }
-    });
+    }
 
     for (const [key, value] of Object.entries(rawValues)) {
       const mappedKey = paramMap.get(key) || key;
@@ -1524,58 +1523,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       msgText = result.error || result.data?.msgText || result.data?.message || t("errors.internalServerError.title");
     }
 
-    // Check if this is HTML content
-    const isHtmlContent = (result as any).isHtml === true;
-
-    // For HTML content, render it directly without text transformations
-    if (isHtmlContent && isSuccessMessage) {
-      return (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="rounded-2xl p-8 shadow-xl w-auto max-w-[95vw] mx-4 max-h-[90vh] overflow-auto">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md">
-                <CheckIcon className="w-10 h-10 fill-green-600" data-testid="SuccessCheckIcon__761503" />
-              </div>
-              <h4 className="font-bold text-xl text-center text-green-800">{msgTitle}</h4>
-              <div
-                className="w-full text-sm"
-                dangerouslySetInnerHTML={{ __html: msgText }}
-                data-testid="HtmlResponseContent__761503"
-              />
-            </div>
-          </div>
-        </div>
-      );
-    }
-
     const displayText = msgText.replace(/<br\s*\/?>/gi, "\n");
 
-    // Success message styled like the reference image
+    // Success messages are handled by ProcessResultModal overlay
     if (isSuccessMessage) {
-      return (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div
-            className="rounded-2xl p-8 shadow-xl max-w-sm w-full mx-4"
-            style={{ background: "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)" }}>
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md">
-                <CheckIcon className="w-10 h-10 fill-green-600" data-testid="SuccessCheckIcon__761503" />
-              </div>
-              <h4 className="font-bold text-xl text-center text-green-800">{msgTitle}</h4>
-              {displayText && displayText !== msgTitle && (
-                <p className="text-sm text-center text-gray-700 whitespace-pre-line">{displayText}</p>
-              )}
-            </div>
-          </div>
-        </div>
-      );
+      return null;
     }
 
     // Error message - keep the simple style
     return (
       <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-etendo-main)">
         <h4 className="font-bold text-sm">{msgTitle}</h4>
-        <p className="text-sm whitespace-pre-line">{displayText}</p>
+        <p className="text-sm border-(--color-active-40) rounded whitespace-pre-line p-2">{displayText}</p>
       </div>
     );
   };
@@ -1802,68 +1761,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         </Modal>
       )}
       {/* Success Modal - Separate overlay */}
-      {open && result?.success && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60] p-4">
-          <div
-            className={`rounded-2xl p-6 shadow-xl relative max-h-[90vh] overflow-auto ${
-              (result as any).isHtml ? "w-auto max-w-[95vw]" : "w-full max-w-sm"
-            }`}
-            style={{ background: "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)" }}>
-            <button
-              type="button"
-              onClick={handleSuccessClose}
-              className="absolute top-4 right-4 p-1 rounded-full hover:bg-white/50 transition-colors"
-              aria-label="Close">
-              <CloseIcon className="w-5 h-5" data-testid="SuccessCloseIcon__761503" />
-            </button>
-            <div className="flex flex-col items-center gap-4">
-              <div className="flex items-center justify-center">
-                <CheckIcon className="w-6 h-6 fill-(--color-success-main)" data-testid="SuccessCheckIcon__761503" />
-              </div>
-              <div>
-                <h4 className="font-medium text-xl text-center text-(--color-success-main)">
-                  {t("process.completedSuccessfully")}
-                </h4>
-                {(() => {
-                  const msg =
-                    typeof result?.data === "string"
-                      ? result.data
-                      : result?.data?.msgText || result?.data?.message || result?.error;
-
-                  if (!msg || msg === t("process.completedSuccessfully")) return null;
-
-                  // Check if this is HTML content
-                  const isHtmlContent = (result as any).isHtml === true;
-
-                  if (isHtmlContent) {
-                    return (
-                      <div
-                        className="w-full text-sm mt-4"
-                        dangerouslySetInnerHTML={{ __html: String(msg) }}
-                        data-testid="HtmlSuccessContent__761503"
-                      />
-                    );
-                  }
-
-                  return (
-                    <p className="text-sm text-center text-(--color-transparent-neutral-80) whitespace-pre-line">
-                      {String(msg).replace(/<br\s*\/?>/gi, "\n")}
-                    </p>
-                  );
-                })()}
-              </div>
-              <Button
-                variant="filled"
-                size="large"
-                onClick={handleSuccessClose}
-                className="w-49"
-                data-testid="SuccessCloseButton__761503">
-                {t("common.close")}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ProcessResultModal
+        open={Boolean(open && result?.success)}
+        success={true}
+        isHtml={(result as any)?.isHtml}
+        message={
+          typeof result?.data === "string"
+            ? result.data
+            : result?.data?.msgText || result?.data?.message || result?.error || undefined
+        }
+        onClose={handleSuccessClose}
+        data-testid="ProcessResultModal__761503"
+      />
     </>
   );
 }
