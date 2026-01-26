@@ -22,6 +22,11 @@ import type { TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
 export type ButtonType = keyof typeof TOOLBAR_BUTTONS_TYPES;
 export type ButtonSection = "left" | "center" | "right";
 
+export interface ToolbarWindow {
+  id: string;
+  name: string;
+}
+
 export interface ToolbarButtonMetadata {
   id: string;
   action: string;
@@ -39,6 +44,7 @@ export interface ToolbarButtonMetadata {
   };
   // TODO: check the implementation of active state
   active?: boolean;
+  windows: ToolbarWindow[];
 }
 
 export interface OrganizedSections {
