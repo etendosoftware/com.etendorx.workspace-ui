@@ -15,9 +15,19 @@
  *************************************************************************
  */
 
+import type { Tab } from "@workspaceui/api-client/src/api/types";
+
 export const CUSTOM_SELECTORS_IDENTIFIERS = {
   LOCATION: "Location",
 };
+
+/**
+ * Placeholder value used for password fields when editing existing records.
+ * The backend sends this value instead of the actual password for security.
+ * When saving, if a password field still contains this placeholder value,
+ * it should be excluded from the payload to avoid overwriting the real password.
+ */
+export const PASSWORD_PLACEHOLDER = "***";
 
 /**
  * Field reference codes used in form field type identification
@@ -95,3 +105,46 @@ export const DATASOURCE_REFERENCE_CODES = {
   // Fallback selector
   FALLBACK_SELECTOR_ID: "EB3C41F0973A4EDA91E475833792A6D4",
 } as const;
+
+/**
+ * Gets a set of password field names from tab metadata.
+ * Password fields are identified by their column reference code.
+ * @param tab The tab metadata containing field definitions
+ * @returns Set of field names (hqlName) that are password type fields
+ */
+export const getPasswordFieldNames = (tab?: Tab): Set<string> => {
+  const passwordFields = new Set<string>();
+  if (!tab?.fields) return passwordFields;
+
+  for (const field of Object.values(tab.fields)) {
+    if (field.column?.reference === FIELD_REFERENCE_CODES.PASSWORD && field.hqlName) {
+      passwordFields.add(field.hqlName);
+    }
+  }
+
+  return passwordFields;
+};
+
+/**
+ * Checks if a password field should be excluded from the save payload.
+ * A password field should be excluded if:
+ * - It's identified as a password type field by its reference code
+ * - Its value is the placeholder ("***")
+ * - We're in EDIT mode (not creating a new record)
+ *
+ * @param fieldName The name of the field to check
+ * @param value The current value of the field
+ * @param passwordFields Set of password field names from tab metadata
+ * @param isNewRecord Whether we're creating a new record
+ * @returns True if the field should be excluded from the payload
+ */
+export const shouldExcludePasswordField = (
+  fieldName: string,
+  value: unknown,
+  passwordFields: Set<string>,
+  isNewRecord: boolean
+): boolean => {
+  if (isNewRecord) return false;
+  if (!passwordFields.has(fieldName)) return false;
+  return value === PASSWORD_PLACEHOLDER;
+};
