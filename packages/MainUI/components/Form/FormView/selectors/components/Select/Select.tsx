@@ -245,8 +245,12 @@ function SelectCmp({
   );
 
   const renderedOptions = useMemo(() => {
+    if (loading && filteredOptions.length === 0) {
+      return <li className="px-4 py-3 text-sm text-baseline-60">Loading...</li>;
+    }
+
     if (filteredOptions.length > 0) {
-      return filteredOptions.map(({ id, label }, index) => (
+      const optionsList = filteredOptions.map(({ id, label }, index) => (
         <OptionItem
           key={id}
           id={id}
@@ -259,9 +263,19 @@ function SelectCmp({
           data-testid="OptionItem__ff38f9"
         />
       ));
+
+      if (loading) {
+        optionsList.push(
+          <li key="loading-indicator" className="px-4 py-3 text-sm text-baseline-60">
+            Loading...
+          </li>
+        );
+      }
+
+      return optionsList;
     }
     return <li className="px-4 py-3 text-sm text-baseline-60">No options found</li>;
-  }, [filteredOptions, highlightedIndex, selectedValue, handleOptionClick, handleOptionMouseEnter]);
+  }, [filteredOptions, highlightedIndex, selectedValue, handleOptionClick, handleOptionMouseEnter, loading]);
 
   const shouldShowClearButton = selectedLabel && (isHovering || isOpen) && !isReadOnly;
 

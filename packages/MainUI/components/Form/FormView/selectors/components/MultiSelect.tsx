@@ -20,6 +20,7 @@ import {
   useInfiniteScroll,
   useKeyboardNavigation,
   useClickOutside,
+  useOpenDropdownEffect,
   type Option,
 } from "@/utils/selectorUtils";
 import { Checkbox, styled } from "@mui/material";
@@ -30,6 +31,7 @@ import ChevronDown from "../../../../../../ComponentLibrary/src/assets/icons/che
 import closeIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/x.svg?url";
 import { useTranslation } from "@/hooks/useTranslation";
 import { DropdownPortal } from "./DropdownPortal";
+import SearchInput from "./Select/SearchInput";
 import { useDebouncedCallback } from "../../../../Table/utils/performanceOptimizations";
 
 const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
@@ -119,6 +121,7 @@ const MultiSelect = memo(function MultiSelectCmp({
 }: MultiSelectProps) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
+  const [isDebouncing, setIsDebouncing] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isFetchingInitial, setIsFetchingInitial] = useState(false);
@@ -131,6 +134,7 @@ const MultiSelect = memo(function MultiSelectCmp({
   const handleOnSearch = useCallback(
     (term: string) => {
       onSearch?.(term);
+      setIsDebouncing(false);
     },
     [onSearch]
   );
@@ -217,17 +221,6 @@ const MultiSelect = memo(function MultiSelectCmp({
     });
   }, [onFocus, isReadOnly]);
 
-  const handleInputClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (isReadOnly) return;
-      e.stopPropagation();
-      setIsOpen(true);
-      setIsFetchingInitial(true);
-      onFocus?.();
-    },
-    [onFocus, isReadOnly]
-  );
-
   const handleKeyDown = useKeyboardNavigation(
     filteredOptions,
     highlightedIndex,
@@ -250,14 +243,12 @@ const MultiSelect = memo(function MultiSelectCmp({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const term = e.target.value;
       setSearchTerm(term);
-      debouncedSearch(term);
-      if (!isOpen) {
-        setIsOpen(true);
-        setIsFetchingInitial(true);
-        onFocus?.();
+      if (onSearch) {
+        setIsDebouncing(true);
       }
+      debouncedSearch(term);
     },
-    [debouncedSearch, isOpen, onFocus]
+    [debouncedSearch, onSearch]
   );
 
   const handleScroll = useInfiniteScroll(listRef as React.RefObject<HTMLUListElement>, loading, hasMore, onLoadMore);
@@ -269,7 +260,35 @@ const MultiSelect = memo(function MultiSelectCmp({
     }
   }, [options, loading, isFetchingInitial]);
 
+  useOpenDropdownEffect(
+    isOpen,
+    setSearchTerm,
+    setHighlightedIndex,
+    searchInputRef as React.RefObject<HTMLInputElement>
+  );
+
+  const handleSearchBlur = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      const relatedTarget = e.relatedTarget as Element | null;
+      if (wrapperRef.current?.contains(relatedTarget)) {
+        return;
+      }
+      setTimeout(() => {
+        const activeElement = document.activeElement;
+        // Ideally we would check dropdown ID like Select.tsx but useClickOutside handles most cases.
+        // We add this for Tab navigation out of the input.
+        const isInPortal = portalRef.current?.contains(activeElement);
+        const isInWrapper = wrapperRef.current?.contains(activeElement);
+        if (!isInPortal && !isInWrapper) {
+          setIsOpen(false);
+        }
+      }, 150);
+    },
+    [portalRef]
+  );
+
   const showSkeleton = isFetchingInitial && loading;
+  const showLoading = loading || isDebouncing;
 
   const SKELETON_IDS = ["skeleton-item-1", "skeleton-item-2", "skeleton-item-3"];
 
@@ -300,12 +319,21 @@ const MultiSelect = memo(function MultiSelectCmp({
       ));
     }
 
-    if (!loading) {
+    if (!showLoading) {
       return <li className={`${LIST_ITEM_BASE} ${TEXT_MUTED}`}>{t("multiselect.noOptionsFound")}</li>;
     }
 
     return null;
-  }, [filteredOptions, highlightedIndex, selectedValues, handleSingleSelect, handleToggle, showSkeleton, loading, t]);
+  }, [
+    filteredOptions,
+    highlightedIndex,
+    selectedValues,
+    handleSingleSelect,
+    handleToggle,
+    showSkeleton,
+    showLoading,
+    t,
+  ]);
 
   const inputPlaceholder = !isReadOnly || selectedLabels.length > 0 ? displayText : "";
 
@@ -316,23 +344,17 @@ const MultiSelect = memo(function MultiSelectCmp({
       tabIndex={-1}>
       <div
         onClick={handleClick}
-        className={`w-full flex items-center justify-between py-2 h-10 border-b ${isReadOnly ? "border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) cursor-not-allowed" : "border-baseline-10 hover:border-baseline-100 cursor-pointer hover:border-baseline-60"} ${FOCUS_STYLES} 
-          ${isOpen && !isReadOnly ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : ""} 
-          text-baseline-20 ${BASE_TRANSITION}`}>
-        <input
-          ref={searchInputRef}
-          value={searchTerm}
-          onChange={handleSetSearchTerm}
-          onKeyDown={handleKeyDown}
-          onClick={handleInputClick}
-          placeholder={inputPlaceholder}
-          readOnly={isReadOnly}
-          className={`w-full bg-transparent outline-none text-sm truncate max-w-[calc(100%-40px)] ${
-            selectedLabels.length && !searchTerm
+        className={`w-full flex items-center justify-between py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 ${FOCUS_STYLES} 
+          ${isOpen ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : ""} 
+          text-baseline-20 cursor-pointer hover:border-baseline-60 ${BASE_TRANSITION}`}>
+        <div
+          className={`w-full text-sm truncate max-w-[calc(100%-40px)] ${
+            selectedLabels.length
               ? "text-baseline-90 font-medium placeholder-baseline-90"
-              : "text-baseline-90 placeholder-baseline-50"
-          }`}
-        />
+              : "text-baseline-50 font-medium placeholder-baseline-50"
+          }`}>
+          {displayText}
+        </div>
         <div className="flex items-center flex-shrink-0 ml-2">
           {selectedLabels.length > 0 && !isReadOnly && (
             <button type="button" onClick={handleClear} className={`mr-1 ${TEXT_MUTED} ${HOVER_TEXT_COLOR} rounded`}>
@@ -348,25 +370,32 @@ const MultiSelect = memo(function MultiSelectCmp({
           )}
         </div>
       </div>
-      {!isReadOnly && (
-        <DropdownPortal
-          isOpen={isOpen}
-          triggerRef={wrapperRef as React.RefObject<HTMLElement>}
-          portalRef={portalRef as React.RefObject<HTMLDivElement>}
-          minWidth={256}
-          data-testid="DropdownPortal__cb81f7">
-          <ul
-            ref={listRef}
-            className="overflow-y-auto focus:outline-none mt-1"
-            style={{ maxHeight: `${maxHeight}px` }}
-            onScroll={handleScroll}>
-            {renderedOptions}
-            {loading && hasMore && !showSkeleton && (
-              <li className={`${LIST_ITEM_BASE} ${TEXT_MUTED} text-center`}>{t("multiselect.loadingOptions")}</li>
-            )}
-          </ul>
-        </DropdownPortal>
-      )}
+      <DropdownPortal
+        isOpen={isOpen}
+        triggerRef={wrapperRef as React.RefObject<HTMLElement>}
+        portalRef={portalRef as React.RefObject<HTMLDivElement>}
+        minWidth={256}
+        data-testid="DropdownPortal__cb81f7">
+        <SearchInput
+          searchTerm={searchTerm}
+          searchInputRef={searchInputRef as React.RefObject<HTMLInputElement>}
+          handleSetSearchTerm={handleSetSearchTerm}
+          handleKeyDown={handleKeyDown}
+          handleSearchBlur={handleSearchBlur}
+          handleFocus={() => {}}
+          data-testid="SearchInput__cb81f7"
+        />
+        <ul
+          ref={listRef}
+          className="overflow-y-auto focus:outline-none mt-1"
+          style={{ maxHeight: `${maxHeight}px` }}
+          onScroll={handleScroll}>
+          {renderedOptions}
+          {showLoading && !showSkeleton && (
+            <li className={`${LIST_ITEM_BASE} ${TEXT_MUTED} text-center`}>{t("multiselect.loadingOptions")}</li>
+          )}
+        </ul>
+      </DropdownPortal>
     </div>
   );
 });
