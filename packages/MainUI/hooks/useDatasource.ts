@@ -215,7 +215,7 @@ export function useDatasource({
     const valid = cachedData.cacheKey === cacheKey;
     console.log(`[useDatasource] Cache validation for ${entity}: ${valid}`, {
       cachedKey: cachedData.cacheKey,
-      currentKey: cacheKey
+      currentKey: cacheKey,
     });
     return valid;
   }, [cachedData, cacheKey, entity]);
@@ -299,7 +299,7 @@ export function useDatasource({
       isCacheValid,
       initialCacheKey: initialCacheKeyRef.current,
       currentCacheKey: cacheKey,
-      skip
+      skip,
     });
 
     // Skip fetch if cache is valid and this is the initial load

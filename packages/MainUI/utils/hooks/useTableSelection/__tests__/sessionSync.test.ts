@@ -106,7 +106,7 @@ describe("syncSelectedRecordsToSession", () => {
 
   it("should send request when selection changes", async () => {
     const windowId = "window-test-cache-2";
-    
+
     // First call
     await syncSelectedRecordsToSession({
       tab: mockTab,
@@ -133,7 +133,7 @@ describe("syncSelectedRecordsToSession", () => {
 
   it("should send request when windowIdentifier changes", async () => {
     const selectedRecords = [{ id: "record5" }] as EntityData[];
-    
+
     // First call with window A
     await syncSelectedRecordsToSession({
       tab: mockTab,

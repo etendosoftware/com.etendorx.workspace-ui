@@ -52,9 +52,7 @@ describe("useCurrentRecord", () => {
       },
     });
 
-    const { result } = renderHook(() =>
-      useCurrentRecord({ tab: mockTab, recordId: recordId })
-    );
+    const { result } = renderHook(() => useCurrentRecord({ tab: mockTab, recordId: recordId }));
 
     // Initially loading
     expect(result.current.loading).toBe(true);
@@ -83,9 +81,7 @@ describe("useCurrentRecord", () => {
     });
 
     // First render to populate cache
-    const { unmount } = renderHook(() =>
-      useCurrentRecord({ tab: mockTab, recordId: recordId })
-    );
+    const { unmount } = renderHook(() => useCurrentRecord({ tab: mockTab, recordId: recordId }));
 
     await waitFor(() => {
       expect(datasource.get).toHaveBeenCalledTimes(1);
@@ -94,14 +90,12 @@ describe("useCurrentRecord", () => {
     unmount();
 
     // Second render with same params
-    const { result } = renderHook(() =>
-      useCurrentRecord({ tab: mockTab, recordId: recordId })
-    );
+    const { result } = renderHook(() => useCurrentRecord({ tab: mockTab, recordId: recordId }));
 
     // Should not be loading and should have data immediately
     expect(result.current.loading).toBe(false);
     expect(result.current.record).toEqual(recordData);
-    
+
     // Should not have called datasource again (still 1 from first call)
     expect(datasource.get).toHaveBeenCalledTimes(1);
   });
@@ -113,25 +107,24 @@ describe("useCurrentRecord", () => {
     const recordData2 = { id: recordId2, name: "Test Record 3b" };
 
     (datasource.get as jest.Mock).mockImplementation((entity, params) => {
-        const id = params.criteria[0].value;
-        if (id === recordId1) {
-            return Promise.resolve({
-                data: { response: { data: [recordData1], totalResults: 1 }, status: 200 }
-            });
-        }
-        if (id === recordId2) {
-            return Promise.resolve({
-                data: { response: { data: [recordData2], totalResults: 1 }, status: 200 }
-            });
-        }
-        return Promise.resolve({ data: { response: { data: [], totalResults: 0 }, status: 200 } });
+      const id = params.criteria[0].value;
+      if (id === recordId1) {
+        return Promise.resolve({
+          data: { response: { data: [recordData1], totalResults: 1 }, status: 200 },
+        });
+      }
+      if (id === recordId2) {
+        return Promise.resolve({
+          data: { response: { data: [recordData2], totalResults: 1 }, status: 200 },
+        });
+      }
+      return Promise.resolve({ data: { response: { data: [], totalResults: 0 }, status: 200 } });
     });
 
     // First fetch
-    const { result, rerender } = renderHook(
-      ({ id }) => useCurrentRecord({ tab: mockTab, recordId: id }),
-      { initialProps: { id: recordId1 } }
-    );
+    const { result, rerender } = renderHook(({ id }) => useCurrentRecord({ tab: mockTab, recordId: id }), {
+      initialProps: { id: recordId1 },
+    });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -142,11 +135,11 @@ describe("useCurrentRecord", () => {
     rerender({ id: recordId2 });
 
     await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-        expect(result.current.record).toEqual(recordData2);
+      expect(result.current.loading).toBe(false);
+      expect(result.current.record).toEqual(recordData2);
     });
 
     // Should be called twice in total
-    expect(datasource.get).toHaveBeenCalledTimes(2); 
+    expect(datasource.get).toHaveBeenCalledTimes(2);
   });
 });

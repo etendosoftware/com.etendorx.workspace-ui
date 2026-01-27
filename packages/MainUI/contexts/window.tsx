@@ -167,7 +167,6 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   // Getters
   const getTableState = useCallback(
     (windowIdentifier: string, tabId: string): TableState => {
-
       if (!state[windowIdentifier] || !state[windowIdentifier].tabs[tabId]) {
         return defaultTableState;
       }
@@ -179,7 +178,6 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
   const getNavigationState = useCallback(
     (windowIdentifier: string): NavigationState => {
-
       if (!state[windowIdentifier]) {
         return defaultNavigationState;
       }
