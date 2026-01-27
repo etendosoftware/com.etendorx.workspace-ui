@@ -91,23 +91,17 @@ const Navigation: React.FC = () => {
 
   const handleCopilotOpen = useCallback(() => {
     setCopilotOpen(true);
-
-    if (!hasAssistants) {
-      getAssistants();
-    }
-  }, [hasAssistants, getAssistants]);
+    getAssistants();
+  }, [getAssistants]);
 
   const handleCopilotOpenWithContext = useCallback(
     (contextString: string, contextItems: ContextItem[]) => {
       setPendingContextString(contextString);
       setPendingContextItems(contextItems);
       setCopilotOpen(true);
-
-      if (!hasAssistants) {
-        getAssistants();
-      }
+      getAssistants();
     },
-    [hasAssistants, getAssistants]
+    [getAssistants]
   );
 
   const handleCopilotClose = useCallback(() => {
