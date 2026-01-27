@@ -36,90 +36,66 @@ interface SmartContextOptions {
  *    based on provided field metadata.
  * 3. Fallback across multiple data sources (Values > ParentValues > Context).
  */
-export const createSmartContext = (options: SmartContextOptions) => {
-  const { values = {}, fields, parentValues, parentFields, context = {} } = options;
+export const createEvaluationContext = (options: SmartContextOptions) => {
+  const { values, fields, parentValues, parentFields, context = {} } = options;
 
-  // Create lookup maps for DB Column Name -> HQL Name
-  const colToHql = new Map<string, string>();
+  // Helper to normalize values (true -> 'Y', false -> 'N')
+  const normalize = (val: unknown) => {
+    if (typeof val === "boolean") return val ? "Y" : "N";
+    return val;
+  };
 
-  if (fields) {
-    Object.values(fields).forEach((f) => {
-      if (f.column?.dBColumnName) {
-        // Map UPPERCASE column name to hqlName
-        colToHql.set(f.column.dBColumnName.toUpperCase(), f.hqlName);
+  // 1. Base Context: Start with session/global context
+  const evalContext: Record<string, any> = { ...context };
+
+  // 2. Merge & Normalize Values (Current & Parent)
+  // We prioritize 'values' (current record) over 'parentValues'
+  const allValues = { ...parentValues, ...values };
+
+  Object.entries(allValues).forEach(([key, val]) => {
+    const normalizedVal = normalize(val);
+    evalContext[key] = normalizedVal; // Original key (e.g. allowGroupAccess)
+
+    // 4. Fallback: Auto-generate Snake Case for standard camelCase
+    // e.g. allowGroupAccess -> ALLOW_GROUP_ACCESS
+    // This helps when metadata is missing
+    if (typeof key === "string") {
+      // Convert camelCase to SNAKE_CASE for fallback compatibility
+      // e.g. allowGroupAccess -> ALLOW_GROUP_ACCESS
+      // Only do this if the key doesn't contain special chars used in other contexts
+      if (!key.startsWith("$") && !key.startsWith("#")) {
+        const snakeKey = key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
+        if (!(snakeKey in evalContext)) {
+          evalContext[snakeKey] = normalizedVal;
+        }
       }
-    });
-  }
-
-  const parentColToHql = new Map<string, string>();
-  if (parentFields) {
-    Object.values(parentFields).forEach((f) => {
-      if (f.column?.dBColumnName) {
-        parentColToHql.set(f.column.dBColumnName.toUpperCase(), f.hqlName);
-      }
-    });
-  }
-
-  // Combine data for direct access (highest priority first)
-  // We use this base object for 'in' operator checks and direct access
-  const baseData = { ...context, ...parentValues, ...values };
-
-  return new Proxy(baseData, {
-    get: (target, prop: string | symbol) => {
-      if (typeof prop !== "string") return Reflect.get(target, prop);
-
-      // 1. Direct match
-      if (prop in target) return target[prop];
-
-      const upperProp = prop.toUpperCase();
-
-      // 2. Check DB Column Mapping (Current Record)
-      if (colToHql.has(upperProp)) {
-        const hqlName = colToHql.get(upperProp)!;
-        // Check in values first, then record/parent?
-        // Usually local fields are in 'values' relative to the record
-        if (values && hqlName in values) return values[hqlName];
-        
-        // Sometimes the value might be in the combined target directly?
-        if (hqlName in target) return target[hqlName];
-      }
-
-      // 3. Check DB Column Mapping (Parent Record)
-      if (parentColToHql.has(upperProp)) {
-        const hqlName = parentColToHql.get(upperProp)!;
-        if (parentValues && hqlName in parentValues) return parentValues[hqlName];
-      }
-
-      // 4. Case-insensitive key match
-      // Helper to find key in object case-insensitively
-      const findIn = (obj: Record<string, unknown> | undefined) => {
-        if (!obj) return undefined;
-        const key = Object.keys(obj).find((k) => k.toUpperCase() === upperProp);
-        return key ? obj[key] : undefined;
-      };
-
-      let val = findIn(values);
-      if (val !== undefined) return val;
-
-      val = findIn(parentValues);
-      if (val !== undefined) return val;
-
-      val = findIn(context);
-      if (val !== undefined) return val;
-
-      return undefined;
-    },
-    
-    // Implement 'has' to support 'prop in proxy' checks if needed
-    has: (target, prop) => {
-       if (typeof prop !== "string") return Reflect.has(target, prop);
-       if (Reflect.has(target, prop)) return true;
-       const upperProp = prop.toUpperCase();
-       if (colToHql.has(upperProp)) return true;
-       if (parentColToHql.has(upperProp)) return true;
-       // We don't exhaustively check case-insensitive existence for performance
-       // unless absolutely necessary.
-       return false;
     }
   });
+
+  // 3. Apply Metadata Mapping (if available)
+  // Map DB Column Names (e.g. ALLOW_GROUP_ACCESS) to values
+  const mapFields = (schemaFields?: Record<string, Field>, sourceValues?: Record<string, unknown>) => {
+    if (!schemaFields || !sourceValues) return;
+
+    Object.values(schemaFields).forEach((field) => {
+      // Use dBColumnName if available (correct property according to typings)
+      const dbCol = field.column?.dBColumnName || field.columnName;
+      if (dbCol && field.hqlName) {
+        const val = sourceValues[field.hqlName];
+        if (val !== undefined) {
+          // Add the column name pointing to the normalized value
+          const normalized = normalize(val);
+          evalContext[dbCol] = normalized;
+          evalContext[dbCol.toUpperCase()] = normalized;
+        }
+      }
+    });
+  };
+
+  mapFields(parentFields, parentValues);
+  mapFields(fields, values);
+
+  return evalContext;
 };
+
+export const createSmartContext = createEvaluationContext;

@@ -97,7 +97,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         parentFields: parentTab?.fields,
         context: session,
       });
-      return compiledExpr(session, smartContext);
+      return compiledExpr(smartContext, smartContext);
     } catch (error) {
       logger.warn("Error executing expression:", compiledExpr, error);
       return true;

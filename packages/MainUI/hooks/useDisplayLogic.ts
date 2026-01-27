@@ -41,7 +41,7 @@ export default function useDisplayLogic({ field, values }: UseDisplayLogicProps)
         context: session,
       });
 
-      const result = compiledExpr(session, smartContext);
+      const result = compiledExpr(smartContext, smartContext);
 
       return result;
     } catch (error) {

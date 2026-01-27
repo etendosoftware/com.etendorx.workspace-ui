@@ -80,12 +80,19 @@ const TabsGroupRenderer = ({
   // Verify Parent Visibility against Grandparent Record
   const grandParentRecord = useSelectedRecord(grandParentTab || undefined);
 
+  console.log(
+    "[TabsGroupRenderer] Rendering group:",
+    tabs.map((t) => t.name),
+    "ActiveParent:",
+    activeParentTab?.name
+  );
+
   const isParentVisible = useMemo(() => {
+    console.log("[TabsGroupRenderer] Checking parent visibility:", activeParentTab?.name);
     if (!activeParentTab) return true;
     const expression = activeParentTab.displayLogicExpression || activeParentTab.displayLogic;
     if (!expression) return true;
 
-    // Use Proxy for Case-Insensitive Context (Same robust logic)
     // Use createSmartContext for robust evaluation
     const context = createSmartContext({
       values: grandParentRecord || undefined,
@@ -96,11 +103,11 @@ const TabsGroupRenderer = ({
     try {
       const compiledExpr = compileExpression(expression);
       // We assume global session variables are handled by session arg
-      return compiledExpr(session, context);
+      const result = compiledExpr(context, context);
+      // console.log("[TabsGroupRenderer] Parent visibility result:", result);
+      return result;
     } catch (error) {
-      // If critical error in parent check, default to visible to avoid blocking UI unnecessarily?
-      // Or hidden? Standard is 'false' on error in basic useDisplayLogic.
-      // We'll stick to true to be less disruptive unless sure.
+      console.error("[TabsGroupRenderer] Error checking parent visibility", error);
       return true;
     }
   }, [activeParentTab, grandParentRecord, grandParentTab, session]);
@@ -108,6 +115,7 @@ const TabsGroupRenderer = ({
   const filteredTabs = useMemo(() => {
     // 1. Cascade Check: If Parent is hidden, Children are hidden.
     if (!isParentVisible) {
+      console.log("[TabsGroupRenderer] Parent hidden, hiding all children");
       return [];
     }
 
@@ -115,7 +123,7 @@ const TabsGroupRenderer = ({
     // (Optional: if (!parentRecord?.id && currentLevel > 0) return []; )
 
     // 3. Filter current tabs
-    // Use createSmartContext for robust evaluation (Case-Insensitive + Column Mapping)
+    // Use createEvaluationContext for robust evaluation (Flat Object with Normalized Values)
     const context = createSmartContext({
       values: parentRecord || undefined,
       fields: activeParentTab?.fields,
@@ -131,7 +139,7 @@ const TabsGroupRenderer = ({
 
       try {
         const compiledExpr = compileExpression(expression);
-        const result = compiledExpr(session, context);
+        const result = compiledExpr(context, context);
         return result;
       } catch (error) {
         logger.error(`Error evaluating display logic for tab ${tab.name}:`, error);
@@ -141,6 +149,7 @@ const TabsGroupRenderer = ({
   }, [tabs, parentRecord, session, activeParentTab, isParentVisible]);
 
   if (filteredTabs.length === 0) {
+    console.log("[TabsGroupRenderer] No visible tabs in group");
     return null;
   }
 
