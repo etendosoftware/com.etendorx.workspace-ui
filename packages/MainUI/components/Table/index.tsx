@@ -3008,6 +3008,13 @@ const DynamicTable = ({
     }
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, graph]);
 
+  // Sync records to graph for cache optimization
+  useEffect(() => {
+    if (records) {
+      graph.setRecords(tab, records);
+    }
+  }, [records, graph, tab]);
+
   /** Restore selection from URL on mount */
   useEffect(() => {
     const windowId = activeWindow?.windowId;
