@@ -44,9 +44,9 @@ const SINGLE_RECORD_ONLY_PROCESSES = new Set([
 ]);
 
 export function useToolbar(windowIdentifier: string, tabId?: string) {
-  const cacheKey = `${windowIdentifier}-${tabId || "default"}`;
+  const cacheKey = "global_toolbar";
   const [toolbar, setToolbar] = useState<ToolbarButtonMetadata[] | null>(() => toolbarCache.get(cacheKey) || null);
-  const [loading, setLoading] = useState(!!windowIdentifier && !toolbarCache.has(cacheKey));
+  const [loading, setLoading] = useState(!toolbar && !!windowIdentifier);
   const [error, setError] = useState<Error | null>(null);
 
   const { session } = useUserContext();

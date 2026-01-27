@@ -212,8 +212,13 @@ export function useDatasource({
   // Check if cache is valid
   const isCacheValid = useMemo(() => {
     if (!cachedData || !cachedData.records.length) return false;
-    return cachedData.cacheKey === cacheKey;
-  }, [cachedData, cacheKey]);
+    const valid = cachedData.cacheKey === cacheKey;
+    console.log(`[useDatasource] Cache validation for ${entity}: ${valid}`, {
+      cachedKey: cachedData.cacheKey,
+      currentKey: cacheKey
+    });
+    return valid;
+  }, [cachedData, cacheKey, entity]);
 
   const fetchData = useCallback(
     async (targetPage: number = page) => {
@@ -290,8 +295,16 @@ export function useDatasource({
       return;
     }
 
+    console.log(`[useDatasource] Effect triggered for ${entity}`, {
+      isCacheValid,
+      initialCacheKey: initialCacheKeyRef.current,
+      currentCacheKey: cacheKey,
+      skip
+    });
+
     // Skip fetch if cache is valid and this is the initial load
     if (isCacheValid && initialCacheKeyRef.current === cacheKey) {
+      console.log(`[useDatasource] Skipping fetch for ${entity} (cache valid and initial load)`);
       setLoaded(true);
       return;
     }
@@ -302,6 +315,7 @@ export function useDatasource({
     setError(undefined);
     setLoading(true);
 
+    console.log(`[useDatasource] Calling fetchData for ${entity}`);
     fetchData();
   }, [
     entity,
@@ -321,8 +335,10 @@ export function useDatasource({
   const prevSearchRef = useRef(searchQuery);
 
   useEffect(() => {
-    // Skip reinit on initial mount when we have valid cache
-    const filtersChanged = prevFiltersRef.current !== activeColumnFilters;
+    // Track previous values to detect actual changes (not initial mount)
+    const prevFiltersStr = JSON.stringify(prevFiltersRef.current);
+    const currentFiltersStr = JSON.stringify(activeColumnFilters);
+    const filtersChanged = prevFiltersStr !== currentFiltersStr;
     const searchChanged = prevSearchRef.current !== searchQuery;
 
     // Update refs
@@ -331,6 +347,10 @@ export function useDatasource({
 
     // Only reinit if something actually changed (not on initial mount)
     if (filtersChanged || searchChanged) {
+      console.log(`[useDatasource] Reinit triggered for ${entity}`, {
+        filtersChanged,
+        searchChanged,
+      });
       reinit();
     }
   }, [activeColumnFilters, searchQuery, reinit]);

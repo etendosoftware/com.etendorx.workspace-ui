@@ -141,6 +141,20 @@ interface WindowContextI {
 // Context creation
 const WindowContext = createContext<WindowContextI | undefined>(undefined);
 
+const defaultTableState: TableState = {
+  filters: [],
+  visibility: {},
+  sorting: [],
+  order: [],
+  isImplicitFilterApplied: undefined,
+};
+
+const defaultNavigationState: NavigationState = {
+  activeLevels: [0],
+  activeTabsByLevel: new Map(),
+  initialized: false,
+};
+
 // Provider component
 export default function WindowProvider({ children }: React.PropsWithChildren) {
   const [state, setState] = useState<WindowContextState>({});
@@ -153,13 +167,6 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   // Getters
   const getTableState = useCallback(
     (windowIdentifier: string, tabId: string): TableState => {
-      const defaultTableState: TableState = {
-        filters: [],
-        visibility: {},
-        sorting: [],
-        order: [],
-        isImplicitFilterApplied: undefined,
-      };
 
       if (!state[windowIdentifier] || !state[windowIdentifier].tabs[tabId]) {
         return defaultTableState;
@@ -172,11 +179,6 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
   const getNavigationState = useCallback(
     (windowIdentifier: string): NavigationState => {
-      const defaultNavigationState: NavigationState = {
-        activeLevels: [0],
-        activeTabsByLevel: new Map(),
-        initialized: false,
-      };
 
       if (!state[windowIdentifier]) {
         return defaultNavigationState;
