@@ -3011,7 +3011,6 @@ const DynamicTable = ({
   // Sync records to graph for cache optimization
   useEffect(() => {
     if (!isEmptyArray(records)) {
-      console.log("Syncing records to graph");
       graph.setRecords(tab, records);
     }
   }, [records, graph, tab]);

@@ -42,19 +42,16 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
       const field = fieldsByColumnName?.[key];
       const newKey = field?.hqlName ?? key;
 
-      // Only set value if it's not empty - preserve record data for empty form init values
-      if (value !== undefined && value !== null && value !== "") {
-        acc[newKey] = value;
-      }
+      acc[newKey] = value;
 
-      // Always preserve entries for dropdown/select fields
       if (entries) {
         acc[`${newKey}$_entries`] = entries.map((e) => ({ id: e.id, label: e._identifier })) as unknown as EntityValue;
       }
 
-      // Only set identifier if explicitly provided
       if (identifier) {
         acc[`${newKey}$_identifier`] = identifier;
+      } else if (value !== null && value !== undefined && value !== "") {
+        acc[`${newKey}$_identifier`] = "";
       }
     }
 
