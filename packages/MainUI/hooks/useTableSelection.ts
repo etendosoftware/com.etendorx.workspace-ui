@@ -360,6 +360,7 @@ export default function useTableSelection(
         parentId: tab.parentTabId,
         setSession,
         setSessionSyncLoading,
+        windowIdentifier,
       });
     }
   }, [

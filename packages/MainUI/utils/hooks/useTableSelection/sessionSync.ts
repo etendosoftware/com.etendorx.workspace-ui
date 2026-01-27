@@ -27,12 +27,15 @@ import { buildPayloadByInputName } from "@/utils";
 
 const MULTIPLE_ROW_IDS_KEY = "MULTIPLE_ROW_IDS";
 
+const sessionSyncCache = new Map<string, string>();
+
 export interface SessionSyncOptions {
   tab: Tab;
   selectedRecords: EntityData[];
   parentId?: string;
   setSession: (updater: (prev: ISession) => ISession) => void;
   setSessionSyncLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  windowIdentifier: string;
 }
 
 export const syncSelectedRecordsToSession = async ({
@@ -41,12 +44,24 @@ export const syncSelectedRecordsToSession = async ({
   parentId,
   setSession,
   setSessionSyncLoading,
+  windowIdentifier,
 }: SessionSyncOptions): Promise<void> => {
   try {
-    setSessionSyncLoading(true);
     if (selectedRecords.length === 0) {
       return;
     }
+
+    // Create a unique key for the cache based on window, tab, and selected record IDs
+    const allSelectedIds = selectedRecords.map((record) => String(record.id)).sort();
+    const cacheKey = `${windowIdentifier}-${tab.id}`;
+    const cacheValue = allSelectedIds.join(",");
+
+    // Check if the selection is already cached
+    if (sessionSyncCache.get(cacheKey) === cacheValue) {
+      return;
+    }
+
+    setSessionSyncLoading(true);
 
     // Find entity key column (same logic as useFormInitialization)
     const entityKeyColumn = Object.values(tab.fields).find((field) => field?.column?.keyColumn);
@@ -69,7 +84,6 @@ export const syncSelectedRecordsToSession = async ({
     });
 
     // Build payload with all selected record IDs
-    const allSelectedIds = selectedRecords.map((record) => String(record.id));
     const payload = buildFormInitializationPayload(
       tab,
       SessionMode.SETSESSION,
@@ -93,6 +107,9 @@ export const syncSelectedRecordsToSession = async ({
       ...prev,
       ...sessionAttributes,
     }));
+
+    // Update the cache after successful sync
+    sessionSyncCache.set(cacheKey, cacheValue);
 
     logger.info(`Successfully synced ${selectedRecords.length} records to session`);
   } catch (error) {

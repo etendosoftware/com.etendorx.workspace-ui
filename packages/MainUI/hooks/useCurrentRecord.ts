@@ -42,15 +42,19 @@ interface UseCurrentRecordReturn {
   loading: boolean;
 }
 
+const EMPTY_RECORD: Record<string, Field> = {};
+
+const recordCache = new Map<string, Record<string, Field>>();
+
 export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): UseCurrentRecordReturn => {
-  const [record, setRecord] = useState<Record<string, Field>>({});
+  const [record, setRecord] = useState<Record<string, Field>>(EMPTY_RECORD);
   const [loading, setLoading] = useState(false);
   const fetchInProgressRef = useRef(false);
   const lastFetchParamsRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!tab || !recordId || recordId === NEW_RECORD_ID) {
-      setRecord({});
+      setRecord(EMPTY_RECORD);
       setLoading(false);
       lastFetchParamsRef.current = null; // Prepare for next valid fetch
       return;
@@ -58,6 +62,13 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
 
     // Create unique key for current fetch params
     const paramsKey = `${tab.entityName}-${tab.window}-${tab.id}-${recordId}`;
+
+    // Check cache first
+    if (recordCache.has(paramsKey)) {
+      setRecord(recordCache.get(paramsKey)!);
+      setLoading(false);
+      return;
+    }
 
     // Prevent duplicate fetches for the same parameters
     if (fetchInProgressRef.current || lastFetchParamsRef.current === paramsKey) {
@@ -86,15 +97,18 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
         const responseData = result.data.response?.data;
 
         if (responseData?.length > 0) {
-          setRecord(responseData[0]);
+          const newRecord = responseData[0];
+          setRecord(newRecord);
+          // Update cache
+          recordCache.set(paramsKey, newRecord);
         } else {
-          setRecord({});
+          setRecord(EMPTY_RECORD);
         }
       } catch (err) {
         if (cancelled) return;
 
         console.error(err);
-        setRecord({});
+        setRecord(EMPTY_RECORD);
       } finally {
         if (!cancelled) {
           setLoading(false);

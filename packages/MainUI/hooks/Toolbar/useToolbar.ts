@@ -91,8 +91,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
     if (!windowIdentifier) return;
 
     const cachedData = toolbarCache.get(cacheKey);
-    const toolbarHasWindowsAttribute = cachedData?.some((button) => !!button.windows);
-    if (cachedData && toolbarHasWindowsAttribute) {
+    if (cachedData && cachedData.length > 0) {
       setToolbar(cachedData);
       setLoading(false);
       return;
