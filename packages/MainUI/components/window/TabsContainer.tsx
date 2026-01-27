@@ -31,6 +31,7 @@ import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useUserContext } from "@/hooks/useUserContext";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { logger } from "@/utils/logger";
+import { createSmartContext } from "@/utils/expressions";
 
 /**
  * TabsContainer Component
@@ -85,17 +86,11 @@ const TabsGroupRenderer = ({
     if (!expression) return true;
 
     // Use Proxy for Case-Insensitive Context (Same robust logic)
-    const baseContext = {
-      ...(grandParentTab || {}),
-      ...(grandParentRecord || {}),
-    };
-    const context = new Proxy(baseContext, {
-      get: (target, prop: string) => {
-        if (prop in target) return target[prop as keyof typeof target];
-        const lowerProp = prop.toLowerCase();
-        const foundKey = Object.keys(target).find((k) => k.toLowerCase() === lowerProp);
-        return foundKey ? target[foundKey as keyof typeof target] : undefined;
-      },
+    // Use createSmartContext for robust evaluation
+    const context = createSmartContext({
+      values: grandParentRecord || undefined,
+      fields: grandParentTab?.fields, // Use grandparent fields for mapping if available
+      context: { ...(grandParentTab || {}), ...session },
     });
 
     try {
@@ -120,28 +115,11 @@ const TabsGroupRenderer = ({
     // (Optional: if (!parentRecord?.id && currentLevel > 0) return []; )
 
     // 3. Filter current tabs
-    const baseContext = {
-      ...(activeParentTab || {}), // Metadata (lowest priority)
-      ...(parentRecord || {}), // Record Data (highest priority)
-    };
-
-    const context = new Proxy(baseContext, {
-      get: (target, prop: string) => {
-        // 1. Direct match (fast path)
-        if (prop in target) {
-          return target[prop as keyof typeof target];
-        }
-
-        // 2. Case-insensitive match (generic fallback)
-        const lowerProp = prop.toLowerCase();
-        const foundKey = Object.keys(target).find((k) => k.toLowerCase() === lowerProp);
-
-        if (foundKey) {
-          return target[foundKey as keyof typeof target];
-        }
-
-        return undefined;
-      },
+    // Use createSmartContext for robust evaluation (Case-Insensitive + Column Mapping)
+    const context = createSmartContext({
+      values: parentRecord || undefined,
+      fields: activeParentTab?.fields,
+      context: { ...(activeParentTab || {}), ...session }, // Include tab metadata in context if needed
     });
 
     return tabs.filter((tab) => {
@@ -159,8 +137,8 @@ const TabsGroupRenderer = ({
         logger.error(`Error evaluating display logic for tab ${tab.name}:`, error);
         return false; // Hide on error
       }
-    });
-  }, [tabs, parentRecord, session, activeParentTab, isParentVisible]); // added isParentVisible dependency
+    }); // removed specific dependency on isParentVisible which is handled by early return, but kept logically
+  }, [tabs, parentRecord, session, activeParentTab, isParentVisible]);
 
   if (filteredTabs.length === 0) {
     return null;

@@ -1,20 +1,3 @@
-/*
- *************************************************************************
- * The contents of this file are subject to the Etendo License
- * (the "License"), you may not use this file except in compliance with
- * the License.
- * You may obtain a copy of the License at
- * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
- * Software distributed under the License is distributed on an
- * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
- * implied. See the License for the specific language governing rights
- * and limitations under the License.
- * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
- * All Rights Reserved.
- * Contributor(s): Futit Services S.L.
- *************************************************************************
- */
-
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { useUserContext } from "./useUserContext";
 import { useTabContext } from "@/contexts/tab";
@@ -22,15 +5,16 @@ import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useMemo } from "react";
 import { useFormContext } from "react-hook-form";
 import { logger } from "@/utils/logger";
+import { createSmartContext } from "@/utils/expressions";
 
 interface UseDisplayLogicProps {
   field: Field;
-  values?: Field;
+  values?: any; // Changed from Field to any/Record to be safer with spread, though original was Field
 }
 
 export default function useDisplayLogic({ field, values }: UseDisplayLogicProps) {
   const { session } = useUserContext();
-  const { tab, record, parentRecord } = useTabContext();
+  const { tab, record, parentRecord, parentTab } = useTabContext();
 
   const formContext = useFormContext();
   const formValues = formContext?.watch?.();
@@ -47,15 +31,35 @@ export default function useDisplayLogic({ field, values }: UseDisplayLogicProps)
     const compiledExpr = compileExpression(field.displayLogicExpression);
 
     try {
-      const currentValues = { ...parentRecord, ...record, ...formValues, ...values };
-      const result = compiledExpr(session, currentValues);
+      const currentValues = { ...record, ...formValues, ...values };
+
+      const smartContext = createSmartContext({
+        values: currentValues,
+        fields: tab.fields,
+        parentValues: parentRecord || undefined,
+        parentFields: parentTab?.fields,
+        context: session,
+      });
+
+      const result = compiledExpr(session, smartContext);
 
       return result;
     } catch (error) {
       console.error(`[DisplayLogic Error] Field: ${field.name}`, error);
       return logger.error("Unexpected error", error);
     }
-  }, [field.displayLogicExpression, field.displayed, formValues, record, session, tab, values, parentRecord]);
+  }, [
+    field.displayLogicExpression,
+    field.displayed,
+    field.name,
+    formValues,
+    record,
+    session,
+    tab,
+    values,
+    parentRecord,
+    parentTab,
+  ]);
 
   return isDisplayed;
 }
