@@ -51,40 +51,10 @@ export const useCopilotClient = () => {
   const client = useMemo(
     () => ({
       getAssistants: async () => {
-        try {
-          return await CopilotClient.getAssistants();
-        } catch (error: any) {
-          if (error?.message?.includes("Copilot service not installed")) {
-            return [];
-          }
-          throw error;
-        }
+        return await CopilotClient.getAssistants();
       },
       getLabels: async () => {
-        try {
-          return await CopilotClient.getLabels();
-        } catch (error: any) {
-          if (error?.message?.includes("Copilot service not installed")) {
-            return {
-              title: "",
-              placeholder: "",
-              send: "",
-              upload: "",
-              clear: "",
-              close: "",
-              error: "",
-              retry: "",
-              copy: "",
-              copied: "",
-              feedback: "",
-              feedback_placeholder: "",
-              feedback_submit: "",
-              feedback_success: "",
-              feedback_error: "",
-            };
-          }
-          throw error;
-        }
+        return await CopilotClient.getLabels();
       },
       uploadFile: CopilotClient.uploadFile,
       uploadFiles: CopilotClient.uploadFiles,
@@ -95,14 +65,7 @@ export const useCopilotClient = () => {
       shouldCacheQuestion: CopilotClient.shouldCacheQuestion,
       handleLargeQuestion: CopilotClient.handleLargeQuestion,
       getConversations: async (appId: string) => {
-        try {
-          return await CopilotClient.getConversations(appId);
-        } catch (error: any) {
-          if (error?.message?.includes("Copilot service not installed")) {
-            return [];
-          }
-          throw error;
-        }
+        return await CopilotClient.getConversations(appId);
       },
       getConversationMessages: CopilotClient.getConversationMessages,
       generateTitle: CopilotClient.generateTitle,
