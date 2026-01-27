@@ -63,7 +63,7 @@ import { AddAttachmentModal } from "../Form/FormView/Sections/AddAttachmentModal
 import { createAttachment } from "@workspaceui/api-client/src/api/attachments";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useTableData } from "@/hooks/table/useTableData";
-import { isEmptyObject } from "@/utils/commons";
+import { isEmptyArray, isEmptyObject } from "@/utils/commons";
 import { useUserContext } from "@/hooks/useUserContext";
 import {
   getDisplayColumnDefOptions,
@@ -3010,7 +3010,8 @@ const DynamicTable = ({
 
   // Sync records to graph for cache optimization
   useEffect(() => {
-    if (records) {
+    if (!isEmptyArray(records)) {
+      console.log("Syncing records to graph");
       graph.setRecords(tab, records);
     }
   }, [records, graph, tab]);

@@ -674,14 +674,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     resetFormChanges();
   }, [activeWindow?.windowIdentifier, graph, resetFormChanges, setRecordId, setSelectedRecord, tab]);
 
-  useEffect(() => {}, [recordId]);
-
-  useEffect(() => {}, [currentRecordId]);
-
-  useEffect(() => {}, [mode]);
-
-  useEffect(() => {}, [currentMode]);
-
   /**
    * Context value object containing all form view state and handlers.
    * Provides centralized access to form view functionality for child components
