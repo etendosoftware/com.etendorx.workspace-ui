@@ -64,8 +64,9 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
     const paramsKey = `${tab.entityName}-${tab.window}-${tab.id}-${recordId}`;
 
     // Check cache first
-    if (recordCache.has(paramsKey)) {
-      setRecord(recordCache.get(paramsKey)!);
+    const cachedRecord = recordCache.get(paramsKey);
+    if (cachedRecord) {
+      setRecord(cachedRecord);
       setLoading(false);
       return;
     }

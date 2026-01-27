@@ -52,7 +52,7 @@ export const syncSelectedRecordsToSession = async ({
     }
 
     // Create a unique key for the cache based on window, tab, and selected record IDs
-    const allSelectedIds = selectedRecords.map((record) => String(record.id)).sort();
+    const allSelectedIds = selectedRecords.map((record) => String(record.id)).sort((a, b) => a.localeCompare(b));
     const cacheKey = `${windowIdentifier}-${tab.id}`;
     const cacheValue = allSelectedIds.join(",");
 

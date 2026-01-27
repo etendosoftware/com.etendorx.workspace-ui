@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { useAttachmentInfo } from "../useAttachmentInfo";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { Tab, EntityData } from "@workspaceui/api-client/src/api/types";
