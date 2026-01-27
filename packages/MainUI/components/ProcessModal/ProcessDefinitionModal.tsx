@@ -109,10 +109,7 @@ const NULLABLE_REFERENCES = [
  * Checks if a parameter value should be converted to null when empty string
  */
 const shouldConvertEmptyToNull = (reference: string): boolean => {
-  return (
-    isDateReference(reference) ||
-    NULLABLE_REFERENCES.includes(reference as (typeof NULLABLE_REFERENCES)[number])
-  );
+  return isDateReference(reference) || NULLABLE_REFERENCES.includes(reference as (typeof NULLABLE_REFERENCES)[number]);
 };
 
 /** Fallback object for record values when no record context exists */
