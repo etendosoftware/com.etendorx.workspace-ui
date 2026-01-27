@@ -40,36 +40,8 @@ export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | nul
     return tab.parentTabId === activeParentTab.id;
   }
 
-  if (tab.parentColumns && tab.parentColumns.length > 0) {
-    const parentEntityLower = activeParentTab.entityName?.toLowerCase() || "";
-    const parentTableName = activeParentTab.table$_identifier?.toLowerCase() || "";
-
-    const hasMatch = tab.parentColumns.some((parentColumn) => {
-      const columnLower = parentColumn.toLowerCase();
-
-      const normalizedColumn = columnLower.replace(/_id$/, "").replace(/[_-]/g, "");
-
-      const normalizedEntity = parentEntityLower
-        .replace(/^(fin|mgmt|financial|management)/gi, "")
-        .replace(/([A-Z])/g, (p1, offset) => (offset > 0 ? `_${p1}` : p1))
-        .toLowerCase()
-        .replace(/[_-]/g, "");
-
-      const normalizedTable = parentTableName.replace(/^c_/, "").replace(/[_-]/g, "");
-
-      return (
-        normalizedColumn.includes(normalizedEntity) ||
-        normalizedEntity.includes(normalizedColumn) ||
-        normalizedColumn.includes(normalizedTable) ||
-        normalizedTable.includes(normalizedColumn)
-      );
-    });
-
-    if (!hasMatch) {
-      return false;
-    }
-    return true;
-  }
-
-  return false;
+  // If no parentTabId is provided, show the tab by default
+  // This happens when metadata doesn't include explicit parent relationships
+  // In this case, we trust that the server is sending the correct tabs for this window
+  return true;
 }
