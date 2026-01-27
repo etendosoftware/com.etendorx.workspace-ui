@@ -210,6 +210,8 @@ const mockMultiWindowURL = {
   clearChildrenSelections: jest.fn(),
   getTabInitializedWithDirectLink: jest.fn().mockReturnValue(false),
   setTabInitializedWithDirectLink: jest.fn(),
+  getTabDataCache: jest.fn(),
+  setTabDataCache: jest.fn(),
 };
 
 const mockUserContext = {
