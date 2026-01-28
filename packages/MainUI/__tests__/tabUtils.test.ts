@@ -18,24 +18,28 @@
 import { shouldShowTab, type TabWithParentInfo } from "../utils/tabUtils";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 
-const createMockTab = (overrides: Partial<Tab> = {}): Tab => ({
-  id: "default-id",
-  tabLevel: 0,
-  name: "Default Tab",
-  _identifier: "default-identifier",
-  entityName: "DefaultEntity",
-  table$_identifier: "default_table",
-  uIPattern: "",
-  window: "",
-  title: "Default Title",
-  parentColumns: [],
-  table: "",
-  readOnlyLogic: "",
-  displayLogic: "",
-  orderByClause: "",
-  whereClause: "",
-  ...overrides,
-});
+const createMockTab = (overrides: Partial<Tab> = {}): Tab =>
+  ({
+    id: "default-id",
+    tabLevel: 0,
+    name: "Default Tab",
+    _identifier: "default-identifier",
+    entityName: "DefaultEntity",
+    table$_identifier: "default_table",
+    uIPattern: "STD",
+    window: "",
+    title: "Default Title",
+    parentColumns: [],
+    table: "",
+    displayLogic: "",
+    sQLOrderByClause: "",
+    sQLWhereClause: "",
+    hqlfilterclause: "",
+    hqlwhereclause: "",
+    fields: {},
+    records: {},
+    ...overrides,
+  }) as unknown as Tab;
 
 const createMockTabWithParentInfo = (overrides: Partial<TabWithParentInfo> = {}): TabWithParentInfo => ({
   ...createMockTab(),
@@ -271,6 +275,61 @@ describe("tabUtils", () => {
       const result = shouldShowTab(tab, activeParentTab);
 
       expect(result).toBe(false);
+    });
+
+    it("should return true when parentColumns match via field referencedEntity (metadata)", () => {
+      const tab = createMockTabWithParentInfo({
+        id: "tab-mem",
+        tabLevel: 1,
+        name: "Memory",
+        entityName: "Entity",
+        table$_identifier: "table7",
+        parentColumns: ["agent"], // mismatched name
+        fields: {
+          agent: {
+            name: "agent",
+            referencedEntity: "ETCOP_App",
+            columnName: "etcop_app_id",
+          },
+        } as any,
+      });
+
+      const activeParentTab = createMockTab({
+        id: "parent1",
+        tabLevel: 0,
+        name: "App",
+        entityName: "ETCOP_App",
+      });
+
+      const result = shouldShowTab(tab, activeParentTab);
+      expect(result).toBe(true);
+    });
+
+    it("should return true when parentColumns match via field DB columnName (metadata)", () => {
+      const tab = createMockTabWithParentInfo({
+        id: "tab-mem2",
+        tabLevel: 1,
+        name: "Child",
+        entityName: "Entity",
+        parentColumns: ["complex_prop"],
+        fields: {
+          complex_prop: {
+            name: "complex_prop",
+            columnName: "c_bpartner_id", // Explicitly matches parent table
+          },
+        } as any,
+      });
+
+      const activeParentTab = createMockTab({
+        id: "parent2",
+        tabLevel: 0,
+        name: "Partner",
+        entityName: "BusinessPartner", // Doesn't match 'complex_prop' match
+        table$_identifier: "c_bpartner", // Matches columnName
+      });
+
+      const result = shouldShowTab(tab, activeParentTab);
+      expect(result).toBe(true);
     });
   });
 });
