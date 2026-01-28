@@ -94,7 +94,6 @@ export const TimeSelector = ({ field, isReadOnly, error, helperText, label }: Ti
           {field.isMandatory && <span className="text-error-main ml-1">*</span>}
         </label>
       )}
-
       <div className={`relative flex items-center w-full ${isReadOnly ? "pointer-events-none" : ""}`}>
         <input
           type="time"
@@ -117,10 +116,9 @@ export const TimeSelector = ({ field, isReadOnly, error, helperText, label }: Ti
           className={buttonClassNames}
           disabled={isReadOnly}
           tabIndex={-1}>
-          <ClockIcon fill="currentColor" className="h-5 w-5" />
+          <ClockIcon fill="currentColor" className="h-5 w-5" data-testid={"ClockIcon__" + field.id} />
         </button>
       </div>
-
       {(helperText || fieldError?.message) && (
         <div className="h-0">
           <p className={`text-xs mt-1 ${hasError ? "text-red-500" : "text-baseline-60"}`}>

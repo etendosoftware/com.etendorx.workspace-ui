@@ -111,14 +111,13 @@ export const TimeCellEditor: React.FC<CellEditorProps> = ({
         className={inputClassNames}
         aria-label={field?.name || "Time Input"}
       />
-
       {!disabled && (
         <button
           type="button"
           onClick={handleIconClick}
           className="absolute right-2 p-0.5 text-gray-500 hover:text-primary-main focus:outline-none flex items-center justify-center"
           tabIndex={-1}>
-          <ClockIcon fill="currentColor" className="h-4 w-4" />
+          <ClockIcon fill="currentColor" className="h-4 w-4" data-testid={"ClockIcon__" + field.id} />
         </button>
       )}
     </div>
