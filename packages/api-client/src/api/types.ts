@@ -213,6 +213,7 @@ export enum FieldType {
   BUTTON = "button",
   WINDOW = "window",
   DATETIME = "datetime",
+  TIME = "time",
 }
 
 export interface MappedTab {

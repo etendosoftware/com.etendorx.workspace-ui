@@ -57,6 +57,8 @@ export const getFieldReference = (reference?: string): FieldType => {
     case FIELD_REFERENCE_CODES.LIST_17:
     case FIELD_REFERENCE_CODES.LIST_13:
       return FieldType.LIST;
+    case FIELD_REFERENCE_CODES.TIME:
+      return FieldType.TIME;
     case "28":
       return FieldType.BUTTON;
     case FIELD_REFERENCE_CODES.SELECT_30:
