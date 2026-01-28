@@ -17,6 +17,7 @@
 
 import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
 import type { TabFormState } from "@/utils/url/constants";
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
 
 export const WINDOW_PROPERTY_NAMES = {
   TITLE: "title",
@@ -43,12 +44,21 @@ export interface NavigationState {
   initialized: boolean;
 }
 
+export interface TabDataCache {
+  records: EntityData[];
+  cacheKey: string;
+  timestamp: number;
+  hasMoreRecords: boolean;
+  page: number;
+}
+
 export interface TabState {
   table: TableState;
   form: TabFormState;
   level: number;
   selectedRecord?: string;
   initializedWithDirectLink?: boolean;
+  dataCache?: TabDataCache;
 }
 
 export interface WindowState {

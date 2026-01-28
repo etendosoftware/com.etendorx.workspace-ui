@@ -29,8 +29,9 @@ export interface AttachmentInfo {
   attachmentCount: number;
 }
 
+const attachmentCache = new Map<string, AttachmentInfo>();
+
 export const useAttachmentInfo = () => {
-  const [attachmentCache, setAttachmentCache] = useState<Map<string, AttachmentInfo>>(new Map());
   const [loading, setLoading] = useState<Set<string>>(new Set());
 
   const fetchAttachmentInfo = useCallback(
@@ -75,7 +76,7 @@ export const useAttachmentInfo = () => {
           attachmentCount: data.attachmentCount || 0,
         };
 
-        setAttachmentCache((prev) => new Map(prev).set(cacheKey, attachmentInfo));
+        attachmentCache.set(cacheKey, attachmentInfo);
         setLoading((prev) => {
           const newSet = new Set(prev);
           newSet.delete(cacheKey);
@@ -93,11 +94,11 @@ export const useAttachmentInfo = () => {
         return null;
       }
     },
-    [attachmentCache, loading]
+    [loading]
   );
 
   const clearCache = useCallback(() => {
-    setAttachmentCache(new Map());
+    attachmentCache.clear();
   }, []);
 
   return {

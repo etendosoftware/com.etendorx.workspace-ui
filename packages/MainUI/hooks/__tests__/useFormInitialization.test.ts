@@ -16,7 +16,7 @@
  */
 
 import { renderHook, act } from "@testing-library/react";
-import { useFormInitialization } from "../useFormInitialization";
+import { useFormInitialization, clearFormInitCache } from "../useFormInitialization";
 import { useUserContext } from "../useUserContext";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import { fetchFormInitialization, buildFormInitializationParams } from "../../utils/hooks/useFormInitialization/utils";
@@ -57,6 +57,7 @@ describe("useFormInitialization loading state", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    clearFormInitCache();
 
     mockSetSession = jest.fn();
     mockSetSessionSyncLoading = jest.fn();
@@ -296,5 +297,57 @@ describe("useFormInitialization loading state", () => {
     // This verifies the race condition fix is working correctly
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeNull();
+  });
+
+  test("should use cached form initialization on subsequent calls", async () => {
+    const uniqueRecordId = "cached-record-id";
+    const uniqueParams = new URLSearchParams(`recordId=${uniqueRecordId}`);
+    mockBuildFormInitializationParams.mockReturnValue(uniqueParams);
+
+    mockUseCurrentRecord.mockReturnValue({
+      record: { id: uniqueRecordId },
+      loading: false,
+    });
+
+    mockFetchFormInitialization.mockResolvedValue({
+      auxiliaryInputValues: { cached: { value: "true" } },
+      columnValues: {},
+      sessionAttributes: {},
+      dynamicCols: [],
+      attachmentExists: false,
+    });
+
+    // First call to populate cache
+    const { unmount } = renderHook(() =>
+      useFormInitialization({
+        tab: mockTab,
+        mode: FormMode.EDIT,
+        recordId: uniqueRecordId,
+      })
+    );
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(mockFetchFormInitialization).toHaveBeenCalledTimes(1);
+    unmount();
+
+    // Second call with same params
+    const { result } = renderHook(() =>
+      useFormInitialization({
+        tab: mockTab,
+        mode: FormMode.EDIT,
+        recordId: uniqueRecordId,
+      })
+    );
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    // Should NOT have called fetch again
+    expect(mockFetchFormInitialization).toHaveBeenCalledTimes(1);
+    expect(result.current.formInitialization?.auxiliaryInputValues.cached.value).toBe("true");
   });
 });

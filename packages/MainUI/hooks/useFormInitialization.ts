@@ -94,6 +94,42 @@ export type useFormInitialization = State & {
  * - `refetch` - Function to re-trigger form initialization
  *
  */
+const formInitCache = new Map<string, FormInitializationResponse>();
+
+/**
+ * Clears the form initialization cache.
+ * Primarily used for testing purposes.
+ */
+export const clearFormInitCache = () => {
+  formInitCache.clear();
+};
+
+/**
+ * Custom hook for managing form initialization in Etendo ERP forms
+ *
+ * This hook handles the complete lifecycle of form initialization including:
+ * - Fetching form metadata and initial values
+ * - Managing loading and error states
+ * - Enriching data with audit fields
+ * - Updating session attributes
+ * - Providing refetch capability
+ *
+ * @param params - Form initialization parameters
+ * @param params.tab - Tab configuration containing fields, entity info, etc.
+ * @param params.mode - Form mode (NEW, EDIT, etc.)
+ * @param params.recordId - Optional record ID for editing existing records
+ *
+ * @returns Object containing:
+ * - `loading` - Boolean indicating if initialization is in progress
+ * - `error` - Error object if initialization failed, null otherwise
+ * - `formInitialization` - Initialized form data and configuration
+ * - `refetch` - Function to re-trigger form initialization
+ *
+ * @example
+ * ```typescript
+ * const { loading, formInitialization } = useFormInitialization({ tab, mode, recordId });
+ * ```
+ */
 export function useFormInitialization({ tab, mode, recordId }: FormInitializationParams): useFormInitialization {
   const { setSession, setSessionSyncLoading } = useUserContext();
   const { parentRecord: parent } = useTabContext();
@@ -155,6 +191,9 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
         ...prev,
         ...storedInSessionAttributes,
       }));
+
+      // Update cache
+      formInitCache.set(params.toString(), enrichedData);
 
       dispatch({ type: "FETCH_SUCCESS", payload: enrichedData });
     } catch (err) {
@@ -233,6 +272,14 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       // Use params.toString() instead of JSON.stringify because URLSearchParams serializes to {}
       const paramsKey = params.toString();
 
+      // Check cache first
+      if (formInitCache.has(paramsKey)) {
+        const cachedData = formInitCache.get(paramsKey)!;
+        dispatch({ type: "FETCH_SUCCESS", payload: cachedData });
+        lastFetchParamsRef.current = paramsKey;
+        return;
+      }
+
       // Prevent duplicate fetches for the same parameters
       if (fetchInProgressRef.current || lastFetchParamsRef.current === paramsKey) {
         return;
@@ -264,6 +311,9 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     // Reset tracking to allow refetch even with same params
     lastFetchParamsRef.current = null;
     fetchInProgressRef.current = true;
+
+    // Clear cache for this specific param set on manual refetch
+    formInitCache.delete(params.toString());
 
     dispatch({ type: "FETCH_START" });
     try {

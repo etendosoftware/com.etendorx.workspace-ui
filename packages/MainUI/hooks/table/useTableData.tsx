@@ -40,6 +40,7 @@ import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumn
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
 import type { ExpandedState, Updater } from "@tanstack/react-table";
 import { isEmptyObject } from "@/utils/commons";
+import type { TabDataCache } from "@/utils/window/constants";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -121,8 +122,14 @@ export const useTableData = ({
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
-  const { activeWindow, getTabFormState, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink } =
-    useWindowContext();
+  const {
+    activeWindow,
+    getTabFormState,
+    getTabInitializedWithDirectLink,
+    setTabInitializedWithDirectLink,
+    getTabDataCache,
+    setTabDataCache,
+  } = useWindowContext();
   const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
 
   const {
@@ -498,6 +505,20 @@ export const useTableData = ({
     return rawColumns;
   }, [rawColumns]);
 
+  // Tab data cache management
+  const cachedData = useMemo((): TabDataCache | undefined => {
+    if (!activeWindow?.windowIdentifier) return undefined;
+    return getTabDataCache(activeWindow.windowIdentifier, tab.id);
+  }, [activeWindow?.windowIdentifier, tab.id, getTabDataCache]);
+
+  const handleCacheUpdate = useCallback(
+    (cache: TabDataCache) => {
+      if (!activeWindow?.windowIdentifier) return;
+      setTabDataCache(activeWindow.windowIdentifier, tab.id, cache, tab.tabLevel);
+    },
+    [activeWindow?.windowIdentifier, tab.id, tab.tabLevel, setTabDataCache]
+  );
+
   // Use datasource hook
   const {
     fetchMore,
@@ -519,6 +540,8 @@ export const useTableData = ({
     activeColumnFilters: tableColumnFilters,
     isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
     setIsImplicitFilterApplied,
+    cachedData,
+    onCacheUpdate: handleCacheUpdate,
   });
 
   // Display records (tree mode uses flattened, normal mode uses original records)
@@ -767,9 +790,18 @@ export const useTableData = ({
         }
 
         if (!hasBeenInGridMode.current && tabFormState?.recordId && windowIdentifier) {
-          const currentIdFilter = tableColumnFilters.find((f) => f.id === "id");
-          if (currentIdFilter?.value !== tabFormState.recordId) {
-            setTableColumnFilters([{ id: "id", value: tabFormState.recordId }]);
+          // Check if the selected record exists in cached data
+          // If it does, we don't need to apply an ID filter - the record is already available
+          const recordExistsInCache = cachedData?.records?.some(
+            (record) => String(record.id) === tabFormState.recordId
+          );
+
+          if (!recordExistsInCache) {
+            // Only apply ID filter if record is NOT in cache (needs to be fetched)
+            const currentIdFilter = tableColumnFilters.find((f) => f.id === "id");
+            if (currentIdFilter?.value !== tabFormState.recordId) {
+              setTableColumnFilters([{ id: "id", value: tabFormState.recordId }]);
+            }
           }
           setTabInitializedWithDirectLink(windowIdentifier, tab.id, true);
         }
@@ -798,6 +830,7 @@ export const useTableData = ({
     activeWindow,
     tab.id,
     setTabInitializedWithDirectLink,
+    cachedData,
   ]);
 
   /** Clear ID filter when returning to grid mode from manual navigation */

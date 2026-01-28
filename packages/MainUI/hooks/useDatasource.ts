@@ -25,6 +25,7 @@ import type {
 } from "@workspaceui/api-client/src/api/types";
 import { LegacyColumnFilterUtils, SearchUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { TabDataCache } from "@/utils/window/constants";
 
 const loadData = async (
   entity: string,
@@ -90,6 +91,8 @@ export type UseDatasourceOptions = {
   activeColumnFilters?: MRT_ColumnFiltersState;
   isImplicitFilterApplied?: boolean;
   setIsImplicitFilterApplied?: (value: boolean) => void;
+  cachedData?: TabDataCache;
+  onCacheUpdate?: (cache: TabDataCache) => void;
 };
 
 export function useDatasource({
@@ -102,15 +105,18 @@ export function useDatasource({
   activeColumnFilters = EMPTY_FILTERS,
   isImplicitFilterApplied = false,
   setIsImplicitFilterApplied,
+  cachedData,
+  onCacheUpdate,
 }: UseDatasourceOptions) {
   const [loading, setLoading] = useState(!skip);
   const [loaded, setLoaded] = useState(false);
-  const [records, setRecords] = useState<EntityData[]>([]);
+  const [records, setRecords] = useState<EntityData[]>(cachedData?.records ?? []);
   const [error, setError] = useState<Error | undefined>(undefined);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(cachedData?.page ?? 1);
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
-  const [hasMoreRecords, setHasMoreRecords] = useState(true);
+  const [hasMoreRecords, setHasMoreRecords] = useState(cachedData?.hasMoreRecords ?? true);
   const fetchInProgressRef = useRef(false);
+  const initialCacheKeyRef = useRef(cachedData?.cacheKey);
   const removeRecordLocally = useCallback((recordId: string) => {
     setRecords((prevRecords) => prevRecords.filter((record) => String(record.id) !== recordId));
   }, []);
@@ -194,6 +200,26 @@ export function useDatasource({
     return finalParams;
   }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, activeColumnFilters]);
 
+  // Generate cache key for invalidation checks
+  const cacheKey = useMemo(() => {
+    return JSON.stringify({
+      entity,
+      queryParams,
+      isImplicitFilterApplied,
+    });
+  }, [entity, queryParams, isImplicitFilterApplied]);
+
+  // Check if cache is valid
+  const isCacheValid = useMemo(() => {
+    if (!cachedData || !cachedData.records.length) return false;
+    const valid = cachedData.cacheKey === cacheKey;
+    console.log(`[useDatasource] Cache validation for ${entity}: ${valid}`, {
+      cachedKey: cachedData.cacheKey,
+      currentKey: cacheKey,
+    });
+    return valid;
+  }, [cachedData, cacheKey, entity]);
+
   const fetchData = useCallback(
     async (targetPage: number = page) => {
       // Prevent duplicate fetches
@@ -213,8 +239,21 @@ export function useDatasource({
         if (!(ok && data.response.data)) {
           throw data;
         }
-        setHasMoreRecords(data.response.data.length >= safePageSize);
-        setRecords((prev) => (page === 1 || searchQuery ? data.response.data : prev.concat(data.response.data)));
+        const newHasMoreRecords = data.response.data.length >= safePageSize;
+        setHasMoreRecords(newHasMoreRecords);
+        const newRecords = targetPage === 1 || searchQuery ? data.response.data : records.concat(data.response.data);
+        setRecords(newRecords);
+
+        // Update cache after successful fetch
+        if (onCacheUpdate) {
+          onCacheUpdate({
+            records: newRecords,
+            cacheKey,
+            timestamp: Date.now(),
+            hasMoreRecords: newHasMoreRecords,
+            page: targetPage,
+          });
+        }
         setLoaded(true);
       } catch (e) {
         logger.warn(e);
@@ -238,6 +277,8 @@ export function useDatasource({
       isImplicitFilterApplied,
       searchQuery,
       setIsImplicitFilterApplied,
+      cacheKey,
+      onCacheUpdate,
     ]
   );
 
@@ -251,14 +292,65 @@ export function useDatasource({
       return;
     }
 
+    console.log(`[useDatasource] Effect triggered for ${entity}`, {
+      isCacheValid,
+      initialCacheKey: initialCacheKeyRef.current,
+      currentCacheKey: cacheKey,
+      skip,
+    });
+
+    // Skip fetch if cache is valid and this is the initial load
+    if (isCacheValid && initialCacheKeyRef.current === cacheKey) {
+      console.log(`[useDatasource] Skipping fetch for ${entity} (cache valid and initial load)`);
+      setLoaded(true);
+      setLoading(false);
+      return;
+    }
+
+    // Clear initial cache key ref after first check
+    initialCacheKeyRef.current = undefined;
+
     setError(undefined);
     setLoading(true);
 
+    console.log(`[useDatasource] Calling fetchData for ${entity}`);
     fetchData();
-  }, [entity, page, pageSize, queryParams, skip, memoizedTreeOptions, isImplicitFilterApplied, activeColumnFilters]);
+  }, [
+    entity,
+    page,
+    pageSize,
+    queryParams,
+    skip,
+    memoizedTreeOptions,
+    isImplicitFilterApplied,
+    activeColumnFilters,
+    isCacheValid,
+    cacheKey,
+  ]);
+
+  // Track previous values to detect actual changes (not initial mount)
+  const prevFiltersRef = useRef(activeColumnFilters);
+  const prevSearchRef = useRef(searchQuery);
 
   useEffect(() => {
-    reinit();
+    // Track previous values to detect actual changes (not initial mount)
+    const prevFiltersStr = JSON.stringify(prevFiltersRef.current);
+    const currentFiltersStr = JSON.stringify(activeColumnFilters);
+    const filtersChanged = prevFiltersStr !== currentFiltersStr;
+    const searchChanged = prevSearchRef.current !== searchQuery;
+
+    // Update refs
+    prevFiltersRef.current = activeColumnFilters;
+    prevSearchRef.current = searchQuery;
+
+    // Only reinit if something actually changed (not on initial mount)
+    if (filtersChanged || searchChanged) {
+      console.log(`[useDatasource] Reinit triggered for ${entity}`, {
+        filtersChanged,
+        searchChanged,
+      });
+      reinit();
+    }
   }, [activeColumnFilters, searchQuery, reinit]);
 
   const refetch = useCallback(async () => {
