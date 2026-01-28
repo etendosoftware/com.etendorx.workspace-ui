@@ -19,6 +19,7 @@ import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useFormContext } from "react-hook-form";
 import { useState, useEffect, useMemo } from "react";
 import ClockIcon from "@workspaceui/componentlibrary/src/assets/icons/clock.svg";
+import { formatUTCTimeToLocal, formatLocalTimeToUTCPayload } from "@/utils/date/utils";
 
 interface TimeSelectorProps {
   field: Field;
@@ -40,27 +41,15 @@ export const TimeSelector = ({ field, isReadOnly, error, helperText, label }: Ti
   const fieldError = formState.errors[fieldName];
   const hasError = error || !!fieldError;
 
-  // Sync display value with form value
+  // Sync display value with form value (convert UTC to Local)
   useEffect(() => {
     if (!formValue) {
       setDisplayValue("");
       return;
     }
 
-    // Handle case where formValue might be the full ISO string we just set
-    if (formValue.includes("T")) {
-      const date = new Date(formValue);
-      if (!Number.isNaN(date.getTime())) {
-        const hours = date.getHours().toString().padStart(2, "0");
-        const minutes = date.getMinutes().toString().padStart(2, "0");
-        const seconds = date.getSeconds().toString().padStart(2, "0");
-        setDisplayValue(`${hours}:${minutes}:${seconds}`);
-      } else {
-        setDisplayValue(formValue);
-      }
-    } else {
-      setDisplayValue(formValue);
-    }
+    const localTime = formatUTCTimeToLocal(String(formValue));
+    setDisplayValue(localTime);
   }, [formValue]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,18 +63,9 @@ export const TimeSelector = ({ field, isReadOnly, error, helperText, label }: Ti
       return;
     }
 
-    // Construct full date for payload
-    const now = new Date();
-    const [hours, minutes, seconds] = timeValue.split(":").map(Number);
-
-    // Create date object with Today's date and Selected Local Time
-    const dateToSave = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds || 0);
-
-    const isoString = dateToSave.toISOString(); // e.g., 2026-01-28T14:30:00.000Z
-    const formattedPayload = isoString.split(".")[0]; // 2026-01-28T14:30:00
-
-    // Update the form value with the payload format
-    setValue(fieldName, formattedPayload, { shouldDirty: true, shouldValidate: true });
+    // Convert local time to UTC payload
+    const utcPayload = formatLocalTimeToUTCPayload(timeValue);
+    setValue(fieldName, utcPayload, { shouldDirty: true, shouldValidate: true });
   };
 
   const inputClassNames = useMemo(() => {
