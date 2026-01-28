@@ -116,6 +116,7 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import "./styles/inlineEditing.css";
 import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
+import { formatUTCTimeToLocal } from "@/utils/date/utils";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
@@ -410,6 +411,13 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
   // For non-editing cells, check if we should show identifier instead of UUID
   const identifierKey = `${fieldKey}$_identifier`;
   const identifier = row.original[identifierKey];
+
+  // Format Time values from UTC to Local for display in the grid
+  const fieldMapping = columnFieldMappings.get(col.name);
+  if (fieldMapping?.fieldType === FieldType.TIME && typeof renderedCellValue === "string" && renderedCellValue) {
+    const localTimeValue = formatUTCTimeToLocal(renderedCellValue);
+    return <div className="table-cell-content">{localTimeValue}</div>;
+  }
 
   if (identifier && typeof identifier === "string" && typeof renderedCellValue === "string") {
     if (originalCell && typeof originalCell === "function") {
