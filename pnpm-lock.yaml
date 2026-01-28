@@ -187,9 +187,15 @@ importers:
       '@mui/material':
         specifier: ^5.15.19
         version: 5.18.0(@emotion/react@11.14.0(@types/react@18.3.1)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.1)(react@18.3.1))(@types/react@18.3.1)(react@18.3.1))(@types/react@18.3.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@workspaceui/api-client':
+        specifier: workspace:*
+        version: link:../api-client
       '@workspaceui/componentlibrary':
         specifier: workspace:componentlibrary
         version: link:../ComponentLibrary
+      event-source-polyfill:
+        specifier: ^1.0.31
+        version: 1.0.31
       react:
         specifier: 18.3.1
         version: 18.3.1

@@ -31,8 +31,13 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 4176,
     proxy: {
-      "/api": {
-        target: "http://localhost:3851/api",
+      "/api/erp": {
+        target: "http://localhost:8080/etendo",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/erp/, "/sws"),
+      },
+      "/sws": {
+        target: "http://localhost:8080/etendo",
         changeOrigin: true,
         rewrite: (path) => path,
       },
