@@ -251,14 +251,14 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * Result: Array of filtered tab groups maintaining hierarchy structure
    */
   const filteredGroupedTabs = useMemo(() => {
-    return groupedTabs.map((tabGroup) => {
+    return groupedTabs.map((tabGroup, index) => {
       const currentLevel = tabGroup[0]?.tabLevel;
 
-      if (currentLevel === 0) {
+      if (index === 0) {
         return tabGroup;
       }
 
-      const parentLevel = currentLevel - 1;
+      const parentLevel = groupedTabs[index - 1][0].tabLevel;
       const activeParentTab = getActiveTabForLevel(parentLevel);
 
       const filtered = tabGroup.filter((tab) => {
@@ -308,9 +308,12 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
 
           // Determine the active parent tab
           // For level 0, there is no parent (null)
-          // For level > 0, get the active tab of the previous level
-          const parentLevel = currentLevel - 1;
-          const activeParentTab = currentLevel > 0 ? getActiveTabForLevel(parentLevel) : null;
+          // For level > 0, get the active tab of the PREVIOUS GROUP's level
+          let activeParentTab = null;
+          if (index > 0) {
+            const parentLevel = groupedTabs[index - 1][0].tabLevel;
+            activeParentTab = getActiveTabForLevel(parentLevel);
+          }
 
           return (
             <TabsGroupRenderer

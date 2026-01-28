@@ -49,9 +49,43 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
     this.activeLevels = [];
 
     tabs.forEach(this.addNode);
-    for (const tab of tabs) {
+
+    // Sort tabs by sequence to mimic Classic's UI rendering order behavior
+    const sortedTabs = [...tabs].sort((a, b) => {
+      // Primary sort by tabLevel (although Classic mixes levels, parents must structurally appear before children in traversal context usually)
+      // Actually strictly, Classic stack logic relies on sequence.
+      // But let's stick to safe hierarchy construction.
+      if (a.tabLevel !== b.tabLevel) {
+        return a.tabLevel - b.tabLevel;
+      }
+      return ((a as any).sequenceNumber || 0) - ((b as any).sequenceNumber || 0);
+    });
+
+    // Keep track of the last seen tab for each level to infer parents
+    const lastTabAtLevel = new Map<number, string>();
+
+    for (const tab of sortedTabs) {
+      lastTabAtLevel.set(tab.tabLevel, tab.id);
+
       if (tab.parentTabId) {
         this.addEdge(tab.parentTabId, tab.id);
+      } else if (tab.tabLevel > 0) {
+        // Missing explicit parent: Infer from hierarchy (Classic Logic "Best Effort")
+        // Find the closest defined parent level strictly less than current
+        let bestParentLevel = -1;
+        for (let l = tab.tabLevel - 1; l >= 0; l--) {
+          if (lastTabAtLevel.has(l)) {
+            bestParentLevel = l;
+            break;
+          }
+        }
+
+        if (bestParentLevel !== -1) {
+          const parentId = lastTabAtLevel.get(bestParentLevel);
+          if (parentId) {
+            this.addEdge(parentId, tab.id);
+          }
+        }
       }
     }
   }
