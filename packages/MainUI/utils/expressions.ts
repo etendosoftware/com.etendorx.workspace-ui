@@ -25,6 +25,8 @@ interface SmartContextOptions {
   parentFields?: Record<string, Field>;
 
   context?: Record<string, unknown>; // Session/Global context
+  normalizeValues?: boolean;
+  defaultValue?: unknown;
 }
 
 /**
@@ -37,10 +39,11 @@ interface SmartContextOptions {
  * 3. Fallback across multiple data sources (Values > ParentValues > Context).
  */
 export const createEvaluationContext = (options: SmartContextOptions) => {
-  const { values, fields, parentValues, parentFields, context = {} } = options;
+  const { values, fields, parentValues, parentFields, context = {}, normalizeValues = true, defaultValue } = options;
 
   // Helper to normalize values (true -> 'Y', false -> 'N')
   const normalize = (val: unknown) => {
+    if (!normalizeValues) return val;
     if (typeof val === "boolean") return val ? "Y" : "N";
     return val;
   };
@@ -95,7 +98,43 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
   mapFields(parentFields, parentValues);
   mapFields(fields, values);
 
-  return evalContext;
+  return new Proxy(evalContext, {
+    get(target, prop, receiver) {
+      if (typeof prop !== "string") {
+        return Reflect.get(target, prop, receiver);
+      }
+
+      // 1. Exact match
+      if (prop in target) {
+        const val = target[prop];
+        if ((val === null || val === undefined) && defaultValue !== undefined) {
+          return defaultValue;
+        }
+        return val;
+      }
+
+      // 2. Case-insensitive match
+      const lowerProp = prop.toLowerCase();
+      const keys = Object.keys(target);
+      for (const key of keys) {
+        if (key.toLowerCase() === lowerProp) {
+          const val = target[key];
+          if ((val === null || val === undefined) && defaultValue !== undefined) {
+            return defaultValue;
+          }
+          return val;
+        }
+      }
+
+      return defaultValue;
+    },
+    has(target, prop) {
+      if (typeof prop !== "string") return Reflect.has(target, prop);
+      if (prop in target) return true;
+      const lowerProp = prop.toLowerCase();
+      return Object.keys(target).some((k) => k.toLowerCase() === lowerProp);
+    },
+  });
 };
 
 export const createSmartContext = createEvaluationContext;
