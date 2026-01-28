@@ -25,8 +25,11 @@ interface SmartContextOptions {
   parentFields?: Record<string, Field>;
 
   context?: Record<string, unknown>; // Session/Global context
+<<<<<<< HEAD
   normalizeValues?: boolean;
   defaultValue?: unknown;
+=======
+>>>>>>> a06cbc59 (Hotfix ETP-3201: Fix display Logic evaluation)
 }
 
 /**

@@ -80,7 +80,15 @@ const TabsGroupRenderer = ({
   // Verify Parent Visibility against Grandparent Record
   const grandParentRecord = useSelectedRecord(grandParentTab || undefined);
 
+  console.log(
+    "[TabsGroupRenderer] Rendering group:",
+    tabs.map((t) => t.name),
+    "ActiveParent:",
+    activeParentTab?.name
+  );
+
   const isParentVisible = useMemo(() => {
+    console.log("[TabsGroupRenderer] Checking parent visibility:", activeParentTab?.name);
     if (!activeParentTab) return true;
     const expression = activeParentTab.displayLogicExpression || activeParentTab.displayLogic;
     if (!expression) return true;
@@ -106,6 +114,7 @@ const TabsGroupRenderer = ({
   const filteredTabs = useMemo(() => {
     // 1. Cascade Check: If Parent is hidden, Children are hidden.
     if (!isParentVisible) {
+      console.log("[TabsGroupRenderer] Parent hidden, hiding all children");
       return [];
     }
 
@@ -139,6 +148,7 @@ const TabsGroupRenderer = ({
   }, [tabs, parentRecord, session, activeParentTab, isParentVisible]);
 
   if (filteredTabs.length === 0) {
+    console.log("[TabsGroupRenderer] No visible tabs in group");
     return null;
   }
 
