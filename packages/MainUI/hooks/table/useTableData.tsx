@@ -40,6 +40,7 @@ import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumn
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
 import type { ExpandedState, Updater } from "@tanstack/react-table";
 import { isEmptyObject } from "@/utils/commons";
+import { mapSummariesToBackend, getSummaryCriteria } from "@/utils/table/utils";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -1032,73 +1033,54 @@ export const useTableData = ({
   // Fetch summary data
   const fetchSummary = useCallback(
     async (summaries: Record<string, string>): Promise<Record<string, number | string> | null> => {
-      if (Object.keys(summaries).length === 0) {
-        return null;
-      }
+      if (Object.keys(summaries).length === 0) return null;
 
-      // Map column IDs to their backend names (columnName or id)
-      const summaryRequest: Record<string, string> = {};
-      const columnMapping: Record<string, string> = {}; // backendName -> originalId
+      const { summaryRequest, columnMapping } = mapSummariesToBackend(summaries, baseColumns);
+      if (Object.keys(summaryRequest).length === 0) return null;
 
-      for (const [colId, type] of Object.entries(summaries)) {
-        const column = baseColumns.find((col) => col.columnName === colId || col.id === colId);
-        if (column) {
-          const backendName = column.columnName || column.id;
-          summaryRequest[backendName] = type;
-          columnMapping[backendName] = colId;
-        }
-      }
+      const combinedCriteria = getSummaryCriteria(query, tableColumnFilters, baseColumns);
+      const { sortBy: _sortBy, pageSize: _pageSize, ...cleanQuery } = query;
 
-      if (Object.keys(summaryRequest).length === 0) {
-        return null;
-      }
-
-      // Use the same query params as the main grid but add summary params
-      // Explicitly remove sortBy and pageSize to prevent the backend from returning sorted records instead of the summary
-      const { sortBy, pageSize, ...cleanQuery } = query;
       const summaryQuery = {
         ...cleanQuery,
+        criteria: combinedCriteria,
         _summary: JSON.stringify(summaryRequest),
         _noCount: true,
         _startRow: 0,
         _endRow: 1,
         _operationType: "fetch",
         _textMatchStyle: "substring",
-        _noActiveFilter: true,
+        _noActiveFilter: false,
         _className: "OBViewDataSource",
         Constants_FIELDSEPARATOR: "$",
         Constants_IDENTIFIER: "_identifier",
+        operator: "and",
+        _constructor: "AdvancedCriteria",
       };
-
-      console.log("Summary Query:", JSON.stringify(summaryQuery, null, 2));
 
       try {
         const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
         const response = (await datasource.get(treeEntity, summaryQuery)) as {
           ok: boolean;
-          data: { response?: { data?: any[] } };
+          data: { response?: { data?: Record<string, unknown>[] } };
         };
 
-        if (response.ok && response.data?.response?.data && response.data.response.data.length > 0) {
-          const resultData = response.data.response.data[0];
-          const results: Record<string, number | string> = {};
+        const firstResult = response.ok ? (response.data?.response?.data?.[0] as Record<string, unknown>) : null;
+        if (!firstResult) return null;
 
-          // Map backend results back to original column IDs
-          for (const [backendName, originalId] of Object.entries(columnMapping)) {
-            if (resultData[backendName] !== undefined) {
-              results[originalId] = resultData[backendName];
-            }
+        const results: Record<string, number | string> = {};
+        for (const [backendName, originalId] of Object.entries(columnMapping)) {
+          if (firstResult[backendName] !== undefined) {
+            results[originalId] = firstResult[backendName] as number | string;
           }
-
-          return results;
         }
-        return null;
+        return results;
       } catch (error) {
-        console.error("❌ Exception fetching summary:", error);
+        console.error("Exception fetching summary:", error);
         return null;
       }
     },
-    [query, treeEntity, baseColumns]
+    [query, treeEntity, baseColumns, tableColumnFilters]
   );
 
   return {

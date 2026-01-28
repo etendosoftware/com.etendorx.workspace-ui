@@ -35,7 +35,9 @@ global.FormData = jest.fn(() => ({
   values: jest.fn(),
 }));
 
-global.URL = {
-  createObjectURL: jest.fn(),
-  revokeObjectURL: jest.fn(),
-};
+Object.defineProperty(global, 'URL', {
+  value: {
+    createObjectURL: jest.fn(),
+    revokeObjectURL: jest.fn(),
+  }
+});
