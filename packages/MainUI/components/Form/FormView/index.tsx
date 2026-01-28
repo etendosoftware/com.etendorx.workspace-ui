@@ -302,19 +302,19 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     // Smart merge: start with initialState as base, then overlay record values
     // Only use record values that are not undefined/null (those are "no value")
     // This preserves initialState values (like dropdown entries) while prioritizing record data
-    const result = { ...initialState };
+    const formattedResult = { ...record };
 
-    if (record) {
-      for (const [key, value] of Object.entries(record)) {
-        // record value wins if it's not undefined/null
-        // "" is a valid value and should override initialState
-        if (value !== undefined && value !== null) {
-          result[key] = value;
+    if (initialState) {
+      for (const [key, value] of Object.entries(initialState)) {
+        // record value wins if it's not undefined
+        // "" and null are valid values and should override initialState
+        if (value !== undefined && value !== null && value !== "") {
+          formattedResult[key] = value;
         }
       }
     }
 
-    return result;
+    return formattedResult;
   }, [record, initialState, currentRecordId]);
 
   const { fields, groups } = useFormFields(tab, currentRecordId, currentMode, true, availableFormData);
