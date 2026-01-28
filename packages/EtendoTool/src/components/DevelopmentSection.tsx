@@ -11,6 +11,8 @@ import {
   Tooltip,
   Typography,
   useTheme,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
@@ -20,7 +22,11 @@ import CloseIcon from "@mui/icons-material/Close";
 import StorageIcon from "@mui/icons-material/Storage";
 import BuildIcon from "@mui/icons-material/Build";
 import DataObjectIcon from "@mui/icons-material/DataObject";
+import CameraAltIcon from "@mui/icons-material/CameraAlt";
+import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import { executeGradle } from "../api/gradle";
+import { useScreenshot } from "../hooks/useScreenshot";
+import { ScreenshotManager } from "./ScreenshotManager";
 
 type ServerStatus = "stopped" | "starting" | "running" | "error";
 
@@ -39,6 +45,9 @@ export function DevelopmentSection() {
   const [isPolling, setIsPolling] = useState(false);
   const [gradleExecuting, setGradleExecuting] = useState<string | null>(null);
   const [gradleOutput, setGradleOutput] = useState<{ command: string; output: string; success: boolean } | null>(null);
+  const [showScreenshotManager, setShowScreenshotManager] = useState(false);
+  const [screenshotSuccess, setScreenshotSuccess] = useState(false);
+  const { captureScreenshot, isCapturing, error: screenshotError, setIframeRef } = useScreenshot();
 
   const logStyles = useMemo(
     () => ({
@@ -110,6 +119,15 @@ export function DevelopmentSection() {
       setGradleExecuting(null);
     }
   }, []);
+
+  const handleCaptureScreenshot = useCallback(async () => {
+    try {
+      await captureScreenshot();
+      setScreenshotSuccess(true);
+    } catch (err) {
+      console.error("Failed to capture screenshot:", err);
+    }
+  }, [captureScreenshot]);
 
   // Check if the server is already running (e.g., when returning to the section)
   useEffect(() => {
@@ -244,6 +262,24 @@ export function DevelopmentSection() {
                   </IconButton>
                 </span>
               </Tooltip>
+              <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+              <Tooltip title="Capture screenshot">
+                <span>
+                  <IconButton
+                    color="secondary"
+                    onClick={handleCaptureScreenshot}
+                    disabled={serverStatus !== "running" || isCapturing}>
+                    <CameraAltIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="View screenshots">
+                <span>
+                  <IconButton color="info" onClick={() => setShowScreenshotManager(true)}>
+                    <PhotoLibraryIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
             </Stack>
           </Stack>
 
@@ -336,9 +372,39 @@ export function DevelopmentSection() {
         )}
 
         {showIframe && serverStatus === "running" && (
-          <iframe src="http://localhost:3000" title="Etendo UI" className="development-iframe" />
+          <iframe
+            ref={setIframeRef}
+            src="http://localhost:3000"
+            title="Etendo UI"
+            className="development-iframe"
+          />
         )}
       </Box>
+
+      {/* Screenshot Manager Dialog */}
+      <ScreenshotManager open={showScreenshotManager} onClose={() => setShowScreenshotManager(false)} />
+
+      {/* Success Snackbar */}
+      <Snackbar
+        open={screenshotSuccess}
+        autoHideDuration={3000}
+        onClose={() => setScreenshotSuccess(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}>
+        <Alert onClose={() => setScreenshotSuccess(false)} severity="success" sx={{ width: "100%" }}>
+          Screenshot captured successfully!
+        </Alert>
+      </Snackbar>
+
+      {/* Error Snackbar */}
+      <Snackbar
+        open={!!screenshotError}
+        autoHideDuration={5000}
+        onClose={() => {}}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}>
+        <Alert severity="error" sx={{ width: "100%" }}>
+          {screenshotError || "Failed to capture screenshot"}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

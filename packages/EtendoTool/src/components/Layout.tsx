@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Box } from "@mui/material";
 import { Sidebar } from "./Sidebar";
-import { ChatSidebar } from "./ChatSidebar";
+// import { ChatSidebar } from "./ChatSidebar"; // DISABLED: Copilot component hidden for dev
 import type { NavigationSection } from "../types/navigation";
 
 interface LayoutProps {
@@ -12,11 +12,11 @@ interface LayoutProps {
 
 export function Layout({ activeSection, onSectionChange, children }: LayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isChatCollapsed, setIsChatCollapsed] = useState(false);
+  // const [isChatCollapsed, setIsChatCollapsed] = useState(false); // DISABLED: Copilot
 
   return (
     <Box
-      className={`app-layout ${isCollapsed ? "sidebar-collapsed" : ""} ${isChatCollapsed ? "chat-sidebar-collapsed" : ""}`}>
+      className={`app-layout ${isCollapsed ? "sidebar-collapsed" : ""}`}>
       <Sidebar
         activeSection={activeSection}
         onSectionChange={onSectionChange}
@@ -24,7 +24,9 @@ export function Layout({ activeSection, onSectionChange, children }: LayoutProps
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
       />
       <Box className="main-content">{children}</Box>
+      {/* DISABLED: Copilot chat sidebar hidden for dev
       <ChatSidebar isCollapsed={isChatCollapsed} onToggleCollapse={() => setIsChatCollapsed(!isChatCollapsed)} />
+      */}
     </Box>
   );
 }
