@@ -20,6 +20,7 @@ import { useFormContext } from "react-hook-form";
 import { useState, useEffect, useMemo } from "react";
 import ClockIcon from "@workspaceui/componentlibrary/src/assets/icons/clock.svg";
 import { formatUTCTimeToLocal, formatLocalTimeToUTCPayload } from "@/utils/date/utils";
+import { getInputClassNames, getButtonClassNames, getLabelClassNames } from "@/utils/date/constants";
 
 interface TimeSelectorProps {
   field: Field;
@@ -68,36 +69,14 @@ export const TimeSelector = ({ field, isReadOnly, error, helperText, label }: Ti
     setValue(fieldName, utcPayload, { shouldDirty: true, shouldValidate: true });
   };
 
-  const inputClassNames = useMemo(() => {
-    const baseClass = `w-full pl-3 pr-10 rounded-t tracking-normal h-10.5 border-0 border-b-2 
-      bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) 
-      text-(--color-transparent-neutral-80) font-medium text-sm leading-5
-      [&::-webkit-calendar-picker-indicator]:hidden
-      [&::-moz-calendar-picker-indicator]:hidden`;
+  const inputClassNames = useMemo(
+    () => getInputClassNames({ isFocused, isReadOnly, hasError }),
+    [isFocused, isReadOnly, hasError]
+  );
 
-    const focusClass = isFocused && !isReadOnly ? "border-[#004ACA] text-[#004ACA] bg-[#E5EFFF]" : "";
+  const buttonClassNames = useMemo(() => getButtonClassNames({ isFocused }), [isFocused]);
 
-    const hoverClass = !isReadOnly
-      ? "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)"
-      : "";
-
-    const readOnlyClass = isReadOnly
-      ? "bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) hover:bg-transparent focus:border-dotted focus:border-(--color-transparent-neutral-70) focus:bg-transparent focus:text-(--color-transparent-neutral-80)"
-      : "";
-
-    const errorClass = hasError ? "border-error-main" : "";
-
-    return `${baseClass} ${focusClass} ${hoverClass} ${readOnlyClass} ${errorClass} focus:outline-none transition-colors`;
-  }, [isFocused, isReadOnly, hasError]);
-
-  const buttonClassNames = useMemo(() => {
-    const baseClasses =
-      "absolute right-3 top-1/2 transform -translate-y-1/2 transition-transform z-10 flex items-center justify-center";
-
-    const colorClass = isFocused ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)";
-
-    return `${baseClasses} ${colorClass}`;
-  }, [isFocused]);
+  const labelClassNames = useMemo(() => getLabelClassNames({ isFocused, isReadOnly }), [isFocused, isReadOnly]);
 
   const handleIconClick = () => {
     if (!isReadOnly) {
@@ -110,9 +89,7 @@ export const TimeSelector = ({ field, isReadOnly, error, helperText, label }: Ti
   return (
     <div className="w-full font-['Inter'] font-medium">
       {label && (
-        <label
-          htmlFor={fieldName}
-          className={`flex items-center gap-1 font-medium text-sm leading-5 tracking-normal transition-colors ${isFocused && !isReadOnly ? "text-(--color-baseline-100)" : "text-(--color-baseline-80)"}`}>
+        <label htmlFor={fieldName} className={labelClassNames}>
           {label}
           {field.isMandatory && <span className="text-error-main ml-1">*</span>}
         </label>
