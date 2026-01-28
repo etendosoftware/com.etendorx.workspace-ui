@@ -23,6 +23,7 @@ import { useTabContext } from "@/contexts/tab";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import useFormFields from "@/hooks/useFormFields";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
+import { createSmartContext } from "@/utils/expressions";
 import { useUserContext } from "@/hooks/useUserContext";
 import type { ProcessButton } from "@/components/ProcessModal/types";
 import { getWindowIdFromIdentifier } from "@/utils/window/utils";
@@ -50,7 +51,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
   const [error, setError] = useState<Error | null>(null);
 
   const { session } = useUserContext();
-  const { tab } = useTabContext();
+  const { tab, parentRecord, parentTab } = useTabContext();
   const selectedItems = useSelectedRecords(tab);
   const {
     fields: { actionFields },
@@ -74,7 +75,18 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
 
       const compiledExpr = compileExpression(button.displayLogicExpression);
       try {
-        const checkRecord = (record: Record<string, unknown>) => compiledExpr(session, record);
+        const checkRecord = (record: Record<string, unknown>) => {
+          const smartContext = createSmartContext({
+            values: record,
+            fields: tab.fields,
+            parentValues: parentRecord || undefined,
+            parentFields: parentTab?.fields,
+            context: session,
+            normalizeValues: false,
+            defaultValue: "",
+          });
+          return compiledExpr(smartContext, smartContext);
+        };
 
         // For multi-record processes: ALL selected records must satisfy the condition
         // For single-record processes: AT LEAST ONE record must satisfy the condition
@@ -85,7 +97,7 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
         return true;
       }
     }) as ProcessButton[];
-  }, [actionFields, selectedItems, session]);
+  }, [actionFields, selectedItems, session, tab, parentRecord, parentTab]);
 
   const fetchToolbar = useCallback(async () => {
     if (!windowIdentifier) return;

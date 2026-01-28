@@ -17,7 +17,6 @@
 
 "use client";
 
-import useDisplayLogic from "@/hooks/useDisplayLogic";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import { useCallback, useMemo } from "react";
 import type { ProcessButton, ProcessActionButton, ProcessDefinitionButton } from "../../ProcessModal/types";
@@ -65,17 +64,11 @@ interface ProcessDefinitionMenuItemProps {
 }
 
 const ProcessMenuItem = ({ button, onProcessClick, disabled, selectedRecord }: ProcessMenuItemProps) => {
-  const isDisplayed = useDisplayLogic({ field: button });
-
   const buttonName = useMemo(() => getManualProcessButtonName(button, selectedRecord), [button, selectedRecord]);
 
   const handleClick = useCallback(() => {
     onProcessClick(button);
   }, [button, onProcessClick]);
-
-  if (!isDisplayed) {
-    return null;
-  }
 
   return (
     <div
@@ -95,15 +88,9 @@ const ProcessMenuItem = ({ button, onProcessClick, disabled, selectedRecord }: P
 ProcessMenuItem.displayName = "ProcessMenuItem";
 
 const ProcessDefinitionMenuItem = ({ button, onProcessClick, disabled }: ProcessDefinitionMenuItemProps) => {
-  const isDisplayed = useDisplayLogic({ field: button as ProcessButton });
-
   const handleClick = useCallback(() => {
     onProcessClick(button);
   }, [button, onProcessClick]);
-
-  if (!isDisplayed) {
-    return null;
-  }
 
   return (
     <div
