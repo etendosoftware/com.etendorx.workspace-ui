@@ -44,6 +44,7 @@ interface FormFieldsProps {
   showErrorModal?: (message: string) => void;
   openAttachmentModal?: boolean;
   onAttachmentModalClose?: () => void;
+  isReadOnly?: boolean;
 }
 
 export function FormFields({
@@ -59,6 +60,7 @@ export function FormFields({
   showErrorModal,
   openAttachmentModal = false,
   onAttachmentModalClose,
+  isReadOnly,
 }: FormFieldsProps) {
   const { watch } = useFormContext();
   const { session } = useUserContext();
@@ -173,7 +175,13 @@ export function FormFields({
               data-testid="Collapsible__38e4a6">
               <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2">
                 {Object.entries(group.fields).map(([hqlName, field]) => (
-                  <BaseSelector field={field} key={hqlName} formMode={mode} data-testid="BaseSelector__38e4a6" />
+                  <BaseSelector
+                    field={field}
+                    key={hqlName}
+                    formMode={mode}
+                    forceReadOnly={isReadOnly}
+                    data-testid="BaseSelector__38e4a6"
+                  />
                 ))}
               </div>
             </Collapsible>

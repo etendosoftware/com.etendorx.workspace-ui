@@ -15,7 +15,14 @@
  *************************************************************************
  */
 
-import type { Field, FormMode, WindowMetadata, FieldDefinition, Tab } from "@workspaceui/api-client/src/api/types";
+import type {
+  Field,
+  FormMode,
+  WindowMetadata,
+  FieldDefinition,
+  Tab,
+  UIPattern,
+} from "@workspaceui/api-client/src/api/types";
 import type { ReportColumn } from "@workspaceui/api-client/src/hooks/types";
 import type { MRT_ColumnDef, MRT_Row } from "material-react-table";
 
@@ -55,6 +62,7 @@ export interface FormViewProps {
   recordId?: string;
   onSave?: (saveFn: () => void) => void;
   setRecordId: React.Dispatch<React.SetStateAction<string>>;
+  uIPattern?: UIPattern;
 }
 
 export type FieldValue = string | number | boolean | string[] | Date | null | FieldDefinition["value"];

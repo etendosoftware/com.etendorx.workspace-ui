@@ -46,7 +46,11 @@ export const compileExpression = (expression: string) => {
   }
 };
 
-const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; formMode?: FormMode }) => {
+const BaseSelectorComp = ({
+  field,
+  formMode = FormMode.EDIT,
+  forceReadOnly,
+}: { field: Field; formMode?: FormMode; forceReadOnly?: boolean }) => {
   // Field type mapping corrected - reference "10" now properly maps to TEXT
 
   const formMethods = useFormContext();
@@ -83,6 +87,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
   const isDisplayed = useDisplayLogic({ field });
 
   const isReadOnly = useMemo(() => {
+    if (forceReadOnly) return true;
     if (field.isReadOnly) return true;
     if (!field.isUpdatable) return FormMode.NEW !== formMode;
     if (!field.readOnlyLogicExpression) return false;
@@ -94,7 +99,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
       logger.warn("Error executing expression:", compiledExpr, error);
       return true;
     }
-  }, [field, formMode, session, values]);
+  }, [field, formMode, session, values, forceReadOnly]);
 
   const applyColumnValues = useCallback(
     (columnValues: FormInitializationResponse["columnValues"]) => {

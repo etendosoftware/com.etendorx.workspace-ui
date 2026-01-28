@@ -10,9 +10,10 @@ interface QuantitySelectorProps {
   min?: number | string;
   max?: number | string;
   allowNegative?: boolean;
+  isReadOnly?: boolean;
 }
 
-export const QuantitySelector = ({ field, min, max, allowNegative = false }: QuantitySelectorProps) => {
+export const QuantitySelector = ({ field, min, max, allowNegative = false, isReadOnly }: QuantitySelectorProps) => {
   const { watch, setValue } = useFormContext();
   const { language } = useLanguage();
   const fieldName = field.hqlName;
@@ -118,6 +119,7 @@ export const QuantitySelector = ({ field, min, max, allowNegative = false }: Qua
   return (
     <TextInput
       field={field}
+      readOnly={isReadOnly}
       value={displayValue}
       setValue={handleSetValue}
       onChange={(e) => handleSetValue(e.target.value)}

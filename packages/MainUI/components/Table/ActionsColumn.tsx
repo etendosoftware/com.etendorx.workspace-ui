@@ -17,8 +17,8 @@
 
 import type React from "react";
 import type { MRT_Row } from "material-react-table";
-import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import { IconButton } from "@workspaceui/componentlibrary/src/components";
+import { type UIPattern, type EntityData, UIPattern as UIPatternEnum } from "@workspaceui/api-client/src/api/types";
 import { LoadingIndicator } from "./components/LoadingIndicator";
 import { generateAriaAttributes } from "./utils/accessibilityUtils";
 
@@ -47,7 +47,10 @@ interface ActionsColumnProps {
   /** Callback to cancel editing this row */
   onCancel: () => void;
   /** Callback to open the full form view for this row */
+  /** Callback to open the full form view for this row */
   onOpenForm: () => void;
+  /** UI Pattern for permission control */
+  uIPattern?: UIPattern;
 }
 
 /**
@@ -66,7 +69,9 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
   onSave,
   onCancel,
   onOpenForm,
+  uIPattern,
 }) => {
+  const isReadOnly = uIPattern === UIPatternEnum.READ_ONLY;
   const getErrorTooltip = (): string => {
     if (!validationErrors) return "Validation errors present";
 
@@ -146,8 +151,9 @@ export const ActionsColumn: React.FC<ActionsColumnProps> = ({
     <fieldset className="flex items-center justify-center gap-1 min-w-[80px]" aria-label="Row actions">
       <IconButton
         onClick={onEdit}
-        title="Edit in grid"
-        className="w-6 h-6 text-blue-600"
+        disabled={isReadOnly}
+        title={isReadOnly ? "Edit disabled (Read Only)" : "Edit in grid"}
+        className={`w-6 h-6 ${isReadOnly ? "text-gray-300 cursor-not-allowed" : "text-blue-600"}`}
         data-testid={`edit-button-${String(row.original.id)}`}
         {...editButtonAttrs}>
         <EditIcon className="w-4 h-4" data-testid="EditIcon__6c559a" />

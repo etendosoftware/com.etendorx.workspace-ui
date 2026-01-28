@@ -25,6 +25,7 @@ import type {
   FormInitializationResponse,
   WindowMetadata,
 } from "@workspaceui/api-client/src/api/types";
+import { UIPattern } from "@workspaceui/api-client/src/api/types";
 
 interface MockRequestOptions {
   method?: string;
@@ -436,7 +437,7 @@ export const createMockTab = (idOrOverrides?: string | Partial<Tab>, level = 0):
     window: "TestWindow",
     tabLevel,
     parentTabId: tabLevel > 0 ? "parentTab" : undefined,
-    uIPattern: "STD",
+    uIPattern: UIPattern.STANDARD,
     table: "test_table",
     entityName: "TestEntity",
     fields: {
