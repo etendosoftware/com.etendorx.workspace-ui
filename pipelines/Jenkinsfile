@@ -158,6 +158,7 @@ spec:
                 pnpm test:mainui:coverage
                 pnpm test:api-client:coverage
                 pnpm test:component-library:coverage
+                pnpm test:etendotool:coverage
               """
               sh """
                 cd ${REPOSITORY_NAME}

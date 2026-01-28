@@ -33,12 +33,15 @@
     "apply:data-testid": "./scripts/apply-add-data-testid.sh",
     "test:api-client": "jest --selectProjects \"API Client\"",
     "test:component-library": "jest --selectProjects ComponentLibrary",
+    "test:etendotool": "jest --selectProjects EtendoTool",
     "test:mainui:watch": "jest --selectProjects MainUI --watch",
     "test:api-client:watch": "jest --selectProjects \"API Client\" --watch",
     "test:component-library:watch": "jest --selectProjects ComponentLibrary --watch",
+    "test:etendotool:watch": "jest --selectProjects EtendoTool --watch",
     "test:mainui:coverage": "cd packages/MainUI && npx jest --coverage --passWithNoTests --collectCoverageFrom='app/**/*.{ts,tsx}' --collectCoverageFrom='components/**/*.{ts,tsx}' --collectCoverageFrom='hooks/**/*.{ts,tsx}' --collectCoverageFrom='contexts/**/*.{ts,tsx}' --collectCoverageFrom='utils/**/*.{ts,tsx}' --collectCoverageFrom='screens/**/*.{ts,tsx}' --collectCoverageFrom='!**/*.test.{ts,tsx}' --collectCoverageFrom='!**/__tests__/**'",
     "test:api-client:coverage": "cd packages/api-client && npx jest --coverage --passWithNoTests --collectCoverageFrom='src/**/*.{ts,tsx}' --collectCoverageFrom='!src/**/*.test.{ts,tsx}' --collectCoverageFrom='!src/**/__tests__/**'",
-    "test:component-library:coverage": "cd packages/ComponentLibrary && npx jest --coverage --collectCoverageFrom='src/**/*.{ts,tsx}' --collectCoverageFrom='!src/**/*.test.{ts,tsx}' --collectCoverageFrom='!src/**/__tests__/**'"
+    "test:component-library:coverage": "cd packages/ComponentLibrary && npx jest --coverage --collectCoverageFrom='src/**/*.{ts,tsx}' --collectCoverageFrom='!src/**/*.test.{ts,tsx}' --collectCoverageFrom='!src/**/__tests__/**'",
+    "test:etendotool:coverage": "cd packages/EtendoTool && npx jest --coverage --passWithNoTests --collectCoverageFrom='src/**/*.{ts,tsx}' --collectCoverageFrom='!src/**/*.test.{ts,tsx}' --collectCoverageFrom='!src/**/__tests__/**'"
   },
   "keywords": [],
   "author": "",
