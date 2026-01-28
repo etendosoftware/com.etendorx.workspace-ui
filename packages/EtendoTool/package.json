@@ -10,7 +10,9 @@
     "lint": "biome lint src/",
     "lint:fix": "biome lint --apply src/",
     "format": "biome format src/",
-    "format:fix": "biome format --write src/"
+    "format:fix": "biome format --write src/",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
@@ -20,6 +22,7 @@
     "@workspaceui/api-client": "workspace:*",
     "@workspaceui/componentlibrary": "workspace:componentlibrary",
     "event-source-polyfill": "^1.0.31",
+    "html-to-image": "^1.11.13",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
