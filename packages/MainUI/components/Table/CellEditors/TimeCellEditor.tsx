@@ -19,6 +19,7 @@ import type React from "react";
 import { useRef, useState, useEffect } from "react";
 import type { CellEditorProps } from "../types/inlineEditing";
 import ClockIcon from "@workspaceui/componentlibrary/src/assets/icons/clock.svg";
+import { formatUTCTimeToLocal, formatLocalTimeToUTCPayload } from "@/utils/date/utils";
 
 export const TimeCellEditor: React.FC<CellEditorProps> = ({
   value,
@@ -41,23 +42,8 @@ export const TimeCellEditor: React.FC<CellEditorProps> = ({
       return;
     }
 
-    const stringValue = String(value);
-
-    // If it's a full ISO string (from a previous edit), extract time
-    if (stringValue.includes("T")) {
-      const date = new Date(stringValue);
-      if (!Number.isNaN(date.getTime())) {
-        const hours = date.getHours().toString().padStart(2, "0");
-        const minutes = date.getMinutes().toString().padStart(2, "0");
-        const seconds = date.getSeconds().toString().padStart(2, "0");
-        setDisplayValue(`${hours}:${minutes}:${seconds}`);
-      } else {
-        setDisplayValue(stringValue);
-      }
-    } else {
-      // Assuming it's already HH:MM:SS from API
-      setDisplayValue(stringValue);
-    }
+    const localTime = formatUTCTimeToLocal(String(value));
+    setDisplayValue(localTime);
   }, [value]);
 
   // Focus handling
@@ -77,16 +63,8 @@ export const TimeCellEditor: React.FC<CellEditorProps> = ({
       return;
     }
 
-    // Construct full date for payload using Today's date + Selected Time -> UTC
-    const now = new Date();
-    const [hours, minutes, seconds] = timeValue.split(":").map(Number);
-
-    const dateToSave = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds || 0);
-
-    const isoString = dateToSave.toISOString(); // e.g. 2026-01-28T14:30:00.000Z
-    const formattedPayload = isoString.split(".")[0]; // 2026-01-28T14:30:00
-
-    onChange(formattedPayload);
+    const utcPayload = formatLocalTimeToUTCPayload(timeValue);
+    onChange(utcPayload);
   };
 
   const handleBlur = (e: React.FocusEvent) => {

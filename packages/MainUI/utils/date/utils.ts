@@ -25,21 +25,33 @@ export const formatUTCTimeToLocal = (utcTime: string): string => {
     return utcTime;
   }
 
-  const parts = utcTime.split(":");
-  if (parts.length < 2) {
-    return utcTime;
+  let date: Date;
+
+  if (utcTime.includes("T")) {
+    // Append Z if not present to ensure JavaScript parses it as UTC, not local
+    const utcString = utcTime.endsWith("Z") ? utcTime : `${utcTime}Z`;
+    date = new Date(utcString);
+  } else {
+    const parts = utcTime.split(":");
+    if (parts.length < 2) {
+      return utcTime;
+    }
+
+    const hours = Number(parts[0]);
+    const minutes = Number(parts[1]);
+    const seconds = Number(parts[2] || 0);
+
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+      return utcTime;
+    }
+
+    date = new Date();
+    date.setUTCHours(hours, minutes, seconds);
   }
 
-  const hours = Number(parts[0]);
-  const minutes = Number(parts[1]);
-  const seconds = Number(parts[2] || 0);
-
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+  if (Number.isNaN(date.getTime())) {
     return utcTime;
   }
-
-  const date = new Date();
-  date.setUTCHours(hours, minutes, seconds);
 
   const localHours = date.getHours().toString().padStart(2, "0");
   const localMinutes = date.getMinutes().toString().padStart(2, "0");
