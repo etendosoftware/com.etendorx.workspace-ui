@@ -21,7 +21,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit) {
 
   if (!response.ok) {
     const message = typeof payload === "string" ? payload : payload?.message;
-    throw new Error(message ?? "No se pudo comunicar con la API.");
+    throw new Error(message ?? "Could not reach the API.");
   }
 
   return payload as T;

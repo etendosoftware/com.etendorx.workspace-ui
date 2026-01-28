@@ -132,10 +132,10 @@ export function DockerSection() {
         setContainers(toContainerList(rawText || containersRes.data));
         setContainersRaw(rawText);
       } else {
-        setError(containersRes.error || "No se pudo obtener los contenedores");
+        setError(containersRes.error || "Could not fetch the containers");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al cargar información de Docker");
+      setError(err instanceof Error ? err.message : "Error loading Docker information");
     } finally {
       setLoading(false);
     }
@@ -156,13 +156,13 @@ export function DockerSection() {
     try {
       const res = await action();
       if (res.success) {
-        setMessage(res.message || `Acción ${label} ejecutada correctamente.`);
+        setMessage(res.message || `Action ${label} executed successfully.`);
         await fetchData();
       } else {
-        setError(res.error || res.message || `No se pudo ejecutar ${label}.`);
+        setError(res.error || res.message || `Could not run ${label}.`);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : `No se pudo ejecutar ${label}.`);
+      setError(err instanceof Error ? err.message : `Could not run ${label}.`);
     } finally {
       setActionLoading(null);
     }
@@ -171,7 +171,7 @@ export function DockerSection() {
   const statusBadge = useMemo(() => {
     const running = containers.filter((c) => (c.state || c.status || "").toLowerCase().includes("up")).length;
     if (containers.length === 0) return null;
-    return `${running}/${containers.length} corriendo`;
+    return `${running}/${containers.length} running`;
   }, [containers]);
 
   const fetchLogs = async (service: string) => {
@@ -182,8 +182,8 @@ export function DockerSection() {
       if (res.success) {
         const raw =
           pickRawOutput(res.output) || pickRawOutput(res.data) || (typeof res.data === "string" ? res.data : "") || "";
-        setLogs((prev) => ({ ...prev, [service]: raw || "Sin contenido" }));
-        // scroll al final después de setState
+        setLogs((prev) => ({ ...prev, [service]: raw || "No content" }));
+        // scroll to the end after setState
         setTimeout(() => {
           const el = document.getElementById(`logs-${service}`);
           if (el) {
@@ -191,10 +191,10 @@ export function DockerSection() {
           }
         }, 50);
       } else {
-        setError(res.error || res.message || `No se pudieron obtener logs de ${service}`);
+        setError(res.error || res.message || `Could not fetch logs for ${service}`);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : `No se pudieron obtener logs de ${service}`);
+      setError(err instanceof Error ? err.message : `Could not fetch logs for ${service}`);
     } finally {
       setLogsLoading(null);
     }
@@ -228,7 +228,7 @@ export function DockerSection() {
               }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                 <Typography variant="subtitle1" fontWeight={700}>
-                  Logs de {fullscreenLog.service}
+                  Logs for {fullscreenLog.service}
                 </Typography>
                 <Stack direction="row" spacing={1}>
                   <Button
@@ -236,10 +236,10 @@ export function DockerSection() {
                     size="small"
                     startIcon={<RefreshIcon />}
                     onClick={() => fetchLogs(fullscreenLog.service)}>
-                    Refrescar
+                    Refresh
                   </Button>
                   <Button variant="contained" size="small" color="error" onClick={() => setFullscreenLog(null)}>
-                    Cerrar
+                    Close
                   </Button>
                 </Stack>
               </Stack>
@@ -257,10 +257,10 @@ export function DockerSection() {
             Docker Wrapper
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Controla los contenedores Docker usando el wrapper REST expuesto por setup.web (proyecto compose: etendo).
+            Manage Docker containers using the REST wrapper exposed by setup.web (compose project: etendo).
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Endpoints: /api/docker/* (start/stop/restart/pull/remove, contenedores, logs, config).
+            Endpoints: /api/docker/* (start/stop/restart/pull/remove, containers, logs, config).
           </Typography>
         </Box>
 
@@ -287,38 +287,38 @@ export function DockerSection() {
                 startIcon={<PlayArrowIcon />}
                 disabled={actionLoading !== null}
                 onClick={() => handleAction(dockerApi.startAll, "resources.up")}>
-                Iniciar todo (Gradle resources.up)
+                Start all (Gradle resources.up)
               </Button>
               <Button
                 variant="outlined"
                 startIcon={<StopIcon />}
                 disabled={actionLoading !== null}
                 onClick={() => handleAction(dockerApi.stopAll, "resources.stop")}>
-                Detener todo (resources.stop)
+                Stop all (resources.stop)
               </Button>
               <Button
                 variant="outlined"
                 startIcon={<RestartAltIcon />}
                 disabled={actionLoading !== null}
                 onClick={() => handleAction(dockerApi.restartAll, "resources.restart")}>
-                Reiniciar todo (resources.restart)
+                Restart all (resources.restart)
               </Button>
               <Button
                 variant="outlined"
                 startIcon={<DownloadIcon />}
                 disabled={actionLoading !== null}
                 onClick={() => handleAction(dockerApi.pullAll, "pull")}>
-                Pull imágenes
+                Pull images
               </Button>
               <Button
                 variant="outlined"
                 startIcon={<DeleteSweepIcon />}
                 disabled={actionLoading !== null}
                 onClick={() => handleAction(dockerApi.removeStopped, "resources.down")}>
-                Borrar todo (resources.down)
+                Remove all (resources.down)
               </Button>
               <Button variant="text" startIcon={<RefreshIcon />} onClick={fetchData} disabled={loading}>
-                Refrescar
+                Refresh
               </Button>
             </Stack>
             {statusBadge && (
@@ -337,7 +337,7 @@ export function DockerSection() {
           <Paper elevation={0} sx={{ p: 2, flex: 1, border: "1px solid #e4e7ec" }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography variant="h6" fontWeight={600}>
-                Contenedores
+                Containers
               </Typography>
               <IconButton size="small" onClick={fetchData} disabled={loading}>
                 {loading ? <CircularProgress size={18} /> : <RefreshIcon />}
@@ -358,12 +358,12 @@ export function DockerSection() {
                         {c.name}
                       </Typography>
                       <Stack direction="row" spacing={1} flexWrap="wrap">
-                        {c.state && <Chip size="small" label={`Estado: ${c.state}`} color={isUpStatus(c.state) ? "success" : "error"} />}
+                        {c.state && <Chip size="small" label={`Status: ${c.state}`} color={isUpStatus(c.state) ? "success" : "error"} />}
                         {!c.state && c.status && (
                           <Chip size="small" label={c.status} color={isUpStatus(c.status) ? "success" : "error"} />
                         )}
-                        {!isUpStatus(c.state || c.status) && <Chip size="small" label="Detenido" color="error" />}
-                        {c.ports && <Chip size="small" label={`Puertos: ${c.ports}`} />}
+                        {!isUpStatus(c.state || c.status) && <Chip size="small" label="Stopped" color="error" />}
+                        {c.ports && <Chip size="small" label={`Ports: ${c.ports}`} />}
                       </Stack>
                     </Stack>
                     {c.service && (
@@ -374,7 +374,7 @@ export function DockerSection() {
                             startIcon={<PlayArrowIcon />}
                             onClick={() => handleAction(() => dockerApi.serviceAction(c.service ?? c.key, "start"), "start", c.service)}
                             disabled={actionLoading !== null}>
-                            Iniciar
+                            Start
                           </Button>
                           <Button
                             size="small"
@@ -382,7 +382,7 @@ export function DockerSection() {
                             startIcon={<StopIcon />}
                             onClick={() => handleAction(() => dockerApi.serviceAction(c.service ?? c.key, "stop"), "stop", c.service)}
                             disabled={actionLoading !== null}>
-                            Detener
+                            Stop
                           </Button>
                           <Button
                             size="small"
@@ -390,7 +390,7 @@ export function DockerSection() {
                             startIcon={<RestartAltIcon />}
                             onClick={() => handleAction(() => dockerApi.serviceAction(c.service ?? c.key, "restart"), "restart", c.service)}
                             disabled={actionLoading !== null}>
-                            Reiniciar
+                            Restart
                           </Button>
                           <Stack direction="row" spacing={1}>
                             <Button
@@ -399,7 +399,7 @@ export function DockerSection() {
                               startIcon={<TerminalIcon />}
                               onClick={() => fetchLogs(c.service ?? c.key)}
                               disabled={logsLoading === c.service}>
-                              {logsLoading === c.service ? "Cargando logs..." : "Logs"}
+                              {logsLoading === c.service ? "Loading logs..." : "Logs"}
                             </Button>
                             {logs[c.service ?? ""] && (
                               <Button
@@ -408,7 +408,7 @@ export function DockerSection() {
                                 onClick={() =>
                                   setFullscreenLog({ service: c.service ?? c.key, content: logs[c.service ?? ""] || "" })
                                 }>
-                                Ver pantalla completa
+                                View fullscreen
                               </Button>
                             )}
                           </Stack>
@@ -426,7 +426,7 @@ export function DockerSection() {
                           fontFamily: "monospace",
                         }}>
                         <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
-                          Logs de {c.service}:
+                          Logs for {c.service}:
                         </Typography>
                         <pre
                           id={`logs-${c.service}`}
@@ -440,14 +440,14 @@ export function DockerSection() {
               </Stack>
             ) : (
               <Typography variant="body2" color="text.secondary">
-                {loading ? "Cargando contenedores..." : "No se encontraron contenedores para etendo."}
+                {loading ? "Loading containers..." : "No containers found for etendo."}
               </Typography>
             )}
 
             {containersRaw && (
               <Box sx={{ mt: 2 }}>
                 <Button size="small" variant="text" onClick={() => setShowRaw((v) => !v)}>
-                  {showRaw ? "Ocultar salida cruda" : "Mostrar salida cruda"}
+                  {showRaw ? "Hide raw output" : "Show raw output"}
                 </Button>
                 {showRaw && (
                   <Paper
@@ -460,7 +460,7 @@ export function DockerSection() {
             )}
           </Paper>
 
-          {/* Sección docker compose config temporalmente oculta */}
+          {/* Docker compose config section temporarily hidden */}
         </Stack>
       </Stack>
     </Box>

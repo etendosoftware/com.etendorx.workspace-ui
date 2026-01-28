@@ -123,7 +123,7 @@ export const useCopilot = () => {
         setMessages((prev) => [
           ...prev,
           {
-            text: "Error al enviar mensaje",
+            text: "Failed to send message",
             sender: "bot",
             timestamp: new Date().toLocaleTimeString(),
           },

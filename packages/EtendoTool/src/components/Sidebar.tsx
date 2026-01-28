@@ -32,26 +32,26 @@ const NAV_ITEMS: Array<{
 }> = [
   {
     id: "configuration",
-    label: "Configuración",
+    label: "Configuration",
     description: "gradle.properties",
     icon: <SettingsIcon />,
   },
   {
     id: "installation",
-    label: "Instalación",
-    description: "Setup inicial",
+    label: "Installation",
+    description: "Initial setup",
     icon: <InstallDesktopIcon />,
   },
   {
     id: "docker",
     label: "Docker",
-    description: "Wrapper y contenedores",
+    description: "Wrapper and containers",
     icon: <HealthAndSafetyIcon />,
   },
   {
     id: "development",
-    label: "Desarrollo",
-    description: "Panel de control",
+    label: "Development",
+    description: "Control panel",
     icon: <CodeIcon />,
   },
 ];
@@ -66,7 +66,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, onToggleC
               ETENDO TOOL
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Centro de Control
+              Control Center
             </Typography>
           </>
         )}
@@ -129,7 +129,7 @@ export function Sidebar({ activeSection, onSectionChange, isCollapsed, onToggleC
 
       <Box sx={{ flexGrow: 1 }} />
 
-      {/* Botón de toggle */}
+      {/* Toggle button */}
       <Box sx={{ p: 1, display: "flex", justifyContent: "center" }}>
         <IconButton onClick={onToggleCollapse} size="small" sx={{ border: "1px solid", borderColor: "divider" }}>
           {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
