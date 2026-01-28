@@ -3,7 +3,7 @@ export default {
   preset: "ts-jest",
   testEnvironment: "jsdom",
 
-  projects: ["<rootDir>/packages/MainUI", "<rootDir>/packages/api-client", "<rootDir>/packages/ComponentLibrary"],
+  projects: ["<rootDir>/packages/MainUI", "<rootDir>/packages/api-client", "<rootDir>/packages/ComponentLibrary", "<rootDir>/packages/EtendoTool"],
 
   collectCoverage: false, // Only collect when --coverage flag is used
 
