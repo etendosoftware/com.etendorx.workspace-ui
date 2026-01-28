@@ -110,7 +110,7 @@ export function useDatasource({
 }: UseDatasourceOptions) {
   const [loading, setLoading] = useState(!skip);
   const [loaded, setLoaded] = useState(false);
-  const [records, setRecords] = useState<EntityData[]>([]);
+  const [records, setRecords] = useState<EntityData[]>(cachedData?.records ?? []);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [page, setPage] = useState(cachedData?.page ?? 1);
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
@@ -241,22 +241,19 @@ export function useDatasource({
         }
         const newHasMoreRecords = data.response.data.length >= safePageSize;
         setHasMoreRecords(newHasMoreRecords);
-        setRecords((prev) => {
-          const newRecords = targetPage === 1 || searchQuery ? data.response.data : prev.concat(data.response.data);
+        const newRecords = targetPage === 1 || searchQuery ? data.response.data : records.concat(data.response.data);
+        setRecords(newRecords);
 
-          // Update cache after successful fetch
-          if (onCacheUpdate) {
-            onCacheUpdate({
-              records: newRecords,
-              cacheKey,
-              timestamp: Date.now(),
-              hasMoreRecords: newHasMoreRecords,
-              page: targetPage,
-            });
-          }
-
-          return newRecords;
-        });
+        // Update cache after successful fetch
+        if (onCacheUpdate) {
+          onCacheUpdate({
+            records: newRecords,
+            cacheKey,
+            timestamp: Date.now(),
+            hasMoreRecords: newHasMoreRecords,
+            page: targetPage,
+          });
+        }
         setLoaded(true);
       } catch (e) {
         logger.warn(e);
@@ -306,6 +303,7 @@ export function useDatasource({
     if (isCacheValid && initialCacheKeyRef.current === cacheKey) {
       console.log(`[useDatasource] Skipping fetch for ${entity} (cache valid and initial load)`);
       setLoaded(true);
+      setLoading(false);
       return;
     }
 
