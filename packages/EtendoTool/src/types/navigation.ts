@@ -1,1 +1,1 @@
-export type NavigationSection = "system-status" | "installation" | "development";
+export type NavigationSection = "system-status" | "installation" | "development" | "configuration";

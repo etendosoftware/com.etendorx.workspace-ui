@@ -1,0 +1,496 @@
+import { useEffect, useState } from "react";
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  FormControlLabel,
+  IconButton,
+  InputAdornment,
+  MenuItem,
+  Paper,
+  Stack,
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import SaveIcon from "@mui/icons-material/Save";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import { ConfigApi, type GroupedConfigs, type PropertyConfig } from "../services/configApi";
+
+interface ConfigurationSectionProps {
+  onClose?: () => void;
+}
+
+export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
+  const [configsByGroup, setConfigsByGroup] = useState<GroupedConfigs["groups"]>({});
+  const [editedConfigs, setEditedConfigs] = useState<Record<string, string>>({});
+  const [initialValues, setInitialValues] = useState<Record<string, string>>({});
+  const [propertyIndex, setPropertyIndex] = useState<Record<string, PropertyConfig>>({});
+  const [processStatus, setProcessStatus] = useState<Record<string, { loading: boolean; output?: string; error?: string }>>(
+    {}
+  );
+  const [totalProperties, setTotalProperties] = useState<number>(0);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [requiredFilter, setRequiredFilter] = useState<"all" | "required" | "optional">("all");
+
+  const normalizeMessage = (message: unknown, fallback = ""): string => {
+    if (!message) return fallback;
+    if (typeof message === "string") return message;
+    try {
+      return JSON.stringify(message);
+    } catch (e) {
+      return fallback || "Operación completada";
+    }
+  };
+
+  useEffect(() => {
+    loadConfigurations();
+  }, []);
+
+  const flattenConfigs = (groupData: GroupedConfigs["groups"]) => {
+    const flatConfigs: Record<string, string> = {};
+    Object.values(groupData).forEach((group) => {
+      group.properties.forEach((prop) => {
+        if (prop.process) return;
+        flatConfigs[prop.key] = prop.currentValue ?? "";
+      });
+    });
+    return flatConfigs;
+  };
+
+  const loadConfigurations = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await ConfigApi.getConfigsByGroup();
+      if (response.success && response.data?.groups) {
+        setConfigsByGroup(response.data.groups);
+        setTotalProperties(response.data.total);
+        const newPropertyIndex: Record<string, PropertyConfig> = {};
+        Object.values(response.data.groups).forEach((group) => {
+          group.properties.forEach((prop) => {
+            newPropertyIndex[prop.key] = prop;
+          });
+        });
+        setPropertyIndex(newPropertyIndex);
+        const flatConfigs = flattenConfigs(response.data.groups);
+        setEditedConfigs(flatConfigs);
+        setInitialValues(flatConfigs);
+      } else {
+        setError(response.error || normalizeMessage(response.message, "Failed to load configurations"));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load configurations");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfigChange = (key: string, value: string) => {
+    setEditedConfigs((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+    if (validationErrors[key]) {
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[key];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    setValidationErrors({});
+
+    try {
+      const changes: Record<string, string> = {};
+      Object.entries(editedConfigs).forEach(([key, value]) => {
+        if (propertyIndex[key]?.process) return;
+        if (initialValues[key] !== value) {
+          changes[key] = value;
+        }
+      });
+
+      if (Object.keys(changes).length === 0) {
+        setSuccess("No hay cambios para guardar");
+        return;
+      }
+
+      const response = await ConfigApi.saveConfigs(changes);
+
+      if (response.success) {
+        setSuccess(
+          normalizeMessage(response.message, `Se actualizaron ${Object.keys(changes).length} propiedades correctamente`)
+        );
+        await loadConfigurations();
+      } else {
+        if (response.validationErrors) {
+          setValidationErrors(response.validationErrors);
+          setError("Por favor, corrige los errores de validación antes de guardar");
+        } else {
+          setError(response.error || normalizeMessage(response.message, "Error al guardar las configuraciones"));
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al guardar las configuraciones");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getChangedCount = () => {
+    return Object.entries(editedConfigs).reduce(
+      (count, [key, value]) => (initialValues[key] !== value && !propertyIndex[key]?.process ? count + 1 : count),
+      0
+    );
+  };
+
+  const togglePasswordVisibility = (key: string) => {
+    setVisiblePasswords((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const handleExecuteProcess = async (property: PropertyConfig) => {
+    const command = property.key;
+    setProcessStatus((prev) => ({
+      ...prev,
+      [property.key]: { loading: true, output: undefined, error: undefined },
+    }));
+    try {
+      const response = await ConfigApi.executeCommand(command, {});
+      const output =
+        (response as unknown as { output?: string }).output || (response as { data?: { output?: string } }).data?.output || "";
+      if (response.success) {
+        setProcessStatus((prev) => ({
+          ...prev,
+          [property.key]: { loading: false, output: output || "Comando ejecutado correctamente" },
+        }));
+      } else {
+        setProcessStatus((prev) => ({
+          ...prev,
+          [property.key]: {
+            loading: false,
+            error: response.error || response.message || "Error al ejecutar comando",
+            output,
+          },
+        }));
+      }
+    } catch (err) {
+      setProcessStatus((prev) => ({
+        ...prev,
+        [property.key]: { loading: false, error: err instanceof Error ? err.message : "Error al ejecutar comando" },
+      }));
+    }
+  };
+
+  const renderInput = (property: PropertyConfig) => {
+    if (property.process) {
+      const command = property.key;
+      const status = processStatus[property.key] || { loading: false };
+      return (
+        <Stack spacing={1}>
+          <Button
+            variant="outlined"
+            startIcon={status.loading ? <CircularProgress size={16} /> : <RefreshIcon />}
+            onClick={() => handleExecuteProcess(property)}
+            disabled={status.loading}>
+            {status.loading ? "Ejecutando..." : "Ejecutar"} {command}
+          </Button>
+          {(status.output || status.error) && (
+            <TextField
+              value={status.error ? `Error: ${status.error}\n${status.output ?? ""}` : status.output || ""}
+              multiline
+              fullWidth
+              minRows={3}
+              InputProps={{ readOnly: true }}
+            />
+          )}
+        </Stack>
+      );
+    }
+
+    const value = editedConfigs[property.key] ?? "";
+
+    if (property.options && property.options.length > 0) {
+      return (
+        <TextField
+          select
+          fullWidth
+          value={value}
+          onChange={(e) => handleConfigChange(property.key, e.target.value)}
+          size="small"
+          variant="outlined">
+          {property.options.map((option) => (
+            <MenuItem key={option} value={option}>
+              {option}
+            </MenuItem>
+          ))}
+        </TextField>
+      );
+    }
+
+    if (property.type?.toLowerCase() === "boolean") {
+      return (
+        <FormControlLabel
+          control={
+            <Switch
+              color="primary"
+              checked={(value || "").toLowerCase() === "true"}
+              onChange={(e) => handleConfigChange(property.key, e.target.checked.toString())}
+            />
+          }
+          label={(value || "").toLowerCase() === "true" ? "Activado" : "Desactivado"}
+        />
+      );
+    }
+
+    const normalizedType = property.type?.toLowerCase();
+    const inputType =
+      property.sensitive && !visiblePasswords[property.key]
+        ? "password"
+        : normalizedType === "integer" || normalizedType === "int" || normalizedType === "port"
+          ? "number"
+          : "text";
+
+    return (
+      <TextField
+        value={value}
+        onChange={(e) => handleConfigChange(property.key, e.target.value)}
+        type={inputType}
+        fullWidth
+        error={!!validationErrors[property.key]}
+        helperText={validationErrors[property.key]}
+        size="small"
+        variant="outlined"
+        placeholder={property.defaultValue ? `Valor por defecto: ${property.defaultValue}` : undefined}
+        InputProps={
+          property.sensitive
+            ? {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => togglePasswordVisibility(property.key)} edge="end">
+                      {visiblePasswords[property.key] ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }
+            : undefined
+        }
+      />
+    );
+  };
+
+  if (loading) {
+    return (
+      <Box className="section-content">
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <CircularProgress />
+        </Box>
+      </Box>
+    );
+  }
+
+  const changedCount = getChangedCount();
+
+  return (
+    <Box className="section-content">
+      <Stack spacing={3}>
+        <Box>
+          <Typography variant="h5" fontWeight={700} gutterBottom>
+            Configuración de gradle.properties
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Administra la configuración del proyecto Etendo. Los valores y metadatos se leen desde los config.gradle de cada
+            módulo y se guardan en gradle.properties.
+          </Typography>
+          {totalProperties > 0 && (
+            <Typography variant="body2" color="text.secondary">
+              Propiedades detectadas: {totalProperties}
+            </Typography>
+          )}
+          <Typography variant="body2" color="text.secondary">
+            Las propiedades marcadas como <strong>Proceso Gradle</strong> ejecutan un comando en el backend en lugar de
+            guardarse.
+          </Typography>
+        </Box>
+
+        <Stack direction="row" spacing={2} alignItems="center">
+          <Button
+            variant="contained"
+            startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
+            onClick={handleSave}
+            disabled={loading || saving || changedCount === 0}>
+            Guardar {changedCount > 0 && `(${changedCount})`}
+          </Button>
+          <Button variant="outlined" startIcon={<RefreshIcon />} onClick={loadConfigurations} disabled={loading || saving}>
+            Refrescar
+          </Button>
+          {changedCount > 0 && (
+            <Alert severity="info" sx={{ flex: 1 }}>
+              {changedCount} propiedad(es) modificada(s). Haz clic en Guardar para aplicar los cambios.
+            </Alert>
+          )}
+        </Stack>
+
+        <Stack direction="row" spacing={2} alignItems="center">
+          <Typography variant="body2" color="text.secondary">
+            Vista:
+          </Typography>
+          <ToggleButtonGroup
+            exclusive
+            value={requiredFilter}
+            onChange={(_, value) => value && setRequiredFilter(value)}
+            size="small"
+            color="primary">
+            <ToggleButton value="all">Todos</ToggleButton>
+            <ToggleButton value="required">Requeridos</ToggleButton>
+            <ToggleButton value="optional">No requeridos</ToggleButton>
+          </ToggleButtonGroup>
+        </Stack>
+
+        {error && (
+          <Alert severity="error" onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
+        {success && (
+          <Alert severity="success" onClose={() => setSuccess(null)}>
+            {success}
+          </Alert>
+        )}
+
+        {Object.entries(configsByGroup).map(([groupKey, groupData]) => (
+          <Box key={groupKey}>
+            <Typography variant="h6" fontWeight={600} gutterBottom sx={{ mb: 1 }}>
+              {groupKey} ({groupData.count} propiedades)
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Configuraciones provistas por los config.gradle. Si modificas un valor sensible, puedes alternar la
+              visibilidad desde el campo.
+            </Typography>
+
+            {groupData.properties.some((p) => p.process) && (
+              <Paper elevation={0} sx={{ p: 2, mb: 2, border: "1px solid #e4e7ec", backgroundColor: "#f9fafb" }}>
+                <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+                  Procesos del grupo
+                </Typography>
+                <Stack spacing={1}>
+                  {groupData.properties
+                    .filter((property) => property.process)
+                    .map((property) => (
+                      <Stack key={property.key} direction="row" spacing={2} alignItems="flex-start">
+                        <Stack spacing={0.5} flex={1}>
+                          <Typography variant="body2" fontWeight={500}>
+                            {property.key}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {property.description}
+                          </Typography>
+                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                            <Chip size="small" label="Proceso Gradle" color="success" />
+                            {property.source && <Chip size="small" label={`Módulo: ${property.source}`} />}
+                          </Stack>
+                        </Stack>
+                        <Box flex={1}>{renderInput(property)}</Box>
+                      </Stack>
+                    ))}
+                </Stack>
+              </Paper>
+            )}
+
+            <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #e4e7ec" }}>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+                    <TableCell sx={{ fontWeight: 600, width: "45%" }}>Propiedad</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Valor</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {groupData.properties
+                    .filter((property) => !property.process)
+                    .filter((property) => {
+                      if (requiredFilter === "all") return true;
+                      if (requiredFilter === "required") return property.required === true;
+                      return property.required !== true;
+                    })
+                    .map((property) => (
+                    <TableRow key={property.key} hover>
+                      <TableCell>
+                        <Stack spacing={0.5}>
+                          <Typography variant="body2" fontWeight={500}>
+                            {property.key} {property.required && <Typography component="span" color="error">*</Typography>}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {property.description}
+                          </Typography>
+                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                            {property.type && <Chip size="small" label={`Tipo: ${property.type}`} />}
+                            {property.source && <Chip size="small" label={`Módulo: ${property.source}`} />}
+                            {property.sensitive && <Chip size="small" color="warning" label="Sensible" />}
+                            {property.required && <Chip size="small" color="error" label="Requerido" />}
+                            {property.process && <Chip size="small" color="success" label="Proceso Gradle" />}
+                          </Stack>
+                          <Typography variant="caption" color="text.secondary">
+                            Valor por defecto: {property.defaultValue || "N/A"}
+                          </Typography>
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        {renderInput(property)}
+                        {validationErrors[property.key] && (
+                          <Typography variant="caption" color="error" display="block" sx={{ mt: 0.5 }}>
+                            {validationErrors[property.key]}
+                          </Typography>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+        ))}
+
+        {Object.keys(configsByGroup).length === 0 && !loading && (
+          <Paper elevation={0} sx={{ p: 3, textAlign: "center", border: "1px solid #e4e7ec" }}>
+            <Typography color="text.secondary">
+              No se encontraron configuraciones. Asegúrate de que el servidor Gradle esté corriendo en el puerto 3851.
+            </Typography>
+          </Paper>
+        )}
+
+        <Paper elevation={0} sx={{ p: 2, backgroundColor: "#f8fafc", border: "1px solid #e4e7ec" }}>
+          <Typography variant="body2" color="text.secondary">
+            <strong>Nota:</strong> Los cambios en la configuración se aplicarán inmediatamente al archivo gradle.properties.
+            Algunas propiedades pueden requerir reiniciar el servidor para que surtan efecto.
+          </Typography>
+        </Paper>
+      </Stack>
+    </Box>
+  );
+}

@@ -36,6 +36,10 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/erp/, "/sws"),
       },
+      "/api": {
+        target: "http://localhost:3851",
+        changeOrigin: true,
+      },
       "/sws": {
         target: "http://localhost:8080/etendo",
         changeOrigin: true,

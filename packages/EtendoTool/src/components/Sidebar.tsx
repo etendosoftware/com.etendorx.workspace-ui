@@ -12,6 +12,7 @@ import {
 import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
 import InstallDesktopIcon from "@mui/icons-material/InstallDesktop";
 import CodeIcon from "@mui/icons-material/Code";
+import SettingsIcon from "@mui/icons-material/Settings";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import type { NavigationSection } from "../types/navigation";
@@ -34,6 +35,12 @@ const NAV_ITEMS: Array<{
     label: "Estado del Sistema",
     description: "Prerrequisitos",
     icon: <HealthAndSafetyIcon />,
+  },
+  {
+    id: "configuration",
+    label: "Configuración",
+    description: "gradle.properties",
+    icon: <SettingsIcon />,
   },
   {
     id: "installation",
