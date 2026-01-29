@@ -91,23 +91,17 @@ const Navigation: React.FC = () => {
 
   const handleCopilotOpen = useCallback(() => {
     setCopilotOpen(true);
-
-    if (!hasAssistants) {
-      getAssistants();
-    }
-  }, [hasAssistants, getAssistants]);
+    getAssistants();
+  }, [getAssistants]);
 
   const handleCopilotOpenWithContext = useCallback(
     (contextString: string, contextItems: ContextItem[]) => {
       setPendingContextString(contextString);
       setPendingContextItems(contextItems);
       setCopilotOpen(true);
-
-      if (!hasAssistants) {
-        getAssistants();
-      }
+      getAssistants();
     },
-    [hasAssistants, getAssistants]
+    [getAssistants]
   );
 
   const handleCopilotClose = useCallback(() => {
@@ -234,12 +228,14 @@ const Navigation: React.FC = () => {
           data-testid="Waterfall__120cc9"
         />
         <ConfigurationSection data-testid="ConfigurationSection__120cc9" />
-        <CopilotButton
-          onClick={handleCopilotOpen}
-          disabled={!isCopilotInstalled}
-          tooltip="Copilot"
-          data-testid="CopilotButton__120cc9"
-        />
+        {isCopilotInstalled && (
+          <CopilotButton
+            onClick={handleCopilotOpen}
+            disabled={!isCopilotInstalled}
+            tooltip="Copilot"
+            data-testid="CopilotButton__120cc9"
+          />
+        )}
         <AboutButton onClick={openAboutModal} tooltip={t("common.about")} data-testid="AboutButton__120cc9" />
         <AboutModal
           aboutUrl={aboutUrl}

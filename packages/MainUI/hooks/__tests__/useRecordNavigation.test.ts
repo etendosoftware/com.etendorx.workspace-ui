@@ -210,7 +210,7 @@ describe("useRecordNavigation", () => {
       });
 
       await waitFor(() => {
-        expect(mockHandleSave).toHaveBeenCalledWith(true);
+        expect(mockHandleSave).toHaveBeenCalledWith({ showModal: true });
         expect(mockOnNavigate).toHaveBeenCalledWith(expectedTargetId);
       });
     });
@@ -236,7 +236,7 @@ describe("useRecordNavigation", () => {
       });
 
       await waitFor(() => {
-        expect(mockHandleSave).toHaveBeenCalledWith(true);
+        expect(mockHandleSave).toHaveBeenCalledWith({ showModal: true });
         expect(mockShowErrorModal).toHaveBeenCalled();
         expect(mockOnNavigate).not.toHaveBeenCalled();
       });

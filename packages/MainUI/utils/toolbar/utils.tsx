@@ -95,7 +95,13 @@ const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMeta
   });
 };
 
-const isVisibleButton = (button: ToolbarButtonMetadata, isFormView: boolean, isTreeNodeView?: boolean, tab?: Tab) => {
+const isVisibleButton = (
+  button: ToolbarButtonMetadata,
+  isFormView: boolean,
+  isTreeNodeView?: boolean,
+  tab?: Tab,
+  isCopilotInstalled?: boolean
+) => {
   if (!button.active) return false;
 
   const isFindButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FIND;
@@ -104,13 +110,15 @@ const isVisibleButton = (button: ToolbarButtonMetadata, isFormView: boolean, isT
   const isToggleTreeView = !isTreeNodeView && button.action === TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW;
   const isPrintButtonInTransactionWindow =
     button.action === TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD && !tab?.process$_identifier?.includes("Print");
+  const isCopilotButtonHidden = button.action === TOOLBAR_BUTTONS_ACTIONS.COPILOT && !isCopilotInstalled;
 
   return (
     !isFindButtonInFormView &&
     !isSaveButtonInNonFormView &&
     !isFilterButtonInFormView &&
     !isToggleTreeView &&
-    !isPrintButtonInTransactionWindow
+    !isPrintButtonInTransactionWindow &&
+    !isCopilotButtonHidden
   );
 };
 
@@ -118,11 +126,14 @@ export const organizeButtonsBySection = (
   buttons: ToolbarButtonMetadata[],
   isFormView: boolean,
   isTreeNodeView?: boolean,
-  tab?: Tab
+  tab?: Tab,
+  isCopilotInstalled?: boolean
 ): OrganizedSections => {
   const sections: OrganizedSections = { left: [], center: [], right: [] };
 
-  const visibleButtons = buttons.filter((button) => isVisibleButton(button, isFormView, isTreeNodeView, tab));
+  const visibleButtons = buttons.filter((button) =>
+    isVisibleButton(button, isFormView, isTreeNodeView, tab, isCopilotInstalled)
+  );
 
   for (const button of visibleButtons) {
     if (button.section && sections[button.section]) {
@@ -152,7 +163,6 @@ export const createButtonByType = ({
   tab,
   selectedRecordsLength,
   isAdvancedFilterApplied,
-  windowType,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
@@ -168,7 +178,6 @@ export const createButtonByType = ({
   tab: Tab;
   selectedRecordsLength: number;
   isAdvancedFilterApplied?: boolean;
-  windowType?: string;
 }) => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
@@ -329,7 +338,6 @@ interface ButtonConfig {
   tab: Tab;
   selectedRecordsLength: number;
   isAdvancedFilterApplied?: boolean;
-  windowType?: string;
 }
 
 /**
@@ -356,7 +364,6 @@ const createSectionButtons = (
       tab: config.tab,
       selectedRecordsLength: config.selectedRecordsLength,
       isAdvancedFilterApplied: config.isAdvancedFilterApplied,
-      windowType: config.windowType,
     });
 
     // Apply button-specific styles if available
@@ -403,7 +410,6 @@ interface ToolbarSectionsConfig {
   tab: Tab;
   selectedRecordsLength: number;
   isAdvancedFilterApplied?: boolean;
-  windowType?: string;
 }
 
 export const getToolbarSections = ({
@@ -428,7 +434,7 @@ export const getToolbarSections = ({
   centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   rightSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
 } => {
-  const organizedButtons = organizeButtonsBySection(buttons, isFormView, isTreeNodeView, tab);
+  const organizedButtons = organizeButtonsBySection(buttons, isFormView, isTreeNodeView, tab, isCopilotInstalled);
 
   // Shared configuration object to avoid parameter repetition
   const buttonConfig: ButtonConfig = {

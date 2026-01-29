@@ -103,7 +103,7 @@ export function useDatasource({
   isImplicitFilterApplied = false,
   setIsImplicitFilterApplied,
 }: UseDatasourceOptions) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!skip);
   const [loaded, setLoaded] = useState(false);
   const [records, setRecords] = useState<EntityData[]>([]);
   const [error, setError] = useState<Error | undefined>(undefined);

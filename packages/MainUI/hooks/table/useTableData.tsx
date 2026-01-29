@@ -40,6 +40,7 @@ import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumn
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
 import type { ExpandedState, Updater } from "@tanstack/react-table";
 import { isEmptyObject } from "@/utils/commons";
+import { mapSummariesToBackend, getSummaryCriteria } from "@/utils/table/utils";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -97,6 +98,7 @@ interface UseTableDataReturn {
   ) => Promise<void>;
   isImplicitFilterApplied: boolean;
   tableColumnFilters: MRT_ColumnFiltersState;
+  tableColumnVisibility: MRT_VisibilityState;
   fetchSummary: (summaries: Record<string, string>) => Promise<Record<string, number | string> | null>;
 }
 
@@ -480,7 +482,7 @@ export const useTableData = ({
             isTreeMode: true,
             windowId: tab.window,
             tabId: tab.id,
-            referencedTableId: treeMetadata.referencedTableId || "155",
+            referencedTableId: treeMetadata.referencedTableId,
             parentId: -1,
           }
         : undefined,
@@ -535,7 +537,7 @@ export const useTableData = ({
           isTreeMode: true,
           windowId: tab.window,
           tabId: tab.id,
-          referencedTableId: treeMetadata.referencedTableId || "155",
+          referencedTableId: treeMetadata.referencedTableId,
           parentId: parentId,
         };
 
@@ -582,12 +584,41 @@ export const useTableData = ({
 
   // Build flattened records for tree mode
   const buildFlattenedRecords = useCallback(
-    (
-      parentRecords: EntityData[],
-      expandedState: MRT_ExpandedState,
-      childrenMap: Map<string, EntityData[]>
-    ): EntityData[] => {
+    (records: EntityData[], expandedState: MRT_ExpandedState, childrenMap: Map<string, EntityData[]>): EntityData[] => {
       const result: EntityData[] = [];
+      const recordIds = new Set(records.map((r) => String(r.id)));
+      const localChildren = new Map<string, EntityData[]>();
+      const roots: EntityData[] = [];
+
+      // Partition records into roots and children based on whether their parent is in the list
+      records.forEach((record) => {
+        const pId = record.parentId ? String(record.parentId) : null;
+        if (pId && recordIds.has(pId)) {
+          if (!localChildren.has(pId)) {
+            localChildren.set(pId, []);
+          }
+          localChildren.get(pId)?.push(record);
+        } else {
+          roots.push(record);
+        }
+      });
+
+      const sortRecords = (list: EntityData[]) => {
+        return list.sort((a, b) => {
+          // Compare seqno first
+          if (typeof a.seqno === "number" && typeof b.seqno === "number") {
+            if (a.seqno !== b.seqno) return a.seqno - b.seqno;
+          }
+
+          // Fallback to identifier/name string comparison
+          const nameA = String(a._identifier || a.name || "").toLowerCase();
+          const nameB = String(b._identifier || b.name || "").toLowerCase();
+
+          if (nameA < nameB) return -1;
+          if (nameA > nameB) return 1;
+          return 0;
+        });
+      };
 
       const processNode = (record: EntityData, level = 0, parentTreeId?: string) => {
         const nodeWithLevel = {
@@ -602,16 +633,28 @@ export const useTableData = ({
         const nodeId = String(record.id);
         const isExpanded = typeof expandedState === "object" && expandedState[nodeId];
 
-        if (isExpanded && childrenMap.has(nodeId)) {
-          const children = childrenMap.get(nodeId) || [];
-          for (const childRecord of children) {
+        if (isExpanded) {
+          const fetchedChildren = childrenMap.get(nodeId) || [];
+          const localChildNodes = localChildren.get(nodeId) || [];
+
+          // Merge and deduplicate
+          const combinedChildrenMap = new Map<string, EntityData>();
+          [...fetchedChildren, ...localChildNodes].forEach((child) => {
+            combinedChildrenMap.set(String(child.id), child);
+          });
+
+          const sortedChildren = sortRecords(Array.from(combinedChildrenMap.values()));
+
+          for (const childRecord of sortedChildren) {
             processNode(childRecord, level + 1, nodeId);
           }
         }
       };
 
-      for (const parentRecord of parentRecords) {
-        processNode(parentRecord, 0);
+      const sortedRoots = sortRecords(roots);
+
+      for (const rootRecord of sortedRoots) {
+        processNode(rootRecord, 0);
       }
       return result;
     },
@@ -990,73 +1033,54 @@ export const useTableData = ({
   // Fetch summary data
   const fetchSummary = useCallback(
     async (summaries: Record<string, string>): Promise<Record<string, number | string> | null> => {
-      if (Object.keys(summaries).length === 0) {
-        return null;
-      }
+      if (Object.keys(summaries).length === 0) return null;
 
-      // Map column IDs to their backend names (columnName or id)
-      const summaryRequest: Record<string, string> = {};
-      const columnMapping: Record<string, string> = {}; // backendName -> originalId
+      const { summaryRequest, columnMapping } = mapSummariesToBackend(summaries, baseColumns);
+      if (Object.keys(summaryRequest).length === 0) return null;
 
-      for (const [colId, type] of Object.entries(summaries)) {
-        const column = baseColumns.find((col) => col.columnName === colId || col.id === colId);
-        if (column) {
-          const backendName = column.columnName || column.id;
-          summaryRequest[backendName] = type;
-          columnMapping[backendName] = colId;
-        }
-      }
+      const combinedCriteria = getSummaryCriteria(query, tableColumnFilters, baseColumns);
+      const { sortBy: _sortBy, pageSize: _pageSize, ...cleanQuery } = query;
 
-      if (Object.keys(summaryRequest).length === 0) {
-        return null;
-      }
-
-      // Use the same query params as the main grid but add summary params
-      // Explicitly remove sortBy and pageSize to prevent the backend from returning sorted records instead of the summary
-      const { sortBy, pageSize, ...cleanQuery } = query;
       const summaryQuery = {
         ...cleanQuery,
+        criteria: combinedCriteria,
         _summary: JSON.stringify(summaryRequest),
         _noCount: true,
         _startRow: 0,
         _endRow: 1,
         _operationType: "fetch",
         _textMatchStyle: "substring",
-        _noActiveFilter: true,
+        _noActiveFilter: false,
         _className: "OBViewDataSource",
         Constants_FIELDSEPARATOR: "$",
         Constants_IDENTIFIER: "_identifier",
+        operator: "and",
+        _constructor: "AdvancedCriteria",
       };
-
-      console.log("Summary Query:", JSON.stringify(summaryQuery, null, 2));
 
       try {
         const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
         const response = (await datasource.get(treeEntity, summaryQuery)) as {
           ok: boolean;
-          data: { response?: { data?: any[] } };
+          data: { response?: { data?: Record<string, unknown>[] } };
         };
 
-        if (response.ok && response.data?.response?.data && response.data.response.data.length > 0) {
-          const resultData = response.data.response.data[0];
-          const results: Record<string, number | string> = {};
+        const firstResult = response.ok ? (response.data?.response?.data?.[0] as Record<string, unknown>) : null;
+        if (!firstResult) return null;
 
-          // Map backend results back to original column IDs
-          for (const [backendName, originalId] of Object.entries(columnMapping)) {
-            if (resultData[backendName] !== undefined) {
-              results[originalId] = resultData[backendName];
-            }
+        const results: Record<string, number | string> = {};
+        for (const [backendName, originalId] of Object.entries(columnMapping)) {
+          if (firstResult[backendName] !== undefined) {
+            results[originalId] = firstResult[backendName] as number | string;
           }
-
-          return results;
         }
-        return null;
+        return results;
       } catch (error) {
-        console.error("❌ Exception fetching summary:", error);
+        console.error("Exception fetching summary:", error);
         return null;
       }
     },
-    [query, treeEntity, baseColumns]
+    [query, treeEntity, baseColumns, tableColumnFilters]
   );
 
   return {
@@ -1094,6 +1118,7 @@ export const useTableData = ({
     applyQuickFilter,
     isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
     tableColumnFilters,
+    tableColumnVisibility,
     fetchSummary,
     hasMoreRecords,
   };
