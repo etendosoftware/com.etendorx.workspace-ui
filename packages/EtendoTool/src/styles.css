@@ -4,6 +4,8 @@
   color-scheme: light;
   --sidebar-width: 260px;
   --sidebar-collapsed-width: 64px;
+  --chat-sidebar-width: 380px;
+  --chat-sidebar-collapsed-width: 64px;
   --toolbar-height: 180px;
   --surface: #ffffff;
   --text-primary: #0b0c10;
@@ -86,14 +88,19 @@ body {
 .main-content {
   flex: 1;
   margin-left: var(--sidebar-width);
+  margin-right: var(--chat-sidebar-width);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  transition: margin-left var(--transition-speed) ease;
+  transition: margin-left var(--transition-speed) ease, margin-right var(--transition-speed) ease;
 }
 
 .sidebar-collapsed .main-content {
   margin-left: var(--sidebar-collapsed-width);
+}
+
+.chat-sidebar-collapsed .main-content {
+  margin-right: var(--chat-sidebar-collapsed-width);
 }
 
 .section-content {
@@ -207,6 +214,50 @@ body {
   border: 0;
   background: var(--surface);
   display: block;
+}
+
+/* =====================
+   Chat Sidebar (Derecha)
+   ===================== */
+
+.chat-sidebar {
+  width: var(--chat-sidebar-width);
+  min-width: var(--chat-sidebar-width);
+  height: 100vh;
+  position: fixed;
+  right: 0;
+  top: 0;
+  background: var(--sidebar-bg);
+  border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  transition: width var(--transition-speed) ease, min-width var(--transition-speed) ease;
+}
+
+.chat-sidebar.collapsed {
+  width: var(--chat-sidebar-collapsed-width);
+  min-width: var(--chat-sidebar-collapsed-width);
+}
+
+.chat-sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+  transition: padding var(--transition-speed) ease;
+}
+
+.chat-sidebar.collapsed .chat-sidebar-header {
+  padding: 16px 8px;
+}
+
+.chat-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.chat-sidebar.collapsed .chat-sidebar-content {
+  display: none;
 }
 
 /* =====================
