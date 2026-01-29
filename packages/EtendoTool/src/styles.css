@@ -3,6 +3,7 @@
 :root {
   color-scheme: light;
   --sidebar-width: 260px;
+  --sidebar-collapsed-width: 64px;
   --toolbar-height: 180px;
   --surface: #ffffff;
   --text-primary: #0b0c10;
@@ -11,6 +12,7 @@
   --background-main: #f5f6fa;
   --sidebar-bg: #ffffff;
   --primary-color: #004aca;
+  --transition-speed: 0.2s;
 }
 
 * {
@@ -50,15 +52,31 @@ body {
   display: flex;
   flex-direction: column;
   z-index: 100;
+  transition: width var(--transition-speed) ease, min-width var(--transition-speed) ease;
+}
+
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
+  min-width: var(--sidebar-collapsed-width);
 }
 
 .sidebar-header {
   padding: 24px 20px 16px;
+  transition: padding var(--transition-speed) ease;
+}
+
+.sidebar.collapsed .sidebar-header {
+  padding: 16px 8px;
 }
 
 .sidebar-footer {
   padding: 16px 20px;
   border-top: 1px solid var(--border-color);
+  transition: padding var(--transition-speed) ease;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  padding: 8px;
 }
 
 /* =====================
@@ -71,6 +89,11 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  transition: margin-left var(--transition-speed) ease;
+}
+
+.sidebar-collapsed .main-content {
+  margin-left: var(--sidebar-collapsed-width);
 }
 
 .section-content {
