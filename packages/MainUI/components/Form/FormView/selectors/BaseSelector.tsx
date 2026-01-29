@@ -41,8 +41,8 @@ import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.
 export const compileExpression = (expression: string) => {
   try {
     return new Function(
-      "context", 
-      "currentValues", 
+      "context",
+      "currentValues",
       // Safely stub OB for legacy expressions that might leak through
       `
       const OB = {

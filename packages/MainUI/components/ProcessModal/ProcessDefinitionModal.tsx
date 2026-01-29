@@ -1615,9 +1615,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           const hasFormValues = formValues && Object.keys(formValues).length > 0;
           const hasAvailableData = availableFormData && Object.keys(availableFormData).length > 0;
           const hasData = hasFormValues || hasAvailableData;
-          
-          const isMalformedLogic =
-            parameter.displayLogic.includes("_logic") && !parameter.displayLogic.includes("@");
+
+          const isMalformedLogic = parameter.displayLogic.includes("_logic") && !parameter.displayLogic.includes("@");
 
           if (!isMalformedLogic && hasData) {
             try {
@@ -1632,20 +1631,20 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                     columnName: p.dBColumnName,
                     column: { dBColumnName: p.dBColumnName },
                   } as any;
-                  
+
                   if (p.dBColumnName && p.dBColumnName !== p.name) {
-                     acc[p.dBColumnName] = {
-                        hqlName: p.name, // Point to p.name because formValues are keyed by p.name!
-                        columnName: p.dBColumnName,
-                        column: { dBColumnName: p.dBColumnName },
-                     } as any;
+                    acc[p.dBColumnName] = {
+                      hqlName: p.name, // Point to p.name because formValues are keyed by p.name!
+                      columnName: p.dBColumnName,
+                      column: { dBColumnName: p.dBColumnName },
+                    } as any;
                   }
-                  
+
                   return acc;
                 },
                 {} as Record<string, any>
               );
-              
+
               const smartContext = createSmartContext({
                 // Use formValues if available (reactive), otherwise fallback to combined defaults (initial load)
                 values: hasFormValues ? formValues : availableFormData,
