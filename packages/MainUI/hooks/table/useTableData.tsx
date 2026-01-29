@@ -42,6 +42,8 @@ import type { ExpandedState, Updater } from "@tanstack/react-table";
 import { isEmptyObject } from "@/utils/commons";
 import { mapSummariesToBackend, getSummaryCriteria } from "@/utils/table/utils";
 
+import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
+
 interface UseTableDataParams {
   isTreeMode: boolean;
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
@@ -252,7 +254,7 @@ export const useTableData = ({
           columnId,
           searchQuery,
           tabId: tab.id,
-          entityName: treeEntity,
+          entityName: tab.entityName,
           fetchFilterOptions,
           setFilterOptions,
           isImplicitFilterApplied,
@@ -294,7 +296,7 @@ export const useTableData = ({
         columnId,
         searchQuery: currentSearchQuery,
         tabId: tab.id,
-        entityName: treeEntity,
+        entityName: tab.entityName,
         fetchFilterOptions,
         setFilterOptions,
         offset,
@@ -547,6 +549,28 @@ export const useTableData = ({
 
         const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
 
+        // Generate filters
+        const searchCriteriaArray =
+          searchQuery && stableDatasourceColumns
+            ? // @ts-ignore
+              SearchUtils.createSearchCriteria(stableDatasourceColumns, searchQuery)
+            : [];
+        const columnFilterCriteria = LegacyColumnFilterUtils.createColumnFilterCriteria(
+          tableColumnFilters,
+          stableDatasourceColumns
+        );
+
+        const parentIdCriteria = {
+          fieldName: "parentId",
+          operator: "equals",
+          value: parentId,
+        };
+
+        // Combine criteria
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const baseCriteria = (childQuery.criteria as any[]) || [];
+        const finalCriteria = [...baseCriteria, ...searchCriteriaArray, ...columnFilterCriteria, parentIdCriteria];
+
         const safePageSize = 1000;
         const startRow = 0;
         const endRow = safePageSize - 1;
@@ -556,10 +580,12 @@ export const useTableData = ({
           startRow,
           endRow,
           pageSize: safePageSize,
-          parentId: parentId,
+          // parentId: parentId, // Removed to match useDatasource behavior, now in criteria
+          criteria: finalCriteria,
           tabId: childTreeOptions.tabId,
           windowId: childTreeOptions.windowId,
           referencedTableId: childTreeOptions.referencedTableId,
+          _textMatchStyle: "substring",
         };
 
         const response = (await datasource.get(treeEntity, processedParams)) as {
@@ -579,8 +605,65 @@ export const useTableData = ({
         console.error("❌ Exception loading child nodes:", error);
       }
     },
-    [shouldUseTreeMode, loadedNodes, treeEntity, tab, treeMetadata, query]
+    [
+      shouldUseTreeMode,
+      loadedNodes,
+      treeEntity,
+      tab,
+      treeMetadata,
+      query,
+      searchQuery,
+      tableColumnFilters,
+      stableDatasourceColumns,
+    ]
   );
+
+  // Clear loaded nodes when filters change to force re-fetch
+  const prevFiltersRef = useRef(tableColumnFilters);
+  const prevSearchRef = useRef(searchQuery);
+
+  useEffect(() => {
+    const filtersChanged = prevFiltersRef.current !== tableColumnFilters;
+    const searchChanged = prevSearchRef.current !== searchQuery;
+    const modeChanged = prevShouldUseTreeMode !== shouldUseTreeMode;
+
+    if (filtersChanged || searchChanged || modeChanged) {
+      setLoadedNodes(new Set());
+      setChildrenData(new Map());
+      setExpanded({});
+      prevFiltersRef.current = tableColumnFilters;
+      prevSearchRef.current = searchQuery;
+      if (modeChanged) {
+        setPrevShouldUseTreeMode(shouldUseTreeMode);
+      }
+    }
+  }, [tableColumnFilters, searchQuery, shouldUseTreeMode, prevShouldUseTreeMode]);
+
+  // Auto-expand nodes that are parents of other nodes in the current record set (Tree Search behavior)
+  useEffect(() => {
+    if (shouldUseTreeMode && records.length > 0) {
+      const parentIds = new Set(records.map((r) => String(r.parentId)));
+      const newExpanded: MRT_ExpandedState = {};
+      let hasChanges = false;
+
+      records.forEach((r) => {
+        const id = String(r.id);
+        // If this record's ID is used as a parentId by another record in the list, it's a parent path node.
+        if (parentIds.has(id)) {
+          newExpanded[id] = true;
+          hasChanges = true;
+        }
+      });
+
+      if (hasChanges) {
+        setExpanded((prev) => {
+          // If prev is not an object (e.g. true/false for all), reset it
+          const prevObj = typeof prev === "object" && prev !== null ? prev : {};
+          return { ...prevObj, ...newExpanded };
+        });
+      }
+    }
+  }, [records, shouldUseTreeMode]);
 
   // Build flattened records for tree mode
   const buildFlattenedRecords = useCallback(
