@@ -23,6 +23,40 @@ export interface TabWithParentInfo extends Tab {
   active?: boolean;
 }
 
+/**
+ * Normalizes a string to lowercase snake_case and removes common prefixes
+ * @param str - The string to normalize
+ * @returns Normalized string
+ */
+function normalizeIdentifier(str: string): string {
+  return (
+    str
+      // Convert camelCase to snake_case (must be done before lowercasing)
+      .replace(/([A-Z])/g, "_$1")
+      .toLowerCase()
+      // Remove common table prefixes
+      .replace(/^(fin|c|m|ad|s)_/, "")
+      // Remove leading/trailing underscores
+      .replace(/^_/, "")
+      .replace(/_$/, "")
+  );
+}
+
+/**
+ * Checks if a parent column matches the parent tab's identifier
+ * @param columnName - The column name from parentColumns (e.g., "business_partner_id", "invoice_id")
+ * @param parentTableIdentifier - The parent tab's table identifier (e.g., "c_bpartner", "c_invoice")
+ * @param parentEntityName - The parent tab's entity name (e.g., "BusinessPartner", "FinInvoice")
+ * @returns true if the column matches the parent tab
+ */
+function matchesParentColumn(columnName: string, parentTableIdentifier: string, parentEntityName: string): boolean {
+  const normalizedColumn = normalizeIdentifier(columnName.replace(/_id$/, "")); // Remove _id suffix
+  const normalizedTable = normalizeIdentifier(parentTableIdentifier);
+  const normalizedEntity = normalizeIdentifier(parentEntityName);
+
+  return normalizedColumn === normalizedTable || normalizedColumn === normalizedEntity;
+}
+
 export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | null): boolean {
   if (tab.tabLevel === 0) {
     return true;
@@ -40,8 +74,14 @@ export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | nul
     return tab.parentTabId === activeParentTab.id;
   }
 
-  // If no parentTabId is provided, show the tab by default
-  // This happens when metadata doesn't include explicit parent relationships
-  // In this case, we trust that the server is sending the correct tabs for this window
-  return true;
+  // Check parentColumns if they exist and have values
+  if (tab.parentColumns && tab.parentColumns.length > 0) {
+    return tab.parentColumns.some((column) =>
+      matchesParentColumn(column, activeParentTab.table$_identifier, activeParentTab.entityName)
+    );
+  }
+
+  // If no parentTabId and no parentColumns, don't show the tab
+  // This indicates no relationship is defined between the tab and the parent
+  return false;
 }
