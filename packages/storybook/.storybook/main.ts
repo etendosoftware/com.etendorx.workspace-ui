@@ -72,7 +72,21 @@ const config: StorybookConfig = {
         external: ['@emotion/react', '@emotion/styled'],
       },
       optimizeDeps: {
-        include: ['react', 'react-dom'],
+        include: [
+          'react',
+          'react-dom',
+          '@mui/material',
+          '@mui/system',
+          '@emotion/react',
+          '@emotion/styled',
+          '@mui/material/styles',
+          '@mui/system/colorManipulator',
+          '@mui/material/utils',
+          '@mui/utils',
+          '@mui/icons-material',
+          '@mui/material/colors',
+          '@mui/material/styles/createPalette',
+        ],
       },
     });
   },

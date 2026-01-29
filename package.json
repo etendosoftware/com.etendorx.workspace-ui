@@ -6,7 +6,11 @@
   "main": "packages/MainUI/server.js",
   "packageManager": "pnpm@9.15.2",
   "scripts": {
-    "build:all": "pnpm --filter @workspaceui/storybook build && pnpm --filter @workspaceui/mainui build",
+    "build:all": "pnpm --filter @workspaceui/storybook build && pnpm --filter @workspaceui/mainui build && pnpm --filter @workspaceui/etendotool build",
+    "dev:etendotool": "pnpm --filter @workspaceui/etendotool dev",
+    "build:etendotool": "pnpm --filter @workspaceui/etendotool build",
+    "dev:java-runtime": "pnpm run dev:etendotool",
+    "build:java-runtime": "pnpm run build:etendotool",
     "storybook": "pnpm --filter @workspaceui/storybook storybook",
     "dev": "pnpm --filter @workspaceui/mainui dev",
     "dev-turbo": "turbo run dev --filter=@workspaceui/mainui",
