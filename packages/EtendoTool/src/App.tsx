@@ -4,6 +4,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { Layout } from "./components/Layout";
 import { SystemStatusSection } from "./components/SystemStatusSection";
 import { InstallationSection } from "./components/InstallationSection";
+import { StartAllSection } from "./components/StartAllSection";
 import { DevelopmentSection } from "./components/DevelopmentSection";
 import { ConfigurationSection } from "./components/ConfigurationSection";
 import { DockerSection } from "./components/DockerSection";
@@ -68,6 +69,8 @@ export default function App() {
     switch (activeSection) {
       case "system-status":
         return <SystemStatusSection />;
+      case "start-all":
+        return <StartAllSection />;
       case "installation":
         return <InstallationSection />;
       case "docker":

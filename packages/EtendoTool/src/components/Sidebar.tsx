@@ -9,12 +9,12 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
-import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
 import InstallDesktopIcon from "@mui/icons-material/InstallDesktop";
 import CodeIcon from "@mui/icons-material/Code";
 import SettingsIcon from "@mui/icons-material/Settings";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import type { NavigationSection } from "../types/navigation";
 
 interface SidebarProps {
@@ -35,6 +35,12 @@ const NAV_ITEMS: Array<{
     label: "Configuration",
     description: "gradle.properties",
     icon: <SettingsIcon />,
+  },
+  {
+    id: "start-all",
+    label: "Start All",
+    description: "Quick full setup",
+    icon: <RocketLaunchIcon />,
   },
   {
     id: "installation",
