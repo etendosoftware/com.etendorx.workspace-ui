@@ -140,11 +140,27 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
         return Reflect.get(target, prop, receiver);
       }
 
+      // 1. Try standard resolution (Exact + Fuzzy)
       const val = resolveProperty(target, prop);
+      if (val !== undefined && val !== null) {
+        return val;
+      }
 
-      if ((val === null || val === undefined) && defaultValue !== undefined) {
+      // 2. Handle @property@ access pattern (from Hotfix ETP-3261)
+      // This handles cases where raw @field@ syntax is passed directly to the context
+      if (prop.startsWith("@") && prop.endsWith("@")) {
+        const cleanProp = prop.slice(1, -1);
+        const cleanVal = resolveProperty(target, cleanProp);
+        if (cleanVal !== undefined && cleanVal !== null) {
+          return cleanVal;
+        }
+      }
+
+      // 3. Fallback to default value
+      if (defaultValue !== undefined) {
         return defaultValue;
       }
+
       return val;
     },
     has(target, prop) {

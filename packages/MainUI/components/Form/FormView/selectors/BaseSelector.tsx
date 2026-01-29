@@ -40,7 +40,20 @@ import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.
 
 export const compileExpression = (expression: string) => {
   try {
-    return new Function("context", "currentValues", `return ${parseDynamicExpression(expression)};`);
+    return new Function(
+      "context", 
+      "currentValues", 
+      // Safely stub OB for legacy expressions that might leak through
+      `
+      const OB = {
+        Utilities: {
+           getValue: (obj, prop) => obj?.[prop]
+        },
+        getFilterExpression: () => null
+      };
+      return ${parseDynamicExpression(expression)};
+      `
+    );
   } catch (error) {
     logger.error("Error compiling expression:", expression, error);
     return () => true;

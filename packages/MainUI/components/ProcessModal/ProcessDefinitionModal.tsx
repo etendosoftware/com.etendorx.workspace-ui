@@ -38,6 +38,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import type { ExecuteProcessResult } from "@/app/actions/process";
 import { revalidateDopoProcess } from "@/app/actions/revalidate"; // Import revalidation action
 import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
+import { createSmartContext } from "@/utils/expressions";
 import {
   BUTTON_LIST_REFERENCE_ID,
   PROCESS_DEFINITION_DATA,
@@ -58,6 +59,7 @@ import Loading from "../loading";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
+import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import ProcessResultModal from "./ProcessResultModal";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
@@ -1605,6 +1607,66 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       }
 
       if (parameter.reference === WINDOW_REFERENCE_ID) {
+        // Evaluate display logic for Grid parameters (Window Reference)
+        let isDisplayed = true;
+        const defaultsDisplayLogic = logicFields?.[`${parameter.name}.display`];
+
+        if (parameter.displayLogic) {
+          const hasFormValues = formValues && Object.keys(formValues).length > 0;
+          const hasAvailableData = availableFormData && Object.keys(availableFormData).length > 0;
+          const hasData = hasFormValues || hasAvailableData;
+          
+          const isMalformedLogic =
+            parameter.displayLogic.includes("_logic") && !parameter.displayLogic.includes("@");
+
+          if (!isMalformedLogic && hasData) {
+            try {
+              const compiledExpr = compileExpression(parameter.displayLogic);
+
+              // Map parameters to field-like structure for smart context mapping
+              const paramFields = Object.values(parameters).reduce(
+                (acc, p) => {
+                  // Key by BOTH name and dBColumnName (if available) to ensure lookup works
+                  acc[p.name] = {
+                    hqlName: p.name,
+                    columnName: p.dBColumnName,
+                    column: { dBColumnName: p.dBColumnName },
+                  } as any;
+                  
+                  if (p.dBColumnName && p.dBColumnName !== p.name) {
+                     acc[p.dBColumnName] = {
+                        hqlName: p.name, // Point to p.name because formValues are keyed by p.name!
+                        columnName: p.dBColumnName,
+                        column: { dBColumnName: p.dBColumnName },
+                     } as any;
+                  }
+                  
+                  return acc;
+                },
+                {} as Record<string, any>
+              );
+              
+              const smartContext = createSmartContext({
+                // Use formValues if available (reactive), otherwise fallback to combined defaults (initial load)
+                values: hasFormValues ? formValues : availableFormData,
+                fields: paramFields,
+                // Merge session and recordValues to provide full context
+                context: { ...session, ...(recordValues || {}) },
+              });
+
+              isDisplayed = compiledExpr(smartContext, smartContext);
+            } catch (error) {
+              logger.warn("Error evaluating display logic for " + parameter.name, error);
+            }
+          }
+        } else if (defaultsDisplayLogic !== undefined) {
+          isDisplayed = defaultsDisplayLogic;
+        }
+
+        if (!isDisplayed) {
+          continue;
+        }
+
         const parameterTab = getTabForParameter(parameter);
         const parameterEntityName = parameterTab?.entityName || "";
         const parameterTabId = parameterTab?.id || "";
