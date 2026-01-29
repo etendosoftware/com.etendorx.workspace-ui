@@ -23,12 +23,10 @@
     "@workspaceui/componentlibrary": "workspace:componentlibrary",
     "event-source-polyfill": "^1.0.31",
     "html-to-image": "^1.11.13",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react": "19.2.1",
+    "react-dom": "19.2.1"
   },
   "devDependencies": {
-    "@types/react": "18.3.1",
-    "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "^4.2.1",
     "typescript": "^5.2.2",
     "vite": "^5.4.19",
