@@ -160,6 +160,7 @@ export interface Field {
    * from the child record's data (e.g., record["cBpartnerId"]).
    */
   isParentRecordProperty?: boolean;
+  isAuditField?: boolean;
 }
 
 export interface Option<T extends string = string> {
@@ -190,6 +191,7 @@ export interface Column {
   fieldId?: string;
   customJs?: string | null;
   referencedTabId: string | null;
+  isAuditField?: boolean;
 }
 
 export interface MappedField {
