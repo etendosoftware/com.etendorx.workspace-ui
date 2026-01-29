@@ -17,7 +17,9 @@
     "@emotion/styled": "^11.11.5",
     "@mui/icons-material": "^5.15.19",
     "@mui/material": "^5.15.19",
+    "@workspaceui/api-client": "workspace:*",
     "@workspaceui/componentlibrary": "workspace:componentlibrary",
+    "event-source-polyfill": "^1.0.31",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
