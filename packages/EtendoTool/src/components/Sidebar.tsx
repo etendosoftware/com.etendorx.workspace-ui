@@ -42,12 +42,13 @@ const NAV_ITEMS: Array<{
     description: "Initial setup",
     icon: <InstallDesktopIcon />,
   },
-  {
-    id: "docker",
-    label: "Docker",
-    description: "Wrapper and containers",
-    icon: <HealthAndSafetyIcon />,
-  },
+  // DISABLED: Docker section hidden for dev (install actions with Docker commented)
+  // {
+  //   id: "docker",
+  //   label: "Docker",
+  //   description: "Wrapper and containers",
+  //   icon: <HealthAndSafetyIcon />,
+  // },
   {
     id: "development",
     label: "Development",
