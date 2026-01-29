@@ -13,7 +13,7 @@ export class AuthService {
 
   static async login(credentials: LoginCredentials): Promise<string> {
     try {
-      const loginUrl = "/sws/login";
+      const loginUrl = "http://localhost:8080/etendo/sws/login";
       console.log("[AuthService] Login URL:", window.location.origin + loginUrl);
       console.log("[AuthService] Login credentials:", { username: credentials.username, role: credentials.role });
 

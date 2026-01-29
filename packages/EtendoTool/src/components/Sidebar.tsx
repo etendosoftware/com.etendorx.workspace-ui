@@ -31,12 +31,6 @@ const NAV_ITEMS: Array<{
   icon: React.ReactNode;
 }> = [
   {
-    id: "system-status",
-    label: "Estado del Sistema",
-    description: "Prerrequisitos",
-    icon: <HealthAndSafetyIcon />,
-  },
-  {
     id: "configuration",
     label: "Configuración",
     description: "gradle.properties",
@@ -47,6 +41,12 @@ const NAV_ITEMS: Array<{
     label: "Instalación",
     description: "Setup inicial",
     icon: <InstallDesktopIcon />,
+  },
+  {
+    id: "docker",
+    label: "Docker",
+    description: "Wrapper y contenedores",
+    icon: <HealthAndSafetyIcon />,
   },
   {
     id: "development",

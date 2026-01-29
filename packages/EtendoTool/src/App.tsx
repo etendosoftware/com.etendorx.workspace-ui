@@ -6,6 +6,7 @@ import { SystemStatusSection } from "./components/SystemStatusSection";
 import { InstallationSection } from "./components/InstallationSection";
 import { DevelopmentSection } from "./components/DevelopmentSection";
 import { ConfigurationSection } from "./components/ConfigurationSection";
+import { DockerSection } from "./components/DockerSection";
 import type { NavigationSection } from "./types/navigation";
 
 const theme = createTheme({
@@ -61,7 +62,7 @@ const theme = createTheme({
 });
 
 export default function App() {
-  const [activeSection, setActiveSection] = useState<NavigationSection>("system-status");
+  const [activeSection, setActiveSection] = useState<NavigationSection>("configuration");
 
   const renderSection = () => {
     switch (activeSection) {
@@ -69,12 +70,14 @@ export default function App() {
         return <SystemStatusSection />;
       case "installation":
         return <InstallationSection />;
+      case "docker":
+        return <DockerSection />;
       case "development":
         return <DevelopmentSection />;
       case "configuration":
         return <ConfigurationSection />;
       default:
-        return <SystemStatusSection />;
+        return <ConfigurationSection />;
     }
   };
 

@@ -19,8 +19,6 @@ export const useCopilot = () => {
         console.log("[useCopilot] Initializing Copilot...");
         const token = await AuthService.autoLogin();
         CopilotClient.setBaseUrl();
-        console.log("[useCopilot] Copilot Base URL:", window.location.origin + "/api/erp");
-        console.log("[useCopilot] Token obtained:", token ? "✓" : "✗");
         CopilotClient.setToken(token);
         setIsInitialized(true);
         console.log("[useCopilot] Copilot initialized successfully");
@@ -37,9 +35,7 @@ export const useCopilot = () => {
 
     setIsLoadingAssistants(true);
     try {
-      console.log("[useCopilot] Loading assistants from:", window.location.origin + "/api/erp/copilot/assistants");
       const data = await CopilotClient.getAssistants();
-      console.log("[useCopilot] Assistants loaded:", data.length);
       setAssistants(data);
     } catch (error) {
       console.error("[useCopilot] Error loading assistants:", error);
