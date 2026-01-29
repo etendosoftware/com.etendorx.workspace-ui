@@ -46,7 +46,7 @@ export function SystemStatusSection() {
   const checkJava = useCallback(async () => {
     setState((prev) => ({
       ...prev,
-      java: { ...prev.java, status: "checking", details: "Verificando..." },
+      java: { ...prev.java, status: "checking", details: "Checking..." },
     }));
 
     try {
@@ -56,8 +56,8 @@ export function SystemStatusSection() {
         java: {
           ...prev.java,
           status: response.available ? "ok" : "error",
-          details: response.available ? "Java 17 detectado en PATH" : "Java 17 no encontrado",
-          actionLabel: response.available ? undefined : "Instalar Java",
+          details: response.available ? "Java 17 detected in PATH" : "Java 17 not found",
+          actionLabel: response.available ? undefined : "Install Java",
         },
       }));
     } catch (err) {
@@ -66,8 +66,8 @@ export function SystemStatusSection() {
         java: {
           ...prev.java,
           status: "error",
-          details: err instanceof Error ? err.message : "Error al verificar",
-          actionLabel: "Reintentar",
+          details: err instanceof Error ? err.message : "Error while checking",
+          actionLabel: "Retry",
         },
       }));
     }
@@ -76,7 +76,7 @@ export function SystemStatusSection() {
   const checkDocker = useCallback(async () => {
     setState((prev) => ({
       ...prev,
-      docker: { ...prev.docker, status: "checking", details: "Verificando..." },
+      docker: { ...prev.docker, status: "checking", details: "Checking..." },
     }));
 
     // Simulated check - in real implementation would call an API
@@ -88,8 +88,8 @@ export function SystemStatusSection() {
         docker: {
           ...prev.docker,
           status: "warning",
-          details: "Docker instalado, verificar si está corriendo",
-          actionLabel: "Iniciar Docker",
+          details: "Docker installed; verify it is running",
+          actionLabel: "Start Docker",
         },
       }));
     } catch {
@@ -98,8 +98,8 @@ export function SystemStatusSection() {
         docker: {
           ...prev.docker,
           status: "error",
-          details: "Docker no detectado",
-          actionLabel: "Instalar Docker",
+          details: "Docker not detected",
+          actionLabel: "Install Docker",
         },
       }));
     }
@@ -108,7 +108,7 @@ export function SystemStatusSection() {
   const checkDatabase = useCallback(async () => {
     setState((prev) => ({
       ...prev,
-      database: { ...prev.database, status: "checking", details: "Verificando..." },
+      database: { ...prev.database, status: "checking", details: "Checking..." },
     }));
 
     try {
@@ -118,8 +118,8 @@ export function SystemStatusSection() {
         database: {
           ...prev.database,
           status: "warning",
-          details: "Contenedor existe, verificar conexión",
-          actionLabel: "Reiniciar DB",
+          details: "Container found; verify the connection",
+          actionLabel: "Restart DB",
         },
       }));
     } catch {
@@ -128,8 +128,8 @@ export function SystemStatusSection() {
         database: {
           ...prev.database,
           status: "error",
-          details: "Base de datos no disponible",
-          actionLabel: "Configurar DB",
+          details: "Database unavailable",
+          actionLabel: "Configure DB",
         },
       }));
     }
@@ -138,7 +138,7 @@ export function SystemStatusSection() {
   const checkPorts = useCallback(async () => {
     setState((prev) => ({
       ...prev,
-      ports: { ...prev.ports, status: "checking", details: "Verificando..." },
+      ports: { ...prev.ports, status: "checking", details: "Checking..." },
     }));
 
     try {
@@ -149,7 +149,7 @@ export function SystemStatusSection() {
         ports: {
           ...prev.ports,
           status: "warning",
-          details: "Puerto 3000 en uso (UI podría estar corriendo)",
+          details: "Port 3000 in use (UI might already be running)",
         },
       }));
     } catch {
@@ -158,7 +158,7 @@ export function SystemStatusSection() {
         ports: {
           ...prev.ports,
           status: "ok",
-          details: "Puerto 3000 disponible",
+          details: "Port 3000 available",
         },
       }));
     }
@@ -171,7 +171,7 @@ export function SystemStatusSection() {
     try {
       await Promise.all([checkJava(), checkDocker(), checkDatabase(), checkPorts()]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al verificar prerrequisitos");
+      setError(err instanceof Error ? err.message : "Error checking prerequisites");
     } finally {
       setState((prev) => ({ ...prev, isRefreshing: false }));
     }
@@ -193,10 +193,10 @@ export function SystemStatusSection() {
       <Stack spacing={3}>
         <Box>
           <Typography variant="h5" fontWeight={700} gutterBottom>
-            Estado del Sistema y Prerrequisitos
+            System Status and Prerequisites
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Verifica que tu entorno cumpla con todas las dependencias necesarias antes de instalar o desarrollar.
+            Check that your environment meets all required dependencies before installing or developing.
           </Typography>
         </Box>
 
@@ -206,11 +206,11 @@ export function SystemStatusSection() {
             startIcon={state.isRefreshing ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
             onClick={refreshAll}
             disabled={state.isRefreshing}>
-            Refrescar Todo
+            Refresh All
           </Button>
           {criticalErrors > 0 && (
             <Alert severity="warning" sx={{ flex: 1 }}>
-              {criticalErrors} prerrequisito(s) crítico(s) requieren atención antes de continuar.
+              {criticalErrors} critical prerequisite(s) need attention before continuing.
             </Alert>
           )}
         </Stack>
@@ -221,10 +221,10 @@ export function SystemStatusSection() {
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#f9fafb" }}>
-                <TableCell sx={{ fontWeight: 600 }}>Componente</TableCell>
-                <TableCell sx={{ fontWeight: 600, width: 120 }}>Estado</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Detalles</TableCell>
-                <TableCell sx={{ fontWeight: 600, width: 150 }}>Acción</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Component</TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 120 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Details</TableCell>
+                <TableCell sx={{ fontWeight: 600, width: 150 }}>Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -266,8 +266,8 @@ export function SystemStatusSection() {
 
         <Paper elevation={0} sx={{ p: 2, backgroundColor: "#f8fafc", border: "1px solid #e4e7ec" }}>
           <Typography variant="body2" color="text.secondary">
-            <strong>Nota:</strong> Si hay indicadores rojos en prerrequisitos críticos, las secciones de Instalación y
-            Desarrollo podrían no funcionar correctamente. Resuelve los problemas indicados antes de continuar.
+            <strong>Note:</strong> If there are red indicators in critical prerequisites, the Installation and Development
+            sections may not work correctly. Resolve the indicated issues before continuing.
           </Typography>
         </Paper>
       </Stack>

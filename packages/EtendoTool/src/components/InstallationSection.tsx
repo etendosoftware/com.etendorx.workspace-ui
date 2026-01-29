@@ -38,24 +38,24 @@ export function InstallationSection() {
 
   const handleInstall = async () => {
     setIsInstalling(true);
-    setInstallOutput("> Iniciando proceso de instalación...\n");
+    setInstallOutput("> Starting installation process...\n");
     setInstallSuccess(null);
     setError(null);
 
     try {
-      setInstallOutput((prev) => `${prev}> Ejecutando gradle install...\n`);
+      setInstallOutput((prev) => `${prev}> Running gradle install...\n`);
 
       const result = await executeGradle("install");
 
       if (result.success) {
-        setInstallOutput((prev) => `${prev}${result.output}\n\n✓ Instalación completada exitosamente.`);
+        setInstallOutput((prev) => `${prev}${result.output}\n\n✓ Installation completed successfully.`);
         setInstallSuccess(true);
       } else {
-        setInstallOutput((prev) => `${prev}${result.error || result.output}\n\n✗ La instalación falló.`);
+        setInstallOutput((prev) => `${prev}${result.error || result.output}\n\n✗ The installation failed.`);
         setInstallSuccess(false);
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Error desconocido";
+      const message = err instanceof Error ? err.message : "Unknown error";
       setInstallOutput((prev) => `${prev}\n✗ Error: ${message}`);
       setInstallSuccess(false);
       setError(message);
@@ -69,17 +69,17 @@ export function InstallationSection() {
       <Stack spacing={3}>
         <Box>
           <Typography variant="h5" fontWeight={700} gutterBottom>
-            Instalación Inicial de Etendo
+            Initial Etendo Installation
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Esta acción preparará la base de datos y las estructuras necesarias. Ejecutar solo si es la primera vez o si
-            necesitas reinstalar desde cero.
+            This action prepares the database and required structures. Run it only for the first setup or if you need a
+            clean reinstall.
           </Typography>
         </Box>
 
         <Alert severity="info" variant="outlined">
           <Typography variant="body2">
-            <strong>Estado:</strong> Prerrequisitos verificados. El sistema está listo para la instalación.
+            <strong>Status:</strong> Prerequisites verified. The system is ready for installation.
           </Typography>
         </Alert>
 
@@ -91,7 +91,7 @@ export function InstallationSection() {
             border: "2px dashed #e4e7ec",
             borderRadius: 3,
             backgroundColor: "#fafbfc",
-          }}>
+            }}>
           <Stack spacing={3} alignItems="center">
             <Box
               sx={{
@@ -109,11 +109,10 @@ export function InstallationSection() {
 
             <Box>
               <Typography variant="h6" fontWeight={600} gutterBottom>
-                Ejecutar Instalación
+                Run Installation
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 400, mx: "auto" }}>
-                Este proceso creará las tablas de base de datos, configurará los esquemas y preparará el sistema para su
-                uso.
+                This process creates the database tables, configures schemas, and prepares the system for use.
               </Typography>
             </Box>
 
@@ -131,7 +130,7 @@ export function InstallationSection() {
                 borderRadius: 2,
                 boxShadow: "0 4px 14px rgba(0, 74, 202, 0.4)",
               }}>
-              {isInstalling ? "Instalando..." : "EJECUTAR INSTALACIÓN (INSTALL)"}
+              {isInstalling ? "Installing..." : "RUN INSTALLATION (INSTALL)"}
             </Button>
           </Stack>
         </Paper>
@@ -143,7 +142,7 @@ export function InstallationSection() {
         {installOutput && (
           <Box>
             <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-              Progreso de la instalación:
+              Installation progress:
             </Typography>
             <Paper sx={logStyles}>{installOutput}</Paper>
           </Box>
@@ -152,7 +151,7 @@ export function InstallationSection() {
         {installSuccess && (
           <Alert severity="success">
             <Typography variant="body2">
-              ¡Instalación completada! Ahora puedes ir al <strong>Panel de Desarrollo</strong> para iniciar la UI.
+              Installation complete! You can now go to the <strong>Development Panel</strong> to start the UI.
             </Typography>
           </Alert>
         )}

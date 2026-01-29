@@ -5,7 +5,7 @@ import type { JavaRuntimeStatus, JavaRuntimeViewState } from "../types/javaRunti
 const INITIAL_STATE: JavaRuntimeViewState = {
   status: "unknown",
   available: false,
-  message: "Aun no se chequo el runtime.",
+  message: "Runtime has not been checked yet.",
 };
 
 export function useJavaRuntime() {
@@ -23,13 +23,13 @@ export function useJavaRuntime() {
         status,
         available: response.available,
         message: response.available
-          ? "Java esta disponible en el host."
-          : "Java no esta disponible, ejecuta la instalacion.",
+          ? "Java is available on the host."
+          : "Java is not available; run the installation.",
         lastCheckedAt: new Date().toISOString(),
       });
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error desconocido al verificar la instalacion.");
+      setError(err instanceof Error ? err.message : "Unknown error while checking the installation.");
     } finally {
       setLoading(false);
     }
@@ -43,8 +43,8 @@ export function useJavaRuntime() {
         status: response.success ? "installed" : "installing",
         available: response.success,
         message: response.success
-          ? "Java respondio correctamente."
-          : response.error ?? "No se pudo ejecutar Java, revisa el output.",
+          ? "Java responded correctly."
+          : response.error ?? "Could not run Java; check the output.",
         output: response.output || response.error,
         success: response.success,
         lastRunAt: new Date().toISOString(),
@@ -52,7 +52,7 @@ export function useJavaRuntime() {
       });
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo iniciar la instalacion de Java 17.");
+      setError(err instanceof Error ? err.message : "Could not start the Java 17 installation.");
     } finally {
       setLoading(false);
     }
@@ -69,7 +69,7 @@ export function useJavaRuntime() {
       available: true,
       status: "installed",
       skipped: true,
-      message: "Requisitos salteados manualmente.",
+      message: "Requirements manually skipped.",
     }));
   }, []);
 

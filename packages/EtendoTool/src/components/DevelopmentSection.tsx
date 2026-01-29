@@ -77,7 +77,7 @@ export function DevelopmentSection() {
     try {
       await executeGradle("ui");
     } catch {
-      console.log("Backend no disponible, continuando con polling...");
+      console.log("Backend not available, continuing to poll...");
     }
   }, []);
 
@@ -97,13 +97,13 @@ export function DevelopmentSection() {
       const result = await executeGradle(command);
       setGradleOutput({
         command,
-        output: result.output || result.error || "Sin salida",
+        output: result.output || result.error || "No output",
         success: result.success,
       });
     } catch (err) {
       setGradleOutput({
         command,
-        output: err instanceof Error ? err.message : "Error desconocido",
+        output: err instanceof Error ? err.message : "Unknown error",
         success: false,
       });
     } finally {
@@ -111,7 +111,7 @@ export function DevelopmentSection() {
     }
   }, []);
 
-  // Chequea si el servidor ya está corriendo (p.ej., al volver a la sección)
+  // Check if the server is already running (e.g., when returning to the section)
   useEffect(() => {
     let cancelled = false;
     const verify = async () => {
@@ -167,13 +167,13 @@ export function DevelopmentSection() {
   const statusLabel = useMemo(() => {
     switch (serverStatus) {
       case "running":
-        return { text: "Corriendo", color: "success" as const };
+        return { text: "Running", color: "success" as const };
       case "starting":
-        return { text: "Iniciando...", color: "warning" as const };
+        return { text: "Starting...", color: "warning" as const };
       case "error":
         return { text: "Error", color: "error" as const };
       default:
-        return { text: "Detenido", color: "default" as const };
+        return { text: "Stopped", color: "default" as const };
     }
   }, [serverStatus]);
 
@@ -181,10 +181,10 @@ export function DevelopmentSection() {
 
   return (
     <Box className="development-section">
-      {/* Toolbar Superior */}
+      {/* Top toolbar */}
       <Paper elevation={0} className="development-toolbar">
         <Stack spacing={2}>
-          {/* Control del Servidor */}
+          {/* Server Controls */}
           <Stack
             direction={{ xs: "column", md: "row" }}
             justifyContent="space-between"
@@ -192,7 +192,7 @@ export function DevelopmentSection() {
             spacing={2}>
             <Stack direction="row" spacing={2} alignItems="center">
               <Typography variant="subtitle1" fontWeight={600}>
-                Control del Servidor UI:
+                UI Server Control:
               </Typography>
               <Chip label={statusLabel.text} color={statusLabel.color} size="small" sx={{ fontWeight: 600 }} />
               {serverStatus === "running" && (
@@ -203,7 +203,7 @@ export function DevelopmentSection() {
             </Stack>
 
             <Stack direction="row" spacing={1}>
-              <Tooltip title="Iniciar servidor UI">
+              <Tooltip title="Start UI server">
                 <span>
                   <IconButton
                     color="primary"
@@ -213,14 +213,14 @@ export function DevelopmentSection() {
                   </IconButton>
                 </span>
               </Tooltip>
-              <Tooltip title="Detener servidor">
+              <Tooltip title="Stop server">
                 <span>
                   <IconButton color="error" onClick={stopServer} disabled={serverStatus === "stopped"}>
                     <StopIcon />
                   </IconButton>
                 </span>
               </Tooltip>
-              <Tooltip title="Reiniciar servidor">
+              <Tooltip title="Restart server">
                 <span>
                   <IconButton
                     onClick={() => {
@@ -232,7 +232,7 @@ export function DevelopmentSection() {
                   </IconButton>
                 </span>
               </Tooltip>
-              <Tooltip title="Abrir en pestaña nueva">
+              <Tooltip title="Open in new tab">
                 <span>
                   <IconButton
                     component="a"
@@ -249,10 +249,10 @@ export function DevelopmentSection() {
 
           <Divider />
 
-          {/* Comandos Gradle */}
+          {/* Gradle commands */}
           <Stack spacing={1}>
             <Typography variant="subtitle2" color="text.secondary">
-              Comandos Rápidos de Desarrollo (Gradle):
+              Quick Development Commands (Gradle):
             </Typography>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1} flexWrap="wrap">
               {GRADLE_COMMANDS.map((cmd) => (
@@ -268,20 +268,20 @@ export function DevelopmentSection() {
                     borderWidth: 2,
                     "&:hover": { borderWidth: 2 },
                   }}>
-                  {gradleExecuting === cmd.id ? "Ejecutando..." : cmd.label}
+                  {gradleExecuting === cmd.id ? "Running..." : cmd.label}
                 </Button>
               ))}
             </Stack>
           </Stack>
 
-          {/* Output de comandos Gradle */}
+          {/* Gradle command output */}
           {gradleOutput && (
             <Box>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Typography variant="caption" color="text.secondary">
-                  Resultado de {gradleOutput.command}:
+                  Result of {gradleOutput.command}:
                 </Typography>
-                <Tooltip title="Cerrar">
+                <Tooltip title="Close">
                   <IconButton size="small" onClick={() => setGradleOutput(null)}>
                     <CloseIcon fontSize="small" />
                   </IconButton>
@@ -295,16 +295,16 @@ export function DevelopmentSection() {
         </Stack>
       </Paper>
 
-      {/* Área del Iframe */}
+      {/* Iframe area */}
       <Box className="development-iframe-area">
         {serverStatus === "starting" && !showIframe && (
           <Stack alignItems="center" justifyContent="center" spacing={2} sx={{ flex: 1, p: 4 }}>
             <LinearProgress sx={{ width: 300 }} />
             <Typography variant="body1" fontWeight={500}>
-              Conectando al servidor...
+              Connecting to the server...
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Tiempo: {elapsedTime}s | Intento: {connectionAttempts}
+              Time: {elapsedTime}s | Attempt: {connectionAttempts}
             </Typography>
           </Stack>
         )}
@@ -324,14 +324,13 @@ export function DevelopmentSection() {
               <PlayArrowIcon sx={{ fontSize: 48, color: "#999" }} />
             </Box>
             <Typography variant="h6" color="text.secondary">
-              Servidor UI no iniciado
+              UI server not started
             </Typography>
             <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ maxWidth: 400 }}>
-              Haz clic en el botón de play en la barra superior para iniciar el servidor de desarrollo y cargar la
-              interfaz de Etendo.
+              Click the play button in the top bar to start the development server and load the Etendo UI.
             </Typography>
             <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={startServer}>
-              Iniciar Servidor UI
+              Start UI Server
             </Button>
           </Stack>
         )}

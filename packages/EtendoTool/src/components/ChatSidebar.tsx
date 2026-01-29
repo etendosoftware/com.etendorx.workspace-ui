@@ -75,14 +75,14 @@ export function ChatSidebar({ isCollapsed, onToggleCollapse }: ChatSidebarProps)
               <Stack spacing={2} alignItems="center">
                 <CircularProgress />
                 <Typography variant="body2" color="text.secondary">
-                  Inicializando Copilot...
+                  Initializing Copilot...
                 </Typography>
               </Stack>
             </Box>
           ) : !selectedAssistant ? (
             <Box sx={{ p: 2 }}>
               <Typography variant="h6" gutterBottom>
-                Selecciona un Asistente
+                Pick an Assistant
               </Typography>
               {isLoadingAssistants ? (
                 <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
@@ -123,7 +123,7 @@ export function ChatSidebar({ isCollapsed, onToggleCollapse }: ChatSidebarProps)
                     {selectedAssistant.name}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {selectedAssistant.description || "Tu asistente de IA para desarrollo y soporte de Etendo"}
+                    {selectedAssistant.description || "Your AI assistant for Etendo development and support"}
                   </Typography>
                 </Box>
               )}
@@ -156,7 +156,7 @@ export function ChatSidebar({ isCollapsed, onToggleCollapse }: ChatSidebarProps)
                 <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2 }}>
                   <Paper sx={{ p: 1.5, bgcolor: "grey.100" }}>
                     <Typography variant="body2" color="text.secondary">
-                      Escribiendo...
+                      Typing...
                     </Typography>
                   </Paper>
                 </Box>
@@ -169,7 +169,7 @@ export function ChatSidebar({ isCollapsed, onToggleCollapse }: ChatSidebarProps)
                   <TextField
                     fullWidth
                     size="small"
-                    placeholder="Escribe tu mensaje..."
+                    placeholder="Type your message..."
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={(e) => {
@@ -191,7 +191,7 @@ export function ChatSidebar({ isCollapsed, onToggleCollapse }: ChatSidebarProps)
       )}
 
       {isCollapsed && (
-        <Tooltip title="Abrir Copilot" placement="left">
+        <Tooltip title="Open Copilot" placement="left">
           <Box
             sx={{
               display: "flex",

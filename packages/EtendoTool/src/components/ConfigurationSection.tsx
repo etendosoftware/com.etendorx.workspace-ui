@@ -56,7 +56,7 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
     try {
       return JSON.stringify(message);
     } catch (e) {
-      return fallback || "Operación completada";
+      return fallback || "Operation completed";
     }
   };
 
@@ -133,7 +133,7 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
       });
 
       if (Object.keys(changes).length === 0) {
-        setSuccess("No hay cambios para guardar");
+        setSuccess("No changes to save");
         return;
       }
 
@@ -141,19 +141,19 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
 
       if (response.success) {
         setSuccess(
-          normalizeMessage(response.message, `Se actualizaron ${Object.keys(changes).length} propiedades correctamente`)
+          normalizeMessage(response.message, `Updated ${Object.keys(changes).length} properties successfully`)
         );
         await loadConfigurations();
       } else {
         if (response.validationErrors) {
           setValidationErrors(response.validationErrors);
-          setError("Por favor, corrige los errores de validación antes de guardar");
+          setError("Please fix the validation errors before saving");
         } else {
-          setError(response.error || normalizeMessage(response.message, "Error al guardar las configuraciones"));
+          setError(response.error || normalizeMessage(response.message, "Error saving configurations"));
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al guardar las configuraciones");
+      setError(err instanceof Error ? err.message : "Error saving configurations");
     } finally {
       setSaving(false);
     }
@@ -186,14 +186,14 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
       if (response.success) {
         setProcessStatus((prev) => ({
           ...prev,
-          [property.key]: { loading: false, output: output || "Comando ejecutado correctamente" },
+          [property.key]: { loading: false, output: output || "Command executed successfully" },
         }));
       } else {
         setProcessStatus((prev) => ({
           ...prev,
           [property.key]: {
             loading: false,
-            error: response.error || response.message || "Error al ejecutar comando",
+            error: response.error || response.message || "Error executing command",
             output,
           },
         }));
@@ -201,7 +201,7 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
     } catch (err) {
       setProcessStatus((prev) => ({
         ...prev,
-        [property.key]: { loading: false, error: err instanceof Error ? err.message : "Error al ejecutar comando" },
+        [property.key]: { loading: false, error: err instanceof Error ? err.message : "Error executing command" },
       }));
     }
   };
@@ -217,7 +217,7 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
             startIcon={status.loading ? <CircularProgress size={16} /> : <RefreshIcon />}
             onClick={() => handleExecuteProcess(property)}
             disabled={status.loading}>
-            {status.loading ? "Ejecutando..." : "Ejecutar"} {command}
+            {status.loading ? "Running..." : "Run"} {command}
           </Button>
           {(status.output || status.error) && (
             <TextField
@@ -262,7 +262,7 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
               onChange={(e) => handleConfigChange(property.key, e.target.checked.toString())}
             />
           }
-          label={(value || "").toLowerCase() === "true" ? "Activado" : "Desactivado"}
+          label={(value || "").toLowerCase() === "true" ? "Enabled" : "Disabled"}
         />
       );
     }
@@ -285,7 +285,7 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
         helperText={validationErrors[property.key]}
         size="small"
         variant="outlined"
-        placeholder={property.defaultValue ? `Valor por defecto: ${property.defaultValue}` : undefined}
+        placeholder={property.defaultValue ? `Default value: ${property.defaultValue}` : undefined}
         InputProps={
           property.sensitive
             ? {
@@ -320,20 +320,19 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
       <Stack spacing={3}>
         <Box>
           <Typography variant="h5" fontWeight={700} gutterBottom>
-            Configuración de gradle.properties
+            gradle.properties Configuration
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Administra la configuración del proyecto Etendo. Los valores y metadatos se leen desde los config.gradle de cada
-            módulo y se guardan en gradle.properties.
+            Manage the Etendo project configuration. Values and metadata are read from each module's config.gradle files
+            and saved into gradle.properties.
           </Typography>
           {totalProperties > 0 && (
             <Typography variant="body2" color="text.secondary">
-              Propiedades detectadas: {totalProperties}
+              Detected properties: {totalProperties}
             </Typography>
           )}
           <Typography variant="body2" color="text.secondary">
-            Las propiedades marcadas como <strong>Proceso Gradle</strong> ejecutan un comando en el backend en lugar de
-            guardarse.
+            Properties marked as a <strong>Gradle Process</strong> execute a backend command instead of being saved.
           </Typography>
         </Box>
 
@@ -343,21 +342,21 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
             startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
             onClick={handleSave}
             disabled={loading || saving || changedCount === 0}>
-            Guardar {changedCount > 0 && `(${changedCount})`}
+            Save {changedCount > 0 && `(${changedCount})`}
           </Button>
           <Button variant="outlined" startIcon={<RefreshIcon />} onClick={loadConfigurations} disabled={loading || saving}>
-            Refrescar
+            Refresh
           </Button>
           {changedCount > 0 && (
             <Alert severity="info" sx={{ flex: 1 }}>
-              {changedCount} propiedad(es) modificada(s). Haz clic en Guardar para aplicar los cambios.
+              {changedCount} modified property(ies). Click Save to apply the changes.
             </Alert>
           )}
         </Stack>
 
         <Stack direction="row" spacing={2} alignItems="center">
           <Typography variant="body2" color="text.secondary">
-            Vista:
+            View:
           </Typography>
           <ToggleButtonGroup
             exclusive
@@ -365,9 +364,9 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
             onChange={(_, value) => value && setRequiredFilter(value)}
             size="small"
             color="primary">
-            <ToggleButton value="all">Todos</ToggleButton>
-            <ToggleButton value="required">Requeridos</ToggleButton>
-            <ToggleButton value="optional">No requeridos</ToggleButton>
+            <ToggleButton value="all">All</ToggleButton>
+            <ToggleButton value="required">Required</ToggleButton>
+            <ToggleButton value="optional">Optional</ToggleButton>
           </ToggleButtonGroup>
         </Stack>
 
@@ -386,17 +385,17 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
         {Object.entries(configsByGroup).map(([groupKey, groupData]) => (
           <Box key={groupKey}>
             <Typography variant="h6" fontWeight={600} gutterBottom sx={{ mb: 1 }}>
-              {groupKey} ({groupData.count} propiedades)
+              {groupKey} ({groupData.count} properties)
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Configuraciones provistas por los config.gradle. Si modificas un valor sensible, puedes alternar la
-              visibilidad desde el campo.
+              Configurations provided by config.gradle. If you edit a sensitive value, you can toggle its visibility from
+              the field.
             </Typography>
 
             {groupData.properties.some((p) => p.process) && (
               <Paper elevation={0} sx={{ p: 2, mb: 2, border: "1px solid #e4e7ec", backgroundColor: "#f9fafb" }}>
                 <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
-                  Procesos del grupo
+                  Group processes
                 </Typography>
                 <Stack spacing={1}>
                   {groupData.properties
@@ -411,8 +410,8 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
                             {property.description}
                           </Typography>
                           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                            <Chip size="small" label="Proceso Gradle" color="success" />
-                            {property.source && <Chip size="small" label={`Módulo: ${property.source}`} />}
+                            <Chip size="small" label="Gradle Process" color="success" />
+                            {property.source && <Chip size="small" label={`Module: ${property.source}`} />}
                           </Stack>
                         </Stack>
                         <Box flex={1}>{renderInput(property)}</Box>
@@ -426,8 +425,8 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
               <Table>
                 <TableHead>
                   <TableRow sx={{ backgroundColor: "#f9fafb" }}>
-                    <TableCell sx={{ fontWeight: 600, width: "45%" }}>Propiedad</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Valor</TableCell>
+                    <TableCell sx={{ fontWeight: 600, width: "45%" }}>Property</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Value</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -449,14 +448,14 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
                             {property.description}
                           </Typography>
                           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                            {property.type && <Chip size="small" label={`Tipo: ${property.type}`} />}
-                            {property.source && <Chip size="small" label={`Módulo: ${property.source}`} />}
-                            {property.sensitive && <Chip size="small" color="warning" label="Sensible" />}
-                            {property.required && <Chip size="small" color="error" label="Requerido" />}
-                            {property.process && <Chip size="small" color="success" label="Proceso Gradle" />}
+                            {property.type && <Chip size="small" label={`Type: ${property.type}`} />}
+                            {property.source && <Chip size="small" label={`Module: ${property.source}`} />}
+                            {property.sensitive && <Chip size="small" color="warning" label="Sensitive" />}
+                            {property.required && <Chip size="small" color="error" label="Required" />}
+                            {property.process && <Chip size="small" color="success" label="Gradle Process" />}
                           </Stack>
                           <Typography variant="caption" color="text.secondary">
-                            Valor por defecto: {property.defaultValue || "N/A"}
+                            Default value: {property.defaultValue || "N/A"}
                           </Typography>
                         </Stack>
                       </TableCell>
@@ -479,15 +478,15 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
         {Object.keys(configsByGroup).length === 0 && !loading && (
           <Paper elevation={0} sx={{ p: 3, textAlign: "center", border: "1px solid #e4e7ec" }}>
             <Typography color="text.secondary">
-              No se encontraron configuraciones. Asegúrate de que el servidor Gradle esté corriendo en el puerto 3851.
+              No configurations found. Make sure the Gradle server is running on port 3851.
             </Typography>
           </Paper>
         )}
 
         <Paper elevation={0} sx={{ p: 2, backgroundColor: "#f8fafc", border: "1px solid #e4e7ec" }}>
           <Typography variant="body2" color="text.secondary">
-            <strong>Nota:</strong> Los cambios en la configuración se aplicarán inmediatamente al archivo gradle.properties.
-            Algunas propiedades pueden requerir reiniciar el servidor para que surtan efecto.
+            <strong>Note:</strong> Configuration changes are applied immediately to gradle.properties. Some properties may
+            require restarting the server to take effect.
           </Typography>
         </Paper>
       </Stack>

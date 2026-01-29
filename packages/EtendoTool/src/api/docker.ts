@@ -23,7 +23,7 @@ const handle = async <T>(endpoint: string, options: RequestInit = {}) => {
   } catch (err) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Error al comunicarse con la API de Docker",
+      error: err instanceof Error ? err.message : "Error communicating with the Docker API",
     };
   }
 };
