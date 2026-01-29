@@ -111,6 +111,27 @@ export function DevelopmentSection() {
     }
   }, []);
 
+  // Chequea si el servidor ya está corriendo (p.ej., al volver a la sección)
+  useEffect(() => {
+    let cancelled = false;
+    const verify = async () => {
+      const isUp = await checkServerHealth();
+      if (cancelled) return;
+      if (isUp) {
+        setServerStatus("running");
+        setShowIframe(true);
+        setIsPolling(false);
+      } else {
+        setServerStatus("stopped");
+        setShowIframe(false);
+      }
+    };
+    verify();
+    return () => {
+      cancelled = true;
+    };
+  }, [checkServerHealth]);
+
   // Polling effect
   useEffect(() => {
     if (!isPolling || showIframe) return;

@@ -5,6 +5,7 @@ import { Layout } from "./components/Layout";
 import { SystemStatusSection } from "./components/SystemStatusSection";
 import { InstallationSection } from "./components/InstallationSection";
 import { DevelopmentSection } from "./components/DevelopmentSection";
+import { ConfigurationSection } from "./components/ConfigurationSection";
 import type { NavigationSection } from "./types/navigation";
 
 const theme = createTheme({
@@ -70,6 +71,8 @@ export default function App() {
         return <InstallationSection />;
       case "development":
         return <DevelopmentSection />;
+      case "configuration":
+        return <ConfigurationSection />;
       default:
         return <SystemStatusSection />;
     }
