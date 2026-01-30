@@ -57,6 +57,8 @@ export const getFieldReference = (reference?: string): FieldType => {
     case FIELD_REFERENCE_CODES.LIST_17:
     case FIELD_REFERENCE_CODES.LIST_13:
       return FieldType.LIST;
+    case FIELD_REFERENCE_CODES.TIME:
+      return FieldType.TIME;
     case "28":
       return FieldType.BUTTON;
     case FIELD_REFERENCE_CODES.SELECT_30:
@@ -137,9 +139,11 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
       const field = fields?.[key];
       let newKey = field?.inputName ?? key;
 
-      // Transform documentAction to DocAction
+      // Transform documentAction to DocAction and inpporeference to POReference
       if (key === "documentAction" || newKey === "documentAction") {
         newKey = "DocAction";
+      } else if (key === "inpporeference" || newKey === "inpporeference") {
+        newKey = "POReference";
       }
 
       // Special handling for known numeric fields when field metadata is not available

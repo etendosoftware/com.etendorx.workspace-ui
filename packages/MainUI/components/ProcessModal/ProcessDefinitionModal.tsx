@@ -65,6 +65,7 @@ import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
 import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
+import { DEFAULT_BULK_COMPLETION_ONLOAD, isBulkCompletionProcess } from "@/utils/process/bulkCompletionUtils";
 import { registerPayScriptDSL } from "./callouts/genericPayScriptCallout";
 
 // Date field reference codes for conversion
@@ -283,6 +284,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   } = useProcessInitializationState(
     processInitialization,
     memoizedParameters // Use memoized version to prevent infinite loops
+  );
+
+  const isBulkCompletion = useMemo(
+    () => isBulkCompletionProcess(processDefinition, parameters),
+    [processDefinition, parameters]
   );
 
   // Combined form data: record values + process defaults (similar to FormView pattern)
@@ -797,6 +803,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         });
 
         const formValues = form.getValues();
+
+        // Fix: DocAction - copy user selection from parameter.name to dBColumnName
+        const docActionParam = Object.values(parameters).find(
+          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
+        );
+        if (docActionParam) {
+          const userSelection = formValues[docActionParam.name];
+          if (userSelection) {
+            formValues.DocAction = userSelection;
+          }
+        }
+
         const mappedValues = mapKeysWithDefaults({ ...formValues, ...populatedGrids });
 
         logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - After mapKeysWithDefaults:", {
@@ -900,17 +918,32 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
         const skipParamsLevel = processDefConfig?.skipParamsLevel;
 
+        const formValues = form.getValues();
+
+        // Fix: DocAction - copy user selection from parameter.name to dBColumnName
+        const docActionParam = Object.values(parameters).find(
+          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
+        );
+        if (docActionParam) {
+          const userSelection = formValues[docActionParam.name];
+          if (userSelection) {
+            formValues.DocAction = userSelection;
+          }
+        }
+
+        const combinedValues = { ...recordValues, ...formValues, ...extraKey, ...populatedGrids };
+
         const payload = {
           recordIds,
           _buttonValue: actionValue || "DONE",
           ...(skipParamsLevel
             ? {
-                ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues, ...populatedGrids }),
+                ...mapKeysWithDefaults(combinedValues),
                 ...buttonParams,
               }
             : {
                 _params: {
-                  ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues, ...populatedGrids }),
+                  ...mapKeysWithDefaults(combinedValues),
                   ...buttonParams,
                 },
               }),
@@ -961,24 +994,31 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       }
 
       startTransition(async () => {
+        const formValues = form.getValues();
+
         // Build complete payload with all context fields
-        const completePayload = buildProcessPayload(
-          record || {}, // Complete record data (fallback to empty object)
-          tab, // Tab metadata
-          initialState || {}, // Process defaults from server (handle null case)
-          (() => {
-            const formValues = form.getValues();
-            return formValues;
-          })() // User input from form
+        const completePayload = buildProcessPayload(record || {}, tab, initialState || {}, formValues);
+
+        // Fix: DocAction - the form stores user selection under parameter.name (e.g. "Document Action")
+        // but the backend expects it under dBColumnName ("DocAction")
+        const docActionParam = Object.values(parameters).find(
+          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
         );
+        if (docActionParam) {
+          const userSelection = formValues[docActionParam.name];
+          if (userSelection) {
+            (completePayload as Record<string, unknown>).DocAction = userSelection;
+          }
+        }
 
         const stringFunctionPayload = {
           _buttonValue: actionValue || "DONE",
           buttonValue: actionValue || "DONE",
           windowId: tab.window,
+          tabId: tab?.id || tabId || "",
           entityName: tab.entityName,
           recordIds: selectedRecords?.map((r) => r.id),
-          ...completePayload, // Use complete payload instead of just form values
+          ...completePayload,
         };
 
         try {
@@ -1008,11 +1048,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       onProcess,
       javaClassName,
       tab,
+      tabId,
       record,
       initialState,
       button.processDefinition,
       selectedRecords,
       form,
+      parameters,
     ]
   );
 
@@ -1270,10 +1312,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       try {
         setLoading(true);
 
-        if (onLoad && tab) {
-          const result = await executeStringFunction(onLoad, { Metadata }, button.processDefinition, {
+        const effectiveOnLoad = onLoad || (isBulkCompletion ? DEFAULT_BULK_COMPLETION_ONLOAD : null);
+
+        if (effectiveOnLoad && tab) {
+          const result = await executeStringFunction(effectiveOnLoad, { Metadata }, button.processDefinition, {
             selectedRecords,
-            tabId,
+            tabId: tab.id || "",
+            tableId: tab.table || "",
           });
 
           // If result is undefined/null, skip
@@ -1316,7 +1361,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
               if (!newParameters[parameterName]) continue;
 
               try {
-                const newOptions = values as string[];
+                const isArray = Array.isArray(values);
+                const newOptions = isArray ? (values as string[]) : [values as string];
 
                 newParameters[parameterName] = { ...newParameters[parameterName] };
 
@@ -1344,7 +1390,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     };
 
     fetchOptions();
-  }, [button.processDefinition, onLoad, open, selectedRecords, tab, tabId]);
+  }, [button.processDefinition, onLoad, open, selectedRecords, tab, setGridSelection, isBulkCompletion]);
 
   /**
    * NEW useEffect:
@@ -1536,9 +1582,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     if (result?.success) return null;
 
     // Sort parameters by sequence number
-    const parametersList = Object.values(parameters).sort(
+    let parametersList = Object.values(parameters).sort(
       (a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0)
     );
+
+    // If bulk completion, only show DocAction
+    if (isBulkCompletion) {
+      parametersList = parametersList.filter(
+        (p) => p.name === "DocAction" || p.dBColumnName === "DocAction" || p.name === "Document Actionn"
+      );
+    }
+
     const windowReferences: React.ReactElement[] = [];
     const selectors: React.ReactElement[] = [];
 

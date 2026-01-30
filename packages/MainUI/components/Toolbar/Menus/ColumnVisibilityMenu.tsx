@@ -34,6 +34,7 @@ export interface CustomColumnDef<TData extends MRT_RowData = MRT_RowData> extend
   displayed?: boolean;
   type?: string;
   fieldId?: string;
+  isAuditField?: boolean;
 }
 interface ColumnVisibilityMenuProps<T extends MRT_RowData = MRT_RowData> {
   anchorEl: HTMLElement | null;
@@ -64,15 +65,15 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
   // Initialize items state based on table columns and visibility state
   useEffect(() => {
     if (isEmptyObject(tableColumnVisibility) || items.length > 0) return;
-    const visibleColumns = table
-      .getAllLeafColumns()
+    const allColumns = table.getAllLeafColumns();
+    const visibleColumns = allColumns
       .filter((column) => {
         if (column.id.startsWith("mrt-")) {
           return false;
         }
         const colDef = column.columnDef as CustomColumnDef;
 
-        if (colDef?.fieldId?.startsWith("audit_")) {
+        if (colDef?.isAuditField) {
           return true;
         }
 
