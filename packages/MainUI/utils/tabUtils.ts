@@ -49,10 +49,18 @@ function normalizeIdentifier(str: string): string {
  * @param parentEntityName - The parent tab's entity name (e.g., "BusinessPartner", "FinInvoice")
  * @returns true if the column matches the parent tab
  */
-function matchesParentColumn(columnName: string, parentTableIdentifier: string, parentEntityName: string): boolean {
+function matchesParentColumn(
+  columnName: string,
+  parentTableIdentifier: string | undefined,
+  parentEntityName: string | undefined
+): boolean {
+  if (!parentTableIdentifier && !parentEntityName) {
+    return false;
+  }
+
   const normalizedColumn = normalizeIdentifier(columnName.replace(/_id$/, "")); // Remove _id suffix
-  const normalizedTable = normalizeIdentifier(parentTableIdentifier);
-  const normalizedEntity = normalizeIdentifier(parentEntityName);
+  const normalizedTable = parentTableIdentifier ? normalizeIdentifier(parentTableIdentifier) : null;
+  const normalizedEntity = parentEntityName ? normalizeIdentifier(parentEntityName) : null;
 
   return normalizedColumn === normalizedTable || normalizedColumn === normalizedEntity;
 }
