@@ -31,6 +31,7 @@ import { PasswordSelector } from "./PasswordSelector";
 import { TableDirSelector } from "./TableDirSelector";
 import DatetimeSelector from "./DatetimeSelector";
 import LocationSelector from "./LocationSelector";
+import { TimeSelector } from "./TimeSelector";
 
 import { useFormContext } from "react-hook-form";
 
@@ -84,6 +85,8 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           data-testid="QuantitySelector__6e80fa"
         />
       );
+    case FIELD_REFERENCE_CODES.TIME:
+      return <TimeSelector field={field} isReadOnly={isReadOnly} data-testid={"TimeSelector__" + field.id} />;
     case FIELD_REFERENCE_CODES.LIST_17:
     case FIELD_REFERENCE_CODES.LIST_13:
       return <ListSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="ListSelector__6e80fa" />;

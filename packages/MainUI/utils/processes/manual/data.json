@@ -118,5 +118,11 @@
     "command": "BUTTONProcessedEFDBF909811544DAAE4E876AA781E5DC",
     "inpkeyColumnId": "C_Year_Close_V_ID",
     "keyColumnName": "C_Year_Close_V_ID"
+  },
+  "801863": {
+    "url": "/WorkEffort/WorkEffort_Edition.html",
+    "command": "BUTTONValidating800106",
+    "inpkeyColumnId": "M_Production_ID",
+    "keyColumnName": "M_Production_ID"
   }
 }
