@@ -49,44 +49,49 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
   };
 
   // 1. Base Context: Start with session/global context
-  const evalContext: Record<string, any> = { ...context };
+  const evalContext: Record<string, any> = {};
+  Object.entries(context).forEach(([key, val]) => {
+    evalContext[key] = normalize(val);
+  });
 
   // 2. Merge & Normalize Values (Current & Parent)
-  // We prioritize 'values' (current record) over 'parentValues'
   const allValues = { ...parentValues, ...values };
 
   Object.entries(allValues).forEach(([key, val]) => {
     const normalizedVal = normalize(val);
-    evalContext[key] = normalizedVal; // Original key (e.g. allowGroupAccess)
+    evalContext[key] = normalizedVal;
 
-    // 4. Fallback: Auto-generate Snake Case for standard camelCase
-    // e.g. allowGroupAccess -> ALLOW_GROUP_ACCESS
-    // This helps when metadata is missing
     if (typeof key === "string") {
-      // Convert camelCase to SNAKE_CASE for fallback compatibility
-      // e.g. allowGroupAccess -> ALLOW_GROUP_ACCESS
-      // Only do this if the key doesn't contain special chars used in other contexts
+      const lowerKey = key.toLowerCase();
+      const normalizedKey = lowerKey.replace(/_/g, "");
+
+      // 3. Case-Insensitive Overwrite (Strict & Loose)
+      Object.keys(evalContext).forEach((existingKey) => {
+        if (existingKey === key) return;
+        const existingLower = existingKey.toLowerCase();
+
+        if (existingLower === lowerKey || existingLower.replace(/_/g, "") === normalizedKey) {
+          evalContext[existingKey] = normalizedVal;
+        }
+      });
+
+      // 4. Fallback: Auto-generate Snake Case
       if (!key.startsWith("$") && !key.startsWith("#")) {
         const snakeKey = key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
-        if (!(snakeKey in evalContext)) {
-          evalContext[snakeKey] = normalizedVal;
-        }
+        evalContext[snakeKey] = normalizedVal;
       }
     }
   });
 
-  // 3. Apply Metadata Mapping (if available)
-  // Map DB Column Names (e.g. ALLOW_GROUP_ACCESS) to values
+  // 3. Apply Metadata Mapping
   const mapFields = (schemaFields?: Record<string, Field>, sourceValues?: Record<string, unknown>) => {
     if (!schemaFields || !sourceValues) return;
 
     Object.values(schemaFields).forEach((field) => {
-      // Use dBColumnName if available (correct property according to typings)
       const dbCol = field.column?.dBColumnName || field.columnName;
       if (dbCol && field.hqlName) {
         const val = sourceValues[field.hqlName];
         if (val !== undefined) {
-          // Add the column name pointing to the normalized value
           const normalized = normalize(val);
           evalContext[dbCol] = normalized;
           evalContext[dbCol.toUpperCase()] = normalized;
@@ -118,6 +123,18 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
       const keys = Object.keys(target);
       for (const key of keys) {
         if (key.toLowerCase() === lowerProp) {
+          const val = target[key];
+          if ((val === null || val === undefined) && defaultValue !== undefined) {
+            return defaultValue;
+          }
+          return val;
+        }
+      }
+
+      // 3. Loose match (ignore underscores) - matches Allow_Group_Access to allowGroupAccess/simplekey
+      const normalizedProp = lowerProp.replace(/_/g, "");
+      for (const key of keys) {
+        if (key.toLowerCase().replace(/_/g, "") === normalizedProp) {
           const val = target[key];
           if ((val === null || val === undefined) && defaultValue !== undefined) {
             return defaultValue;
