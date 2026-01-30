@@ -82,7 +82,6 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
             parentValues: parentRecord || undefined,
             parentFields: parentTab?.fields,
             context: session,
-            normalizeValues: false,
             defaultValue: "",
           });
           return compiledExpr(smartContext, smartContext);

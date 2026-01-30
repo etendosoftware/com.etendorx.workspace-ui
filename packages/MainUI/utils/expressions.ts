@@ -103,47 +103,46 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
   mapFields(parentFields, parentValues);
   mapFields(fields, values);
 
+  const resolveProperty = (target: Record<string, any>, prop: string) => {
+    // 1. Exact match
+    if (prop in target) return target[prop];
+
+    const lowerProp = prop.toLowerCase();
+    const normalizedProp = lowerProp.replace(/_/g, "");
+    let looseMatchValue = undefined;
+    let looseMatchFound = false;
+
+    // Single loop for both checks
+    for (const key of Object.keys(target)) {
+      const keyLower = key.toLowerCase();
+
+      // 2. Case-insensitive match (Priority)
+      if (keyLower === lowerProp) {
+        return target[key];
+      }
+
+      // 3. Loose match (Fallback)
+      if (!looseMatchFound && keyLower.replace(/_/g, "") === normalizedProp) {
+        looseMatchValue = target[key];
+        looseMatchFound = true;
+      }
+    }
+
+    return looseMatchFound ? looseMatchValue : undefined;
+  };
+
   return new Proxy(evalContext, {
     get(target, prop, receiver) {
       if (typeof prop !== "string") {
         return Reflect.get(target, prop, receiver);
       }
 
-      // 1. Exact match
-      if (prop in target) {
-        const val = target[prop];
-        if ((val === null || val === undefined) && defaultValue !== undefined) {
-          return defaultValue;
-        }
-        return val;
-      }
+      const val = resolveProperty(target, prop);
 
-      // 2. Case-insensitive match
-      const lowerProp = prop.toLowerCase();
-      const keys = Object.keys(target);
-      for (const key of keys) {
-        if (key.toLowerCase() === lowerProp) {
-          const val = target[key];
-          if ((val === null || val === undefined) && defaultValue !== undefined) {
-            return defaultValue;
-          }
-          return val;
-        }
+      if ((val === null || val === undefined) && defaultValue !== undefined) {
+        return defaultValue;
       }
-
-      // 3. Loose match (ignore underscores) - matches Allow_Group_Access to allowGroupAccess/simplekey
-      const normalizedProp = lowerProp.replace(/_/g, "");
-      for (const key of keys) {
-        if (key.toLowerCase().replace(/_/g, "") === normalizedProp) {
-          const val = target[key];
-          if ((val === null || val === undefined) && defaultValue !== undefined) {
-            return defaultValue;
-          }
-          return val;
-        }
-      }
-
-      return defaultValue;
+      return val;
     },
     has(target, prop) {
       if (typeof prop !== "string") return Reflect.has(target, prop);
