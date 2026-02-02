@@ -40,25 +40,27 @@ import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.
 
 export const compileExpression = (expression: string) => {
   try {
-    return new Function(
-      "context",
-      "currentValues",
-      // Safely stub OB for legacy expressions that might leak through
-      `
-      const OB = {
+    // Shim for legacy OpenBravo/Etendo functions used in expressions
+    const obShim = `
+      var OB = {
         Utilities: {
-           getValue: (obj, prop) => obj?.[prop]
+          getValue: function(obj, prop) { return obj && obj[prop]; },
+          PropertyStore: function(ctx, prop) { return ctx && (ctx[prop] || ctx['$'+prop] || ctx['#'+prop]); }
         },
-        getFilterExpression: () => null
+        PropertyStore: function(ctx, prop) { return ctx && (ctx[prop] || ctx['$'+prop] || ctx['#'+prop]); },
+        getExpression: function() { return true; }, // Fallback for complex expressions
+        PropertyStore: {
+            get: function(prop) { return context[prop] || context['$'+prop] || context['#'+prop]; }
+        }
       };
-      return ${parseDynamicExpression(expression)};
-      `
-    );
+    `;
+    return new Function("context", "currentValues", `${obShim} return ${parseDynamicExpression(expression)};`);
   } catch (error) {
     logger.error("Error compiling expression:", expression, error);
     return () => true;
   }
 };
+
 
 const BaseSelectorComp = ({
   field,
