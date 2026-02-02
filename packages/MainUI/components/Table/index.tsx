@@ -455,6 +455,7 @@ interface ExtendedColumn extends Column {
   readOnlyLogicExpression?: string;
   isReadOnly?: boolean;
   isUpdatable?: boolean;
+  isAuditField?: boolean;
 }
 
 // Helper function to determine if a field should be readonly in inline editing
