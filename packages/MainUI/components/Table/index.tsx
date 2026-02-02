@@ -407,19 +407,24 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
     );
   }
 
+  const fieldMapping = columnFieldMappings.get(col.name);
+  const field = fieldMapping?.field;
+
+  const isLinkDisabled = field?.isReferencedWindowAccessible === false;
+
   // For non-editing cells, check if we should show identifier instead of UUID
   const identifierKey = `${fieldKey}$_identifier`;
   const identifier = row.original[identifierKey];
 
   if (identifier && typeof identifier === "string" && typeof renderedCellValue === "string") {
-    if (originalCell && typeof originalCell === "function") {
+    if (!isLinkDisabled && originalCell && typeof originalCell === "function") {
       return <>{originalCell({ renderedCellValue: identifier, row, table })}</>;
     }
     return <div className="table-cell-content">{identifier}</div>;
   }
 
   // Preserve original rendering logic and formatting
-  if (originalCell && typeof originalCell === "function") {
+  if (!isLinkDisabled && originalCell && typeof originalCell === "function") {
     return <>{originalCell({ renderedCellValue, row, table })}</>;
   }
 
@@ -443,6 +448,7 @@ interface ExtendedColumn extends Column {
   readOnlyLogicExpression?: string;
   isReadOnly?: boolean;
   isUpdatable?: boolean;
+  isReferencedWindowAccessible?: boolean;
 }
 
 // Helper function to determine if a field should be readonly in inline editing
@@ -583,6 +589,7 @@ const columnToFieldForEditor = (column: Column): Field => {
     etmetaCustomjs: column.customJs || null,
     isActive: true,
     gridDisplayLogic: "",
+    isReferencedWindowAccessible: extColumn.isReferencedWindowAccessible,
   } as Field;
 
   // Limit cache size to prevent memory leaks
@@ -1013,6 +1020,10 @@ const DynamicTable = ({
 
       if (!originalField) {
         return field;
+      }
+
+      if (originalField.isReferencedWindowAccessible !== undefined) {
+        field.isReferencedWindowAccessible = originalField.isReferencedWindowAccessible;
       }
 
       // Transfer callout if present
