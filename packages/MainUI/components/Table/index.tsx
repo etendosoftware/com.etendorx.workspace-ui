@@ -35,8 +35,9 @@ import type {
   Field,
   FormInitializationResponse,
   RefListField,
+  UIPattern,
 } from "@workspaceui/api-client/src/api/types";
-import { FieldType } from "@workspaceui/api-client/src/api/types";
+import { FieldType, UIPattern as UIPatternEnum } from "@workspaceui/api-client/src/api/types";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
@@ -62,7 +63,7 @@ import { AddAttachmentModal } from "../Form/FormView/Sections/AddAttachmentModal
 import { createAttachment } from "@workspaceui/api-client/src/api/attachments";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useTableData } from "@/hooks/table/useTableData";
-import { isEmptyObject } from "@/utils/commons";
+import { isEmptyArray, isEmptyObject } from "@/utils/commons";
 import { useUserContext } from "@/hooks/useUserContext";
 import {
   getDisplayColumnDefOptions,
@@ -116,6 +117,7 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import "./styles/inlineEditing.css";
 import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
+import { formatUTCTimeToLocal } from "@/utils/date/utils";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
@@ -295,6 +297,7 @@ interface ActionsColumnCellProps {
   handleSaveRow: (rowId: string) => void;
   handleCancelRow: (rowId: string) => void;
   setRecordId: (id: string) => void;
+  uIPattern?: UIPattern;
 }
 
 /**
@@ -308,6 +311,7 @@ const ActionsColumnCell: React.FC<ActionsColumnCellProps> = ({
   handleSaveRow,
   handleCancelRow,
   setRecordId,
+  uIPattern,
 }) => {
   const rowId = String(row.original.id);
   const editingData = editingRowUtils.getEditingRowData(rowId);
@@ -330,6 +334,7 @@ const ActionsColumnCell: React.FC<ActionsColumnCellProps> = ({
         setRecordId(String(row.original.id));
       }}
       data-testid="ActionsColumn__8ca888"
+      uIPattern={uIPattern}
     />
   );
 };
@@ -411,6 +416,13 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
   const identifierKey = `${fieldKey}$_identifier`;
   const identifier = row.original[identifierKey];
 
+  // Format Time values from UTC to Local for display in the grid
+  const fieldMapping = columnFieldMappings.get(col.name);
+  if (fieldMapping?.fieldType === FieldType.TIME && typeof renderedCellValue === "string" && renderedCellValue) {
+    const localTimeValue = formatUTCTimeToLocal(renderedCellValue);
+    return <div className="table-cell-content">{localTimeValue}</div>;
+  }
+
   if (identifier && typeof identifier === "string" && typeof renderedCellValue === "string") {
     if (originalCell && typeof originalCell === "function") {
       return <>{originalCell({ renderedCellValue: identifier, row, table })}</>;
@@ -443,6 +455,7 @@ interface ExtendedColumn extends Column {
   readOnlyLogicExpression?: string;
   isReadOnly?: boolean;
   isUpdatable?: boolean;
+  isAuditField?: boolean;
 }
 
 // Helper function to determine if a field should be readonly in inline editing
@@ -603,7 +616,58 @@ interface DynamicTableProps {
   isTreeMode?: boolean;
   isVisible?: boolean;
   areFiltersDisabled?: boolean;
+  uIPattern?: UIPattern;
 }
+
+const getExpandIcon = (canExpand: boolean, isExpanded: boolean) => {
+  if (!canExpand) return null;
+  return isExpanded ? (
+    <ChevronUp height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronUp__8ca888" />
+  ) : (
+    <ChevronDown height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronDown__8ca888" />
+  );
+};
+
+const getHierarchyIcon = (
+  shouldUseTreeMode: boolean,
+  eTMETAIcon: string | undefined,
+  hasChildren: boolean,
+  isExpanded: boolean
+) => {
+  if (!shouldUseTreeMode) return null;
+
+  if (eTMETAIcon) {
+    let svgContent = "";
+    try {
+      svgContent = atob(eTMETAIcon);
+      // Replace black fill with primary blue color to match design system
+      // Also handles specific case where fill is set to black or inherited
+      svgContent = svgContent.replace(/fill="black"/g, 'fill="#004ACA"');
+      // Add logic for paths that might not have fill attribute but rely on default black
+      svgContent = svgContent.replace(/<path(?![^>]*fill=)/g, '<path fill="#004ACA"');
+    } catch (e) {
+      console.error("Error parsing eTMETAIcon SVG", e);
+      svgContent = eTMETAIcon; // Fallback to original if decode fails
+    }
+    const encodedSvg = btoa(svgContent);
+
+    return (
+      <img
+        src={`data:image/svg+xml;base64,${encodedSvg}`}
+        alt=""
+        className="min-w-5 min-h-5 w-5 h-5 object-contain"
+        data-testid="eTMETAIcon__8ca888"
+      />
+    );
+  }
+
+  if (hasChildren) {
+    const Icon = isExpanded ? MinusFolderIcon : PlusFolderFilledIcon;
+    return <Icon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />;
+  }
+
+  return <CircleFilledIcon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />;
+};
 
 const DynamicTable = ({
   setRecordId,
@@ -611,6 +675,7 @@ const DynamicTable = ({
   isTreeMode = true,
   isVisible = true,
   areFiltersDisabled = false,
+  uIPattern,
 }: DynamicTableProps) => {
   const { sx } = useStyle();
   const { t } = useTranslation();
@@ -1471,7 +1536,7 @@ const DynamicTable = ({
           if (prev.anchorEl.parentNode && document.body.contains(prev.anchorEl)) {
             prev.anchorEl.parentNode.removeChild(prev.anchorEl);
           }
-        } catch (error) {
+        } catch {
           // Silently ignore if element was already removed
           // Performance: Debug log removed
         }
@@ -1495,6 +1560,13 @@ const DynamicTable = ({
   // Inline editing action handlers
   const handleEditRow = useCallback(
     async (row: MRT_Row<EntityData>) => {
+      // Logic based on uIPattern
+      // RO: Disable Inline Edit
+      if (uIPattern === UIPatternEnum.READ_ONLY) {
+        logger.warn("[InlineEditing] Editing blocked due to READ_ONLY UIPattern");
+        return;
+      }
+
       const rowId = String(row.original.id);
 
       // Add the row to editing state with original data immediately
@@ -1545,10 +1617,21 @@ const DynamicTable = ({
         // Continue with original data if initialization fails
       }
     },
-    [editingRowUtils, screenReaderAnnouncer, baseColumns, fetchInitialData]
+    [editingRowUtils, screenReaderAnnouncer, baseColumns, fetchInitialData, uIPattern]
   );
 
   const handleInsertRow = useCallback(async () => {
+    // Logic based on uIPattern
+    // RO, SR, ED: Disable Insert
+    if (
+      uIPattern === UIPatternEnum.READ_ONLY ||
+      uIPattern === UIPatternEnum.EDIT_ONLY ||
+      uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY
+    ) {
+      logger.warn("[InlineEditing] Insert blocked due to UIPattern restrictions");
+      return;
+    }
+
     // Import utility functions for new row creation
     const { generateNewRowId, createEmptyRowData, insertNewRowAtTop } = await import("./utils/editingRowUtils");
 
@@ -1597,7 +1680,17 @@ const DynamicTable = ({
     if (screenReaderAnnouncer) {
       screenReaderAnnouncer.announceRowInsertion(newRowId);
     }
-  }, [editingRowUtils, optimisticRecords, displayRecords, baseColumns, screenReaderAnnouncer, fetchInitialData]);
+  }, [
+    editingRowUtils,
+    screenReaderAnnouncer,
+    baseColumns,
+    fetchInitialData,
+    uIPattern,
+    optimisticRecords,
+    displayRecords,
+    setInitialFocusCell,
+    setOptimisticRecords,
+  ]);
 
   // Validate an entire row before saving
   const validateRow = useCallback(
@@ -2034,24 +2127,11 @@ const DynamicTable = ({
       const canExpand = shouldUseTreeMode && hasChildren;
       const isExpanded = row.getIsExpanded();
       const isSelected = row.getIsSelected();
+      const eTMETAIcon = row.original.eTMETAIcon as string | undefined;
+      const isSummary = row.original.summaryLevel === true;
 
-      let expandIcon: React.ReactNode = null;
-      if (canExpand) {
-        expandIcon = isExpanded ? (
-          <ChevronUp height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronUp__8ca888" />
-        ) : (
-          <ChevronDown height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronDown__8ca888" />
-        );
-      }
-
-      let HierarchyIcon = null;
-      if (shouldUseTreeMode) {
-        if (hasChildren) {
-          HierarchyIcon = isExpanded ? MinusFolderIcon : PlusFolderFilledIcon;
-        } else {
-          HierarchyIcon = CircleFilledIcon;
-        }
-      }
+      const expandIcon = getExpandIcon(canExpand, isExpanded);
+      const HierarchyIcon = getHierarchyIcon(shouldUseTreeMode, eTMETAIcon, hasChildren, isExpanded);
 
       if (shouldUseTreeMode) {
         return (
@@ -2088,10 +2168,8 @@ const DynamicTable = ({
                 />
               )}
             </div>
-            {HierarchyIcon && (
-              <HierarchyIcon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />
-            )}
-            <span className="flex-1">
+            {HierarchyIcon}
+            <span className={`flex-1 ${isSummary ? "font-bold" : ""}`}>
               {originalCell && typeof originalCell === "function"
                 ? originalCell({ renderedCellValue, row, table })
                 : renderedCellValue}
@@ -2101,7 +2179,7 @@ const DynamicTable = ({
       }
 
       return (
-        <span className="flex-1">
+        <span className={`flex-1 ${isSummary ? "font-bold" : ""}`}>
           {originalCell && typeof originalCell === "function"
             ? originalCell({ renderedCellValue, row, table })
             : renderedCellValue}
@@ -2121,10 +2199,11 @@ const DynamicTable = ({
         handleSaveRow={handleSaveRow}
         handleCancelRow={handleCancelRow}
         setRecordId={setRecordId}
+        uIPattern={uIPattern}
         data-testid="ActionsColumnCell__8ca888"
       />
     ),
-    [editingRowUtils, handleEditRow, handleSaveRow, handleCancelRow, setRecordId]
+    [editingRowUtils, handleEditRow, handleSaveRow, handleCancelRow, setRecordId, uIPattern]
   );
 
   // Stable Cell renderer for data columns - reads column metadata from column object
@@ -2267,24 +2346,44 @@ const DynamicTable = ({
     // Insert actions column at the very beginning
     modifiedColumns.unshift(actionsColumn);
 
-    // Now apply tree rendering to the SECOND column (first data column, after actions)
-    // This is index 1 after inserting actions at index 0
-    const firstDataColumnIndex = 1;
-    const firstDataColumn = { ...modifiedColumns[firstDataColumnIndex] };
+    // Apply tree rendering to the first DISPLAYED data column
+    // We search for the first column after the actions column (index 0) that is displayed
+    const firstDisplayedDataColumnIndex = modifiedColumns.findIndex((col, index) => {
+      if (index <= 0) return false;
 
-    if (shouldUseTreeMode) {
-      firstDataColumn.size = 300;
-      firstDataColumn.minSize = 250;
-      firstDataColumn.maxSize = 500;
+      // Check column definition visibility
+      if (col.displayed === false) return false;
+
+      // Check current visibility state (if defined)
+      // Check both id and name as they might be used as keys
+      const id = col.id;
+      const name = col.name;
+
+      if (tableColumnVisibility) {
+        if (name && tableColumnVisibility[name] === false) return false;
+        if (id && tableColumnVisibility[id] === false) return false;
+      }
+
+      return true;
+    });
+
+    if (firstDisplayedDataColumnIndex !== -1) {
+      const firstDataColumn = { ...modifiedColumns[firstDisplayedDataColumnIndex] };
+
+      if (shouldUseTreeMode) {
+        firstDataColumn.size = 300;
+        firstDataColumn.minSize = 250;
+        firstDataColumn.maxSize = 500;
+      }
+
+      // Store tree mode flag on the column for the stable renderer to access
+      (firstDataColumn as Column & { _shouldUseTreeMode: boolean })._shouldUseTreeMode = shouldUseTreeMode;
+
+      modifiedColumns[firstDisplayedDataColumnIndex] = firstDataColumn;
     }
 
-    // Store tree mode flag on the column for the stable renderer to access
-    (firstDataColumn as Column & { _shouldUseTreeMode: boolean })._shouldUseTreeMode = shouldUseTreeMode;
-
-    modifiedColumns[firstDataColumnIndex] = firstDataColumn;
-
     return modifiedColumns;
-  }, [baseColumns, shouldUseTreeMode, renderActionsColumnCell, renderDataColumnCell]);
+  }, [baseColumns, shouldUseTreeMode, renderActionsColumnCell, renderDataColumnCell, tableColumnVisibility]);
 
   // Helper function to check if a row is being edited
 
@@ -2495,10 +2594,11 @@ const DynamicTable = ({
         table={table}
         onContextMenu={handleTableBodyContextMenu}
         onInsertRow={handleInsertRow}
+        uIPattern={uIPattern}
         data-testid="EmptyState__8ca888"
       />
     ),
-    [handleTableBodyContextMenu, handleInsertRow]
+    [handleTableBodyContextMenu, handleInsertRow, uIPattern]
   );
 
   const fetchMoreOnBottomReached = useCallback(
@@ -2729,6 +2829,7 @@ const DynamicTable = ({
     enableColumnResizing: true,
     enableColumnActions: true,
     manualFiltering: true,
+    manualSorting: true,
     enableColumnOrdering: true,
     enableColumnPinning: true,
     renderEmptyRowsFallback,
@@ -2915,6 +3016,13 @@ const DynamicTable = ({
       }
     }
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, graph]);
+
+  // Sync records to graph for cache optimization
+  useEffect(() => {
+    if (!isEmptyArray(records)) {
+      graph.setRecords(tab, records);
+    }
+  }, [records, graph, tab]);
 
   /** Restore selection from URL on mount */
   useEffect(() => {

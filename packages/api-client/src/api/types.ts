@@ -160,6 +160,7 @@ export interface Field {
    * from the child record's data (e.g., record["cBpartnerId"]).
    */
   isParentRecordProperty?: boolean;
+  isAuditField?: boolean;
 }
 
 export interface Option<T extends string = string> {
@@ -190,6 +191,7 @@ export interface Column {
   fieldId?: string;
   customJs?: string | null;
   referencedTabId: string | null;
+  isAuditField?: boolean;
 }
 
 export interface MappedField {
@@ -213,6 +215,7 @@ export enum FieldType {
   BUTTON = "button",
   WINDOW = "window",
   DATETIME = "datetime",
+  TIME = "time",
 }
 
 export interface MappedTab {
@@ -252,8 +255,15 @@ export interface WindowMetadataProperties {
   };
 }
 
+export enum UIPattern {
+  READ_ONLY = "RO",
+  EDIT_ONLY = "SR",
+  EDIT_AND_DELETE_ONLY = "ED",
+  STANDARD = "STD",
+}
+
 export interface Tab {
-  uIPattern: "STD" | "SR";
+  uIPattern: UIPattern;
   window: string;
   name: string;
   title: string;
@@ -662,6 +672,11 @@ export interface Warehouse {
   name: string;
 }
 
+interface ToolbarWindow {
+  id: string;
+  name: string;
+}
+
 export interface ToolbarButton {
   id: string;
   name: string;
@@ -675,6 +690,7 @@ export interface ToolbarButton {
   nameKey: string;
   buttonType: string;
   section: string;
+  windows: ToolbarWindow[];
 }
 
 export interface ToolbarMetadata {

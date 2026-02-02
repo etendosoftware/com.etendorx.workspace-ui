@@ -58,12 +58,14 @@ import Loading from "../loading";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
+import ProcessResultModal from "./ProcessResultModal";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
 import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
+import { DEFAULT_BULK_COMPLETION_ONLOAD, isBulkCompletionProcess } from "@/utils/process/bulkCompletionUtils";
 import { registerPayScriptDSL } from "./callouts/genericPayScriptCallout";
 
 // Date field reference codes for conversion
@@ -171,8 +173,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const processId = processDefinition.id;
   const javaClassName = processDefinition.javaClassName;
 
-  console.debug("ProcessDefinitionModalContent", processDefinition);
-
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -213,7 +213,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   useEffect(() => {
     const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
 
-    if (buttonListParam && buttonListParam.refList) {
+    if (buttonListParam?.refList) {
       setAvailableButtons(
         buttonListParam.refList.map((item) => ({
           value: item.value,
@@ -284,6 +284,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   } = useProcessInitializationState(
     processInitialization,
     memoizedParameters // Use memoized version to prevent infinite loops
+  );
+
+  const isBulkCompletion = useMemo(
+    () => isBulkCompletionProcess(processDefinition, parameters),
+    [processDefinition, parameters]
   );
 
   // Combined form data: record values + process defaults (similar to FormView pattern)
@@ -709,11 +714,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     const mappedValues: Record<string, any> = {};
     const paramMap = new Map<string, string>();
 
-    Object.values(parameters).forEach((p: any) => {
+    for (const p of Object.values(parameters)) {
       if (p.name && p.dBColumnName) {
         paramMap.set(p.name, p.dBColumnName);
       }
-    });
+    }
 
     for (const [key, value] of Object.entries(rawValues)) {
       const mappedKey = paramMap.get(key) || key;
@@ -798,6 +803,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         });
 
         const formValues = form.getValues();
+
+        // Fix: DocAction - copy user selection from parameter.name to dBColumnName
+        const docActionParam = Object.values(parameters).find(
+          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
+        );
+        if (docActionParam) {
+          const userSelection = formValues[docActionParam.name];
+          if (userSelection) {
+            formValues.DocAction = userSelection;
+          }
+        }
+
         const mappedValues = mapKeysWithDefaults({ ...formValues, ...populatedGrids });
 
         logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - After mapKeysWithDefaults:", {
@@ -901,17 +918,32 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
         const skipParamsLevel = processDefConfig?.skipParamsLevel;
 
+        const formValues = form.getValues();
+
+        // Fix: DocAction - copy user selection from parameter.name to dBColumnName
+        const docActionParam = Object.values(parameters).find(
+          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
+        );
+        if (docActionParam) {
+          const userSelection = formValues[docActionParam.name];
+          if (userSelection) {
+            formValues.DocAction = userSelection;
+          }
+        }
+
+        const combinedValues = { ...recordValues, ...formValues, ...extraKey, ...populatedGrids };
+
         const payload = {
           recordIds,
           _buttonValue: actionValue || "DONE",
           ...(skipParamsLevel
             ? {
-                ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues, ...populatedGrids }),
+                ...mapKeysWithDefaults(combinedValues),
                 ...buttonParams,
               }
             : {
                 _params: {
-                  ...mapKeysWithDefaults({ ...form.getValues(), ...extraKey, ...recordValues, ...populatedGrids }),
+                  ...mapKeysWithDefaults(combinedValues),
                   ...buttonParams,
                 },
               }),
@@ -962,24 +994,31 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       }
 
       startTransition(async () => {
+        const formValues = form.getValues();
+
         // Build complete payload with all context fields
-        const completePayload = buildProcessPayload(
-          record || {}, // Complete record data (fallback to empty object)
-          tab, // Tab metadata
-          initialState || {}, // Process defaults from server (handle null case)
-          (() => {
-            const formValues = form.getValues();
-            return formValues;
-          })() // User input from form
+        const completePayload = buildProcessPayload(record || {}, tab, initialState || {}, formValues);
+
+        // Fix: DocAction - the form stores user selection under parameter.name (e.g. "Document Action")
+        // but the backend expects it under dBColumnName ("DocAction")
+        const docActionParam = Object.values(parameters).find(
+          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
         );
+        if (docActionParam) {
+          const userSelection = formValues[docActionParam.name];
+          if (userSelection) {
+            (completePayload as Record<string, unknown>).DocAction = userSelection;
+          }
+        }
 
         const stringFunctionPayload = {
           _buttonValue: actionValue || "DONE",
           buttonValue: actionValue || "DONE",
           windowId: tab.window,
+          tabId: tab?.id || tabId || "",
           entityName: tab.entityName,
           recordIds: selectedRecords?.map((r) => r.id),
-          ...completePayload, // Use complete payload instead of just form values
+          ...completePayload,
         };
 
         try {
@@ -1009,11 +1048,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       onProcess,
       javaClassName,
       tab,
+      tabId,
       record,
       initialState,
       button.processDefinition,
       selectedRecords,
       form,
+      parameters,
     ]
   );
 
@@ -1271,10 +1312,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       try {
         setLoading(true);
 
-        if (onLoad && tab) {
-          const result = await executeStringFunction(onLoad, { Metadata }, button.processDefinition, {
+        const effectiveOnLoad = onLoad || (isBulkCompletion ? DEFAULT_BULK_COMPLETION_ONLOAD : null);
+
+        if (effectiveOnLoad && tab) {
+          const result = await executeStringFunction(effectiveOnLoad, { Metadata }, button.processDefinition, {
             selectedRecords,
-            tabId,
+            tabId: tab.id || "",
+            tableId: tab.table || "",
           });
 
           // If result is undefined/null, skip
@@ -1317,7 +1361,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
               if (!newParameters[parameterName]) continue;
 
               try {
-                const newOptions = values as string[];
+                const isArray = Array.isArray(values);
+                const newOptions = isArray ? (values as string[]) : [values as string];
 
                 newParameters[parameterName] = { ...newParameters[parameterName] };
 
@@ -1345,7 +1390,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     };
 
     fetchOptions();
-  }, [button.processDefinition, onLoad, open, selectedRecords, tab, tabId]);
+  }, [button.processDefinition, onLoad, open, selectedRecords, tab, setGridSelection, isBulkCompletion]);
 
   /**
    * NEW useEffect:
@@ -1537,9 +1582,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     if (result?.success) return null;
 
     // Sort parameters by sequence number
-    const parametersList = Object.values(parameters).sort(
+    let parametersList = Object.values(parameters).sort(
       (a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0)
     );
+
+    // If bulk completion, only show DocAction
+    if (isBulkCompletion) {
+      parametersList = parametersList.filter(
+        (p) => p.name === "DocAction" || p.dBColumnName === "DocAction" || p.name === "Document Actionn"
+      );
+    }
+
     const windowReferences: React.ReactElement[] = [];
     const selectors: React.ReactElement[] = [];
 
@@ -1747,53 +1800,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         </Modal>
       )}
       {/* Success Modal - Separate overlay */}
-      {open && result?.success && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60] p-4">
-          <div
-            className="rounded-2xl p-6 shadow-xl max-w-sm w-full relative"
-            style={{ background: "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)" }}>
-            <button
-              type="button"
-              onClick={handleSuccessClose}
-              className="absolute top-4 right-4 p-1 rounded-full hover:bg-white/50 transition-colors"
-              aria-label="Close">
-              <CloseIcon className="w-5 h-5" data-testid="SuccessCloseIcon__761503" />
-            </button>
-            <div className="flex flex-col items-center gap-4">
-              <div className="flex items-center justify-center">
-                <CheckIcon className="w-6 h-6 fill-(--color-success-main)" data-testid="SuccessCheckIcon__761503" />
-              </div>
-              <div>
-                <h4 className="font-medium text-xl text-center text-(--color-success-main)">
-                  {t("process.completedSuccessfully")}
-                </h4>
-                {(() => {
-                  const msg =
-                    typeof result?.data === "string"
-                      ? result.data
-                      : result?.data?.msgText || result?.data?.message || result?.error;
-
-                  if (!msg || msg === t("process.completedSuccessfully")) return null;
-
-                  return (
-                    <p className="text-sm text-center text-(--color-transparent-neutral-80) whitespace-pre-line">
-                      {String(msg).replace(/<br\s*\/?>/gi, "\n")}
-                    </p>
-                  );
-                })()}
-              </div>
-              <Button
-                variant="filled"
-                size="large"
-                onClick={handleSuccessClose}
-                className="w-49"
-                data-testid="SuccessCloseButton__761503">
-                {t("common.close")}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ProcessResultModal
+        open={Boolean(open && result?.success)}
+        success={true}
+        message={
+          typeof result?.data === "string"
+            ? result.data
+            : result?.data?.msgText || result?.data?.message || result?.error || undefined
+        }
+        onClose={handleSuccessClose}
+        data-testid="ProcessResultModal__761503"
+      />
     </>
   );
 }
