@@ -31,6 +31,7 @@ import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useUserContext } from "@/hooks/useUserContext";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { logger } from "@/utils/logger";
+import { createSmartContext } from "@/utils/expressions";
 
 /**
  * TabsContainer Component
@@ -84,18 +85,11 @@ const TabsGroupRenderer = ({
     const expression = activeParentTab.displayLogicExpression || activeParentTab.displayLogic;
     if (!expression) return true;
 
-    // Use Proxy for Case-Insensitive Context (Same robust logic)
-    const baseContext = {
-      ...(grandParentTab || {}),
-      ...(grandParentRecord || {}),
-    };
-    const context = new Proxy(baseContext, {
-      get: (target, prop: string) => {
-        if (prop in target) return target[prop as keyof typeof target];
-        const lowerProp = prop.toLowerCase();
-        const foundKey = Object.keys(target).find((k) => k.toLowerCase() === lowerProp);
-        return foundKey ? target[foundKey as keyof typeof target] : undefined;
-      },
+    // Use createSmartContext for robust evaluation
+    const context = createSmartContext({
+      values: grandParentRecord || undefined,
+      fields: grandParentTab?.fields, // Use grandparent fields for mapping if available
+      context: { ...(grandParentTab || {}), ...session },
     });
 
     try {
@@ -117,28 +111,11 @@ const TabsGroupRenderer = ({
     // (Optional: if (!parentRecord?.id && currentLevel > 0) return []; )
 
     // 3. Filter current tabs
-    const baseContext = {
-      ...(activeParentTab || {}), // Metadata (lowest priority)
-      ...(parentRecord || {}), // Record Data (highest priority)
-    };
-
-    const context = new Proxy(baseContext, {
-      get: (target, prop: string) => {
-        // 1. Direct match (fast path)
-        if (prop in target) {
-          return target[prop as keyof typeof target];
-        }
-
-        // 2. Case-insensitive match (generic fallback)
-        const lowerProp = prop.toLowerCase();
-        const foundKey = Object.keys(target).find((k) => k.toLowerCase() === lowerProp);
-
-        if (foundKey) {
-          return target[foundKey as keyof typeof target];
-        }
-
-        return undefined;
-      },
+    // Use createEvaluationContext for robust evaluation (Flat Object with Normalized Values)
+    const context = createSmartContext({
+      values: parentRecord || undefined,
+      fields: activeParentTab?.fields,
+      context: { ...(activeParentTab || {}), ...session }, // Include tab metadata in context if needed
     });
 
     const result = tabs.filter((tab) => {
@@ -302,14 +279,14 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * Result: Array of filtered tab groups maintaining hierarchy structure
    */
   const filteredGroupedTabs = useMemo(() => {
-    return groupedTabs.map((tabGroup) => {
+    return groupedTabs.map((tabGroup, index) => {
       const currentLevel = tabGroup[0]?.tabLevel;
 
-      if (currentLevel === 0) {
+      if (index === 0) {
         return tabGroup;
       }
 
-      const parentLevel = currentLevel - 1;
+      const parentLevel = groupedTabs[index - 1][0].tabLevel;
       const activeParentTab = getActiveTabForLevel(parentLevel);
 
       const filtered = tabGroup.filter((tab) => {
@@ -359,9 +336,12 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
 
           // Determine the active parent tab
           // For level 0, there is no parent (null)
-          // For level > 0, get the active tab of the previous level
-          const parentLevel = currentLevel - 1;
-          const activeParentTab = currentLevel > 0 ? getActiveTabForLevel(parentLevel) : null;
+          // For level > 0, get the active tab of the PREVIOUS GROUP's level
+          let activeParentTab = null;
+          if (index > 0) {
+            const parentLevel = groupedTabs[index - 1][0].tabLevel;
+            activeParentTab = getActiveTabForLevel(parentLevel);
+          }
 
           return (
             <TabsGroupRenderer

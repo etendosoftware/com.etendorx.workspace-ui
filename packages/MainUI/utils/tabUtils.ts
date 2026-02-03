@@ -100,8 +100,60 @@ export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | nul
 
   // Check parentColumns if they exist and have values
   if (tab.parentColumns && tab.parentColumns.length > 0) {
-    const hasMatch = tab.parentColumns.some((column) => {
-      return matchesParentColumn(column, activeParentTab.table$_identifier, activeParentTab.entityName);
+    const parentEntityLower = activeParentTab.entityName?.toLowerCase() || "";
+    const parentTableName = activeParentTab.table$_identifier?.toLowerCase() || "";
+
+    const hasMatch = tab.parentColumns.some((parentColumn) => {
+      const columnLower = parentColumn.toLowerCase();
+
+      const normalizedColumn = columnLower.replace(/_id$/, "").replace(/[_-]/g, "");
+
+      const normalizedEntity = parentEntityLower
+        .replace(/^(fin|mgmt|financial|management)/gi, "")
+        .replace(/([A-Z])/g, (p1, offset) => (offset > 0 ? `_${p1}` : p1))
+        .toLowerCase()
+        .replace(/[_-]/g, "");
+
+      const normalizedTable = parentTableName.replace(/^c_/, "").replace(/[_-]/g, "");
+
+      // 1. Existing Naive Name Match
+      if (
+        normalizedColumn.includes(normalizedEntity) ||
+        normalizedEntity.includes(normalizedColumn) ||
+        normalizedColumn.includes(normalizedTable) ||
+        normalizedTable.includes(normalizedColumn)
+      ) {
+        return true;
+      }
+
+      // 2. Metadata-based Match (Fields)
+      // If the property name (e.g., "agent") doesn't match the entity (e.g., "etcop_app"),
+      // check the field definition to see if it points to that entity.
+      if (tab.fields && tab.fields[parentColumn]) {
+        const field = tab.fields[parentColumn];
+
+        // Check Referenced Entity
+        if (field.referencedEntity && activeParentTab.entityName) {
+          if (field.referencedEntity.toLowerCase() === activeParentTab.entityName.toLowerCase()) {
+            return true;
+          }
+        }
+
+        // Check DB Column Name (backup)
+        if (field.columnName) {
+          const normDBCol = field.columnName.toLowerCase().replace(/_id$/, "").replace(/[_-]/g, "");
+          if (
+            normDBCol.includes(normalizedEntity) ||
+            normalizedEntity.includes(normDBCol) ||
+            normDBCol.includes(normalizedTable) ||
+            normalizedTable.includes(normDBCol)
+          ) {
+            return true;
+          }
+        }
+      }
+
+      return false;
     });
 
     if (hasMatch) {

@@ -113,6 +113,12 @@
     "inpkeyColumnId": "M_Inventory_ID",
     "keyColumnName": "M_Inventory_ID"
   },
+  "5126": {
+    "url": "/TablesandColumns/Table_Edition.html",
+    "command": "BUTTONImportTable173",
+    "inpkeyColumnId": "AD_Table_ID",
+    "keyColumnName": "AD_Table_ID"
+  },
   "AF8B0E7A0FA24CF1AA7CE1207B5ACA4E": {
     "url": "/EndYearClose/EndYearClose_Edition.html",
     "command": "BUTTONProcessedEFDBF909811544DAAE4E876AA781E5DC",
