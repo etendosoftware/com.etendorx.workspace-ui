@@ -103,9 +103,6 @@ const TabsGroupRenderer = ({
       // We assume global session variables are handled by session arg
       return compiledExpr(session, context);
     } catch {
-      // If critical error in parent check, default to visible to avoid blocking UI unnecessarily?
-      // Or hidden? Standard is 'false' on error in basic useDisplayLogic.
-      // We'll stick to true to be less disruptive unless sure.
       return true;
     }
   }, [activeParentTab, grandParentRecord, grandParentTab, session]);
@@ -144,7 +141,7 @@ const TabsGroupRenderer = ({
       },
     });
 
-    return tabs.filter((tab) => {
+    const result = tabs.filter((tab) => {
       const expression = tab.displayLogicExpression || tab.displayLogic;
 
       if (!expression) {
@@ -153,16 +150,19 @@ const TabsGroupRenderer = ({
 
       try {
         const compiledExpr = compileExpression(expression);
-        const result = compiledExpr(session, context);
-        return result;
+        const res = compiledExpr(session, context);
+        return res;
       } catch (error) {
         logger.error(`Error evaluating display logic for tab ${tab.name}:`, error);
-        return false; // Hide on error
+        return false;
       }
     });
-  }, [tabs, parentRecord, session, activeParentTab, isParentVisible]); // added isParentVisible dependency
 
-  if (filteredTabs.length === 0) {
+    const filteredTabs = result.filter((tab) => shouldShowTab(tab, activeParentTab));
+    return filteredTabs;
+  }, [tabs, parentRecord, session, activeParentTab, isParentVisible, currentLevel]);
+
+  if (!Array.isArray(filteredTabs) || filteredTabs.length === 0) {
     return null;
   }
 

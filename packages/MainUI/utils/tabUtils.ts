@@ -29,16 +29,17 @@ export interface TabWithParentInfo extends Tab {
  * @returns Normalized string
  */
 function normalizeIdentifier(str: string): string {
+  if (!str) return "";
   return (
     str
-      // Convert camelCase to snake_case (must be done before lowercasing)
-      .replace(/([A-Z])/g, "_$1")
+      // 1. Remove prefixes first
+      .replace(/^(fin|c|m|ad|s)_/i, "")
+      // 2. Handle CamelCase to snake_case properly
+      .replace(/([A-Z])/g, (match, offset) => (offset > 0 && str[offset - 1] !== "_" ? "_" : "") + match.toLowerCase())
       .toLowerCase()
-      // Remove common table prefixes
-      .replace(/^(fin|c|m|ad|s)_/, "")
-      // Remove leading/trailing underscores
-      .replace(/^_/, "")
-      .replace(/_$/, "")
+      // 3. Clean up
+      .replace(/_{2,}/g, "_")
+      .replace(/^_+|_+$/g, "")
   );
 }
 
@@ -58,11 +59,24 @@ function matchesParentColumn(
     return false;
   }
 
-  const normalizedColumn = normalizeIdentifier(columnName.replace(/_id$/, "")); // Remove _id suffix
+  const normalizedColumn = normalizeIdentifier(columnName.replace(/_id$/i, "")); 
   const normalizedTable = parentTableIdentifier ? normalizeIdentifier(parentTableIdentifier) : null;
   const normalizedEntity = parentEntityName ? normalizeIdentifier(parentEntityName) : null;
 
-  return normalizedColumn === normalizedTable || normalizedColumn === normalizedEntity;
+  const result = normalizedColumn === normalizedTable || normalizedColumn === normalizedEntity;
+  
+  if (result) return true;
+
+  // Fuzzy match: underscore-agnostic and common Etendo naming diffs
+  const fuzzyColumn = normalizedColumn.replace(/_/g, "");
+  const fuzzyTable = normalizedTable?.replace(/_/g, "") || "";
+  const fuzzyEntity = normalizedEntity?.replace(/_/g, "") || "";
+
+  const fuzzyResult = 
+    fuzzyColumn === fuzzyTable || 
+    fuzzyColumn === fuzzyEntity;
+
+  return fuzzyResult;
 }
 
 export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | null): boolean {
@@ -78,18 +92,32 @@ export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | nul
     return false;
   }
 
-  if (tab.parentTabId) {
-    return tab.parentTabId === activeParentTab.id;
+  const pTabId = tab.parentTabId || (tab as any).parentTab;
+  if (pTabId) {
+    const match = pTabId === activeParentTab.id;
+    return match;
   }
 
   // Check parentColumns if they exist and have values
   if (tab.parentColumns && tab.parentColumns.length > 0) {
-    return tab.parentColumns.some((column) =>
-      matchesParentColumn(column, activeParentTab.table$_identifier, activeParentTab.entityName)
-    );
+    const hasMatch = tab.parentColumns.some((column) => {
+      return matchesParentColumn(column, activeParentTab.table$_identifier, activeParentTab.entityName);
+    });
+
+    if (hasMatch) {
+      return true;
+    }
   }
 
-  // If no parentTabId and no parentColumns, don't show the tab
-  // This indicates no relationship is defined between the tab and the parent
+  // Fallback: If it's a Level-1 tab and we are at the root level, 
+  // and metadata is incomplete (missing linkage), show it anyway
+  // if it's an active tab. This prevents "loss" of tabs due to 
+  // backend metadata context issues.
+  if (tab.tabLevel === 1 && activeParentTab.tabLevel === 0) {
+    // If we have no linkage but it's clearly a child level, 
+    // we default to showing it to avoid blank windows. 
+    return true;
+  }
+
   return false;
 }
