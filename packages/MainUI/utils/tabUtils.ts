@@ -33,13 +33,14 @@ function normalizeIdentifier(str: string): string {
   return (
     str
       // 1. Remove prefixes first
-      .replace(/^(fin|c|m|ad|s)_/i, "")
+      .replace(/^(?:fin|c|m|ad|s)_/i, "")
       // 2. Handle CamelCase to snake_case properly
       .replace(/([A-Z])/g, (match, offset) => (offset > 0 && str[offset - 1] !== "_" ? "_" : "") + match.toLowerCase())
       .toLowerCase()
       // 3. Clean up
       .replace(/_{2,}/g, "_")
-      .replace(/(^_+)|(_+$)/g, "")
+      .replace(/^_+/, "")
+      .replace(/_+$/, "")
   );
 }
 
