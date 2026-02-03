@@ -59,12 +59,12 @@ function matchesParentColumn(
     return false;
   }
 
-  const normalizedColumn = normalizeIdentifier(columnName.replace(/_id$/i, "")); 
+  const normalizedColumn = normalizeIdentifier(columnName.replace(/_id$/i, ""));
   const normalizedTable = parentTableIdentifier ? normalizeIdentifier(parentTableIdentifier) : null;
   const normalizedEntity = parentEntityName ? normalizeIdentifier(parentEntityName) : null;
 
   const result = normalizedColumn === normalizedTable || normalizedColumn === normalizedEntity;
-  
+
   if (result) return true;
 
   // Fuzzy match: underscore-agnostic and common Etendo naming diffs
@@ -72,9 +72,7 @@ function matchesParentColumn(
   const fuzzyTable = normalizedTable?.replace(/_/g, "") || "";
   const fuzzyEntity = normalizedEntity?.replace(/_/g, "") || "";
 
-  const fuzzyResult = 
-    fuzzyColumn === fuzzyTable || 
-    fuzzyColumn === fuzzyEntity;
+  const fuzzyResult = fuzzyColumn === fuzzyTable || fuzzyColumn === fuzzyEntity;
 
   return fuzzyResult;
 }
@@ -161,13 +159,13 @@ export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | nul
     }
   }
 
-  // Fallback: If it's a Level-1 tab and we are at the root level, 
+  // Fallback: If it's a Level-1 tab and we are at the root level,
   // and metadata is incomplete (missing linkage), show it anyway
-  // if it's an active tab. This prevents "loss" of tabs due to 
+  // if it's an active tab. This prevents "loss" of tabs due to
   // backend metadata context issues.
   if (tab.tabLevel === 1 && activeParentTab.tabLevel === 0) {
-    // If we have no linkage but it's clearly a child level, 
-    // we default to showing it to avoid blank windows. 
+    // If we have no linkage but it's clearly a child level,
+    // we default to showing it to avoid blank windows.
     return true;
   }
 

@@ -200,7 +200,7 @@ function buildErpHeaders(
 
   const url = new URL(request.url);
   const slugParts = url.pathname.split("/api/erp/")[1]?.split("/") || [];
-  
+
   if (slugParts[0] === "meta" && slugParts[1] === "window" && slugParts[2]) {
     const windowId = slugParts[2];
     const currentReferer = headers["referer"] || "";
