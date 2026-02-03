@@ -147,3 +147,30 @@ export const extractKeyValuePairs = <T extends Record<string, { value: unknown }
     {} as Record<string, string>
   );
 };
+
+/**
+ * Converts a string to camelCase representation.
+ *
+ * This function processes the input string by:
+ * 1. Treating the first word derived from start or space boundaries as lowercase
+ * 2. Converting subsequent words (identified by uppercase letter or word boundary) to have an uppercase first letter
+ * 3. Removing all whitespace characters
+ *
+ * @param str - The input string to convert
+ * @returns The camelCased version of the input string
+ *
+ * @example
+ * // Returns "generalLedger"
+ * toCamelCase("General Ledger")
+ *
+ * @example
+ * // Returns "someVariableName"
+ * toCamelCase("Some Variable Name")
+ */
+export const toCamelCase = (str: string): string => {
+  return str
+    .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => {
+      return index === 0 ? word.toLowerCase() : word.toUpperCase();
+    })
+    .replace(/\s+/g, "");
+};
