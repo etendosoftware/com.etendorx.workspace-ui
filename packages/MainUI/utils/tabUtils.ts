@@ -30,18 +30,26 @@ export interface TabWithParentInfo extends Tab {
  */
 function normalizeIdentifier(str: string): string {
   if (!str) return "";
-  return (
-    str
-      // 1. Remove prefixes first
-      .replace(/^(?:fin|c|m|ad|s)_/i, "")
-      // 2. Handle CamelCase to snake_case properly
-      .replace(/([A-Z])/g, (match, offset) => (offset > 0 && str[offset - 1] !== "_" ? "_" : "") + match.toLowerCase())
-      .toLowerCase()
-      // 3. Clean up
-      .replace(/_{2,}/g, "_")
-      .replace(/^_+/, "")
-      .replace(/_+$/, "")
-  );
+  const normalized = str
+    // 1. Remove prefixes first
+    .replace(/^(?:fin|c|m|ad|s)_/i, "")
+    // 2. Handle CamelCase to snake_case properly
+    .replace(/([A-Z])/g, (match, offset) => (offset > 0 && str[offset - 1] !== "_" ? "_" : "") + match.toLowerCase())
+    .toLowerCase()
+    // 3. Clean up
+    .replace(/_{2,}/g, "_");
+
+  // 4. Safe trim for underscores (prevents ReDoS warnings in SonarQube)
+  let start = 0;
+  while (start < normalized.length && normalized[start] === "_") {
+    start++;
+  }
+  let end = normalized.length - 1;
+  while (end >= start && normalized[end] === "_") {
+    end--;
+  }
+
+  return normalized.substring(start, end + 1);
 }
 
 /**
