@@ -937,17 +937,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
         // Use buildProcessParameters to properly map parameter names to DB column names
         const formValues = form.getValues();
-        const mappedFormValues = buildProcessParameters(formValues, parameters);
         const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
         const skipParamsLevel = processDefConfig?.skipParamsLevel;
-        const params = mapKeysWithDefaults({
-          ...mappedFormValues,
-          ...extraKey,
-          ...recordValues,
-          ...populatedGrids,
-        } as SourceObject);
 
-        const formValues = form.getValues();
 
         // Fix: DocAction - copy user selection from parameter.name to dBColumnName
         const docActionParam = Object.values(parameters).find(
