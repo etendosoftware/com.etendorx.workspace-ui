@@ -23,6 +23,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import { globalCalloutManager } from "@/services/callouts";
 import { buildPayloadByInputName, parseDynamicExpression } from "@/utils";
 import { logger } from "@/utils/logger";
+import { createSmartContext } from "@/utils/expressions";
 import { isDebugCallouts } from "@/utils/debug";
 import { type Field, type FormInitializationResponse, FormMode } from "@workspaceui/api-client/src/api/types";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
@@ -46,13 +47,17 @@ export const compileExpression = (expression: string) => {
   }
 };
 
-const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; formMode?: FormMode }) => {
+const BaseSelectorComp = ({
+  field,
+  formMode = FormMode.EDIT,
+  forceReadOnly,
+}: { field: Field; formMode?: FormMode; forceReadOnly?: boolean }) => {
   // Field type mapping corrected - reference "10" now properly maps to TEXT
 
   const formMethods = useFormContext();
   const { watch, getValues, setValue, register, formState } = formMethods;
   const { isFormInitializing, isSettingInitialValues, setIsSettingInitialValues } = useFormInitializationContext();
-  const { tab } = useTabContext();
+  const { tab, record, parentRecord, parentTab } = useTabContext();
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
   const { recordId } = useParams<{ recordId: string }>();
   const { session } = useUserContext();
@@ -83,18 +88,26 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
   const isDisplayed = useDisplayLogic({ field });
 
   const isReadOnly = useMemo(() => {
+    if (forceReadOnly) return true;
     if (field.isReadOnly) return true;
     if (!field.isUpdatable) return FormMode.NEW !== formMode;
     if (!field.readOnlyLogicExpression) return false;
     const compiledExpr = compileExpression(field.readOnlyLogicExpression);
 
     try {
-      return compiledExpr(session, values);
+      const smartContext = createSmartContext({
+        values: { ...record, ...values },
+        fields: tab.fields,
+        parentValues: parentRecord || undefined,
+        parentFields: parentTab?.fields,
+        context: session,
+      });
+      return compiledExpr(smartContext, smartContext);
     } catch (error) {
       logger.warn("Error executing expression:", compiledExpr, error);
       return true;
     }
-  }, [field, formMode, session, values]);
+  }, [field, formMode, session, values, forceReadOnly, record, parentRecord, parentTab, tab]);
 
   const applyColumnValues = useCallback(
     (columnValues: FormInitializationResponse["columnValues"]) => {

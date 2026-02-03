@@ -57,6 +57,8 @@ export const getFieldReference = (reference?: string): FieldType => {
     case FIELD_REFERENCE_CODES.LIST_17:
     case FIELD_REFERENCE_CODES.LIST_13:
       return FieldType.LIST;
+    case FIELD_REFERENCE_CODES.TIME:
+      return FieldType.TIME;
     case "28":
       return FieldType.BUTTON;
     case FIELD_REFERENCE_CODES.SELECT_30:
@@ -137,9 +139,11 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
       const field = fields?.[key];
       let newKey = field?.inputName ?? key;
 
-      // Transform documentAction to DocAction
+      // Transform documentAction to DocAction and inpporeference to POReference
       if (key === "documentAction" || newKey === "documentAction") {
         newKey = "DocAction";
+      } else if (key === "inpporeference" || newKey === "inpporeference") {
+        newKey = "POReference";
       }
 
       // Special handling for known numeric fields when field metadata is not available
@@ -196,7 +200,14 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
 export const parseDynamicExpression = (expr: string) => {
   // Transform @field_name@ syntax to valid JavaScript references
   // Supports: @fieldName@, @#sessionVar@, @$contextVar@
-  let expr0 = expr.replace(/@([#$]?[a-zA-Z_]\w*)@/g, (_, fieldName) => {
+  // Transform logical operators (SQL-like to JS)
+  // Replace & with && (unless it's already &&)
+  // Replace | with || (unless it's already ||)
+  const exprLogic = expr.replace(/(?<!&)&(?!&)/g, "&&").replace(/(?<!\|)\|(?!\|)/g, "||");
+
+  // Transform @field_name@ syntax to valid JavaScript references
+  // Supports: @fieldName@, @#sessionVar@, @$contextVar@
+  let expr0 = exprLogic.replace(/@([#$]?[a-zA-Z_]\w*)@/g, (_, fieldName) => {
     return `(currentValues["${fieldName}"] || context["${fieldName}"])`;
   });
 
@@ -219,9 +230,22 @@ export const parseDynamicExpression = (expr: string) => {
     return `context[${quote}${prop}${quote}]`;
   });
 
-  const expr5 = expr4.replace(/context\[\s*(['"])(.*?)\1\s*\]/g, (_, quote, key) => {
+  let expr5 = expr4.replace(/context\[\s*(['"])(.*?)\1\s*\]/g, (_, quote, key) => {
     return `context[${quote}${key}${quote}]`;
   });
+
+  // Handle boolean comparisons against normalized 'Y'/'N' values
+  // e.g. context.IsSummary === false  ->  context.IsSummary === 'N'
+  // e.g. context.IsSold === true      ->  context.IsSold === 'Y'
+  expr5 = expr5
+    .replace(/===\s*false\b/g, "=== 'N'")
+    .replace(/===\s*true\b/g, "=== 'Y'")
+    .replace(/!==\s*false\b/g, "!== 'N'")
+    .replace(/!==\s*true\b/g, "!== 'Y'")
+    .replace(/==\s*false\b/g, "== 'N'")
+    .replace(/==\s*true\b/g, "== 'Y'")
+    .replace(/!=\s*false\b/g, "!= 'N'")
+    .replace(/!=\s*true\b/g, "!= 'Y'");
 
   return expr5;
 };

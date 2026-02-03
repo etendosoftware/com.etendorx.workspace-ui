@@ -35,8 +35,9 @@ import type {
   Field,
   FormInitializationResponse,
   RefListField,
+  UIPattern,
 } from "@workspaceui/api-client/src/api/types";
-import { FieldType } from "@workspaceui/api-client/src/api/types";
+import { FieldType, UIPattern as UIPatternEnum } from "@workspaceui/api-client/src/api/types";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
@@ -62,7 +63,7 @@ import { AddAttachmentModal } from "../Form/FormView/Sections/AddAttachmentModal
 import { createAttachment } from "@workspaceui/api-client/src/api/attachments";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { useTableData } from "@/hooks/table/useTableData";
-import { isEmptyObject } from "@/utils/commons";
+import { isEmptyArray, isEmptyObject } from "@/utils/commons";
 import { useUserContext } from "@/hooks/useUserContext";
 import {
   getDisplayColumnDefOptions,
@@ -116,6 +117,7 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import "./styles/inlineEditing.css";
 import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
+import { formatUTCTimeToLocal } from "@/utils/date/utils";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
@@ -295,6 +297,7 @@ interface ActionsColumnCellProps {
   handleSaveRow: (rowId: string) => void;
   handleCancelRow: (rowId: string) => void;
   setRecordId: (id: string) => void;
+  uIPattern?: UIPattern;
 }
 
 /**
@@ -308,6 +311,7 @@ const ActionsColumnCell: React.FC<ActionsColumnCellProps> = ({
   handleSaveRow,
   handleCancelRow,
   setRecordId,
+  uIPattern,
 }) => {
   const rowId = String(row.original.id);
   const editingData = editingRowUtils.getEditingRowData(rowId);
@@ -330,6 +334,7 @@ const ActionsColumnCell: React.FC<ActionsColumnCellProps> = ({
         setRecordId(String(row.original.id));
       }}
       data-testid="ActionsColumn__8ca888"
+      uIPattern={uIPattern}
     />
   );
 };
@@ -411,6 +416,13 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
   const identifierKey = `${fieldKey}$_identifier`;
   const identifier = row.original[identifierKey];
 
+  // Format Time values from UTC to Local for display in the grid
+  const fieldMapping = columnFieldMappings.get(col.name);
+  if (fieldMapping?.fieldType === FieldType.TIME && typeof renderedCellValue === "string" && renderedCellValue) {
+    const localTimeValue = formatUTCTimeToLocal(renderedCellValue);
+    return <div className="table-cell-content">{localTimeValue}</div>;
+  }
+
   if (identifier && typeof identifier === "string" && typeof renderedCellValue === "string") {
     if (originalCell && typeof originalCell === "function") {
       return <>{originalCell({ renderedCellValue: identifier, row, table })}</>;
@@ -443,6 +455,7 @@ interface ExtendedColumn extends Column {
   readOnlyLogicExpression?: string;
   isReadOnly?: boolean;
   isUpdatable?: boolean;
+  isAuditField?: boolean;
 }
 
 // Helper function to determine if a field should be readonly in inline editing
@@ -603,6 +616,7 @@ interface DynamicTableProps {
   isTreeMode?: boolean;
   isVisible?: boolean;
   areFiltersDisabled?: boolean;
+  uIPattern?: UIPattern;
 }
 
 const getExpandIcon = (canExpand: boolean, isExpanded: boolean) => {
@@ -661,6 +675,7 @@ const DynamicTable = ({
   isTreeMode = true,
   isVisible = true,
   areFiltersDisabled = false,
+  uIPattern,
 }: DynamicTableProps) => {
   const { sx } = useStyle();
   const { t } = useTranslation();
@@ -1521,7 +1536,7 @@ const DynamicTable = ({
           if (prev.anchorEl.parentNode && document.body.contains(prev.anchorEl)) {
             prev.anchorEl.parentNode.removeChild(prev.anchorEl);
           }
-        } catch (error) {
+        } catch {
           // Silently ignore if element was already removed
           // Performance: Debug log removed
         }
@@ -1545,6 +1560,13 @@ const DynamicTable = ({
   // Inline editing action handlers
   const handleEditRow = useCallback(
     async (row: MRT_Row<EntityData>) => {
+      // Logic based on uIPattern
+      // RO: Disable Inline Edit
+      if (uIPattern === UIPatternEnum.READ_ONLY) {
+        logger.warn("[InlineEditing] Editing blocked due to READ_ONLY UIPattern");
+        return;
+      }
+
       const rowId = String(row.original.id);
 
       // Add the row to editing state with original data immediately
@@ -1595,10 +1617,21 @@ const DynamicTable = ({
         // Continue with original data if initialization fails
       }
     },
-    [editingRowUtils, screenReaderAnnouncer, baseColumns, fetchInitialData]
+    [editingRowUtils, screenReaderAnnouncer, baseColumns, fetchInitialData, uIPattern]
   );
 
   const handleInsertRow = useCallback(async () => {
+    // Logic based on uIPattern
+    // RO, SR, ED: Disable Insert
+    if (
+      uIPattern === UIPatternEnum.READ_ONLY ||
+      uIPattern === UIPatternEnum.EDIT_ONLY ||
+      uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY
+    ) {
+      logger.warn("[InlineEditing] Insert blocked due to UIPattern restrictions");
+      return;
+    }
+
     // Import utility functions for new row creation
     const { generateNewRowId, createEmptyRowData, insertNewRowAtTop } = await import("./utils/editingRowUtils");
 
@@ -1647,7 +1680,17 @@ const DynamicTable = ({
     if (screenReaderAnnouncer) {
       screenReaderAnnouncer.announceRowInsertion(newRowId);
     }
-  }, [editingRowUtils, optimisticRecords, displayRecords, baseColumns, screenReaderAnnouncer, fetchInitialData]);
+  }, [
+    editingRowUtils,
+    screenReaderAnnouncer,
+    baseColumns,
+    fetchInitialData,
+    uIPattern,
+    optimisticRecords,
+    displayRecords,
+    setInitialFocusCell,
+    setOptimisticRecords,
+  ]);
 
   // Validate an entire row before saving
   const validateRow = useCallback(
@@ -2156,10 +2199,11 @@ const DynamicTable = ({
         handleSaveRow={handleSaveRow}
         handleCancelRow={handleCancelRow}
         setRecordId={setRecordId}
+        uIPattern={uIPattern}
         data-testid="ActionsColumnCell__8ca888"
       />
     ),
-    [editingRowUtils, handleEditRow, handleSaveRow, handleCancelRow, setRecordId]
+    [editingRowUtils, handleEditRow, handleSaveRow, handleCancelRow, setRecordId, uIPattern]
   );
 
   // Stable Cell renderer for data columns - reads column metadata from column object
@@ -2545,20 +2589,16 @@ const DynamicTable = ({
   );
 
   const renderEmptyRowsFallback = useCallback(
-    ({ table }: { table: MRT_TableInstance<EntityData> }) => {
-      if (loading) {
-        return null;
-      }
-      return (
-        <EmptyState
-          table={table}
-          onContextMenu={handleTableBodyContextMenu}
-          onInsertRow={handleInsertRow}
-          data-testid="EmptyState__8ca888"
-        />
-      );
-    },
-    [handleTableBodyContextMenu, handleInsertRow, loading]
+    ({ table }: { table: MRT_TableInstance<EntityData> }) => (
+      <EmptyState
+        table={table}
+        onContextMenu={handleTableBodyContextMenu}
+        onInsertRow={handleInsertRow}
+        uIPattern={uIPattern}
+        data-testid="EmptyState__8ca888"
+      />
+    ),
+    [handleTableBodyContextMenu, handleInsertRow, uIPattern]
   );
 
   const fetchMoreOnBottomReached = useCallback(
@@ -2977,6 +3017,13 @@ const DynamicTable = ({
       }
     }
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, graph]);
+
+  // Sync records to graph for cache optimization
+  useEffect(() => {
+    if (!isEmptyArray(records)) {
+      graph.setRecords(tab, records);
+    }
+  }, [records, graph, tab]);
 
   /** Restore selection from URL on mount */
   useEffect(() => {

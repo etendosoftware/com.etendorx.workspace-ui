@@ -25,6 +25,7 @@ import { BooleanCellEditor } from "./BooleanCellEditor";
 import { NumericCellEditor } from "./NumericCellEditor";
 import { TableDirCellEditor } from "./TableDirCellEditor";
 import { generateAriaAttributes } from "../utils/accessibilityUtils";
+import { TimeCellEditor } from "./TimeCellEditor";
 
 /**
  * Props for the CellEditorFactory component
@@ -89,6 +90,9 @@ const CellEditorFactoryComponent: React.FC<CellEditorFactoryProps> = ({
 
       case FieldType.BOOLEAN:
         return <BooleanCellEditor {...enhancedEditorProps} data-testid="BooleanCellEditor__89bcf8" />;
+
+      case FieldType.TIME:
+        return <TimeCellEditor {...enhancedEditorProps} data-testid="TimeCellEditor__89bcf8" />;
 
       case FieldType.LIST:
       case FieldType.SELECT:

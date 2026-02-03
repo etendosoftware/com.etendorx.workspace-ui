@@ -19,6 +19,7 @@ import { useEffect, useState, useRef } from "react";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
+import { useSelected } from "./useSelected";
 
 interface DatasourceResponse {
   data: {
@@ -52,11 +53,21 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
   const fetchInProgressRef = useRef(false);
   const lastFetchParamsRef = useRef<string | null>(null);
 
+  const { graph } = useSelected();
+
   useEffect(() => {
     if (!tab || !recordId || recordId === NEW_RECORD_ID) {
       setRecord(EMPTY_RECORD);
       setLoading(false);
       lastFetchParamsRef.current = null; // Prepare for next valid fetch
+      return;
+    }
+
+    // Check if record is already in graph (cached)
+    const cachedRecord = graph.getRecord(tab, recordId);
+    if (cachedRecord) {
+      setRecord(cachedRecord as unknown as Record<string, Field>);
+      setLoading(false);
       return;
     }
 
@@ -124,7 +135,7 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
       cancelled = true;
       fetchInProgressRef.current = false;
     };
-  }, [tab?.entityName, tab?.window, tab?.id, recordId]);
+  }, [tab?.entityName, tab?.window, tab?.id, recordId, graph, tab]);
 
   return {
     record,
