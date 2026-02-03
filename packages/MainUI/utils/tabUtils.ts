@@ -39,7 +39,7 @@ function normalizeIdentifier(str: string): string {
       .toLowerCase()
       // 3. Clean up
       .replace(/_{2,}/g, "_")
-      .replace(/^_+|_+$/g, "")
+      .replace(/(^_+)|(_+$)/g, "")
   );
 }
 
