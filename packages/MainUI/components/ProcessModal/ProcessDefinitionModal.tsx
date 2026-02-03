@@ -43,6 +43,7 @@ import {
   PROCESS_DEFINITION_DATA,
   WINDOW_SPECIFIC_KEYS,
   PROCESS_TYPES,
+  ADD_PAYMENT_ORDER_PROCESS_ID,
 } from "@/utils/processes/definition/constants";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
@@ -84,6 +85,31 @@ const isDateReference = (reference: string): boolean => {
     reference.toLowerCase().includes("date") ||
     reference.toLowerCase().includes("time")
   );
+};
+
+const NULLABLE_REFERENCES = [
+  FIELD_REFERENCE_CODES.INTEGER,
+  FIELD_REFERENCE_CODES.NUMERIC,
+  FIELD_REFERENCE_CODES.QUANTITY_22,
+  FIELD_REFERENCE_CODES.QUANTITY_29,
+  FIELD_REFERENCE_CODES.DECIMAL,
+  FIELD_REFERENCE_CODES.RATE,
+  FIELD_REFERENCE_CODES.LIST_13,
+  FIELD_REFERENCE_CODES.LIST_17,
+  FIELD_REFERENCE_CODES.TABLE_DIR_18,
+  FIELD_REFERENCE_CODES.TABLE_DIR_19,
+  FIELD_REFERENCE_CODES.PRODUCT,
+  FIELD_REFERENCE_CODES.SELECTOR,
+  FIELD_REFERENCE_CODES.WINDOW,
+  FIELD_REFERENCE_CODES.LOCATION_21,
+  FIELD_REFERENCE_CODES.SELECT_30,
+];
+
+/**
+ * Checks if a parameter value should be converted to null when empty string
+ */
+const shouldConvertEmptyToNull = (reference: string): boolean => {
+  return isDateReference(reference) || NULLABLE_REFERENCES.includes(reference as (typeof NULLABLE_REFERENCES)[number]);
 };
 
 /** Fallback object for record values when no record context exists */
@@ -726,18 +752,30 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const getMappedFormValues = useCallback(() => {
     const rawValues = form.getValues();
     const mappedValues: Record<string, any> = {};
-    const paramMap = new Map<string, string>();
 
-    for (const p of Object.values(parameters)) {
-      if (p.name && p.dBColumnName) {
-        paramMap.set(p.name, p.dBColumnName);
+    Object.values(parameters).forEach((p: any) => {
+      // Find value in rawValues
+      // Try name first, then dBColumnName
+      let val = rawValues[p.name];
+      if (val === undefined && p.dBColumnName) {
+        val = rawValues[p.dBColumnName];
       }
-    }
 
-    for (const [key, value] of Object.entries(rawValues)) {
-      const mappedKey = paramMap.get(key) || key;
-      mappedValues[mappedKey] = value;
-    }
+      // Check for fields that might need conversion from empty string to null
+      // (Date, Number, List, etc. fail on backend if sent as "")
+      if (val === "" && p.reference && shouldConvertEmptyToNull(p.reference)) {
+        val = null;
+      }
+
+      // Target key is dBColumnName (preferred) or name
+      const targetKey = p.dBColumnName || p.name;
+
+      // Only include if it is a valid parameter key
+      if (targetKey) {
+        mappedValues[targetKey] = val !== undefined ? val : null;
+      }
+    });
+
     return mappedValues;
   }, [form, parameters]);
 
@@ -816,17 +854,19 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           processId,
         });
 
-        const formValues = form.getValues();
-        // Use buildProcessParameters to properly map parameter names to DB column names
-        const mappedFormValues = buildProcessParameters(formValues, parameters);
-        const mappedValues = mapKeysWithDefaults({ ...mappedFormValues, ...populatedGrids } as SourceObject);
+        // Determine mapping strategy
+        const isAddPayment = processId === ADD_PAYMENT_ORDER_PROCESS_ID;
 
-        logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - After mapKeysWithDefaults:", {
-          mappedValuesKeys: Object.keys(mappedValues),
-          hasGridsInMapped: Object.keys(mappedValues).some(
-            (k) => k === "order_invoice" || k === "credit_to_use" || k === "glitem"
-          ),
-        });
+        let mappedValues: Record<string, any>;
+
+        if (isAddPayment) {
+          // Legacy mapping for Add Payment process
+          mappedValues = mapKeysWithDefaults({ ...formValues, ...populatedGrids });
+        } else {
+          // Clean mapping for standard processes using buildProcessParameters
+          const mappedFormValues = buildProcessParameters(formValues, parameters);
+          mappedValues = { ...mappedFormValues, ...populatedGrids };
+        }
 
         // Build base payload
         const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
@@ -1742,7 +1782,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                             {btn.label}
                           </Button>
                         ))
-                      : !result && (
+                      : (!result || !result.success) && (
                           <Button
                             variant="filled"
                             size="large"
