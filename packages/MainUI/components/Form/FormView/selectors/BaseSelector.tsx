@@ -61,7 +61,6 @@ export const compileExpression = (expression: string) => {
   }
 };
 
-
 const BaseSelectorComp = ({
   field,
   formMode = FormMode.EDIT,

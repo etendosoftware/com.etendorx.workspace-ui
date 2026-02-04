@@ -176,24 +176,27 @@ const evaluateWindowReferenceDisplay = (
         const compiledExpr = compileExpression(parameter.displayLogic);
 
         // Map parameters to field-like structure for smart context mapping
-        const paramFields = Object.values(parameters).reduce((acc, p) => {
-          // Key by BOTH name and dBColumnName (if available) to ensure lookup works
-          acc[p.name] = {
-            hqlName: p.name,
-            columnName: p.dBColumnName,
-            column: { dBColumnName: p.dBColumnName },
-          } as any;
-
-          if (p.dBColumnName && p.dBColumnName !== p.name) {
-            acc[p.dBColumnName] = {
-              hqlName: p.name, // Point to p.name because formValues are keyed by p.name!
+        const paramFields = Object.values(parameters).reduce(
+          (acc, p) => {
+            // Key by BOTH name and dBColumnName (if available) to ensure lookup works
+            acc[p.name] = {
+              hqlName: p.name,
               columnName: p.dBColumnName,
               column: { dBColumnName: p.dBColumnName },
             } as any;
-          }
 
-          return acc;
-        }, {} as Record<string, any>);
+            if (p.dBColumnName && p.dBColumnName !== p.name) {
+              acc[p.dBColumnName] = {
+                hqlName: p.name, // Point to p.name because formValues are keyed by p.name!
+                columnName: p.dBColumnName,
+                column: { dBColumnName: p.dBColumnName },
+              } as any;
+            }
+
+            return acc;
+          },
+          {} as Record<string, any>
+        );
 
         const smartContext = createSmartContext({
           // Use formValues if available (reactive), otherwise fallback to combined defaults (initial load)
@@ -1691,7 +1694,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             processConfig={{
               processId: processConfig?.processId || "",
               ...processConfig,
-              defaults: (processInitialization?.defaults || {}) as Record<string, { value: string; identifier: string }>,
+              defaults: (processInitialization?.defaults || {}) as Record<
+                string,
+                { value: string; identifier: string }
+              >,
             }}
             processConfigLoading={processConfigLoading}
             processConfigError={processConfigError}
