@@ -392,7 +392,8 @@ export const useTableData = ({
   // Helper to find parent field name
   const getParentFieldName = useCallback(() => {
     if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
-      return "id";
+      console.log("No parent columns found");
+      return "_dummy";
     }
 
     if (!parentTab) {
@@ -423,7 +424,7 @@ export const useTableData = ({
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = getParentFieldName();
-    const value = parentId;
+    const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
     const operator = "equals";
 
     const options: DatasourceOptions = {
