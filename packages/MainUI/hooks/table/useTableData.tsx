@@ -23,7 +23,7 @@ import type {
   MRT_VisibilityState,
   MRT_SortingState,
 } from "material-react-table";
-import type { DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
+import type { DatasourceOptions, EntityData, Column, Criteria } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useSearch } from "../../contexts/searchContext";
@@ -43,6 +43,7 @@ import { isEmptyObject } from "@/utils/commons";
 import { mapSummariesToBackend, getSummaryCriteria } from "@/utils/table/utils";
 import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { buildEtendoContext } from "@/utils/contextUtils";
+import { buildBaseCriteria } from "@/utils/criteriaUtils";
 import { useSelected } from "../../hooks/useSelected";
 
 interface UseTableDataParams {
@@ -391,25 +392,6 @@ export const useTableData = ({
     return null;
   }, [tab]);
 
-  // Helper to find parent field name
-  const getParentFieldName = useCallback(() => {
-    if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
-      console.log("No parent columns found");
-      return "_dummy";
-    }
-
-    if (!parentTab) {
-      return tab.parentColumns[0] || "id";
-    }
-
-    const matchingField = tab.parentColumns.find((colName) => {
-      const field = tab.fields[colName];
-      return field?.referencedEntity === parentTab.entityName;
-    });
-
-    return matchingField || tab.parentColumns[0] || "id";
-  }, [tab.parentColumns, tab.fields, parentTab]);
-
   // Helper to apply sort options to query
   const applySortToOptions = useCallback(
     (options: DatasourceOptions, sort: ReturnType<typeof getDefaultSort>) => {
@@ -425,10 +407,6 @@ export const useTableData = ({
   );
 
   const query: DatasourceOptions = useMemo(() => {
-    const fieldName = getParentFieldName();
-    const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
-    const operator = "equals";
-
     const options: DatasourceOptions = {
       windowId: tab.window,
       tabId: tab.id,
@@ -445,12 +423,13 @@ export const useTableData = ({
       options.language = language;
     }
 
-    if (value && value !== "" && value !== undefined) {
-      options.criteria = [{ fieldName, value, operator }];
+    // Build base criteria (handling Parent-Child or Dummy fallback)
+    const baseCriteria = buildBaseCriteria({ tab, parentTab, parentId });
+    if (baseCriteria.length > 0) {
+      options.criteria = baseCriteria as unknown as Criteria[];
 
-      // Add parent context parameter manually as some datasources rely on it (like Process Request)
-      if (parentTab?.entityName) {
-        options[`@${parentTab.entityName}.id@`] = value;
+      if (parentTab?.entityName && baseCriteria[0]?.value) {
+        options[`@${parentTab.entityName}.id@`] = baseCriteria[0].value;
       }
     }
 
@@ -485,7 +464,6 @@ export const useTableData = ({
     tableColumnSorting,
     advancedCriteria,
     getDefaultSort,
-    getParentFieldName,
     applySortToOptions,
     graph,
     parentTab,
