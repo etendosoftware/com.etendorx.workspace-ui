@@ -38,6 +38,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import type { ExecuteProcessResult } from "@/app/actions/process";
 import { revalidateDopoProcess } from "@/app/actions/revalidate"; // Import revalidation action
 import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
+import { executeStringFunction } from "@/utils/functions";
 import {
   BUTTON_LIST_REFERENCE_ID,
   PROCESS_DEFINITION_DATA,
@@ -59,14 +60,14 @@ import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import ProcessResultModal from "./ProcessResultModal";
-import type { ProcessDefinitionModalContentProps, RecordValues } from "./types";
+import type { ProcessDefinitionModalContentProps, RecordValues, ProcessDefinitionModalProps } from "./types";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import type { SourceObject } from "@/utils/processes/manual/types";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
 import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
-import { isBulkCompletionProcess } from "@/utils/process/bulkCompletionUtils";
+import { isBulkCompletionProcess, DEFAULT_BULK_COMPLETION_ONLOAD } from "@/utils/process/bulkCompletionUtils";
 import { registerPayScriptDSL } from "./callouts/genericPayScriptCallout";
 
 // Date field reference codes for conversion
