@@ -17,7 +17,7 @@
 
 import analyzer from "@next/bundle-analyzer";
 import type { NextConfig } from "next";
-import { generateAppVersion } from "@/utils/version";
+import { generateAppVersion } from "./utils/version";
 
 const DEBUG_MODE = process.env.DEBUG_MODE === "true" || process.env.NODE_ENV === "development";
 const ANALYZE = process.env.ANALYZE === "true";
