@@ -323,7 +323,7 @@ export default function useTableSelection(
       // Case A: Single Record Selected
       const recordId = String(selectedRecords[0].id);
       const currentUrlSelection = getSelectedRecord(windowIdentifier, tab.id);
-      
+
       if (currentUrlSelection !== recordId) {
         setSelectedRecord(windowIdentifier, tab.id, recordId);
       }

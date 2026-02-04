@@ -114,11 +114,7 @@ export default function Window({ window }: { window: WindowState }) {
       windowId={windowId}
       windowIdentifier={windowIdentifier}
       data-testid="SelectedProvider__56042a">
-      <TabsContainer
-        windowData={windowData}
-        windowIdentifier={windowIdentifier}
-        data-testid="TabsContainer__56042a"
-      />
+      <TabsContainer windowData={windowData} windowIdentifier={windowIdentifier} data-testid="TabsContainer__56042a" />
     </SelectedProvider>
   );
 }

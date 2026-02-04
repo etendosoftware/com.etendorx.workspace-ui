@@ -2927,8 +2927,8 @@ const DynamicTable = ({
     }
     // We intentionally DO NOT clear the selection if the record doesn't exist in the current data.
     // This allows the selection to persist when filters change or pagination occurs,
-      // ensuring that if the record reappears (or if we are just viewing other data),
-      // the logical selection remains intact.
+    // ensuring that if the record reappears (or if we are just viewing other data),
+    // the logical selection remains intact.
   }, [windowIdentifier, getSelectedRecord, tab.id, tab.window, records, graph, getTabFormState]);
 
   // Handle browser navigation and direct link access

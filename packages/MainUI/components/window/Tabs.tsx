@@ -170,12 +170,7 @@ export default function TabsComponent({
             className={`absolute inset-0 flex-col ${tab.id === current.id ? "flex" : "hidden"}`}
             data-testid={`TabWrapper__${tab.id}`}>
             <TabContextProvider tab={tab} data-testid={`TabContextProvider__${tab.id}`}>
-              <Tab
-                tab={tab}
-                collapsed={collapsed}
-                windowIdentifier={windowIdentifier}
-                data-testid={`Tab__${tab.id}`}
-              />
+              <Tab tab={tab} collapsed={collapsed} windowIdentifier={windowIdentifier} data-testid={`Tab__${tab.id}`} />
             </TabContextProvider>
           </div>
         ))}

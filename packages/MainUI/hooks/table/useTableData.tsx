@@ -935,13 +935,7 @@ export const useTableData = ({
         setTabInitializedWithDirectLink(windowIdentifier, tab.id, false);
       }
     }
-  }, [
-    tableColumnFilters,
-    windowIdentifier,
-    tab.id,
-    getTabInitializedWithDirectLink,
-    setTabInitializedWithDirectLink,
-  ]);
+  }, [tableColumnFilters, windowIdentifier, tab.id, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink]);
 
   // Clear filters when parent selection changes
   // This ensures that if we were filtering by a specific ID (e.g. from direct link),
