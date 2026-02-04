@@ -52,40 +52,6 @@ function normalizeIdentifier(str: string): string {
   return normalized.substring(start, end + 1);
 }
 
-/**
- * Checks if a parent column matches the parent tab's identifier
- * @param columnName - The column name from parentColumns (e.g., "business_partner_id", "invoice_id")
- * @param parentTableIdentifier - The parent tab's table identifier (e.g., "c_bpartner", "c_invoice")
- * @param parentEntityName - The parent tab's entity name (e.g., "BusinessPartner", "FinInvoice")
- * @returns true if the column matches the parent tab
- */
-function matchesParentColumn(
-  columnName: string,
-  parentTableIdentifier: string | undefined,
-  parentEntityName: string | undefined
-): boolean {
-  if (!parentTableIdentifier && !parentEntityName) {
-    return false;
-  }
-
-  const normalizedColumn = normalizeIdentifier(columnName.replace(/_id$/i, ""));
-  const normalizedTable = parentTableIdentifier ? normalizeIdentifier(parentTableIdentifier) : null;
-  const normalizedEntity = parentEntityName ? normalizeIdentifier(parentEntityName) : null;
-
-  const result = normalizedColumn === normalizedTable || normalizedColumn === normalizedEntity;
-
-  if (result) return true;
-
-  // Fuzzy match: underscore-agnostic and common Etendo naming diffs
-  const fuzzyColumn = normalizedColumn.replace(/_/g, "");
-  const fuzzyTable = normalizedTable?.replace(/_/g, "") || "";
-  const fuzzyEntity = normalizedEntity?.replace(/_/g, "") || "";
-
-  const fuzzyResult = fuzzyColumn === fuzzyTable || fuzzyColumn === fuzzyEntity;
-
-  return fuzzyResult;
-}
-
 export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | null): boolean {
   if (tab.tabLevel === 0) {
     return true;
@@ -107,24 +73,15 @@ export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | nul
 
   // Check parentColumns if they exist and have values
   if (tab.parentColumns && tab.parentColumns.length > 0) {
-    const parentEntityLower = activeParentTab.entityName?.toLowerCase() || "";
-    const parentTableName = activeParentTab.table$_identifier?.toLowerCase() || "";
-
     const hasMatch = tab.parentColumns.some((parentColumn) => {
-      const columnLower = parentColumn.toLowerCase();
-
-      const normalizedColumn = columnLower.replace(/_id$/, "").replace(/[_-]/g, "");
-
-      const normalizedEntity = parentEntityLower
-        .replace(/^(fin|mgmt|financial|management)/gi, "")
-        .replace(/([A-Z])/g, (p1, offset) => (offset > 0 ? `_${p1}` : p1))
-        .toLowerCase()
-        .replace(/[_-]/g, "");
-
-      const normalizedTable = parentTableName.replace(/^c_/, "").replace(/[_-]/g, "");
+      const normalizedColumn = normalizeIdentifier(parentColumn.replace(/_id$/i, "")).replace(/_/g, "");
+      const normalizedEntity = normalizeIdentifier(activeParentTab.entityName || "").replace(/_/g, "");
+      const normalizedTable = normalizeIdentifier(activeParentTab.table$_identifier || "").replace(/_/g, "");
 
       // 1. Existing Naive Name Match
       if (
+        normalizedColumn === normalizedEntity ||
+        normalizedColumn === normalizedTable ||
         normalizedColumn.includes(normalizedEntity) ||
         normalizedEntity.includes(normalizedColumn) ||
         normalizedColumn.includes(normalizedTable) ||
@@ -166,16 +123,10 @@ export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | nul
     if (hasMatch) {
       return true;
     }
-  }
 
-  // Fallback: If it's a Level-1 tab and we are at the root level,
-  // and metadata is incomplete (missing linkage), show it anyway
-  // if it's an active tab. This prevents "loss" of tabs due to
-  // backend metadata context issues.
-  if (tab.tabLevel === 1 && activeParentTab.tabLevel === 0) {
-    // If we have no linkage but it's clearly a child level,
-    // we default to showing it to avoid blank windows.
-    return true;
+    // If we have parent columns but none matched, we explicitly return false
+    // to avoid falling back to showing orphaned tabs.
+    return false;
   }
 
   return false;
