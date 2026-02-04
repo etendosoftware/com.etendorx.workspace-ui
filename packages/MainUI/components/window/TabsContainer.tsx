@@ -280,8 +280,6 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    */
   const filteredGroupedTabs = useMemo(() => {
     return groupedTabs.map((tabGroup, index) => {
-      const currentLevel = tabGroup[0]?.tabLevel;
-
       if (index === 0) {
         return tabGroup;
       }
@@ -332,7 +330,6 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
           if (tabs.length === 0) return null;
 
           const isTopGroup = index === firstExpandedIndex && firstExpandedIndex !== -1;
-          const currentLevel = tabs[0].tabLevel;
 
           // Determine the active parent tab
           // For level 0, there is no parent (null)

@@ -49,9 +49,9 @@ const applySelectorConfig = (payload: any, isSelector: boolean, field: any, sele
         "_extraProperties",
         "_sortBy",
       ];
-      selectorProps.forEach((prop) => {
+      for (const prop of selectorProps) {
         if (field.selector[prop]) payload[prop] = field.selector[prop];
-      });
+      }
     } else if (selectorId) {
       payload._selectorDefinitionId = selectorId;
     }
@@ -97,11 +97,11 @@ const constructPayload = (
 const fetchOptionsFromDatasource = async (apiUrl: string, payload: any, searchQuery?: string) => {
   const params = new URLSearchParams();
 
-  Object.keys(payload).forEach((key) => {
+  for (const key of Object.keys(payload)) {
     if (payload[key] !== undefined && payload[key] !== null && typeof payload[key] !== "object") {
       params.append(key, String(payload[key]));
     }
-  });
+  }
 
   const criteria: any[] = [];
   if (searchQuery) {
