@@ -150,6 +150,70 @@ const convertParameterDateFields = (combined: Record<string, unknown>, param: Pr
   }
 };
 /**
+ * Evaluates display logic for window reference parameters
+ */
+const evaluateWindowReferenceDisplay = (
+  parameter: ProcessParameter,
+  logicFields: any,
+  formValues: any,
+  availableFormData: any,
+  parameters: Record<string, ProcessParameter>,
+  session: any,
+  recordValues: any
+): boolean => {
+  let isDisplayed = true;
+  const defaultsDisplayLogic = logicFields?.[`${parameter.name}.display`];
+
+  if (parameter.displayLogic) {
+    const hasFormValues = formValues && Object.keys(formValues).length > 0;
+    const hasAvailableData = availableFormData && Object.keys(availableFormData).length > 0;
+    const hasData = hasFormValues || hasAvailableData;
+
+    const isMalformedLogic = parameter.displayLogic.includes("_logic") && !parameter.displayLogic.includes("@");
+
+    if (!isMalformedLogic && hasData) {
+      try {
+        const compiledExpr = compileExpression(parameter.displayLogic);
+
+        // Map parameters to field-like structure for smart context mapping
+        const paramFields = Object.values(parameters).reduce((acc, p) => {
+          // Key by BOTH name and dBColumnName (if available) to ensure lookup works
+          acc[p.name] = {
+            hqlName: p.name,
+            columnName: p.dBColumnName,
+            column: { dBColumnName: p.dBColumnName },
+          } as any;
+
+          if (p.dBColumnName && p.dBColumnName !== p.name) {
+            acc[p.dBColumnName] = {
+              hqlName: p.name, // Point to p.name because formValues are keyed by p.name!
+              columnName: p.dBColumnName,
+              column: { dBColumnName: p.dBColumnName },
+            } as any;
+          }
+
+          return acc;
+        }, {} as Record<string, any>);
+
+        const smartContext = createSmartContext({
+          // Use formValues if available (reactive), otherwise fallback to combined defaults (initial load)
+          values: hasFormValues ? formValues : availableFormData,
+          fields: paramFields,
+          // Merge session and recordValues to provide full context
+          context: { ...session, ...(recordValues || {}) },
+        });
+
+        isDisplayed = compiledExpr(smartContext, smartContext);
+      } catch (error) {
+        logger.warn("Error evaluating display logic for " + parameter.name, error);
+      }
+    }
+  } else if (defaultsDisplayLogic !== undefined) {
+    isDisplayed = defaultsDisplayLogic;
+  }
+  return isDisplayed;
+};
+/**
  * ProcessDefinitionModalContent - Core modal component for process execution
  *
  * Handles three types of process execution:
@@ -1583,92 +1647,37 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const renderParameters = () => {
     if (result?.success) return null;
 
-    // Sort parameters by sequence number
-    let parametersList = Object.values(parameters).sort(
-      (a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0)
-    );
-
-    // If bulk completion, only show DocAction
-    if (isBulkCompletion) {
-      parametersList = parametersList.filter(
-        (p) => p.name === "DocAction" || p.dBColumnName === "DocAction" || p.name === "Document Actionn"
-      );
-    }
+    // Filter and sort parameters
+    const parametersList = Object.values(parameters)
+      .filter((p) => {
+        // @ts-ignore
+        if (p.active === false) return false;
+        if (isBulkCompletion) {
+          return p.name === "DocAction" || p.dBColumnName === "DocAction" || p.name === "Document Actionn";
+        }
+        return true;
+      })
+      .sort((a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0));
 
     const windowReferences: React.ReactElement[] = [];
     const selectors: React.ReactElement[] = [];
 
     // Separate window references from selectors
     for (const parameter of parametersList) {
-      // Skip inactive parameters
-      // @ts-ignore
-      if (parameter.active === false) {
-        continue;
-      }
-
       if (parameter.reference === WINDOW_REFERENCE_ID) {
-        // Evaluate display logic for Grid parameters (Window Reference)
-        let isDisplayed = true;
-        const defaultsDisplayLogic = logicFields?.[`${parameter.name}.display`];
+        const isDisplayed = evaluateWindowReferenceDisplay(
+          parameter,
+          logicFields,
+          formValues,
+          availableFormData,
+          parameters,
+          session,
+          recordValues
+        );
 
-        if (parameter.displayLogic) {
-          const hasFormValues = formValues && Object.keys(formValues).length > 0;
-          const hasAvailableData = availableFormData && Object.keys(availableFormData).length > 0;
-          const hasData = hasFormValues || hasAvailableData;
-
-          const isMalformedLogic = parameter.displayLogic.includes("_logic") && !parameter.displayLogic.includes("@");
-
-          if (!isMalformedLogic && hasData) {
-            try {
-              const compiledExpr = compileExpression(parameter.displayLogic);
-
-              // Map parameters to field-like structure for smart context mapping
-              const paramFields = Object.values(parameters).reduce(
-                (acc, p) => {
-                  // Key by BOTH name and dBColumnName (if available) to ensure lookup works
-                  acc[p.name] = {
-                    hqlName: p.name,
-                    columnName: p.dBColumnName,
-                    column: { dBColumnName: p.dBColumnName },
-                  } as any;
-
-                  if (p.dBColumnName && p.dBColumnName !== p.name) {
-                    acc[p.dBColumnName] = {
-                      hqlName: p.name, // Point to p.name because formValues are keyed by p.name!
-                      columnName: p.dBColumnName,
-                      column: { dBColumnName: p.dBColumnName },
-                    } as any;
-                  }
-
-                  return acc;
-                },
-                {} as Record<string, any>
-              );
-
-              const smartContext = createSmartContext({
-                // Use formValues if available (reactive), otherwise fallback to combined defaults (initial load)
-                values: hasFormValues ? formValues : availableFormData,
-                fields: paramFields,
-                // Merge session and recordValues to provide full context
-                context: { ...session, ...(recordValues || {}) },
-              });
-
-              isDisplayed = compiledExpr(smartContext, smartContext);
-            } catch (error) {
-              logger.warn("Error evaluating display logic for " + parameter.name, error);
-            }
-          }
-        } else if (defaultsDisplayLogic !== undefined) {
-          isDisplayed = defaultsDisplayLogic;
-        }
-
-        if (!isDisplayed) {
-          continue;
-        }
+        if (!isDisplayed) continue;
 
         const parameterTab = getTabForParameter(parameter);
-        const parameterEntityName = parameterTab?.entityName || "";
-        const parameterTabId = parameterTab?.id || "";
         windowReferences.push(
           <WindowReferenceGrid
             key={`window-ref-${parameter.id || parameter.name}`}
@@ -1676,16 +1685,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             parameters={parameters}
             onSelectionChange={setGridSelection}
             gridSelection={gridSelection}
-            tabId={parameterTabId}
-            entityName={parameterEntityName}
+            tabId={parameterTab?.id || ""}
+            entityName={parameterTab?.entityName || ""}
             windowReferenceTab={parameterTab || windowReferenceTab}
             processConfig={{
               processId: processConfig?.processId || "",
               ...processConfig,
-              defaults: (processInitialization?.defaults || {}) as Record<
-                string,
-                { value: string; identifier: string }
-              >,
+              defaults: (processInitialization?.defaults || {}) as Record<string, { value: string; identifier: string }>,
             }}
             processConfigLoading={processConfigLoading}
             processConfigError={processConfigError}
