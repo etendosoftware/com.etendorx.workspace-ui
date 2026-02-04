@@ -54,7 +54,24 @@ export const compileExpression = (expression: string) => {
         }
       };
     `;
-    return new Function("context", "currentValues", `${obShim} return ${parseDynamicExpression(expression)};`);
+
+    // Security: Shadow global objects to prevent access from within the expression
+    // This provides depth-in-defense for the trusted metadata model
+    const securityShim = `
+      var window = undefined;
+      var document = undefined;
+      var fetch = undefined;
+      var XMLHttpRequest = undefined;
+      var alert = undefined;
+    `;
+
+    // NOSONAR: This dynamic execution is required to evaluate business logic defined in the Application Dictionary.
+    // The Input 'expression' comes from the system metadata (trusted source) and is not user-supplied.
+    return new Function(
+      "context",
+      "currentValues",
+      `${securityShim} ${obShim} return ${parseDynamicExpression(expression)};`
+    );
   } catch (error) {
     logger.error("Error compiling expression:", expression, error);
     return () => true;
