@@ -1106,6 +1106,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
             window={window}
             recordId={currentRecordId}
             setRecordId={handleSetRecordId}
+            uIPattern={tab.uIPattern}
             data-testid="FormView__5893c8"
           />
         </div>
@@ -1123,6 +1124,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
             onRecordSelection={handleRecordSelection}
             isVisible={!shouldShowForm}
             areFiltersDisabled={advancedFilters.length > 0}
+            uIPattern={tab.uIPattern}
             data-testid="DynamicTable__5893c8"
           />
         </AttachmentProvider>

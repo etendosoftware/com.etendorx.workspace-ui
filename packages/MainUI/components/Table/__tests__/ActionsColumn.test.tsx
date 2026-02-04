@@ -26,6 +26,7 @@ jest.mock("@/hooks/useTranslation", () => ({
 jest.mock("@workspaceui/componentlibrary/src/components", () => ({
   IconButton: ({ children, onClick, disabled, title, className, size, "data-testid": testId }: any) => (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       title={title}
@@ -90,7 +91,7 @@ jest.mock("../../../ComponentLibrary/src/assets/icons/loader.svg", () => ({
 describe("ActionsColumn", () => {
   const mockRow: MRT_Row<EntityData> = {
     original: { id: "test-row-123" },
-  } as MRT_Row<EntityData>;
+  } as unknown as MRT_Row<EntityData>;
 
   const mockCallbacks = {
     onEdit: jest.fn(),
@@ -140,6 +141,22 @@ describe("ActionsColumn", () => {
 
       expect(screen.getByTestId("edit-button-test-row-123")).toHaveAttribute("title", "Edit in grid");
       expect(screen.getByTestId("form-button-test-row-123")).toHaveAttribute("title", "Open form view");
+    });
+
+    it("should disable edit button when uIPattern is READ_ONLY", () => {
+      render(
+        <ActionsColumn
+          row={mockRow}
+          isEditing={false}
+          isSaving={false}
+          hasErrors={false}
+          uIPattern={"RO" as any}
+          {...mockCallbacks}
+        />
+      );
+
+      expect(screen.getByTestId("edit-button-test-row-123")).toBeDisabled();
+      expect(screen.getByTestId("form-button-test-row-123")).toBeInTheDocument();
     });
   });
 

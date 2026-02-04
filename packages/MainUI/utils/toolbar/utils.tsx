@@ -23,6 +23,7 @@ import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
 import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
 import type { SaveButtonState } from "@/contexts/ToolbarContext";
 import type { ISession, Tab } from "@workspaceui/api-client/src/api/types";
+import { UIPattern } from "@workspaceui/api-client/src/api/types";
 import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
 
 const isBase64Image = (str: string): boolean => {
@@ -229,14 +230,28 @@ export const createButtonByType = ({
 
   const getDisableConfig = (): Partial<ToolbarButton> => {
     const hasSelectedRecord = selectedRecordsLength > 0;
+
+    // UIPattern logic
+    const uIPattern = tab.uIPattern;
+    const isReadOnly = uIPattern === UIPattern.READ_ONLY;
+    const isEditOnly = uIPattern === UIPattern.EDIT_ONLY;
+    const isEditAndDeleteOnly = uIPattern === UIPattern.EDIT_AND_DELETE_ONLY;
+
     const actionHandlers = {
       [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: () => buildDisableConfig(!(isFormView || hasSelectedRecord)),
-      [TOOLBAR_BUTTONS_ACTIONS.DELETE]: () => buildDisableConfig(!hasSelectedRecord),
+      [TOOLBAR_BUTTONS_ACTIONS.DELETE]: () => {
+        const patternDisabled = isReadOnly || isEditOnly;
+        return buildDisableConfig(!hasSelectedRecord || patternDisabled);
+      },
       [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () => buildDisableConfig(!hasSelectedRecord || !isCopilotInstalled),
       [TOOLBAR_BUTTONS_ACTIONS.ATTACHMENT]: () => buildDisableConfig(!hasSelectedRecord),
-      [TOOLBAR_BUTTONS_ACTIONS.NEW]: () => buildDisableConfig(!hasParentRecordSelected),
+      [TOOLBAR_BUTTONS_ACTIONS.NEW]: () => {
+        const patternDisabled = isReadOnly || isEditOnly || isEditAndDeleteOnly;
+        return buildDisableConfig(!hasParentRecordSelected || patternDisabled);
+      },
       [TOOLBAR_BUTTONS_ACTIONS.SAVE]: () => {
-        const baseDisabled = !isFormView || !hasFormChanges || !hasParentRecordSelected;
+        const patternDisabled = isReadOnly;
+        const baseDisabled = !isFormView || !hasFormChanges || !hasParentRecordSelected || patternDisabled;
         const additionalDisabled = saveButtonState
           ? saveButtonState.isCalloutLoading || saveButtonState.isSaving
           : false;
@@ -245,7 +260,8 @@ export const createButtonByType = ({
       [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: () => {
         const isCloneEnabled = tab?.obuiappShowCloneButton;
         const isSingleSelection = hasSelectedRecord;
-        return buildDisableConfig(!isCloneEnabled || !isSingleSelection);
+        const patternDisabled = isReadOnly || isEditOnly;
+        return buildDisableConfig(!isCloneEnabled || !isSingleSelection || patternDisabled);
       },
       [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: () => buildDisableConfig(!hasSelectedRecord),
     };
@@ -316,7 +332,7 @@ export const createButtonByType = ({
 
 export const getButtonStyles = (button: ToolbarButtonMetadata, isFormView?: boolean) => {
   if (isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW) {
-    return "toolbar-button-new-form bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 rounded-full flex items-center justify-center hover:bg-[var(--color-dynamic-main)] disabled:opacity-20 aspect-square p-0";
+    return "toolbar-button-new-form bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 rounded-full flex items-center justify-center hover:bg-[var(--color-dynamic-main)] disabled:bg-[var(--color-baseline-100)] disabled:opacity-20 disabled:text-[var(--color-baseline-0)]";
   }
   return BUTTON_STYLES[button.action as keyof typeof BUTTON_STYLES];
 };
