@@ -1554,6 +1554,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             processConfigError={processConfigError}
             recordValues={recordValues}
             currentValues={formValues}
+            originTab={tab}
             data-testid="WindowReferenceGrid__761503"
           />
         );

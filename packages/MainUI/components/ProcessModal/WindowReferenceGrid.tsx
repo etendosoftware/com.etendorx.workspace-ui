@@ -46,6 +46,8 @@ import { useUserContext } from "@/hooks/useUserContext";
 import { GridCellEditor } from "./GridCellEditor";
 import { WindowReferenceGridProvider, useWindowReferenceGridContext } from "./WindowReferenceGridContext";
 import { getFieldReference } from "@/utils";
+import { buildEtendoContext } from "@/utils/contextUtils";
+import { useSelected } from "@/hooks/useSelected";
 import { PROCESS_DEFINITION_DATA } from "../../utils/processes/definition/constants";
 
 const MAX_WIDTH = 100;
@@ -319,7 +321,8 @@ const WindowReferenceGrid = ({
   processConfigLoading,
   processConfigError,
   recordValues,
-}: WindowReferenceGridProps) => {
+  originTab,
+}: WindowReferenceGridProps & { originTab?: Tab }) => {
   const { t } = useTranslation();
   // ... rest of component
 
@@ -339,6 +342,12 @@ const WindowReferenceGrid = ({
     }),
     [recordValues, currentValues]
   );
+  
+  const { graph } = useSelected();
+
+  const etendoContext = useMemo(() => {
+    return originTab ? buildEtendoContext(originTab, graph) : {};
+  }, [originTab, graph]);
 
   const [_validationErrors, setValidationErrors] = useState<Record<string, string | undefined>>({});
   const { user, session, currentClient } = useUserContext();
@@ -420,6 +429,9 @@ const WindowReferenceGrid = ({
     if (tabId) {
       options.windowId = tabId;
     }
+    
+    // Inject Etendo Context
+    Object.assign(options, etendoContext);
 
     // Apply filters and context
     // This logic mimics verifyInput in SmartClient
