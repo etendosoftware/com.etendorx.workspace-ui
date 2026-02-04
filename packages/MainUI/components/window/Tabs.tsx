@@ -176,12 +176,7 @@ export default function TabsComponent({
                   <Loading data-testid="Loading__TabsSkeleton" />
                 </div>
               )}
-              <Tab
-                tab={tab}
-                collapsed={collapsed}
-                windowIdentifier={windowIdentifier}
-                data-testid={`Tab__${tab.id}`}
-              />
+              <Tab tab={tab} collapsed={collapsed} windowIdentifier={windowIdentifier} data-testid={`Tab__${tab.id}`} />
             </TabContextProvider>
           </div>
         ))}
