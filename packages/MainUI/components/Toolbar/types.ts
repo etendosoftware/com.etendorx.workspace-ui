@@ -43,6 +43,7 @@ export interface ToolbarProps {
   tabId?: string;
   onSearch?: (value: string) => void;
   isFormView?: boolean;
+  windowIdentifier: string;
 }
 export interface ProcessResponse {
   success: boolean;

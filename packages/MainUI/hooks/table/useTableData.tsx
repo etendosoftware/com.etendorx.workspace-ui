@@ -49,6 +49,7 @@ interface UseTableDataParams {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
   onLoadFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   onLoadMoreFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
+  windowIdentifier: string;
 }
 
 export interface SummaryResult {
@@ -109,6 +110,7 @@ export const useTableData = ({
   onColumnFilter,
   onLoadFilterOptions,
   onLoadMoreFilterOptions,
+  windowIdentifier,
 }: UseTableDataParams): UseTableDataReturn => {
   // State
   const [expanded, setExpanded] = useState<MRT_ExpandedState>({});
@@ -124,8 +126,7 @@ export const useTableData = ({
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
-  const { activeWindow, getTabFormState, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink } =
-    useWindowContext();
+  const { getTabFormState, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink } = useWindowContext();
   const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
 
   const {
@@ -140,7 +141,7 @@ export const useTableData = ({
     tableColumnSorting,
     advancedCriteria,
   } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.windowIdentifier || "",
+    windowIdentifier: windowIdentifier,
     tabId: tab.id,
     tabLevel: tab.tabLevel,
   });
@@ -151,16 +152,16 @@ export const useTableData = ({
   const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
   const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
 
-  const tabFormState = activeWindow?.windowIdentifier
-    ? getTabFormState(activeWindow.windowIdentifier, tab.id)
-    : undefined;
+  const tabFormState = windowIdentifier ? getTabFormState(windowIdentifier, tab.id) : undefined;
   const hasSelectedRecord = !!tabFormState?.recordId && tabFormState.recordId !== NEW_RECORD_ID;
 
   // Parse columns
   const rawColumns = useMemo(() => {
     const { parseColumns } = require("@/utils/tableColumns");
     return parseColumns(Object.values(tab.fields));
-  }, [tab.fields]);
+    // Use JSON.stringify on keys to ensure stability even if tab object reference changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab.id, JSON.stringify(Object.keys(tab.fields).sort())]);
 
   const initialIsFilterApplied = useMemo(() => {
     return tab.hqlfilterclause?.length > 0 || tab.sQLWhereClause?.length > 0;
@@ -327,19 +328,21 @@ export const useTableData = ({
   });
 
   // Build query
+  const { hqlorderbyclause, sQLOrderByClause, fields } = tab;
+
   // Helper to determine default sort
   const getDefaultSort = useCallback(() => {
-    if (!tab) return null;
+    if (!hqlorderbyclause && !sQLOrderByClause && !fields) return null;
 
     // 1. Tab Level: Order By Clause
-    const orderByClause = tab.hqlorderbyclause || tab.sQLOrderByClause;
+    const orderByClause = hqlorderbyclause || sQLOrderByClause;
     if (orderByClause) {
       const parts = orderByClause.trim().split(/\s+/);
       const fieldName = parts[0];
       const desc = parts.length > 1 && parts[1].toUpperCase() === "DESC";
 
       // Try to find the field to get its UI ID (name)
-      const field = Object.values(tab.fields).find(
+      const field = Object.values(fields).find(
         (f) => f.hqlName === fieldName || f.columnName === fieldName || f.name === fieldName
       );
 
@@ -350,10 +353,10 @@ export const useTableData = ({
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const fields = Object.values(tab.fields) as any[];
+    const fieldsArray = Object.values(fields) as any[];
 
     // 2. Field Level: Record Sort No
-    const sortNoFields = fields.filter((f) => f.recordSortNo != null);
+    const sortNoFields = fieldsArray.filter((f) => f.recordSortNo != null);
     if (sortNoFields.length > 0) {
       sortNoFields.sort((a, b) => a.recordSortNo - b.recordSortNo);
       return {
@@ -363,7 +366,7 @@ export const useTableData = ({
     }
 
     // 3. Field Level: Identifier
-    const identifierFields = fields.filter((field) => {
+    const identifierFields = fieldsArray.filter((field) => {
       const col = field.column;
       if (!col) return false;
       // Check both boolean true and string "true" values
@@ -387,7 +390,7 @@ export const useTableData = ({
     }
 
     return null;
-  }, [tab]);
+  }, [hqlorderbyclause, sQLOrderByClause, fields]);
 
   // Helper to find parent field name
   const getParentFieldName = useCallback(() => {
@@ -843,8 +846,6 @@ export const useTableData = ({
   /** Initialize implicit filter state */
   useEffect(() => {
     if (!hasInitializedDirectLink.current) {
-      const windowIdentifier = activeWindow?.windowIdentifier;
-
       const initializeDirectLink = () => {
         if (isImplicitFilterApplied !== false) {
           setIsImplicitFilterApplied(false);
@@ -855,7 +856,9 @@ export const useTableData = ({
           if (currentIdFilter?.value !== tabFormState.recordId) {
             setTableColumnFilters([{ id: "id", value: tabFormState.recordId }]);
           }
-          setTabInitializedWithDirectLink(windowIdentifier, tab.id, true);
+          if (windowIdentifier && tab.id) {
+            setTabInitializedWithDirectLink(windowIdentifier, tab.id, true);
+          }
         }
         hasInitializedDirectLink.current = true;
       };
@@ -879,14 +882,13 @@ export const useTableData = ({
     tabFormState,
     setTableColumnFilters,
     tableColumnFilters,
-    activeWindow,
+    windowIdentifier,
     tab.id,
     setTabInitializedWithDirectLink,
   ]);
 
   /** Clear ID filter when returning to grid mode from manual navigation */
   useEffect(() => {
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowIdentifier) return;
 
     // If we are NOT in form mode (meaning we are in grid/table mode)
@@ -914,14 +916,13 @@ export const useTableData = ({
     initialIsFilterApplied,
     isImplicitFilterApplied,
     setIsImplicitFilterApplied,
-    activeWindow,
+    windowIdentifier,
     tab.id,
     getTabInitializedWithDirectLink,
   ]);
 
   /** Detect manual filter removal and clear direct link flag */
   useEffect(() => {
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (!windowIdentifier) return;
 
     const hasIdFilter = tableColumnFilters.some((f) => f.id === "id");
@@ -930,9 +931,17 @@ export const useTableData = ({
     // If the ID filter was removed manually and we had marked this as a direct link,
     // clear the direct link flag so future navigation behaves like manual navigation
     if (!hasIdFilter && wasInitializedWithDirectLink) {
-      setTabInitializedWithDirectLink(windowIdentifier, tab.id, false);
+      if (windowIdentifier && tab.id) {
+        setTabInitializedWithDirectLink(windowIdentifier, tab.id, false);
+      }
     }
-  }, [tableColumnFilters, activeWindow, tab.id, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink]);
+  }, [
+    tableColumnFilters,
+    windowIdentifier,
+    tab.id,
+    getTabInitializedWithDirectLink,
+    setTabInitializedWithDirectLink,
+  ]);
 
   // Clear filters when parent selection changes
   // This ensures that if we were filtering by a specific ID (e.g. from direct link),

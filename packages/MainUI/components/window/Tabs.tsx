@@ -31,9 +31,15 @@ import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab
 
 interface ExtendedTabsProps extends TabsProps {
   isTopGroup?: boolean;
+  windowIdentifier: string;
 }
 
-export default function TabsComponent({ tabs, isTopGroup = false, initialActiveTab }: ExtendedTabsProps) {
+export default function TabsComponent({
+  tabs,
+  isTopGroup = false,
+  initialActiveTab,
+  windowIdentifier,
+}: ExtendedTabsProps) {
   const initialTab = initialActiveTab && tabs.some((t) => t.id === initialActiveTab.id) ? initialActiveTab : tabs[0];
 
   const [current, setCurrent] = useState(initialTab);
@@ -64,9 +70,8 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
     }
   }, [initialActiveTab, tabs]); // dependency on tabs ensures re-eval when filter changes
 
-  const { activeWindow } = useWindowContext();
   const { activeLevels, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.windowIdentifier || "",
+    windowIdentifier: windowIdentifier,
     tabId: "",
   });
 
@@ -158,17 +163,23 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
       customHeight={customHeight}
       data-testid="TabContainer__6fa401">
       {renderTabContent()}
-      {isPending ? (
-        <div className="p-4 animate-pulse flex-1 flex flex-col gap-4">
-          <div className="h-10 w-full bg-(--color-transparent-neutral-10) rounded-md" />
-          <div className="h-8 w-3/4 bg-(--color-transparent-neutral-10) rounded-md" />
-          <div className="flex-1 bg-(--color-transparent-neutral-10) rounded-md" />
-        </div>
-      ) : (
-        <TabContextProvider tab={current} data-testid={`TabContextProvider__${current?.id ?? activeTabId ?? "6fa401"}`}>
-          <Tab tab={current} collapsed={collapsed} data-testid={`Tab__${current?.id ?? activeTabId ?? "6fa401"}`} />
-        </TabContextProvider>
-      )}
+      <div className="flex-1 min-h-0 relative">
+        {tabs.map((tab) => (
+          <div
+            key={tab.id}
+            className={`absolute inset-0 flex-col ${tab.id === current.id ? "flex" : "hidden"}`}
+            data-testid={`TabWrapper__${tab.id}`}>
+            <TabContextProvider tab={tab} data-testid={`TabContextProvider__${tab.id}`}>
+              <Tab
+                tab={tab}
+                collapsed={collapsed}
+                windowIdentifier={windowIdentifier}
+                data-testid={`Tab__${tab.id}`}
+              />
+            </TabContextProvider>
+          </div>
+        ))}
+      </div>
     </TabContainer>
   );
 }

@@ -60,11 +60,13 @@ const TabsGroupRenderer = ({
   activeParentTab,
   isTopGroup,
   getActiveTabForLevel,
+  windowIdentifier,
 }: {
   tabs: Tab[];
   activeParentTab: Tab | null;
   isTopGroup: boolean;
   getActiveTabForLevel: (level: number) => Tab | null;
+  windowIdentifier: string;
 }) => {
   const { session } = useUserContext();
   // Fetch the record of the parent tab to evaluate THIS level's tabs
@@ -174,12 +176,19 @@ const TabsGroupRenderer = ({
       tabs={filteredTabs}
       isTopGroup={isTopGroup}
       initialActiveTab={initialActiveTab ?? undefined}
+      windowIdentifier={windowIdentifier}
       data-testid="Tabs__895626"
     />
   );
 };
 
-export default function TabsContainer({ windowData }: { windowData: Etendo.WindowMetadata }) {
+export default function TabsContainer({
+  windowData,
+  windowIdentifier,
+}: {
+  windowData: Etendo.WindowMetadata;
+  windowIdentifier: string;
+}) {
   /**
    * Multi-window navigation hook providing access to current window state.
    */
@@ -196,7 +205,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * - graph: Hierarchical tab structure
    */
   const { activeLevels, activeTabsByLevel } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.windowIdentifier || "",
+    windowIdentifier: windowIdentifier,
     tabId: "",
   });
 
@@ -215,7 +224,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
   const groupedTabs = useMemo(() => {
     const groups = windowData ? groupTabsByLevel(windowData) : [];
     return groups.filter((group) => group && group.length > 0);
-  }, [windowData]);
+  }, [windowData?.tabs]);
 
   /**
    * Determines which tab should be active for a given hierarchical level.
@@ -332,6 +341,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
               activeParentTab={activeParentTab}
               isTopGroup={isTopGroup}
               getActiveTabForLevel={getActiveTabForLevel}
+              windowIdentifier={windowIdentifier}
               data-testid="TabsGroupRenderer__895626"
             />
           );

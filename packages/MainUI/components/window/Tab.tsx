@@ -104,11 +104,10 @@ const handleEditRecordFormState = (
 const ADVANCED_CRITERIA_DEFAULT_OPERATOR = "and";
 const ADVANCED_CRITERIA_CONSTRUCTOR = "AdvancedCriteria";
 
-export function Tab({ tab, collapsed }: TabLevelProps) {
+export function Tab({ tab, collapsed, windowIdentifier }: TabLevelProps) {
   const { config } = useRuntimeConfig();
   const { window } = useMetadataContext();
   const {
-    activeWindow,
     clearSelectedRecord,
     getTabFormState,
     setSelectedRecord,
@@ -131,8 +130,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const [advancedFilters, setAdvancedFilters] = useState<any[]>([]);
   const { t } = useTranslation();
   const lastParentSelectionRef = useRef<Map<string, string | undefined>>(new Map());
-
-  const windowIdentifier = activeWindow?.windowIdentifier;
 
   const tabFormState = windowIdentifier ? getTabFormState(windowIdentifier, tab.id) : undefined;
   const selectedRecordId = windowIdentifier ? getSelectedRecord(windowIdentifier, tab.id) : undefined;
@@ -1093,19 +1090,22 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         collapsed ? "hidden" : "flex-1 h-full"
       }`}>
       <Toolbar
-        windowId={windowIdentifier || tab.window}
+        windowId={tab.window}
+        windowIdentifier={windowIdentifier}
         tabId={tab.id}
         isFormView={shouldShowForm}
-        data-testid="Toolbar__5893c8"
+        data-testid="Toolbar__895626"
       />
       {shouldShowForm && (
         <div className="flex-1 h-full min-h-0 relative z-10">
           <FormView
             mode={formMode}
             tab={tab}
-            window={window}
+            window={window ?? undefined}
             recordId={currentRecordId}
             setRecordId={handleSetRecordId}
+            uIPattern={tab.uIPattern}
+            windowIdentifier={windowIdentifier}
             data-testid="FormView__5893c8"
           />
         </div>
@@ -1118,11 +1118,12 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         }>
         <AttachmentProvider data-testid="AttachmentProvider__5893c8">
           <DynamicTable
-            isTreeMode={toggle}
             setRecordId={handleSetRecordId}
             onRecordSelection={handleRecordSelection}
+            isTreeMode={toggle}
             isVisible={!shouldShowForm}
-            areFiltersDisabled={advancedFilters.length > 0}
+            uIPattern={tab.uIPattern}
+            windowIdentifier={windowIdentifier}
             data-testid="DynamicTable__5893c8"
           />
         </AttachmentProvider>

@@ -239,20 +239,19 @@ const validateParentSelection = (
  * @see {@link debounce} - For performance optimization of URL updates
  */
 export default function useTableSelection(
+  windowIdentifier: string,
   tab: Tab,
   records: EntityData[],
   rowSelection: MRT_RowSelectionState,
   _onSelectionChange?: (recordId: string) => void
 ) {
   const { graph } = useSelected();
-  const { activeWindow, clearSelectedRecord, getTabFormState, setSelectedRecord, getSelectedRecord } =
-    useWindowContext();
+  const { clearSelectedRecord, getTabFormState, setSelectedRecord, getSelectedRecord } = useWindowContext();
   const { setSession, setSessionSyncLoading } = useUserContext();
   const previousSelectionRef = useRef<string[]>([]);
   const previousSingleSelectionRef = useRef<string | undefined>(undefined);
 
-  const windowId = activeWindow?.windowId;
-  const windowIdentifier = activeWindow?.windowIdentifier;
+  const windowId = tab.window;
   const currentWindowId = tab.window;
 
   // Initialize previousSingleSelectionRef from URL on mount/remount
@@ -323,7 +322,11 @@ export default function useTableSelection(
     if (selectedRecords.length === 1) {
       // Case A: Single Record Selected
       const recordId = String(selectedRecords[0].id);
-      setSelectedRecord(windowIdentifier, tab.id, recordId);
+      const currentUrlSelection = getSelectedRecord(windowIdentifier, tab.id);
+      
+      if (currentUrlSelection !== recordId) {
+        setSelectedRecord(windowIdentifier, tab.id, recordId);
+      }
     } else if (selectedRecords.length === 0) {
       // Case B: No Selection (Deselect All)
       // Only clear if the table selection state is actually empty

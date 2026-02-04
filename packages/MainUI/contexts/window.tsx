@@ -467,6 +467,12 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
   const setSelectedRecord = useCallback((windowIdentifier: string, tabId: string, recordId: string, tabLevel = 0) => {
     setState((prevState: WindowContextState) => {
+      // Optimization: Check if value is already keyset
+      const currentSelectedRecord = prevState[windowIdentifier]?.tabs?.[tabId]?.selectedRecord;
+      if (currentSelectedRecord === recordId) {
+        return prevState;
+      }
+
       const newState = ensureTabExists(prevState, windowIdentifier, tabId, tabLevel);
 
       // Create deep copy with proper immutability at all levels
