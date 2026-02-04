@@ -40,6 +40,8 @@ import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumn
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
 import type { ExpandedState, Updater } from "@tanstack/react-table";
 import { isEmptyObject } from "@/utils/commons";
+import { buildEtendoContext } from "@/utils/contextUtils";
+import { useSelected } from "../../hooks/useSelected";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -124,6 +126,7 @@ export const useTableData = ({
   const { activeWindow, getTabFormState, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink } =
     useWindowContext();
   const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
+  const { graph } = useSelected();
 
   const {
     tableColumnFilters,
@@ -430,6 +433,11 @@ export const useTableData = ({
       pageSize: 100,
     };
 
+    // Add Etendo Classic Context Variables
+    const context = buildEtendoContext(tab, graph);
+    // Merge context into params (using casting if necessary as DatasourceOptions might be strict)
+    Object.assign(options, context);
+
     if (language) {
       options.language = language;
     }
@@ -471,6 +479,7 @@ export const useTableData = ({
     getDefaultSort,
     getParentFieldName,
     applySortToOptions,
+    graph,
   ]);
 
   // Tree options
@@ -590,7 +599,7 @@ export const useTableData = ({
       const roots: EntityData[] = [];
 
       // Partition records into roots and children based on whether their parent is in the list
-      records.forEach((record) => {
+      for (const record of records) {
         const pId = record.parentId ? String(record.parentId) : null;
         if (pId && recordIds.has(pId)) {
           if (!localChildren.has(pId)) {
@@ -600,7 +609,7 @@ export const useTableData = ({
         } else {
           roots.push(record);
         }
-      });
+      }
 
       const sortRecords = (list: EntityData[]) => {
         return list.sort((a, b) => {
@@ -638,9 +647,9 @@ export const useTableData = ({
 
           // Merge and deduplicate
           const combinedChildrenMap = new Map<string, EntityData>();
-          [...fetchedChildren, ...localChildNodes].forEach((child) => {
+          for (const child of [...fetchedChildren, ...localChildNodes]) {
             combinedChildrenMap.set(String(child.id), child);
-          });
+          }
 
           const sortedChildren = sortRecords(Array.from(combinedChildrenMap.values()));
 
