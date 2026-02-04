@@ -51,7 +51,6 @@ export const buildContextString = ({ contextItems, registersText }: BuildContext
  *
  * @param value - The value to format
  * @returns The formatted value
- * @todo Implement proper date formatting logic
  */
 const formatDateContext = (value: unknown): unknown => {
   return value;
