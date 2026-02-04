@@ -17,7 +17,7 @@
 
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTab } from "@/hooks/useTab";
-import type { EntityData, EntityValue, Column, Tab } from "@workspaceui/api-client/src/api/types";
+import type { EntityData, EntityValue, Column, Tab, Criteria } from "@workspaceui/api-client/src/api/types";
 import {
   MaterialReactTable,
   useMaterialReactTable,
@@ -47,6 +47,7 @@ import { GridCellEditor } from "./GridCellEditor";
 import { WindowReferenceGridProvider, useWindowReferenceGridContext } from "./WindowReferenceGridContext";
 import { getFieldReference } from "@/utils";
 import { buildEtendoContext } from "@/utils/contextUtils";
+import { buildBaseCriteria } from "@/utils/criteriaUtils";
 import { useSelected } from "@/hooks/useSelected";
 import { PROCESS_DEFINITION_DATA } from "../../utils/processes/definition/constants";
 
@@ -618,11 +619,15 @@ const WindowReferenceGrid = ({
     applyRecordValues();
 
     const criteria = buildCriteria();
+    const baseCriteria = buildBaseCriteria({ tab: stableWindowReferenceTab || ({ fields: {}, parentColumns: [] } as any) });
 
-    if (criteria.length > 0) {
+    const finalCriteria = criteria.length > 0 ? criteria : baseCriteria;
+
+    // Ensure a valid criteria contract by using buildBaseCriteria as a dummy fallback
+    options.criteria = finalCriteria as unknown as Criteria[];
+    
+    if (finalCriteria.length > 0) {
       options.orderBy = "documentNo desc";
-      // Keep criteria as array of objects, cast to EntityValue for type compatibility
-      options.criteria = criteria as unknown as EntityValue;
     }
 
     return options;
