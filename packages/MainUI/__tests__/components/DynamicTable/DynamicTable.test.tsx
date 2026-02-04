@@ -633,6 +633,7 @@ describe("DynamicTable", () => {
     setRecordId: jest.fn(),
     onRecordSelection: jest.fn(),
     isTreeMode: true,
+    windowIdentifier: "test-window-id_123456789",
   };
 
   beforeEach(() => {

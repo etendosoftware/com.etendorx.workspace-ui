@@ -252,8 +252,10 @@ export interface WindowMetadataProperties {
   };
 }
 
+export type UIPattern = "STD" | "SR";
+
 export interface Tab {
-  uIPattern: "STD" | "SR";
+  uIPattern: UIPattern;
   window: string;
   name: string;
   title: string;

@@ -35,6 +35,7 @@ import type {
   Field,
   FormInitializationResponse,
   RefListField,
+  UIPattern,
 } from "@workspaceui/api-client/src/api/types";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";

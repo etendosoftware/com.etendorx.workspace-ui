@@ -252,7 +252,7 @@ export default function useTableSelection(
   const previousSingleSelectionRef = useRef<string | undefined>(undefined);
 
   const windowId = tab.window;
-  const currentWindowId = tab.window;
+  const currentWindowId = windowIdentifier?.split("_")[0];
 
   // Initialize previousSingleSelectionRef from URL on mount/remount
   // This is important when transitioning from FormView to Table mode

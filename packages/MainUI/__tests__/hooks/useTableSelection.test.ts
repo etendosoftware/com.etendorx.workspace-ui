@@ -198,7 +198,7 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
       const emptySelection: MRT_RowSelectionState = {};
 
-      const { result } = renderHook(() => useTableSelection(tab, records, emptySelection));
+      const { result } = renderHook(() => useTableSelection("window1_123456789", tab, records, emptySelection));
 
       expect(result.current).toBeUndefined();
       expect(mockUseSelected).toHaveBeenCalled();
@@ -209,7 +209,7 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
       const rowSelection = createMockRowSelection(["1"]);
 
-      renderHook(() => useTableSelection(tab, records, rowSelection));
+      renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection));
 
       expect(mockGraph.setSelected).not.toHaveBeenCalled();
       expect(mockGraph.setSelectedMultiple).not.toHaveBeenCalled();
@@ -220,7 +220,7 @@ describe("useTableSelection", () => {
       const records: EntityData[] = [];
       const emptySelection: MRT_RowSelectionState = {};
 
-      const { result } = renderHook(() => useTableSelection(tab, records, emptySelection));
+      const { result } = renderHook(() => useTableSelection("window1_123456789", tab, records, emptySelection));
 
       expect(result.current).toBeUndefined();
       expect(mockGraph.clearSelected).not.toHaveBeenCalled();
@@ -234,7 +234,7 @@ describe("useTableSelection", () => {
       const rowSelection = createMockRowSelection(["2"]);
       const onSelectionChange = jest.fn();
 
-      renderHook(() => useTableSelection(tab, records, rowSelection, onSelectionChange));
+      renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection, onSelectionChange));
 
       expect(mockGraph.setSelected).toHaveBeenCalledWith(tab, records[1]);
       expect(mockGraph.setSelectedMultiple).toHaveBeenCalledWith(tab, [records[1]]);
@@ -247,7 +247,7 @@ describe("useTableSelection", () => {
       const rowSelection = createMockRowSelection(["1", "3", "5"]);
       const onSelectionChange = jest.fn();
 
-      renderHook(() => useTableSelection(tab, records, rowSelection, onSelectionChange));
+      renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection, onSelectionChange));
 
       const expectedRecords = [records[0], records[2], records[4]];
       expect(mockGraph.setSelected).toHaveBeenCalledWith(tab, records[4]); // Last selected
@@ -263,7 +263,7 @@ describe("useTableSelection", () => {
       mockGraph.getSelected.mockReturnValue(records[0]);
 
       // First render with selection
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+      const { rerender } = renderHook(({ selection }) => useTableSelection("window1_123456789", tab, records, selection), {
         initialProps: { selection: createMockRowSelection(["1"]) },
       });
 
@@ -279,7 +279,7 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
       const rowSelection = createMockRowSelection(["1", "999", "2"]); // 999 doesn't exist
 
-      renderHook(() => useTableSelection(tab, records, rowSelection));
+      renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection));
 
       // Should only include valid records
       const expectedRecords = [records[0], records[1]]; // Records with IDs 1 and 2
@@ -294,7 +294,7 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
       const rowSelection = createMockRowSelection(["1", "2"]);
 
-      const { rerender } = renderHook(() => useTableSelection(tab, records, rowSelection));
+      const { rerender } = renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection));
 
       // Clear all mock calls
       jest.clearAllMocks();
@@ -310,7 +310,7 @@ describe("useTableSelection", () => {
       const tab = createMockTab();
       const records = createMockRecords(5);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+      const { rerender } = renderHook(({ selection }) => useTableSelection("window1_123456789", tab, records, selection), {
         initialProps: { selection: createMockRowSelection(["2", "1"]) },
       });
 
@@ -328,7 +328,7 @@ describe("useTableSelection", () => {
       const tab = createMockTab();
       const records = createMockRecords(5);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+      const { rerender } = renderHook(({ selection }) => useTableSelection("window1_123456789", tab, records, selection), {
         initialProps: { selection: createMockRowSelection(["1", "2"]) },
       });
 
@@ -350,7 +350,7 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
       const rowSelection = createMockRowSelection(["2"]);
 
-      renderHook(() => useTableSelection(tab, records, rowSelection));
+      renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection));
 
       // WindowContext should be updated immediately (no debounce)
       expect(mockGraph.setSelected).toHaveBeenCalledWith(tab, records[1]);
@@ -361,7 +361,7 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
       const rowSelection = createMockRowSelection(["1", "3"]);
 
-      renderHook(() => useTableSelection(tab, records, rowSelection));
+      renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection));
 
       const expectedRecords = [records[0], records[2]];
       expect(mockGraph.setSelectedMultiple).toHaveBeenCalledWith(tab, expectedRecords);
@@ -375,7 +375,7 @@ describe("useTableSelection", () => {
       mockGraph.getSelected.mockReturnValue(records[0]);
 
       // Start with a selection and then clear it
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+      const { rerender } = renderHook(({ selection }) => useTableSelection("window1_123456789", tab, records, selection), {
         initialProps: { selection: createMockRowSelection(["1"]) },
       });
 
@@ -396,7 +396,7 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
       const rowSelection = createMockRowSelection(["1"]);
 
-      renderHook(() => useTableSelection(parentTab, records, rowSelection));
+      renderHook(() => useTableSelection("window1_123456789", parentTab, records, rowSelection));
 
       // Now uses atomic update instead of separate clearChildrenSelections
       // expect(mockWindowURL...); // REMOVED: mockWindowURL no longer exists
@@ -411,7 +411,7 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
       const rowSelection = createMockRowSelection(["1"]);
 
-      renderHook(() => useTableSelection(parentTab, records, rowSelection));
+      renderHook(() => useTableSelection("window1_123456789", parentTab, records, rowSelection));
 
       // expect(mockWindowURL...); // REMOVED: mockWindowURL no longer exists
     });
@@ -423,7 +423,7 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
       const rowSelection = createMockRowSelection(["1"]);
 
-      const { result } = renderHook(() => useTableSelection(tab, records, rowSelection));
+      const { result } = renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection));
 
       expect(result.current).toBeUndefined();
       // No special handling needed - immediate sync doesn't require cleanup
@@ -438,7 +438,7 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
       const rowSelection = createMockRowSelection(["1"]);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(parentTab, records, selection), {
+      const { rerender } = renderHook(({ selection }) => useTableSelection("window1_123456789", parentTab, records, selection), {
         initialProps: { selection: rowSelection },
       });
 
@@ -459,7 +459,7 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
       const rowSelection = createMockRowSelection(["1"]);
 
-      const { result } = renderHook(() => useTableSelection(tab, records, rowSelection));
+      const { result } = renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection));
 
       expect(result.current).toBeUndefined();
       // No special handling needed - immediate sync doesn't require cleanup
@@ -472,7 +472,7 @@ describe("useTableSelection", () => {
       const records: EntityData[] = [];
       const rowSelection: MRT_RowSelectionState = {};
 
-      const { result } = renderHook(() => useTableSelection(tab, records, rowSelection));
+      const { result } = renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection));
 
       expect(result.current).toBeUndefined();
       expect(mockGraph.clearSelected).not.toHaveBeenCalled();
@@ -486,7 +486,7 @@ describe("useTableSelection", () => {
 
       // Should not throw - onSelectionChange is not called anymore
       expect(() => {
-        renderHook(() => useTableSelection(tab, records, rowSelection, onSelectionChange));
+        renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection, onSelectionChange));
       }).not.toThrow();
 
       // Verify graph was updated
@@ -499,7 +499,7 @@ describe("useTableSelection", () => {
       const tab = createMockTab();
       const records = createMockRecords(3);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+      const { rerender } = renderHook(({ selection }) => useTableSelection("window1_123456789", tab, records, selection), {
         initialProps: { selection: {} as MRT_RowSelectionState },
       });
 
@@ -517,7 +517,7 @@ describe("useTableSelection", () => {
       const tab = createMockTab();
       const records = createMockRecords(5);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+      const { rerender } = renderHook(({ selection }) => useTableSelection("window1_123456789", tab, records, selection), {
         initialProps: { selection: createMockRowSelection(["2"]) },
       });
 
@@ -536,7 +536,7 @@ describe("useTableSelection", () => {
       const tab = createMockTab();
       const records = createMockRecords(5);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+      const { rerender } = renderHook(({ selection }) => useTableSelection("window1_123456789", tab, records, selection), {
         initialProps: { selection: createMockRowSelection(["1", "2", "4"]) },
       });
 
@@ -557,7 +557,7 @@ describe("useTableSelection", () => {
       // Configure mock to simulate that there was a previous selection
       mockGraph.getSelected.mockReturnValue(records[1]); // Simulate record 2 was selected
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+      const { rerender } = renderHook(({ selection }) => useTableSelection("window1_123456789", tab, records, selection), {
         initialProps: { selection: createMockRowSelection(["1", "2"]) },
       });
 
@@ -577,7 +577,7 @@ describe("useTableSelection", () => {
       const tab = createMockTab();
       const records = createMockRecords(10);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+      const { rerender } = renderHook(({ selection }) => useTableSelection("window1_123456789", tab, records, selection), {
         initialProps: { selection: createMockRowSelection(["1"]) },
       });
 
@@ -605,7 +605,7 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
       const rowSelection = createMockRowSelection(["1"]);
 
-      const { rerender } = renderHook(({ tab }) => useTableSelection(tab, records, rowSelection), {
+      const { rerender } = renderHook(({ tab }) => useTableSelection("window1_123456789", tab, records, rowSelection), {
         initialProps: { tab: initialTab },
       });
 
@@ -624,7 +624,7 @@ describe("useTableSelection", () => {
       const records = createMockRecords(3);
 
       // Start with selection
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+      const { rerender } = renderHook(({ selection }) => useTableSelection("window1_123456789", tab, records, selection), {
         initialProps: { selection: createMockRowSelection(["1"]) },
       });
 
@@ -646,7 +646,7 @@ describe("useTableSelection", () => {
 
       mockGraph.getSelected.mockReturnValue(undefined);
 
-      renderHook(() => useTableSelection(tab, records, {}));
+      renderHook(() => useTableSelection("window1_123456789", tab, records, {}));
 
       expect(mockGraph.clearSelected).not.toHaveBeenCalled();
     });
@@ -660,7 +660,7 @@ describe("Utility functions", () => {
       const tab = createMockTab();
       const records = createMockRecords(5);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+      const { rerender } = renderHook(({ selection }) => useTableSelection("window1_123456789", tab, records, selection), {
         initialProps: { selection: createMockRowSelection(["1", "2"]) },
       });
 
@@ -676,7 +676,7 @@ describe("Utility functions", () => {
       const tab = createMockTab();
       const records = createMockRecords(5);
 
-      const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+      const { rerender } = renderHook(({ selection }) => useTableSelection("window1_123456789", tab, records, selection), {
         initialProps: { selection: createMockRowSelection(["b", "a", "c"]) },
       });
 
@@ -696,7 +696,7 @@ describe("Utility functions", () => {
       const records = createMockRecords(5);
       const rowSelection = createMockRowSelection(["2", "4"]);
 
-      renderHook(() => useTableSelection(tab, records, rowSelection));
+      renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection));
 
       // Verify the processed records were passed correctly
       const expectedRecords = [records[1], records[3]];
@@ -716,7 +716,7 @@ describe("Integration scenarios", () => {
     let currentSelectedRecord: EntityData | undefined = undefined;
     mockGraph.getSelected.mockImplementation(() => currentSelectedRecord);
 
-    const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection, onSelectionChange), {
+    const { rerender } = renderHook(({ selection }) => useTableSelection("window1_123456789", tab, records, selection, onSelectionChange), {
       initialProps: { selection: {} as MRT_RowSelectionState },
     });
 
@@ -760,7 +760,7 @@ describe("Integration scenarios", () => {
     const rowSelection = createMockRowSelection(["1"]);
 
     // Test with first window
-    const { rerender } = renderHook(({ tab }) => useTableSelection(tab, records, rowSelection), {
+    const { rerender } = renderHook(({ tab }) => useTableSelection("window1_123456789", tab, records, rowSelection), {
       initialProps: { tab: tab1 },
     });
 
@@ -776,7 +776,7 @@ describe("Integration scenarios", () => {
     // Configure mock to return undefined activeWindow from the start
     // mockUseMultiWindowURL.mockReturnValue...; // REMOVED
 
-    renderHook(() => useTableSelection(tab, records, rowSelection));
+    renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection));
   });
 });
 
@@ -786,7 +786,7 @@ describe("Performance considerations", () => {
     const records = createMockRecords(3);
     const rowSelection = createMockRowSelection(["1"]);
 
-    renderHook(() => useTableSelection(tab, records, rowSelection));
+    renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection));
 
     // Verify graph was updated immediately
     expect(mockGraph.setSelected).toHaveBeenCalledWith(tab, records[0]);
@@ -796,7 +796,7 @@ describe("Performance considerations", () => {
     const tab = createMockTab();
     const records = createMockRecords(10);
 
-    const { rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+    const { rerender } = renderHook(({ selection }) => useTableSelection("window1_123456789", tab, records, selection), {
       initialProps: { selection: createMockRowSelection(["1"]) },
     });
 
@@ -820,7 +820,7 @@ describe("Error handling and edge cases", () => {
     const corruptedSelection = { toString: () => "corrupted" } as any;
 
     expect(() => {
-      renderHook(() => useTableSelection(tab, records, corruptedSelection));
+      renderHook(() => useTableSelection("window1_123456789", tab, records, corruptedSelection));
     }).not.toThrow();
   });
 
@@ -829,7 +829,7 @@ describe("Error handling and edge cases", () => {
     const records = createMockRecords(3);
     const rowSelection = createMockRowSelection(["1", "null", "undefined", "2"]);
 
-    renderHook(() => useTableSelection(tab, records, rowSelection));
+    renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection));
 
     // Should only process valid records
     const expectedRecords = [records[0], records[1]]; // Records 1 and 2
@@ -841,7 +841,7 @@ describe("Error handling and edge cases", () => {
     const records = createMockRecords(3);
     const rowSelection = createMockRowSelection(["1"]);
 
-    const { rerender } = renderHook(({ records, selection }) => useTableSelection(tab, records, selection), {
+    const { rerender } = renderHook(({ records, selection }) => useTableSelection("window1_123456789", tab, records, selection), {
       initialProps: { records, selection: rowSelection },
     });
 
@@ -864,7 +864,7 @@ describe("Error handling and edge cases", () => {
     const selectedIds = Array.from({ length: 500 }, (_, i) => String(i + 1));
     const rowSelection = createMockRowSelection(selectedIds);
 
-    renderHook(() => useTableSelection(tab, records, rowSelection));
+    renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection));
 
     // Should handle large selections without performance issues
     expect(mockGraph.setSelectedMultiple).toHaveBeenCalled();
@@ -877,7 +877,7 @@ describe("Dependency updates", () => {
     const records = createMockRecords(3);
     const rowSelection = createMockRowSelection(["1"]);
 
-    const { rerender } = renderHook(({ tab }) => useTableSelection(tab, records, rowSelection), {
+    const { rerender } = renderHook(({ tab }) => useTableSelection("window1_123456789", tab, records, rowSelection), {
       initialProps: { tab: initialTab },
     });
 
@@ -893,7 +893,7 @@ describe("Dependency updates", () => {
     const records = createMockRecords(3);
     const rowSelection = createMockRowSelection(["1"]);
 
-    const { rerender } = renderHook(() => useTableSelection(tab, records, rowSelection));
+    const { rerender } = renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection));
 
     // Change active window
     // mockWindowURL.activeWindow = ...; // REMOVED
@@ -915,7 +915,7 @@ describe("Dependency updates", () => {
 
     // Hook accepts callback parameter for backwards compatibility but doesn't use it
     expect(() => {
-      renderHook(() => useTableSelection(tab, records, rowSelection, callback));
+      renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection, callback));
     }).not.toThrow();
 
     // Callback is not called - URL is updated directly
@@ -931,7 +931,7 @@ describe("Memory management", () => {
     const records = createMockRecords(3);
     const rowSelection = createMockRowSelection(["1"]);
 
-    const { unmount } = renderHook(() => useTableSelection(tab, records, rowSelection));
+    const { unmount } = renderHook(() => useTableSelection("window1_123456789", tab, records, rowSelection));
 
     // Unmount component - should not throw
     expect(() => unmount()).not.toThrow();
@@ -942,7 +942,7 @@ describe("Memory management", () => {
     const records = createMockRecords(3);
     const rowSelection = createMockRowSelection(["1"]);
 
-    const { unmount, rerender } = renderHook(({ selection }) => useTableSelection(tab, records, selection), {
+    const { unmount, rerender } = renderHook(({ selection }) => useTableSelection("window1_123456789", tab, records, selection), {
       initialProps: { selection: rowSelection },
     });
 

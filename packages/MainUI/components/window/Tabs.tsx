@@ -24,6 +24,7 @@ import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
 import { SubTabsSwitch } from "@/components/window/SubTabsSwitch";
 import { Tab } from "@/components/window/Tab";
+import Loading from "@/components/loading";
 import { useWindowContext } from "@/contexts/window";
 import TabContextProvider from "@/contexts/tab";
 import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHandle";
@@ -170,7 +171,17 @@ export default function TabsComponent({
             className={`absolute inset-0 flex-col ${tab.id === current.id ? "flex" : "hidden"}`}
             data-testid={`TabWrapper__${tab.id}`}>
             <TabContextProvider tab={tab} data-testid={`TabContextProvider__${tab.id}`}>
-              <Tab tab={tab} collapsed={collapsed} windowIdentifier={windowIdentifier} data-testid={`Tab__${tab.id}`} />
+              {isPending && tab.id === current.id && (
+                <div className="absolute inset-0 z-10 bg-(--color-transparent-neutral-10) animate-pulse flex items-center justify-center">
+                  <Loading data-testid="Loading__TabsSkeleton" />
+                </div>
+              )}
+              <Tab
+                tab={tab}
+                collapsed={collapsed}
+                windowIdentifier={windowIdentifier}
+                data-testid={`Tab__${tab.id}`}
+              />
             </TabContextProvider>
           </div>
         ))}
