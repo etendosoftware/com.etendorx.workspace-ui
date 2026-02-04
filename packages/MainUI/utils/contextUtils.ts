@@ -16,6 +16,8 @@
  */
 
 import { CONTEXT_CONSTANTS } from "@workspaceui/api-client/src/api/copilot";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
+import type Graph from "../data/graph";
 
 interface ContextItem {
   contextString: string;
@@ -26,6 +28,12 @@ interface BuildContextStringOptions {
   registersText: string;
 }
 
+/**
+ * Interface representing the context parameters.
+ * Keys are in the format `@EntityName.PropertyName@`.
+ */
+export interface EtendoContext extends Record<string, unknown> {}
+
 export const buildContextString = ({ contextItems, registersText }: BuildContextStringOptions): string => {
   if (contextItems.length === 0) {
     return "";
@@ -35,4 +43,62 @@ export const buildContextString = ({ contextItems, registersText }: BuildContext
   const count = contextItems.length;
 
   return `${CONTEXT_CONSTANTS.TAG_START} (${count} ${registersText}):\n\n${recordsData.join("\n\n---\n\n")}${CONTEXT_CONSTANTS.TAG_END}`;
+};
+
+/**
+ * Formats a value for use in the Etendo context, specifically handling dates.
+ * NOTE: currently not used
+ *
+ * @param value - The value to format
+ * @returns The formatted value
+ */
+const formatDateContext = (value: unknown): unknown => {
+  return value;
+};
+
+/**
+ * Recursively builds the Etendo Classic context variables for a given tab.
+ * This mimics the "Snowball Context" logic where context is gathered from
+ * the current tab (if a record is selected) and all its ancestor tabs.
+ *
+ * The context keys are formatted as `@EntityName.HqlName@`.
+ *
+ * Filtering Rules:
+ * - A field is included if its `hqlName` is "id".
+ * - OR if its column definition has `storedInSession` set to true.
+ *
+ * @param tab - The tab to start building context from.
+ * @param graph - The Graph instance used to traverse the tab hierarchy and retrieve selected records.
+ * @returns A record of context variables.
+ */
+export const buildEtendoContext = (tab: Tab, graph: Graph<Tab>): EtendoContext => {
+  // Get Parent Context first (ancestors)
+  const parentTab = graph.getParent(tab);
+  const parentContext = parentTab ? buildEtendoContext(parentTab, graph) : {};
+
+  // Build Current Tab Context
+  const currentContext: EtendoContext = {};
+  const record = graph.getSelected(tab);
+
+  if (record) {
+    for (const field of Object.values(tab.fields)) {
+      // Rule: Include if it is the ID (Mandatory) OR it is a Session Attribute
+      // Note: storedInSession is a string "true" in the column definition record
+      const isSessionAttr = field.column?.storedInSession;
+      const isId = field.hqlName === "id";
+
+      if (isId || isSessionAttr) {
+        const value = record[field.hqlName];
+
+        if (value !== undefined) {
+          // Format: @EntityName.PropertyName@
+          const contextKey = `@${tab.entityName}.${field.hqlName}@`;
+          currentContext[contextKey] = formatDateContext(value);
+        }
+      }
+    }
+  }
+
+  // Merge: Parent context is base, Current context overrides/adds to it
+  return { ...parentContext, ...currentContext };
 };

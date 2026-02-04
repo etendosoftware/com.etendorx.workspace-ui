@@ -51,7 +51,7 @@ export default {
   },
 
   transform: {
-    "^.+\\.(ts|tsx)$": [
+    "^.+\\.(ts|tsx|js)$": [
       "ts-jest",
       {
         useESM: true,
