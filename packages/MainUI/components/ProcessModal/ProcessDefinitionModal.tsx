@@ -38,7 +38,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import type { ExecuteProcessResult } from "@/app/actions/process";
 import { revalidateDopoProcess } from "@/app/actions/revalidate"; // Import revalidation action
 import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
-import { createSmartContext } from "@/utils/expressions";
+import { createProcessExpressionContext } from "./utils/processExpressionUtils";
 import {
   BUTTON_LIST_REFERENCE_ID,
   PROCESS_DEFINITION_DATA,
@@ -152,16 +152,23 @@ const convertParameterDateFields = (combined: Record<string, unknown>, param: Pr
 /**
  * Evaluates display logic for window reference parameters
  */
-const evaluateWindowReferenceDisplay = (
-  parameter: ProcessParameter,
-  logicFields: any,
-  formValues: any,
-  availableFormData: any,
-  parameters: Record<string, ProcessParameter>,
-  session: any,
-  recordValues: any,
-  parentFields?: Record<string, Field>
-): boolean => {
+interface EvaluateWindowReferenceDisplayOptions {
+  parameter: ProcessParameter;
+  logicFields?: Record<string, boolean>;
+  formValues: Record<string, unknown>;
+  availableFormData: Record<string, unknown>;
+  parameters: Record<string, ProcessParameter>;
+  session: Record<string, unknown>;
+  recordValues: Record<string, unknown>;
+  parentFields?: Record<string, Field>;
+}
+
+/**
+ * Evaluates display logic for window reference parameters
+ */
+const evaluateWindowReferenceDisplay = (options: EvaluateWindowReferenceDisplayOptions): boolean => {
+  const { parameter, logicFields, formValues, availableFormData, parameters, session, recordValues, parentFields } =
+    options;
   let isDisplayed = true;
   const defaultsDisplayLogic = logicFields?.[`${parameter.name}.display`];
 
@@ -176,38 +183,12 @@ const evaluateWindowReferenceDisplay = (
       try {
         const compiledExpr = compileExpression(parameter.displayLogic);
 
-        // Map parameters to field-like structure for smart context mapping
-        const paramFields = Object.values(parameters).reduce(
-          (acc, p) => {
-            // Key by BOTH name and dBColumnName (if available) to ensure lookup works
-            acc[p.name] = {
-              hqlName: p.name,
-              columnName: p.dBColumnName,
-              column: { dBColumnName: p.dBColumnName },
-            } as any;
-
-            if (p.dBColumnName && p.dBColumnName !== p.name) {
-              acc[p.dBColumnName] = {
-                hqlName: p.name, // Point to p.name because formValues are keyed by p.name!
-                columnName: p.dBColumnName,
-                column: { dBColumnName: p.dBColumnName },
-              } as any;
-            }
-
-            return acc;
-          },
-          {} as Record<string, any>
-        );
-
-        const smartContext = createSmartContext({
-          // Use formValues if available (reactive), otherwise fallback to combined defaults (initial load)
+        const smartContext = createProcessExpressionContext({
           values: hasFormValues ? formValues : availableFormData,
-          fields: paramFields,
-          // Use recordValues as parentValues to support field mapping
-          parentValues: recordValues || {},
-          parentFields: parentFields,
-          // Session is context
-          context: session,
+          parameters,
+          recordValues,
+          parentFields,
+          session,
         });
 
         isDisplayed = compiledExpr(smartContext, smartContext);
@@ -1672,16 +1653,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     // Separate window references from selectors
     for (const parameter of parametersList) {
       if (parameter.reference === WINDOW_REFERENCE_ID) {
-        const isDisplayed = evaluateWindowReferenceDisplay(
+        const isDisplayed = evaluateWindowReferenceDisplay({
           parameter,
           logicFields,
           formValues,
           availableFormData,
           parameters,
           session,
-          recordValues,
-          tab?.fields
-        );
+          recordValues: recordValues || {},
+          parentFields: tab?.fields,
+        });
 
         if (!isDisplayed) continue;
 

@@ -1,6 +1,5 @@
 import type { ProcessParameter, Field } from "@workspaceui/api-client/src/api/types";
 import type { ExtendedProcessParameter } from "../types/ProcessParameterExtensions";
-import { createSmartContext } from "@/utils/expressions";
 import { useMemo } from "react";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useFormContext } from "react-hook-form";
@@ -33,6 +32,10 @@ interface ProcessParameterSelectorProps {
   parentFields?: Record<string, Field>;
 }
 
+import { createProcessExpressionContext } from "../utils/processExpressionUtils";
+
+// ... imports remain the same
+
 /**
  * Main selector component that routes ProcessParameters to appropriate form controls
  * This component bridges ProcessParameters with FormView selectors for consistent UI
@@ -53,42 +56,14 @@ export const ProcessParameterSelector = ({
     return ProcessParameterMapper.mapToField(parameter);
   }, [parameter]);
 
-  // Create smart context for expression evaluation
+  // Create smart context for expression evaluation using shared utility
   const evaluationContext = useMemo(() => {
-    // 1. Map all parameters to fields structure for smart mapping (dBColumnName -> hqlName)
-    const paramFields = parameters
-      ? Object.values(parameters).reduce(
-          (acc, p) => {
-            acc[p.name] = {
-              hqlName: p.name,
-              columnName: p.dBColumnName,
-              column: { dBColumnName: p.dBColumnName },
-            } as any;
-
-            if (p.dBColumnName && p.dBColumnName !== p.name) {
-              acc[p.dBColumnName] = {
-                hqlName: p.name,
-                columnName: p.dBColumnName,
-                column: { dBColumnName: p.dBColumnName },
-              } as any;
-            }
-            return acc;
-          },
-          {} as Record<string, any>
-        )
-      : undefined;
-
-    // 2. Create SmartContext
-    // This provides:
-    // - Access to sibling parameters via dBColumnName (using paramFields map)
-    // - Access to parent record values via dBColumnName (using parentFields map)
-    // - Case-insensitive resolution
-    return createSmartContext({
-      values: values,
-      fields: paramFields,
-      parentValues: recordValues || {},
-      parentFields: parentFields,
-      context: { ...session, ...(recordValues || {}) },
+    return createProcessExpressionContext({
+      values,
+      parameters,
+      recordValues,
+      parentFields,
+      session,
     });
   }, [parameters, values, recordValues, parentFields, session]);
 
