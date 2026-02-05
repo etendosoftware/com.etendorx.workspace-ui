@@ -28,7 +28,7 @@ describe("api-client: Metadata.kernelClient forward base", () => {
     (global as any).fetch = origFetch;
   });
 
-  it("posts to /api/erp/meta/forward/org.openbravo.client.kernel?...", async () => {
+  it("posts to /api/erp/org.openbravo.client.kernel?...", async () => {
     Metadata.setBaseUrl(); // Auto-configures using window.location.origin
     Metadata.setToken("tkn");
     await Metadata.kernelClient.post(
@@ -37,8 +37,7 @@ describe("api-client: Metadata.kernelClient forward base", () => {
     expect((global as any).fetch).toHaveBeenCalled();
     const url = String((global as any).fetch.mock.calls[0][0]);
     // Trailing slash normalization is fine; accept both forms
-    const expectedSnippet =
-      "/api/erp/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?MODE=NEW&TAB_ID=186";
+    const expectedSnippet = "/api/erp/org.openbravo.client.kernel?MODE=NEW&TAB_ID=186";
     expect(url.toString()).toContain(expectedSnippet);
   });
 });

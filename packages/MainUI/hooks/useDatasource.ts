@@ -37,7 +37,8 @@ const loadData = async (
     tabId?: string;
     referencedTableId?: string;
     parentId?: string | number;
-  }
+  },
+  isFiltering: boolean = false
 ) => {
   const safePageSize = pageSize ?? 1000;
   const startRow = (page - 1) * pageSize;
@@ -45,13 +46,24 @@ const loadData = async (
 
   const processedParams = {
     ...params,
+    _textMatchStyle: "substring",
     startRow,
     endRow,
     pageSize: safePageSize,
   };
 
   if (treeOptions?.isTreeMode) {
-    processedParams.parentId = treeOptions.parentId ?? -1;
+    const parentIdCriteria = {
+      fieldName: "parentId",
+      operator: "equals",
+      value: String(treeOptions.parentId ?? -1),
+    };
+
+    // Ensure criteria is an array and append parentId criteria
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const currentCriteria = (params.criteria as any[]) || [];
+    processedParams.criteria = [...currentCriteria, parentIdCriteria];
+
     if (treeOptions.tabId) {
       processedParams.tabId = treeOptions.tabId;
     }
@@ -103,6 +115,11 @@ export function useDatasource({
   isImplicitFilterApplied = false,
   setIsImplicitFilterApplied,
 }: UseDatasourceOptions) {
+  // Detect if user is filtering (search or column filters)
+  const isFiltering = useMemo(() => {
+    return (!!searchQuery && searchQuery.trim().length > 0) || (activeColumnFilters && activeColumnFilters.length > 0);
+  }, [searchQuery, activeColumnFilters]);
+
   const [loading, setLoading] = useState(!skip);
   const [loaded, setLoaded] = useState(false);
   const [records, setRecords] = useState<EntityData[]>([]);
@@ -205,7 +222,14 @@ export function useDatasource({
       const safePageSize = pageSize ?? 1000;
 
       try {
-        const { ok, data } = (await loadData(entity, targetPage, safePageSize, queryParams, memoizedTreeOptions)) as {
+        const { ok, data } = (await loadData(
+          entity,
+          targetPage,
+          safePageSize,
+          queryParams,
+          memoizedTreeOptions,
+          isFiltering
+        )) as {
           ok: boolean;
           data: { response: { data: EntityData[] } };
         };

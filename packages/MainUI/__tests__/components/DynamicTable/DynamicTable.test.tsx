@@ -187,6 +187,8 @@ const mockSelectedContext = {
     clearSelected: jest.fn(),
     clearSelectedMultiple: jest.fn(),
     setSelectedMultiple: jest.fn(),
+    setRecords: jest.fn(),
+    getRecord: jest.fn().mockReturnValue(null),
   },
 };
 

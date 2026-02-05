@@ -25,6 +25,7 @@ type GraphNode<T> = {
   neighbors: Set<GraphNode<T>>;
   selected?: EntityData;
   selectedMultiple: EntityData[];
+  records?: EntityData[];
 };
 
 export type GraphEvents = {
@@ -210,6 +211,21 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
 
   public getSelectedMultiple = (tab?: Tab) => {
     return tab ? this.nodes.get(tab.id)?.selectedMultiple : undefined;
+  };
+
+  public setRecords = (tab?: Tab, records: EntityData[] = []) => {
+    if (tab) {
+      const node = this.nodes.get(tab.id);
+
+      if (node) {
+        node.records = records;
+      }
+    }
+  };
+
+  public getRecord = (tab: Tab, recordId: string) => {
+    const node = this.nodes.get(tab.id);
+    return node?.records?.find((r) => String(r.id) === recordId);
   };
 }
 

@@ -164,6 +164,7 @@ export interface Field {
    * Indicates if the role has access to the window linked to this field.
    */
   isReferencedWindowAccessible?: boolean;
+  isAuditField?: boolean;
 }
 
 export interface Option<T extends string = string> {
@@ -195,6 +196,7 @@ export interface Column {
   customJs?: string | null;
   referencedTabId: string | null;
   isReferencedWindowAccessible?: boolean;
+  isAuditField?: boolean;
 }
 
 export interface MappedField {
@@ -218,6 +220,7 @@ export enum FieldType {
   BUTTON = "button",
   WINDOW = "window",
   DATETIME = "datetime",
+  TIME = "time",
 }
 
 export interface MappedTab {
@@ -257,8 +260,15 @@ export interface WindowMetadataProperties {
   };
 }
 
+export enum UIPattern {
+  READ_ONLY = "RO",
+  EDIT_ONLY = "SR",
+  EDIT_AND_DELETE_ONLY = "ED",
+  STANDARD = "STD",
+}
+
 export interface Tab {
-  uIPattern: "STD" | "SR";
+  uIPattern: UIPattern;
   window: string;
   name: string;
   title: string;
