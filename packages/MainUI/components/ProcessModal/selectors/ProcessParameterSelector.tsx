@@ -1,5 +1,6 @@
-import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
+import type { ProcessParameter, Field } from "@workspaceui/api-client/src/api/types";
 import type { ExtendedProcessParameter } from "../types/ProcessParameterExtensions";
+import { createSmartContext } from "@/utils/expressions";
 import { useMemo } from "react";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useFormContext } from "react-hook-form";
@@ -27,13 +28,22 @@ import GenericSelector from "./GenericSelector";
 interface ProcessParameterSelectorProps {
   parameter: ProcessParameter | ExtendedProcessParameter;
   logicFields?: Record<string, boolean>; // Optional logic fields from process defaults
+  parameters?: Record<string, ProcessParameter>;
+  recordValues?: Record<string, unknown>;
+  parentFields?: Record<string, Field>;
 }
 
 /**
  * Main selector component that routes ProcessParameters to appropriate form controls
  * This component bridges ProcessParameters with FormView selectors for consistent UI
  */
-export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessParameterSelectorProps) => {
+export const ProcessParameterSelector = ({
+  parameter,
+  logicFields,
+  parameters,
+  recordValues,
+  parentFields,
+}: ProcessParameterSelectorProps) => {
   const { session } = useUserContext();
   const { watch, register } = useFormContext();
   const values = watch(); // Watch all form values for reactive logic evaluation
@@ -42,6 +52,45 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
   const mappedField = useMemo(() => {
     return ProcessParameterMapper.mapToField(parameter);
   }, [parameter]);
+
+  // Create smart context for expression evaluation
+  const evaluationContext = useMemo(() => {
+    // 1. Map all parameters to fields structure for smart mapping (dBColumnName -> hqlName)
+    const paramFields = parameters
+      ? Object.values(parameters).reduce(
+          (acc, p) => {
+            acc[p.name] = {
+              hqlName: p.name,
+              columnName: p.dBColumnName,
+              column: { dBColumnName: p.dBColumnName },
+            } as any;
+
+            if (p.dBColumnName && p.dBColumnName !== p.name) {
+              acc[p.dBColumnName] = {
+                hqlName: p.name,
+                columnName: p.dBColumnName,
+                column: { dBColumnName: p.dBColumnName },
+              } as any;
+            }
+            return acc;
+          },
+          {} as Record<string, any>
+        )
+      : undefined;
+
+    // 2. Create SmartContext
+    // This provides:
+    // - Access to sibling parameters via dBColumnName (using paramFields map)
+    // - Access to parent record values via dBColumnName (using parentFields map)
+    // - Case-insensitive resolution
+    return createSmartContext({
+      values: values,
+      fields: paramFields,
+      parentValues: recordValues || {},
+      parentFields: parentFields,
+      context: { ...session, ...(recordValues || {}) },
+    });
+  }, [parameters, values, recordValues, parentFields, session]);
 
   // Evaluate display logic expression (combine parameter logic with process defaults logic)
   const isDisplayed = useMemo(() => {
@@ -68,12 +117,13 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
 
     try {
       const compiledExpr = compileExpression(parameter.displayLogic);
-      return compiledExpr(session, values);
+      // Pass smartContext as both context and values to ensure resolution works for all variable types
+      return compiledExpr(evaluationContext, evaluationContext);
     } catch (error) {
       logger.warn("Error executing display logic expression:", parameter.displayLogic, error);
       return true; // Default to visible on error
     }
-  }, [parameter.displayLogic, parameter.name, logicFields, session, values]);
+  }, [parameter.displayLogic, parameter.name, logicFields, values, evaluationContext]);
 
   // Evaluate readonly logic expression (EXACT same logic as BaseSelector lines 83-95)
   const isReadOnly = useMemo(() => {
@@ -100,13 +150,13 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
 
     try {
       const compiledExpr = compileExpression(readOnlyExpression);
-      const result = compiledExpr(session, values);
+      const result = compiledExpr(evaluationContext, evaluationContext);
       return result;
     } catch (error) {
       logger.warn("Error executing readonly logic expression:", readOnlyExpression, error);
       return false; // Default to editable on error
     }
-  }, [mappedField, parameter, logicFields, session, values]);
+  }, [mappedField, parameter, logicFields, values, evaluationContext]);
 
   // Get field type for selector routing
   const fieldType = useMemo(() => {

@@ -62,7 +62,7 @@ import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import ProcessResultModal from "./ProcessResultModal";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
-import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
+import type { Tab, ProcessParameter, EntityData, Field } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
 import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
@@ -159,7 +159,8 @@ const evaluateWindowReferenceDisplay = (
   availableFormData: any,
   parameters: Record<string, ProcessParameter>,
   session: any,
-  recordValues: any
+  recordValues: any,
+  parentFields?: Record<string, Field>
 ): boolean => {
   let isDisplayed = true;
   const defaultsDisplayLogic = logicFields?.[`${parameter.name}.display`];
@@ -202,8 +203,11 @@ const evaluateWindowReferenceDisplay = (
           // Use formValues if available (reactive), otherwise fallback to combined defaults (initial load)
           values: hasFormValues ? formValues : availableFormData,
           fields: paramFields,
-          // Merge session and recordValues to provide full context
-          context: { ...session, ...(recordValues || {}) },
+          // Use recordValues as parentValues to support field mapping
+          parentValues: recordValues || {},
+          parentFields: parentFields,
+          // Session is context
+          context: session,
         });
 
         isDisplayed = compiledExpr(smartContext, smartContext);
@@ -1675,7 +1679,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           availableFormData,
           parameters,
           session,
-          recordValues
+          recordValues,
+          tab?.fields
         );
 
         if (!isDisplayed) continue;
@@ -1712,6 +1717,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
             parameter={parameter}
             logicFields={logicFields}
+            parameters={parameters}
+            recordValues={recordValues || undefined}
+            parentFields={tab?.fields}
             data-testid="ProcessParameterSelector__761503"
           />
         );
