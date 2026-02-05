@@ -304,6 +304,22 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   useEffect(() => {
     let active = true;
 
+    const fetchDynamicButtons = async (referenceId: string) => {
+      try {
+        const result = (await datasource.get("ADList", {
+          criteria: [{ fieldName: "reference.id", operator: "equals", value: referenceId }],
+          sortBy: "sequenceNumber",
+          _startRow: 0,
+          _endRow: 100,
+        })) as any;
+
+        return result?.response?.data || result?.data?.response?.data || [];
+      } catch (e) {
+        logger.error("Failed to fetch dynamic buttons", e);
+        return [];
+      }
+    };
+
     const loadButtons = async () => {
       const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
 
@@ -330,27 +346,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       const referenceId = (buttonListParam as any).referenceSearchKey;
 
       if (referenceId) {
-        try {
-          const result = (await datasource.get("ADList", {
-            criteria: [{ fieldName: "reference.id", operator: "equals", value: referenceId }],
-            sortBy: "sequenceNumber",
-            _startRow: 0,
-            _endRow: 100,
-          })) as any;
+        const responseData = await fetchDynamicButtons(referenceId);
 
-          const responseData = result?.response?.data || result?.data?.response?.data;
-
-          if (responseData && active) {
-            const mappedButtons = responseData.map((item: any) => ({
-              value: item.searchKey,
-              label: item.name,
-              isFilter: ["filter", "apply", "search", "refresh"].includes(item.searchKey?.toLowerCase()),
-            }));
-            setAvailableButtons(mappedButtons);
-          }
-        } catch (e) {
-          logger.error("Failed to fetch dynamic buttons", e);
-          if (active) setAvailableButtons([]);
+        if (responseData && responseData.length > 0 && active) {
+          const mappedButtons = responseData.map((item: any) => ({
+            value: item.searchKey,
+            label: item.name,
+            isFilter: ["filter", "apply", "search", "refresh"].includes(item.searchKey?.toLowerCase()),
+          }));
+          setAvailableButtons(mappedButtons);
+        } else if (active) {
+          setAvailableButtons([]);
         }
       } else {
         if (active) setAvailableButtons([]);
