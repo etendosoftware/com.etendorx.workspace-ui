@@ -161,8 +161,9 @@ describe("Metadata", () => {
       const result = await Metadata.getWindow("win1");
       expect(spyPost).toHaveBeenCalledWith("meta/window/win1");
       expect(result).toEqual(mockWindow);
-      expect((Metadata as any).cache.get("window-win1")).toEqual(mockWindow);
-      expect((Metadata as any).cache.get("tab-tab1")).toEqual(mockWindow.tabs[0]);
+      expect((Metadata as any).cache.get("window-win1-default")).toEqual(mockWindow);
+      // Expect default role suffix when no role is set
+      expect((Metadata as any).cache.get("tab-tab1-default")).toEqual(mockWindow.tabs[0]);
     });
 
     it("should throw error if window not found", async () => {
@@ -204,6 +205,49 @@ describe("Metadata", () => {
     });
   });
 
+  describe("Role Segregation", () => {
+    it("should segregate tab cache by role ID", async () => {
+      const mockTab = { id: "tab1" };
+      const roleA = "roleA";
+      const roleB = "roleB";
+
+      jest.spyOn(Metadata.client, "post").mockResolvedValue({ data: mockTab } as any);
+
+      // Role A
+      localStorage.setItem("currentRoleId", roleA);
+      await Metadata.getTab("tab1");
+      expect((Metadata as any).cache.get(`tab-tab1-${roleA}`)).toEqual(mockTab);
+
+      // Role B
+      localStorage.setItem("currentRoleId", roleB);
+      // Reset internal currentRoleId if it was cached (though getTab doesn't set it, getMenu does)
+      (Metadata as any).currentRoleId = null;
+
+      await Metadata.getTab("tab1");
+      expect((Metadata as any).cache.get(`tab-tab1-${roleB}`)).toEqual(mockTab);
+    });
+
+    it("should segregate window cache by role ID", async () => {
+      const mockWindow = { id: "win1", tabs: [] };
+      const roleA = "roleA";
+      const roleB = "roleB";
+
+      jest.spyOn(Metadata.client, "post").mockResolvedValue({ ok: true, data: mockWindow } as any);
+
+      // Role A
+      localStorage.setItem("currentRoleId", roleA);
+      await Metadata.getWindow("win1");
+      expect((Metadata as any).cache.get(`window-win1-${roleA}`)).toEqual(mockWindow);
+
+      // Role B
+      localStorage.setItem("currentRoleId", roleB);
+      (Metadata as any).currentRoleId = null;
+
+      await Metadata.getWindow("win1");
+      expect((Metadata as any).cache.get(`window-win1-${roleB}`)).toEqual(mockWindow);
+    });
+  });
+
   describe("Cache management", () => {
     it("should clear menu cache", () => {
       (Metadata as any).cache.set("OBMenu", []);
@@ -216,9 +260,9 @@ describe("Metadata", () => {
     });
 
     it("should clear window cache", () => {
-      (Metadata as any).cache.set("window-123", {});
+      (Metadata as any).cache.set("window-123-default", {});
       Metadata.clearWindowCache("123");
-      expect((Metadata as any).cache.get("window-123")).toBeUndefined();
+      expect((Metadata as any).cache.get("window-123-default")).toBeUndefined();
     });
   });
 
@@ -226,7 +270,7 @@ describe("Metadata", () => {
     it("should return columns for multiple tabs", () => {
       const mockTab = { id: "tab1" };
       const mockFields = [{ name: "field1" }];
-      (Metadata as any).cache.set("tab-tab1", { fields: mockFields });
+      (Metadata as any).cache.set("tab-tab1-default", { fields: mockFields });
 
       const result = Metadata.getTabsColumns([mockTab as any]);
       expect(result).toEqual({ tab1: mockFields });
