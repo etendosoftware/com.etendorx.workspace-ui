@@ -30,9 +30,13 @@ import { MetadataStoreProvider, useMetadataStore } from "../metadataStore";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
+import { useUserContext } from "@/hooks/useUserContext";
 
 // Mock dependencies
 jest.mock("@workspaceui/api-client/src/api/metadata");
+jest.mock("@/hooks/useUserContext", () => ({
+  useUserContext: jest.fn(),
+}));
 jest.mock("@/utils/logger", () => ({
   logger: {
     info: jest.fn(),
@@ -43,6 +47,7 @@ jest.mock("@/utils/logger", () => ({
 }));
 
 const mockMetadata = Metadata as jest.Mocked<typeof Metadata>;
+const mockUseUserContext = useUserContext as jest.Mock;
 
 /**
  * Test helpers
@@ -136,7 +141,10 @@ const expectWindowError = (result: any, windowId: string, error: Error) => {
 };
 
 describe("MetadataStoreProvider", () => {
-  beforeEach(setupMocks);
+  beforeEach(() => {
+    setupMocks();
+    mockUseUserContext.mockReturnValue({ currentRole: { id: "role1" } });
+  });
 
   it("should provide initial empty state", () => {
     const { result } = renderMetadataStoreHook();
@@ -598,6 +606,50 @@ describe("Integration scenarios", () => {
       expect(result.current.getWindowError("window1")).toBeUndefined();
       expect(result.current.getWindowError("window2")).toBeUndefined();
       expect(result.current.getWindowError("window3")).toBe(window3Error);
+    });
+  });
+
+  describe("Store reset on role change", () => {
+    it("should clear state when currentRole.id changes", async () => {
+      mockUseUserContext.mockReturnValue({ currentRole: { id: "role1" } });
+      const { result, rerender } = renderMetadataStoreHook();
+
+      const windowMetadata = createMockWindowMetadata("window1");
+      mockMetadata.forceWindowReload.mockResolvedValue(windowMetadata);
+
+      await act(async () => {
+        await result.current.loadWindowData("window1");
+      });
+
+      expect(result.current.windowsData.window1).toEqual(windowMetadata);
+
+      // Change role ID
+      mockUseUserContext.mockReturnValue({ currentRole: { id: "role2" } });
+      rerender();
+
+      expect(result.current.windowsData).toEqual({});
+      expect(result.current.loadingWindows).toEqual({});
+      expect(result.current.errors).toEqual({});
+    });
+
+    it("should NOT clear state when other currentRole properties change but ID remains same", async () => {
+      mockUseUserContext.mockReturnValue({ currentRole: { id: "role1", name: "Role 1" } });
+      const { result, rerender } = renderMetadataStoreHook();
+
+      const windowMetadata = createMockWindowMetadata("window1");
+      mockMetadata.forceWindowReload.mockResolvedValue(windowMetadata);
+
+      await act(async () => {
+        await result.current.loadWindowData("window1");
+      });
+
+      expect(result.current.windowsData.window1).toEqual(windowMetadata);
+
+      // Change role name but keep same ID
+      mockUseUserContext.mockReturnValue({ currentRole: { id: "role1", name: "Role 1 Updated" } });
+      rerender();
+
+      expect(result.current.windowsData.window1).toEqual(windowMetadata);
     });
   });
 });
