@@ -42,7 +42,7 @@ const loadData = async (
 ) => {
   const safePageSize = pageSize ?? 1000;
   const startRow = (page - 1) * pageSize;
-  const endRow = page * pageSize - 1;
+  const endRow = startRow + pageSize;
 
   const processedParams = {
     ...params,
@@ -150,6 +150,13 @@ export function useDatasource({
     setPageSize(size);
   }, []);
 
+  // Sync pageSize with params
+  useEffect(() => {
+    if (params.pageSize && params.pageSize !== pageSize) {
+      setPageSize(params.pageSize);
+    }
+  }, [params.pageSize, pageSize]);
+
   const reinit = useCallback(() => {
     setRecords([]);
     setPage(1);
@@ -200,13 +207,16 @@ export function useDatasource({
     const hasIdFilter = Boolean(filterById);
     const idParams = hasIdFilter ? { targetRecordId: filterById?.value, directNavigation: true } : {};
 
-    const finalParams = {
+    const finalParams: any = {
       ...stableParams,
       ...idParams,
-      criteria: allCriteria,
       isImplicitFilterApplied,
       noActiveFilter: true,
     };
+
+    if (allCriteria.length > 0) {
+      finalParams.criteria = allCriteria;
+    }
 
     return finalParams;
   }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, activeColumnFilters]);
