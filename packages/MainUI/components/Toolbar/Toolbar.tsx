@@ -56,7 +56,7 @@ import { useWindowContext } from "@/contexts/window";
 import ActionModal from "@workspaceui/componentlibrary/src/components/ActionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 
-const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
+const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false, windowIdentifier }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
@@ -71,10 +71,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
-  const { buttons, processButtons, loading, refetch: refetchToolbar } = useToolbar(windowId, tab?.id);
+  const { buttons, processButtons, loading, refetch: refetchToolbar } = useToolbar(windowIdentifier, tab?.id);
   const { saveButtonState, isImplicitFilterApplied, isAdvancedFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
-  const { activeWindow, getTabFormState, clearChildrenSelections } = useWindowContext();
+  const { getTabFormState, clearChildrenSelections, getNavigationState } = useWindowContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { isSessionSyncLoading, isCopilotInstalled, session } = useUserContext();
@@ -104,7 +104,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     closeActionModal,
     resultModal,
     closeResultModal,
-  } = useToolbarConfig({ windowId, tabId: tab?.id, parentId, isFormView });
+  } = useToolbarConfig({ windowId, tabId: tab?.id, parentId, isFormView, windowIdentifier });
 
   const { handleProcessClick } = useProcessButton(executeProcess, refetchToolbar);
   const { formViewRefetch } = useToolbarContext();
@@ -115,11 +115,12 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   // Check if any child tab is fully expanded
   const isChildTabExpanded = useMemo(() => {
-    if (!activeWindow || !tab?.id) return false;
-    const navigationState = activeWindow.navigation;
+    if (!windowIdentifier || !tab?.id) return false;
+    const navigationState = getNavigationState(windowIdentifier);
+    if (!navigationState) return false;
     // If we are in a parent tab (level 0) and there is an active tab in level 1, it means a child is expanded/visible
     return navigationState.activeLevels.includes(1) && navigationState.activeTabsByLevel.has(1);
-  }, [activeWindow, tab?.id]);
+  }, [windowIdentifier, tab?.id, getNavigationState]);
 
   // Manage temporary filter tooltip visibility
   useEffect(() => {
@@ -218,7 +219,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     const childTabIdsInFormView: string[] = [];
 
     const hasChildTabs = childTabs && childTabs.length > 0;
-    const windowIdentifier = activeWindow?.windowIdentifier;
 
     if (hasChildTabs && windowIdentifier) {
       childTabIdsInFormView.push(...processChildTabsInFormView(childTabs, windowIdentifier));
@@ -249,7 +249,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     tab,
     isFormView,
     formViewRefetch,
-    activeWindow,
+    windowIdentifier,
     processChildTabsInFormView,
     clearChildrenSelections,
   ]);

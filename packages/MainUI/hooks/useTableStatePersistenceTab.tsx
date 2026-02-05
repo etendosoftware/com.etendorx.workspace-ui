@@ -152,14 +152,43 @@ export const useTableStatePersistenceTab = ({
 
   return {
     // State getters - current values
-    tableColumnFilters: currentTableState.filters,
-    tableColumnVisibility: currentTableState.visibility,
-    tableColumnSorting: currentTableState.sorting,
-    tableColumnOrder: currentTableState.order,
+    // State getters - current values
+    tableColumnFilters: useMemo(
+      () => currentTableState.filters,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [JSON.stringify(currentTableState.filters)]
+    ),
+    tableColumnVisibility: useMemo(
+      () => currentTableState.visibility,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [JSON.stringify(currentTableState.visibility)]
+    ),
+    tableColumnSorting: useMemo(
+      () => currentTableState.sorting,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [JSON.stringify(currentTableState.sorting)]
+    ),
+    tableColumnOrder: useMemo(
+      () => currentTableState.order,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [JSON.stringify(currentTableState.order)]
+    ),
     isImplicitFilterApplied: currentTableState.isImplicitFilterApplied,
-    advancedCriteria: currentTableState.advancedCriteria,
-    activeLevels: currentNavigationState.activeLevels,
-    activeTabsByLevel: currentNavigationState.activeTabsByLevel,
+    advancedCriteria: useMemo(
+      () => currentTableState.advancedCriteria,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [JSON.stringify(currentTableState.advancedCriteria)]
+    ),
+    activeLevels: useMemo(
+      () => currentNavigationState.activeLevels,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [JSON.stringify(currentNavigationState.activeLevels)]
+    ),
+    activeTabsByLevel: useMemo(
+      () => currentNavigationState.activeTabsByLevel,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [JSON.stringify(Array.from(currentNavigationState.activeTabsByLevel.entries()))]
+    ),
 
     // State setters - React-style setters
     setTableColumnFilters,

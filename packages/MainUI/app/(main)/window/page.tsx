@@ -41,11 +41,21 @@ export default function Page() {
           <WindowTabs data-testid={`WindowTabs__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
         </TabsProvider>
       )}
-      {shouldShowWindow ? (
-        <Window window={activeWindow} data-testid={`Window__${activeWindow.windowIdentifier}`} />
-      ) : (
-        <Home data-testid={`Home__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
-      )}
+      <div className="flex-1 min-h-0 relative">
+        {windows.map((win) => (
+          <div
+            key={win.windowIdentifier}
+            className={`absolute inset-0 ${win.isActive && !isHomeRoute ? "flex flex-col" : "hidden"}`}
+            data-testid={`WindowWrapper__${win.windowIdentifier}`}>
+            <Window window={win} data-testid={`Window__${win.windowIdentifier}`} />
+          </div>
+        ))}
+        {(isHomeRoute || windows.length === 0) && (
+          <div className="absolute inset-0 block" data-testid="HomeWrapper">
+            <Home data-testid={`Home__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

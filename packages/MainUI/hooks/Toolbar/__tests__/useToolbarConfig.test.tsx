@@ -96,13 +96,22 @@ describe("useToolbarConfig", () => {
   });
 
   it("initializes correctly", () => {
-    const { result } = renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+    const { result } = renderHook(() =>
+      useToolbarConfig({ tabId: "tab1", isFormView: false, windowIdentifier: "windowIdentifier1", windowId: "window1" })
+    );
     expect(result.current.actionModal.isOpen).toBe(false);
   });
 
   describe("handleCopyRecord", () => {
     it("does nothing if no records are selected", () => {
-      const { result } = renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+      const { result } = renderHook(() =>
+        useToolbarConfig({
+          tabId: "tab1",
+          isFormView: false,
+          windowIdentifier: "windowIdentifier1",
+          windowId: "window1",
+        })
+      );
 
       act(() => {
         result.current.actionHandlers.COPY_RECORD();
@@ -113,7 +122,14 @@ describe("useToolbarConfig", () => {
 
     it("opens simple confirmation modal when obuiappCloneChildren is false", () => {
       (useSelectedRecords as jest.Mock).mockReturnValue([{ id: "record1" }]);
-      const { result } = renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+      const { result } = renderHook(() =>
+        useToolbarConfig({
+          tabId: "tab1",
+          isFormView: false,
+          windowIdentifier: "windowIdentifier1",
+          windowId: "window1",
+        })
+      );
 
       act(() => {
         result.current.actionHandlers.COPY_RECORD();
@@ -127,7 +143,14 @@ describe("useToolbarConfig", () => {
     it("opens complex confirmation modal when obuiappCloneChildren is true", () => {
       (useTabContext as jest.Mock).mockReturnValue({ tab: { ...mockTab, obuiappCloneChildren: true } });
       (useSelectedRecords as jest.Mock).mockReturnValue([{ id: "record1" }]);
-      const { result } = renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+      const { result } = renderHook(() =>
+        useToolbarConfig({
+          tabId: "tab1",
+          isFormView: false,
+          windowIdentifier: "windowIdentifier1",
+          windowId: "window1",
+        })
+      );
 
       act(() => {
         result.current.actionHandlers.COPY_RECORD();
@@ -143,7 +166,14 @@ describe("useToolbarConfig", () => {
       (useSelectedRecords as jest.Mock).mockReturnValue([{ id: "record1" }]);
       (copyRecordRequest as jest.Mock).mockResolvedValue({ ok: true, data: {} });
 
-      const { result } = renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+      const { result } = renderHook(() =>
+        useToolbarConfig({
+          tabId: "tab1",
+          isFormView: false,
+          windowIdentifier: "windowIdentifier1",
+          windowId: "window1",
+        })
+      );
 
       act(() => {
         result.current.actionHandlers.COPY_RECORD();
@@ -181,7 +211,14 @@ describe("useToolbarConfig", () => {
         json: () => Promise.resolve(mockResult),
       });
 
-      const { result } = renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+      const { result } = renderHook(() =>
+        useToolbarConfig({
+          tabId: "tab1",
+          isFormView: false,
+          windowIdentifier: "windowIdentifier1",
+          windowId: "window1",
+        })
+      );
 
       await act(async () => {
         await result.current.actionHandlers.INITIALIZE_RX_SERVICES();
@@ -209,7 +246,14 @@ describe("useToolbarConfig", () => {
         text: () => Promise.resolve("API Error"),
       });
 
-      const { result } = renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+      const { result } = renderHook(() =>
+        useToolbarConfig({
+          tabId: "tab1",
+          isFormView: false,
+          windowIdentifier: "windowIdentifier1",
+          windowId: "window1",
+        })
+      );
 
       await act(async () => {
         await result.current.actionHandlers.INITIALIZE_RX_SERVICES();
