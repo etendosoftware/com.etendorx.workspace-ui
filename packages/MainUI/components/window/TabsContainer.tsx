@@ -17,7 +17,7 @@
 
 "use client";
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect } from "react";
 import Tabs from "@/components/window/Tabs";
 import AppBreadcrumb from "@/components/Breadcrums";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
@@ -95,10 +95,8 @@ const TabsGroupRenderer = ({
     try {
       const compiledExpr = compileExpression(expression);
       // We assume global session variables are handled by session arg
-      const result = compiledExpr(context, context);
-      return result;
-    } catch (error) {
-      console.error("[TabsGroupRenderer] Error checking parent visibility", error);
+      return compiledExpr(session, context);
+    } catch {
       return true;
     }
   }, [activeParentTab, grandParentRecord, grandParentTab, session]);
@@ -120,7 +118,7 @@ const TabsGroupRenderer = ({
       context: { ...(activeParentTab || {}), ...session }, // Include tab metadata in context if needed
     });
 
-    return tabs.filter((tab) => {
+    const result = tabs.filter((tab) => {
       const expression = tab.displayLogicExpression || tab.displayLogic;
 
       if (!expression) {
@@ -129,16 +127,19 @@ const TabsGroupRenderer = ({
 
       try {
         const compiledExpr = compileExpression(expression);
-        const result = compiledExpr(context, context);
-        return result;
+        const res = compiledExpr(session, context);
+        return res;
       } catch (error) {
         logger.error(`Error evaluating display logic for tab ${tab.name}:`, error);
-        return false; // Hide on error
+        return false;
       }
-    }); // removed specific dependency on isParentVisible which is handled by early return, but kept logically
-  }, [tabs, parentRecord, session, activeParentTab, isParentVisible]);
+    });
 
-  if (filteredTabs.length === 0) {
+    const filteredTabs = result.filter((tab) => shouldShowTab(tab, activeParentTab));
+    return filteredTabs;
+  }, [tabs, parentRecord, session, activeParentTab, isParentVisible, currentLevel]);
+
+  if (!Array.isArray(filteredTabs) || filteredTabs.length === 0) {
     return null;
   }
 
@@ -171,7 +172,7 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * - setActiveTabsByLevel: Function to update active tab selection per level
    * - graph: Hierarchical tab structure
    */
-  const { activeLevels, activeTabsByLevel } = useTableStatePersistenceTab({
+  const { activeLevels, activeTabsByLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
     windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: "",
   });
@@ -189,9 +190,43 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
    * - Dynamic filtering based on parent-child relationships
    */
   const groupedTabs = useMemo(() => {
-    const groups = windowData ? groupTabsByLevel(windowData) : [];
+    if (!windowData) {
+      return [];
+    }
+
+    const groups = groupTabsByLevel(windowData);
     return groups.filter((group) => group && group.length > 0);
   }, [windowData]);
+
+  /**
+   * Initialize activeTabsByLevel when metadata first loads
+   *
+   * This ensures that on first navigation to a window, the first tab of each level
+   * is registered in activeTabsByLevel BEFORE child tab filtering occurs.
+   *
+   * Bug fix: Without this initialization, child tabs are hidden on first load because
+   * shouldShowTab() receives null for activeParentTab (since activeTabsByLevel is empty).
+   * After F5 refresh, the state is restored from URL, so child tabs appear correctly.
+   */
+  useEffect(() => {
+    if (!activeWindow?.windowIdentifier || groupedTabs.length === 0) {
+      return;
+    }
+
+    // Check if level 0 is already initialized
+    const level0Group = groupedTabs.find((group) => group[0]?.tabLevel === 0);
+    if (!level0Group || level0Group.length === 0) {
+      return;
+    }
+
+    // Only initialize if level 0 is not already set
+    // This prevents overriding user selections or URL-restored state
+    const hasLevel0Tab = activeTabsByLevel.has(0);
+    if (!hasLevel0Tab) {
+      const firstTab = level0Group[0];
+      setActiveTabsByLevel(firstTab);
+    }
+  }, [activeWindow?.windowIdentifier, groupedTabs, activeTabsByLevel, setActiveTabsByLevel]);
 
   /**
    * Determines which tab should be active for a given hierarchical level.
@@ -208,12 +243,16 @@ export default function TabsContainer({ windowData }: { windowData: Etendo.Windo
   const getActiveTabForLevel = useCallback(
     (level: number): Tab | null => {
       const tabGroup = groupedTabs.find((group) => group[0]?.tabLevel === level);
-      if (!tabGroup || tabGroup.length === 0) return null;
+      if (!tabGroup || tabGroup.length === 0) {
+        return null;
+      }
 
       const activeTabId = activeTabsByLevel.get(level);
       if (activeTabId) {
         const activeTab = tabGroup.find((tab) => tab.id === activeTabId);
-        if (activeTab) return activeTab;
+        if (activeTab) {
+          return activeTab;
+        }
       }
 
       return tabGroup[0];
