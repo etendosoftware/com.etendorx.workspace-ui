@@ -160,6 +160,7 @@ export interface Field {
    * from the child record's data (e.g., record["cBpartnerId"]).
    */
   isParentRecordProperty?: boolean;
+  isAuditField?: boolean;
 }
 
 export interface Option<T extends string = string> {
@@ -190,6 +191,7 @@ export interface Column {
   fieldId?: string;
   customJs?: string | null;
   referencedTabId: string | null;
+  isAuditField?: boolean;
 }
 
 export interface MappedField {
@@ -213,6 +215,7 @@ export enum FieldType {
   BUTTON = "button",
   WINDOW = "window",
   DATETIME = "datetime",
+  TIME = "time",
 }
 
 export interface MappedTab {
@@ -252,7 +255,12 @@ export interface WindowMetadataProperties {
   };
 }
 
-export type UIPattern = "STD" | "SR";
+export enum UIPattern {
+  READ_ONLY = "RO",
+  EDIT_ONLY = "SR",
+  EDIT_AND_DELETE_ONLY = "ED",
+  STANDARD = "STD",
+}
 
 export interface Tab {
   uIPattern: UIPattern;

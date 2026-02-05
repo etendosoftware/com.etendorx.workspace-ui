@@ -1124,6 +1124,7 @@ export function Tab({ tab, collapsed, windowIdentifier }: TabLevelProps) {
             isVisible={!shouldShowForm}
             uIPattern={tab.uIPattern}
             windowIdentifier={windowIdentifier}
+            areFiltersDisabled={advancedFilters.length > 0}
             data-testid="DynamicTable__5893c8"
           />
         </AttachmentProvider>

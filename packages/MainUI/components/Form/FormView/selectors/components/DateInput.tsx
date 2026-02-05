@@ -20,6 +20,12 @@ import { forwardRef, useCallback, useRef, useState, useEffect, useMemo } from "r
 import CalendarIcon from "../../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
 import { formatClassicDate, getLocaleDatePlaceholder } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { autocompleteDate } from "@/utils/dateAutocomplete";
+import {
+  getInputClassNames,
+  getButtonClassNames,
+  getLabelClassNames,
+  getHelperTextClassNames,
+} from "@/utils/date/constants";
 
 interface DateInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -40,58 +46,16 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
 
     const datePlaceholder = useMemo(() => getLocaleDatePlaceholder(), []);
 
-    const labelClassNames = useMemo(() => {
-      const baseClasses = "flex items-center gap-1 font-medium text-sm leading-5 tracking-normal transition-colors";
+    const labelClassNames = useMemo(() => getLabelClassNames({ isFocused, isReadOnly }), [isFocused, isReadOnly]);
 
-      let textColorClass: string;
-      if (isFocused && !isReadOnly) {
-        textColorClass = "text-(--color-baseline-100)";
-      } else if (isReadOnly) {
-        textColorClass = "text-baseline-60";
-      } else {
-        textColorClass = "text-(--color-baseline-80)";
-      }
+    const inputClassNames = useMemo(
+      () => getInputClassNames({ isFocused, isReadOnly, hasError: error }),
+      [error, isFocused, isReadOnly]
+    );
 
-      return `${baseClasses} ${textColorClass}`;
-    }, [isFocused, isReadOnly]);
+    const buttonClassNames = useMemo(() => getButtonClassNames({ isFocused }), [isFocused]);
 
-    const inputClassNames = useMemo(() => {
-      const baseClass = `w-full pl-3 pr-3 rounded-t tracking-normal h-10.5 border-0 border-b-2 
-      bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) 
-      text-(--color-transparent-neutral-80) font-medium text-sm leading-5
-      [&::-webkit-calendar-picker-indicator]:hidden
-      [&::-moz-calendar-picker-indicator]:hidden`;
-
-      const focusClass = isFocused && !isReadOnly ? "border-[#004ACA] text-[#004ACA] bg-[#E5EFFF]" : "";
-
-      const hoverClass = !isReadOnly
-        ? "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)"
-        : "";
-
-      const readOnlyClass = isReadOnly
-        ? "bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) hover:bg-transparent focus:border-dotted focus:border-(--color-transparent-neutral-70) focus:bg-transparent focus:text-(--color-transparent-neutral-80)"
-        : "";
-
-      const errorClass = error ? "border-error-main" : "";
-
-      return `${baseClass} ${focusClass} ${hoverClass} ${readOnlyClass} ${errorClass} focus:outline-none transition-colors`;
-    }, [error, isFocused, isReadOnly]);
-
-    const buttonClassNames = useMemo(() => {
-      const baseClasses =
-        "absolute right-3 top-1/2 transform -translate-y-1/2 transition-transform z-10 flex items-center justify-center";
-
-      const colorClass = isFocused ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)";
-
-      return `${baseClasses} ${colorClass}`;
-    }, [isFocused]);
-
-    const helperTextClassNames = useMemo(() => {
-      const baseClass = "text-xs mt-1";
-      const colorClass = error ? "text-red-500" : "text-baseline-60";
-
-      return `${baseClass} ${colorClass}`;
-    }, [error]);
+    const helperTextClassNames = useMemo(() => getHelperTextClassNames({ hasError: error }), [error]);
 
     const handleCalendarClick = useCallback(() => {
       if (!isReadOnly && hiddenDateInputRef.current) {

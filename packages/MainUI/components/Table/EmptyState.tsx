@@ -17,7 +17,8 @@
 
 import type React from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import type { EntityData, UIPattern } from "@workspaceui/api-client/src/api/types";
+import { UIPattern as UIPatternEnum } from "@workspaceui/api-client/src/api/types";
 import type { MRT_TableInstance } from "material-react-table";
 import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 import PlusCircle from "@workspaceui/componentlibrary/src/assets/icons/plus-circle.svg";
@@ -27,14 +28,20 @@ const EmptyState = ({
   maxWidth,
   onContextMenu,
   onInsertRow,
+  uIPattern,
 }: {
   table?: MRT_TableInstance<EntityData>;
   maxWidth?: number;
   onContextMenu?: (event: React.MouseEvent) => void;
   onInsertRow?: () => void;
+  uIPattern?: UIPattern;
 }) => {
   const { t } = useTranslation();
   maxWidth = table?.refs.tableContainerRef.current?.clientWidth ?? maxWidth;
+  const isCreateDisabled =
+    uIPattern === UIPatternEnum.READ_ONLY ||
+    uIPattern === UIPatternEnum.EDIT_ONLY ||
+    uIPattern === UIPatternEnum.EDIT_AND_DELETE_ONLY;
 
   return (
     <div
@@ -45,7 +52,7 @@ const EmptyState = ({
       <h3 className="text-lg font-semibold text-gray-700 mb-2 pointer-events-none">{t("table.labels.emptyRecords")}</h3>
       <p className="text-sm text-gray-500 mb-4 pointer-events-none">{t("status.noRecords")}</p>
 
-      {onInsertRow && (
+      {onInsertRow && !isCreateDisabled && (
         <Button
           variant="filled"
           style={{ maxWidth: "15rem" }}

@@ -25,7 +25,7 @@ import Info from "@workspaceui/componentlibrary/src/assets/icons/info.svg";
 import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
 import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
-import { FormMode, type EntityData, type EntityValue } from "@workspaceui/api-client/src/api/types";
+import { FormMode, type EntityData, type EntityValue, UIPattern } from "@workspaceui/api-client/src/api/types";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import useFormFields from "@/hooks/useFormFields";
 import { useFormInitialState } from "@/hooks/useFormInitialState";
@@ -86,13 +86,13 @@ const processFormData = (
   // If fields definition is provided, ensure all fields are present with at least empty string
   // This forces controlled inputs to clear visually when resetting the form
   if (fields) {
-    Object.values(fields).forEach((field: any) => {
+    for (const field of Object.values(fields) as any[]) {
       // Use hqlName if available (standard for form fields), fallback to other identifiers
       const key = field.hqlName || field.columnName || field.name;
       if (key && processedData[key] === undefined) {
         processedData[key] = "";
       }
-    });
+    }
   }
 
   return processedData;
@@ -108,6 +108,7 @@ export function FormView({
   windowIdentifier,
 }: FormViewProps) {
   const theme = useTheme();
+  const isReadOnly = uIPattern === UIPattern.READ_ONLY;
 
   const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
   const [selectedTab, setSelectedTab] = useState<string>("");
@@ -278,7 +279,7 @@ export function FormView({
 
     const selectedRecordId = getSelectedRecord(windowIdentifier, tab.id);
     if (selectedRecordId && selectedRecordId === currentRecordId) {
-      const graphRecord = graph.getSelected(tab);
+      const graphRecord = graph.getRecord(tab, selectedRecordId);
       if (graphRecord && String(graphRecord.id) === currentRecordId) {
         return graphRecord;
       }
@@ -305,7 +306,22 @@ export function FormView({
       return { ...initialState };
     }
 
-    return { ...record, ...initialState };
+    // Smart merge: start with initialState as base, then overlay record values
+    // Only use record values that are not undefined/null (those are "no value")
+    // This preserves initialState values (like dropdown entries) while prioritizing record data
+    const formattedResult = { ...record };
+
+    if (initialState) {
+      for (const [key, value] of Object.entries(initialState)) {
+        // record value wins if it's not undefined
+        // "" and null are valid values and should override initialState
+        if (value !== undefined && value !== null && value !== "") {
+          formattedResult[key] = value;
+        }
+      }
+    }
+
+    return formattedResult;
   }, [record, initialState, currentRecordId]);
 
   const { fields, groups } = useFormFields(tab, currentRecordId, currentMode, true, availableFormData);
@@ -765,6 +781,7 @@ export function FormView({
               showErrorModal={showErrorModal}
               openAttachmentModal={openAttachmentModal}
               onAttachmentModalClose={() => setOpenAttachmentModal(false)}
+              isReadOnly={isReadOnly}
               data-testid="FormFields__1a0853"
             />
 
