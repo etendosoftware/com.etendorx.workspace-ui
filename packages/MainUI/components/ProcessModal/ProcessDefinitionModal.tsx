@@ -52,6 +52,8 @@ import { PackingProcess } from "./Custom/PackingProcess/PackingProcess";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
+
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { FormProvider, useForm, useFormState } from "react-hook-form";
@@ -256,6 +258,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const processId = processDefinition.id;
   const javaClassName = processDefinition.javaClassName;
 
+  const [gridRefreshKey, setGridRefreshKey] = useState(0);
+
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -277,7 +281,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   // NEW: autoSelectConfig state to hold declarative selection instructions OR backward-compatible _gridSelection
   const [autoSelectConfig, setAutoSelectConfig] = useState<AutoSelectConfig | null>(null);
   const [autoSelectApplied, setAutoSelectApplied] = useState(false);
-  const [availableButtons, setAvailableButtons] = useState<Array<{ value: string; label: string }>>([]);
+  const [availableButtons, setAvailableButtons] = useState<Array<{ value: string; label: string; isFilter?: boolean }>>([]);
   const [rulesRegistered, setRulesRegistered] = useState(false);
 
   // Register PayScript DSL if available in process definition
@@ -298,18 +302,66 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   }, [processDefinition]);
 
   useEffect(() => {
-    const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+    let active = true;
 
-    if (buttonListParam?.refList) {
-      setAvailableButtons(
-        buttonListParam.refList.map((item) => ({
-          value: item.value,
-          label: item.label,
-        }))
-      );
-    } else {
-      setAvailableButtons([]);
-    }
+    const loadButtons = async () => {
+      const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+
+      if (!buttonListParam) {
+        if (active) setAvailableButtons([]);
+        return;
+      }
+
+      // Case 1: refList is already populated
+      if (buttonListParam.refList && buttonListParam.refList.length > 0) {
+        if (active) {
+          setAvailableButtons(
+            buttonListParam.refList.map((item) => ({
+              value: item.value,
+              label: item.label,
+            }))
+          );
+        }
+        return;
+      }
+
+      // Case 2: Try to fetch from ADList if we have the reference ID
+      // referenceSearchKey holds the AD_Reference_ID for list references as seen in debug
+      const referenceId = (buttonListParam as any).referenceSearchKey;
+
+      if (referenceId) {
+        try {
+          const result = (await datasource.get("ADList", {
+            criteria: [{ fieldName: "reference.id", operator: "equals", value: referenceId }],
+            sortBy: "sequenceNumber",
+            _startRow: 0,
+            _endRow: 100,
+          })) as any;
+
+          const responseData = result?.response?.data || result?.data?.response?.data;
+
+          if (responseData && active) {
+            const mappedButtons = responseData.map((item: any) => ({
+              value: item.searchKey,
+              label: item.name,
+              isFilter: ["filter", "apply", "search", "refresh"].includes(item.searchKey?.toLowerCase()),
+            }));
+            setAvailableButtons(mappedButtons);
+          }
+        } catch (e) {
+          logger.error("Failed to fetch dynamic buttons", e);
+          if (active) setAvailableButtons([]);
+        }
+      } else {
+        if (active) setAvailableButtons([]);
+      }
+    };
+
+    loadButtons();
+
+    return () => {
+      active = false;
+    };
   }, [parameters]);
 
   // Handle case when modal is opened from sidebar (no tab context)
@@ -1047,6 +1099,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
    */
   const handleExecute = useCallback(
     async (actionValue?: string) => {
+      // Generic handling for filter actions (defined in button list)
+      const actionButton = availableButtons.find((b) => b.value === actionValue);
+      if (actionButton?.isFilter) {
+        setGridRefreshKey((prev) => prev + 1);
+        return;
+      }
+
       setResult(null);
       if (hasWindowReference) {
         await handleWindowReferenceExecute(actionValue);
@@ -1645,6 +1704,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
     // Separate window references from selectors
     for (const parameter of parametersList) {
+      // Skip inactive parameters
+      // @ts-ignore
+      if (parameter.active === false) {
+        continue;
+      }
+
+      // Skip Button List parameters (rendered as footer buttons)
+      if (parameter.reference === BUTTON_LIST_REFERENCE_ID) {
+        continue;
+      }
       if (parameter.reference === WINDOW_REFERENCE_ID) {
         const isDisplayed = evaluateWindowReferenceDisplay({
           parameter,
@@ -1662,7 +1731,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         const parameterTab = getTabForParameter(parameter);
         windowReferences.push(
           <WindowReferenceGrid
-            key={`window-ref-${parameter.id || parameter.name}`}
+            key={`window-ref-${parameter.id || parameter.name}-${gridRefreshKey}`}
             parameter={parameter}
             parameters={parameters}
             onSelectionChange={setGridSelection}
@@ -1844,7 +1913,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                               {btn.label}
                             </Button>
                           ))
-                        : (!result || !result.success) && (
+                        : (!result || !result.success) &&
+                          processId !== "FF1893F761AF46E893E37CB4EF1DFCB1" && (
                             <Button
                               variant="filled"
                               size="large"

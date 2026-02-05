@@ -408,7 +408,9 @@ const WindowReferenceGrid = ({
   const stableRecordValues = useMemo(() => effectiveRecordValues, [JSON.stringify(effectiveRecordValues)]);
 
   const datasourceOptions = useMemo(() => {
-    const options: DatasourceParams = {};
+    const options: DatasourceParams = {
+      pageSize: PAGE_SIZE,
+    };
     // Restore legacy behavior: property tabId is vital for backend context resolution
     // If parameter.tab is missing, use the component's tabId prop (which usually holds the WindowID in process context)
     options.tabId = parameter.tab || tabId;
@@ -1576,6 +1578,26 @@ const WindowReferenceGrid = ({
     </div>
   );
 
+  const fetchMoreOnBottomReached = useCallback(
+    (event: React.UIEvent<HTMLDivElement>) => {
+      const containerRefElement = event.currentTarget as HTMLDivElement;
+
+      if (containerRefElement) {
+        const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
+        if (
+          clientHeight > 0 &&
+          scrollHeight > clientHeight &&
+          scrollHeight - scrollTop - clientHeight < 100 && // 100px threshold
+          !datasourceLoading &&
+          hasMoreRecords
+        ) {
+          fetchMore();
+        }
+      }
+    },
+    [fetchMore, hasMoreRecords, datasourceLoading]
+  );
+
   const tableOptions: MRT_TableOptions<EntityData> = useMemo(
     () => ({
       muiTablePaperProps: {
@@ -1608,6 +1630,7 @@ const WindowReferenceGrid = ({
           minHeight: "300px",
           maxHeight: "500px",
         },
+        onScroll: fetchMoreOnBottomReached,
       },
       layoutMode: "semantic",
       enableColumnResizing: true,
@@ -1622,13 +1645,11 @@ const WindowReferenceGrid = ({
       enableSorting: true,
       enableColumnActions: true,
       manualFiltering: true,
+      enableRowVirtualization: true,
       columns: finalColumns, // Use modified columns with handler
       data: records || [],
       getRowId: (row) => String(row.id),
       renderTopToolbar,
-      renderBottomToolbar: hasMoreRecords
-        ? () => <LoadMoreButton fetchMore={fetchMore} data-testid="LoadMoreButton__ce8544" />
-        : undefined,
       renderEmptyRowsFallback: () => (
         <div className="flex justify-center items-center p-8 text-gray-500">
           <EmptyState maxWidth={MAX_WIDTH} data-testid="EmptyState__ce8544" />
