@@ -525,6 +525,11 @@ const WindowReferenceGrid = ({
 
       // 2. Process merged parameters
       for (const [key, finalValue] of Object.entries(mergedParams)) {
+        // Special Case: Auto-map ad_org_id to _org for datasource compatibility
+        if (key === "ad_org_id") {
+          options._org = finalValue;
+        }
+
         // If it's a mapped system key, apply to options
         if (defaultKeys && key in defaultKeys) {
           options[defaultKeys[key as keyof typeof defaultKeys]] = finalValue;
