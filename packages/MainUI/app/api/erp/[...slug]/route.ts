@@ -191,6 +191,27 @@ function buildErpHeaders(
     headers["X-CSRF-Token"] = csrfToken;
   }
 
+  // Normalize referer header and ensure window context for metadata requests.
+  const originalReferer = request.headers.get("referer") || "";
+  if (originalReferer) {
+    headers["referer"] = originalReferer;
+    headers["Referer"] = originalReferer;
+  }
+
+  const url = new URL(request.url);
+  const slugParts = url.pathname.split("/api/erp/")[1]?.split("/") || [];
+
+  if (slugParts[0] === "meta" && slugParts[1] === "window" && slugParts[2]) {
+    const windowId = slugParts[2];
+    const currentReferer = headers["referer"] || "";
+    if (!currentReferer.includes("window?")) {
+      const baseUrl = url.origin;
+      const spoofedReferer = `${baseUrl}/window?wi_0=${windowId}`;
+      headers["referer"] = spoofedReferer;
+      headers["Referer"] = spoofedReferer;
+    }
+  }
+
   return headers;
 }
 
