@@ -162,6 +162,8 @@ export class Datasource {
       params.criteria = options.criteria.map((criteria) => JSON.stringify(criteria));
     } else if (options.criteria && typeof options.criteria === "string") {
       params.criteria = options.criteria;
+    } else if (options.criteria && typeof options.criteria === "object") {
+      params.criteria = JSON.stringify(options.criteria);
     }
 
     if (options.parentId) {

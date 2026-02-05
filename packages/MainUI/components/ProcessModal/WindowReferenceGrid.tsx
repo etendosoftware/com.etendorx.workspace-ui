@@ -539,9 +539,18 @@ const WindowReferenceGrid = ({
     };
 
     const buildCriteria = (): Array<{ fieldName: string; operator: string; value: EntityValue }> => {
-      if (!stableFilterExpressions?.grid) return [];
+      if (!stableFilterExpressions) return [];
 
-      return Object.entries(stableFilterExpressions.grid).map(([fieldName, value]) => {
+      const gridKey = parameter.dBColumnName || "";
+
+      const expressions = Object.entries(stableFilterExpressions).find(
+        ([key]) => key.toLowerCase() === gridKey.toLowerCase()
+      )?.[1];
+
+
+      if (!expressions) return [];
+
+      return Object.entries(expressions).map(([fieldName, value]) => {
         let parsedValue: EntityValue;
         let operator = "equals";
 
@@ -619,13 +628,15 @@ const WindowReferenceGrid = ({
     applyRecordValues();
 
     const criteria = buildCriteria();
-    const baseCriteria = buildBaseCriteria({ tab: stableWindowReferenceTab || ({ fields: {}, parentColumns: [] } as any) });
+    const baseCriteria = buildBaseCriteria({
+      tab: stableWindowReferenceTab || ({ fields: {}, parentColumns: [] } as any),
+    });
 
     const finalCriteria = criteria.length > 0 ? criteria : baseCriteria;
 
     // Ensure a valid criteria contract by using buildBaseCriteria as a dummy fallback
     options.criteria = finalCriteria as unknown as Criteria[];
-    
+
     if (finalCriteria.length > 0) {
       options.orderBy = "documentNo desc";
     }
@@ -634,6 +645,7 @@ const WindowReferenceGrid = ({
   }, [
     processConfig?.processId,
     parameter.tab,
+    parameter.dBColumnName,
     tabId,
     stableProcessDefaults,
     stableFilterExpressions,
