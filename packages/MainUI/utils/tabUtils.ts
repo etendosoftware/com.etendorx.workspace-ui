@@ -23,6 +23,35 @@ export interface TabWithParentInfo extends Tab {
   active?: boolean;
 }
 
+/**
+ * Normalizes a string to lowercase snake_case and removes common prefixes
+ * @param str - The string to normalize
+ * @returns Normalized string
+ */
+function normalizeIdentifier(str: string): string {
+  if (!str) return "";
+  const normalized = str
+    // 1. Remove prefixes first
+    .replace(/^(?:fin|c|m|ad|s)_/i, "")
+    // 2. Handle CamelCase to snake_case properly
+    .replace(/([A-Z])/g, (match, offset) => (offset > 0 && str[offset - 1] !== "_" ? "_" : "") + match.toLowerCase())
+    .toLowerCase()
+    // 3. Clean up
+    .replace(/_{2,}/g, "_");
+
+  // 4. Safe trim for underscores (prevents ReDoS warnings in SonarQube)
+  let start = 0;
+  while (start < normalized.length && normalized[start] === "_") {
+    start++;
+  }
+  let end = normalized.length - 1;
+  while (end >= start && normalized[end] === "_") {
+    end--;
+  }
+
+  return normalized.substring(start, end + 1);
+}
+
 export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | null): boolean {
   if (tab.tabLevel === 0) {
     return true;
@@ -36,29 +65,23 @@ export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | nul
     return false;
   }
 
-  if (tab.parentTabId) {
-    return tab.parentTabId === activeParentTab.id;
+  const pTabId = tab.parentTabId || (tab as any).parentTab;
+  if (pTabId) {
+    const match = pTabId === activeParentTab.id;
+    return match;
   }
 
+  // Check parentColumns if they exist and have values
   if (tab.parentColumns && tab.parentColumns.length > 0) {
-    const parentEntityLower = activeParentTab.entityName?.toLowerCase() || "";
-    const parentTableName = activeParentTab.table$_identifier?.toLowerCase() || "";
-
     const hasMatch = tab.parentColumns.some((parentColumn) => {
-      const columnLower = parentColumn.toLowerCase();
-
-      const normalizedColumn = columnLower.replace(/_id$/, "").replace(/[_-]/g, "");
-
-      const normalizedEntity = parentEntityLower
-        .replace(/^(fin|mgmt|financial|management)/gi, "")
-        .replace(/([A-Z])/g, (p1, offset) => (offset > 0 ? `_${p1}` : p1))
-        .toLowerCase()
-        .replace(/[_-]/g, "");
-
-      const normalizedTable = parentTableName.replace(/^c_/, "").replace(/[_-]/g, "");
+      const normalizedColumn = normalizeIdentifier(parentColumn.replace(/_id$/i, "")).replace(/_/g, "");
+      const normalizedEntity = normalizeIdentifier(activeParentTab.entityName || "").replace(/_/g, "");
+      const normalizedTable = normalizeIdentifier(activeParentTab.table$_identifier || "").replace(/_/g, "");
 
       // 1. Existing Naive Name Match
       if (
+        normalizedColumn === normalizedEntity ||
+        normalizedColumn === normalizedTable ||
         normalizedColumn.includes(normalizedEntity) ||
         normalizedEntity.includes(normalizedColumn) ||
         normalizedColumn.includes(normalizedTable) ||
@@ -97,10 +120,13 @@ export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | nul
       return false;
     });
 
-    if (!hasMatch) {
-      return false;
+    if (hasMatch) {
+      return true;
     }
-    return true;
+
+    // If we have parent columns but none matched, we explicitly return false
+    // to avoid falling back to showing orphaned tabs.
+    return false;
   }
 
   return false;
