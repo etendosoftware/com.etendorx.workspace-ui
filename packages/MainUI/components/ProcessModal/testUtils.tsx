@@ -1,4 +1,5 @@
 import React from "react";
+import { fireEvent, type RenderResult } from "@testing-library/react";
 
 // Mock Data
 export const mockExecuteStringFunctionResponse = {
@@ -71,6 +72,22 @@ export const mockProcessDefinitionConstants = {
     REPORT_AND_PROCESS: "report-and-process",
   },
   BUTTON_LIST_REFERENCE_ID: "FF80818132F94B500132F9575619000A",
+};
+
+// Mock Implementations for Jest
+export const mockMetadataImplementation = {
+  Metadata: {
+    getProcess: jest.fn().mockResolvedValue({ id: "TEST_PROCESS_ID" }),
+    client: {
+      post: jest.fn().mockResolvedValue({ ok: true, data: { parameters: [] } }),
+    },
+  },
+};
+
+// Actions
+export const clickExecuteButton = async (container: RenderResult): Promise<void> => {
+  const executeButton = container.getByText("common.execute");
+  fireEvent.click(executeButton);
 };
 
 // Mock Component Implementations

@@ -1,8 +1,8 @@
-import { render, fireEvent, waitFor, type RenderResult } from "@testing-library/react";
+import { render, waitFor } from "@testing-library/react";
 import ProcessDefinitionModal from "../ProcessDefinitionModal";
 import React from "react";
 // Keep imports for things used in the test body
-import { mockExecuteStringFunctionResponse, mockFetchResponseOk, mockUserContextData } from "./mockHelpers";
+import { mockExecuteStringFunctionResponse, mockFetchResponseOk, clickExecuteButton } from "../testUtils";
 
 // Mock executeStringFunction
 const mockExecuteStringFunction = jest.fn().mockResolvedValue(mockExecuteStringFunctionResponse);
@@ -14,14 +14,7 @@ jest.mock("@/utils/functions", () => ({
 // Mock global fetch
 global.fetch = jest.fn().mockResolvedValue(mockFetchResponseOk);
 
-jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
-  Metadata: {
-    getProcess: jest.fn().mockResolvedValue({ id: "TEST_PROCESS_ID" }),
-    client: {
-      post: jest.fn().mockResolvedValue({ ok: true, data: { parameters: [] } }),
-    },
-  },
-}));
+jest.mock("@workspaceui/api-client/src/api/metadata", () => require("../testUtils").mockMetadataImplementation);
 
 // Mock server actions
 jest.mock("@/app/actions/process", () => ({
@@ -34,16 +27,16 @@ jest.mock("@/app/actions/revalidate", () => ({
 
 // Mock user context
 jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: () => require("./mockHelpers").mockUserContextData,
+  useUserContext: () => require("../testUtils").mockUserContextData,
 }));
 
 // Mock other hooks
 jest.mock("@/contexts/tab", () => ({
-  useTabContext: () => require("./mockHelpers").mockTabContextData,
+  useTabContext: () => require("../testUtils").mockTabContextData,
 }));
 
 jest.mock("@/hooks/useSelected", () => ({
-  useSelected: () => require("./mockHelpers").mockSelectedData,
+  useSelected: () => require("../testUtils").mockSelectedData,
 }));
 
 jest.mock("@/hooks/useTranslation", () => ({
@@ -51,18 +44,18 @@ jest.mock("@/hooks/useTranslation", () => ({
 }));
 
 jest.mock("@/hooks/useProcessInitialization", () => ({
-  useProcessInitialization: () => require("./mockHelpers").mockProcessInitializationData,
+  useProcessInitialization: () => require("../testUtils").mockProcessInitializationData,
 }));
 
 jest.mock("@/hooks/useProcessInitialState", () => ({
-  useProcessInitializationState: () => require("./mockHelpers").mockProcessInitialStateData,
+  useProcessInitializationState: () => require("../testUtils").mockProcessInitialStateData,
 }));
 
 jest.mock("@/hooks/datasource/useProcessDatasourceConfig", () => ({
-  useProcessConfig: () => require("./mockHelpers").mockProcessConfigData,
+  useProcessConfig: () => require("../testUtils").mockProcessConfigData,
 }));
 
-jest.mock("@/utils/processes/definition/constants", () => require("./mockHelpers").mockProcessDefinitionConstants);
+jest.mock("@/utils/processes/definition/constants", () => require("../testUtils").mockProcessDefinitionConstants);
 
 jest.mock("@/components/ProcessModal/callouts/useProcessCallouts", () => ({
   useProcessCallouts: jest.fn(),
@@ -72,7 +65,7 @@ jest.mock("@/components/ProcessModal/callouts/useProcessCallouts", () => ({
 jest.mock("@/components/ProcessModal/selectors/ProcessParameterSelector", () => ({
   __esModule: true,
   default: () => {
-    const { MockParamSelector } = require("./mockHelpers");
+    const { MockParamSelector } = require("../testUtils");
     return <MockParamSelector />;
   },
 }));
@@ -80,7 +73,7 @@ jest.mock("@/components/ProcessModal/selectors/ProcessParameterSelector", () => 
 jest.mock("@/components/ProcessModal/WindowReferenceGrid", () => ({
   __esModule: true,
   default: () => {
-    const { MockWindowGrid } = require("./mockHelpers");
+    const { MockWindowGrid } = require("../testUtils");
     return <MockWindowGrid />;
   },
 }));
@@ -88,7 +81,7 @@ jest.mock("@/components/ProcessModal/WindowReferenceGrid", () => ({
 jest.mock("@/components/Modal", () => ({
   __esModule: true,
   default: ({ children }: any) => {
-    const { MockModal } = require("./mockHelpers");
+    const { MockModal } = require("../testUtils");
     return <MockModal>{children}</MockModal>;
   },
 }));
@@ -96,7 +89,7 @@ jest.mock("@/components/Modal", () => ({
 jest.mock("@/components/loading", () => ({
   __esModule: true,
   default: () => {
-    const { MockLoading } = require("./mockHelpers");
+    const { MockLoading } = require("../testUtils");
     return <MockLoading />;
   },
 }));
@@ -104,39 +97,16 @@ jest.mock("@/components/loading", () => ({
 jest.mock("@workspaceui/componentlibrary/src/components/Button/Button", () => ({
   __esModule: true,
   default: (props: any) => {
-    const { MockButton } = require("./mockHelpers");
+    const { MockButton } = require("../testUtils");
     return <MockButton {...props} />;
   },
 }));
 
 jest.mock("react-hook-form", () => ({
   FormProvider: ({ children }: { children: React.ReactNode }) => children,
-  useForm: () => require("./mockHelpers").mockFormData,
-  useFormState: () => require("./mockHelpers").mockFormState,
+  useForm: () => require("../testUtils").mockFormData,
+  useFormState: () => require("../testUtils").mockFormState,
 }));
-
-interface RenderModalOptions {
-  onClose?: jest.Mock;
-  onSuccess?: jest.Mock;
-}
-
-const clickExecuteButton = async (container: RenderResult): Promise<void> => {
-  const executeButton = container.getByText("common.execute");
-  fireEvent.click(executeButton);
-};
-
-const expectFetchCall = (expectedToken: string) => {
-  expect(global.fetch).toHaveBeenCalledWith(
-    expect.stringContaining("/api/erp/org.openbravo.client.kernel"),
-    expect.objectContaining({
-      method: "POST",
-      headers: expect.objectContaining({
-        Authorization: `Bearer ${expectedToken}`,
-        "X-CSRF-Token": "test-csrf-token",
-      }),
-    })
-  );
-};
 
 describe("ProcessDefinitionModal Execution Flows", () => {
   const mockClose = jest.fn();
@@ -210,8 +180,8 @@ describe("ProcessDefinitionModal Execution Flows", () => {
       />
     );
 
-    const executeButton = container.getByText("common.execute");
-    fireEvent.click(executeButton);
+    // Use await with clickExecuteButton
+    await clickExecuteButton(container);
 
     await waitFor(() => {
       // First call: execute
