@@ -27,9 +27,9 @@ describe("ProcessParameterMapper", () => {
     it("should map basic ProcessParameter to Field interface", () => {
       const field = ProcessParameterMapper.mapToField(mockParameter);
 
-      // hqlName and inputName now use parameter.name to match form data keys
-      expect(field.hqlName).toBe("Test Parameter");
-      expect(field.inputName).toBe("Test Parameter");
+      // hqlName and inputName now use parameter.dBColumnName preferred over name
+      expect(field.hqlName).toBe("test_column");
+      expect(field.inputName).toBe("test_column");
       // columnName still uses dBColumnName for database column reference
       expect(field.columnName).toBe("test_column");
       expect(field.id).toBe("test-id");

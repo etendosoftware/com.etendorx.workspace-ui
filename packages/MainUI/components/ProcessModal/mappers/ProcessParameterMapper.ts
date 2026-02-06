@@ -364,34 +364,36 @@ export class ProcessParameterMapper {
     const formData: Record<string, unknown> = {};
 
     try {
-      // Create parameter lookup for type information
-      const parameterMap = new Map<string, ProcessParameter>();
+      // Create parameter lookup for type information - index by both name and dBColumnName
+      const parameterLookup = new Map<string, ProcessParameter>();
       for (const param of parameters) {
-        parameterMap.set(param.name, param);
+        parameterLookup.set(param.name, param);
+        if (param.dBColumnName) {
+          parameterLookup.set(param.dBColumnName, param);
+        }
       }
 
       const processField = (
-        fieldName: string,
+        sourceFieldName: string,
         value: unknown,
-        parameterMap: Map<string, ProcessParameter>,
+        lookup: Map<string, ProcessParameter>,
         formData: Record<string, unknown>
       ) => {
-        if (fieldName.endsWith("_display_logic") || fieldName.endsWith("_readonly_logic")) {
+        if (sourceFieldName.endsWith("_display_logic") || sourceFieldName.endsWith("_readonly_logic")) {
           return;
         }
-        const parameter = parameterMap.get(fieldName);
+
+        const parameter = lookup.get(sourceFieldName);
+        // Use the same technical key as mapToField (dBColumnName || name)
+        const targetFieldName = parameter ? parameter.dBColumnName || parameter.name : sourceFieldName;
+
         try {
           const processDefaultValue = value as ProcessDefaultValue;
           if (isReferenceValue(processDefaultValue)) {
-            formData[fieldName] = processDefaultValue.value;
+            formData[targetFieldName] = processDefaultValue.value;
             if (processDefaultValue.identifier) {
-              formData[`${fieldName}$_identifier`] = processDefaultValue.identifier;
+              formData[`${targetFieldName}$_identifier`] = processDefaultValue.identifier;
             }
-            logger.debug(`Processed reference field ${fieldName}:`, {
-              value: processDefaultValue.value,
-              identifier: processDefaultValue.identifier,
-              parameterType: parameter?.reference,
-            });
             return;
           }
           if (isSimpleValue(processDefaultValue)) {
@@ -400,27 +402,21 @@ export class ProcessParameterMapper {
               parameter?.reference === "Yes/No" ||
               parameter?.reference === "Boolean"
             ) {
-              formData[fieldName] = value === "Y" || value === true;
+              formData[targetFieldName] = value === "Y" || value === true;
             } else {
-              formData[fieldName] = value;
+              formData[targetFieldName] = value;
             }
-            logger.debug(`Processed simple field ${fieldName}:`, {
-              value: value,
-              type: typeof value,
-              parameterType: parameter?.reference,
-            });
             return;
           }
-          logger.warn(`Unexpected value type for field ${fieldName}:`, value);
-          formData[fieldName] = String(value || "");
+          formData[targetFieldName] = String(value || "");
         } catch (fieldError) {
-          logger.error(`Error processing field ${fieldName}:`, fieldError);
-          formData[fieldName] = "";
+          logger.error(`Error processing field ${sourceFieldName}:`, fieldError);
+          formData[targetFieldName] = "";
         }
       };
 
       for (const [fieldName, value] of Object.entries(processDefaults.defaults)) {
-        processField(fieldName, value, parameterMap, formData);
+        processField(fieldName, value, parameterLookup, formData);
       }
 
       logger.debug("Processed form data:", {

@@ -91,6 +91,20 @@ jest.mock("@/hooks/datasource/useProcessDatasourceConfig", () => ({
   useProcessConfig: () => ({ fetchConfig: jest.fn(), loading: false, error: null, config: {} }),
 }));
 
+jest.mock("@/contexts/window", () => ({
+  useWindowContext: () => ({
+    triggerRecovery: jest.fn(),
+  }),
+}));
+
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+  }),
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 jest.mock("@/hooks/useProcessInitialization", () => ({
   useProcessInitialization: () => ({ processInitialization: {}, loading: false, error: null, refetch: jest.fn() }),
 }));
