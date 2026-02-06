@@ -247,7 +247,10 @@ export const parseDynamicExpression = (expr: string) => {
     .replace(/!=\s*false\b/g, "!= 'N'")
     .replace(/!=\s*true\b/g, "!= 'Y'");
 
-  return expr5;
+  // Stub OB.getFilterExpression calls as they require server-side execution
+  const expr6 = expr5.replace(/OB\.getFilterExpression\s*\([^)]*\)/g, "null");
+
+  return expr6;
 };
 
 export const buildQueryString = ({
