@@ -165,9 +165,15 @@ export function processDefaultValue(
       return null;
     }
 
-    // Find corresponding parameter
-    const parameter = parameterMap.get(fieldName);
-    const formFieldName = parameter?.name || fieldName;
+    // Simplified mapping: try to find parameter by field name
+    // Process parameter names in defaults often start with 'inp', so try matching without that prefix
+    let parameter = parameterMap.get(fieldName);
+    if (!parameter && fieldName.startsWith("inp")) {
+      const strippedName = fieldName.substring(3);
+      parameter = parameterMap.get(strippedName);
+    }
+
+    const formFieldName = parameter?.dBColumnName || parameter?.name || fieldName;
 
     if (isReferenceValue(value)) {
       return processReferenceValue(fieldName, formFieldName, value);

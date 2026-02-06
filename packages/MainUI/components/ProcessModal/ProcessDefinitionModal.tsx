@@ -35,6 +35,8 @@ import { useProcessInitializationState } from "@/hooks/useProcessInitialState";
 import { useSelected } from "@/hooks/useSelected";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserContext } from "@/hooks/useUserContext";
+import { useWindowContext } from "@/contexts/window";
+import { useRouter } from "next/navigation";
 import type { ExecuteProcessResult } from "@/app/actions/process";
 import { revalidateDopoProcess } from "@/app/actions/revalidate"; // Import revalidation action
 import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
@@ -60,6 +62,7 @@ import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
+import Collapsible from "../Form/Collapsible";
 import ProcessResultModal from "./ProcessResultModal";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import type { Tab, ProcessParameter, EntityData, Field } from "@workspaceui/api-client/src/api/types";
@@ -247,6 +250,32 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const [autoSelectConfig, setAutoSelectConfig] = useState<AutoSelectConfig | null>(null);
   const [autoSelectApplied, setAutoSelectApplied] = useState(false);
   const [availableButtons, setAvailableButtons] = useState<Array<{ value: string; label: string }>>([]);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+
+  const handleAccordionChange = useCallback((id: string, isOpen: boolean) => {
+    setExpandedSections((prev) => ({ ...prev, [id]: isOpen }));
+  }, []);
+
+  const { triggerRecovery } = useWindowContext();
+  const router = useRouter();
+
+  // Legacy support for OB.Utilities.openDirectTab in process messages
+  useEffect(() => {
+    const obGlobal = (window as any).OB || {};
+    obGlobal.Utilities = obGlobal.Utilities || {};
+    obGlobal.Utilities.openDirectTab = (windowId: string, tabId: string) => {
+      if (!windowId) return;
+      triggerRecovery();
+      const params = new URLSearchParams();
+      // For simplicity, we open it as the primary window
+      params.set("wi_0", windowId);
+      if (tabId) {
+        params.set("ti_0", tabId);
+      }
+      router.push(`/window?${params.toString()}`);
+    };
+    (window as any).OB = obGlobal;
+  }, [triggerRecovery, router]);
 
   // Register PayScript DSL if available in process definition
   useEffect(() => {
@@ -896,8 +925,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                   ...buttonParams,
                 },
               }),
-          _entityName: tab?.entityName || "",
+          _entityName: tab?.entityName || button.processInfo?._entityName || "",
+          entityName: tab?.entityName || button.processInfo?._entityName || "",
           windowId: tab?.window || "",
+          inpwindowId: tab?.window || "",
+          inpTabId: tab?.id || "",
+          adTabId: tab?.id || "",
+          ad_tab_id: tab?.id || "",
+          _processId: processId,
           ...buildProcessSpecificFields(processId),
           ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
         };
@@ -1001,6 +1036,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                   ...buttonParams,
                 },
               }),
+          _entityName: tab?.entityName || button.processInfo?._entityName || "",
+          entityName: tab?.entityName || button.processInfo?._entityName || "",
+          windowId: tab?.window || "",
+          inpwindowId: tab?.window || "",
+          inpTabId: tab?.id || "",
+          adTabId: tab?.id || "",
+          ad_tab_id: tab?.id || "",
+          _processId: processId,
+          ...buildProcessSpecificFields(processId),
+          ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
         };
 
         await executeJavaProcess(payload, "direct Java process");
@@ -1606,8 +1651,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                 <CheckIcon className="w-10 h-10 fill-green-600" data-testid="SuccessCheckIcon__761503" />
               </div>
               <h4 className="font-bold text-xl text-center text-green-800">{msgTitle}</h4>
-              {displayText && displayText !== msgTitle && (
-                <p className="text-sm text-center text-gray-700 whitespace-pre-line">{displayText}</p>
+              {msgText && msgText !== msgTitle && (
+                <div
+                  className="text-sm text-center text-gray-700 whitespace-pre-line"
+                  dangerouslySetInnerHTML={{ __html: msgText }}
+                />
               )}
             </div>
           </div>
@@ -1619,7 +1667,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     return (
       <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-etendo-main)">
         <h4 className="font-bold text-sm">{msgTitle}</h4>
-        <p className="text-sm whitespace-pre-line">{displayText}</p>
+        <div
+          className="text-sm whitespace-pre-line"
+          dangerouslySetInnerHTML={{ __html: msgText }}
+        />
       </div>
     );
   };
@@ -1648,9 +1699,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       .sort((a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0));
 
     const windowReferences: React.ReactElement[] = [];
-    const selectors: React.ReactElement[] = [];
+    const groupedSelectors: Record<string, { identifier: string; elements: React.ReactElement[] }> = {};
+    const ungroupedSelectors: React.ReactElement[] = [];
 
-    // Separate window references from selectors
+    // Separate window references and group selectors
     for (const parameter of parametersList) {
       if (parameter.reference === WINDOW_REFERENCE_ID) {
         const isDisplayed = evaluateWindowReferenceDisplay({
@@ -1693,7 +1745,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           />
         );
       } else {
-        selectors.push(
+        const selector = (
           <ProcessParameterSelector
             key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
             parameter={parameter}
@@ -1704,19 +1756,44 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             data-testid="ProcessParameterSelector__761503"
           />
         );
+
+        const groupName = (parameter as any).fieldGroup;
+        const groupIdentifier = (parameter as any).fieldGroup$_identifier;
+
+        if (groupName) {
+          if (!groupedSelectors[groupName]) {
+            groupedSelectors[groupName] = { identifier: groupIdentifier || groupName, elements: [] };
+          }
+          groupedSelectors[groupName].elements.push(selector);
+        } else {
+          ungroupedSelectors.push(selector);
+        }
       }
     }
 
     return (
-      <>
-        {/* Selectors in 3 column grid - matching FormView style */}
-        {selectors.length > 0 && (
-          <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2 mb-4">{selectors}</div>
+      <div className="flex flex-col gap-6">
+        {/* Ungrouped Selectors */}
+        {ungroupedSelectors.length > 0 && (
+          <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2">{ungroupedSelectors}</div>
         )}
 
-        {/* Window references full width with spacing between tables */}
-        {windowReferences.length > 0 && <div className="w-full flex flex-col gap-4">{windowReferences}</div>}
-      </>
+        {/* Grouped Selectors with Collapsible Sections */}
+        {Object.entries(groupedSelectors).map(([groupName, group]) => (
+          <Collapsible
+            key={groupName}
+            title={group.identifier}
+            sectionId={groupName}
+            isExpanded={expandedSections[groupName] ?? true} // Default to expanded
+            onToggle={(isOpen) => handleAccordionChange(groupName, isOpen)}
+            data-testid="Collapsible__761503">
+            <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2 pt-2">{group.elements}</div>
+          </Collapsible>
+        ))}
+
+        {/* Window references full width */}
+        {windowReferences.length > 0 && <div className="w-full flex flex-col gap-4 mt-4">{windowReferences}</div>}
+      </div>
     );
   };
 

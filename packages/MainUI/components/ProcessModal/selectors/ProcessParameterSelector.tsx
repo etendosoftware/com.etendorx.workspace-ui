@@ -58,19 +58,21 @@ export const ProcessParameterSelector = ({
 
   // Create smart context for expression evaluation using shared utility
   const evaluationContext = useMemo(() => {
-    return createProcessExpressionContext({
+    const ctx = createProcessExpressionContext({
       values,
       parameters,
       recordValues,
       parentFields,
       session,
     });
-  }, [parameters, values, recordValues, parentFields, session]);
+    return ctx;
+  }, [parameters, values, recordValues, parentFields, session, parameter.name, parameter.dBColumnName]);
 
   // Evaluate display logic expression (combine parameter logic with process defaults logic)
   const isDisplayed = useMemo(() => {
     // Check process defaults logic first (takes precedence)
-    const defaultsDisplayLogic = logicFields?.[`${parameter.name}.display`];
+    const defaultsDisplayLogic =
+      logicFields?.[`${parameter.name}.display`] ?? logicFields?.[`${parameter.dBColumnName}.display`];
     if (defaultsDisplayLogic !== undefined) {
       return defaultsDisplayLogic;
     }

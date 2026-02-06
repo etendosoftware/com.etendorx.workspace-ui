@@ -198,8 +198,6 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
  * // Returns: '(currentValues["#AD_Org_ID"] || context["#AD_Org_ID"])'
  */
 export const parseDynamicExpression = (expr: string) => {
-  // Transform @field_name@ syntax to valid JavaScript references
-  // Supports: @fieldName@, @#sessionVar@, @$contextVar@
   // Transform logical operators (SQL-like to JS)
   // Replace & with && (unless it's already &&)
   // Replace | with || (unless it's already ||)
@@ -207,8 +205,8 @@ export const parseDynamicExpression = (expr: string) => {
 
   // Transform @field_name@ syntax to valid JavaScript references
   // Supports: @fieldName@, @#sessionVar@, @$contextVar@
-  let expr0 = exprLogic.replace(/@([#$]?[a-zA-Z_]\w*)@/g, (_, fieldName) => {
-    return `(currentValues["${fieldName}"] || context["${fieldName}"])`;
+  let expr0 = exprLogic.replace(/@([^@]+)@/g, (_, fieldName) => {
+    return `(OB.Utilities.getValue(currentValues, "${fieldName}") ?? OB.Utilities.getValue(context, "${fieldName}"))`;
   });
 
   // Transform legacy Etendo/OB '!' comparison to '!=' (e.g., @Col@!'Y' -> ...!='Y')

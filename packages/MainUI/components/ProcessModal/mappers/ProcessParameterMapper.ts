@@ -23,11 +23,12 @@ export class ProcessParameterMapper {
     const mappedReference = ProcessParameterMapper.mapReferenceType(parameter.reference);
 
     return {
-      // Core identification properties - use parameter.name to match form data keys
-      hqlName: parameter.name,
-      inputName: parameter.name,
+      // Core identification properties - use dBColumnName for technical identification
+      hqlName: parameter.dBColumnName || parameter.name,
+      inputName: parameter.dBColumnName || parameter.name,
       columnName: parameter.dBColumnName || parameter.name,
       id: parameter.id,
+      // name is often used for the display label in UI components - keeping it as the translatable name
       name: parameter.name,
 
       // Form behavior properties
@@ -39,7 +40,9 @@ export class ProcessParameterMapper {
       isActive: true,
       gridDisplayLogic: parameter.gridDisplayLogic || "",
       isUpdatable: true,
-      sequenceNumber: 0,
+      sequenceNumber: Number(parameter.sequenceNumber) || 0,
+      fieldGroup: (parameter as any).fieldGroup || "",
+      fieldGroup$_identifier: (parameter as any).fieldGroup$_identifier || "",
 
       // Reference and type information
       column: {
@@ -69,8 +72,6 @@ export class ProcessParameterMapper {
       process: "",
       shownInStatusBar: false,
       tab: "",
-      fieldGroup$_identifier: "",
-      fieldGroup: "",
       module: "",
       refColumnName: "",
       targetEntity: "",
