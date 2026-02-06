@@ -964,11 +964,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         await executeJavaProcess(payload, "process");
       });
     },
-    [
-      processId,
-      executeJavaProcess,
-      buildExecutionPayload,
-    ]
+    [processId, executeJavaProcess, buildExecutionPayload]
   );
 
   /**
