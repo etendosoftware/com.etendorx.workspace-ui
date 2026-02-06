@@ -42,16 +42,19 @@ export const compileExpression = (expression: string) => {
   try {
     // Shim for legacy OpenBravo/Etendo functions used in expressions
     const obShim = `
+      const normalize = (val) => {
+        if (val === true) return 'Y';
+        if (val === false) return 'N';
+        return val;
+      };
       var OB = {
         Utilities: {
-          getValue: function(obj, prop) { return obj && obj[prop]; },
-          PropertyStore: function(ctx, prop) { return ctx && (ctx[prop] || ctx['$'+prop] || ctx['#'+prop]); }
+          getValue: (obj, prop) => normalize(obj?.[prop]),
         },
-        PropertyStore: function(ctx, prop) { return ctx && (ctx[prop] || ctx['$'+prop] || ctx['#'+prop]); },
-        getExpression: function() { return true; }, // Fallback for complex expressions
         PropertyStore: {
-            get: function(prop) { return context[prop] || context['$'+prop] || context['#'+prop]; }
-        }
+          get: (key) => normalize(context[key] ?? context['#' + key] ?? context['$' + key] ?? 'Y')
+        },
+        getExpression: function() { return true; }
       };
     `;
 

@@ -35,6 +35,8 @@ import { useProcessInitializationState } from "@/hooks/useProcessInitialState";
 import { useSelected } from "@/hooks/useSelected";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserContext } from "@/hooks/useUserContext";
+import { useWindowContext } from "@/contexts/window";
+import { useRouter } from "next/navigation";
 import type { ExecuteProcessResult } from "@/app/actions/process";
 import { revalidateDopoProcess } from "@/app/actions/revalidate"; // Import revalidation action
 import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
@@ -60,6 +62,7 @@ import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
+import Collapsible from "../Form/Collapsible";
 import ProcessResultModal from "./ProcessResultModal";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import type { Tab, ProcessParameter, EntityData, Field } from "@workspaceui/api-client/src/api/types";
@@ -247,6 +250,42 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const [autoSelectConfig, setAutoSelectConfig] = useState<AutoSelectConfig | null>(null);
   const [autoSelectApplied, setAutoSelectApplied] = useState(false);
   const [availableButtons, setAvailableButtons] = useState<Array<{ value: string; label: string }>>([]);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+
+  const handleAccordionChange = useCallback((id: string, isOpen: boolean) => {
+    setExpandedSections((prev) => ({ ...prev, [id]: isOpen }));
+  }, []);
+
+  const { triggerRecovery } = useWindowContext();
+  const router = useRouter();
+
+  // Legacy support for OB.Utilities.openDirectTab in process messages
+  useEffect(() => {
+    const obGlobal = (window as any).OB || {};
+    obGlobal.Utilities = obGlobal.Utilities || {};
+    const originalOpenDirectTab = obGlobal.Utilities.openDirectTab;
+
+    obGlobal.Utilities.openDirectTab = (windowId: string, tabId: string) => {
+      if (!windowId) return;
+      triggerRecovery();
+      const params = new URLSearchParams();
+      // For simplicity, we open it as the primary window
+      params.set("wi_0", windowId);
+      if (tabId) {
+        params.set("ti_0", tabId);
+      }
+      router.push(`/window?${params.toString()}`);
+    };
+    (window as any).OB = obGlobal;
+
+    return () => {
+      if (originalOpenDirectTab) {
+        obGlobal.Utilities.openDirectTab = originalOpenDirectTab;
+      } else {
+        delete obGlobal.Utilities.openDirectTab;
+      }
+    };
+  }, [triggerRecovery, router]);
 
   // Register PayScript DSL if available in process definition
   useEffect(() => {
@@ -827,10 +866,79 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   }, [gridSelection]);
 
   /**
-   * Executes processes with window reference parameters
-   * Used for processes that require grid record selection
-   * Calls servlet with selected grid records and process-specific data
+   * Builds the execution payload for Java-based processes
    */
+  const buildExecutionPayload = useCallback(
+    (actionValue?: string, customRecordIds?: string[], customParams?: Record<string, unknown>) => {
+      const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+      const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
+
+      const populatedGrids = getPopulatedGrids();
+      const formValues = form.getValues();
+
+      // Fix: DocAction - copy user selection from parameter.name to dBColumnName
+      const docActionParam = Object.values(parameters).find(
+        (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
+      );
+      if (docActionParam) {
+        const userSelection = formValues[docActionParam.name];
+        if (userSelection) {
+          formValues.DocAction = userSelection;
+        }
+      }
+
+      const combinedValues = {
+        ...recordValues,
+        ...formValues,
+        ...populatedGrids,
+        ...customParams,
+      };
+
+      const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+      const skipParamsLevel = processDefConfig?.skipParamsLevel;
+
+      const payload: Record<string, unknown> = {
+        recordIds: customRecordIds || (record?.id ? [record.id] : []),
+        _buttonValue: actionValue || "DONE",
+        ...(skipParamsLevel
+          ? {
+              ...mapKeysWithDefaults(combinedValues),
+              ...buttonParams,
+            }
+          : {
+              _params: {
+                ...mapKeysWithDefaults(combinedValues),
+                ...buttonParams,
+              },
+            }),
+        _entityName: tab?.entityName || button.processInfo?._entityName || "",
+        entityName: tab?.entityName || button.processInfo?._entityName || "",
+        windowId: tab?.window || "",
+        inpwindowId: tab?.window || "",
+        inpTabId: tab?.id || "",
+        adTabId: tab?.id || "",
+        ad_tab_id: tab?.id || "",
+        _processId: processId,
+        ...buildProcessSpecificFields(processId),
+        ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
+      };
+
+      return payload;
+    },
+    [
+      parameters,
+      getPopulatedGrids,
+      form,
+      recordValues,
+      processId,
+      record,
+      tab,
+      button.processInfo?._entityName,
+      buildProcessSpecificFields,
+      buildWindowSpecificFields,
+    ]
+  );
+
   const handleWindowReferenceExecute = useCallback(
     async (actionValue?: string) => {
       // Allow execution without tab context when opened from sidebar
@@ -838,104 +946,25 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         return;
       }
       startTransition(async () => {
-        const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
-        const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
+        const payload = buildExecutionPayload(actionValue);
 
-        // Only include grids that have data
-        const populatedGrids = getPopulatedGrids();
-
-        logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Before building payload:", {
-          formValuesKeys: Object.keys(form.getValues()),
-          populatedGridsKeys: Object.keys(populatedGrids),
-        });
-
-        logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Record Context:", {
-          recordId: record?.id,
-          recordValuesKeys: recordValues ? Object.keys(recordValues) : "null",
-          tabId: tab?.id,
-          processId,
-        });
-
-        const formValues = form.getValues();
-
-        // Fix: DocAction - copy user selection from parameter.name to dBColumnName
-        const docActionParam = Object.values(parameters).find(
-          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
-        );
-        if (docActionParam) {
-          const userSelection = formValues[docActionParam.name];
-          if (userSelection) {
-            formValues.DocAction = userSelection;
-          }
-        }
-
-        const mappedValues = mapKeysWithDefaults({ ...formValues, ...populatedGrids });
-
-        logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - After mapKeysWithDefaults:", {
-          mappedValuesKeys: Object.keys(mappedValues),
-          hasGridsInMapped: Object.keys(mappedValues).some(
-            (k) => k === "order_invoice" || k === "credit_to_use" || k === "glitem"
-          ),
-        });
-
-        // Build base payload
         const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
         const skipParamsLevel = processDefConfig?.skipParamsLevel;
-
-        const payload: Record<string, unknown> = {
-          recordIds: record?.id ? [record.id] : [],
-          _buttonValue: actionValue || "DONE",
-          ...(skipParamsLevel
-            ? {
-                ...mappedValues,
-                ...buttonParams,
-              }
-            : {
-                _params: {
-                  ...mappedValues,
-                  ...buttonParams,
-                },
-              }),
-          _entityName: tab?.entityName || "",
-          windowId: tab?.window || "",
-          ...buildProcessSpecificFields(processId),
-          ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
-        };
-
         const params = (skipParamsLevel ? payload : payload._params) as Record<string, unknown>;
+
         logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Final payload:", {
           payloadKeys: Object.keys(payload),
           paramsKeys: Object.keys(params),
           gridsInParams: Object.keys(params).filter(
             (k) => k === "order_invoice" || k === "credit_to_use" || k === "glitem"
           ),
-          orderInvoiceStructure: params.order_invoice
-            ? {
-                hasSelection: !!(params.order_invoice as any)._selection,
-                selectionLength: ((params.order_invoice as any)._selection || []).length,
-                hasAllRows: !!(params.order_invoice as any)._allRows,
-                allRowsLength: ((params.order_invoice as any)._allRows || []).length,
-                fullStructure: JSON.stringify(params.order_invoice).substring(0, 300),
-              }
-            : "NOT PRESENT",
           payloadSample: JSON.stringify(payload).substring(0, 500),
         });
 
         await executeJavaProcess(payload, "process");
       });
     },
-    [
-      tab,
-      processId,
-      parameters,
-      record,
-      buildProcessSpecificFields,
-      buildWindowSpecificFields,
-      executeJavaProcess,
-      getMappedFormValues,
-      initialState,
-      getPopulatedGrids,
-    ]
+    [processId, executeJavaProcess, buildExecutionPayload]
   );
 
   /**
@@ -954,14 +983,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       const extraKey = windowConfig ? { [windowConfig.key]: windowConfig.value(record) } : {};
 
       startTransition(async () => {
-        const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
-        const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
-
-        // Only include grids that have data
-        const populatedGrids = getPopulatedGrids();
-
         // Determine record IDs to send
-        // Prioritize explicit selection, fall back to current record contex
+        // Prioritize explicit selection, fall back to current record context
         let recordIds: string[] = [];
         if (selectedRecords && selectedRecords.length > 0) {
           recordIds = selectedRecords.map((r) => String(r.id));
@@ -969,39 +992,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           recordIds = [String(record.id)];
         }
 
-        const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
-        const skipParamsLevel = processDefConfig?.skipParamsLevel;
-
-        const formValues = form.getValues();
-
-        // Fix: DocAction - copy user selection from parameter.name to dBColumnName
-        const docActionParam = Object.values(parameters).find(
-          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
-        );
-        if (docActionParam) {
-          const userSelection = formValues[docActionParam.name];
-          if (userSelection) {
-            formValues.DocAction = userSelection;
-          }
-        }
-
-        const combinedValues = { ...recordValues, ...formValues, ...extraKey, ...populatedGrids };
-
-        const payload = {
-          recordIds,
-          _buttonValue: actionValue || "DONE",
-          ...(skipParamsLevel
-            ? {
-                ...mapKeysWithDefaults(combinedValues),
-                ...buttonParams,
-              }
-            : {
-                _params: {
-                  ...mapKeysWithDefaults(combinedValues),
-                  ...buttonParams,
-                },
-              }),
-        };
+        const payload = buildExecutionPayload(actionValue, recordIds, extraKey);
 
         await executeJavaProcess(payload, "direct Java process");
       });
@@ -1015,9 +1006,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       recordValues,
       parameters,
       executeJavaProcess,
-      getMappedFormValues,
-      initialState,
-      getPopulatedGrids,
+      buildExecutionPayload,
     ]
   );
 
@@ -1606,8 +1595,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                 <CheckIcon className="w-10 h-10 fill-green-600" data-testid="SuccessCheckIcon__761503" />
               </div>
               <h4 className="font-bold text-xl text-center text-green-800">{msgTitle}</h4>
-              {displayText && displayText !== msgTitle && (
-                <p className="text-sm text-center text-gray-700 whitespace-pre-line">{displayText}</p>
+              {msgText && msgText !== msgTitle && (
+                <div
+                  className="text-sm text-center text-gray-700 whitespace-pre-line"
+                  dangerouslySetInnerHTML={{ __html: msgText }}
+                />
               )}
             </div>
           </div>
@@ -1619,7 +1611,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     return (
       <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-etendo-main)">
         <h4 className="font-bold text-sm">{msgTitle}</h4>
-        <p className="text-sm whitespace-pre-line">{displayText}</p>
+        <div className="text-sm whitespace-pre-line" dangerouslySetInnerHTML={{ __html: msgText }} />
       </div>
     );
   };
@@ -1648,9 +1640,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       .sort((a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0));
 
     const windowReferences: React.ReactElement[] = [];
-    const selectors: React.ReactElement[] = [];
+    const groupedSelectors: Record<string, { identifier: string; elements: React.ReactElement[] }> = {};
+    const ungroupedSelectors: React.ReactElement[] = [];
 
-    // Separate window references from selectors
+    // Separate window references and group selectors
     for (const parameter of parametersList) {
       if (parameter.reference === WINDOW_REFERENCE_ID) {
         const isDisplayed = evaluateWindowReferenceDisplay({
@@ -1693,7 +1686,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           />
         );
       } else {
-        selectors.push(
+        const selector = (
           <ProcessParameterSelector
             key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
             parameter={parameter}
@@ -1704,19 +1697,44 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             data-testid="ProcessParameterSelector__761503"
           />
         );
+
+        const groupName = (parameter as any).fieldGroup;
+        const groupIdentifier = (parameter as any).fieldGroup$_identifier;
+
+        if (groupName) {
+          if (!groupedSelectors[groupName]) {
+            groupedSelectors[groupName] = { identifier: groupIdentifier || groupName, elements: [] };
+          }
+          groupedSelectors[groupName].elements.push(selector);
+        } else {
+          ungroupedSelectors.push(selector);
+        }
       }
     }
 
     return (
-      <>
-        {/* Selectors in 3 column grid - matching FormView style */}
-        {selectors.length > 0 && (
-          <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2 mb-4">{selectors}</div>
+      <div className="flex flex-col gap-6">
+        {/* Ungrouped Selectors */}
+        {ungroupedSelectors.length > 0 && (
+          <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2">{ungroupedSelectors}</div>
         )}
 
-        {/* Window references full width with spacing between tables */}
-        {windowReferences.length > 0 && <div className="w-full flex flex-col gap-4">{windowReferences}</div>}
-      </>
+        {/* Grouped Selectors with Collapsible Sections */}
+        {Object.entries(groupedSelectors).map(([groupName, group]) => (
+          <Collapsible
+            key={groupName}
+            title={group.identifier}
+            sectionId={groupName}
+            isExpanded={expandedSections[groupName] ?? true} // Default to expanded
+            onToggle={(isOpen) => handleAccordionChange(groupName, isOpen)}
+            data-testid="Collapsible__761503">
+            <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2 pt-2">{group.elements}</div>
+          </Collapsible>
+        ))}
+
+        {/* Window references full width */}
+        {windowReferences.length > 0 && <div className="w-full flex flex-col gap-4 mt-4">{windowReferences}</div>}
+      </div>
     );
   };
 
