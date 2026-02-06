@@ -1,30 +1,18 @@
 import { render, fireEvent, waitFor, type RenderResult } from "@testing-library/react";
 import ProcessDefinitionModal from "../ProcessDefinitionModal";
-import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import React from "react";
+// Keep imports for things used in the test body
+import { mockExecuteStringFunctionResponse, mockFetchResponseOk, mockUserContextData } from "./mockHelpers";
 
-// Mock executeStringFunction to return proper response structure
-const mockExecuteStringFunction = jest.fn().mockResolvedValue({
-  responseActions: [
-    {
-      showMsgInProcessView: {
-        msgType: "success",
-        msgText: "Process executed successfully",
-      },
-    },
-  ],
-});
+// Mock executeStringFunction
+const mockExecuteStringFunction = jest.fn().mockResolvedValue(mockExecuteStringFunctionResponse);
 
 jest.mock("@/utils/functions", () => ({
   executeStringFunction: (...args: unknown[]) => mockExecuteStringFunction(...args),
 }));
 
 // Mock global fetch
-global.fetch = jest.fn().mockResolvedValue({
-  ok: true,
-  json: () => Promise.resolve({ success: true, response: { status: 0, data: [], responseActions: [] } }),
-  text: () => Promise.resolve(""),
-} as Response);
+global.fetch = jest.fn().mockResolvedValue(mockFetchResponseOk);
 
 jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
   Metadata: {
@@ -35,46 +23,27 @@ jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
   },
 }));
 
-// Mock the server action (not used in this path anymore but kept for safety)
+// Mock server actions
 jest.mock("@/app/actions/process", () => ({
   executeProcess: jest.fn(),
 }));
 
-// Mock the revalidate server action (next/cache is not available in Jest)
 jest.mock("@/app/actions/revalidate", () => ({
   revalidateDopoProcess: jest.fn().mockResolvedValue({ success: true }),
 }));
 
-// Mock the user context to provide a token
-const mockUseUserContext = jest.fn(() => ({
-  token: "test-auth-token-123",
-  session: { userId: "test-user" },
-  getCsrfToken: () => "test-csrf-token",
-}));
-
+// Mock user context
 jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: () => mockUseUserContext(),
+  useUserContext: () => require("./mockHelpers").mockUserContextData,
 }));
 
-// Mock other dependencies
+// Mock other hooks
 jest.mock("@/contexts/tab", () => ({
-  useTabContext: () => ({
-    tab: {
-      id: "test-tab",
-      window: "test-window",
-      entityName: "TestEntity",
-      fields: [],
-    },
-    record: { id: "test-record" },
-  }),
+  useTabContext: () => require("./mockHelpers").mockTabContextData,
 }));
 
 jest.mock("@/hooks/useSelected", () => ({
-  useSelected: () => ({
-    graph: {
-      getSelectedMultiple: jest.fn(() => []),
-    },
-  }),
+  useSelected: () => require("./mockHelpers").mockSelectedData,
 }));
 
 jest.mock("@/hooks/useTranslation", () => ({
@@ -82,107 +51,68 @@ jest.mock("@/hooks/useTranslation", () => ({
 }));
 
 jest.mock("@/hooks/useProcessInitialization", () => ({
-  useProcessInitialization: () => ({
-    initializeProcess: jest.fn(),
-    loading: false,
-    availableFormData: {},
-    recordValues: {},
-  }),
+  useProcessInitialization: () => require("./mockHelpers").mockProcessInitializationData,
 }));
 
 jest.mock("@/hooks/useProcessInitialState", () => ({
-  useProcessInitializationState: () => ({
-    initialState: {},
-    logicFields: {},
-    filterExpressions: {},
-    refreshParent: false,
-    hasData: false,
-  }),
+  useProcessInitializationState: () => require("./mockHelpers").mockProcessInitialStateData,
 }));
 
 jest.mock("@/hooks/datasource/useProcessDatasourceConfig", () => ({
-  useProcessConfig: () => ({ fetchConfig: jest.fn(), loading: false, error: null, config: {} }),
+  useProcessConfig: () => require("./mockHelpers").mockProcessConfigData,
 }));
 
-jest.mock("@/utils/processes/definition/constants", () => ({
-  PROCESS_DEFINITION_DATA: {
-    TEST_PROCESS_ID: {
-      inpPrimaryKeyColumnId: "testPrimaryKey",
-      inpColumnId: "testColumn",
-      additionalPayloadFields: [],
-    },
-  },
-  WINDOW_SPECIFIC_KEYS: {},
-  PROCESS_TYPES: {
-    PROCESS_DEFINITION: "process-definition",
-    REPORT_AND_PROCESS: "report-and-process",
-  },
-  BUTTON_LIST_REFERENCE_ID: "FF80818132F94B500132F9575619000A",
-}));
+jest.mock("@/utils/processes/definition/constants", () => require("./mockHelpers").mockProcessDefinitionConstants);
 
-// Mock useProcessCallouts hook
 jest.mock("@/components/ProcessModal/callouts/useProcessCallouts", () => ({
   useProcessCallouts: jest.fn(),
 }));
 
+// Mock Components
 jest.mock("@/components/ProcessModal/selectors/ProcessParameterSelector", () => ({
   __esModule: true,
-  default: () => <div data-testid="param-selector">param</div>,
+  default: () => {
+    const { MockParamSelector } = require("./mockHelpers");
+    return <MockParamSelector />;
+  },
 }));
 
 jest.mock("@/components/ProcessModal/WindowReferenceGrid", () => ({
   __esModule: true,
-  default: () => <div data-testid="window-grid">grid</div>,
+  default: () => {
+    const { MockWindowGrid } = require("./mockHelpers");
+    return <MockWindowGrid />;
+  },
 }));
 
 jest.mock("@/components/Modal", () => ({
   __esModule: true,
-  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  default: ({ children }: any) => {
+    const { MockModal } = require("./mockHelpers");
+    return <MockModal>{children}</MockModal>;
+  },
 }));
 
 jest.mock("@/components/loading", () => ({
   __esModule: true,
-  default: () => <div data-testid="loading">loading</div>,
+  default: () => {
+    const { MockLoading } = require("./mockHelpers");
+    return <MockLoading />;
+  },
 }));
 
 jest.mock("@workspaceui/componentlibrary/src/components/Button/Button", () => ({
   __esModule: true,
-  default: ({
-    children,
-    onClick,
-    disabled,
-    startIcon,
-    className,
-    ...props
-  }: {
-    children?: React.ReactNode;
-    onClick?: () => void;
-    disabled?: boolean;
-    startIcon?: React.ReactNode;
-    className?: string;
-  }) => (
-    <button onClick={onClick} disabled={disabled} className={className} {...props}>
-      {startIcon}
-      {children}
-    </button>
-  ),
+  default: (props: any) => {
+    const { MockButton } = require("./mockHelpers");
+    return <MockButton {...props} />;
+  },
 }));
 
 jest.mock("react-hook-form", () => ({
   FormProvider: ({ children }: { children: React.ReactNode }) => children,
-  useForm: () => ({
-    getValues: () => ({}),
-    setValue: jest.fn(),
-    watch: () => ({}),
-    control: {},
-    reset: jest.fn(),
-  }),
-  useFormState: (_: { control?: unknown } = {}) => ({ isValid: true, isSubmitting: false }),
-}));
-
-// Mock Revalidate
-jest.mock("@/app/actions/revalidate", () => ({
-  revalidateDopoProcess: jest.fn().mockResolvedValue(true),
+  useForm: () => require("./mockHelpers").mockFormData,
+  useFormState: () => require("./mockHelpers").mockFormState,
 }));
 
 interface RenderModalOptions {
@@ -270,9 +200,6 @@ describe("ProcessDefinitionModal Execution Flows", () => {
     };
 
     // Need to pass type prop which comes from ProcessDefinitionModalProps
-    // The ProcessDefinitionModal passes props to Content.
-    // However, `type` is not in the button structure usually, it's a separate prop
-    // Let's modify renderModal to accept props
     const container = render(
       <ProcessDefinitionModal
         button={reportButton}
