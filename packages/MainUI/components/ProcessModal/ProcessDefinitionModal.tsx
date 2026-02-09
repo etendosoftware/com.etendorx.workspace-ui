@@ -1596,22 +1596,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
               </div>
               <h4 className="font-bold text-xl text-center text-green-800">{msgTitle}</h4>
               {msgText && msgText !== msgTitle && (
-                <div
-                  className="text-sm text-center text-gray-700 whitespace-pre-line"
-                  dangerouslySetInnerHTML={{ __html: msgText }}
-                />
+                <div className="text-sm text-center text-gray-700 whitespace-pre-line">{displayText}</div>
               )}
             </div>
           </div>
         </div>
       );
     }
-
     // Error message - keep the simple style
     return (
       <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-etendo-main)">
         <h4 className="font-bold text-sm">{msgTitle}</h4>
-        <div className="text-sm whitespace-pre-line" dangerouslySetInnerHTML={{ __html: msgText }} />
+        <div className="text-sm whitespace-pre-line">{displayText}</div>
       </div>
     );
   };
