@@ -50,12 +50,48 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
     this.activeLevels = [];
 
     tabs.forEach(this.addNode);
-    for (const tab of tabs) {
+    this.buildGraph(tabs);
+  }
+
+  private buildGraph = (tabs: T[]) => {
+    // Sort tabs by sequence
+    const sortedTabs = [...tabs].sort((a, b) => {
+      if (a.tabLevel !== b.tabLevel) {
+        return a.tabLevel - b.tabLevel;
+      }
+      return ((a as any).sequenceNumber || 0) - ((b as any).sequenceNumber || 0);
+    });
+
+    const lastTabAtLevel = new Map<number, string>();
+
+    for (const tab of sortedTabs) {
+      lastTabAtLevel.set(tab.tabLevel, tab.id);
+
       if (tab.parentTabId) {
         this.addEdge(tab.parentTabId, tab.id);
+      } else if (tab.tabLevel > 0) {
+        this.inferParent(tab, lastTabAtLevel);
       }
     }
-  }
+  };
+
+  private inferParent = (tab: T, lastTabAtLevel: Map<number, string>) => {
+    let bestParentLevel = -1;
+    // Search backwards for the closest parent level
+    for (let l = tab.tabLevel - 1; l >= 0; l--) {
+      if (lastTabAtLevel.has(l)) {
+        bestParentLevel = l;
+        break;
+      }
+    }
+
+    if (bestParentLevel !== -1) {
+      const parentId = lastTabAtLevel.get(bestParentLevel);
+      if (parentId) {
+        this.addEdge(parentId, tab.id);
+      }
+    }
+  };
 
   private addNode = (value: T) => {
     if (!this.nodes.has(value.id)) {

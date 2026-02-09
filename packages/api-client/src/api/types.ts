@@ -71,6 +71,7 @@ export interface DatasourceOptions {
   language?: string;
   parentId?: string | number;
   referencedTableId?: string;
+  [key: string]: unknown;
 }
 
 export interface ProcessAction extends Record<string, unknown> {
