@@ -95,16 +95,35 @@ export const mapUpdatesToFormFields = (
     }
 
     if (formFieldName) {
-      formUpdates[formFieldName] = value;
-      // ALSO keep the original key (dbColumnName) if it's different
-      // This is CRITICAL for Display Logic expressions that might reference the DB name
-      if (formFieldName !== key) {
-        formUpdates[key] = value;
+      if (value && typeof value === "object" && "id" in value && "identifier" in value) {
+        // Handle object values { id, identifier }
+        const objVal = value as { id: unknown; identifier: unknown };
+        formUpdates[formFieldName] = objVal.id;
+        formUpdates[`${formFieldName}$_identifier`] = objVal.identifier;
+
+        // Also keep original key for DB name reference if needed
+        if (formFieldName !== key) {
+          formUpdates[key] = objVal.id;
+          formUpdates[`${key}$_identifier`] = objVal.identifier;
+        }
+      } else {
+        formUpdates[formFieldName] = value;
+        // ALSO keep the original key (dbColumnName) if it's different
+        // This is CRITICAL for Display Logic expressions that might reference the DB name
+        if (formFieldName !== key) {
+          formUpdates[key] = value;
+        }
       }
     } else {
       // If no mapping found, pass it through
       // This might be an internal field or already correct
-      formUpdates[key] = value;
+      if (value && typeof value === "object" && "id" in value && "identifier" in value) {
+        const objVal = value as { id: unknown; identifier: unknown };
+        formUpdates[key] = objVal.id;
+        formUpdates[`${key}$_identifier`] = objVal.identifier;
+      } else {
+        formUpdates[key] = value;
+      }
     }
   }
 
