@@ -1620,11 +1620,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     return parameter.window.tabs[0] as Tab;
   }, []);
 
-  const renderParameters = () => {
-    if (result?.success) return null;
-
-    // Filter and sort parameters
-    const parametersList = Object.values(parameters)
+  const parametersList = useMemo(() => {
+    return Object.values(parameters)
       .filter((p) => {
         // @ts-ignore
         if (p.active === false) return false;
@@ -1634,12 +1631,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         return true;
       })
       .sort((a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0));
+  }, [parameters, isBulkCompletion]);
 
+  const renderedParametersData = useMemo(() => {
     const windowReferences: React.ReactElement[] = [];
     const groupedSelectors: Record<string, { identifier: string; elements: React.ReactElement[] }> = {};
     const ungroupedSelectors: React.ReactElement[] = [];
 
-    // Separate window references and group selectors
     for (const parameter of parametersList) {
       if (parameter.reference === WINDOW_REFERENCE_ID) {
         const isDisplayed = evaluateWindowReferenceDisplay({
@@ -1707,6 +1705,31 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         }
       }
     }
+
+    return { windowReferences, groupedSelectors, ungroupedSelectors };
+  }, [
+    parametersList,
+    logicFields,
+    formValues,
+    availableFormData,
+    parameters,
+    session,
+    recordValues,
+    tab?.fields,
+    getTabForParameter,
+    setGridSelection,
+    gridSelection,
+    windowReferenceTab,
+    processConfig,
+    processInitialization?.defaults,
+    processConfigLoading,
+    processConfigError,
+  ]);
+
+  const renderParameters = () => {
+    if (result?.success) return null;
+
+    const { windowReferences, groupedSelectors, ungroupedSelectors } = renderedParametersData;
 
     return (
       <div className="flex flex-col gap-6">
