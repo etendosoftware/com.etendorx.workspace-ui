@@ -46,4 +46,4 @@ export type TabSwitchProps = {
   canClose?: boolean;
 };
 
-export type TabLevelProps = { tab: Tab; collapsed?: boolean };
+export type TabLevelProps = { tab: Tab; collapsed?: boolean; windowIdentifier: string };
