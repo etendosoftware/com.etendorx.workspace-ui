@@ -23,6 +23,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import { globalCalloutManager } from "@/services/callouts";
 import { buildPayloadByInputName, parseDynamicExpression } from "@/utils";
 import { logger } from "@/utils/logger";
+import { createSmartContext } from "@/utils/expressions";
 import { isDebugCallouts } from "@/utils/debug";
 import { type Field, type FormInitializationResponse, FormMode } from "@workspaceui/api-client/src/api/types";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
@@ -39,7 +40,38 @@ import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.
 
 export const compileExpression = (expression: string) => {
   try {
-    return new Function("context", "currentValues", `return ${parseDynamicExpression(expression)};`);
+    // Shim for legacy OpenBravo/Etendo functions used in expressions
+    const obShim = `
+      var OB = {
+        Utilities: {
+          getValue: function(obj, prop) { return obj && obj[prop]; },
+          PropertyStore: function(ctx, prop) { return ctx && (ctx[prop] || ctx['$'+prop] || ctx['#'+prop]); }
+        },
+        PropertyStore: function(ctx, prop) { return ctx && (ctx[prop] || ctx['$'+prop] || ctx['#'+prop]); },
+        getExpression: function() { return true; }, // Fallback for complex expressions
+        PropertyStore: {
+            get: function(prop) { return context[prop] || context['$'+prop] || context['#'+prop]; }
+        }
+      };
+    `;
+
+    // Security: Shadow global objects to prevent access from within the expression
+    // This provides depth-in-defense for the trusted metadata model
+    const securityShim = `
+      var window = undefined;
+      var document = undefined;
+      var fetch = undefined;
+      var XMLHttpRequest = undefined;
+      var alert = undefined;
+    `;
+
+    // NOSONAR: This dynamic execution is required to evaluate business logic defined in the Application Dictionary.
+    // The Input 'expression' comes from the system metadata (trusted source) and is not user-supplied.
+    return new Function(
+      "context",
+      "currentValues",
+      `${securityShim} ${obShim} return ${parseDynamicExpression(expression)};`
+    );
   } catch (error) {
     logger.error("Error compiling expression:", expression, error);
     return () => true;
@@ -56,7 +88,7 @@ const BaseSelectorComp = ({
   const formMethods = useFormContext();
   const { watch, getValues, setValue, register, formState } = formMethods;
   const { isFormInitializing, isSettingInitialValues, setIsSettingInitialValues } = useFormInitializationContext();
-  const { tab } = useTabContext();
+  const { tab, record, parentRecord, parentTab } = useTabContext();
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
   const { recordId } = useParams<{ recordId: string }>();
   const { session } = useUserContext();
@@ -94,12 +126,19 @@ const BaseSelectorComp = ({
     const compiledExpr = compileExpression(field.readOnlyLogicExpression);
 
     try {
-      return compiledExpr(session, values);
+      const smartContext = createSmartContext({
+        values: { ...record, ...values },
+        fields: tab.fields,
+        parentValues: parentRecord || undefined,
+        parentFields: parentTab?.fields,
+        context: session,
+      });
+      return compiledExpr(smartContext, smartContext);
     } catch (error) {
       logger.warn("Error executing expression:", compiledExpr, error);
       return true;
     }
-  }, [field, formMode, session, values, forceReadOnly]);
+  }, [field, formMode, session, values, forceReadOnly, record, parentRecord, parentTab, tab]);
 
   const applyColumnValues = useCallback(
     (columnValues: FormInitializationResponse["columnValues"]) => {

@@ -42,6 +42,16 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useUserContext } from "@/hooks/useUserContext";
 import { AddAttachmentModal } from "./AddAttachmentModal";
 
+const TYPOGRAPHY_TEST_ID = "Typography__ce37c8";
+const TRASH_ICON_TEST_ID = "TrashIcon__ce37c8";
+const DOWNLOAD_ICON_TEST_ID = "DownloadIcon__ce37c8";
+const UPLOAD_ICON_TEST_ID = "UploadIcon__ce37c8";
+const FILE_PLUS_ICON_TEST_ID = "FilePlusIcon__ce37c8";
+const CHECK_ICON_TEST_ID = "CheckIcon__ce37c8";
+const EDIT_ICON_TEST_ID = "EditIcon__ce37c8";
+const X_ICON_TEST_ID = "XIcon__ce37c8";
+const ATTACHMENT_ICON_TEST_ID = "AttachmentIcon__ce37c8";
+
 interface AttachmentSectionProps {
   recordId: string;
   tabId: string;
@@ -204,8 +214,9 @@ const AttachmentSection = ({
     }
   };
 
-  const handleAddAttachment = async () => {
-    if (!selectedFile) return;
+  const handleAddAttachment = async (fileOverride?: File) => {
+    const fileToUpload = fileOverride || selectedFile;
+    if (!fileToUpload) return;
 
     setIsLoading(true);
     try {
@@ -224,7 +235,7 @@ const AttachmentSection = ({
       } = {
         recordId,
         tabId,
-        file: selectedFile,
+        file: fileToUpload,
         inpDocumentOrg: orgId as string,
       };
 
@@ -406,7 +417,7 @@ const AttachmentSection = ({
                       disabled={isLoading}
                       className="p-1 h-6 w-6 m-0"
                       data-testid={`IconButton__delete_${attachment.id}`}>
-                      <TrashIcon width={14} height={14} data-testid="TrashIcon__ce37c8" />
+                      <TrashIcon width={14} height={14} data-testid={TRASH_ICON_TEST_ID} />
                     </IconButton>
                   </div>
                 </div>
@@ -422,7 +433,7 @@ const AttachmentSection = ({
                   width={14}
                   height={14}
                   fill={theme.palette.text.secondary}
-                  data-testid="DownloadIcon__ce37c8"
+                  data-testid={DOWNLOAD_ICON_TEST_ID}
                 />
                 <span className="text-sm font-medium text-gray-700">{t("forms.attachments.downloadAll")}</span>
               </button>
@@ -432,7 +443,7 @@ const AttachmentSection = ({
                 onClick={() => setShowDeleteAllConfirmation(true)}
                 className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 bg-white border border-red-200 hover:bg-red-50 transition-colors shadow-sm cursor-pointer min-w-fit whitespace-nowrap"
                 data-testid="Button__attachments_remove_all_chip">
-                <TrashIcon width={14} height={14} fill={theme.palette.error.main} data-testid="TrashIcon__ce37c8" />
+                <TrashIcon width={14} height={14} fill={theme.palette.error.main} data-testid={TRASH_ICON_TEST_ID} />
                 <span className="text-sm font-medium text-red-700">{t("forms.attachments.removeAll")}</span>
               </button>
             </div>
@@ -452,19 +463,19 @@ const AttachmentSection = ({
             data-testid="Div__attachments_dropzone">
             {/* Upload Icon top right */}
             <div className="absolute top-4 right-4 text-gray-400">
-              <UploadIcon width={20} height={20} fill="currentColor" data-testid="UploadIcon__ce37c8" />
+              <UploadIcon width={20} height={20} fill="currentColor" data-testid={UPLOAD_ICON_TEST_ID} />
             </div>
 
             {/* Center Content */}
             <div className="flex flex-col items-center gap-3 mt-6">
               <div className="p-3 bg-white rounded-full shadow-sm">
-                <FilePlusIcon width={32} height={32} fill="#6B7280" data-testid="FilePlusIcon__ce37c8" />
+                <FilePlusIcon width={32} height={32} fill="#6B7280" data-testid={FILE_PLUS_ICON_TEST_ID} />
               </div>
               <div className="text-center">
-                <Typography variant="body1" className="font-medium text-gray-700" data-testid="Typography__ce37c8">
+                <Typography variant="body1" className="font-medium text-gray-700" data-testid={TYPOGRAPHY_TEST_ID}>
                   {t("forms.attachments.dropZoneText")}
                 </Typography>
-                <Typography variant="caption" className="text-blue-500 mt-1 block" data-testid="Typography__ce37c8">
+                <Typography variant="caption" className="text-blue-500 mt-1 block" data-testid={TYPOGRAPHY_TEST_ID}>
                   {t("forms.attachments.maxSizeText")}
                 </Typography>
               </div>
@@ -486,7 +497,7 @@ const AttachmentSection = ({
         onUpload={async (file: File, description: string) => {
           setNewDescription(description);
           setSelectedFile(file);
-          await handleAddAttachment();
+          await handleAddAttachment(file);
         }}
         initialFile={selectedFile}
         isLoading={isLoading}
@@ -524,7 +535,7 @@ const AttachmentSection = ({
               {/* Preview Content */}
               <div className="flex justify-center bg-gray-100 rounded-lg overflow-hidden h-[350px] items-center border border-gray-200">
                 {isPreviewLoading && (
-                  <Typography className="text-gray-500" data-testid="Typography__ce37c8">
+                  <Typography className="text-gray-500" data-testid={TYPOGRAPHY_TEST_ID}>
                     {t("common.loading")}
                   </Typography>
                 )}
@@ -539,8 +550,8 @@ const AttachmentSection = ({
 
                 {!isPreviewLoading && !previewUrl && (
                   <div className="flex flex-col items-center p-8 text-gray-400">
-                    <AttachmentIcon width={48} height={48} fill="currentColor" data-testid="AttachmentIcon__ce37c8" />
-                    <Typography className="mt-2" data-testid="Typography__ce37c8">
+                    <AttachmentIcon width={48} height={48} fill="currentColor" data-testid={ATTACHMENT_ICON_TEST_ID} />
+                    <Typography className="mt-2" data-testid={TYPOGRAPHY_TEST_ID}>
                       Preview not available
                     </Typography>
                   </div>
@@ -557,7 +568,7 @@ const AttachmentSection = ({
                     }}
                     className="hover:bg-dynamic-main rounded-xl p-2"
                     data-testid="IconButton__preview_edit">
-                    <EditIcon width={16} height={16} data-testid="EditIcon__ce37c8" />
+                    <EditIcon width={16} height={16} data-testid={EDIT_ICON_TEST_ID} />
                   </IconButton>
                 )}
               </div>
@@ -612,8 +623,8 @@ const AttachmentSection = ({
                       disabled={isLoading}
                       className="flex-1 justify-center border border-gray-300 hover:border-transparent p-2 gap-2"
                       data-testid="IconButton__preview_save">
-                      <CheckIcon width={20} height={20} data-testid="CheckIcon__ce37c8" />
-                      <Typography variant="body1" data-testid="Typography__ce37c8">
+                      <CheckIcon width={20} height={20} data-testid={CHECK_ICON_TEST_ID} />
+                      <Typography variant="body1" data-testid={TYPOGRAPHY_TEST_ID}>
                         {t("common.save")}
                       </Typography>
                     </IconButton>
@@ -621,8 +632,8 @@ const AttachmentSection = ({
                       onClick={() => setIsEditingInPreview(false)}
                       className="flex-1 justify-center border border-gray-300 hover:border-transparent p-2 gap-2"
                       data-testid="IconButton__preview_cancel">
-                      <XIcon width={20} height={20} data-testid="XIcon__ce37c8" />
-                      <Typography variant="body1" className="ml-2" data-testid="Typography__ce37c8">
+                      <XIcon width={20} height={20} data-testid={X_ICON_TEST_ID} />
+                      <Typography variant="body1" className="ml-2" data-testid={TYPOGRAPHY_TEST_ID}>
                         {t("common.cancel")}
                       </Typography>
                     </IconButton>
@@ -640,8 +651,8 @@ const AttachmentSection = ({
                 disabled={isLoading}
                 className="flex-1 justify-center border border-gray-300 hover:border-transparent p-2 gap-2"
                 data-testid="IconButton__preview_download">
-                <DownloadIcon width={20} height={20} data-testid="DownloadIcon__ce37c8" />
-                <Typography variant="body1" className="ml-2" data-testid="Typography__ce37c8">
+                <DownloadIcon width={20} height={20} data-testid={DOWNLOAD_ICON_TEST_ID} />
+                <Typography variant="body1" className="ml-2" data-testid={TYPOGRAPHY_TEST_ID}>
                   {t("common.download")}
                 </Typography>
               </IconButton>
@@ -653,8 +664,8 @@ const AttachmentSection = ({
                 disabled={isLoading}
                 className="flex-1 justify-center border border-gray-300 hover:border-transparent p-2 gap-2"
                 data-testid="IconButton__preview_delete">
-                <TrashIcon width={20} height={20} data-testid="TrashIcon__ce37c8" />
-                <Typography variant="body1" className="ml-2" data-testid="Typography__ce37c8">
+                <TrashIcon width={20} height={20} data-testid={TRASH_ICON_TEST_ID} />
+                <Typography variant="body1" className="ml-2" data-testid={TYPOGRAPHY_TEST_ID}>
                   {t("common.delete")}
                 </Typography>
               </IconButton>

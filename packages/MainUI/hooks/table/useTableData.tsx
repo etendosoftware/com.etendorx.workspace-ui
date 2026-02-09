@@ -41,8 +41,9 @@ import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/colu
 import type { ExpandedState, Updater } from "@tanstack/react-table";
 import { isEmptyObject } from "@/utils/commons";
 import { mapSummariesToBackend, getSummaryCriteria } from "@/utils/table/utils";
-
 import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
+import { buildEtendoContext } from "@/utils/contextUtils";
+import { useSelected } from "../../hooks/useSelected";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -127,6 +128,7 @@ export const useTableData = ({
   const { activeWindow, getTabFormState, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink } =
     useWindowContext();
   const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
+  const { graph } = useSelected();
 
   const {
     tableColumnFilters,
@@ -392,7 +394,8 @@ export const useTableData = ({
   // Helper to find parent field name
   const getParentFieldName = useCallback(() => {
     if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
-      return "id";
+      console.log("No parent columns found");
+      return "_dummy";
     }
 
     if (!parentTab) {
@@ -423,7 +426,7 @@ export const useTableData = ({
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = getParentFieldName();
-    const value = parentId;
+    const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
     const operator = "equals";
 
     const options: DatasourceOptions = {
@@ -433,12 +436,22 @@ export const useTableData = ({
       pageSize: 100,
     };
 
+    // Add Etendo Classic Context Variables
+    const context = buildEtendoContext(tab, graph);
+    // Merge context into params (using casting if necessary as DatasourceOptions might be strict)
+    Object.assign(options, context);
+
     if (language) {
       options.language = language;
     }
 
     if (value && value !== "" && value !== undefined) {
       options.criteria = [{ fieldName, value, operator }];
+
+      // Add parent context parameter manually as some datasources rely on it (like Process Request)
+      if (parentTab?.entityName) {
+        options[`@${parentTab.entityName}.id@`] = value;
+      }
     }
 
     // Apply advanced criteria
@@ -474,6 +487,8 @@ export const useTableData = ({
     getDefaultSort,
     getParentFieldName,
     applySortToOptions,
+    graph,
+    parentTab,
   ]);
 
   // Tree options
@@ -674,7 +689,7 @@ export const useTableData = ({
       const roots: EntityData[] = [];
 
       // Partition records into roots and children based on whether their parent is in the list
-      records.forEach((record) => {
+      for (const record of records) {
         const pId = record.parentId ? String(record.parentId) : null;
         if (pId && recordIds.has(pId)) {
           if (!localChildren.has(pId)) {
@@ -684,7 +699,7 @@ export const useTableData = ({
         } else {
           roots.push(record);
         }
-      });
+      }
 
       const sortRecords = (list: EntityData[]) => {
         return list.sort((a, b) => {
@@ -722,9 +737,9 @@ export const useTableData = ({
 
           // Merge and deduplicate
           const combinedChildrenMap = new Map<string, EntityData>();
-          [...fetchedChildren, ...localChildNodes].forEach((child) => {
+          for (const child of [...fetchedChildren, ...localChildNodes]) {
             combinedChildrenMap.set(String(child.id), child);
-          });
+          }
 
           const sortedChildren = sortRecords(Array.from(combinedChildrenMap.values()));
 

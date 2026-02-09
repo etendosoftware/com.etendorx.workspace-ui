@@ -39,6 +39,7 @@ import type { ExecuteProcessResult } from "@/app/actions/process";
 import { revalidateDopoProcess } from "@/app/actions/revalidate"; // Import revalidation action
 import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
 import { executeStringFunction } from "@/utils/functions";
+import { createProcessExpressionContext } from "./utils/processExpressionUtils";
 import {
   BUTTON_LIST_REFERENCE_ID,
   PROCESS_DEFINITION_DATA,
@@ -59,9 +60,10 @@ import Loading from "../loading";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
+import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import ProcessResultModal from "./ProcessResultModal";
 import type { ProcessDefinitionModalContentProps, RecordValues, ProcessDefinitionModalProps } from "./types";
-import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
+import type { Tab, ProcessParameter, EntityData, Field } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import type { SourceObject } from "@/utils/processes/manual/types";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
@@ -173,6 +175,58 @@ const convertParameterDateFields = (combined: Record<string, unknown>, param: Pr
   if (param.dBColumnName && param.dBColumnName !== param.name && combined[param.dBColumnName]) {
     combined[param.dBColumnName] = convertDateFieldValue(combined[param.dBColumnName]);
   }
+};
+/**
+ * Evaluates display logic for window reference parameters
+ */
+interface EvaluateWindowReferenceDisplayOptions {
+  parameter: ProcessParameter;
+  logicFields?: Record<string, boolean>;
+  formValues: Record<string, unknown>;
+  availableFormData: Record<string, unknown>;
+  parameters: Record<string, ProcessParameter>;
+  session: Record<string, unknown>;
+  recordValues: Record<string, unknown>;
+  parentFields?: Record<string, Field>;
+}
+
+/**
+ * Evaluates display logic for window reference parameters
+ */
+const evaluateWindowReferenceDisplay = (options: EvaluateWindowReferenceDisplayOptions): boolean => {
+  const { parameter, logicFields, formValues, availableFormData, parameters, session, recordValues, parentFields } =
+    options;
+  let isDisplayed = true;
+  const defaultsDisplayLogic = logicFields?.[`${parameter.name}.display`];
+
+  if (parameter.displayLogic) {
+    const hasFormValues = formValues && Object.keys(formValues).length > 0;
+    const hasAvailableData = availableFormData && Object.keys(availableFormData).length > 0;
+    const hasData = hasFormValues || hasAvailableData;
+
+    const isMalformedLogic = parameter.displayLogic.includes("_logic") && !parameter.displayLogic.includes("@");
+
+    if (!isMalformedLogic && hasData) {
+      try {
+        const compiledExpr = compileExpression(parameter.displayLogic);
+
+        const smartContext = createProcessExpressionContext({
+          values: hasFormValues ? formValues : availableFormData,
+          parameters,
+          recordValues,
+          parentFields,
+          session,
+        });
+
+        isDisplayed = compiledExpr(smartContext, smartContext);
+      } catch (error) {
+        logger.warn("Error evaluating display logic for " + parameter.name, error);
+      }
+    }
+  } else if (defaultsDisplayLogic !== undefined) {
+    isDisplayed = defaultsDisplayLogic;
+  }
+  return isDisplayed;
 };
 /**
  * ProcessDefinitionModalContent - Core modal component for process execution
@@ -1635,33 +1689,38 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const renderParameters = () => {
     if (result?.success) return null;
 
-    // Sort parameters by sequence number
-    let parametersList = Object.values(parameters).sort(
-      (a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0)
-    );
-
-    // If bulk completion, only show DocAction
-    if (isBulkCompletion) {
-      parametersList = parametersList.filter(
-        (p) => p.name === "DocAction" || p.dBColumnName === "DocAction" || p.name === "Document Actionn"
-      );
-    }
+    // Filter and sort parameters
+    const parametersList = Object.values(parameters)
+      .filter((p) => {
+        // @ts-ignore
+        if (p.active === false) return false;
+        if (isBulkCompletion) {
+          return p.name === "DocAction" || p.dBColumnName === "DocAction" || p.name === "Document Actionn";
+        }
+        return true;
+      })
+      .sort((a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0));
 
     const windowReferences: React.ReactElement[] = [];
     const selectors: React.ReactElement[] = [];
 
     // Separate window references from selectors
     for (const parameter of parametersList) {
-      // Skip inactive parameters
-      // @ts-ignore
-      if (parameter.active === false) {
-        continue;
-      }
-
       if (parameter.reference === WINDOW_REFERENCE_ID) {
+        const isDisplayed = evaluateWindowReferenceDisplay({
+          parameter,
+          logicFields,
+          formValues,
+          availableFormData,
+          parameters,
+          session,
+          recordValues: recordValues || {},
+          parentFields: tab?.fields,
+        });
+
+        if (!isDisplayed) continue;
+
         const parameterTab = getTabForParameter(parameter);
-        const parameterEntityName = parameterTab?.entityName || "";
-        const parameterTabId = parameterTab?.id || "";
         windowReferences.push(
           <WindowReferenceGrid
             key={`window-ref-${parameter.id || parameter.name}`}
@@ -1669,8 +1728,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             parameters={parameters}
             onSelectionChange={setGridSelection}
             gridSelection={gridSelection}
-            tabId={parameterTabId}
-            entityName={parameterEntityName}
+            tabId={parameterTab?.id || ""}
+            entityName={parameterTab?.entityName || ""}
             windowReferenceTab={parameterTab || windowReferenceTab}
             processConfig={{
               processId: processConfig?.processId || "",
@@ -1693,6 +1752,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
             parameter={parameter}
             logicFields={logicFields}
+            parameters={parameters}
+            recordValues={recordValues || undefined}
+            parentFields={tab?.fields}
             data-testid="ProcessParameterSelector__761503"
           />
         );
