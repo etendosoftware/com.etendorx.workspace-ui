@@ -16,6 +16,9 @@
  */
 
 import type { Field } from "@workspaceui/api-client/src/api/types";
+import SearchIcon from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
+import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
+import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import { memo } from "react";
 import { CUSTOM_SELECTORS_IDENTIFIERS, FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { toCamelCase } from "@/utils/commons";
@@ -59,72 +62,104 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
 
   const { reference } = effectiveField.column;
 
-  switch (reference) {
-    case FIELD_REFERENCE_CODES.PASSWORD:
-      return <PasswordSelector field={effectiveField} readOnly={isReadOnly} data-testid="PasswordSelector__6e80fa" />;
-    case FIELD_REFERENCE_CODES.PRODUCT: // Product reference to datasource
-    case FIELD_REFERENCE_CODES.SELECTOR: // Generic selector (includes Product)
-    case FIELD_REFERENCE_CODES.TABLE_DIR_19:
-    case FIELD_REFERENCE_CODES.TABLE_DIR_18:
-      return <TableDirSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="TableDirSelector__6e80fa" />;
-    case FIELD_REFERENCE_CODES.DATE:
-      return <DateSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="DateSelector__6e80fa" />;
-    case FIELD_REFERENCE_CODES.DATETIME:
-      return <DatetimeSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="DatetimeSelector__6e80fa" />;
-    case FIELD_REFERENCE_CODES.BOOLEAN:
-      return <BooleanSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="BooleanSelector__6e80fa" />;
-    case FIELD_REFERENCE_CODES.QUANTITY_29:
-    case FIELD_REFERENCE_CODES.QUANTITY_22:
-      return (
-        <QuantitySelector
-          allowNegative={true}
-          field={effectiveField}
-          min={effectiveField.column.minValue}
-          max={effectiveField.column.maxValue}
-          isReadOnly={isReadOnly}
-          data-testid="QuantitySelector__6e80fa"
-        />
-      );
-    case FIELD_REFERENCE_CODES.TIME:
-      return <TimeSelector field={field} isReadOnly={isReadOnly} data-testid={"TimeSelector__" + field.id} />;
-    case FIELD_REFERENCE_CODES.LIST_17:
-    case FIELD_REFERENCE_CODES.LIST_13:
-      return <ListSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="ListSelector__6e80fa" />;
-    case FIELD_REFERENCE_CODES.SELECT_30:
-      if (
-        effectiveField.column.referenceSearchKey === FIELD_REFERENCE_CODES.LOCATION_21 ||
-        effectiveField.column.referenceSearchKey$_identifier === CUSTOM_SELECTORS_IDENTIFIERS.LOCATION
-      ) {
+  const SelectorComponent = (() => {
+    switch (reference) {
+      case FIELD_REFERENCE_CODES.PASSWORD:
+        return <PasswordSelector field={effectiveField} readOnly={isReadOnly} data-testid="PasswordSelector__6e80fa" />;
+      case FIELD_REFERENCE_CODES.PRODUCT: // Product reference to datasource
+      case FIELD_REFERENCE_CODES.SELECTOR: // Generic selector (includes Product)
+      case FIELD_REFERENCE_CODES.TABLE_DIR_19:
+      case FIELD_REFERENCE_CODES.TABLE_DIR_18:
         return (
-          <LocationSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="LocationSelector__6e80fa" />
+          <TableDirSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="TableDirSelector__6e80fa" />
         );
-      }
-      return <SelectSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="SelectSelector__6e80fa" />;
-    case FIELD_REFERENCE_CODES.DECIMAL:
-    case FIELD_REFERENCE_CODES.NUMERIC:
-    case FIELD_REFERENCE_CODES.RATE:
-      return (
-        <NumericSelector
-          field={effectiveField}
-          type="decimal"
-          readOnly={isReadOnly}
-          data-testid="NumericSelector__6e80fa"
-        />
-      );
-    case FIELD_REFERENCE_CODES.INTEGER:
-      return (
-        <NumericSelector
-          field={effectiveField}
-          type="integer"
-          readOnly={isReadOnly}
-          data-testid="NumericSelector__6e80fa"
-        />
-      );
-    case FIELD_REFERENCE_CODES.TEXT_LONG:
-      return <TextLongSelector field={effectiveField} readOnly={isReadOnly} data-testid="TextLongSelector__6e80fa" />;
-    default:
-      return <StringSelector field={effectiveField} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;
-  }
+      case FIELD_REFERENCE_CODES.DATE:
+        return <DateSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="DateSelector__6e80fa" />;
+      case FIELD_REFERENCE_CODES.DATETIME:
+        return (
+          <DatetimeSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="DatetimeSelector__6e80fa" />
+        );
+      case FIELD_REFERENCE_CODES.BOOLEAN:
+        return <BooleanSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="BooleanSelector__6e80fa" />;
+      case FIELD_REFERENCE_CODES.QUANTITY_29:
+      case FIELD_REFERENCE_CODES.QUANTITY_22:
+        return (
+          <QuantitySelector
+            allowNegative={true}
+            field={effectiveField}
+            min={effectiveField.column.minValue}
+            max={effectiveField.column.maxValue}
+            isReadOnly={isReadOnly}
+            data-testid="QuantitySelector__6e80fa"
+          />
+        );
+      case FIELD_REFERENCE_CODES.TIME:
+        return <TimeSelector field={field} isReadOnly={isReadOnly} data-testid={`TimeSelector__${field.id}`} />;
+      case FIELD_REFERENCE_CODES.LIST_17:
+      case FIELD_REFERENCE_CODES.LIST_13:
+        return <ListSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="ListSelector__6e80fa" />;
+      case FIELD_REFERENCE_CODES.SELECT_30:
+        if (
+          effectiveField.column.referenceSearchKey === FIELD_REFERENCE_CODES.LOCATION_21 ||
+          effectiveField.column.referenceSearchKey$_identifier === CUSTOM_SELECTORS_IDENTIFIERS.LOCATION
+        ) {
+          return (
+            <LocationSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="LocationSelector__6e80fa" />
+          );
+        }
+        return <SelectSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="SelectSelector__6e80fa" />;
+      case FIELD_REFERENCE_CODES.DECIMAL:
+      case FIELD_REFERENCE_CODES.NUMERIC:
+      case FIELD_REFERENCE_CODES.RATE:
+        return (
+          <NumericSelector
+            field={effectiveField}
+            type="decimal"
+            readOnly={isReadOnly}
+            data-testid="NumericSelector__6e80fa"
+          />
+        );
+      case FIELD_REFERENCE_CODES.INTEGER:
+        return (
+          <NumericSelector
+            field={effectiveField}
+            type="integer"
+            readOnly={isReadOnly}
+            data-testid="NumericSelector__6e80fa"
+          />
+        );
+      case FIELD_REFERENCE_CODES.TEXT_LONG:
+        return <TextLongSelector field={effectiveField} readOnly={isReadOnly} data-testid="TextLongSelector__6e80fa" />;
+      default:
+        return <StringSelector field={effectiveField} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;
+    }
+  })();
+
+  const { hasTableRelated, hasProcessDefinitionRelated } = effectiveField.selector || {};
+
+  return (
+    <div className="flex w-full items-center gap-1">
+      <div className="flex-grow min-w-0">{SelectorComponent}</div>
+      {hasTableRelated && (
+        <IconButton
+          onClick={() => console.log("Search clicked")}
+          className="w-8 h-8 flex-shrink-0"
+          tooltip="Search"
+          tooltipPosition="top">
+          <SearchIcon className="w-5 h-5 fill-current" />
+        </IconButton>
+      )}
+      {hasProcessDefinitionRelated && (
+        <IconButton
+          onClick={() => console.log("Process clicked")}
+          className="w-8 h-8 flex-shrink-0"
+          tooltip="Add"
+          tooltipPosition="top">
+          <PlusIcon className="w-5 h-5 fill-current" />
+        </IconButton>
+      )}
+    </div>
+  );
 };
 
 const GenericSelector = memo(GenericSelectorCmp);

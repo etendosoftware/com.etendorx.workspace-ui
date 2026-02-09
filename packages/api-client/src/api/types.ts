@@ -135,7 +135,11 @@ export interface Field {
   gridProps: GridProps;
   type: string;
   field: unknown[];
-  selector?: Record<string, string>;
+  selector?: {
+    hasTableRelated?: boolean;
+    hasProcessDefinitionRelated?: boolean;
+    [key: string]: unknown;
+  };
   refList: RefListField[];
   referencedEntity: string;
   referencedWindowId: string;
