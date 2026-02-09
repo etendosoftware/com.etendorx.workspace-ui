@@ -38,6 +38,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import type { ExecuteProcessResult } from "@/app/actions/process";
 import { revalidateDopoProcess } from "@/app/actions/revalidate"; // Import revalidation action
 import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
+import { createProcessExpressionContext } from "./utils/processExpressionUtils";
 import {
   BUTTON_LIST_REFERENCE_ID,
   PROCESS_DEFINITION_DATA,
@@ -58,9 +59,10 @@ import Loading from "../loading";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
+import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import ProcessResultModal from "./ProcessResultModal";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
-import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
+import type { Tab, ProcessParameter, EntityData, Field } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
 import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
@@ -146,6 +148,58 @@ const convertParameterDateFields = (combined: Record<string, unknown>, param: Pr
   if (param.dBColumnName && param.dBColumnName !== param.name && combined[param.dBColumnName]) {
     combined[param.dBColumnName] = convertDateFieldValue(combined[param.dBColumnName]);
   }
+};
+/**
+ * Evaluates display logic for window reference parameters
+ */
+interface EvaluateWindowReferenceDisplayOptions {
+  parameter: ProcessParameter;
+  logicFields?: Record<string, boolean>;
+  formValues: Record<string, unknown>;
+  availableFormData: Record<string, unknown>;
+  parameters: Record<string, ProcessParameter>;
+  session: Record<string, unknown>;
+  recordValues: Record<string, unknown>;
+  parentFields?: Record<string, Field>;
+}
+
+/**
+ * Evaluates display logic for window reference parameters
+ */
+const evaluateWindowReferenceDisplay = (options: EvaluateWindowReferenceDisplayOptions): boolean => {
+  const { parameter, logicFields, formValues, availableFormData, parameters, session, recordValues, parentFields } =
+    options;
+  let isDisplayed = true;
+  const defaultsDisplayLogic = logicFields?.[`${parameter.name}.display`];
+
+  if (parameter.displayLogic) {
+    const hasFormValues = formValues && Object.keys(formValues).length > 0;
+    const hasAvailableData = availableFormData && Object.keys(availableFormData).length > 0;
+    const hasData = hasFormValues || hasAvailableData;
+
+    const isMalformedLogic = parameter.displayLogic.includes("_logic") && !parameter.displayLogic.includes("@");
+
+    if (!isMalformedLogic && hasData) {
+      try {
+        const compiledExpr = compileExpression(parameter.displayLogic);
+
+        const smartContext = createProcessExpressionContext({
+          values: hasFormValues ? formValues : availableFormData,
+          parameters,
+          recordValues,
+          parentFields,
+          session,
+        });
+
+        isDisplayed = compiledExpr(smartContext, smartContext);
+      } catch (error) {
+        logger.warn("Error evaluating display logic for " + parameter.name, error);
+      }
+    }
+  } else if (defaultsDisplayLogic !== undefined) {
+    isDisplayed = defaultsDisplayLogic;
+  }
+  return isDisplayed;
 };
 /**
  * ProcessDefinitionModalContent - Core modal component for process execution
@@ -711,18 +765,35 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
   const getMappedFormValues = useCallback(() => {
     const rawValues = form.getValues();
-    const mappedValues: Record<string, any> = {};
-    const paramMap = new Map<string, string>();
+    // Start with all form values (includes system context fields like inpTabId, etc.)
+    const mappedValues: Record<string, any> = { ...rawValues };
 
     for (const p of Object.values(parameters)) {
-      if (p.name && p.dBColumnName) {
-        paramMap.set(p.name, p.dBColumnName);
-      }
-    }
+      if (!p.name) continue;
 
-    for (const [key, value] of Object.entries(rawValues)) {
-      const mappedKey = paramMap.get(key) || key;
-      mappedValues[mappedKey] = value;
+      const dbKey = p.dBColumnName || p.name;
+      const value = rawValues[p.name];
+
+      // Normalize empty values to null as per user requirement
+      const normalizedValue = value === "" || value === undefined ? null : value;
+
+      // Map value to dBColumnName key
+      mappedValues[dbKey] = normalizedValue;
+
+      // Handle associated identifier mapping (e.g., Locator$_identifier -> M_Locator_ID$_identifier)
+      const identifierKey = `${p.name}$_identifier`;
+      if (rawValues[identifierKey] !== undefined) {
+        mappedValues[`${dbKey}$_identifier`] = rawValues[identifierKey];
+      }
+
+      // If internal name is different from dBColumnName, remove internal key to avoid redundancy
+      if (p.name !== dbKey && mappedValues[p.name] !== undefined) {
+        delete mappedValues[p.name];
+        const idKey = `${p.name}$_identifier`;
+        if (mappedValues[idKey] !== undefined) {
+          delete mappedValues[idKey];
+        }
+      }
     }
     return mappedValues;
   }, [form, parameters]);
@@ -802,7 +873,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           processId,
         });
 
-        const formValues = form.getValues();
+        const formValues = getMappedFormValues();
 
         // Fix: DocAction - copy user selection from parameter.name to dBColumnName
         const docActionParam = Object.values(parameters).find(
@@ -918,7 +989,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
         const skipParamsLevel = processDefConfig?.skipParamsLevel;
 
-        const formValues = form.getValues();
+        const formValues = getMappedFormValues();
 
         // Fix: DocAction - copy user selection from parameter.name to dBColumnName
         const docActionParam = Object.values(parameters).find(
@@ -1581,33 +1652,38 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const renderParameters = () => {
     if (result?.success) return null;
 
-    // Sort parameters by sequence number
-    let parametersList = Object.values(parameters).sort(
-      (a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0)
-    );
-
-    // If bulk completion, only show DocAction
-    if (isBulkCompletion) {
-      parametersList = parametersList.filter(
-        (p) => p.name === "DocAction" || p.dBColumnName === "DocAction" || p.name === "Document Actionn"
-      );
-    }
+    // Filter and sort parameters
+    const parametersList = Object.values(parameters)
+      .filter((p) => {
+        // @ts-ignore
+        if (p.active === false) return false;
+        if (isBulkCompletion) {
+          return p.name === "DocAction" || p.dBColumnName === "DocAction" || p.name === "Document Actionn";
+        }
+        return true;
+      })
+      .sort((a, b) => (Number(a.sequenceNumber) || 0) - (Number(b.sequenceNumber) || 0));
 
     const windowReferences: React.ReactElement[] = [];
     const selectors: React.ReactElement[] = [];
 
     // Separate window references from selectors
     for (const parameter of parametersList) {
-      // Skip inactive parameters
-      // @ts-ignore
-      if (parameter.active === false) {
-        continue;
-      }
-
       if (parameter.reference === WINDOW_REFERENCE_ID) {
+        const isDisplayed = evaluateWindowReferenceDisplay({
+          parameter,
+          logicFields,
+          formValues,
+          availableFormData,
+          parameters,
+          session,
+          recordValues: recordValues || {},
+          parentFields: tab?.fields,
+        });
+
+        if (!isDisplayed) continue;
+
         const parameterTab = getTabForParameter(parameter);
-        const parameterEntityName = parameterTab?.entityName || "";
-        const parameterTabId = parameterTab?.id || "";
         windowReferences.push(
           <WindowReferenceGrid
             key={`window-ref-${parameter.id || parameter.name}`}
@@ -1615,8 +1691,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             parameters={parameters}
             onSelectionChange={setGridSelection}
             gridSelection={gridSelection}
-            tabId={parameterTabId}
-            entityName={parameterEntityName}
+            tabId={parameterTab?.id || ""}
+            entityName={parameterTab?.entityName || ""}
             windowReferenceTab={parameterTab || windowReferenceTab}
             processConfig={{
               processId: processConfig?.processId || "",
@@ -1639,6 +1715,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
             parameter={parameter}
             logicFields={logicFields}
+            parameters={parameters}
+            recordValues={recordValues || undefined}
+            parentFields={tab?.fields}
             data-testid="ProcessParameterSelector__761503"
           />
         );

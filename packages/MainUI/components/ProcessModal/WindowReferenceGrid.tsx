@@ -478,9 +478,16 @@ const WindowReferenceGrid = ({
 
     const applyProcessDynamicKeys = (processId: string) => {
       const processDef = PROCESS_DEFINITION_DATA[processId];
-      if (!processDef?.dynamicKeys) return;
+      if (!processDef?.dynamicKeys) {
+        console.log(`[PROCESS_DEBUG] No dynamicKeys found for process ${processId}`);
+        return;
+      }
+
+      console.log(`[PROCESS_DEBUG] Applying dynamicKeys for process ${processId}:`, processDef.dynamicKeys);
+      console.log(`[PROCESS_DEBUG] Current stableRecordValues:`, stableRecordValues);
 
       for (const [key, value] of Object.entries(processDef.dynamicKeys)) {
+        console.log(`[PROCESS_DEBUG] Resolving key: ${key}, value mapping: ${value}`);
         processDynamicKey(key, value);
       }
     };

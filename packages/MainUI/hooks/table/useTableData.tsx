@@ -445,6 +445,11 @@ export const useTableData = ({
 
     if (value && value !== "" && value !== undefined) {
       options.criteria = [{ fieldName, value, operator }];
+
+      // Add parent context parameter manually as some datasources rely on it (like Process Request)
+      if (parentTab?.entityName) {
+        options[`@${parentTab.entityName}.id@`] = value;
+      }
     }
 
     // Apply advanced criteria
@@ -481,6 +486,7 @@ export const useTableData = ({
     getParentFieldName,
     applySortToOptions,
     graph,
+    parentTab,
   ]);
 
   // Tree options
