@@ -161,7 +161,7 @@ export const useTableData = ({
     return parseColumns(Object.values(tab.fields));
     // Use JSON.stringify on keys to ensure stability even if tab object reference changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab.id, JSON.stringify(Object.keys(tab.fields).sort())]);
+  }, [tab.id, JSON.stringify(Object.keys(tab.fields).toSorted((a, b) => a.localeCompare(b)))]);
 
   const initialIsFilterApplied = useMemo(() => {
     return tab.hqlfilterclause?.length > 0 || tab.sQLWhereClause?.length > 0;
@@ -856,9 +856,7 @@ export const useTableData = ({
           if (currentIdFilter?.value !== tabFormState.recordId) {
             setTableColumnFilters([{ id: "id", value: tabFormState.recordId }]);
           }
-          if (windowIdentifier && tab.id) {
-            setTabInitializedWithDirectLink(windowIdentifier, tab.id, true);
-          }
+          setTabInitializedWithDirectLink(windowIdentifier, tab.id, true);
         }
         hasInitializedDirectLink.current = true;
       };

@@ -49,7 +49,7 @@ export const useToolbarConfig = ({
   tabId: string;
   isFormView: boolean;
   windowIdentifier: string;
-  windowId?: string | undefined;
+  windowId?: string;
   parentId?: string | null;
 }) => {
   const { setSearchQuery } = useSearch();

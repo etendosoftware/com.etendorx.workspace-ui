@@ -1094,7 +1094,7 @@ export function Tab({ tab, collapsed, windowIdentifier }: TabLevelProps) {
         windowIdentifier={windowIdentifier}
         tabId={tab.id}
         isFormView={shouldShowForm}
-        data-testid="Toolbar__895626"
+        data-testid="Toolbar__5893c8"
       />
       {shouldShowForm && (
         <div className="flex-1 h-full min-h-0 relative z-10">
