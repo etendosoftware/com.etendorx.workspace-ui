@@ -804,18 +804,35 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
   const getMappedFormValues = useCallback(() => {
     const rawValues = form.getValues();
-    const mappedValues: Record<string, any> = {};
-    const paramMap = new Map<string, string>();
+    // Start with all form values (includes system context fields like inpTabId, etc.)
+    const mappedValues: Record<string, any> = { ...rawValues };
 
     for (const p of Object.values(parameters)) {
-      if (p.name && p.dBColumnName) {
-        paramMap.set(p.name, p.dBColumnName);
-      }
-    }
+      if (!p.name) continue;
 
-    for (const [key, value] of Object.entries(rawValues)) {
-      const mappedKey = paramMap.get(key) || key;
-      mappedValues[mappedKey] = value;
+      const dbKey = p.dBColumnName || p.name;
+      const value = rawValues[p.name];
+
+      // Normalize empty values to null as per user requirement
+      const normalizedValue = value === "" || value === undefined ? null : value;
+
+      // Map value to dBColumnName key
+      mappedValues[dbKey] = normalizedValue;
+
+      // Handle associated identifier mapping (e.g., Locator$_identifier -> M_Locator_ID$_identifier)
+      const identifierKey = `${p.name}$_identifier`;
+      if (rawValues[identifierKey] !== undefined) {
+        mappedValues[`${dbKey}$_identifier`] = rawValues[identifierKey];
+      }
+
+      // If internal name is different from dBColumnName, remove internal key to avoid redundancy
+      if (p.name !== dbKey && mappedValues[p.name] !== undefined) {
+        delete mappedValues[p.name];
+        const idKey = `${p.name}$_identifier`;
+        if (mappedValues[idKey] !== undefined) {
+          delete mappedValues[idKey];
+        }
+      }
     }
     return mappedValues;
   }, [form, parameters]);
@@ -874,14 +891,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
 
       const populatedGrids = getPopulatedGrids();
-      const formValues = form.getValues();
+      const formValues = getMappedFormValues();
 
       // Fix: DocAction - copy user selection from parameter.name to dBColumnName
       const docActionParam = Object.values(parameters).find(
         (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
       );
       if (docActionParam) {
-        const userSelection = formValues[docActionParam.name];
+        const userSelection = (formValues as any)[docActionParam.name];
         if (userSelection) {
           formValues.DocAction = userSelection;
         }
