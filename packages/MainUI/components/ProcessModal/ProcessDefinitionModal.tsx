@@ -880,7 +880,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
         // Only include grids that have data
         const populatedGrids = getPopulatedGrids();
-        
+
         // Determine mapping strategy
         const isAddPayment = processId === ADD_PAYMENT_ORDER_PROCESS_ID;
 
