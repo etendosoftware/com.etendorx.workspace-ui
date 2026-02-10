@@ -114,6 +114,22 @@ export class Metadata {
     return data;
   }
 
+  private static getTabCacheKey(tabId: string): string {
+    let roleId = Metadata.currentRoleId;
+    if (!roleId && typeof window !== "undefined") {
+      roleId = localStorage.getItem("currentRoleId");
+    }
+    return `tab-${tabId}-${roleId || "default"}`;
+  }
+
+  private static getWindowCacheKey(windowId: string): string {
+    let roleId = Metadata.currentRoleId;
+    if (!roleId && typeof window !== "undefined") {
+      roleId = localStorage.getItem("currentRoleId");
+    }
+    return `window-${windowId}-${roleId || "default"}`;
+  }
+
   private static async _getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
     const { data, ok } = await Metadata.client.post(`meta/window/${windowId}`);
 
@@ -121,16 +137,16 @@ export class Metadata {
       throw new Error("Window not found");
     }
 
-    Metadata.cache.set(`window-${windowId}`, data);
+    Metadata.cache.set(Metadata.getWindowCacheKey(windowId), data);
     for (const tab of data.tabs) {
-      Metadata.cache.set(`tab-${tab.id}`, tab);
+      Metadata.cache.set(Metadata.getTabCacheKey(tab.id), tab);
     }
 
     return data;
   }
 
   public static async getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
-    const cached = Metadata.cache.get<Etendo.WindowMetadata>(`window-${windowId}`);
+    const cached = Metadata.cache.get<Etendo.WindowMetadata>(Metadata.getWindowCacheKey(windowId));
 
     if (cached) {
       return cached;
@@ -141,13 +157,13 @@ export class Metadata {
   private static async _getTab(tabId?: Etendo.Tab["id"]): Promise<Etendo.Tab> {
     const { data } = await Metadata.client.post(`meta/tab/${tabId}`);
 
-    Metadata.cache.set(`tab-${tabId}`, data);
+    Metadata.cache.set(Metadata.getTabCacheKey(tabId!), data);
 
     return data;
   }
 
   public static async getTab(tabId: Etendo.Tab["id"]): Promise<Etendo.Tab> {
-    const cached = Metadata.cache.get<Etendo.Tab>(`tab-${tabId}`);
+    const cached = Metadata.cache.get<Etendo.Tab>(Metadata.getTabCacheKey(tabId));
 
     if (cached) {
       return cached;
@@ -173,7 +189,7 @@ export class Metadata {
   }
 
   public static getColumns(tabId: string): Etendo.Column[] {
-    return Metadata.cache.get<{ fields: Etendo.Column[] }>(`tab-${tabId}`)?.fields ?? [];
+    return Metadata.cache.get<{ fields: Etendo.Column[] }>(Metadata.getTabCacheKey(tabId))?.fields ?? [];
   }
 
   public static async getMenu(forceRefresh = false): Promise<Menu[]> {
@@ -206,7 +222,9 @@ export class Metadata {
   }
 
   public static getCachedWindow(windowId: string): Etendo.WindowMetadata {
-    return Metadata.cache.get<Etendo.WindowMetadata>(`window-${windowId}`) || ({} as Etendo.WindowMetadata);
+    return (
+      Metadata.cache.get<Etendo.WindowMetadata>(Metadata.getWindowCacheKey(windowId)) || ({} as Etendo.WindowMetadata)
+    );
   }
 
   public static clearMenuCache() {
@@ -215,7 +233,7 @@ export class Metadata {
   }
 
   public static clearWindowCache(windowId: string) {
-    Metadata.cache.delete(`window-${windowId}`);
+    Metadata.cache.delete(Metadata.getWindowCacheKey(windowId));
   }
 
   public static clearToolbarCache() {

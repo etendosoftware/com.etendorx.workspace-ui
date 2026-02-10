@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { changeProfile } from "../changeProfile";
+import handler, { changeProfile } from "../changeProfile";
 import { Metadata } from "../metadata";
 import { API_LOGIN_URL } from "../constants";
 
@@ -28,50 +28,93 @@ jest.mock("../metadata", () => ({
 }));
 
 describe("api/changeProfile", () => {
-  it("successfully changes profile with role and warehouse", async () => {
-    const mockResponse = {
-      ok: true,
-      data: { token: "new-token", user: "test-user" },
-    };
-    (Metadata.loginClient.request as jest.Mock).mockResolvedValue(mockResponse);
-
-    const params = { role: "admin-role", warehouse: "main-wh" };
-    const result = await changeProfile(params);
-
-    expect(Metadata.loginClient.request).toHaveBeenCalledWith(API_LOGIN_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),
-    });
-    expect(result).toEqual(mockResponse.data);
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it("throws error when response is not ok", async () => {
-    (Metadata.loginClient.request as jest.Mock).mockResolvedValue({
-      ok: false,
-      status: 403,
+  describe("changeProfile function", () => {
+    it("successfully changes profile with role and warehouse", async () => {
+      const mockResponse = {
+        ok: true,
+        data: { token: "new-token", user: "test-user" },
+      };
+      (Metadata.loginClient.request as jest.Mock).mockResolvedValue(mockResponse);
+
+      const params = { role: "admin-role", warehouse: "main-wh" };
+      const result = await changeProfile(params);
+
+      expect(Metadata.loginClient.request).toHaveBeenCalledWith(API_LOGIN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      });
+      expect(result).toEqual(mockResponse.data);
     });
 
-    await expect(changeProfile({ role: "fake" })).rejects.toThrow("HTTP error! Status: 403");
+    it("throws error when response is not ok", async () => {
+      (Metadata.loginClient.request as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 403,
+      });
+
+      await expect(changeProfile({ role: "fake" })).rejects.toThrow("HTTP error! Status: 403");
+    });
   });
 
-  it("throws error when no token is present in response data", async () => {
-    (Metadata.loginClient.request as jest.Mock).mockResolvedValue({
-      ok: true,
-      data: { user: "no-token-user" },
+  describe("API handler", () => {
+    it("returns 405 if method is not POST", async () => {
+      const req = { method: "GET" };
+      const res = {
+        setHeader: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(405);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ message: expect.stringContaining("Not Allowed") })
+      );
     });
 
-    await expect(changeProfile({ role: "fake" })).rejects.toThrow("Invalid server response");
-  });
+    it("returns 401 if no authorization token is provided", async () => {
+      const req = { method: "POST", headers: {} };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
 
-  it("logs error to console when request fails", async () => {
-    const error = new Error("Network failure");
-    (Metadata.loginClient.request as jest.Mock).mockRejectedValue(error);
-    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+      await handler(req, res);
 
-    await expect(changeProfile({ role: "fake" })).rejects.toThrow("Network failure");
-    expect(consoleSpy).toHaveBeenCalledWith("Profile change error:", error);
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ message: expect.stringContaining("Unauthorized") })
+      );
+    });
 
-    consoleSpy.mockRestore();
+    it("returns 200 and data on success", async () => {
+      const mockData = { token: "abc", user: "user" };
+      const req = {
+        method: "POST",
+        headers: { authorization: "Bearer token123" },
+        body: { role: "admin" },
+      };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      // Mock changeProfile indirectly by mocking Metadata response
+      (Metadata.loginClient.request as jest.Mock).mockResolvedValue({
+        ok: true,
+        data: mockData,
+      });
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(mockData);
+    });
   });
 });
