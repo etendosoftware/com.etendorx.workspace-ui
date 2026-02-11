@@ -3,6 +3,10 @@ import { FormActions } from "../FormActions";
 import { globalCalloutManager } from "../../../../services/callouts";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import WindowProvider from "@/contexts/window";
+import { useFormViewContext } from "../contexts/FormViewContext";
+import { useFormValidation } from "@/hooks/useFormValidation";
+import { useFormContext } from "react-hook-form";
+import { useTabContext } from "@/contexts/tab";
 
 /**
  * Test helpers
@@ -69,13 +73,12 @@ jest.mock("next/navigation", () => ({
 
 // Mock de hooks y contextos usados
 jest.mock("react-hook-form", () => ({
-  useFormContext: () => ({
-    formState: { isDirty: false },
-  }),
+  useFormContext: jest.fn(),
   useForm: () => ({
     handleSubmit: jest.fn(),
     reset: jest.fn(),
   }),
+  useWatch: jest.fn(() => ({})), // Mock useWatch
 }));
 
 jest.mock("@/contexts/ToolbarContext", () => ({
@@ -86,25 +89,22 @@ jest.mock("@/contexts/ToolbarContext", () => ({
 }));
 
 jest.mock("@/contexts/tab", () => ({
-  useTabContext: () => ({
-    markFormAsChanged: jest.fn(),
-    resetFormChanges: jest.fn(),
-  }),
+  useTabContext: jest.fn(),
 }));
 
 jest.mock("@/hooks/useFormValidation", () => ({
-  useFormValidation: () => ({
-    validateRequiredFields: jest.fn(() => ({
-      isValid: true,
-      missingFields: [],
-    })),
-  }),
+  useFormValidation: jest.fn(),
 }));
 
 jest.mock("@/contexts/FormInitializationContext", () => ({
   useFormInitializationContext: () => ({
     isFormInitializing: false,
+    isSettingInitialValues: false,
   }),
+}));
+
+jest.mock("../contexts/FormViewContext", () => ({
+  useFormViewContext: jest.fn(),
 }));
 
 jest.mock("@/services/callouts", () => ({
@@ -124,6 +124,24 @@ describe("FormActions", () => {
   beforeEach(() => {
     mockReplace.mockClear();
     setupSearchParams("WIN1");
+    // Default mock implementations
+    (useFormContext as jest.Mock).mockReturnValue({
+      formState: { isDirty: false },
+    });
+    (useTabContext as jest.Mock).mockReturnValue({
+      markFormAsChanged: jest.fn(),
+      resetFormChanges: jest.fn(),
+    });
+    (useFormValidation as jest.Mock).mockReturnValue({
+      validateRequiredFields: jest.fn(() => ({
+        isValid: true,
+        missingFields: [],
+      })),
+      requiredFields: [],
+    });
+    (useFormViewContext as jest.Mock).mockReturnValue({
+      mode: "EDIT",
+    });
   });
 
   it("renders and registers actions", () => {
@@ -137,5 +155,68 @@ describe("FormActions", () => {
 
     renderFormActions(props);
     expect(globalCalloutManager.getState).toHaveBeenCalled();
+  });
+
+  it("should enable save when NEW mode and defaults are valid", () => {
+    const { useFormViewContext } = require("../contexts/FormViewContext");
+    const { useTabContext } = require("@/contexts/tab");
+
+    // Mock NEW mode
+    (useFormViewContext as jest.Mock).mockReturnValue({ mode: "NEW" });
+
+    // Mock valid form
+    const { useFormValidation } = require("@/hooks/useFormValidation");
+    (useFormValidation as jest.Mock).mockReturnValue({
+      validateRequiredFields: () => ({ isValid: true, missingFields: [] }),
+      requiredFields: [{ hqlName: "active" }],
+    });
+
+    const { markFormAsChanged } = useTabContext();
+
+    renderFormActions(props);
+
+    // Debería llamar a markFormAsChanged porque es NEW y válido
+    expect(markFormAsChanged).toHaveBeenCalled();
+  });
+
+  it("should NOT enable save when EDIT mode even if valid (not dirty)", () => {
+    const { useFormViewContext } = require("../contexts/FormViewContext");
+    const { useTabContext } = require("@/contexts/tab");
+
+    // Mock EDIT mode
+    (useFormViewContext as jest.Mock).mockReturnValue({ mode: "EDIT" });
+
+    // Mock valid form
+    const { useFormValidation } = require("@/hooks/useFormValidation");
+    (useFormValidation as jest.Mock).mockReturnValue({
+      validateRequiredFields: () => ({ isValid: true, missingFields: [] }),
+      requiredFields: [{ hqlName: "active" }],
+    });
+
+    const { markFormAsChanged, resetFormChanges } = useTabContext();
+
+    renderFormActions(props);
+
+    // No debería marcarse como cambiado en EDIT si no es dirty
+    expect(markFormAsChanged).not.toHaveBeenCalled();
+    expect(resetFormChanges).toHaveBeenCalled();
+  });
+
+  it("should enable save when EDIT mode and isDirty is true", () => {
+    const { useFormViewContext } = require("../contexts/FormViewContext");
+    const { useFormContext } = require("react-hook-form");
+    const { useTabContext } = require("@/contexts/tab");
+
+    // Mock EDIT mode
+    (useFormViewContext as jest.Mock).mockReturnValue({ mode: "EDIT" });
+
+    // Mock Dirty
+    (useFormContext as jest.Mock).mockReturnValue({ formState: { isDirty: true } });
+
+    const { markFormAsChanged } = useTabContext();
+
+    renderFormActions(props);
+
+    expect(markFormAsChanged).toHaveBeenCalled();
   });
 });
