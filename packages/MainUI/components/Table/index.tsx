@@ -3182,13 +3182,15 @@ const DynamicTable = ({
   ]);
 
   useEffect(() => {
-    registerActions({
-      refresh: refetch,
-      filter: toggleImplicitFilters,
-      save: async () => {},
-      columnFilters: toggleColumnsDropdown,
-    });
-  }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown]);
+    if (isVisible) {
+      registerActions({
+        refresh: refetch,
+        filter: toggleImplicitFilters,
+        save: async () => {},
+        columnFilters: toggleColumnsDropdown,
+      });
+    }
+  }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown, isVisible]);
 
   // Register table's refetch function with TabRefreshContext
   // This allows triggering table refresh after save operations in FormView
