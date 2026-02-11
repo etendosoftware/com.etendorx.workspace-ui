@@ -25,6 +25,8 @@ import { logger } from "@/utils/logger";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 import { useWindowContext } from "@/contexts/window";
+import { FormMode } from "@workspaceui/api-client/src/api/types";
+import { useFormViewContext } from "./contexts/FormViewContext";
 
 interface FormActionsProps {
   tab: Tab;
@@ -42,6 +44,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
   const { registerActions, setSaveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
   const { isFormInitializing, isSettingInitialValues } = useFormInitializationContext();
+  const { mode } = useFormViewContext();
 
   const { validateRequiredFields, requiredFields } = useFormValidation(tab);
 
@@ -101,7 +104,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
     }
 
     // Form is completely loaded, validate if save button should be enabled
-    const shouldEnableSave = isDirty || validateRequiredFields().isValid;
+    const shouldEnableSave = isDirty || (mode === FormMode.NEW && validateRequiredFields().isValid);
     shouldEnableSave ? markFormAsChanged() : resetFormChanges();
     setHasValidatedInitialLoad(true);
   }, [
@@ -113,6 +116,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
     hasValidatedInitialLoad,
     validateRequiredFields,
     requiredValues,
+    mode,
   ]);
 
   // Reset validation flag when form is re-initialized (e.g., navigating to a different record)
