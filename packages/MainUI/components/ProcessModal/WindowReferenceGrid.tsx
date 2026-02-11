@@ -561,21 +561,21 @@ const WindowReferenceGrid = ({
     // Build set of valid column names for this grid to filter params
     const validColumnNames = new Set<string>();
     if (stableWindowReferenceTab?.fields) {
-      Object.values(stableWindowReferenceTab.fields).forEach((f: any) => {
+      for (const f of Object.values(stableWindowReferenceTab.fields) as any[]) {
         if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
         // also add hqlName if different
         if (f.hqlName) validColumnNames.add(f.hqlName.toLowerCase());
-      });
+      }
     }
     // Also add prop fields if any
     if (fields) {
-      fields.forEach((f: any) => {
+      for (const f of fields) {
         if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
         if (f.name) validColumnNames.add(f.name.toLowerCase());
-      });
+      }
     }
     // Add standard context keys that imply filtering
-    [
+    for (const k of [
       "c_bpartner_id",
       "m_product_id",
       "c_project_id",
@@ -588,14 +588,15 @@ const WindowReferenceGrid = ({
       "trxtype",
       "issotrx",
       "transaction_type",
-    ].forEach((k) => validColumnNames.add(k));
+    ]) {
+      validColumnNames.add(k);
+    }
 
     const applyRecordValues = () => {
       if (!parameters || !stableRecordValues) return;
 
-      Object.values(parameters).forEach((param: any) => {
-        const rawValue = effectiveRecordValues[param.name];
-        const paramValue = extractActualValue(rawValue);
+      for (const param of Object.values(parameters) as any[]) {
+        const paramValue = effectiveRecordValues[param.name];
         // Only include parameter if it matches a column in the grid OR is a standard ID
         if (paramValue !== undefined && param.dBColumnName) {
           if (paramValue === "" || paramValue === null) return;
@@ -605,7 +606,7 @@ const WindowReferenceGrid = ({
             options[param.dBColumnName] = paramValue;
           }
         }
-      });
+      }
     };
 
     applyDynamicKeys();

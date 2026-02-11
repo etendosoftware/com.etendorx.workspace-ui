@@ -89,8 +89,14 @@ const processFormData = (
     for (const field of Object.values(fields) as any[]) {
       // Use hqlName if available (standard for form fields), fallback to other identifiers
       const key = field.hqlName || field.columnName || field.name;
+
+      // If key is hqlName but data has columnName, map it
       if (key && processedData[key] === undefined) {
-        processedData[key] = "";
+        if (field.columnName && processedData[field.columnName] !== undefined) {
+          processedData[key] = processedData[field.columnName];
+        } else {
+          processedData[key] = "";
+        }
       }
     }
   }
