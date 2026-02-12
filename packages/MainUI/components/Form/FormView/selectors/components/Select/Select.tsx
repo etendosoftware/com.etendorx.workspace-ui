@@ -42,7 +42,6 @@ function SelectCmp({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
-  const loadingRef = useRef<HTMLLIElement>(null);
 
   const dropdownId = useMemo(() => `dropdown-${name}`, [name]);
 
@@ -104,9 +103,11 @@ function SelectCmp({
   const handleSelect = useCallback(
     (id: string, label: string) => {
       const option = options.find((opt) => opt.id === id);
+
       setValue(`${name}_data`, option?.data);
       setValue(name, id);
       setSelectedLabel(label);
+
       setIsOpen(false);
       setHighlightedIndex(-1);
       setIsFocused(false);
@@ -244,13 +245,14 @@ function SelectCmp({
 
   const renderedOptions = useMemo(() => {
     if (filteredOptions.length > 0) {
-      return filteredOptions.map(({ id, label }, index) => (
+      return filteredOptions.map((option, index) => (
         <OptionItem
-          key={id}
-          id={id}
-          label={label}
+          key={option.id}
+          id={option.id}
+          label={option.label}
+          data={option.data}
           index={index}
-          isSelected={selectedValue === id}
+          isSelected={selectedValue === option.id}
           isHighlighted={highlightedIndex === index}
           onOptionClick={handleOptionClick}
           onMouseEnter={handleOptionMouseEnter}
@@ -259,7 +261,13 @@ function SelectCmp({
       ));
     }
     return <li className="px-4 py-3 text-sm text-baseline-60">No options found</li>;
-  }, [filteredOptions, highlightedIndex, selectedValue, handleOptionClick, handleOptionMouseEnter]);
+  }, [
+    filteredOptions,
+    highlightedIndex,
+    selectedValue,
+    handleOptionClick,
+    handleOptionMouseEnter,
+  ]);
 
   const shouldShowClearButton = selectedLabel && (isHovering || isOpen) && !isReadOnly;
 
@@ -314,9 +322,6 @@ function SelectCmp({
           listRef={listRef as React.RefObject<HTMLUListElement>}
           handleScroll={handleScroll}
           renderedOptions={renderedOptions}
-          loading={loading}
-          hasMore={hasMore}
-          loadingRef={loadingRef as React.RefObject<HTMLLIElement>}
           dropdownId={dropdownId}
           data-testid={`DropdownPortal__${field.id}`}
         />

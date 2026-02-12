@@ -206,12 +206,20 @@ const BaseSelectorComp = ({
 
       //TODO: This will imply the evaluation of out fiels inside the fieldBuilder an it's implementation in metadata module
       if (field.inputName === "inpmProductId" && optionData) {
+        // Pricing fields (for order/invoice windows)
         calloutData.inpmProductId_CURR =
           optionData.product$currency$id || optionData.currency || session.$C_Currency_ID;
         calloutData.inpmProductId_UOM = optionData.product$uOM$id || optionData.uOM || session["#C_UOM_ID"];
         calloutData.inpmProductId_PSTD = String(optionData.standardPrice || optionData.netListPrice || 0);
         calloutData.inpmProductId_PLIST = String(optionData.netListPrice || 0);
         calloutData.inpmProductId_PLIM = String(optionData.priceLimit || 0);
+
+        // Inventory/warehouse fields (from ProductStockView data)
+        calloutData.inpmProductId_ATR = String(optionData.attributeSetValue || optionData.attributeSetValue$id || "");
+        calloutData.inpmProductId_LOC = String(optionData.storageBin || optionData.storageBin$id || "");
+        calloutData.inpmProductId_QTY = String(optionData.quantityOnHand || 0);
+        calloutData.inpmProductId_PUOM = "";
+        calloutData.inpmProductId_PQTY = "";
       }
 
       const data = await debouncedCallout(calloutData);
