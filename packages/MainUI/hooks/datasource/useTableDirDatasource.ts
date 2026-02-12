@@ -22,6 +22,7 @@ import { useFormContext } from "react-hook-form";
 import { buildPayloadByInputName } from "@/utils";
 import { FieldName, type UseTableDirDatasourceParams } from "../types";
 import useFormParent from "../useFormParent";
+import { useUserContext } from "../useUserContext";
 import {
   REFERENCE_IDS,
   PRODUCT_SELECTOR_DEFAULTS,
@@ -44,11 +45,12 @@ export const useTableDirDatasource = ({
   const hasStaticOptions = staticOptions !== undefined;
 
   const { getValues, watch } = useFormContext();
-  const { tab, parentRecord } = useTabContext();
+  const { tab, parentTab, parentRecord } = useTabContext();
   const windowId = tab?.window;
   const [records, setRecords] = useState<Record<string, string>[]>(
     hasStaticOptions ? staticOptions.map((opt) => ({ id: opt.id, _identifier: opt.name })) : []
   );
+  const [columns, setColumns] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();
   const [currentPage, setCurrentPage] = useState(0);
@@ -57,10 +59,23 @@ export const useTableDirDatasource = ({
   const value = watch(field.hqlName);
   const fetchInProgressRef = useRef(false);
 
-  const isProductField = field.column.reference === REFERENCE_IDS.PRODUCT;
+  const isProductField =
+    field.column?.reference === REFERENCE_IDS.PRODUCT ||
+    field.column?.reference === "30" ||
+    field.selector?.datasourceName === "ProductStockView";
+
   const parentData = useFormParent(FieldName.INPUT_NAME);
 
+  const { currentWarehouse } = useUserContext();
+
   const invoiceContext: Record<string, EntityValue> = useMemo(() => {
+    // 1. Generic mapping using parentTab metadata (if available)
+    if (parentTab?.fields && parentRecord) {
+      const genericPayload = buildPayloadByInputName(parentRecord, parentTab.fields);
+      return (genericPayload || FALLBACK_RESULT) as Record<string, EntityValue>;
+    }
+
+    // 2. Legacy fallback mapping for known fields
     if ((!isProductField && !parentRecord) || !tab?.fields) {
       return FALLBACK_RESULT;
     }
@@ -79,7 +94,7 @@ export const useTableDirDatasource = ({
     }
 
     return context;
-  }, [isProductField, parentRecord, tab?.fields]);
+  }, [isProductField, parentRecord, tab?.fields, parentTab?.fields]);
 
   const selectorId =
     field.selector?._selectorDefinitionId ||
@@ -184,7 +199,7 @@ export const useTableDirDatasource = ({
       field.selector,
       field.module,
       field.tab,
-      field.column.table,
+      field.column?.table,
       field.hqlName,
       windowId,
       isProductField,
@@ -236,29 +251,69 @@ export const useTableDirDatasource = ({
     [field.selector]
   );
 
-  const applySearchCriteria = useCallback(
+  const applyCriteria = useCallback(
     (body: URLSearchParams, search: string) => {
-      const { dummyId, criteria } = buildSearchCriteria(search, isProductField);
-
-      if (isProductField) {
-        body.set("criteria", JSON.stringify({ fieldName: "_dummy", operator: "equals", value: dummyId }));
-        body.set("operator", "or");
+      // 1. Preserve existing selector criteria if they exist (Always)
+      if (field.selector?.criteria) {
+        try {
+          const existingCriteria = JSON.parse(field.selector.criteria);
+          if (Array.isArray(existingCriteria)) {
+            for (const c of existingCriteria) {
+              body.append("criteria", JSON.stringify(c));
+            }
+          } else {
+            body.append("criteria", JSON.stringify(existingCriteria));
+          }
+        } catch (e) {
+          logger.warn("Failed to parse selector criteria", e);
+        }
       }
 
-      for (const criterion of criteria) {
-        body.append("criteria", JSON.stringify(criterion));
+      // 2. Apply Search Criteria (Only if searching)
+      if (search) {
+        const { dummyId, criteria } = buildSearchCriteria(search, isProductField);
+
+        if (isProductField) {
+          body.set("criteria", JSON.stringify({ fieldName: "_dummy", operator: "equals", value: dummyId }));
+          body.set("operator", "or");
+        }
+
+        for (const criterion of criteria) {
+          body.append("criteria", JSON.stringify(criterion));
+        }
+      }
+
+      // 3. Fallback Warehouse Filter for ProductStockView
+      if (field.selector?.datasourceName === "ProductStockView") {
+        const hasWarehouseInContext =
+          body.has("inpmWarehouseId") || body.has("mWarehouseId") || body.has("warehouse");
+
+        if (!hasWarehouseInContext && currentWarehouse?.id) {
+          body.append(
+            "criteria",
+            JSON.stringify({
+              fieldName: "storageBin.warehouse",
+              operator: "equals",
+              value: currentWarehouse.id,
+            })
+          );
+        }
       }
     },
-    [buildSearchCriteria, isProductField]
+    [buildSearchCriteria, isProductField, field.selector?.criteria, field.selector?.datasourceName, currentWarehouse?.id]
   );
 
   const processApiResponse = useCallback(
-    (data: { response?: { data?: Record<string, string>[] } }, reset: boolean) => {
+    (data: { response?: { data?: Record<string, string>[]; metadata?: { fields?: any[] } } }, reset: boolean) => {
       if (!data?.response?.data) {
         throw new Error(JSON.stringify(data));
       }
 
       const responseData = data.response.data;
+
+      if (data.response.metadata?.fields) {
+        setColumns(data.response.metadata.fields);
+      }
 
       if (!responseData.length || responseData.length < pageSize) {
         setHasMore(false);
@@ -336,9 +391,7 @@ export const useTableDirDatasource = ({
         const baseBody = buildRequestBody(startRow, endRow, _currentValue);
         const body = new URLSearchParams(baseBody as Record<string, string>);
 
-        if (search) {
-          applySearchCriteria(body, search);
-        }
+        applyCriteria(body, search);
 
         const { data } = await datasource.client.request(`/api/datasource/${field.selector?.datasourceName ?? ""}`, {
           method: "POST",
@@ -363,7 +416,7 @@ export const useTableDirDatasource = ({
       pageSize,
       initialPageSize,
       buildRequestBody,
-      applySearchCriteria,
+      applyCriteria,
       processApiResponse,
       hasStaticOptions,
       handleStaticOptionsSearch,
@@ -400,5 +453,6 @@ export const useTableDirDatasource = ({
     hasMore,
     search,
     searchTerm,
+    columns,
   };
 };
