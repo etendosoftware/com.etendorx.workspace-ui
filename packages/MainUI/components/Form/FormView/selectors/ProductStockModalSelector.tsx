@@ -167,7 +167,7 @@ export const ProductStockModalSelector = ({
 
   return (
     <>
-      <div className="w-full">
+      <div className="w-full" data-testid="ProductStockModalSelector">
         <div
           className={containerClassNames}
           onClick={handleOpenModal}
@@ -198,18 +198,24 @@ export const ProductStockModalSelector = ({
         HeaderIcon={ProductIcon}
         showHeader
         buttons={
-          <Button variant="outlined" onClick={handleCloseModal} className="w-auto px-6">
+          <Button
+            variant="outlined"
+            onClick={handleCloseModal}
+            className="w-auto px-6"
+            data-testid="ProductStockModalSelector__cancel">
             Cancel
           </Button>
-        }>
+        }
+        data-testid="ProductStockModalSelector__modal">
         <div className="flex flex-col gap-4 p-4 overflow-hidden" style={{ maxHeight: "70vh" }}>
           <TextInput
             placeholder="Search by product name or key..."
             value={localSearch}
             onChange={handleSearchChange}
             field={field}
+            data-testid="ProductStockModalSelector__search"
           />
-          <div className="overflow-auto flex-1 border rounded">
+          <div className="overflow-auto flex-1 border rounded" data-testid="ProductStockModalSelector__table">
             <MaterialReactTable table={table} />
           </div>
         </div>
