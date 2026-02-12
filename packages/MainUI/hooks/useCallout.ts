@@ -64,12 +64,12 @@ export const useCallout = ({ field, parentId = "null", rowId = "null" }: UseCall
 
         // CHANGE mode may wrap data in a {response: {...}} envelope.
         // Unwrap if columnValues are inside the wrapper, otherwise use top-level.
-        const actualData =
-          rawData.columnValues !== undefined
-            ? rawData
-            : rawData.response?.columnValues !== undefined
-              ? rawData.response
-              : rawData;
+        // CHANGE mode may wrap data in a {response: {...}} envelope.
+        // Unwrap if columnValues are inside the wrapper, otherwise use top-level.
+        let actualData = rawData;
+        if (rawData.columnValues === undefined && rawData.response?.columnValues !== undefined) {
+          actualData = rawData.response;
+        }
 
         return actualData as FormInitializationResponse;
       } catch (error) {

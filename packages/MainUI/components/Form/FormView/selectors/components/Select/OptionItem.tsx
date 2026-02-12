@@ -39,9 +39,7 @@ const OptionItem = memo(
          ${isHighlighted ? "bg-baseline-10" : ""}
          ${isSelected ? "bg-baseline-10 font-medium" : ""}
          hover:bg-baseline-10`}>
-        <span className={`truncate mr-2 ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>
-          {label}
-        </span>
+        <span className={`truncate mr-2 ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>{label}</span>
         {isSelected && (
           <CheckIcon
             alt="Selected Item"

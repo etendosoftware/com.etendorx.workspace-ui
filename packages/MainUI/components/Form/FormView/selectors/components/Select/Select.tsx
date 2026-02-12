@@ -261,13 +261,7 @@ function SelectCmp({
       ));
     }
     return <li className="px-4 py-3 text-sm text-baseline-60">No options found</li>;
-  }, [
-    filteredOptions,
-    highlightedIndex,
-    selectedValue,
-    handleOptionClick,
-    handleOptionMouseEnter,
-  ]);
+  }, [filteredOptions, highlightedIndex, selectedValue, handleOptionClick, handleOptionMouseEnter]);
 
   const shouldShowClearButton = selectedLabel && (isHovering || isOpen) && !isReadOnly;
 

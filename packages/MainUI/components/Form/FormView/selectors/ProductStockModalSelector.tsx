@@ -49,7 +49,13 @@ export const ProductStockModalSelector = ({
     return `${baseClasses} ${textColorClass}`;
   }, [identifier, value, isFocused, isModalOpen, isReadOnly]);
 
-  const { records, loading, refetch, search, columns: backendColumns } = useTableDirDatasource({
+  const {
+    records,
+    loading,
+    refetch,
+    search,
+    columns: backendColumns,
+  } = useTableDirDatasource({
     field,
     pageSize: 50,
   });
@@ -175,7 +181,9 @@ export const ProductStockModalSelector = ({
             <ProductIcon
               fill="currentColor"
               className={`w-5 h-5 transition-colors ${
-                (isFocused || isModalOpen) && !isReadOnly ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)"
+                (isFocused || isModalOpen) && !isReadOnly
+                  ? "text-(--color-baseline-100)"
+                  : "text-(--color-transparent-neutral-60)"
               }`}
             />
           </div>

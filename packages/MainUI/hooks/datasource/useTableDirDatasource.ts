@@ -253,24 +253,21 @@ export const useTableDirDatasource = ({
 
   const applyCriteria = useCallback(
     (body: URLSearchParams, search: string) => {
-      // 1. Preserve existing selector criteria if they exist (Always)
-      if (field.selector?.criteria) {
+      const applySelectorCriteria = () => {
+        if (!field.selector?.criteria) return;
         try {
           const existingCriteria = JSON.parse(field.selector.criteria);
-          if (Array.isArray(existingCriteria)) {
-            for (const c of existingCriteria) {
-              body.append("criteria", JSON.stringify(c));
-            }
-          } else {
-            body.append("criteria", JSON.stringify(existingCriteria));
+          const criteriaList = Array.isArray(existingCriteria) ? existingCriteria : [existingCriteria];
+          for (const c of criteriaList) {
+            body.append("criteria", JSON.stringify(c));
           }
         } catch (e) {
           logger.warn("Failed to parse selector criteria", e);
         }
-      }
+      };
 
-      // 2. Apply Search Criteria (Only if searching)
-      if (search) {
+      const applySearchCriteria = () => {
+        if (!search) return;
         const { dummyId, criteria } = buildSearchCriteria(search, isProductField);
 
         if (isProductField) {
@@ -281,12 +278,11 @@ export const useTableDirDatasource = ({
         for (const criterion of criteria) {
           body.append("criteria", JSON.stringify(criterion));
         }
-      }
+      };
 
-      // 3. Fallback Warehouse Filter for ProductStockView
-      if (field.selector?.datasourceName === "ProductStockView") {
-        const hasWarehouseInContext =
-          body.has("inpmWarehouseId") || body.has("mWarehouseId") || body.has("warehouse");
+      const applyWarehouseFilter = () => {
+        if (field.selector?.datasourceName !== "ProductStockView") return;
+        const hasWarehouseInContext = body.has("inpmWarehouseId") || body.has("mWarehouseId") || body.has("warehouse");
 
         if (!hasWarehouseInContext && currentWarehouse?.id) {
           body.append(
@@ -298,9 +294,19 @@ export const useTableDirDatasource = ({
             })
           );
         }
-      }
+      };
+
+      applySelectorCriteria();
+      applySearchCriteria();
+      applyWarehouseFilter();
     },
-    [buildSearchCriteria, isProductField, field.selector?.criteria, field.selector?.datasourceName, currentWarehouse?.id]
+    [
+      buildSearchCriteria,
+      isProductField,
+      field.selector?.criteria,
+      field.selector?.datasourceName,
+      currentWarehouse?.id,
+    ]
   );
 
   const processApiResponse = useCallback(
@@ -311,35 +317,47 @@ export const useTableDirDatasource = ({
 
       const responseData = data.response.data;
 
-      if (data.response.metadata?.fields) {
-        setColumns(data.response.metadata.fields);
-      }
+      const updateColumns = () => {
+        if (data.response?.metadata?.fields) {
+          setColumns(data.response.metadata.fields);
+        }
+      };
 
-      if (!responseData.length || responseData.length < pageSize) {
-        setHasMore(false);
-      }
+      const checkHasMore = () => {
+        if (!responseData.length || responseData.length < pageSize) {
+          setHasMore(false);
+        }
+      };
 
-      if (reset) {
-        setRecords(responseData);
-      } else {
+      const mergeRecords = () => {
+        if (reset) {
+          setRecords(responseData);
+          return;
+        }
+
         const recordMap = new Map();
 
-        for (const record of records) {
+        const addRecordToMap = (record: Record<string, string>) => {
           const recordId = record.id || JSON.stringify(record);
           if (!recordMap.has(recordId)) {
             recordMap.set(recordId, record);
           }
+        };
+
+        for (const record of records) {
+          addRecordToMap(record);
         }
 
         for (const record of responseData) {
-          const recordId = record.id || JSON.stringify(record);
-          if (!recordMap.has(recordId)) {
-            recordMap.set(recordId, record);
-          }
+          addRecordToMap(record);
         }
 
         setRecords(Array.from(recordMap.values()));
-      }
+      };
+
+      updateColumns();
+      checkHasMore();
+      mergeRecords();
 
       if (!reset) {
         setCurrentPage((prev) => prev + 1);
