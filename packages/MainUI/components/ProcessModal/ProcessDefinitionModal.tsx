@@ -270,10 +270,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     });
   }, []);
 
+  console.debug(processDefinition);
+
   // NEW: autoSelectConfig state to hold declarative selection instructions OR backward-compatible _gridSelection
   const [autoSelectConfig, setAutoSelectConfig] = useState<AutoSelectConfig | null>(null);
   const [autoSelectApplied, setAutoSelectApplied] = useState(false);
   const [availableButtons, setAvailableButtons] = useState<Array<{ value: string; label: string }>>([]);
+  const [rulesRegistered, setRulesRegistered] = useState(false);
 
   // Register PayScript DSL if available in process definition
   useEffect(() => {
@@ -287,6 +290,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         def.em_etmeta_onprocess;
       if (dsl) {
         registerPayScriptDSL(processDefinition.id, dsl);
+        setRulesRegistered(true);
       }
     }
   }, [processDefinition]);
@@ -399,14 +403,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     // Build base payload with system context fields
     const basePayload = buildProcessPayload(record, tab, {}, {});
 
-    logger.debug("[PROCESS_DEBUG] Building availableFormData:", {
-      hasRecord: !!record,
-      hasTab: !!tab,
-      initialStateKeys: initialState ? Object.keys(initialState) : "null",
-      basePayloadKeys: basePayload ? Object.keys(basePayload) : "null",
-      top5BasePayload: basePayload ? Object.keys(basePayload).slice(0, 5) : [],
-    });
-
     const combined = {
       ...basePayload,
       ...initialState,
@@ -441,13 +437,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   useEffect(() => {
     const hasFormData = Object.keys(availableFormData).length > 0;
     if (hasFormData) {
-      logger.debug("[PROCESS_DEBUG] Resetting form with availableFormData:", {
-        keys: Object.keys(availableFormData),
-        hasGrids: Object.keys(availableFormData).some(
-          (k) => k === "order_invoice" || k === "credit_to_use" || k === "glitem"
-        ),
-        sample: JSON.stringify(availableFormData).substring(0, 300),
-      });
       form.reset(availableFormData);
     }
   }, [availableFormData, form]);
@@ -469,10 +458,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       }
 
       setGridSelection(initialGrids);
-      logger.debug("[PROCESS_DEBUG] Initialized gridSelection from filterExpressions:", {
-        gridNames: Object.keys(initialGrids),
-        filterExpressions,
-      });
     } else if (!open) {
       // Reset gridSelection when modal closes
       setGridSelection({});
@@ -514,6 +499,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     parameters,
     enabled: open && !loading && !initializationLoading,
     onGridUpdate: handleGridUpdate,
+    dependencies: [rulesRegistered],
   });
 
   // NOTE: globalCalloutManager.isCalloutRunning() not working correctly
@@ -713,7 +699,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         return {};
       }
 
-      const currentRecordValue = recordValues[currentAttrs.inpPrimaryKeyColumnId];
+      let currentRecordValue = recordValues[currentAttrs.inpPrimaryKeyColumnId];
+
+      // Fallback: try to find value by inpColumnId (DB Column Name) if not found by primary key ID
+      if (currentRecordValue === undefined && currentAttrs.inpColumnId) {
+        currentRecordValue = recordValues[currentAttrs.inpColumnId];
+      }
+
+      // Final fallback: use record.id directly if still undefined
+      if (currentRecordValue === undefined && record?.id) {
+        currentRecordValue = record.id;
+      }
+
       const fields: Record<string, unknown> = {
         [currentAttrs.inpColumnId]: currentRecordValue,
         [currentAttrs.inpPrimaryKeyColumnId]: currentRecordValue,
@@ -730,7 +727,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
       return fields;
     },
-    [recordValues]
+    [recordValues, record]
   );
 
   /**
@@ -848,15 +845,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const getPopulatedGrids = useCallback(() => {
     const populated: GridSelectionStructure = {};
 
-    logger.debug("[PROCESS_DEBUG] getPopulatedGrids - Input gridSelection:", {
-      gridNames: Object.keys(gridSelection),
-      details: Object.entries(gridSelection).map(([name, data]) => ({
-        name,
-        selectionCount: data._selection?.length || 0,
-        allRowsCount: data._allRows?.length || 0,
-      })),
-    });
-
     for (const [gridName, gridData] of Object.entries(gridSelection)) {
       // Include all grids that exist in gridSelection
       // If no selection, send empty arrays to prevent backend errors
@@ -871,15 +859,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         };
       }
     }
-
-    logger.debug("[PROCESS_DEBUG] getPopulatedGrids - Output populated grids:", {
-      gridNames: Object.keys(populated),
-      details: Object.entries(populated).map(([name, data]) => ({
-        name,
-        selectionCount: data._selection?.length || 0,
-        allRowsLength: data._allRows?.length || 0,
-      })),
-    });
 
     return populated;
   }, [gridSelection]);
@@ -902,44 +881,20 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         // Only include grids that have data
         const populatedGrids = getPopulatedGrids();
 
-        logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Before building payload:", {
-          formValuesKeys: Object.keys(form.getValues()),
-          populatedGridsKeys: Object.keys(populatedGrids),
-        });
-
-        logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Record Context:", {
-          recordId: record?.id,
-          recordValuesKeys: recordValues ? Object.keys(recordValues) : "null",
-          tabId: tab?.id,
-          processId,
-        });
-
         // Determine mapping strategy
         const isAddPayment = processId === ADD_PAYMENT_ORDER_PROCESS_ID;
-        const formValues = form.getValues();
-
-        // Fix: DocAction - copy user selection from parameter.name to dBColumnName
-        const docActionParam = Object.values(parameters).find(
-          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
-        );
-        if (docActionParam) {
-          const userSelection = formValues[docActionParam.name];
-          if (userSelection) {
-            formValues.DocAction = userSelection;
-          }
-        }
 
         let mappedValues: Record<string, any>;
 
         if (isAddPayment) {
           // Legacy mapping for Add Payment process
+          const formValues = form.getValues();
           mappedValues = mapKeysWithDefaults({ ...formValues, ...populatedGrids });
         } else {
-          // Clean mapping for standard processes using buildProcessParameters
-          const mappedFormValues = buildProcessParameters(formValues, parameters);
-          mappedValues = { ...mappedFormValues, ...populatedGrids };
+          // Use getMappedFormValues for cleaner mapping (handles empty->null and dbColumnName)
+          const mappedFormValues = getMappedFormValues();
+          mappedValues = mapKeysWithDefaults({ ...mappedFormValues, ...populatedGrids });
         }
-
         // Build base payload
         const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
         const skipParamsLevel = processDefConfig?.skipParamsLevel;
@@ -1032,30 +987,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         }
 
         // Use buildProcessParameters to properly map parameter names to DB column names
-        const formValues = form.getValues();
-        const mappedFormValues = buildProcessParameters(formValues, parameters);
         const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
         const skipParamsLevel = processDefConfig?.skipParamsLevel;
 
+        const formValues = getMappedFormValues();
         const combinedValues = {
           ...recordValues,
           ...formValues,
           ...extraKey,
           ...populatedGrids,
-          ...mappedFormValues,
         };
         const params = mapKeysWithDefaults(combinedValues as SourceObject);
-
-        // Fix: DocAction - copy user selection from parameter.name to dBColumnName
-        const docActionParam = Object.values(parameters).find(
-          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
-        );
-        if (docActionParam) {
-          const userSelection = formValues[docActionParam.name];
-          if (userSelection) {
-            formValues.DocAction = userSelection;
-          }
-        }
 
         const payload = {
           recordIds,
@@ -1071,6 +1013,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                   ...buttonParams,
                 },
               }),
+          ...buildProcessSpecificFields(processId),
         };
 
         await executeJavaProcess(payload, "direct Java process");
@@ -1088,6 +1031,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       getMappedFormValues,
       initialState,
       getPopulatedGrids,
+      buildProcessSpecificFields,
     ]
   );
 
@@ -1359,10 +1303,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           // Update parameters from the loaded metadata
           if (processData.parameters) {
             setParameters(processData.parameters);
-            logger.debug("Process metadata loaded successfully", {
-              processId,
-              paramCount: Object.keys(processData.parameters).length,
-            });
           }
 
           // Also update other process definition properties if needed
@@ -1601,7 +1541,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             _selection: matched,
           },
         }));
-        logger.debug(`Auto-selection applied on table ${tableKey} by explicit ids (${matched.length})`);
         setAutoSelectApplied(true);
       }
       return;
@@ -1642,7 +1581,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           _selection: matchedRows,
         },
       }));
-      logger.debug(`Auto-selection applied on table ${tableKey} (${matchedRows.length} rows)`);
       setAutoSelectApplied(true);
     }
   }, [autoSelectConfig, autoSelectApplied, gridSelection, selectedRecords]);
