@@ -3,6 +3,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
+import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
+import CheckIcon from "@workspaceui/componentlibrary/src/assets/icons/check-circle.svg";
+import AlertIcon from "@workspaceui/componentlibrary/src/assets/icons/alert-circle.svg";
 import Loading from "../../../loading";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useWindowContext } from "@/contexts/window";
@@ -246,6 +249,26 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
     setTimeout(() => barcodeInputRef.current?.focus(), 100);
   }, [boxCount]);
 
+  // Remove the last box column
+  const handleRemoveBox = useCallback(() => {
+    if (boxCount <= 1) return;
+
+    setLines((prev) =>
+      prev.map((line) => {
+        const newLine = { ...line };
+        delete newLine[`box${boxCount}`];
+        return newLine;
+      })
+    );
+
+    const newCount = boxCount - 1;
+    setBoxCount(newCount);
+    // If we were on the deleted box, move to the new last box
+    if (currentBox >= boxCount) {
+      setCurrentBox(newCount);
+    }
+  }, [boxCount, currentBox]);
+
   // Validate barcode - calls ValidateBarcodeAction
   const handleValidate = useCallback(async () => {
     if (!barcodeInput) return;
@@ -271,12 +294,14 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
+            _buttonValue: "DONE",
             _params: {
               barcode: barcodeInput,
               productIds: lines.map((l) => l.productId),
               validLines: validLines,
               strictMode: true,
             },
+            _entityName: "obwpack_packingh",
           }),
         }
       );
@@ -399,15 +424,18 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
   }, [lines, boxCount, realShipmentId, checkCalculate, backendWindowId, windowId, token, onClose]);
 
   // Handle process with pending validation
+  // SmartClient blocks the process entirely if any line has qtyPending !== 0,
+  // showing an error dialog. We replicate that exact behavior here.
   const handleProcess = useCallback(() => {
     const pendingLines = lines.filter((l) => l.qtyPending !== 0);
     if (pendingLines.length > 0) {
+      // Block execution — show error dialog (not a confirm), same as SmartClient
       setConfirmDialog({
         open: true,
         message: t("packing.pendingToPack"),
         onConfirm: () => {
+          // Just close the dialog — do NOT execute the process
           setConfirmDialog((prev) => ({ ...prev, open: false }));
-          executeProcess();
         },
       });
       return;
@@ -496,7 +524,7 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
   if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-        <div className="bg-white rounded-lg p-8">
+        <div className="bg-white rounded-lg p-8 shadow-lg">
           <Loading data-testid="Loading__3fbaf0" />
         </div>
       </div>
@@ -505,43 +533,77 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
 
   return (
     <>
-      {/* Modal backdrop + centering — hidden when showing result */}
-      {!resultMessage && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50 shrink-0">
-              <h2 className="text-lg font-semibold text-gray-800">{t("packing.title")}</h2>
-              <button type="button" onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-                <CloseIcon className="w-5 h-5 text-gray-500" data-testid="CloseIcon__3fbaf0" />
-              </button>
-            </div>
+      <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
+        <div className="bg-white rounded-lg shadow-lg w-full max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 shrink-0">
+            <h3 className="text-lg font-bold">{t("packing.title")}</h3>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 rounded-full hover:bg-(--color-baseline-10) transition-colors"
+              disabled={processing}>
+              <CloseIcon className="w-5 h-5 text-gray-500" data-testid="CloseIcon__3fbaf0" />
+            </button>
+          </div>
 
-            {/* Inputs Bar */}
-            <div className="px-6 py-3 grid grid-cols-12 gap-3 items-end border-b bg-gray-50 shrink-0">
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">{t("packing.box")}</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={boxCount}
-                  value={currentBox}
-                  onChange={(e) => setCurrentBox(Math.max(1, Math.min(boxCount, Number(e.target.value))))}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-2 border"
-                />
+          {/* Content Area */}
+          <div className="flex-1 overflow-auto p-4 min-h-[12rem] flex flex-col gap-4">
+            {/* Inputs Bar - styled as form section */}
+            {/* Inputs Bar - styled as form section */}
+            <div className="grid grid-cols-12 gap-x-5 gap-y-4 items-end">
+              <div className="col-span-12 sm:col-span-2">
+                <label className="flex items-center gap-1 font-medium text-sm leading-5 tracking-normal text-(--color-baseline-80) mb-1 select-none">
+                  {t("packing.box")}
+                </label>
+                <div className="flex items-center h-10.5 rounded-t bg-(--color-transparent-neutral-5) border-0 border-b-2 border-(--color-transparent-neutral-30)">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (boxCount <= 1) return;
+                      // Remove last box if empty, otherwise just decrease count
+                      const isLastBoxEmpty = lines.every((l) => !Number(l[`box${boxCount}`]));
+                      if (isLastBoxEmpty) {
+                        handleRemoveBox();
+                      }
+                    }}
+                    disabled={boxCount <= 1}
+                    className="flex items-center justify-center w-9 h-full text-(--color-transparent-neutral-60) hover:text-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M3 7h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                  <span className="flex-1 flex items-center justify-center font-medium text-sm text-(--color-transparent-neutral-80) select-none tabular-nums">
+                    {boxCount}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleAddBox}
+                    className="flex items-center justify-center w-9 h-full text-(--color-transparent-neutral-60) hover:text-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) transition-colors select-none">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M7 3v8M3 7h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">{t("packing.quantity")}</label>
+
+              <div className="col-span-12 sm:col-span-2">
+                <label className="flex items-center gap-1 font-medium text-sm leading-5 tracking-normal text-(--color-baseline-80) mb-1 select-none">
+                  {t("packing.quantity")}
+                </label>
                 <input
                   type="number"
                   min={0}
                   value={currentQty}
                   onChange={(e) => setCurrentQty(Number(e.target.value))}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-2 border"
+                  className="w-full px-3 rounded-t tracking-normal h-10.5 border-0 border-b-2 bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) transition-colors"
                 />
               </div>
-              <div className="col-span-4">
-                <label className="block text-xs font-medium text-gray-600 mb-1">{t("packing.barcode")}</label>
+
+              <div className="col-span-12 sm:col-span-6">
+                <label className="flex items-center gap-1 font-medium text-sm leading-5 tracking-normal text-(--color-baseline-80) mb-1 select-none">
+                  {t("packing.barcode")}
+                </label>
                 <input
                   ref={barcodeInputRef}
                   type="text"
@@ -549,66 +611,66 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
                   onChange={(e) => setBarcodeInput(e.target.value)}
                   onKeyDown={handleBarcodeKeyDown}
                   placeholder={t("packing.scanBarcode")}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-2 border"
+                  className="w-full px-3 rounded-t tracking-normal h-10.5 border-0 border-b-2 bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) transition-colors"
                 />
               </div>
-              <div className="col-span-4 flex gap-2 items-end">
-                <button
-                  type="button"
-                  onClick={handleAddBox}
-                  className="bg-white text-blue-600 border border-blue-600 px-3 py-2 rounded shadow-sm hover:bg-blue-50 font-medium text-sm whitespace-nowrap transition-colors">
-                  {t("packing.addBox")}
-                </button>
-                <button
-                  type="button"
+
+              <div className="col-span-12 sm:col-span-2 flex items-end h-10.5 pb-[2px]">
+                <Button
+                  variant="filled"
+                  size="large"
                   onClick={handleValidate}
                   disabled={processing || !barcodeInput}
-                  className="bg-blue-600 text-white px-3 py-2 rounded shadow-sm hover:bg-blue-700 font-medium text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  className="whitespace-nowrap w-full px-4 !h-10"
+                  data-testid="Button__3fbaf0">
                   {t("packing.validateBarcode")}
-                </button>
+                </Button>
               </div>
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="mx-6 mt-3 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm shrink-0">
-                {error}
+              <div className="p-3 rounded border-l-4 bg-gray-50 border-red-500 flex justify-between items-start">
+                <div>
+                  <h4 className="font-bold text-sm text-red-600">{t("process.processError")}</h4>
+                  <p className="text-sm text-gray-700 whitespace-pre-line mt-1">{error}</p>
+                </div>
                 <button
                   type="button"
                   onClick={() => setError(null)}
-                  className="ml-2 text-red-500 hover:text-red-700 font-bold">
-                  ✕
+                  className="text-gray-400 hover:text-gray-600 font-bold ml-2">
+                  <CloseIcon className="w-4 h-4" data-testid="CloseIcon__3fbaf0" />
                 </button>
               </div>
             )}
 
             {/* Grid */}
-            <div className="flex-1 overflow-auto px-6 py-3">
-              <table className="min-w-full divide-y divide-gray-200 border rounded-md overflow-hidden">
-                <thead className="bg-gray-100 sticky top-0 z-10">
+            <div className="flex-1 overflow-auto border rounded-md">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
-                    <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                    <th className="px-3 py-2.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-r">
                       {t("packing.barcode")}
                     </th>
-                    <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                    <th className="px-3 py-2.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-r">
                       {t("packing.product")}
                     </th>
-                    <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                    <th className="px-3 py-2.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-r">
                       {t("packing.storageBin")}
                     </th>
-                    <th className="px-3 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                    <th className="px-3 py-2.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider border-r">
                       {t("packing.qty")}
                     </th>
-                    <th className="px-3 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                    <th className="px-3 py-2.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider border-r">
                       {t("packing.qtyPending")}
                     </th>
-                    <th className="px-3 py-2.5 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r w-16">
+                    <th className="px-3 py-2.5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r w-16">
                       {t("packing.status")}
                     </th>
                     {Array.from({ length: boxCount }).map((_, i) => (
                       <th
                         key={`th-box-${i + 1}`}
-                        className={`px-3 py-2.5 text-center text-xs font-medium text-gray-500 uppercase tracking-wider ${i < boxCount - 1 ? "border-r" : ""} w-24`}>
+                        className={`px-3 py-2.5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider ${i < boxCount - 1 ? "border-r" : ""} w-24`}>
                         {`${t("packing.box")} ${i + 1}`}
                       </th>
                     ))}
@@ -673,89 +735,98 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
                 </tbody>
               </table>
             </div>
+          </div>
 
-            {/* Footer Actions */}
-            <div className="px-6 py-3 border-t bg-gray-50 flex justify-between items-center shrink-0">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="checkCalculate"
-                  checked={checkCalculate}
-                  onChange={(e) => setCheckCalculate(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="checkCalculate" className="ml-2 text-sm text-gray-700">
-                  {t("packing.calculateWeight")}
-                </label>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded shadow-sm hover:bg-gray-50 font-medium text-sm transition-colors">
-                  {t("packing.cancel")}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleProcess}
-                  disabled={processing}
-                  className="bg-blue-600 text-white px-4 py-2 rounded shadow-sm hover:bg-blue-700 font-medium text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                  {processing && <span className="animate-spin">⟳</span>}
-                  {t("packing.generatePack")}
-                </button>
-              </div>
+          {/* Footer Actions */}
+          <div className="flex items-center justify-between mx-4 my-3 pt-3 border-t border-gray-100 shrink-0">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="checkCalculate"
+                checked={checkCalculate}
+                onChange={(e) => setCheckCalculate(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="checkCalculate" className="ml-2 text-sm text-gray-700">
+                {t("packing.calculateWeight")}
+              </label>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outlined" size="large" onClick={onClose} className="w-32" data-testid="Button__3fbaf0">
+                {t("packing.cancel")}
+              </Button>
+              <Button
+                variant="filled"
+                size="large"
+                onClick={handleProcess}
+                disabled={processing}
+                className="w-48 flex items-center justify-center gap-2"
+                data-testid="Button__3fbaf0">
+                {processing && <span className="animate-spin mr-2">⟳</span>}
+                {t("packing.generatePack")}
+              </Button>
             </div>
           </div>
         </div>
-      )}
-      {/* Confirm Dialog */}
+      </div>
+      {/* Error Dialog — blocks process execution when lines have pending qty (same as SmartClient) */}
       {confirmDialog.open && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60] p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
-                <span className="text-yellow-600 text-xl">⚠</span>
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 relative">
+            <button
+              type="button"
+              onClick={() => setConfirmDialog((prev) => ({ ...prev, open: false }))}
+              className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 transition-colors">
+              <CloseIcon className="w-5 h-5 text-gray-500" data-testid="CloseIcon__3fbaf0" />
+            </button>
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center justify-center">
+                <AlertIcon className="w-10 h-10 stroke-red-500" data-testid="AlertIcon__3fbaf0" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">{t("packing.warning")}</h3>
-                <p className="mt-1 text-sm text-gray-600">{confirmDialog.message}</p>
+                <h4 className="font-medium text-xl text-center text-red-600">{t("packing.validationError")}</h4>
+                <p className="mt-2 text-sm text-center text-gray-600">{confirmDialog.message}</p>
               </div>
-            </div>
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setConfirmDialog((prev) => ({ ...prev, open: false }))}
-                className="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded shadow-sm hover:bg-gray-50 font-medium text-sm transition-colors">
-                {t("packing.cancel")}
-              </button>
-              <button
-                type="button"
-                onClick={confirmDialog.onConfirm}
-                className="bg-blue-600 text-white px-4 py-2 rounded shadow-sm hover:bg-blue-700 font-medium text-sm transition-colors">
-                {t("packing.continue")}
-              </button>
+              <div className="flex w-full mt-2">
+                <Button
+                  variant="filled"
+                  size="large"
+                  onClick={confirmDialog.onConfirm}
+                  className="flex-1"
+                  data-testid="Button__3fbaf0">
+                  {t("packing.close")}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       )}
-      {/* Result Message Modal (shown after process completes) */}
+      {/* Result Message Modal (using ProcessResultModal styles) */}
       {resultMessage &&
         (() => {
           const isWarning = resultMessage.type === "warning";
           const isError = resultMessage.type === "error";
+          // Success style
           const bgGradient = isWarning
             ? "linear-gradient(180deg, #FFF3CD 0%, #FCFCFD 45%)"
             : isError
-              ? "linear-gradient(180deg, #FFD6D6 0%, #FCFCFD 45%)"
+              ? "bg-white" // Error uses white bg in standard modal
               : "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)";
-          const titleColor = isWarning ? "text-amber-600" : isError ? "text-red-600" : "text-green-600";
-          const iconBg = isWarning ? "bg-amber-100" : isError ? "bg-red-100" : "bg-green-100";
-          const icon = isWarning ? "⚠" : isError ? "✕" : "✓";
-          const iconColor = isWarning ? "text-amber-600" : isError ? "text-red-600" : "text-green-600";
+
+          const titleColor = isWarning ? "text-amber-600" : isError ? "text-red-600" : "text-(--color-success-main)";
+          const icon = isWarning ? (
+            <AlertIcon className="w-10 h-10 stroke-amber-600" data-testid="AlertIcon__3fbaf0" />
+          ) : isError ? (
+            <AlertIcon className="w-10 h-10 stroke-red-600" data-testid="AlertIcon__3fbaf0" />
+          ) : (
+            <CheckIcon className="w-6 h-6 fill-(--color-success-main)" data-testid="CheckIcon__3fbaf0" />
+          );
 
           return (
             <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60] p-4">
-              <div className="rounded-2xl p-6 shadow-xl relative max-w-sm w-full" style={{ background: bgGradient }}>
+              <div
+                className="rounded-2xl p-6 shadow-xl relative max-w-sm w-full"
+                style={{ background: isError ? "#fff" : bgGradient }}>
                 <button
                   type="button"
                   onClick={() => {
@@ -766,32 +837,35 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
                   <CloseIcon className="w-5 h-5" data-testid="CloseIcon__3fbaf0" />
                 </button>
                 <div className="flex flex-col items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full ${iconBg} flex items-center justify-center`}>
-                    <span className={`text-xl ${iconColor}`}>{icon}</span>
-                  </div>
+                  <div className="flex items-center justify-center">{icon}</div>
                   <div className="w-full">
                     <h4 className={`font-medium text-xl text-center ${titleColor}`}>{resultMessage.title}</h4>
-                    <p className="text-sm text-center text-gray-700 mt-2">{resultMessage.text}</p>
+                    <p className="text-sm text-center text-(--color-transparent-neutral-80) whitespace-pre-line mt-2">
+                      {resultMessage.text}
+                    </p>
                     {resultMessage.linkTabId && resultMessage.linkRecordId && (
-                      <p className="text-sm text-center mt-1">
+                      <p className="text-sm text-center mt-2">
                         <button
                           type="button"
                           onClick={() => handleNavigateToTab(resultMessage.linkTabId!, resultMessage.linkRecordId!)}
-                          className="text-blue-600 underline hover:text-blue-800">
+                          className="text-blue-600 underline hover:text-blue-800 font-medium">
                           {t("packing.checkStatus")}
                         </button>
                       </p>
                     )}
                   </div>
-                  <button
-                    type="button"
+                  <Button
+                    variant="filled"
+                    // @ts-ignore
+                    size="large"
                     onClick={() => {
                       setResultMessage(null);
                       onClose();
                     }}
-                    className="bg-gray-900 text-white px-6 py-2 rounded-full font-medium hover:bg-gray-800 transition-colors">
+                    className="w-full mt-2"
+                    data-testid="Button__3fbaf0">
                     {t("packing.close")}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

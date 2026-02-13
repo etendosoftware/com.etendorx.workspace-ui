@@ -564,7 +564,7 @@ const es = {
   },
   packing: {
     title: "Proceso de Empaque",
-    box: "Caja",
+    box: "Cajas",
     quantity: "Cantidad",
     barcode: "Código de barras",
     scanBarcode: "Escanear o escribir código de barras...",
@@ -578,8 +578,10 @@ const es = {
     noLines: "No hay líneas para mostrar",
     calculateWeight: "Calcular Peso",
     generatePack: "Generar Empaque",
+    validationError: "Error al procesar",
     wrongBarcode: "Código de barras incorrecto",
-    pendingToPack: "Hay items pendientes de empacar. ¿Continuar?",
+    pendingToPack:
+      "Todos los items deben estar completamente empacados antes de generar. Por favor completá las cantidades pendientes.",
     checkStatus: "Ver estado aquí",
     warning: "Advertencia",
     cancel: "Cancelar",
