@@ -25,7 +25,7 @@ import { ListSelector } from "./ListSelector";
 import { NumericSelector } from "./NumericSelector";
 import QuantitySelector from "./QuantitySelector";
 import { SelectSelector } from "./SelectSelector";
-import { ModalSelector } from "./ModalSelector";
+
 import { ProductStockModalSelector } from "./ProductStockModalSelector";
 import { StringSelector } from "./StringSelector";
 import { TextLongSelector } from "./TextLongSelector";

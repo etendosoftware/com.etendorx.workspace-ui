@@ -284,7 +284,7 @@ export const useTableDirDatasource = ({
         if (field.selector?.datasourceName !== "ProductStockView") return;
 
         // Check if we should skip the warehouse filter (e.g. for Requisition)
-        if ((field.selector as any)?.skipWarehouseFilter) return;
+        if (field.selector?.skipWarehouseFilter) return;
 
         const hasWarehouseInContext = body.has("inpmWarehouseId") || body.has("mWarehouseId") || body.has("warehouse");
 

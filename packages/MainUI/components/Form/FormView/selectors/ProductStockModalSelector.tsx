@@ -1,6 +1,5 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { ModalSelector } from "./ModalSelector";
-import { useTabContext } from "@/contexts/tab";
 import { useMemo } from "react";
 
 export const ProductStockModalSelector = ({
@@ -10,15 +9,13 @@ export const ProductStockModalSelector = ({
   field: Field;
   isReadOnly: boolean;
 }) => {
-  const { parentTab } = useTabContext();
-
   const effectiveField = useMemo(() => {
     return {
       ...field,
       selector: {
         ...field.selector,
-        skipWarehouseFilter: true,
-      } as any,
+        skipWarehouseFilter: "true",
+      },
     };
   }, [field]);
 
