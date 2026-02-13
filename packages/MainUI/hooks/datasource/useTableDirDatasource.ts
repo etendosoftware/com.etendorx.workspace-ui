@@ -338,7 +338,6 @@ export const useTableDirDatasource = ({
       const updateColumns = () => {
         if (data.response?.metadata?.fields) {
           setColumns(data.response.metadata.fields);
-        } else {
         }
       };
 

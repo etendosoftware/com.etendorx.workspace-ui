@@ -6,8 +6,6 @@ import { useTableDirDatasource } from "@/hooks/datasource/useTableDirDatasource"
 import type { Field, EntityData } from "@workspaceui/api-client/src/api/types";
 import { MaterialReactTable, useMaterialReactTable } from "material-react-table";
 import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
-import { TextInput } from "./components/TextInput";
-import type { ChangeEvent } from "react";
 
 export const ModalSelector = ({
   field,
@@ -20,7 +18,7 @@ export const ModalSelector = ({
 }) => {
   const { watch, setValue, getValues } = useFormContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [localSearch, setLocalSearch] = useState("");
+
   const [isFocused, setIsFocused] = useState(false);
 
   const valueField = (field.selector?.valueField as string) || "id";
@@ -200,12 +198,6 @@ export const ModalSelector = ({
       sx: { cursor: "pointer" },
     }),
   });
-
-  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setLocalSearch(val);
-    search(val);
-  };
 
   const fieldLabel = field.name || field.hqlName;
 
