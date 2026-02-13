@@ -562,6 +562,32 @@ const es = {
       or: "O",
     },
   },
+  packing: {
+    title: "Proceso de Empaque",
+    box: "Cajas",
+    quantity: "Cantidad",
+    barcode: "Código de barras",
+    scanBarcode: "Escanear o escribir código de barras...",
+    addBox: "Agregar Caja",
+    validateBarcode: "Validar Código",
+    product: "Producto",
+    storageBin: "Ubicación",
+    qty: "Cantidad",
+    qtyPending: "Pendiente",
+    status: "Estado",
+    noLines: "No hay líneas para mostrar",
+    calculateWeight: "Calcular Peso",
+    generatePack: "Generar Empaque",
+    validationError: "Error al procesar",
+    wrongBarcode: "Código de barras incorrecto",
+    pendingToPack:
+      "Todos los items deben estar completamente empacados antes de generar. Por favor completá las cantidades pendientes.",
+    checkStatus: "Ver estado aquí",
+    warning: "Advertencia",
+    cancel: "Cancelar",
+    continue: "Continuar",
+    close: "Cerrar",
+  },
 };
 
 export default es;
