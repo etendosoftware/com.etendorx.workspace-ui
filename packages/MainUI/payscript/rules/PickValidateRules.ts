@@ -1,3 +1,5 @@
+import type { PayScriptRules } from "../engine/LogicEngine";
+
 /**
  * PayScript rules for Pick & Validate Process (OBWPL)
  *
@@ -6,7 +8,7 @@
  * - Validating that no line exceeds its quantity
  * - Validating that at least one line has been scanned
  */
-export const PickValidateRules = {
+export const PickValidateRules: PayScriptRules = {
   id: "OBWPL_PICK_VALIDATE_V1",
 
   compute: (_context, util) => {
@@ -47,7 +49,7 @@ export const PickValidateRules = {
         id: "OBWPL_OVER_LIMIT",
         isValid: false,
         message: "OBWPL_Alert_PendingToValidate",
-        severity: "error",
+        severity: "error" as const, // The type inference should handle this
       });
     }
 
@@ -56,10 +58,11 @@ export const PickValidateRules = {
         id: "OBWPL_NO_SCANNED",
         isValid: false,
         message: "OBWPL_Alert_PendingToValidate",
-        severity: "error",
+        severity: "error" as const,
       });
     }
 
+    // Explicit return type assertion not needed in JS, but ensuring values are correct string literals
     return validations;
   },
 };

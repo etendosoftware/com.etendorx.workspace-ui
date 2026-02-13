@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState, useRef } from "react";
+import type React from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
@@ -23,18 +24,47 @@ const VALIDATE_BARCODE_ACTION_HANDLER = "org.openbravo.warehouse.packing.action.
  * Returns the tabId, recordId, and cleaned text (without HTML).
  */
 const parseSmartClientMessage = (html: string): { text: string; tabId?: string; recordId?: string } => {
-  // Extract openDirectTab params
-  const match = html.match(/OB\.Utilities\.openDirectTab\(["\s]*([^"',\s)]+)["\s]*,\s*["\s]*([^"',\s)]+)["\s]*\)/i);
-  // Strip HTML tags to get clean text, replace the link with a placeholder
-  const cleanText = html
-    .replace(/<a\s[^>]*>.*?<\/a>/gi, "")
-    .replace(/<[^>]+>/g, "")
-    .trim();
+  // Extract openDirectTab params using simple string search (avoids regex backtracking)
+  let tabId: string | undefined;
+  let recordId: string | undefined;
+  const marker = "openDirectTab(";
+  const idx = html.indexOf(marker);
+  if (idx !== -1) {
+    // Extract the arguments substring: everything between openDirectTab( and the next )
+    const argsStart = idx + marker.length;
+    const argsEnd = html.indexOf(")", argsStart);
+    if (argsEnd !== -1) {
+      const argsStr = html.substring(argsStart, argsEnd);
+      // Split by comma and strip quotes/whitespace from each argument
+      const args = argsStr.split(",").map((s) => s.replace(/["'\s]/g, ""));
+      tabId = args[0] || undefined;
+      recordId = args[1] || undefined;
+    }
+  }
+
+  // Strip HTML tags using DOMParser-safe approach (no vulnerable regex)
+  let cleanText = html;
+  // Remove anchor tags and their content first
+  const anchorStart = cleanText.indexOf("<a");
+  if (anchorStart !== -1) {
+    const anchorEnd = cleanText.indexOf("</a>", anchorStart);
+    if (anchorEnd !== -1) {
+      cleanText = cleanText.substring(0, anchorStart) + cleanText.substring(anchorEnd + 4);
+    }
+  }
+  // Remove remaining HTML tags by iterating (no backtracking-prone regex)
+  let result = "";
+  let inTag = false;
+  for (const ch of cleanText) {
+    if (ch === "<") inTag = true;
+    else if (ch === ">") inTag = false;
+    else if (!inTag) result += ch;
+  }
 
   return {
-    text: cleanText,
-    tabId: match?.[1]?.trim(),
-    recordId: match?.[2]?.trim(),
+    text: result.trim(),
+    tabId,
+    recordId,
   };
 };
 
@@ -421,7 +451,7 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
     } finally {
       setProcessing(false);
     }
-  }, [lines, boxCount, realShipmentId, checkCalculate, backendWindowId, windowId, token, onClose]);
+  }, [lines, boxCount, realShipmentId, checkCalculate, backendWindowId, windowId, token, t]);
 
   // Handle process with pending validation
   // SmartClient blocks the process entirely if any line has qtyPending !== 0,
@@ -553,9 +583,9 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
             {/* Inputs Bar - styled as form section */}
             <div className="grid grid-cols-12 gap-x-5 gap-y-4 items-end">
               <div className="col-span-12 sm:col-span-2">
-                <label className="flex items-center gap-1 font-medium text-sm leading-5 tracking-normal text-(--color-baseline-80) mb-1 select-none">
+                <span className="flex items-center gap-1 font-medium text-sm leading-5 tracking-normal text-(--color-baseline-80) mb-1 select-none">
                   {t("packing.box")}
-                </label>
+                </span>
                 <div className="flex items-center h-10.5 rounded-t bg-(--color-transparent-neutral-5) border-0 border-b-2 border-(--color-transparent-neutral-30)">
                   <button
                     type="button"
@@ -569,7 +599,7 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
                     }}
                     disabled={boxCount <= 1}
                     className="flex items-center justify-center w-9 h-full text-(--color-transparent-neutral-60) hover:text-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" role="img" aria-label="Remove box">
                       <path d="M3 7h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                     </svg>
                   </button>
@@ -580,7 +610,7 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
                     type="button"
                     onClick={handleAddBox}
                     className="flex items-center justify-center w-9 h-full text-(--color-transparent-neutral-60) hover:text-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) transition-colors select-none">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" role="img" aria-label="Add box">
                       <path d="M7 3v8M3 7h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                     </svg>
                   </button>
@@ -588,10 +618,13 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
               </div>
 
               <div className="col-span-12 sm:col-span-2">
-                <label className="flex items-center gap-1 font-medium text-sm leading-5 tracking-normal text-(--color-baseline-80) mb-1 select-none">
+                <label
+                  htmlFor="packing-qty"
+                  className="flex items-center gap-1 font-medium text-sm leading-5 tracking-normal text-(--color-baseline-80) mb-1 select-none">
                   {t("packing.quantity")}
                 </label>
                 <input
+                  id="packing-qty"
                   type="number"
                   min={0}
                   value={currentQty}
@@ -601,10 +634,13 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
               </div>
 
               <div className="col-span-12 sm:col-span-6">
-                <label className="flex items-center gap-1 font-medium text-sm leading-5 tracking-normal text-(--color-baseline-80) mb-1 select-none">
+                <label
+                  htmlFor="packing-barcode"
+                  className="flex items-center gap-1 font-medium text-sm leading-5 tracking-normal text-(--color-baseline-80) mb-1 select-none">
                   {t("packing.barcode")}
                 </label>
                 <input
+                  id="packing-barcode"
                   ref={barcodeInputRef}
                   type="text"
                   value={barcodeInput}
@@ -687,8 +723,18 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
                     lines.map((line, idx) => {
                       const isComplete = line.qtyPending === 0;
                       const isOver = line.qtyPending < 0;
-                      const rowBg = isOver ? "bg-red-50" : isComplete ? "bg-green-50" : "";
-                      const statusColor = isComplete ? "text-green-500" : isOver ? "text-red-500" : "text-gray-300";
+
+                      let rowBg = "";
+                      if (isOver) rowBg = "bg-red-50";
+                      else if (isComplete) rowBg = "bg-green-50";
+
+                      let statusColor = "text-gray-300";
+                      if (isComplete) statusColor = "text-green-500";
+                      else if (isOver) statusColor = "text-red-500";
+
+                      let pendingColor = "text-gray-900";
+                      if (isOver) pendingColor = "text-red-600";
+                      else if (isComplete) pendingColor = "text-green-600";
 
                       return (
                         <tr key={line.shipmentLineId || idx} className={`hover:bg-gray-50 ${rowBg}`}>
@@ -705,9 +751,7 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
                             {line.quantity}
                           </td>
                           <td className="px-3 py-2 whitespace-nowrap text-sm text-right font-bold border-r">
-                            <span className={isOver ? "text-red-600" : isComplete ? "text-green-600" : "text-gray-900"}>
-                              {line.qtyPending}
-                            </span>
+                            <span className={pendingColor}>{line.qtyPending}</span>
                           </td>
                           <td className="px-3 py-2 whitespace-nowrap text-center border-r">
                             <span className={`text-lg ${statusColor}`}>●</span>
@@ -806,21 +850,18 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
         (() => {
           const isWarning = resultMessage.type === "warning";
           const isError = resultMessage.type === "error";
-          // Success style
-          const bgGradient = isWarning
-            ? "linear-gradient(180deg, #FFF3CD 0%, #FCFCFD 45%)"
-            : isError
-              ? "bg-white" // Error uses white bg in standard modal
-              : "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)";
 
-          const titleColor = isWarning ? "text-amber-600" : isError ? "text-red-600" : "text-(--color-success-main)";
-          const icon = isWarning ? (
-            <AlertIcon className="w-10 h-10 stroke-amber-600" data-testid="AlertIcon__3fbaf0" />
-          ) : isError ? (
-            <AlertIcon className="w-10 h-10 stroke-red-600" data-testid="AlertIcon__3fbaf0" />
-          ) : (
-            <CheckIcon className="w-6 h-6 fill-(--color-success-main)" data-testid="CheckIcon__3fbaf0" />
-          );
+          let bgGradient = "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)";
+          if (isWarning) bgGradient = "linear-gradient(180deg, #FFF3CD 0%, #FCFCFD 45%)";
+          else if (isError) bgGradient = "#fff";
+
+          let titleColor = "text-(--color-success-main)";
+          if (isWarning) titleColor = "text-amber-600";
+          else if (isError) titleColor = "text-red-600";
+
+          let icon = <CheckIcon className="w-6 h-6 fill-(--color-success-main)" data-testid="CheckIcon__3fbaf0" />;
+          if (isWarning) icon = <AlertIcon className="w-10 h-10 stroke-amber-600" data-testid="AlertIcon__3fbaf0" />;
+          else if (isError) icon = <AlertIcon className="w-10 h-10 stroke-red-600" data-testid="AlertIcon__3fbaf0" />;
 
           return (
             <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60] p-4">
@@ -847,7 +888,9 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
                       <p className="text-sm text-center mt-2">
                         <button
                           type="button"
-                          onClick={() => handleNavigateToTab(resultMessage.linkTabId!, resultMessage.linkRecordId!)}
+                          onClick={() =>
+                            handleNavigateToTab(resultMessage.linkTabId as string, resultMessage.linkRecordId as string)
+                          }
                           className="text-blue-600 underline hover:text-blue-800 font-medium">
                           {t("packing.checkStatus")}
                         </button>
@@ -856,7 +899,6 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
                   </div>
                   <Button
                     variant="filled"
-                    // @ts-ignore
                     size="large"
                     onClick={() => {
                       setResultMessage(null);

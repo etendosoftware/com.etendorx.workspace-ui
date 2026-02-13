@@ -1388,15 +1388,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           });
 
           if (result) {
-            // If result is undefined/null, skip
-            const safeResult = result || {};
-
             // If backend returns a legacy `_gridSelection` mapping (ids), apply it directly (backward compatibility)
-            if (safeResult._gridSelection && typeof safeResult._gridSelection === "object") {
+            if (result._gridSelection && typeof result._gridSelection === "object") {
               // Merge into gridSelection state
               setGridSelection((prev) => {
                 const next = { ...prev };
-                for (const [key, ids] of Object.entries(safeResult._gridSelection as Record<string, string[]>)) {
+                for (const [key, ids] of Object.entries(result._gridSelection as Record<string, string[]>)) {
                   // keep existing _allRows if present, but overwrite _selection with EntityData array
                   next[key] = {
                     ...(next[key] || { _selection: [], _allRows: [] }),
@@ -1415,14 +1412,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             }
 
             // If backend returns an autoSelectConfig, store it
-            if (safeResult.autoSelectConfig) {
-              setAutoSelectConfig(safeResult.autoSelectConfig as AutoSelectConfig);
+            if (result.autoSelectConfig) {
+              setAutoSelectConfig(result.autoSelectConfig as AutoSelectConfig);
             }
 
             setParameters((prev) => {
               const newParameters = { ...prev };
 
-              for (const [parameterName, values] of Object.entries(safeResult)) {
+              for (const [parameterName, values] of Object.entries(result)) {
                 if (["_gridSelection", "autoSelectConfig"].includes(parameterName)) continue;
 
                 if (!newParameters[parameterName]) continue;
