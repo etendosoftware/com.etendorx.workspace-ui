@@ -17,10 +17,15 @@
 
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { UseFormReturn } from "react-hook-form";
-import { ADD_PAYMENT_ORDER_PROCESS_ID } from "@/utils/processes/definition/constants";
-import { genericPayScriptCallout } from "./genericPayScriptCallout";
+import { ADD_PAYMENT_ORDER_PROCESS_ID, PICK_VALIDATE_PROCESS_ID } from "@/utils/processes/definition/constants";
+import { genericPayScriptCallout, registerPayScriptRules } from "./genericPayScriptCallout";
+import { pickValidateBarcodeCallout } from "./pickValidateBarcodeCallout";
+import { PickValidateRules } from "@/payscript/rules/PickValidateRules";
 
 export const FUNDS_TRANSFER_PROCESS_ID = "CC73C4845CDC487395804946EACB225F";
+
+// Register PayScript rules for Pick & Validate process (static registration)
+registerPayScriptRules(PICK_VALIDATE_PROCESS_ID, PickValidateRules);
 
 /**
  * Grid selection structure type
@@ -93,6 +98,13 @@ export const PROCESS_CALLOUTS: ProcessCalloutsConfig = {
     createPayScriptCallout("amount_gl_items"),
     createPayScriptCallout("used_credit"),
     createPayScriptCallout("generateCredit"),
+  ],
+  // Pick & Validate process: barcode triggers async server validation,
+  // grid changes trigger PayScript recalculation of qtyPending
+  [PICK_VALIDATE_PROCESS_ID]: [
+    { triggerField: "barcode", execute: pickValidateBarcodeCallout },
+    createPayScriptCallout("_internalGridSelectionTrigger"),
+    createPayScriptCallout("quantity"),
   ],
 };
 
