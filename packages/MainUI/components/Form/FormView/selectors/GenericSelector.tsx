@@ -25,6 +25,8 @@ import { ListSelector } from "./ListSelector";
 import { NumericSelector } from "./NumericSelector";
 import QuantitySelector from "./QuantitySelector";
 import { SelectSelector } from "./SelectSelector";
+
+import { ProductStockModalSelector } from "./ProductStockModalSelector";
 import { StringSelector } from "./StringSelector";
 import { TextLongSelector } from "./TextLongSelector";
 import { PasswordSelector } from "./PasswordSelector";
@@ -58,6 +60,10 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   }
 
   const { reference } = effectiveField.column;
+
+  if (field.selector?.datasourceName === "ProductStockView") {
+    return <ProductStockModalSelector field={effectiveField} isReadOnly={isReadOnly} />;
+  }
 
   switch (reference) {
     case FIELD_REFERENCE_CODES.PASSWORD:

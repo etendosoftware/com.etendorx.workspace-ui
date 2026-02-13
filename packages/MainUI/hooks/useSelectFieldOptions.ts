@@ -33,7 +33,8 @@ const buildOptionsFromInjected = (injectedEntries: any[]): SelectProps["options"
 const buildOptionsFromRecords = (
   records: EntityData[],
   idKey: string,
-  identifierKey: string
+  identifierKey: string,
+  _selectorId?: string
 ): SelectProps["options"] => {
   const result: SelectProps["options"] = [];
   for (const record of records) {
@@ -62,6 +63,7 @@ export const useSelectFieldOptions = (field: Field, records: EntityData[]) => {
   const { watch } = useFormContext();
   const idKey = (field.selector?.valueField ?? "") as string;
   const identifierKey = (field.selector?.displayField ?? "") as string;
+  const selectorId = field.selector?._selectorDefinitionId;
   const fieldName = field.hqlName || field.columnName || field.name;
   const [currentValue, currentIdentifier, injectedEntries] = watch([
     fieldName,
@@ -76,9 +78,9 @@ export const useSelectFieldOptions = (field: Field, records: EntityData[]) => {
     if (injected.length > 0) {
       result = buildOptionsFromInjected(injected);
     } else {
-      result = buildOptionsFromRecords(records, idKey, identifierKey);
+      result = buildOptionsFromRecords(records, idKey, identifierKey, selectorId);
     }
 
     return addCurrentValueIfMissing(result, currentValue, currentIdentifier);
-  }, [currentIdentifier, currentValue, idKey, identifierKey, records, injectedEntries]);
+  }, [currentIdentifier, currentValue, idKey, identifierKey, records, injectedEntries, selectorId]);
 };
