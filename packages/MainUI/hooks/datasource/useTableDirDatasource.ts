@@ -282,15 +282,33 @@ export const useTableDirDatasource = ({
 
       const applyWarehouseFilter = () => {
         if (field.selector?.datasourceName !== "ProductStockView") return;
+
+        // Check if we should skip the warehouse filter (e.g. for Requisition)
+        if ((field.selector as any)?.skipWarehouseFilter) return;
+
         const hasWarehouseInContext = body.has("inpmWarehouseId") || body.has("mWarehouseId") || body.has("warehouse");
 
-        if (!hasWarehouseInContext && currentWarehouse?.id) {
+        if (hasWarehouseInContext) {
+          return;
+        }
+
+        let warehouseId = currentWarehouse?.id;
+
+        // Try to get warehouse from parent record if available (e.g. Requisition Header)
+        if (parentRecord) {
+          const parentWarehouse = parentRecord.warehouse || parentRecord.mWarehouseId;
+          if (parentWarehouse) {
+            warehouseId = typeof parentWarehouse === "object" ? (parentWarehouse as any).id : parentWarehouse;
+          }
+        }
+
+        if (warehouseId) {
           body.append(
             "criteria",
             JSON.stringify({
               fieldName: "storageBin.warehouse",
               operator: "equals",
-              value: currentWarehouse.id,
+              value: warehouseId,
             })
           );
         }
@@ -320,6 +338,7 @@ export const useTableDirDatasource = ({
       const updateColumns = () => {
         if (data.response?.metadata?.fields) {
           setColumns(data.response.metadata.fields);
+        } else {
         }
       };
 
@@ -410,6 +429,11 @@ export const useTableDirDatasource = ({
         const body = new URLSearchParams(baseBody as Record<string, string>);
 
         applyCriteria(body, search);
+
+        const bodyObj: Record<string, string> = {};
+        for (const [k, v] of body.entries()) {
+          bodyObj[k] = v;
+        }
 
         const { data } = await datasource.client.request(`/api/datasource/${field.selector?.datasourceName ?? ""}`, {
           method: "POST",

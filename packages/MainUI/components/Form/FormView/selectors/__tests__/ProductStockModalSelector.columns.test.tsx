@@ -31,6 +31,10 @@ jest.mock("@workspaceui/componentlibrary/src/components/Button/Button", () => ({
 ));
 jest.mock("../components/TextInput", () => ({ TextInput: () => <div>TextInput</div> }));
 
+jest.mock("@/contexts/tab", () => ({
+  useTabContext: jest.fn(() => ({ parentTab: null })),
+}));
+
 const mockField = {
   hqlName: "testField",
   columnName: "testField",
@@ -50,7 +54,7 @@ describe("ProductStockModalSelector Columns", () => {
     });
   });
 
-  it("uses backend columns when provided", () => {
+  it("uses custom columns even when backend columns are provided", () => {
     const backendColumns = [
       { name: "col1", title: "Column 1", isDisplayed: true },
       { name: "col2", title: "Column 2", isDisplayed: true },
@@ -69,12 +73,13 @@ describe("ProductStockModalSelector Columns", () => {
 
     render(<ProductStockModalSelector field={mockField} isReadOnly={false} />);
 
-    // Check if useMaterialReactTable was called with expected columns
+    // Custom columns should always be used, overriding backend columns
     expect(useMaterialReactTable).toHaveBeenCalledWith(
       expect.objectContaining({
         columns: expect.arrayContaining([
-          expect.objectContaining({ accessorKey: "col1", header: "Column 1" }),
-          expect.objectContaining({ accessorKey: "col2", header: "Column 2" }),
+          expect.objectContaining({ accessorKey: "_identifier", header: "Product" }),
+          expect.objectContaining({ accessorKey: "storageBin", header: "Storage Bin" }),
+          expect.objectContaining({ accessorKey: "attributeSetValue", header: "Attribute Set Value" }),
         ]),
       })
     );
