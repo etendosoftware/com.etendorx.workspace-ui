@@ -44,6 +44,7 @@ import { FormActions } from "./FormActions";
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import { useTabContext } from "@/contexts/tab";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
+import type { SaveOptions } from "@/contexts/ToolbarContext";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useRecordNavigation } from "@/hooks/useRecordNavigation";
 import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
@@ -508,10 +509,12 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * Also refreshes parent tab datasource if this is a child tab.
    *
    * @param data - Saved entity data returned from server
-   * @param showModal - Whether to display success modal to user
+   * @param options - Save options including showModal and skipFormStateUpdate flags
    */
   const onSuccess = useCallback(
-    async (data: EntityData, showModal: boolean) => {
+    async (data: EntityData, options: SaveOptions) => {
+      const { showModal = false, skipFormStateUpdate = false } = options;
+
       // Clear only the cache for this specific entity to get fresh data
       // This is more targeted than clearing the entire cache
       datasource.clearCacheForEntity(tab.entityName);
@@ -532,10 +535,12 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       const newRecordId = String(data.id);
 
       if (currentMode === FormMode.NEW) {
-        // For new records, change to EDIT mode with the new record ID first
-        setCurrentMode(FormMode.EDIT);
-        setCurrentRecordId(newRecordId);
-        setRecordId(newRecordId); // Also update parent state
+        if (!skipFormStateUpdate) {
+          // For new records, change to EDIT mode with the new record ID first
+          setCurrentMode(FormMode.EDIT);
+          setCurrentRecordId(newRecordId);
+          setRecordId(newRecordId); // Also update parent state
+        }
 
         // Set flag to wait for automatic refetch to complete
         setWaitingForRefetch(newRecordId);
@@ -608,13 +613,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   /**
    * Wrapper function for form save operations.
-   * Provides a consistent interface for save operations with modal control.
+   * Provides a consistent interface for save operations with options object.
    *
-   * @param showModal - Whether to show success modal after successful save
+   * @param options - Save options including showModal and skipFormStateUpdate flags
    */
   const handleSave = useCallback(
-    async (showModal: boolean) => {
-      await save(showModal);
+    async (options: SaveOptions) => {
+      await save(options);
     },
     [save]
   );
@@ -781,6 +786,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               refetch={refetch}
               onSave={handleSave}
               showErrorModal={showErrorModal}
+              mode={currentMode}
               data-testid="FormActions__1a0853"
             />
           </form>

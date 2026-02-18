@@ -27,6 +27,9 @@ export const SYNC_SERVER_PROCESS_ID = "A7E842C7B06D460BA37F8AACD41CFA1E";
 export const START_STOP_SERVER_PROCESS_ID = "53F3CA8AE4A34B618454B516DD76BB65";
 export const REQUEST_DOMAIN_PROCESS_ID = "8ACE386EA8B7472A8BF6279D4A019E82";
 export const DELETE_SERVER_PROCESS_ID = "8F6B9719DDAC4B178212599EE62489D8";
+export const FUNDS_TRANSFER_PROCESS_ID = "CC73C4845CDC487395804946EACB225F";
+export const PICK_VALIDATE_PROCESS_ID = "50D2EB7B24B44EA39C4735AC51CA8E0A";
+export const PACKING_PROCESS_ID = "F3B77135F9D94C8FA1EFA270691265FB";
 export const BUTTON_LIST_REFERENCE_ID = "FF80818132F94B500132F9575619000A";
 type ProcessDefinition = {
   inpColumnId: string;
@@ -161,6 +164,28 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
     dynamicKeys: {},
     staticOptions: {},
     skipParamsLevel: true,
+  },
+  [FUNDS_TRANSFER_PROCESS_ID]: {
+    inpColumnId: "FIN_Financial_Account_ID",
+    inpPrimaryKeyColumnId: "inpfinFinancialAccountId",
+    defaultKeys: {},
+    dynamicKeys: {},
+    staticOptions: {},
+    skipParamsLevel: false,
+  },
+  [PICK_VALIDATE_PROCESS_ID]: {
+    inpColumnId: "OBWPL_Pickinglist_ID",
+    inpPrimaryKeyColumnId: "inpobwplPickinglistId",
+    defaultKeys: {},
+    dynamicKeys: {},
+    staticOptions: {},
+  },
+  [PACKING_PROCESS_ID]: {
+    inpColumnId: "OBWPL_Pickinglist_ID",
+    inpPrimaryKeyColumnId: "inpobwplPickinglistId",
+    defaultKeys: {},
+    dynamicKeys: {},
+    staticOptions: {},
   },
 };
 

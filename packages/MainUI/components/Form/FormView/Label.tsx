@@ -28,12 +28,14 @@ function LabelCmp({ field }: { field: Field }) {
   const { watch } = useFormContext();
   const value = watch(field.hqlName);
   const isReference = useMemo(() => isEntityReference(getFieldReference(field.column?.reference)), [field]);
+  const isAccessible = field.isReferencedWindowAccessible ?? false;
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
 
   if (
     field.fieldGroup !== "audit" &&
     value &&
     isReference &&
+    isAccessible &&
     field.column.referenceSearchKey$_identifier !== CUSTOM_SELECTORS_IDENTIFIERS.LOCATION
   ) {
     const windowId = field.referencedWindowId || "";

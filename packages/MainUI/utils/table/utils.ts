@@ -1,8 +1,9 @@
 import type { SxProps, Theme } from "@mui/material";
-import type { MRT_ColumnDef, MRT_Row, MRT_Column } from "material-react-table";
-import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import type { MRT_ColumnDef, MRT_Row, MRT_Column, MRT_ColumnFiltersState } from "material-react-table";
+import type { EntityData, Column, DatasourceOptions } from "@workspaceui/api-client/src/api/types";
 import { isEmptyObject } from "../commons";
 import { formatClassicDate, isDateLike } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
+import { LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 
 export const getDisplayColumnDefOptions = ({ shouldUseTreeMode }: { shouldUseTreeMode: boolean }) => {
   if (shouldUseTreeMode) {
@@ -131,4 +132,37 @@ export const getCellTitle = (cellValue: unknown): string => {
     }
   }
   return "";
+};
+
+export const mapSummariesToBackend = (summaries: Record<string, string>, baseColumns: Column[]) => {
+  const summaryRequest: Record<string, string> = {};
+  const columnMapping: Record<string, string> = {};
+
+  for (const [colId, type] of Object.entries(summaries)) {
+    const column = baseColumns.find((col) => col.columnName === colId || col.id === colId);
+    if (column) {
+      const backendName = column.columnName || column.id;
+      summaryRequest[backendName] = type;
+      columnMapping[backendName] = colId;
+    }
+  }
+
+  return { summaryRequest, columnMapping };
+};
+
+export const getSummaryCriteria = (
+  query: DatasourceOptions,
+  tableColumnFilters: MRT_ColumnFiltersState,
+  baseColumns: Column[]
+) => {
+  const columnFilterCriteria = LegacyColumnFilterUtils.createColumnFilterCriteria(tableColumnFilters, baseColumns);
+
+  let existingCriteria: Record<string, unknown>[] = [];
+  if (Array.isArray(query.criteria)) {
+    existingCriteria = query.criteria as unknown as Record<string, unknown>[];
+  } else if (query.criteria) {
+    existingCriteria = [query.criteria] as unknown as Record<string, unknown>[];
+  }
+
+  return [...existingCriteria, ...columnFilterCriteria];
 };
