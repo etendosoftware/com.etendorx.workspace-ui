@@ -135,7 +135,8 @@ export class ConfigApi {
     try {
       const response = await fetch(`${API_BASE}/templates`);
       const data = await response.json();
-      return data;
+      // Server returns {success, templates} — wrap under data for consistency
+      return { success: data.success, data: { templates: data.templates ?? [] }, error: data.error };
     } catch (error) {
       return {
         success: false,
@@ -151,7 +152,8 @@ export class ConfigApi {
     try {
       const response = await fetch(`${API_BASE}/templates/${encodeURIComponent(name)}`);
       const data = await response.json();
-      return data;
+      // Server returns {success, template} — wrap under data for consistency
+      return { success: data.success, data: { template: data.template }, error: data.error };
     } catch (error) {
       return {
         success: false,
