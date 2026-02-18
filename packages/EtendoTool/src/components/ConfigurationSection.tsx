@@ -35,6 +35,7 @@ import SaveIcon from "@mui/icons-material/Save";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { ConfigApi, type GroupedConfigs, type PropertyConfig, type TemplateInfo } from "../services/configApi";
+import { GithubAuthButton } from "./GithubAuthButton";
 
 interface ConfigurationSectionProps {
   onClose?: () => void;
@@ -266,6 +267,44 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
     }
   };
 
+  const renderDefaultInput = (property: PropertyConfig) => {
+    const value = editedConfigs[property.key] ?? "";
+    const normalizedType = property.type?.toLowerCase();
+    const inputType =
+      property.sensitive && !visiblePasswords[property.key]
+        ? "password"
+        : normalizedType === "integer" || normalizedType === "int" || normalizedType === "port"
+          ? "number"
+          : "text";
+
+    return (
+      <TextField
+        value={value}
+        onChange={(e) => handleConfigChange(property.key, e.target.value)}
+        type={inputType}
+        fullWidth
+        error={!!validationErrors[property.key]}
+        helperText={validationErrors[property.key]}
+        size="small"
+        variant="outlined"
+        placeholder={property.defaultValue ? `Default value: ${property.defaultValue}` : undefined}
+        InputProps={
+          property.sensitive
+            ? {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => togglePasswordVisibility(property.key)} edge="end">
+                      {visiblePasswords[property.key] ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }
+            : undefined
+        }
+      />
+    );
+  };
+
   const renderInput = (property: PropertyConfig) => {
     if (property.process) {
       const command = property.key;
@@ -327,40 +366,16 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
       );
     }
 
-    const normalizedType = property.type?.toLowerCase();
-    const inputType =
-      property.sensitive && !visiblePasswords[property.key]
-        ? "password"
-        : normalizedType === "integer" || normalizedType === "int" || normalizedType === "port"
-          ? "number"
-          : "text";
+    if (property.key === "githubToken") {
+      return (
+        <Stack spacing={1}>
+          {renderDefaultInput(property)}
+          <GithubAuthButton onSuccess={(token) => handleConfigChange("githubToken", token)} />
+        </Stack>
+      );
+    }
 
-    return (
-      <TextField
-        value={value}
-        onChange={(e) => handleConfigChange(property.key, e.target.value)}
-        type={inputType}
-        fullWidth
-        error={!!validationErrors[property.key]}
-        helperText={validationErrors[property.key]}
-        size="small"
-        variant="outlined"
-        placeholder={property.defaultValue ? `Default value: ${property.defaultValue}` : undefined}
-        InputProps={
-          property.sensitive
-            ? {
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => togglePasswordVisibility(property.key)} edge="end">
-                      {visiblePasswords[property.key] ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }
-            : undefined
-        }
-      />
-    );
+    return renderDefaultInput(property);
   };
 
   if (loading) {
