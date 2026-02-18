@@ -15,6 +15,7 @@
  *************************************************************************
  */
 
+// @data-testid-ignore
 import { memo, useCallback } from "react";
 import { CellEditorFactory } from "../Table/CellEditors";
 import { getFieldReference } from "@/utils";
