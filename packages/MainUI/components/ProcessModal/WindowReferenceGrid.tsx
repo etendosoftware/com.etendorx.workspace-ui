@@ -116,36 +116,43 @@ const normalizeContextKey = (contextKey: string): string => {
   return contextKey;
 };
 
+const STANDARD_CONTEXT_KEYS = [
+  "c_bpartner_id",
+  "m_product_id",
+  "c_project_id",
+  "c_campaign_id",
+  "c_activity_id",
+  "user1_id",
+  "user2_id",
+  "ad_org_id",
+  "ad_client_id",
+  "trxtype",
+  "issotrx",
+  "transaction_type",
+];
+
+const addTabFieldsToSet = (validColumnNames: Set<string>, stableWindowReferenceTab: any) => {
+  if (!stableWindowReferenceTab?.fields) return;
+  for (const f of Object.values(stableWindowReferenceTab.fields) as any[]) {
+    if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
+    if (f.hqlName) validColumnNames.add(f.hqlName.toLowerCase());
+  }
+};
+
+const addPropFieldsToSet = (validColumnNames: Set<string>, fields: any) => {
+  if (!fields) return;
+  for (const f of fields) {
+    if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
+    if (f.name) validColumnNames.add(f.name.toLowerCase());
+  }
+};
+
 const getValidColumnNames = (stableWindowReferenceTab: any, fields: any) => {
-  const validColumnNames = new Set<string>();
-  if (stableWindowReferenceTab?.fields) {
-    for (const f of Object.values(stableWindowReferenceTab.fields) as any[]) {
-      if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
-      if (f.hqlName) validColumnNames.add(f.hqlName.toLowerCase());
-    }
-  }
-  if (fields) {
-    for (const f of fields) {
-      if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
-      if (f.name) validColumnNames.add(f.name.toLowerCase());
-    }
-  }
-  for (const k of [
-    "c_bpartner_id",
-    "m_product_id",
-    "c_project_id",
-    "c_campaign_id",
-    "c_activity_id",
-    "user1_id",
-    "user2_id",
-    "ad_org_id",
-    "ad_client_id",
-    "trxtype",
-    "issotrx",
-    "transaction_type",
-  ]) {
-    validColumnNames.add(k);
-  }
+  const validColumnNames = new Set<string>(STANDARD_CONTEXT_KEYS);
+
+  addTabFieldsToSet(validColumnNames, stableWindowReferenceTab);
+  addPropFieldsToSet(validColumnNames, fields);
+
   return validColumnNames;
 };
 
