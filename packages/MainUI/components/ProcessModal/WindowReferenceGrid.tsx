@@ -595,14 +595,9 @@ const WindowReferenceGrid = ({
     const applyRecordValues = () => {
       if (!parameters || !stableRecordValues) return;
 
-<<<<<<< HEAD
-      for (const param of Object.values(parameters) as any[]) {
-        const paramValue = effectiveRecordValues[param.name];
-=======
       for (const param of Object.values(parameters)) {
         const rawValue = effectiveRecordValues[param.name];
         const paramValue = extractActualValue(rawValue);
->>>>>>> bf97f69c (Feature ETP-3168: Fix build)
         // Only include parameter if it matches a column in the grid OR is a standard ID
         if (paramValue !== undefined && param.dBColumnName) {
           if (paramValue === "" || paramValue === null) return;
