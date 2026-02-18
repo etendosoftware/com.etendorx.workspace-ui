@@ -901,62 +901,63 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           // Use getMappedFormValues for cleaner mapping (handles empty->null and dbColumnName)
           const mappedFormValues = getMappedFormValues();
           mappedValues = mapKeysWithDefaults({ ...mappedFormValues, ...populatedGrids });
-        const formValues = getMappedFormValues();
+          const formValues = getMappedFormValues();
 
-        // Fix: DocAction - copy user selection from parameter.name to dBColumnName
-        const docActionParam = Object.values(parameters).find(
-          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
-        );
-        if (docActionParam) {
-          const userSelection = formValues[docActionParam.name];
-          if (userSelection) {
-            formValues.DocAction = userSelection;
+          // Fix: DocAction - copy user selection from parameter.name to dBColumnName
+          const docActionParam = Object.values(parameters).find(
+            (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
+          );
+          if (docActionParam) {
+            const userSelection = formValues[docActionParam.name];
+            if (userSelection) {
+              formValues.DocAction = userSelection;
+            }
           }
-        }
-        // Build base payload
-        const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
-        const skipParamsLevel = processDefConfig?.skipParamsLevel;
+          // Build base payload
+          const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+          const skipParamsLevel = processDefConfig?.skipParamsLevel;
 
-        const payload: Record<string, unknown> = {
-          recordIds: record?.id ? [record.id] : [],
-          _buttonValue: actionValue || "DONE",
-          ...(skipParamsLevel
-            ? {
-                ...mappedValues,
-                ...buttonParams,
-              }
-            : {
-                _params: {
+          const payload: Record<string, unknown> = {
+            recordIds: record?.id ? [record.id] : [],
+            _buttonValue: actionValue || "DONE",
+            ...(skipParamsLevel
+              ? {
                   ...mappedValues,
                   ...buttonParams,
-                },
-              }),
-          _entityName: tab?.entityName || "",
-          windowId: tab?.window || "",
-          ...buildProcessSpecificFields(processId),
-          ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
-        };
+                }
+              : {
+                  _params: {
+                    ...mappedValues,
+                    ...buttonParams,
+                  },
+                }),
+            _entityName: tab?.entityName || "",
+            windowId: tab?.window || "",
+            ...buildProcessSpecificFields(processId),
+            ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
+          };
 
-        const params = (skipParamsLevel ? payload : payload._params) as Record<string, unknown>;
-        logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Final payload:", {
-          payloadKeys: Object.keys(payload),
-          paramsKeys: Object.keys(params),
-          gridsInParams: Object.keys(params).filter(
-            (k) => k === "order_invoice" || k === "credit_to_use" || k === "glitem"
-          ),
-          orderInvoiceStructure: params.order_invoice
-            ? {
-                hasSelection: !!(params.order_invoice as any)._selection,
-                selectionLength: ((params.order_invoice as any)._selection || []).length,
-                hasAllRows: !!(params.order_invoice as any)._allRows,
-                allRowsLength: ((params.order_invoice as any)._allRows || []).length,
-                fullStructure: JSON.stringify(params.order_invoice).substring(0, 300),
-              }
-            : "NOT PRESENT",
-          payloadSample: JSON.stringify(payload).substring(0, 500),
-        });
+          const params = (skipParamsLevel ? payload : payload._params) as Record<string, unknown>;
+          logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Final payload:", {
+            payloadKeys: Object.keys(payload),
+            paramsKeys: Object.keys(params),
+            gridsInParams: Object.keys(params).filter(
+              (k) => k === "order_invoice" || k === "credit_to_use" || k === "glitem"
+            ),
+            orderInvoiceStructure: params.order_invoice
+              ? {
+                  hasSelection: !!(params.order_invoice as any)._selection,
+                  selectionLength: ((params.order_invoice as any)._selection || []).length,
+                  hasAllRows: !!(params.order_invoice as any)._allRows,
+                  allRowsLength: ((params.order_invoice as any)._allRows || []).length,
+                  fullStructure: JSON.stringify(params.order_invoice).substring(0, 300),
+                }
+              : "NOT PRESENT",
+            payloadSample: JSON.stringify(payload).substring(0, 500),
+          });
 
-        await executeJavaProcess(payload, "process");
+          await executeJavaProcess(payload, "process");
+        }
       });
     },
     [
@@ -1018,7 +1019,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           if (userSelection) {
             formValues.DocAction = userSelection;
           }
-        }        
+        }
 
         const combinedValues = {
           ...recordValues,
