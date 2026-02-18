@@ -17,6 +17,7 @@ import type { SelectProps } from "../types";
 import { useDropdownPosition } from "@/components/Form/FormView/selectors/hooks/useDropdownPosition";
 import OptionItem from "@/components/Form/FormView/selectors/components/Select/OptionItem";
 import DropdownPortal from "@/components/Form/FormView/selectors/components/Select/DropdownPortal";
+import { updateSelectorValue } from "@/utils/form/selectors/utils";
 
 function SelectCmp({
   name,
@@ -106,8 +107,7 @@ function SelectCmp({
   const handleSelect = useCallback(
     (id: string, label: string) => {
       const option = options.find((opt) => opt.id === id);
-      setValue(`${name}_data`, option?.data);
-      setValue(name, id);
+      updateSelectorValue(setValue, name, id, option?.data);
       setSelectedLabel(label);
       setIsOpen(false);
       setHighlightedIndex(-1);

@@ -111,6 +111,16 @@ export interface RefListField {
   color?: string;
 }
 
+export interface SelectorColumn {
+  id: string;
+  header: string;
+  accessorKey: string;
+  enableSorting?: boolean;
+  enableFiltering?: boolean;
+  referenceId?: string;
+  [key: string]: unknown;
+}
+
 export interface Field {
   hqlName: string;
   inputName: string;
@@ -138,6 +148,7 @@ export interface Field {
   selector?: {
     hasTableRelated?: boolean;
     hasProcessDefinitionRelated?: boolean;
+    gridColumns?: SelectorColumn[];
     [key: string]: unknown;
   };
   refList: RefListField[];

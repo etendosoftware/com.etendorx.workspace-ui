@@ -15,12 +15,13 @@
  *************************************************************************
  */
 
-import type { Field } from "@workspaceui/api-client/src/api/types";
+import type { Field, EntityData } from "@workspaceui/api-client/src/api/types";
 import SearchIcon from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
 import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
-import { memo } from "react";
+import { memo, useState } from "react";
 import { CUSTOM_SELECTORS_IDENTIFIERS, FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { getSelectorFieldName, updateSelectorValue } from "@/utils/form/selectors/utils";
 import { toCamelCase } from "@/utils/commons";
 import { BooleanSelector } from "./BooleanSelector";
 import { DateSelector } from "./DateSelector";
@@ -35,6 +36,7 @@ import { TableDirSelector } from "./TableDirSelector";
 import DatetimeSelector from "./DatetimeSelector";
 import LocationSelector from "./LocationSelector";
 import { TimeSelector } from "./TimeSelector";
+import SelectorModal from "./SelectorModal";
 
 import { useFormContext } from "react-hook-form";
 
@@ -44,7 +46,8 @@ export type GenericSelectorProps = {
 };
 
 const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
-  const { getValues } = useFormContext();
+  const { getValues, setValue } = useFormContext();
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   // if hqlName data is missing, try camelCase version
   let effectiveField = field;
@@ -61,7 +64,6 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   }
 
   const { reference } = effectiveField.column;
-
   const SelectorComponent = (() => {
     switch (reference) {
       case FIELD_REFERENCE_CODES.PASSWORD:
@@ -137,28 +139,48 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
 
   const { hasTableRelated, hasProcessDefinitionRelated } = effectiveField.selector || {};
 
+  const handleSelect = (record: EntityData) => {
+    if (record?.id) {
+      const fieldName = getSelectorFieldName(effectiveField);
+      updateSelectorValue(setValue, fieldName, record.id, record);
+    }
+  };
+
   return (
-    <div className="flex w-full items-center gap-1">
-      <div className="flex-grow min-w-0">{SelectorComponent}</div>
-      {hasTableRelated && (
-        <IconButton
-          onClick={() => console.log("Search clicked")}
-          className="w-8 h-8 flex-shrink-0"
-          tooltip="Search"
-          tooltipPosition="top">
-          <SearchIcon className="w-5 h-5 fill-current" />
-        </IconButton>
+    <>
+      <div className="flex w-full items-center gap-1">
+        <div className="flex-grow min-w-0">{SelectorComponent}</div>
+        {hasTableRelated && !isReadOnly && (
+          <IconButton
+            onClick={() => setIsSearchModalOpen(true)}
+            className="w-8 h-8 flex-shrink-0"
+            tooltip="Search"
+            tooltipPosition="top"
+            data-testid={`IconButton__${field.id}`}>
+            <SearchIcon className="w-5 h-5 fill-current" data-testid={`SearchIcon__${field.id}`} />
+          </IconButton>
+        )}
+        {hasProcessDefinitionRelated && !isReadOnly && (
+          <IconButton
+            onClick={() => console.log("Process clicked")}
+            className="w-8 h-8 flex-shrink-0"
+            tooltip="Add"
+            tooltipPosition="top"
+            data-testid={`IconButton__${field.id}`}>
+            <PlusIcon className="w-5 h-5 fill-current" data-testid={`PlusIcon__${field.id}`} />
+          </IconButton>
+        )}
+      </div>
+      {isSearchModalOpen && (
+        <SelectorModal
+          field={effectiveField}
+          isOpen={isSearchModalOpen}
+          onClose={() => setIsSearchModalOpen(false)}
+          onSelect={handleSelect}
+          data-testid={`SelectorModal__${field.id}`}
+        />
       )}
-      {hasProcessDefinitionRelated && (
-        <IconButton
-          onClick={() => console.log("Process clicked")}
-          className="w-8 h-8 flex-shrink-0"
-          tooltip="Add"
-          tooltipPosition="top">
-          <PlusIcon className="w-5 h-5 fill-current" />
-        </IconButton>
-      )}
-    </div>
+    </>
   );
 };
 

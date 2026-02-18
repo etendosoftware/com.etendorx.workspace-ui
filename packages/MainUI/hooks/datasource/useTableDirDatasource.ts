@@ -209,12 +209,14 @@ export const useTableDirDatasource = ({
       const searchFields: string[] = [];
 
       // 1. Prioritize Selector Configuration
-      if (field.selector?.extraSearchFields) {
-        searchFields.push(...field.selector.extraSearchFields.split(",").map((f) => f.trim()));
+      const extraSearchFields = field.selector?.extraSearchFields as string | undefined;
+      if (extraSearchFields) {
+        searchFields.push(...extraSearchFields.split(",").map((f) => f.trim()));
       }
 
-      if (field.selector?.displayField && !searchFields.includes(field.selector.displayField)) {
-        searchFields.push(field.selector.displayField);
+      const displayField = field.selector?.displayField as string | undefined;
+      if (displayField && !searchFields.includes(displayField)) {
+        searchFields.push(displayField);
       }
 
       // 2. Fallbacks if no fields defined in selector
@@ -341,7 +343,8 @@ export const useTableDirDatasource = ({
           applySearchCriteria(body, search);
         }
 
-        const { data } = await datasource.client.request(`/api/datasource/${field.selector?.datasourceName ?? ""}`, {
+        const datasourceName = (field.selector?.datasourceName ?? "") as string;
+        const { data } = await datasource.client.request(`/api/datasource/${datasourceName}`, {
           method: "POST",
           body,
         });
