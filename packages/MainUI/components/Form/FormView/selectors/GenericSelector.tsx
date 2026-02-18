@@ -18,6 +18,7 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { memo } from "react";
 import { CUSTOM_SELECTORS_IDENTIFIERS, FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { toCamelCase } from "@/utils/commons";
 import { BooleanSelector } from "./BooleanSelector";
 import { DateSelector } from "./DateSelector";
 import { ListSelector } from "./ListSelector";
@@ -30,6 +31,9 @@ import { PasswordSelector } from "./PasswordSelector";
 import { TableDirSelector } from "./TableDirSelector";
 import DatetimeSelector from "./DatetimeSelector";
 import LocationSelector from "./LocationSelector";
+import { TimeSelector } from "./TimeSelector";
+
+import { useFormContext } from "react-hook-form";
 
 export type GenericSelectorProps = {
   field: Field;
@@ -37,59 +41,89 @@ export type GenericSelectorProps = {
 };
 
 const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
-  // Reference mapping corrected - "10" now properly handled as STRING
+  const { getValues } = useFormContext();
 
-  const { reference } = field.column;
+  // if hqlName data is missing, try camelCase version
+  let effectiveField = field;
+  if (field.hqlName) {
+    const values = getValues();
+    const directValue = values[field.hqlName];
+
+    if (directValue === undefined) {
+      const camelKey = toCamelCase(field.hqlName);
+      if (values[camelKey] !== undefined) {
+        effectiveField = { ...field, hqlName: camelKey };
+      }
+    }
+  }
+
+  const { reference } = effectiveField.column;
+
   switch (reference) {
     case FIELD_REFERENCE_CODES.PASSWORD:
-      return <PasswordSelector field={field} readOnly={isReadOnly} data-testid="PasswordSelector__6e80fa" />;
+      return <PasswordSelector field={effectiveField} readOnly={isReadOnly} data-testid="PasswordSelector__6e80fa" />;
     case FIELD_REFERENCE_CODES.PRODUCT: // Product reference to datasource
     case FIELD_REFERENCE_CODES.SELECTOR: // Generic selector (includes Product)
     case FIELD_REFERENCE_CODES.TABLE_DIR_19:
     case FIELD_REFERENCE_CODES.TABLE_DIR_18:
-      return <TableDirSelector field={field} isReadOnly={isReadOnly} data-testid="TableDirSelector__6e80fa" />;
+      return <TableDirSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="TableDirSelector__6e80fa" />;
     case FIELD_REFERENCE_CODES.DATE:
-      return <DateSelector field={field} isReadOnly={isReadOnly} data-testid="DateSelector__6e80fa" />;
+      return <DateSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="DateSelector__6e80fa" />;
     case FIELD_REFERENCE_CODES.DATETIME:
-      return <DatetimeSelector field={field} isReadOnly={isReadOnly} data-testid="DatetimeSelector__6e80fa" />;
+      return <DatetimeSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="DatetimeSelector__6e80fa" />;
     case FIELD_REFERENCE_CODES.BOOLEAN:
-      return <BooleanSelector field={field} isReadOnly={isReadOnly} data-testid="BooleanSelector__6e80fa" />;
+      return <BooleanSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="BooleanSelector__6e80fa" />;
     case FIELD_REFERENCE_CODES.QUANTITY_29:
     case FIELD_REFERENCE_CODES.QUANTITY_22:
       return (
         <QuantitySelector
           allowNegative={true}
-          field={field}
-          min={field.column.minValue}
-          max={field.column.maxValue}
+          field={effectiveField}
+          min={effectiveField.column.minValue}
+          max={effectiveField.column.maxValue}
+          isReadOnly={isReadOnly}
           data-testid="QuantitySelector__6e80fa"
         />
       );
+    case FIELD_REFERENCE_CODES.TIME:
+      return <TimeSelector field={field} isReadOnly={isReadOnly} data-testid={"TimeSelector__" + field.id} />;
     case FIELD_REFERENCE_CODES.LIST_17:
     case FIELD_REFERENCE_CODES.LIST_13:
-      return <ListSelector field={field} isReadOnly={isReadOnly} data-testid="ListSelector__6e80fa" />;
+      return <ListSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="ListSelector__6e80fa" />;
     case FIELD_REFERENCE_CODES.SELECT_30:
       if (
-        field.column.referenceSearchKey === FIELD_REFERENCE_CODES.LOCATION_21 ||
-        field.column.referenceSearchKey$_identifier === CUSTOM_SELECTORS_IDENTIFIERS.LOCATION
+        effectiveField.column.referenceSearchKey === FIELD_REFERENCE_CODES.LOCATION_21 ||
+        effectiveField.column.referenceSearchKey$_identifier === CUSTOM_SELECTORS_IDENTIFIERS.LOCATION
       ) {
-        return <LocationSelector field={field} isReadOnly={isReadOnly} data-testid="LocationSelector__6e80fa" />;
+        return (
+          <LocationSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="LocationSelector__6e80fa" />
+        );
       }
-      return <SelectSelector field={field} isReadOnly={isReadOnly} data-testid="SelectSelector__6e80fa" />;
+      return <SelectSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="SelectSelector__6e80fa" />;
     case FIELD_REFERENCE_CODES.DECIMAL:
     case FIELD_REFERENCE_CODES.NUMERIC:
     case FIELD_REFERENCE_CODES.RATE:
       return (
-        <NumericSelector field={field} type="decimal" readOnly={isReadOnly} data-testid="NumericSelector__6e80fa" />
+        <NumericSelector
+          field={effectiveField}
+          type="decimal"
+          readOnly={isReadOnly}
+          data-testid="NumericSelector__6e80fa"
+        />
       );
     case FIELD_REFERENCE_CODES.INTEGER:
       return (
-        <NumericSelector field={field} type="integer" readOnly={isReadOnly} data-testid="NumericSelector__6e80fa" />
+        <NumericSelector
+          field={effectiveField}
+          type="integer"
+          readOnly={isReadOnly}
+          data-testid="NumericSelector__6e80fa"
+        />
       );
     case FIELD_REFERENCE_CODES.TEXT_LONG:
-      return <TextLongSelector field={field} readOnly={isReadOnly} data-testid="TextLongSelector__6e80fa" />;
+      return <TextLongSelector field={effectiveField} readOnly={isReadOnly} data-testid="TextLongSelector__6e80fa" />;
     default:
-      return <StringSelector field={field} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;
+      return <StringSelector field={effectiveField} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;
   }
 };
 
