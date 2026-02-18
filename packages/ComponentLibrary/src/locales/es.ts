@@ -579,7 +579,8 @@ const es = {
     process: "Procesar",
     validationError: "Error al procesar",
     wrongBarcode: "Código de barras incorrecto",
-    pendingToValidate: "Todos los items deben tener cantidades verificadas antes de procesar. Ninguna línea puede exceder su cantidad original y al menos una línea debe estar verificada.",
+    pendingToValidate:
+      "Todos los items deben tener cantidades verificadas antes de procesar. Ninguna línea puede exceder su cantidad original y al menos una línea debe estar verificada.",
     processCompleted: "Proceso completado exitosamente",
     cancel: "Cancelar",
     close: "Cerrar",

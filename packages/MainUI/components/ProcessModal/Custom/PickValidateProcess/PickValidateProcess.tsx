@@ -455,7 +455,13 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
                     disabled={currentBox <= 1}
                     className="flex items-center justify-center w-9 h-full text-(--color-transparent-neutral-60) hover:text-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none">
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" role="img" aria-label="Previous box">
-                      <path d="M8 3L4 7l4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      <path
+                        d="M8 3L4 7l4 4"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   </button>
                   <span className="flex-1 flex items-center justify-center font-medium text-sm text-(--color-transparent-neutral-80) select-none tabular-nums">
@@ -467,7 +473,13 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
                     disabled={currentBox >= boxCount}
                     className="flex items-center justify-center w-9 h-full text-(--color-transparent-neutral-60) hover:text-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none">
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" role="img" aria-label="Next box">
-                      <path d="M6 3l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      <path
+                        d="M6 3l4 4-4 4"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   </button>
                 </div>

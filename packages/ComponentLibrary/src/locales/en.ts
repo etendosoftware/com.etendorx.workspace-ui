@@ -580,7 +580,8 @@ const en = {
     process: "Process",
     validationError: "Error while processing",
     wrongBarcode: "Wrong Barcode",
-    pendingToValidate: "All items must have verified quantities before processing. No line can exceed its original quantity and at least one line must be verified.",
+    pendingToValidate:
+      "All items must have verified quantities before processing. No line can exceed its original quantity and at least one line must be verified.",
     processCompleted: "Process completed successfully",
     cancel: "Cancel",
     close: "Close",
