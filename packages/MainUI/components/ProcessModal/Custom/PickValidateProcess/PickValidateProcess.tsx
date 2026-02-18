@@ -1,16 +1,54 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
+/**
+ * @fileoverview Custom process modal for Pick & Validate (Warehouse Picking List).
+ * Overrides the generic process modal for PICK_VALIDATE_PROCESS_ID.
+ */
+
 import type React from "react";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
-import CheckIcon from "@workspaceui/componentlibrary/src/assets/icons/check-circle.svg";
-import AlertIcon from "@workspaceui/componentlibrary/src/assets/icons/alert-circle.svg";
-import Loading from "../../../loading";
 import { useUserContext } from "@/hooks/useUserContext";
 import { revalidateDopoProcess } from "@/app/actions/revalidate";
+import {
+  type ResultMessage,
+  type ConfirmDialogState,
+  INITIAL_CONFIRM_DIALOG,
+  parseSmartClientMessage,
+} from "../shared/processModalUtils";
+import { useBoxManager } from "../shared/useBoxManager";
+import {
+  LoadingOverlay,
+  ErrorAlert,
+  ConfirmDialog,
+  ResultMessageModal,
+  BoxSelector,
+  AddBoxButton,
+  FormInput,
+  ValidateButton,
+} from "../shared/ProcessModalShared";
 
-// Constants for IDs — Pick & Validate uses different action handlers per operation
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
 const PICK_VALIDATE_PROCESS_ID_CONST = "40317268E74C445FA85DB97249AFFE37";
 const MANAGE_PICKING_LIST_PROCESS_ID = "B7B1D4F53D4249C5A10D3AD0865D909F";
 const VALIDATE_ACTION_HANDLER = "org.openbravo.warehouse.pickinglist.ValidateActionHandler";
@@ -19,57 +57,9 @@ const VALIDATE_BARCODE_ACTION_HANDLER = "org.openbravo.warehouse.pickinglist.act
 const VALIDATE_BARCODE_PROCESS_ID = "40317268E74C445FA85DB97249AFFE37";
 const ENTITY_NAME = "OBWPL_pickinglist";
 
-/**
- * Extract openDirectTab params from SmartClient HTML messages.
- * Returns the tabId, recordId, and cleaned text (without HTML).
- */
-const parseSmartClientMessage = (html: string): { text: string; tabId?: string; recordId?: string } => {
-  let tabId: string | undefined;
-  let recordId: string | undefined;
-  const marker = "openDirectTab(";
-  const idx = html.indexOf(marker);
-  if (idx !== -1) {
-    const argsStart = idx + marker.length;
-    const argsEnd = html.indexOf(")", argsStart);
-    if (argsEnd !== -1) {
-      const argsStr = html.substring(argsStart, argsEnd);
-      const args = argsStr.split(",").map((s) => s.replace(/["'\s]/g, ""));
-      tabId = args[0] || undefined;
-      recordId = args[1] || undefined;
-    }
-  }
-
-  let cleanText = html;
-  const anchorStart = cleanText.indexOf("<a");
-  if (anchorStart !== -1) {
-    const anchorEnd = cleanText.indexOf("</a>", anchorStart);
-    if (anchorEnd !== -1) {
-      cleanText = cleanText.substring(0, anchorStart) + cleanText.substring(anchorEnd + 4);
-    }
-  }
-  let result = "";
-  let inTag = false;
-  for (const ch of cleanText) {
-    if (ch === "<") inTag = true;
-    else if (ch === ">") inTag = false;
-    else if (!inTag) result += ch;
-  }
-
-  return { text: result.trim(), tabId, recordId };
-};
-
-interface ScannedInput {
-  code: string;
-  qty: number;
-}
-
-interface ResultMessage {
-  type: "success" | "warning" | "error";
-  title: string;
-  text: string;
-  linkTabId?: string;
-  linkRecordId?: string;
-}
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface PickValidateProcessProps {
   onClose: () => void;
@@ -94,9 +84,13 @@ interface PickValidateLine {
   quantity: number;
   qtyVerified: number;
   qtyPending: number;
-  scannedInputs: ScannedInput[];
+  scannedInputs: { code: string; qty: number }[];
   [key: string]: unknown;
 }
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
   onClose,
@@ -107,32 +101,25 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
   const { t } = useTranslation();
   const { token } = useUserContext();
 
-  // State
+  // UI state
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lines, setLines] = useState<PickValidateLine[]>([]);
   const [resultMessage, setResultMessage] = useState<ResultMessage | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>(INITIAL_CONFIRM_DIALOG);
 
-  // Form State
-  const [boxCount, setBoxCount] = useState(1);
-  const [currentBox, setCurrentBox] = useState(1);
+  // Form state
   const [currentQty, setCurrentQty] = useState(1);
   const [barcodeInput, setBarcodeInput] = useState("");
-  const barcodeInputRef = useRef<HTMLInputElement>(null);
 
-  // Confirmation dialog state
-  const [confirmDialog, setConfirmDialog] = useState<{
-    open: boolean;
-    message: string;
-    onConfirm: () => void;
-  }>({
-    open: false,
-    message: "",
-    onConfirm: () => {},
-  });
+  // Box management (shared hook)
+  const { boxCount, currentBox, setCurrentBox, handleAddBox, barcodeInputRef } = useBoxManager();
 
+  // ---------------------------------------------------------------------------
   // Initialize — call ValidateActionHandler with action: 'validate' to load grid data
+  // ---------------------------------------------------------------------------
+
   useEffect(() => {
     const initialize = async () => {
       try {
@@ -185,33 +172,12 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
     };
 
     initialize();
-  }, [pickingListId, token]);
+  }, [pickingListId, token, barcodeInputRef]);
 
-  // Add a new box column
-  const handleAddBox = useCallback(() => {
-    const newBoxNo = boxCount + 1;
-    setBoxCount(newBoxNo);
-    setCurrentBox(newBoxNo);
-    setLines((prev) => prev.map((line) => ({ ...line, [`box${newBoxNo}`]: 0 })));
-    setTimeout(() => barcodeInputRef.current?.focus(), 100);
-  }, [boxCount]);
+  // ---------------------------------------------------------------------------
+  // Validate barcode — calls ValidateBarcodeAction
+  // ---------------------------------------------------------------------------
 
-  // Remove the last box column
-  const handleRemoveBox = useCallback(() => {
-    if (boxCount <= 1) return;
-    setLines((prev) =>
-      prev.map((line) => {
-        const newLine = { ...line };
-        delete newLine[`box${boxCount}`];
-        return newLine;
-      })
-    );
-    const newCount = boxCount - 1;
-    setBoxCount(newCount);
-    if (currentBox >= boxCount) setCurrentBox(newCount);
-  }, [boxCount, currentBox]);
-
-  // Validate barcode — calls ValidateBarcodeAction (picking list version)
   const handleValidate = useCallback(async () => {
     if (!barcodeInput) return;
 
@@ -219,7 +185,6 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
       setProcessing(true);
       setError(null);
 
-      // Build validLines array matching SmartClient format
       const validLines = lines
         .filter((l) => l.shipmentLineId)
         .map((l) => ({
@@ -279,7 +244,6 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
           return prev;
         });
 
-        // Clear inputs
         setBarcodeInput("");
         setCurrentQty(1);
       } else {
@@ -292,9 +256,12 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
       setProcessing(false);
       setTimeout(() => barcodeInputRef.current?.focus(), 100);
     }
-  }, [barcodeInput, lines, currentBox, currentQty, boxCount, token, t]);
+  }, [barcodeInput, lines, currentBox, currentQty, boxCount, token, t, barcodeInputRef]);
 
+  // ---------------------------------------------------------------------------
   // Handle qtyVerified inline edit
+  // ---------------------------------------------------------------------------
+
   const handleQtyVerifiedChange = useCallback((lineIdx: number, newVal: number) => {
     setLines((prev) => {
       const next = [...prev];
@@ -305,11 +272,9 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
       updatedLine.qtyVerified = newVal;
       updatedLine.qtyPending = updatedLine.quantity - newVal;
 
-      // Track the manual change as a scanned input
       if (delta > 0) {
         updatedLine.scannedInputs = [...(updatedLine.scannedInputs || []), { code: "", qty: delta }];
       } else if (delta < 0) {
-        // Pop scanned inputs to undo
         const inputs = [...(updatedLine.scannedInputs || [])];
         let remaining = Math.abs(delta);
         while (remaining > 0 && inputs.length > 0) {
@@ -326,13 +291,15 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
     });
   }, []);
 
-  // Execute pick validate process — calls ManagePickingListAction matching SmartClient format
+  // ---------------------------------------------------------------------------
+  // Execute pick validate process — calls ManagePickingListAction
+  // ---------------------------------------------------------------------------
+
   const executeProcess = useCallback(async () => {
     try {
       setProcessing(true);
       setError(null);
 
-      // Build line data matching SmartClient format
       const lineData = lines.map((l) => ({
         productId: l.productId,
         shipmentLineId: l.shipmentLineId,
@@ -385,7 +352,10 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
     }
   }, [lines, pickingListId, token, t]);
 
-  // Handle process with validation — SmartClient blocks if over-limit or no verification done
+  // ---------------------------------------------------------------------------
+  // Handle process with validation
+  // ---------------------------------------------------------------------------
+
   const handleProcess = useCallback(() => {
     const overLimit = lines.some((l) => l.qtyVerified > l.quantity);
     const hasNonZero = lines.some((l) => l.qtyVerified > 0);
@@ -403,7 +373,10 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
     executeProcess();
   }, [lines, t, executeProcess]);
 
-  // Keyboard handling for barcode input
+  // ---------------------------------------------------------------------------
+  // Keyboard handler
+  // ---------------------------------------------------------------------------
+
   const handleBarcodeKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter") {
@@ -413,14 +386,23 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
     [handleValidate]
   );
 
+  // ---------------------------------------------------------------------------
+  // Close result modal and refresh
+  // ---------------------------------------------------------------------------
+
+  const handleResultClose = useCallback(async () => {
+    setResultMessage(null);
+    await revalidateDopoProcess();
+    onSuccess?.();
+    onClose();
+  }, [onClose, onSuccess]);
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+
   if (loading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-        <div className="bg-white rounded-lg p-8 shadow-lg">
-          <Loading data-testid="Loading__pickvalidate" />
-        </div>
-      </div>
-    );
+    return <LoadingOverlay testId="Loading__pickvalidate" />;
   }
 
   return (
@@ -443,126 +425,62 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
           <div className="flex-1 overflow-auto p-4 min-h-[12rem] flex flex-col gap-4">
             {/* Inputs Bar */}
             <div className="grid grid-cols-12 gap-x-5 gap-y-4 items-end">
-              {/* Box selector */}
-              <div className="col-span-12 sm:col-span-2">
-                <span className="flex items-center gap-1 font-medium text-sm leading-5 tracking-normal text-(--color-baseline-80) mb-1 select-none">
-                  {t("packing.box")}
-                </span>
-                <div className="flex items-center h-10.5 rounded-t bg-(--color-transparent-neutral-5) border-0 border-b-2 border-(--color-transparent-neutral-30)">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentBox((b) => Math.max(1, b - 1))}
-                    disabled={currentBox <= 1}
-                    className="flex items-center justify-center w-9 h-full text-(--color-transparent-neutral-60) hover:text-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" role="img" aria-label="Previous box">
-                      <path
-                        d="M8 3L4 7l4 4"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                  <span className="flex-1 flex items-center justify-center font-medium text-sm text-(--color-transparent-neutral-80) select-none tabular-nums">
-                    {currentBox}/{boxCount}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentBox((b) => Math.min(boxCount, b + 1))}
-                    disabled={currentBox >= boxCount}
-                    className="flex items-center justify-center w-9 h-full text-(--color-transparent-neutral-60) hover:text-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" role="img" aria-label="Next box">
-                      <path
-                        d="M6 3l4 4-4 4"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              <BoxSelector
+                label={t("packing.box")}
+                currentBox={currentBox}
+                boxCount={boxCount}
+                onPrev={() => setCurrentBox(Math.max(1, currentBox - 1))}
+                onNext={() => setCurrentBox(Math.min(boxCount, currentBox + 1))}
+              />
 
-              {/* Add box button */}
-              <div className="col-span-12 sm:col-span-1 flex items-end h-10.5 pb-[2px]">
-                <button
-                  type="button"
-                  onClick={handleAddBox}
-                  className="flex items-center justify-center w-full h-10 rounded bg-(--color-transparent-neutral-5) border-0 border-b-2 border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-60) hover:text-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) transition-colors select-none"
-                  title={t("packing.addBox")}>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" role="img" aria-label="Add box">
-                    <path d="M7 3v8M3 7h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
-                </button>
-              </div>
+              <AddBoxButton
+                onClick={() =>
+                  handleAddBox(
+                    setLines as (updater: (prev: Record<string, unknown>[]) => Record<string, unknown>[]) => void
+                  )
+                }
+                title={t("packing.addBox")}
+              />
 
-              {/* Quantity */}
-              <div className="col-span-12 sm:col-span-2">
-                <label
-                  htmlFor="pv-qty"
-                  className="flex items-center gap-1 font-medium text-sm leading-5 tracking-normal text-(--color-baseline-80) mb-1 select-none">
-                  {t("pickValidate.quantity")}
-                </label>
-                <input
-                  id="pv-qty"
-                  type="number"
-                  min={1}
-                  max={9999}
-                  value={currentQty}
-                  onChange={(e) => setCurrentQty(Math.max(1, Number(e.target.value)))}
-                  className="w-full px-3 rounded-t tracking-normal h-10.5 border-0 border-b-2 bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) transition-colors"
-                />
-              </div>
+              <FormInput
+                id="pv-qty"
+                label={t("pickValidate.quantity")}
+                type="number"
+                value={currentQty}
+                onChange={(e) => setCurrentQty(Math.max(1, Number(e.target.value)))}
+                min={1}
+                max={9999}
+                colSpan={2}
+              />
 
-              {/* Barcode */}
-              <div className="col-span-12 sm:col-span-5">
-                <label
-                  htmlFor="pv-barcode"
-                  className="flex items-center gap-1 font-medium text-sm leading-5 tracking-normal text-(--color-baseline-80) mb-1 select-none">
-                  {t("pickValidate.barcode")}
-                </label>
-                <input
-                  id="pv-barcode"
-                  ref={barcodeInputRef}
-                  type="text"
-                  value={barcodeInput}
-                  onChange={(e) => setBarcodeInput(e.target.value)}
-                  onKeyDown={handleBarcodeKeyDown}
-                  placeholder={t("pickValidate.scanBarcode")}
-                  className="w-full px-3 rounded-t tracking-normal h-10.5 border-0 border-b-2 bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) transition-colors"
-                />
-              </div>
+              <FormInput
+                id="pv-barcode"
+                label={t("pickValidate.barcode")}
+                type="text"
+                value={barcodeInput}
+                onChange={(e) => setBarcodeInput(e.target.value)}
+                onKeyDown={handleBarcodeKeyDown}
+                placeholder={t("pickValidate.scanBarcode")}
+                inputRef={barcodeInputRef}
+                colSpan={5}
+              />
 
-              {/* Validate button */}
-              <div className="col-span-12 sm:col-span-2 flex items-end h-10.5 pb-[2px]">
-                <Button
-                  variant="filled"
-                  size="large"
-                  onClick={handleValidate}
-                  disabled={processing || !barcodeInput}
-                  className="whitespace-nowrap w-full px-4 !h-10"
-                  data-testid="Button__pickvalidate">
-                  {t("pickValidate.validateBarcode")}
-                </Button>
-              </div>
+              <ValidateButton
+                onClick={handleValidate}
+                disabled={processing || !barcodeInput}
+                label={t("pickValidate.validateBarcode")}
+                testId="Button__pickvalidate"
+              />
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="p-3 rounded border-l-4 bg-gray-50 border-red-500 flex justify-between items-start">
-                <div>
-                  <h4 className="font-bold text-sm text-red-600">{t("pickValidate.validationError")}</h4>
-                  <p className="text-sm text-gray-700 whitespace-pre-line mt-1">{error}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setError(null)}
-                  className="text-gray-400 hover:text-gray-600 font-bold ml-2">
-                  <CloseIcon className="w-4 h-4" data-testid="CloseIcon__pickvalidate_err" />
-                </button>
-              </div>
+              <ErrorAlert
+                title={t("pickValidate.validationError")}
+                message={error}
+                onDismiss={() => setError(null)}
+                testId="CloseIcon__pickvalidate_err"
+              />
             )}
 
             {/* Grid */}
@@ -687,103 +605,24 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
         </div>
       </div>
 
-      {/* Error Dialog — blocks process execution (same as SmartClient) */}
-      {confirmDialog.open && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60] p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 relative">
-            <button
-              type="button"
-              onClick={() => setConfirmDialog((prev) => ({ ...prev, open: false }))}
-              className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 transition-colors">
-              <CloseIcon className="w-5 h-5 text-gray-500" data-testid="CloseIcon__pickvalidate_dialog" />
-            </button>
-            <div className="flex flex-col items-center gap-4">
-              <div className="flex items-center justify-center">
-                <AlertIcon className="w-10 h-10 stroke-red-500" data-testid="AlertIcon__pickvalidate" />
-              </div>
-              <div>
-                <h4 className="font-medium text-xl text-center text-red-600">{t("pickValidate.validationError")}</h4>
-                <p className="mt-2 text-sm text-center text-gray-600">{confirmDialog.message}</p>
-              </div>
-              <div className="flex w-full mt-2">
-                <Button
-                  variant="filled"
-                  size="large"
-                  onClick={confirmDialog.onConfirm}
-                  className="flex-1"
-                  data-testid="Button__pickvalidate_close_dialog">
-                  {t("pickValidate.close")}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Error/Confirm Dialog */}
+      <ConfirmDialog
+        state={confirmDialog}
+        title={t("pickValidate.validationError")}
+        closeLabel={t("pickValidate.close")}
+        onClose={() => setConfirmDialog((prev) => ({ ...prev, open: false }))}
+        testIdPrefix="pickvalidate"
+      />
 
       {/* Result Message Modal */}
-      {resultMessage &&
-        (() => {
-          const isWarning = resultMessage.type === "warning";
-          const isError = resultMessage.type === "error";
-
-          let bgGradient = "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)";
-          if (isWarning) bgGradient = "linear-gradient(180deg, #FFF3CD 0%, #FCFCFD 45%)";
-          else if (isError) bgGradient = "#fff";
-
-          let titleColor = "text-(--color-success-main)";
-          if (isWarning) titleColor = "text-amber-600";
-          else if (isError) titleColor = "text-red-600";
-
-          let icon = (
-            <CheckIcon className="w-6 h-6 fill-(--color-success-main)" data-testid="CheckIcon__pickvalidate" />
-          );
-          if (isWarning)
-            icon = <AlertIcon className="w-10 h-10 stroke-amber-600" data-testid="AlertIcon__pickvalidate_warn" />;
-          else if (isError)
-            icon = <AlertIcon className="w-10 h-10 stroke-red-600" data-testid="AlertIcon__pickvalidate_err" />;
-
-          return (
-            <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60] p-4">
-              <div
-                className="rounded-2xl p-6 shadow-xl relative max-w-sm w-full"
-                style={{ background: isError ? "#fff" : bgGradient }}>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setResultMessage(null);
-                    await revalidateDopoProcess();
-                    onSuccess?.();
-                    onClose();
-                  }}
-                  className="absolute top-4 right-4 p-1 rounded-full hover:bg-white/50 transition-colors">
-                  <CloseIcon className="w-5 h-5" data-testid="CloseIcon__pickvalidate_result" />
-                </button>
-                <div className="flex flex-col items-center gap-4">
-                  <div className="flex items-center justify-center">{icon}</div>
-                  <div className="w-full">
-                    <h4 className={`font-medium text-xl text-center ${titleColor}`}>{resultMessage.title}</h4>
-                    <p className="text-sm text-center text-(--color-transparent-neutral-80) whitespace-pre-line mt-2">
-                      {resultMessage.text}
-                    </p>
-                  </div>
-                  <Button
-                    variant="filled"
-                    size="large"
-                    onClick={async () => {
-                      setResultMessage(null);
-                      await revalidateDopoProcess();
-                      onSuccess?.();
-                      onClose();
-                    }}
-                    className="w-full mt-2"
-                    data-testid="Button__pickvalidate_result_close">
-                    {t("pickValidate.close")}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
+      {resultMessage && (
+        <ResultMessageModal
+          result={resultMessage}
+          closeLabel={t("pickValidate.close")}
+          onClose={handleResultClose}
+          testIdPrefix="pickvalidate"
+        />
+      )}
     </>
   );
 };
