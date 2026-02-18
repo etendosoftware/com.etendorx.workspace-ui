@@ -15,6 +15,7 @@
  *************************************************************************
  */
 
+// @data-testid-ignore
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Row, MRT_Cell } from "material-react-table";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
