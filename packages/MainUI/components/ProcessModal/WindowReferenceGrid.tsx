@@ -691,11 +691,14 @@ const WindowReferenceGrid = ({
   const visibleFieldsFromTab = useMemo(() => {
     if (!stableWindowReferenceTab?.fields) return [];
 
-    const visibleFields = Object.values(stableWindowReferenceTab.fields).filter((f: any) => isFieldVisible(f));
+    const visibleEntries = Object.entries(stableWindowReferenceTab.fields).filter(([_, f]: [string, any]) =>
+      isFieldVisible(f)
+    );
 
     // Parse the filtered fields
-    const parsed = visibleFields.map((field: any) => ({
+    const parsed = visibleEntries.map(([key, field]: [string, any]) => ({
       ...field,
+      _key: key, // Store the key to be used as ID
       // Ensure hqlName is consistent for grid columns
       hqlName: field.columnName || field.hqlName,
       label: field.name,
@@ -713,20 +716,23 @@ const WindowReferenceGrid = ({
     // Only use parsed fields for columns, fallback to provided fields prop if empty
     if (stableVisibleFields.length > 0) {
       // Map back to column structure expected by SmartClient-like grids
-      const enriched = stableVisibleFields.map((field: any) => ({
-        id: field.id,
-        header: field.name || field.columnName,
-        accessorKey: field.columnName,
-        columnName: field.columnName,
-        type: getFieldReference(field.reference || field.column?.reference),
-        // Important properties for column setup
-        canHide: true,
-        enableColumnFilter: true,
-        enableSorting: true,
-        ...field,
-        // Match with passed prop fields to ensure we have all metadata
-        // Note: 'fields' prop comes from ProcessDefinitionModal which might have different enrichment
-      }));
+      const enriched = stableVisibleFields.map((field: any) => {
+        return {
+          id: field.id || field._key || field.columnName,
+          header: field.name || field.columnName,
+          accessorKey: field.columnName,
+          columnName: field.columnName,
+          type: getFieldReference(field.reference || field.column?.reference),
+          // Important properties for column setup
+          canHide: true,
+          enableColumnFilter: true,
+          enableSorting: true,
+          ...field,
+          // Match with passed prop fields to ensure we have all metadata
+          // Note: 'fields' prop comes from ProcessDefinitionModal which might have different enrichment
+          filterFieldName: field._key || field.hqlName || field.columnName,
+        };
+      });
       return enriched;
     }
 
@@ -813,14 +819,43 @@ const WindowReferenceGrid = ({
 
   // Get columns with filter handlers using useColumns
   // Pass options as stable reference to avoid re-creating columns unnecessarily
+  const handleDateTextFilterChange = useCallback(
+    (columnId: string, filterValue: string) => {
+      const column = stableRawColumns.find((col: Column) => col.columnName === columnId || col.id === columnId);
+      const filterKey = column?.columnName || columnId;
+
+      const mrtFilter = filterValue?.trim() ? { id: filterKey, value: filterValue } : null;
+
+      setAppliedTableFilters((prev) => {
+        const filtered = prev.filter((f) => f.id !== filterKey);
+        return mrtFilter ? [...filtered, mrtFilter] : filtered;
+      });
+
+      setColumnFilters((prev) => {
+        const filtered = prev.filter((f) => f.id !== filterKey);
+        return mrtFilter ? [...filtered, mrtFilter] : filtered;
+      });
+    },
+    [stableRawColumns, setAppliedTableFilters, setColumnFilters]
+  );
+
   const columnOptions = useMemo(
     () => ({
       onColumnFilter: handleColumnFilterChange,
+      onDateTextFilterChange: handleDateTextFilterChange,
       onLoadFilterOptions: handleLoadFilterOptions,
       onLoadMoreFilterOptions: handleLoadMoreFilterOptions,
       columnFilterStates: advancedColumnFilters,
+      tableColumnFilters: columnFilters,
     }),
-    [handleColumnFilterChange, handleLoadFilterOptions, handleLoadMoreFilterOptions, advancedColumnFilters]
+    [
+      handleColumnFilterChange,
+      handleDateTextFilterChange,
+      handleLoadFilterOptions,
+      handleLoadMoreFilterOptions,
+      advancedColumnFilters,
+      columnFilters,
+    ]
   );
 
   const finalFields = useMemo(() => {
