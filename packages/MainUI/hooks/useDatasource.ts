@@ -38,7 +38,7 @@ const loadData = async (
     referencedTableId?: string;
     parentId?: string | number;
   },
-  isFiltering: boolean = false
+  _isFiltering = false
 ) => {
   const safePageSize = pageSize ?? 1000;
   const startRow = (page - 1) * pageSize;
