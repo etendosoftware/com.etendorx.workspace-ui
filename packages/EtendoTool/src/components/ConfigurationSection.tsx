@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Box,
   Button,
+  Card,
+  CardActionArea,
+  CardContent,
   Chip,
   CircularProgress,
   FormControlLabel,
@@ -23,11 +29,12 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SaveIcon from "@mui/icons-material/Save";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import { ConfigApi, type GroupedConfigs, type PropertyConfig } from "../services/configApi";
+import { ConfigApi, type GroupedConfigs, type PropertyConfig, type TemplateInfo } from "../services/configApi";
 
 interface ConfigurationSectionProps {
   onClose?: () => void;
@@ -49,6 +56,11 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [requiredFilter, setRequiredFilter] = useState<"all" | "required" | "optional">("all");
+  const [availableTemplates, setAvailableTemplates] = useState<string[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [templateInfo, setTemplateInfo] = useState<TemplateInfo | null>(null);
+  const [templateGaps, setTemplateGaps] = useState<Array<{ key: string; templateDefault: string }>>([]);
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
 
   const normalizeMessage = (message: unknown, fallback = ""): string => {
     if (!message) return fallback;
@@ -62,7 +74,55 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
 
   useEffect(() => {
     loadConfigurations();
+    loadTemplates();
   }, []);
+
+  const loadTemplates = async () => {
+    const response = await ConfigApi.listTemplates();
+    if (response.success && response.data?.templates) {
+      setAvailableTemplates(response.data.templates);
+    }
+  };
+
+  const handleSelectTemplate = async (name: string) => {
+    if (selectedTemplate === name) {
+      setSelectedTemplate(null);
+      setTemplateInfo(null);
+      setTemplateGaps([]);
+      return;
+    }
+    setSelectedTemplate(name);
+    setLoadingTemplate(true);
+    try {
+      const response = await ConfigApi.getTemplate(name);
+      if (response.success && response.data?.template) {
+        const tmpl = response.data.template;
+        setTemplateInfo(tmpl);
+        // Compute gaps: template properties that have no current value set
+        const gaps = Object.entries(tmpl.properties)
+          .filter(([key]) => {
+            const currentVal = editedConfigs[key];
+            return !currentVal || currentVal.trim() === "";
+          })
+          .map(([key, templateDefault]) => ({ key, templateDefault }));
+        setTemplateGaps(gaps);
+        // Pre-fill edited configs with template defaults for empty properties
+        if (gaps.length > 0) {
+          setEditedConfigs((prev) => {
+            const updated = { ...prev };
+            gaps.forEach(({ key, templateDefault }) => {
+              if (!updated[key] || updated[key].trim() === "") {
+                updated[key] = templateDefault;
+              }
+            });
+            return updated;
+          });
+        }
+      }
+    } finally {
+      setLoadingTemplate(false);
+    }
+  };
 
   const flattenConfigs = (groupData: GroupedConfigs["groups"]) => {
     const flatConfigs: Record<string, string> = {};
@@ -318,6 +378,106 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
   return (
     <Box className="section-content">
       <Stack spacing={3}>
+
+        {/* Template Selector */}
+        {availableTemplates.length > 0 && (
+          <Box>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Quick Setup — Select a template
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Templates pre-fill your configuration with sensible defaults. Only missing values will be shown for review.
+            </Typography>
+            <Stack direction="row" spacing={2} flexWrap="wrap">
+              {availableTemplates.map((tmpl) => (
+                <Card
+                  key={tmpl}
+                  variant="outlined"
+                  sx={{
+                    minWidth: 130,
+                    border: selectedTemplate === tmpl ? "2px solid" : "1px solid",
+                    borderColor: selectedTemplate === tmpl ? "primary.main" : "divider",
+                    backgroundColor: selectedTemplate === tmpl ? "primary.50" : "background.paper",
+                  }}>
+                  <CardActionArea onClick={() => handleSelectTemplate(tmpl)} disabled={loadingTemplate}>
+                    <CardContent sx={{ py: 1.5, px: 2 }}>
+                      <Typography variant="body2" fontWeight={selectedTemplate === tmpl ? 700 : 400} textTransform="capitalize">
+                        {tmpl}
+                      </Typography>
+                      {selectedTemplate === tmpl && (
+                        <Chip size="small" label="Selected" color="primary" sx={{ mt: 0.5 }} />
+                      )}
+                    </CardContent>
+                  </CardActionArea>
+                </Card>
+              ))}
+            </Stack>
+          </Box>
+        )}
+
+        {/* Template Gaps — properties without a value */}
+        {selectedTemplate && templateInfo && (
+          <Paper elevation={0} sx={{ p: 2, border: "1px solid", borderColor: "primary.light", backgroundColor: "primary.50" }}>
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
+              <Typography variant="subtitle1" fontWeight={600}>
+                {templateGaps.length === 0
+                  ? `✓ Template "${selectedTemplate}" — all properties already configured`
+                  : `Complete setup for "${selectedTemplate}" (${templateGaps.length} missing)`}
+              </Typography>
+              {loadingTemplate && <CircularProgress size={16} />}
+            </Stack>
+            {templateGaps.length > 0 && (
+              <Stack spacing={1.5}>
+                {templateGaps.map(({ key, templateDefault }) => {
+                  const prop = propertyIndex[key];
+                  return (
+                    <Stack key={key} direction="row" spacing={2} alignItems="flex-start">
+                      <Box flex={1}>
+                        <Typography variant="body2" fontWeight={500}>
+                          {key} <Typography component="span" color="error">*</Typography>
+                        </Typography>
+                        {prop?.description && (
+                          <Typography variant="caption" color="text.secondary">{prop.description}</Typography>
+                        )}
+                        {templateDefault && (
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            Template default: {templateDefault}
+                          </Typography>
+                        )}
+                      </Box>
+                      <Box flex={1}>
+                        {prop ? renderInput(prop) : (
+                          <TextField
+                            size="small"
+                            fullWidth
+                            value={editedConfigs[key] ?? ""}
+                            onChange={(e) => handleConfigChange(key, e.target.value)}
+                            placeholder={templateDefault}
+                          />
+                        )}
+                      </Box>
+                    </Stack>
+                  );
+                })}
+              </Stack>
+            )}
+            {templateInfo.dependencies.length > 0 && (
+              <Box sx={{ mt: 1.5 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Dependencies: {templateInfo.dependencies.join(", ")}
+                </Typography>
+              </Box>
+            )}
+            {templateInfo.modules.length > 0 && (
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Modules: {templateInfo.modules.join(", ")}
+                </Typography>
+              </Box>
+            )}
+          </Paper>
+        )}
+
         <Box>
           <Typography variant="h5" fontWeight={700} gutterBottom>
             gradle.properties Configuration
@@ -354,22 +514,6 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
           )}
         </Stack>
 
-        <Stack direction="row" spacing={2} alignItems="center">
-          <Typography variant="body2" color="text.secondary">
-            View:
-          </Typography>
-          <ToggleButtonGroup
-            exclusive
-            value={requiredFilter}
-            onChange={(_, value) => value && setRequiredFilter(value)}
-            size="small"
-            color="primary">
-            <ToggleButton value="all">All</ToggleButton>
-            <ToggleButton value="required">Required</ToggleButton>
-            <ToggleButton value="optional">Optional</ToggleButton>
-          </ToggleButtonGroup>
-        </Stack>
-
         {error && (
           <Alert severity="error" onClose={() => setError(null)}>
             {error}
@@ -382,106 +526,132 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
           </Alert>
         )}
 
-        {Object.entries(configsByGroup).map(([groupKey, groupData]) => (
-          <Box key={groupKey}>
-            <Typography variant="h6" fontWeight={600} gutterBottom sx={{ mb: 1 }}>
-              {groupKey} ({groupData.count} properties)
+        {/* Advanced Configuration — collapsed by default */}
+        <Accordion defaultExpanded={false}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="subtitle1" fontWeight={600}>
+              Advanced Configuration ({totalProperties} properties)
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Configurations provided by config.gradle. If you edit a sensitive value, you can toggle its visibility from
-              the field.
-            </Typography>
+          </AccordionSummary>
+          <AccordionDetails sx={{ p: 0 }}>
+            <Stack spacing={3} sx={{ p: 2 }}>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Typography variant="body2" color="text.secondary">View:</Typography>
+                <ToggleButtonGroup
+                  exclusive
+                  value={requiredFilter}
+                  onChange={(_, value) => value && setRequiredFilter(value)}
+                  size="small"
+                  color="primary">
+                  <ToggleButton value="all">All</ToggleButton>
+                  <ToggleButton value="required">Required</ToggleButton>
+                  <ToggleButton value="optional">Optional</ToggleButton>
+                </ToggleButtonGroup>
+              </Stack>
 
-            {groupData.properties.some((p) => p.process) && (
-              <Paper elevation={0} sx={{ p: 2, mb: 2, border: "1px solid #e4e7ec", backgroundColor: "#f9fafb" }}>
-                <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
-                  Group processes
-                </Typography>
-                <Stack spacing={1}>
-                  {groupData.properties
-                    .filter((property) => property.process)
-                    .map((property) => (
-                      <Stack key={property.key} direction="row" spacing={2} alignItems="flex-start">
-                        <Stack spacing={0.5} flex={1}>
-                          <Typography variant="body2" fontWeight={500}>
-                            {property.key}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {property.description}
-                          </Typography>
-                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                            <Chip size="small" label="Gradle Process" color="success" />
-                            {property.source && <Chip size="small" label={`Module: ${property.source}`} />}
-                          </Stack>
-                        </Stack>
-                        <Box flex={1}>{renderInput(property)}</Box>
+              {Object.entries(configsByGroup).map(([groupKey, groupData]) => (
+                <Box key={groupKey}>
+                  <Typography variant="h6" fontWeight={600} gutterBottom sx={{ mb: 1 }}>
+                    {groupKey} ({groupData.count} properties)
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Configurations provided by config.gradle. If you edit a sensitive value, you can toggle its visibility from
+                    the field.
+                  </Typography>
+
+                  {groupData.properties.some((p) => p.process) && (
+                    <Paper elevation={0} sx={{ p: 2, mb: 2, border: "1px solid #e4e7ec", backgroundColor: "#f9fafb" }}>
+                      <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+                        Group processes
+                      </Typography>
+                      <Stack spacing={1}>
+                        {groupData.properties
+                          .filter((property) => property.process)
+                          .map((property) => (
+                            <Stack key={property.key} direction="row" spacing={2} alignItems="flex-start">
+                              <Stack spacing={0.5} flex={1}>
+                                <Typography variant="body2" fontWeight={500}>
+                                  {property.key}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {property.description}
+                                </Typography>
+                                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                                  <Chip size="small" label="Gradle Process" color="success" />
+                                  {property.source && <Chip size="small" label={`Module: ${property.source}`} />}
+                                </Stack>
+                              </Stack>
+                              <Box flex={1}>{renderInput(property)}</Box>
+                            </Stack>
+                          ))}
                       </Stack>
-                    ))}
-                </Stack>
-              </Paper>
-            )}
+                    </Paper>
+                  )}
 
-            <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #e4e7ec" }}>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: "#f9fafb" }}>
-                    <TableCell sx={{ fontWeight: 600, width: "45%" }}>Property</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Value</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {groupData.properties
-                    .filter((property) => !property.process)
-                    .filter((property) => {
-                      if (requiredFilter === "all") return true;
-                      if (requiredFilter === "required") return property.required === true;
-                      return property.required !== true;
-                    })
-                    .map((property) => (
-                    <TableRow key={property.key} hover>
-                      <TableCell>
-                        <Stack spacing={0.5}>
-                          <Typography variant="body2" fontWeight={500}>
-                            {property.key} {property.required && <Typography component="span" color="error">*</Typography>}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {property.description}
-                          </Typography>
-                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                            {property.type && <Chip size="small" label={`Type: ${property.type}`} />}
-                            {property.source && <Chip size="small" label={`Module: ${property.source}`} />}
-                            {property.sensitive && <Chip size="small" color="warning" label="Sensitive" />}
-                            {property.required && <Chip size="small" color="error" label="Required" />}
-                            {property.process && <Chip size="small" color="success" label="Gradle Process" />}
-                          </Stack>
-                          <Typography variant="caption" color="text.secondary">
-                            Default value: {property.defaultValue || "N/A"}
-                          </Typography>
-                        </Stack>
-                      </TableCell>
-                      <TableCell>
-                        {renderInput(property)}
-                        {validationErrors[property.key] && (
-                          <Typography variant="caption" color="error" display="block" sx={{ mt: 0.5 }}>
-                            {validationErrors[property.key]}
-                          </Typography>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
-        ))}
+                  <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #e4e7ec" }}>
+                    <Table>
+                      <TableHead>
+                        <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+                          <TableCell sx={{ fontWeight: 600, width: "45%" }}>Property</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>Value</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {groupData.properties
+                          .filter((property) => !property.process)
+                          .filter((property) => {
+                            if (requiredFilter === "all") return true;
+                            if (requiredFilter === "required") return property.required === true;
+                            return property.required !== true;
+                          })
+                          .map((property) => (
+                          <TableRow key={property.key} hover>
+                            <TableCell>
+                              <Stack spacing={0.5}>
+                                <Typography variant="body2" fontWeight={500}>
+                                  {property.key} {property.required && <Typography component="span" color="error">*</Typography>}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {property.description}
+                                </Typography>
+                                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                                  {property.type && <Chip size="small" label={`Type: ${property.type}`} />}
+                                  {property.source && <Chip size="small" label={`Module: ${property.source}`} />}
+                                  {property.sensitive && <Chip size="small" color="warning" label="Sensitive" />}
+                                  {property.required && <Chip size="small" color="error" label="Required" />}
+                                  {property.process && <Chip size="small" color="success" label="Gradle Process" />}
+                                </Stack>
+                                <Typography variant="caption" color="text.secondary">
+                                  Default value: {property.defaultValue || "N/A"}
+                                </Typography>
+                              </Stack>
+                            </TableCell>
+                            <TableCell>
+                              {renderInput(property)}
+                              {validationErrors[property.key] && (
+                                <Typography variant="caption" color="error" display="block" sx={{ mt: 0.5 }}>
+                                  {validationErrors[property.key]}
+                                </Typography>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+              ))}
 
-        {Object.keys(configsByGroup).length === 0 && !loading && (
-          <Paper elevation={0} sx={{ p: 3, textAlign: "center", border: "1px solid #e4e7ec" }}>
-            <Typography color="text.secondary">
-              No configurations found. Make sure the Gradle server is running on port 3851.
-            </Typography>
-          </Paper>
-        )}
+              {Object.keys(configsByGroup).length === 0 && !loading && (
+                <Paper elevation={0} sx={{ p: 3, textAlign: "center", border: "1px solid #e4e7ec" }}>
+                  <Typography color="text.secondary">
+                    No configurations found. Make sure the Gradle server is running on port 3851.
+                  </Typography>
+                </Paper>
+              )}
+            </Stack>
+          </AccordionDetails>
+        </Accordion>
 
         <Paper elevation={0} sx={{ p: 2, backgroundColor: "#f8fafc", border: "1px solid #e4e7ec" }}>
           <Typography variant="body2" color="text.secondary">

@@ -1,3 +1,11 @@
+export interface TemplateInfo {
+  name: string;
+  source: string;
+  properties: Record<string, string>;
+  dependencies: string[];
+  modules: string[];
+}
+
 interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -116,6 +124,38 @@ export class ConfigApi {
       return {
         success: false,
         error: error instanceof Error ? error.message : "Failed to save configurations",
+      };
+    }
+  }
+
+  /**
+   * List available templates
+   */
+  static async listTemplates(): Promise<ApiResponse<{ templates: string[] }>> {
+    try {
+      const response = await fetch(`${API_BASE}/templates`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch templates",
+      };
+    }
+  }
+
+  /**
+   * Get template details by name
+   */
+  static async getTemplate(name: string): Promise<ApiResponse<{ template: TemplateInfo }>> {
+    try {
+      const response = await fetch(`${API_BASE}/templates/${encodeURIComponent(name)}`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch template",
       };
     }
   }
