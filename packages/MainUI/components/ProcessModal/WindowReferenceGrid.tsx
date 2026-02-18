@@ -85,6 +85,178 @@ function mergeCurrentValuesIntoParams(
 }
 
 /**
+ * Local type for datasource params
+ */
+interface DatasourceParams {
+  processId?: string;
+  tabId?: string;
+  windowId?: string;
+  ad_org_id?: any;
+  ad_client_id?: any;
+  orderBy?: string;
+  criteria?: any;
+  [key: string]: any;
+}
+
+const convertValueType = (value: unknown): boolean | number | unknown => {
+  if (value === "Y") return true;
+  if (value === "N") return false;
+
+  if (typeof value === "string" && value !== "" && !Number.isNaN(Number(value)) && value.length < 15) {
+    return Number(value);
+  }
+
+  return value;
+};
+
+const normalizeContextKey = (contextKey: string): string => {
+  if (typeof contextKey === "string" && contextKey.startsWith("@") && contextKey.endsWith("@")) {
+    return contextKey.slice(1, -1);
+  }
+  return contextKey;
+};
+
+const getValidColumnNames = (stableWindowReferenceTab: any, fields: any) => {
+  const validColumnNames = new Set<string>();
+  if (stableWindowReferenceTab?.fields) {
+    for (const f of Object.values(stableWindowReferenceTab.fields) as any[]) {
+      if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
+      if (f.hqlName) validColumnNames.add(f.hqlName.toLowerCase());
+    }
+  }
+  if (fields) {
+    for (const f of fields) {
+      if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
+      if (f.name) validColumnNames.add(f.name.toLowerCase());
+    }
+  }
+  for (const k of [
+    "c_bpartner_id",
+    "m_product_id",
+    "c_project_id",
+    "c_campaign_id",
+    "c_activity_id",
+    "user1_id",
+    "user2_id",
+    "ad_org_id",
+    "ad_client_id",
+    "trxtype",
+    "issotrx",
+    "transaction_type",
+  ]) {
+    validColumnNames.add(k);
+  }
+  return validColumnNames;
+};
+
+const buildGridCriteria = (
+  stableFilterExpressions: any
+): Array<{ fieldName: string; operator: string; value: EntityValue }> => {
+  if (!stableFilterExpressions?.grid) return [];
+
+  return Object.entries(stableFilterExpressions.grid).map(([fieldName, value]) => {
+    let parsedValue: EntityValue;
+    let operator = "equals";
+
+    if (value === "true") {
+      parsedValue = true;
+    } else if (value === "false") {
+      parsedValue = false;
+    } else if (typeof value === "string") {
+      const isUUID = /^[0-9a-fA-F]{32}$/.test(value);
+      if (!isUUID) {
+        operator = "iContains";
+      }
+      parsedValue = value;
+    } else {
+      parsedValue = value as EntityValue;
+    }
+
+    return {
+      fieldName,
+      operator,
+      value: parsedValue,
+    };
+  });
+};
+
+const applyAllDynamicKeys = (options: DatasourceParams, stableRecordValues: any, processConfig: any) => {
+  if (!stableRecordValues) return;
+
+  if (stableRecordValues.inpadOrgId) options.ad_org_id = stableRecordValues.inpadOrgId;
+  if (stableRecordValues.inpadClientId) options.ad_client_id = stableRecordValues.inpadClientId;
+
+  const processId = processConfig?.processId;
+  if (!processId) return;
+
+  const processDef = PROCESS_DEFINITION_DATA[processId];
+  if (!processDef?.dynamicKeys) return;
+
+  for (const [key, value] of Object.entries(processDef.dynamicKeys)) {
+    const contextKey = normalizeContextKey(value as string);
+    const resolvedValue = stableRecordValues[contextKey] || stableRecordValues[`inp${contextKey}`];
+    if (resolvedValue !== undefined && resolvedValue !== null) {
+      options[key] = convertValueType(resolvedValue);
+    }
+  }
+};
+
+const applyMergedParameters = (
+  options: DatasourceParams,
+  stableProcessDefaults: any,
+  currentValues: any,
+  parameters: any
+) => {
+  const mergedParams: Record<string, EntityValue> = {};
+
+  if (stableProcessDefaults) mergeDefaultsIntoParams(stableProcessDefaults, mergedParams);
+  if (currentValues) mergeCurrentValuesIntoParams(currentValues, mergedParams);
+
+  const defaultKeys = {
+    inpadOrgId: "ad_org_id",
+    inpadClientId: "ad_client_id",
+  };
+
+  for (const [key, finalValue] of Object.entries(mergedParams)) {
+    if (key in defaultKeys) {
+      options[defaultKeys[key as keyof typeof defaultKeys]] = finalValue;
+      continue;
+    }
+
+    const matchingParameter = (Object.values(parameters) as any[]).find((param: any) => param.name === key);
+    if (matchingParameter) {
+      if (finalValue !== "" && finalValue !== null && finalValue !== undefined) {
+        options[matchingParameter.dBColumnName || key] = finalValue;
+      }
+    }
+  }
+};
+
+const applyEffectiveRecordValues = (
+  options: DatasourceParams,
+  parameters: any,
+  stableRecordValues: any,
+  effectiveRecordValues: any,
+  validColumnNames: Set<string>
+) => {
+  if (!parameters || !stableRecordValues) return;
+
+  for (const param of Object.values(parameters) as any[]) {
+    const rawValue = effectiveRecordValues[param.name];
+    const paramValue = extractActualValue(rawValue);
+
+    if (paramValue !== undefined && param.dBColumnName) {
+      if (paramValue === "" || paramValue === null) continue;
+
+      const lowerKey = param.dBColumnName.toLowerCase();
+      if (validColumnNames.has(lowerKey)) {
+        options[param.dBColumnName] = paramValue;
+      }
+    }
+  }
+};
+
+/**
  * WindowReferenceGrid Component
  * Displays a grid of referenced records that can be selected
  */
@@ -292,18 +464,6 @@ const findMatchingRecord = (
   );
 };
 
-// Local type for datasource params
-interface DatasourceParams {
-  processId?: string;
-  tabId?: string;
-  windowId?: string;
-  ad_org_id?: any;
-  ad_client_id?: any;
-  orderBy?: string;
-  criteria?: any;
-  [key: string]: any;
-}
-
 const WindowReferenceGrid = ({
   parameter,
   tabId,
@@ -410,10 +570,8 @@ const WindowReferenceGrid = ({
   const datasourceOptions = useMemo(() => {
     const options: DatasourceParams = {
       pageSize: PAGE_SIZE,
+      tabId: parameter.tab || tabId,
     };
-    // Restore legacy behavior: property tabId is vital for backend context resolution
-    // If parameter.tab is missing, use the component's tabId prop (which usually holds the WindowID in process context)
-    options.tabId = parameter.tab || tabId;
 
     if (processConfig?.processId) {
       options.processId = processConfig.processId;
@@ -423,202 +581,17 @@ const WindowReferenceGrid = ({
       options.windowId = tabId;
     }
 
-    // Apply filters and context
-    // This logic mimics verifyInput in SmartClient
-    // We need to support:
-    // 1. Explicit Validation Logic (displayLogic/readOnlyLogic often implies data dependencies) - handled by Callouts mostly
-    // 2. Default Values (passed from ProcessDefinitionModal)
-    // 3. Grid Filters (passed from ProcessDefinitionModal)
+    applyAllDynamicKeys(options, stableRecordValues, processConfig);
+    applyMergedParameters(options, stableProcessDefaults, currentValues, parameters);
 
-    const defaultKeys = {
-      inpadOrgId: "ad_org_id",
-      inpadClientId: "ad_client_id",
-    };
-
-    const convertValueType = (value: unknown): boolean | number | unknown => {
-      if (value === "Y") return true;
-      if (value === "N") return false;
-
-      // Convert numeric strings to numbers (e.g., "102" -> 102, "0" -> 0)
-      if (
-        typeof value === "string" &&
-        value !== "" &&
-        !Number.isNaN(Number(value)) &&
-        value.length < 15 // Avoid converting UUIDs that happen to be numeric
-      ) {
-        return Number(value);
-      }
-
-      return value;
-    };
-
-    const normalizeContextKey = (contextKey: string): string => {
-      if (typeof contextKey === "string" && contextKey.startsWith("@") && contextKey.endsWith("@")) {
-        return contextKey.slice(1, -1);
-      }
-      return contextKey;
-    };
-
-    const resolveContextValue = (contextKey: string): unknown => {
-      return stableRecordValues[contextKey] || stableRecordValues[`inp${contextKey}`];
-    };
-
-    const applyStandardEnvVariables = () => {
-      if (stableRecordValues.inpadOrgId) options.ad_org_id = stableRecordValues.inpadOrgId;
-      if (stableRecordValues.inpadClientId) options.ad_client_id = stableRecordValues.inpadClientId;
-    };
-
-    const processDynamicKey = (key: string, value: unknown) => {
-      const payloadKey = key;
-      const contextKey = normalizeContextKey(value as string);
-
-      const resolvedValue = resolveContextValue(contextKey);
-      if (resolvedValue === undefined || resolvedValue === null) return;
-
-      options[payloadKey] = convertValueType(resolvedValue);
-    };
-
-    const applyProcessDynamicKeys = (processId: string) => {
-      const processDef = PROCESS_DEFINITION_DATA[processId];
-      if (!processDef?.dynamicKeys) return;
-
-      for (const [key, value] of Object.entries(processDef.dynamicKeys)) {
-        processDynamicKey(key, value);
-      }
-    };
-
-    const applyDynamicKeys = () => {
-      if (!stableRecordValues) return;
-
-      applyStandardEnvVariables();
-
-      const processId = processConfig?.processId;
-      if (processId) {
-        applyProcessDynamicKeys(processId);
-      }
-    };
-
-    const applyParameters = () => {
-      // 1. Merge defaults and current values into a single map
-      const mergedParams: Record<string, EntityValue> = {};
-
-      // Apply defaults using helper function
-      if (stableProcessDefaults && Object.keys(stableProcessDefaults).length > 0) {
-        mergeDefaultsIntoParams(stableProcessDefaults, mergedParams);
-      }
-
-      // Apply current values (overrides defaults) using helper function
-      if (currentValues && Object.keys(currentValues).length > 0) {
-        mergeCurrentValuesIntoParams(currentValues, mergedParams);
-      }
-
-      // 2. Process merged parameters
-      for (const [key, finalValue] of Object.entries(mergedParams)) {
-        // If it's a mapped system key, apply to options
-        if (defaultKeys && key in defaultKeys) {
-          options[defaultKeys[key as keyof typeof defaultKeys]] = finalValue;
-          continue;
-        }
-
-        const matchingParameter = Object.values(parameters).find((param) => param.name === key);
-        if (matchingParameter) {
-          if (finalValue !== "" && finalValue !== null && finalValue !== undefined) {
-            options[matchingParameter.dBColumnName || key] = finalValue;
-          }
-        }
-      }
-    };
-
-    const buildCriteria = (): Array<{ fieldName: string; operator: string; value: EntityValue }> => {
-      if (!stableFilterExpressions?.grid) return [];
-
-      return Object.entries(stableFilterExpressions.grid).map(([fieldName, value]) => {
-        let parsedValue: EntityValue;
-        let operator = "equals";
-
-        if (value === "true") {
-          parsedValue = true;
-        } else if (value === "false") {
-          parsedValue = false;
-        } else if (typeof value === "string") {
-          const isUUID = /^[0-9a-fA-F]{32}$/.test(value);
-          if (!isUUID) {
-            operator = "iContains";
-          }
-          parsedValue = value;
-        } else {
-          parsedValue = value as EntityValue;
-        }
-
-        return {
-          fieldName,
-          operator,
-          value: parsedValue,
-        };
-      });
-    };
-
-    // Build set of valid column names for this grid to filter params
-    const validColumnNames = new Set<string>();
-    if (stableWindowReferenceTab?.fields) {
-      for (const f of Object.values(stableWindowReferenceTab.fields) as any[]) {
-        if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
-        // also add hqlName if different
-        if (f.hqlName) validColumnNames.add(f.hqlName.toLowerCase());
-      }
-    }
-    // Also add prop fields if any
-    if (fields) {
-      for (const f of fields) {
-        if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
-        if (f.name) validColumnNames.add(f.name.toLowerCase());
-      }
-    }
-    // Add standard context keys that imply filtering
-    for (const k of [
-      "c_bpartner_id",
-      "m_product_id",
-      "c_project_id",
-      "c_campaign_id",
-      "c_activity_id",
-      "user1_id",
-      "user2_id",
-      "ad_org_id",
-      "ad_client_id",
-      "trxtype",
-      "issotrx",
-      "transaction_type",
-    ]) {
-      validColumnNames.add(k);
+    if (parameters && stableRecordValues) {
+      const validColumnNames = getValidColumnNames(stableWindowReferenceTab, fields);
+      applyEffectiveRecordValues(options, parameters, stableRecordValues, effectiveRecordValues, validColumnNames);
     }
 
-    const applyRecordValues = () => {
-      if (!parameters || !stableRecordValues) return;
-
-      for (const param of Object.values(parameters)) {
-        const rawValue = effectiveRecordValues[param.name];
-        const paramValue = extractActualValue(rawValue);
-        // Only include parameter if it matches a column in the grid OR is a standard ID
-        if (paramValue !== undefined && param.dBColumnName) {
-          if (paramValue === "" || paramValue === null) return;
-
-          const lowerKey = param.dBColumnName.toLowerCase();
-          if (validColumnNames.has(lowerKey)) {
-            options[param.dBColumnName] = paramValue;
-          }
-        }
-      }
-    };
-
-    applyDynamicKeys();
-    applyParameters();
-    applyRecordValues();
-
-    const criteria = buildCriteria();
-
+    const criteria = buildGridCriteria(stableFilterExpressions);
     if (criteria.length > 0) {
       options.orderBy = "documentNo desc";
-      // Keep criteria as array of objects, cast to EntityValue for type compatibility
       options.criteria = criteria as unknown as EntityValue;
     }
 
