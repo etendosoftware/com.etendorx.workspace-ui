@@ -335,8 +335,6 @@ const MultiSelect = memo(function MultiSelectCmp({
     t,
   ]);
 
-  const inputPlaceholder = !isReadOnly || selectedLabels.length > 0 ? displayText : "";
-
   return (
     <div
       ref={wrapperRef}
