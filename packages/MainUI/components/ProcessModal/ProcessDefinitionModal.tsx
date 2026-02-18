@@ -47,8 +47,10 @@ import {
   PROCESS_TYPES,
   ADD_PAYMENT_ORDER_PROCESS_ID,
   PACKING_PROCESS_ID,
+  PICK_VALIDATE_PROCESS_ID,
 } from "@/utils/processes/definition/constants";
 import { PackingProcess } from "./Custom/PackingProcess/PackingProcess";
+import { PickValidateProcess } from "./Custom/PickValidateProcess/PickValidateProcess";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
@@ -1753,6 +1755,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
               shipmentId={String(selectedRecords?.[0]?.id || record?.id || "")}
               windowId={String(tab?.window || "")}
               data-testid="PackingProcess__761503"
+            />
+          ) : processId === PICK_VALIDATE_PROCESS_ID ? (
+            <PickValidateProcess
+              onClose={handleClose}
+              onSuccess={onSuccess}
+              pickingListId={String(selectedRecords?.[0]?.id || record?.id || "")}
+              windowId={String(tab?.window || "")}
+              data-testid="PickValidateProcess__761503"
             />
           ) : (
             <FormProvider {...form} data-testid="FormProvider__761503">
