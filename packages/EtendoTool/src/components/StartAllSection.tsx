@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Alert,
   Box,
@@ -16,6 +16,8 @@ import {
   FormControlLabel,
   Typography,
   useTheme,
+  CircularProgress,
+  Tooltip,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -26,9 +28,13 @@ import BuildIcon from "@mui/icons-material/Build";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import CloudIcon from "@mui/icons-material/Cloud";
 import SettingsIcon from "@mui/icons-material/Settings";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { useEnvironment } from "../hooks/useEnvironment";
 import { executeGradle } from "../api/gradle";
 import { dockerApi } from "../api/docker";
+import { fetchSetupStatus, type SetupStatus } from "../api/setup";
 
 type StepStatus = "pending" | "running" | "success" | "error" | "skipped";
 
@@ -80,6 +86,237 @@ const ALL_STEPS: SetupStep[] = [
   },
 ];
 
+// ─── Pre-flight status banner ────────────────────────────────────────────────
+
+interface StatusBannerProps {
+  status: SetupStatus | null;
+  loading: boolean;
+  error: string | null;
+  onRefresh: () => void;
+}
+
+function ServiceChip({
+  label,
+  ok,
+  warning,
+  tooltip,
+}: {
+  label: string;
+  ok: boolean;
+  warning?: boolean;
+  tooltip?: string;
+}) {
+  const chip = (
+    <Chip
+      size="small"
+      icon={ok ? <CheckCircleIcon /> : warning ? <WarningAmberIcon /> : <ErrorIcon />}
+      label={label}
+      color={ok ? "success" : warning ? "warning" : "error"}
+      variant="outlined"
+      sx={{ fontWeight: 600 }}
+    />
+  );
+  if (tooltip) {
+    return (
+      <Tooltip title={tooltip} placement="top" arrow>
+        <span>{chip}</span>
+      </Tooltip>
+    );
+  }
+  return chip;
+}
+
+function PreFlightBanner({ status, loading, error, onRefresh }: StatusBannerProps) {
+  if (loading) {
+    return (
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 2,
+          backgroundColor: "#f8fafc",
+        }}>
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <CircularProgress size={18} />
+          <Typography variant="body2" color="text.secondary">
+            Checking environment status...
+          </Typography>
+        </Stack>
+      </Paper>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert
+        severity="warning"
+        action={
+          <Button size="small" startIcon={<RefreshIcon />} onClick={onRefresh}>
+            Retry
+          </Button>
+        }>
+        Could not load pre-flight status: {error}
+      </Alert>
+    );
+  }
+
+  if (!status) return null;
+
+  const { docker, postgres, tomcat, warnings } = status;
+
+  // Docker chip label
+  const dockerLabel = docker.running
+    ? docker.hasContainers
+      ? "Docker: running"
+      : "Docker: running (no containers)"
+    : "Docker: stopped";
+
+  const dockerOk = docker.running;
+  const dockerWarn = !docker.running && !docker.hasComposeFile;
+
+  // Postgres chip label
+  const pgLabel = postgres.connected
+    ? `PostgreSQL: connected (${postgres.via})`
+    : `PostgreSQL: not connected`;
+
+  // Tomcat chip
+  const tomcatLabel = tomcat.running
+    ? tomcat.needsRestart
+      ? `Tomcat: restart needed (${tomcat.via})`
+      : `Tomcat: running (${tomcat.via})`
+    : "Tomcat: not running";
+
+  const tomcatWarn = tomcat.running && tomcat.needsRestart;
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 2,
+        backgroundColor: "#f8fafc",
+      }}>
+      <Stack spacing={1.5}>
+        {/* Header row */}
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Stack direction="row" spacing={1} alignItems="center">
+            <InfoOutlinedIcon sx={{ color: "#004aca", fontSize: 18 }} />
+            <Typography variant="subtitle2" fontWeight={700} sx={{ color: "#004aca" }}>
+              Pre-Flight Status
+            </Typography>
+          </Stack>
+          <Button
+            size="small"
+            startIcon={<RefreshIcon fontSize="small" />}
+            onClick={onRefresh}
+            sx={{ fontSize: "0.75rem", minWidth: 0, px: 1 }}>
+            Refresh
+          </Button>
+        </Stack>
+
+        {/* Service chips */}
+        <Stack direction="row" flexWrap="wrap" gap={1}>
+          <ServiceChip
+            label={dockerLabel}
+            ok={dockerOk}
+            warning={dockerWarn}
+            tooltip={
+              docker.running && docker.containers.length > 0
+                ? `Running containers: ${docker.containers.join(", ")}`
+                : docker.running
+                  ? "Docker is running but no Etendo containers are active."
+                  : "Docker daemon is not running. Start Docker Desktop or the Docker service."
+            }
+          />
+
+          <ServiceChip
+            label={pgLabel}
+            ok={postgres.connected}
+            tooltip={
+              postgres.connected
+                ? `Connected to ${postgres.url}/${postgres.sid}`
+                : postgres.url
+                  ? `Cannot reach ${postgres.url}/${postgres.sid}. Check that PostgreSQL is running and credentials in gradle.properties are correct.`
+                  : "No bbdd.url found in gradle.properties."
+            }
+          />
+
+          <ServiceChip
+            label={tomcatLabel}
+            ok={tomcat.running && !tomcat.needsRestart}
+            warning={tomcatWarn}
+            tooltip={
+              tomcat.running && tomcat.needsRestart
+                ? "The application was compiled after Tomcat last started. A restart is recommended."
+                : tomcat.running
+                  ? `Tomcat is responding on port ${tomcat.port}`
+                  : `Tomcat is not listening on port ${tomcat.port}. The 'Start Tomcat' step will start it.`
+            }
+          />
+        </Stack>
+
+        {/* Context-sensitive advice */}
+        {!docker.running && !docker.hasContainers && (
+          <Alert severity="info" sx={{ py: 0.5 }}>
+            <Typography variant="body2">
+              Docker is not running and no containers were found. If you are using locally installed PostgreSQL and
+              Tomcat, Docker is not required.
+            </Typography>
+          </Alert>
+        )}
+
+        {tomcat.needsRestart && (
+          <Alert
+            severity="warning"
+            sx={{ py: 0.5 }}
+            icon={<WarningAmberIcon fontSize="small" />}>
+            <Typography variant="body2">
+              <strong>Restart recommended:</strong> The application was compiled after Tomcat last started. Run{" "}
+              <strong>smartbuild</strong> then restart Tomcat to apply the latest changes.
+            </Typography>
+          </Alert>
+        )}
+
+        {!postgres.connected && postgres.url && (
+          <Alert severity="error" sx={{ py: 0.5 }}>
+            <Typography variant="body2">
+              PostgreSQL is not reachable at{" "}
+              <code>
+                {postgres.url}/{postgres.sid}
+              </code>
+              . Verify the database is running and that the credentials in <code>gradle.properties</code> are correct.
+            </Typography>
+          </Alert>
+        )}
+
+        {/* Generic warnings from backend */}
+        {warnings.length > 0 &&
+          warnings
+            .filter((w) => {
+              // Suppress duplicates already shown as specific alerts above
+              if (!docker.running && !docker.hasContainers && w.toLowerCase().includes("docker is not running"))
+                return false;
+              if (!postgres.connected && w.toLowerCase().includes("postgresql is not reachable")) return false;
+              if (tomcat.needsRestart && w.toLowerCase().includes("tomcat may need")) return false;
+              return true;
+            })
+            .map((w, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: static warning list
+              <Alert key={i} severity="warning" sx={{ py: 0.5 }}>
+                <Typography variant="body2">{w}</Typography>
+              </Alert>
+            ))}
+      </Stack>
+    </Paper>
+  );
+}
+
+// ─── Main component ──────────────────────────────────────────────────────────
+
 export function StartAllSection() {
   const theme = useTheme();
   const { environment, isLoading: envLoading } = useEnvironment();
@@ -88,6 +325,29 @@ export function StartAllSection() {
   const [stepStates, setStepStates] = useState<Record<string, StepState>>({});
   const [includeDockerStep, setIncludeDockerStep] = useState(true);
   const [showOutput, setShowOutput] = useState(true);
+
+  // Pre-flight status state
+  const [preflightStatus, setPreflightStatus] = useState<SetupStatus | null>(null);
+  const [preflightLoading, setPreflightLoading] = useState(false);
+  const [preflightError, setPreflightError] = useState<string | null>(null);
+
+  const loadPreflightStatus = useCallback(async () => {
+    setPreflightLoading(true);
+    setPreflightError(null);
+    try {
+      const data = await fetchSetupStatus();
+      setPreflightStatus(data);
+    } catch (err) {
+      setPreflightError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setPreflightLoading(false);
+    }
+  }, []);
+
+  // Load pre-flight status on mount
+  useEffect(() => {
+    void loadPreflightStatus();
+  }, [loadPreflightStatus]);
 
   // Determine which steps to show based on environment
   const steps = useMemo(() => {
@@ -184,7 +444,9 @@ export function StartAllSection() {
 
     setCurrentStepIndex(steps.length);
     setIsRunning(false);
-  }, [steps, executeStep]);
+    // Refresh pre-flight status after all steps complete
+    void loadPreflightStatus();
+  }, [steps, executeStep, loadPreflightStatus]);
 
   const getStepIcon = (stepId: string, index: number) => {
     const state = stepStates[stepId];
@@ -241,6 +503,14 @@ export function StartAllSection() {
             {isDevContainer && " Docker services are managed by DevContainer."}
           </Typography>
         </Box>
+
+        {/* Pre-Flight Status Banner */}
+        <PreFlightBanner
+          status={preflightStatus}
+          loading={preflightLoading}
+          error={preflightError}
+          onRefresh={loadPreflightStatus}
+        />
 
         {/* Environment Info Alert */}
         {isDevContainer && (
