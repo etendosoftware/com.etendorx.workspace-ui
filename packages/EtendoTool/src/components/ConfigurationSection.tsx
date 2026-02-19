@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Accordion,
   AccordionDetails,
@@ -11,9 +11,16 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControlLabel,
   IconButton,
   InputAdornment,
+  List,
+  ListItem,
+  ListItemText,
   MenuItem,
   Paper,
   Stack,
@@ -60,13 +67,45 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
   const [success, setSuccess] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
-  const [requiredFilter, setRequiredFilter] = useState<"all" | "required" | "optional">("all");
+  const [requiredFilter, setRequiredFilter] = useState<"all" | "required" | "optional">("required");
+  const [advancedExpanded, setAdvancedExpanded] = useState(false);
+  const [showMissingDialog, setShowMissingDialog] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"save" | "next" | null>(null);
   const [availableTemplates, setAvailableTemplates] = useState<string[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [templateInfo, setTemplateInfo] = useState<TemplateInfo | null>(null);
   const [templateGaps, setTemplateGaps] = useState<Array<{ key: string; templateDefault: string }>>([]);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
+
+  // Required fields that have no default value and are currently empty
+  const missingRequired = useMemo(
+    () =>
+      Object.values(propertyIndex).filter(
+        (p) =>
+          p.required &&
+          !p.process &&
+          (!p.defaultValue || p.defaultValue.trim() === "") &&
+          (!editedConfigs[p.key] || editedConfigs[p.key].trim() === "")
+      ),
+    [propertyIndex, editedConfigs]
+  );
+
+  // Check for missing required fields before save/next; returns true if ok to proceed
+  const checkRequired = (action: "save" | "next"): boolean => {
+    if (missingRequired.length === 0) return true;
+    setPendingAction(action);
+    setShowMissingDialog(true);
+    return false;
+  };
+
+  const handleMissingDialogClose = () => {
+    setShowMissingDialog(false);
+    setPendingAction(null);
+    // Expand advanced section and filter to required so user can see what's missing
+    setAdvancedExpanded(true);
+    setRequiredFilter("required");
+  };
 
   const normalizeMessage = (message: unknown, fallback = ""): string => {
     if (!message) return fallback;
@@ -189,6 +228,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
   };
 
   const handleSave = async () => {
+    if (!checkRequired("save")) return;
     setSaving(true);
     setError(null);
     setSuccess(null);
@@ -509,7 +549,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
                 <Button
                   variant="contained"
                   endIcon={<ArrowForwardIcon />}
-                  onClick={() => onSectionChange("start-all")}
+                  onClick={() => { if (checkRequired("next")) onSectionChange("start-all"); }}
                   sx={{ fontWeight: 600 }}>
                   Next: Start All
                 </Button>
@@ -567,7 +607,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
         )}
 
         {/* Advanced Configuration — collapsed by default */}
-        <Accordion defaultExpanded={false}>
+        <Accordion expanded={advancedExpanded} onChange={(_, expanded) => setAdvancedExpanded(expanded)}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography variant="subtitle1" fontWeight={600}>
               Advanced Configuration ({totalProperties} properties)
@@ -700,6 +740,38 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
           </Typography>
         </Paper>
       </Stack>
+
+      {/* Missing required fields — blocking dialog */}
+      <Dialog open={showMissingDialog} onClose={handleMissingDialogClose} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, color: "error.main" }}>
+          Required fields are missing
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            The following required fields have no default value and must be filled before{" "}
+            {pendingAction === "next" ? "continuing" : "saving"}:
+          </Typography>
+          <List dense disablePadding>
+            {missingRequired.map((p) => (
+              <ListItem key={p.key} disableGutters sx={{ py: 0.25 }}>
+                <ListItemText
+                  primary={
+                    <Typography variant="body2" fontWeight={600}>
+                      {p.key}
+                    </Typography>
+                  }
+                  secondary={p.description || undefined}
+                />
+              </ListItem>
+            ))}
+          </List>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button variant="contained" color="primary" onClick={handleMissingDialogClose}>
+            Complete required fields
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
