@@ -18,6 +18,7 @@
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
+import type { SaveOptions } from "@/contexts/ToolbarContext";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { useTabContext } from "@/contexts/tab";
 import { globalCalloutManager } from "@/services/callouts";
@@ -26,17 +27,17 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 import { useWindowContext } from "@/contexts/window";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
-import { useFormViewContext } from "./contexts/FormViewContext";
 
 interface FormActionsProps {
   tab: Tab;
   onNew: () => void;
   refetch: () => Promise<void>;
-  onSave: (showModal: boolean) => Promise<void>;
+  onSave: (options: SaveOptions) => Promise<void>;
   showErrorModal: (message: string) => void;
+  mode: FormMode;
 }
 
-export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: FormActionsProps) {
+export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode }: FormActionsProps) {
   const formContext = useFormContext();
   const { isDirty } = formContext.formState;
 
@@ -44,7 +45,6 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
   const { registerActions, setSaveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
   const { isFormInitializing, isSettingInitialValues } = useFormInitializationContext();
-  const { mode } = useFormViewContext();
 
   const { validateRequiredFields, requiredFields } = useFormValidation(tab);
 
@@ -104,13 +104,16 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
     }
 
     // Form is completely loaded, validate if save button should be enabled
-    const shouldEnableSave = isDirty || (mode === FormMode.NEW && validateRequiredFields().isValid);
+    const validationResult = validateRequiredFields();
+
+    const shouldEnableSave = isDirty || (mode === FormMode.NEW && validationResult.isValid);
     shouldEnableSave ? markFormAsChanged() : resetFormChanges();
     setHasValidatedInitialLoad(true);
   }, [
     isFormInitializing,
     isSettingInitialValues,
     isDirty,
+    mode,
     markFormAsChanged,
     resetFormChanges,
     hasValidatedInitialLoad,
@@ -127,7 +130,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
   }, [isFormInitializing]);
 
   const handleSave = useCallback(
-    async (showModal: boolean) => {
+    async (options: SaveOptions) => {
       try {
         // Set saving state
         setSaveButtonState((prev) => ({ ...prev, isSaving: true }));
@@ -149,7 +152,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
         }
 
         // Proceed with save if validation passes
-        await onSave(showModal);
+        await onSave(options);
       } catch (error) {
         logger.error("Error during save operation:", error);
       } finally {
@@ -187,7 +190,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
     };
 
     registerActions(actions);
-  }, [registerActions, handleSave, onReset, handleBack, handleNew, tab.id]);
+  }, [registerActions, handleSave, onReset, handleBack, handleNew]);
 
   return null;
 }

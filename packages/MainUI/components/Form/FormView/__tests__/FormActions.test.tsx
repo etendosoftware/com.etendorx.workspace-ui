@@ -50,10 +50,11 @@ const createMockCalloutState = (overrides = {}) => ({
 
 const createFormActionsProps = (tab: Tab, overrides = {}) => ({
   tab,
-  setRecordId: jest.fn(),
+  onNew: jest.fn(),
   refetch: jest.fn(),
   onSave: jest.fn(),
   showErrorModal: jest.fn(),
+  mode: "EDIT" as const,
   ...overrides,
 });
 

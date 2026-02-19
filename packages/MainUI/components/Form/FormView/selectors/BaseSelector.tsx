@@ -51,6 +51,17 @@ export const compileExpression = (expression: string) => {
         getExpression: function() { return true; }, // Fallback for complex expressions
         PropertyStore: {
             get: function(prop) { return context[prop] || context['$'+prop] || context['#'+prop]; }
+        },
+        getSession: function() {
+            return {
+                getAttribute: function(prop) { 
+                    var val = context[prop] || context['$'+prop] || context['#'+prop];
+                    if (val === undefined && typeof currentValues !== 'undefined') {
+                        val = currentValues[prop] || currentValues['$'+prop] || currentValues['#'+prop];
+                    }
+                    return val;
+                }
+            };
         }
       };
     `;
