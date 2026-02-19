@@ -75,6 +75,12 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
   const [templateGaps, setTemplateGaps] = useState<Array<{ key: string; templateDefault: string }>>([]);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
 
+  // Keys provided by the selected template (for visual indicator in Advanced table)
+  const templateKeys = useMemo(
+    () => new Set(Object.keys(templateInfo?.properties ?? {})),
+    [templateInfo]
+  );
+
   // Required fields that have no default value and are currently empty
   const missingRequired = useMemo(
     () =>
@@ -545,18 +551,45 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
                 })}
               </Stack>
             )}
-            {templateInfo.dependencies.length > 0 && (
-              <Box sx={{ mt: 1.5 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Dependencies: {templateInfo.dependencies.join(", ")}
+            {(templateInfo.dependencies.length > 0 || templateInfo.modules.length > 0) && (
+              <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid", borderColor: "primary.light" }}>
+                <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
+                  What this template installs
                 </Typography>
-              </Box>
-            )}
-            {templateInfo.modules.length > 0 && (
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Modules: {templateInfo.modules.join(", ")}
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
+                  Applying this template will add the following to your project. These changes are written to{" "}
+                  <strong>build.gradle</strong> and take effect on the next Gradle sync.
                 </Typography>
+                {templateInfo.dependencies.length > 0 && (
+                  <Box sx={{ mb: 1.5 }}>
+                    <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      Gradle dependencies
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.75 }}>
+                      Artifacts that will be downloaded and added to your classpath.
+                    </Typography>
+                    <Stack direction="row" flexWrap="wrap" gap={0.75}>
+                      {templateInfo.dependencies.map((dep) => (
+                        <Chip key={dep} label={dep} size="small" variant="outlined" sx={{ fontFamily: "monospace", fontSize: "0.7rem" }} />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+                {templateInfo.modules.length > 0 && (
+                  <Box>
+                    <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      Etendo modules
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.75 }}>
+                      Business modules installed into Etendo. Includes database schema, UI windows, and processes.
+                    </Typography>
+                    <Stack direction="row" flexWrap="wrap" gap={0.75}>
+                      {templateInfo.modules.map((mod) => (
+                        <Chip key={mod} label={mod} size="small" color="secondary" variant="outlined" sx={{ fontFamily: "monospace", fontSize: "0.7rem" }} />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
               </Box>
             )}
             {onSectionChange && (
@@ -715,6 +748,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
                                   {property.sensitive && <Chip size="small" color="warning" label="Sensitive" />}
                                   {property.required && <Chip size="small" color="error" label="Required" />}
                                   {property.process && <Chip size="small" color="success" label="Gradle Process" />}
+                                  {templateKeys.has(property.key) && <Chip size="small" color="primary" variant="outlined" label="Template" />}
                                 </Stack>
                                 <Typography variant="caption" color="text.secondary">
                                   Default value: {property.defaultValue || "N/A"}
