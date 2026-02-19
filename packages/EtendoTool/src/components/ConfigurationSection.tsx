@@ -74,6 +74,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
   const [templateInfo, setTemplateInfo] = useState<TemplateInfo | null>(null);
   const [templateGaps, setTemplateGaps] = useState<Array<{ key: string; templateDefault: string }>>([]);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
+  const [showTemplateFields, setShowTemplateFields] = useState(false);
 
   // Keys provided by the selected template (for visual indicator in Advanced table)
   const templateKeys = useMemo(
@@ -144,6 +145,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
       return;
     }
     setSelectedTemplate(name);
+    setShowTemplateFields(false);
     setLoadingTemplate(true);
     try {
       const response = await ConfigApi.getTemplate(name);
@@ -511,8 +513,19 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
               </Typography>
               {loadingTemplate && <CircularProgress size={16} />}
             </Stack>
-            {templateGaps.length > 0 && (
-              <Stack spacing={1.5}>
+            {/* Advanced toggle — shows template fields only on demand */}
+            <Box sx={{ mt: 1 }}>
+              <Button
+                size="small"
+                variant="text"
+                endIcon={<ExpandMoreIcon sx={{ transform: showTemplateFields ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />}
+                onClick={() => setShowTemplateFields((v) => !v)}
+                sx={{ px: 0, color: "primary.main", fontWeight: 600 }}>
+                {showTemplateFields ? "Hide" : "Advanced"}{templateGaps.length > 0 ? ` (${templateGaps.length} field${templateGaps.length > 1 ? "s" : ""} to complete)` : ""}
+              </Button>
+            </Box>
+            {showTemplateFields && templateGaps.length > 0 && (
+              <Stack spacing={1.5} sx={{ mt: 1.5 }}>
                 {templateGaps.map(({ key, templateDefault }) => {
                   const prop = propertyIndex[key];
                   return (
