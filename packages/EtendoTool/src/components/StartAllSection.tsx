@@ -245,18 +245,18 @@ function PreFlightBanner({ status, loading, error, onRefresh }: StatusBannerProp
             }
           />
 
-          <ServiceChip
-            label={tomcatLabel}
-            ok={tomcat.running && !tomcat.needsRestart}
-            warning={tomcatWarn}
-            tooltip={
-              tomcat.running && tomcat.needsRestart
-                ? "The application was compiled after Tomcat last started. A restart is recommended."
-                : tomcat.running
-                  ? `Tomcat is responding on port ${tomcat.port}`
-                  : `Tomcat is not listening on port ${tomcat.port}. The 'Start Tomcat' step will start it.`
-            }
-          />
+          {tomcat.running && (
+            <ServiceChip
+              label={tomcatLabel}
+              ok={!tomcat.needsRestart}
+              warning={tomcatWarn}
+              tooltip={
+                tomcat.needsRestart
+                  ? "The application was compiled after Tomcat last started. A restart is recommended."
+                  : `Tomcat is responding on port ${tomcat.port}`
+              }
+            />
+          )}
         </Stack>
 
         {/* Context-sensitive advice */}
