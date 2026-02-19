@@ -10,26 +10,16 @@ import {
   Stack,
   Tooltip,
   Typography,
-  Snackbar,
-  Alert,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import CloseIcon from "@mui/icons-material/Close";
 import StorageIcon from "@mui/icons-material/Storage";
 import BuildIcon from "@mui/icons-material/Build";
 import DataObjectIcon from "@mui/icons-material/DataObject";
-import CameraAltIcon from "@mui/icons-material/CameraAlt";
-import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { executeGradle } from "../api/gradle";
-import { useScreenshot } from "../hooks/useScreenshot";
-import { ScreenshotManager } from "./ScreenshotManager";
 
 type ServerStatus = "stopped" | "starting" | "running" | "error";
 
@@ -65,10 +55,7 @@ export function DevelopmentSection() {
   const [isPolling, setIsPolling] = useState(false);
   const [gradleExecuting, setGradleExecuting] = useState<string | null>(null);
   const [gradleOutput, setGradleOutput] = useState<{ command: string; output: string; success: boolean } | null>(null);
-  const [showScreenshotManager, setShowScreenshotManager] = useState(false);
-  const [screenshotSuccess, setScreenshotSuccess] = useState(false);
-  const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(null);
-  const { captureScreenshot, isCapturing, error: screenshotError, setIframeRef } = useScreenshot();
+  const [showOutput, setShowOutput] = useState(false);
 
 
   const checkServerHealth = useCallback(async (): Promise<boolean> => {
@@ -105,6 +92,7 @@ export function DevelopmentSection() {
   const executeCommand = useCallback(async (command: string) => {
     setGradleExecuting(command);
     setGradleOutput(null);
+    setShowOutput(false);
 
     try {
       const result = await executeGradle(command);
@@ -113,6 +101,7 @@ export function DevelopmentSection() {
         output: result.output || result.error || "No output",
         success: result.success,
       });
+      setShowOutput(true);
     } catch (err) {
       setGradleOutput({
         command,
@@ -123,16 +112,6 @@ export function DevelopmentSection() {
       setGradleExecuting(null);
     }
   }, []);
-
-  const handleCaptureScreenshot = useCallback(async () => {
-    setMoreMenuAnchor(null);
-    try {
-      await captureScreenshot();
-      setScreenshotSuccess(true);
-    } catch (err) {
-      console.error("Failed to capture screenshot:", err);
-    }
-  }, [captureScreenshot]);
 
   // Check if the server is already running (e.g., when returning to the section)
   useEffect(() => {
@@ -198,189 +177,132 @@ export function DevelopmentSection() {
 
   return (
     <Box className="development-section">
-      {/* Top toolbar */}
+      {/* Top toolbar — single line with sections */}
       <Paper elevation={0} className="development-toolbar">
-        <Stack spacing={1.5}>
+        <Stack direction="row" alignItems="center" spacing={1}>
 
-          {/* ── Row 1: Server controls ── */}
-          <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
-            <Typography variant="subtitle2" fontWeight={700} color="text.primary" sx={{ mr: 0.5 }}>
-              Server
-            </Typography>
-            <Chip label={statusLabel.text} color={statusLabel.color} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
-            {serverStatus === "running" && (
-              <Typography variant="caption" color="text.secondary">localhost:3000</Typography>
-            )}
-            <Box sx={{ flex: 1 }} />
-            <Button
-              variant="outlined"
-              color="primary"
-              size="small"
-              startIcon={<PlayArrowIcon />}
-              onClick={startServer}
-              disabled={serverStatus === "running" || serverStatus === "starting"}>
-              Start
-            </Button>
-            <Button
-              variant="outlined"
-              color="error"
-              size="small"
-              startIcon={<StopIcon />}
-              onClick={stopServer}
-              disabled={serverStatus === "stopped"}>
-              Stop
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<RefreshIcon />}
-              onClick={() => { stopServer(); setTimeout(startServer, 500); }}
-              disabled={serverStatus !== "running"}>
-              Restart
-            </Button>
-            <Tooltip title="Open in new tab">
-              <span>
-                <IconButton
-                  component="a"
-                  href="http://localhost:3000"
-                  target="_blank"
-                  rel="noreferrer"
-                  size="small"
-                  disabled={serverStatus !== "running"}>
-                  <OpenInNewIcon fontSize="small" />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="More options">
-              <IconButton size="small" onClick={(e) => setMoreMenuAnchor(e.currentTarget)}>
-                <MoreVertIcon fontSize="small" />
+          {/* ── Section: Server status ── */}
+          <Typography variant="body2" fontWeight={700} noWrap>Server</Typography>
+          <Chip
+            label={statusLabel.text}
+            color={statusLabel.color}
+            size="small"
+            variant="outlined"
+            sx={{ fontWeight: 600 }}
+          />
+          {serverStatus === "running" && (
+            <Typography variant="caption" color="text.secondary" noWrap>:3000</Typography>
+          )}
+
+          <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+
+          {/* ── Section: Server controls ── */}
+          <Button variant="outlined" size="small" startIcon={<PlayArrowIcon />}
+            onClick={startServer} disabled={serverStatus === "running" || serverStatus === "starting"}>
+            Start
+          </Button>
+          <Button variant="outlined" color="error" size="small" startIcon={<StopIcon />}
+            onClick={stopServer} disabled={serverStatus === "stopped"}>
+            Stop
+          </Button>
+          <Button variant="outlined" size="small" startIcon={<RefreshIcon />}
+            onClick={() => { stopServer(); setTimeout(startServer, 500); }}
+            disabled={serverStatus !== "running"}>
+            Restart
+          </Button>
+
+          <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+
+          {/* ── Section: Gradle commands ── */}
+          {GRADLE_COMMANDS.map((cmd) => {
+            const result = gradleOutput?.command === cmd.id ? gradleOutput : null;
+            const resultColor = result ? (result.success ? "success" : "error") : cmd.color;
+            return (
+              <Tooltip key={cmd.id} title={cmd.description} placement="bottom">
+                <span>
+                  <Button
+                    variant={result ? "contained" : "outlined"}
+                    color={resultColor}
+                    size="small"
+                    startIcon={gradleExecuting === cmd.id ? undefined : cmd.icon}
+                    onClick={() => executeCommand(cmd.id)}
+                    disabled={isBusy}
+                    sx={{ fontWeight: 600, minWidth: 0 }}>
+                    {gradleExecuting === cmd.id ? <LinearProgress sx={{ width: 60, height: 2 }} /> : cmd.label}
+                  </Button>
+                </span>
+              </Tooltip>
+            );
+          })}
+
+          <Box sx={{ flex: 1 }} />
+
+          {/* ── Section: Utility actions ── */}
+          <Tooltip title="Open in new tab">
+            <span>
+              <IconButton component="a" href="http://localhost:3000" target="_blank"
+                rel="noreferrer" size="small" disabled={serverStatus !== "running"}>
+                <OpenInNewIcon fontSize="small" />
               </IconButton>
-            </Tooltip>
-          </Stack>
-
-          <Divider />
-
-          {/* ── Row 2: Gradle commands + result bars ── */}
-          <Stack direction="row" alignItems="flex-start" spacing={1} flexWrap="wrap">
-            {GRADLE_COMMANDS.map((cmd) => {
-              const isRunning = gradleExecuting === cmd.id;
-              const result = gradleOutput?.command === cmd.id ? gradleOutput : null;
-              const borderColor = result
-                ? result.success
-                  ? "#4caf50"
-                  : "#f44336"
-                : "transparent";
-              const bgColor = result
-                ? result.success
-                  ? "rgba(76,175,80,0.06)"
-                  : "rgba(244,67,54,0.06)"
-                : "transparent";
-
-              return (
-                <Stack key={cmd.id} spacing={0.5} sx={{ width: "auto" }}>
-                  <Tooltip title={cmd.description} placement="bottom">
-                    <span>
-                      <Button
-                        variant="outlined"
-                        color={cmd.color}
-                        size="small"
-                        startIcon={cmd.icon}
-                        onClick={() => executeCommand(cmd.id)}
-                        disabled={isBusy}
-                        sx={{ fontWeight: 600 }}>
-                        {isRunning ? "Running..." : cmd.label}
-                      </Button>
-                    </span>
-                  </Tooltip>
-
-                  {/* Result bar */}
-                  <Box
-                    sx={{
-                      borderLeft: `3px solid ${result ? borderColor : "#e0e0e0"}`,
-                      borderRadius: "0 4px 4px 0",
-                      backgroundColor: result ? bgColor : "#fafafa",
-                      px: 1,
-                      py: 0.5,
-                      minHeight: 28,
-                      display: "flex",
-                      alignItems: "center",
-                      overflow: "hidden",
-                      cursor: result ? "pointer" : "default",
-                      transition: "background-color 0.2s",
-                    }}
-                    onClick={() => result && setGradleOutput(result.command === gradleOutput?.command ? null : result)}>
-                    {isRunning ? (
-                      <LinearProgress sx={{ width: "100%", height: 2 }} />
-                    ) : result ? (
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          color: result.success ? "#2e7d32" : "#c62828",
-                          fontFamily: "monospace",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          fontWeight: 600,
-                          fontSize: "0.7rem",
-                        }}>
-                        {result.success ? "✓ OK" : "✗ Failed"}
-                      </Typography>
-                    ) : (
-                      <Typography variant="caption" sx={{ color: "#bdbdbd", fontSize: "0.7rem" }}>
-                        not run
-                      </Typography>
-                    )}
-                  </Box>
-
-                  {/* Expanded output */}
-                  {gradleOutput?.command === cmd.id && gradleOutput !== null && (
-                    <Box
-                      sx={{
-                        borderLeft: `3px solid ${borderColor}`,
-                        borderRadius: "0 4px 4px 0",
-                        backgroundColor: bgColor,
-                        px: 1,
-                        py: 0.75,
-                        fontFamily: "monospace",
-                        fontSize: "0.72rem",
-                        lineHeight: 1.5,
-                        whiteSpace: "pre-wrap",
-                        maxHeight: 140,
-                        overflow: "auto",
-                        color: "text.primary",
-                      }}>
-                      {gradleOutput.output}
-                    </Box>
-                  )}
-                </Stack>
-              );
-            })}
-          </Stack>
+            </span>
+          </Tooltip>
         </Stack>
-      </Paper>
 
-      {/* More options menu */}
-      <Menu
-        anchorEl={moreMenuAnchor}
-        open={Boolean(moreMenuAnchor)}
-        onClose={() => setMoreMenuAnchor(null)}
-        transformOrigin={{ horizontal: "right", vertical: "top" }}
-        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}>
-        <MenuItem
-          onClick={handleCaptureScreenshot}
-          disabled={serverStatus !== "running" || isCapturing}>
-          <ListItemIcon>
-            <CameraAltIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText primary="Capture screenshot" secondary="Save current UI state" />
-        </MenuItem>
-        <MenuItem onClick={() => { setMoreMenuAnchor(null); setShowScreenshotManager(true); }}>
-          <ListItemIcon>
-            <PhotoLibraryIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText primary="View screenshots" secondary="Browse saved captures" />
-        </MenuItem>
-      </Menu>
+        {/* ── Result bar — appears below the toolbar row when a command has run ── */}
+        {gradleOutput && (
+          <Box
+            sx={{
+              mt: 1.5,
+              pl: 1.5,
+              py: 0.5,
+              borderLeft: `3px solid ${gradleOutput.success ? "#4caf50" : "#f44336"}`,
+              borderRadius: "0 4px 4px 0",
+              backgroundColor: gradleOutput.success ? "rgba(76,175,80,0.05)" : "rgba(244,67,54,0.05)",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}>
+            <Typography
+              variant="caption"
+              sx={{
+                fontFamily: "monospace",
+                color: gradleOutput.success ? "#2e7d32" : "#c62828",
+                fontWeight: 600,
+                cursor: "pointer",
+                flex: 1,
+              }}
+              onClick={() => setShowOutput((v) => !v)}>
+              {gradleOutput.success ? "✓" : "✗"} {gradleOutput.command}
+              {showOutput ? " ▴" : " ▾"}
+            </Typography>
+            <IconButton size="small" onClick={() => setGradleOutput(null)} sx={{ p: 0.25 }}>
+              <CloseIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+          </Box>
+        )}
+
+        {/* ── Expanded output ── */}
+        {gradleOutput && showOutput && (
+          <Box
+            sx={{
+              mx: 0,
+              mt: 0.5,
+              pl: 1.5,
+              py: 0.75,
+              borderLeft: `3px solid ${gradleOutput.success ? "#4caf50" : "#f44336"}`,
+              borderRadius: "0 4px 4px 0",
+              backgroundColor: gradleOutput.success ? "rgba(76,175,80,0.04)" : "rgba(244,67,54,0.04)",
+              fontFamily: "monospace",
+              fontSize: "0.72rem",
+              lineHeight: 1.5,
+              whiteSpace: "pre-wrap",
+              maxHeight: 140,
+              overflow: "auto",
+            }}>
+            {gradleOutput.output}
+          </Box>
+        )}
+      </Paper>
 
       {/* Iframe area */}
       <Box className="development-iframe-area">
@@ -424,7 +346,6 @@ export function DevelopmentSection() {
 
         {showIframe && serverStatus === "running" && (
           <iframe
-            ref={setIframeRef}
             src="http://localhost:3000"
             title="Etendo UI"
             className="development-iframe"
@@ -432,30 +353,6 @@ export function DevelopmentSection() {
         )}
       </Box>
 
-      {/* Screenshot Manager Dialog */}
-      <ScreenshotManager open={showScreenshotManager} onClose={() => setShowScreenshotManager(false)} />
-
-      {/* Success Snackbar */}
-      <Snackbar
-        open={screenshotSuccess}
-        autoHideDuration={3000}
-        onClose={() => setScreenshotSuccess(false)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}>
-        <Alert onClose={() => setScreenshotSuccess(false)} severity="success" sx={{ width: "100%" }}>
-          Screenshot captured successfully!
-        </Alert>
-      </Snackbar>
-
-      {/* Error Snackbar */}
-      <Snackbar
-        open={!!screenshotError}
-        autoHideDuration={5000}
-        onClose={() => {}}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}>
-        <Alert severity="error" sx={{ width: "100%" }}>
-          {screenshotError || "Failed to capture screenshot"}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 }
