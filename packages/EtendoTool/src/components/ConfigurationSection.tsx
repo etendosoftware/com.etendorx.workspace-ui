@@ -18,9 +18,6 @@ import {
   FormControlLabel,
   IconButton,
   InputAdornment,
-  List,
-  ListItem,
-  ListItemText,
   MenuItem,
   Paper,
   Stack,
@@ -99,10 +96,9 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
     return false;
   };
 
-  const handleMissingDialogClose = () => {
+  const handleMissingDialogCancel = () => {
     setShowMissingDialog(false);
     setPendingAction(null);
-    // Expand advanced section and filter to required so user can see what's missing
     setAdvancedExpanded(true);
     setRequiredFilter("required");
   };
@@ -227,8 +223,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
     }
   };
 
-  const handleSave = async () => {
-    if (!checkRequired("save")) return;
+  const saveChanges = async () => {
     setSaving(true);
     setError(null);
     setSuccess(null);
@@ -267,6 +262,21 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
       setError(err instanceof Error ? err.message : "Error saving configurations");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!checkRequired("save")) return;
+    await saveChanges();
+  };
+
+  const handleDialogProceed = async () => {
+    const action = pendingAction;
+    setShowMissingDialog(false);
+    setPendingAction(null);
+    await saveChanges();
+    if (action === "next") {
+      onSectionChange?.("start-all");
     }
   };
 
@@ -502,9 +512,14 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
                   return (
                     <Stack key={key} direction="row" spacing={2} alignItems="flex-start">
                       <Box flex={1}>
-                        <Typography variant="body2" fontWeight={500}>
-                          {key} <Typography component="span" color="error">*</Typography>
-                        </Typography>
+                        <Stack direction="row" alignItems="center" spacing={0.75}>
+                          <Typography variant="body2" fontWeight={500}>
+                            {key} <Typography component="span" color="error">*</Typography>
+                          </Typography>
+                          {prop?.type?.toLowerCase() === "boolean" && (
+                            <Chip label="Boolean" size="small" variant="outlined" sx={{ height: 18, fontSize: "0.65rem" }} />
+                          )}
+                        </Stack>
                         {prop?.description && (
                           <Typography variant="caption" color="text.secondary">{prop.description}</Typography>
                         )}
@@ -741,34 +756,47 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
         </Paper>
       </Stack>
 
-      {/* Missing required fields — blocking dialog */}
-      <Dialog open={showMissingDialog} onClose={handleMissingDialogClose} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, color: "error.main" }}>
-          Required fields are missing
+      {/* Missing required fields — inline edit dialog */}
+      <Dialog open={showMissingDialog} onClose={handleMissingDialogCancel} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          Complete required fields
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            The following required fields have no default value and must be filled before{" "}
-            {pendingAction === "next" ? "continuing" : "saving"}:
+            These required fields have no default value. Fill them in to{" "}
+            {pendingAction === "next" ? "continue" : "save"}.
           </Typography>
-          <List dense disablePadding>
+          <Stack spacing={2}>
             {missingRequired.map((p) => (
-              <ListItem key={p.key} disableGutters sx={{ py: 0.25 }}>
-                <ListItemText
-                  primary={
-                    <Typography variant="body2" fontWeight={600}>
-                      {p.key}
-                    </Typography>
-                  }
-                  secondary={p.description || undefined}
-                />
-              </ListItem>
+              <Box key={p.key}>
+                <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
+                  <Typography variant="body2" fontWeight={600}>{p.key}</Typography>
+                  <Typography component="span" color="error" variant="body2">*</Typography>
+                  {p.type?.toLowerCase() === "boolean" && (
+                    <Chip label="Boolean" size="small" variant="outlined" sx={{ height: 18, fontSize: "0.65rem" }} />
+                  )}
+                </Stack>
+                {p.description && (
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+                    {p.description}
+                  </Typography>
+                )}
+                {renderInput(p)}
+              </Box>
             ))}
-          </List>
+          </Stack>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button variant="contained" color="primary" onClick={handleMissingDialogClose}>
-            Complete required fields
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button variant="outlined" onClick={handleMissingDialogCancel}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            disabled={missingRequired.length > 0 || saving}
+            startIcon={saving ? <CircularProgress size={16} color="inherit" /> : undefined}
+            onClick={handleDialogProceed}>
+            {pendingAction === "next" ? "Save & Continue" : "Save"}
           </Button>
         </DialogActions>
       </Dialog>
