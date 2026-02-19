@@ -449,7 +449,7 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
   // Render
   // ---------------------------------------------------------------------------
 
-  if (loading) return <LoadingOverlay testId="Loading__3fbaf0" />;
+  if (loading) return <LoadingOverlay testId="Loading__3fbaf0" data-testid="LoadingOverlay__3fbaf0" />;
 
   return (
     <>
@@ -477,8 +477,9 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
                 boxCount={boxCount}
                 onPrev={() => setCurrentBox((b) => Math.max(1, b - 1))}
                 onNext={() => setCurrentBox((b) => Math.min(boxCount, b + 1))}
+                data-testid="BoxSelector__3fbaf0"
               />
-              <AddBoxButton onClick={handleAddBox} title={t("packing.addBox")} />
+              <AddBoxButton onClick={handleAddBox} title={t("packing.addBox")} data-testid="AddBoxButton__3fbaf0" />
               <FormInput
                 id="packing-qty"
                 label={t("packing.quantity")}
@@ -486,6 +487,7 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
                 value={currentQty}
                 min={0}
                 onChange={(e) => setCurrentQty(Number(e.target.value))}
+                data-testid="FormInput__3fbaf0"
               />
               <FormInput
                 id="packing-barcode"
@@ -497,12 +499,14 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
                 placeholder={t("packing.scanBarcode")}
                 inputRef={barcodeInputRef}
                 colSpan={5}
+                data-testid="FormInput__3fbaf0"
               />
               <ValidateButton
                 onClick={handleValidate}
                 disabled={processing || !barcodeInput}
                 label={t("packing.validateBarcode")}
                 testId="Button__3fbaf0"
+                data-testid="ValidateButton__3fbaf0"
               />
             </div>
 
@@ -513,6 +517,7 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
                 title={t("process.processError")}
                 onDismiss={() => setError(null)}
                 testId="CloseIcon__3fbaf0_err"
+                data-testid="ErrorAlert__3fbaf0"
               />
             )}
 
@@ -559,9 +564,17 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
                     lines.map((line, idx) => {
                       const isComplete = line.qtyPending === 0;
                       const isOver = line.qtyPending < 0;
-                      const rowBg = isOver ? "bg-red-50" : isComplete ? "bg-green-50" : "";
-                      const statusColor = isComplete ? "text-green-500" : isOver ? "text-red-500" : "text-gray-300";
-                      const pendingColor = isOver ? "text-red-600" : isComplete ? "text-green-600" : "text-gray-900";
+                      let rowBg = "";
+                      if (isOver) rowBg = "bg-red-50";
+                      else if (isComplete) rowBg = "bg-green-50";
+
+                      let statusColor = "text-gray-300";
+                      if (isComplete) statusColor = "text-green-500";
+                      else if (isOver) statusColor = "text-red-500";
+
+                      let pendingColor = "text-gray-900";
+                      if (isOver) pendingColor = "text-red-600";
+                      else if (isComplete) pendingColor = "text-green-600";
 
                       return (
                         <tr key={line.shipmentLineId || idx} className={`hover:bg-gray-50 ${rowBg}`}>
@@ -639,15 +652,14 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
           </div>
         </div>
       </div>
-
       <ConfirmDialog
         state={confirmDialog}
         title={t("packing.validationError")}
         closeLabel={t("packing.close")}
         onClose={() => setConfirmDialog((prev) => ({ ...prev, open: false }))}
         testIdPrefix="3fbaf0"
+        data-testid="ConfirmDialog__3fbaf0"
       />
-
       {resultMessage && (
         <ResultMessageModal
           result={resultMessage}
@@ -671,6 +683,7 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
               </p>
             ) : undefined
           }
+          data-testid="ResultMessageModal__3fbaf0"
         />
       )}
     </>

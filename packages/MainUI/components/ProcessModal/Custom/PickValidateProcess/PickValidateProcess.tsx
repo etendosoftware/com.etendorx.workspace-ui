@@ -402,7 +402,7 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
   // ---------------------------------------------------------------------------
 
   if (loading) {
-    return <LoadingOverlay testId="Loading__pickvalidate" />;
+    return <LoadingOverlay testId="Loading__pickvalidate" data-testid="LoadingOverlay__7f07bf" />;
   }
 
   return (
@@ -431,6 +431,7 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
                 boxCount={boxCount}
                 onPrev={() => setCurrentBox(Math.max(1, currentBox - 1))}
                 onNext={() => setCurrentBox(Math.min(boxCount, currentBox + 1))}
+                data-testid="BoxSelector__7f07bf"
               />
 
               <AddBoxButton
@@ -440,6 +441,7 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
                   )
                 }
                 title={t("packing.addBox")}
+                data-testid="AddBoxButton__7f07bf"
               />
 
               <FormInput
@@ -451,6 +453,7 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
                 min={1}
                 max={9999}
                 colSpan={2}
+                data-testid="FormInput__7f07bf"
               />
 
               <FormInput
@@ -463,6 +466,7 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
                 placeholder={t("pickValidate.scanBarcode")}
                 inputRef={barcodeInputRef}
                 colSpan={5}
+                data-testid="FormInput__7f07bf"
               />
 
               <ValidateButton
@@ -470,6 +474,7 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
                 disabled={processing || !barcodeInput}
                 label={t("pickValidate.validateBarcode")}
                 testId="Button__pickvalidate"
+                data-testid="ValidateButton__7f07bf"
               />
             </div>
 
@@ -480,6 +485,7 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
                 message={error}
                 onDismiss={() => setError(null)}
                 testId="CloseIcon__pickvalidate_err"
+                data-testid="ErrorAlert__7f07bf"
               />
             )}
 
@@ -604,7 +610,6 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
           </div>
         </div>
       </div>
-
       {/* Error/Confirm Dialog */}
       <ConfirmDialog
         state={confirmDialog}
@@ -612,8 +617,8 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
         closeLabel={t("pickValidate.close")}
         onClose={() => setConfirmDialog((prev) => ({ ...prev, open: false }))}
         testIdPrefix="pickvalidate"
+        data-testid="ConfirmDialog__7f07bf"
       />
-
       {/* Result Message Modal */}
       {resultMessage && (
         <ResultMessageModal
@@ -621,6 +626,7 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
           closeLabel={t("pickValidate.close")}
           onClose={handleResultClose}
           testIdPrefix="pickvalidate"
+          data-testid="ResultMessageModal__7f07bf"
         />
       )}
     </>
