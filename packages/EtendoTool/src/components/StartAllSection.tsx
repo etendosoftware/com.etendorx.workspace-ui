@@ -302,6 +302,7 @@ function PreFlightBanner({ status, loading, error, onRefresh }: StatusBannerProp
                 return false;
               if (!postgres.connected && w.toLowerCase().includes("postgresql is not reachable")) return false;
               if (tomcat.needsRestart && w.toLowerCase().includes("tomcat may need")) return false;
+              if (!tomcat.running && w.toLowerCase().includes("tomcat is not running")) return false;
               return true;
             })
             .map((w, i) => (
