@@ -44,6 +44,17 @@ import { GithubAuthButton } from "./GithubAuthButton";
 import type { NavigationSection } from "../types/navigation";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
+/** Short description shown on each template card */
+const TEMPLATE_DESCRIPTIONS: Record<string, string> = {
+  copilot: "AI assistant with LLM integration and Etendo-native tools",
+};
+
+/** Parse `implementation('com.etendoerp:module.id:[ver)')` → `module.id` */
+const parseDependencyLabel = (dep: string): string => {
+  const match = dep.match(/['"(]?[^:'"(]+:([^:['"]+)/);
+  return match ? match[1] : dep;
+};
+
 interface ConfigurationSectionProps {
   onClose?: () => void;
   onSectionChange?: (section: NavigationSection) => void;
@@ -493,6 +504,9 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
                           <Typography variant="body2" fontWeight={selectedTemplate === tmpl ? 700 : 400} textTransform="capitalize">
                             {tmpl}
                           </Typography>
+                          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25, lineHeight: 1.3 }}>
+                            {TEMPLATE_DESCRIPTIONS[tmpl] ?? "Pre-configured setup template"}
+                          </Typography>
                           {selectedTemplate === tmpl && (
                             <Chip size="small" label="Selected" color="primary" sx={{ mt: 0.5 }} />
                           )}
@@ -515,36 +529,44 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
               </Typography>
               {loadingTemplate && <CircularProgress size={16} />}
             </Stack>
-            {/* Advanced toggle — shows template fields only on demand */}
-            <Box sx={{ mt: 1 }}>
-              <Button
-                size="small"
-                variant="text"
-                endIcon={<ExpandMoreIcon sx={{ transform: showTemplateFields ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />}
-                onClick={() => setShowTemplateFields((v) => !v)}
-                sx={{ px: 0, color: "primary.main", fontWeight: 600 }}>
-                {showTemplateFields ? "Hide" : "Advanced"}{templateGaps.length > 0 ? ` (${templateGaps.length} field${templateGaps.length > 1 ? "s" : ""} to complete)` : ""}
-              </Button>
-            </Box>
-            {showTemplateFields && templateGaps.length > 0 && (
+            {/* Advanced toggle — shows all template fields on demand */}
+            {templateInfo && Object.keys(templateInfo.properties).length > 0 && (
+              <Box sx={{ mt: 1 }}>
+                <Button
+                  size="small"
+                  variant="text"
+                  endIcon={<ExpandMoreIcon sx={{ transform: showTemplateFields ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />}
+                  onClick={() => setShowTemplateFields((v) => !v)}
+                  sx={{ px: 0, color: "primary.main", fontWeight: 600 }}>
+                  {showTemplateFields ? "Hide fields" : "Edit template fields"}
+                  {templateGaps.length > 0 && ` (${templateGaps.length} to complete)`}
+                </Button>
+              </Box>
+            )}
+            {showTemplateFields && templateInfo && Object.keys(templateInfo.properties).length > 0 && (
               <Stack spacing={1.5} sx={{ mt: 1.5 }}>
-                {templateGaps.map(({ key, templateDefault }) => {
+                {Object.entries(templateInfo.properties).map(([key, templateDefault]) => {
                   const prop = propertyIndex[key];
+                  const isGap = templateGaps.some((g) => g.key === key);
                   return (
                     <Stack key={key} direction="row" spacing={2} alignItems="flex-start">
                       <Box flex={1}>
                         <Stack direction="row" alignItems="center" spacing={0.75}>
                           <Typography variant="body2" fontWeight={500}>
-                            {key} <Typography component="span" color="error">*</Typography>
+                            {key}
+                            {prop?.required && <Typography component="span" color="error"> *</Typography>}
                           </Typography>
                           {prop?.type?.toLowerCase() === "boolean" && (
                             <Chip label="Boolean" size="small" variant="outlined" sx={{ height: 18, fontSize: "0.65rem" }} />
+                          )}
+                          {!isGap && (
+                            <Chip label="Set" size="small" color="success" variant="outlined" sx={{ height: 18, fontSize: "0.65rem" }} />
                           )}
                         </Stack>
                         {prop?.description && (
                           <Typography variant="caption" color="text.secondary">{prop.description}</Typography>
                         )}
-                        {templateDefault && (
+                        {templateDefault && templateDefault.trim() !== "" && (
                           <Typography variant="caption" color="text.secondary" display="block">
                             Template default: {templateDefault}
                           </Typography>
@@ -557,7 +579,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
                             fullWidth
                             value={editedConfigs[key] ?? ""}
                             onChange={(e) => handleConfigChange(key, e.target.value)}
-                            placeholder={templateDefault}
+                            placeholder={templateDefault || undefined}
                           />
                         )}
                       </Box>
@@ -585,7 +607,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
                     </Typography>
                     <Stack direction="row" flexWrap="wrap" gap={0.75}>
                       {templateInfo.dependencies.map((dep) => (
-                        <Chip key={dep} label={dep} size="small" variant="outlined" sx={{ fontFamily: "monospace", fontSize: "0.7rem" }} />
+                        <Chip key={dep} label={parseDependencyLabel(dep)} size="small" variant="outlined" title={dep} />
                       ))}
                     </Stack>
                   </Box>
