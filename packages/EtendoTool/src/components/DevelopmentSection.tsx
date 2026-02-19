@@ -182,7 +182,7 @@ export function DevelopmentSection() {
         <Stack direction="row" alignItems="center" spacing={1}>
 
           {/* ── Section: Server status ── */}
-          <Typography variant="body2" fontWeight={700} noWrap>Server</Typography>
+          <Typography variant="body2" fontWeight={700} noWrap>UI Server</Typography>
           <Chip
             label={statusLabel.text}
             color={statusLabel.color}
@@ -310,7 +310,7 @@ export function DevelopmentSection() {
           <Stack alignItems="center" justifyContent="center" spacing={2} sx={{ flex: 1, p: 4 }}>
             <LinearProgress sx={{ width: 300 }} />
             <Typography variant="body1" fontWeight={500} sx={{ color: "rgba(255,255,255,0.9)" }}>
-              Connecting to Etendo Application Server...
+              Starting UI server on :3000...
             </Typography>
             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)" }}>
               Time: {elapsedTime}s | Attempt: {connectionAttempts}
@@ -333,13 +333,13 @@ export function DevelopmentSection() {
               <PlayArrowIcon sx={{ fontSize: 48, color: "rgba(255,255,255,0.35)" }} />
             </Box>
             <Typography variant="h6" sx={{ color: "rgba(255,255,255,0.9)" }}>
-              Etendo Application Server is not running
+              UI Server is not running
             </Typography>
             <Typography variant="body2" textAlign="center" sx={{ color: "rgba(255,255,255,0.55)", maxWidth: 400 }}>
-              Start the server to load the Etendo UI in this panel. The server runs on port 3000.
+              Starts the frontend app on port 3000. This is independent from the Etendo ERP backend (Tomcat).
             </Typography>
             <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={startServer}>
-              Start Server
+              Start UI Server
             </Button>
           </Stack>
         )}
