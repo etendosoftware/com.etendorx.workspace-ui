@@ -42,7 +42,7 @@ import {
   BoxSelector,
   AddBoxButton,
   FormInput,
-  ValidateButton,
+  BarcodeInputRow,
 } from "../shared/ProcessModalShared";
 
 // ---------------------------------------------------------------------------
@@ -452,25 +452,20 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
                 data-testid="FormInput__7f07bf"
               />
 
-              <FormInput
+              <BarcodeInputRow
                 id="pv-barcode"
                 label={t("pickValidate.barcode")}
-                type="text"
                 value={barcodeInput}
                 onChange={(e) => setBarcodeInput(e.target.value)}
                 onKeyDown={handleBarcodeKeyDown}
                 placeholder={t("pickValidate.scanBarcode")}
                 inputRef={barcodeInputRef}
-                colSpan={5}
-                data-testid="FormInput__7f07bf"
-              />
-
-              <ValidateButton
-                onClick={handleValidate}
-                disabled={processing || !barcodeInput}
-                label={t("pickValidate.validateBarcode")}
-                testId="Button__pickvalidate"
-                data-testid="ValidateButton__7f07bf"
+                onValidate={handleValidate}
+                validateDisabled={processing || !barcodeInput}
+                validateLabel={t("pickValidate.validateBarcode")}
+                validateTestId="Button__pickvalidate"
+                colSpan={6}
+                data-testid="BarcodeInputRow__7f07bf"
               />
             </div>
 

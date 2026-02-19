@@ -40,7 +40,7 @@ import {
   BoxSelector,
   AddBoxButton,
   FormInput,
-  ValidateButton,
+  BarcodeInputRow,
 } from "../shared/ProcessModalShared";
 
 // ---------------------------------------------------------------------------
@@ -489,24 +489,20 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
                 onChange={(e) => setCurrentQty(Number(e.target.value))}
                 data-testid="FormInput__3fbaf0"
               />
-              <FormInput
+              <BarcodeInputRow
                 id="packing-barcode"
                 label={t("packing.barcode")}
-                type="text"
                 value={barcodeInput}
                 onChange={(e) => setBarcodeInput(e.target.value)}
                 onKeyDown={handleBarcodeKeyDown}
                 placeholder={t("packing.scanBarcode")}
                 inputRef={barcodeInputRef}
-                colSpan={5}
-                data-testid="FormInput__3fbaf0"
-              />
-              <ValidateButton
-                onClick={handleValidate}
-                disabled={processing || !barcodeInput}
-                label={t("packing.validateBarcode")}
-                testId="Button__3fbaf0"
-                data-testid="ValidateButton__3fbaf0"
+                onValidate={handleValidate}
+                validateDisabled={processing || !barcodeInput}
+                validateLabel={t("packing.validateBarcode")}
+                validateTestId="Button__3fbaf0"
+                colSpan={6}
+                data-testid="BarcodeInputRow__3fbaf0"
               />
             </div>
 

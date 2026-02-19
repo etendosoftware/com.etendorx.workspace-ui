@@ -237,15 +237,21 @@ interface AddBoxButtonProps {
 }
 
 export const AddBoxButton: React.FC<AddBoxButtonProps> = ({ onClick, title }) => (
-  <div className="col-span-12 sm:col-span-1 flex items-end h-10.5 pb-[2px]">
+  <div className="col-span-12 sm:col-span-2 flex flex-col">
+    <span
+      className="flex items-center gap-1 font-medium text-sm leading-5 tracking-normal text-(--color-baseline-80) mb-1 select-none opacity-0 pointer-events-none"
+      aria-hidden="true">
+      &nbsp;
+    </span>
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center justify-center w-full h-10 rounded bg-(--color-transparent-neutral-5) border-0 border-b-2 border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-60) hover:text-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) transition-colors select-none"
-      title={title}>
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" role="img" aria-label="Add box">
+      aria-label={title}
+      className="flex items-center justify-center gap-2 w-full h-10.5 rounded-t bg-(--color-transparent-neutral-5) border-0 border-b-2 border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-60) hover:text-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) transition-colors select-none px-3">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" role="img" aria-hidden="true" focusable="false">
         <path d="M7 3v8M3 7h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
       </svg>
+      <span className="font-medium text-sm leading-5">{title}</span>
     </button>
   </div>
 );
@@ -328,5 +334,67 @@ export const ValidateButton: React.FC<ValidateButtonProps> = ({ onClick, disable
       data-testid={testId}>
       {label}
     </Button>
+  </div>
+);
+
+// ---------------------------------------------------------------------------
+// BarcodeInputRow — barcode input + validate button on the same line
+// ---------------------------------------------------------------------------
+
+interface BarcodeInputRowProps {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
+  onValidate: () => void;
+  validateDisabled: boolean;
+  validateLabel: string;
+  validateTestId?: string;
+  /** Total grid col-span (default 7 = 5 barcode + 2 button) */
+  colSpan?: number;
+}
+
+export const BarcodeInputRow: React.FC<BarcodeInputRowProps> = ({
+  id,
+  label,
+  value,
+  onChange,
+  onKeyDown,
+  placeholder,
+  inputRef,
+  onValidate,
+  validateDisabled,
+  validateLabel,
+  validateTestId,
+  colSpan = 7,
+}) => (
+  <div className={`col-span-12 sm:col-span-${colSpan}`}>
+    <label htmlFor={id} className={LABEL_CLASS}>
+      {label}
+    </label>
+    <div className="flex items-stretch gap-2">
+      <input
+        id={id}
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={onChange}
+        onKeyDown={onKeyDown}
+        placeholder={placeholder}
+        className={`${INPUT_CLASS} flex-1 min-w-0`}
+      />
+      <Button
+        variant="filled"
+        size="large"
+        onClick={onValidate}
+        disabled={validateDisabled}
+        className="whitespace-nowrap shrink-0 px-4 !h-10.5"
+        data-testid={validateTestId}>
+        {validateLabel}
+      </Button>
+    </div>
   </div>
 );

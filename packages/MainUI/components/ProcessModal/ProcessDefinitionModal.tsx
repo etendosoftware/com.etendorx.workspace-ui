@@ -47,6 +47,7 @@ import {
   PROCESS_TYPES,
   ADD_PAYMENT_ORDER_PROCESS_ID,
   PACKING_PROCESS_ID,
+  PACKING_FROM_SHIPMENT_PROCESS_ID,
   PICK_VALIDATE_PROCESS_ID,
 } from "@/utils/processes/definition/constants";
 import { PackingProcess } from "./Custom/PackingProcess/PackingProcess";
@@ -1745,7 +1746,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     (hasWindowReference && !gridSelection);
 
   const renderModalContent = () => {
-    if (processId === PACKING_PROCESS_ID) {
+    if (processId === PACKING_PROCESS_ID || processId === PACKING_FROM_SHIPMENT_PROCESS_ID) {
       return (
         <PackingProcess
           onClose={handleClose}

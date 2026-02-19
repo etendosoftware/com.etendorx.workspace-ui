@@ -19,7 +19,8 @@
  * used by PackingProcess and PickValidateProcess.
  */
 
-import React, { useCallback, useRef, useState } from "react";
+import type React from "react";
+import { useCallback, useRef, useState } from "react";
 
 export interface UseBoxManagerResult<T extends Record<string, unknown> = Record<string, unknown>> {
   boxCount: number;
