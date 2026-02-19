@@ -42,6 +42,10 @@ export const compileExpression = (expression: string) => {
   try {
     // Shim for legacy OpenBravo/Etendo functions used in expressions
     const obShim = `
+      var normalize = function(val) {
+        if (typeof val === "boolean") return val ? "Y" : "N";
+        return val;
+      };
       var OB = {
         Utilities: {
           getValue: function(obj, prop) { return obj && obj[prop]; },
@@ -50,7 +54,22 @@ export const compileExpression = (expression: string) => {
         PropertyStore: function(ctx, prop) { return ctx && (ctx[prop] || ctx['$'+prop] || ctx['#'+prop]); },
         getExpression: function() { return true; }, // Fallback for complex expressions
         PropertyStore: {
-            get: function(prop) { return context[prop] || context['$'+prop] || context['#'+prop]; }
+          get: (key) => {
+            // 1. Check context (session attributes with #/$ prefixes)
+            const fromContext = context[key] ?? context['#' + key] ?? context['$' + key];
+            if (fromContext !== undefined && fromContext !== null) return normalize(fromContext);
+            // 2. Check preferences loaded from backend (stored in localStorage at login)
+            try {
+              const prefs = JSON.parse(localStorage.getItem('etendo_preferences') || '{}');
+              if (prefs[key] !== undefined) return normalize(prefs[key]);
+              // Case-insensitive fallback
+              const lowerKey = key.toLowerCase();
+              for (const k of Object.keys(prefs)) {
+                if (k.toLowerCase() === lowerKey) return normalize(prefs[k]);
+              }
+            } catch (e) { /* ignore parse errors */ }
+            return undefined;
+          }
         },
         getSession: function() {
             return {
@@ -62,7 +81,8 @@ export const compileExpression = (expression: string) => {
                     return val;
                 }
             };
-        }
+        },
+        getFilterExpression: () => null
       };
     `;
 

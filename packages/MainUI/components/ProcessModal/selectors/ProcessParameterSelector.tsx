@@ -93,12 +93,13 @@ export const ProcessParameterSelector = ({
     try {
       const compiledExpr = compileExpression(parameter.displayLogic);
       // Pass smartContext as both context and values to ensure resolution works for all variable types
-      return compiledExpr(evaluationContext, evaluationContext);
+      const result = compiledExpr(evaluationContext, evaluationContext);
+      return result;
     } catch (error) {
       logger.warn("Error executing display logic expression:", parameter.displayLogic, error);
       return true; // Default to visible on error
     }
-  }, [parameter.displayLogic, parameter.name, logicFields, values, evaluationContext]);
+  }, [parameter.displayLogic, parameter.name, parameter.dBColumnName, logicFields, values, evaluationContext]);
 
   // Evaluate readonly logic expression (EXACT same logic as BaseSelector lines 83-95)
   const isReadOnly = useMemo(() => {
