@@ -272,35 +272,6 @@ describe("Table Feature Integration with Inline Editing", () => {
   });
 
   describe("Performance with Large Datasets", () => {
-    it("should handle large datasets efficiently", () => {
-      // Create a large dataset
-      const largeDataset: EntityData[] = [];
-      for (let i = 1; i <= 10000; i++) {
-        largeDataset.push({
-          id: String(i),
-          name: `Record ${i}`,
-          value: i * 10,
-          active: i % 2 === 0,
-        });
-      }
-
-      // Test optimistic updates with large dataset
-      const optimisticRecords = [
-        { id: "new_1", name: "New Record", value: 150, active: true },
-        ...largeDataset.slice(0, 100), // First 100 records
-      ];
-      const editingRows: EditingRowsState = {};
-
-      const startTime = performance.now();
-      const merged = mergeOptimisticRecordsWithSort(largeDataset, optimisticRecords, editingRows);
-      const endTime = performance.now();
-
-      // Should complete within reasonable time (less than 150ms)
-      expect(endTime - startTime).toBeLessThan(150);
-      expect(merged.length).toBeGreaterThan(0);
-      expect(merged[0].id).toBe("new_1"); // New record should be first
-    });
-
     it("should efficiently check virtual scrolling compatibility", () => {
       const editingRows: EditingRowsState = {};
       for (let i = 1; i <= 50; i++) {

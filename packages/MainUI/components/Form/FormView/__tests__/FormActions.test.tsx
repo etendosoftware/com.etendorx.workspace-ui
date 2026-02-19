@@ -2,11 +2,9 @@ import { render } from "@testing-library/react";
 import { FormActions } from "../FormActions";
 import { globalCalloutManager } from "../../../../services/callouts";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
-import WindowProvider from "@/contexts/window";
-import { useFormViewContext } from "../contexts/FormViewContext";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { useFormContext } from "react-hook-form";
-import { useTabContext } from "@/contexts/tab";
+import { FormMode } from "@workspaceui/api-client/src/api/types";
 
 /**
  * Test helpers
@@ -50,19 +48,22 @@ const createMockCalloutState = (overrides = {}) => ({
 
 const createFormActionsProps = (tab: Tab, overrides = {}) => ({
   tab,
-  setRecordId: jest.fn(),
+  onNew: jest.fn(),
   refetch: jest.fn(),
   onSave: jest.fn(),
   showErrorModal: jest.fn(),
+  mode: "EDIT" as const,
   ...overrides,
 });
 
+const mockMarkFormAsChanged = jest.fn();
+const mockResetFormChanges = jest.fn();
+const mockRegisterActions = jest.fn();
+const mockSetSaveButtonState = jest.fn();
+const mockClearTabFormState = jest.fn();
+
 const renderFormActions = (props: ReturnType<typeof createFormActionsProps>) => {
-  return render(
-    <WindowProvider>
-      <FormActions {...props} />
-    </WindowProvider>
-  );
+  return render(<FormActions {...props} />);
 };
 
 jest.mock("next/navigation", () => ({
@@ -83,13 +84,24 @@ jest.mock("react-hook-form", () => ({
 
 jest.mock("@/contexts/ToolbarContext", () => ({
   useToolbarContext: () => ({
-    registerActions: jest.fn(),
-    setSaveButtonState: jest.fn(),
+    registerActions: mockRegisterActions,
+    setSaveButtonState: mockSetSaveButtonState,
   }),
 }));
 
 jest.mock("@/contexts/tab", () => ({
-  useTabContext: jest.fn(),
+  useTabContext: () => ({
+    markFormAsChanged: mockMarkFormAsChanged,
+    resetFormChanges: mockResetFormChanges,
+  }),
+}));
+
+jest.mock("@/contexts/window", () => ({
+  useWindowContext: () => ({
+    activeWindow: { windowIdentifier: "WIN1" },
+    clearTabFormState: mockClearTabFormState,
+  }),
+  WindowProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 jest.mock("@/hooks/useFormValidation", () => ({
@@ -101,10 +113,6 @@ jest.mock("@/contexts/FormInitializationContext", () => ({
     isFormInitializing: false,
     isSettingInitialValues: false,
   }),
-}));
-
-jest.mock("../contexts/FormViewContext", () => ({
-  useFormViewContext: jest.fn(),
 }));
 
 jest.mock("@/services/callouts", () => ({
@@ -122,15 +130,11 @@ describe("FormActions", () => {
   const props = createFormActionsProps(mockTab);
 
   beforeEach(() => {
-    mockReplace.mockClear();
+    jest.clearAllMocks();
     setupSearchParams("WIN1");
     // Default mock implementations
     (useFormContext as jest.Mock).mockReturnValue({
       formState: { isDirty: false },
-    });
-    (useTabContext as jest.Mock).mockReturnValue({
-      markFormAsChanged: jest.fn(),
-      resetFormChanges: jest.fn(),
     });
     (useFormValidation as jest.Mock).mockReturnValue({
       validateRequiredFields: jest.fn(() => ({
@@ -139,15 +143,16 @@ describe("FormActions", () => {
       })),
       requiredFields: [],
     });
-    (useFormViewContext as jest.Mock).mockReturnValue({
-      mode: "EDIT",
-    });
   });
 
   it("renders and registers actions", () => {
     renderFormActions(props);
-    // Esperamos que se registre el objeto con las acciones
-    // (el mock de registerActions se llama desde el useEffect)
+    expect(mockRegisterActions).toHaveBeenCalledWith({
+      save: expect.any(Function),
+      refresh: expect.any(Function),
+      back: expect.any(Function),
+      new: expect.any(Function),
+    });
   });
 
   it("calls validation when callouts are done", () => {
@@ -158,65 +163,38 @@ describe("FormActions", () => {
   });
 
   it("should enable save when NEW mode and defaults are valid", () => {
-    const { useFormViewContext } = require("../contexts/FormViewContext");
-    const { useTabContext } = require("@/contexts/tab");
-
-    // Mock NEW mode
-    (useFormViewContext as jest.Mock).mockReturnValue({ mode: "NEW" });
-
     // Mock valid form
-    const { useFormValidation } = require("@/hooks/useFormValidation");
     (useFormValidation as jest.Mock).mockReturnValue({
       validateRequiredFields: () => ({ isValid: true, missingFields: [] }),
       requiredFields: [{ hqlName: "active" }],
     });
 
-    const { markFormAsChanged } = useTabContext();
-
-    renderFormActions(props);
+    renderFormActions({ ...props, mode: FormMode.NEW });
 
     // Debería llamar a markFormAsChanged porque es NEW y válido
-    expect(markFormAsChanged).toHaveBeenCalled();
+    expect(mockMarkFormAsChanged).toHaveBeenCalled();
   });
 
   it("should NOT enable save when EDIT mode even if valid (not dirty)", () => {
-    const { useFormViewContext } = require("../contexts/FormViewContext");
-    const { useTabContext } = require("@/contexts/tab");
-
-    // Mock EDIT mode
-    (useFormViewContext as jest.Mock).mockReturnValue({ mode: "EDIT" });
-
     // Mock valid form
-    const { useFormValidation } = require("@/hooks/useFormValidation");
     (useFormValidation as jest.Mock).mockReturnValue({
       validateRequiredFields: () => ({ isValid: true, missingFields: [] }),
       requiredFields: [{ hqlName: "active" }],
     });
 
-    const { markFormAsChanged, resetFormChanges } = useTabContext();
-
-    renderFormActions(props);
+    renderFormActions({ ...props, mode: FormMode.EDIT });
 
     // No debería marcarse como cambiado en EDIT si no es dirty
-    expect(markFormAsChanged).not.toHaveBeenCalled();
-    expect(resetFormChanges).toHaveBeenCalled();
+    expect(mockMarkFormAsChanged).not.toHaveBeenCalled();
+    expect(mockResetFormChanges).toHaveBeenCalled();
   });
 
   it("should enable save when EDIT mode and isDirty is true", () => {
-    const { useFormViewContext } = require("../contexts/FormViewContext");
-    const { useFormContext } = require("react-hook-form");
-    const { useTabContext } = require("@/contexts/tab");
-
-    // Mock EDIT mode
-    (useFormViewContext as jest.Mock).mockReturnValue({ mode: "EDIT" });
-
     // Mock Dirty
     (useFormContext as jest.Mock).mockReturnValue({ formState: { isDirty: true } });
 
-    const { markFormAsChanged } = useTabContext();
+    renderFormActions({ ...props, mode: FormMode.EDIT });
 
-    renderFormActions(props);
-
-    expect(markFormAsChanged).toHaveBeenCalled();
+    expect(mockMarkFormAsChanged).toHaveBeenCalled();
   });
 });

@@ -19,7 +19,6 @@ import { executeLogic } from "@/payscript";
 import type { PayScriptRules } from "@/payscript";
 import type { ProcessCalloutFunction } from "./processCallouts";
 import { logger } from "@/utils/logger";
-
 /**
  * Registry of PayScript rules by process ID
  * In the future, this will be loaded from the backend dynamically
@@ -61,21 +60,14 @@ export const genericPayScriptCallout: ProcessCalloutFunction = async (formValues
     // Extract process ID from form values
     const processId = extractProcessId(formValues);
     if (!processId) {
-      logger.debug("[PayScript] No process ID found in form values");
       return {};
     }
 
     // Get rules for this process
     const rules = getPayScriptRules(processId);
     if (!rules) {
-      logger.debug(`[PayScript] No rules registered for process: ${processId}`);
       return {};
     }
-
-    logger.debug(`[PayScript] Executing rules for process: ${processId}`);
-    logger.debug("[PayScript] Form values keys:", Object.keys(formValues));
-    logger.debug("[PayScript] Grid selection:", gridSelection);
-
     // Build context by passing everything
     const context = {
       ...formValues,
@@ -90,14 +82,6 @@ export const genericPayScriptCallout: ProcessCalloutFunction = async (formValues
       logger.error(`[PayScript] Execution failed: ${result.error}`);
       return {};
     }
-
-    logger.debug("[PayScript] Execution successful");
-    logger.debug("[PayScript] Computed fields:", Object.keys(result.computed || {}));
-    logger.debug("[PayScript] Sample computed values:", {
-      total: result.computed?.total,
-      difference: result.computed?.difference,
-      overpayment_action: result.computed?.overpayment_action,
-    });
 
     // Handle validation errors
     if (result.validations && result.validations.length > 0) {
@@ -121,11 +105,8 @@ export const genericPayScriptCallout: ProcessCalloutFunction = async (formValues
     // Don't include internal fields (success, computed, validations, error)
     // These are already extracted above
 
-    logger.debug("[PayScript] Returning updates:", updates);
-
     return updates;
   } catch (error) {
-    logger.error("[PayScript] Callout error:", error);
     return {};
   }
 };

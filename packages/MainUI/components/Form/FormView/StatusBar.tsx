@@ -21,7 +21,7 @@ import { IconButton } from "@workspaceui/componentlibrary/src/components";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { useTabContext } from "@/contexts/tab";
 import { RecordNavigationControls } from "./RecordNavigationControls";
 import type { NavigationState } from "@/hooks/useRecordNavigation";
@@ -41,7 +41,6 @@ export default function StatusBar({
   onNavigatePrevious,
   isNavigating = false,
 }: StatusBarProps) {
-  const [isSaved, setIsSaved] = useState(false);
   const { t } = useTranslation();
   const { onBack, onSave } = useToolbarContext();
   const { hasFormChanges } = useTabContext();
@@ -49,23 +48,15 @@ export default function StatusBar({
   const handleCloseRecord = useCallback(async () => {
     try {
       if (hasFormChanges) {
-        await onSave(false);
+        // Save with skipFormStateUpdate: true to prevent the form from
+        // transitioning to EDIT mode with the new record ID before we navigate back
+        await onSave({ skipFormStateUpdate: true });
       }
-      setIsSaved(true);
+      onBack();
     } catch (error) {
       console.error("Error saving record", error);
     }
-  }, [hasFormChanges, onSave]);
-
-  useEffect(() => {
-    if (isSaved) {
-      onBack();
-    }
-
-    return () => {
-      setIsSaved(false);
-    };
-  }, [isSaved, onBack]);
+  }, [hasFormChanges, onSave, onBack]);
 
   return (
     <div

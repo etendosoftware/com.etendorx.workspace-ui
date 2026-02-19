@@ -416,6 +416,62 @@ jest.mock("@workspaceui/api-client/src/hooks/useColumnFilterData", () => ({
   }),
 }));
 
+// Mock useTableData hook to prevent infinite loops from the summary useEffect
+const mockFetchSummary = jest.fn().mockResolvedValue({});
+const mockTableDataColumns = [
+  {
+    id: "name",
+    name: "name",
+    columnName: "name",
+    header: "Name",
+    accessorKey: "name",
+    type: "string",
+  },
+  {
+    id: "status",
+    name: "status",
+    columnName: "status",
+    header: "Status",
+    accessorKey: "status",
+    type: "string",
+  },
+];
+
+const mockTableDataHook = {
+  displayRecords: [] as EntityData[],
+  records: [] as EntityData[],
+  columns: mockTableDataColumns,
+  expanded: {},
+  loading: false,
+  error: null as Error | null,
+  shouldUseTreeMode: false,
+  hasMoreRecords: false,
+  handleMRTColumnFiltersChange: jest.fn(),
+  handleMRTColumnVisibilityChange: jest.fn(),
+  handleMRTSortingChange: jest.fn(),
+  handleMRTColumnOrderChange: jest.fn(),
+  handleMRTExpandChange: jest.fn(),
+  handleColumnFilterChange: jest.fn(),
+  handleDateTextFilterChange: jest.fn(),
+  handleLoadFilterOptions: jest.fn().mockResolvedValue([]),
+  handleLoadMoreFilterOptions: jest.fn().mockResolvedValue([]),
+  toggleImplicitFilters: jest.fn(),
+  fetchMore: jest.fn(),
+  refetch: jest.fn().mockResolvedValue(undefined),
+  removeRecordLocally: jest.fn(),
+  updateRecordLocally: jest.fn(),
+  addRecordLocally: jest.fn(),
+  applyQuickFilter: jest.fn().mockResolvedValue(undefined),
+  isImplicitFilterApplied: false,
+  tableColumnFilters: [],
+  tableColumnVisibility: {},
+  fetchSummary: mockFetchSummary,
+};
+
+jest.mock("@/hooks/table/useTableData", () => ({
+  useTableData: () => mockTableDataHook,
+}));
+
 // Mock useTableData helper functions
 
 // Mock for capturing row props from the table
@@ -588,6 +644,12 @@ describe("DynamicTable", () => {
     mockDatasourceHook.error = null;
     resetTabContext(); // Reset tab context to default state
 
+    // Reset table data hook mocks
+    mockTableDataHook.displayRecords = mockRecords;
+    mockTableDataHook.records = mockRecords;
+    mockTableDataHook.loading = false;
+    mockTableDataHook.error = null;
+
     // Reset table state persistence mocks
     mockTableStatePersistenceTab.tableColumnFilters = [];
     mockTableStatePersistenceTab.tableColumnVisibility = {};
@@ -632,6 +694,7 @@ describe("DynamicTable", () => {
   describe("Loading State", () => {
     it("displays loading state correctly", () => {
       mockDatasourceHook.loading = true;
+      mockTableDataHook.loading = true;
 
       renderWithProviders(<DynamicTable {...defaultProps} />);
 
@@ -653,6 +716,7 @@ describe("DynamicTable", () => {
   describe("Error Handling", () => {
     it("displays error when datasource has error", () => {
       mockDatasourceHook.error = new Error("Database connection failed");
+      mockTableDataHook.error = new Error("Database connection failed");
 
       renderWithProviders(<DynamicTable {...defaultProps} />);
 
@@ -664,13 +728,14 @@ describe("DynamicTable", () => {
     it("calls refetch when retry button is clicked", async () => {
       const user = userEvent.setup();
       mockDatasourceHook.error = new Error("Network error");
+      mockTableDataHook.error = new Error("Network error");
 
       renderWithProviders(<DynamicTable {...defaultProps} />);
 
       const retryButton = screen.getByText("Retry");
       await user.click(retryButton);
 
-      expect(mockDatasourceHook.refetch).toHaveBeenCalledTimes(1);
+      expect(mockTableDataHook.refetch).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -1161,6 +1226,7 @@ describe("DynamicTable", () => {
     it("should handle datasource errors with retry functionality", async () => {
       const user = userEvent.setup();
       mockDatasourceHook.error = new Error("Network timeout");
+      mockTableDataHook.error = new Error("Network timeout");
 
       renderWithProviders(<DynamicTable {...defaultProps} />);
 
@@ -1169,7 +1235,7 @@ describe("DynamicTable", () => {
       const retryButton = screen.getByText("Retry");
       await user.click(retryButton);
 
-      expect(mockDatasourceHook.refetch).toHaveBeenCalledTimes(1);
+      expect(mockTableDataHook.refetch).toHaveBeenCalledTimes(1);
     });
 
     it("should handle rapid state changes", () => {
@@ -1388,6 +1454,7 @@ describe("DynamicTable", () => {
 
     it("should show loading state during fetch", () => {
       mockDatasourceHook.loading = true;
+      mockTableDataHook.loading = true;
 
       renderWithProviders(<DynamicTable {...defaultProps} />);
 

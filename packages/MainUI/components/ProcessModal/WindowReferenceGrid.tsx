@@ -79,7 +79,7 @@ function mergeCurrentValuesIntoParams(
 ): void {
   for (const [key, value] of Object.entries(currentValues)) {
     if (value !== undefined && value !== null) {
-      mergedParams[key] = value as EntityValue;
+      mergedParams[key] = extractActualValue(value);
     }
   }
 }
@@ -527,7 +527,9 @@ const WindowReferenceGrid = ({
 
         const matchingParameter = Object.values(parameters).find((param) => param.name === key);
         if (matchingParameter) {
-          options[matchingParameter.dBColumnName || key] = finalValue;
+          if (finalValue !== "" && finalValue !== null && finalValue !== undefined) {
+            options[matchingParameter.dBColumnName || key] = finalValue;
+          }
         }
       }
     };
@@ -597,12 +599,15 @@ const WindowReferenceGrid = ({
       if (!parameters || !stableRecordValues) return;
 
       Object.values(parameters).forEach((param: any) => {
-        const paramValue = effectiveRecordValues[param.name];
+        const rawValue = effectiveRecordValues[param.name];
+        const paramValue = extractActualValue(rawValue);
         // Only include parameter if it matches a column in the grid OR is a standard ID
         if (paramValue !== undefined && param.dBColumnName) {
+          if (paramValue === "" || paramValue === null) return;
+
           const lowerKey = param.dBColumnName.toLowerCase();
           if (validColumnNames.has(lowerKey)) {
-            options[param.dBColumnName] = paramValue as any;
+            options[param.dBColumnName] = paramValue;
           }
         }
       });

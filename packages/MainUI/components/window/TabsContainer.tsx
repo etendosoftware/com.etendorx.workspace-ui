@@ -94,8 +94,8 @@ const TabsGroupRenderer = ({
 
     try {
       const compiledExpr = compileExpression(expression);
-      // We assume global session variables are handled by session arg
-      return compiledExpr(session, context);
+      // We pass the context (which includes session) as the first argument
+      return compiledExpr(context, context);
     } catch {
       return true;
     }
@@ -127,7 +127,7 @@ const TabsGroupRenderer = ({
 
       try {
         const compiledExpr = compileExpression(expression);
-        const res = compiledExpr(session, context);
+        const res = compiledExpr(context, context);
         return res;
       } catch (error) {
         logger.error(`Error evaluating display logic for tab ${tab.name}:`, error);
