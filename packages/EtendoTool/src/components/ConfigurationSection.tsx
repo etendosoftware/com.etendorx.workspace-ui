@@ -28,6 +28,7 @@ import {
   Typography,
   ToggleButton,
   ToggleButtonGroup,
+  Skeleton,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -61,6 +62,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [requiredFilter, setRequiredFilter] = useState<"all" | "required" | "optional">("all");
   const [availableTemplates, setAvailableTemplates] = useState<string[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [templateInfo, setTemplateInfo] = useState<TemplateInfo | null>(null);
   const [templateGaps, setTemplateGaps] = useState<Array<{ key: string; templateDefault: string }>>([]);
@@ -82,9 +84,14 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
   }, []);
 
   const loadTemplates = async () => {
-    const response = await ConfigApi.listTemplates();
-    if (response.success && response.data?.templates) {
-      setAvailableTemplates(response.data.templates);
+    setLoadingTemplates(true);
+    try {
+      const response = await ConfigApi.listTemplates();
+      if (response.success && response.data?.templates) {
+        setAvailableTemplates(response.data.templates);
+      }
+    } finally {
+      setLoadingTemplates(false);
     }
   };
 
@@ -398,7 +405,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
       <Stack spacing={3}>
 
         {/* Template Selector */}
-        {availableTemplates.length > 0 && (
+        {(loadingTemplates || availableTemplates.length > 0) && (
           <Box>
             <Typography variant="h6" fontWeight={600} gutterBottom>
               Quick Setup — Select a template
@@ -407,28 +414,32 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
               Templates pre-fill your configuration with sensible defaults. Only missing values will be shown for review.
             </Typography>
             <Stack direction="row" spacing={2} flexWrap="wrap">
-              {availableTemplates.map((tmpl) => (
-                <Card
-                  key={tmpl}
-                  variant="outlined"
-                  sx={{
-                    minWidth: 130,
-                    border: selectedTemplate === tmpl ? "2px solid" : "1px solid",
-                    borderColor: selectedTemplate === tmpl ? "primary.main" : "divider",
-                    backgroundColor: selectedTemplate === tmpl ? "primary.50" : "background.paper",
-                  }}>
-                  <CardActionArea onClick={() => handleSelectTemplate(tmpl)} disabled={loadingTemplate}>
-                    <CardContent sx={{ py: 1.5, px: 2 }}>
-                      <Typography variant="body2" fontWeight={selectedTemplate === tmpl ? 700 : 400} textTransform="capitalize">
-                        {tmpl}
-                      </Typography>
-                      {selectedTemplate === tmpl && (
-                        <Chip size="small" label="Selected" color="primary" sx={{ mt: 0.5 }} />
-                      )}
-                    </CardContent>
-                  </CardActionArea>
-                </Card>
-              ))}
+              {loadingTemplates
+                ? [130, 100, 120, 110].map((w) => (
+                    <Skeleton key={w} variant="rounded" width={w} height={52} sx={{ borderRadius: 1 }} />
+                  ))
+                : availableTemplates.map((tmpl) => (
+                    <Card
+                      key={tmpl}
+                      variant="outlined"
+                      sx={{
+                        minWidth: 130,
+                        border: selectedTemplate === tmpl ? "2px solid" : "1px solid",
+                        borderColor: selectedTemplate === tmpl ? "primary.main" : "divider",
+                        backgroundColor: selectedTemplate === tmpl ? "primary.50" : "background.paper",
+                      }}>
+                      <CardActionArea onClick={() => handleSelectTemplate(tmpl)} disabled={loadingTemplate}>
+                        <CardContent sx={{ py: 1.5, px: 2 }}>
+                          <Typography variant="body2" fontWeight={selectedTemplate === tmpl ? 700 : 400} textTransform="capitalize">
+                            {tmpl}
+                          </Typography>
+                          {selectedTemplate === tmpl && (
+                            <Chip size="small" label="Selected" color="primary" sx={{ mt: 0.5 }} />
+                          )}
+                        </CardContent>
+                      </CardActionArea>
+                    </Card>
+                  ))}
             </Stack>
           </Box>
         )}

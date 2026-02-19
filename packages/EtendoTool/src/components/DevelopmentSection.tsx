@@ -13,6 +13,10 @@ import {
   useTheme,
   Snackbar,
   Alert,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
@@ -24,6 +28,7 @@ import BuildIcon from "@mui/icons-material/Build";
 import DataObjectIcon from "@mui/icons-material/DataObject";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { executeGradle } from "../api/gradle";
 import { useScreenshot } from "../hooks/useScreenshot";
 import { ScreenshotManager } from "./ScreenshotManager";
@@ -31,9 +36,27 @@ import { ScreenshotManager } from "./ScreenshotManager";
 type ServerStatus = "stopped" | "starting" | "running" | "error";
 
 const GRADLE_COMMANDS = [
-  { id: "update.database", label: "UPDATE.DATABASE", icon: <StorageIcon />, color: "primary" as const },
-  { id: "smartbuild", label: "SMARTBUILD", icon: <BuildIcon />, color: "secondary" as const },
-  { id: "generate.entities.quick", label: "GENERATE.ENTITIES.QUICK", icon: <DataObjectIcon />, color: "info" as const },
+  {
+    id: "update.database",
+    label: "Update Database",
+    description: "Sync schema and apply pending migrations",
+    icon: <StorageIcon />,
+    color: "primary" as const,
+  },
+  {
+    id: "smartbuild",
+    label: "Smartbuild",
+    description: "Compile and deploy only changed modules",
+    icon: <BuildIcon />,
+    color: "secondary" as const,
+  },
+  {
+    id: "generate.entities.quick",
+    label: "Generate Entities",
+    description: "Regenerate Java entity classes from data model",
+    icon: <DataObjectIcon />,
+    color: "info" as const,
+  },
 ];
 
 export function DevelopmentSection() {
@@ -47,6 +70,7 @@ export function DevelopmentSection() {
   const [gradleOutput, setGradleOutput] = useState<{ command: string; output: string; success: boolean } | null>(null);
   const [showScreenshotManager, setShowScreenshotManager] = useState(false);
   const [screenshotSuccess, setScreenshotSuccess] = useState(false);
+  const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(null);
   const { captureScreenshot, isCapturing, error: screenshotError, setIframeRef } = useScreenshot();
 
   const logStyles = useMemo(
@@ -121,6 +145,7 @@ export function DevelopmentSection() {
   }, []);
 
   const handleCaptureScreenshot = useCallback(async () => {
+    setMoreMenuAnchor(null);
     try {
       await captureScreenshot();
       setScreenshotSuccess(true);
@@ -201,111 +226,106 @@ export function DevelopmentSection() {
     <Box className="development-section">
       {/* Top toolbar */}
       <Paper elevation={0} className="development-toolbar">
-        <Stack spacing={2}>
-          {/* Server Controls */}
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            justifyContent="space-between"
-            alignItems={{ xs: "flex-start", md: "center" }}
-            spacing={2}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Typography variant="subtitle1" fontWeight={600}>
-                UI Server Control:
-              </Typography>
-              <Chip label={statusLabel.text} color={statusLabel.color} size="small" sx={{ fontWeight: 600 }} />
-              {serverStatus === "running" && (
-                <Typography variant="body2" color="text.secondary">
-                  (localhost:3000)
+        <Stack spacing={2.5}>
+
+          {/* ── Section 1: Server ── */}
+          <Stack spacing={1.5}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Typography variant="subtitle2" fontWeight={700} color="text.primary">
+                  Etendo Application Server
                 </Typography>
-              )}
+                <Chip label={statusLabel.text} color={statusLabel.color} size="small" sx={{ fontWeight: 600 }} />
+                {serverStatus === "running" && (
+                  <Typography variant="caption" color="text.secondary">
+                    localhost:3000
+                  </Typography>
+                )}
+              </Stack>
+
+              {/* More menu (screenshots) */}
+              <Stack direction="row" alignItems="center" spacing={0.5}>
+                <Tooltip title="Open in new tab">
+                  <span>
+                    <IconButton
+                      component="a"
+                      href="http://localhost:3000"
+                      target="_blank"
+                      rel="noreferrer"
+                      size="small"
+                      disabled={serverStatus !== "running"}>
+                      <OpenInNewIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Tooltip title="More options">
+                  <IconButton size="small" onClick={(e) => setMoreMenuAnchor(e.currentTarget)}>
+                    <MoreVertIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
             </Stack>
 
             <Stack direction="row" spacing={1}>
-              <Tooltip title="Start UI server">
-                <span>
-                  <IconButton
-                    color="primary"
-                    onClick={startServer}
-                    disabled={serverStatus === "running" || serverStatus === "starting"}>
-                    <PlayArrowIcon />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip title="Stop server">
-                <span>
-                  <IconButton color="error" onClick={stopServer} disabled={serverStatus === "stopped"}>
-                    <StopIcon />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip title="Restart server">
-                <span>
-                  <IconButton
-                    onClick={() => {
-                      stopServer();
-                      setTimeout(startServer, 500);
-                    }}
-                    disabled={serverStatus !== "running"}>
-                    <RefreshIcon />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip title="Open in new tab">
-                <span>
-                  <IconButton
-                    component="a"
-                    href="http://localhost:3000"
-                    target="_blank"
-                    rel="noreferrer"
-                    disabled={serverStatus !== "running"}>
-                    <OpenInNewIcon />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-              <Tooltip title="Capture screenshot">
-                <span>
-                  <IconButton
-                    color="secondary"
-                    onClick={handleCaptureScreenshot}
-                    disabled={serverStatus !== "running" || isCapturing}>
-                    <CameraAltIcon />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip title="View screenshots">
-                <span>
-                  <IconButton color="info" onClick={() => setShowScreenshotManager(true)}>
-                    <PhotoLibraryIcon />
-                  </IconButton>
-                </span>
-              </Tooltip>
+              <Button
+                variant={serverStatus === "running" || serverStatus === "starting" ? "outlined" : "contained"}
+                color="primary"
+                size="small"
+                startIcon={<PlayArrowIcon />}
+                onClick={startServer}
+                disabled={serverStatus === "running" || serverStatus === "starting"}>
+                Start
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                startIcon={<StopIcon />}
+                onClick={stopServer}
+                disabled={serverStatus === "stopped"}>
+                Stop
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<RefreshIcon />}
+                onClick={() => {
+                  stopServer();
+                  setTimeout(startServer, 500);
+                }}
+                disabled={serverStatus !== "running"}>
+                Restart
+              </Button>
             </Stack>
           </Stack>
 
           <Divider />
 
-          {/* Gradle commands */}
-          <Stack spacing={1}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Quick Development Commands (Gradle):
+          {/* ── Section 2: Gradle Commands ── */}
+          <Stack spacing={1.5}>
+            <Typography variant="subtitle2" fontWeight={700} color="text.primary">
+              Gradle Commands
             </Typography>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1} flexWrap="wrap">
               {GRADLE_COMMANDS.map((cmd) => (
-                <Button
-                  key={cmd.id}
-                  variant="outlined"
-                  color={cmd.color}
-                  startIcon={cmd.icon}
-                  onClick={() => executeCommand(cmd.id)}
-                  disabled={isBusy}
-                  sx={{
-                    fontWeight: 600,
-                    borderWidth: 2,
-                    "&:hover": { borderWidth: 2 },
-                  }}>
-                  {gradleExecuting === cmd.id ? "Running..." : cmd.label}
-                </Button>
+                <Tooltip key={cmd.id} title={cmd.description} placement="bottom">
+                  <span>
+                    <Button
+                      variant="outlined"
+                      color={cmd.color}
+                      size="small"
+                      startIcon={cmd.icon}
+                      onClick={() => executeCommand(cmd.id)}
+                      disabled={isBusy}
+                      sx={{
+                        fontWeight: 600,
+                        borderWidth: 2,
+                        "&:hover": { borderWidth: 2 },
+                      }}>
+                      {gradleExecuting === cmd.id ? "Running..." : cmd.label}
+                    </Button>
+                  </span>
+                </Tooltip>
               ))}
             </Stack>
           </Stack>
@@ -331,13 +351,36 @@ export function DevelopmentSection() {
         </Stack>
       </Paper>
 
+      {/* More options menu */}
+      <Menu
+        anchorEl={moreMenuAnchor}
+        open={Boolean(moreMenuAnchor)}
+        onClose={() => setMoreMenuAnchor(null)}
+        transformOrigin={{ horizontal: "right", vertical: "top" }}
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}>
+        <MenuItem
+          onClick={handleCaptureScreenshot}
+          disabled={serverStatus !== "running" || isCapturing}>
+          <ListItemIcon>
+            <CameraAltIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Capture screenshot" secondary="Save current UI state" />
+        </MenuItem>
+        <MenuItem onClick={() => { setMoreMenuAnchor(null); setShowScreenshotManager(true); }}>
+          <ListItemIcon>
+            <PhotoLibraryIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="View screenshots" secondary="Browse saved captures" />
+        </MenuItem>
+      </Menu>
+
       {/* Iframe area */}
       <Box className="development-iframe-area">
         {serverStatus === "starting" && !showIframe && (
           <Stack alignItems="center" justifyContent="center" spacing={2} sx={{ flex: 1, p: 4 }}>
             <LinearProgress sx={{ width: 300 }} />
             <Typography variant="body1" fontWeight={500}>
-              Connecting to the server...
+              Connecting to Etendo Application Server...
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Time: {elapsedTime}s | Attempt: {connectionAttempts}
@@ -360,13 +403,13 @@ export function DevelopmentSection() {
               <PlayArrowIcon sx={{ fontSize: 48, color: "#999" }} />
             </Box>
             <Typography variant="h6" color="text.secondary">
-              UI server not started
+              Etendo Application Server is not running
             </Typography>
             <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ maxWidth: 400 }}>
-              Click the play button in the top bar to start the development server and load the Etendo UI.
+              Start the server to load the Etendo UI in this panel. The server runs on port 3000.
             </Typography>
             <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={startServer}>
-              Start UI Server
+              Start Server
             </Button>
           </Stack>
         )}
