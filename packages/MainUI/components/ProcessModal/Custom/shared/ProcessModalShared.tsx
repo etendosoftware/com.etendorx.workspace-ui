@@ -264,7 +264,7 @@ interface FormInputProps {
   placeholder?: string;
   min?: number;
   max?: number;
-  inputRef?: React.RefObject<HTMLInputElement>;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
   colSpan?: number;
 }
 

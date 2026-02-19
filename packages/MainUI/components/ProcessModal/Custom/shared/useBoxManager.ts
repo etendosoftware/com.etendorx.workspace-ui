@@ -19,44 +19,44 @@
  * used by PackingProcess and PickValidateProcess.
  */
 
-import { useCallback, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 
-export interface UseBoxManagerResult {
+export interface UseBoxManagerResult<T extends Record<string, unknown> = Record<string, unknown>> {
   boxCount: number;
   currentBox: number;
-  setBoxCount: (n: number) => void;
-  setCurrentBox: (n: number) => void;
-  handleAddBox: (setLines: (updater: (prev: Record<string, unknown>[]) => Record<string, unknown>[]) => void) => void;
-  handleRemoveBox: (
-    setLines: (updater: (prev: Record<string, unknown>[]) => Record<string, unknown>[]) => void
-  ) => void;
-  barcodeInputRef: React.RefObject<HTMLInputElement>;
+  setBoxCount: React.Dispatch<React.SetStateAction<number>>;
+  setCurrentBox: React.Dispatch<React.SetStateAction<number>>;
+  handleAddBox: (setLines: React.Dispatch<React.SetStateAction<T[]>>) => void;
+  handleRemoveBox: (setLines: React.Dispatch<React.SetStateAction<T[]>>) => void;
+  barcodeInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
-export function useBoxManager(initialBoxCount = 1): UseBoxManagerResult {
+export function useBoxManager<T extends Record<string, unknown> = Record<string, unknown>>(
+  initialBoxCount = 1
+): UseBoxManagerResult<T> {
   const [boxCount, setBoxCount] = useState(initialBoxCount);
   const [currentBox, setCurrentBox] = useState(1);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddBox = useCallback(
-    (setLines: (updater: (prev: Record<string, unknown>[]) => Record<string, unknown>[]) => void) => {
+    (setLines: React.Dispatch<React.SetStateAction<T[]>>) => {
       const newBoxNo = boxCount + 1;
       setBoxCount(newBoxNo);
       setCurrentBox(newBoxNo);
-      setLines((prev) => prev.map((line) => ({ ...line, [`box${newBoxNo}`]: 0 })));
+      setLines((prev) => prev.map((line) => ({ ...line, [`box${newBoxNo}`]: 0 }) as T));
       setTimeout(() => barcodeInputRef.current?.focus(), 100);
     },
     [boxCount]
   );
 
   const handleRemoveBox = useCallback(
-    (setLines: (updater: (prev: Record<string, unknown>[]) => Record<string, unknown>[]) => void) => {
+    (setLines: React.Dispatch<React.SetStateAction<T[]>>) => {
       if (boxCount <= 1) return;
       setLines((prev) =>
         prev.map((line) => {
           const newLine = { ...line };
           delete newLine[`box${boxCount}`];
-          return newLine;
+          return newLine as T;
         })
       );
       const newCount = boxCount - 1;

@@ -114,7 +114,7 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
   const [barcodeInput, setBarcodeInput] = useState("");
 
   // Box management (shared hook)
-  const { boxCount, currentBox, setCurrentBox, handleAddBox, barcodeInputRef } = useBoxManager();
+  const { boxCount, currentBox, setCurrentBox, handleAddBox, barcodeInputRef } = useBoxManager<PickValidateLine>();
 
   // ---------------------------------------------------------------------------
   // Initialize — call ValidateActionHandler with action: 'validate' to load grid data
@@ -435,11 +435,7 @@ export const PickValidateProcess: React.FC<PickValidateProcessProps> = ({
               />
 
               <AddBoxButton
-                onClick={() =>
-                  handleAddBox(
-                    setLines as (updater: (prev: Record<string, unknown>[]) => Record<string, unknown>[]) => void
-                  )
-                }
+                onClick={() => handleAddBox(setLines)}
                 title={t("packing.addBox")}
                 data-testid="AddBoxButton__7f07bf"
               />
