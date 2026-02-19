@@ -216,7 +216,7 @@ export function DevelopmentSection() {
       case "error":
         return { text: "Error", color: "error" as const };
       default:
-        return { text: "Stopped", color: "default" as const };
+        return { text: "Stopped", color: "error" as const };
     }
   }, [serverStatus]);
 
@@ -379,10 +379,10 @@ export function DevelopmentSection() {
         {serverStatus === "starting" && !showIframe && (
           <Stack alignItems="center" justifyContent="center" spacing={2} sx={{ flex: 1, p: 4 }}>
             <LinearProgress sx={{ width: 300 }} />
-            <Typography variant="body1" fontWeight={500}>
+            <Typography variant="body1" fontWeight={500} sx={{ color: "rgba(255,255,255,0.9)" }}>
               Connecting to Etendo Application Server...
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)" }}>
               Time: {elapsedTime}s | Attempt: {connectionAttempts}
             </Typography>
           </Stack>
@@ -395,17 +395,17 @@ export function DevelopmentSection() {
                 width: 100,
                 height: 100,
                 borderRadius: "50%",
-                backgroundColor: "#f0f0f0",
+                backgroundColor: "rgba(255,255,255,0.08)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}>
-              <PlayArrowIcon sx={{ fontSize: 48, color: "#999" }} />
+              <PlayArrowIcon sx={{ fontSize: 48, color: "rgba(255,255,255,0.35)" }} />
             </Box>
-            <Typography variant="h6" color="text.secondary">
+            <Typography variant="h6" sx={{ color: "rgba(255,255,255,0.9)" }}>
               Etendo Application Server is not running
             </Typography>
-            <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ maxWidth: 400 }}>
+            <Typography variant="body2" textAlign="center" sx={{ color: "rgba(255,255,255,0.55)", maxWidth: 400 }}>
               Start the server to load the Etendo UI in this panel. The server runs on port 3000.
             </Typography>
             <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={startServer}>
