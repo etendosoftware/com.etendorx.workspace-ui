@@ -810,18 +810,21 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
   const getMappedFormValues = useCallback(() => {
     const rawValues = form.getValues();
+    // Start from a clean object — only include parameter-derived keys
+    // System context is added by callers (buildProcessSpecificFields, recordValues, etc.)
     const mappedValues: Record<string, any> = {};
 
-    Object.values(parameters).forEach((p: any) => {
-      // Find value in rawValues
-      // Try name first, then dBColumnName
+    for (const p of Object.values(parameters)) {
+      if (!p.name) continue;
+
+      // Find value in rawValues: try name first, then dBColumnName as fallback
       let val = rawValues[p.name];
       if (val === undefined && p.dBColumnName) {
         val = rawValues[p.dBColumnName];
       }
 
-      // Check for fields that might need conversion from empty string to null
-      // (Date, Number, List, etc. fail on backend if sent as "")
+      // Type-aware empty→null conversion (dates, numbers, lists, selectors)
+      // String fields intentionally keep "" as a valid value
       if (val === "" && p.reference && shouldConvertEmptyToNull(p.reference)) {
         val = null;
       }
@@ -829,11 +832,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       // Target key is dBColumnName (preferred) or name
       const targetKey = p.dBColumnName || p.name;
 
-      // Only include if it is a valid parameter key
       if (targetKey) {
         mappedValues[targetKey] = val !== undefined ? val : null;
       }
-    });
+
+      // Map associated $_identifier (e.g., Locator$_identifier → M_Locator_ID$_identifier)
+      const identifierKey = `${p.name}$_identifier`;
+      if (rawValues[identifierKey] !== undefined) {
+        mappedValues[`${targetKey}$_identifier`] = rawValues[identifierKey];
+      }
+    }
 
     return mappedValues;
   }, [form, parameters]);
@@ -888,6 +896,19 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
         let mappedValues: Record<string, any>;
 
+        const formValues = getMappedFormValues();
+
+        // Fix: DocAction - copy user selection from parameter.name to dBColumnName
+        const docActionParam = Object.values(parameters).find(
+          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
+        );
+
+        if (docActionParam) {
+          const userSelection = formValues[docActionParam.name];
+          if (userSelection) {
+            formValues.DocAction = userSelection;
+          }
+        }
         if (isAddPayment) {
           // Legacy mapping for Add Payment process
           const formValues = form.getValues();
@@ -993,12 +1014,20 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         const skipParamsLevel = processDefConfig?.skipParamsLevel;
 
         const formValues = getMappedFormValues();
-        const combinedValues = {
-          ...recordValues,
-          ...formValues,
-          ...extraKey,
-          ...populatedGrids,
-        };
+
+        // Fix: DocAction - copy user selection from parameter.name to dBColumnName
+        const docActionParam = Object.values(parameters).find(
+          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
+        );
+        if (docActionParam) {
+          const userSelection = formValues[docActionParam.name];
+          if (userSelection) {
+            formValues.DocAction = userSelection;
+          }
+        }
+
+        const combinedValues = { ...recordValues, ...formValues, ...extraKey, ...populatedGrids };
+
         const params = mapKeysWithDefaults(combinedValues as SourceObject);
 
         const payload = {
