@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Button,
@@ -10,7 +10,6 @@ import {
   Stack,
   Tooltip,
   Typography,
-  useTheme,
   Snackbar,
   Alert,
   Menu,
@@ -22,7 +21,6 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import CloseIcon from "@mui/icons-material/Close";
 import StorageIcon from "@mui/icons-material/Storage";
 import BuildIcon from "@mui/icons-material/Build";
 import DataObjectIcon from "@mui/icons-material/DataObject";
@@ -60,7 +58,6 @@ const GRADLE_COMMANDS = [
 ];
 
 export function DevelopmentSection() {
-  const theme = useTheme();
   const [serverStatus, setServerStatus] = useState<ServerStatus>("stopped");
   const [showIframe, setShowIframe] = useState(false);
   const [connectionAttempts, setConnectionAttempts] = useState(0);
@@ -73,23 +70,6 @@ export function DevelopmentSection() {
   const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(null);
   const { captureScreenshot, isCapturing, error: screenshotError, setIframeRef } = useScreenshot();
 
-  const logStyles = useMemo(
-    () => ({
-      p: 1.5,
-      mt: 1,
-      borderRadius: 1,
-      border: `1px solid ${gradleOutput?.success ? theme.palette.success.main : theme.palette.error.main}`,
-      backgroundColor: gradleOutput?.success ? "rgba(76, 175, 80, 0.05)" : "rgba(244, 67, 54, 0.05)",
-      color: theme.palette.text.primary,
-      fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-      fontSize: "0.85rem",
-      lineHeight: 1.5,
-      whiteSpace: "pre-wrap" as const,
-      maxHeight: "150px",
-      overflow: "auto",
-    }),
-    [theme, gradleOutput]
-  );
 
   const checkServerHealth = useCallback(async (): Promise<boolean> => {
     try {
@@ -207,18 +187,12 @@ export function DevelopmentSection() {
     };
   }, [isPolling, showIframe, checkServerHealth]);
 
-  const statusLabel = useMemo(() => {
-    switch (serverStatus) {
-      case "running":
-        return { text: "Running", color: "success" as const };
-      case "starting":
-        return { text: "Starting...", color: "warning" as const };
-      case "error":
-        return { text: "Error", color: "error" as const };
-      default:
-        return { text: "Stopped", color: "error" as const };
-    }
-  }, [serverStatus]);
+  const statusLabel = {
+    running:  { text: "Running",    color: "success" as const },
+    starting: { text: "Starting...", color: "warning" as const },
+    error:    { text: "Error",      color: "error"   as const },
+    stopped:  { text: "Stopped",    color: "error"   as const },
+  }[serverStatus];
 
   const isBusy = gradleExecuting !== null || serverStatus === "starting";
 
@@ -226,128 +200,163 @@ export function DevelopmentSection() {
     <Box className="development-section">
       {/* Top toolbar */}
       <Paper elevation={0} className="development-toolbar">
-        <Stack spacing={2.5}>
+        <Stack spacing={1.5}>
 
-          {/* ── Section 1: Server ── */}
-          <Stack spacing={1.5}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Typography variant="subtitle2" fontWeight={700} color="text.primary">
-                  Etendo Application Server
-                </Typography>
-                <Chip label={statusLabel.text} color={statusLabel.color} size="small" sx={{ fontWeight: 600 }} />
-                {serverStatus === "running" && (
-                  <Typography variant="caption" color="text.secondary">
-                    localhost:3000
-                  </Typography>
-                )}
-              </Stack>
-
-              {/* More menu (screenshots) */}
-              <Stack direction="row" alignItems="center" spacing={0.5}>
-                <Tooltip title="Open in new tab">
-                  <span>
-                    <IconButton
-                      component="a"
-                      href="http://localhost:3000"
-                      target="_blank"
-                      rel="noreferrer"
-                      size="small"
-                      disabled={serverStatus !== "running"}>
-                      <OpenInNewIcon fontSize="small" />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-                <Tooltip title="More options">
-                  <IconButton size="small" onClick={(e) => setMoreMenuAnchor(e.currentTarget)}>
-                    <MoreVertIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Stack>
-            </Stack>
-
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant={serverStatus === "running" || serverStatus === "starting" ? "outlined" : "contained"}
-                color="primary"
-                size="small"
-                startIcon={<PlayArrowIcon />}
-                onClick={startServer}
-                disabled={serverStatus === "running" || serverStatus === "starting"}>
-                Start
-              </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                size="small"
-                startIcon={<StopIcon />}
-                onClick={stopServer}
-                disabled={serverStatus === "stopped"}>
-                Stop
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<RefreshIcon />}
-                onClick={() => {
-                  stopServer();
-                  setTimeout(startServer, 500);
-                }}
-                disabled={serverStatus !== "running"}>
-                Restart
-              </Button>
-            </Stack>
+          {/* ── Row 1: Server controls ── */}
+          <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+            <Typography variant="subtitle2" fontWeight={700} color="text.primary" sx={{ mr: 0.5 }}>
+              Server
+            </Typography>
+            <Chip label={statusLabel.text} color={statusLabel.color} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+            {serverStatus === "running" && (
+              <Typography variant="caption" color="text.secondary">localhost:3000</Typography>
+            )}
+            <Box sx={{ flex: 1 }} />
+            <Button
+              variant={serverStatus === "running" || serverStatus === "starting" ? "outlined" : "contained"}
+              color="primary"
+              size="small"
+              startIcon={<PlayArrowIcon />}
+              onClick={startServer}
+              disabled={serverStatus === "running" || serverStatus === "starting"}>
+              Start
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              size="small"
+              startIcon={<StopIcon />}
+              onClick={stopServer}
+              disabled={serverStatus === "stopped"}>
+              Stop
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<RefreshIcon />}
+              onClick={() => { stopServer(); setTimeout(startServer, 500); }}
+              disabled={serverStatus !== "running"}>
+              Restart
+            </Button>
+            <Tooltip title="Open in new tab">
+              <span>
+                <IconButton
+                  component="a"
+                  href="http://localhost:3000"
+                  target="_blank"
+                  rel="noreferrer"
+                  size="small"
+                  disabled={serverStatus !== "running"}>
+                  <OpenInNewIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="More options">
+              <IconButton size="small" onClick={(e) => setMoreMenuAnchor(e.currentTarget)}>
+                <MoreVertIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Stack>
 
           <Divider />
 
-          {/* ── Section 2: Gradle Commands ── */}
-          <Stack spacing={1.5}>
-            <Typography variant="subtitle2" fontWeight={700} color="text.primary">
-              Gradle Commands
-            </Typography>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={1} flexWrap="wrap">
-              {GRADLE_COMMANDS.map((cmd) => (
-                <Tooltip key={cmd.id} title={cmd.description} placement="bottom">
-                  <span>
-                    <Button
-                      variant="outlined"
-                      color={cmd.color}
-                      size="small"
-                      startIcon={cmd.icon}
-                      onClick={() => executeCommand(cmd.id)}
-                      disabled={isBusy}
-                      sx={{
-                        fontWeight: 600,
-                        borderWidth: 2,
-                        "&:hover": { borderWidth: 2 },
-                      }}>
-                      {gradleExecuting === cmd.id ? "Running..." : cmd.label}
-                    </Button>
-                  </span>
-                </Tooltip>
-              ))}
-            </Stack>
-          </Stack>
+          {/* ── Row 2: Gradle commands + result bars ── */}
+          <Stack direction="row" alignItems="flex-start" spacing={1} flexWrap="wrap">
+            {GRADLE_COMMANDS.map((cmd) => {
+              const isRunning = gradleExecuting === cmd.id;
+              const result = gradleOutput?.command === cmd.id ? gradleOutput : null;
+              const borderColor = result
+                ? result.success
+                  ? "#4caf50"
+                  : "#f44336"
+                : "transparent";
+              const bgColor = result
+                ? result.success
+                  ? "rgba(76,175,80,0.06)"
+                  : "rgba(244,67,54,0.06)"
+                : "transparent";
 
-          {/* Gradle command output */}
-          {gradleOutput && (
-            <Box>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography variant="caption" color="text.secondary">
-                  Result of {gradleOutput.command}:
-                </Typography>
-                <Tooltip title="Close">
-                  <IconButton size="small" onClick={() => setGradleOutput(null)}>
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Stack>
-              <Paper variant="outlined" sx={logStyles}>
-                {gradleOutput.output}
-              </Paper>
-            </Box>
-          )}
+              return (
+                <Stack key={cmd.id} spacing={0.5} sx={{ minWidth: 160, flex: "1 1 160px" }}>
+                  <Tooltip title={cmd.description} placement="bottom">
+                    <span>
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        color={cmd.color}
+                        size="small"
+                        startIcon={cmd.icon}
+                        onClick={() => executeCommand(cmd.id)}
+                        disabled={isBusy}
+                        sx={{ fontWeight: 600, borderWidth: 2, "&:hover": { borderWidth: 2 } }}>
+                        {isRunning ? "Running..." : cmd.label}
+                      </Button>
+                    </span>
+                  </Tooltip>
+
+                  {/* Result bar */}
+                  <Box
+                    sx={{
+                      borderLeft: `3px solid ${result ? borderColor : "#e0e0e0"}`,
+                      borderRadius: "0 4px 4px 0",
+                      backgroundColor: result ? bgColor : "#fafafa",
+                      px: 1,
+                      py: 0.5,
+                      minHeight: 28,
+                      display: "flex",
+                      alignItems: "center",
+                      overflow: "hidden",
+                      cursor: result ? "pointer" : "default",
+                      transition: "background-color 0.2s",
+                    }}
+                    onClick={() => result && setGradleOutput(result.command === gradleOutput?.command ? null : result)}>
+                    {isRunning ? (
+                      <LinearProgress sx={{ width: "100%", height: 2 }} />
+                    ) : result ? (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: result.success ? "#2e7d32" : "#c62828",
+                          fontFamily: "monospace",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          fontWeight: 600,
+                          fontSize: "0.7rem",
+                        }}>
+                        {result.success ? "✓ OK" : "✗ Failed"}
+                      </Typography>
+                    ) : (
+                      <Typography variant="caption" sx={{ color: "#bdbdbd", fontSize: "0.7rem" }}>
+                        not run
+                      </Typography>
+                    )}
+                  </Box>
+
+                  {/* Expanded output */}
+                  {gradleOutput?.command === cmd.id && gradleOutput !== null && (
+                    <Box
+                      sx={{
+                        borderLeft: `3px solid ${borderColor}`,
+                        borderRadius: "0 4px 4px 0",
+                        backgroundColor: bgColor,
+                        px: 1,
+                        py: 0.75,
+                        fontFamily: "monospace",
+                        fontSize: "0.72rem",
+                        lineHeight: 1.5,
+                        whiteSpace: "pre-wrap",
+                        maxHeight: 140,
+                        overflow: "auto",
+                        color: "text.primary",
+                      }}>
+                      {gradleOutput.output}
+                    </Box>
+                  )}
+                </Stack>
+              );
+            })}
+          </Stack>
         </Stack>
       </Paper>
 
