@@ -75,6 +75,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
   const [templateGaps, setTemplateGaps] = useState<Array<{ key: string; templateDefault: string }>>([]);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
   const [showTemplateFields, setShowTemplateFields] = useState(false);
+  const [showRawConfig, setShowRawConfig] = useState(false);
 
   // Keys provided by the selected template (for visual indicator in Advanced table)
   const templateKeys = useMemo(
@@ -146,6 +147,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
     }
     setSelectedTemplate(name);
     setShowTemplateFields(false);
+    setShowRawConfig(false);
     setLoadingTemplate(true);
     try {
       const response = await ConfigApi.getTemplate(name);
@@ -619,6 +621,20 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
           </Paper>
         )}
 
+        {/* When a template is selected, collapse raw config behind a toggle */}
+        {selectedTemplate && (
+          <Button
+            size="small"
+            variant="text"
+            color="inherit"
+            endIcon={<ExpandMoreIcon sx={{ transform: showRawConfig ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />}
+            onClick={() => setShowRawConfig((v) => !v)}
+            sx={{ px: 0, color: "text.secondary", fontWeight: 500 }}>
+            {showRawConfig ? "Hide" : "Show"} gradle.properties configuration
+          </Button>
+        )}
+
+        {(!selectedTemplate || showRawConfig) && (<>
         <Box>
           <Typography variant="h5" fontWeight={700} gutterBottom>
             gradle.properties Configuration
@@ -801,6 +817,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
             require restarting the server to take effect.
           </Typography>
         </Paper>
+        </>)}
       </Stack>
 
       {/* Missing required fields — inline edit dialog */}
