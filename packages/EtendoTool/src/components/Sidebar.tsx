@@ -9,7 +9,6 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
-import InstallDesktopIcon from "@mui/icons-material/InstallDesktop";
 import CodeIcon from "@mui/icons-material/Code";
 import SettingsIcon from "@mui/icons-material/Settings";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
@@ -41,12 +40,6 @@ const NAV_ITEMS: Array<{
     label: "Start All",
     description: "Quick full setup",
     icon: <RocketLaunchIcon />,
-  },
-  {
-    id: "installation",
-    label: "Installation",
-    description: "Initial setup",
-    icon: <InstallDesktopIcon />,
   },
   // DISABLED: Docker section hidden for dev (install actions with Docker commented)
   // {

@@ -36,12 +36,15 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { ConfigApi, type GroupedConfigs, type PropertyConfig, type TemplateInfo } from "../services/configApi";
 import { GithubAuthButton } from "./GithubAuthButton";
+import type { NavigationSection } from "../types/navigation";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
 interface ConfigurationSectionProps {
   onClose?: () => void;
+  onSectionChange?: (section: NavigationSection) => void;
 }
 
-export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
+export function ConfigurationSection({ onClose, onSectionChange }: ConfigurationSectionProps) {
   const [configsByGroup, setConfigsByGroup] = useState<GroupedConfigs["groups"]>({});
   const [editedConfigs, setEditedConfigs] = useState<Record<string, string>>({});
   const [initialValues, setInitialValues] = useState<Record<string, string>>({});
@@ -488,6 +491,17 @@ export function ConfigurationSection({ onClose }: ConfigurationSectionProps) {
                 <Typography variant="caption" color="text.secondary">
                   Modules: {templateInfo.modules.join(", ")}
                 </Typography>
+              </Box>
+            )}
+            {onSectionChange && (
+              <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
+                <Button
+                  variant="contained"
+                  endIcon={<ArrowForwardIcon />}
+                  onClick={() => onSectionChange("start-all")}
+                  sx={{ fontWeight: 600 }}>
+                  Next: Start All
+                </Button>
               </Box>
             )}
           </Paper>

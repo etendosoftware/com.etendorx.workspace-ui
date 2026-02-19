@@ -78,9 +78,9 @@ export default function App() {
       case "development":
         return <DevelopmentSection />;
       case "configuration":
-        return <ConfigurationSection />;
+        return <ConfigurationSection onSectionChange={setActiveSection} />;
       default:
-        return <ConfigurationSection />;
+        return <ConfigurationSection onSectionChange={setActiveSection} />;
     }
   };
 
