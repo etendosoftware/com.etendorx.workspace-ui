@@ -1,0 +1,19 @@
+{
+  "loginPage": {
+    "title": "Etendo",
+    "usernameField": "#username",
+    "passwordField": "#password",
+    "loginButton": "button:contains('Log In')"
+  },
+  "testCredentials": {
+    "valid": {
+      "username": "admin",
+      "password": "admin"
+    },
+    "invalid": {
+      "username": "invalid",
+      "password": "invalid"
+    }
+  }
+}
+
