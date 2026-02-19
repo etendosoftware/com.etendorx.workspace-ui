@@ -28,6 +28,7 @@ export interface SetupStatus {
   postgres: PostgresStatus;
   tomcat: TomcatStatus;
   warnings: string[];
+  uiDockerized: boolean;
 }
 
 export async function fetchSetupStatus(): Promise<SetupStatus> {

@@ -349,14 +349,19 @@ export function StartAllSection() {
     void loadPreflightStatus();
   }, [loadPreflightStatus]);
 
-  // Determine which steps to show based on environment
+  // Determine which steps to show based on environment and properties
   const steps = useMemo(() => {
+    let filtered = ALL_STEPS;
     if (environment?.isDevContainer) {
       // In DevContainer, skip Docker step by default (already running)
-      return ALL_STEPS.filter((step) => !step.isDocker || includeDockerStep);
+      filtered = filtered.filter((step) => !step.isDocker || includeDockerStep);
     }
-    return ALL_STEPS;
-  }, [environment, includeDockerStep]);
+    // If UI is dockerized, skip startUINodeTask — Docker already started it via resources.up
+    if (preflightStatus?.uiDockerized) {
+      filtered = filtered.filter((step) => step.id !== "tomcat");
+    }
+    return filtered;
+  }, [environment, includeDockerStep, preflightStatus]);
 
   const isDevContainer = environment?.isDevContainer ?? false;
 
