@@ -213,7 +213,7 @@ export function DevelopmentSection() {
             )}
             <Box sx={{ flex: 1 }} />
             <Button
-              variant={serverStatus === "running" || serverStatus === "starting" ? "outlined" : "contained"}
+              variant="outlined"
               color="primary"
               size="small"
               startIcon={<PlayArrowIcon />}
@@ -277,18 +277,17 @@ export function DevelopmentSection() {
                 : "transparent";
 
               return (
-                <Stack key={cmd.id} spacing={0.5} sx={{ minWidth: 160, flex: "1 1 160px" }}>
+                <Stack key={cmd.id} spacing={0.5} sx={{ width: "auto" }}>
                   <Tooltip title={cmd.description} placement="bottom">
                     <span>
                       <Button
-                        fullWidth
                         variant="outlined"
                         color={cmd.color}
                         size="small"
                         startIcon={cmd.icon}
                         onClick={() => executeCommand(cmd.id)}
                         disabled={isBusy}
-                        sx={{ fontWeight: 600, borderWidth: 2, "&:hover": { borderWidth: 2 } }}>
+                        sx={{ fontWeight: 600 }}>
                         {isRunning ? "Running..." : cmd.label}
                       </Button>
                     </span>
