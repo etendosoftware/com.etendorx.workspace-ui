@@ -382,6 +382,35 @@ export function StartAllSection() {
     []
   );
 
+  /**
+   * After docker-up, polls /api/setup/status until PostgreSQL is reachable.
+   * Appends live progress to the docker-up step output so the user sees feedback.
+   */
+  const waitForPostgres = useCallback(
+    async (appendToStep: (msg: string) => void): Promise<void> => {
+      const MAX_WAIT_MS = 60_000;
+      const POLL_INTERVAL_MS = 2_000;
+      const start = Date.now();
+
+      while (Date.now() - start < MAX_WAIT_MS) {
+        try {
+          const status = await fetchSetupStatus();
+          if (status.postgres.connected) {
+            appendToStep("PostgreSQL is ready.");
+            return;
+          }
+        } catch (_) {
+          // ignore transient errors, keep polling
+        }
+        const elapsed = Math.round((Date.now() - start) / 1000);
+        appendToStep(`Waiting for PostgreSQL... (${elapsed}s)`);
+        await new Promise<void>((res) => setTimeout(res, POLL_INTERVAL_MS));
+      }
+      appendToStep("Warning: PostgreSQL did not respond within 60s. Proceeding anyway.");
+    },
+    [],
+  );
+
   const executeStep = useCallback(async (step: SetupStep): Promise<{ success: boolean; output: string }> => {
     if (step.isDocker) {
       // Use Docker API for docker commands
@@ -432,6 +461,20 @@ export function StartAllSection() {
           setIsRunning(false);
           return;
         }
+
+        // After docker-up succeeds, wait for PostgreSQL to accept connections
+        // before proceeding to install — Docker containers take a few seconds to init.
+        if (step.isDocker && i < steps.length - 1) {
+          await waitForPostgres((msg) => {
+            setStepStates((prev) => ({
+              ...prev,
+              [step.id]: {
+                ...prev[step.id],
+                output: (prev[step.id]?.output ?? "") + "\n" + msg,
+              },
+            }));
+          });
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error";
         setStepStates((prev) => ({
@@ -451,7 +494,7 @@ export function StartAllSection() {
     setIsRunning(false);
     // Refresh pre-flight status after all steps complete
     void loadPreflightStatus();
-  }, [steps, executeStep, loadPreflightStatus]);
+  }, [steps, executeStep, waitForPostgres, loadPreflightStatus]);
 
   const getStepIcon = (stepId: string, index: number) => {
     const state = stepStates[stepId];
