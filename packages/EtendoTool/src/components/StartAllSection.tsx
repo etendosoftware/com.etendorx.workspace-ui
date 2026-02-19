@@ -245,18 +245,18 @@ function PreFlightBanner({ status, loading, error, onRefresh }: StatusBannerProp
             }
           />
 
-          <ServiceChip
-            label={tomcatLabel}
-            ok={tomcat.running && !tomcat.needsRestart}
-            warning={tomcatWarn}
-            tooltip={
-              tomcat.running && tomcat.needsRestart
-                ? "The application was compiled after Tomcat last started. A restart is recommended."
-                : tomcat.running
-                  ? `Tomcat is responding on port ${tomcat.port}`
-                  : `Tomcat is not listening on port ${tomcat.port}. The 'Start Tomcat' step will start it.`
-            }
-          />
+          {tomcat.running && (
+            <ServiceChip
+              label={tomcatLabel}
+              ok={!tomcat.needsRestart}
+              warning={tomcatWarn}
+              tooltip={
+                tomcat.needsRestart
+                  ? "The application was compiled after Tomcat last started. A restart is recommended."
+                  : `Tomcat is responding on port ${tomcat.port}`
+              }
+            />
+          )}
         </Stack>
 
         {/* Context-sensitive advice */}
@@ -302,6 +302,7 @@ function PreFlightBanner({ status, loading, error, onRefresh }: StatusBannerProp
                 return false;
               if (!postgres.connected && w.toLowerCase().includes("postgresql is not reachable")) return false;
               if (tomcat.needsRestart && w.toLowerCase().includes("tomcat may need")) return false;
+              if (!tomcat.running && w.toLowerCase().includes("tomcat is not running")) return false;
               return true;
             })
             .map((w, i) => (
@@ -349,14 +350,19 @@ export function StartAllSection() {
     void loadPreflightStatus();
   }, [loadPreflightStatus]);
 
-  // Determine which steps to show based on environment
+  // Determine which steps to show based on environment and properties
   const steps = useMemo(() => {
+    let filtered = ALL_STEPS;
     if (environment?.isDevContainer) {
       // In DevContainer, skip Docker step by default (already running)
-      return ALL_STEPS.filter((step) => !step.isDocker || includeDockerStep);
+      filtered = filtered.filter((step) => !step.isDocker || includeDockerStep);
     }
-    return ALL_STEPS;
-  }, [environment, includeDockerStep]);
+    // If UI is dockerized, skip startUINodeTask — Docker already started it via resources.up
+    if (preflightStatus?.uiDockerized) {
+      filtered = filtered.filter((step) => step.id !== "tomcat");
+    }
+    return filtered;
+  }, [environment, includeDockerStep, preflightStatus]);
 
   const isDevContainer = environment?.isDevContainer ?? false;
 
@@ -375,6 +381,35 @@ export function StartAllSection() {
       overflow: "auto",
     }),
     []
+  );
+
+  /**
+   * After docker-up, polls /api/setup/status until PostgreSQL is reachable.
+   * Appends live progress to the docker-up step output so the user sees feedback.
+   */
+  const waitForPostgres = useCallback(
+    async (appendToStep: (msg: string) => void): Promise<void> => {
+      const MAX_WAIT_MS = 60_000;
+      const POLL_INTERVAL_MS = 2_000;
+      const start = Date.now();
+
+      while (Date.now() - start < MAX_WAIT_MS) {
+        try {
+          const status = await fetchSetupStatus();
+          if (status.postgres.connected) {
+            appendToStep("PostgreSQL is ready.");
+            return;
+          }
+        } catch (_) {
+          // ignore transient errors, keep polling
+        }
+        const elapsed = Math.round((Date.now() - start) / 1000);
+        appendToStep(`Waiting for PostgreSQL... (${elapsed}s)`);
+        await new Promise<void>((res) => setTimeout(res, POLL_INTERVAL_MS));
+      }
+      appendToStep("Warning: PostgreSQL did not respond within 60s. Proceeding anyway.");
+    },
+    [],
   );
 
   const executeStep = useCallback(async (step: SetupStep): Promise<{ success: boolean; output: string }> => {
@@ -427,6 +462,20 @@ export function StartAllSection() {
           setIsRunning(false);
           return;
         }
+
+        // After docker-up succeeds, wait for PostgreSQL to accept connections
+        // before proceeding to install — Docker containers take a few seconds to init.
+        if (step.isDocker && i < steps.length - 1) {
+          await waitForPostgres((msg) => {
+            setStepStates((prev) => ({
+              ...prev,
+              [step.id]: {
+                ...prev[step.id],
+                output: (prev[step.id]?.output ?? "") + "\n" + msg,
+              },
+            }));
+          });
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error";
         setStepStates((prev) => ({
@@ -446,7 +495,7 @@ export function StartAllSection() {
     setIsRunning(false);
     // Refresh pre-flight status after all steps complete
     void loadPreflightStatus();
-  }, [steps, executeStep, loadPreflightStatus]);
+  }, [steps, executeStep, waitForPostgres, loadPreflightStatus]);
 
   const getStepIcon = (stepId: string, index: number) => {
     const state = stepStates[stepId];
