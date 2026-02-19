@@ -621,8 +621,8 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
           </Paper>
         )}
 
-        {/* When a template is selected, collapse raw config behind a toggle */}
-        {selectedTemplate && (
+        {/* When templates exist, collapse raw config behind a toggle */}
+        {!loadingTemplates && availableTemplates.length > 0 && (
           <Button
             size="small"
             variant="text"
@@ -634,7 +634,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
           </Button>
         )}
 
-        {(!selectedTemplate || showRawConfig) && (<>
+        {(loadingTemplates || availableTemplates.length === 0 || showRawConfig) && (<>
         <Box>
           <Typography variant="h5" fontWeight={700} gutterBottom>
             gradle.properties Configuration
