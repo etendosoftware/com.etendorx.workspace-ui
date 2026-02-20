@@ -19,20 +19,21 @@
  * the registered Payscript onScan hook for a given warehouse process.
  *
  * Flow:
- *  1. onLoad is evaluated via executeStringFunction → returns WarehouseProcessSchema
- *     If the backend field is empty, falls back to LOCAL_ON_LOAD_FALLBACKS (dev/testing only).
- *  2. The EM_Etmeta_Payscript field is already registered in PAYSCRIPT_RULES_REGISTRY
- *     by ProcessDefinitionModal. If not yet registered (field empty in backend), falls back
- *     to LOCAL_PAYSCRIPT_FALLBACKS and registers it locally.
+ *  1. onLoad (from processDefinition AD field) is evaluated via executeStringFunction
+ *     → returns WarehouseProcessSchema with structure + initial data.
+ *     If the field is empty the hook returns loading=false with no schema,
+ *     and the modal falls through to its normal render.
+ *  2. The EM_Etmeta_Payscript field is registered in PAYSCRIPT_RULES_REGISTRY
+ *     by ProcessDefinitionModal before this hook runs.
  *  3. This hook also exposes the effective onProcess code for the caller to execute.
  *
- * TODO: Remove fallback usage once all AD fields are populated in the module.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { executeStringFunction } from "@/utils/functions";
 import { getPayScriptRules } from "@/components/ProcessModal/callouts/genericPayScriptCallout";
 import { logger } from "@/utils/logger";
+import { createCallAction, createFetchDatasource } from "./warehouseApiHelpers";
 import type { WarehouseProcessSchema, WarehousePayScriptPlugin } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -81,57 +82,12 @@ export function useWarehousePlugin({
   const effectiveOnLoad = onLoadCode;
   const effectiveOnProcess = onProcessCode;
 
-  // Build a sandboxed fetchDatasource helper for entity lookups (e.g. resolving IDs).
-  // Proxies through /api/datasource — no direct backend access.
-  const buildFetchDatasource = useCallback(
-    () =>
-      async (entity: string, params: Record<string, unknown>): Promise<Record<string, unknown>> => {
-        const res = await fetch("/api/datasource", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ entity, params }),
-        });
-        if (!res.ok) throw new Error(`fetchDatasource failed: ${res.status}`);
-        return res.json();
-      },
-    [token]
-  );
+  // Sandboxed helpers for entity lookups and ERP kernel calls.
+  // Created via shared factory functions to avoid duplication with GenericWarehouseProcess.
+  const fetchDatasource = useMemo(() => createFetchDatasource(token), [token]);
+  const callAction = useMemo(() => createCallAction(token, processId), [token, processId]);
 
-  // Build a sandboxed callAction helper exposed to the onLoad/onProcess functions.
-  // It only allows calling the ERP kernel endpoint — no direct DOM/fetch access.
-  const buildCallAction = useCallback(
-    () =>
-      async (actionHandler: string, params: Record<string, unknown>): Promise<Record<string, unknown>> => {
-        // Extract reserved top-level fields that must NOT go inside _params.
-        // _topLevel: when true, all remaining params are sent flat in the body (no _params wrapper).
-        //   Use this for handlers like ValidateActionHandler that read params at the root level.
-        const { processId: pidOverride, _entityName, _topLevel, ...innerParams } = params;
-        const pid = (pidOverride as string) || processId;
-
-        const body = _topLevel
-          ? JSON.stringify({
-              _buttonValue: "DONE",
-              ...innerParams,
-              ...(_entityName ? { _entityName } : {}),
-            })
-          : JSON.stringify({
-              _buttonValue: "DONE",
-              _params: innerParams,
-              ...(_entityName ? { _entityName } : {}),
-            });
-
-        const res = await fetch(`/api/erp/org.openbravo.client.kernel?processId=${pid}&_action=${actionHandler}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body,
-        });
-        if (!res.ok) throw new Error(`callAction failed: ${res.status}`);
-        return res.json();
-      },
-    [processId, token]
-  );
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally limited deps — processDefinition, buildCallAction and buildFetchDatasource are stable
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally limited deps — processDefinition, callAction and fetchDatasource are stable (derived from token/processId via useMemo)
   useEffect(() => {
     // If there's no onLoad at all (not in backend, not in fallbacks) → not a warehouse process
     if (!effectiveOnLoad) {
@@ -145,8 +101,8 @@ export function useWarehousePlugin({
         setError(null);
 
         const context = {
-          callAction: buildCallAction(),
-          fetchDatasource: buildFetchDatasource(),
+          callAction,
+          fetchDatasource,
           fetch: undefined, // explicitly blocked — use callAction / fetchDatasource instead
         };
 

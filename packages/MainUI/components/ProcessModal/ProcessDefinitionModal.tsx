@@ -258,7 +258,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   // Warehouse plugin — evaluated only when onLoad returns type: 'warehouseProcess'
   const selectedRecordsForPlugin = useMemo(
     () => (tab ? graph.getSelectedMultiple(tab) : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     [graph, tab]
   );
   const {
@@ -266,7 +266,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     payscriptPlugin: warehousePayscriptPlugin,
     effectiveOnProcess: warehouseOnProcess,
     loading: warehousePluginLoading,
-    error: warehousePluginError,
   } = useWarehousePlugin({
     processId,
     onLoadCode: onLoad,

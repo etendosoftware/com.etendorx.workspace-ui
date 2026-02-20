@@ -29,11 +29,12 @@
  */
 
 import type React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
 import { executeStringFunction } from "@/utils/functions";
+import { createCallAction } from "./warehouseApiHelpers";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 import { useUserContext } from "@/hooks/useUserContext";
@@ -125,36 +126,9 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
   // Sandbox callAction — shared by both onScan and onProcess
   // ---------------------------------------------------------------------------
 
-  const callAction = useCallback(
-    async (actionHandler: string, params: Record<string, unknown>): Promise<Record<string, unknown>> => {
-      // Extract reserved top-level fields that must NOT go inside _params.
-      // _topLevel: when true, all remaining params are sent flat in the body (no _params wrapper).
-      //   Use this for handlers like ValidateActionHandler that read params at the root level.
-      const { processId: pidOverride, _entityName, _topLevel, ...innerParams } = params;
-      const pid = (pidOverride as string) || processId;
-
-      const body = _topLevel
-        ? JSON.stringify({
-            _buttonValue: "DONE",
-            ...innerParams,
-            ...(_entityName ? { _entityName } : {}),
-          })
-        : JSON.stringify({
-            _buttonValue: "DONE",
-            _params: innerParams,
-            ...(_entityName ? { _entityName } : {}),
-          });
-
-      const res = await fetch(`/api/erp/org.openbravo.client.kernel?processId=${pid}&_action=${actionHandler}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body,
-      });
-      if (!res.ok) throw new Error(`callAction failed: ${res.status}`);
-      return res.json();
-    },
-    [processId, token]
-  );
+  // Created via shared factory function to avoid duplication with useWarehousePlugin.
+  // token is guaranteed non-null here — the parent modal only renders this component after auth.
+  const callAction = useMemo(() => createCallAction(token ?? "", processId), [token, processId]);
 
   // ---------------------------------------------------------------------------
   // Add box
@@ -339,12 +313,14 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
         setError(showMsg?.msgText || "Process failed");
       } else {
         const parsed = parseSmartClientMessage(showMsg?.msgText || "");
+        const msgType = showMsg?.msgType;
         setResultMessage({
-          type: (showMsg?.msgType as ResultMessage["type"]) || "success",
-          // biome-ignore lint/suspicious/noExplicitAny: titleKey is a dynamic string from schema
+          type: (msgType === "success" || msgType === "warning" || msgType === "error"
+            ? msgType
+            : "success") satisfies ResultMessage["type"],
+          // biome-ignore lint/suspicious/noExplicitAny: titleKey is a dynamic schema string — not a static translation key
           title: showMsg?.msgTitle || t(schema.titleKey as any),
-          // biome-ignore lint/suspicious/noExplicitAny: fallback key
-          text: parsed.text || t("process.processError" as any),
+          text: parsed.text || t("process.processError"),
           linkTabId: parsed.tabId,
           linkRecordId: parsed.recordId,
         });
@@ -437,7 +413,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
         <div className="bg-white rounded-lg shadow-lg w-full max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 shrink-0">
-            {/* biome-ignore lint/suspicious/noExplicitAny: titleKey is a dynamic string from schema */}
+            {/* biome-ignore lint/suspicious/noExplicitAny: titleKey is a dynamic schema string — not a static translation key */}
             <h3 className="text-lg font-bold">{t(schema.titleKey as any)}</h3>
             <button
               type="button"
@@ -515,7 +491,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
                       <th
                         key={col.field}
                         className={`px-3 py-2.5 text-${col.align ?? "left"} text-xs font-bold text-gray-500 uppercase tracking-wider border-r`}>
-                        {/* biome-ignore lint/suspicious/noExplicitAny: labelKey is a dynamic string from schema */}
+                        {/* biome-ignore lint/suspicious/noExplicitAny: labelKey is a dynamic schema string — not a static translation key */}
                         {t(col.labelKey as any)}
                       </th>
                     ))}
