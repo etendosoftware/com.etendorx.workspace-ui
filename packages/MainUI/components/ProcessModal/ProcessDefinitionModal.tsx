@@ -46,9 +46,8 @@ import {
   WINDOW_SPECIFIC_KEYS,
   PROCESS_TYPES,
   ADD_PAYMENT_ORDER_PROCESS_ID,
-  PACKING_PROCESS_ID,
 } from "@/utils/processes/definition/constants";
-import { PackingProcess } from "./Custom/PackingProcess/PackingProcess";
+import { GenericWarehouseProcess, useWarehousePlugin } from "./Custom/GenericWarehouseProcess";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
@@ -255,6 +254,26 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const { onProcess, onLoad } = processDefinition;
   const processId = processDefinition.id;
   const javaClassName = processDefinition.javaClassName;
+
+  // Warehouse plugin — evaluated only when onLoad returns type: 'warehouseProcess'
+  const selectedRecordsForPlugin = useMemo(
+    () => (tab ? graph.getSelectedMultiple(tab) : []),
+
+    [graph, tab]
+  );
+  const {
+    schema: warehouseSchema,
+    payscriptPlugin: warehousePayscriptPlugin,
+    effectiveOnProcess: warehouseOnProcess,
+    loading: warehousePluginLoading,
+  } = useWarehousePlugin({
+    processId,
+    onLoadCode: onLoad,
+    onProcessCode: typeof onProcess === "string" ? onProcess : undefined,
+    processDefinition: processDefinition as Record<string, unknown>,
+    selectedRecords: selectedRecordsForPlugin as { id: string }[],
+    token: token ?? "",
+  });
 
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
@@ -1742,125 +1761,147 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     !!result?.success ||
     (hasWindowReference && !gridSelection);
 
+  const renderModalContent = () => {
+    // --- Generic warehouse process (schema-driven, module-declared via onLoad/payscript) ---
+    if (warehousePluginLoading && onLoad) {
+      return (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg p-8 flex items-center gap-3">
+            <span className="animate-spin text-2xl">⟳</span>
+            <span className="text-sm text-gray-600">{button.name}</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (warehouseSchema) {
+      return (
+        <GenericWarehouseProcess
+          schema={warehouseSchema}
+          payscriptPlugin={warehousePayscriptPlugin}
+          onProcessCode={warehouseOnProcess}
+          processId={processId}
+          onClose={handleClose}
+          onSuccess={onSuccess}
+          data-testid="GenericWarehouseProcess__761503"
+        />
+      );
+    }
+
+    return (
+      <FormProvider {...form} data-testid="FormProvider__761503">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex flex-col gap-1">
+                <h3 className="text-lg font-bold">{button.name}</h3>
+                {button.processDefinition.description && (
+                  <p className="text-sm text-gray-600">{String(button.processDefinition.description)}</p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handleClose}
+                className="p-1 rounded-full hover:bg-(--color-baseline-10)"
+                disabled={isPending}>
+                <CloseIcon data-testid="CloseIcon__761503" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-auto p-4 min-h-[12rem]">
+              <div className={`relative h-full ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
+                {(loading || initializationLoading) && !result && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10 transition-opacity duration-200">
+                    <Loading data-testid="Loading__761503" />
+                  </div>
+                )}
+                <div className="h-full">
+                  {result && !result.success && renderResponse()}
+                  {renderParameters()}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 justify-end mx-3 my-3">
+              {/* REPORT_AND_PROCESS type: always show Cancel + Execute */}
+              {type === PROCESS_TYPES.REPORT_AND_PROCESS && (!result || !result.success) && (
+                <>
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    onClick={handleClose}
+                    disabled={isPending}
+                    className="w-49"
+                    data-testid="CancelButton__761503">
+                    {t("common.cancel")}
+                  </Button>
+                  <Button
+                    variant="filled"
+                    size="large"
+                    onClick={handleReportProcessExecute}
+                    disabled={Boolean(isActionButtonDisabled)}
+                    startIcon={getActionButtonContent().icon}
+                    className="w-49"
+                    data-testid="ExecuteReportButton__761503">
+                    {getActionButtonContent().text}
+                  </Button>
+                </>
+              )}
+
+              {/* Other process types: existing logic */}
+              {type !== PROCESS_TYPES.REPORT_AND_PROCESS && (!result || !result.success) && !isPending && (
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={handleClose}
+                  className="w-49"
+                  data-testid="CloseButton__761503">
+                  {t("common.close")}
+                </Button>
+              )}
+
+              {type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
+                ((!result || !result.success) && availableButtons.length > 0
+                  ? availableButtons.map((btn) => (
+                      <Button
+                        key={btn.value}
+                        variant="filled"
+                        size="large"
+                        onClick={() => handleExecute(btn.value)}
+                        disabled={Boolean(isActionButtonDisabled)}
+                        className="w-49"
+                        data-testid={`ExecuteButton_${btn.value}__761503`}>
+                        {btn.label}
+                      </Button>
+                    ))
+                  : (!result || !result.success) && (
+                      <Button
+                        variant="filled"
+                        size="large"
+                        onClick={() => handleExecute()}
+                        disabled={Boolean(isActionButtonDisabled)}
+                        startIcon={getActionButtonContent().icon}
+                        className="w-49"
+                        data-testid="ExecuteButton__761503">
+                        {getActionButtonContent().text}
+                      </Button>
+                    ))}
+            </div>
+          </div>
+        </div>
+      </FormProvider>
+    );
+  };
+
   return (
     <>
       {/* Main Process Modal */}
       {open && !result?.success && (
         <Modal open={open && !result?.success} onClose={handleClose} data-testid="Modal__761503">
-          {processId === PACKING_PROCESS_ID ? (
-            <PackingProcess
-              onClose={handleClose}
-              shipmentId={String(selectedRecords?.[0]?.id || record?.id || "")}
-              windowId={String(tab?.window || "")}
-              data-testid="PackingProcess__761503"
-            />
-          ) : (
-            <FormProvider {...form} data-testid="FormProvider__761503">
-              <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
-                <div className="bg-white rounded-lg shadow-lg w-full max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
-                  {/* Header */}
-                  <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                    <div className="flex flex-col gap-1">
-                      <h3 className="text-lg font-bold">{button.name}</h3>
-                      {button.processDefinition.description && (
-                        <p className="text-sm text-gray-600">{String(button.processDefinition.description)}</p>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleClose}
-                      className="p-1 rounded-full hover:bg-(--color-baseline-10)"
-                      disabled={isPending}>
-                      <CloseIcon data-testid="CloseIcon__761503" />
-                    </button>
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 overflow-auto p-4 min-h-[12rem]">
-                    <div
-                      className={`relative h-full ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
-                      {(loading || initializationLoading) && !result && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10 transition-opacity duration-200">
-                          <Loading data-testid="Loading__761503" />
-                        </div>
-                      )}
-                      <div className="h-full">
-                        {result && !result.success && renderResponse()}
-                        {renderParameters()}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="flex gap-3 justify-end mx-3 my-3">
-                    {/* REPORT_AND_PROCESS type: always show Cancel + Execute */}
-                    {type === PROCESS_TYPES.REPORT_AND_PROCESS && (!result || !result.success) && (
-                      <>
-                        <Button
-                          variant="outlined"
-                          size="large"
-                          onClick={handleClose}
-                          disabled={isPending}
-                          className="w-49"
-                          data-testid="CancelButton__761503">
-                          {t("common.cancel")}
-                        </Button>
-                        <Button
-                          variant="filled"
-                          size="large"
-                          onClick={handleReportProcessExecute}
-                          disabled={Boolean(isActionButtonDisabled)}
-                          startIcon={getActionButtonContent().icon}
-                          className="w-49"
-                          data-testid="ExecuteReportButton__761503">
-                          {getActionButtonContent().text}
-                        </Button>
-                      </>
-                    )}
-
-                    {/* Other process types: existing logic */}
-                    {type !== PROCESS_TYPES.REPORT_AND_PROCESS && (!result || !result.success) && !isPending && (
-                      <Button
-                        variant="outlined"
-                        size="large"
-                        onClick={handleClose}
-                        className="w-49"
-                        data-testid="CloseButton__761503">
-                        {t("common.close")}
-                      </Button>
-                    )}
-
-                    {type !== PROCESS_TYPES.REPORT_AND_PROCESS &&
-                      ((!result || !result.success) && availableButtons.length > 0
-                        ? availableButtons.map((btn) => (
-                            <Button
-                              key={btn.value}
-                              variant="filled"
-                              size="large"
-                              onClick={() => handleExecute(btn.value)}
-                              disabled={Boolean(isActionButtonDisabled)}
-                              className="w-49"
-                              data-testid={`ExecuteButton_${btn.value}__761503`}>
-                              {btn.label}
-                            </Button>
-                          ))
-                        : (!result || !result.success) && (
-                            <Button
-                              variant="filled"
-                              size="large"
-                              onClick={() => handleExecute()}
-                              disabled={Boolean(isActionButtonDisabled)}
-                              startIcon={getActionButtonContent().icon}
-                              className="w-49"
-                              data-testid="ExecuteButton__761503">
-                              {getActionButtonContent().text}
-                            </Button>
-                          ))}
-                  </div>
-                </div>
-              </div>
-            </FormProvider>
-          )}
+          {renderModalContent()}
         </Modal>
       )}
       {/* Success Modal - Separate overlay */}

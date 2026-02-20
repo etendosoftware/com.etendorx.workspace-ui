@@ -16,7 +16,8 @@
       "**/jest.config.js",
       "**/jest.setup.js",
       "**/jest.polyfills.js",
-      "**/__mocks__/**"
+      "**/__mocks__/**",
+      "**/GenericWarehouseProcess/pluginValues/**"
     ]
   },
   "linter": {

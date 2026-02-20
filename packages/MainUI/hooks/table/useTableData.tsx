@@ -393,21 +393,35 @@ export const useTableData = ({
 
   // Helper to find parent field name
   const getParentFieldName = useCallback(() => {
-    if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
-      console.log("No parent columns found");
-      return "_dummy";
-    }
-
     if (!parentTab) {
+      if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
+        return "_dummy";
+      }
       return tab.parentColumns[0] || "id";
     }
 
-    const matchingField = tab.parentColumns.find((colName) => {
-      const field = tab.fields[colName];
-      return field?.referencedEntity === parentTab.entityName;
-    });
+    // 1st: search parentColumns for a field whose referencedEntity matches the parent tab
+    if (Array.isArray(tab?.parentColumns) && tab.parentColumns.length > 0) {
+      const matchingField = tab.parentColumns.find((colName) => {
+        const field = tab.fields[colName];
+        return field?.referencedEntity === parentTab.entityName;
+      });
+      if (matchingField) return matchingField;
+    }
 
-    return matchingField || tab.parentColumns[0] || "id";
+    // 2nd fallback: search ALL fields for one that references the parent entity
+    // This handles cases where parentColumns doesn't list the correct link field
+    const fieldFromAllFields = Object.entries(tab.fields || {}).find(([_, field]) => {
+      return (field as { referencedEntity?: string }).referencedEntity === parentTab.entityName;
+    });
+    if (fieldFromAllFields) return fieldFromAllFields[0];
+
+    // 3rd fallback: use first parentColumns entry or dummy
+    if (Array.isArray(tab?.parentColumns) && tab.parentColumns.length > 0) {
+      return tab.parentColumns[0] || "id";
+    }
+
+    return "_dummy";
   }, [tab.parentColumns, tab.fields, parentTab]);
 
   // Helper to apply sort options to query
