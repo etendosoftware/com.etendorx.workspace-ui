@@ -46,12 +46,8 @@ import {
   WINDOW_SPECIFIC_KEYS,
   PROCESS_TYPES,
   ADD_PAYMENT_ORDER_PROCESS_ID,
-  PACKING_PROCESS_ID,
-  PACKING_FROM_SHIPMENT_PROCESS_ID,
-  PICK_VALIDATE_PROCESS_ID,
 } from "@/utils/processes/definition/constants";
-import { PackingProcess } from "./Custom/PackingProcess/PackingProcess";
-import { PickValidateProcess } from "./Custom/PickValidateProcess/PickValidateProcess";
+import { GenericWarehouseProcess, useWarehousePlugin } from "./Custom/GenericWarehouseProcess";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
@@ -258,6 +254,27 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const { onProcess, onLoad } = processDefinition;
   const processId = processDefinition.id;
   const javaClassName = processDefinition.javaClassName;
+
+  // Warehouse plugin — evaluated only when onLoad returns type: 'warehouseProcess'
+  const selectedRecordsForPlugin = useMemo(
+    () => (tab ? graph.getSelectedMultiple(tab) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [graph, tab]
+  );
+  const {
+    schema: warehouseSchema,
+    payscriptPlugin: warehousePayscriptPlugin,
+    effectiveOnProcess: warehouseOnProcess,
+    loading: warehousePluginLoading,
+    error: warehousePluginError,
+  } = useWarehousePlugin({
+    processId,
+    onLoadCode: onLoad,
+    onProcessCode: typeof onProcess === "string" ? onProcess : undefined,
+    processDefinition: processDefinition as Record<string, unknown>,
+    selectedRecords: selectedRecordsForPlugin as { id: string }[],
+    token: token ?? "",
+  });
 
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
@@ -1746,27 +1763,31 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     (hasWindowReference && !gridSelection);
 
   const renderModalContent = () => {
-    if (processId === PACKING_PROCESS_ID || processId === PACKING_FROM_SHIPMENT_PROCESS_ID) {
+    // --- Generic warehouse process (schema-driven, module-declared via onLoad/payscript) ---
+    if (warehousePluginLoading && onLoad) {
       return (
-        <PackingProcess
-          onClose={handleClose}
-          shipmentId={String(selectedRecords?.[0]?.id || record?.id || "")}
-          windowId={String(tab?.window || "")}
-          data-testid="PackingProcess__761503"
-        />
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg p-8 flex items-center gap-3">
+            <span className="animate-spin text-2xl">⟳</span>
+            <span className="text-sm text-gray-600">{button.name}</span>
+          </div>
+        </div>
       );
     }
-    if (processId === PICK_VALIDATE_PROCESS_ID) {
+
+    if (warehouseSchema) {
       return (
-        <PickValidateProcess
+        <GenericWarehouseProcess
+          schema={warehouseSchema}
+          payscriptPlugin={warehousePayscriptPlugin}
+          onProcessCode={warehouseOnProcess}
+          processId={processId}
           onClose={handleClose}
           onSuccess={onSuccess}
-          pickingListId={String(selectedRecords?.[0]?.id || record?.id || "")}
-          windowId={String(tab?.window || "")}
-          data-testid="PickValidateProcess__761503"
         />
       );
     }
+
     return (
       <FormProvider {...form} data-testid="FormProvider__761503">
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
