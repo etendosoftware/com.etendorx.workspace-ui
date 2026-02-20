@@ -555,11 +555,9 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
 
                             // qtyPending with color
                             if (col.field === "qtyPending") {
-                              const pendingColor = isOver
-                                ? "text-red-600"
-                                : isComplete
-                                  ? "text-green-600"
-                                  : "text-gray-900";
+                              let pendingColor = "text-gray-900";
+                              if (isOver) pendingColor = "text-red-600";
+                              else if (isComplete) pendingColor = "text-green-600";
                               return (
                                 <td
                                   key={col.field}
