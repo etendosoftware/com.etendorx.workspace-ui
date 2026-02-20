@@ -1,0 +1,25 @@
+{
+  "name": "com.etendoerp.ui.tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "cy:run:smoke": "cypress run --spec 'e2e/smoke/**/*.cy.js'",
+    "cy:run:regression": "cypress run --spec 'e2e/regression/**/*.cy.js'",
+    "test:e2e": "start-server-and-test http://localhost:3000 cy:run",
+    "test": "newman run postman_tests/etendo-ui-api.postman_collection.json -e postman_tests/local.postman_environment.json -d postman_tests/user_data.csv"
+  },
+  "devDependencies": {
+    "cypress": "^13.0.0",
+    "cypress-real-events": "^1.15.0",
+    "newman": "^6.2.1",
+    "start-server-and-test": "^2.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "cypress"
+    ]
+  }
+}

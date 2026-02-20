@@ -1,0 +1,3 @@
+username,password,ad_user_id,ad_user_name,role_count,has_role,role_has_orgs,ad_role_id,ad_org_id
+admin,admin,100,Admin,13,F&B International Group Admin,8,42D0EEB1C66F497A90DD526DC597E6F0,E443A31992CB4635AFCAEABE7183CE85
+F&BESUser,user,167450A5BB284AB29C4FEF039E98C963,F&B ES User,4,"F&B España, S.A - Sales",3,E03ED4A0056340678C3D6A3BA183F941,E443A31992CB4635AFCAEABE7183CE85
