@@ -444,7 +444,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
               onClick={onClose}
               className="p-1 rounded-full hover:bg-(--color-baseline-10) transition-colors"
               disabled={processing}>
-              <CloseIcon className="w-5 h-5 text-gray-500" />
+              <CloseIcon className="w-5 h-5 text-gray-500" data-testid="CloseIcon__cad053" />
             </button>
           </div>
 
@@ -459,10 +459,11 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
                   boxCount={boxCount}
                   onPrev={() => setCurrentBox((b) => Math.max(1, b - 1))}
                   onNext={() => setCurrentBox((b) => Math.min(boxCount, b + 1))}
+                  data-testid="BoxSelector__cad053"
                 />
               )}
               {schema.inputBar.includes("addBox") && schema.features.dynamicBoxes !== false && (
-                <AddBoxButton onClick={handleAddBox} title={t("packing.addBox")} />
+                <AddBoxButton onClick={handleAddBox} title={t("packing.addBox")} data-testid="AddBoxButton__cad053" />
               )}
               {schema.inputBar.includes("qty") && (
                 <FormInput
@@ -472,6 +473,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
                   value={currentQty}
                   min={0}
                   onChange={(e) => setCurrentQty(Number(e.target.value))}
+                  data-testid="FormInput__cad053"
                 />
               )}
               {schema.inputBar.includes("barcode") && (
@@ -488,6 +490,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
                   validateLabel={t("packing.validateBarcode")}
                   validateTestId="Button__warehouse_validate"
                   colSpan={6}
+                  data-testid="BarcodeInputRow__cad053"
                 />
               )}
             </div>
@@ -499,6 +502,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
                 title={t("process.processError")}
                 onDismiss={() => setError(null)}
                 testId="CloseIcon__warehouse_err"
+                data-testid="ErrorAlert__cad053"
               />
             )}
 
@@ -649,7 +653,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
               )}
             </div>
             <div className="flex gap-3">
-              <Button variant="outlined" size="large" onClick={onClose} className="w-32">
+              <Button variant="outlined" size="large" onClick={onClose} className="w-32" data-testid="Button__cad053">
                 {t("packing.cancel")}
               </Button>
               <Button
@@ -657,7 +661,8 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
                 size="large"
                 onClick={handleProcess}
                 disabled={processing}
-                className="w-48 flex items-center justify-center gap-2">
+                className="w-48 flex items-center justify-center gap-2"
+                data-testid="Button__cad053">
                 {processing && <span className="animate-spin mr-2">⟳</span>}
                 {t("packing.generatePack")}
               </Button>
@@ -665,15 +670,14 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
           </div>
         </div>
       </div>
-
       <ConfirmDialog
         state={confirmDialog}
         title={t("packing.validationError")}
         closeLabel={t("packing.close")}
         onClose={() => setConfirmDialog((prev) => ({ ...prev, open: false }))}
         testIdPrefix="warehouse"
+        data-testid="ConfirmDialog__cad053"
       />
-
       {resultMessage && (
         <ResultMessageModal
           result={resultMessage}
@@ -694,6 +698,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
               </p>
             ) : undefined
           }
+          data-testid="ResultMessageModal__cad053"
         />
       )}
     </>

@@ -1784,6 +1784,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           processId={processId}
           onClose={handleClose}
           onSuccess={onSuccess}
+          data-testid="GenericWarehouseProcess__761503"
         />
       );
     }
