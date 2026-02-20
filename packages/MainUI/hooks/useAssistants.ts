@@ -16,13 +16,14 @@
  */
 
 import type { IAssistant } from "@workspaceui/api-client/src/api/copilot";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useCopilotClient } from "./useCopilotClient";
 
 export const useAssistants = () => {
   const [selectedOption, setSelectedOption] = useState<IAssistant | null>(null);
   const [assistants, setAssistants] = useState<IAssistant[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showOnlyFeatured, setShowOnlyFeatured] = useState(true);
 
   const copilotClient = useCopilotClient();
 
@@ -32,8 +33,14 @@ export const useAssistants = () => {
       const data = await copilotClient.getAssistants();
 
       if (data.length > 0) {
-        setSelectedOption(data[0]);
-        setAssistants(data);
+        // Sort: featured "Y" first, then the rest
+        const sorted = [...data].sort((a, b) => {
+          if (a.featured === "Y" && b.featured !== "Y") return -1;
+          if (a.featured !== "Y" && b.featured === "Y") return 1;
+          return 0;
+        });
+        setSelectedOption(sorted[0]);
+        setAssistants(sorted);
       } else {
         setSelectedOption(null);
         setAssistants([]);
@@ -47,6 +54,31 @@ export const useAssistants = () => {
     }
   }, [copilotClient]);
 
+  // Filtered list: when showOnlyFeatured is true, only show assistants with featured "Y"
+  // If none have featured "Y", fall back to showing all
+  const filteredAssistants = useMemo(() => {
+    if (!showOnlyFeatured) return assistants;
+    const featured = assistants.filter((a: IAssistant) => a.featured === "Y");
+    return featured.length > 0 ? featured : assistants;
+  }, [assistants, showOnlyFeatured]);
+
+  const hasFeaturedAssistants = useMemo(
+    () => assistants.some((a: IAssistant) => a.featured === "Y"),
+    [assistants]
+  );
+
+  const clearFeaturedFilter = useCallback(() => {
+    setShowOnlyFeatured(false);
+  }, []);
+
+  const resetFeaturedFilter = useCallback(() => {
+    setShowOnlyFeatured(true);
+  }, []);
+
+  const toggleFeaturedFilter = useCallback(() => {
+    setShowOnlyFeatured((prev) => !prev);
+  }, []);
+
   const invalidateCache = useCallback(() => {
     setAssistants([]);
     setSelectedOption(null);
@@ -59,6 +91,12 @@ export const useAssistants = () => {
   return {
     selectedOption,
     assistants,
+    filteredAssistants,
+    hasFeaturedAssistants,
+    showOnlyFeatured,
+    clearFeaturedFilter,
+    resetFeaturedFilter,
+    toggleFeaturedFilter,
     getAssistants,
     invalidateCache,
     handleOptionSelected,

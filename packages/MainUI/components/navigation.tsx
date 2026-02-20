@@ -82,7 +82,7 @@ const Navigation: React.FC = () => {
   const { isOpen: aboutModalOpen, openModal: openAboutModal, closeModal: closeAboutModal } = useAboutModalOpen();
   const { aboutUrl } = useAboutModal();
 
-  const { assistants, getAssistants, invalidateCache, isLoading: isLoadingAssistants } = useAssistants();
+  const { assistants, filteredAssistants, hasFeaturedAssistants, showOnlyFeatured, clearFeaturedFilter, resetFeaturedFilter, toggleFeaturedFilter, getAssistants, invalidateCache, isLoading: isLoadingAssistants } = useAssistants();
   const { labels, getLabels } = useCopilotLabels();
 
   const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,17 +91,19 @@ const Navigation: React.FC = () => {
 
   const handleCopilotOpen = useCallback(() => {
     setCopilotOpen(true);
+    resetFeaturedFilter();
     getAssistants();
-  }, [getAssistants]);
+  }, [getAssistants, resetFeaturedFilter]);
 
   const handleCopilotOpenWithContext = useCallback(
     (contextString: string, contextItems: ContextItem[]) => {
       setPendingContextString(contextString);
       setPendingContextItems(contextItems);
       setCopilotOpen(true);
+      resetFeaturedFilter();
       getAssistants();
     },
-    [getAssistants]
+    [getAssistants, resetFeaturedFilter]
   );
 
   const handleCopilotClose = useCallback(() => {
@@ -298,7 +300,7 @@ const Navigation: React.FC = () => {
       <CopilotPopup
         open={copilotOpen && isCopilotInstalled}
         onClose={handleCopilotClose}
-        assistants={assistants}
+        assistants={filteredAssistants}
         labels={labels}
         isExpanded={copilotExpanded}
         onToggleExpanded={handleCopilotToggleExpanded}
@@ -319,6 +321,9 @@ const Navigation: React.FC = () => {
         onSelectConversation={handleSelectConversation}
         onLoadConversations={loadConversations}
         conversationsLoading={conversationsLoading}
+        showOnlyFeatured={showOnlyFeatured}
+        hasFeaturedAssistants={hasFeaturedAssistants}
+        onToggleFeaturedFilter={toggleFeaturedFilter}
         translations={{
           copilotProfile: t("copilot.copilotProfile"),
           backToSelection: t("copilot.backToSelection"),
@@ -335,6 +340,7 @@ const Navigation: React.FC = () => {
             profilesTitle: t("copilot.assistantSelector.profilesTitle"),
             learnMoreText: t("copilot.assistantSelector.learnMoreText"),
             filterPlaceholder: t("copilot.assistantSelector.filterPlaceholder"),
+            toggleFeaturedFilter: t("copilot.assistantSelector.toggleFeaturedFilter"),
           },
           messageInput: {
             placeholder: t("copilot.messageInput.placeholder"),

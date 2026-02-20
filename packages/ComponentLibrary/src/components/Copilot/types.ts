@@ -25,6 +25,9 @@ export interface AssistantSelectorProps {
   isExpanded?: boolean;
   showDescription?: boolean;
   isLoading?: boolean;
+  showOnlyFeatured?: boolean;
+  hasFeaturedAssistants?: boolean;
+  onToggleFeaturedFilter?: () => void;
   translations: {
     errorInvalidData: string;
     errorNoAssistantsAvailable: string;
@@ -33,6 +36,7 @@ export interface AssistantSelectorProps {
     profilesTitle: string;
     learnMoreText: string;
     filterPlaceholder: string;
+    toggleFeaturedFilter?: string;
   };
 }
 
@@ -64,6 +68,9 @@ export interface ChatInterfaceProps {
   onSelectConversation?: (conversationId: string) => void;
   onLoadConversations?: () => void;
   conversationsLoading?: boolean;
+  showOnlyFeatured?: boolean;
+  hasFeaturedAssistants?: boolean;
+  onToggleFeaturedFilter?: () => void;
   translations: {
     selectedRegisters: string;
     assistantSelector: AssistantSelectorProps["translations"];
@@ -100,6 +107,9 @@ export interface CopilotPopupProps {
   onSelectConversation?: (conversationId: string) => void;
   onLoadConversations?: () => void;
   conversationsLoading?: boolean;
+  showOnlyFeatured?: boolean;
+  hasFeaturedAssistants?: boolean;
+  onToggleFeaturedFilter?: () => void;
   translations: {
     copilotProfile: string;
     backToSelection: string;
