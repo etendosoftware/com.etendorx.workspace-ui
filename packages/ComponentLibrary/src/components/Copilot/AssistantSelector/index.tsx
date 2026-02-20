@@ -16,6 +16,7 @@
  */
 
 import SparksIcon from "../../../assets/icons/sparks.svg";
+import FilterIcon from "../../../assets/icons/filter.svg";
 import RadioGrid, { type RadioGridOption } from "../../RadioGrid";
 import { IconButton, TextInputBase } from "../..";
 import type { AssistantSelectorProps } from "../types";
@@ -28,6 +29,9 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({
   isExpanded = false,
   showDescription,
   isLoading = false,
+  showOnlyFeatured = false,
+  hasFeaturedAssistants = false,
+  onToggleFeaturedFilter,
   translations,
 }) => {
   const [filterText, setFilterText] = useState("");
@@ -86,13 +90,26 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({
             </IconButton>
             <h6 className="text-lg font-semibold">{translations.profilesTitle}</h6>
           </div>
-          <div className="w-48">
-            <TextInputBase
-              value={filterText}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterText(e.target.value)}
-              placeholder={translations.filterPlaceholder}
-              size="small"
-            />
+          <div className="flex items-center gap-1 w-48">
+            <div className="flex-1 relative">
+              <TextInputBase
+                value={filterText}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterText(e.target.value)}
+                placeholder={translations.filterPlaceholder}
+                size="small"
+              />
+            </div>
+            {hasFeaturedAssistants && onToggleFeaturedFilter && (
+              <IconButton
+                onClick={onToggleFeaturedFilter}
+                ariaLabel={translations.toggleFeaturedFilter ?? "Toggle featured filter"}
+                tooltip={translations.toggleFeaturedFilter ?? "Toggle featured filter"}
+                tooltipPosition="left"
+                className={`flex-shrink-0 [&>svg]:text-[1rem] ${showOnlyFeatured ? "text-blue-500" : "text-gray-400"}`}
+              >
+                <FilterIcon />
+              </IconButton>
+            )}
           </div>
         </div>
 

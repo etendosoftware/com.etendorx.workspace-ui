@@ -112,6 +112,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onSelectConversation,
   onLoadConversations,
   conversationsLoading = false,
+  showOnlyFeatured,
+  hasFeaturedAssistants,
+  onToggleFeaturedFilter,
   translations,
 }) => {
   const [showConversations, setShowConversations] = useState(true);
@@ -166,6 +169,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         isExpanded={isExpanded}
         showDescription={showDescription}
         isLoading={isLoadingAssistants}
+        showOnlyFeatured={showOnlyFeatured}
+        hasFeaturedAssistants={hasFeaturedAssistants}
+        onToggleFeaturedFilter={onToggleFeaturedFilter}
         translations={translations.assistantSelector}
       />
     );
