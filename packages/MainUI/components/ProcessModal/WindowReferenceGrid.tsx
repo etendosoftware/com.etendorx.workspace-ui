@@ -641,9 +641,17 @@ const WindowReferenceGrid = ({
       }
     };
 
+    const applyOrgFilter = () => {
+      // Ensure _org is always present if ad_org_id is present, as it is required for filtering
+      if (options.ad_org_id && !options._org) {
+        options._org = options.ad_org_id;
+      }
+    };
+
     applyDynamicKeys();
     applyParameters();
     applyRecordValues();
+    applyOrgFilter();
 
     const criteria = buildCriteria();
     const baseCriteria = buildBaseCriteria({
