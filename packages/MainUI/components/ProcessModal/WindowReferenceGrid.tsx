@@ -102,7 +102,13 @@ const convertValueType = (value: unknown): boolean | number | unknown => {
   if (value === "Y") return true;
   if (value === "N") return false;
 
-  if (typeof value === "string" && value !== "" && !Number.isNaN(Number(value)) && value.length < 15) {
+  // Convert numeric strings to numbers (e.g., "102" -> 102, "0" -> 0)
+  if (
+    typeof value === "string" &&
+    value !== "" &&
+    !Number.isNaN(Number(value)) &&
+    value.length < 15 // Avoid converting UUIDs that happen to be numeric
+  ) {
     return Number(value);
   }
 
@@ -197,9 +203,16 @@ const applyAllDynamicKeys = (options: DatasourceParams, stableRecordValues: any,
   if (!processId) return;
 
   const processDef = PROCESS_DEFINITION_DATA[processId];
-  if (!processDef?.dynamicKeys) return;
+  if (!processDef?.dynamicKeys) {
+    console.log(`[PROCESS_DEBUG] No dynamicKeys found for process ${processId}`);
+    return;
+  }
+
+  console.log(`[PROCESS_DEBUG] Applying dynamicKeys for process ${processId}:`, processDef.dynamicKeys);
+  console.log("[PROCESS_DEBUG] Current stableRecordValues:", stableRecordValues);
 
   for (const [key, value] of Object.entries(processDef.dynamicKeys)) {
+    console.log(`[PROCESS_DEBUG] Resolving key: ${key}, value mapping: ${value}`);
     const contextKey = normalizeContextKey(value as string);
     const resolvedValue = stableRecordValues[contextKey] || stableRecordValues[`inp${contextKey}`];
     if (resolvedValue !== undefined && resolvedValue !== null) {
