@@ -114,6 +114,24 @@ export function getKernelUrl(): string {
 }
 
 /**
+ * Returns the kernel SWS datasource URL for a specific entity.
+ * This path (`sws/com.smf.securewebservices.kernel/org.openbravo.service.datasource/<entity>`)
+ * authenticates via Bearer token without requiring a CSRF token, making it the correct
+ * route for write operations (PUT/PATCH/DELETE) initiated by the New UI.
+ * @param entity - The datasource entity name
+ * @returns Complete kernel datasource URL for the entity
+ */
+export function getKernelDatasourceUrl(entity: string): string {
+  const config: EndpointConfig = {
+    baseUrl: process.env.ETENDO_CLASSIC_URL || "",
+    useSws: true,
+    useForward: false,
+    service: `com.smf.securewebservices.kernel/org.openbravo.service.datasource/${entity}`,
+  };
+  return buildEndpointUrl(config);
+}
+
+/**
  * Convenience function to get a complete metadata URL
  * @param path - The metadata path
  * @returns Complete metadata URL

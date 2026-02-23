@@ -69,6 +69,8 @@ interface UseTableDataReturn {
 
   // Tree mode
   shouldUseTreeMode: boolean;
+  treeEntity: string;
+  referencedTableId?: string;
 
   // Handlers
   handleMRTColumnFiltersChange: (
@@ -1194,6 +1196,8 @@ export const useTableData = ({
 
     // Tree mode
     shouldUseTreeMode,
+    treeEntity,
+    referencedTableId: treeMetadata.referencedTableId,
 
     // Handlers
     handleMRTColumnFiltersChange,

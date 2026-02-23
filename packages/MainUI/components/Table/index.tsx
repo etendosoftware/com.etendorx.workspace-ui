@@ -117,6 +117,7 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import "./styles/inlineEditing.css";
 import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
+import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatUTCTimeToLocal } from "@/utils/date/utils";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
@@ -793,6 +794,8 @@ const DynamicTable = ({
     loading,
     error,
     shouldUseTreeMode,
+    treeEntity,
+    referencedTableId,
     hasMoreRecords,
     handleMRTColumnFiltersChange,
     handleMRTColumnVisibilityChange,
@@ -1008,6 +1011,17 @@ const DynamicTable = ({
   const { getRowDropZoneProps } = useRowDropZone({
     onFileDrop: handleFileDrop,
     onDragStateChange: setDropTargetState,
+  });
+
+  const { dropTarget, draggingRowId, getNodeDragProps, getNodeDropProps } = useTreeNodeDragDrop({
+    shouldUseTreeMode,
+    treeEntity,
+    referencedTableId,
+    tabId: tab.id,
+    displayRecords,
+    refetch,
+    onError: (message) => showErrorModal(message),
+    parentTabRecordId: parentRecord?.id != null ? String(parentRecord.id) : null,
   });
 
   // Optimistic updates state - tracks pending updates for immediate UI feedback
@@ -2576,20 +2590,79 @@ const DynamicTable = ({
           setRecordId(record.id);
         },
 
-        // Merge drag & drop handlers for file attachments
-        ...getRowDropZoneProps(record as EntityData),
+        // File attachment drag & drop props
+        ...(() => {
+          const fileDrop = getRowDropZoneProps(record as EntityData);
+          const nodeDrag = getNodeDragProps(record as EntityData);
+          const nodeDrop = getNodeDropProps(record as EntityData);
+          return {
+            // Make rows draggable in tree mode for node reordering/reparenting
+            draggable: shouldUseTreeMode,
+            onDragStart: nodeDrag.onDragStart,
+            onDragEnd: nodeDrag.onDragEnd,
+            // File drop uses onDragEnter; tree drop does not need it
+            onDragEnter: fileDrop.onDragEnter,
+            // Route onDragOver, onDragLeave, onDrop to the correct handler
+            // based on what is being dragged (tree node vs file)
+            onDragOver: (e: React.DragEvent<HTMLTableRowElement>) => {
+              if (e.dataTransfer.types.includes(TREE_DRAG_TYPE)) {
+                nodeDrop.onDragOver?.(e);
+              } else {
+                fileDrop.onDragOver?.(e);
+              }
+            },
+            onDragLeave: (e: React.DragEvent<HTMLTableRowElement>) => {
+              if (e.dataTransfer.types.includes(TREE_DRAG_TYPE)) {
+                nodeDrop.onDragLeave?.(e);
+              } else {
+                fileDrop.onDragLeave?.(e);
+              }
+            },
+            onDrop: (e: React.DragEvent<HTMLTableRowElement>) => {
+              if (e.dataTransfer.types.includes(TREE_DRAG_TYPE)) {
+                nodeDrop.onDrop?.(e);
+              } else {
+                fileDrop.onDrop?.(e);
+              }
+            },
+          };
+        })(),
 
         sx: {
           ...(isSelected && {
             ...sx.rowSelected,
           }),
         },
-        className: rowClassName,
+        // Apply drag source / drop-target CSS classes via React state so that React's
+        // reconciler manages the className and never overwrites our changes.
+        className: [
+          rowClassName,
+          shouldUseTreeMode && draggingRowId === rowId ? "tree-node-dragging" : "",
+          shouldUseTreeMode && dropTarget?.id === rowId
+            ? dropTarget.position === "on"
+              ? "drop-target-overlay"
+              : `drop-indicator-${dropTarget.position}`
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
         row,
         table,
       };
     },
-    [graph, setRecordId, sx.rowSelected, tab, editingRowUtils, getRowDropZoneProps]
+    [
+      graph,
+      setRecordId,
+      sx.rowSelected,
+      tab,
+      editingRowUtils,
+      getRowDropZoneProps,
+      shouldUseTreeMode,
+      draggingRowId,
+      dropTarget,
+      getNodeDragProps,
+      getNodeDropProps,
+    ]
   );
 
   const renderEmptyRowsFallback = useCallback(
