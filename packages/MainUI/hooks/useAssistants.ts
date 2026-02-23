@@ -62,10 +62,7 @@ export const useAssistants = () => {
     return featured.length > 0 ? featured : assistants;
   }, [assistants, showOnlyFeatured]);
 
-  const hasFeaturedAssistants = useMemo(
-    () => assistants.some((a: IAssistant) => a.featured === "Y"),
-    [assistants]
-  );
+  const hasFeaturedAssistants = useMemo(() => assistants.some((a: IAssistant) => a.featured === "Y"), [assistants]);
 
   const clearFeaturedFilter = useCallback(() => {
     setShowOnlyFeatured(false);

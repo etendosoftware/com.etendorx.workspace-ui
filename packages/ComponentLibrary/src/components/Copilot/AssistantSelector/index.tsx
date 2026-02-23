@@ -105,8 +105,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({
                 ariaLabel={translations.toggleFeaturedFilter ?? "Toggle featured filter"}
                 tooltip={translations.toggleFeaturedFilter ?? "Toggle featured filter"}
                 tooltipPosition="left"
-                className={`flex-shrink-0 [&>svg]:text-[1rem] ${showOnlyFeatured ? "text-blue-500" : "text-gray-400"}`}
-              >
+                className={`flex-shrink-0 [&>svg]:text-[1rem] ${showOnlyFeatured ? "text-blue-500" : "text-gray-400"}`}>
                 <FilterIcon />
               </IconButton>
             )}
