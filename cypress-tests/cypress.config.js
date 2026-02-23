@@ -1,20 +1,20 @@
 import { defineConfig } from "cypress";
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync } from "fs";
+import { resolve } from "path";
 
 // Load .env file manually
 const loadEnv = () => {
   try {
-    const envFile = resolve(process.cwd(), '.env');
-    const envContent = readFileSync(envFile, 'utf8');
+    const envFile = resolve(process.cwd(), ".env");
+    const envContent = readFileSync(envFile, "utf8");
     const envVars = {};
 
-    envContent.split('\n').forEach(line => {
+    envContent.split("\n").forEach((line) => {
       const trimmedLine = line.trim();
-      if (trimmedLine && !trimmedLine.startsWith('#')) {
-        const [key, ...valueParts] = trimmedLine.split('=');
+      if (trimmedLine && !trimmedLine.startsWith("#")) {
+        const [key, ...valueParts] = trimmedLine.split("=");
         if (key) {
-          envVars[key] = valueParts.join('=');
+          envVars[key] = valueParts.join("=");
         }
       }
     });
@@ -26,7 +26,7 @@ const loadEnv = () => {
       }
     });
   } catch (error) {
-    console.log('No .env file found or error loading it:', error.message);
+    console.log("No .env file found or error loading it:", error.message);
   }
 };
 
