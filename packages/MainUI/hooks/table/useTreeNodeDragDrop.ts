@@ -84,6 +84,85 @@ function resolveDropPosition(e: React.DragEvent, targetRecord?: EntityData): Dro
   return "on";
 }
 
+type ResolvedDrop = {
+  newParentId: string;
+  dropIndex: number;
+  prevNodeId: string | null;
+  nextNodeId: string | null;
+  prevIndex: number;
+};
+
+/**
+ * Calculates drop coordinates (parent, sibling order) based on DropPosition in the tree hierarchy.
+ */
+function buildDropDetails(
+  draggingId: string,
+  targetId: string,
+  position: DropPosition,
+  originalParentId: string,
+  effectiveTargetParentId: string,
+  displayRecords: EntityData[]
+): ResolvedDrop {
+  const originalSiblings = displayRecords.filter((r) => String(r.parentId ?? "-1") === originalParentId);
+  const prevIndex = Math.max(
+    originalSiblings.findIndex((r) => String(r.id) === draggingId),
+    0
+  );
+
+  let newParentId: string;
+  let dropIndex: number;
+  let prevNodeId: string | null = null;
+  let nextNodeId: string | null = null;
+
+  if (position === "on") {
+    const targetChildren = displayRecords.filter((r) => String(r.parentId ?? "-1") === targetId);
+    newParentId = targetId;
+    dropIndex = targetChildren.length;
+    if (targetChildren.length > 0) {
+      prevNodeId = String(targetChildren[targetChildren.length - 1].id);
+    }
+  } else {
+    const siblings = displayRecords.filter((r) => String(r.parentId ?? "-1") === effectiveTargetParentId);
+    const targetSiblingIndex = siblings.findIndex((r) => String(r.id) === targetId);
+    newParentId = effectiveTargetParentId;
+
+    if (position === "before") {
+      dropIndex = targetSiblingIndex;
+      nextNodeId = targetId;
+      if (targetSiblingIndex > 0) {
+        prevNodeId = String(siblings[targetSiblingIndex - 1].id);
+      }
+    } else {
+      dropIndex = targetSiblingIndex + 1;
+      prevNodeId = targetId;
+      if (targetSiblingIndex < siblings.length - 1) {
+        nextNodeId = String(siblings[targetSiblingIndex + 1].id);
+      }
+    }
+  }
+
+  return { newParentId, dropIndex, prevNodeId, nextNodeId, prevIndex };
+}
+
+/**
+ * Analyzes the API response to find any explicitly thrown errors or reverted states.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: response shape is dynamic
+function processDropResponse(erpResponse: any): string | null {
+  if (erpResponse?.status === -1 || erpResponse?.message?.messageType === "error") {
+    return erpResponse?.message?.message ?? erpResponse?.error?.message ?? "Failed to move tree node";
+  }
+
+  const nodes: EntityData[] = erpResponse?.data ?? [];
+  // biome-ignore lint/suspicious/noExplicitAny: node shape is dynamic
+  const hasRevert = nodes.some((n: any) => n.revertMovement === true);
+  if (hasRevert) {
+    return erpResponse?.message?.message ?? "Node move was reverted by the server";
+  }
+
+  return null;
+}
+
 /**
  * Hook that adds drag-and-drop node reordering/reparenting support to the tree view.
  *
@@ -311,55 +390,23 @@ export const useTreeNodeDragDrop = ({
       if (!isDropAllowed(targetRecord, draggingId, position)) return;
 
       try {
-        // Original sibling index for potential server-side reversion
         const originalParentId = String(dragging.parentId ?? "-1");
-        const originalSiblings = displayRecords.filter((r) => String(r.parentId ?? "-1") === originalParentId);
-        const prevIndex = Math.max(
-          originalSiblings.findIndex((r) => String(r.id) === draggingId),
-          0
+        const effectiveTargetParentId = String(targetRecord.parentId ?? "-1");
+
+        const details = buildDropDetails(
+          draggingId,
+          targetId,
+          position,
+          originalParentId,
+          effectiveTargetParentId,
+          displayRecords
         );
-
-        let newParentId: string;
-        let dropIndex: number;
-        let prevNodeId: string | null = null;
-        let nextNodeId: string | null = null;
-
-        if (position === "on") {
-          // Reparent: make the dragging node the last child of the target
-          const targetChildren = displayRecords.filter((r) => String(r.parentId ?? "-1") === targetId);
-          newParentId = targetId;
-          dropIndex = targetChildren.length;
-          if (targetChildren.length > 0) {
-            prevNodeId = String(targetChildren[targetChildren.length - 1].id);
-          }
-        } else {
-          // Reorder: insert as a sibling before or after the target row
-          const effectiveParentId = String(targetRecord.parentId ?? "-1");
-          const siblings = displayRecords.filter((r) => String(r.parentId ?? "-1") === effectiveParentId);
-          const targetSiblingIndex = siblings.findIndex((r) => String(r.id) === targetId);
-          newParentId = effectiveParentId;
-
-          if (position === "before") {
-            dropIndex = targetSiblingIndex;
-            nextNodeId = targetId;
-            if (targetSiblingIndex > 0) {
-              prevNodeId = String(siblings[targetSiblingIndex - 1].id);
-            }
-          } else {
-            // "after"
-            dropIndex = targetSiblingIndex + 1;
-            prevNodeId = targetId;
-            if (targetSiblingIndex < siblings.length - 1) {
-              nextNodeId = String(siblings[targetSiblingIndex + 1].id);
-            }
-          }
-        }
 
         // Build the updated record with the resolved parentId
         const updatedData = {
           ...dragging,
-          parentId: newParentId,
-          prevIndex,
+          parentId: details.newParentId,
+          prevIndex: details.prevIndex,
         };
 
         const payload = {
@@ -375,17 +422,17 @@ export const useTreeNodeDragDrop = ({
           _noActiveFilter: "true",
           tabId,
           parentRecordId: String(parentTabRecordId ?? "null"),
-          dropIndex: String(dropIndex),
+          dropIndex: String(details.dropIndex),
         });
 
         if (referencedTableId) {
           queryParams.set("referencedTableId", referencedTableId);
         }
-        if (prevNodeId) {
-          queryParams.set("prevNodeId", prevNodeId);
+        if (details.prevNodeId) {
+          queryParams.set("prevNodeId", details.prevNodeId);
         }
-        if (nextNodeId) {
-          queryParams.set("nextNodeId", nextNodeId);
+        if (details.nextNodeId) {
+          queryParams.set("nextNodeId", details.nextNodeId);
         }
 
         // biome-ignore lint/suspicious/noExplicitAny: datasource client returns dynamic response
@@ -396,22 +443,10 @@ export const useTreeNodeDragDrop = ({
         })) as any;
 
         const erpResponse = (response?.data)?.response;
+        const errorMessage = processDropResponse(erpResponse);
 
-        // Handle explicit error status or error message type from the backend
-        if (erpResponse?.status === -1 || erpResponse?.message?.messageType === "error") {
-          const errorMessage =
-            erpResponse?.message?.message ?? erpResponse?.error?.message ?? "Failed to move tree node";
+        if (errorMessage) {
           onError(errorMessage);
-          return;
-        }
-
-        // Handle revertMovement flag: backend signals that the move was invalid
-        const nodes: EntityData[] = erpResponse?.data ?? [];
-        // biome-ignore lint/suspicious/noExplicitAny: node shape is dynamic
-        const hasRevert = nodes.some((n: any) => n.revertMovement === true);
-        if (hasRevert) {
-          const revertMessage = erpResponse?.message?.message ?? "Node move was reverted by the server";
-          onError(revertMessage);
           return;
         }
 
