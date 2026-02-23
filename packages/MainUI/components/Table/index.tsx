@@ -2500,6 +2500,14 @@ const DynamicTable = ({
         }
       }
 
+      // Determine drop target overlay styling for drag and drop interactions
+      let dropIndicatorClass = "";
+      if (shouldUseTreeMode && dropTarget?.id === rowId) {
+        dropIndicatorClass = dropTarget.position === "on" 
+          ? "drop-target-overlay" 
+          : `drop-indicator-${dropTarget.position}`;
+      }
+
       return {
         onClick: (event) => {
           const target = event.target as HTMLElement;
@@ -2638,11 +2646,7 @@ const DynamicTable = ({
         className: [
           rowClassName,
           shouldUseTreeMode && draggingRowId === rowId ? "tree-node-dragging" : "",
-          shouldUseTreeMode && dropTarget?.id === rowId
-            ? dropTarget.position === "on"
-              ? "drop-target-overlay"
-              : `drop-indicator-${dropTarget.position}`
-            : "",
+          dropIndicatorClass,
         ]
           .filter(Boolean)
           .join(" "),

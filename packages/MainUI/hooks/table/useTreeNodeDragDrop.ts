@@ -395,8 +395,7 @@ export const useTreeNodeDragDrop = ({
           body: JSON.stringify(payload),
         })) as any;
 
-        // biome-ignore lint/suspicious/noExplicitAny: response shape depends on ERP backend
-        const erpResponse = (response?.data as any)?.response;
+        const erpResponse = (response?.data)?.response;
 
         // Handle explicit error status or error message type from the backend
         if (erpResponse?.status === -1 || erpResponse?.message?.messageType === "error") {
