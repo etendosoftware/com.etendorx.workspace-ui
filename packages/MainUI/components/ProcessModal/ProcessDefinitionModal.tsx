@@ -67,7 +67,6 @@ import ProcessResultModal from "./ProcessResultModal";
 import type { ProcessDefinitionModalContentProps, RecordValues, ProcessDefinitionModalProps } from "./types";
 import type { Tab, ProcessParameter, EntityData, Field } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
-import type { SourceObject } from "@/utils/processes/manual/types";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
 import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
@@ -938,6 +937,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
 
         const mergedValues = getMergedProcessValues();
+
+        // Build complete context base payload to be placed at the root of the request
+        const _basePayload = tab ? buildProcessPayload(record || {}, tab, {}, {}) : {};
+
         const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
         const skipParamsLevel = processDefConfig?.skipParamsLevel;
 
@@ -951,6 +954,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           windowId: tab?.window || "",
           ...buildProcessSpecificFields(processId),
           ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
+          ..._basePayload,
         };
 
         await executeJavaProcess(payload, "process");
@@ -992,12 +996,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
         const params = getMergedProcessValues({ ...recordValues, ...extraKey });
 
+        // Build complete context base payload to be placed at the root of the request
+        const _basePayload = tab ? buildProcessPayload(record || {}, tab, {}, {}) : {};
+
         const payload = {
           recordIds: getRecordIds(),
           _buttonValue: actionValue || "DONE",
           _entityName: tab?.entityName || "",
           ...(skipParamsLevel ? { ...params, ...buttonParams } : { _params: { ...params, ...buttonParams } }),
           ...buildProcessSpecificFields(processId),
+          ..._basePayload,
         };
 
         await executeJavaProcess(payload, "direct Java process");
