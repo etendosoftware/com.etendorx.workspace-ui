@@ -660,10 +660,8 @@ const WindowReferenceGrid = ({
 
     const finalCriteria = criteria.length > 0 ? criteria : baseCriteria;
 
-    // Ensure a valid criteria contract by using buildBaseCriteria as a dummy fallback
-    options.criteria = finalCriteria as unknown as Criteria[];
-
     if (finalCriteria.length > 0) {
+      options.criteria = finalCriteria as unknown as Criteria[];
       options.orderBy = "documentNo desc";
     }
 

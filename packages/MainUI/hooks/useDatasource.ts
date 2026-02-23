@@ -38,7 +38,7 @@ const loadData = async (
     referencedTableId?: string;
     parentId?: string | number;
   },
-  isFiltering: boolean = false
+  isFiltering = false
 ) => {
   const safePageSize = pageSize ?? 1000;
   const startRow = (page - 1) * pageSize;
@@ -204,7 +204,7 @@ export function useDatasource({
     const finalParams = {
       ...stableParams,
       ...idParams,
-      criteria: allCriteria.length === 1 ? allCriteria[0] : allCriteria,
+      ...(allCriteria.length > 0 ? { criteria: allCriteria.length === 1 ? allCriteria[0] : allCriteria } : {}),
       isImplicitFilterApplied,
       noActiveFilter: true,
     };

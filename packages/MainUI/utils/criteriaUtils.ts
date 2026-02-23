@@ -31,15 +31,14 @@ export interface CriteriaItem {
 
 /**
  * Builds the base criteria for a datasource request.
- * Handles the logic for Parent-Child relationships and the "dummy" criteria fallback
- * when no parent context is present (ensuring a valid request contract).
+ * Handles the logic for Parent-Child relationships.
  */
 export const buildBaseCriteria = ({ tab, parentTab, parentId }: BaseCriteriaOptions): [] | [CriteriaItem] => {
-  const getParentFieldName = () => {
-    if (!parentTab) {
-      return "_dummy";
-    }
+  if (!parentTab) {
+    return [];
+  }
 
+  const getParentFieldName = () => {
     if (tab.fields && tab.parentColumns && tab.parentColumns.length > 0) {
       return tab.parentColumns[0] || "id";
     }
@@ -52,15 +51,14 @@ export const buildBaseCriteria = ({ tab, parentTab, parentId }: BaseCriteriaOpti
           })
         : undefined;
 
-    return matchingField || (tab.parentColumns && tab.parentColumns[0]) || "id";
+    return matchingField || tab.parentColumns?.[0] || "id";
   };
 
   const fieldName = getParentFieldName();
-  const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
   const operator = "equals";
 
-  if (value && value !== "" && value !== undefined) {
-    return [{ fieldName, value: value as EntityValue, operator }];
+  if (parentId && parentId !== "") {
+    return [{ fieldName, value: parentId as EntityValue, operator }];
   }
 
   return [];
