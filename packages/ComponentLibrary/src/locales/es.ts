@@ -376,6 +376,7 @@ const es = {
       profilesTitle: "Perfiles",
       learnMoreText: "Conoce más sobre Copilot →",
       filterPlaceholder: "Filtrar perfiles...",
+      toggleFeaturedFilter: "Mostrar solo perfiles destacados",
     },
     messageInput: {
       placeholder: "Conversa con Copilot...",

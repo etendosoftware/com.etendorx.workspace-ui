@@ -25,6 +25,9 @@ export interface AssistantSelectorProps {
   isExpanded?: boolean;
   showDescription?: boolean;
   isLoading?: boolean;
+  showOnlyFeatured?: boolean;
+  hasFeaturedAssistants?: boolean;
+  onToggleFeaturedFilter?: () => void;
   translations: {
     errorInvalidData: string;
     errorNoAssistantsAvailable: string;
@@ -33,6 +36,7 @@ export interface AssistantSelectorProps {
     profilesTitle: string;
     learnMoreText: string;
     filterPlaceholder: string;
+    toggleFeaturedFilter?: string;
   };
 }
 
@@ -64,6 +68,9 @@ export interface ChatInterfaceProps {
   onSelectConversation?: (conversationId: string) => void;
   onLoadConversations?: () => void;
   conversationsLoading?: boolean;
+  showOnlyFeatured?: boolean;
+  hasFeaturedAssistants?: boolean;
+  onToggleFeaturedFilter?: () => void;
   translations: {
     selectedRegisters: string;
     assistantSelector: AssistantSelectorProps["translations"];
@@ -75,45 +82,18 @@ export interface ChatInterfaceProps {
   };
 }
 
-export interface CopilotPopupProps {
+export interface CopilotPopupProps extends Omit<ChatInterfaceProps, "translations"> {
   open: boolean;
   onClose: () => void;
-  assistants: IAssistant[];
-  labels: ILabels;
-  isExpanded?: boolean;
   onToggleExpanded?: () => void;
-  messages: IMessage[];
-  selectedAssistant: IAssistant | null;
-  isLoading: boolean;
-  onSelectAssistant: (assistant: IAssistant | null) => void;
-  onSendMessage: (message: string, files?: File[]) => void;
-  onResetConversation: () => void;
-  showDescription?: boolean;
-  isLoadingAssistants?: boolean;
   hasContextPending?: boolean;
-  contextItems?: ContextItem[];
-  onRemoveContext?: (id: string) => void;
-  files?: File[];
-  onFileSelect?: (files: File[]) => void;
-  onRemoveFile?: (index: number) => void;
-  conversations?: import("@workspaceui/api-client/src/api/copilot").IConversationSummary[];
-  onSelectConversation?: (conversationId: string) => void;
-  onLoadConversations?: () => void;
-  conversationsLoading?: boolean;
-  translations: {
+  translations: ChatInterfaceProps["translations"] & {
     copilotProfile: string;
     backToSelection: string;
     minimize: string;
     maximize: string;
     close: string;
     contextText: string;
-    selectedRegisters: string;
-    assistantSelector: AssistantSelectorProps["translations"];
-    messageInput: MessageInputProps["translations"];
-    messageList: MessageListProps["translations"];
-    conversationList?: ConversationListProps["translations"];
-    conversationsButton?: string;
-    hideConversationsButton?: string;
   };
 }
 
