@@ -594,7 +594,10 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
                                     type="number"
                                     className="w-full text-center border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-sm p-1 bg-white border"
                                     value={Number(line[`box${boxNum}`] || 0)}
-                                    onChange={(e) => handleBoxQtyChange(idx, boxNum, Number(e.target.value))}
+                                    min={0}
+                                    onChange={(e) =>
+                                      handleBoxQtyChange(idx, boxNum, Math.max(0, Number(e.target.value)))
+                                    }
                                   />
                                 </td>
                               );

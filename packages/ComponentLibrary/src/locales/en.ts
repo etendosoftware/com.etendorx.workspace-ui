@@ -606,7 +606,7 @@ const en = {
     status: "Status",
     noLines: "No lines to display",
     calculateWeight: "Calculate Weight",
-    generatePack: "Generate Pack",
+    generatePack: "Pack",
     validationError: "Error while processing",
     wrongBarcode: "Wrong Barcode",
     pendingToPack: "All items must be fully packed before generating. Please complete the pending quantities.",

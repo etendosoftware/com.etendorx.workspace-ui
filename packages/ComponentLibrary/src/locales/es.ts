@@ -605,7 +605,7 @@ const es = {
     status: "Estado",
     noLines: "No hay líneas para mostrar",
     calculateWeight: "Calcular Peso",
-    generatePack: "Generar Empaque",
+    generatePack: "Empacar",
     validationError: "Error al procesar",
     wrongBarcode: "Código de barras incorrecto",
     pendingToPack:
