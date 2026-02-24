@@ -139,6 +139,16 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
 
       // 1. Try standard resolution (Exact + Fuzzy)
       const val = resolveProperty(target, prop);
+      
+      // If the field has an empty string as its identifier, it should be treated as empty
+      // even if there is an ID value present (simulating Classic Etendo UI behavior for cleared foreign keys)
+      if (typeof val === 'string' && val !== '') {
+         const identifierVal = resolveProperty(target, `${prop}$_identifier`);
+         if (identifierVal === '') {
+             return '';
+         }
+      }
+
       if (val !== undefined && val !== null) {
         return val;
       }

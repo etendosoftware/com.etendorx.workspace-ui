@@ -112,12 +112,6 @@ const getCachedErpData = unstable_cache(
  * @param method - HTTP method
  * @returns true if this is a mutation route that should not be cached
  */
-/**
- * Determines if a route should bypass caching (mutations or non-GET requests)
- * @param slug - The API slug path
- * @param method - HTTP method
- * @returns true if this is a mutation route that should not be cached
- */
 function isMutationRoute(slug: string, method: string): boolean {
   return (
     slug.includes(SLUGS_METHODS.CREATE) ||
@@ -127,11 +121,14 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.startsWith(SLUGS_CATEGORIES.NOTES) || // Notes servlet needs session cookies
     slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || // Attachments servlet needs session cookies and multipart/form-data
     slug.startsWith(SLUGS_CATEGORIES.LEGACY) || // Legacy servlets need session cookies
+    slug.startsWith("das/") ||
+    slug.startsWith("org.openbravo.client.kernel") ||
     // Static resources and direct handling
     slug.startsWith("web/") ||
     slug.startsWith("ad_forms/") ||
     slug.startsWith("org.openbravo") ||
     slug.startsWith("etendo/") ||
+    slug.startsWith("info/") ||
     method !== "GET"
   );
 }
@@ -233,6 +230,7 @@ async function handleMutationRequest(
     method,
     headers,
     body: requestBody,
+    redirect: "manual", // Prevent automatic redirect following so cookies are preserved
   };
 
   // Add duplex option only for ReadableStream bodies
@@ -242,7 +240,32 @@ async function handleMutationRequest(
     fetchOptions.duplex = "half";
   }
 
-  const response = await fetch(erpUrl, fetchOptions);
+  let response = await fetch(erpUrl, fetchOptions);
+
+  // Manually follow HTTP redirects to preserve the `Cookie` header
+  // Node's native fetch drops request cookies across redirects.
+  if (response.status >= 300 && response.status < 400 && response.headers.has("location")) {
+    const location = response.headers.get("location")!;
+    const redirectUrl = location.startsWith("http") ? location : new URL(location, erpUrl).toString();
+
+    // 301, 302, 303 conventionally change POST to GET. 307 & 308 preserve the method.
+    const isPostToGet = (response.status === 301 || response.status === 302 || response.status === 303) && method !== "GET";
+    const nextMethod = isPostToGet ? "GET" : method;
+    
+    const nextHeaders = { ...headers };
+    if (isPostToGet) {
+      delete nextHeaders["Content-Type"];
+    }
+
+    const nextFetchOptions: RequestInit = {
+      method: nextMethod,
+      headers: nextHeaders,
+      body: isPostToGet ? undefined : requestBody,
+      redirect: "manual",
+    };
+
+    response = await fetch(redirectUrl, nextFetchOptions);
+  }
 
   if (!response.ok) {
     const defaultResponseStatus = erpUrl.includes("copilot") ? 404 : response.status;
@@ -278,8 +301,6 @@ async function handleMutationRequest(
     responseText.trim().toLowerCase().startsWith("<html") ||
     responseText.trim().toLowerCase().startsWith("<!doctype html")
   ) {
-    // Rewrite HTML to inject <base> tag pointing to ETENDO_CLASSIC_HOST
-    // This allows relative paths on the client to resolve directly to the backend
     // Rewrite HTML to inject <base> tag pointing to ETENDO_CLASSIC_HOST
     // This allows relative paths on the client to resolve directly to the backend
     const rewrittenHtml = rewriteHtmlResourceUrls(
@@ -364,6 +385,8 @@ function buildErpUrl(slug: string, requestUrl: string): string {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.SWS)) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
+  } else if (slug.startsWith("das/") || slug.startsWith("org.openbravo.client.kernel")) {
+    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.COPILOT)) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.OPENBRAVO_KERNEL)) {
@@ -373,7 +396,8 @@ function buildErpUrl(slug: string, requestUrl: string): string {
     slug.startsWith("web/") ||
     slug.startsWith("ad_forms/") ||
     slug.startsWith("org.openbravo") ||
-    slug.startsWith("etendo/")
+    slug.startsWith("etendo/") ||
+    slug.startsWith("info/")
   ) {
     // Direct mapping for static resources and other classic paths
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
