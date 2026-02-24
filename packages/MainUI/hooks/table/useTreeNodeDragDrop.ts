@@ -442,7 +442,7 @@ export const useTreeNodeDragDrop = ({
           body: JSON.stringify(payload),
         })) as any;
 
-        const erpResponse = (response?.data)?.response;
+        const erpResponse = response?.data?.response;
         const errorMessage = processDropResponse(erpResponse);
 
         if (errorMessage) {

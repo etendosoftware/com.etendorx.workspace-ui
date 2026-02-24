@@ -2503,9 +2503,8 @@ const DynamicTable = ({
       // Determine drop target overlay styling for drag and drop interactions
       let dropIndicatorClass = "";
       if (shouldUseTreeMode && dropTarget?.id === rowId) {
-        dropIndicatorClass = dropTarget.position === "on" 
-          ? "drop-target-overlay" 
-          : `drop-indicator-${dropTarget.position}`;
+        dropIndicatorClass =
+          dropTarget.position === "on" ? "drop-target-overlay" : `drop-indicator-${dropTarget.position}`;
       }
 
       return {
