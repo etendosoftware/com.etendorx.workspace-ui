@@ -9,20 +9,29 @@
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
  * implied. See the License for the specific language governing rights
  * and limitations under the License.
- * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All portions are Copyright © 2021–2026 FUTIT SERVICES, S.L
  * All Rights Reserved.
  * Contributor(s): Futit Services S.L.
  *************************************************************************
  */
 
-export * from "./api/metadata";
-export * from "./api/client";
-export * from "./api/copilot/index";
-export * from "./api/types";
-export * from "./api/linkedItems";
-export * from "./api/getPreferences";
+import { Metadata } from "./metadata";
 
-// Export column filter utilities and hooks
-export * from "./utils/column-filter-utils";
-export * from "./hooks/useColumnFilters";
-export * from "./hooks/useTableSearch";
+export type PreferencesMap = Record<string, string>;
+
+/**
+ * Fetches all resolved preferences for the current user session from the backend.
+ * This replicates the classic OB.PropertyStore behavior, exposing preferences
+ * that are used in display logic expressions.
+ *
+ * @returns A map of preference key -> value pairs
+ */
+export const getPreferences = async (): Promise<PreferencesMap> => {
+  const response = await Metadata.client.request("meta/preferences");
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch preferences: HTTP ${response.status}`);
+  }
+
+  return response.data?.preferences ?? {};
+};
