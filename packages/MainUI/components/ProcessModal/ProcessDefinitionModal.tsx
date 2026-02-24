@@ -1294,8 +1294,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             }
           );
 
-          console.log("result: ", result);
-
           if (result) {
             // Handle early error returns from onLoad script (e.g., validation)
             if (result.error) {
@@ -1339,9 +1337,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             setParameters((prev) => {
               const newParameters = { ...prev };
 
+              // Track names injected by _dynamicParameters so the filter loop below skips them
+              const dynamicParamNames = new Set<string>();
+
               // If backend returns _dynamicParameters, structurally inject them into the parameters object so UI components can render them
               if (result._dynamicParameters && Array.isArray(result._dynamicParameters)) {
                 for (const dynamicParam of result._dynamicParameters) {
+                  dynamicParamNames.add(dynamicParam.name);
                   newParameters[dynamicParam.name] = {
                     id: dynamicParam.id || dynamicParam.name,
                     name: dynamicParam.name,
@@ -1356,6 +1358,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
               for (const [parameterName, values] of Object.entries(result)) {
                 if (["_gridSelection", "autoSelectConfig", "_dynamicParameters"].includes(parameterName)) continue;
+
+                if (dynamicParamNames.has(parameterName)) {
+                  form.setValue(parameterName, values);
+                  continue;
+                }
 
                 if (!newParameters[parameterName]) continue;
 
