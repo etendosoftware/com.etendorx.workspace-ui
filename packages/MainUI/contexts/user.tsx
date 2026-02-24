@@ -24,6 +24,8 @@ import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { login as doLogin, logout as doLogout } from "@workspaceui/api-client/src/api/authentication";
 import { changeProfile as doChangeProfile } from "@workspaceui/api-client/src/api/changeProfile";
 import { getSession } from "@workspaceui/api-client/src/api/getSession";
+import { getPreferences } from "@workspaceui/api-client/src/api/getPreferences";
+import { savePreferences, clearPreferences } from "@/utils/propertyStore";
 import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
 import { HTTP_CODES } from "@workspaceui/api-client/src/api/constants";
 import type { DefaultConfiguration, IUserContext, Language, LanguageOption } from "./types";
@@ -140,6 +142,15 @@ export default function UserProvider(props: React.PropsWithChildren) {
       setCurrentOrganization(sessionResponse.currentOrganization);
       setCurrentWarehouse(sessionResponse.currentWarehouse);
       setRoles(sessionResponse.roles);
+
+      // Load all preferences from backend and store in localStorage
+      // These are used by display logic expressions (OB.PropertyStore.get)
+      try {
+        const prefs = await getPreferences();
+        savePreferences(prefs);
+      } catch (prefError) {
+        logger.warn("Failed to load preferences:", prefError);
+      }
     },
     [language, setLanguage, updateProfile]
   );
@@ -160,6 +171,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     localStorage.removeItem("currentWarehouse");
     localStorage.removeItem("currentLanguage");
     localStorage.removeItem("language");
+    clearPreferences();
     setLanguage(null);
   }, [INITIAL_PROFILE, setToken, setLanguage]);
 

@@ -15,7 +15,8 @@
  *************************************************************************
  */
 
-import { Field } from "@workspaceui/api-client/src/api/types";
+import type { Field } from "@workspaceui/api-client/src/api/types";
+import { getStoredPreferences } from "./propertyStore";
 
 interface SmartContextOptions {
   values?: Record<string, unknown>; // Primary values (current record, form values)
@@ -131,6 +132,17 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
     return looseMatchFound ? looseMatchValue : undefined;
   };
 
+  const getFromPrefs = (key: string) => {
+    const prefs = getStoredPreferences();
+    if (prefs[key] !== undefined) return normalize(prefs[key]);
+
+    const lowerKey = key.toLowerCase();
+    for (const [k, v] of Object.entries(prefs)) {
+      if (k.toLowerCase() === lowerKey) return normalize(v);
+    }
+    return undefined;
+  };
+
   return new Proxy(evalContext, {
     get(target, prop, receiver) {
       if (typeof prop !== "string") {
@@ -144,21 +156,19 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
       }
 
       // 2. Handle @property@ access pattern (from Hotfix ETP-3261)
-      // This handles cases where raw @field@ syntax is passed directly to the context
       if (prop.startsWith("@") && prop.endsWith("@")) {
-        const cleanProp = prop.slice(1, -1);
-        const cleanVal = resolveProperty(target, cleanProp);
-        if (cleanVal !== undefined && cleanVal !== null) {
-          return cleanVal;
-        }
+        const cleanVal = resolveProperty(target, prop.slice(1, -1));
+        if (cleanVal !== undefined && cleanVal !== null) return cleanVal;
       }
 
-      // 3. Fallback to default value
-      if (defaultValue !== undefined) {
-        return defaultValue;
+      // 3. Handle # and $ prefixes for Preferences/Session variables (ETP-3261)
+      if (prop.startsWith("#") || prop.startsWith("$")) {
+        const valFromPrefs = getFromPrefs(prop.slice(1)) ?? getFromPrefs(prop);
+        if (valFromPrefs !== undefined) return valFromPrefs;
       }
 
-      return val;
+      // 4. Fallback to default value
+      return defaultValue !== undefined ? defaultValue : val;
     },
     has(target, prop) {
       if (typeof prop !== "string") return Reflect.has(target, prop);
