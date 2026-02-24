@@ -507,6 +507,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     enabled: open && !loading && !initializationLoading,
     onGridUpdate: handleGridUpdate,
     dependencies: [rulesRegistered],
+    selectedRecords,
   });
 
   // NOTE: globalCalloutManager.isCalloutRunning() not working correctly
