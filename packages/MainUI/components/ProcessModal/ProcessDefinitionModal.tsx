@@ -1079,7 +1079,24 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             stringFunctionPayload
           );
 
-          const responseMessage = stringFnResult.responseActions[0].showMsgInProcessView;
+          // Handle different response formats from onProcess scripts
+          // callAction may wrap the response in a `data` property
+          const result = stringFnResult?.data ?? stringFnResult;
+          let responseMessage: { msgType?: string; msgText?: string; severity?: string; text?: string };
+
+          if (result?.responseActions?.[0]?.showMsgInProcessView) {
+            // Standard Etendo process response format
+            responseMessage = result.responseActions[0].showMsgInProcessView;
+          } else if (result?.severity) {
+            // Direct response format from custom scripts: { severity, text }
+            responseMessage = { msgType: result.severity, msgText: result.text };
+          } else if (result?.error) {
+            // Error response format
+            responseMessage = { msgType: "error", msgText: result.error.msgText || result.error };
+          } else {
+            responseMessage = { msgType: "success", msgText: t("process.completedSuccessfully") };
+          }
+
           const success = responseMessage.msgType === "success";
           setResult({ success, data: responseMessage, error: success ? undefined : responseMessage.msgText });
           if (success) {
