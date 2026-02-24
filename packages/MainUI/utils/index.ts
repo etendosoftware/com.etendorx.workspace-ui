@@ -214,6 +214,12 @@ export const parseDynamicExpression = (expr: string) => {
   // Transform legacy Etendo/OB '!' comparison to '!=' (e.g., @Col@!'Y' -> ...!='Y')
   expr0 = expr0.replace(/!'/g, "!='");
 
+  // Transform space-surrounded '!' to '!=' (e.g. @Col@ ! @Col2@)
+  expr0 = expr0.replace(/\s!\s/g, " != ");
+
+  // Transform '!undefined' to '!= undefined' covers common case @Col@!undefined
+  expr0 = expr0.replace(/!undefined/g, "!= undefined");
+
   // Transform Etendo comparison operators to JavaScript
   // Convert single = to == for comparison (avoiding conflicts with assignment)
   const expr1 = expr0.replace(/([^=!<>])=([^=])/g, "$1==$2");

@@ -9,10 +9,18 @@ interface ProcessResultModalProps {
   success: boolean;
   message?: string | null;
   title?: string;
+  isHtml?: boolean;
   onClose: () => void;
 }
 
-export default function ProcessResultModal({ open, success, message, title, onClose }: ProcessResultModalProps) {
+export default function ProcessResultModal({
+  open,
+  success,
+  message,
+  title,
+  isHtml,
+  onClose,
+}: ProcessResultModalProps) {
   const { t } = useTranslation();
 
   if (!open) return null;
@@ -25,7 +33,9 @@ export default function ProcessResultModal({ open, success, message, title, onCl
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60] p-4">
         <div
-          className="rounded-2xl p-6 shadow-xl max-w-sm w-full relative"
+          className={`rounded-2xl p-6 shadow-xl relative max-h-[90vh] overflow-auto ${
+            isHtml ? "w-auto max-w-[95vw]" : "w-full max-w-sm"
+          }`}
           style={{ background: "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)" }}>
           <button
             type="button"
@@ -38,13 +48,21 @@ export default function ProcessResultModal({ open, success, message, title, onCl
             <div className="flex items-center justify-center">
               <CheckIcon className="w-6 h-6 fill-(--color-success-main)" data-testid="SuccessCheckIcon" />
             </div>
-            <div>
+            <div className="w-full">
               <h4 className="font-medium text-xl text-center text-(--color-success-main)">{displayTitle}</h4>
-              {displayText && displayText !== displayTitle && (
-                <p className="text-sm text-center text-(--color-transparent-neutral-80) whitespace-pre-line">
-                  {displayText}
-                </p>
-              )}
+              {displayText &&
+                displayText !== displayTitle &&
+                (isHtml ? (
+                  <div
+                    className="w-full text-sm mt-4"
+                    dangerouslySetInnerHTML={{ __html: String(message) }}
+                    data-testid="HtmlSuccessContent"
+                  />
+                ) : (
+                  <p className="text-sm text-center text-(--color-transparent-neutral-80) whitespace-pre-line">
+                    {displayText}
+                  </p>
+                ))}
             </div>
             <Button
               variant="filled"

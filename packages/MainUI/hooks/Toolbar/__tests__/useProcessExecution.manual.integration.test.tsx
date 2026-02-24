@@ -219,7 +219,7 @@ describe("useProcessExecution manual processes integration", () => {
     render(withUser(userCtx, <ErrorHarness />));
     fireEvent.click(screen.getByRole("button", { name: /run/i }));
     const errEl = await screen.findByTestId("error");
-    await waitFor(() => expect(errEl.textContent).toMatch(/Tipo de proceso no soportado/i));
+    await waitFor(() => expect(errEl.textContent).toMatch(/Process execution failed/i));
   });
 
   it("emits debug logs when DEBUG_MANUAL_PROCESSES is enabled", async () => {

@@ -43,6 +43,9 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
   hasContextPending = false,
   contextItems = [],
   onRemoveContext,
+  files,
+  onFileSelect,
+  onRemoveFile,
   conversations = [],
   onSelectConversation,
   onLoadConversations,
@@ -146,6 +149,9 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
             isLoadingAssistants={isLoadingAssistants}
             contextItems={contextItems}
             onRemoveContext={onRemoveContext}
+            files={files}
+            onFileSelect={onFileSelect}
+            onRemoveFile={onRemoveFile}
             conversations={conversations}
             onSelectConversation={onSelectConversation}
             onLoadConversations={onLoadConversations}

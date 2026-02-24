@@ -130,5 +130,23 @@
     "command": "BUTTONValidating800106",
     "inpkeyColumnId": "M_Production_ID",
     "keyColumnName": "M_Production_ID"
+  },
+  "A0417A0E9256CA28E040007F01003C18": {
+    "url": "/org.openbravo.advpaymentmngt.ad_actionbutton/Reconciliation.html",
+    "command": "DEFAULT",
+    "inpkeyColumnId": "Fin_Financial_Account_ID",
+    "keyColumnName": "Fin_Financial_Account_ID",
+    "additionalParameters": {
+      "inpfinFinancialAccountId": "$recordId"
+    }
+  },
+  "E5569BAF22C644EF9B5D6846515883F9": {
+    "url": "/FinancialAccount/Transaction_Edition.html",
+    "command": "BUTTONEM_Aprm_ProcessedF68F2890E96D4D85A1DEF0274D105BCE",
+    "inpkeyColumnId": "Fin_Finacc_Transaction_ID",
+    "keyColumnName": "Fin_Finacc_Transaction_ID",
+    "additionalParameters": {
+      "inpprocessed": "N"
+    }
   }
 }

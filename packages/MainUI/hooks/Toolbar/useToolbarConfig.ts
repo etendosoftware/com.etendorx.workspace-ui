@@ -368,7 +368,7 @@ export const useToolbarConfig = ({
         onFilter?.();
       },
       SAVE: () => {
-        onSave?.(true);
+        onSave?.({ showModal: true });
       },
       DELETE: () => {
         handleDeleteRecord();

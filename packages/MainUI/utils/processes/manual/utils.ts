@@ -37,6 +37,7 @@ import type {
   KeyMapConfig,
   NestedObject,
   PrimitiveValue,
+  ProcessActionData,
   SelectionItem,
   SourceObject,
   TargetObject,
@@ -78,9 +79,14 @@ export const getParams = ({
   token,
   isPostedProcess,
 }: GetParamsProps): URLSearchParams => {
-  const processActionData = data[currentButtonId as keyof typeof data];
-  const commandAction = processActionData.command;
+  const processActionData = (data as Record<string, ProcessActionData>)[currentButtonId];
 
+  if (!processActionData) {
+    console.warn(`[ManualProcess] No configuration found for button ID: ${currentButtonId}`);
+    return new URLSearchParams();
+  }
+
+  const commandAction = processActionData.command;
   const docStatus = getDocumentStatus(record);
   const isProcessing = getProcessing(record);
   const adClientId = getAdClientId(record);
@@ -106,6 +112,21 @@ export const getParams = ({
   params.append(REQUIRED_PARAMS_KEYS.inpdocstatus, docStatus);
   params.append(REQUIRED_PARAMS_KEYS.inpprocessing, isProcessing);
   params.append(REQUIRED_PARAMS_KEYS.inpposted, isPostedRecord);
+
+  if (processActionData.additionalParameters) {
+    const additionalParams = processActionData.additionalParameters;
+    const placeholders: Record<string, string> = {
+      $recordId: recordId,
+      $windowId: windowId,
+      $tabId: tabId,
+      $tableId: tableId,
+    };
+
+    for (const [key, value] of Object.entries(additionalParams)) {
+      const resolvedValue = placeholders[value] ?? value;
+      params.append(key, resolvedValue);
+    }
+  }
 
   if (isPostedProcess) {
     params.append(REQUIRED_PARAMS_KEYS.inpdocaction, DEFAULT_REQUIRED_PARAMS_KEYS.inpodcStatusPosted);

@@ -15,10 +15,11 @@
  *************************************************************************
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useMemo } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { getProcessCallouts } from "./processCallouts";
+import { getPayScriptRules, genericPayScriptCallout } from "./genericPayScriptCallout";
 import type { GridSelectionStructure as ModalGridSelectionStructure } from "../ProcessDefinitionModal";
 import { logger } from "@/utils/logger";
 import { getDbColumnName, mapFormValuesToContext, mapUpdatesToFormFields } from "../utils/processParameterMapping";
@@ -43,6 +44,7 @@ interface UseProcessCalloutsOptions {
   parameters?: Record<string, ProcessParameter>;
   enabled?: boolean;
   onGridUpdate?: (gridName: string, data: unknown) => void;
+  dependencies?: unknown[];
 }
 
 /**
@@ -56,8 +58,30 @@ export function useProcessCallouts({
   parameters,
   enabled = true,
   onGridUpdate,
+  dependencies = [],
 }: UseProcessCalloutsOptions) {
-  const callouts = getProcessCallouts(processId);
+  const callouts = useMemo(() => {
+    const staticCallouts = getProcessCallouts(processId);
+    if (staticCallouts.length > 0) return staticCallouts;
+
+    if (parameters && getPayScriptRules(processId)) {
+      const dynamicCallouts = Object.values(parameters)
+        .filter((p) => p.active !== "N")
+        .map((p) => ({
+          triggerField: p.dBColumnName || p.name,
+          execute: genericPayScriptCallout,
+        }));
+
+      // Auto-add grid trigger
+      dynamicCallouts.push({
+        triggerField: "_internalGridSelectionTrigger",
+        execute: genericPayScriptCallout,
+      });
+
+      return dynamicCallouts;
+    }
+    return [];
+  }, [processId, parameters, ...dependencies]);
   const previousValuesRef = useRef<Record<string, unknown>>({});
   const previousGridSelectionRef = useRef<string>("");
   const isExecutingRef = useRef(false);
@@ -128,6 +152,17 @@ export function useProcessCallouts({
     },
     [formValues, form, gridSelection]
   );
+
+  /**
+   * Reset previous values when callouts structure changes (e.g. dynamic rules loaded)
+   * This forces the main effect to detect changes and execute the new rules against current data
+   */
+  useEffect(() => {
+    if (callouts.length > 0 && !isInitialMountRef.current) {
+      logger.debug("[useProcessCallouts] Callouts updated, forcing execution on next effect cycle");
+      previousValuesRef.current = {};
+    }
+  }, [callouts]);
 
   /**
    * Check for field changes and trigger callouts

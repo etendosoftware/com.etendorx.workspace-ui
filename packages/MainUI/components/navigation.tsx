@@ -82,7 +82,7 @@ const Navigation: React.FC = () => {
   const { isOpen: aboutModalOpen, openModal: openAboutModal, closeModal: closeAboutModal } = useAboutModalOpen();
   const { aboutUrl } = useAboutModal();
 
-  const { assistants, getAssistants, invalidateCache, hasAssistants, isLoading: isLoadingAssistants } = useAssistants();
+  const { assistants, getAssistants, invalidateCache, isLoading: isLoadingAssistants } = useAssistants();
   const { labels, getLabels } = useCopilotLabels();
 
   const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,23 +91,17 @@ const Navigation: React.FC = () => {
 
   const handleCopilotOpen = useCallback(() => {
     setCopilotOpen(true);
-
-    if (!hasAssistants) {
-      getAssistants();
-    }
-  }, [hasAssistants, getAssistants]);
+    getAssistants();
+  }, [getAssistants]);
 
   const handleCopilotOpenWithContext = useCallback(
     (contextString: string, contextItems: ContextItem[]) => {
       setPendingContextString(contextString);
       setPendingContextItems(contextItems);
       setCopilotOpen(true);
-
-      if (!hasAssistants) {
-        getAssistants();
-      }
+      getAssistants();
     },
-    [hasAssistants, getAssistants]
+    [getAssistants]
   );
 
   const handleCopilotClose = useCallback(() => {
@@ -134,9 +128,12 @@ const Navigation: React.FC = () => {
     messages,
     selectedAssistant,
     isLoading,
+    files,
     handleSendMessage,
     handleSelectAssistant,
     handleResetConversation,
+    handleFileUpload,
+    handleRemoveFile,
     conversations,
     conversationsLoading,
     loadConversations,
@@ -231,12 +228,14 @@ const Navigation: React.FC = () => {
           data-testid="Waterfall__120cc9"
         />
         <ConfigurationSection data-testid="ConfigurationSection__120cc9" />
-        <CopilotButton
-          onClick={handleCopilotOpen}
-          disabled={!isCopilotInstalled}
-          tooltip="Copilot"
-          data-testid="CopilotButton__120cc9"
-        />
+        {isCopilotInstalled && (
+          <CopilotButton
+            onClick={handleCopilotOpen}
+            disabled={!isCopilotInstalled}
+            tooltip="Copilot"
+            data-testid="CopilotButton__120cc9"
+          />
+        )}
         <AboutButton onClick={openAboutModal} tooltip={t("common.about")} data-testid="AboutButton__120cc9" />
         <AboutModal
           aboutUrl={aboutUrl}
@@ -313,6 +312,9 @@ const Navigation: React.FC = () => {
         hasContextPending={!!pendingContextString}
         contextItems={pendingContextItems}
         onRemoveContext={handleRemoveContext}
+        files={files || []}
+        onFileSelect={handleFileUpload}
+        onRemoveFile={handleRemoveFile}
         conversations={conversations}
         onSelectConversation={handleSelectConversation}
         onLoadConversations={loadConversations}
@@ -341,6 +343,7 @@ const Navigation: React.FC = () => {
             contextRecords: t("copilot.messageList.contextRecords"),
             welcomeMessage: t("copilot.messageList.welcomeMessage"),
             typing: t("copilot.messageList.typing"),
+            processing: t("copilot.messageList.processing"),
           },
           conversationList: {
             newConversation: t("copilot.conversationList.newConversation"),

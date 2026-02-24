@@ -19,6 +19,7 @@ import type { ILabels } from "@workspaceui/api-client/src/api/copilot";
 import { useState, useCallback, useContext } from "react";
 import { UserContext } from "@/contexts/user";
 import { useCopilotClient } from "./useCopilotClient";
+import { CopilotNotInstalledError } from "@workspaceui/api-client/src/api/copilot/client";
 
 export const useCopilotLabels = () => {
   const [labels, setLabels] = useState<ILabels>({});
@@ -43,6 +44,12 @@ export const useCopilotLabels = () => {
           setAreLabelsLoaded(true);
         }
       } catch (err) {
+        if (err instanceof CopilotNotInstalledError) {
+          setIsCopilotInstalled(false);
+          setLoading(false);
+          return;
+        }
+
         if (retryCount < 2) {
           setTimeout(() => getLabels(retryCount + 1), 1000);
           return;

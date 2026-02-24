@@ -57,6 +57,9 @@ export interface ChatInterfaceProps {
   isLoadingAssistants?: boolean;
   contextItems?: ContextItem[];
   onRemoveContext?: (id: string) => void;
+  files?: File[];
+  onFileSelect?: (files: File[]) => void;
+  onRemoveFile?: (index: number) => void;
   conversations?: import("@workspaceui/api-client/src/api/copilot").IConversationSummary[];
   onSelectConversation?: (conversationId: string) => void;
   onLoadConversations?: () => void;
@@ -90,6 +93,9 @@ export interface CopilotPopupProps {
   hasContextPending?: boolean;
   contextItems?: ContextItem[];
   onRemoveContext?: (id: string) => void;
+  files?: File[];
+  onFileSelect?: (files: File[]) => void;
+  onRemoveFile?: (index: number) => void;
   conversations?: import("@workspaceui/api-client/src/api/copilot").IConversationSummary[];
   onSelectConversation?: (conversationId: string) => void;
   onLoadConversations?: () => void;
@@ -119,6 +125,9 @@ export interface MessageInputProps {
   onRemoveContext?: (id: string) => void;
   message?: string;
   onMessageChange?: (message: string) => void;
+  files?: File[];
+  onFileSelect?: (files: File[]) => void;
+  onRemoveFile?: (index: number) => void;
   translations?: {
     placeholder: string;
     selectedRegisters?: string;
@@ -134,6 +143,7 @@ export interface MessageListProps {
     contextRecords: string;
     welcomeMessage: string;
     typing: string;
+    processing: string;
   };
 }
 

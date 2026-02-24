@@ -8,6 +8,7 @@ import {
   useSearchHandler,
   useSearchTermHandler,
 } from "@/utils/selectorUtils";
+import { useTranslation } from "@/hooks/useTranslation";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import ChevronDown from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
@@ -28,6 +29,7 @@ function SelectCmp({
   hasMore = true,
   field,
 }: SelectProps) {
+  const { t } = useTranslation();
   const { register, setValue, watch } = useFormContext();
   const selectedValue = watch(name);
   const currentIdentifier = watch(`${name}$_identifier`);
@@ -244,8 +246,12 @@ function SelectCmp({
   );
 
   const renderedOptions = useMemo(() => {
+    if (loading && filteredOptions.length === 0) {
+      return <li className="px-4 py-3 text-sm text-baseline-60">Loading...</li>;
+    }
+
     if (filteredOptions.length > 0) {
-      return filteredOptions.map((option, index) => (
+      const optionsList = filteredOptions.map((option, index) => (
         <OptionItem
           key={option.id}
           id={option.id}
@@ -259,9 +265,19 @@ function SelectCmp({
           data-testid="OptionItem__ff38f9"
         />
       ));
+
+      if (loading) {
+        optionsList.push(
+          <li key="loading-indicator" className="px-4 py-3 text-sm text-baseline-60">
+            Loading...
+          </li>
+        );
+      }
+
+      return optionsList;
     }
     return <li className="px-4 py-3 text-sm text-baseline-60">No options found</li>;
-  }, [filteredOptions, highlightedIndex, selectedValue, handleOptionClick, handleOptionMouseEnter]);
+  }, [filteredOptions, highlightedIndex, selectedValue, handleOptionClick, handleOptionMouseEnter, loading]);
 
   const shouldShowClearButton = selectedLabel && (isHovering || isOpen) && !isReadOnly;
 
@@ -287,7 +303,9 @@ function SelectCmp({
           onFocus={handleFocus}
           tabIndex={isReadOnly ? -1 : 0}
           className={mainDivClassNames}>
-          <span className={selectedLabelClassNames}>{selectedLabel || "Select an option"}</span>
+          <span className={selectedLabelClassNames}>
+            {selectedLabel || (!isReadOnly ? t("form.select.placeholder") : "")}
+          </span>
           <div className="flex items-center flex-shrink-0 ml-2">
             {shouldShowClearButton && (
               <button
@@ -299,7 +317,9 @@ function SelectCmp({
                 <XIcon data-testid={`XIcon__${field.id}`} />
               </button>
             )}
-            <ChevronDown fill="currentColor" className={chevronClassNames} data-testid={`ChevronDown__${field.id}`} />
+            {!isReadOnly && (
+              <ChevronDown fill="currentColor" className={chevronClassNames} data-testid={`ChevronDown__${field.id}`} />
+            )}
           </div>
         </div>
       </div>

@@ -178,6 +178,7 @@ export class CopilotClient {
     try {
       const { data, ok } = await CopilotClient.request(COPILOT_ENDPOINTS.GET_ASSISTANTS, {
         method: COPILOT_METHODS.GET,
+        cache: "no-store",
       });
 
       if (!ok) {

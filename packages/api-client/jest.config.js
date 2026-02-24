@@ -19,7 +19,7 @@
 export default {
   displayName: "API Client",
   preset: "ts-jest",
-  testEnvironment: "node",
+  testEnvironment: "jsdom",
 
   rootDir: ".",
 

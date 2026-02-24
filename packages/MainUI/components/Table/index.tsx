@@ -412,26 +412,29 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
     );
   }
 
+  // Format Time values from UTC to Local for display in the grid
+  const fieldMapping = columnFieldMappings.get(col.name);
+  const field = fieldMapping?.field;
+
+  const isLinkDisabled = field?.isReferencedWindowAccessible === false;
+
   // For non-editing cells, check if we should show identifier instead of UUID
   const identifierKey = `${fieldKey}$_identifier`;
   const identifier = row.original[identifierKey];
-
-  // Format Time values from UTC to Local for display in the grid
-  const fieldMapping = columnFieldMappings.get(col.name);
   if (fieldMapping?.fieldType === FieldType.TIME && typeof renderedCellValue === "string" && renderedCellValue) {
     const localTimeValue = formatUTCTimeToLocal(renderedCellValue);
     return <div className="table-cell-content">{localTimeValue}</div>;
   }
 
   if (identifier && typeof identifier === "string" && typeof renderedCellValue === "string") {
-    if (originalCell && typeof originalCell === "function") {
+    if (!isLinkDisabled && originalCell && typeof originalCell === "function") {
       return <>{originalCell({ renderedCellValue: identifier, row, table })}</>;
     }
     return <div className="table-cell-content">{identifier}</div>;
   }
 
   // Preserve original rendering logic and formatting
-  if (originalCell && typeof originalCell === "function") {
+  if (!isLinkDisabled && originalCell && typeof originalCell === "function") {
     return <>{originalCell({ renderedCellValue, row, table })}</>;
   }
 
@@ -455,6 +458,7 @@ interface ExtendedColumn extends Column {
   readOnlyLogicExpression?: string;
   isReadOnly?: boolean;
   isUpdatable?: boolean;
+  isReferencedWindowAccessible?: boolean;
   isAuditField?: boolean;
 }
 
@@ -596,6 +600,7 @@ const columnToFieldForEditor = (column: Column): Field => {
     etmetaCustomjs: column.customJs || null,
     isActive: true,
     gridDisplayLogic: "",
+    isReferencedWindowAccessible: extColumn.isReferencedWindowAccessible,
   } as Field;
 
   // Limit cache size to prevent memory leaks
@@ -860,13 +865,8 @@ const DynamicTable = ({
     });
   }, []);
 
-  // Keep fetchSummary in a ref to use in effects without causing infinite loops
-  const fetchSummaryRef = useRef(fetchSummary);
-  useLayoutEffect(() => {
-    fetchSummaryRef.current = fetchSummary;
-  }, [fetchSummary]);
-
-  // Load summary when state or filters change
+  // Load summary when state, filters, or data change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: records is needed to trigger re-fetch
   useEffect(() => {
     const loadSummary = async () => {
       if (Object.keys(summaryState).length === 0) {
@@ -876,7 +876,7 @@ const DynamicTable = ({
 
       setIsSummaryLoading(true);
       try {
-        const result = await fetchSummaryRef.current(summaryState);
+        const result = await fetchSummary(summaryState);
         if (result) {
           setSummaryResult(result);
         } else {
@@ -891,7 +891,7 @@ const DynamicTable = ({
     };
 
     loadSummary();
-  }, [summaryState]);
+  }, [summaryState, fetchSummary, records]);
 
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<HTMLElement | null>(null);
   const [hasInitialColumnVisibility, setHasInitialColumnVisibility] = useState<boolean>(false);
@@ -1033,6 +1033,10 @@ const DynamicTable = ({
 
       if (!originalField) {
         return field;
+      }
+
+      if (originalField.isReferencedWindowAccessible !== undefined) {
+        field.isReferencedWindowAccessible = originalField.isReferencedWindowAccessible;
       }
 
       // Transfer callout if present
@@ -2589,16 +2593,21 @@ const DynamicTable = ({
   );
 
   const renderEmptyRowsFallback = useCallback(
-    ({ table }: { table: MRT_TableInstance<EntityData> }) => (
-      <EmptyState
-        table={table}
-        onContextMenu={handleTableBodyContextMenu}
-        onInsertRow={handleInsertRow}
-        uIPattern={uIPattern}
-        data-testid="EmptyState__8ca888"
-      />
-    ),
-    [handleTableBodyContextMenu, handleInsertRow, uIPattern]
+    ({ table }: { table: MRT_TableInstance<EntityData> }) => {
+      if (loading) {
+        return null;
+      }
+      return (
+        <EmptyState
+          table={table}
+          onContextMenu={handleTableBodyContextMenu}
+          onInsertRow={handleInsertRow}
+          uIPattern={uIPattern}
+          data-testid="EmptyState__8ca888"
+        />
+      );
+    },
+    [handleTableBodyContextMenu, handleInsertRow, loading]
   );
 
   const fetchMoreOnBottomReached = useCallback(
@@ -2742,6 +2751,7 @@ const DynamicTable = ({
       expanded: expandedState,
       showColumnFilters: true,
       showProgressBars: loading,
+      isLoading: loading,
     }),
     [tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder, expandedState, loading]
   );

@@ -20,6 +20,7 @@ import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { FormState } from "react-hook-form";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { logger } from "@/utils/logger";
+import type { SaveOptions } from "@/contexts/ToolbarContext";
 
 export interface NavigationState {
   canNavigateNext: boolean;
@@ -33,7 +34,7 @@ interface UseRecordNavigationOptions {
   records: EntityData[];
   onNavigate: (recordId: string) => void;
   formState: FormState<EntityData>;
-  handleSave: (showModal: boolean) => Promise<void>;
+  handleSave: (options: SaveOptions) => Promise<void>;
   showErrorModal: (message: string) => void;
   hasMoreRecords?: boolean;
   fetchMore?: () => void;
@@ -94,7 +95,8 @@ export function useRecordNavigation({
 
     try {
       // Autosave with modal showing "Saved" message
-      await handleSave(true);
+      // skipFormStateUpdate: false to allow normal form state updates during navigation
+      await handleSave({ showModal: true });
       return true; // Save successful, proceed with navigation
     } catch (error) {
       logger.error("Error during autosave before navigation:", error);

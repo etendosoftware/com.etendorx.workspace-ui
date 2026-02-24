@@ -24,6 +24,17 @@ import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
 
 /**
+ * Options for save operations.
+ * Using an options object instead of positional parameters for better extensibility.
+ */
+export interface SaveOptions {
+  /** Whether to show a success modal after saving. Default: false */
+  showModal?: boolean;
+  /** When true, prevents form state updates after save (mode, recordId). Used when closing form after save. Default: false */
+  skipFormStateUpdate?: boolean;
+}
+
+/**
  * Save button state management interface
  */
 export interface SaveButtonState {
@@ -42,10 +53,10 @@ export interface SaveButtonState {
 type ToolbarActions = {
   /**
    * Save the current record or form data.
-   * @param showModal - Whether to show a confirmation modal after saving
+   * @param options - Save options including showModal and skipFormStateUpdate flags
    * @returns Promise that resolves when save operation is complete
    */
-  save: (showModal: boolean) => Promise<void>;
+  save: (options: SaveOptions) => Promise<void>;
 
   /**
    * Refresh the current view or data.
@@ -101,7 +112,7 @@ type ToolbarActions = {
 };
 
 type ToolbarContextType = {
-  onSave: (showModal: boolean) => Promise<void>;
+  onSave: (options: SaveOptions) => Promise<void>;
   onRefresh: () => Promise<void>;
   onNew: () => void;
   onBack: () => void;
@@ -128,7 +139,7 @@ type ToolbarContextType = {
 };
 
 const initialState: ToolbarActions = {
-  save: async () => {},
+  save: async (_options: SaveOptions) => {},
   refresh: async () => {},
   new: () => {},
   back: () => {},
@@ -142,7 +153,7 @@ const initialState: ToolbarActions = {
 };
 
 const ToolbarContext = createContext<ToolbarContextType>({
-  onSave: async () => {},
+  onSave: async (_options: SaveOptions) => {},
   onRefresh: async () => {},
   onNew: () => {},
   onBack: () => {},
@@ -221,9 +232,9 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
   const { triggerParentRefreshes } = useTabRefreshContext();
 
   const wrappedOnSave = useCallback(
-    async (showModal: boolean) => {
+    async (options: SaveOptions) => {
       // Execute original save operation first
-      await originalOnSave(showModal);
+      await originalOnSave(options);
 
       // If save succeeded and this tab has parents, trigger parent refreshes
       if (tab?.tabLevel && tab.tabLevel > 0) {
