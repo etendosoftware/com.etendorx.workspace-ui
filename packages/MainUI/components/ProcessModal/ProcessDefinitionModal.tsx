@@ -67,6 +67,7 @@ import ProcessResultModal from "./ProcessResultModal";
 import type { ProcessDefinitionModalContentProps, RecordValues, ProcessDefinitionModalProps } from "./types";
 import type { Tab, ProcessParameter, EntityData, Field } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
+import { buildProcessScriptContext } from "@/utils/processes/definition/utils";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
 import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
@@ -252,6 +253,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
   const [processDefinition, setProcessDefinition] = useState(button.processDefinition);
   const { onProcess, onLoad } = processDefinition;
+
+  // Build the reusable process script context (auth-aware HTTP helpers)
+  // Memoized so the reference is stable: the useEffect that depends on it won't re-run on every render.
+  const processScriptContext = useMemo(
+    () => buildProcessScriptContext({ token: token || "", getCsrfToken }),
+    [token, getCsrfToken]
+  );
   const processId = processDefinition.id;
   const javaClassName = processDefinition.javaClassName;
 
@@ -270,8 +278,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       return next;
     });
   }, []);
-
-  console.debug(processDefinition);
 
   // NEW: autoSelectConfig state to hold declarative selection instructions OR backward-compatible _gridSelection
   const [autoSelectConfig, setAutoSelectConfig] = useState<AutoSelectConfig | null>(null);
@@ -1067,7 +1073,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         try {
           const stringFnResult = await executeStringFunction(
             onProcess,
-            { Metadata },
+            { Metadata, ...processScriptContext },
             button.processDefinition,
             stringFunctionPayload
           );
@@ -1098,6 +1104,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       selectedRecords,
       form,
       parameters,
+      processScriptContext,
     ]
   );
 
@@ -1276,13 +1283,31 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         const effectiveOnLoad = onLoad || (isBulkCompletion ? DEFAULT_BULK_COMPLETION_ONLOAD : null);
 
         if (effectiveOnLoad && tab) {
-          const result = await executeStringFunction(effectiveOnLoad, { Metadata }, button.processDefinition, {
-            selectedRecords,
-            tabId: tab.id || "",
-            tableId: tab.table || "",
-          });
+          const result = await executeStringFunction(
+            effectiveOnLoad,
+            { Metadata, ...processScriptContext },
+            button.processDefinition,
+            {
+              selectedRecords,
+              tabId: tab.id || "",
+              tableId: tab.table || "",
+            }
+          );
+
+          console.log("result: ", result);
 
           if (result) {
+            // Handle early error returns from onLoad script (e.g., validation)
+            if (result.error) {
+              setResult({
+                success: false,
+                error: result.error.message || result.error.msgText || JSON.stringify(result.error),
+                data: result.error,
+              });
+              setLoading(false);
+              return;
+            }
+
             // If backend returns a legacy `_gridSelection` mapping (ids), apply it directly (backward compatibility)
             if (result._gridSelection && typeof result._gridSelection === "object") {
               // Merge into gridSelection state
@@ -1314,8 +1339,23 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             setParameters((prev) => {
               const newParameters = { ...prev };
 
+              // If backend returns _dynamicParameters, structurally inject them into the parameters object so UI components can render them
+              if (result._dynamicParameters && Array.isArray(result._dynamicParameters)) {
+                for (const dynamicParam of result._dynamicParameters) {
+                  newParameters[dynamicParam.name] = {
+                    id: dynamicParam.id || dynamicParam.name,
+                    name: dynamicParam.name,
+                    DBColumnName: dynamicParam.name,
+                    reference: dynamicParam.reference,
+                    required: dynamicParam.required || false,
+                    refList: dynamicParam.refList || [],
+                    ...dynamicParam,
+                  };
+                }
+              }
+
               for (const [parameterName, values] of Object.entries(result)) {
-                if (["_gridSelection", "autoSelectConfig"].includes(parameterName)) continue;
+                if (["_gridSelection", "autoSelectConfig", "_dynamicParameters"].includes(parameterName)) continue;
 
                 if (!newParameters[parameterName]) continue;
 
@@ -1350,7 +1390,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     };
 
     fetchOptions();
-  }, [button.processDefinition, onLoad, open, selectedRecords, tab, setGridSelection, isBulkCompletion]);
+  }, [
+    button.processDefinition,
+    onLoad,
+    open,
+    selectedRecords,
+    tab,
+    setGridSelection,
+    isBulkCompletion,
+    processScriptContext,
+  ]);
 
   /**
    * NEW useEffect:
@@ -1490,7 +1539,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
     // Error message - keep the simple style
     return (
-      <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-etendo-main)">
+      <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-error-main)">
         <h4 className="font-bold text-sm">{msgTitle}</h4>
         <p className="text-sm border-(--color-active-40) rounded whitespace-pre-line p-2">{displayText}</p>
       </div>
