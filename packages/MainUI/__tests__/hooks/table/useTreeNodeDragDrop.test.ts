@@ -37,20 +37,21 @@ describe("useTreeNodeDragDrop", () => {
     jest.clearAllMocks();
   });
 
-  const createDragEvent = (types = ["application/x-etendo-tree-node"], ratio = 0.5) => ({
-    preventDefault: jest.fn(),
-    stopPropagation: jest.fn(),
-    dataTransfer: {
-      setData: jest.fn(),
-      setDragImage: jest.fn(),
-      types,
-      dropEffect: "none",
-    },
-    currentTarget: {
-      getBoundingClientRect: () => ({ top: 0, height: 100 }),
-    },
-    clientY: ratio * 100, // Top 30%, Middle 40%, Bottom 30%
-  } as unknown as React.DragEvent);
+  const createDragEvent = (types = ["application/x-etendo-tree-node"], ratio = 0.5) =>
+    ({
+      preventDefault: jest.fn(),
+      stopPropagation: jest.fn(),
+      dataTransfer: {
+        setData: jest.fn(),
+        setDragImage: jest.fn(),
+        types,
+        dropEffect: "none",
+      },
+      currentTarget: {
+        getBoundingClientRect: () => ({ top: 0, height: 100 }),
+      },
+      clientY: ratio * 100, // Top 30%, Middle 40%, Bottom 30%
+    }) as unknown as React.DragEvent;
 
   it("should initialize with default states", () => {
     const { result } = renderHook(() => useTreeNodeDragDrop(defaultProps));
@@ -78,11 +79,15 @@ describe("useTreeNodeDragDrop", () => {
     const { result } = renderHook(() => useTreeNodeDragDrop(defaultProps));
     const dragProps = result.current.getNodeDragProps(mockDisplayRecords[0]);
     const mockEvent = createDragEvent();
-      
-    act(() => { dragProps.onDragStart?.(mockEvent); });
+
+    act(() => {
+      dragProps.onDragStart?.(mockEvent);
+    });
     expect(result.current.isTreeDragActive).toBe(true);
 
-    act(() => { dragProps.onDragEnd?.(mockEvent); });
+    act(() => {
+      dragProps.onDragEnd?.(mockEvent);
+    });
 
     expect(result.current.draggingRowId).toBeNull();
     expect(result.current.isTreeDragActive).toBe(false);
@@ -91,26 +96,34 @@ describe("useTreeNodeDragDrop", () => {
 
   it("should handle drag over and calculate position 'before'", () => {
     const { result } = renderHook(() => useTreeNodeDragDrop(defaultProps));
-    
+
     // Drag node 2
-    act(() => { result.current.getNodeDragProps(mockDisplayRecords[1]).onDragStart?.(createDragEvent()); });
+    act(() => {
+      result.current.getNodeDragProps(mockDisplayRecords[1]).onDragStart?.(createDragEvent());
+    });
 
     // Hover top 20% of node 1
     const mockEventBefore = createDragEvent(["application/x-etendo-tree-node"], 0.2);
-    act(() => { result.current.getNodeDropProps(mockDisplayRecords[0]).onDragOver?.(mockEventBefore); });
+    act(() => {
+      result.current.getNodeDropProps(mockDisplayRecords[0]).onDragOver?.(mockEventBefore);
+    });
 
     expect(result.current.dropTarget).toEqual({ id: "1", position: "before" });
   });
 
   it("should handle drag over and calculate position 'after'", () => {
     const { result } = renderHook(() => useTreeNodeDragDrop(defaultProps));
-    
+
     // Drag node 1
-    act(() => { result.current.getNodeDragProps(mockDisplayRecords[0]).onDragStart?.(createDragEvent()); });
+    act(() => {
+      result.current.getNodeDragProps(mockDisplayRecords[0]).onDragStart?.(createDragEvent());
+    });
 
     // Hover bottom 20% of node 3
     const mockEventAfter = createDragEvent(["application/x-etendo-tree-node"], 0.8);
-    act(() => { result.current.getNodeDropProps(mockDisplayRecords[2]).onDragOver?.(mockEventAfter); });
+    act(() => {
+      result.current.getNodeDropProps(mockDisplayRecords[2]).onDragOver?.(mockEventAfter);
+    });
 
     expect(result.current.dropTarget).toEqual({ id: "3", position: "after" });
   });
@@ -121,12 +134,14 @@ describe("useTreeNodeDragDrop", () => {
     });
 
     const { result } = renderHook(() => useTreeNodeDragDrop(defaultProps));
-    
+
     // Drag node 2
-    act(() => { result.current.getNodeDragProps(mockDisplayRecords[1]).onDragStart?.(createDragEvent()); });
+    act(() => {
+      result.current.getNodeDragProps(mockDisplayRecords[1]).onDragStart?.(createDragEvent());
+    });
 
     const mockEventDrop = createDragEvent(["application/x-etendo-tree-node"], 0.2); // Position 'before' node 3
-    
+
     await act(async () => {
       await result.current.getNodeDropProps(mockDisplayRecords[2]).onDrop?.(mockEventDrop);
     });
@@ -142,12 +157,14 @@ describe("useTreeNodeDragDrop", () => {
     });
 
     const { result } = renderHook(() => useTreeNodeDragDrop(defaultProps));
-    
+
     // Drag node 2
-    act(() => { result.current.getNodeDragProps(mockDisplayRecords[1]).onDragStart?.(createDragEvent()); });
+    act(() => {
+      result.current.getNodeDragProps(mockDisplayRecords[1]).onDragStart?.(createDragEvent());
+    });
 
     const mockEventDrop = createDragEvent(["application/x-etendo-tree-node"], 0.2);
-    
+
     await act(async () => {
       await result.current.getNodeDropProps(mockDisplayRecords[2]).onDrop?.(mockEventDrop);
     });

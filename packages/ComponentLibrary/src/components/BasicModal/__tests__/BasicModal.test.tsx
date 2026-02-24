@@ -2,13 +2,16 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import Modal from "../index";
 
 jest.mock("../../../assets/icons/x.svg", () => ({
-  __esModule: true, default: (props: any) => <svg data-testid="close-icon" {...props} />
+  __esModule: true,
+  default: (props: any) => <svg data-testid="close-icon" {...props} />,
 }));
 jest.mock("../../../assets/icons/maximize-2.svg", () => ({
-  __esModule: true, default: (props: any) => <svg data-testid="maximize-icon" {...props} />
+  __esModule: true,
+  default: (props: any) => <svg data-testid="maximize-icon" {...props} />,
 }));
 jest.mock("../../../assets/icons/minimize-2.svg", () => ({
-  __esModule: true, default: (props: any) => <svg data-testid="minimize-icon" {...props} />
+  __esModule: true,
+  default: (props: any) => <svg data-testid="minimize-icon" {...props} />,
 }));
 
 jest.mock("@mui/material", () => ({
@@ -22,7 +25,7 @@ jest.mock("@mui/material", () => ({
       },
       dynamicColor: {
         contrastText: "#000",
-      }
+      },
     },
     spacing: (f: number) => `${f * 8}px`,
   }),
@@ -35,11 +38,7 @@ describe("BasicModal", () => {
   });
 
   it("renders custom trigger if provided", () => {
-    render(
-      <Modal customTrigger={<button data-testid="custom-trigger">Open</button>}>
-        Test Content
-      </Modal>
-    );
+    render(<Modal customTrigger={<button data-testid="custom-trigger">Open</button>}>Test Content</Modal>);
     expect(screen.getByTestId("custom-trigger")).toBeInTheDocument();
   });
 
@@ -80,13 +79,7 @@ describe("BasicModal", () => {
     const SaveIcon = (props: any) => <svg data-testid="save-icon" {...props} />;
 
     render(
-      <Modal
-        open={true}
-        onSave={handleSave}
-        secondaryButtonLabel="Cancel"
-        saveButtonLabel="Save"
-        SaveIcon={SaveIcon}
-      >
+      <Modal open={true} onSave={handleSave} secondaryButtonLabel="Cancel" saveButtonLabel="Save" SaveIcon={SaveIcon}>
         Test Content
       </Modal>
     );
@@ -102,10 +95,9 @@ describe("BasicModal", () => {
       </Modal>
     );
 
-    const fullscreenButton = screen.getAllByRole("button").find(b => b.getAttribute("aria-label") === "fullscreen");
+    const fullscreenButton = screen.getAllByRole("button").find((b) => b.getAttribute("aria-label") === "fullscreen");
     expect(fullscreenButton).toBeInTheDocument();
 
     fireEvent.click(fullscreenButton!);
   });
 });
-
