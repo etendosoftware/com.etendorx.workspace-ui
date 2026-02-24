@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Accordion,
   AccordionDetails,
@@ -11,6 +11,10 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControlLabel,
   IconButton,
   InputAdornment,
@@ -40,6 +44,17 @@ import { GithubAuthButton } from "./GithubAuthButton";
 import type { NavigationSection } from "../types/navigation";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
+/** Short description shown on each template card */
+const TEMPLATE_DESCRIPTIONS: Record<string, string> = {
+  copilot: "AI assistant with LLM integration and Etendo-native tools",
+};
+
+/** Parse `implementation('com.etendoerp:module.id:[ver)')` → `module.id` */
+const parseDependencyLabel = (dep: string): string => {
+  const match = dep.match(/['"(]?[^:'"(]+:([^:['"]+)/);
+  return match ? match[1] : dep;
+};
+
 interface ConfigurationSectionProps {
   onClose?: () => void;
   onSectionChange?: (section: NavigationSection) => void;
@@ -60,13 +75,52 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
   const [success, setSuccess] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
-  const [requiredFilter, setRequiredFilter] = useState<"all" | "required" | "optional">("all");
+  const [requiredFilter, setRequiredFilter] = useState<"all" | "required" | "optional">("required");
+  const [advancedExpanded, setAdvancedExpanded] = useState(false);
+  const [showMissingDialog, setShowMissingDialog] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"save" | "next" | null>(null);
   const [availableTemplates, setAvailableTemplates] = useState<string[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [templateInfo, setTemplateInfo] = useState<TemplateInfo | null>(null);
   const [templateGaps, setTemplateGaps] = useState<Array<{ key: string; templateDefault: string }>>([]);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
+  const [showTemplateFields, setShowTemplateFields] = useState(false);
+  const [showRawConfig, setShowRawConfig] = useState(false);
+
+  // Keys provided by the selected template (for visual indicator in Advanced table)
+  const templateKeys = useMemo(
+    () => new Set(Object.keys(templateInfo?.properties ?? {})),
+    [templateInfo]
+  );
+
+  // Required fields that have no default value and are currently empty
+  const missingRequired = useMemo(
+    () =>
+      Object.values(propertyIndex).filter(
+        (p) =>
+          p.required &&
+          !p.process &&
+          (!p.defaultValue || p.defaultValue.trim() === "") &&
+          (!editedConfigs[p.key] || editedConfigs[p.key].trim() === "")
+      ),
+    [propertyIndex, editedConfigs]
+  );
+
+  // Check for missing required fields before save/next; returns true if ok to proceed
+  const checkRequired = (action: "save" | "next"): boolean => {
+    if (missingRequired.length === 0) return true;
+    setPendingAction(action);
+    setShowMissingDialog(true);
+    return false;
+  };
+
+  const handleMissingDialogCancel = () => {
+    setShowMissingDialog(false);
+    setPendingAction(null);
+    setAdvancedExpanded(true);
+    setRequiredFilter("required");
+  };
 
   const normalizeMessage = (message: unknown, fallback = ""): string => {
     if (!message) return fallback;
@@ -103,6 +157,8 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
       return;
     }
     setSelectedTemplate(name);
+    setShowTemplateFields(false);
+    setShowRawConfig(false);
     setLoadingTemplate(true);
     try {
       const response = await ConfigApi.getTemplate(name);
@@ -188,7 +244,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
     }
   };
 
-  const handleSave = async () => {
+  const saveChanges = async () => {
     setSaving(true);
     setError(null);
     setSuccess(null);
@@ -227,6 +283,21 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
       setError(err instanceof Error ? err.message : "Error saving configurations");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!checkRequired("save")) return;
+    await saveChanges();
+  };
+
+  const handleDialogProceed = async () => {
+    const action = pendingAction;
+    setShowMissingDialog(false);
+    setPendingAction(null);
+    await saveChanges();
+    if (action === "next") {
+      onSectionChange?.("start-all");
     }
   };
 
@@ -433,6 +504,9 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
                           <Typography variant="body2" fontWeight={selectedTemplate === tmpl ? 700 : 400} textTransform="capitalize">
                             {tmpl}
                           </Typography>
+                          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25, lineHeight: 1.3 }}>
+                            {TEMPLATE_DESCRIPTIONS[tmpl] ?? "Pre-configured setup template"}
+                          </Typography>
                           {selectedTemplate === tmpl && (
                             <Chip size="small" label="Selected" color="primary" sx={{ mt: 0.5 }} />
                           )}
@@ -455,20 +529,44 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
               </Typography>
               {loadingTemplate && <CircularProgress size={16} />}
             </Stack>
-            {templateGaps.length > 0 && (
-              <Stack spacing={1.5}>
-                {templateGaps.map(({ key, templateDefault }) => {
+            {/* Advanced toggle — shows all template fields on demand */}
+            {templateInfo && Object.keys(templateInfo.properties).length > 0 && (
+              <Box sx={{ mt: 1 }}>
+                <Button
+                  size="small"
+                  variant="text"
+                  endIcon={<ExpandMoreIcon sx={{ transform: showTemplateFields ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />}
+                  onClick={() => setShowTemplateFields((v) => !v)}
+                  sx={{ px: 0, color: "primary.main", fontWeight: 600 }}>
+                  {showTemplateFields ? "Hide fields" : "Edit template fields"}
+                  {templateGaps.length > 0 && ` (${templateGaps.length} to complete)`}
+                </Button>
+              </Box>
+            )}
+            {showTemplateFields && templateInfo && Object.keys(templateInfo.properties).length > 0 && (
+              <Stack spacing={1.5} sx={{ mt: 1.5 }}>
+                {Object.entries(templateInfo.properties).map(([key, templateDefault]) => {
                   const prop = propertyIndex[key];
+                  const isGap = templateGaps.some((g) => g.key === key);
                   return (
                     <Stack key={key} direction="row" spacing={2} alignItems="flex-start">
                       <Box flex={1}>
-                        <Typography variant="body2" fontWeight={500}>
-                          {key} <Typography component="span" color="error">*</Typography>
-                        </Typography>
+                        <Stack direction="row" alignItems="center" spacing={0.75}>
+                          <Typography variant="body2" fontWeight={500}>
+                            {key}
+                            {prop?.required && <Typography component="span" color="error"> *</Typography>}
+                          </Typography>
+                          {prop?.type?.toLowerCase() === "boolean" && (
+                            <Chip label="Boolean" size="small" variant="outlined" sx={{ height: 18, fontSize: "0.65rem" }} />
+                          )}
+                          {!isGap && (
+                            <Chip label="Set" size="small" color="success" variant="outlined" sx={{ height: 18, fontSize: "0.65rem" }} />
+                          )}
+                        </Stack>
                         {prop?.description && (
                           <Typography variant="caption" color="text.secondary">{prop.description}</Typography>
                         )}
-                        {templateDefault && (
+                        {templateDefault && templateDefault.trim() !== "" && (
                           <Typography variant="caption" color="text.secondary" display="block">
                             Template default: {templateDefault}
                           </Typography>
@@ -481,7 +579,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
                             fullWidth
                             value={editedConfigs[key] ?? ""}
                             onChange={(e) => handleConfigChange(key, e.target.value)}
-                            placeholder={templateDefault}
+                            placeholder={templateDefault || undefined}
                           />
                         )}
                       </Box>
@@ -490,18 +588,45 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
                 })}
               </Stack>
             )}
-            {templateInfo.dependencies.length > 0 && (
-              <Box sx={{ mt: 1.5 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Dependencies: {templateInfo.dependencies.join(", ")}
+            {(templateInfo.dependencies.length > 0 || templateInfo.modules.length > 0) && (
+              <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid", borderColor: "primary.light" }}>
+                <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
+                  What this template installs
                 </Typography>
-              </Box>
-            )}
-            {templateInfo.modules.length > 0 && (
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Modules: {templateInfo.modules.join(", ")}
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
+                  Applying this template will add the following to your project. These changes are written to{" "}
+                  <strong>build.gradle</strong> and take effect on the next Gradle sync.
                 </Typography>
+                {templateInfo.dependencies.length > 0 && (
+                  <Box sx={{ mb: 1.5 }}>
+                    <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      Gradle dependencies
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.75 }}>
+                      Artifacts that will be downloaded and added to your classpath.
+                    </Typography>
+                    <Stack direction="row" flexWrap="wrap" gap={0.75}>
+                      {templateInfo.dependencies.map((dep) => (
+                        <Chip key={dep} label={parseDependencyLabel(dep)} size="small" variant="outlined" title={dep} />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+                {templateInfo.modules.length > 0 && (
+                  <Box>
+                    <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      Etendo modules
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.75 }}>
+                      Business modules installed into Etendo. Includes database schema, UI windows, and processes.
+                    </Typography>
+                    <Stack direction="row" flexWrap="wrap" gap={0.75}>
+                      {templateInfo.modules.map((mod) => (
+                        <Chip key={mod} label={mod} size="small" color="secondary" variant="outlined" sx={{ fontFamily: "monospace", fontSize: "0.7rem" }} />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
               </Box>
             )}
             {onSectionChange && (
@@ -509,7 +634,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
                 <Button
                   variant="contained"
                   endIcon={<ArrowForwardIcon />}
-                  onClick={() => onSectionChange("start-all")}
+                  onClick={() => { if (checkRequired("next")) onSectionChange("start-all"); }}
                   sx={{ fontWeight: 600 }}>
                   Next: Start All
                 </Button>
@@ -518,6 +643,20 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
           </Paper>
         )}
 
+        {/* When templates exist, collapse raw config behind a toggle */}
+        {!loadingTemplates && availableTemplates.length > 0 && (
+          <Button
+            size="small"
+            variant="text"
+            color="inherit"
+            endIcon={<ExpandMoreIcon sx={{ transform: showRawConfig ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />}
+            onClick={() => setShowRawConfig((v) => !v)}
+            sx={{ px: 0, color: "text.secondary", fontWeight: 500 }}>
+            {showRawConfig ? "Hide" : "Show"} gradle.properties configuration
+          </Button>
+        )}
+
+        {(loadingTemplates || availableTemplates.length === 0 || showRawConfig) && (<>
         <Box>
           <Typography variant="h5" fontWeight={700} gutterBottom>
             gradle.properties Configuration
@@ -567,7 +706,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
         )}
 
         {/* Advanced Configuration — collapsed by default */}
-        <Accordion defaultExpanded={false}>
+        <Accordion expanded={advancedExpanded} onChange={(_, expanded) => setAdvancedExpanded(expanded)}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography variant="subtitle1" fontWeight={600}>
               Advanced Configuration ({totalProperties} properties)
@@ -660,6 +799,7 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
                                   {property.sensitive && <Chip size="small" color="warning" label="Sensitive" />}
                                   {property.required && <Chip size="small" color="error" label="Required" />}
                                   {property.process && <Chip size="small" color="success" label="Gradle Process" />}
+                                  {templateKeys.has(property.key) && <Chip size="small" color="primary" variant="outlined" label="Template" />}
                                 </Stack>
                                 <Typography variant="caption" color="text.secondary">
                                   Default value: {property.defaultValue || "N/A"}
@@ -699,7 +839,53 @@ export function ConfigurationSection({ onClose, onSectionChange }: Configuration
             require restarting the server to take effect.
           </Typography>
         </Paper>
+        </>)}
       </Stack>
+
+      {/* Missing required fields — inline edit dialog */}
+      <Dialog open={showMissingDialog} onClose={handleMissingDialogCancel} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          Complete required fields
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            These required fields have no default value. Fill them in to{" "}
+            {pendingAction === "next" ? "continue" : "save"}.
+          </Typography>
+          <Stack spacing={2}>
+            {missingRequired.map((p) => (
+              <Box key={p.key}>
+                <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
+                  <Typography variant="body2" fontWeight={600}>{p.key}</Typography>
+                  <Typography component="span" color="error" variant="body2">*</Typography>
+                  {p.type?.toLowerCase() === "boolean" && (
+                    <Chip label="Boolean" size="small" variant="outlined" sx={{ height: 18, fontSize: "0.65rem" }} />
+                  )}
+                </Stack>
+                {p.description && (
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+                    {p.description}
+                  </Typography>
+                )}
+                {renderInput(p)}
+              </Box>
+            ))}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button variant="outlined" onClick={handleMissingDialogCancel}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            disabled={missingRequired.length > 0 || saving}
+            startIcon={saving ? <CircularProgress size={16} color="inherit" /> : undefined}
+            onClick={handleDialogProceed}>
+            {pendingAction === "next" ? "Save & Continue" : "Save"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
