@@ -428,8 +428,8 @@ export const useTableData = ({
     if (baseCriteria.length > 0) {
       options.criteria = baseCriteria as unknown as Criteria[];
 
-      if (parentTab?.entityName && baseCriteria[0]?.value) {
-        options[`@${parentTab.entityName}.id@`] = baseCriteria[0].value;
+      if (parentTab?.entityName && parentId) {
+        options[`@${parentTab.entityName}.id@`] = parentId;
       }
     }
 

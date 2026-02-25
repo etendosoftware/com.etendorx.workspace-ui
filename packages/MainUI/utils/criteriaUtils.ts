@@ -32,10 +32,25 @@ export interface CriteriaItem {
 /**
  * Builds the base criteria for a datasource request.
  * Handles the logic for Parent-Child relationships.
+ *
+ * When a `parentId` is present (i.e. the user has selected a record in the parent tab),
+ * this mirrors Etendo Classic behavior by returning a `_dummy` criteria. Classic always
+ * sends `_dummy` for parent-child tab navigation, never an explicit field criteria.
+ * The actual filtering is done server-side via session variables (e.g. `@EntityName.id@`)
+ * set separately in `useTableData`.
+ *
+ * The `getParentFieldName` logic below is preserved as a fallback for cases where
+ * `parentId` is not set but a tab/parentColumns relationship is defined.
  */
 export const buildBaseCriteria = ({ tab, parentTab, parentId }: BaseCriteriaOptions): [] | [CriteriaItem] => {
   if (!parentTab) {
     return [];
+  }
+
+  // Classic always sends _dummy for parent-child tab navigation, never an explicit field criteria.
+  // The server uses @EntityName.id@ session variables (set in useTableData) for the actual filtering.
+  if (parentId && parentId !== "") {
+    return [{ fieldName: "_dummy", value: Date.now() as EntityValue, operator: "equals" }];
   }
 
   const getParentFieldName = () => {
