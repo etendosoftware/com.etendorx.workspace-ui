@@ -285,13 +285,25 @@ export function useDatasource({
     reinit();
   }, [activeColumnFilters, searchQuery, reinit]);
 
-  const refetch = useCallback(async () => {
-    reinit();
-    setError(undefined);
-    setLoading(true);
+  const refetch = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const isSilent = options?.silent === true;
 
-    await fetchData(1);
-  }, [reinit, fetchData]);
+      if (!isSilent) {
+        reinit();
+        setLoading(true);
+      } else {
+        setPage(1);
+        setHasMoreRecords(true);
+        // Notice we don't setLoading(true) for silent refetches
+      }
+
+      setError(undefined);
+
+      await fetchData(1);
+    },
+    [reinit, fetchData]
+  );
 
   return {
     loading,

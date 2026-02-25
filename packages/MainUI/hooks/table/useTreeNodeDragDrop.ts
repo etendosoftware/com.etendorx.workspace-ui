@@ -51,7 +51,7 @@ interface UseTreeNodeDragDropOptions {
   /** All currently displayed (flattened) tree records, used for hierarchy validation */
   displayRecords: EntityData[];
   /** Function to refetch tree data after a successful node move */
-  refetch: () => Promise<void>;
+  refetch: (options?: { silent?: boolean }) => Promise<void>;
   /** Callback invoked when a move operation fails or is rejected */
   onError: (message: string) => void;
   /** Optional callback invoked after a successful move */
@@ -450,8 +450,8 @@ export const useTreeNodeDragDrop = ({
           return;
         }
 
-        // Success: refresh tree to reflect the persisted changes
-        await refetch();
+        // Success: refresh tree to reflect the persisted changes silently
+        await refetch({ silent: true });
         onSuccess?.();
       } catch (err) {
         onError((err as Error).message ?? "Failed to move tree node");
