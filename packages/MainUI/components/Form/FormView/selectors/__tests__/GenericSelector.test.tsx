@@ -44,7 +44,6 @@ jest.mock("../LocationSelector", () => ({
   default: () => <div data-testid="LocationSelector">LocationSelector</div>,
 }));
 
-
 describe("GenericSelector", () => {
   const getValues = jest.fn();
 
@@ -56,83 +55,70 @@ describe("GenericSelector", () => {
     getValues.mockReturnValue({});
   });
 
-  it("renders ProductStockModalSelector when datasourceName is ProductStockView", () => {
-    const field = {
-      column: { reference: FIELD_REFERENCE_CODES.SELECT_30 },
-      selector: { datasourceName: "ProductStockView" },
-    } as any;
-
-    const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
-    expect(getByTestId("ProductStockModalSelector")).toBeInTheDocument();
-  });
-
-  it("renders ProductStockModalSelector when reference is FIELD_REFERENCE_CODES.PRODUCT", () => {
-    const field = {
-      column: { reference: FIELD_REFERENCE_CODES.PRODUCT },
-    } as any;
-
-    const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
-    expect(getByTestId("ProductStockModalSelector")).toBeInTheDocument();
-  });
-
-  it("renders ProductStockModalSelector when inputName is inpmProductId and reference is SELECT_30", () => {
-    const field = {
-      inputName: "inpmProductId",
-      column: { reference: FIELD_REFERENCE_CODES.SELECT_30 },
-    } as any;
-
-    const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
-    expect(getByTestId("ProductStockModalSelector")).toBeInTheDocument();
-  });
-
-  it("renders SelectSelector for generic SELECT_30 fields", () => {
-    const field = {
-      inputName: "genericField",
-      column: { reference: FIELD_REFERENCE_CODES.SELECT_30 },
-    } as any;
-
-    const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
-    expect(getByTestId("SelectSelector")).toBeInTheDocument();
-  });
-
-  it("renders StringSelector as default for unknown references", () => {
-    const field = {
-      column: { reference: "UNKNOWN" },
-    } as any;
-
-    const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
-    expect(getByTestId("StringSelector")).toBeInTheDocument();
-  });
-
   it("handles camelCase fallback for hqlName", () => {
-    const field = {
-      hqlName: "field_name",
-      column: { reference: "UNKNOWN" },
-    } as any;
-
-    // Simulate form having data in camelCase version
+    const field = { hqlName: "field_name", column: { reference: "UNKNOWN" } } as any;
     getValues.mockReturnValue({ fieldName: "some value" });
-
     const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
     expect(getByTestId("StringSelector")).toBeInTheDocument();
   });
 
-  const simpleTests = [
-    { reference: FIELD_REFERENCE_CODES.NUMERIC, expected: "NumericSelector" },
-    { reference: FIELD_REFERENCE_CODES.TABLE_DIR_19, expected: "TableDirSelector" },
-    { reference: FIELD_REFERENCE_CODES.DATE, expected: "DateSelector" },
-    { reference: FIELD_REFERENCE_CODES.BOOLEAN, expected: "BooleanSelector" },
-    { reference: FIELD_REFERENCE_CODES.QUANTITY_29, expected: "QuantitySelector" },
-    { reference: FIELD_REFERENCE_CODES.TIME, expected: "TimeSelector", extra: { id: "1" } },
-    { reference: FIELD_REFERENCE_CODES.LIST_17, expected: "ListSelector" },
+  const cases = [
+    {
+      title: "datasourceName is ProductStockView",
+      expected: "ProductStockModalSelector",
+      field: { column: { reference: "30" }, selector: { datasourceName: "ProductStockView" } },
+    },
+    {
+      title: "reference is PRODUCT",
+      expected: "ProductStockModalSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.PRODUCT } },
+    },
+    {
+      title: "inputName is inpmProductId",
+      expected: "ProductStockModalSelector",
+      field: { inputName: "inpmProductId", column: { reference: "30" } },
+    },
+    {
+      title: "generic SELECT_30 fields",
+      expected: "SelectSelector",
+      field: { inputName: "genericField", column: { reference: FIELD_REFERENCE_CODES.SELECT_30 } },
+    },
+    { title: "unknown references", expected: "StringSelector", field: { column: { reference: "UNKNOWN" } } },
+    {
+      title: "numeric fields",
+      expected: "NumericSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.NUMERIC } },
+    },
+    {
+      title: "TABLE_DIR_19 fields",
+      expected: "TableDirSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.TABLE_DIR_19 } },
+    },
+    { title: "DATE fields", expected: "DateSelector", field: { column: { reference: FIELD_REFERENCE_CODES.DATE } } },
+    {
+      title: "BOOLEAN fields",
+      expected: "BooleanSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.BOOLEAN } },
+    },
+    {
+      title: "QUANTITY_29 fields",
+      expected: "QuantitySelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.QUANTITY_29 } },
+    },
+    {
+      title: "TIME fields",
+      expected: "TimeSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.TIME }, id: "1" },
+    },
+    {
+      title: "LIST_17 fields",
+      expected: "ListSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.LIST_17 } },
+    },
   ];
 
-  test.each(simpleTests)(
-    "renders $expected for reference $reference",
-    ({ reference, expected, extra = {} }) => {
-      const field = { column: { reference }, ...extra } as any;
-      const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
-      expect(getByTestId(expected)).toBeInTheDocument();
-    }
-  );
+  test.each(cases)("renders $expected when $title", ({ expected, field }) => {
+    const { getByTestId } = render(<GenericSelector field={field as any} isReadOnly={false} />);
+    expect(getByTestId(expected)).toBeInTheDocument();
+  });
 });
