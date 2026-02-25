@@ -23,7 +23,7 @@ import { Toolbar } from "../Toolbar/Toolbar";
 import DynamicTable from "../Table";
 import { useMetadataContext } from "../../hooks/useMetadataContext";
 import { FormView } from "@/components/Form/FormView";
-import { FormMode } from "@workspaceui/api-client/src/api/types";
+import { FormMode, UIPattern } from "@workspaceui/api-client/src/api/types";
 import { AttachmentProvider } from "@/contexts/AttachmentContext";
 import type { TabLevelProps } from "@/components/window/types";
 import { useCallback, useEffect, useState, useRef, useMemo } from "react";
@@ -1086,6 +1086,20 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     currentMode,
     tabFormState?.mode,
   ]);
+
+  // Auto-open FormView for SR (Single Record) tabs.
+  // SR tabs share the same entity as the parent and always display exactly one record
+  // (the parent record itself). When a parent record is selected and the tab is not
+  // yet in form view, we navigate directly to form view using the parent's record ID.
+  useEffect(() => {
+    if (tab.uIPattern !== UIPattern.EDIT_ONLY) {
+      return;
+    }
+    if (!parentSelectedRecordId || shouldShowForm) {
+      return;
+    }
+    handleSetRecordId(parentSelectedRecordId);
+  }, [tab.uIPattern, parentSelectedRecordId, shouldShowForm, handleSetRecordId]);
 
   return (
     <div
