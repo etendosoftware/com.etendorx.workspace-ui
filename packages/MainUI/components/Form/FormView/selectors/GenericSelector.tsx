@@ -61,9 +61,14 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
 
   const { reference } = effectiveField.column;
 
-  if (field.selector?.datasourceName === "ProductStockView") {
+  if (
+    effectiveField.selector?.datasourceName === "ProductStockView" ||
+    reference === FIELD_REFERENCE_CODES.PRODUCT ||
+    (reference === FIELD_REFERENCE_CODES.SELECT_30 && effectiveField.inputName === "inpmProductId")
+  ) {
     return <ProductStockModalSelector field={effectiveField} isReadOnly={isReadOnly} />;
   }
+
 
   switch (reference) {
     case FIELD_REFERENCE_CODES.PASSWORD:
