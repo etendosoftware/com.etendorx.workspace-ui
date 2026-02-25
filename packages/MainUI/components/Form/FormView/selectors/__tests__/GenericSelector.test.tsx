@@ -117,51 +117,22 @@ describe("GenericSelector", () => {
     expect(getByTestId("StringSelector")).toBeInTheDocument();
   });
 
-  it("renders NumericSelector for numeric fields", () => {
-    const field = {
-      column: { reference: FIELD_REFERENCE_CODES.NUMERIC },
-    } as any;
+  const simpleTests = [
+    { reference: FIELD_REFERENCE_CODES.NUMERIC, expected: "NumericSelector" },
+    { reference: FIELD_REFERENCE_CODES.TABLE_DIR_19, expected: "TableDirSelector" },
+    { reference: FIELD_REFERENCE_CODES.DATE, expected: "DateSelector" },
+    { reference: FIELD_REFERENCE_CODES.BOOLEAN, expected: "BooleanSelector" },
+    { reference: FIELD_REFERENCE_CODES.QUANTITY_29, expected: "QuantitySelector" },
+    { reference: FIELD_REFERENCE_CODES.TIME, expected: "TimeSelector", extra: { id: "1" } },
+    { reference: FIELD_REFERENCE_CODES.LIST_17, expected: "ListSelector" },
+  ];
 
-    const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
-    expect(getByTestId("NumericSelector")).toBeInTheDocument();
-  });
-
-  it("renders TableDirSelector for TABLE_DIR_19 fields", () => {
-    const field = {
-      column: { reference: FIELD_REFERENCE_CODES.TABLE_DIR_19 },
-    } as any;
-
-    const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
-    expect(getByTestId("TableDirSelector")).toBeInTheDocument();
-  });
-
-  it("renders DateSelector for DATE fields", () => {
-    const field = { column: { reference: FIELD_REFERENCE_CODES.DATE } } as any;
-    const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
-    expect(getByTestId("DateSelector")).toBeInTheDocument();
-  });
-
-  it("renders BooleanSelector for BOOLEAN fields", () => {
-    const field = { column: { reference: FIELD_REFERENCE_CODES.BOOLEAN } } as any;
-    const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
-    expect(getByTestId("BooleanSelector")).toBeInTheDocument();
-  });
-
-  it("renders QuantitySelector for QUANTITY fields", () => {
-    const field = { column: { reference: FIELD_REFERENCE_CODES.QUANTITY_29 } } as any;
-    const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
-    expect(getByTestId("QuantitySelector")).toBeInTheDocument();
-  });
-
-  it("renders TimeSelector for TIME fields", () => {
-    const field = { column: { reference: FIELD_REFERENCE_CODES.TIME }, id: "1" } as any;
-    const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
-    expect(getByTestId("TimeSelector")).toBeInTheDocument();
-  });
-
-  it("renders ListSelector for LIST fields", () => {
-    const field = { column: { reference: FIELD_REFERENCE_CODES.LIST_17 } } as any;
-    const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
-    expect(getByTestId("ListSelector")).toBeInTheDocument();
-  });
+  test.each(simpleTests)(
+    "renders $expected for reference $reference",
+    ({ reference, expected, extra = {} }) => {
+      const field = { column: { reference }, ...extra } as any;
+      const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
+      expect(getByTestId(expected)).toBeInTheDocument();
+    }
+  );
 });
