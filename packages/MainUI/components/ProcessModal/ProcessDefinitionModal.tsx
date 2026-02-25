@@ -1309,6 +1309,37 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     }
   }, [button.processDefinition.parameters, open]);
 
+  /**
+   * Dispatches the raw result from an onLoad script to the appropriate state setters.
+   * Returns true if processing should stop early (e.g., the result contained an error).
+   */
+  const handleOnLoadResult = useCallback(
+    (result: Record<string, unknown>): boolean => {
+      if (result.error) {
+        const err = result.error as Record<string, unknown>;
+        setResult({
+          success: false,
+          error: String(err.message ?? err.msgText ?? JSON.stringify(result.error)),
+          data: result.error,
+        });
+        setLoading(false);
+        return true; // stop early
+      }
+
+      if (result._gridSelection && typeof result._gridSelection === "object") {
+        setGridSelection((prev) => applyGridSelection(prev, result._gridSelection as Record<string, string[]>));
+      }
+
+      if (result.autoSelectConfig) {
+        setAutoSelectConfig(result.autoSelectConfig as AutoSelectConfig);
+      }
+
+      setParameters((prev) => updateParametersFromOnLoadResult(result, prev, form.setValue));
+      return false;
+    },
+    [setGridSelection, form.setValue]
+  );
+
   useEffect(() => {
     const fetchOptions = async () => {
       if (!open) return;
@@ -1323,42 +1354,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             effectiveOnLoad,
             { Metadata, ...processScriptContext },
             button.processDefinition,
-            {
-              selectedRecords,
-              tabId: tab.id || "",
-              tableId: tab.table || "",
-            }
+            { selectedRecords, tabId: tab.id || "", tableId: tab.table || "" }
           );
 
           if (result) {
-            // Handle early error returns from onLoad script (e.g., validation)
-            if (result.error) {
-              setResult({
-                success: false,
-                error: result.error.message || result.error.msgText || JSON.stringify(result.error),
-                data: result.error,
-              });
-              setLoading(false);
-              return;
-            }
-
-            // Apply legacy _gridSelection mapping (backward compatibility)
-            if (result._gridSelection && typeof result._gridSelection === "object") {
-              setGridSelection((prev) => applyGridSelection(prev, result._gridSelection as Record<string, string[]>));
-            }
-
-            // Store declarative auto-select config if returned
-            if (result.autoSelectConfig) {
-              setAutoSelectConfig(result.autoSelectConfig as AutoSelectConfig);
-            }
-
-            setParameters((prev) => updateParametersFromOnLoadResult(result, prev, form.setValue));
+            const shouldStop = handleOnLoadResult(result);
+            if (shouldStop) return;
           }
         }
 
-        setTimeout(() => {
-          setLoading(false);
-        }, 300);
+        setTimeout(() => setLoading(false), 300);
       } catch (error) {
         logger.warn("Error loading parameters:", error);
         setLoading(false);
@@ -1372,10 +1377,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     open,
     selectedRecords,
     tab,
-    setGridSelection,
     isBulkCompletion,
     processScriptContext,
-    form.setValue,
+    handleOnLoadResult,
   ]);
 
   /**
