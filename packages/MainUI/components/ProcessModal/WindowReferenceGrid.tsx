@@ -50,6 +50,13 @@ import { buildEtendoContext } from "@/utils/contextUtils";
 import { buildBaseCriteria } from "@/utils/criteriaUtils";
 import { useSelected } from "@/hooks/useSelected";
 import { PROCESS_DEFINITION_DATA } from "../../utils/processes/definition/constants";
+import {
+  convertDatasourceValue,
+  normalizeContextKey,
+  resolveContextValue,
+  applyMergedParam,
+  buildFilterCriteriaEntry,
+} from "@/utils/processes/definition/utils";
 
 const MAX_WIDTH = 100;
 
@@ -441,75 +448,27 @@ const WindowReferenceGrid = ({
     // 2. Default Values (passed from ProcessDefinitionModal)
     // 3. Grid Filters (passed from ProcessDefinitionModal)
 
-    const defaultKeys = {
-      inpadOrgId: "ad_org_id",
-      inpadClientId: "ad_client_id",
-    };
-
-    const convertValueType = (value: unknown): boolean | number | unknown => {
-      if (value === "Y") return true;
-      if (value === "N") return false;
-
-      // Convert numeric strings to numbers (e.g., "102" -> 102, "0" -> 0)
-      if (
-        typeof value === "string" &&
-        value !== "" &&
-        !Number.isNaN(Number(value)) &&
-        value.length < 15 // Avoid converting UUIDs that happen to be numeric
-      ) {
-        return Number(value);
-      }
-
-      return value;
-    };
-
-    const normalizeContextKey = (contextKey: string): string => {
-      if (typeof contextKey === "string" && contextKey.startsWith("@") && contextKey.endsWith("@")) {
-        return contextKey.slice(1, -1);
-      }
-      return contextKey;
-    };
-
-    const resolveContextValue = (contextKey: string): unknown => {
-      return stableRecordValues[contextKey] || stableRecordValues[`inp${contextKey}`];
-    };
-
-    const applyStandardEnvVariables = () => {
-      if (stableRecordValues.inpadOrgId) options.ad_org_id = stableRecordValues.inpadOrgId;
-      if (stableRecordValues.inpadClientId) options.ad_client_id = stableRecordValues.inpadClientId;
-    };
-
     const processDynamicKey = (key: string, value: unknown) => {
-      const payloadKey = key;
       const contextKey = normalizeContextKey(value as string);
-
-      const resolvedValue = resolveContextValue(contextKey);
-      if (resolvedValue === undefined || resolvedValue === null) return;
-
-      options[payloadKey] = convertValueType(resolvedValue);
+      const resolvedValue = resolveContextValue(contextKey, stableRecordValues);
+      if (resolvedValue !== undefined && resolvedValue !== null) {
+        options[key] = convertDatasourceValue(resolvedValue);
+      }
     };
 
     const applyProcessDynamicKeys = (processId: string) => {
       const processDef = PROCESS_DEFINITION_DATA[processId];
-      if (!processDef?.dynamicKeys) {
-        console.log(`[PROCESS_DEBUG] No dynamicKeys found for process ${processId}`);
-        return;
-      }
-
-      console.log(`[PROCESS_DEBUG] Applying dynamicKeys for process ${processId}:`, processDef.dynamicKeys);
-      console.log(`[PROCESS_DEBUG] Current stableRecordValues:`, stableRecordValues);
-
+      if (!processDef?.dynamicKeys) return;
       for (const [key, value] of Object.entries(processDef.dynamicKeys)) {
-        console.log(`[PROCESS_DEBUG] Resolving key: ${key}, value mapping: ${value}`);
         processDynamicKey(key, value);
       }
     };
 
     const applyDynamicKeys = () => {
       if (!stableRecordValues) return;
-
-      applyStandardEnvVariables();
-
+      // Apply standard env variables (org/client context)
+      if (stableRecordValues.inpadOrgId) options.ad_org_id = stableRecordValues.inpadOrgId;
+      if (stableRecordValues.inpadClientId) options.ad_client_id = stableRecordValues.inpadClientId;
       const processId = processConfig?.processId;
       if (processId) {
         applyProcessDynamicKeys(processId);
@@ -519,74 +478,29 @@ const WindowReferenceGrid = ({
     const applyParameters = () => {
       // 1. Merge defaults and current values into a single map
       const mergedParams: Record<string, EntityValue> = {};
-
-      // Apply defaults using helper function
       if (stableProcessDefaults && Object.keys(stableProcessDefaults).length > 0) {
         mergeDefaultsIntoParams(stableProcessDefaults, mergedParams);
       }
-
-      // Apply current values (overrides defaults) using helper function
       if (currentValues && Object.keys(currentValues).length > 0) {
         mergeCurrentValuesIntoParams(currentValues, mergedParams);
       }
-
-      // 2. Process merged parameters
-      for (const [key, finalValue] of Object.entries(mergedParams)) {
-        // Special Case: Auto-map ad_org_id to _org for datasource compatibility
-        if (key === "ad_org_id") {
-          options._org = finalValue;
-        }
-
-        // If it's a mapped system key, apply to options
-        if (defaultKeys && key in defaultKeys) {
-          options[defaultKeys[key as keyof typeof defaultKeys]] = finalValue;
-          continue;
-        }
-
-        const matchingParameter = Object.values(parameters).find((param) => param.name === key);
-        if (matchingParameter) {
-          if (finalValue !== "" && finalValue !== null && finalValue !== undefined) {
-            options[matchingParameter.dBColumnName || key] = finalValue;
-          }
-        }
+      // 2. Apply each merged entry to datasource options
+      for (const [key, value] of Object.entries(mergedParams)) {
+        applyMergedParam(key, value, parameters, options);
       }
     };
 
     const buildCriteria = (): Array<{ fieldName: string; operator: string; value: EntityValue }> => {
       if (!stableFilterExpressions) return [];
-
       const gridKey = parameter.dBColumnName || "";
-
       const expressions = Object.entries(stableFilterExpressions).find(
         ([key]) => key.toLowerCase() === gridKey.toLowerCase()
       )?.[1];
-
       if (!expressions) return [];
-
-      return Object.entries(expressions).map(([fieldName, value]) => {
-        let parsedValue: EntityValue;
-        let operator = "equals";
-
-        if (value === "true") {
-          parsedValue = true;
-        } else if (value === "false") {
-          parsedValue = false;
-        } else if (typeof value === "string") {
-          const isUUID = /^[0-9a-fA-F]{32}$/.test(value);
-          if (!isUUID) {
-            operator = "iContains";
-          }
-          parsedValue = value;
-        } else {
-          parsedValue = value as EntityValue;
-        }
-
-        return {
-          fieldName,
-          operator,
-          value: parsedValue,
-        };
-      });
+      return Object.entries(expressions).map(
+        ([fieldName, value]) =>
+          buildFilterCriteriaEntry(fieldName, value) as { fieldName: string; operator: string; value: EntityValue }
+      );
     };
 
     // Build set of valid column names for this grid to filter params

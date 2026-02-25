@@ -67,7 +67,12 @@ import ProcessResultModal from "./ProcessResultModal";
 import type { ProcessDefinitionModalContentProps, RecordValues, ProcessDefinitionModalProps } from "./types";
 import type { Tab, ProcessParameter, EntityData, Field } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
-import { buildProcessScriptContext } from "@/utils/processes/definition/utils";
+import {
+  buildProcessScriptContext,
+  applyGridSelection,
+  updateParametersFromOnLoadResult,
+} from "@/utils/processes/definition/utils";
+
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
 import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
@@ -1337,84 +1342,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
               return;
             }
 
-            // If backend returns a legacy `_gridSelection` mapping (ids), apply it directly (backward compatibility)
+            // Apply legacy _gridSelection mapping (backward compatibility)
             if (result._gridSelection && typeof result._gridSelection === "object") {
-              // Merge into gridSelection state
-              setGridSelection((prev) => {
-                const next = { ...prev };
-                for (const [key, ids] of Object.entries(result._gridSelection as Record<string, string[]>)) {
-                  // keep existing _allRows if present, but overwrite _selection with EntityData array
-                  next[key] = {
-                    ...(next[key] || { _selection: [], _allRows: [] }),
-                    _selection: Array.isArray(ids)
-                      ? ids.map(
-                          (id) =>
-                            ({
-                              id: String(id),
-                            }) as EntityData
-                        )
-                      : [],
-                  };
-                }
-                return next;
-              });
+              setGridSelection((prev) => applyGridSelection(prev, result._gridSelection as Record<string, string[]>));
             }
 
-            // If backend returns an autoSelectConfig, store it
+            // Store declarative auto-select config if returned
             if (result.autoSelectConfig) {
               setAutoSelectConfig(result.autoSelectConfig as AutoSelectConfig);
             }
 
-            setParameters((prev) => {
-              const newParameters = { ...prev };
-
-              // Track names injected by _dynamicParameters so the filter loop below skips them
-              const dynamicParamNames = new Set<string>();
-
-              // If backend returns _dynamicParameters, structurally inject them into the parameters object so UI components can render them
-              if (result._dynamicParameters && Array.isArray(result._dynamicParameters)) {
-                for (const dynamicParam of result._dynamicParameters) {
-                  dynamicParamNames.add(dynamicParam.name);
-                  newParameters[dynamicParam.name] = {
-                    id: dynamicParam.id || dynamicParam.name,
-                    name: dynamicParam.name,
-                    DBColumnName: dynamicParam.name,
-                    reference: dynamicParam.reference,
-                    required: dynamicParam.required || false,
-                    refList: dynamicParam.refList || [],
-                    ...dynamicParam,
-                  };
-                }
-              }
-
-              for (const [parameterName, values] of Object.entries(result)) {
-                if (["_gridSelection", "autoSelectConfig", "_dynamicParameters"].includes(parameterName)) continue;
-
-                if (dynamicParamNames.has(parameterName)) {
-                  form.setValue(parameterName, values);
-                  continue;
-                }
-
-                if (!newParameters[parameterName]) continue;
-
-                try {
-                  const isArray = Array.isArray(values);
-                  const newOptions = isArray ? (values as string[]) : [values as string];
-
-                  newParameters[parameterName] = { ...newParameters[parameterName] };
-
-                  if (Array.isArray(newParameters[parameterName].refList)) {
-                    newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
-                      newOptions.includes(option.value)
-                    );
-                  }
-                } catch (e) {
-                  logger.warn("Malformed parameter data from onLoad for", parameterName, e);
-                }
-              }
-
-              return newParameters;
-            });
+            setParameters((prev) => updateParametersFromOnLoadResult(result, prev, form.setValue));
           }
         }
 
