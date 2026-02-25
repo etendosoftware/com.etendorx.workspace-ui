@@ -230,6 +230,69 @@ const evaluateWindowReferenceDisplay = (options: EvaluateWindowReferenceDisplayO
   }
   return isDisplayed;
 };
+
+/**
+ * Processes grid selection from an onLoad result
+ */
+const updateGridSelectionFromResult = (
+  result: Record<string, unknown>,
+  prev: GridSelectionStructure
+): GridSelectionStructure => {
+  if (!result._gridSelection || typeof result._gridSelection !== "object") {
+    return prev;
+  }
+
+  const next = { ...prev };
+  const gridSelection = result._gridSelection as Record<string, string[]>;
+  for (const [key, ids] of Object.entries(gridSelection)) {
+    next[key] = {
+      ...(next[key] || { _selection: [], _allRows: [] }),
+      _selection: Array.isArray(ids)
+        ? ids.map(
+            (id) =>
+              ({
+                id: String(id),
+              }) as EntityData
+          )
+        : [],
+    };
+  }
+  return next;
+};
+
+/**
+ * Updates process parameters based on the result of an onLoad script
+ */
+const updateParametersFromResult = (
+  result: Record<string, unknown>,
+  prevParameters: Record<string, ProcessParameter>
+): Record<string, ProcessParameter> => {
+  const newParameters = { ...prevParameters };
+
+  for (const [parameterName, values] of Object.entries(result)) {
+    if (["_gridSelection", "autoSelectConfig"].includes(parameterName)) continue;
+
+    if (!newParameters[parameterName]) continue;
+
+    try {
+      const isArray = Array.isArray(values);
+      const newOptions = isArray ? (values as string[]) : [values as string];
+
+      newParameters[parameterName] = { ...newParameters[parameterName] };
+
+      if (Array.isArray(newParameters[parameterName].refList)) {
+        newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
+          newOptions.includes(option.value)
+        );
+      }
+    } catch (e) {
+      logger.warn("Malformed parameter data from onLoad for", parameterName, e);
+    }
+  }
+
+  return newParameters;
+};
+
 /**
  * ProcessDefinitionModalContent - Core modal component for process execution
  *
@@ -1436,25 +1499,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             } else {
               // If backend returns a legacy `_gridSelection` mapping (ids), apply it directly (backward compatibility)
               if (result._gridSelection && typeof result._gridSelection === "object") {
-                // Merge into gridSelection state
-                setGridSelection((prev) => {
-                  const next = { ...prev };
-                  for (const [key, ids] of Object.entries(result._gridSelection as Record<string, string[]>)) {
-                    // keep existing _allRows if present, but overwrite _selection with EntityData array
-                    next[key] = {
-                      ...(next[key] || { _selection: [], _allRows: [] }),
-                      _selection: Array.isArray(ids)
-                        ? ids.map(
-                            (id) =>
-                              ({
-                                id: String(id),
-                              }) as EntityData
-                          )
-                        : [],
-                    };
-                  }
-                  return next;
-                });
+                setGridSelection((prev) => updateGridSelectionFromResult(result as Record<string, unknown>, prev));
               }
 
               // If backend returns an autoSelectConfig, store it
@@ -1462,33 +1507,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                 setAutoSelectConfig(result.autoSelectConfig as AutoSelectConfig);
               }
 
-              setParameters((prev) => {
-                const newParameters = { ...prev };
-
-                for (const [parameterName, values] of Object.entries(result)) {
-                  if (["_gridSelection", "autoSelectConfig"].includes(parameterName)) continue;
-
-                  if (!newParameters[parameterName]) continue;
-
-                  try {
-                    const isArray = Array.isArray(values);
-                    const newOptions = isArray ? (values as string[]) : [values as string];
-
-                    newParameters[parameterName] = { ...newParameters[parameterName] };
-
-                    if (Array.isArray(newParameters[parameterName].refList)) {
-                      newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
-                        newOptions.includes(option.value)
-                      );
-                    }
-                  } catch (e) {
-                    logger.warn("Malformed parameter data from onLoad for", parameterName, e);
-                  }
-                }
-
-                return newParameters;
-              });
-            } // close else (directExecute guard)
+              setParameters((prev) => updateParametersFromResult(result as Record<string, unknown>, prev));
+            }
           }
         }
 
