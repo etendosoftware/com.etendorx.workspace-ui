@@ -1254,9 +1254,22 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         if (response.ok && response.data) {
           const processData = response.data;
 
-          // Update parameters from the loaded metadata
+          // Update parameters from the loaded metadata.
+          // Use a functional update to avoid overwriting dynamic params injected by onLoad.
+          // Server params are the base; any param already in state that is NOT in server response
+          // is a dynamic param from onLoad and must be preserved.
           if (processData.parameters) {
-            setParameters(processData.parameters);
+            setParameters((prev) => {
+              // Start with server params as the base
+              const merged = { ...processData.parameters };
+              // Keep any dynamic params from onLoad that don't exist in the server response
+              for (const [key, value] of Object.entries(prev)) {
+                if (!merged[key]) {
+                  merged[key] = value;
+                }
+              }
+              return merged;
+            });
           }
 
           // Also update other process definition properties if needed
@@ -1424,6 +1437,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     setGridSelection,
     isBulkCompletion,
     processScriptContext,
+    form.setValue,
   ]);
 
   /**
