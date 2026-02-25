@@ -35,7 +35,14 @@ export const ProductStockModalSelector = ({
     },
   ];
 
-  return <ModalSelector field={effectiveField} isReadOnly={isReadOnly} customColumns={columns} />;
+  return (
+    <ModalSelector
+      field={effectiveField}
+      isReadOnly={isReadOnly}
+      customColumns={columns}
+      data-testid={"ModalSelector__" + field.id}
+    />
+  );
 };
 
 export default ProductStockModalSelector;

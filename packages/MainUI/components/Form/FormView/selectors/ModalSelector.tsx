@@ -215,11 +215,10 @@ export const ModalSelector = ({
             {identifier || (typeof value === "string" ? value : value?._identifier) || `Select ${fieldLabel}...`}
           </span>
           <div className="flex items-center flex-shrink-0 ml-2">
-            <SearchIcon fill="currentColor" className="w-5 h-5" />
+            <SearchIcon fill="currentColor" className="w-5 h-5" data-testid={"SearchIcon__" + field.id} />
           </div>
         </button>
       </div>
-
       <Modal
         open={isModalOpen}
         onCancel={handleCloseModal}
@@ -239,7 +238,7 @@ export const ModalSelector = ({
         data-testid={`ModalSelector__modal__${field.id}`}>
         <div className="flex flex-col gap-4 p-4 overflow-hidden" style={{ maxHeight: "70vh" }}>
           <div className="overflow-auto flex-1 border rounded" data-testid={`ModalSelector__table__${field.id}`}>
-            <MaterialReactTable table={table} />
+            <MaterialReactTable table={table} data-testid={"MaterialReactTable__" + field.id} />
           </div>
         </div>
       </Modal>

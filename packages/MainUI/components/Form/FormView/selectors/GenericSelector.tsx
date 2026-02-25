@@ -66,7 +66,13 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
     reference === FIELD_REFERENCE_CODES.PRODUCT ||
     (reference === FIELD_REFERENCE_CODES.SELECT_30 && effectiveField.inputName === "inpmProductId")
   ) {
-    return <ProductStockModalSelector field={effectiveField} isReadOnly={isReadOnly} />;
+    return (
+      <ProductStockModalSelector
+        field={effectiveField}
+        isReadOnly={isReadOnly}
+        data-testid={"ProductStockModalSelector__" + field.id}
+      />
+    );
   }
 
   switch (reference) {
