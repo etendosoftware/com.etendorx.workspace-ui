@@ -294,6 +294,34 @@ const updateParametersFromResult = (
 };
 
 /**
+ * Handles the result of an onLoad script
+ */
+const handleOnLoadResult = (
+  result: Record<string, unknown> | null | undefined,
+  setShouldDirectExecute: (value: boolean) => void,
+  setGridSelection: (updater: GridSelectionUpdater) => void,
+  setAutoSelectConfig: (config: AutoSelectConfig) => void,
+  setParameters: (updater: (prev: Record<string, ProcessParameter>) => Record<string, ProcessParameter>) => void
+): void => {
+  if (!result) return;
+
+  if (result.type === "directExecute") {
+    setShouldDirectExecute(true);
+    return;
+  }
+
+  if (result._gridSelection && typeof result._gridSelection === "object") {
+    setGridSelection((prev) => updateGridSelectionFromResult(result, prev));
+  }
+
+  if (result.autoSelectConfig) {
+    setAutoSelectConfig(result.autoSelectConfig as AutoSelectConfig);
+  }
+
+  setParameters((prev) => updateParametersFromResult(result, prev));
+};
+
+/**
  * ProcessDefinitionModalContent - Core modal component for process execution
  *
  * Handles three types of process execution:
@@ -1491,25 +1519,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             tableId: tab.table || "",
           });
 
-          if (result) {
-            // Direct execute: onLoad signals that onProcess should fire immediately (no UI interaction needed).
-            // The modal shows only a loading overlay and closes after onProcess completes.
-            if (result.type === "directExecute") {
-              setShouldDirectExecute(true);
-            } else {
-              // If backend returns a legacy `_gridSelection` mapping (ids), apply it directly (backward compatibility)
-              if (result._gridSelection && typeof result._gridSelection === "object") {
-                setGridSelection((prev) => updateGridSelectionFromResult(result as Record<string, unknown>, prev));
-              }
-
-              // If backend returns an autoSelectConfig, store it
-              if (result.autoSelectConfig) {
-                setAutoSelectConfig(result.autoSelectConfig as AutoSelectConfig);
-              }
-
-              setParameters((prev) => updateParametersFromResult(result as Record<string, unknown>, prev));
-            }
-          }
+          handleOnLoadResult(
+            result as Record<string, unknown> | null | undefined,
+            setShouldDirectExecute,
+            setGridSelection,
+            setAutoSelectConfig,
+            setParameters
+          );
         }
 
         setTimeout(() => {
