@@ -48,6 +48,7 @@ import {
   ADD_PAYMENT_ORDER_PROCESS_ID,
 } from "@/utils/processes/definition/constants";
 import { GenericWarehouseProcess, useWarehousePlugin } from "./Custom/GenericWarehouseProcess";
+import { createCallAction } from "./Custom/GenericWarehouseProcess/warehouseApiHelpers";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
@@ -283,6 +284,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
   const [gridSelection, setGridSelectionInternal] = useState<GridSelectionStructure>({});
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
+  const [shouldDirectExecute, setShouldDirectExecute] = useState(false);
 
   const setGridSelection = useCallback((updater: GridSelectionUpdater) => {
     setGridSelectionInternal((prev) => {
@@ -1111,12 +1113,31 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         };
 
         try {
+          const callAction = createCallAction(token ?? "", processId ?? "");
           const stringFnResult = await executeStringFunction(
             onProcess,
-            { Metadata },
+            { Metadata, callAction },
             button.processDefinition,
             stringFunctionPayload
           );
+
+          // Handle custom return types from onProcess (e.g. open external URL and close modal)
+          if (stringFnResult?.type === "openUrl" && stringFnResult.url) {
+            const { url, closeModal, refreshRecord, windowFeatures } = stringFnResult as {
+              url: string;
+              closeModal?: boolean;
+              refreshRecord?: boolean;
+              windowFeatures?: string;
+            };
+            window.open(url, "_blank", windowFeatures ?? "width=800,height=600,noopener,noreferrer");
+            if (refreshRecord) {
+              onSuccess?.();
+            }
+            if (closeModal !== false) {
+              handleClose();
+            }
+            return;
+          }
 
           const responseMessage = stringFnResult.responseActions[0].showMsgInProcessView;
           const success = responseMessage.msgType === "success";
@@ -1144,6 +1165,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       selectedRecords,
       form,
       parameters,
+      onSuccess,
     ]
   );
 
@@ -1407,60 +1429,66 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           });
 
           if (result) {
-            // If backend returns a legacy `_gridSelection` mapping (ids), apply it directly (backward compatibility)
-            if (result._gridSelection && typeof result._gridSelection === "object") {
-              // Merge into gridSelection state
-              setGridSelection((prev) => {
-                const next = { ...prev };
-                for (const [key, ids] of Object.entries(result._gridSelection as Record<string, string[]>)) {
-                  // keep existing _allRows if present, but overwrite _selection with EntityData array
-                  next[key] = {
-                    ...(next[key] || { _selection: [], _allRows: [] }),
-                    _selection: Array.isArray(ids)
-                      ? ids.map(
-                          (id) =>
-                            ({
-                              id: String(id),
-                            }) as EntityData
-                        )
-                      : [],
-                  };
-                }
-                return next;
-              });
-            }
-
-            // If backend returns an autoSelectConfig, store it
-            if (result.autoSelectConfig) {
-              setAutoSelectConfig(result.autoSelectConfig as AutoSelectConfig);
-            }
-
-            setParameters((prev) => {
-              const newParameters = { ...prev };
-
-              for (const [parameterName, values] of Object.entries(result)) {
-                if (["_gridSelection", "autoSelectConfig"].includes(parameterName)) continue;
-
-                if (!newParameters[parameterName]) continue;
-
-                try {
-                  const isArray = Array.isArray(values);
-                  const newOptions = isArray ? (values as string[]) : [values as string];
-
-                  newParameters[parameterName] = { ...newParameters[parameterName] };
-
-                  if (Array.isArray(newParameters[parameterName].refList)) {
-                    newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
-                      newOptions.includes(option.value)
-                    );
+            // Direct execute: onLoad signals that onProcess should fire immediately (no UI interaction needed).
+            // The modal shows only a loading overlay and closes after onProcess completes.
+            if (result.type === "directExecute") {
+              setShouldDirectExecute(true);
+            } else {
+              // If backend returns a legacy `_gridSelection` mapping (ids), apply it directly (backward compatibility)
+              if (result._gridSelection && typeof result._gridSelection === "object") {
+                // Merge into gridSelection state
+                setGridSelection((prev) => {
+                  const next = { ...prev };
+                  for (const [key, ids] of Object.entries(result._gridSelection as Record<string, string[]>)) {
+                    // keep existing _allRows if present, but overwrite _selection with EntityData array
+                    next[key] = {
+                      ...(next[key] || { _selection: [], _allRows: [] }),
+                      _selection: Array.isArray(ids)
+                        ? ids.map(
+                            (id) =>
+                              ({
+                                id: String(id),
+                              }) as EntityData
+                          )
+                        : [],
+                    };
                   }
-                } catch (e) {
-                  logger.warn("Malformed parameter data from onLoad for", parameterName, e);
-                }
+                  return next;
+                });
               }
 
-              return newParameters;
-            });
+              // If backend returns an autoSelectConfig, store it
+              if (result.autoSelectConfig) {
+                setAutoSelectConfig(result.autoSelectConfig as AutoSelectConfig);
+              }
+
+              setParameters((prev) => {
+                const newParameters = { ...prev };
+
+                for (const [parameterName, values] of Object.entries(result)) {
+                  if (["_gridSelection", "autoSelectConfig"].includes(parameterName)) continue;
+
+                  if (!newParameters[parameterName]) continue;
+
+                  try {
+                    const isArray = Array.isArray(values);
+                    const newOptions = isArray ? (values as string[]) : [values as string];
+
+                    newParameters[parameterName] = { ...newParameters[parameterName] };
+
+                    if (Array.isArray(newParameters[parameterName].refList)) {
+                      newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
+                        newOptions.includes(option.value)
+                      );
+                    }
+                  } catch (e) {
+                    logger.warn("Malformed parameter data from onLoad for", parameterName, e);
+                  }
+                }
+
+                return newParameters;
+              });
+            } // close else (directExecute guard)
           }
         }
 
@@ -1604,6 +1632,15 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       setAutoSelectApplied(true);
     }
   }, [autoSelectConfig, autoSelectApplied, gridSelection, selectedRecords]);
+
+  // Auto-execute onProcess when onLoad returns { type: "directExecute" }.
+  // Waits for loading to finish (onLoad evaluated) before firing, so all context is ready.
+  useEffect(() => {
+    if (shouldDirectExecute && !loading && open) {
+      setShouldDirectExecute(false);
+      handleExecute();
+    }
+  }, [shouldDirectExecute, loading, open, handleExecute]);
 
   const renderResponse = () => {
     if (!result) return null;
@@ -1762,6 +1799,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     (hasWindowReference && !gridSelection);
 
   const renderModalContent = () => {
+    // --- Direct execute: onLoad signaled to skip UI and fire onProcess immediately ---
+    if (shouldDirectExecute || (loading && shouldDirectExecute)) {
+      return (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg p-8 flex items-center gap-3">
+            <Loading data-testid="Loading__directExecute" />
+            <span className="text-sm text-gray-600">{button.name}</span>
+          </div>
+        </div>
+      );
+    }
+
     // --- Generic warehouse process (schema-driven, module-declared via onLoad/payscript) ---
     if (warehousePluginLoading && onLoad) {
       return (
