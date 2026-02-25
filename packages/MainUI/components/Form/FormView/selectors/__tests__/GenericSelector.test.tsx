@@ -117,8 +117,8 @@ describe("GenericSelector", () => {
     },
   ];
 
-  test.each(cases)("renders $expected when $title", ({ expected, field }) => {
-    const { getByTestId } = render(<GenericSelector field={field as any} isReadOnly={false} />);
+  test.each(cases)("renders $expected when $title", ({ expected, field }: any) => {
+    const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
     expect(getByTestId(expected)).toBeInTheDocument();
   });
 });
