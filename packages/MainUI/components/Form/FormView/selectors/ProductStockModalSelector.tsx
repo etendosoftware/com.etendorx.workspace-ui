@@ -10,7 +10,6 @@ export const ProductStockModalSelector = ({
   isReadOnly: boolean;
 }) => {
   const effectiveField = useMemo(() => {
-
     return {
       ...field,
       selector: {

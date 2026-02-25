@@ -69,7 +69,6 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
     return <ProductStockModalSelector field={effectiveField} isReadOnly={isReadOnly} />;
   }
 
-
   switch (reference) {
     case FIELD_REFERENCE_CODES.PASSWORD:
       return <PasswordSelector field={effectiveField} readOnly={isReadOnly} data-testid="PasswordSelector__6e80fa" />;
