@@ -32,7 +32,8 @@ export const useColumnFilterData = () => {
       distinctField?: string,
       tabId?: string,
       offset = 0,
-      isImplicitFilterApplied?: boolean
+      isImplicitFilterApplied?: boolean,
+      extraParams?: Record<string, unknown>
     ): Promise<FilterOption[]> => {
       try {
         const params: Record<string, unknown> = {
@@ -48,20 +49,27 @@ export const useColumnFilterData = () => {
         }
 
         if (distinctField && tabId) {
-          params._distinct = distinctField;
-          params.tabId = tabId;
-          params.operator = "and";
-          params._constructor = "AdvancedCriteria";
+          // Build criteria array: base process criteria first, then search or dummy
+          const criteriaItems: object[] = [];
+
+          if (extraParams?.criteria) {
+            const extra = extraParams.criteria;
+            if (Array.isArray(extra)) {
+              criteriaItems.push(...extra);
+            } else {
+              criteriaItems.push(extra as object);
+            }
+          }
 
           if (searchQuery?.trim()) {
-            params.criteria = JSON.stringify({
+            criteriaItems.push({
               fieldName: `${distinctField}$_identifier`,
               operator: "iContains",
               value: searchQuery.trim(),
               _constructor: "AdvancedCriteria",
             });
           } else {
-            params.criteria = JSON.stringify({
+            criteriaItems.push({
               fieldName: "_dummy",
               operator: "equals",
               value: Date.now(),
@@ -69,6 +77,21 @@ export const useColumnFilterData = () => {
             });
           }
 
+          // Merge extra params (excluding criteria which is handled above)
+          if (extraParams) {
+            for (const [key, value] of Object.entries(extraParams)) {
+              if (key !== "criteria" && value !== undefined && value !== null) {
+                params[key] = value;
+              }
+            }
+          }
+
+          // Set distinct-specific params last so extraParams can't overwrite them
+          params._distinct = distinctField;
+          params.tabId = tabId;
+          params.operator = "and";
+          params._constructor = "AdvancedCriteria";
+          params.criteria = criteriaItems;
           // Optimize payload by requesting only necessary fields
           params._selectedProperties = `id,${distinctField},${distinctField}$_identifier`;
         } else {

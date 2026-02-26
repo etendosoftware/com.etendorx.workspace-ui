@@ -90,9 +90,10 @@ function createFormData(params: DatasourceRequestParams): URLSearchParams {
   const formData = new URLSearchParams();
   for (const [key, value] of Object.entries(params || {})) {
     if (key === "criteria" && Array.isArray(value)) {
-      // Datasource expects a single JSON array string under 'criteria'
-      const arrayStr = `[${value.join(",")}]`;
-      formData.set("criteria", arrayStr);
+      // Classic backend expects multiple criteria= params (one per criterion), not a JSON array
+      for (const item of value) {
+        formData.append("criteria", String(item));
+      }
     } else if (Array.isArray(value)) {
       for (const item of value) {
         formData.append(key, String(item));

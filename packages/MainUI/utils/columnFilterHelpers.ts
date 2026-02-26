@@ -26,7 +26,8 @@ type FetchFilterOptionsFunction = (
   distinctField?: string,
   tabId?: string,
   offset?: number,
-  isImplicitFilterApplied?: boolean
+  isImplicitFilterApplied?: boolean,
+  extraParams?: Record<string, unknown>
 ) => Promise<FilterOption[]>;
 
 interface LoadTableDirFilterOptionsParams {
@@ -40,6 +41,7 @@ interface LoadTableDirFilterOptionsParams {
   offset?: number;
   pageSize?: number;
   isImplicitFilterApplied?: boolean;
+  extraParams?: Record<string, unknown>;
 }
 
 /**
@@ -74,6 +76,7 @@ export const loadTableDirFilterOptions = async ({
   offset = 0,
   pageSize = 20,
   isImplicitFilterApplied,
+  extraParams,
 }: LoadTableDirFilterOptionsParams): Promise<FilterOption[]> => {
   try {
     let options: FilterOption[] = [];
@@ -83,7 +86,9 @@ export const loadTableDirFilterOptions = async ({
       // This queries the main datasource with _distinct to get unique values of this field from actual table data
       const currentDatasource = entityName;
       const tabIdStr = tabId;
-      const distinctField = column.columnName;
+      // Classic backend expects HQL property names (e.g. "businessPartner"), not DB column names (e.g. "C_BPartner_ID")
+      // filterFieldName is set from field._key (HQL property name) in WindowReferenceGrid rawColumns
+      const distinctField = (column as any).filterFieldName || column.columnName;
 
       options = await fetchFilterOptions(
         String(currentDatasource),
@@ -93,7 +98,8 @@ export const loadTableDirFilterOptions = async ({
         distinctField,
         tabIdStr,
         offset,
-        isImplicitFilterApplied
+        isImplicitFilterApplied,
+        extraParams
       );
     } else {
       // Fallback to selector/datasource approach for fields without a referenced entity
@@ -110,6 +116,22 @@ export const loadTableDirFilterOptions = async ({
           undefined,
           offset,
           isImplicitFilterApplied
+        );
+      } else if (entityName && column.columnName) {
+        // Last-resort fallback for TABLEDIR columns in process grids without explicit datasource:
+        // use _distinct on the main entity to get available values for this column
+        // Classic backend expects HQL property names, not DB column names
+        const distinctField = (column as any).filterFieldName || column.columnName;
+        options = await fetchFilterOptions(
+          String(entityName),
+          undefined,
+          searchQuery,
+          pageSize,
+          distinctField,
+          tabId,
+          offset,
+          isImplicitFilterApplied,
+          extraParams
         );
       }
     }

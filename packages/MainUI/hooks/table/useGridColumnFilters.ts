@@ -17,6 +17,7 @@
 
 import { useCallback, useRef } from "react";
 import type { Column } from "@workspaceui/api-client/src/api/types";
+import { FieldType } from "@workspaceui/api-client/src/api/types";
 import type { MRT_ColumnFiltersState } from "material-react-table";
 import {
   ColumnFilterUtils,
@@ -34,6 +35,7 @@ interface UseGridColumnFiltersParams {
   setAppliedTableFilters: React.Dispatch<React.SetStateAction<MRT_ColumnFiltersState>>;
   setColumnFilters: React.Dispatch<React.SetStateAction<MRT_ColumnFiltersState>>;
   isImplicitFilterApplied?: boolean;
+  extraParams?: Record<string, unknown>;
 }
 
 /**
@@ -46,6 +48,7 @@ export const useGridColumnFilters = ({
   setAppliedTableFilters,
   setColumnFilters,
   isImplicitFilterApplied,
+  extraParams,
 }: UseGridColumnFiltersParams) => {
   const {
     columnFilters: advancedColumnFilters,
@@ -88,7 +91,14 @@ export const useGridColumnFilters = ({
 
   const handleLoadFilterOptions = useCallback(
     async (columnId: string, searchQuery?: string): Promise<FilterOption[]> => {
-      const column = columns.find((col: Column) => col.id === columnId || col.columnName === columnId);
+      // Also check by header/name since ColumnFilter passes column.id = column.name (display name)
+      const column = columns.find(
+        (col: Column) =>
+          col.id === columnId ||
+          col.columnName === columnId ||
+          (col as any).header === columnId ||
+          (col as any).name === columnId
+      );
       if (!column) {
         return [];
       }
@@ -97,7 +107,8 @@ export const useGridColumnFilters = ({
         return loadSelectFilterOptions(column, columnId, searchQuery, setFilterOptions);
       }
 
-      if (ColumnFilterUtils.isTableDirColumn(column)) {
+      // isTableDirColumn requires referencedEntity; also handle TABLEDIR columns without it
+      if (ColumnFilterUtils.isTableDirColumn(column) || (column.type === FieldType.TABLEDIR && entityName)) {
         return loadTableDirFilterOptions({
           column,
           columnId,
@@ -107,24 +118,31 @@ export const useGridColumnFilters = ({
           fetchFilterOptions,
           setFilterOptions,
           isImplicitFilterApplied,
+          extraParams,
         });
       }
 
       return [];
     },
-    [columns, fetchFilterOptions, setFilterOptions, tabId, entityName]
+    [columns, fetchFilterOptions, setFilterOptions, tabId, entityName, extraParams]
   );
 
   const fetchingRefs = useRef<Record<string, boolean>>({});
 
   const handleLoadMoreFilterOptions = useCallback(
     async (columnId: string, searchQuery?: string): Promise<FilterOption[]> => {
-      const column = columns.find((col: Column) => col.id === columnId || col.columnName === columnId);
+      const column = columns.find(
+        (col: Column) =>
+          col.id === columnId ||
+          col.columnName === columnId ||
+          (col as any).header === columnId ||
+          (col as any).name === columnId
+      );
       if (!column) {
         return [];
       }
 
-      if (!ColumnFilterUtils.isTableDirColumn(column)) {
+      if (!ColumnFilterUtils.isTableDirColumn(column) && !(column.type === FieldType.TABLEDIR && entityName)) {
         return [];
       }
 
@@ -157,13 +175,14 @@ export const useGridColumnFilters = ({
           offset,
           pageSize,
           isImplicitFilterApplied,
+          extraParams,
         });
         return newOptions;
       } finally {
         fetchingRefs.current[columnId] = false;
       }
     },
-    [columns, fetchFilterOptions, setFilterOptions, loadMoreFilterOptions, tabId, entityName, advancedColumnFilters]
+    [columns, fetchFilterOptions, setFilterOptions, loadMoreFilterOptions, tabId, entityName, advancedColumnFilters, extraParams]
   );
 
   return {
