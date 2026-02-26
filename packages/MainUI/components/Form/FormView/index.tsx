@@ -183,7 +183,10 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   }, [waitingForRefetch, loadingFormInitialization, currentRecordId]);
 
   const refreshRecordAndSession = useCallback(async () => {
-    if (!recordId || recordId === NEW_RECORD_ID) return;
+    if (!recordId || recordId === NEW_RECORD_ID) {
+      await refetch();
+      return;
+    }
 
     try {
       const result = (await datasource.get(tab.entityName, {
@@ -824,7 +827,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
             <FormActions
               tab={tab}
               onNew={handleNewRecord}
-              refetch={refetch}
+              refetch={refreshRecordAndSession}
               onSave={handleSave}
               showErrorModal={showErrorModal}
               mode={currentMode}
