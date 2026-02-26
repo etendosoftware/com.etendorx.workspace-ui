@@ -23,14 +23,15 @@ describe("Sidebar", () => {
   it("renders all navigation items", () => {
     render(<Sidebar {...defaultProps} />);
     expect(screen.getByText("Configuration")).toBeInTheDocument();
-    expect(screen.getByText("Installation")).toBeInTheDocument();
+    expect(screen.getByText("Start All")).toBeInTheDocument();
+    expect(screen.getByText("Dependencies")).toBeInTheDocument();
     expect(screen.getByText("Development")).toBeInTheDocument();
   });
 
   it("highlights the active section", () => {
-    render(<Sidebar {...defaultProps} activeSection="installation" />);
-    const installationButton = screen.getByText("Installation").closest("div[role='button']");
-    expect(installationButton).toHaveClass("Mui-selected");
+    render(<Sidebar {...defaultProps} activeSection="development" />);
+    const devButton = screen.getByText("Development").closest("div[role='button']");
+    expect(devButton).toHaveClass("Mui-selected");
   });
 
   it("calls onSectionChange when clicking a navigation item", async () => {

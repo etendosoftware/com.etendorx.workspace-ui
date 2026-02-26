@@ -24,11 +24,11 @@ describe("Layout", () => {
 
   it("renders sidebar with correct active section", () => {
     render(
-      <Layout {...defaultProps} activeSection="installation">
+      <Layout {...defaultProps} activeSection="dependencies">
         <div>Content</div>
       </Layout>
     );
-    expect(screen.getByText("Installation")).toBeInTheDocument();
+    expect(screen.getByText("Dependencies")).toBeInTheDocument();
   });
 
   it("passes onSectionChange to sidebar", async () => {
