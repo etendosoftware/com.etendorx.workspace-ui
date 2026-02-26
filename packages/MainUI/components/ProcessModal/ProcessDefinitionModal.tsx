@@ -52,6 +52,8 @@ import { PackingProcess } from "./Custom/PackingProcess/PackingProcess";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
+
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { FormProvider, useForm, useFormState } from "react-hook-form";
@@ -256,6 +258,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const processId = processDefinition.id;
   const javaClassName = processDefinition.javaClassName;
 
+  const [gridRefreshKey, setGridRefreshKey] = useState(0);
+
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -277,7 +281,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   // NEW: autoSelectConfig state to hold declarative selection instructions OR backward-compatible _gridSelection
   const [autoSelectConfig, setAutoSelectConfig] = useState<AutoSelectConfig | null>(null);
   const [autoSelectApplied, setAutoSelectApplied] = useState(false);
-  const [availableButtons, setAvailableButtons] = useState<Array<{ value: string; label: string }>>([]);
+  const [availableButtons, setAvailableButtons] = useState<Array<{ value: string; label: string; isFilter?: boolean }>>(
+    []
+  );
   const [rulesRegistered, setRulesRegistered] = useState(false);
 
   // Register PayScript DSL if available in process definition
@@ -298,18 +304,72 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   }, [processDefinition]);
 
   useEffect(() => {
-    const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+    let active = true;
 
-    if (buttonListParam?.refList) {
-      setAvailableButtons(
-        buttonListParam.refList.map((item) => ({
-          value: item.value,
-          label: item.label,
-        }))
-      );
-    } else {
-      setAvailableButtons([]);
-    }
+    const fetchDynamicButtons = async (referenceId: string) => {
+      try {
+        const result = (await datasource.get("ADList", {
+          criteria: [{ fieldName: "reference.id", operator: "equals", value: referenceId }],
+          sortBy: "sequenceNumber",
+          _startRow: 0,
+          _endRow: 100,
+        })) as any;
+
+        return result?.response?.data || result?.data?.response?.data || [];
+      } catch (e) {
+        logger.error("Failed to fetch dynamic buttons", e);
+        return [];
+      }
+    };
+
+    const loadButtons = async () => {
+      const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+
+      if (!buttonListParam) {
+        if (active) setAvailableButtons([]);
+        return;
+      }
+
+      // Case 1: refList is already populated
+      if (buttonListParam.refList && buttonListParam.refList.length > 0) {
+        if (active) {
+          setAvailableButtons(
+            buttonListParam.refList.map((item) => ({
+              value: item.value,
+              label: item.label,
+            }))
+          );
+        }
+        return;
+      }
+
+      // Case 2: Try to fetch from ADList if we have the reference ID
+      // referenceSearchKey holds the AD_Reference_ID for list references as seen in debug
+      const referenceId = (buttonListParam as any).referenceSearchKey;
+
+      if (referenceId) {
+        const responseData = await fetchDynamicButtons(referenceId);
+
+        if (responseData && responseData.length > 0 && active) {
+          const mappedButtons = responseData.map((item: any) => ({
+            value: item.searchKey,
+            label: item.name,
+            isFilter: ["filter", "apply", "search", "refresh"].includes(item.searchKey?.toLowerCase()),
+          }));
+          setAvailableButtons(mappedButtons);
+        } else if (active) {
+          setAvailableButtons([]);
+        }
+      } else {
+        if (active) setAvailableButtons([]);
+      }
+    };
+
+    loadButtons();
+
+    return () => {
+      active = false;
+    };
   }, [parameters]);
 
   // Handle case when modal is opened from sidebar (no tab context)
@@ -874,6 +934,55 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   }, [gridSelection]);
 
   /**
+   * Helper to copy user selection from DocAction parameter to the dBColumnName "DocAction"
+   */
+  const resolveDocAction = useCallback(
+    (formValues: Record<string, any>) => {
+      const docActionParam = Object.values(parameters).find(
+        (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
+      );
+      if (docActionParam && formValues[docActionParam.name]) {
+        formValues.DocAction = formValues[docActionParam.name];
+      }
+    },
+    [parameters]
+  );
+
+  /**
+   * Helper to merge form values with populated grids for process execution.
+   */
+  const getMergedProcessValues = useCallback(
+    (extraValues: Record<string, any> = {}) => {
+      const populatedGrids = getPopulatedGrids();
+      const isAddPayment = processId === ADD_PAYMENT_ORDER_PROCESS_ID;
+
+      if (isAddPayment) {
+        return mapKeysWithDefaults({ ...form.getValues(), ...populatedGrids });
+      }
+
+      const formValues = getMappedFormValues();
+      resolveDocAction(formValues);
+
+      return mapKeysWithDefaults({
+        ...extraValues,
+        ...formValues,
+        ...populatedGrids,
+      });
+    },
+    [processId, form, getPopulatedGrids, getMappedFormValues, resolveDocAction]
+  );
+
+  /**
+   * Determines record IDs to send for process execution
+   */
+  const getRecordIds = useCallback(() => {
+    if (selectedRecords && selectedRecords.length > 0) {
+      return selectedRecords.map((r) => String(r.id));
+    }
+    return record?.id ? [String(record.id)] : [];
+  }, [selectedRecords, record]);
+
+  /**
    * Executes processes with window reference parameters
    * Used for processes that require grid record selection
    * Calls servlet with selected grid records and process-specific data
@@ -888,78 +997,21 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
         const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
 
-        // Only include grids that have data
-        const populatedGrids = getPopulatedGrids();
-
-        // Determine mapping strategy
-        const isAddPayment = processId === ADD_PAYMENT_ORDER_PROCESS_ID;
-
-        let mappedValues: Record<string, any>;
-
-        const formValues = getMappedFormValues();
-
-        // Fix: DocAction - copy user selection from parameter.name to dBColumnName
-        const docActionParam = Object.values(parameters).find(
-          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
-        );
-
-        if (docActionParam) {
-          const userSelection = formValues[docActionParam.name];
-          if (userSelection) {
-            formValues.DocAction = userSelection;
-          }
-        }
-        if (isAddPayment) {
-          // Legacy mapping for Add Payment process
-          const formValues = form.getValues();
-          mappedValues = mapKeysWithDefaults({ ...formValues, ...populatedGrids });
-        } else {
-          // Use getMappedFormValues for cleaner mapping (handles empty->null and dbColumnName)
-          const mappedFormValues = getMappedFormValues();
-          mappedValues = mapKeysWithDefaults({ ...mappedFormValues, ...populatedGrids });
-        }
-        // Build base payload
+        const mergedValues = getMergedProcessValues();
         const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
         const skipParamsLevel = processDefConfig?.skipParamsLevel;
 
         const payload: Record<string, unknown> = {
-          recordIds: record?.id ? [record.id] : [],
+          recordIds: getRecordIds(),
           _buttonValue: actionValue || "DONE",
           ...(skipParamsLevel
-            ? {
-                ...mappedValues,
-                ...buttonParams,
-              }
-            : {
-                _params: {
-                  ...mappedValues,
-                  ...buttonParams,
-                },
-              }),
+            ? { ...mergedValues, ...buttonParams }
+            : { _params: { ...mergedValues, ...buttonParams } }),
           _entityName: tab?.entityName || "",
           windowId: tab?.window || "",
           ...buildProcessSpecificFields(processId),
           ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
         };
-
-        const params = (skipParamsLevel ? payload : payload._params) as Record<string, unknown>;
-        logger.debug("[PROCESS_DEBUG] handleWindowReferenceExecute - Final payload:", {
-          payloadKeys: Object.keys(payload),
-          paramsKeys: Object.keys(params),
-          gridsInParams: Object.keys(params).filter(
-            (k) => k === "order_invoice" || k === "credit_to_use" || k === "glitem"
-          ),
-          orderInvoiceStructure: params.order_invoice
-            ? {
-                hasSelection: !!(params.order_invoice as any)._selection,
-                selectionLength: ((params.order_invoice as any)._selection || []).length,
-                hasAllRows: !!(params.order_invoice as any)._allRows,
-                allRowsLength: ((params.order_invoice as any)._allRows || []).length,
-                fullStructure: JSON.stringify(params.order_invoice).substring(0, 300),
-              }
-            : "NOT PRESENT",
-          payloadSample: JSON.stringify(payload).substring(0, 500),
-        });
 
         await executeJavaProcess(payload, "process");
       });
@@ -968,13 +1020,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       tab,
       processId,
       parameters,
-      record,
       buildProcessSpecificFields,
       buildWindowSpecificFields,
       executeJavaProcess,
-      getMappedFormValues,
-      initialState,
-      getPopulatedGrids,
+      getMergedProcessValues,
+      getRecordIds,
     ]
   );
 
@@ -990,60 +1040,23 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         return;
       }
 
-      const windowConfig = windowId ? WINDOW_SPECIFIC_KEYS[windowId] : null;
-      const extraKey = windowConfig ? { [windowConfig.key]: windowConfig.value(record) } : {};
-
       startTransition(async () => {
+        const windowConfig = windowId ? WINDOW_SPECIFIC_KEYS[windowId] : null;
+        const extraKey = windowConfig ? { [windowConfig.key]: windowConfig.value(record) } : {};
+
         const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
         const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
 
-        // Only include grids that have data
-        const populatedGrids = getPopulatedGrids();
-
-        // Determine record IDs to send
-        // Prioritize explicit selection, fall back to current record contex
-        let recordIds: string[] = [];
-        if (selectedRecords && selectedRecords.length > 0) {
-          recordIds = selectedRecords.map((r) => String(r.id));
-        } else if (record?.id) {
-          recordIds = [String(record.id)];
-        }
-
-        // Use buildProcessParameters to properly map parameter names to DB column names
         const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
         const skipParamsLevel = processDefConfig?.skipParamsLevel;
 
-        const formValues = getMappedFormValues();
-
-        // Fix: DocAction - copy user selection from parameter.name to dBColumnName
-        const docActionParam = Object.values(parameters).find(
-          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
-        );
-        if (docActionParam) {
-          const userSelection = formValues[docActionParam.name];
-          if (userSelection) {
-            formValues.DocAction = userSelection;
-          }
-        }
-
-        const combinedValues = { ...recordValues, ...formValues, ...extraKey, ...populatedGrids };
-
-        const params = mapKeysWithDefaults(combinedValues as SourceObject);
+        const params = getMergedProcessValues({ ...recordValues, ...extraKey });
 
         const payload = {
-          recordIds,
+          recordIds: getRecordIds(),
           _buttonValue: actionValue || "DONE",
-          ...(skipParamsLevel
-            ? {
-                ...params,
-                ...buttonParams,
-              }
-            : {
-                _params: {
-                  ...params,
-                  ...buttonParams,
-                },
-              }),
+          _entityName: tab?.entityName || "",
+          ...(skipParamsLevel ? { ...params, ...buttonParams } : { _params: { ...params, ...buttonParams } }),
           ...buildProcessSpecificFields(processId),
         };
 
@@ -1051,13 +1064,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       });
     },
     [
+      tab,
       processId,
       javaClassName,
       windowId,
       record,
-      selectedRecords,
-      recordValues,
       parameters,
+      getMergedProcessValues,
+      getRecordIds,
+      recordValues,
+      buildProcessSpecificFields,
       executeJavaProcess,
       getMappedFormValues,
       initialState,
@@ -1065,17 +1081,15 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       buildProcessSpecificFields,
     ]
   );
-
-  /**
-   * Main process execution handler - routes to appropriate execution method
-   *
-   * Execution Priority:
-   * 1. Window Reference Process (hasWindowReference = true)
-   * 2. Direct Java Process (javaClassName exists, no onProcess)
-   * 3. String Function Process (onProcess exists)
-   */
   const handleExecute = useCallback(
     async (actionValue?: string) => {
+      // Generic handling for filter actions (defined in button list)
+      const actionButton = availableButtons.find((b) => b.value === actionValue);
+      if (actionButton?.isFilter) {
+        setGridRefreshKey((prev) => prev + 1);
+        return;
+      }
+
       setResult(null);
       if (hasWindowReference) {
         await handleWindowReferenceExecute(actionValue);
@@ -1094,21 +1108,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
       startTransition(async () => {
         const formValues = form.getValues();
+        resolveDocAction(formValues);
 
         // Build complete payload with all context fields
         const completePayload = buildProcessPayload(record || {}, tab, initialState || {}, formValues);
-
-        // Fix: DocAction - the form stores user selection under parameter.name (e.g. "Document Action")
-        // but the backend expects it under dBColumnName ("DocAction")
-        const docActionParam = Object.values(parameters).find(
-          (p) => p.name === "DocAction" || p.dBColumnName === "DocAction"
-        );
-        if (docActionParam) {
-          const userSelection = formValues[docActionParam.name];
-          if (userSelection) {
-            (completePayload as Record<string, unknown>).DocAction = userSelection;
-          }
-        }
 
         const stringFunctionPayload = {
           _buttonValue: actionValue || "DONE",
@@ -1229,22 +1232,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     });
   }, [form, button.processDefinition.id, token, parameters]);
 
-  // Register PayScript DSL if available in process definition
-  useEffect(() => {
-    if (processDefinition.id) {
-      const def = processDefinition as any;
-      const dsl =
-        def.etmetaPayscriptLogic ||
-        def.emPayscriptLogic ||
-        def.em_payscript_logic ||
-        def.emEtmetaOnprocess ||
-        def.em_etmeta_onprocess;
-      if (dsl) {
-        registerPayScriptDSL(processDefinition.id, dsl);
-      }
-    }
-  }, [processDefinition]);
-
   useEffect(() => {
     if (open && hasWindowReference) {
       const loadConfig = async () => {
@@ -1264,21 +1251,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   // DefaultsProcessActionHandler integration including mixed types and logic fields
 
   // Handle initialization errors and logging
-  // Register PayScript DSL if available in process definition
-  useEffect(() => {
-    if (processDefinition.id) {
-      const def = processDefinition as any;
-      const dsl =
-        def.etmetaPayscriptLogic ||
-        def.emPayscriptLogic ||
-        def.em_payscript_logic ||
-        def.emEtmetaOnprocess ||
-        def.em_etmeta_onprocess;
-      if (dsl) {
-        registerPayScriptDSL(processDefinition.id, dsl);
-      }
-    }
-  }, [processDefinition]);
 
   useEffect(() => {
     if (initializationError) {
@@ -1296,21 +1268,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   }, [initializationError, hasInitialData, processId, initialState, logicFields, filterExpressions]);
 
   // Load process definition metadata when opened from sidebar (parameters are empty)
-  // Register PayScript DSL if available in process definition
-  useEffect(() => {
-    if (processDefinition.id) {
-      const def = processDefinition as any;
-      const dsl =
-        def.etmetaPayscriptLogic ||
-        def.emPayscriptLogic ||
-        def.em_payscript_logic ||
-        def.emEtmetaOnprocess ||
-        def.em_etmeta_onprocess;
-      if (dsl) {
-        registerPayScriptDSL(processDefinition.id, dsl);
-      }
-    }
-  }, [processDefinition]);
 
   useEffect(() => {
     const loadProcessMetadata = async () => {
@@ -1354,22 +1311,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     loadProcessMetadata();
   }, [open, processId, button.processDefinition.parameters, type]);
 
-  // Register PayScript DSL if available in process definition
-  useEffect(() => {
-    if (processDefinition.id) {
-      const def = processDefinition as any;
-      const dsl =
-        def.etmetaPayscriptLogic ||
-        def.emPayscriptLogic ||
-        def.em_payscript_logic ||
-        def.emEtmetaOnprocess ||
-        def.em_etmeta_onprocess;
-      if (dsl) {
-        registerPayScriptDSL(processDefinition.id, dsl);
-      }
-    }
-  }, [processDefinition]);
-
   useEffect(() => {
     if (open) {
       setResult(null);
@@ -1383,22 +1324,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       setAutoSelectApplied(false);
     }
   }, [button.processDefinition.parameters, open]);
-
-  // Register PayScript DSL if available in process definition
-  useEffect(() => {
-    if (processDefinition.id) {
-      const def = processDefinition as any;
-      const dsl =
-        def.etmetaPayscriptLogic ||
-        def.emPayscriptLogic ||
-        def.em_payscript_logic ||
-        def.emEtmetaOnprocess ||
-        def.em_etmeta_onprocess;
-      if (dsl) {
-        registerPayScriptDSL(processDefinition.id, dsl);
-      }
-    }
-  }, [processDefinition]);
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -1496,21 +1421,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
    *  - autoSelectConfig._gridSelection: mapping table -> [ids]
    *  - autoSelectConfig.table + autoSelectConfig.logic: declarative selection
    */
-  // Register PayScript DSL if available in process definition
-  useEffect(() => {
-    if (processDefinition.id) {
-      const def = processDefinition as any;
-      const dsl =
-        def.etmetaPayscriptLogic ||
-        def.emPayscriptLogic ||
-        def.em_payscript_logic ||
-        def.emEtmetaOnprocess ||
-        def.em_etmeta_onprocess;
-      if (dsl) {
-        registerPayScriptDSL(processDefinition.id, dsl);
-      }
-    }
-  }, [processDefinition]);
 
   useEffect(() => {
     if (!autoSelectConfig || autoSelectApplied) return;
@@ -1674,6 +1584,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
     // Separate window references from selectors
     for (const parameter of parametersList) {
+      // Skip inactive parameters
+      // @ts-ignore
+      if (parameter.active === false) {
+        continue;
+      }
+
+      // Skip Button List parameters (rendered as footer buttons)
+      if (parameter.reference === BUTTON_LIST_REFERENCE_ID) {
+        continue;
+      }
       if (parameter.reference === WINDOW_REFERENCE_ID) {
         const isDisplayed = evaluateWindowReferenceDisplay({
           parameter,
@@ -1691,7 +1611,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         const parameterTab = getTabForParameter(parameter);
         windowReferences.push(
           <WindowReferenceGrid
-            key={`window-ref-${parameter.id || parameter.name}`}
+            key={`window-ref-${parameter.id || parameter.name}-${gridRefreshKey}`}
             parameter={parameter}
             parameters={parameters}
             onSelectionChange={setGridSelection}
@@ -1873,7 +1793,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                               {btn.label}
                             </Button>
                           ))
-                        : (!result || !result.success) && (
+                        : (!result || !result.success) &&
+                          processId !== "FF1893F761AF46E893E37CB4EF1DFCB1" && (
                             <Button
                               variant="filled"
                               size="large"
