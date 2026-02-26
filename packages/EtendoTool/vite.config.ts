@@ -5,6 +5,8 @@ import path from "node:path";
 
 const __dirname = new URL(".", import.meta.url).pathname;
 
+const SETUP_TOKEN = process.env.SETUP_TOKEN ?? "";
+
 export default defineConfig({
   plugins: [react(), tsconfigPaths()],
   resolve: {
@@ -39,6 +41,13 @@ export default defineConfig({
       "/api": {
         target: "http://localhost:3851",
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyReq) => {
+            if (SETUP_TOKEN) {
+              proxyReq.setHeader("Authorization", `Bearer ${SETUP_TOKEN}`);
+            }
+          });
+        },
       },
       "/sws": {
         target: "http://localhost:8080/etendo",
