@@ -10,18 +10,20 @@ interface AttributeSetInstanceSelectorProps {
   isReadOnly: boolean;
 }
 
-const ATTRIBUTE_SET_KEYS = ["attributeSet", "mAttributeSet"];
+const ATTRIBUTE_SET_KEYS = ["attributeSet", "mAttributeSet", "ATTRIBUTESET", "mAttributeSetId", "M_AttributeSet_ID"];
 
 const PRODUCT_KEYS = ["product", "mProduct", "mProductId"];
 
-const resolveFromFormValues = (
-  values: Record<string, unknown>,
-  keys: string[]
-): string | null => {
-  for (const key of keys) {
-    const val = values[key];
-    if (val && typeof val === "string" && val.length > 5) {
-      return val;
+const resolveFromFormValues = (values: Record<string, unknown>, keys: string[]): string | null => {
+  const valueKeys = Object.keys(values);
+  const lowerKeys = keys.map((k) => k.toLowerCase());
+
+  for (const key of valueKeys) {
+    if (lowerKeys.includes(key.toLowerCase())) {
+      const val = values[key];
+      if (val && typeof val === "string" && val.length > 5) {
+        return val;
+      }
     }
   }
   return null;
@@ -30,16 +32,29 @@ const resolveFromFormValues = (
 const resolveAttributeSetId = (values: Record<string, unknown>): string | null => {
   // 1. Direct form field (Product form has attributeSet as a sibling field)
   const direct = resolveFromFormValues(values, ATTRIBUTE_SET_KEYS);
-  if (direct) return direct;
+  if (direct) {
+    return direct;
+  }
 
   // 2. From product _data object (transaction forms with product reference)
   for (const [key, val] of Object.entries(values)) {
     if (!key.endsWith("_data") || !val || typeof val !== "object") continue;
     const data = val as Record<string, unknown>;
-    for (const prop of ["attributeSet", "product$attributeSet"]) {
-      if (data[prop] && typeof data[prop] === "string") {
-        return data[prop] as string;
-      }
+
+    const possibleProps = [
+      "attributeSet",
+      "attributeSetId",
+      "attributeSet$id",
+      "mAttributeSet",
+      "mAttributeSet$id",
+      "product$attributeSet",
+      "product$attributeSet$id",
+      "ATTRIBUTESET",
+    ];
+
+    const dataValue = resolveFromFormValues(data, possibleProps);
+    if (dataValue) {
+      return dataValue;
     }
   }
 
@@ -58,6 +73,8 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
   const identifier = watch(`${fieldName}$_identifier`);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [displayValue, setDisplayValue] = useState<string>("");
+  // Track the last saved instance ID for re-opening the modal in same session
+  const [lastSavedInstanceId, setLastSavedInstanceId] = useState<string | null>(null);
 
   useEffect(() => {
     if (identifier) {
@@ -80,14 +97,21 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
 
   const handleSave = useCallback(
     (data: { id: string; description: string }) => {
-      setValue(fieldName, data.id);
-      setValue(`${fieldName}$_identifier`, data.description);
-      setValue(`${fieldName}_data`, {
-        id: data.id,
-        _identifier: data.description,
-        _entityName: "MaterialMgmtAttributeSetInstance",
-      });
+      // Use shouldDirty and shouldTouch to ensure react-hook-form tracks the change
+      setValue(fieldName, data.id, { shouldDirty: true, shouldTouch: true });
+      setValue(`${fieldName}$_identifier`, data.description, { shouldDirty: true });
+      setValue(
+        `${fieldName}_data`,
+        {
+          id: data.id,
+          _identifier: data.description,
+          _entityName: "MaterialMgmtAttributeSetInstance",
+        },
+        { shouldDirty: true }
+      );
       setDisplayValue(data.description);
+      // Track the saved instance ID locally so we can pass it to the modal on reopen
+      setLastSavedInstanceId(data.id);
       setIsModalOpen(false);
     },
     [fieldName, setValue]
@@ -95,14 +119,25 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
 
   const formValues = getValues();
   const attributeSetId = resolveAttributeSetId(formValues);
-  const productId = resolveProductId(formValues);
+  let productId = resolveProductId(formValues);
+
+  // Fallback for productId if we are in the Product window
+  const entityName = formValues._entityName as string | undefined;
+  if (!productId && entityName === "Product" && formValues.id) {
+    productId = String(formValues.id);
+  }
+
+  // Resolve the current instance ID: prefer form value, then fallback to locally saved ID
+  const resolvedInstanceId = value || lastSavedInstanceId || null;
 
   return (
     <>
       <div className="w-full">
         <div
-          className={`flex items-center justify-between w-full h-10 px-3 border-b transition-colors ${
-            isReadOnly ? "bg-gray-100 cursor-not-allowed" : "hover:border-gray-400 cursor-pointer border-gray-300"
+          className={`flex items-center w-full px-3 rounded-t tracking-normal h-10.5 border-0 border-b-2 transition-colors outline-none ${
+            isReadOnly
+              ? "bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) hover:bg-transparent"
+              : "bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10) focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none cursor-pointer"
           }`}
           onClick={handleOpenModal}
           tabIndex={isReadOnly ? -1 : 0}
@@ -112,11 +147,15 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
               handleOpenModal();
             }
           }}>
-          <div className="flex items-center gap-2">
-            <SearchOutlined fill="#6B7280" className="w-4 h-4" />
-            <span className={`text-sm ${displayValue ? "text-gray-900" : "text-gray-500"}`}>
+          <div className="flex items-center justify-between gap-2 flex-1 min-w-0">
+            <span
+              className={`text-sm truncate font-medium ${displayValue ? "text-(--color-transparent-neutral-80)" : "text-baseline-60"}`}>
               {displayValue || "Select attribute..."}
             </span>
+            <SearchOutlined
+              fill="currentColor"
+              className="w-4 h-4 flex-shrink-0 text-(--color-transparent-neutral-60)"
+            />
           </div>
         </div>
       </div>
@@ -125,7 +164,7 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
         onCancel={handleCloseModal}
         onSave={handleSave}
         attributeSetId={attributeSetId}
-        currentInstanceId={value || null}
+        currentInstanceId={resolvedInstanceId}
         productId={productId}
         field={field}
       />

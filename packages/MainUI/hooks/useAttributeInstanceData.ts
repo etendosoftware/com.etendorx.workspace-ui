@@ -1,18 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { datasource } from "@workspaceui/api-client/src/api/datasource";
-import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { logger } from "@/utils/logger";
-
-interface AttributeInstanceValue {
-  attributeId: string;
-  value: string;
-}
 
 interface UseAttributeInstanceDataResult {
   instanceData: {
     lot: string;
     serialNo: string;
     expirationDate: string;
+    guaranteeDate: string;
     values: Record<string, string>;
   } | null;
   loading: boolean;
@@ -35,39 +30,48 @@ export const useAttributeInstanceData = (instanceId: string | null): UseAttribut
     setError(null);
 
     try {
-      // 1. Fetch Attribute Set Instance record for core attributes (lot, serialNo, date)
-      const asiResponse = (await datasource.get("AttributeSetInstance", {
-        criteria: [{ fieldName: "id", operator: "equals", value: instanceId }],
-      })) as any;
+      // Use the Kernel ActionHandler with FETCH action to bypass entity access restrictions
+      const response = await Metadata.client.request(
+        "api/erp/org.openbravo.client.kernel?_action=com.etendoerp.metadata.AttributeSetInstanceActionHandler",
+        {
+          method: "POST",
+          body: {
+            _buttonValue: "FETCH",
+            _entityName: "AttributeSetInstance",
+            _params: {
+              instanceId,
+            },
+          },
+        }
+      );
 
-      const asiData = asiResponse?.data?.response?.data as EntityData[] | undefined;
-      if (!asiData || asiData.length === 0) {
-        setError("Attribute Set Instance not found");
+      const data = response?.data;
+
+      if (!data || data.status === "Error") {
+        const msg = data?.message || "Attribute Set Instance not found";
+        logger.warn(`Failed to fetch ASI ${instanceId}: ${msg}`);
+        setError(msg);
         setLoading(false);
         return;
       }
 
-      const asi = asiData[0];
+      const expirationDate = String(data.expirationDate || "");
+      const guaranteeDate = String(data.guaranteeDate || "");
+
       const coreData = {
-        lot: String(asi.lotName || ""),
-        serialNo: String(asi.serialNo || ""),
-        expirationDate: String(asi.guaranteedDate || ""), // Etendo uses guaranteedDate for expiration
+        lot: String(data.lotName || ""),
+        serialNo: String(data.serialNo || ""),
+        expirationDate,
+        guaranteeDate: guaranteeDate || expirationDate,
         values: {} as Record<string, string>,
       };
 
-      // 2. Fetch Attribute Instance records for custom attributes
-      const aiResponse = (await datasource.get("AttributeInstance", {
-        criteria: [{ fieldName: "attributeSetInstance", operator: "equals", value: instanceId }],
-      })) as any;
-
-      const aiData = aiResponse?.data?.response?.data as EntityData[] | undefined;
-      if (aiData) {
-        aiData.forEach((item: EntityData) => {
-          const attrId = String(item.attribute);
-          // For list attributes, use attributeValue ID, for text use searchKey
-          const value = String(item.attributeValue || item.searchKey || "");
-          coreData.values[attrId] = value;
-        });
+      // Parse custom attribute values from the response
+      if (data.customAttributes) {
+        const customAttrs = data.customAttributes;
+        for (const attrId of Object.keys(customAttrs)) {
+          coreData.values[attrId] = String(customAttrs[attrId] || "");
+        }
       }
 
       setInstanceData(coreData);

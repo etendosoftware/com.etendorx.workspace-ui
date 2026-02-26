@@ -11,6 +11,8 @@ interface SaveAttributeSetInstanceParams {
   lot?: string;
   serialNo?: string;
   expirationDate?: string;
+  guaranteeDate?: string;
+  description?: string;
   isLocked?: string;
   lockDescription?: string;
   customAttributes?: Record<string, string>;
@@ -57,10 +59,13 @@ export const useAttributeSetInstance = (): UseAttributeSetInstanceResult => {
       };
 
       // Call the Kernel ActionHandler
-      const response = await Metadata.client.request(`api/erp/org.openbravo.client.kernel?_action=com.etendoerp.metadata.AttributeSetInstanceActionHandler`, {
-        method: "POST",
-        body: payload,
-      });
+      const response = await Metadata.client.request(
+        `api/erp/org.openbravo.client.kernel?_action=com.etendoerp.metadata.AttributeSetInstanceActionHandler`,
+        {
+          method: "POST",
+          body: payload,
+        }
+      );
 
       const responseData = response?.data;
 

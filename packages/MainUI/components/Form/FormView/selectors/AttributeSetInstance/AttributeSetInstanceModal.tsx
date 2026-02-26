@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import Modal from "@workspaceui/componentlibrary/src/components/BasicModal";
 import Select from "@workspaceui/componentlibrary/src/components/Input/Select";
 import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
-import Button from "@mui/material/Button";
+import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 import SearchOutlined from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
 import { TextInput } from "../components/TextInput";
 import { DateInput } from "../components/DateInput";
@@ -38,23 +38,38 @@ const INITIAL_FORM_DATA: AttributeSetInstanceFormData = {
 const buildDescription = (formData: AttributeSetInstanceFormData, customAttributes: CustomAttribute[]): string => {
   const parts: string[] = [];
 
-  if (formData.lot) parts.push(formData.lot);
-  if (formData.serialNo) parts.push(`#${formData.serialNo}`);
-
+  // 1. Custom attributes first
   for (const attr of customAttributes) {
     const value = formData.customAttributes[attr.id];
     if (value) {
       if (attr.isList) {
         const selectedOption = attr.values.find((v) => v.id === value);
-        if (selectedOption) parts.push(selectedOption.name);
+        if (selectedOption) {
+          parts.push(selectedOption.name);
+        } else {
+          const identifier = formData.customAttributes[`${attr.id}_identifier`];
+          parts.push(identifier || value);
+        }
       } else {
         parts.push(value);
       }
     }
   }
 
-  if (formData.expirationDate) parts.push(formData.expirationDate);
-  if (formData.guaranteeDate) parts.push(formData.guaranteeDate);
+  // 2. Standard fields
+  if (formData.lot) parts.push(`L${formData.lot}`);
+  if (formData.serialNo) parts.push(`#${formData.serialNo}`);
+
+  // 3. Dates (DD-MM-YYYY format)
+  const formatDate = (dateStr: string) => {
+    if (!dateStr || !dateStr.includes("-")) return dateStr;
+    const [y, m, d] = dateStr.split("-");
+    if (y.length === 4) return `${d}-${m}-${y}`;
+    return dateStr;
+  };
+
+  if (formData.expirationDate) parts.push(formatDate(formData.expirationDate));
+  if (formData.guaranteeDate) parts.push(formatDate(formData.guaranteeDate));
 
   return parts.join("_");
 };
@@ -80,7 +95,7 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
     instanceData,
     loading: dataLoading,
     error: dataError,
-  } = useAttributeInstanceData(open ? currentInstanceId : null);
+  } = useAttributeInstanceData(open && currentInstanceId ? currentInstanceId : null);
 
   const { saveInstance, loading: saving, error: saveHookError } = useAttributeSetInstance();
 
@@ -96,12 +111,13 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
     }
 
     if (instanceData) {
+      logger.debug("Pre-populating form with instance data:", instanceData);
       setFormData({
         lot: instanceData.lot,
         serialNo: instanceData.serialNo,
         expirationDate: instanceData.expirationDate,
-        guaranteeDate: "", // Map appropriately if needed
-        description: "", // Usually generated
+        guaranteeDate: instanceData.guaranteeDate,
+        description: "",
         customAttributes: { ...instanceData.values },
       });
     }
@@ -137,6 +153,9 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
     []
   );
 
+  // Auto-computed description preview (read-only, like Classic)
+  const computedDescription = useMemo(() => buildDescription(formData, customAttributes), [formData, customAttributes]);
+
   const hasRequiredFields = useMemo(() => {
     if (!config) return false;
     for (const attr of customAttributes) {
@@ -153,8 +172,6 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
     setSaveError(null);
 
     try {
-      const description = formData.description || buildDescription(formData, customAttributes);
-
       const result = await saveInstance({
         attributeSetId,
         instanceId: currentInstanceId,
@@ -164,9 +181,8 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
         serialNo: formData.serialNo || undefined,
         expirationDate: formData.expirationDate || undefined,
         guaranteeDate: formData.guaranteeDate || undefined,
-        description,
-        customAttributes:
-          Object.keys(formData.customAttributes).length > 0 ? formData.customAttributes : undefined,
+        description: computedDescription,
+        customAttributes: Object.keys(formData.customAttributes).length > 0 ? formData.customAttributes : undefined,
       });
 
       onSave(result);
@@ -174,7 +190,18 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
       const errorMessage = err instanceof Error ? err.message : "Error saving attribute set instance";
       setSaveError(errorMessage);
     }
-  }, [config, saving, attributeSetId, formData, customAttributes, currentInstanceId, productId, windowId, saveInstance, onSave]);
+  }, [
+    config,
+    saving,
+    attributeSetId,
+    formData,
+    computedDescription,
+    currentInstanceId,
+    productId,
+    windowId,
+    saveInstance,
+    onSave,
+  ]);
 
   const renderStandardFields = () => {
     if (!config) return null;
@@ -207,6 +234,7 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
               label="Expiration Date"
               field={{ ...field, isMandatory: false, name: "expirationDate", hqlName: "expirationDate" }}
               value={formData.expirationDate}
+              currentValue={formData.expirationDate}
               onChange={(e) => handleDateChange("expirationDate", e)}
             />
           </div>
@@ -218,6 +246,7 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
               label="Guarantee Date"
               field={{ ...field, isMandatory: false, name: "guaranteeDate", hqlName: "guaranteeDate" }}
               value={formData.guaranteeDate}
+              currentValue={formData.guaranteeDate}
               onChange={(e) => handleDateChange("guaranteeDate", e)}
             />
           </div>
@@ -226,8 +255,8 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
         <TextInput
           label="Description"
           field={{ ...field, isMandatory: false, name: "description", hqlName: "description" }}
-          value={formData.description}
-          onChange={(e) => handleInputChange("description", e.target.value)}
+          value={computedDescription}
+          readOnly
           className="w-full"
         />
       </>
@@ -238,6 +267,17 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
     if (customAttributes.length === 0) return null;
 
     return customAttributes.map((attr) => {
+      // Normalize search to be case-insensitive for ID matching
+      const attrIdLower = attr.id.toLowerCase();
+      const formDataKeys = Object.keys(formData.customAttributes);
+
+      const matchingKey = formDataKeys.find((k) => k.toLowerCase() === attrIdLower) || attr.id;
+      const selectedValue = formData.customAttributes[matchingKey] || "";
+
+      // Look for the identifier if it was returned by FETCH
+      const identifierKey = `${matchingKey}_identifier`;
+      const selectedIdentifier = formData.customAttributes[identifierKey] || "";
+
       if (attr.isList) {
         const options: Option[] = attr.values.map((v) => ({
           id: v.id,
@@ -245,8 +285,24 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
           value: v.id,
         }));
 
-        const selectedValue = formData.customAttributes[attr.id] || "";
-        const selectedOption = options.find((o) => o.value === selectedValue) || null;
+        // Find option with case-insensitive value matching
+        const selectedValueLower = selectedValue.toLowerCase();
+        let selectedOption = options.find((o) => o.value.toLowerCase() === selectedValueLower) || null;
+
+        // If not found but we have an identifier, create a virtual option so it's not empty
+        if (!selectedOption && selectedValue && selectedIdentifier) {
+          selectedOption = {
+            id: selectedValue,
+            title: selectedIdentifier,
+            value: selectedValue,
+          };
+          // Optionally add it to the list if the Select component needs it
+          options.push(selectedOption);
+        }
+
+        if (selectedValue && !selectedOption) {
+          logger.warn(`Attribute ${attr.name} (${attr.id}): value "${selectedValue}" not found in options`, options);
+        }
 
         return (
           <div key={attr.id}>
@@ -272,7 +328,7 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
           key={attr.id}
           label={attr.name}
           field={{ ...field, isMandatory: attr.isMandatory, name: attr.id, hqlName: attr.id }}
-          value={formData.customAttributes[attr.id] || ""}
+          value={selectedValue}
           onChange={(e) => handleCustomAttributeChange(attr.id, e.target.value)}
           className="w-full"
         />
@@ -280,25 +336,27 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
     });
   };
 
-  const combinedError = configError || saveError || saveHookError;
+  const combinedError = configError || dataError || saveError || saveHookError;
+  const isLoading = configLoading || dataLoading;
 
   return (
     <Modal
       open={open}
       onCancel={onCancel}
       tittleHeader="Attribute Selector"
-      descriptionText="Attribute"
+      descriptionText=""
       HeaderIcon={SearchOutlined}
       showHeader
       buttons={
-        <div className="flex gap-2">
-          <Button variant="outlined" onClick={onCancel} disabled={saving}>
+        <div className="flex gap-2 flex-1">
+          <Button className="flex-[1_0_0]" variant="outlined" onClick={onCancel} disabled={saving}>
             Cancel
           </Button>
           <Button
-            variant="contained"
+            className="flex-[1_0_0]"
+            variant="filled"
             onClick={handleSave}
-            disabled={!hasRequiredFields || saving || configLoading || !config}>
+            disabled={!hasRequiredFields || saving || isLoading || !config}>
             {saving ? (
               <div className="flex items-center gap-2">
                 <Spinner />
@@ -317,13 +375,13 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
           </div>
         )}
 
-        {configLoading && (
+        {isLoading && (
           <div className="flex items-center justify-center p-8">
             <Spinner />
           </div>
         )}
 
-        {!configLoading && !attributeSetId && (
+        {!isLoading && !attributeSetId && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
             <p className="text-sm text-yellow-600">
               No Attribute Set is configured for this product. Please select a product with an Attribute Set first.
@@ -331,10 +389,10 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
           </div>
         )}
 
-        {!configLoading && config && (
+        {!isLoading && config && (
           <>
-            {renderStandardFields()}
             {renderCustomAttributes()}
+            {renderStandardFields()}
           </>
         )}
       </div>

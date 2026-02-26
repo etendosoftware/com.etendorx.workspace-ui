@@ -139,14 +139,14 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
 
       // 1. Try standard resolution (Exact + Fuzzy)
       const val = resolveProperty(target, prop);
-      
+
       // If the field has an empty string as its identifier, it should be treated as empty
       // even if there is an ID value present (simulating Classic Etendo UI behavior for cleared foreign keys)
-      if (typeof val === 'string' && val !== '') {
-         const identifierVal = resolveProperty(target, `${prop}$_identifier`);
-         if (identifierVal === '') {
-             return '';
-         }
+      if (typeof val === "string" && val !== "") {
+        const identifierVal = resolveProperty(target, `${prop}$_identifier`);
+        if (identifierVal === "") {
+          return "";
+        }
       }
 
       if (val !== undefined && val !== null) {
@@ -168,7 +168,12 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
         return defaultValue;
       }
 
-      return val;
+      // 4. Null/undefined values should be treated as empty string (matching Classic behavior).
+      // In Classic, unresolved context variables (like Auxiliary Inputs: @ATTRIBUTESET@,
+      // @ATTRSETVALUETYPE@) always resolve to '' (empty string), never null or undefined.
+      // parseDynamicExpression also replaces OB.Utilities.getValue(obj, prop) with obj["prop"],
+      // removing the null->'' conversion that getValue provided. The Proxy must handle it.
+      return "";
     },
     has(target, prop) {
       if (typeof prop !== "string") return Reflect.has(target, prop);

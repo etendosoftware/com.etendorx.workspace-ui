@@ -249,9 +249,10 @@ async function handleMutationRequest(
     const redirectUrl = location.startsWith("http") ? location : new URL(location, erpUrl).toString();
 
     // 301, 302, 303 conventionally change POST to GET. 307 & 308 preserve the method.
-    const isPostToGet = (response.status === 301 || response.status === 302 || response.status === 303) && method !== "GET";
+    const isPostToGet =
+      (response.status === 301 || response.status === 302 || response.status === 303) && method !== "GET";
     const nextMethod = isPostToGet ? "GET" : method;
-    
+
     const nextHeaders = { ...headers };
     if (isPostToGet) {
       delete nextHeaders["Content-Type"];

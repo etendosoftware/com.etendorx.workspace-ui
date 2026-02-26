@@ -164,7 +164,6 @@ const BaseSelectorComp = ({
 
         if (targetField && identifier) {
           setValue(`${hqlName}$_identifier`, identifier, { shouldDirty: false });
-
         } else if (targetField && !identifier && value) {
           setValue(`${hqlName}$_identifier`, "", { shouldDirty: false });
         }
