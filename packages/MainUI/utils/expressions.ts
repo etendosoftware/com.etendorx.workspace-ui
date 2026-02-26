@@ -143,9 +143,10 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
     return undefined;
   };
 
-  // Check if a cleared foreign key should return empty string
+  // Check if a cleared foreign key should return empty string.
+  // Only applies to UUID-like ID values (32+ hex chars), not to short values like 'Y'/'N'.
   const checkClearedIdentifier = (target: Record<string, any>, prop: string, val: unknown): string | undefined => {
-    if (typeof val === "string" && val !== "") {
+    if (typeof val === "string" && val.length > 8) {
       const identifierVal = resolveProperty(target, `${prop}$_identifier`);
       if (identifierVal === "") return "";
     }
