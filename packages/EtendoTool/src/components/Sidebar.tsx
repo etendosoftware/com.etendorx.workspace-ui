@@ -10,6 +10,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import CodeIcon from "@mui/icons-material/Code";
+import ExtensionIcon from "@mui/icons-material/Extension";
 import SettingsIcon from "@mui/icons-material/Settings";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
@@ -48,6 +49,12 @@ const NAV_ITEMS: Array<{
   //   description: "Wrapper and containers",
   //   icon: <HealthAndSafetyIcon />,
   // },
+  {
+    id: "dependencies",
+    label: "Dependencies",
+    description: "Module management",
+    icon: <ExtensionIcon />,
+  },
   {
     id: "development",
     label: "Development",

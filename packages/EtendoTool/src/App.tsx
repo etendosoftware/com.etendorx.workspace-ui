@@ -8,6 +8,7 @@ import { StartAllSection } from "./components/StartAllSection";
 import { DevelopmentSection } from "./components/DevelopmentSection";
 import { ConfigurationSection } from "./components/ConfigurationSection";
 import { DockerSection } from "./components/DockerSection";
+import { DependenciesSection } from "./components/DependenciesSection";
 import type { NavigationSection } from "./types/navigation";
 
 const theme = createTheme({
@@ -77,6 +78,8 @@ export default function App() {
         return <DockerSection />;
       case "development":
         return <DevelopmentSection />;
+      case "dependencies":
+        return <DependenciesSection />;
       case "configuration":
         return <ConfigurationSection onSectionChange={setActiveSection} />;
       default:
