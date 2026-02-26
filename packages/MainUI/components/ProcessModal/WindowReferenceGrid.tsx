@@ -52,13 +52,14 @@ import { useSelected } from "@/hooks/useSelected";
 import { PROCESS_DEFINITION_DATA } from "../../utils/processes/definition/constants";
 import {
   convertDatasourceValue,
-  normalizeContextKey,
   resolveContextValue,
   applyMergedParam,
   buildFilterCriteriaEntry,
+  normalizeContextKey,
 } from "@/utils/processes/definition/utils";
 
 const MAX_WIDTH = 100;
+const PAGE_SIZE = 100;
 
 /**
  * Extracts the actual value from a wrapped value object or returns the value directly
@@ -556,10 +557,11 @@ const WindowReferenceGrid = ({
   const stableRecordValues = useMemo(() => effectiveRecordValues, [JSON.stringify(effectiveRecordValues)]);
 
   const datasourceOptions = useMemo(() => {
-    const options: DatasourceParams = {};
+    const options: DatasourceParams = {
+      pageSize: PAGE_SIZE,
+      tabId: parameter.tab || tabId,
+    };
 
-    // 1. Base identifiers
-    options.tabId = parameter.tab || tabId;
     if (processConfig?.processId) options.processId = processConfig.processId;
     if (tabId) options.windowId = tabId;
 
@@ -688,11 +690,14 @@ const WindowReferenceGrid = ({
   const visibleFieldsFromTab = useMemo(() => {
     if (!stableWindowReferenceTab?.fields) return [];
 
-    const visibleFields = Object.values(stableWindowReferenceTab.fields).filter((f: any) => isFieldVisible(f));
+    const visibleEntries = Object.entries(stableWindowReferenceTab.fields).filter(([_, f]: [string, any]) =>
+      isFieldVisible(f)
+    );
 
     // Parse the filtered fields
-    const parsed = visibleFields.map((field: any) => ({
+    const parsed = visibleEntries.map(([key, field]: [string, any]) => ({
       ...field,
+      _key: key, // Store the key to be used as ID
       // Ensure hqlName is consistent for grid columns
       hqlName: field.columnName || field.hqlName,
       label: field.name,
@@ -710,20 +715,23 @@ const WindowReferenceGrid = ({
     // Only use parsed fields for columns, fallback to provided fields prop if empty
     if (stableVisibleFields.length > 0) {
       // Map back to column structure expected by SmartClient-like grids
-      const enriched = stableVisibleFields.map((field: any) => ({
-        id: field.id,
-        header: field.name || field.columnName,
-        accessorKey: field.columnName,
-        columnName: field.columnName,
-        type: getFieldReference(field.reference || field.column?.reference),
-        // Important properties for column setup
-        canHide: true,
-        enableColumnFilter: true,
-        enableSorting: true,
-        ...field,
-        // Match with passed prop fields to ensure we have all metadata
-        // Note: 'fields' prop comes from ProcessDefinitionModal which might have different enrichment
-      }));
+      const enriched = stableVisibleFields.map((field: any) => {
+        return {
+          id: field.id || field._key || field.columnName,
+          header: field.name || field.columnName,
+          accessorKey: field.columnName,
+          columnName: field.columnName,
+          type: getFieldReference(field.reference || field.column?.reference),
+          // Important properties for column setup
+          canHide: true,
+          enableColumnFilter: true,
+          enableSorting: true,
+          ...field,
+          // Match with passed prop fields to ensure we have all metadata
+          // Note: 'fields' prop comes from ProcessDefinitionModal which might have different enrichment
+          filterFieldName: field._key || field.hqlName || field.columnName,
+        };
+      });
       return enriched;
     }
 
@@ -810,14 +818,43 @@ const WindowReferenceGrid = ({
 
   // Get columns with filter handlers using useColumns
   // Pass options as stable reference to avoid re-creating columns unnecessarily
+  const handleDateTextFilterChange = useCallback(
+    (columnId: string, filterValue: string) => {
+      const column = stableRawColumns.find((col: Column) => col.columnName === columnId || col.id === columnId);
+      const filterKey = column?.columnName || columnId;
+
+      const mrtFilter = filterValue?.trim() ? { id: filterKey, value: filterValue } : null;
+
+      setAppliedTableFilters((prev) => {
+        const filtered = prev.filter((f) => f.id !== filterKey);
+        return mrtFilter ? [...filtered, mrtFilter] : filtered;
+      });
+
+      setColumnFilters((prev) => {
+        const filtered = prev.filter((f) => f.id !== filterKey);
+        return mrtFilter ? [...filtered, mrtFilter] : filtered;
+      });
+    },
+    [stableRawColumns, setAppliedTableFilters, setColumnFilters]
+  );
+
   const columnOptions = useMemo(
     () => ({
       onColumnFilter: handleColumnFilterChange,
+      onDateTextFilterChange: handleDateTextFilterChange,
       onLoadFilterOptions: handleLoadFilterOptions,
       onLoadMoreFilterOptions: handleLoadMoreFilterOptions,
       columnFilterStates: advancedColumnFilters,
+      tableColumnFilters: columnFilters,
     }),
-    [handleColumnFilterChange, handleLoadFilterOptions, handleLoadMoreFilterOptions, advancedColumnFilters]
+    [
+      handleColumnFilterChange,
+      handleDateTextFilterChange,
+      handleLoadFilterOptions,
+      handleLoadMoreFilterOptions,
+      advancedColumnFilters,
+      columnFilters,
+    ]
   );
 
   const finalFields = useMemo(() => {
@@ -1548,15 +1585,24 @@ const WindowReferenceGrid = ({
     [parameter.name, t, handleClearSelections]
   );
 
-  const LoadMoreButton = ({ fetchMore }: { fetchMore: () => void }) => (
-    <div className="flex justify-center p-2 border-t border-gray-200">
-      <button
-        type="button"
-        onClick={fetchMore}
-        className="px-4 py-2 text-sm border border-gray-300 rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
-        {t("common.loadMore")}
-      </button>
-    </div>
+  const fetchMoreOnBottomReached = useCallback(
+    (event: React.UIEvent<HTMLDivElement>) => {
+      const containerRefElement = event.currentTarget as HTMLDivElement;
+
+      if (containerRefElement) {
+        const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
+        if (
+          clientHeight > 0 &&
+          scrollHeight > clientHeight &&
+          scrollHeight - scrollTop - clientHeight < 100 && // 100px threshold
+          !datasourceLoading &&
+          hasMoreRecords
+        ) {
+          fetchMore();
+        }
+      }
+    },
+    [fetchMore, hasMoreRecords, datasourceLoading]
   );
 
   const tableOptions: MRT_TableOptions<EntityData> = useMemo(
@@ -1591,6 +1637,7 @@ const WindowReferenceGrid = ({
           minHeight: "300px",
           maxHeight: "500px",
         },
+        onScroll: fetchMoreOnBottomReached,
       },
       layoutMode: "semantic",
       enableColumnResizing: true,
@@ -1605,13 +1652,11 @@ const WindowReferenceGrid = ({
       enableSorting: true,
       enableColumnActions: true,
       manualFiltering: true,
+      enableRowVirtualization: true,
       columns: finalColumns, // Use modified columns with handler
       data: records || [],
       getRowId: (row) => String(row.id),
       renderTopToolbar,
-      renderBottomToolbar: hasMoreRecords
-        ? () => <LoadMoreButton fetchMore={fetchMore} data-testid="LoadMoreButton__ce8544" />
-        : undefined,
       renderEmptyRowsFallback: () => (
         <div className="flex justify-center items-center p-8 text-gray-500">
           <EmptyState maxWidth={MAX_WIDTH} data-testid="EmptyState__ce8544" />

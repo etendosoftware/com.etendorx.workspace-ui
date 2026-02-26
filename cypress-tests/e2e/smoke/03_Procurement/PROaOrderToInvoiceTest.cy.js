@@ -208,8 +208,11 @@ describe("Purchase Order to Invoice flow", () => {
     cy.contains("Create Lines From Order").click();
 
     cy.get("@orderNumber").then((orderNumber) => {
-      cy.get('input[placeholder="Filter by Document No."]').clear().type(orderNumber, { delay: 100 });
-
+      cy.get('input.w-full[placeholder="Filter Document No...."]')
+        .filter(":visible")
+        .should("be.visible")
+        .clear()
+        .type(orderNumber, { delay: 100 });
       cy.wait(1000);
     });
 

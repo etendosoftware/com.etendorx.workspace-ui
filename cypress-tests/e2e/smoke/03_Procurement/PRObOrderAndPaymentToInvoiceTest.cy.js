@@ -115,13 +115,13 @@ describe.skip("Purchase Order with advance payment flow", () => {
     cy.get("@invoiceNumber").then((invoiceNumber) => {
       cy.log(`Searching for order ${invoiceNumber} in Create Lines From Order popup`);
 
-      cy.get('input[placeholder="Filter by Document No."]', { timeout: 10000 })
+      cy.get('input[placeholder="Filter Document No...."]', { timeout: 10000 })
         .should("be.visible")
         .should("not.be.disabled");
 
       cy.wait(1000);
 
-      cy.get('input[placeholder="Filter by Document No."]').clear().type(invoiceNumber, { delay: 100 });
+      cy.get('input[placeholder="Filter Document No...."]').clear().type(invoiceNumber, { delay: 100 });
 
       cy.wait(1500);
 
