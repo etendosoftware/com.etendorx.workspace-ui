@@ -239,7 +239,7 @@ Cypress.Commands.add("getCreateFromInnerBody", () => {
       const outerDoc = $outer[0].contentDocument;
       expect(outerDoc).to.exist;
 
-      let innerCreateFrom = outerDoc.querySelector('iframe[src*="ad_actionButton/CreateFrom"]');
+      const innerCreateFrom = outerDoc.querySelector('iframe[src*="ad_actionButton/CreateFrom"]');
 
       const getDeepDocFromFrame = (frameEl) => {
         const deepDoc = frameEl.contentDocument || frameEl.contentWindow?.document;

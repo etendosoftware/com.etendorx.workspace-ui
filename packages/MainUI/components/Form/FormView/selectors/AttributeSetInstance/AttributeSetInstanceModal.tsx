@@ -35,41 +35,38 @@ const INITIAL_FORM_DATA: AttributeSetInstanceFormData = {
   customAttributes: {},
 };
 
+const formatDateToDMY = (dateStr: string): string => {
+  if (!dateStr || !dateStr.includes("-")) return dateStr;
+  const [y, m, d] = dateStr.split("-");
+  if (y.length === 4) return `${d}-${m}-${y}`;
+  return dateStr;
+};
+
+const resolveAttributeLabel = (
+  attr: CustomAttribute,
+  value: string,
+  customAttributes: Record<string, string>
+): string => {
+  if (!attr.isList) return value;
+  const selectedOption = attr.values.find((v) => v.id === value);
+  if (selectedOption) return selectedOption.name;
+  return customAttributes[`${attr.id}_identifier`] || value;
+};
+
 const buildDescription = (formData: AttributeSetInstanceFormData, customAttributes: CustomAttribute[]): string => {
   const parts: string[] = [];
 
-  // 1. Custom attributes first
   for (const attr of customAttributes) {
     const value = formData.customAttributes[attr.id];
     if (value) {
-      if (attr.isList) {
-        const selectedOption = attr.values.find((v) => v.id === value);
-        if (selectedOption) {
-          parts.push(selectedOption.name);
-        } else {
-          const identifier = formData.customAttributes[`${attr.id}_identifier`];
-          parts.push(identifier || value);
-        }
-      } else {
-        parts.push(value);
-      }
+      parts.push(resolveAttributeLabel(attr, value, formData.customAttributes));
     }
   }
 
-  // 2. Standard fields
   if (formData.lot) parts.push(`L${formData.lot}`);
   if (formData.serialNo) parts.push(`#${formData.serialNo}`);
-
-  // 3. Dates (DD-MM-YYYY format)
-  const formatDate = (dateStr: string) => {
-    if (!dateStr || !dateStr.includes("-")) return dateStr;
-    const [y, m, d] = dateStr.split("-");
-    if (y.length === 4) return `${d}-${m}-${y}`;
-    return dateStr;
-  };
-
-  if (formData.expirationDate) parts.push(formatDate(formData.expirationDate));
-  if (formData.guaranteeDate) parts.push(formatDate(formData.guaranteeDate));
+  if (formData.expirationDate) parts.push(formatDateToDMY(formData.expirationDate));
+  if (formData.guaranteeDate) parts.push(formatDateToDMY(formData.guaranteeDate));
 
   return parts.join("_");
 };

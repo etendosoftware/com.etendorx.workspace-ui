@@ -143,49 +143,51 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
     return undefined;
   };
 
+  // Check if a cleared foreign key should return empty string
+  const checkClearedIdentifier = (target: Record<string, any>, prop: string, val: unknown): string | undefined => {
+    if (typeof val === "string" && val !== "") {
+      const identifierVal = resolveProperty(target, `${prop}$_identifier`);
+      if (identifierVal === "") return "";
+    }
+    return undefined;
+  };
+
+  // Resolve special prefixed properties (@prop@, #prop, $prop)
+  const resolvePrefixed = (target: Record<string, any>, prop: string): unknown => {
+    if (prop.startsWith("@") && prop.endsWith("@")) {
+      const cleanVal = resolveProperty(target, prop.slice(1, -1));
+      if (cleanVal !== undefined && cleanVal !== null) return cleanVal;
+    }
+    if (prop.startsWith("#") || prop.startsWith("$")) {
+      const valFromPrefs = getFromPrefs(prop.slice(1)) ?? getFromPrefs(prop);
+      if (valFromPrefs !== undefined) return valFromPrefs;
+    }
+    return undefined;
+  };
+
   return new Proxy(evalContext, {
     get(target, prop, receiver) {
       if (typeof prop !== "string") {
         return Reflect.get(target, prop, receiver);
       }
 
-      // 1. Try standard resolution (Exact + Fuzzy)
       const val = resolveProperty(target, prop);
 
-      // If the field has an empty string as its identifier, it should be treated as empty
-      // even if there is an ID value present (simulating Classic Etendo UI behavior for cleared foreign keys)
-      if (typeof val === "string" && val !== "") {
-        const identifierVal = resolveProperty(target, `${prop}$_identifier`);
-        if (identifierVal === "") {
-          return "";
-        }
-      }
+      // If the field has an empty identifier, treat as empty (Classic behavior for cleared foreign keys)
+      const cleared = checkClearedIdentifier(target, prop, val);
+      if (cleared !== undefined) return cleared;
 
-      if (val !== undefined && val !== null) {
-        return val;
-      }
+      if (val !== undefined && val !== null) return val;
 
-      // 2. Handle @property@ access pattern (from Hotfix ETP-3261)
-      if (prop.startsWith("@") && prop.endsWith("@")) {
-        const cleanVal = resolveProperty(target, prop.slice(1, -1));
-        if (cleanVal !== undefined && cleanVal !== null) return cleanVal;
-      }
+      // Handle @property@, #property, $property access patterns
+      const prefixed = resolvePrefixed(target, prop);
+      if (prefixed !== undefined) return prefixed;
 
-      // 3. Handle # and $ prefixes for Preferences/Session variables (ETP-3261)
-      if (prop.startsWith("#") || prop.startsWith("$")) {
-        const valFromPrefs = getFromPrefs(prop.slice(1)) ?? getFromPrefs(prop);
-        if (valFromPrefs !== undefined) return valFromPrefs;
-      }
-
-      // 4. Fallback to default value, then empty string (matching Classic behavior).
-      // In Classic, unresolved context variables (like Auxiliary Inputs: @ATTRIBUTESET@,
-      // @ATTRSETVALUETYPE@) always resolve to '' (empty string), never null or undefined.
-      // parseDynamicExpression also replaces OB.Utilities.getValue(obj, prop) with obj["prop"],
+      // Fallback to default value, then empty string (matching Classic behavior).
+      // In Classic, unresolved context variables always resolve to '' (empty string).
+      // parseDynamicExpression replaces OB.Utilities.getValue(obj, prop) with obj["prop"],
       // removing the null->'' conversion that getValue provided. The Proxy must handle it.
-      if (defaultValue !== undefined) {
-        return defaultValue;
-      }
-      return "";
+      return defaultValue !== undefined ? defaultValue : "";
     },
     has(target, prop) {
       if (typeof prop !== "string") return Reflect.has(target, prop);
