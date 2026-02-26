@@ -215,9 +215,9 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
             value={formData.lot}
             onChange={(e) => handleInputChange("lot", e.target.value)}
             className="w-full"
+            data-testid={"TextInput__" + field.id}
           />
         )}
-
         {config.isSerNo && (
           <TextInput
             label="Serial Number"
@@ -225,9 +225,9 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
             value={formData.serialNo}
             onChange={(e) => handleInputChange("serialNo", e.target.value)}
             className="w-full"
+            data-testid={"TextInput__" + field.id}
           />
         )}
-
         {config.isExpirationDate && (
           <div className="w-full font-['Inter'] font-medium">
             <DateInput
@@ -236,10 +236,10 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
               value={formData.expirationDate}
               currentValue={formData.expirationDate}
               onChange={(e) => handleDateChange("expirationDate", e)}
+              data-testid={"DateInput__" + field.id}
             />
           </div>
         )}
-
         {config.isGuaranteeDate && (
           <div className="w-full font-['Inter'] font-medium">
             <DateInput
@@ -248,16 +248,17 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
               value={formData.guaranteeDate}
               currentValue={formData.guaranteeDate}
               onChange={(e) => handleDateChange("guaranteeDate", e)}
+              data-testid={"DateInput__" + field.id}
             />
           </div>
         )}
-
         <TextInput
           label="Description"
           field={{ ...field, isMandatory: false, name: "description", hqlName: "description" }}
           value={computedDescription}
           readOnly
           className="w-full"
+          data-testid={"TextInput__" + field.id}
         />
       </>
     );
@@ -318,6 +319,7 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
               }}
               id={`custom-attr-${attr.id}`}
               disabled={saving}
+              data-testid={"Select__" + field.id}
             />
           </div>
         );
@@ -331,6 +333,7 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
           value={selectedValue}
           onChange={(e) => handleCustomAttributeChange(attr.id, e.target.value)}
           className="w-full"
+          data-testid={"TextInput__" + field.id}
         />
       );
     });
@@ -349,17 +352,23 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
       showHeader
       buttons={
         <div className="flex gap-2 flex-1">
-          <Button className="flex-[1_0_0]" variant="outlined" onClick={onCancel} disabled={saving}>
+          <Button
+            className="flex-[1_0_0]"
+            variant="outlined"
+            onClick={onCancel}
+            disabled={saving}
+            data-testid={"Button__" + field.id}>
             Cancel
           </Button>
           <Button
             className="flex-[1_0_0]"
             variant="filled"
             onClick={handleSave}
-            disabled={!hasRequiredFields || saving || isLoading || !config}>
+            disabled={!hasRequiredFields || saving || isLoading || !config}
+            data-testid={"Button__" + field.id}>
             {saving ? (
               <div className="flex items-center gap-2">
-                <Spinner />
+                <Spinner data-testid={"Spinner__" + field.id} />
                 <span>Saving...</span>
               </div>
             ) : (
@@ -367,7 +376,8 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
             )}
           </Button>
         </div>
-      }>
+      }
+      data-testid={"Modal__" + field.id}>
       <div className="space-y-4 p-4">
         {combinedError && (
           <div className="bg-red-50 border border-red-200 rounded-md p-3">
@@ -377,7 +387,7 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
 
         {isLoading && (
           <div className="flex items-center justify-center p-8">
-            <Spinner />
+            <Spinner data-testid={"Spinner__" + field.id} />
           </div>
         )}
 

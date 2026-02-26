@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { Field } from "@workspaceui/api-client/src/api/types";
+import type { Field } from "@workspaceui/api-client/src/api/types";
 
 interface SmartContextOptions {
   values?: Record<string, unknown>; // Primary values (current record, form values)

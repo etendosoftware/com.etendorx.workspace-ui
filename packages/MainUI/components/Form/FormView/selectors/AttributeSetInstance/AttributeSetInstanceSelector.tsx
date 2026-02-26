@@ -155,6 +155,7 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
             <SearchOutlined
               fill="currentColor"
               className="w-4 h-4 flex-shrink-0 text-(--color-transparent-neutral-60)"
+              data-testid={"SearchOutlined__" + field.id}
             />
           </div>
         </div>
@@ -167,6 +168,7 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
         currentInstanceId={resolvedInstanceId}
         productId={productId}
         field={field}
+        data-testid={"AttributeSetInstanceModal__" + field.id}
       />
     </>
   );
