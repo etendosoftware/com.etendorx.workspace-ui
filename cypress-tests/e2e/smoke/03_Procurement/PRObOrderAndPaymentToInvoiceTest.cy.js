@@ -39,8 +39,10 @@ describe.skip("Purchase Order with advance payment flow", () => {
       '[style="height: 50%;"] > .bg-\\(linear-gradient\\(180deg\\, > .h-10.gap-1 > :nth-child(1) > [data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"] > span'
     ).click();
     cy.get('[aria-describedby="Product-help"] > .w-2\\/3 > .relative > .w-full').click();
+    cy.intercept("POST", /FormInitializationComponent/).as("productFormInit");
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"] > .truncate').click();
-    cy.get('[data-testid="TextInput__3389"]').clear("1").type("11,2");
+    cy.wait("@productFormInit", { timeout: 60000 });
+    cy.get('[data-testid="TextInput__3389"]').clear({ force: true }).type("11,2", { force: true });
     cy.get(
       '[style="height: 50%;"] > .bg-\\(linear-gradient\\(180deg\\, > .h-10.gap-1 > :nth-child(1) > [data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span'
     ).click();

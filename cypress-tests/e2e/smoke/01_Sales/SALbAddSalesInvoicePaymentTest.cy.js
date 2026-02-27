@@ -138,6 +138,8 @@ describe("Sales Order Automation - Complete Flow", () => {
     cy.get('[data-testid="ExecuteButton__761503"]').click();
 
     //verify payment transaction
-    cy.contains("p", /^Created Payment:\s*\d+/).should("be.visible");
+    cy.get('[data-sonner-toast][data-type="success"]')
+      .contains(/^Created Payment:\s*\d+\./)
+      .should("be.visible");
   });
 });

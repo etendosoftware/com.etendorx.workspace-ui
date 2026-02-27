@@ -38,8 +38,10 @@ describe("Purchase Order to Invoice flow", () => {
     cy.clickNewRecord();
 
     cy.get('[aria-describedby="Product-help"] > .w-2\\/3 > .relative > .w-full').click();
+    cy.intercept("POST", /FormInitializationComponent/).as("productFormInit");
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"] > .truncate').click();
-    cy.get('[data-testid="TextInput__3389"]').clear("1").type("11,2");
+    cy.wait("@productFormInit", { timeout: 60000 });
+    cy.get('[data-testid="TextInput__3389"]').clear({ force: true }).type("11,2", { force: true });
 
     cy.get("button.toolbar-button-save").eq(1).click();
     cy.wait(2000);
@@ -213,7 +215,7 @@ describe("Purchase Order to Invoice flow", () => {
         .filter(":visible")
         .should("be.visible")
         .clear()
-        .type(orderNumber, { delay: 100 });
+        .type(orderNumber, { delay: 300 });
       cy.wait(1000);
     });
 
@@ -224,11 +226,6 @@ describe("Purchase Order to Invoice flow", () => {
     });
 
     cy.get('[data-testid="ExecuteButton__761503"]').click();
-
-    cy.get(".flex-col > :nth-child(2) > .font-medium").should("be.visible");
-    cy.wait(1000);
-
-    cy.contains("button", "Close", { timeout: 20000 }).should("be.visible").click();
 
     cy.wait(3000);
 

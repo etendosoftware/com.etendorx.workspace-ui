@@ -125,22 +125,34 @@ const formatOptionItem = (item: Record<string, unknown>, distinctField?: string)
   };
 };
 
+export interface FetchFilterOptionsParams {
+  datasourceId: string;
+  selectorDefinitionId?: string;
+  searchQuery?: string;
+  limit?: number;
+  distinctField?: string;
+  tabId?: string;
+  offset?: number;
+  isImplicitFilterApplied?: boolean;
+  extraParams?: Record<string, unknown>;
+}
+
 /**
  * Hook for fetching column filter data optimized for simple filter queries.
  */
 export const useColumnFilterData = () => {
   const fetchFilterOptions = useCallback(
-    async (
-      datasourceId: string,
-      selectorDefinitionId?: string,
-      searchQuery?: string,
+    async ({
+      datasourceId,
+      selectorDefinitionId,
+      searchQuery,
       limit = 20,
-      distinctField?: string,
-      tabId?: string,
+      distinctField,
+      tabId,
       offset = 0,
-      isImplicitFilterApplied?: boolean,
-      extraParams?: Record<string, unknown>
-    ): Promise<FilterOption[]> => {
+      isImplicitFilterApplied,
+      extraParams,
+    }: FetchFilterOptionsParams): Promise<FilterOption[]> => {
       try {
         const params: Record<string, unknown> = {
           startRow: offset,
