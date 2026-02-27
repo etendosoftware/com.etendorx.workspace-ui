@@ -156,6 +156,7 @@ describe("columnFilterHelpers", () => {
         "organization",
         "tab123",
         0,
+        undefined,
         undefined
       );
       expect(mockSetFilterOptions).toHaveBeenCalledWith("organization", mockData, false, false);
@@ -191,6 +192,7 @@ describe("columnFilterHelpers", () => {
         "businessPartner",
         "tab123",
         0,
+        undefined,
         undefined
       );
     });
@@ -219,6 +221,7 @@ describe("columnFilterHelpers", () => {
         "product",
         "tab123",
         20,
+        undefined,
         undefined
       );
       expect(mockSetFilterOptions).toHaveBeenCalledWith("product", mockData, false, true);

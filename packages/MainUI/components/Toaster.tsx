@@ -24,6 +24,7 @@ export const Toaster = () => {
           info: "!border-blue-500 !bg-[#e8f4fe]",
         },
       }}
+      data-testid="SonnerToaster__efe1bf"
     />
   );
 };

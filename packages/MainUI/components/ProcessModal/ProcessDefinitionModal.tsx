@@ -858,8 +858,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
         if (parsedResult.success) {
           await revalidateDopoProcess();
-          const message = typeof parsedResult.data === "string" ? parsedResult.data : parsedResult.data?.message || parsedResult.data?.msgText || "";
-          toast.success(t("process.completedSuccessfully"), { description: <ToastContent message={message} />, duration: Number.POSITIVE_INFINITY });
+          const message =
+            typeof parsedResult.data === "string"
+              ? parsedResult.data
+              : parsedResult.data?.message || parsedResult.data?.msgText || "";
+          toast.success(t("process.completedSuccessfully"), {
+            description: <ToastContent message={message} data-testid="ToastContent__761503" />,
+            duration: Number.POSITIVE_INFINITY,
+          });
           setShouldTriggerSuccess(true);
           handleSuccessClose();
         } else {
@@ -1139,7 +1145,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           const responseMessage = stringFnResult.responseActions[0].showMsgInProcessView;
           const success = responseMessage.msgType === "success";
           if (success) {
-            toast.success(t("process.completedSuccessfully"), { description: <ToastContent message={responseMessage.msgText} />, duration: Number.POSITIVE_INFINITY });
+            toast.success(t("process.completedSuccessfully"), {
+              description: <ToastContent message={responseMessage.msgText} data-testid="ToastContent__761503" />,
+              duration: Number.POSITIVE_INFINITY,
+            });
             setShouldTriggerSuccess(true);
             handleSuccessClose();
           } else {
@@ -1221,9 +1230,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
           // Process completed
           const success = status.result === 1;
-          
+
           if (success) {
-            toast.success(t("process.completedSuccessfully"), { description: <ToastContent message={status.errorMsg} />, duration: Number.POSITIVE_INFINITY });
+            toast.success(t("process.completedSuccessfully"), {
+              description: <ToastContent message={status.errorMsg} data-testid="ToastContent__761503" />,
+              duration: Number.POSITIVE_INFINITY,
+            });
             setShouldTriggerSuccess(true);
             handleSuccessClose();
           } else {

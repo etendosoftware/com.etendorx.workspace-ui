@@ -77,8 +77,6 @@ export const useColumnFilterData = () => {
             });
           }
 
-
-
           // Set distinct-specific params last so extraParams can't overwrite them
           params._distinct = distinctField;
           params.tabId = tabId;

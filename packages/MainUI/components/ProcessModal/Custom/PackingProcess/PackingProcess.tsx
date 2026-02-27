@@ -445,10 +445,10 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
         if (parsed.tabId && parsed.recordId) {
           toastOptions.action = {
             label: t("packing.checkStatus"),
-            onClick: () => handleNavigateToTab(parsed.tabId as string, parsed.recordId as string)
-          }
+            onClick: () => handleNavigateToTab(parsed.tabId as string, parsed.recordId as string),
+          };
         }
-        
+
         if (toastType === "warning") {
           toast.warning(toastTitle, toastOptions);
         } else if (toastType === "error") {

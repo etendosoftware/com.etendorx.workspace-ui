@@ -93,7 +93,7 @@ export default async function RootLayout({
                           <MetadataSynchronizer data-testid="MetadataSynchronizer__ba7569" />
                           <LoadingProvider data-testid="LoadingProvider__ba7569">
                             <Layout data-testid="Layout__ba7569">{children}</Layout>
-                            <Toaster />
+                            <Toaster data-testid="Toaster__ba7569" />
                           </LoadingProvider>
                         </WindowProvider>
                       </MetadataStoreProvider>

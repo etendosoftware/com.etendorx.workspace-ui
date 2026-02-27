@@ -442,9 +442,13 @@ export const useToolbarConfig = ({
           }
 
           if (isSuccess) {
-            toast.success(t("process.completedSuccessfully"), { description: React.createElement(ToastContent, { message: finalMessage }) });
+            toast.success(t("process.completedSuccessfully"), {
+              description: React.createElement(ToastContent, { message: finalMessage }),
+            });
           } else {
-            toast.error(t("process.processError"), { description: React.createElement(ToastContent, { message: finalMessage }) });
+            toast.error(t("process.processError"), {
+              description: React.createElement(ToastContent, { message: finalMessage }),
+            });
           }
 
           if (isSuccess && refreshGrid) {
@@ -452,7 +456,11 @@ export const useToolbarConfig = ({
           }
         } catch (error) {
           logger.error("Error initializing RX services:", error);
-          toast.error(t("process.processError"), { description: React.createElement(ToastContent, { message: error instanceof Error ? error.message : "Unknown error" }) });
+          toast.error(t("process.processError"), {
+            description: React.createElement(ToastContent, {
+              message: error instanceof Error ? error.message : "Unknown error",
+            }),
+          });
         }
       },
     }),

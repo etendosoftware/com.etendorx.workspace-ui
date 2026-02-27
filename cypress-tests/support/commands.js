@@ -446,7 +446,7 @@ Cypress.Commands.add("clickSave", () => {
 });
 
 Cypress.Commands.add("closeToastIfPresent", () => {
-  const toastClose = '[data-sonner-toast] [data-close-button]';
+  const toastClose = "[data-sonner-toast] [data-close-button]";
 
   cy.get("body", { timeout: 20000 }).then(($body) => {
     if ($body.find(toastClose).length) {
@@ -458,7 +458,7 @@ Cypress.Commands.add("closeToastIfPresent", () => {
 
 Cypress.Commands.add("closeSuccessOverlay", () => {
   const modalText = "Process completed successfully";
-  const closeButton = '[data-sonner-toast] [data-close-button]';
+  const closeButton = "[data-sonner-toast] [data-close-button]";
   const closeIcon = '[aria-label="Close"]';
 
   cy.contains(modalText, { timeout: 60000 }).should("be.visible").wait(1000);

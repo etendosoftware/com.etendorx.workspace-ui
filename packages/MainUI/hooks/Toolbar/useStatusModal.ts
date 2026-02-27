@@ -31,7 +31,7 @@ export const useStatusModal = () => {
   // We keep state for ConfirmModal as it requires user interaction
   const [confirmAction, setConfirmAction] = useState<ConfirmOptions | null>(null);
 
-  // Dummy state to avoid breaking consumers that read statusModal.open 
+  // Dummy state to avoid breaking consumers that read statusModal.open
   const statusModal = { open: false, statusType: "info" as StatusType, statusText: "", isDeleteSuccess: false };
 
   const showStatusModal = useCallback(
@@ -48,7 +48,9 @@ export const useStatusModal = () => {
       }
     ) => {
       const isPersistent = options?.isProcessResult || false;
-      const description = options?.errorMessage ? React.createElement(ToastContent, { message: options.errorMessage }) : undefined;
+      const description = options?.errorMessage
+        ? React.createElement(ToastContent, { message: options.errorMessage })
+        : undefined;
       const duration = isPersistent ? Number.POSITIVE_INFINITY : 4000;
 
       const toastOptions = {

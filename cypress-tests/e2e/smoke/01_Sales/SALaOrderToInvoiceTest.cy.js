@@ -78,9 +78,9 @@ describe.skip("Sales Orders - Create, Complete Shipment and Invoice", () => {
     // Select Product
     cy.get('[aria-describedby="Product-help"] > .w-2\\/3 > .relative > .w-full').click();
     cy.wait(2000);
-    cy.intercept('POST', /FormInitializationComponent/).as('productFormInit');
+    cy.intercept("POST", /FormInitializationComponent/).as("productFormInit");
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295ADC2340023D"] > .truncate').click();
-    cy.wait('@productFormInit', { timeout: 60000 });
+    cy.wait("@productFormInit", { timeout: 60000 });
 
     // Update Quantity
     cy.get('[data-testid="TextInput__1130"]').clear({ force: true });

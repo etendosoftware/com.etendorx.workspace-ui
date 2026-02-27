@@ -182,7 +182,16 @@ export const useGridColumnFilters = ({
         fetchingRefs.current[columnId] = false;
       }
     },
-    [columns, fetchFilterOptions, setFilterOptions, loadMoreFilterOptions, tabId, entityName, advancedColumnFilters, extraParams]
+    [
+      columns,
+      fetchFilterOptions,
+      setFilterOptions,
+      loadMoreFilterOptions,
+      tabId,
+      entityName,
+      advancedColumnFilters,
+      extraParams,
+    ]
   );
 
   return {
