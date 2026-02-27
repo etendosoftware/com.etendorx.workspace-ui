@@ -210,13 +210,21 @@ describe("Purchase Order to Invoice flow", () => {
 
     cy.contains("Create Lines From Order").click();
 
+    cy.wait(1000);
+
+    cy.intercept("POST", "**/api/datasource**").as("filterRequest");
+
     cy.get("@orderNumber").then((orderNumber) => {
       cy.get('input.w-full[placeholder="Filter Document No...."]')
         .filter(":visible")
         .should("be.visible")
         .clear()
-        .type(orderNumber, { delay: 300 });
-      cy.wait(1000);
+        .type(orderNumber + "{enter}", { force: true });
+
+      cy.wait("@filterRequest");
+
+      cy.contains(orderNumber, { timeout: 10000 })
+        .should("be.visible");
     });
 
     cy.wait(500);
