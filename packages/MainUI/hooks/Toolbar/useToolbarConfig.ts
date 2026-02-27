@@ -20,7 +20,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
 import type { Tab, EntityData } from "@workspaceui/api-client/src/api/types";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearch } from "../../contexts/searchContext";
 import { useDeleteRecord } from "../useDeleteRecord";
 import { useMetadataContext } from "../useMetadataContext";
@@ -37,7 +37,6 @@ import type { ActionButton, ActionModalProps } from "@workspaceui/componentlibra
 import { isEmptyArray } from "@/utils/commons";
 import { getNewTabFormState } from "@/utils/window/utils";
 import { copyRecordRequest, handleCopyRecordResponse } from "@/utils/processes/toolbar/utils";
-import React from "react";
 import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { toast } from "sonner";
