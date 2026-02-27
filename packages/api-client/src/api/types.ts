@@ -297,6 +297,7 @@ export interface Tab {
   obuiappCloneChildren?: boolean;
   process?: string;
   process$_identifier?: string;
+  disableParentKeyProperty?: boolean;
 }
 
 export interface WindowMetadata {

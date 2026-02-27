@@ -47,9 +47,9 @@ export const buildBaseCriteria = ({ tab, parentTab, parentId }: BaseCriteriaOpti
     return [];
   }
 
-  // Classic always sends _dummy for parent-child tab navigation, never an explicit field criteria.
+  // Classic sends _dummy for parent-child tab navigation when disableParentKeyProperty is true.
   // The server uses @EntityName.id@ session variables (set in useTableData) for the actual filtering.
-  if (parentId && parentId !== "") {
+  if (tab.disableParentKeyProperty && parentId && parentId !== "") {
     return [{ fieldName: "_dummy", value: Date.now() as EntityValue, operator: "equals" }];
   }
 
