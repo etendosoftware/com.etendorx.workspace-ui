@@ -1183,7 +1183,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           const success = responseMessage.msgType === "success";
           if (success) {
             toast.success(t("process.completedSuccessfully"), {
-              description: <ToastContent message={responseMessage.msgText} data-testid="ToastContent__761503" />,
+              description: (
+                <ToastContent
+                  message={responseMessage.msgText || t("process.completedSuccessfully")}
+                  data-testid="ToastContent__761503"
+                />
+              ),
               duration: Number.POSITIVE_INFINITY,
             });
             setShouldTriggerSuccess(true);
