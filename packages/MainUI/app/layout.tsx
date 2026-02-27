@@ -32,6 +32,7 @@ import { RuntimeConfigProvider } from "@/contexts/RuntimeConfigContext";
 import { PreferencesProvider } from "@/contexts/preferences";
 import Layout from "@/components/layout";
 import { DENSITY_KEY } from "@/utils/accessibility/constants";
+import { Toaster } from "@/components/Toaster";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -92,6 +93,7 @@ export default async function RootLayout({
                           <MetadataSynchronizer data-testid="MetadataSynchronizer__ba7569" />
                           <LoadingProvider data-testid="LoadingProvider__ba7569">
                             <Layout data-testid="Layout__ba7569">{children}</Layout>
+                            <Toaster data-testid="Toaster__ba7569" />
                           </LoadingProvider>
                         </WindowProvider>
                       </MetadataStoreProvider>

@@ -48,7 +48,7 @@ describe("User Management - Create user and assign role", () => {
     cy.get('input[name="password"]').should("have.value", pwd).blur();
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(1000);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.wait(1000);
     cy.get('button[aria-label="User Roles"]').click();
 
@@ -62,7 +62,7 @@ describe("User Management - Create user and assign role", () => {
 
     cy.get("button.toolbar-button-save").eq(1).click();
     cy.wait(1000);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.wait(1000);
     cy.get('[data-testid="PersonIcon__120cc9"] > path').click();
     cy.wait(1000);
