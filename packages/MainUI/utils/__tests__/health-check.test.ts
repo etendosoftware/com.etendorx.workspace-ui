@@ -59,7 +59,7 @@ describe("health-check", () => {
 
       // Trigger the abort immediately prior to fetch invocation
       controller.abort();
-      
+
       const p = performHealthCheck(controller.signal, 2, 100, onSuccess, onError);
       await p;
 

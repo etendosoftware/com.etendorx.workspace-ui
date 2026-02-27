@@ -17,11 +17,10 @@ describe("evaluateCustomJs", () => {
     (functions.executeStringFunction as jest.Mock).mockResolvedValue("success");
     const result = await evaluateCustomJs("return 'success';", { record: {}, column: {} as any });
     expect(result).toBe("success");
-    expect(functions.executeStringFunction).toHaveBeenCalledWith(
-      "return 'success';",
-      expect.any(Object),
-      { record: {}, column: {} }
-    );
+    expect(functions.executeStringFunction).toHaveBeenCalledWith("return 'success';", expect.any(Object), {
+      record: {},
+      column: {},
+    });
   });
 
   it("should handle error in evaluation", async () => {
