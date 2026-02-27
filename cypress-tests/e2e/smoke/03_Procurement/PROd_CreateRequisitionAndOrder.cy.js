@@ -29,7 +29,7 @@ describe("Requisition flow - Create and generate Purchase Order", () => {
     cy.wait(1000);
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(1000);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.wait(1000);
     cy.get('button[aria-label="Lines"]').click();
     cy.wait(1000);
@@ -58,7 +58,7 @@ describe("Requisition flow - Create and generate Purchase Order", () => {
 
     cy.get("button.toolbar-button-save").eq(1).click();
     cy.wait(1000);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
 
     cy.wait(1000);
     cy.get('[data-testid="IconButtonWithText__process-menu"]').first().click();
@@ -79,9 +79,8 @@ describe("Requisition flow - Create and generate Purchase Order", () => {
 
     cy.clickOkInLegacyPopup();
     cy.wait(1000);
-
-    cy.get(".mb-1").should("be.visible");
     cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
     cy.wait(1000);
 
     cy.captureDocumentNumber();
@@ -113,9 +112,8 @@ describe("Requisition flow - Create and generate Purchase Order", () => {
     cy.wait(1000);
 
     cy.clickOkInLegacyPopup();
-
-    cy.get(".mb-1").should("be.visible");
-
+    cy.wait(500);
     cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
   });
 });

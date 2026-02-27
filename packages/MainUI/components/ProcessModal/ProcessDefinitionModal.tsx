@@ -65,8 +65,9 @@ import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
-import ProcessResultModal from "./ProcessResultModal";
 import type { ProcessDefinitionModalContentProps, RecordValues, ProcessDefinitionModalProps } from "./types";
+import { toast } from "sonner";
+import { ToastContent } from "@/components/ToastContent";
 import type { Tab, ProcessParameter, EntityData, Field } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import {
@@ -865,11 +866,21 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         };
 
         const parsedResult = parseProcessResponse(res);
-        setResult(parsedResult);
 
         if (parsedResult.success) {
           await revalidateDopoProcess();
+          const message =
+            typeof parsedResult.data === "string"
+              ? parsedResult.data
+              : parsedResult.data?.message || parsedResult.data?.msgText || "";
+          toast.success(t("process.completedSuccessfully"), {
+            description: <ToastContent message={message} data-testid="ToastContent__761503" />,
+            duration: Number.POSITIVE_INFINITY,
+          });
           setShouldTriggerSuccess(true);
+          handleSuccessClose();
+        } else {
+          setResult(parsedResult);
         }
       } catch (error) {
         logger.warn(`Error executing ${logContext}:`, error);
@@ -1170,9 +1181,15 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           }
 
           const success = responseMessage.msgType === "success";
-          setResult({ success, data: responseMessage, error: success ? undefined : responseMessage.msgText });
           if (success) {
+            toast.success(t("process.completedSuccessfully"), {
+              description: <ToastContent message={responseMessage.msgText} data-testid="ToastContent__761503" />,
+              duration: Number.POSITIVE_INFINITY,
+            });
             setShouldTriggerSuccess(true);
+            handleSuccessClose();
+          } else {
+            setResult({ success, data: responseMessage, error: responseMessage.msgText });
           }
         } catch (error) {
           logger.warn("Error executing process:", error);
@@ -1251,14 +1268,20 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
           // Process completed
           const success = status.result === 1;
-          setResult({
-            success,
-            data: status.errorMsg,
-            error: success ? undefined : status.errorMsg,
-          });
 
           if (success) {
+            toast.success(t("process.completedSuccessfully"), {
+              description: <ToastContent message={status.errorMsg} data-testid="ToastContent__761503" />,
+              duration: Number.POSITIVE_INFINITY,
+            });
             setShouldTriggerSuccess(true);
+            handleSuccessClose();
+          } else {
+            setResult({
+              success,
+              data: status.errorMsg,
+              error: status.errorMsg,
+            });
           }
         };
 
@@ -1852,19 +1875,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           )}
         </Modal>
       )}
-      {/* Success Modal - Separate overlay */}
-      <ProcessResultModal
-        open={Boolean(open && result?.success)}
-        success={true}
-        isHtml={(result as any)?.isHtml}
-        message={
-          typeof result?.data === "string"
-            ? result.data
-            : result?.data?.msgText || result?.data?.message || result?.error || undefined
-        }
-        onClose={handleSuccessClose}
-        data-testid="ProcessResultModal__761503"
-      />
     </>
   );
 }

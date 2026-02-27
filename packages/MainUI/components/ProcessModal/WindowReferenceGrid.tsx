@@ -602,6 +602,10 @@ const WindowReferenceGrid = ({
       options.orderBy = "documentNo desc";
     }
 
+    if (options.ad_org_id) {
+      options._org = options.ad_org_id;
+    }
+
     return options;
   }, [
     processConfig?.processId,
@@ -717,7 +721,6 @@ const WindowReferenceGrid = ({
       // Map back to column structure expected by SmartClient-like grids
       const enriched = stableVisibleFields.map((field: any) => {
         return {
-          id: field.id || field._key || field.columnName,
           header: field.name || field.columnName,
           accessorKey: field.columnName,
           columnName: field.columnName,
@@ -727,8 +730,12 @@ const WindowReferenceGrid = ({
           enableColumnFilter: true,
           enableSorting: true,
           ...field,
-          // Match with passed prop fields to ensure we have all metadata
-          // Note: 'fields' prop comes from ProcessDefinitionModal which might have different enrichment
+          // id must come AFTER the spread so it overrides the metadata field's UUID id.
+          // Use display name (field.name) to match what parseColumns sets as column.id,
+          // ensuring filter state IDs align with the MRT column IDs used in useColumns.
+          id: field.name || field._key || field.columnName,
+          // filterFieldName must come AFTER the spread to preserve HQL property name
+          // Classic backend expects HQL names (e.g. "businessPartner") not DB names ("C_BPartner_ID")
           filterFieldName: field._key || field.hqlName || field.columnName,
         };
       });
@@ -768,6 +775,23 @@ const WindowReferenceGrid = ({
   // Column filters hook - needs stable columns reference
   const stableRawColumns = useMemo(() => rawColumns, [JSON.stringify(rawColumns.map((c: Column) => c.id))]);
 
+  // Build extra params for filter options requests (process context needed by Classic datasource)
+  const filterExtraParams = useMemo(() => {
+    const extra: Record<string, unknown> = { noActiveFilter: true };
+    if (datasourceOptions.processId) extra.processId = datasourceOptions.processId;
+    if (datasourceOptions.windowId) extra.windowId = datasourceOptions.windowId;
+    if (datasourceOptions.ad_org_id) extra.ad_org_id = datasourceOptions.ad_org_id;
+    if (datasourceOptions.ad_client_id) extra.ad_client_id = datasourceOptions.ad_client_id;
+    if (datasourceOptions.criteria) extra.criteria = datasourceOptions.criteria;
+    return extra;
+  }, [
+    datasourceOptions.processId,
+    datasourceOptions.windowId,
+    datasourceOptions.ad_org_id,
+    datasourceOptions.ad_client_id,
+    datasourceOptions.criteria,
+  ]);
+
   // Use grid column filters hook to avoid code duplication with useTableData
   const { advancedColumnFilters, handleColumnFilterChange, handleLoadFilterOptions, handleLoadMoreFilterOptions } =
     useGridColumnFilters({
@@ -777,6 +801,7 @@ const WindowReferenceGrid = ({
       setAppliedTableFilters,
       setColumnFilters,
       isImplicitFilterApplied: false,
+      extraParams: filterExtraParams,
     });
 
   // Create a minimal tab object for useColumns with corrected field hqlNames
@@ -821,7 +846,7 @@ const WindowReferenceGrid = ({
   const handleDateTextFilterChange = useCallback(
     (columnId: string, filterValue: string) => {
       const column = stableRawColumns.find((col: Column) => col.columnName === columnId || col.id === columnId);
-      const filterKey = column?.columnName || columnId;
+      const filterKey = column?.id || columnId;
 
       const mrtFilter = filterValue?.trim() ? { id: filterKey, value: filterValue } : null;
 
