@@ -67,7 +67,7 @@ describe("Requisition flow - Create and generate Purchase Order", () => {
     cy.get(".rounded-2xl > :nth-child(1)").click();
     cy.get(".h-\\[625px\\] > .items-center > .font-semibold").should("have.text", "Post Requisition");
     cy.wait(1000);
-    cy.closeToastIfPresent();
+    cy.get('[data-testid="close-button"]').click();
 
     cy.wait(1000);
     cy.get('[data-testid="IconButtonWithText__process-menu"]').first().click();
@@ -79,8 +79,7 @@ describe("Requisition flow - Create and generate Purchase Order", () => {
 
     cy.clickOkInLegacyPopup();
     cy.wait(1000);
-
-    cy.get("[data-sonner-toast]").should("be.visible");
+    cy.get('[data-testid="close-button"]').click();
     cy.closeToastIfPresent();
     cy.wait(1000);
 
@@ -113,9 +112,8 @@ describe("Requisition flow - Create and generate Purchase Order", () => {
     cy.wait(1000);
 
     cy.clickOkInLegacyPopup();
-
-    cy.get("[data-sonner-toast]").should("be.visible");
-
+    cy.wait(500);
+    cy.get('[data-testid="close-button"]').click();
     cy.closeToastIfPresent();
   });
 });

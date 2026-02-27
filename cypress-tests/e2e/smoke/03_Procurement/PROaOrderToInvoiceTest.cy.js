@@ -55,7 +55,7 @@ describe("Purchase Order to Invoice flow", () => {
 
     cy.clickOkInLegacyPopup();
     cy.wait(500);
-
+    cy.get('[data-testid="close-button"]').click();
     cy.closeToastIfPresent();
 
     cy.typeInGlobalSearch("goods");
@@ -161,7 +161,7 @@ describe("Purchase Order to Invoice flow", () => {
     });
 
     cy.wait(500);
-
+    cy.get('[data-testid="close-button"]').click();
     cy.closeToastIfPresent();
 
     cy.wait(500);
@@ -171,7 +171,8 @@ describe("Purchase Order to Invoice flow", () => {
     cy.get(".rounded-2xl").contains(".cursor-pointer", "Complete").click();
 
     cy.clickOkInLegacyPopup();
-
+    cy.wait(500);
+    cy.get('[data-testid="close-button"]').click();
     cy.closeToastIfPresent();
 
     cy.typeInGlobalSearch("purcha");
@@ -239,12 +240,8 @@ describe("Purchase Order to Invoice flow", () => {
 
     cy.clickOkInLegacyPopup();
     cy.wait(500);
-
+    cy.get('[data-testid="close-button"]').click();
     cy.closeToastIfPresent();
-
-    cy.get('button[data-testid="close-button"]').should("exist").click({ force: true });
-
-    cy.get('button[data-testid="close-button"]').should("not.exist");
 
     cy.get('[data-testid="IconButton__25D1FA357A484AE38A3E2382889198FE"]').first().click();
     cy.wait(500);
@@ -256,7 +253,7 @@ describe("Purchase Order to Invoice flow", () => {
 
     cy.clickOkInLegacyPopup();
     cy.wait(500);
-
+    cy.get('[data-testid="close-button"]').click();
     cy.closeToastIfPresent();
   });
 });

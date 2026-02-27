@@ -63,7 +63,7 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
 
     cy.clickOkInLegacyPopup();
     cy.wait(500);
-
+    cy.get('[data-testid="close-button"]').click();
     cy.closeToastIfPresent();
 
     cy.get("button.toolbar-button-refresh").filter(":visible").first().should("be.enabled").click();
