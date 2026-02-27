@@ -8,10 +8,11 @@ import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 import CheckIcon from "@workspaceui/componentlibrary/src/assets/icons/check-circle.svg";
 import AlertIcon from "@workspaceui/componentlibrary/src/assets/icons/alert-circle.svg";
 import Loading from "../../../loading";
-import { useUserContext } from "@/hooks/useUserContext";
 import { useWindowContext } from "@/contexts/window";
+import { useUserContext } from "@/hooks/useUserContext";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { appendWindowToUrl } from "@/utils/url/utils";
+import { toast } from "sonner";
 
 // Constants for IDs
 const MANAGE_PACKING_PROCESS_ID = "83AD8A78FB1C4EDBB4A222A276498938";
@@ -120,7 +121,6 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
   const [error, setError] = useState<string | null>(null);
   const [lines, setLines] = useState<PackingLine[]>([]);
   const [boxCount, setBoxCount] = useState(1);
-  const [resultMessage, setResultMessage] = useState<ResultMessage | null>(null);
 
   // Form State
   const [currentBox, setCurrentBox] = useState(1);
@@ -437,13 +437,26 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
         const msgText = msgAction?.msgText || "";
         const parsed = parseSmartClientMessage(msgText);
 
-        setResultMessage({
-          type: (msgAction?.msgType as ResultMessage["type"]) || "success",
-          title: msgAction?.msgTitle || t("packing.title"),
-          text: parsed.text || "Process completed",
-          linkTabId: parsed.tabId,
-          linkRecordId: parsed.recordId,
-        });
+        const toastType = msgAction?.msgType || "success";
+        const toastTitle = msgAction?.msgTitle || t("packing.title");
+        const toastText = parsed.text || "Process completed";
+
+        const toastOptions: any = { description: toastText, duration: Number.POSITIVE_INFINITY };
+        if (parsed.tabId && parsed.recordId) {
+          toastOptions.action = {
+            label: t("packing.checkStatus"),
+            onClick: () => handleNavigateToTab(parsed.tabId as string, parsed.recordId as string)
+          }
+        }
+        
+        if (toastType === "warning") {
+          toast.warning(toastTitle, toastOptions);
+        } else if (toastType === "error") {
+          toast.error(toastTitle, toastOptions);
+        } else {
+          toast.success(toastTitle, toastOptions);
+        }
+        onClose();
       }
     } catch (e) {
       logger.error("Error processing packing", e);
@@ -525,8 +538,6 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
         const resolvedWindowId = tabData?.window || tabData?.windowId || tabId;
 
         // Close the packing modal first
-        setResultMessage(null);
-        onClose();
 
         // Use the same internal navigation pattern as LinkedItemsSection:
         // 1. Generate unique window identifier
@@ -845,74 +856,6 @@ export const PackingProcess: React.FC<PackingProcessProps> = ({ onClose, shipmen
           </div>
         </div>
       )}
-      {/* Result Message Modal (using ProcessResultModal styles) */}
-      {resultMessage &&
-        (() => {
-          const isWarning = resultMessage.type === "warning";
-          const isError = resultMessage.type === "error";
-
-          let bgGradient = "linear-gradient(180deg, #BFFFBF 0%, #FCFCFD 45%)";
-          if (isWarning) bgGradient = "linear-gradient(180deg, #FFF3CD 0%, #FCFCFD 45%)";
-          else if (isError) bgGradient = "#fff";
-
-          let titleColor = "text-(--color-success-main)";
-          if (isWarning) titleColor = "text-amber-600";
-          else if (isError) titleColor = "text-red-600";
-
-          let icon = <CheckIcon className="w-6 h-6 fill-(--color-success-main)" data-testid="CheckIcon__3fbaf0" />;
-          if (isWarning) icon = <AlertIcon className="w-10 h-10 stroke-amber-600" data-testid="AlertIcon__3fbaf0" />;
-          else if (isError) icon = <AlertIcon className="w-10 h-10 stroke-red-600" data-testid="AlertIcon__3fbaf0" />;
-
-          return (
-            <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[60] p-4">
-              <div
-                className="rounded-2xl p-6 shadow-xl relative max-w-sm w-full"
-                style={{ background: isError ? "#fff" : bgGradient }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setResultMessage(null);
-                    onClose();
-                  }}
-                  className="absolute top-4 right-4 p-1 rounded-full hover:bg-white/50 transition-colors">
-                  <CloseIcon className="w-5 h-5" data-testid="CloseIcon__3fbaf0" />
-                </button>
-                <div className="flex flex-col items-center gap-4">
-                  <div className="flex items-center justify-center">{icon}</div>
-                  <div className="w-full">
-                    <h4 className={`font-medium text-xl text-center ${titleColor}`}>{resultMessage.title}</h4>
-                    <p className="text-sm text-center text-(--color-transparent-neutral-80) whitespace-pre-line mt-2">
-                      {resultMessage.text}
-                    </p>
-                    {resultMessage.linkTabId && resultMessage.linkRecordId && (
-                      <p className="text-sm text-center mt-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleNavigateToTab(resultMessage.linkTabId as string, resultMessage.linkRecordId as string)
-                          }
-                          className="text-blue-600 underline hover:text-blue-800 font-medium">
-                          {t("packing.checkStatus")}
-                        </button>
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    variant="filled"
-                    size="large"
-                    onClick={() => {
-                      setResultMessage(null);
-                      onClose();
-                    }}
-                    className="w-full mt-2"
-                    data-testid="Button__3fbaf0">
-                    {t("packing.close")}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
     </>
   );
 };

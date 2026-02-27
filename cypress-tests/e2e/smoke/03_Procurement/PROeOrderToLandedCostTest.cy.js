@@ -35,7 +35,7 @@ describe.skip("Purchase Order to Landed Cost flow", () => {
     cy.get('[data-testid="OptionItem__9C91AE200EFA4A61836D79A2E99E29DB"] > .truncate').click();
 
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
 
     cy.get(":nth-child(2) > .bg-\\(--color-transparent-neutral-5\\) > div > :nth-child(1) > .px-2").click();
     cy.get(
@@ -50,7 +50,7 @@ describe.skip("Purchase Order to Landed Cost flow", () => {
     cy.get(
       '[style="height: 50%;"] > .bg-\\(linear-gradient\\(180deg\\, > .h-10.gap-1 > :nth-child(1) > [data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span'
     ).click();
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
 
     cy.get('[data-testid="IconButtonWithText__process-menu"]').first().click();
     cy.wait(500);
@@ -59,7 +59,7 @@ describe.skip("Purchase Order to Landed Cost flow", () => {
 
     cy.wait(2000);
 
-    cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
     cy.wait(2000);
 
     cy.get('[data-testid="IconButtonWithText__process-menu"]').first().click();
@@ -70,7 +70,7 @@ describe.skip("Purchase Order to Landed Cost flow", () => {
     cy.clickOkInLegacyPopup();
     cy.wait(2000);
 
-    cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
 
     cy.typeInGlobalSearch("goods");
     cy.wait(500);
@@ -89,7 +89,7 @@ describe.skip("Purchase Order to Landed Cost flow", () => {
 
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(2000);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.wait(2000);
     cy.get('[data-testid="IconButtonWithText__process-menu"] > span').click();
     cy.wait(2000);
@@ -181,7 +181,7 @@ describe.skip("Purchase Order to Landed Cost flow", () => {
 
     cy.wait(2000);
 
-    cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
     cy.get(":nth-child(2) > .bg-\\(--color-transparent-neutral-5\\) > div > :nth-child(1) > .px-2").click();
 
     cy.wait(2000);
@@ -197,7 +197,7 @@ describe.skip("Purchase Order to Landed Cost flow", () => {
     cy.get(
       '[style="height: 50%;"] > .bg-\\(linear-gradient\\(180deg\\, > .h-10.gap-1 > :nth-child(1) > [data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span'
     ).click();
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
 
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__process-menu"]').first().click();
@@ -206,7 +206,7 @@ describe.skip("Purchase Order to Landed Cost flow", () => {
     cy.get(".rounded-2xl").contains(".cursor-pointer", "Complete").click();
 
     cy.clickOkInLegacyPopup();
-    cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
     cy.wait(1000);
 
     cy.typeInGlobalSearch("Process");
@@ -225,7 +225,7 @@ describe.skip("Purchase Order to Landed Cost flow", () => {
 
     cy.contains("Reschedule Process").click();
 
-    cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
 
     cy.typeInGlobalSearch("lande");
     cy.wait(500);
@@ -250,7 +250,7 @@ describe.skip("Purchase Order to Landed Cost flow", () => {
 
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]').click();
 
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
 
     cy.get('button[aria-label="Cost"]').click();
 
@@ -260,7 +260,7 @@ describe.skip("Purchase Order to Landed Cost flow", () => {
 
     cy.get("button.toolbar-button-save").eq(1).click();
 
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
     cy.wait(1000);
 
     cy.get('button[aria-label="Receipt"]').click();
@@ -281,7 +281,7 @@ describe.skip("Purchase Order to Landed Cost flow", () => {
 
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]').last().should("be.visible").click();
 
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
 
     cy.get('[data-testid="IconButtonWithText__process-menu"] > span').click();
 

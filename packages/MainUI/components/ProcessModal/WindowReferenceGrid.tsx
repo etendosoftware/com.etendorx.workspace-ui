@@ -602,6 +602,10 @@ const WindowReferenceGrid = ({
       options.criteria = criteria as unknown as EntityValue;
     }
 
+    if (options.ad_org_id) {
+      options._org = options.ad_org_id;
+    }
+
     return options;
   }, [
     processConfig?.processId,

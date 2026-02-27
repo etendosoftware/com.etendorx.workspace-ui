@@ -50,7 +50,7 @@ describe("Sales Order Automation - Complete Flow", () => {
     // Save header
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(500);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.wait(500);
 
     // Select Invoice Terms
@@ -62,7 +62,7 @@ describe("Sales Order Automation - Complete Flow", () => {
     // Save invoice terms
     cy.clickSave();
     cy.wait(500);
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
 
     // -------------------------
     // Step 4: Add Order Lines
@@ -86,7 +86,7 @@ describe("Sales Order Automation - Complete Flow", () => {
     // Save line
     cy.get("button.toolbar-button-save").eq(1).click();
     cy.wait(500);
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
     cy.wait(500);
 
     // -------------------------

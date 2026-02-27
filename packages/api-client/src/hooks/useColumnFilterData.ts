@@ -77,14 +77,7 @@ export const useColumnFilterData = () => {
             });
           }
 
-          // Merge extra params (excluding criteria which is handled above)
-          if (extraParams) {
-            for (const [key, value] of Object.entries(extraParams)) {
-              if (key !== "criteria" && value !== undefined && value !== null) {
-                params[key] = value;
-              }
-            }
-          }
+
 
           // Set distinct-specific params last so extraParams can't overwrite them
           params._distinct = distinctField;
@@ -110,6 +103,18 @@ export const useColumnFilterData = () => {
 
             params.operator = "and";
             params._constructor = "AdvancedCriteria";
+          }
+        }
+
+        // Merge extra params globally (excluding criteria which is handled conditionally above)
+        if (extraParams) {
+          for (const [key, value] of Object.entries(extraParams)) {
+            if (key !== "criteria" && value !== undefined && value !== null) {
+              params[key] = value;
+            }
+          }
+          if (extraParams.ad_org_id && !params._org) {
+            params._org = extraParams.ad_org_id;
           }
         }
 

@@ -48,7 +48,7 @@ describe("Sales Orders - Create, Complete and Close", () => {
     cy.wait(500);
 
     // Close success popup
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.wait(500);
 
     // Capture order number for later use
@@ -70,22 +70,23 @@ describe("Sales Orders - Create, Complete and Close", () => {
     cy.get('[aria-describedby="Product-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
     cy.wait(500);
 
+    cy.intercept('POST', /FormInitializationComponent/).as('productFormInit');
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295ADC2340023D"] > .truncate').click();
-    cy.wait(500);
+    cy.wait('@productFormInit', { timeout: 60000 });
 
     // -------------------------
     // Step 5: Update Quantity
     // -------------------------
-    cy.get('[data-testid="TextInput__1130"]').clear();
+    cy.get('[data-testid="TextInput__1130"]').clear({ force: true });
     cy.wait(500);
-    cy.get('[data-testid="TextInput__1130"]').type("11");
+    cy.get('[data-testid="TextInput__1130"]').type("11", { force: true });
     cy.wait(500);
 
     // Save line
     cy.get("button.toolbar-button-save").eq(1).click();
     cy.wait(500);
 
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
 
     // -------------------------
     // Step 6: Process the Order (Book)
@@ -102,8 +103,8 @@ describe("Sales Orders - Create, Complete and Close", () => {
     // Book the order
     cy.clickOkInLegacyPopup();
     cy.wait(500);
-
     cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
 
     // -------------------------
     // Step 7: Search for Created Order and Close It
@@ -134,7 +135,7 @@ describe("Sales Orders - Create, Complete and Close", () => {
     // Close the order
     cy.clickOkInLegacyPopup();
     cy.wait(500);
-
     cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
   });
 });

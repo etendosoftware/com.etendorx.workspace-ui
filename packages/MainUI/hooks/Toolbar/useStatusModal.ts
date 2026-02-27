@@ -15,15 +15,10 @@
  *************************************************************************
  */
 
-import type { StatusModalState, StatusType } from "@workspaceui/componentlibrary/src/components/StatusModal/types";
-import { useState, useCallback } from "react";
-
-const initialState: StatusModalState = {
-  open: false,
-  statusType: "info",
-  statusText: "",
-  isDeleteSuccess: false,
-};
+import type { StatusType } from "@workspaceui/componentlibrary/src/components/StatusModal/types";
+import React, { useState, useCallback } from "react";
+import { toast } from "sonner";
+import { ToastContent } from "@/components/ToastContent";
 
 interface ConfirmOptions {
   confirmText: string;
@@ -33,8 +28,11 @@ interface ConfirmOptions {
 }
 
 export const useStatusModal = () => {
-  const [state, setState] = useState<StatusModalState>(initialState);
+  // We keep state for ConfirmModal as it requires user interaction
   const [confirmAction, setConfirmAction] = useState<ConfirmOptions | null>(null);
+
+  // Dummy state to avoid breaking consumers that read statusModal.open 
+  const statusModal = { open: false, statusType: "info" as StatusType, statusText: "", isDeleteSuccess: false };
 
   const showStatusModal = useCallback(
     (
@@ -46,15 +44,35 @@ export const useStatusModal = () => {
         secondaryButtonLabel?: string;
         onAfterClose?: () => void;
         isDeleteSuccess?: boolean;
+        isProcessResult?: boolean; // Used to make toast persistent
       }
     ) => {
-      setState({
-        open: true,
-        statusType,
-        statusText,
-        isDeleteSuccess: options?.isDeleteSuccess || false,
-        ...options,
-      });
+      const isPersistent = options?.isProcessResult || false;
+      const description = options?.errorMessage ? React.createElement(ToastContent, { message: options.errorMessage }) : undefined;
+      const duration = isPersistent ? Number.POSITIVE_INFINITY : 4000;
+
+      const toastOptions = {
+        description,
+        duration,
+        onDismiss: () => {
+          if (options?.onAfterClose) options.onAfterClose();
+        },
+        onAutoClose: () => {
+          if (options?.onAfterClose) options.onAfterClose();
+        },
+      };
+
+      const titleNode = React.createElement(ToastContent, { message: statusText });
+
+      if (statusType === "success") {
+        toast.success(titleNode, toastOptions);
+      } else if (statusType === "error") {
+        toast.error(titleNode, toastOptions);
+      } else if (statusType === "warning") {
+        toast.warning(titleNode, toastOptions);
+      } else {
+        toast.info(titleNode, toastOptions);
+      }
     },
     []
   );
@@ -67,6 +85,7 @@ export const useStatusModal = () => {
         secondaryButtonLabel?: string;
         onAfterClose?: () => void;
         isDeleteSuccess?: boolean;
+        isProcessResult?: boolean;
       }
     ) => {
       showStatusModal("success", statusText, options);
@@ -85,7 +104,6 @@ export const useStatusModal = () => {
       showStatusModal("success", statusText, {
         ...options,
         isDeleteSuccess: true,
-        saveLabel: options?.saveLabel || "Close",
       });
     },
     [showStatusModal]
@@ -99,6 +117,7 @@ export const useStatusModal = () => {
         saveLabel?: string;
         secondaryButtonLabel?: string;
         onAfterClose?: () => void;
+        isProcessResult?: boolean;
       }
     ) => {
       showStatusModal("error", statusText, options);
@@ -114,6 +133,7 @@ export const useStatusModal = () => {
         saveLabel?: string;
         secondaryButtonLabel?: string;
         onAfterClose?: () => void;
+        isProcessResult?: boolean;
       }
     ) => {
       showStatusModal("warning", statusText, options);
@@ -138,11 +158,11 @@ export const useStatusModal = () => {
   }, []);
 
   const hideStatusModal = useCallback(() => {
-    setState((prev) => ({ ...prev, open: false }));
+    // No-op for toasts
   }, []);
 
   return {
-    statusModal: state,
+    statusModal,
     confirmAction,
     showStatusModal,
     showSuccessModal,

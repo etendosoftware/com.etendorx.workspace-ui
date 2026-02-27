@@ -61,7 +61,7 @@ describe("Master Data - Business Partner Setup", () => {
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(500);
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
     cy.wait(500);
     cy.get('[data-testid="CloseIcon__cfc328"]').click();
     cy.wait(500);
@@ -93,7 +93,7 @@ describe("Master Data - Business Partner Setup", () => {
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(500);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.wait(500);
     cy.typeInGlobalSearch("invoi");
     cy.wait(500);
@@ -120,7 +120,7 @@ describe("Master Data - Business Partner Setup", () => {
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(500);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.wait(500);
     cy.typeInGlobalSearch("busine");
     cy.wait(500);
@@ -146,7 +146,7 @@ describe("Master Data - Business Partner Setup", () => {
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(500);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.wait(500);
     cy.typeInGlobalSearch("busi");
     cy.wait(500);
@@ -178,6 +178,6 @@ describe("Master Data - Business Partner Setup", () => {
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(500);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
   });
 });

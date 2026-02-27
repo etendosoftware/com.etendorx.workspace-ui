@@ -50,7 +50,7 @@ describe.skip("Sales Orders - Create, Complete Shipment and Invoice", () => {
     // Save header
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(2000);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.wait(2000);
 
     // Select Invoice Terms
@@ -62,7 +62,7 @@ describe.skip("Sales Orders - Create, Complete Shipment and Invoice", () => {
     // Save invoice terms
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(2000);
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
 
     // -------------------------
     // Step 4: Add Order Lines
@@ -78,13 +78,14 @@ describe.skip("Sales Orders - Create, Complete Shipment and Invoice", () => {
     // Select Product
     cy.get('[aria-describedby="Product-help"] > .w-2\\/3 > .relative > .w-full').click();
     cy.wait(2000);
+    cy.intercept('POST', /FormInitializationComponent/).as('productFormInit');
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295ADC2340023D"] > .truncate').click();
-    cy.wait(2000);
+    cy.wait('@productFormInit', { timeout: 60000 });
 
     // Update Quantity
-    cy.get('[data-testid="TextInput__1130"]').clear();
-    cy.wait(2000);
-    cy.get('[data-testid="TextInput__1130"]').type("11");
+    cy.get('[data-testid="TextInput__1130"]').clear({ force: true });
+    cy.wait(500);
+    cy.get('[data-testid="TextInput__1130"]').type("11", { force: true });
     cy.wait(2000);
 
     // Save line
@@ -92,7 +93,7 @@ describe.skip("Sales Orders - Create, Complete Shipment and Invoice", () => {
       '[style="height: 50%;"] > .bg-\\(linear-gradient\\(180deg\\, > .h-10.gap-1 > :nth-child(1) > [data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span'
     ).click();
     cy.wait(2000);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
 
     // -------------------------
     // Step 5: Process the Order (Book)
@@ -110,9 +111,9 @@ describe.skip("Sales Orders - Create, Complete Shipment and Invoice", () => {
     cy.wait(2000);
 
     // Verify success message
-    cy.get(".mb-1").should("have.text", "Process completed successfully");
+    cy.get("[data-sonner-toast]").should("have.text", "Process completed successfully");
     cy.wait(2000);
-    cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
 
     // Reload page(bug)
     cy.reload();
@@ -139,7 +140,7 @@ describe.skip("Sales Orders - Create, Complete Shipment and Invoice", () => {
     // Save shipment header
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(2000);
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
     cy.wait(2000);
 
     // -------------------------
@@ -322,8 +323,8 @@ describe.skip("Sales Orders - Create, Complete Shipment and Invoice", () => {
       });
 
     // Verify success message (note: there's a bug with this message)
-    cy.get(".mb-1").should("have.text", "Process completed successfully");
-    cy.get('[data-testid="close-button"]').click();
+    cy.get("[data-sonner-toast]").should("have.text", "Process completed successfully");
+    cy.closeToastIfPresent();
 
     // -------------------------
     // Step 8: Process Shipment
@@ -348,7 +349,7 @@ describe.skip("Sales Orders - Create, Complete Shipment and Invoice", () => {
         cy.wait(2000);
       });
 
-    cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
 
     // -------------------------
     // Step 9: Create Sales Invoice
@@ -371,7 +372,7 @@ describe.skip("Sales Orders - Create, Complete Shipment and Invoice", () => {
     // Save invoice header
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(2000);
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
 
     // -------------------------
     // Step 10: Add Lines from Goods Shipment
@@ -415,9 +416,9 @@ describe.skip("Sales Orders - Create, Complete Shipment and Invoice", () => {
     cy.wait(2000);
 
     // Verify success message
-    cy.get(".mb-1").should("have.text", "Process completed successfully");
+    cy.get("[data-sonner-toast]").should("have.text", "Process completed successfully");
     cy.wait(2000);
-    cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
     cy.wait(2000);
 
     // Close invoice
@@ -435,6 +436,6 @@ describe.skip("Sales Orders - Create, Complete Shipment and Invoice", () => {
     // Post the invoice
     cy.clickOkInLegacyPopup();
     cy.wait(2000);
-    cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
   });
 });

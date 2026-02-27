@@ -41,7 +41,7 @@ describe("Sales flow - Generate invoices from multiple sales orders", () => {
 
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(500);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.wait(500);
     cy.get('[aria-describedby="Invoice Terms-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
     cy.wait(500);
@@ -49,7 +49,7 @@ describe("Sales flow - Generate invoices from multiple sales orders", () => {
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(500);
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
 
     cy.wait(500);
     cy.get('button[aria-label="Lines"]').click();
@@ -63,16 +63,17 @@ describe("Sales flow - Generate invoices from multiple sales orders", () => {
     cy.wait(500);
     cy.get('[aria-describedby="Product-help"] > .w-2\\/3 > .relative > .w-full').click();
     cy.wait(500);
+    cy.intercept('POST', /FormInitializationComponent/).as('productFormInit');
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295ADC2340023D"] > .truncate').click();
+    cy.wait('@productFormInit', { timeout: 60000 });
+    cy.get('[data-testid="TextInput__1130"]').clear({ force: true });
     cy.wait(500);
-    cy.get('[data-testid="TextInput__1130"]').clear();
-    cy.wait(500);
-    cy.get('[data-testid="TextInput__1130"]').type("11");
+    cy.get('[data-testid="TextInput__1130"]').type("11", { force: true });
     cy.wait(500);
 
     cy.get("button.toolbar-button-save").eq(1).click();
     cy.wait(500);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
 
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__process-menu"]').first().click();
@@ -85,6 +86,7 @@ describe("Sales flow - Generate invoices from multiple sales orders", () => {
     cy.clickOkInLegacyPopup();
     cy.wait(500);
     cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
 
     cy.wait(500);
     cy.get(':nth-child(3) > [data-testid="IconButton__C7913FFAF4DF44BFB0392755DEAE9C89"]').click();
@@ -98,6 +100,7 @@ describe("Sales flow - Generate invoices from multiple sales orders", () => {
     cy.clickOkInLegacyPopup();
     cy.wait(500);
     cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
     cy.get(':nth-child(3) > [data-testid="IconButton__C7913FFAF4DF44BFB0392755DEAE9C89"]').click();
     cy.wait(500);
     cy.get(".bg-\\[var\\(--color-etendo-main\\)\\]").click();
@@ -109,6 +112,7 @@ describe("Sales flow - Generate invoices from multiple sales orders", () => {
     cy.clickOkInLegacyPopup();
     cy.wait(500);
     cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
 
     cy.typeInGlobalSearch("create");
     cy.wait(500);
@@ -126,8 +130,8 @@ describe("Sales flow - Generate invoices from multiple sales orders", () => {
     cy.clickLegacyButton("Process");
     cy.wait(500);
     cy.verifyLegacySuccessMessage("Process completed successfully");
-
     cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
 
     cy.typeInGlobalSearch("genera");
     cy.wait(500);

@@ -30,7 +30,7 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(500);
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
     cy.wait(500);
     cy.get('button[aria-label="Lines"]').click();
     cy.wait(500);
@@ -49,7 +49,7 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
     cy.get("button.toolbar-button-save").eq(1).click();
     cy.wait(500);
 
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
     cy.wait(500);
 
     cy.get('[data-testid="IconButtonWithText__process-menu"] > span').click();
@@ -64,7 +64,7 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
     cy.clickOkInLegacyPopup();
     cy.wait(500);
 
-    cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
 
     cy.get("button.toolbar-button-refresh").filter(":visible").first().should("be.enabled").click();
     cy.wait(500);

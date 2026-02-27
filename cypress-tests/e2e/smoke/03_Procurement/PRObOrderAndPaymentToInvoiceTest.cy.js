@@ -30,7 +30,7 @@ describe.skip("Purchase Order with advance payment flow", () => {
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295F40BDDF02E3"]').click();
 
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
 
     cy.get(
       ":nth-child(2) > .bg-\\(--color-transparent-neutral-5\\) > .flex > .border-b-\\(--color-neutral-90\\)"
@@ -44,7 +44,7 @@ describe.skip("Purchase Order with advance payment flow", () => {
     cy.get(
       '[style="height: 50%;"] > .bg-\\(linear-gradient\\(180deg\\, > .h-10.gap-1 > :nth-child(1) > [data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span'
     ).click();
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
     cy.captureDocumentNumber(":nth-child(3) > .MuiBox-root > .MuiTypography-root", "invoiceNumber");
 
     cy.get('[data-testid="IconButtonWithText__process-menu"]').first().click();
@@ -54,7 +54,7 @@ describe.skip("Purchase Order with advance payment flow", () => {
 
     cy.wait(500);
 
-    cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
     cy.wait(500);
 
     cy.get('[data-testid="IconButtonWithText__process-menu"]').first().click();
@@ -65,7 +65,7 @@ describe.skip("Purchase Order with advance payment flow", () => {
     cy.clickOkInLegacyPopup();
     cy.wait(2000);
 
-    cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
 
     cy.typeInGlobalSearch("payment");
     cy.wait(500);
@@ -77,7 +77,7 @@ describe.skip("Purchase Order with advance payment flow", () => {
     cy.get('[aria-describedby="Paying To-help"] > .w-2\\/3 > .relative > .w-full').click();
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295F40BDDF02E3"]').click();
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.get('[data-testid="IconButtonWithText__process-menu"] > span').click();
     cy.get(".rounded-2xl > .cursor-pointer").click();
     cy.selectDocumentInAddPayment("invoiceNumber", "order");
@@ -105,7 +105,7 @@ describe.skip("Purchase Order with advance payment flow", () => {
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295F40BDDF02E3"]').click();
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__process-menu"] > span').click();
     cy.wait(500);
@@ -143,6 +143,6 @@ describe.skip("Purchase Order with advance payment flow", () => {
     cy.wait(500);
     cy.get(".rounded-2xl > :nth-child(1)").click();
     cy.clickOkInLegacyPopup();
-    cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
   });
 });

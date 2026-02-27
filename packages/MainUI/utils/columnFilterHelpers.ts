@@ -115,7 +115,8 @@ export const loadTableDirFilterOptions = async ({
           undefined,
           undefined,
           offset,
-          isImplicitFilterApplied
+          isImplicitFilterApplied,
+          extraParams
         );
       } else if (entityName && column.columnName) {
         // Last-resort fallback for TABLEDIR columns in process grids without explicit datasource:
