@@ -24,7 +24,6 @@ import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useUserContext } from "@/hooks/useUserContext";
 import { EMPTY_ARRAY } from "@/utils/defaults";
-import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -42,7 +41,6 @@ import {
   type ProcessResponse,
 } from "../ProcessModal/types";
 import ProcessMenu from "./Menus/ProcessMenu";
-import ProcessResultModal from "../ProcessModal/ProcessResultModal";
 import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar/TopToolbar";
 import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
@@ -102,8 +100,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     hideStatusModal,
     actionModal,
     closeActionModal,
-    resultModal,
-    closeResultModal,
   } = useToolbarConfig({ windowId, tabId: tab?.id, parentId, isFormView });
 
   const { handleProcessClick } = useProcessButton(executeProcess, refetchToolbar);
@@ -344,28 +340,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   return (
     <>
       <TopToolbar {...toolbarConfig} data-testid="TopToolbar__a2dd07" />
-      {activeModal && (
-        <StatusModal
-          open={activeModal.isOpen}
-          statusText={`Modal para: ${activeModal.button.name}`}
-          statusType="info"
-          saveLabel="Cerrar"
-          onClose={handleCloseStatusModal}
-          data-testid="StatusModal__a2dd07"
-        />
-      )}
-      {statusModal.open && (
-        <StatusModal
-          open={statusModal.open}
-          statusText={statusModal.statusText}
-          statusType={statusModal.statusType}
-          errorMessage={statusModal.errorMessage}
-          saveLabel={statusModal.saveLabel || t("common.close")}
-          secondaryButtonLabel={statusModal.secondaryButtonLabel}
-          onClose={hideStatusModal}
-          data-testid="StatusModal__a2dd07"
-        />
-      )}
       {confirmAction && (
         <ConfirmModal
           open={!!confirmAction}
@@ -428,14 +402,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           data-testid="ActionModal__a2dd07"
         />
       )}
-      <ProcessResultModal
-        open={resultModal.open}
-        success={resultModal.success}
-        title={resultModal.title}
-        message={resultModal.message}
-        onClose={closeResultModal}
-        data-testid="ProcessResultModal__a2dd07"
-      />
     </>
   );
 };

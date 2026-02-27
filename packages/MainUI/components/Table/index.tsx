@@ -3429,22 +3429,6 @@ const DynamicTable = ({
         isDeleteSuccess={false}
         data-testid="ConfirmationDialog__8ca888"
       />
-      <StatusModal
-        open={statusModal.open}
-        statusType={statusModal.statusType}
-        statusText={statusModal.statusText}
-        onClose={hideStatusModal}
-        onAfterClose={() => {
-          if ("onAfterClose" in statusModal && typeof statusModal.onAfterClose === "function") {
-            statusModal.onAfterClose();
-          }
-        }}
-        saveLabel={statusModal.saveLabel}
-        secondaryButtonLabel={statusModal.secondaryButtonLabel}
-        errorMessage={statusModal.errorMessage}
-        isDeleteSuccess={statusModal.isDeleteSuccess}
-        data-testid="StatusModal__8ca888"
-      />
       <HeaderContextMenu
         anchorEl={headerContextMenuAnchor}
         onClose={handleCloseHeaderContextMenu}

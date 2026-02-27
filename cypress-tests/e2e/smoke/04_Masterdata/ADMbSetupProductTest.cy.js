@@ -27,7 +27,7 @@ describe("Master Data - Product and Pricing Setup", () => {
 
     cy.clickSave();
     cy.wait(1000);
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
     cy.wait(1000);
 
     // open lines subtab
@@ -40,7 +40,7 @@ describe("Master Data - Product and Pricing Setup", () => {
 
     cy.get("button.toolbar-button-save").eq(1).click();
     cy.wait(1000);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.wait(1000);
     cy.get("button.toolbar-button-cancel", { timeout: 20000 }).filter(":visible").not(":disabled").first().click();
 
@@ -51,7 +51,7 @@ describe("Master Data - Product and Pricing Setup", () => {
 
     cy.clickSave();
     cy.wait(1000);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.wait(1000);
 
     cy.get('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"] > span').click();
@@ -61,7 +61,7 @@ describe("Master Data - Product and Pricing Setup", () => {
     cy.wait(1000);
     cy.clickSave();
     cy.wait(1000);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.wait(1000);
     // navigate to the price list window
     cy.typeInGlobalSearch("price");
@@ -74,7 +74,7 @@ describe("Master Data - Product and Pricing Setup", () => {
     cy.typeName("Wholesale_pricelist ");
 
     cy.clickSave();
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     // navigate to the attributes window
     cy.typeInGlobalSearch("att");
     cy.wait(1000);
@@ -89,7 +89,7 @@ describe("Master Data - Product and Pricing Setup", () => {
     cy.get('button[role="switch"][aria-label="Serial No."]', { timeout: 20000 }).filter(":visible").click();
     cy.clickSave();
     cy.wait(1000);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.typeInGlobalSearch("produc");
     cy.wait(1000);
     cy.get('[data-testid="MenuTitle__130"] > .flex.overflow-hidden > .relative > .ml-2').click();
@@ -107,7 +107,7 @@ describe("Master Data - Product and Pricing Setup", () => {
 
     cy.wait(1000);
     cy.clickSave();
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     // navigate to the units window
     cy.typeInGlobalSearch("unit");
     cy.wait(1000);
@@ -135,7 +135,7 @@ describe("Master Data - Product and Pricing Setup", () => {
     cy.typeName("Carat");
 
     cy.clickSave();
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.typeInGlobalSearch("tax");
     cy.wait(1000);
     cy.get('[data-testid="MenuTitle__124"] > .flex.overflow-hidden > .relative > .ml-2').click();
@@ -147,7 +147,7 @@ describe("Master Data - Product and Pricing Setup", () => {
 
     cy.wait(1000);
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]').click();
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
 
     // navigate to the products window
 
@@ -188,6 +188,6 @@ describe("Master Data - Product and Pricing Setup", () => {
     cy.contains('[data-testid^="OptionItem"]', "Lots").click();
     cy.wait(1000);
     cy.clickSave();
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
   });
 });
