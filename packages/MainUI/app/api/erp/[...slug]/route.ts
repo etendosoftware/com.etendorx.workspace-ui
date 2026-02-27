@@ -568,15 +568,16 @@ async function handleError(error: unknown, params: Promise<{ slug: string[] }>):
   const resolvedParams = await params;
   console.error(`API Route /api/erp/${resolvedParams.slug.join("/")} Error:`, error);
 
-  if (error instanceof ErpRequestError) {
+  if (error instanceof ErpRequestError || (error instanceof Error && error.name === "ErpRequestError")) {
+    const erpError = error as ErpRequestError;
     return NextResponse.json(
       {
-        error: error.message,
-        details: error.errorText,
-        status: error.status,
-        statusText: error.statusText,
+        error: erpError.message,
+        details: erpError.errorText,
+        status: erpError.status,
+        statusText: erpError.statusText,
       },
-      { status: error.status }
+      { status: erpError.status }
     );
   }
 
