@@ -223,8 +223,7 @@ describe("Purchase Order to Invoice flow", () => {
 
       cy.wait("@filterRequest");
 
-      cy.contains(orderNumber, { timeout: 10000 })
-        .should("be.visible");
+      cy.contains(orderNumber, { timeout: 10000 }).should("be.visible");
     });
 
     cy.wait(500);
