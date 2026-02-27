@@ -1,7 +1,7 @@
 import { render } from "@testing-library/react";
 import { GenericSelector } from "../GenericSelector";
 import { useFormContext } from "react-hook-form";
-import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { FIELD_REFERENCE_CODES, PRODUCT_STOCK_VIEW_REFERENCE_IDS } from "@/utils/form/constants";
 
 // Mocks
 jest.mock("react-hook-form");
@@ -69,13 +69,13 @@ describe("GenericSelector", () => {
       field: { column: { reference: "30" }, selector: { datasourceName: "ProductStockView" } },
     },
     {
-      title: "reference is PRODUCT",
+      title: "referenceSearchKey is a ProductStockView reference",
       expected: "ProductStockModalSelector",
-      field: { column: { reference: FIELD_REFERENCE_CODES.PRODUCT } },
+      field: { column: { reference: "30", referenceSearchKey: PRODUCT_STOCK_VIEW_REFERENCE_IDS[0] } },
     },
     {
-      title: "inputName is inpmProductId",
-      expected: "ProductStockModalSelector",
+      title: "inputName is inpmProductId (renders as dropdown like Classic)",
+      expected: "SelectSelector",
       field: { inputName: "inpmProductId", column: { reference: "30" } },
     },
     {

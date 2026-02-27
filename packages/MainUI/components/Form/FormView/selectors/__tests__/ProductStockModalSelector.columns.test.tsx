@@ -2,6 +2,7 @@ import { render } from "@testing-library/react";
 import { ProductStockModalSelector } from "../ProductStockModalSelector";
 import { useTableDirDatasource } from "@/hooks/datasource/useTableDirDatasource";
 import { useFormContext } from "react-hook-form";
+import { PRODUCT_STOCK_VIEW_REFERENCE_IDS } from "@/utils/form/constants";
 
 // Mocks
 jest.mock("@/hooks/datasource/useTableDirDatasource");
@@ -35,10 +36,25 @@ jest.mock("@/contexts/tab", () => ({
   useTabContext: jest.fn(() => ({ parentTab: null })),
 }));
 
-const mockField = {
+const mockProductSimpleField = {
   hqlName: "testField",
   columnName: "testField",
   name: "testField",
+  selector: { displayField: "_identifier", valueField: "id" },
+} as any;
+
+const mockProductStockField = {
+  hqlName: "testField",
+  columnName: "testField",
+  name: "testField",
+  selector: { displayField: "_identifier", valueField: "id", datasourceName: "ProductStockView" },
+} as any;
+
+const mockProductCompleteField = {
+  hqlName: "testField",
+  columnName: "testField",
+  name: "testField",
+  column: { referenceSearchKey: PRODUCT_STOCK_VIEW_REFERENCE_IDS[0] },
   selector: { displayField: "_identifier", valueField: "id" },
 } as any;
 
@@ -54,7 +70,7 @@ describe("ProductStockModalSelector Columns", () => {
     });
   });
 
-  it("uses custom columns even when backend columns are provided", () => {
+  it("uses ProductSimple columns when datasourceName is not ProductStockView", () => {
     const backendColumns = [
       { name: "col1", title: "Column 1", isDisplayed: true },
       { name: "col2", title: "Column 2", isDisplayed: true },
@@ -68,12 +84,36 @@ describe("ProductStockModalSelector Columns", () => {
       columns: backendColumns,
     });
 
-    // We need to spy on useMaterialReactTable to verify columns passed
     const { useMaterialReactTable } = require("material-react-table");
 
-    render(<ProductStockModalSelector field={mockField} isReadOnly={false} />);
+    render(<ProductStockModalSelector field={mockProductSimpleField} isReadOnly={false} />);
 
-    // Custom columns should always be used, overriding backend columns
+    expect(useMaterialReactTable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        columns: expect.arrayContaining([
+          expect.objectContaining({ accessorKey: "searchKey", header: "Search Key" }),
+          expect.objectContaining({ accessorKey: "_identifier", header: "Product" }),
+          expect.objectContaining({ accessorKey: "standardPrice", header: "Unit Price" }),
+          expect.objectContaining({ accessorKey: "netListPrice", header: "List Price" }),
+          expect.objectContaining({ accessorKey: "uOM", header: "UOM" }),
+        ]),
+      })
+    );
+  });
+
+  it("uses ProductStock columns when datasourceName is ProductStockView", () => {
+    (useTableDirDatasource as jest.Mock).mockReturnValue({
+      records: [],
+      loading: false,
+      refetch: jest.fn(),
+      search: jest.fn(),
+      columns: [],
+    });
+
+    const { useMaterialReactTable } = require("material-react-table");
+
+    render(<ProductStockModalSelector field={mockProductStockField} isReadOnly={false} />);
+
     expect(useMaterialReactTable).toHaveBeenCalledWith(
       expect.objectContaining({
         columns: expect.arrayContaining([
@@ -85,7 +125,7 @@ describe("ProductStockModalSelector Columns", () => {
     );
   });
 
-  it("falls back to default columns when backend columns are empty", () => {
+  it("uses ProductStock columns when referenceSearchKey is a ProductComplete reference", () => {
     (useTableDirDatasource as jest.Mock).mockReturnValue({
       records: [],
       loading: false,
@@ -96,14 +136,14 @@ describe("ProductStockModalSelector Columns", () => {
 
     const { useMaterialReactTable } = require("material-react-table");
 
-    render(<ProductStockModalSelector field={mockField} isReadOnly={false} />);
+    render(<ProductStockModalSelector field={mockProductCompleteField} isReadOnly={false} />);
 
     expect(useMaterialReactTable).toHaveBeenCalledWith(
       expect.objectContaining({
         columns: expect.arrayContaining([
-          expect.objectContaining({ header: "Product" }),
-          expect.objectContaining({ header: "Storage Bin" }),
-          expect.objectContaining({ header: "Attribute Set Value" }),
+          expect.objectContaining({ accessorKey: "_identifier", header: "Product" }),
+          expect.objectContaining({ accessorKey: "storageBin", header: "Storage Bin" }),
+          expect.objectContaining({ accessorKey: "attributeSetValue", header: "Attribute Set Value" }),
         ]),
       })
     );

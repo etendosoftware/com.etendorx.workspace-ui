@@ -17,7 +17,11 @@
 
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { memo } from "react";
-import { CUSTOM_SELECTORS_IDENTIFIERS, FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import {
+  CUSTOM_SELECTORS_IDENTIFIERS,
+  FIELD_REFERENCE_CODES,
+  PRODUCT_STOCK_VIEW_REFERENCE_IDS,
+} from "@/utils/form/constants";
 import { toCamelCase } from "@/utils/commons";
 import { BooleanSelector } from "./BooleanSelector";
 import { DateSelector } from "./DateSelector";
@@ -61,16 +65,16 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
 
   const { reference } = effectiveField.column;
 
-  if (
+  const isProductStockModal =
     effectiveField.selector?.datasourceName === "ProductStockView" ||
-    reference === FIELD_REFERENCE_CODES.PRODUCT ||
-    (reference === FIELD_REFERENCE_CODES.SELECT_30 && effectiveField.inputName === "inpmProductId")
-  ) {
+    (PRODUCT_STOCK_VIEW_REFERENCE_IDS as readonly string[]).includes(effectiveField.column.referenceSearchKey);
+
+  if (isProductStockModal) {
     return (
       <ProductStockModalSelector
         field={effectiveField}
         isReadOnly={isReadOnly}
-        data-testid={"ProductStockModalSelector__" + field.id}
+        data-testid={`ProductStockModalSelector__${field.id}`}
       />
     );
   }
@@ -78,8 +82,6 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   switch (reference) {
     case FIELD_REFERENCE_CODES.PASSWORD:
       return <PasswordSelector field={effectiveField} readOnly={isReadOnly} data-testid="PasswordSelector__6e80fa" />;
-    case FIELD_REFERENCE_CODES.PRODUCT: // Product reference to datasource
-    case FIELD_REFERENCE_CODES.SELECTOR: // Generic selector (includes Product)
     case FIELD_REFERENCE_CODES.TABLE_DIR_19:
     case FIELD_REFERENCE_CODES.TABLE_DIR_18:
       return <TableDirSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="TableDirSelector__6e80fa" />;
@@ -102,7 +104,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         />
       );
     case FIELD_REFERENCE_CODES.TIME:
-      return <TimeSelector field={field} isReadOnly={isReadOnly} data-testid={"TimeSelector__" + field.id} />;
+      return <TimeSelector field={field} isReadOnly={isReadOnly} data-testid={`TimeSelector__${field.id}`} />;
     case FIELD_REFERENCE_CODES.LIST_17:
     case FIELD_REFERENCE_CODES.LIST_13:
       return <ListSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="ListSelector__6e80fa" />;
