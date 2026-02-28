@@ -330,9 +330,9 @@ describe("DependenciesSection", () => {
     });
   });
 
-  it("excludes already installed packages from list", async () => {
+  it("shows installed badge and version for already installed packages", async () => {
     const user = userEvent.setup();
-    // copilot is already installed (in mockDeps), newmodule is not
+    // copilot is already installed (in mockDeps) with version 1.5.0, latestVersion 2.0.0
     mockedApi.fetchAvailablePackages.mockResolvedValueOnce({
       success: true,
       data: [
@@ -353,9 +353,11 @@ describe("DependenciesSection", () => {
       expect(screen.getByText("com.etendoerp:newmodule")).toBeInTheDocument();
     });
 
-    // copilot should not be in the dialog list (already installed)
+    // copilot should be in the dialog list with "installed" label and version chip
     const dialog = screen.getByRole("dialog");
-    expect(within(dialog).queryByText("com.etendoerp:copilot")).not.toBeInTheDocument();
+    expect(within(dialog).getByText("installed")).toBeInTheDocument();
+    expect(within(dialog).getByText("1.5.0")).toBeInTheDocument();
+    expect(within(dialog).getByText("2.0.0 available")).toBeInTheDocument();
   });
 
   it("closes Add dialog on Cancel", async () => {

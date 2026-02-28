@@ -211,11 +211,14 @@ export function DependenciesSection() {
     );
   }, [availablePackages, packageSearch]);
 
-  // Filter out packages already installed
-  const installablePackages = useMemo(() => {
-    const installedKeys = new Set(dependencies.map((d) => `${d.group}:${d.artifact}`));
-    return filteredPackages.filter((pkg) => !installedKeys.has(`${pkg.group}:${pkg.artifact}`));
-  }, [filteredPackages, dependencies]);
+  // Map of installed deps for quick lookup
+  const installedMap = useMemo(() => {
+    const map = new Map<string, Dependency>();
+    for (const d of dependencies) {
+      map.set(`${d.group}:${d.artifact}`, d);
+    }
+    return map;
+  }, [dependencies]);
 
   const hasPendingChanges = pendingChanges.size > 0;
 
@@ -461,22 +464,47 @@ export function DependenciesSection() {
                   }}
                   dense
                 >
-                  {installablePackages.length === 0 ? (
+                  {filteredPackages.length === 0 ? (
                     <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: "center" }}>
                       {packageSearch ? "No matching packages found" : "No packages available"}
                     </Typography>
                   ) : (
-                    installablePackages.map((pkg) => (
-                      <ListItemButton key={pkg.name} onClick={() => handleSelectPackage(pkg)}>
-                        <ListItemText
-                          primary={
-                            <Typography variant="body2" fontFamily="monospace" fontSize="0.85rem">
-                              {pkg.group}:{pkg.artifact}
+                    filteredPackages.map((pkg) => {
+                      const key = `${pkg.group}:${pkg.artifact}`;
+                      const installed = installedMap.get(key);
+                      return (
+                        <ListItemButton
+                          key={pkg.name}
+                          onClick={() => handleSelectPackage(pkg)}
+                          sx={installed ? { bgcolor: "action.selected" } : undefined}
+                        >
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                <Typography variant="body2" fontFamily="monospace" fontSize="0.85rem">
+                                  {key}
+                                </Typography>
+                                {installed && (
+                                  <Chip label={installed.version} size="small" variant="outlined" color="primary" />
+                                )}
+                                {installed?.updateAvailable && installed.latestVersion && (
+                                  <Chip
+                                    label={`${installed.latestVersion} available`}
+                                    size="small"
+                                    color="warning"
+                                  />
+                                )}
+                              </Box>
+                            }
+                          />
+                          {installed && (
+                            <Typography variant="caption" color="text.secondary" sx={{ ml: 1, whiteSpace: "nowrap" }}>
+                              installed
                             </Typography>
-                          }
-                        />
-                      </ListItemButton>
-                    ))
+                          )}
+                        </ListItemButton>
+                      );
+                    })
                   )}
                 </List>
               )}
