@@ -253,69 +253,130 @@ describe("DependenciesSection", () => {
 
   // ==================== Add dependency dialog ====================
 
-  it("opens Add Dependency dialog on button click", async () => {
+  const mockAvailablePackages = [
+    { group: "com.etendoerp", artifact: "newmodule", name: "com.etendoerp.newmodule" },
+    { group: "com.etendoerp", artifact: "analytics", name: "com.etendoerp.analytics" },
+  ];
+
+  it("opens Add Dependency dialog and fetches packages", async () => {
     const user = userEvent.setup();
+    mockedApi.fetchAvailablePackages.mockResolvedValueOnce({
+      success: true,
+      data: mockAvailablePackages,
+    });
+
     renderWithTheme(<DependenciesSection />);
 
     await user.click(screen.getByText("Add Dependency"));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Group")).toBeInTheDocument();
-      expect(screen.getByLabelText("Artifact")).toBeInTheDocument();
-      expect(screen.getByLabelText("Version")).toBeInTheDocument();
+      expect(screen.getByText("Select Package")).toBeInTheDocument();
+    });
+
+    expect(mockedApi.fetchAvailablePackages).toHaveBeenCalledTimes(1);
+
+    await waitFor(() => {
+      expect(screen.getByText("com.etendoerp:newmodule")).toBeInTheDocument();
+      expect(screen.getByText("com.etendoerp:analytics")).toBeInTheDocument();
     });
   });
 
-  it("calls addDependency with form values", async () => {
+  it("filters packages by search text", async () => {
     const user = userEvent.setup();
-    mockedApi.addDependency.mockResolvedValueOnce({
+    mockedApi.fetchAvailablePackages.mockResolvedValueOnce({
       success: true,
-      message: "Added",
+      data: mockAvailablePackages,
     });
 
     renderWithTheme(<DependenciesSection />);
 
-    // Open dialog
     await user.click(screen.getByText("Add Dependency"));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Group")).toBeInTheDocument();
+      expect(screen.getByText("com.etendoerp:newmodule")).toBeInTheDocument();
     });
 
-    // Fill form
-    await user.type(screen.getByLabelText("Group"), "com.etendoerp");
-    await user.type(screen.getByLabelText("Artifact"), "newmodule");
-    await user.type(screen.getByLabelText("Version"), "1.0.0");
-
-    // Submit
-    const addButtons = screen.getAllByText("Add");
-    const submitButton = addButtons[addButtons.length - 1]; // Dialog's Add button
-    await user.click(submitButton);
+    await user.type(screen.getByPlaceholderText("Search packages..."), "analytics");
 
     await waitFor(() => {
-      expect(mockedApi.addDependency).toHaveBeenCalledWith(
-        "com.etendoerp",
-        "newmodule",
-        "1.0.0",
-        "implementation",
-      );
+      expect(screen.queryByText("com.etendoerp:newmodule")).not.toBeInTheDocument();
+      expect(screen.getByText("com.etendoerp:analytics")).toBeInTheDocument();
     });
+  });
+
+  it("shows version step after selecting a package", async () => {
+    const user = userEvent.setup();
+    mockedApi.fetchAvailablePackages.mockResolvedValueOnce({
+      success: true,
+      data: mockAvailablePackages,
+    });
+    mockedApi.fetchVersions.mockResolvedValueOnce({
+      success: true,
+      data: { group: "com.etendoerp", artifact: "newmodule", versions: ["2.0.0", "1.0.0"] },
+    });
+
+    renderWithTheme(<DependenciesSection />);
+
+    await user.click(screen.getByText("Add Dependency"));
+
+    await waitFor(() => {
+      expect(screen.getByText("com.etendoerp:newmodule")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("com.etendoerp:newmodule"));
+
+    await waitFor(() => {
+      expect(mockedApi.fetchVersions).toHaveBeenCalledWith("com.etendoerp", "newmodule");
+    });
+  });
+
+  it("excludes already installed packages from list", async () => {
+    const user = userEvent.setup();
+    // copilot is already installed (in mockDeps), newmodule is not
+    mockedApi.fetchAvailablePackages.mockResolvedValueOnce({
+      success: true,
+      data: [
+        ...mockAvailablePackages,
+        { group: "com.etendoerp", artifact: "copilot", name: "com.etendoerp.copilot" },
+      ],
+    });
+
+    renderWithTheme(<DependenciesSection />);
+
+    await waitFor(() => {
+      expect(screen.getByText("com.etendoerp:copilot")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Add Dependency"));
+
+    await waitFor(() => {
+      expect(screen.getByText("com.etendoerp:newmodule")).toBeInTheDocument();
+    });
+
+    // copilot should not be in the dialog list (already installed)
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).queryByText("com.etendoerp:copilot")).not.toBeInTheDocument();
   });
 
   it("closes Add dialog on Cancel", async () => {
     const user = userEvent.setup();
+    mockedApi.fetchAvailablePackages.mockResolvedValueOnce({
+      success: true,
+      data: mockAvailablePackages,
+    });
+
     renderWithTheme(<DependenciesSection />);
 
     await user.click(screen.getByText("Add Dependency"));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Group")).toBeInTheDocument();
+      expect(screen.getByText("Select Package")).toBeInTheDocument();
     });
 
     await user.click(screen.getByText("Cancel"));
 
     await waitFor(() => {
-      expect(screen.queryByLabelText("Group")).not.toBeInTheDocument();
+      expect(screen.queryByText("Select Package")).not.toBeInTheDocument();
     });
   });
 });

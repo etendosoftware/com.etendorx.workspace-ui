@@ -64,6 +64,50 @@ describe("DependencyApi", () => {
     });
   });
 
+  // ==================== fetchAvailablePackages ====================
+
+  describe("fetchAvailablePackages", () => {
+    it("returns packages on success", async () => {
+      const mockData = {
+        success: true,
+        data: [
+          { group: "com.etendoerp", artifact: "copilot", name: "com.etendoerp.copilot" },
+          { group: "com.etendoerp", artifact: "warehouse", name: "com.etendoerp.warehouse" },
+        ],
+      };
+      mockFetch.mockResolvedValueOnce({
+        json: () => Promise.resolve(mockData),
+      });
+
+      const result = await DependencyApi.fetchAvailablePackages();
+
+      expect(mockFetch).toHaveBeenCalledWith("/api/dependencies/available");
+      expect(result.success).toBe(true);
+      expect(result.data).toHaveLength(2);
+      expect(result.data![0].artifact).toBe("copilot");
+    });
+
+    it("returns error on failure", async () => {
+      mockFetch.mockResolvedValueOnce({
+        json: () => Promise.resolve({ success: false, error: "Auth failed" }),
+      });
+
+      const result = await DependencyApi.fetchAvailablePackages();
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Auth failed");
+    });
+
+    it("handles fetch exception", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("Network error"));
+
+      const result = await DependencyApi.fetchAvailablePackages();
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Network error");
+    });
+  });
+
   // ==================== fetchVersions ====================
 
   describe("fetchVersions", () => {

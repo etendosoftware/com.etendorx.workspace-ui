@@ -20,6 +20,12 @@ interface ApiResponse<T> {
   message?: string;
 }
 
+export interface AvailablePackage {
+  group: string;
+  artifact: string;
+  name: string;
+}
+
 interface ApplyResult {
   success: boolean;
   tasks: Array<{ task: string; success: boolean; output?: string; error?: string }>;
@@ -39,6 +45,22 @@ export class DependencyApi {
       return {
         success: false,
         error: error instanceof Error ? error.message : "Failed to fetch dependencies",
+      };
+    }
+  }
+
+  /**
+   * Fetch all available packages from GitHub Packages API
+   */
+  static async fetchAvailablePackages(): Promise<ApiResponse<AvailablePackage[]>> {
+    try {
+      const response = await fetch(`${API_BASE}/dependencies/available`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch available packages",
       };
     }
   }

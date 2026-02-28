@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -24,13 +24,19 @@ import {
   Stack,
   Tooltip,
   LinearProgress,
+  List,
+  ListItemButton,
+  ListItemText,
+  InputAdornment,
+  Autocomplete,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import UpgradeIcon from "@mui/icons-material/Upgrade";
-import { DependencyApi, type Dependency } from "../services/dependencyApi";
+import SearchIcon from "@mui/icons-material/Search";
+import { DependencyApi, type Dependency, type AvailablePackage } from "../services/dependencyApi";
 
 export function DependenciesSection() {
   const [dependencies, setDependencies] = useState<Dependency[]>([]);
@@ -43,6 +49,13 @@ export function DependenciesSection() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [addForm, setAddForm] = useState({ group: "", artifact: "", version: "", type: "implementation" });
   const [addLoading, setAddLoading] = useState(false);
+  const [availablePackages, setAvailablePackages] = useState<AvailablePackage[]>([]);
+  const [packagesLoading, setPackagesLoading] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<AvailablePackage | null>(null);
+  const [packageVersions, setPackageVersions] = useState<string[]>([]);
+  const [versionsLoading, setVersionsLoading] = useState(false);
+  const [addStep, setAddStep] = useState<"package" | "version">("package");
+  const [packageSearch, setPackageSearch] = useState("");
 
   const depKey = (d: { group: string; artifact: string }) => `${d.group}:${d.artifact}`;
 
@@ -128,6 +141,42 @@ export function DependenciesSection() {
     }
   };
 
+  const handleOpenAddDialog = async () => {
+    setShowAddDialog(true);
+    setAddStep("package");
+    setSelectedPackage(null);
+    setPackageVersions([]);
+    setPackageSearch("");
+    setAddForm({ group: "", artifact: "", version: "", type: "implementation" });
+
+    if (availablePackages.length === 0) {
+      setPackagesLoading(true);
+      const result = await DependencyApi.fetchAvailablePackages();
+      if (result.success && result.data) {
+        setAvailablePackages(result.data);
+      } else {
+        setError(result.error || "Failed to load available packages");
+      }
+      setPackagesLoading(false);
+    }
+  };
+
+  const handleSelectPackage = async (pkg: AvailablePackage) => {
+    setSelectedPackage(pkg);
+    setAddForm({ ...addForm, group: pkg.group, artifact: pkg.artifact });
+    setAddStep("version");
+    setVersionsLoading(true);
+
+    const result = await DependencyApi.fetchVersions(pkg.group, pkg.artifact);
+    if (result.success && result.data) {
+      setPackageVersions(result.data.versions);
+    } else {
+      setPackageVersions([]);
+      setError(result.error || "Failed to load versions");
+    }
+    setVersionsLoading(false);
+  };
+
   const handleAdd = async () => {
     if (!addForm.group || !addForm.artifact || !addForm.version) {
       setError("All fields are required");
@@ -142,11 +191,31 @@ export function DependenciesSection() {
       setSuccess(`Added ${addForm.type} '${addForm.group}:${addForm.artifact}:${addForm.version}'`);
       setShowAddDialog(false);
       setAddForm({ group: "", artifact: "", version: "", type: "implementation" });
+      setSelectedPackage(null);
+      setPackageVersions([]);
+      setAddStep("package");
       await loadDependencies();
     } else {
       setError(result.error || "Failed to add dependency");
     }
   };
+
+  const filteredPackages = useMemo(() => {
+    if (!packageSearch) return availablePackages;
+    const search = packageSearch.toLowerCase();
+    return availablePackages.filter(
+      (pkg) =>
+        pkg.artifact.toLowerCase().includes(search) ||
+        pkg.group.toLowerCase().includes(search) ||
+        pkg.name.toLowerCase().includes(search),
+    );
+  }, [availablePackages, packageSearch]);
+
+  // Filter out packages already installed
+  const installablePackages = useMemo(() => {
+    const installedKeys = new Set(dependencies.map((d) => `${d.group}:${d.artifact}`));
+    return filteredPackages.filter((pkg) => !installedKeys.has(`${pkg.group}:${pkg.artifact}`));
+  }, [filteredPackages, dependencies]);
 
   const hasPendingChanges = pendingChanges.size > 0;
 
@@ -166,7 +235,7 @@ export function DependenciesSection() {
           <Button
             variant="outlined"
             startIcon={<AddCircleOutlineIcon />}
-            onClick={() => setShowAddDialog(true)}
+            onClick={handleOpenAddDialog}
             size="small"
           >
             Add Dependency
@@ -349,50 +418,115 @@ export function DependenciesSection() {
       </Dialog>
 
       {/* Add Dependency Dialog */}
-      <Dialog open={showAddDialog} onClose={() => setShowAddDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add Dependency</DialogTitle>
+      <Dialog
+        open={showAddDialog}
+        onClose={() => setShowAddDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { minHeight: 480 } }}
+      >
+        <DialogTitle>
+          {addStep === "package" ? "Select Package" : `${selectedPackage?.group}:${selectedPackage?.artifact}`}
+        </DialogTitle>
         <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              label="Group"
-              placeholder="com.etendoerp"
-              value={addForm.group}
-              onChange={(e) => setAddForm({ ...addForm, group: e.target.value })}
-              fullWidth
-              size="small"
-            />
-            <TextField
-              label="Artifact"
-              placeholder="copilot.extensions"
-              value={addForm.artifact}
-              onChange={(e) => setAddForm({ ...addForm, artifact: e.target.value })}
-              fullWidth
-              size="small"
-            />
-            <TextField
-              label="Version"
-              placeholder="1.0.0"
-              value={addForm.version}
-              onChange={(e) => setAddForm({ ...addForm, version: e.target.value })}
-              fullWidth
-              size="small"
-            />
-            <Select
-              value={addForm.type}
-              onChange={(e) => setAddForm({ ...addForm, type: e.target.value })}
-              size="small"
-              fullWidth
-            >
-              <MenuItem value="implementation">implementation</MenuItem>
-              <MenuItem value="moduleDeps">moduleDeps</MenuItem>
-            </Select>
-          </Stack>
+          {addStep === "package" && (
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <TextField
+                placeholder="Search packages..."
+                value={packageSearch}
+                onChange={(e) => setPackageSearch(e.target.value)}
+                fullWidth
+                size="small"
+                autoFocus
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              {packagesLoading ? (
+                <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <List
+                  sx={{
+                    maxHeight: 320,
+                    overflow: "auto",
+                    border: 1,
+                    borderColor: "divider",
+                    borderRadius: 1,
+                  }}
+                  dense
+                >
+                  {installablePackages.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: "center" }}>
+                      {packageSearch ? "No matching packages found" : "No packages available"}
+                    </Typography>
+                  ) : (
+                    installablePackages.map((pkg) => (
+                      <ListItemButton key={pkg.name} onClick={() => handleSelectPackage(pkg)}>
+                        <ListItemText
+                          primary={
+                            <Typography variant="body2" fontFamily="monospace" fontSize="0.85rem">
+                              {pkg.group}:{pkg.artifact}
+                            </Typography>
+                          }
+                        />
+                      </ListItemButton>
+                    ))
+                  )}
+                </List>
+              )}
+            </Stack>
+          )}
+
+          {addStep === "version" && (
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              {versionsLoading ? (
+                <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <>
+                  <Autocomplete
+                    options={packageVersions}
+                    value={addForm.version || null}
+                    onChange={(_, value) => setAddForm({ ...addForm, version: value || "" })}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Version" placeholder="Select version" size="small" />
+                    )}
+                    size="small"
+                    fullWidth
+                  />
+                  <Select
+                    value={addForm.type}
+                    onChange={(e) => setAddForm({ ...addForm, type: e.target.value })}
+                    size="small"
+                    fullWidth
+                  >
+                    <MenuItem value="implementation">implementation</MenuItem>
+                    <MenuItem value="moduleDeps">moduleDeps</MenuItem>
+                  </Select>
+                </>
+              )}
+            </Stack>
+          )}
         </DialogContent>
         <DialogActions>
+          {addStep === "version" && (
+            <Button onClick={() => setAddStep("package")} sx={{ mr: "auto" }}>
+              Back
+            </Button>
+          )}
           <Button onClick={() => setShowAddDialog(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleAdd} disabled={addLoading}>
-            {addLoading ? <CircularProgress size={20} /> : "Add"}
-          </Button>
+          {addStep === "version" && (
+            <Button variant="contained" onClick={handleAdd} disabled={addLoading || !addForm.version}>
+              {addLoading ? <CircularProgress size={20} /> : "Add"}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Stack>
