@@ -151,10 +151,10 @@ describe("expressions - createEvaluationContext", () => {
       expect(context["#mypref"]).toBe("Value");
     });
 
-    it("should return undefined if preference not found", () => {
+    it("should return empty string if preference not found", () => {
       (propertyStore.getStoredPreferences as jest.Mock).mockReturnValue({});
       const context = createEvaluationContext({});
-      expect(context["#Missing"]).toBeUndefined();
+      expect(context["#Missing"]).toBe("");
     });
   });
 
@@ -166,9 +166,9 @@ describe("expressions - createEvaluationContext", () => {
       expect(context.nonexistent).toBe("DefaultValue");
     });
 
-    it("should return undefined if property not found and no defaultValue", () => {
+    it("should return empty string if property not found and no defaultValue", () => {
       const context = createEvaluationContext({});
-      expect(context.nonexistent).toBeUndefined();
+      expect(context.nonexistent).toBe("");
     });
   });
 

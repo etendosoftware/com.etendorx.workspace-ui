@@ -48,7 +48,10 @@ export const compileExpression = (expression: string) => {
       };
       var OB = {
         Utilities: {
-          getValue: function(obj, prop) { return obj && obj[prop]; },
+          getValue: function(obj, prop) { 
+            var val = obj && obj[prop];
+            return (val === null || val === undefined) ? '' : val;
+          },
           PropertyStore: function(ctx, prop) { return ctx && (ctx[prop] || ctx['$'+prop] || ctx['#'+prop]); }
         },
         PropertyStore: function(ctx, prop) { return ctx && (ctx[prop] || ctx['$'+prop] || ctx['#'+prop]); },
@@ -181,10 +184,6 @@ const BaseSelectorComp = ({
 
         if (targetField && identifier) {
           setValue(`${hqlName}$_identifier`, identifier, { shouldDirty: false });
-
-          if (value && String(value) !== identifier) {
-            logger.debug(`Field ${hqlName}: value=${value}, identifier=${identifier}`);
-          }
         } else if (targetField && !identifier && value) {
           setValue(`${hqlName}$_identifier`, "", { shouldDirty: false });
         }

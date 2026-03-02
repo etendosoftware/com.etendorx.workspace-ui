@@ -70,7 +70,6 @@ import { toast } from "sonner";
 import { ToastContent } from "@/components/ToastContent";
 import type { Tab, ProcessParameter, EntityData, Field } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
-import type { SourceObject } from "@/utils/processes/manual/types";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
 import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 import { buildProcessParameters } from "@/utils/process/processPayloadMapper";

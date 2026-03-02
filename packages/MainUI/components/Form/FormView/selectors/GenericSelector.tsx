@@ -38,6 +38,7 @@ import { TableDirSelector } from "./TableDirSelector";
 import DatetimeSelector from "./DatetimeSelector";
 import LocationSelector from "./LocationSelector";
 import { TimeSelector } from "./TimeSelector";
+import AttributeSetInstanceSelector from "./AttributeSetInstance";
 
 import { useFormContext } from "react-hook-form";
 
@@ -136,6 +137,14 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           type="integer"
           readOnly={isReadOnly}
           data-testid="NumericSelector__6e80fa"
+        />
+      );
+    case FIELD_REFERENCE_CODES.PATTRIBUTE:
+      return (
+        <AttributeSetInstanceSelector
+          field={effectiveField}
+          isReadOnly={isReadOnly}
+          data-testid="AttributeSetInstanceSelector__6e80fa"
         />
       );
     case FIELD_REFERENCE_CODES.TEXT_LONG:
