@@ -30,7 +30,7 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(500);
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
     cy.wait(500);
     cy.get('button[aria-label="Lines"]').click();
     cy.wait(500);
@@ -38,18 +38,18 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
     cy.wait(500);
     cy.get('[aria-describedby="Product-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
     cy.wait(500);
+    cy.intercept("POST", /FormInitializationComponent/).as("productFormInit");
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"]').click();
+    cy.wait("@productFormInit", { timeout: 60000 });
+    cy.get('[data-testid="TextInput__3374"]').clear({ force: true });
     cy.wait(500);
 
-    cy.get('[data-testid="TextInput__3374"]').clear("11");
-    cy.wait(500);
-
-    cy.get('[data-testid="TextInput__3374"]').type("11,2");
+    cy.get('[data-testid="TextInput__3374"]').type("11,2", { force: true });
 
     cy.get("button.toolbar-button-save").eq(1).click();
     cy.wait(500);
 
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
     cy.wait(500);
 
     cy.get('[data-testid="IconButtonWithText__process-menu"] > span').click();
@@ -63,8 +63,8 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
 
     cy.clickOkInLegacyPopup();
     cy.wait(500);
-
     cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
 
     cy.get("button.toolbar-button-refresh").filter(":visible").first().should("be.enabled").click();
     cy.wait(500);
@@ -86,7 +86,9 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
     cy.wait(500);
 
     //verify payment transaction
-    cy.contains("p", /^Created Payment:\s*\d+/).should("be.visible");
+    cy.get('[data-sonner-toast][data-type="success"]')
+      .contains(/^Created Payment:\s*\d+\./)
+      .should("be.visible");
 
     cy.wait(1000);
 
@@ -94,6 +96,7 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
 
     cy.get('button[title="Payment Plan"]').should("be.visible").click();
     cy.wait(500);
+    cy.get("button.toolbar-button-refresh").filter(":visible").first().should("be.enabled").click();
 
     cy.get('span[name="paymentComplete"]').should("be.visible").and("have.text", "Yes");
   });

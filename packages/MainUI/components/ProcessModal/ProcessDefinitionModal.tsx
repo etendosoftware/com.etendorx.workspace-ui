@@ -52,6 +52,8 @@ import { PackingProcess } from "./Custom/PackingProcess/PackingProcess";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
+
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { FormProvider, useForm, useFormState } from "react-hook-form";
@@ -63,8 +65,9 @@ import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
-import ProcessResultModal from "./ProcessResultModal";
 import type { ProcessDefinitionModalContentProps, RecordValues, ProcessDefinitionModalProps } from "./types";
+import { toast } from "sonner";
+import { ToastContent } from "@/components/ToastContent";
 import type { Tab, ProcessParameter, EntityData, Field } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 import type { SourceObject } from "@/utils/processes/manual/types";
@@ -256,6 +259,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const processId = processDefinition.id;
   const javaClassName = processDefinition.javaClassName;
 
+  const [gridRefreshKey, setGridRefreshKey] = useState(0);
+
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -277,7 +282,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   // NEW: autoSelectConfig state to hold declarative selection instructions OR backward-compatible _gridSelection
   const [autoSelectConfig, setAutoSelectConfig] = useState<AutoSelectConfig | null>(null);
   const [autoSelectApplied, setAutoSelectApplied] = useState(false);
-  const [availableButtons, setAvailableButtons] = useState<Array<{ value: string; label: string }>>([]);
+  const [availableButtons, setAvailableButtons] = useState<Array<{ value: string; label: string; isFilter?: boolean }>>(
+    []
+  );
   const [rulesRegistered, setRulesRegistered] = useState(false);
 
   // Register PayScript DSL if available in process definition
@@ -298,18 +305,72 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   }, [processDefinition]);
 
   useEffect(() => {
-    const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+    let active = true;
 
-    if (buttonListParam?.refList) {
-      setAvailableButtons(
-        buttonListParam.refList.map((item) => ({
-          value: item.value,
-          label: item.label,
-        }))
-      );
-    } else {
-      setAvailableButtons([]);
-    }
+    const fetchDynamicButtons = async (referenceId: string) => {
+      try {
+        const result = (await datasource.get("ADList", {
+          criteria: [{ fieldName: "reference.id", operator: "equals", value: referenceId }],
+          sortBy: "sequenceNumber",
+          _startRow: 0,
+          _endRow: 100,
+        })) as any;
+
+        return result?.response?.data || result?.data?.response?.data || [];
+      } catch (e) {
+        logger.error("Failed to fetch dynamic buttons", e);
+        return [];
+      }
+    };
+
+    const loadButtons = async () => {
+      const buttonListParam = Object.values(parameters).find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
+
+      if (!buttonListParam) {
+        if (active) setAvailableButtons([]);
+        return;
+      }
+
+      // Case 1: refList is already populated
+      if (buttonListParam.refList && buttonListParam.refList.length > 0) {
+        if (active) {
+          setAvailableButtons(
+            buttonListParam.refList.map((item) => ({
+              value: item.value,
+              label: item.label,
+            }))
+          );
+        }
+        return;
+      }
+
+      // Case 2: Try to fetch from ADList if we have the reference ID
+      // referenceSearchKey holds the AD_Reference_ID for list references as seen in debug
+      const referenceId = (buttonListParam as any).referenceSearchKey;
+
+      if (referenceId) {
+        const responseData = await fetchDynamicButtons(referenceId);
+
+        if (responseData && responseData.length > 0 && active) {
+          const mappedButtons = responseData.map((item: any) => ({
+            value: item.searchKey,
+            label: item.name,
+            isFilter: ["filter", "apply", "search", "refresh"].includes(item.searchKey?.toLowerCase()),
+          }));
+          setAvailableButtons(mappedButtons);
+        } else if (active) {
+          setAvailableButtons([]);
+        }
+      } else {
+        if (active) setAvailableButtons([]);
+      }
+    };
+
+    loadButtons();
+
+    return () => {
+      active = false;
+    };
   }, [parameters]);
 
   // Handle case when modal is opened from sidebar (no tab context)
@@ -794,11 +855,21 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         };
 
         const parsedResult = parseProcessResponse(res);
-        setResult(parsedResult);
 
         if (parsedResult.success) {
           await revalidateDopoProcess();
+          const message =
+            typeof parsedResult.data === "string"
+              ? parsedResult.data
+              : parsedResult.data?.message || parsedResult.data?.msgText || "";
+          toast.success(t("process.completedSuccessfully"), {
+            description: <ToastContent message={message} data-testid="ToastContent__761503" />,
+            duration: Number.POSITIVE_INFINITY,
+          });
           setShouldTriggerSuccess(true);
+          handleSuccessClose();
+        } else {
+          setResult(parsedResult);
         }
       } catch (error) {
         logger.warn(`Error executing ${logContext}:`, error);
@@ -1023,6 +1094,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   );
   const handleExecute = useCallback(
     async (actionValue?: string) => {
+      // Generic handling for filter actions (defined in button list)
+      const actionButton = availableButtons.find((b) => b.value === actionValue);
+      if (actionButton?.isFilter) {
+        setGridRefreshKey((prev) => prev + 1);
+        return;
+      }
+
       setResult(null);
       if (hasWindowReference) {
         await handleWindowReferenceExecute(actionValue);
@@ -1066,9 +1144,15 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
           const responseMessage = stringFnResult.responseActions[0].showMsgInProcessView;
           const success = responseMessage.msgType === "success";
-          setResult({ success, data: responseMessage, error: success ? undefined : responseMessage.msgText });
           if (success) {
+            toast.success(t("process.completedSuccessfully"), {
+              description: <ToastContent message={responseMessage.msgText} data-testid="ToastContent__761503" />,
+              duration: Number.POSITIVE_INFINITY,
+            });
             setShouldTriggerSuccess(true);
+            handleSuccessClose();
+          } else {
+            setResult({ success, data: responseMessage, error: responseMessage.msgText });
           }
         } catch (error) {
           logger.warn("Error executing process:", error);
@@ -1146,14 +1230,20 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
           // Process completed
           const success = status.result === 1;
-          setResult({
-            success,
-            data: status.errorMsg,
-            error: success ? undefined : status.errorMsg,
-          });
 
           if (success) {
+            toast.success(t("process.completedSuccessfully"), {
+              description: <ToastContent message={status.errorMsg} data-testid="ToastContent__761503" />,
+              duration: Number.POSITIVE_INFINITY,
+            });
             setShouldTriggerSuccess(true);
+            handleSuccessClose();
+          } else {
+            setResult({
+              success,
+              data: status.errorMsg,
+              error: status.errorMsg,
+            });
           }
         };
 
@@ -1517,6 +1607,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
     // Separate window references from selectors
     for (const parameter of parametersList) {
+      // Skip inactive parameters
+      // @ts-ignore
+      if (parameter.active === false) {
+        continue;
+      }
+
+      // Skip Button List parameters (rendered as footer buttons)
+      if (parameter.reference === BUTTON_LIST_REFERENCE_ID) {
+        continue;
+      }
       if (parameter.reference === WINDOW_REFERENCE_ID) {
         const isDisplayed = evaluateWindowReferenceDisplay({
           parameter,
@@ -1534,7 +1634,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         const parameterTab = getTabForParameter(parameter);
         windowReferences.push(
           <WindowReferenceGrid
-            key={`window-ref-${parameter.id || parameter.name}`}
+            key={`window-ref-${parameter.id || parameter.name}-${gridRefreshKey}`}
             parameter={parameter}
             parameters={parameters}
             onSelectionChange={setGridSelection}
@@ -1716,7 +1816,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
                               {btn.label}
                             </Button>
                           ))
-                        : (!result || !result.success) && (
+                        : (!result || !result.success) &&
+                          processId !== "FF1893F761AF46E893E37CB4EF1DFCB1" && (
                             <Button
                               variant="filled"
                               size="large"
@@ -1735,19 +1836,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           )}
         </Modal>
       )}
-      {/* Success Modal - Separate overlay */}
-      <ProcessResultModal
-        open={Boolean(open && result?.success)}
-        success={true}
-        isHtml={(result as any)?.isHtml}
-        message={
-          typeof result?.data === "string"
-            ? result.data
-            : result?.data?.msgText || result?.data?.message || result?.error || undefined
-        }
-        onClose={handleSuccessClose}
-        data-testid="ProcessResultModal__761503"
-      />
     </>
   );
 }
