@@ -1,6 +1,6 @@
 import { render, waitFor } from "@testing-library/react";
 import ProcessDefinitionModal from "../ProcessDefinitionModal";
-import React from "react";
+import type React from "react";
 // Keep imports for things used in the test body
 import { mockExecuteStringFunctionResponse, mockFetchResponseOk, clickExecuteButton } from "../testUtils";
 

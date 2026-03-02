@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { FormProvider, useForm } from "react-hook-form";
 import { ProcessParameterSelector } from "../selectors/ProcessParameterSelector";
-import React from "react";
+import type React from "react";
 
 // Mock dependencies
 jest.mock("@/hooks/useUserContext", () => ({

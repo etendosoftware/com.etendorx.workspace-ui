@@ -298,6 +298,7 @@ export interface Tab {
   process?: string;
   process$_identifier?: string;
   disableParentKeyProperty?: boolean;
+  defaultEditMode?: boolean;
 }
 
 export interface WindowMetadata {

@@ -183,6 +183,9 @@ export class ProcessParameterMapper {
       // Window reference
       Window: FIELD_REFERENCE_CODES.WINDOW,
 
+      // Attribute Set Instance
+      PAttribute: FIELD_REFERENCE_CODES.PATTRIBUTE,
+
       // String/Text (default)
       String: "10", // Text reference
       Text: "10",
@@ -224,6 +227,7 @@ export class ProcessParameterMapper {
       "TableDir",
       "Table Directory",
       "Window",
+      "PAttribute",
     ];
 
     return (
@@ -272,6 +276,7 @@ export class ProcessParameterMapper {
       return "list";
     }
     if (reference === FIELD_REFERENCE_CODES.WINDOW) return "window";
+    if (reference === FIELD_REFERENCE_CODES.PATTRIBUTE) return "pattribute";
 
     return "text"; // Default fallback
   }
