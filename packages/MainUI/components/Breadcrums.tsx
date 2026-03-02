@@ -108,7 +108,6 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     if (currentTab) {
       const tabFormState = windowIdentifier ? getTabFormState(windowIdentifier, currentTab.id) : undefined;
       const currentRecordId = tabFormState?.recordId || "";
-      // console.log("currentRecordId: ", currentRecordId);
       const currentLabel = record?._identifier?.toString();
 
       if (currentRecordId && currentLabel && currentRecordId !== NEW_RECORD_ID) {

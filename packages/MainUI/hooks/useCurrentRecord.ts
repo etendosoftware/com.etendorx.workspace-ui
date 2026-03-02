@@ -99,7 +99,7 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
         if (responseData?.length > 0) {
           const fetchedRecord = responseData[0];
           setRecord(fetchedRecord);
-          // NEW: Ensure the graph knows about this record so components like Process Buttons can read it
+          // Ensure the graph knows about this record so components like Process Buttons can read it
           const entityDataRecord = fetchedRecord as unknown as Record<string, EntityValue>;
           graph.setSelected(tab, entityDataRecord);
           graph.setSelectedMultiple(tab, [entityDataRecord]);

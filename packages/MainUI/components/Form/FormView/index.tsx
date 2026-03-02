@@ -717,7 +717,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       // Use atomic update to change parent selection and clear all children in one operation
       // This forces children to return to table view even if they were in FormView
       if (activeWindow?.windowIdentifier && childIds.length > 0) {
-        // console.log("[FormView] newRecordId: ", newRecordId);
         setSelectedRecordAndClearChildren(activeWindow.windowIdentifier, tab.id, newRecordId, childIds);
 
         // Also clear the graph selection for all children to ensure they reset completely
