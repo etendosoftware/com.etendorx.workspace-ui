@@ -42,6 +42,7 @@ describe("ERP slug: query append for mutations", () => {
       headers: { get: () => "application/json" },
       json: async () => ({}),
       text: async () => JSON.stringify({ ok: true }),
+      arrayBuffer: async () => new ArrayBuffer(0),
     });
   });
 
