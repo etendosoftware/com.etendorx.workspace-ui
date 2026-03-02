@@ -297,6 +297,7 @@ export interface Tab {
   obuiappCloneChildren?: boolean;
   process?: string;
   process$_identifier?: string;
+  defaultEditMode?: boolean;
 }
 
 export interface WindowMetadata {
