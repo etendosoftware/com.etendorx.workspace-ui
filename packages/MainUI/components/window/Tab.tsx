@@ -23,7 +23,7 @@ import { Toolbar } from "../Toolbar/Toolbar";
 import DynamicTable from "../Table";
 import { useMetadataContext } from "../../hooks/useMetadataContext";
 import { FormView } from "@/components/Form/FormView";
-import { FormMode } from "@workspaceui/api-client/src/api/types";
+import { FormMode, UIPattern } from "@workspaceui/api-client/src/api/types";
 import { AttachmentProvider } from "@/contexts/AttachmentContext";
 import type { TabLevelProps } from "@/components/window/types";
 import { useCallback, useEffect, useState, useRef, useMemo } from "react";
@@ -131,6 +131,9 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const [advancedFilters, setAdvancedFilters] = useState<any[]>([]);
   const { t } = useTranslation();
   const lastParentSelectionRef = useRef<Map<string, string | undefined>>(new Map());
+  // Tracks the parentSelectedRecordId for which the SR auto-open was last triggered.
+  // This prevents re-opening the form view after the user explicitly closes it.
+  const srAutoOpenedForParentRef = useRef<string | undefined>(undefined);
 
   const windowIdentifier = activeWindow?.windowIdentifier;
 
@@ -1086,6 +1089,28 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     currentMode,
     tabFormState?.mode,
   ]);
+
+  // Auto-open FormView for SR (Single Record) tabs when defaultEditMode is enabled.
+  // SR tabs share the same entity as the parent and always display exactly one record
+  // (the parent record itself). When a new parent record is selected, we navigate
+  // directly to form view using the parent's record ID.
+  // A ref tracks the last parent ID for which auto-open fired, so closing the form
+  // (shouldShowForm → false) does not trigger a re-open for the same parent.
+  useEffect(() => {
+    if (tab.uIPattern !== UIPattern.EDIT_ONLY || !tab.defaultEditMode) {
+      return;
+    }
+    if (!parentSelectedRecordId) {
+      return;
+    }
+    // Only auto-open when the parent selection is different from the last time we
+    // auto-opened. This lets the user close the form view and stay in grid mode.
+    if (srAutoOpenedForParentRef.current === parentSelectedRecordId) {
+      return;
+    }
+    srAutoOpenedForParentRef.current = parentSelectedRecordId;
+    handleSetRecordId(parentSelectedRecordId);
+  }, [tab.uIPattern, tab.defaultEditMode, parentSelectedRecordId, handleSetRecordId]);
 
   return (
     <div

@@ -24,6 +24,7 @@ import type {
   MRT_SortingState,
 } from "material-react-table";
 import type { DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
+import { UIPattern } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useSearch } from "../../contexts/searchContext";
@@ -396,6 +397,11 @@ export const useTableData = ({
   // Helper to find parent field name
   const getParentFieldName = useCallback(() => {
     if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
+      // SR (Single Record) tabs share the same entity/table as the parent and have
+      // empty parentColumns. Filter by "id" so only the parent's own record is shown.
+      if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab) {
+        return "id";
+      }
       console.log("No parent columns found");
       return "_dummy";
     }
@@ -410,7 +416,7 @@ export const useTableData = ({
     });
 
     return matchingField || tab.parentColumns[0] || "id";
-  }, [tab.parentColumns, tab.fields, parentTab]);
+  }, [tab.parentColumns, tab.fields, tab.uIPattern, parentTab]);
 
   // Helper to apply sort options to query
   const applySortToOptions = useCallback(
