@@ -2,8 +2,8 @@
  * Comprehensive coverage tests for /api/erp/[...slug]/route.ts
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { GET, POST, PUT, DELETE, PATCH } from "../route";
+import { NextResponse } from "next/server";
+import { GET, POST, PATCH } from "../route";
 
 if (typeof global.ReadableStream === "undefined") {
   (global as any).ReadableStream = class ReadableStream {};
@@ -212,7 +212,7 @@ describe("ERP slug route coverage", () => {
       const ct =
         typeof response.headers.get === "function"
           ? response.headers.get("Content-Type")
-          : (response.headers as any)["Content-Type"];
+          : response.headers["Content-Type"];
       expect(ct?.toLowerCase()).toBe("text/html; charset=utf-8");
     });
 
@@ -246,11 +246,11 @@ describe("ERP slug route coverage", () => {
       const ct =
         typeof response.headers.get === "function"
           ? response.headers.get("Content-Type")
-          : (response.headers as any)["Content-Type"];
+          : response.headers["Content-Type"];
       const conn =
         typeof response.headers.get === "function"
           ? response.headers.get("Connection")
-          : (response.headers as any)["Connection"];
+          : response.headers["Connection"];
       expect(ct).toBe("text/event-stream");
       expect(conn).toBe("keep-alive");
     });
@@ -273,11 +273,11 @@ describe("ERP slug route coverage", () => {
       const ct =
         typeof response.headers.get === "function"
           ? response.headers.get("Content-Type")
-          : (response.headers as any)["Content-Type"];
+          : response.headers["Content-Type"];
       const cd =
         typeof response.headers.get === "function"
           ? response.headers.get("Content-Disposition")
-          : (response.headers as any)["Content-Disposition"];
+          : response.headers["Content-Disposition"];
       expect(ct).toBe("application/pdf");
       expect(cd).toBe("attachment; filename=test.pdf");
     });
@@ -301,7 +301,7 @@ describe("ERP slug route coverage", () => {
       });
 
       const req = createMockRequest("POST", "http://localhost/api/erp/test", {}, { val: 1 });
-      const response: any = await POST(req, { params: Promise.resolve({ slug: ["test"] }) });
+      await POST(req, { params: Promise.resolve({ slug: ["test"] }) });
 
       // fetch should have been called twice
       expect(global.fetch).toHaveBeenCalledTimes(2);

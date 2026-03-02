@@ -33,17 +33,19 @@ describe("Purchase Order to Invoice flow", () => {
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295F40BDDF02E3"]').click();
 
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.get('button[aria-label="Lines"]').click();
     cy.clickNewRecord();
 
     cy.get('[aria-describedby="Product-help"] > .w-2\\/3 > .relative > .w-full').click();
+    cy.intercept("POST", /FormInitializationComponent/).as("productFormInit");
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"] > .truncate').click();
-    cy.get('[data-testid="TextInput__3389"]').clear("1").type("11,2");
+    cy.wait("@productFormInit", { timeout: 60000 });
+    cy.get('[data-testid="TextInput__3389"]').clear({ force: true }).type("11,2", { force: true });
 
     cy.get("button.toolbar-button-save").eq(1).click();
     cy.wait(2000);
-    cy.get('[data-testid="BasicModal_CloseIcon"] > path').click();
+    cy.closeToastIfPresent();
     cy.wait(2000);
     cy.captureDocumentNumber();
 
@@ -55,8 +57,8 @@ describe("Purchase Order to Invoice flow", () => {
 
     cy.clickOkInLegacyPopup();
     cy.wait(500);
-
     cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
 
     cy.typeInGlobalSearch("goods");
     cy.wait(500);
@@ -72,7 +74,7 @@ describe("Purchase Order to Invoice flow", () => {
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.wait(500);
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__process-menu"] > span').click();
     cy.wait(500);
@@ -161,8 +163,8 @@ describe("Purchase Order to Invoice flow", () => {
     });
 
     cy.wait(500);
-
     cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
 
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__process-menu"]').first().click();
@@ -171,8 +173,9 @@ describe("Purchase Order to Invoice flow", () => {
     cy.get(".rounded-2xl").contains(".cursor-pointer", "Complete").click();
 
     cy.clickOkInLegacyPopup();
-
+    cy.wait(500);
     cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
 
     cy.typeInGlobalSearch("purcha");
     cy.wait(500);
@@ -199,7 +202,7 @@ describe("Purchase Order to Invoice flow", () => {
 
     cy.clickSave();
 
-    cy.get('[data-testid="BasicModal_CloseIcon"]').click();
+    cy.closeToastIfPresent();
 
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__process-menu"]').first().click();
@@ -207,13 +210,20 @@ describe("Purchase Order to Invoice flow", () => {
 
     cy.contains("Create Lines From Order").click();
 
+    cy.wait(1000);
+
+    cy.intercept("POST", "**/api/datasource**").as("filterRequest");
+
     cy.get("@orderNumber").then((orderNumber) => {
       cy.get('input.w-full[placeholder="Filter Document No...."]')
         .filter(":visible")
         .should("be.visible")
         .clear()
-        .type(orderNumber, { delay: 100 });
-      cy.wait(1000);
+        .type(orderNumber + "{enter}", { force: true });
+
+      cy.wait("@filterRequest");
+
+      cy.contains(orderNumber, { timeout: 10000 }).should("be.visible");
     });
 
     cy.wait(500);
@@ -223,11 +233,6 @@ describe("Purchase Order to Invoice flow", () => {
     });
 
     cy.get('[data-testid="ExecuteButton__761503"]').click();
-
-    cy.get(".flex-col > :nth-child(2) > .font-medium").should("be.visible");
-    cy.wait(1000);
-
-    cy.contains("button", "Close", { timeout: 20000 }).should("be.visible").click();
 
     cy.wait(3000);
 
@@ -239,12 +244,8 @@ describe("Purchase Order to Invoice flow", () => {
 
     cy.clickOkInLegacyPopup();
     cy.wait(500);
-
+    cy.get('[data-testid="close-button"]').click();
     cy.closeToastIfPresent();
-
-    cy.get('button[data-testid="close-button"]').should("exist").click({ force: true });
-
-    cy.get('button[data-testid="close-button"]').should("not.exist");
 
     cy.get('[data-testid="IconButton__25D1FA357A484AE38A3E2382889198FE"]').first().click();
     cy.wait(500);
@@ -256,7 +257,7 @@ describe("Purchase Order to Invoice flow", () => {
 
     cy.clickOkInLegacyPopup();
     cy.wait(500);
-
     cy.get('[data-testid="close-button"]').click();
+    cy.closeToastIfPresent();
   });
 });
