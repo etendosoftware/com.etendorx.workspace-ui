@@ -83,6 +83,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   switch (reference) {
     case FIELD_REFERENCE_CODES.PASSWORD:
       return <PasswordSelector field={effectiveField} readOnly={isReadOnly} data-testid="PasswordSelector__6e80fa" />;
+    case FIELD_REFERENCE_CODES.SELECTOR:
     case FIELD_REFERENCE_CODES.TABLE_DIR_19:
     case FIELD_REFERENCE_CODES.TABLE_DIR_18:
       return <TableDirSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="TableDirSelector__6e80fa" />;
