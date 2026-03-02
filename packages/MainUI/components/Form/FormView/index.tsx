@@ -27,10 +27,10 @@ import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
 import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
 import {
   FormMode,
+  type Tab,
   type EntityData,
   type EntityValue,
   UIPattern,
-  type Tab,
 } from "@workspaceui/api-client/src/api/types";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import useFormFields from "@/hooks/useFormFields";
@@ -196,6 +196,15 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         pageSize: 1,
       })) as { data: { response?: { data?: EntityData[] } } };
 
+      const currentlySelectedId = activeWindow?.windowIdentifier
+        ? getSelectedRecord(activeWindow.windowIdentifier, tab.id)
+        : null;
+
+      if (currentlySelectedId && currentlySelectedId !== recordId) {
+        // Stop right here if the user has navigated or cloned to another record while we fetched.
+        return;
+      }
+
       const responseData = result.data.response?.data;
       if (responseData && responseData.length > 0) {
         const updatedRecord = responseData[0];
@@ -211,7 +220,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     } catch (error) {
       logger.warn("Error refreshing record and session:", error);
     }
-  }, [recordId, tab, graph, refetch, updateRecordInDatasource]);
+  }, [recordId, tab, graph, refetch, updateRecordInDatasource, activeWindow?.windowIdentifier, getSelectedRecord]);
 
   useEffect(() => {
     if (registerFormViewRefetch) {
@@ -437,16 +446,26 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   }, [availableFormData, tab.id, stableReset, loadingFormInitialization, currentRecordId, currentMode]);
 
   /**
-   * Update graph selection when navigating to a different record
-   * This ensures child tabs know about the parent record change
+   * Update graph selection when navigating to a different record.
+   * This ensures child tabs and processButtons (useToolbar) see the correct record data.
+   *
+   * IMPORTANT: We guard with `currentRecordId === recordId` to avoid syncing the graph
+   * while `currentRecordId` (useState) is still catching up with the new `recordId` prop.
+   * If we update the graph before `currentRecordId` is in sync, `availableFormData` still
+   * contains the previous record's data, which would poison `graph.setSelectedMultiple` and
+   * cause `processButtons` to evaluate their displayLogic against the old record.
    */
   useEffect(() => {
     if (!recordId || recordId === NEW_RECORD_ID || !availableFormData) return;
 
+    // Only sync graph when internal state has caught up with the new recordId prop.
+    // During duplication, recordId prop changes one render before currentRecordId updates.
+    if (currentRecordId !== recordId) return;
+
     // Update graph with current record data so child tabs can see the parent selection
     graph.setSelected(tab, availableFormData);
     graph.setSelectedMultiple(tab, [availableFormData]);
-  }, [recordId, tab, availableFormData, graph]);
+  }, [recordId, currentRecordId, tab, availableFormData, graph]);
 
   /**
    * Enhanced setValue function with controlled dirty state management.
@@ -698,6 +717,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       // Use atomic update to change parent selection and clear all children in one operation
       // This forces children to return to table view even if they were in FormView
       if (activeWindow?.windowIdentifier && childIds.length > 0) {
+        // console.log("[FormView] newRecordId: ", newRecordId);
         setSelectedRecordAndClearChildren(activeWindow.windowIdentifier, tab.id, newRecordId, childIds);
 
         // Also clear the graph selection for all children to ensure they reset completely

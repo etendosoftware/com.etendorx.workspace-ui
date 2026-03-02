@@ -469,6 +469,8 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     setState((prevState: WindowContextState) => {
       const newState = ensureTabExists(prevState, windowIdentifier, tabId, tabLevel);
 
+      console.log("recordId: ", recordId);
+
       // Create deep copy with proper immutability at all levels
       return {
         ...newState,
