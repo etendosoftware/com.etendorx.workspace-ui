@@ -660,20 +660,24 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     onClose();
   }, [button.processDefinition.parameters, isPending, onClose]);
 
-  const handleSuccessClose = useCallback(() => {
-    if (isPending) return;
+  const handleSuccessClose = useCallback(
+    (triggerSuccess?: boolean) => {
+      if (isPending) return;
 
-    // Trigger refresh when closing success modal
-    if (shouldTriggerSuccess) {
-      onSuccess?.();
-    }
+      // Trigger refresh when closing success modal
+      const shouldRefresh = triggerSuccess ?? shouldTriggerSuccess;
+      if (shouldRefresh) {
+        onSuccess?.();
+      }
 
-    setResult(null);
-    setLoading(true);
-    setParameters(processDefinition.parameters);
-    setShouldTriggerSuccess(false);
-    onClose();
-  }, [button.processDefinition.parameters, isPending, onClose, shouldTriggerSuccess, onSuccess]);
+      setResult(null);
+      setLoading(true);
+      setParameters(processDefinition.parameters);
+      setShouldTriggerSuccess(false);
+      onClose();
+    },
+    [button.processDefinition.parameters, isPending, onClose, shouldTriggerSuccess, onSuccess]
+  );
 
   const extractMessageFromProcessView = useCallback((res: ExecuteProcessResult) => {
     const data = res.data;
@@ -878,7 +882,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             duration: Number.POSITIVE_INFINITY,
           });
           setShouldTriggerSuccess(true);
-          handleSuccessClose();
+          handleSuccessClose(true);
         } else {
           setResult(parsedResult);
         }
@@ -1192,7 +1196,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
               duration: Number.POSITIVE_INFINITY,
             });
             setShouldTriggerSuccess(true);
-            handleSuccessClose();
+            handleSuccessClose(true);
           } else {
             setResult({ success, data: responseMessage, error: responseMessage.msgText });
           }
@@ -1280,7 +1284,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
               duration: Number.POSITIVE_INFINITY,
             });
             setShouldTriggerSuccess(true);
-            handleSuccessClose();
+            handleSuccessClose(true);
           } else {
             setResult({
               success,
