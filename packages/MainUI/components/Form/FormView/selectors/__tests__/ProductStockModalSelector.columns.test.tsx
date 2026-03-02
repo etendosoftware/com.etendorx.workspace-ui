@@ -101,7 +101,10 @@ describe("ProductStockModalSelector Columns", () => {
     );
   });
 
-  it("uses ProductStock columns when datasourceName is ProductStockView", () => {
+  test.each([
+    ["datasourceName is ProductStockView", mockProductStockField],
+    ["referenceSearchKey is a ProductComplete reference", mockProductCompleteField],
+  ])("uses ProductStock columns when %s", (_, field) => {
     (useTableDirDatasource as jest.Mock).mockReturnValue({
       records: [],
       loading: false,
@@ -112,31 +115,7 @@ describe("ProductStockModalSelector Columns", () => {
 
     const { useMaterialReactTable } = require("material-react-table");
 
-    render(<ProductStockModalSelector field={mockProductStockField} isReadOnly={false} />);
-
-    expect(useMaterialReactTable).toHaveBeenCalledWith(
-      expect.objectContaining({
-        columns: expect.arrayContaining([
-          expect.objectContaining({ accessorKey: "_identifier", header: "Product" }),
-          expect.objectContaining({ accessorKey: "storageBin", header: "Storage Bin" }),
-          expect.objectContaining({ accessorKey: "attributeSetValue", header: "Attribute Set Value" }),
-        ]),
-      })
-    );
-  });
-
-  it("uses ProductStock columns when referenceSearchKey is a ProductComplete reference", () => {
-    (useTableDirDatasource as jest.Mock).mockReturnValue({
-      records: [],
-      loading: false,
-      refetch: jest.fn(),
-      search: jest.fn(),
-      columns: [],
-    });
-
-    const { useMaterialReactTable } = require("material-react-table");
-
-    render(<ProductStockModalSelector field={mockProductCompleteField} isReadOnly={false} />);
+    render(<ProductStockModalSelector field={field} isReadOnly={false} />);
 
     expect(useMaterialReactTable).toHaveBeenCalledWith(
       expect.objectContaining({
