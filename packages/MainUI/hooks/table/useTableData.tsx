@@ -394,6 +394,37 @@ export const useTableData = ({
     return null;
   }, [tab]);
 
+<<<<<<< Updated upstream
+=======
+  // Helper to find parent field name
+  const getParentFieldName = useCallback((): { fieldName: string; directReference: boolean } => {
+    if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
+      // SR (Single Record) tabs share the same entity/table as the parent and have
+      // empty parentColumns. Filter by "id" so only the parent's own record is shown.
+      if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab) {
+        return { fieldName: "id", directReference: true };
+      }
+      return { fieldName: "_dummy", directReference: false };
+    }
+
+    if (!parentTab) {
+      return { fieldName: tab.parentColumns[0] || "id", directReference: true };
+    }
+
+    const matchingField = tab.parentColumns.find((colName) => {
+      const field = tab.fields[colName];
+      return field?.referencedEntity === parentTab.entityName;
+    });
+
+    return {
+      fieldName: matchingField || tab.parentColumns[0] || "id",
+      // directReference is true only when a field directly referencing the parent was found.
+      // When false, the server-side hqlwhereclause handles filtering via context variables.
+      directReference: Boolean(matchingField),
+    };
+  }, [tab.parentColumns, tab.fields, tab.uIPattern, parentTab]);
+
+>>>>>>> Stashed changes
   // Helper to apply sort options to query
   const applySortToOptions = useCallback(
     (options: DatasourceOptions, sort: ReturnType<typeof getDefaultSort>) => {
@@ -409,6 +440,13 @@ export const useTableData = ({
   );
 
   const query: DatasourceOptions = useMemo(() => {
+<<<<<<< Updated upstream
+=======
+    const { fieldName, directReference: fieldDirectlyReferencesParent } = getParentFieldName();
+    const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
+    const operator = "equals";
+
+>>>>>>> Stashed changes
     const options: DatasourceOptions = {
       windowId: tab.window,
       tabId: tab.id,
@@ -425,6 +463,7 @@ export const useTableData = ({
       options.language = language;
     }
 
+<<<<<<< Updated upstream
     // Build base criteria (handling Parent-Child or Dummy fallback)
     const baseCriteria = buildBaseCriteria({ tab, parentTab, parentId });
     if (baseCriteria.length > 0) {
@@ -432,6 +471,21 @@ export const useTableData = ({
 
       if (parentTab?.entityName && parentId) {
         options[`@${parentTab.entityName}.id@`] = parentId;
+=======
+    if (value && value !== "" && value !== undefined) {
+      if (fieldDirectlyReferencesParent) {
+        // Direct FK: standard criteria filter
+        options.criteria = [{ fieldName, value, operator }];
+      }
+      // else: no criteria — server-side hqlwhereclause handles filtering via context variable
+
+      if (parentTab?.entityName) {
+        // Keep existing format for backward compat (e.g. Process Request datasource)
+        options[`@${parentTab.entityName}.id@`] = value;
+        // OB Classic context variable format for hqlwhereclause substitution
+        // e.g. ETASK_Task → @ETASK_TASK_ID@
+        options[`@${parentTab.entityName.toUpperCase()}_ID@`] = value;
+>>>>>>> Stashed changes
       }
     }
 
@@ -444,8 +498,6 @@ export const useTableData = ({
         // @ts-ignore - advancedCriteria is compatible with Criteria
         options.criteria = [advancedCriteria];
       }
-    } else {
-      console.log("useTableData: No advancedCriteria found");
     }
 
     // Apply sorting
@@ -457,8 +509,7 @@ export const useTableData = ({
 
     return options;
   }, [
-    tab.window,
-    tab.id,
+    tab,
     initialIsFilterApplied,
     isImplicitFilterApplied,
     parentId,
