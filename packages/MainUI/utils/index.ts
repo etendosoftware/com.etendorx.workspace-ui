@@ -385,6 +385,11 @@ export const buildProcessPayload = (
   // Base record values with input name mapping
   const recordValues = buildPayloadByInputName(record, tab.fields);
 
+  // Extract the primary key field from tab metadata for precise case-sensitive naming
+  const entityKeyColumn = Object.values(tab.fields || {}).find((field) => field?.column?.keyColumn);
+  const keyColumnName = entityKeyColumn?.columnName || `${tab.entityName}_ID`;
+  const inpKeyName = entityKeyColumn?.inputName || `inp${tab.entityName}_ID`;
+
   // System context fields that are needed for process execution
   const systemContext = {
     // Window/Tab metadata
@@ -392,11 +397,13 @@ export const buildProcessPayload = (
     inpTabId: String(tab.id),
     inpwindowId: String(tab.window),
     inpTableId: String(tab.table),
-    inpkeyColumnId: `${tab.entityName}_ID`, // Use entityName + "_ID" pattern instead of keyColumn
+    inpkeyColumnId: keyColumnName,
     keyProperty: "id",
-    inpKeyName: `inp${tab.entityName}_ID`, // Use entityName + "_ID" pattern
-    keyColumnName: `${tab.entityName}_ID`, // Use entityName + "_ID" pattern
+    inpKeyName: inpKeyName,
+    keyColumnName: keyColumnName,
     keyPropertyType: "_id_13",
+    [keyColumnName]: record.id,
+    [inpKeyName]: record.id,
 
     // Process execution fields
     PromotionsDefined: "N",
