@@ -144,7 +144,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       const entityKeyColumn = findEntityKeyColumn(tab.fields);
       if (!entityKeyColumn) throw new Error("Missing key column");
 
-      const payload = buildFormInitializationPayload(tab, mode, parentData, entityKeyColumn);
+      const payload = buildFormInitializationPayload(tab, mode, parentData, entityKeyColumn, record);
 
       const data: FormInitializationResponse = await fetchFormInitialization(params, payload);
 

@@ -12,6 +12,7 @@ import { ACTION_FORM_INITIALIZATION } from "./constants";
 import { logger } from "@/utils/logger";
 import { getFieldsToAdd } from "@/utils/form/entityConfig";
 import { extractKeyValuePairs } from "@/utils/commons";
+import { buildPayloadByInputName } from "@/utils";
 
 const getRowId = (mode: FormMode | SessionModeType, recordId?: string | null): string => {
   if (mode === FormMode.EDIT || mode === SessionMode.SETSESSION) {
@@ -29,6 +30,8 @@ const getRowId = (mode: FormMode | SessionModeType, recordId?: string | null): s
  * - Entity key information
  * - Additional fields specific to the entity and mode
  * - Window context information
+ * - _gridVisibleProperties: list of column names for all displayed fields, required
+ *   by FormInitializationComponent to process property fields correctly
  *
  * @param tab - Current tab configuration
  * @param mode - Form operation mode (NEW, EDIT, SETSESSION)
@@ -46,14 +49,39 @@ export const buildFormInitializationPayload = (
   tab: Tab,
   mode: FormMode | SessionModeType,
   parentData: Record<string, unknown>,
-  entityKeyColumn: NonNullable<Field>
+  entityKeyColumn: NonNullable<Field>,
+  record?: Record<string, unknown> | null
 ): Record<string, unknown> => {
   const additionalFields =
     mode === SessionMode.SETSESSION
       ? {} // No additional fields needed for session sync
       : getFieldsToAdd(tab.entityName, mode as FormMode);
 
+  // In EDIT mode, include the current record values as inp* fields so the backend
+  // can correctly compute derived fields (e.g. _propertyField_* fields whose value
+  // depends on other field values via callouts or computed columns).
+  // Classic sends all inp{ColumnName} values in its payload; without them the
+  // FormInitializationComponent returns empty values for those derived fields.
+  const recordPayload = mode === FormMode.EDIT && record ? (buildPayloadByInputName(record, tab.fields) ?? {}) : {};
+
+  // Build _gridVisibleProperties from all displayed tab fields.
+  // Classic sends this list so that FormInitializationComponent (FIC) knows which
+  // fields are currently visible in the form. The FIC's setValuesInRequest method
+  // checks this list for property fields: if a field's columnName is present, the
+  // FIC will look for inp_propertyField_{columnName}_{propertyPath} in the payload
+  // and include the value in the columnValues response.
+  //
+  // Not needed for SETSESSION mode. Entity-specific overrides in entityConfig
+  // (e.g. ADUser) take precedence via the spread of additionalFields below.
+  const computedGridVisibleProperties =
+    mode !== SessionMode.SETSESSION
+      ? Object.values(tab.fields)
+          .filter((f) => f.displayed && f.columnName)
+          .map((f) => f.columnName)
+      : undefined;
+
   return {
+    ...recordPayload,
     ...parentData,
     inpKeyName: entityKeyColumn.inputName,
     inpTabId: tab.id,
@@ -62,6 +90,9 @@ export const buildFormInitializationPayload = (
     keyColumnName: entityKeyColumn.columnName,
     _entityName: tab.entityName,
     inpwindowId: tab.window,
+    // Provide computed _gridVisibleProperties; entity-specific configs in additionalFields
+    // (e.g. ADUser with its curated list) will override this via the spread below.
+    ...(computedGridVisibleProperties && { _gridVisibleProperties: computedGridVisibleProperties }),
     ...additionalFields,
   };
 };

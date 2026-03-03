@@ -39,7 +39,6 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
   const [current, setCurrent] = useState(initialTab);
   // Visual active tab id updates immediately for instant feedback
   const [activeTabId, setActiveTabId] = useState(initialTab.id);
-  const [expand, setExpanded] = useState(false);
   const [customHeight, setCustomHeight] = useState(50);
   const [isPending, startTransition] = useTransition();
 
@@ -62,7 +61,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
         setActiveTabId(tabs[0].id);
       }
     }
-  }, [initialActiveTab, tabs]); // dependency on tabs ensures re-eval when filter changes
+  }, [initialActiveTab, tabs, current.id]); // dependency on tabs ensures re-eval when filter changes
 
   const { activeWindow } = useWindowContext();
   const { activeLevels, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
@@ -73,6 +72,8 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
   const collapsed = !activeLevels.includes(current.tabLevel);
   const isTopExpanded = !collapsed && isTopGroup;
   const showResizeHandle = !isTopExpanded && !collapsed;
+  
+  const isExpanded = activeLevels.length === 1 && activeLevels[0] === current.tabLevel && current.tabLevel > 0;
 
   const handleClick = useCallback(
     (tab: TabType) => {
@@ -88,24 +89,24 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
         setActiveTabsByLevel(tab);
       });
     },
-    [setActiveLevel, startTransition, setActiveTabsByLevel]
+    [setActiveLevel, setActiveTabsByLevel]
   );
 
   const handleDoubleClick = useCallback(
     (tab: TabType) => {
       setActiveTabId(tab.id);
-      const newExpand = !expand;
+      const currentIsExpanded = activeLevels.length === 1 && activeLevels[0] === tab.tabLevel;
+      const newExpand = !currentIsExpanded;
       // Defer deeper updates to avoid blocking click feedback
       startTransition(() => {
         setCurrent(tab);
-        setExpanded(newExpand);
         setActiveLevel(tab.tabLevel, newExpand);
 
         // Update the active tab mapping for this level
         setActiveTabsByLevel(tab);
       });
     },
-    [expand, setActiveLevel, startTransition, setActiveTabsByLevel]
+    [activeLevels, setActiveLevel, setActiveTabsByLevel]
   );
 
   const handleHeightChange = useCallback((height: number) => {
@@ -127,6 +128,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
         activeTabId={activeTabId}
         tabs={tabs}
         collapsed={collapsed}
+        isExpanded={isExpanded}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         onClose={handleClose}
@@ -158,7 +160,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
       customHeight={customHeight}
       data-testid="TabContainer__6fa401">
       {renderTabContent()}
-      {isPending ? (
+      {isPending && current.id !== activeTabId ? (
         <div className="p-4 animate-pulse flex-1 flex flex-col gap-4">
           <div className="h-10 w-full bg-(--color-transparent-neutral-10) rounded-md" />
           <div className="h-8 w-3/4 bg-(--color-transparent-neutral-10) rounded-md" />
