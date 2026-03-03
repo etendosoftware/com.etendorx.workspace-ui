@@ -437,6 +437,27 @@ export const useTableData = ({
     const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
     const operator = "equals";
 
+    // DEBUG: Log child tab query building
+    if (parentTab) {
+      console.log("[DEBUG useTableData] Child tab query:", {
+        tabName: tab.name,
+        tabId: tab.id,
+        entityName: tab.entityName,
+        parentTabName: parentTab.name,
+        parentTabEntityName: parentTab.entityName,
+        parentColumns: tab.parentColumns,
+        fieldName,
+        parentId,
+        parentRecord: parentRecord?.id,
+        parentRecordsLength: parentRecords?.length,
+        skip: parentTab ? Boolean(!parentRecord || (parentRecords && parentRecords.length !== 1)) : false,
+        fields: Object.keys(tab.fields),
+        fieldsWithReferencedEntity: Object.entries(tab.fields)
+          .filter(([_, f]) => f.referencedEntity)
+          .map(([name, f]) => ({ name, referencedEntity: f.referencedEntity })),
+      });
+    }
+
     const options: DatasourceOptions = {
       windowId: tab.window,
       tabId: tab.id,
