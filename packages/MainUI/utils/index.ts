@@ -214,6 +214,12 @@ export const parseDynamicExpression = (expr: string) => {
   // Transform legacy Etendo/OB '!' comparison to '!=' (e.g., @Col@!'Y' -> ...!='Y')
   expr0 = expr0.replace(/!'/g, "!='");
 
+  // Transform space-surrounded '!' to '!=' (e.g. @Col@ ! @Col2@)
+  expr0 = expr0.replace(/\s!\s/g, " != ");
+
+  // Transform '!undefined' to '!= undefined' covers common case @Col@!undefined
+  expr0 = expr0.replace(/!undefined/g, "!= undefined");
+
   // Transform Etendo comparison operators to JavaScript
   // Convert single = to == for comparison (avoiding conflicts with assignment)
   const expr1 = expr0.replace(/([^=!<>])=([^=])/g, "$1==$2");
@@ -247,7 +253,10 @@ export const parseDynamicExpression = (expr: string) => {
     .replace(/!=\s*false\b/g, "!= 'N'")
     .replace(/!=\s*true\b/g, "!= 'Y'");
 
-  return expr5;
+  // Stub OB.getFilterExpression calls as they require server-side execution
+  const expr6 = expr5.replace(/OB\.getFilterExpression\s*\([^)]*\)/g, "null");
+
+  return expr6;
 };
 
 export const buildQueryString = ({
@@ -376,6 +385,11 @@ export const buildProcessPayload = (
   // Base record values with input name mapping
   const recordValues = buildPayloadByInputName(record, tab.fields);
 
+  // Extract the primary key field from tab metadata for precise case-sensitive naming
+  const entityKeyColumn = Object.values(tab.fields || {}).find((field) => field?.column?.keyColumn);
+  const keyColumnName = entityKeyColumn?.columnName || `${tab.entityName}_ID`;
+  const inpKeyName = entityKeyColumn?.inputName || `inp${tab.entityName}_ID`;
+
   // System context fields that are needed for process execution
   const systemContext = {
     // Window/Tab metadata
@@ -383,11 +397,13 @@ export const buildProcessPayload = (
     inpTabId: String(tab.id),
     inpwindowId: String(tab.window),
     inpTableId: String(tab.table),
-    inpkeyColumnId: `${tab.entityName}_ID`, // Use entityName + "_ID" pattern instead of keyColumn
+    inpkeyColumnId: keyColumnName,
     keyProperty: "id",
-    inpKeyName: `inp${tab.entityName}_ID`, // Use entityName + "_ID" pattern
-    keyColumnName: `${tab.entityName}_ID`, // Use entityName + "_ID" pattern
+    inpKeyName: inpKeyName,
+    keyColumnName: keyColumnName,
     keyPropertyType: "_id_13",
+    [keyColumnName]: record.id,
+    [inpKeyName]: record.id,
 
     // Process execution fields
     PromotionsDefined: "N",

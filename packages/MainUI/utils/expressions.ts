@@ -15,7 +15,8 @@
  *************************************************************************
  */
 
-import { Field } from "@workspaceui/api-client/src/api/types";
+import type { Field } from "@workspaceui/api-client/src/api/types";
+import { getStoredPreferences } from "./propertyStore";
 
 interface SmartContextOptions {
   values?: Record<string, unknown>; // Primary values (current record, form values)
@@ -131,6 +132,40 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
     return looseMatchFound ? looseMatchValue : undefined;
   };
 
+  const getFromPrefs = (key: string) => {
+    const prefs = getStoredPreferences();
+    if (prefs[key] !== undefined) return normalize(prefs[key]);
+
+    const lowerKey = key.toLowerCase();
+    for (const [k, v] of Object.entries(prefs)) {
+      if (k.toLowerCase() === lowerKey) return normalize(v);
+    }
+    return undefined;
+  };
+
+  // Check if a cleared foreign key should return empty string.
+  // Only applies to UUID-like ID values (32+ hex chars), not to short values like 'Y'/'N'.
+  const checkClearedIdentifier = (target: Record<string, any>, prop: string, val: unknown): string | undefined => {
+    if (typeof val === "string" && val.length > 8) {
+      const identifierVal = resolveProperty(target, `${prop}$_identifier`);
+      if (identifierVal === "") return "";
+    }
+    return undefined;
+  };
+
+  // Resolve special prefixed properties (@prop@, #prop, $prop)
+  const resolvePrefixed = (target: Record<string, any>, prop: string): unknown => {
+    if (prop.startsWith("@") && prop.endsWith("@")) {
+      const cleanVal = resolveProperty(target, prop.slice(1, -1));
+      if (cleanVal !== undefined && cleanVal !== null) return cleanVal;
+    }
+    if (prop.startsWith("#") || prop.startsWith("$")) {
+      const valFromPrefs = getFromPrefs(prop.slice(1)) ?? getFromPrefs(prop);
+      if (valFromPrefs !== undefined) return valFromPrefs;
+    }
+    return undefined;
+  };
+
   return new Proxy(evalContext, {
     get(target, prop, receiver) {
       if (typeof prop !== "string") {
@@ -139,10 +174,21 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
 
       const val = resolveProperty(target, prop);
 
-      if ((val === null || val === undefined) && defaultValue !== undefined) {
-        return defaultValue;
-      }
-      return val;
+      // If the field has an empty identifier, treat as empty (Classic behavior for cleared foreign keys)
+      const cleared = checkClearedIdentifier(target, prop, val);
+      if (cleared !== undefined) return cleared;
+
+      if (val !== undefined && val !== null) return val;
+
+      // Handle @property@, #property, $property access patterns
+      const prefixed = resolvePrefixed(target, prop);
+      if (prefixed !== undefined) return prefixed;
+
+      // Fallback to default value, then empty string (matching Classic behavior).
+      // In Classic, unresolved context variables always resolve to '' (empty string).
+      // parseDynamicExpression replaces OB.Utilities.getValue(obj, prop) with obj["prop"],
+      // removing the null->'' conversion that getValue provided. The Proxy must handle it.
+      return defaultValue !== undefined ? defaultValue : "";
     },
     has(target, prop) {
       if (typeof prop !== "string") return Reflect.has(target, prop);

@@ -40,7 +40,72 @@ import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.
 
 export const compileExpression = (expression: string) => {
   try {
-    return new Function("context", "currentValues", `return ${parseDynamicExpression(expression)};`);
+    // Shim for legacy OpenBravo/Etendo functions used in expressions
+    const obShim = `
+      var normalize = function(val) {
+        if (typeof val === "boolean") return val ? "Y" : "N";
+        return val;
+      };
+      var OB = {
+        Utilities: {
+          getValue: function(obj, prop) { 
+            var val = obj && obj[prop];
+            return (val === null || val === undefined) ? '' : val;
+          },
+          PropertyStore: function(ctx, prop) { return ctx && (ctx[prop] || ctx['$'+prop] || ctx['#'+prop]); }
+        },
+        PropertyStore: function(ctx, prop) { return ctx && (ctx[prop] || ctx['$'+prop] || ctx['#'+prop]); },
+        getExpression: function() { return true; }, // Fallback for complex expressions
+        PropertyStore: {
+          get: (key) => {
+            // 1. Check context (session attributes with #/$ prefixes)
+            const fromContext = context[key] ?? context['#' + key] ?? context['$' + key];
+            if (fromContext !== undefined && fromContext !== null) return normalize(fromContext);
+            // 2. Check preferences loaded from backend (stored in localStorage at login)
+            try {
+              const prefs = JSON.parse(localStorage.getItem('etendo_preferences') || '{}');
+              if (prefs[key] !== undefined) return normalize(prefs[key]);
+              // Case-insensitive fallback
+              const lowerKey = key.toLowerCase();
+              for (const k of Object.keys(prefs)) {
+                if (k.toLowerCase() === lowerKey) return normalize(prefs[k]);
+              }
+            } catch (e) { /* ignore parse errors */ }
+            return undefined;
+          }
+        },
+        getSession: function() {
+            return {
+                getAttribute: function(prop) { 
+                    var val = context[prop] || context['$'+prop] || context['#'+prop];
+                    if (val === undefined && typeof currentValues !== 'undefined') {
+                        val = currentValues[prop] || currentValues['$'+prop] || currentValues['#'+prop];
+                    }
+                    return val;
+                }
+            };
+        },
+        getFilterExpression: () => null
+      };
+    `;
+
+    // Security: Shadow global objects to prevent access from within the expression
+    // This provides depth-in-defense for the trusted metadata model
+    const securityShim = `
+      var window = undefined;
+      var document = undefined;
+      var fetch = undefined;
+      var XMLHttpRequest = undefined;
+      var alert = undefined;
+    `;
+
+    // NOSONAR: This dynamic execution is required to evaluate business logic defined in the Application Dictionary.
+    // The Input 'expression' comes from the system metadata (trusted source) and is not user-supplied.
+    return new Function(
+      "context",
+      "currentValues",
+      `${securityShim} ${obShim} return ${parseDynamicExpression(expression)};`
+    );
   } catch (error) {
     logger.error("Error compiling expression:", expression, error);
     return () => true;
@@ -119,10 +184,6 @@ const BaseSelectorComp = ({
 
         if (targetField && identifier) {
           setValue(`${hqlName}$_identifier`, identifier, { shouldDirty: false });
-
-          if (value && String(value) !== identifier) {
-            logger.debug(`Field ${hqlName}: value=${value}, identifier=${identifier}`);
-          }
         } else if (targetField && !identifier && value) {
           setValue(`${hqlName}$_identifier`, "", { shouldDirty: false });
         }

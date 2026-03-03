@@ -117,6 +117,7 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import "./styles/inlineEditing.css";
 import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
+import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatUTCTimeToLocal } from "@/utils/date/utils";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
@@ -412,26 +413,29 @@ const DataColumnCell: React.FC<DataColumnCellProps> = ({
     );
   }
 
+  // Format Time values from UTC to Local for display in the grid
+  const fieldMapping = columnFieldMappings.get(col.name);
+  const field = fieldMapping?.field;
+
+  const isLinkDisabled = field?.isReferencedWindowAccessible === false;
+
   // For non-editing cells, check if we should show identifier instead of UUID
   const identifierKey = `${fieldKey}$_identifier`;
   const identifier = row.original[identifierKey];
-
-  // Format Time values from UTC to Local for display in the grid
-  const fieldMapping = columnFieldMappings.get(col.name);
   if (fieldMapping?.fieldType === FieldType.TIME && typeof renderedCellValue === "string" && renderedCellValue) {
     const localTimeValue = formatUTCTimeToLocal(renderedCellValue);
     return <div className="table-cell-content">{localTimeValue}</div>;
   }
 
   if (identifier && typeof identifier === "string" && typeof renderedCellValue === "string") {
-    if (originalCell && typeof originalCell === "function") {
+    if (!isLinkDisabled && originalCell && typeof originalCell === "function") {
       return <>{originalCell({ renderedCellValue: identifier, row, table })}</>;
     }
     return <div className="table-cell-content">{identifier}</div>;
   }
 
   // Preserve original rendering logic and formatting
-  if (originalCell && typeof originalCell === "function") {
+  if (!isLinkDisabled && originalCell && typeof originalCell === "function") {
     return <>{originalCell({ renderedCellValue, row, table })}</>;
   }
 
@@ -455,6 +459,7 @@ interface ExtendedColumn extends Column {
   readOnlyLogicExpression?: string;
   isReadOnly?: boolean;
   isUpdatable?: boolean;
+  isReferencedWindowAccessible?: boolean;
   isAuditField?: boolean;
 }
 
@@ -596,6 +601,7 @@ const columnToFieldForEditor = (column: Column): Field => {
     etmetaCustomjs: column.customJs || null,
     isActive: true,
     gridDisplayLogic: "",
+    isReferencedWindowAccessible: extColumn.isReferencedWindowAccessible,
   } as Field;
 
   // Limit cache size to prevent memory leaks
@@ -788,6 +794,8 @@ const DynamicTable = ({
     loading,
     error,
     shouldUseTreeMode,
+    treeEntity,
+    referencedTableId,
     hasMoreRecords,
     handleMRTColumnFiltersChange,
     handleMRTColumnVisibilityChange,
@@ -860,13 +868,8 @@ const DynamicTable = ({
     });
   }, []);
 
-  // Keep fetchSummary in a ref to use in effects without causing infinite loops
-  const fetchSummaryRef = useRef(fetchSummary);
-  useLayoutEffect(() => {
-    fetchSummaryRef.current = fetchSummary;
-  }, [fetchSummary]);
-
-  // Load summary when state or filters change
+  // Load summary when state, filters, or data change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: records is needed to trigger re-fetch
   useEffect(() => {
     const loadSummary = async () => {
       if (Object.keys(summaryState).length === 0) {
@@ -876,7 +879,7 @@ const DynamicTable = ({
 
       setIsSummaryLoading(true);
       try {
-        const result = await fetchSummaryRef.current(summaryState);
+        const result = await fetchSummary(summaryState);
         if (result) {
           setSummaryResult(result);
         } else {
@@ -891,7 +894,7 @@ const DynamicTable = ({
     };
 
     loadSummary();
-  }, [summaryState]);
+  }, [summaryState, fetchSummary, records]);
 
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<HTMLElement | null>(null);
   const [hasInitialColumnVisibility, setHasInitialColumnVisibility] = useState<boolean>(false);
@@ -1010,6 +1013,17 @@ const DynamicTable = ({
     onDragStateChange: setDropTargetState,
   });
 
+  const { dropTarget, draggingRowId, getNodeDragProps, getNodeDropProps } = useTreeNodeDragDrop({
+    shouldUseTreeMode,
+    treeEntity,
+    referencedTableId,
+    tabId: tab.id,
+    displayRecords,
+    refetch,
+    onError: (message) => showErrorModal(message),
+    parentTabRecordId: parentRecord?.id != null ? String(parentRecord.id) : null,
+  });
+
   // Optimistic updates state - tracks pending updates for immediate UI feedback
   const [optimisticRecords, setOptimisticRecords] = useState<EntityData[]>([]);
 
@@ -1033,6 +1047,10 @@ const DynamicTable = ({
 
       if (!originalField) {
         return field;
+      }
+
+      if (originalField.isReferencedWindowAccessible !== undefined) {
+        field.isReferencedWindowAccessible = originalField.isReferencedWindowAccessible;
       }
 
       // Transfer callout if present
@@ -2482,6 +2500,13 @@ const DynamicTable = ({
         }
       }
 
+      // Determine drop target overlay styling for drag and drop interactions
+      let dropIndicatorClass = "";
+      if (shouldUseTreeMode && dropTarget?.id === rowId) {
+        dropIndicatorClass =
+          dropTarget.position === "on" ? "drop-target-overlay" : `drop-indicator-${dropTarget.position}`;
+      }
+
       return {
         onClick: (event) => {
           const target = event.target as HTMLElement;
@@ -2572,33 +2597,93 @@ const DynamicTable = ({
           setRecordId(record.id);
         },
 
-        // Merge drag & drop handlers for file attachments
-        ...getRowDropZoneProps(record as EntityData),
+        // File attachment drag & drop props
+        ...(() => {
+          const fileDrop = getRowDropZoneProps(record as EntityData);
+          const nodeDrag = getNodeDragProps(record as EntityData);
+          const nodeDrop = getNodeDropProps(record as EntityData);
+          return {
+            // Make rows draggable in tree mode for node reordering/reparenting
+            draggable: shouldUseTreeMode,
+            onDragStart: nodeDrag.onDragStart,
+            onDragEnd: nodeDrag.onDragEnd,
+            // File drop uses onDragEnter; tree drop does not need it
+            onDragEnter: fileDrop.onDragEnter,
+            // Route onDragOver, onDragLeave, onDrop to the correct handler
+            // based on what is being dragged (tree node vs file)
+            onDragOver: (e: React.DragEvent<HTMLTableRowElement>) => {
+              if (e.dataTransfer.types.includes(TREE_DRAG_TYPE)) {
+                nodeDrop.onDragOver?.(e);
+              } else {
+                fileDrop.onDragOver?.(e);
+              }
+            },
+            onDragLeave: (e: React.DragEvent<HTMLTableRowElement>) => {
+              if (e.dataTransfer.types.includes(TREE_DRAG_TYPE)) {
+                nodeDrop.onDragLeave?.(e);
+              } else {
+                fileDrop.onDragLeave?.(e);
+              }
+            },
+            onDrop: (e: React.DragEvent<HTMLTableRowElement>) => {
+              if (e.dataTransfer.types.includes(TREE_DRAG_TYPE)) {
+                nodeDrop.onDrop?.(e);
+              } else {
+                fileDrop.onDrop?.(e);
+              }
+            },
+          };
+        })(),
 
         sx: {
           ...(isSelected && {
             ...sx.rowSelected,
           }),
         },
-        className: rowClassName,
+        // Apply drag source / drop-target CSS classes via React state so that React's
+        // reconciler manages the className and never overwrites our changes.
+        className: [
+          rowClassName,
+          shouldUseTreeMode && draggingRowId === rowId ? "tree-node-dragging" : "",
+          dropIndicatorClass,
+        ]
+          .filter(Boolean)
+          .join(" "),
         row,
         table,
       };
     },
-    [graph, setRecordId, sx.rowSelected, tab, editingRowUtils, getRowDropZoneProps]
+    [
+      graph,
+      setRecordId,
+      sx.rowSelected,
+      tab,
+      editingRowUtils,
+      getRowDropZoneProps,
+      shouldUseTreeMode,
+      draggingRowId,
+      dropTarget,
+      getNodeDragProps,
+      getNodeDropProps,
+    ]
   );
 
   const renderEmptyRowsFallback = useCallback(
-    ({ table }: { table: MRT_TableInstance<EntityData> }) => (
-      <EmptyState
-        table={table}
-        onContextMenu={handleTableBodyContextMenu}
-        onInsertRow={handleInsertRow}
-        uIPattern={uIPattern}
-        data-testid="EmptyState__8ca888"
-      />
-    ),
-    [handleTableBodyContextMenu, handleInsertRow, uIPattern]
+    ({ table }: { table: MRT_TableInstance<EntityData> }) => {
+      if (loading) {
+        return null;
+      }
+      return (
+        <EmptyState
+          table={table}
+          onContextMenu={handleTableBodyContextMenu}
+          onInsertRow={handleInsertRow}
+          uIPattern={uIPattern}
+          data-testid="EmptyState__8ca888"
+        />
+      );
+    },
+    [handleTableBodyContextMenu, handleInsertRow, loading]
   );
 
   const fetchMoreOnBottomReached = useCallback(
@@ -2742,6 +2827,7 @@ const DynamicTable = ({
       expanded: expandedState,
       showColumnFilters: true,
       showProgressBars: loading,
+      isLoading: loading,
     }),
     [tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder, expandedState, loading]
   );
@@ -3182,13 +3268,15 @@ const DynamicTable = ({
   ]);
 
   useEffect(() => {
-    registerActions({
-      refresh: refetch,
-      filter: toggleImplicitFilters,
-      save: async () => {},
-      columnFilters: toggleColumnsDropdown,
-    });
-  }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown]);
+    if (isVisible) {
+      registerActions({
+        refresh: refetch,
+        filter: toggleImplicitFilters,
+        save: async () => {},
+        columnFilters: toggleColumnsDropdown,
+      });
+    }
+  }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown, isVisible]);
 
   // Register table's refetch function with TabRefreshContext
   // This allows triggering table refresh after save operations in FormView
@@ -3340,22 +3428,6 @@ const DynamicTable = ({
         onClose={confirmationState.onCancel}
         isDeleteSuccess={false}
         data-testid="ConfirmationDialog__8ca888"
-      />
-      <StatusModal
-        open={statusModal.open}
-        statusType={statusModal.statusType}
-        statusText={statusModal.statusText}
-        onClose={hideStatusModal}
-        onAfterClose={() => {
-          if ("onAfterClose" in statusModal && typeof statusModal.onAfterClose === "function") {
-            statusModal.onAfterClose();
-          }
-        }}
-        saveLabel={statusModal.saveLabel}
-        secondaryButtonLabel={statusModal.secondaryButtonLabel}
-        errorMessage={statusModal.errorMessage}
-        isDeleteSuccess={statusModal.isDeleteSuccess}
-        data-testid="StatusModal__8ca888"
       />
       <HeaderContextMenu
         anchorEl={headerContextMenuAnchor}

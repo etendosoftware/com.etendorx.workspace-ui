@@ -20,7 +20,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
 import type { Tab, EntityData } from "@workspaceui/api-client/src/api/types";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearch } from "../../contexts/searchContext";
 import { useDeleteRecord } from "../useDeleteRecord";
 import { useMetadataContext } from "../useMetadataContext";
@@ -39,6 +39,8 @@ import { getNewTabFormState } from "@/utils/window/utils";
 import { copyRecordRequest, handleCopyRecordResponse } from "@/utils/processes/toolbar/utils";
 import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
+import { toast } from "sonner";
+import { ToastContent } from "@/components/ToastContent";
 
 export const useToolbarConfig = ({
   tabId,
@@ -89,20 +91,6 @@ export const useToolbarConfig = ({
   });
 
   const { token } = useUserContext();
-
-  const [resultModal, setResultModal] = useState<{
-    open: boolean;
-    success: boolean;
-    message?: string;
-    title?: string;
-  }>({
-    open: false,
-    success: false,
-  });
-
-  const closeResultModal = useCallback(() => {
-    setResultModal((prev) => ({ ...prev, open: false }));
-  }, []);
 
   const closeActionModal = useCallback(() => {
     setActionModal((prev) => ({ ...prev, isOpen: false }));
@@ -368,7 +356,7 @@ export const useToolbarConfig = ({
         onFilter?.();
       },
       SAVE: () => {
-        onSave?.(true);
+        onSave?.({ showModal: true });
       },
       DELETE: () => {
         handleDeleteRecord();
@@ -452,21 +440,25 @@ export const useToolbarConfig = ({
             finalMessage += `<br/>${t("process.refreshGrid") || "Refresh the grid to see the changes."}`;
           }
 
-          setResultModal({
-            open: true,
-            success: isSuccess,
-            message: finalMessage,
-          });
+          if (isSuccess) {
+            toast.success(t("process.completedSuccessfully"), {
+              description: React.createElement(ToastContent, { message: finalMessage }),
+            });
+          } else {
+            toast.error(t("process.processError"), {
+              description: React.createElement(ToastContent, { message: finalMessage }),
+            });
+          }
 
           if (isSuccess && refreshGrid) {
             onRefresh?.();
           }
         } catch (error) {
           logger.error("Error initializing RX services:", error);
-          setResultModal({
-            open: true,
-            success: false,
-            message: error instanceof Error ? error.message : "Unknown error",
+          toast.error(t("process.processError"), {
+            description: React.createElement(ToastContent, {
+              message: error instanceof Error ? error.message : "Unknown error",
+            }),
           });
         }
       },
@@ -541,8 +533,6 @@ export const useToolbarConfig = ({
       selectedRecordId,
       actionModal,
       closeActionModal,
-      resultModal,
-      closeResultModal,
     }),
     [
       handleAction,
@@ -563,8 +553,6 @@ export const useToolbarConfig = ({
       selectedRecordId,
       actionModal,
       closeActionModal,
-      resultModal,
-      closeResultModal,
     ]
   );
 };

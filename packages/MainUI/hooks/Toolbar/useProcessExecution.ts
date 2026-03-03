@@ -191,10 +191,10 @@ export function useProcessExecution() {
         if (isProcessDefinitionButton(button)) {
           return await executeProcessDefinition({ button, recordId, params });
         }
-        throw new Error("Tipo de proceso no soportado");
+        throw new Error("Process type not supported");
       } catch (error) {
         console.error(error);
-        throw new Error("Tipo de proceso no soportado");
+        throw new Error("Process execution failed");
       }
     },
     [executeProcessAction, executeProcessDefinition]

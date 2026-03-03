@@ -17,7 +17,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
-import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
+import type { EntityValue, Field, Tab } from "@workspaceui/api-client/src/api/types";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { useSelected } from "./useSelected";
 
@@ -97,7 +97,12 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
         const responseData = result.data.response?.data;
 
         if (responseData?.length > 0) {
-          setRecord(responseData[0]);
+          const fetchedRecord = responseData[0];
+          setRecord(fetchedRecord);
+          // Ensure the graph knows about this record so components like Process Buttons can read it
+          const entityDataRecord = fetchedRecord as unknown as Record<string, EntityValue>;
+          graph.setSelected(tab, entityDataRecord);
+          graph.setSelectedMultiple(tab, [entityDataRecord]);
         } else {
           setRecord({});
         }

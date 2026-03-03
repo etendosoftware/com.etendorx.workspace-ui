@@ -31,15 +31,29 @@ export interface CriteriaItem {
 
 /**
  * Builds the base criteria for a datasource request.
- * Handles the logic for Parent-Child relationships and the "dummy" criteria fallback
- * when no parent context is present (ensuring a valid request contract).
+ * Handles the logic for Parent-Child relationships.
+ *
+ * When a `parentId` is present (i.e. the user has selected a record in the parent tab),
+ * this mirrors Etendo Classic behavior by returning a `_dummy` criteria. Classic always
+ * sends `_dummy` for parent-child tab navigation, never an explicit field criteria.
+ * The actual filtering is done server-side via session variables (e.g. `@EntityName.id@`)
+ * set separately in `useTableData`.
+ *
+ * The `getParentFieldName` logic below is preserved as a fallback for cases where
+ * `parentId` is not set but a tab/parentColumns relationship is defined.
  */
-export const buildBaseCriteria = ({ tab, parentTab, parentId }: BaseCriteriaOptions): CriteriaItem[] => {
-  const getParentFieldName = () => {
-    if (!parentTab) {
-      return "_dummy";
-    }
+export const buildBaseCriteria = ({ tab, parentTab, parentId }: BaseCriteriaOptions): [] | [CriteriaItem] => {
+  if (!parentTab) {
+    return [];
+  }
 
+  // Classic sends _dummy for parent-child tab navigation when disableParentKeyProperty is true.
+  // The server uses @EntityName.id@ session variables (set in useTableData) for the actual filtering.
+  if (tab.disableParentKeyProperty && parentId && parentId !== "") {
+    return [{ fieldName: "_dummy", value: Date.now() as EntityValue, operator: "equals" }];
+  }
+
+  const getParentFieldName = () => {
     if (tab.fields && tab.parentColumns && tab.parentColumns.length > 0) {
       return tab.parentColumns[0] || "id";
     }
@@ -52,15 +66,14 @@ export const buildBaseCriteria = ({ tab, parentTab, parentId }: BaseCriteriaOpti
           })
         : undefined;
 
-    return matchingField || (tab.parentColumns && tab.parentColumns[0]) || "id";
+    return matchingField || tab.parentColumns?.[0] || "id";
   };
 
   const fieldName = getParentFieldName();
-  const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
   const operator = "equals";
 
-  if (value && value !== "" && value !== undefined) {
-    return [{ fieldName, value: value as EntityValue, operator }];
+  if (parentId && parentId !== "") {
+    return [{ fieldName, value: parentId as EntityValue, operator }];
   }
 
   return [];

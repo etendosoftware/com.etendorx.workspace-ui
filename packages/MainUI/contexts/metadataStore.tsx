@@ -17,9 +17,10 @@
 
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { type Etendo, Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { logger } from "@/utils/logger";
+import { useUserContext } from "@/hooks/useUserContext";
 
 // Define Interface
 export interface IMetadataStoreContext {
@@ -35,9 +36,19 @@ export interface IMetadataStoreContext {
 const MetadataStoreContext = createContext<IMetadataStoreContext>({} as IMetadataStoreContext);
 
 export function MetadataStoreProvider({ children }: React.PropsWithChildren) {
+  const { currentRole } = useUserContext();
   const [windowsData, setWindowsData] = useState<Record<string, Etendo.WindowMetadata>>({});
   const [loadingWindows, setLoadingWindows] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, Error | undefined>>({});
+
+  // Reset store when role changes to avoid stale metadata in memory.
+  // Roles may have different window configurations, so we must ensure the UI re-fetches the correct metadata for the new role context.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Reset store when role changes to avoid stale metadata in memory.
+  useEffect(() => {
+    setWindowsData({});
+    setLoadingWindows({});
+    setErrors({});
+  }, [currentRole?.id]);
 
   const loadWindowData = useCallback(
     async (windowId: string): Promise<Etendo.WindowMetadata> => {

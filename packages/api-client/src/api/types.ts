@@ -48,7 +48,7 @@ export interface DatasourceParams {
   startRow?: number;
   endRow?: number;
   sortBy?: string;
-  criteria?: Criteria[];
+  criteria?: Criteria[] | string | Record<string, unknown>;
   operationType?: "fetch" | "add" | "update" | "remove";
   isSorting?: boolean;
   isImplicitFilterApplied?: boolean;
@@ -59,7 +59,7 @@ export interface DatasourceParams {
 export interface DatasourceOptions {
   columns?: string[];
   sortBy?: string;
-  criteria?: Criteria[];
+  criteria?: Criteria[] | string | Record<string, unknown>;
   operationType?: "fetch" | "add" | "update" | "remove";
   isSorting?: boolean;
   isImplicitFilterApplied?: boolean;
@@ -71,6 +71,7 @@ export interface DatasourceOptions {
   language?: string;
   parentId?: string | number;
   referencedTableId?: string;
+  [key: string]: unknown;
 }
 
 export interface ProcessAction extends Record<string, unknown> {
@@ -160,6 +161,10 @@ export interface Field {
    * from the child record's data (e.g., record["cBpartnerId"]).
    */
   isParentRecordProperty?: boolean;
+  /**
+   * Indicates if the role has access to the window linked to this field.
+   */
+  isReferencedWindowAccessible?: boolean;
   isAuditField?: boolean;
 }
 
@@ -191,6 +196,7 @@ export interface Column {
   fieldId?: string;
   customJs?: string | null;
   referencedTabId: string | null;
+  isReferencedWindowAccessible?: boolean;
   isAuditField?: boolean;
 }
 
@@ -291,6 +297,8 @@ export interface Tab {
   obuiappCloneChildren?: boolean;
   process?: string;
   process$_identifier?: string;
+  disableParentKeyProperty?: boolean;
+  defaultEditMode?: boolean;
 }
 
 export interface WindowMetadata {

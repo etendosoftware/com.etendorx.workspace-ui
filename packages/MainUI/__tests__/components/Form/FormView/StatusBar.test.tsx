@@ -280,7 +280,7 @@ describe("StatusBar", () => {
       const closeButton = screen.getByTestId("icon-button");
       await user.click(closeButton);
 
-      expect(mockToolbarContext.onSave).toHaveBeenCalledWith(false);
+      expect(mockToolbarContext.onSave).toHaveBeenCalledWith({ skipFormStateUpdate: true });
       expect(mockToolbarContext.onSave).toHaveBeenCalledTimes(1);
     });
 
@@ -485,7 +485,7 @@ describe("StatusBar", () => {
       });
 
       // State should be reset after component processes the save
-      expect(mockToolbarContext.onSave).toHaveBeenCalledWith(false);
+      expect(mockToolbarContext.onSave).toHaveBeenCalledWith({ skipFormStateUpdate: true });
     });
 
     it("manages isSaved state correctly during successful flow without form changes", async () => {
@@ -548,7 +548,7 @@ describe("StatusBar", () => {
       closeButton.focus();
 
       await user.keyboard("{Enter}");
-      expect(mockToolbarContext.onSave).toHaveBeenCalledWith(false);
+      expect(mockToolbarContext.onSave).toHaveBeenCalledWith({ skipFormStateUpdate: true });
     });
 
     it("close button is keyboard accessible without form changes", async () => {
@@ -595,9 +595,9 @@ describe("StatusBar", () => {
       );
 
       // Should render all fields provided
-      Object.keys(mockFields).forEach((fieldKey) => {
+      for (const fieldKey of Object.keys(mockFields)) {
         expect(screen.getByTestId(`status-field-${fieldKey}`)).toBeInTheDocument();
-      });
+      }
     });
 
     it("handles fields with different structures", () => {

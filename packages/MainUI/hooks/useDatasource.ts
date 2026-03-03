@@ -37,21 +37,33 @@ const loadData = async (
     tabId?: string;
     referencedTableId?: string;
     parentId?: string | number;
-  }
+  },
+  isFiltering = false
 ) => {
   const safePageSize = pageSize ?? 1000;
   const startRow = (page - 1) * pageSize;
-  const endRow = page * pageSize - 1;
+  const endRow = startRow + pageSize;
 
   const processedParams = {
     ...params,
+    _textMatchStyle: "substring",
     startRow,
     endRow,
     pageSize: safePageSize,
   };
 
   if (treeOptions?.isTreeMode) {
-    processedParams.parentId = treeOptions.parentId ?? -1;
+    const parentIdCriteria = {
+      fieldName: "parentId",
+      operator: "equals",
+      value: String(treeOptions.parentId ?? -1),
+    };
+
+    // Ensure criteria is an array and append parentId criteria
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const currentCriteria = (params.criteria as any[]) || [];
+    processedParams.criteria = [...currentCriteria, parentIdCriteria];
+
     if (treeOptions.tabId) {
       processedParams.tabId = treeOptions.tabId;
     }
@@ -103,7 +115,12 @@ export function useDatasource({
   isImplicitFilterApplied = false,
   setIsImplicitFilterApplied,
 }: UseDatasourceOptions) {
-  const [loading, setLoading] = useState(false);
+  // Detect if user is filtering (search or column filters)
+  const isFiltering = useMemo(() => {
+    return (!!searchQuery && searchQuery.trim().length > 0) || (activeColumnFilters && activeColumnFilters.length > 0);
+  }, [searchQuery, activeColumnFilters]);
+
+  const [loading, setLoading] = useState(!skip);
   const [loaded, setLoaded] = useState(false);
   const [records, setRecords] = useState<EntityData[]>([]);
   const [error, setError] = useState<Error | undefined>(undefined);
@@ -132,6 +149,13 @@ export function useDatasource({
   const changePageSize = useCallback((size: number) => {
     setPageSize(size);
   }, []);
+
+  // Sync pageSize with params
+  useEffect(() => {
+    if (params.pageSize && params.pageSize !== pageSize) {
+      setPageSize(params.pageSize);
+    }
+  }, [params.pageSize, pageSize]);
 
   const reinit = useCallback(() => {
     setRecords([]);
@@ -184,13 +208,17 @@ export function useDatasource({
     const hasIdFilter = Boolean(filterById);
     const idParams = hasIdFilter ? { targetRecordId: filterById?.value, directNavigation: true } : {};
 
-    const finalParams = {
+    const finalParams: any = {
       ...stableParams,
       ...idParams,
-      criteria: allCriteria.length === 1 ? allCriteria[0] : allCriteria,
+      ...(allCriteria.length > 0 ? { criteria: allCriteria.length === 1 ? allCriteria[0] : allCriteria } : {}),
       isImplicitFilterApplied,
       noActiveFilter: true,
     };
+
+    if (allCriteria.length > 0) {
+      finalParams.criteria = allCriteria;
+    }
 
     return finalParams;
   }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, activeColumnFilters]);
@@ -206,7 +234,14 @@ export function useDatasource({
       const safePageSize = pageSize ?? 1000;
 
       try {
-        const { ok, data } = (await loadData(entity, targetPage, safePageSize, queryParams, memoizedTreeOptions)) as {
+        const { ok, data } = (await loadData(
+          entity,
+          targetPage,
+          safePageSize,
+          queryParams,
+          memoizedTreeOptions,
+          isFiltering
+        )) as {
           ok: boolean;
           data: { response: { data: EntityData[] } };
         };
@@ -262,13 +297,25 @@ export function useDatasource({
     reinit();
   }, [activeColumnFilters, searchQuery, reinit]);
 
-  const refetch = useCallback(async () => {
-    reinit();
-    setError(undefined);
-    setLoading(true);
+  const refetch = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const isSilent = options?.silent === true;
 
-    await fetchData(1);
-  }, [reinit, fetchData]);
+      if (!isSilent) {
+        reinit();
+        setLoading(true);
+      } else {
+        setPage(1);
+        setHasMoreRecords(true);
+        // Notice we don't setLoading(true) for silent refetches
+      }
+
+      setError(undefined);
+
+      await fetchData(1);
+    },
+    [reinit, fetchData]
+  );
 
   return {
     loading,

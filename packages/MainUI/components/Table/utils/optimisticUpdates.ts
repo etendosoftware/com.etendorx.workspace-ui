@@ -59,6 +59,12 @@ export function createOptimisticUpdateManager() {
       switch (update.type) {
         case "create":
           if (update.newData) {
+            // Check if record already exists (e.g. from inline insertion)
+            const exists = records.some((r) => String(r.id) === update.rowId);
+            if (exists) {
+              // Update existing record
+              return records.map((record) => (String(record.id) === update.rowId ? update.newData! : record));
+            }
             // Add new record to the beginning of the array
             return [update.newData, ...records];
           }

@@ -50,8 +50,16 @@ import { buildEtendoContext } from "@/utils/contextUtils";
 import { buildBaseCriteria } from "@/utils/criteriaUtils";
 import { useSelected } from "@/hooks/useSelected";
 import { PROCESS_DEFINITION_DATA } from "../../utils/processes/definition/constants";
+import {
+  convertDatasourceValue,
+  resolveContextValue,
+  applyMergedParam,
+  buildFilterCriteriaEntry,
+  normalizeContextKey,
+} from "@/utils/processes/definition/utils";
 
 const MAX_WIDTH = 100;
+const PAGE_SIZE = 100;
 
 /**
  * Extracts the actual value from a wrapped value object or returns the value directly
@@ -81,7 +89,7 @@ function mergeCurrentValuesIntoParams(
 ): void {
   for (const [key, value] of Object.entries(currentValues)) {
     if (value !== undefined && value !== null) {
-      mergedParams[key] = value as EntityValue;
+      mergedParams[key] = extractActualValue(value);
     }
   }
 }
@@ -307,6 +315,137 @@ interface DatasourceParams {
   [key: string]: any;
 }
 
+// Standard context variable keys that are always valid filter columns
+const STANDARD_FILTER_KEYS = [
+  "c_bpartner_id",
+  "m_product_id",
+  "c_project_id",
+  "c_campaign_id",
+  "c_activity_id",
+  "user1_id",
+  "user2_id",
+  "ad_org_id",
+  "ad_client_id",
+  "trxtype",
+  "issotrx",
+  "transaction_type",
+] as const;
+
+/**
+ * Resolves a single dynamic key from PROCESS_DEFINITION_DATA and writes the
+ * converted value into `options`. No-ops if the context value cannot be resolved.
+ */
+function resolveDynamicKey(
+  key: string,
+  valueMapping: unknown,
+  recordValues: Record<string, unknown>,
+  options: DatasourceParams
+): void {
+  const contextKey = normalizeContextKey(valueMapping as string);
+  const resolvedValue = resolveContextValue(contextKey, recordValues);
+  if (resolvedValue !== undefined && resolvedValue !== null) {
+    options[key] = convertDatasourceValue(resolvedValue);
+  }
+}
+
+/**
+ * Applies all dynamic keys registered for a specific processId in
+ * PROCESS_DEFINITION_DATA to the datasource options object.
+ */
+function applyProcessDynamicKeys(
+  processId: string,
+  recordValues: Record<string, unknown>,
+  options: DatasourceParams
+): void {
+  const processDef = PROCESS_DEFINITION_DATA[processId];
+  if (!processDef?.dynamicKeys) return;
+  for (const [key, value] of Object.entries(processDef.dynamicKeys)) {
+    resolveDynamicKey(key, value, recordValues, options);
+  }
+}
+
+/**
+ * Applies all dynamic context variables (org, client, and process-specific keys)
+ * to the datasource options object.
+ */
+function applyDynamicKeys(
+  recordValues: Record<string, unknown>,
+  processId: string | undefined,
+  options: DatasourceParams
+): void {
+  if (!recordValues) return;
+  if (recordValues.inpadOrgId) options.ad_org_id = recordValues.inpadOrgId;
+  if (recordValues.inpadClientId) options.ad_client_id = recordValues.inpadClientId;
+  if (processId) applyProcessDynamicKeys(processId, recordValues, options);
+}
+
+/**
+ * Builds the set of column names that are valid filter targets for a given grid.
+ * Includes fields from the window reference tab, the `fields` prop, and a set
+ * of standard Etendo context keys.
+ */
+function buildValidColumnNames(tabFields: Record<string, any> | undefined, propFields: any[] | undefined): Set<string> {
+  const validColumnNames = new Set<string>();
+
+  if (tabFields) {
+    for (const f of Object.values(tabFields)) {
+      if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
+      if (f.hqlName) validColumnNames.add(f.hqlName.toLowerCase());
+    }
+  }
+
+  if (propFields) {
+    for (const f of propFields) {
+      if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
+      if (f.name) validColumnNames.add(f.name.toLowerCase());
+    }
+  }
+
+  for (const k of STANDARD_FILTER_KEYS) validColumnNames.add(k);
+  return validColumnNames;
+}
+
+/**
+ * For each process parameter that has a matching value in `recordValues`, writes
+ * the value to `options[dBColumnName]` — but only when the column name is in the
+ * set of valid filter columns for this grid.
+ */
+function applyRecordValues(
+  parameters: Record<string, any>,
+  recordValues: Record<string, unknown>,
+  validColumnNames: Set<string>,
+  options: DatasourceParams
+): void {
+  if (!parameters || !recordValues) return;
+
+  for (const param of Object.values(parameters)) {
+    const rawValue = extractActualValue(recordValues[param.name]);
+    if (rawValue === undefined || rawValue === "" || rawValue === null || !param.dBColumnName) continue;
+    if (validColumnNames.has(param.dBColumnName.toLowerCase())) {
+      options[param.dBColumnName] = rawValue;
+    }
+  }
+}
+
+/**
+ * Builds the filter criteria array for a single grid parameter by looking up
+ * its column name in the `filterExpressions` config returned by the backend.
+ */
+function buildGridCriteria(
+  filterExpressions: Record<string, Record<string, unknown>> | undefined,
+  gridColumnName: string
+): Array<{ fieldName: string; operator: string; value: EntityValue }> {
+  if (!filterExpressions) return [];
+  const expressions = Object.entries(filterExpressions).find(
+    ([key]) => key.toLowerCase() === gridColumnName.toLowerCase()
+  )?.[1];
+  if (!expressions) return [];
+  return Object.entries(expressions).map(
+    ([fieldName, value]) =>
+      buildFilterCriteriaEntry(fieldName, value) as { fieldName: string; operator: string; value: EntityValue }
+  );
+}
+
 const WindowReferenceGrid = ({
   parameter,
   tabId,
@@ -418,233 +557,53 @@ const WindowReferenceGrid = ({
   const stableRecordValues = useMemo(() => effectiveRecordValues, [JSON.stringify(effectiveRecordValues)]);
 
   const datasourceOptions = useMemo(() => {
-    const options: DatasourceParams = {};
-    // Restore legacy behavior: property tabId is vital for backend context resolution
-    // If parameter.tab is missing, use the component's tabId prop (which usually holds the WindowID in process context)
-    options.tabId = parameter.tab || tabId;
+    const options: DatasourceParams = {
+      pageSize: PAGE_SIZE,
+      tabId: parameter.tab || tabId,
+    };
 
-    if (processConfig?.processId) {
-      options.processId = processConfig.processId;
-    }
+    if (processConfig?.processId) options.processId = processConfig.processId;
+    if (tabId) options.windowId = tabId;
 
-    if (tabId) {
-      options.windowId = tabId;
-    }
-
-    // Inject Etendo Context
+    // 2. Inject Etendo session context (org, client, user, etc.)
     Object.assign(options, etendoContext);
 
-    // Apply filters and context
-    // This logic mimics verifyInput in SmartClient
-    // We need to support:
-    // 1. Explicit Validation Logic (displayLogic/readOnlyLogic often implies data dependencies) - handled by Callouts mostly
-    // 2. Default Values (passed from ProcessDefinitionModal)
-    // 3. Grid Filters (passed from ProcessDefinitionModal)
+    // 3. Apply dynamic keys from record context and process-specific mappings
+    //    (mimics verifyInput in SmartClient — resolves @VARIABLE@ placeholders)
+    applyDynamicKeys(stableRecordValues, processConfig?.processId, options);
 
-    const defaultKeys = {
-      inpadOrgId: "ad_org_id",
-      inpadClientId: "ad_client_id",
-    };
-
-    const convertValueType = (value: unknown): boolean | number | unknown => {
-      if (value === "Y") return true;
-      if (value === "N") return false;
-
-      // Convert numeric strings to numbers (e.g., "102" -> 102, "0" -> 0)
-      if (
-        typeof value === "string" &&
-        value !== "" &&
-        !Number.isNaN(Number(value)) &&
-        value.length < 15 // Avoid converting UUIDs that happen to be numeric
-      ) {
-        return Number(value);
-      }
-
-      return value;
-    };
-
-    const normalizeContextKey = (contextKey: string): string => {
-      if (typeof contextKey === "string" && contextKey.startsWith("@") && contextKey.endsWith("@")) {
-        return contextKey.slice(1, -1);
-      }
-      return contextKey;
-    };
-
-    const resolveContextValue = (contextKey: string): unknown => {
-      return stableRecordValues[contextKey] || stableRecordValues[`inp${contextKey}`];
-    };
-
-    const applyStandardEnvVariables = () => {
-      if (stableRecordValues.inpadOrgId) options.ad_org_id = stableRecordValues.inpadOrgId;
-      if (stableRecordValues.inpadClientId) options.ad_client_id = stableRecordValues.inpadClientId;
-    };
-
-    const processDynamicKey = (key: string, value: unknown) => {
-      const payloadKey = key;
-      const contextKey = normalizeContextKey(value as string);
-
-      const resolvedValue = resolveContextValue(contextKey);
-      if (resolvedValue === undefined || resolvedValue === null) return;
-
-      options[payloadKey] = convertValueType(resolvedValue);
-    };
-
-    const applyProcessDynamicKeys = (processId: string) => {
-      const processDef = PROCESS_DEFINITION_DATA[processId];
-      if (!processDef?.dynamicKeys) return;
-
-      for (const [key, value] of Object.entries(processDef.dynamicKeys)) {
-        processDynamicKey(key, value);
-      }
-    };
-
-    const applyDynamicKeys = () => {
-      if (!stableRecordValues) return;
-
-      applyStandardEnvVariables();
-
-      const processId = processConfig?.processId;
-      if (processId) {
-        applyProcessDynamicKeys(processId);
-      }
-    };
-
-    const applyParameters = () => {
-      // 1. Merge defaults and current values into a single map
-      const mergedParams: Record<string, EntityValue> = {};
-
-      // Apply defaults using helper function
-      if (stableProcessDefaults && Object.keys(stableProcessDefaults).length > 0) {
-        mergeDefaultsIntoParams(stableProcessDefaults, mergedParams);
-      }
-
-      // Apply current values (overrides defaults) using helper function
-      if (currentValues && Object.keys(currentValues).length > 0) {
-        mergeCurrentValuesIntoParams(currentValues, mergedParams);
-      }
-
-      // 2. Process merged parameters
-      for (const [key, finalValue] of Object.entries(mergedParams)) {
-        // Special Case: Auto-map ad_org_id to _org for datasource compatibility
-        if (key === "ad_org_id") {
-          options._org = finalValue;
-        }
-
-        // If it's a mapped system key, apply to options
-        if (defaultKeys && key in defaultKeys) {
-          options[defaultKeys[key as keyof typeof defaultKeys]] = finalValue;
-          continue;
-        }
-
-        const matchingParameter = Object.values(parameters).find((param) => param.name === key);
-        if (matchingParameter) {
-          options[matchingParameter.dBColumnName || key] = finalValue;
-        }
-      }
-    };
-
-    const buildCriteria = (): Array<{ fieldName: string; operator: string; value: EntityValue }> => {
-      if (!stableFilterExpressions) return [];
-
-      const gridKey = parameter.dBColumnName || "";
-
-      const expressions = Object.entries(stableFilterExpressions).find(
-        ([key]) => key.toLowerCase() === gridKey.toLowerCase()
-      )?.[1];
-
-      if (!expressions) return [];
-
-      return Object.entries(expressions).map(([fieldName, value]) => {
-        let parsedValue: EntityValue;
-        let operator = "equals";
-
-        if (value === "true") {
-          parsedValue = true;
-        } else if (value === "false") {
-          parsedValue = false;
-        } else if (typeof value === "string") {
-          const isUUID = /^[0-9a-fA-F]{32}$/.test(value);
-          if (!isUUID) {
-            operator = "iContains";
-          }
-          parsedValue = value;
-        } else {
-          parsedValue = value as EntityValue;
-        }
-
-        return {
-          fieldName,
-          operator,
-          value: parsedValue,
-        };
-      });
-    };
-
-    // Build set of valid column names for this grid to filter params
-    const validColumnNames = new Set<string>();
-    if (stableWindowReferenceTab?.fields) {
-      for (const f of Object.values(stableWindowReferenceTab.fields) as any[]) {
-        if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
-        // also add hqlName if different
-        if (f.hqlName) validColumnNames.add(f.hqlName.toLowerCase());
-      }
+    // 4. Apply parameter defaults and current form values
+    const mergedParams: Record<string, EntityValue> = {};
+    if (stableProcessDefaults && Object.keys(stableProcessDefaults).length > 0) {
+      mergeDefaultsIntoParams(stableProcessDefaults, mergedParams);
     }
-    // Also add prop fields if any
-    if (fields) {
-      for (const f of fields) {
-        if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
-        if (f.name) validColumnNames.add(f.name.toLowerCase());
-      }
+    if (currentValues && Object.keys(currentValues).length > 0) {
+      mergeCurrentValuesIntoParams(currentValues, mergedParams);
     }
-    // Add standard context keys that imply filtering
-    for (const k of [
-      "c_bpartner_id",
-      "m_product_id",
-      "c_project_id",
-      "c_campaign_id",
-      "c_activity_id",
-      "user1_id",
-      "user2_id",
-      "ad_org_id",
-      "ad_client_id",
-      "trxtype",
-      "issotrx",
-      "transaction_type",
-    ]) {
-      validColumnNames.add(k);
+    for (const [key, value] of Object.entries(mergedParams)) {
+      applyMergedParam(key, value, parameters, options);
     }
 
-    const applyRecordValues = () => {
-      if (!parameters || !stableRecordValues) return;
+    // 5. Apply record-level values for parameters whose column exists in this grid
+    const validColumnNames = buildValidColumnNames(stableWindowReferenceTab?.fields, fields);
+    applyRecordValues(parameters, effectiveRecordValues, validColumnNames, options);
 
-      for (const param of Object.values(parameters) as any[]) {
-        const paramValue = effectiveRecordValues[param.name];
-        // Only include parameter if it matches a column in the grid OR is a standard ID
-        if (paramValue !== undefined && param.dBColumnName) {
-          const lowerKey = param.dBColumnName.toLowerCase();
-          if (validColumnNames.has(lowerKey)) {
-            options[param.dBColumnName] = paramValue as any;
-          }
-        }
-      }
-    };
+    // 6. Ensure _org mirrors ad_org_id (required by backend datasource)
+    if (options.ad_org_id && !options._org) options._org = options.ad_org_id;
 
-    applyDynamicKeys();
-    applyParameters();
-    applyRecordValues();
-
-    const criteria = buildCriteria();
+    // 7. Build filter criteria (explicit expressions take precedence over base criteria)
+    const criteria = buildGridCriteria(stableFilterExpressions, parameter.dBColumnName || "");
     const baseCriteria = buildBaseCriteria({
       tab: stableWindowReferenceTab || ({ fields: {}, parentColumns: [] } as any),
     });
-
     const finalCriteria = criteria.length > 0 ? criteria : baseCriteria;
-
-    // Ensure a valid criteria contract by using buildBaseCriteria as a dummy fallback
-    options.criteria = finalCriteria as unknown as Criteria[];
-
     if (finalCriteria.length > 0) {
+      options.criteria = finalCriteria as unknown as Criteria[];
       options.orderBy = "documentNo desc";
+    }
+
+    if (options.ad_org_id) {
+      options._org = options.ad_org_id;
     }
 
     return options;
@@ -658,11 +617,9 @@ const WindowReferenceGrid = ({
     recordValues?.inpadClientId,
     recordValues?.inpmPricelistId,
     recordValues?.inpcCurrencyId,
-    stableRecordValues, // Using stabilized reference
+    stableRecordValues,
     parameters,
-    // Use stable JSON stringified values for dependency to prevent infinite loops
     JSON.stringify(currentValues),
-    // Add dependencies for column validation
     stableWindowReferenceTab,
     fields,
   ]);
@@ -737,11 +694,14 @@ const WindowReferenceGrid = ({
   const visibleFieldsFromTab = useMemo(() => {
     if (!stableWindowReferenceTab?.fields) return [];
 
-    const visibleFields = Object.values(stableWindowReferenceTab.fields).filter((f: any) => isFieldVisible(f));
+    const visibleEntries = Object.entries(stableWindowReferenceTab.fields).filter(([_, f]: [string, any]) =>
+      isFieldVisible(f)
+    );
 
     // Parse the filtered fields
-    const parsed = visibleFields.map((field: any) => ({
+    const parsed = visibleEntries.map(([key, field]: [string, any]) => ({
       ...field,
+      _key: key, // Store the key to be used as ID
       // Ensure hqlName is consistent for grid columns
       hqlName: field.columnName || field.hqlName,
       label: field.name,
@@ -759,20 +719,26 @@ const WindowReferenceGrid = ({
     // Only use parsed fields for columns, fallback to provided fields prop if empty
     if (stableVisibleFields.length > 0) {
       // Map back to column structure expected by SmartClient-like grids
-      const enriched = stableVisibleFields.map((field: any) => ({
-        id: field.id,
-        header: field.name || field.columnName,
-        accessorKey: field.columnName,
-        columnName: field.columnName,
-        type: getFieldReference(field.reference || field.column?.reference),
-        // Important properties for column setup
-        canHide: true,
-        enableColumnFilter: true,
-        enableSorting: true,
-        ...field,
-        // Match with passed prop fields to ensure we have all metadata
-        // Note: 'fields' prop comes from ProcessDefinitionModal which might have different enrichment
-      }));
+      const enriched = stableVisibleFields.map((field: any) => {
+        return {
+          header: field.name || field.columnName,
+          accessorKey: field.columnName,
+          columnName: field.columnName,
+          type: getFieldReference(field.reference || field.column?.reference),
+          // Important properties for column setup
+          canHide: true,
+          enableColumnFilter: true,
+          enableSorting: true,
+          ...field,
+          // id must come AFTER the spread so it overrides the metadata field's UUID id.
+          // Use display name (field.name) to match what parseColumns sets as column.id,
+          // ensuring filter state IDs align with the MRT column IDs used in useColumns.
+          id: field.name || field._key || field.columnName,
+          // filterFieldName must come AFTER the spread to preserve HQL property name
+          // Classic backend expects HQL names (e.g. "businessPartner") not DB names ("C_BPartner_ID")
+          filterFieldName: field._key || field.hqlName || field.columnName,
+        };
+      });
       return enriched;
     }
 
@@ -809,6 +775,23 @@ const WindowReferenceGrid = ({
   // Column filters hook - needs stable columns reference
   const stableRawColumns = useMemo(() => rawColumns, [JSON.stringify(rawColumns.map((c: Column) => c.id))]);
 
+  // Build extra params for filter options requests (process context needed by Classic datasource)
+  const filterExtraParams = useMemo(() => {
+    const extra: Record<string, unknown> = { noActiveFilter: true };
+    if (datasourceOptions.processId) extra.processId = datasourceOptions.processId;
+    if (datasourceOptions.windowId) extra.windowId = datasourceOptions.windowId;
+    if (datasourceOptions.ad_org_id) extra.ad_org_id = datasourceOptions.ad_org_id;
+    if (datasourceOptions.ad_client_id) extra.ad_client_id = datasourceOptions.ad_client_id;
+    if (datasourceOptions.criteria) extra.criteria = datasourceOptions.criteria;
+    return extra;
+  }, [
+    datasourceOptions.processId,
+    datasourceOptions.windowId,
+    datasourceOptions.ad_org_id,
+    datasourceOptions.ad_client_id,
+    datasourceOptions.criteria,
+  ]);
+
   // Use grid column filters hook to avoid code duplication with useTableData
   const { advancedColumnFilters, handleColumnFilterChange, handleLoadFilterOptions, handleLoadMoreFilterOptions } =
     useGridColumnFilters({
@@ -818,6 +801,7 @@ const WindowReferenceGrid = ({
       setAppliedTableFilters,
       setColumnFilters,
       isImplicitFilterApplied: false,
+      extraParams: filterExtraParams,
     });
 
   // Create a minimal tab object for useColumns with corrected field hqlNames
@@ -859,14 +843,43 @@ const WindowReferenceGrid = ({
 
   // Get columns with filter handlers using useColumns
   // Pass options as stable reference to avoid re-creating columns unnecessarily
+  const handleDateTextFilterChange = useCallback(
+    (columnId: string, filterValue: string) => {
+      const column = stableRawColumns.find((col: Column) => col.columnName === columnId || col.id === columnId);
+      const filterKey = column?.id || columnId;
+
+      const mrtFilter = filterValue?.trim() ? { id: filterKey, value: filterValue } : null;
+
+      setAppliedTableFilters((prev) => {
+        const filtered = prev.filter((f) => f.id !== filterKey);
+        return mrtFilter ? [...filtered, mrtFilter] : filtered;
+      });
+
+      setColumnFilters((prev) => {
+        const filtered = prev.filter((f) => f.id !== filterKey);
+        return mrtFilter ? [...filtered, mrtFilter] : filtered;
+      });
+    },
+    [stableRawColumns, setAppliedTableFilters, setColumnFilters]
+  );
+
   const columnOptions = useMemo(
     () => ({
       onColumnFilter: handleColumnFilterChange,
+      onDateTextFilterChange: handleDateTextFilterChange,
       onLoadFilterOptions: handleLoadFilterOptions,
       onLoadMoreFilterOptions: handleLoadMoreFilterOptions,
       columnFilterStates: advancedColumnFilters,
+      tableColumnFilters: columnFilters,
     }),
-    [handleColumnFilterChange, handleLoadFilterOptions, handleLoadMoreFilterOptions, advancedColumnFilters]
+    [
+      handleColumnFilterChange,
+      handleDateTextFilterChange,
+      handleLoadFilterOptions,
+      handleLoadMoreFilterOptions,
+      advancedColumnFilters,
+      columnFilters,
+    ]
   );
 
   const finalFields = useMemo(() => {
@@ -1597,15 +1610,24 @@ const WindowReferenceGrid = ({
     [parameter.name, t, handleClearSelections]
   );
 
-  const LoadMoreButton = ({ fetchMore }: { fetchMore: () => void }) => (
-    <div className="flex justify-center p-2 border-t border-gray-200">
-      <button
-        type="button"
-        onClick={fetchMore}
-        className="px-4 py-2 text-sm border border-gray-300 rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
-        {t("common.loadMore")}
-      </button>
-    </div>
+  const fetchMoreOnBottomReached = useCallback(
+    (event: React.UIEvent<HTMLDivElement>) => {
+      const containerRefElement = event.currentTarget as HTMLDivElement;
+
+      if (containerRefElement) {
+        const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
+        if (
+          clientHeight > 0 &&
+          scrollHeight > clientHeight &&
+          scrollHeight - scrollTop - clientHeight < 100 && // 100px threshold
+          !datasourceLoading &&
+          hasMoreRecords
+        ) {
+          fetchMore();
+        }
+      }
+    },
+    [fetchMore, hasMoreRecords, datasourceLoading]
   );
 
   const tableOptions: MRT_TableOptions<EntityData> = useMemo(
@@ -1640,6 +1662,7 @@ const WindowReferenceGrid = ({
           minHeight: "300px",
           maxHeight: "500px",
         },
+        onScroll: fetchMoreOnBottomReached,
       },
       layoutMode: "semantic",
       enableColumnResizing: true,
@@ -1654,13 +1677,11 @@ const WindowReferenceGrid = ({
       enableSorting: true,
       enableColumnActions: true,
       manualFiltering: true,
+      enableRowVirtualization: true,
       columns: finalColumns, // Use modified columns with handler
       data: records || [],
       getRowId: (row) => String(row.id),
       renderTopToolbar,
-      renderBottomToolbar: hasMoreRecords
-        ? () => <LoadMoreButton fetchMore={fetchMore} data-testid="LoadMoreButton__ce8544" />
-        : undefined,
       renderEmptyRowsFallback: () => (
         <div className="flex justify-center items-center p-8 text-gray-500">
           <EmptyState maxWidth={MAX_WIDTH} data-testid="EmptyState__ce8544" />

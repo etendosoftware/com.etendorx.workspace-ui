@@ -56,3 +56,11 @@ export type SourceObject = Record<string, PrimitiveValue | NestedObject>;
 
 // Tipo para el objeto objetivo (salida)
 export type TargetObject = Record<string, PrimitiveValue | NestedObject | SelectionItem[]>;
+
+export interface ProcessActionData {
+  url: string;
+  command: string;
+  inpkeyColumnId: string;
+  keyColumnName: string;
+  additionalParameters?: Record<string, string>;
+}

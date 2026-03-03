@@ -8,7 +8,7 @@
     "node": ">=20.9.0"
   },
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "next dev --turbopack",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "biome lint src/ pages/ components/",
@@ -38,6 +38,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.53.2",
+    "sonner": "^2.0.7",
     "tailwindcss": "^4.0.8"
   },
   "devDependencies": {

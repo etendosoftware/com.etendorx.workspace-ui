@@ -119,12 +119,17 @@ export const useCopilot = () => {
   const [state, dispatch] = useReducer(copilotReducer, initialState);
   const copilotClient = useCopilotClient();
 
-  const addMessage = useCallback((sender: string, text: string, role?: string) => {
+  const addMessage = useCallback((sender: string, text: string, role?: string, files?: File[]) => {
     const newMessage: IMessage = {
       text,
       sender,
       timestamp: formatTime(new Date()),
       role,
+      files: files?.map((file) => ({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      })),
     };
 
     dispatch({ type: "ADD_MESSAGE", message: newMessage });
@@ -183,7 +188,8 @@ export const useCopilot = () => {
       }
 
       dispatch({ type: "SET_LOADING", isLoading: true });
-      addMessage("user", message);
+      // Add message with attached files
+      addMessage("user", message, undefined, state.files || undefined);
 
       const questionText = finalQuestion ? finalQuestion(message) : message;
 
@@ -196,13 +202,17 @@ export const useCopilot = () => {
         requestParams.conversation_id = state.conversationId;
       }
 
-      if (state.fileIds) {
+      if (state.fileIds && state.fileIds.length > 0) {
         requestParams.file = state.fileIds;
       }
 
       try {
         const processedParams = await copilotClient.handleLargeQuestion(requestParams as CopilotQuestionParams);
         await startSSEConnection(processedParams);
+
+        // Clear files after successful send
+        dispatch({ type: "SET_FILES", files: null });
+        dispatch({ type: "SET_FILE_IDS", fileIds: null });
       } catch (error) {
         console.error("Error sending message:", error);
         dispatch({ type: "SET_LOADING", isLoading: false });
@@ -214,6 +224,7 @@ export const useCopilot = () => {
       state.selectedAssistant,
       state.conversationId,
       state.fileIds,
+      state.files,
       finalQuestion,
       addMessage,
       startSSEConnection,
@@ -241,14 +252,30 @@ export const useCopilot = () => {
       try {
         const uploadResults = await Promise.all(uploadedFiles.map((file) => copilotClient.uploadFile(file)));
         const ids = uploadResults.flatMap((result) => Object.values(result));
-        dispatch({ type: "SET_FILE_IDS", fileIds: ids as string[] });
-        dispatch({ type: "SET_FILES", files: uploadedFiles });
+
+        // Append to existing files and file IDs
+        const newFiles = [...(state.files || []), ...uploadedFiles];
+        const newFileIds = [...(state.fileIds || []), ...(ids as string[])];
+
+        dispatch({ type: "SET_FILE_IDS", fileIds: newFileIds });
+        dispatch({ type: "SET_FILES", files: newFiles });
       } catch (error) {
         console.error("Error uploading files:", error);
         addMessage("error", "Error subiendo archivos");
       }
     },
-    [addMessage, copilotClient]
+    [addMessage, copilotClient, state.files, state.fileIds]
+  );
+
+  const handleRemoveFile = useCallback(
+    (index: number) => {
+      const newFiles = state.files?.filter((_, i) => i !== index) || null;
+      const newFileIds = state.fileIds?.filter((_, i) => i !== index) || null;
+
+      dispatch({ type: "SET_FILES", files: newFiles });
+      dispatch({ type: "SET_FILE_IDS", fileIds: newFileIds });
+    },
+    [state.files, state.fileIds]
   );
 
   const getMessageDisplayType = useCallback((sender: string) => {
@@ -372,6 +399,7 @@ export const useCopilot = () => {
     handleSelectAssistant,
     handleResetConversation,
     handleFileUpload,
+    handleRemoveFile,
     getMessageDisplayType,
     loadConversations,
     handleSelectConversation,

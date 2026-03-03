@@ -320,30 +320,34 @@ export default function useTableSelection(
     previousSelectedRecordsRef.current = selectedRecords;
 
     // 5. Synchronize to Context (Immediate)
-    if (selectedRecords.length === 1) {
-      // Case A: Single Record Selected
-      const recordId = String(selectedRecords[0].id);
-      setSelectedRecord(windowIdentifier, tab.id, recordId);
-    } else if (selectedRecords.length === 0) {
-      // Case B: No Selection (Deselect All)
-      // Only clear if the table selection state is actually empty
-      // If rowSelection has keys but selectedRecords is empty, it means the selected record
-      // is not in the current page of data, so we should PRESERVE the global selection.
-      const hasTableSelection = Object.keys(rowSelection).length > 0;
+    // ONLY do this if the selected IDs have actually changed. If only content changed,
+    // skip overriding the Window context to avoid race conditions with actions like Clone.
+    if (hasSelectionIdChanged) {
+      if (selectedRecords.length === 1) {
+        // Case A: Single Record Selected
+        const recordId = String(selectedRecords[0].id);
+        setSelectedRecord(windowIdentifier, tab.id, recordId);
+      } else if (selectedRecords.length === 0) {
+        // Case B: No Selection (Deselect All)
+        // Only clear if the table selection state is actually empty
+        // If rowSelection has keys but selectedRecords is empty, it means the selected record
+        // is not in the current page of data, so we should PRESERVE the global selection.
+        const hasTableSelection = Object.keys(rowSelection).length > 0;
 
-      if (!hasTableSelection) {
-        // Guard: Check if any child tab is in "Form Mode"
-        const children = graph.getChildren(tab);
-        const hasChildInFormView = children?.some((child) => {
-          if (!getTabFormState) return false;
-          const childState = getTabFormState(windowIdentifier, child.id);
-          return childState?.mode === "form";
-        });
+        if (!hasTableSelection) {
+          // Guard: Check if any child tab is in "Form Mode"
+          const children = graph.getChildren(tab);
+          const hasChildInFormView = children?.some((child) => {
+            if (!getTabFormState) return false;
+            const childState = getTabFormState(windowIdentifier, child.id);
+            return childState?.mode === "form";
+          });
 
-        if (!hasChildInFormView) {
-          clearSelectedRecord(windowIdentifier, tab.id);
-        } else {
-          logger.debug(`[useTableSelection] NOT clearing parent selection for tab ${tab.id} - child is in FormView`);
+          if (!hasChildInFormView) {
+            clearSelectedRecord(windowIdentifier, tab.id);
+          } else {
+            logger.debug(`[useTableSelection] NOT clearing parent selection for tab ${tab.id} - child is in FormView`);
+          }
         }
       }
     }

@@ -152,6 +152,7 @@ export const useTableDirDatasource = ({
         _constructor: "AdvancedCriteria",
         _OrExpression: "true",
         ...(typeof currentValue !== "undefined" ? { _currentValue: currentValue } : {}),
+        _org: formValues.inpadOrgId || (parentData as any).inpadOrgId || "",
       };
 
       if (isProductField) {

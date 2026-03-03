@@ -15,9 +15,10 @@
  *************************************************************************
  */
 
-import { useCallback, useEffect, useState } from "react";
-import { useFormContext } from "react-hook-form";
+import { useCallback, useEffect, useState, useMemo } from "react";
+import { useFormContext, useWatch } from "react-hook-form";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
+import type { SaveOptions } from "@/contexts/ToolbarContext";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { useTabContext } from "@/contexts/tab";
 import { globalCalloutManager } from "@/services/callouts";
@@ -25,25 +26,34 @@ import { logger } from "@/utils/logger";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 import { useWindowContext } from "@/contexts/window";
+import { FormMode } from "@workspaceui/api-client/src/api/types";
 
 interface FormActionsProps {
   tab: Tab;
   onNew: () => void;
   refetch: () => Promise<void>;
-  onSave: (showModal: boolean) => Promise<void>;
+  onSave: (options: SaveOptions) => Promise<void>;
   showErrorModal: (message: string) => void;
+  mode: FormMode;
 }
 
-export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: FormActionsProps) {
+export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode }: FormActionsProps) {
   const formContext = useFormContext();
   const { isDirty } = formContext.formState;
 
   const { activeWindow, clearTabFormState } = useWindowContext();
   const { registerActions, setSaveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
-  const { isFormInitializing } = useFormInitializationContext();
+  const { isFormInitializing, isSettingInitialValues } = useFormInitializationContext();
 
-  const { validateRequiredFields } = useFormValidation(tab);
+  const { validateRequiredFields, requiredFields } = useFormValidation(tab);
+
+  // Get required field names to watch for changes
+  const requiredFieldNames = useMemo(() => requiredFields.map((f) => f.hqlName), [requiredFields]);
+
+  // Watch only the required fields to re-validate when they change
+  const requiredValues = useWatch({ name: requiredFieldNames });
+
   const [hasValidatedInitialLoad, setHasValidatedInitialLoad] = useState(false);
 
   // Update validation state when form data changes
@@ -74,7 +84,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
   }, [isDirty, markFormAsChanged, resetFormChanges]);
 
   useEffect(() => {
-    if (isFormInitializing) {
+    if (isFormInitializing || isSettingInitialValues) {
       return;
     }
 
@@ -88,26 +98,28 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
       return;
     }
 
-    // If we already validated and callouts are done, don't validate again
-    if (hasValidatedInitialLoad) {
+    // If we already validated and callouts are done, don't validate again unless required values change
+    if (hasValidatedInitialLoad && !requiredValues) {
       return;
     }
 
     // Form is completely loaded, validate if save button should be enabled
-    const timer = setTimeout(() => {
-      const shouldEnableSave = isDirty || validateRequiredFields().isValid;
-      shouldEnableSave ? markFormAsChanged() : resetFormChanges();
-      setHasValidatedInitialLoad(true);
-    }, 150);
+    const validationResult = validateRequiredFields();
 
-    return () => clearTimeout(timer);
+    const shouldEnableSave = isDirty || (mode === FormMode.NEW && validationResult.isValid);
+    shouldEnableSave ? markFormAsChanged() : resetFormChanges();
+    setHasValidatedInitialLoad(true);
   }, [
     isFormInitializing,
+    isSettingInitialValues,
     isDirty,
+    mode,
     markFormAsChanged,
     resetFormChanges,
     hasValidatedInitialLoad,
     validateRequiredFields,
+    requiredValues,
+    mode,
   ]);
 
   // Reset validation flag when form is re-initialized (e.g., navigating to a different record)
@@ -118,7 +130,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
   }, [isFormInitializing]);
 
   const handleSave = useCallback(
-    async (showModal: boolean) => {
+    async (options: SaveOptions) => {
       try {
         // Set saving state
         setSaveButtonState((prev) => ({ ...prev, isSaving: true }));
@@ -140,7 +152,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
         }
 
         // Proceed with save if validation passes
-        await onSave(showModal);
+        await onSave(options);
       } catch (error) {
         logger.error("Error during save operation:", error);
       } finally {
@@ -168,6 +180,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
     onNew();
   }, [onNew]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: actions need to change every Tab change
   useEffect(() => {
     const actions = {
       save: handleSave,
@@ -177,7 +190,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal }: For
     };
 
     registerActions(actions);
-  }, [registerActions, handleSave, onReset, handleBack, handleNew, tab.id]);
+  }, [registerActions, handleSave, onReset, handleBack, handleNew]);
 
   return null;
 }
