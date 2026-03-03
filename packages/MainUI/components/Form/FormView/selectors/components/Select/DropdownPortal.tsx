@@ -28,9 +28,6 @@ const DropdownPortal = memo(
     listRef: React.RefObject<HTMLUListElement>;
     handleScroll: (e: React.UIEvent<HTMLUListElement>) => void;
     renderedOptions: React.ReactNode;
-    loading: boolean;
-    hasMore: boolean;
-    loadingRef: React.RefObject<HTMLLIElement>;
     dropdownId: string;
   }) => {
     if (!isOpen) return null;

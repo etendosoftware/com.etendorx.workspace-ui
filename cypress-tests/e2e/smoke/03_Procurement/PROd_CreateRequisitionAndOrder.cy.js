@@ -34,9 +34,9 @@ describe("Requisition flow - Create and generate Purchase Order", () => {
     cy.get('button[aria-label="Lines"]').click();
     cy.wait(1000);
     cy.clickNewRecord();
-    cy.get('[aria-describedby="Product-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
+    cy.get('[aria-label="Select Product"]').click();
     cy.wait(1000);
-    cy.get('[data-testid="OptionItem__2C873A988D5146EAA9B54BA6F00F3D71"] > .truncate').click();
+    cy.contains("td", "BOM Product").click();
     cy.wait(1000);
 
     cy.get('[aria-describedby="Business Partner-help"]')

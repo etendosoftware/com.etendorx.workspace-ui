@@ -70,6 +70,11 @@ import { toast } from "sonner";
 import { ToastContent } from "@/components/ToastContent";
 import type { Tab, ProcessParameter, EntityData, Field } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
+import {
+  buildProcessScriptContext,
+  applyGridSelection,
+  updateParametersFromOnLoadResult,
+} from "@/utils/processes/definition/utils";
 import { useProcessCallouts } from "./callouts/useProcessCallouts";
 import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefaults";
 import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
@@ -255,6 +260,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
   const [processDefinition, setProcessDefinition] = useState(button.processDefinition);
   const { onProcess, onLoad } = processDefinition;
+
+  // Build the reusable process script context (auth-aware HTTP helpers)
+  // Memoized so the reference is stable: the useEffect that depends on it won't re-run on every render.
+  const processScriptContext = useMemo(
+    () => buildProcessScriptContext({ token: token || "", getCsrfToken }),
+    [token, getCsrfToken]
+  );
   const processId = processDefinition.id;
   const javaClassName = processDefinition.javaClassName;
 
@@ -275,8 +287,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       return next;
     });
   }, []);
-
-  console.debug(processDefinition);
 
   // NEW: autoSelectConfig state to hold declarative selection instructions OR backward-compatible _gridSelection
   const [autoSelectConfig, setAutoSelectConfig] = useState<AutoSelectConfig | null>(null);
@@ -562,6 +572,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     enabled: open && !loading && !initializationLoading,
     onGridUpdate: handleGridUpdate,
     dependencies: [rulesRegistered],
+    selectedRecords,
   });
 
   // NOTE: globalCalloutManager.isCalloutRunning() not working correctly
@@ -648,20 +659,24 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     onClose();
   }, [button.processDefinition.parameters, isPending, onClose]);
 
-  const handleSuccessClose = useCallback(() => {
-    if (isPending) return;
+  const handleSuccessClose = useCallback(
+    (triggerSuccess?: boolean) => {
+      if (isPending) return;
 
-    // Trigger refresh when closing success modal
-    if (shouldTriggerSuccess) {
-      onSuccess?.();
-    }
+      // Trigger refresh when closing success modal
+      const shouldRefresh = triggerSuccess ?? shouldTriggerSuccess;
+      if (shouldRefresh) {
+        onSuccess?.();
+      }
 
-    setResult(null);
-    setLoading(true);
-    setParameters(processDefinition.parameters);
-    setShouldTriggerSuccess(false);
-    onClose();
-  }, [button.processDefinition.parameters, isPending, onClose, shouldTriggerSuccess, onSuccess]);
+      setResult(null);
+      setLoading(true);
+      setParameters(processDefinition.parameters);
+      setShouldTriggerSuccess(false);
+      onClose();
+    },
+    [button.processDefinition.parameters, isPending, onClose, shouldTriggerSuccess, onSuccess]
+  );
 
   const extractMessageFromProcessView = useCallback((res: ExecuteProcessResult) => {
     const data = res.data;
@@ -866,7 +881,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             duration: Number.POSITIVE_INFINITY,
           });
           setShouldTriggerSuccess(true);
-          handleSuccessClose();
+          handleSuccessClose(true);
         } else {
           setResult(parsedResult);
         }
@@ -1008,6 +1023,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         const buttonParams = buttonListParam && actionValue ? { [buttonListParam.dBColumnName]: actionValue } : {};
 
         const mergedValues = getMergedProcessValues();
+
+        // Build complete context base payload to be placed at the root of the request
+        const _basePayload = tab ? buildProcessPayload(record || {}, tab, {}, {}) : {};
+
         const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
         const skipParamsLevel = processDefConfig?.skipParamsLevel;
 
@@ -1021,6 +1040,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           windowId: tab?.window || "",
           ...buildProcessSpecificFields(processId),
           ...(tab?.window ? buildWindowSpecificFields(tab.window) : {}),
+          ..._basePayload,
         };
 
         await executeJavaProcess(payload, "process");
@@ -1062,12 +1082,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
         const params = getMergedProcessValues({ ...recordValues, ...extraKey });
 
+        // Build complete context base payload to be placed at the root of the request
+        const _basePayload = tab ? buildProcessPayload(record || {}, tab, {}, {}) : {};
+
         const payload = {
           recordIds: getRecordIds(),
           _buttonValue: actionValue || "DONE",
           _entityName: tab?.entityName || "",
           ...(skipParamsLevel ? { ...params, ...buttonParams } : { _params: { ...params, ...buttonParams } }),
           ...buildProcessSpecificFields(processId),
+          ..._basePayload,
         };
 
         await executeJavaProcess(payload, "direct Java process");
@@ -1136,20 +1160,42 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         try {
           const stringFnResult = await executeStringFunction(
             onProcess,
-            { Metadata },
+            { Metadata, ...processScriptContext },
             button.processDefinition,
             stringFunctionPayload
           );
 
-          const responseMessage = stringFnResult.responseActions[0].showMsgInProcessView;
+          // Handle different response formats from onProcess scripts
+          // callAction may wrap the response in a `data` property
+          const result = stringFnResult?.data ?? stringFnResult;
+          let responseMessage: { msgType?: string; msgText?: string; severity?: string; text?: string };
+
+          if (result?.responseActions?.[0]?.showMsgInProcessView) {
+            // Standard Etendo process response format
+            responseMessage = result.responseActions[0].showMsgInProcessView;
+          } else if (result?.severity) {
+            // Direct response format from custom scripts: { severity, text }
+            responseMessage = { msgType: result.severity, msgText: result.text };
+          } else if (result?.error) {
+            // Error response format
+            responseMessage = { msgType: "error", msgText: result.error.msgText || result.error };
+          } else {
+            responseMessage = { msgType: "success", msgText: t("process.completedSuccessfully") };
+          }
+
           const success = responseMessage.msgType === "success";
           if (success) {
             toast.success(t("process.completedSuccessfully"), {
-              description: <ToastContent message={responseMessage.msgText} data-testid="ToastContent__761503" />,
+              description: (
+                <ToastContent
+                  message={responseMessage.msgText || t("process.completedSuccessfully")}
+                  data-testid="ToastContent__761503"
+                />
+              ),
               duration: Number.POSITIVE_INFINITY,
             });
             setShouldTriggerSuccess(true);
-            handleSuccessClose();
+            handleSuccessClose(true);
           } else {
             setResult({ success, data: responseMessage, error: responseMessage.msgText });
           }
@@ -1173,6 +1219,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       selectedRecords,
       form,
       parameters,
+      processScriptContext,
     ]
   );
 
@@ -1236,7 +1283,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
               duration: Number.POSITIVE_INFINITY,
             });
             setShouldTriggerSuccess(true);
-            handleSuccessClose();
+            handleSuccessClose(true);
           } else {
             setResult({
               success,
@@ -1310,9 +1357,22 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         if (response.ok && response.data) {
           const processData = response.data;
 
-          // Update parameters from the loaded metadata
+          // Update parameters from the loaded metadata.
+          // Use a functional update to avoid overwriting dynamic params injected by onLoad.
+          // Server params are the base; any param already in state that is NOT in server response
+          // is a dynamic param from onLoad and must be preserved.
           if (processData.parameters) {
-            setParameters(processData.parameters);
+            setParameters((prev) => {
+              // Start with server params as the base
+              const merged = { ...processData.parameters };
+              // Keep any dynamic params from onLoad that don't exist in the server response
+              for (const [key, value] of Object.entries(prev)) {
+                if (!merged[key]) {
+                  merged[key] = value;
+                }
+              }
+              return merged;
+            });
           }
 
           // Also update other process definition properties if needed
@@ -1347,6 +1407,37 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     }
   }, [button.processDefinition.parameters, open]);
 
+  /**
+   * Dispatches the raw result from an onLoad script to the appropriate state setters.
+   * Returns true if processing should stop early (e.g., the result contained an error).
+   */
+  const handleOnLoadResult = useCallback(
+    (result: Record<string, unknown>): boolean => {
+      if (result.error) {
+        const err = result.error as Record<string, unknown>;
+        setResult({
+          success: false,
+          error: String(err.message ?? err.msgText ?? JSON.stringify(result.error)),
+          data: result.error,
+        });
+        setLoading(false);
+        return true; // stop early
+      }
+
+      if (result._gridSelection && typeof result._gridSelection === "object") {
+        setGridSelection((prev) => applyGridSelection(prev, result._gridSelection as Record<string, string[]>));
+      }
+
+      if (result.autoSelectConfig) {
+        setAutoSelectConfig(result.autoSelectConfig as AutoSelectConfig);
+      }
+
+      setParameters((prev) => updateParametersFromOnLoadResult(result, prev, form.setValue));
+      return false;
+    },
+    [setGridSelection, form.setValue]
+  );
+
   useEffect(() => {
     const fetchOptions = async () => {
       if (!open) return;
@@ -1357,73 +1448,20 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         const effectiveOnLoad = onLoad || (isBulkCompletion ? DEFAULT_BULK_COMPLETION_ONLOAD : null);
 
         if (effectiveOnLoad && tab) {
-          const result = await executeStringFunction(effectiveOnLoad, { Metadata }, button.processDefinition, {
-            selectedRecords,
-            tabId: tab.id || "",
-            tableId: tab.table || "",
-          });
+          const result = await executeStringFunction(
+            effectiveOnLoad,
+            { Metadata, ...processScriptContext },
+            button.processDefinition,
+            { selectedRecords, tabId: tab.id || "", tableId: tab.table || "" }
+          );
 
           if (result) {
-            // If backend returns a legacy `_gridSelection` mapping (ids), apply it directly (backward compatibility)
-            if (result._gridSelection && typeof result._gridSelection === "object") {
-              // Merge into gridSelection state
-              setGridSelection((prev) => {
-                const next = { ...prev };
-                for (const [key, ids] of Object.entries(result._gridSelection as Record<string, string[]>)) {
-                  // keep existing _allRows if present, but overwrite _selection with EntityData array
-                  next[key] = {
-                    ...(next[key] || { _selection: [], _allRows: [] }),
-                    _selection: Array.isArray(ids)
-                      ? ids.map(
-                          (id) =>
-                            ({
-                              id: String(id),
-                            }) as EntityData
-                        )
-                      : [],
-                  };
-                }
-                return next;
-              });
-            }
-
-            // If backend returns an autoSelectConfig, store it
-            if (result.autoSelectConfig) {
-              setAutoSelectConfig(result.autoSelectConfig as AutoSelectConfig);
-            }
-
-            setParameters((prev) => {
-              const newParameters = { ...prev };
-
-              for (const [parameterName, values] of Object.entries(result)) {
-                if (["_gridSelection", "autoSelectConfig"].includes(parameterName)) continue;
-
-                if (!newParameters[parameterName]) continue;
-
-                try {
-                  const isArray = Array.isArray(values);
-                  const newOptions = isArray ? (values as string[]) : [values as string];
-
-                  newParameters[parameterName] = { ...newParameters[parameterName] };
-
-                  if (Array.isArray(newParameters[parameterName].refList)) {
-                    newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
-                      newOptions.includes(option.value)
-                    );
-                  }
-                } catch (e) {
-                  logger.warn("Malformed parameter data from onLoad for", parameterName, e);
-                }
-              }
-
-              return newParameters;
-            });
+            const shouldStop = handleOnLoadResult(result);
+            if (shouldStop) return;
           }
         }
 
-        setTimeout(() => {
-          setLoading(false);
-        }, 300);
+        setTimeout(() => setLoading(false), 300);
       } catch (error) {
         logger.warn("Error loading parameters:", error);
         setLoading(false);
@@ -1431,7 +1469,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     };
 
     fetchOptions();
-  }, [button.processDefinition, onLoad, open, selectedRecords, tab, setGridSelection, isBulkCompletion]);
+  }, [
+    button.processDefinition,
+    onLoad,
+    open,
+    selectedRecords,
+    tab,
+    isBulkCompletion,
+    processScriptContext,
+    handleOnLoadResult,
+  ]);
 
   /**
    * NEW useEffect:
@@ -1571,7 +1618,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
     // Error message - keep the simple style
     return (
-      <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-etendo-main)">
+      <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-error-main)">
         <h4 className="font-bold text-sm">{msgTitle}</h4>
         <p className="text-sm border-(--color-active-40) rounded whitespace-pre-line p-2">{displayText}</p>
       </div>
@@ -1653,6 +1700,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             processConfigError={processConfigError}
             recordValues={recordValues}
             currentValues={formValues}
+            originTab={tab}
             data-testid="WindowReferenceGrid__761503"
           />
         );
