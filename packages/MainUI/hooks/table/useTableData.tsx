@@ -395,19 +395,18 @@ export const useTableData = ({
   }, [tab]);
 
   // Helper to find parent field name
-  const getParentFieldName = useCallback(() => {
+  const getParentFieldName = useCallback((): { fieldName: string; directReference: boolean } => {
     if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
       // SR (Single Record) tabs share the same entity/table as the parent and have
       // empty parentColumns. Filter by "id" so only the parent's own record is shown.
       if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab) {
-        return "id";
+        return { fieldName: "id", directReference: true };
       }
-      console.log("No parent columns found");
-      return "_dummy";
+      return { fieldName: "_dummy", directReference: false };
     }
 
     if (!parentTab) {
-      return tab.parentColumns[0] || "id";
+      return { fieldName: tab.parentColumns[0] || "id", directReference: true };
     }
 
     const matchingField = tab.parentColumns.find((colName) => {
@@ -415,7 +414,12 @@ export const useTableData = ({
       return field?.referencedEntity === parentTab.entityName;
     });
 
-    return matchingField || tab.parentColumns[0] || "id";
+    return {
+      fieldName: matchingField || tab.parentColumns[0] || "id",
+      // directReference is true only when a field directly referencing the parent was found.
+      // When false, the server-side hqlwhereclause handles filtering via context variables.
+      directReference: Boolean(matchingField),
+    };
   }, [tab.parentColumns, tab.fields, tab.uIPattern, parentTab]);
 
   // Helper to apply sort options to query
@@ -433,30 +437,9 @@ export const useTableData = ({
   );
 
   const query: DatasourceOptions = useMemo(() => {
-    const fieldName = getParentFieldName();
+    const { fieldName, directReference: fieldDirectlyReferencesParent } = getParentFieldName();
     const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
     const operator = "equals";
-
-    // DEBUG: Log child tab query building
-    if (parentTab) {
-      console.log("[DEBUG useTableData] Child tab query:", {
-        tabName: tab.name,
-        tabId: tab.id,
-        entityName: tab.entityName,
-        parentTabName: parentTab.name,
-        parentTabEntityName: parentTab.entityName,
-        parentColumns: tab.parentColumns,
-        fieldName,
-        parentId,
-        parentRecord: parentRecord?.id,
-        parentRecordsLength: parentRecords?.length,
-        skip: parentTab ? Boolean(!parentRecord || (parentRecords && parentRecords.length !== 1)) : false,
-        fields: Object.keys(tab.fields),
-        fieldsWithReferencedEntity: Object.entries(tab.fields)
-          .filter(([_, f]) => f.referencedEntity)
-          .map(([name, f]) => ({ name, referencedEntity: f.referencedEntity })),
-      });
-    }
 
     const options: DatasourceOptions = {
       windowId: tab.window,
@@ -475,11 +458,18 @@ export const useTableData = ({
     }
 
     if (value && value !== "" && value !== undefined) {
-      options.criteria = [{ fieldName, value, operator }];
+      if (fieldDirectlyReferencesParent) {
+        // Direct FK: standard criteria filter
+        options.criteria = [{ fieldName, value, operator }];
+      }
+      // else: no criteria — server-side hqlwhereclause handles filtering via context variable
 
-      // Add parent context parameter manually as some datasources rely on it (like Process Request)
       if (parentTab?.entityName) {
+        // Keep existing format for backward compat (e.g. Process Request datasource)
         options[`@${parentTab.entityName}.id@`] = value;
+        // OB Classic context variable format for hqlwhereclause substitution
+        // e.g. ETASK_Task → @ETASK_TASK_ID@
+        options[`@${parentTab.entityName.toUpperCase()}_ID@`] = value;
       }
     }
 
@@ -492,8 +482,6 @@ export const useTableData = ({
         // @ts-ignore - advancedCriteria is compatible with Criteria
         options.criteria = [advancedCriteria];
       }
-    } else {
-      console.log("useTableData: No advancedCriteria found");
     }
 
     // Apply sorting
@@ -505,8 +493,7 @@ export const useTableData = ({
 
     return options;
   }, [
-    tab.window,
-    tab.id,
+    tab,
     initialIsFilterApplied,
     isImplicitFilterApplied,
     parentId,
