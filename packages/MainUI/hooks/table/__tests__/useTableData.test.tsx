@@ -25,6 +25,7 @@
  */
 
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import { UIPattern } from "@workspaceui/api-client/src/api/types";
 
 describe("useTableData utilities", () => {
   // ============================================================================
@@ -76,10 +77,23 @@ describe("useTableData utilities", () => {
   };
 
   /**
-   * Determines the parent field name from parentColumns
+   * Determines the parent field name from parentColumns.
+   * Mirrors the logic in useTableData's getParentFieldName callback.
    */
-  const getParentFieldName = (parentColumns: string[] | undefined): string => {
-    return !Array.isArray(parentColumns) || parentColumns.length === 0 ? "id" : parentColumns[0];
+  const getParentFieldName = (
+    parentColumns: string[] | undefined,
+    uIPattern?: UIPattern,
+    parentTab?: { id: string; entityName?: string } | null
+  ): string => {
+    if (!Array.isArray(parentColumns) || parentColumns.length === 0) {
+      // SR (Single Record) tabs share the same entity/table as the parent and have
+      // empty parentColumns. Filter by "id" so only the parent's own record is shown.
+      if (uIPattern === UIPattern.EDIT_ONLY && parentTab) {
+        return "id";
+      }
+      return "_dummy";
+    }
+    return parentColumns[0];
   };
 
   /**
@@ -260,15 +274,50 @@ describe("useTableData utilities", () => {
 
   describe("getParentFieldName", () => {
     it.each([
-      { parentColumns: undefined, expected: "id", description: "no parentColumns exist" },
-      { parentColumns: [], expected: "id", description: "parentColumns is empty" },
+      {
+        parentColumns: undefined,
+        uIPattern: UIPattern.STANDARD,
+        parentTab: null,
+        expected: "_dummy",
+        description: "no parentColumns and STANDARD pattern",
+      },
+      {
+        parentColumns: [],
+        uIPattern: UIPattern.STANDARD,
+        parentTab: { id: "parent-tab-id", entityName: "BusinessPartner" },
+        expected: "_dummy",
+        description: "parentColumns is empty and STANDARD pattern",
+      },
       {
         parentColumns: ["organizationId", "anotherId"],
+        uIPattern: UIPattern.STANDARD,
+        parentTab: null,
         expected: "organizationId",
         description: "parentColumns has values",
       },
-    ])("should return '$expected' when $description", ({ parentColumns, expected }) => {
-      expect(getParentFieldName(parentColumns)).toBe(expected);
+      {
+        parentColumns: [],
+        uIPattern: UIPattern.EDIT_ONLY,
+        parentTab: { id: "parent-tab-id", entityName: "BusinessPartner" },
+        expected: "id",
+        description: "SR tab with empty parentColumns and a parent tab",
+      },
+      {
+        parentColumns: [],
+        uIPattern: UIPattern.EDIT_ONLY,
+        parentTab: null,
+        expected: "_dummy",
+        description: "SR tab with empty parentColumns but no parent tab",
+      },
+      {
+        parentColumns: ["businessPartner"],
+        uIPattern: UIPattern.EDIT_ONLY,
+        parentTab: { id: "parent-tab-id", entityName: "BusinessPartner" },
+        expected: "businessPartner",
+        description: "SR tab with parentColumns populated still uses parentColumns",
+      },
+    ])("should return '$expected' when $description", ({ parentColumns, uIPattern, parentTab, expected }) => {
+      expect(getParentFieldName(parentColumns, uIPattern, parentTab)).toBe(expected);
     });
   });
 

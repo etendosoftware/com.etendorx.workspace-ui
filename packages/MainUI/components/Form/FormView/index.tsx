@@ -86,11 +86,17 @@ const processFormData = (
   // If fields definition is provided, ensure all fields are present with at least empty string
   // This forces controlled inputs to clear visually when resetting the form
   if (fields) {
-    for (const field of Object.values(fields) as any[]) {
+    for (const field of Object.values(fields)) {
       // Use hqlName if available (standard for form fields), fallback to other identifiers
       const key = field.hqlName || field.columnName || field.name;
+
+      // If key is hqlName but data has columnName, map it
       if (key && processedData[key] === undefined) {
-        processedData[key] = "";
+        if (field.columnName && processedData[field.columnName] !== undefined) {
+          processedData[key] = processedData[field.columnName];
+        } else {
+          processedData[key] = "";
+        }
       }
     }
   }

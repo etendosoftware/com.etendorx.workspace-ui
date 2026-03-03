@@ -24,6 +24,7 @@ import type {
   MRT_SortingState,
 } from "material-react-table";
 import type { DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
+import { UIPattern } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useSearch } from "../../contexts/searchContext";
@@ -69,6 +70,8 @@ interface UseTableDataReturn {
 
   // Tree mode
   shouldUseTreeMode: boolean;
+  treeEntity: string;
+  referencedTableId?: string;
 
   // Handlers
   handleMRTColumnFiltersChange: (
@@ -88,7 +91,7 @@ interface UseTableDataReturn {
   // Actions
   toggleImplicitFilters: () => void;
   fetchMore: () => void;
-  refetch: () => Promise<void>;
+  refetch: (options?: { silent?: boolean }) => Promise<void>;
   removeRecordLocally: ((id: string) => void) | null;
   updateRecordLocally: (recordId: string, updatedRecord: EntityData) => void;
   addRecordLocally: (newRecord: EntityData) => void;
@@ -393,6 +396,14 @@ export const useTableData = ({
 
   // Helper to find parent field name
   const getParentFieldName = useCallback(() => {
+    if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
+      // SR (Single Record) tabs share the same entity/table as the parent and have
+      // empty parentColumns. Filter by "id" so only the parent's own record is shown.
+      if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab) {
+        return "id";
+      }
+    }
+
     if (!parentTab) {
       if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
         return "_dummy";
@@ -422,7 +433,7 @@ export const useTableData = ({
     }
 
     return "_dummy";
-  }, [tab.parentColumns, tab.fields, parentTab]);
+  }, [tab.parentColumns, tab.fields, tab.uIPattern, parentTab]);
 
   // Helper to apply sort options to query
   const applySortToOptions = useCallback(
@@ -538,7 +549,7 @@ export const useTableData = ({
     updateRecordLocally,
     addRecordLocally,
     error,
-    refetch,
+    refetch: datasourceRefetch,
     loading,
     hasMoreRecords,
   } = useDatasource({
@@ -558,8 +569,8 @@ export const useTableData = ({
 
   // Load child nodes for tree mode
   const loadChildNodes = useCallback(
-    async (parentId: string) => {
-      if (!shouldUseTreeMode || loadedNodes.has(parentId)) {
+    async (parentId: string, force = false) => {
+      if (!shouldUseTreeMode || (!force && loadedNodes.has(parentId))) {
         return;
       }
 
@@ -1007,6 +1018,40 @@ export const useTableData = ({
     }
   }, [tableColumnFilters, advancedColumnFilters, setColumnFilters]);
 
+  const refetch = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const isSilent = options?.silent === true;
+
+      if (shouldUseTreeMode) {
+        const currentExpanded = (expandedRef.current || {}) as Record<string, boolean>;
+        const expandedKeys = Object.keys(currentExpanded).filter((k) => currentExpanded[k]);
+        const expandedSet = new Set(expandedKeys);
+
+        if (!isSilent) {
+          setLoadedNodes((prev) => {
+            const next = new Set<string>();
+            for (const key of prev) if (expandedSet.has(key)) next.add(key);
+            return next;
+          });
+          setChildrenData((prev) => {
+            const next = new Map<string, EntityData[]>();
+            for (const [key, value] of prev.entries()) if (expandedSet.has(key)) next.set(key, value);
+            return next;
+          });
+        }
+
+        await datasourceRefetch({ silent: isSilent });
+
+        if (expandedKeys.length > 0) {
+          await Promise.all(expandedKeys.map((id) => loadChildNodes(id, true)));
+        }
+      } else {
+        await datasourceRefetch({ silent: isSilent });
+      }
+    },
+    [shouldUseTreeMode, datasourceRefetch, loadChildNodes, setLoadedNodes, setChildrenData]
+  );
+
   // Handle tree mode changes
   useEffect(() => {
     // Skip the first render to avoid unnecessary refetch on mount
@@ -1208,6 +1253,8 @@ export const useTableData = ({
 
     // Tree mode
     shouldUseTreeMode,
+    treeEntity,
+    referencedTableId: treeMetadata.referencedTableId,
 
     // Handlers
     handleMRTColumnFiltersChange,

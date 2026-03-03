@@ -15,8 +15,17 @@ import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useDeleteRecord } from "@/hooks/useDeleteRecord";
 import { useUserContext } from "@/hooks/useUserContext";
+import { toast } from "sonner";
 
 // Mock dependencies
+jest.mock("sonner", () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+    warning: jest.fn(),
+    info: jest.fn(),
+  },
+}));
 jest.mock("@/contexts/tab");
 jest.mock("@/contexts/window");
 jest.mock("@/hooks/useSelectedRecords");
@@ -197,9 +206,7 @@ describe("useToolbarConfig", () => {
         })
       );
 
-      expect(result.current.resultModal.open).toBe(true);
-      expect(result.current.resultModal.success).toBe(true);
-      expect(result.current.resultModal.message).toContain("Success message");
+      expect(toast.success).toHaveBeenCalled();
       expect(mockOnRefresh).toHaveBeenCalled();
     });
 
@@ -215,9 +222,7 @@ describe("useToolbarConfig", () => {
         await result.current.actionHandlers.INITIALIZE_RX_SERVICES();
       });
 
-      expect(result.current.resultModal.open).toBe(true);
-      expect(result.current.resultModal.success).toBe(false);
-      expect(result.current.resultModal.message).toBe("API Error");
+      expect(toast.error).toHaveBeenCalled();
     });
   });
 });

@@ -173,7 +173,7 @@ export function mapKeysWithDefaults(source: SourceObject): TargetObject {
 
   for (const [key, value] of Object.entries(source)) {
     let mappedValue: PrimitiveValue | NestedObject | SelectionItem[] =
-      value !== "" && value != null ? value : keyMap[key]?.default;
+      value !== "" && value !== undefined ? value : keyMap[key]?.default;
     if (mappedValue === "Y") {
       mappedValue = true;
     } else if (mappedValue === "N") {
