@@ -4,7 +4,7 @@ import { getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
 import { shouldAttemptCsrfRecovery } from "@/app/api/_utils/sessionValidator";
 import { recoverFromCsrfError } from "@/app/api/_utils/csrfRecovery";
 import { getErpCsrfToken } from "../../_utils/sessionStore";
-import { getDatasourceUrl } from "../../_utils/endpoints";
+import { getDatasourceUrl, getKernelDatasourceUrl } from "../../_utils/endpoints";
 
 // Type definitions for better code clarity
 interface ProcessedRequestData {
@@ -26,17 +26,41 @@ function validateAndExtractToken(request: NextRequest): string | null {
 }
 
 /**
- * Builds the target ERP URL with query parameters
+ * Builds the target ERP URL with query parameters.
+ *
+ * Routing strategy:
+ * - Write methods (PUT, PATCH, DELETE) with a body and no explicit `_operationType`
+ *   in the URL params are forwarded through the kernel SWS path
+ *   (`sws/com.smf.securewebservices.kernel/org.openbravo.service.datasource/<entity>`).
+ *   This path authenticates via Bearer token and does **not** require a CSRF token,
+ *   matching the behaviour of the classic SmartClient tree-view drag-and-drop.
+ * - All other requests use the existing datasource endpoint routing.
+ *
  * @param entity - The datasource entity name
  * @param requestUrl - The original request URL
+ * @param body - Optional request body (used to detect write operations)
+ * @param userToken - Optional user JWT (used to look up the stored CSRF token for reads)
+ * @param method - HTTP method of the incoming request (e.g. "PUT", "GET")
  * @returns The complete ERP URL with query parameters
  */
-function buildErpUrl(entity: string, requestUrl: URL, body?: string, userToken?: string | null): string {
+function buildErpUrl(
+  entity: string,
+  requestUrl: URL,
+  body?: string,
+  userToken?: string | null,
+  method?: string
+): string {
   const params = new URLSearchParams(requestUrl.search);
   const operationType = params.get("_operationType");
 
-  // Use centralized endpoint configuration
-  const baseUrl = getDatasourceUrl(entity, operationType || undefined);
+  // For write methods that carry a body but have no explicit _operationType in the URL
+  // (e.g. tree node drag-and-drop PUT requests), use the kernel SWS path so that the
+  // request is authenticated purely via Bearer token without a CSRF token requirement.
+  const isWriteWithBody = body && method && ["PUT", "PATCH", "DELETE"].includes(method.toUpperCase()) && !operationType;
+
+  const baseUrl = isWriteWithBody
+    ? getKernelDatasourceUrl(entity)
+    : getDatasourceUrl(entity, operationType || undefined);
 
   if (operationType && !params.has("_startRow") && !params.has("_endRow")) {
     params.set("_startRow", "0");
@@ -202,7 +226,7 @@ async function handle(request: NextRequest, context: { params: Promise<{ entity:
 
     // Step 3: Process request data for ERP compatibility
     const { headers, body } = await processRequestData(request, userToken, cookieHeader, csrfToken, requestBody);
-    const erpUrl = buildErpUrl(entity, requestUrl, body, userToken);
+    const erpUrl = buildErpUrl(entity, requestUrl, body, userToken, request.method);
 
     // Step 4: Forward request to ERP system
     const erpResponse = await fetch(erpUrl, {
@@ -225,7 +249,7 @@ async function handle(request: NextRequest, context: { params: Promise<{ entity:
         newCsrfToken,
         requestBody
       );
-      const retryErpUrl = buildErpUrl(entity, requestUrl, retryBody, userToken);
+      const retryErpUrl = buildErpUrl(entity, requestUrl, retryBody, userToken, request.method);
 
       const retryResponse = await fetch(retryErpUrl, {
         method: request.method,

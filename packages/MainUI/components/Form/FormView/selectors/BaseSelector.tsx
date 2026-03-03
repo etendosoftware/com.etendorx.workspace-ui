@@ -42,15 +42,37 @@ export const compileExpression = (expression: string) => {
   try {
     // Shim for legacy OpenBravo/Etendo functions used in expressions
     const obShim = `
+      var normalize = function(val) {
+        if (typeof val === "boolean") return val ? "Y" : "N";
+        return val;
+      };
       var OB = {
         Utilities: {
-          getValue: function(obj, prop) { return obj && obj[prop]; },
+          getValue: function(obj, prop) { 
+            var val = obj && obj[prop];
+            return (val === null || val === undefined) ? '' : val;
+          },
           PropertyStore: function(ctx, prop) { return ctx && (ctx[prop] || ctx['$'+prop] || ctx['#'+prop]); }
         },
         PropertyStore: function(ctx, prop) { return ctx && (ctx[prop] || ctx['$'+prop] || ctx['#'+prop]); },
         getExpression: function() { return true; }, // Fallback for complex expressions
         PropertyStore: {
-            get: function(prop) { return context[prop] || context['$'+prop] || context['#'+prop]; }
+          get: (key) => {
+            // 1. Check context (session attributes with #/$ prefixes)
+            const fromContext = context[key] ?? context['#' + key] ?? context['$' + key];
+            if (fromContext !== undefined && fromContext !== null) return normalize(fromContext);
+            // 2. Check preferences loaded from backend (stored in localStorage at login)
+            try {
+              const prefs = JSON.parse(localStorage.getItem('etendo_preferences') || '{}');
+              if (prefs[key] !== undefined) return normalize(prefs[key]);
+              // Case-insensitive fallback
+              const lowerKey = key.toLowerCase();
+              for (const k of Object.keys(prefs)) {
+                if (k.toLowerCase() === lowerKey) return normalize(prefs[k]);
+              }
+            } catch (e) { /* ignore parse errors */ }
+            return undefined;
+          }
         },
         getSession: function() {
             return {
@@ -62,7 +84,8 @@ export const compileExpression = (expression: string) => {
                     return val;
                 }
             };
-        }
+        },
+        getFilterExpression: () => null
       };
     `;
 
@@ -161,10 +184,6 @@ const BaseSelectorComp = ({
 
         if (targetField && identifier) {
           setValue(`${hqlName}$_identifier`, identifier, { shouldDirty: false });
-
-          if (value && String(value) !== identifier) {
-            logger.debug(`Field ${hqlName}: value=${value}, identifier=${identifier}`);
-          }
         } else if (targetField && !identifier && value) {
           setValue(`${hqlName}$_identifier`, "", { shouldDirty: false });
         }
@@ -217,12 +236,20 @@ const BaseSelectorComp = ({
 
       //TODO: This will imply the evaluation of out fiels inside the fieldBuilder an it's implementation in metadata module
       if (field.inputName === "inpmProductId" && optionData) {
+        // Pricing fields (for order/invoice windows)
         calloutData.inpmProductId_CURR =
           optionData.product$currency$id || optionData.currency || session.$C_Currency_ID;
         calloutData.inpmProductId_UOM = optionData.product$uOM$id || optionData.uOM || session["#C_UOM_ID"];
         calloutData.inpmProductId_PSTD = String(optionData.standardPrice || optionData.netListPrice || 0);
         calloutData.inpmProductId_PLIST = String(optionData.netListPrice || 0);
         calloutData.inpmProductId_PLIM = String(optionData.priceLimit || 0);
+
+        // Inventory/warehouse fields (from ProductStockView data)
+        calloutData.inpmProductId_ATR = String(optionData.attributeSetValue || optionData.attributeSetValue$id || "");
+        calloutData.inpmProductId_LOC = String(optionData.storageBin || optionData.storageBin$id || "");
+        calloutData.inpmProductId_QTY = String(optionData.quantityOnHand || 0);
+        calloutData.inpmProductId_PUOM = "";
+        calloutData.inpmProductId_PQTY = "";
       }
 
       const data = await debouncedCallout(calloutData);

@@ -38,11 +38,11 @@ const loadData = async (
     referencedTableId?: string;
     parentId?: string | number;
   },
-  isFiltering: boolean = false
+  isFiltering = false
 ) => {
   const safePageSize = pageSize ?? 1000;
   const startRow = (page - 1) * pageSize;
-  const endRow = page * pageSize - 1;
+  const endRow = startRow + pageSize;
 
   const processedParams = {
     ...params,
@@ -150,6 +150,13 @@ export function useDatasource({
     setPageSize(size);
   }, []);
 
+  // Sync pageSize with params
+  useEffect(() => {
+    if (params.pageSize && params.pageSize !== pageSize) {
+      setPageSize(params.pageSize);
+    }
+  }, [params.pageSize, pageSize]);
+
   const reinit = useCallback(() => {
     setRecords([]);
     setPage(1);
@@ -181,7 +188,8 @@ export function useDatasource({
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const queryParams = useMemo(() => {
-    const baseCriteria = stableParams.criteria || ([] as any[]);
+    const rawCriteria = stableParams.criteria;
+    const baseCriteria = [rawCriteria].flat().filter(Boolean);
     const searchCriteriaArray = (
       searchQuery && columns ? SearchUtils.createSearchCriteria(columns, searchQuery) : []
     ) as any[];
@@ -200,13 +208,17 @@ export function useDatasource({
     const hasIdFilter = Boolean(filterById);
     const idParams = hasIdFilter ? { targetRecordId: filterById?.value, directNavigation: true } : {};
 
-    const finalParams = {
+    const finalParams: any = {
       ...stableParams,
       ...idParams,
-      criteria: allCriteria,
+      ...(allCriteria.length > 0 ? { criteria: allCriteria.length === 1 ? allCriteria[0] : allCriteria } : {}),
       isImplicitFilterApplied,
       noActiveFilter: true,
     };
+
+    if (allCriteria.length > 0) {
+      finalParams.criteria = allCriteria;
+    }
 
     return finalParams;
   }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, activeColumnFilters]);
@@ -285,13 +297,25 @@ export function useDatasource({
     reinit();
   }, [activeColumnFilters, searchQuery, reinit]);
 
-  const refetch = useCallback(async () => {
-    reinit();
-    setError(undefined);
-    setLoading(true);
+  const refetch = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const isSilent = options?.silent === true;
 
-    await fetchData(1);
-  }, [reinit, fetchData]);
+      if (!isSilent) {
+        reinit();
+        setLoading(true);
+      } else {
+        setPage(1);
+        setHasMoreRecords(true);
+        // Notice we don't setLoading(true) for silent refetches
+      }
+
+      setError(undefined);
+
+      await fetchData(1);
+    },
+    [reinit, fetchData]
+  );
 
   return {
     loading,

@@ -26,9 +26,13 @@ import { isColorString, getContrastTextColor } from "@/utils/color/utils";
 const renderBooleanField = (value: Record<string, unknown>, column: Field, t?: TranslateFunction) => {
   const yesText = t ? t("common.trueText") : "Yes";
   const noText = t ? t("common.falseText") : "No";
-  const config = value[column.hqlName] ? yesNoConfig.Y : yesNoConfig.N;
 
-  return <Tag icon={config.icon} label={value[column.hqlName] ? yesText : noText} data-testid="Tag__2b5175" />;
+  // Use hqlName or fallback to columnName
+  const fieldValue = value[column.hqlName] ?? value[column.columnName];
+
+  const config = fieldValue ? yesNoConfig.Y : yesNoConfig.N;
+
+  return <Tag icon={config.icon} label={fieldValue ? yesText : noText} data-testid="Tag__2b5175" />;
 };
 
 // Helper function to process and validate tag colors
@@ -52,10 +56,14 @@ const processTagColors = (color?: string) => {
 
 // Helper function to handle list field rendering
 const renderListField = (value: Record<string, unknown>, column: Field) => {
-  const codeValue = value[column.hqlName];
+  // Use hqlName or fallback to columnName
+  const codeValue = value[column.hqlName] ?? value[column.columnName];
 
   if (codeValue === null || codeValue === undefined) {
-    return value[`${column.hqlName}$${IDENTIFIER_KEY}`] ?? "";
+    const identifierKey = `${column.hqlName}$${IDENTIFIER_KEY}`;
+    // Also try fallback for identifier if needed
+    const columnNameIdentifier = `${column.columnName}$${IDENTIFIER_KEY}`;
+    return value[identifierKey] ?? value[columnNameIdentifier] ?? "";
   }
 
   const refItem = column.refList?.find((item) => item.value === codeValue);

@@ -23,7 +23,7 @@ import type {
   MRT_VisibilityState,
   MRT_SortingState,
 } from "material-react-table";
-import type { DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
+import type { Criteria, DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useSearch } from "../../contexts/searchContext";
@@ -43,6 +43,7 @@ import { isEmptyObject } from "@/utils/commons";
 import { mapSummariesToBackend, getSummaryCriteria } from "@/utils/table/utils";
 import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { buildEtendoContext } from "@/utils/contextUtils";
+import { buildBaseCriteria } from "@/utils/criteriaUtils";
 import { useSelected } from "../../hooks/useSelected";
 
 interface UseTableDataParams {
@@ -69,6 +70,8 @@ interface UseTableDataReturn {
 
   // Tree mode
   shouldUseTreeMode: boolean;
+  treeEntity: string;
+  referencedTableId?: string;
 
   // Handlers
   handleMRTColumnFiltersChange: (
@@ -88,7 +91,7 @@ interface UseTableDataReturn {
   // Actions
   toggleImplicitFilters: () => void;
   fetchMore: () => void;
-  refetch: () => Promise<void>;
+  refetch: (options?: { silent?: boolean }) => Promise<void>;
   removeRecordLocally: ((id: string) => void) | null;
   updateRecordLocally: (recordId: string, updatedRecord: EntityData) => void;
   addRecordLocally: (newRecord: EntityData) => void;
@@ -391,25 +394,6 @@ export const useTableData = ({
     return null;
   }, [tab]);
 
-  // Helper to find parent field name
-  const getParentFieldName = useCallback(() => {
-    if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
-      console.log("No parent columns found");
-      return "_dummy";
-    }
-
-    if (!parentTab) {
-      return tab.parentColumns[0] || "id";
-    }
-
-    const matchingField = tab.parentColumns.find((colName) => {
-      const field = tab.fields[colName];
-      return field?.referencedEntity === parentTab.entityName;
-    });
-
-    return matchingField || tab.parentColumns[0] || "id";
-  }, [tab.parentColumns, tab.fields, parentTab]);
-
   // Helper to apply sort options to query
   const applySortToOptions = useCallback(
     (options: DatasourceOptions, sort: ReturnType<typeof getDefaultSort>) => {
@@ -425,10 +409,6 @@ export const useTableData = ({
   );
 
   const query: DatasourceOptions = useMemo(() => {
-    const fieldName = getParentFieldName();
-    const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
-    const operator = "equals";
-
     const options: DatasourceOptions = {
       windowId: tab.window,
       tabId: tab.id,
@@ -445,12 +425,13 @@ export const useTableData = ({
       options.language = language;
     }
 
-    if (value && value !== "" && value !== undefined) {
-      options.criteria = [{ fieldName, value, operator }];
+    // Build base criteria (handling Parent-Child or Dummy fallback)
+    const baseCriteria = buildBaseCriteria({ tab, parentTab, parentId });
+    if (baseCriteria.length > 0) {
+      options.criteria = baseCriteria as unknown as Criteria[];
 
-      // Add parent context parameter manually as some datasources rely on it (like Process Request)
-      if (parentTab?.entityName) {
-        options[`@${parentTab.entityName}.id@`] = value;
+      if (parentTab?.entityName && parentId) {
+        options[`@${parentTab.entityName}.id@`] = parentId;
       }
     }
 
@@ -485,7 +466,6 @@ export const useTableData = ({
     tableColumnSorting,
     advancedCriteria,
     getDefaultSort,
-    getParentFieldName,
     applySortToOptions,
     graph,
     parentTab,
@@ -524,7 +504,7 @@ export const useTableData = ({
     updateRecordLocally,
     addRecordLocally,
     error,
-    refetch,
+    refetch: datasourceRefetch,
     loading,
     hasMoreRecords,
   } = useDatasource({
@@ -544,8 +524,8 @@ export const useTableData = ({
 
   // Load child nodes for tree mode
   const loadChildNodes = useCallback(
-    async (parentId: string) => {
-      if (!shouldUseTreeMode || loadedNodes.has(parentId)) {
+    async (parentId: string, force = false) => {
+      if (!shouldUseTreeMode || (!force && loadedNodes.has(parentId))) {
         return;
       }
 
@@ -993,6 +973,40 @@ export const useTableData = ({
     }
   }, [tableColumnFilters, advancedColumnFilters, setColumnFilters]);
 
+  const refetch = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const isSilent = options?.silent === true;
+
+      if (shouldUseTreeMode) {
+        const currentExpanded = (expandedRef.current || {}) as Record<string, boolean>;
+        const expandedKeys = Object.keys(currentExpanded).filter((k) => currentExpanded[k]);
+        const expandedSet = new Set(expandedKeys);
+
+        if (!isSilent) {
+          setLoadedNodes((prev) => {
+            const next = new Set<string>();
+            for (const key of prev) if (expandedSet.has(key)) next.add(key);
+            return next;
+          });
+          setChildrenData((prev) => {
+            const next = new Map<string, EntityData[]>();
+            for (const [key, value] of prev.entries()) if (expandedSet.has(key)) next.set(key, value);
+            return next;
+          });
+        }
+
+        await datasourceRefetch({ silent: isSilent });
+
+        if (expandedKeys.length > 0) {
+          await Promise.all(expandedKeys.map((id) => loadChildNodes(id, true)));
+        }
+      } else {
+        await datasourceRefetch({ silent: isSilent });
+      }
+    },
+    [shouldUseTreeMode, datasourceRefetch, loadChildNodes, setLoadedNodes, setChildrenData]
+  );
+
   // Handle tree mode changes
   useEffect(() => {
     // Skip the first render to avoid unnecessary refetch on mount
@@ -1194,6 +1208,8 @@ export const useTableData = ({
 
     // Tree mode
     shouldUseTreeMode,
+    treeEntity,
+    referencedTableId: treeMetadata.referencedTableId,
 
     // Handlers
     handleMRTColumnFiltersChange,

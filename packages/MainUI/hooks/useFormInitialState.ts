@@ -50,7 +50,10 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
 
       if (identifier) {
         acc[`${newKey}$_identifier`] = identifier;
-      } else if (value !== null && value !== undefined && value !== "") {
+      } else {
+        // Always explicitly set the identifier key, even when empty.
+        // This ensures that a previously set identifier is cleared when the server
+        // returns null/empty for a field (e.g. after a process clears the value).
         acc[`${newKey}$_identifier`] = "";
       }
     }
