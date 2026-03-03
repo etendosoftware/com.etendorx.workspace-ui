@@ -53,7 +53,25 @@ export const useCallout = ({ field, parentId = "null", rowId = "null" }: UseCall
           throw new Error(`No data returned from callout for field "${field.inputName}".`);
         }
 
-        return response.data as FormInitializationResponse;
+        const rawData = response.data;
+
+        // Detect backend errors (status: -1 in response envelope)
+        if (rawData?.response?.status === -1) {
+          const errorMsg = rawData.response.error?.message || "Unknown callout error";
+          logger.warn(`Backend callout error for "${field.inputName}": ${errorMsg}`);
+          return undefined;
+        }
+
+        // CHANGE mode may wrap data in a {response: {...}} envelope.
+        // Unwrap if columnValues are inside the wrapper, otherwise use top-level.
+        // CHANGE mode may wrap data in a {response: {...}} envelope.
+        // Unwrap if columnValues are inside the wrapper, otherwise use top-level.
+        let actualData = rawData;
+        if (rawData.columnValues === undefined && rawData.response?.columnValues !== undefined) {
+          actualData = rawData.response;
+        }
+
+        return actualData as FormInitializationResponse;
       } catch (error) {
         logger.warn(`Error executing callout for field "${field.inputName}":`, error);
       }
