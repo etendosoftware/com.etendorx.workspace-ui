@@ -967,7 +967,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       const isAddPayment = processId === ADD_PAYMENT_ORDER_PROCESS_ID;
 
       if (isAddPayment) {
-        return mapKeysWithDefaults({ ...form.getValues(), ...populatedGrids });
+        const rawFormValues = form.getValues();
+        // getMappedFormValues maps parameter.name → parameter.dBColumnName so that
+        // mapKeysWithDefaults finds the correct keys (e.g. payment_date) and does not
+        // fall back to the null defaults it has for the legacy inp* keys.
+        const mappedValues = getMappedFormValues();
+        return mapKeysWithDefaults({ ...rawFormValues, ...mappedValues, ...populatedGrids });
       }
 
       const formValues = getMappedFormValues();
