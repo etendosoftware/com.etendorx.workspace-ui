@@ -62,11 +62,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
     useState<ProcessDefinitionButton | null>(null);
 
-  const [activeModal, setActiveModal] = useState<{
-    button: ToolbarButtonMetadata;
-    isOpen: boolean;
-  } | null>(null);
-
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
   const { buttons, processButtons, loading, refetch: refetchToolbar } = useToolbar(windowId, tab?.id);
@@ -93,11 +88,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     handleSearch,
     searchValue,
     setSearchValue,
-    statusModal,
     confirmAction,
     handleConfirm,
     handleCancelConfirm,
-    hideStatusModal,
     actionModal,
     closeActionModal,
   } = useToolbarConfig({ windowId, tabId: tab?.id, parentId, isFormView });
@@ -251,8 +244,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   ]);
 
   const handleCloseSearch = useCallback(() => setSearchOpen(false), [setSearchOpen]);
-
-  const handleCloseStatusModal = useCallback(() => setActiveModal(null), []);
 
   const handleActionWithTooltip = useCallback(
     (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => {
