@@ -67,9 +67,12 @@ export const buildFormInitializationPayload = (
   // Build _gridVisibleProperties from all displayed tab fields.
   // Classic sends this list so that FormInitializationComponent (FIC) knows which
   // fields are currently visible in the form. The FIC's setValuesInRequest method
-  // checks this list for property fields: if a field's columnName is present, the
-  // FIC will look for inp_propertyField_{columnName}_{propertyPath} in the payload
-  // and include the value in the columnValues response.
+  // checks this list for property fields:
+  //   - Regular fields:  their columnName is listed (e.g. "Behaviour")
+  //   - Property fields: BOTH their columnName AND the "$"-format property path are
+  //     listed (e.g. "Type" + "etcopFile$type" for column.propertyPath = "etcopFile.type").
+  //     The FIC uses the "$" entry to identify property fields and look up their value
+  //     from the inp_propertyField_* key in the payload, returning it in columnValues.
   //
   // Not needed for SETSESSION mode. Entity-specific overrides in entityConfig
   // (e.g. ADUser) take precedence via the spread of additionalFields below.
@@ -77,7 +80,17 @@ export const buildFormInitializationPayload = (
     mode !== SessionMode.SETSESSION
       ? Object.values(tab.fields)
           .filter((f) => f.displayed && f.columnName)
-          .map((f) => f.columnName)
+          .flatMap((f) => {
+            const propertyPath = f.column?.propertyPath;
+            if (propertyPath) {
+              // For property fields, include both the column name and the $-format path.
+              // FormInitializationComponent.setValuesInRequest checks _gridVisibleProperties
+              // for entries in the "entity$property" format to identify property fields and
+              // look up their values from the payload.
+              return [f.columnName, propertyPath.replace(/\./g, "$")];
+            }
+            return [f.columnName];
+          })
       : undefined;
 
   return {
