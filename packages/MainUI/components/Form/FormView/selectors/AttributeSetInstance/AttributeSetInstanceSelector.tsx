@@ -14,6 +14,13 @@ const ATTRIBUTE_SET_KEYS = ["attributeSet", "mAttributeSet", "ATTRIBUTESET", "mA
 
 const PRODUCT_KEYS = ["product", "mProduct", "mProductId"];
 
+const extractIdFromEntityRef = (value: string): string => {
+  // Entity reference format: "EntityName(UUID) (identifier)" → extract UUID
+  const match = value.match(/\(([0-9A-Fa-f]{32})\)/);
+  if (match) return match[1];
+  return value;
+};
+
 const resolveFromFormValues = (values: Record<string, unknown>, keys: string[]): string | null => {
   const valueKeys = Object.keys(values);
   const lowerKeys = keys.map((k) => k.toLowerCase());
@@ -22,7 +29,7 @@ const resolveFromFormValues = (values: Record<string, unknown>, keys: string[]):
     if (lowerKeys.includes(key.toLowerCase())) {
       const val = values[key];
       if (val && typeof val === "string" && val.length > 5) {
-        return val;
+        return extractIdFromEntityRef(val);
       }
     }
   }

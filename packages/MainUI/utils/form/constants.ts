@@ -89,6 +89,28 @@ export const FIELD_REFERENCE_CODES = {
 } as const;
 
 /**
+ * Known product selector reference IDs from Etendo Classic.
+ * These are the AD_REFERENCE_ID values used as referenceSearchKey
+ * for product-type fields (M_Product_ID).
+ */
+export const PRODUCT_SELECTOR_REFERENCE_IDS = [
+  "712D9821BE8246AC95E6C16D8BEEBE5E", // ProductSimple
+  "D65D16C78404437AAB008E8040715D2F", // All Products Simple Selector
+  "84BD487714B04B838A8D562A30E8792C", // Products (Generic Product Selector)
+  "D920A7ED46C542629D2A1054560EBF14", // Item Stockable Products
+  "954BA02AD92D4820B4B3A24B104E24C2", // Service Products
+  "F784938E74564BCABF9517EB80DB15F5", // Product Complete (ProductStockView)
+] as const;
+
+/**
+ * Product selector reference IDs that use the ProductStockView datasource
+ * (showing stock/warehouse columns instead of pricing columns).
+ */
+export const PRODUCT_STOCK_VIEW_REFERENCE_IDS = [
+  "F784938E74564BCABF9517EB80DB15F5", // Product Complete (M_Product_Stock_V)
+] as const;
+
+/**
  * Process execution related reference codes
  */
 export const PROCESS_REFERENCE_CODES = {
