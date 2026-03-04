@@ -1471,7 +1471,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             effectiveOnLoad,
             { Metadata, ...processScriptContext },
             button.processDefinition,
-            { selectedRecords, tabId: tab.id || "", tableId: tab.table || "" }
+            { selectedRecords, tabId: tab.id || "", tableId: tab.table || "", parentRecord: recordValues }
           );
 
           if (result) {
@@ -1493,6 +1493,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     onLoad,
     open,
     selectedRecords,
+    recordValues,
     tab,
     isBulkCompletion,
     processScriptContext,

@@ -1142,9 +1142,41 @@ const WindowReferenceGrid = ({
 
   // Reset selection and filters on mount or when entity changes
   useEffect(() => {
+    // Map initial filterExpressions from OnLoad to visual tableColumnFilters (MRT)
+    let initialFilters: MRT_ColumnFiltersState = [];
+    if (stableFilterExpressions?.[parameter.dBColumnName || ""]) {
+      const fieldExpressions = stableFilterExpressions[parameter.dBColumnName || ""];
+      initialFilters = Object.entries(fieldExpressions).map(([fieldName, logic]: [string, any]) => {
+        let filterValue = "";
+
+        if (logic !== null && typeof logic === "object" && !Array.isArray(logic)) {
+          filterValue = logic.value ?? logic.values ?? "";
+        } else if (logic !== undefined && logic !== null) {
+          filterValue = String(logic);
+        }
+
+        // MRT columnFilters need to match the exact column `id` (often the Header name in this app)
+        // rather than the raw database field name. We look it up in rawColumns.
+        const matchingColumn = rawColumns?.find(
+          (col: Column & { hqlName?: string }) =>
+            col.columnName?.toLowerCase() === fieldName.toLowerCase() ||
+            col.hqlName?.toLowerCase() === fieldName.toLowerCase() ||
+            col.id?.toLowerCase() === fieldName.toLowerCase()
+        );
+
+        const columnId = matchingColumn?.id || matchingColumn?.header || fieldName;
+
+        return {
+          id: columnId,
+          value: filterValue,
+        };
+      });
+    }
+
     setRowSelection({});
-    setColumnFilters([]);
-    setAppliedTableFilters([]);
+    setColumnFilters(initialFilters);
+    setAppliedTableFilters(initialFilters);
+
     // Call onSelectionChange with the structure for this entityName
     onSelectionChange((prev: GridSelectionStructure) => ({
       ...prev,
@@ -1153,7 +1185,7 @@ const WindowReferenceGrid = ({
         _allRows: [],
       },
     }));
-  }, [onSelectionChange, entityName, parameter.dBColumnName]);
+  }, [onSelectionChange, entityName, parameter.dBColumnName, stableFilterExpressions, rawColumns]);
 
   const handleMRTColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
