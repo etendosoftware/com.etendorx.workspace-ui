@@ -79,6 +79,7 @@ import { evaluateParameterDefaults } from "@/utils/process/evaluateParameterDefa
 import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
 import { isBulkCompletionProcess, DEFAULT_BULK_COMPLETION_ONLOAD } from "@/utils/process/bulkCompletionUtils";
 import { registerPayScriptDSL } from "./callouts/genericPayScriptCallout";
+import { createOBShim } from "@/utils/propertyStore";
 
 // Date field reference codes for conversion
 const DATE_REFERENCE_CODES = [
@@ -1179,7 +1180,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         try {
           const stringFnResult = await executeStringFunction(
             onProcess,
-            { Metadata, ...processScriptContext },
+            { Metadata, OB: createOBShim(), ...processScriptContext },
             button.processDefinition,
             stringFunctionPayload
           );
@@ -1461,6 +1462,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     const fetchOptions = async () => {
       if (!open) return;
 
+      // If useWarehousePlugin is still evaluating the onLoad, wait — it will re-trigger
+      // this effect once loading is done (warehousePluginLoading is in the dep array).
+      if (warehousePluginLoading) return;
+
+      // If useWarehousePlugin resolved a warehouse schema, this onLoad has already been
+      // handled by that hook — skip to avoid running the same script twice with a
+      // different callAction signature.
+      if (warehouseSchema) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
 
@@ -1469,9 +1482,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         if (effectiveOnLoad && tab) {
           const result = await executeStringFunction(
             effectiveOnLoad,
-            { Metadata, ...processScriptContext },
+            { Metadata, OB: createOBShim(), ...processScriptContext },
             button.processDefinition,
-            { selectedRecords, tabId: tab.id || "", tableId: tab.table || "" }
+            {
+              selectedRecords,
+              tabId: tab.id || "",
+              tableId: tab.table || "",
+            }
           );
 
           if (result) {
@@ -1496,6 +1513,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     tab,
     isBulkCompletion,
     processScriptContext,
+    warehousePluginLoading,
+    warehouseSchema,
     handleOnLoadResult,
   ]);
 
