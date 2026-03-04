@@ -188,7 +188,8 @@ export function useDatasource({
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const queryParams = useMemo(() => {
-    const baseCriteria = stableParams.criteria || ([] as any[]);
+    const rawCriteria = stableParams.criteria;
+    const baseCriteria = [rawCriteria].flat().filter(Boolean);
     const searchCriteriaArray = (
       searchQuery && columns ? SearchUtils.createSearchCriteria(columns, searchQuery) : []
     ) as any[];
@@ -210,6 +211,7 @@ export function useDatasource({
     const finalParams: any = {
       ...stableParams,
       ...idParams,
+      ...(allCriteria.length > 0 ? { criteria: allCriteria.length === 1 ? allCriteria[0] : allCriteria } : {}),
       isImplicitFilterApplied,
       noActiveFilter: true,
     };

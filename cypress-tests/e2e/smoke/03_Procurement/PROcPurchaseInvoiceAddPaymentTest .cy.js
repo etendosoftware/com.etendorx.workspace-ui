@@ -73,10 +73,7 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
 
     cy.get(".rounded-2xl > :nth-child(1)").click();
     cy.wait(2000);
-    cy.contains('div[tabindex="0"] > span', "Select an option", { timeout: 20000 })
-      .should("be.visible")
-      .parent()
-      .click();
+    cy.get('div[aria-label="Action Regarding Document"]').should("be.visible").find('div[tabindex="0"]').click();
 
     cy.contains('li[data-testid^="OptionItem__"] span', "Process Made Payment(s)", { timeout: 20000 })
       .should("be.visible")

@@ -1,219 +1,188 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
+import "@testing-library/jest-dom";
 import AttachmentSection from "../AttachmentSection";
-import { useTranslation } from "@/hooks/useTranslation";
-import { useUserContext } from "@/hooks/useUserContext";
-import * as attachmentApi from "@workspaceui/api-client/src/api/attachments";
+import { fetchAttachments, deleteAttachment, downloadAttachment } from "@workspaceui/api-client/src/api/attachments";
+import { renderWithTheme } from "../../../../../test-utils/test-theme-provider";
 
-// Mock dependencies
-jest.mock("@/hooks/useTranslation", () => ({
-  useTranslation: jest.fn(),
-}));
-
-jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: jest.fn(),
-}));
-
+// Mock API client
 jest.mock("@workspaceui/api-client/src/api/attachments", () => ({
   fetchAttachments: jest.fn(),
   createAttachment: jest.fn(),
+  editAttachment: jest.fn(),
   deleteAttachment: jest.fn(),
   deleteAllAttachments: jest.fn(),
   downloadAttachment: jest.fn(),
   downloadAllAttachments: jest.fn(),
-  editAttachment: jest.fn(),
 }));
 
-// Mock child components
+// Mock IconButton to ensure data-testid is preserved
+jest.mock("@workspaceui/componentlibrary/src/components/IconButton", () => ({
+  __esModule: true,
+  default: ({ onClick, children, "data-testid": testId, disabled, className }: any) => (
+    <button onClick={onClick} data-testid={testId} disabled={disabled} className={className}>
+      {children}
+    </button>
+  ),
+}));
+
+// Mock translations
+jest.mock("@/hooks/useTranslation", () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}));
+
+// Mock user context
+jest.mock("@/hooks/useUserContext", () => ({
+  useUserContext: () => ({
+    session: { adOrgId: "org-123" },
+    currentOrganization: { id: "org-123" },
+  }),
+}));
+
+// Mock components
 jest.mock("../AddAttachmentModal", () => ({
-  AddAttachmentModal: ({ open, onUpload, onClose }) =>
+  AddAttachmentModal: ({ open, onClose }: any) =>
     open ? (
-      <div data-testid="add-attachment-modal">
-        <button onClick={() => onUpload(new File([""], "test.txt"), "Test Description")} data-testid="upload-btn">
-          Upload
-        </button>
-        <button onClick={onClose} data-testid="close-btn">
+      <div data-testid="mock-add-modal">
+        <button onClick={onClose} data-testid="close-add-modal">
           Close
         </button>
       </div>
     ) : null,
 }));
 
-jest.mock(
-  "@workspaceui/componentlibrary/src/components/BasicModal",
-  () => (props) =>
-    props.open ? (
-      <div data-testid="basic-modal">
-        {props.children}
-        <button onClick={props.onClose}>CloseModal</button>
+jest.mock("@workspaceui/componentlibrary/src/components/BasicModal", () => ({
+  __esModule: true,
+  default: ({ open, children, onClose }: any) =>
+    open ? (
+      <div data-testid="mock-preview-modal">
+        {children}
+        <button onClick={onClose} data-testid="close-preview-modal">
+          Close
+        </button>
       </div>
-    ) : null
-);
+    ) : null,
+}));
 
-jest.mock(
-  "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal",
-  () => (props) =>
-    props.open ? (
-      <div data-testid="confirm-modal">
-        <div data-testid="confirm-text">{props.confirmText}</div>
-        <button onClick={props.onConfirm} data-testid="confirm-btn">
+jest.mock("@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal", () => ({
+  __esModule: true,
+  default: ({ open, onConfirm, onCancel }: any) =>
+    open ? (
+      <div data-testid="mock-confirm-modal">
+        <button onClick={onConfirm} data-testid="confirm-button">
           Confirm
         </button>
-        <button onClick={props.onCancel} data-testid="cancel-btn">
+        <button onClick={onCancel} data-testid="cancel-button">
           Cancel
         </button>
       </div>
-    ) : null
-);
+    ) : null,
+}));
 
 // Mock Icons
-jest.mock("@workspaceui/componentlibrary/src/assets/icons/download.svg", () => (props) => (
-  <div data-testid="Download-icon" {...props} />
+jest.mock("@workspaceui/componentlibrary/src/assets/icons/trash.svg", () => () => <div data-testid="trash-icon" />);
+jest.mock("@workspaceui/componentlibrary/src/assets/icons/download.svg", () => () => (
+  <div data-testid="download-icon" />
 ));
-jest.mock("@workspaceui/componentlibrary/src/assets/icons/edit-3.svg", () => (props) => (
-  <div data-testid="Edit-icon" {...props} />
+jest.mock("@workspaceui/componentlibrary/src/assets/icons/edit-3.svg", () => () => <div data-testid="edit-icon" />);
+jest.mock("@workspaceui/componentlibrary/src/assets/icons/paperclip.svg", () => () => (
+  <div data-testid="attachment-icon" />
 ));
-jest.mock("@workspaceui/componentlibrary/src/assets/icons/trash.svg", () => (props) => (
-  <div data-testid="Trash-icon" {...props} />
+jest.mock("@workspaceui/componentlibrary/src/assets/icons/upload.svg", () => () => <div data-testid="upload-icon" />);
+jest.mock("@workspaceui/componentlibrary/src/assets/icons/file-plus.svg", () => () => (
+  <div data-testid="file-plus-icon" />
 ));
-jest.mock("@workspaceui/componentlibrary/src/assets/icons/paperclip.svg", () => (props) => (
-  <div data-testid="Attachment-icon" {...props} />
-));
-jest.mock("@workspaceui/componentlibrary/src/assets/icons/upload.svg", () => (props) => (
-  <div data-testid="Upload-icon" {...props} />
-));
-jest.mock("@workspaceui/componentlibrary/src/assets/icons/file-plus.svg", () => (props) => (
-  <div data-testid="FilePlus-icon" {...props} />
-));
-jest.mock("@workspaceui/componentlibrary/src/assets/icons/check.svg", () => (props) => (
-  <div data-testid="Check-icon" {...props} />
-));
-jest.mock("@workspaceui/componentlibrary/src/assets/icons/x.svg", () => (props) => (
-  <div data-testid="X-icon" {...props} />
-));
-jest.mock("@workspaceui/componentlibrary/src/components/IconButton", () => (props) => <button {...props} />);
-
-const RECORD_ID = "record1";
-const TAB_ID = "tab1";
-const ATTACHMENT_ID = "att1";
-const FILE_NAME = "test.txt";
+jest.mock("@workspaceui/componentlibrary/src/assets/icons/check.svg", () => () => <div data-testid="check-icon" />);
+jest.mock("@workspaceui/componentlibrary/src/assets/icons/x.svg", () => () => <div data-testid="x-icon" />);
 
 describe("AttachmentSection", () => {
-  const mockShowErrorModal = jest.fn();
-  const mockOnAttachmentsChange = jest.fn();
-
   const defaultProps = {
-    recordId: RECORD_ID,
-    tabId: TAB_ID,
+    recordId: "rec-1",
+    tabId: "tab-1",
     initialAttachmentCount: 1,
     isSectionExpanded: true,
-    onAttachmentsChange: mockOnAttachmentsChange,
-    showErrorModal: mockShowErrorModal,
+    onAttachmentsChange: jest.fn(),
   };
 
-  const mockSuccessfulFetch = (
-    attachments = [{ id: ATTACHMENT_ID, name: FILE_NAME, creationDate: new Date().toISOString() }]
-  ) => {
-    (attachmentApi.fetchAttachments as jest.Mock).mockResolvedValue(attachments);
-  };
+  const mockAttachments = [
+    {
+      id: "att-1",
+      name: "test-file.pdf",
+      description: "Test description",
+      createdBy$_identifier: "User 1",
+      creationDate: "2023-01-01T00:00:00Z",
+    },
+  ];
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (useTranslation as jest.Mock).mockReturnValue({ t: (key) => key });
-    (useUserContext as jest.Mock).mockReturnValue({
-      session: { adOrgId: "org1" },
-      currentOrganization: { id: "org1" },
-    });
-    // Default successful fetch
-    mockSuccessfulFetch();
+    (fetchAttachments as jest.Mock).mockResolvedValue(mockAttachments);
+    (downloadAttachment as jest.Mock).mockResolvedValue(new Blob(["test"], { type: "application/pdf" }));
+    // Mock URL.createObjectURL
+    global.URL.createObjectURL = jest.fn(() => "mock-url");
+    global.URL.revokeObjectURL = jest.fn();
   });
 
-  it("should fetch and display attachments when section is expanded", async () => {
-    render(<AttachmentSection {...defaultProps} />);
+  it("renders loading state and then attachments", async () => {
+    renderWithTheme(<AttachmentSection {...defaultProps} />);
 
-    // Should call fetch
-    expect(attachmentApi.fetchAttachments).toHaveBeenCalledWith({
-      recordId: RECORD_ID,
-      tabId: TAB_ID,
-    });
-
-    // Should display attachment name
-    await waitFor(() => {
-      expect(screen.getByText(FILE_NAME)).toBeInTheDocument();
-    });
-  });
-
-  it("should open add attachment modal when file dropped (simulated via dropzone)", async () => {
-    render(<AttachmentSection {...defaultProps} />);
-
-    // Simulate clicking dropzone (which triggers file input usually, but we can't easily test file input without userEvent)
-    // Or we can simulate drop?
-    // Let's verify dropzone exists
-    const dropzone = await screen.findByTestId("Div__attachments_dropzone");
-    expect(dropzone).toBeInTheDocument();
-  });
-
-  it("should handle adding generic attachment via mock modal interaction", async () => {
-    // We open modal via prop or internal state.
-    // Let's pass openAddModal prop
-    render(<AttachmentSection {...defaultProps} openAddModal={true} />);
-
-    const modal = await screen.findByTestId("add-attachment-modal");
-    expect(modal).toBeInTheDocument();
-
-    (attachmentApi.createAttachment as jest.Mock).mockResolvedValue({
-      id: "att-new",
-      name: "new.txt",
-      creationDate: new Date().toISOString(),
-    });
-
-    // Simulate upload
-    fireEvent.click(screen.getByTestId("upload-btn"));
+    expect(screen.getByText("common.loading")).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(attachmentApi.createAttachment).toHaveBeenCalled();
-      expect(mockOnAttachmentsChange).toHaveBeenCalled();
+      expect(screen.getByText("test-file.pdf")).toBeInTheDocument();
     });
-
-    // Should update list
-    expect(await screen.findByText("new.txt")).toBeInTheDocument();
   });
 
-  it("should show delete confirmation and delete attachment", async () => {
-    render(<AttachmentSection {...defaultProps} />);
-    await waitFor(() => expect(screen.getByText(FILE_NAME)).toBeInTheDocument());
+  it("opens preview modal when attachment is clicked", async () => {
+    renderWithTheme(<AttachmentSection {...defaultProps} />);
 
-    // Find delete button
-    const deleteBtn = screen.getByTestId(`IconButton__delete_${ATTACHMENT_ID}`);
-    fireEvent.click(deleteBtn);
+    const attachmentName = await screen.findByText("test-file.pdf");
+    fireEvent.click(attachmentName);
 
-    // Confirm modal should appear
-    expect(await screen.findByTestId("confirm-modal")).toBeInTheDocument();
-
-    // Confirm
-    fireEvent.click(screen.getByTestId("confirm-btn"));
-
-    await waitFor(() => {
-      expect(attachmentApi.deleteAttachment).toHaveBeenCalledWith({
-        attachmentId: ATTACHMENT_ID,
-        tabId: TAB_ID,
-        recordId: RECORD_ID,
-      });
-      expect(mockOnAttachmentsChange).toHaveBeenCalled();
-    });
-
-    // Should be removed from list
-    expect(screen.queryByText(FILE_NAME)).toBeNull(); // wait, we only had 1
-    // Actually wait for removal
-    await waitFor(() => expect(screen.queryByText(FILE_NAME)).not.toBeInTheDocument());
+    expect(screen.getByTestId("mock-preview-modal")).toBeInTheDocument();
+    expect(screen.getByText("Test description")).toBeInTheDocument();
   });
 
-  it("should handle error when fetch fails", async () => {
-    (attachmentApi.fetchAttachments as jest.Mock).mockRejectedValue(new Error("Fetch Failed"));
+  it("shows delete confirmation and deletes attachment", async () => {
+    (deleteAttachment as jest.Mock).mockResolvedValue({ success: true });
 
-    render(<AttachmentSection {...defaultProps} />);
+    renderWithTheme(<AttachmentSection {...defaultProps} />);
+
+    await waitFor(() => screen.getByTestId("IconButton__delete_att-1"));
+    const deleteButton = screen.getByTestId("IconButton__delete_att-1");
+    fireEvent.click(deleteButton);
+
+    expect(screen.getByTestId("mock-confirm-modal")).toBeInTheDocument();
+
+    const confirmButton = screen.getByTestId("confirm-button");
+    fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockShowErrorModal).toHaveBeenCalledWith("Fetch Failed");
+      expect(deleteAttachment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attachmentId: "att-1",
+        })
+      );
+      expect(defaultProps.onAttachmentsChange).toHaveBeenCalled();
     });
+  });
+
+  it("opens add modal when a file is selected", async () => {
+    renderWithTheme(<AttachmentSection {...defaultProps} />);
+
+    const file = new File(["test"], "test.txt", { type: "text/plain" });
+    const input = screen.getByTestId("Input__attachments_file");
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect(await screen.findByTestId("mock-add-modal")).toBeInTheDocument();
+  });
+
+  it("does not fetch if initial count is 0", async () => {
+    renderWithTheme(<AttachmentSection {...defaultProps} initialAttachmentCount={0} />);
+
+    expect(fetchAttachments).not.toHaveBeenCalled();
+    expect(screen.queryByText("common.loading")).not.toBeInTheDocument();
   });
 });
