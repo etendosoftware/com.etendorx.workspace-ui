@@ -446,6 +446,23 @@ function buildGridCriteria(
   );
 }
 
+/**
+ * Deep-merges two filter expression maps by grid key.
+ * Returns `base` as-is when override is empty → stable reference, no new object.
+ */
+const deepMergeFilterExpressions = (
+  base?: Record<string, Record<string, string>>,
+  override?: Record<string, Record<string, string>>
+): Record<string, Record<string, string>> => {
+  if (!override || Object.keys(override).length === 0) return base || {};
+  if (!base || Object.keys(base).length === 0) return override;
+  const merged: Record<string, Record<string, string>> = { ...base };
+  for (const [gridKey, fields] of Object.entries(override)) {
+    merged[gridKey] = { ...merged[gridKey], ...fields };
+  }
+  return merged;
+};
+
 const WindowReferenceGrid = ({
   parameter,
   tabId,
@@ -512,6 +529,7 @@ const WindowReferenceGrid = ({
 
   const lastDefaultsRef = useRef<string>("");
   const lastFilterExpressionsRef = useRef<string>("");
+  const lastFilterExpressionsObjRef = useRef<Record<string, Record<string, string>>>({});
   const stableWindowReferenceTabRef = useRef<typeof windowReferenceTab | undefined>(windowReferenceTab);
 
   // Stabilize windowReferenceTab reference to prevent infinite re-renders
@@ -538,11 +556,21 @@ const WindowReferenceGrid = ({
 
     if (filtersString !== lastFilterExpressionsRef.current) {
       lastFilterExpressionsRef.current = filtersString;
+      lastFilterExpressionsObjRef.current = filters;
       return filters;
     }
 
-    return lastFilterExpressionsRef.current ? JSON.parse(lastFilterExpressionsRef.current) : {};
+    return lastFilterExpressionsObjRef.current;
   }, [processConfig?.filterExpressions]);
+
+  // Visual-only filter expressions: merges criteria filters with _filterExpressions
+  // (e.g. expectedDate from JS onLoad). Used only for MRT column header display,
+  // NOT sent as backend criteria.
+  const stableVisualFilterExpressions = useMemo(() => {
+    const visualOnly = (processConfig?._filterExpressions || {}) as Record<string, Record<string, string>>;
+    if (!visualOnly || Object.keys(visualOnly).length === 0) return stableFilterExpressions;
+    return deepMergeFilterExpressions(stableFilterExpressions, visualOnly);
+  }, [stableFilterExpressions, processConfig?._filterExpressions]);
 
   useEffect(() => {
     if (!processConfigLoading && processConfig) {
@@ -1144,8 +1172,8 @@ const WindowReferenceGrid = ({
   useEffect(() => {
     // Map initial filterExpressions from OnLoad to visual tableColumnFilters (MRT)
     let initialFilters: MRT_ColumnFiltersState = [];
-    if (stableFilterExpressions?.[parameter.dBColumnName || ""]) {
-      const fieldExpressions = stableFilterExpressions[parameter.dBColumnName || ""];
+    if (stableVisualFilterExpressions?.[parameter.dBColumnName || ""]) {
+      const fieldExpressions = stableVisualFilterExpressions[parameter.dBColumnName || ""];
       initialFilters = Object.entries(fieldExpressions).map(([fieldName, logic]: [string, any]) => {
         let filterValue = "";
 
@@ -1185,7 +1213,7 @@ const WindowReferenceGrid = ({
         _allRows: [],
       },
     }));
-  }, [onSelectionChange, entityName, parameter.dBColumnName, stableFilterExpressions, rawColumns]);
+  }, [onSelectionChange, entityName, parameter.dBColumnName, stableVisualFilterExpressions, rawColumns]);
 
   const handleMRTColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
@@ -1339,7 +1367,7 @@ const WindowReferenceGrid = ({
           return "xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx"
             .replace(/[xy]/g, (c) => {
               const r = (Math.random() * 16) | 0;
-              const v = c == "x" ? r : (r & 0x3) | 0x8;
+              const v = c === "x" ? r : (r & 0x3) | 0x8;
               return v.toString(16);
             })
             .toUpperCase();
@@ -1729,7 +1757,7 @@ const WindowReferenceGrid = ({
       },
       onRowSelectionChange: handleRowSelection,
       onColumnFiltersChange: handleMRTColumnFiltersChange,
-      enableEditing: (row) => {
+      enableEditing: (_row) => {
         // Robust check for row editability based on field metadata
         const hasEditableField = finalColumns.some((col) => {
           if (col.id === "mrt-row-actions" || col.id === "mrt-row-select") return false;
