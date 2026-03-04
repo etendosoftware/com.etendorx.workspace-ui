@@ -277,7 +277,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
               column={column}
               filterValue={currentFilterValue}
               onFilterChange={(filterValue: string) => {
-                onDateTextFilterChange?.(column.columnName, filterValue);
+                onDateTextFilterChange?.(column.id, filterValue);
               }}
               data-testid="DateSelector__46c09c"
             />
@@ -299,7 +299,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
               column={column}
               filterValue={currentFilterValue}
               onFilterChange={(filterValue: string) => {
-                onDateTextFilterChange(column.columnName, filterValue);
+                onDateTextFilterChange(column.id, filterValue);
               }}
               data-testid="TextFilter__46c09c"
             />

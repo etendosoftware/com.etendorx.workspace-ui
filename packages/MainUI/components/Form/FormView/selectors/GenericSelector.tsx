@@ -17,7 +17,11 @@
 
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { memo } from "react";
-import { CUSTOM_SELECTORS_IDENTIFIERS, FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import {
+  CUSTOM_SELECTORS_IDENTIFIERS,
+  FIELD_REFERENCE_CODES,
+  PRODUCT_STOCK_VIEW_REFERENCE_IDS,
+} from "@/utils/form/constants";
 import { toCamelCase } from "@/utils/commons";
 import { BooleanSelector } from "./BooleanSelector";
 import { DateSelector } from "./DateSelector";
@@ -25,6 +29,8 @@ import { ListSelector } from "./ListSelector";
 import { NumericSelector } from "./NumericSelector";
 import QuantitySelector from "./QuantitySelector";
 import { SelectSelector } from "./SelectSelector";
+
+import { ProductStockModalSelector } from "./ProductStockModalSelector";
 import { StringSelector } from "./StringSelector";
 import { TextLongSelector } from "./TextLongSelector";
 import { PasswordSelector } from "./PasswordSelector";
@@ -32,6 +38,7 @@ import { TableDirSelector } from "./TableDirSelector";
 import DatetimeSelector from "./DatetimeSelector";
 import LocationSelector from "./LocationSelector";
 import { TimeSelector } from "./TimeSelector";
+import AttributeSetInstanceSelector from "./AttributeSetInstance";
 
 import { useFormContext } from "react-hook-form";
 
@@ -59,11 +66,24 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
 
   const { reference } = effectiveField.column;
 
+  const isProductStockModal =
+    effectiveField.selector?.datasourceName === "ProductStockView" ||
+    (PRODUCT_STOCK_VIEW_REFERENCE_IDS as readonly string[]).includes(effectiveField.column.referenceSearchKey);
+
+  if (isProductStockModal) {
+    return (
+      <ProductStockModalSelector
+        field={effectiveField}
+        isReadOnly={isReadOnly}
+        data-testid={`ProductStockModalSelector__${field.id}`}
+      />
+    );
+  }
+
   switch (reference) {
     case FIELD_REFERENCE_CODES.PASSWORD:
       return <PasswordSelector field={effectiveField} readOnly={isReadOnly} data-testid="PasswordSelector__6e80fa" />;
-    case FIELD_REFERENCE_CODES.PRODUCT: // Product reference to datasource
-    case FIELD_REFERENCE_CODES.SELECTOR: // Generic selector (includes Product)
+    case FIELD_REFERENCE_CODES.SELECTOR:
     case FIELD_REFERENCE_CODES.TABLE_DIR_19:
     case FIELD_REFERENCE_CODES.TABLE_DIR_18:
       return <TableDirSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="TableDirSelector__6e80fa" />;
@@ -86,7 +106,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         />
       );
     case FIELD_REFERENCE_CODES.TIME:
-      return <TimeSelector field={field} isReadOnly={isReadOnly} data-testid={"TimeSelector__" + field.id} />;
+      return <TimeSelector field={field} isReadOnly={isReadOnly} data-testid={`TimeSelector__${field.id}`} />;
     case FIELD_REFERENCE_CODES.LIST_17:
     case FIELD_REFERENCE_CODES.LIST_13:
       return <ListSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="ListSelector__6e80fa" />;
@@ -118,6 +138,14 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           type="integer"
           readOnly={isReadOnly}
           data-testid="NumericSelector__6e80fa"
+        />
+      );
+    case FIELD_REFERENCE_CODES.PATTRIBUTE:
+      return (
+        <AttributeSetInstanceSelector
+          field={effectiveField}
+          isReadOnly={isReadOnly}
+          data-testid="AttributeSetInstanceSelector__6e80fa"
         />
       );
     case FIELD_REFERENCE_CODES.TEXT_LONG:

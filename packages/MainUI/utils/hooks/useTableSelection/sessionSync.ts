@@ -80,10 +80,12 @@ export const syncSelectedRecordsToSession = async ({
     // Add multiple row IDs to payload when more than one record is selected
     if (selectedRecords.length > 1) {
       payload[MULTIPLE_ROW_IDS_KEY] = allSelectedIds;
-    } else {
-      const record = buildPayloadByInputName(lastSelectedRecord, tab.fields);
-      Object.assign(payload, record);
     }
+
+    // Always send the last selected record's data so the backend can compute
+    // session context attributes that displayLogic depends on.
+    const record = buildPayloadByInputName(lastSelectedRecord, tab.fields);
+    Object.assign(payload, record);
 
     // Send single request with all selected record information
     const responseData = await fetchFormInitialization(params, payload);

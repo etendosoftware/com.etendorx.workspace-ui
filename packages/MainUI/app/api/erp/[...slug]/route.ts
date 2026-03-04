@@ -112,12 +112,6 @@ const getCachedErpData = unstable_cache(
  * @param method - HTTP method
  * @returns true if this is a mutation route that should not be cached
  */
-/**
- * Determines if a route should bypass caching (mutations or non-GET requests)
- * @param slug - The API slug path
- * @param method - HTTP method
- * @returns true if this is a mutation route that should not be cached
- */
 function isMutationRoute(slug: string, method: string): boolean {
   return (
     slug.includes(SLUGS_METHODS.CREATE) ||
@@ -127,11 +121,14 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.startsWith(SLUGS_CATEGORIES.NOTES) || // Notes servlet needs session cookies
     slug.startsWith(SLUGS_CATEGORIES.ATTACHMENTS) || // Attachments servlet needs session cookies and multipart/form-data
     slug.startsWith(SLUGS_CATEGORIES.LEGACY) || // Legacy servlets need session cookies
+    slug.startsWith("das/") ||
+    slug.startsWith("org.openbravo.client.kernel") ||
     // Static resources and direct handling
     slug.startsWith("web/") ||
     slug.startsWith("ad_forms/") ||
     slug.startsWith("org.openbravo") ||
     slug.startsWith("etendo/") ||
+    slug.startsWith("info/") ||
     method !== "GET"
   );
 }
@@ -223,40 +220,47 @@ function buildErpHeaders(
  * @param requestBody - Request body (string or stream for multipart)
  * @returns Response data from ERP
  */
-async function handleMutationRequest(
+/**
+ * Manually follows HTTP redirects to preserve the `Cookie` header.
+ * Node's native fetch drops request cookies across redirects.
+ */
+async function followRedirects(
+  response: Response,
   erpUrl: string,
   method: string,
   headers: Record<string, string>,
   requestBody: requestBody
-): Promise<unknown> {
-  const fetchOptions: RequestInit = {
-    method,
-    headers,
-    body: requestBody,
+): Promise<Response> {
+  const location = response.headers.get("location")!;
+  const redirectUrl = location.startsWith("http") ? location : new URL(location, erpUrl).toString();
+
+  // 301, 302, 303 conventionally change POST to GET. 307 & 308 preserve the method.
+  const isPostToGet =
+    (response.status === 301 || response.status === 302 || response.status === 303) && method !== "GET";
+  const nextMethod = isPostToGet ? "GET" : method;
+
+  const nextHeaders = { ...headers };
+  if (isPostToGet) {
+    delete nextHeaders["Content-Type"];
+  }
+
+  const nextFetchOptions: RequestInit = {
+    method: nextMethod,
+    headers: nextHeaders,
+    body: isPostToGet ? undefined : requestBody,
+    redirect: "manual",
   };
 
-  // Add duplex option only for ReadableStream bodies
-  // Check for ReadableStream in a way that works in both Node.js and browser
-  if (typeof ReadableStream !== "undefined" && requestBody instanceof ReadableStream) {
-    // @ts-expect-error - duplex is required for streaming but not in types yet
-    fetchOptions.duplex = "half";
-  }
+  return await fetch(redirectUrl, nextFetchOptions);
+}
 
-  const response = await fetch(erpUrl, fetchOptions);
-
-  if (!response.ok) {
-    const defaultResponseStatus = erpUrl.includes("copilot") ? 404 : response.status;
-    const errorText = await response.text();
-    throw new ErpRequestError({
-      message: `ERP request failed: ${defaultResponseStatus} ${response.statusText}. ${errorText}`,
-      status: defaultResponseStatus,
-      statusText: response.statusText,
-      errorText,
-    });
-  }
-
-  const responseContentType = response.headers.get("content-type");
-
+/**
+ * Handles HTML, EventStream, and Binary content types for mutation responses.
+ */
+async function handleHtmlStreamAndBinary(
+  response: Response,
+  responseContentType: string | null
+): Promise<unknown | null> {
   // Check if response is a stream
   if (responseContentType?.includes("text/event-stream")) {
     return { stream: response.body, headers: response.headers };
@@ -272,23 +276,18 @@ async function handleMutationRequest(
   const encoding = detectCharset(responseContentType);
   const responseText = new TextDecoder(encoding).decode(responseBuffer);
 
-  // Check if response is HTML (with proper encoding detection already applied)
+  // Check if response is HTML
   if (
     responseContentType?.toLowerCase().includes("text/html") ||
     responseText.trim().toLowerCase().startsWith("<html") ||
     responseText.trim().toLowerCase().startsWith("<!doctype html")
   ) {
-    // Rewrite HTML to inject <base> tag pointing to ETENDO_CLASSIC_HOST
-    // This allows relative paths on the client to resolve directly to the backend
-    // Rewrite HTML to inject <base> tag pointing to ETENDO_CLASSIC_HOST
-    // This allows relative paths on the client to resolve directly to the backend
     const rewrittenHtml = rewriteHtmlResourceUrls(
       responseText,
       process.env.ETENDO_CLASSIC_HOST || process.env.ETENDO_CLASSIC_URL
     );
     const htmlResponse = createHtmlResponse(rewrittenHtml, response);
 
-    // For PrinterReports, also return Set-Cookie header so client can extract JSESSIONID
     const setCookie = response.headers.get("set-cookie");
     if (setCookie) {
       htmlResponse.headers.set("set-cookie", setCookie);
@@ -297,6 +296,13 @@ async function handleMutationRequest(
     return { htmlContent: htmlResponse };
   }
 
+  return responseText;
+}
+
+/**
+ * Final parsing of the mutation response, handling legacy errors and JSON.
+ */
+function parseFinalMutationResponse(responseText: string): unknown {
   // Check if response is JavaScript error from Etendo
   if (responseText.startsWith("OB.KernelUtilities.handleSystemException(")) {
     const match = responseText.match(/OB\.KernelUtilities\.handleSystemException\('(.+)'\);/);
@@ -309,6 +315,52 @@ async function handleMutationRequest(
   } catch {
     throw new Error(`Invalid JSON response from backend: ${responseText.substring(0, 200)}...`);
   }
+}
+
+/**
+ * Handles mutation requests (non-cached) to the ERP system
+ */
+async function handleMutationRequest(
+  erpUrl: string,
+  method: string,
+  headers: Record<string, string>,
+  requestBody: requestBody
+): Promise<unknown> {
+  const fetchOptions: RequestInit = {
+    method,
+    headers,
+    body: requestBody,
+    redirect: "manual",
+  };
+
+  if (typeof ReadableStream !== "undefined" && requestBody instanceof ReadableStream) {
+    // @ts-expect-error - duplex is required for streaming but not in types yet
+    fetchOptions.duplex = "half";
+  }
+
+  let response = await fetch(erpUrl, fetchOptions);
+
+  if (response.status >= 300 && response.status < 400 && response.headers.has("location")) {
+    response = await followRedirects(response, erpUrl, method, headers, requestBody);
+  }
+
+  if (!response.ok) {
+    const status = erpUrl.includes("copilot") ? 404 : response.status;
+    const errorText = await response.text();
+    throw new ErpRequestError({
+      message: `ERP request failed: ${status} ${response.statusText}. ${errorText}`,
+      status,
+      statusText: response.statusText,
+      errorText,
+    });
+  }
+
+  const result = await handleHtmlStreamAndBinary(response, response.headers.get("content-type"));
+  if (result !== null && typeof result === "object") {
+    return result;
+  }
+
+  return parseFinalMutationResponse(result as string);
 }
 
 async function handleERPRequest(request: Request, params: Promise<{ slug: string[] }>, method: string) {
@@ -364,6 +416,8 @@ function buildErpUrl(slug: string, requestUrl: string): string {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.SWS)) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
+  } else if (slug.startsWith("das/") || slug.startsWith("org.openbravo.client.kernel")) {
+    erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.COPILOT)) {
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
   } else if (slug.startsWith(SLUGS_CATEGORIES.OPENBRAVO_KERNEL)) {
@@ -373,7 +427,8 @@ function buildErpUrl(slug: string, requestUrl: string): string {
     slug.startsWith("web/") ||
     slug.startsWith("ad_forms/") ||
     slug.startsWith("org.openbravo") ||
-    slug.startsWith("etendo/")
+    slug.startsWith("etendo/") ||
+    slug.startsWith("info/")
   ) {
     // Direct mapping for static resources and other classic paths
     erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
@@ -513,15 +568,16 @@ async function handleError(error: unknown, params: Promise<{ slug: string[] }>):
   const resolvedParams = await params;
   console.error(`API Route /api/erp/${resolvedParams.slug.join("/")} Error:`, error);
 
-  if (error instanceof ErpRequestError) {
+  if (error instanceof ErpRequestError || (error instanceof Error && error.name === "ErpRequestError")) {
+    const erpError = error as ErpRequestError;
     return NextResponse.json(
       {
-        error: error.message,
-        details: error.errorText,
-        status: error.status,
-        statusText: error.statusText,
+        error: erpError.message,
+        details: erpError.errorText,
+        status: erpError.status,
+        statusText: erpError.statusText,
       },
-      { status: error.status }
+      { status: erpError.status }
     );
   }
 
