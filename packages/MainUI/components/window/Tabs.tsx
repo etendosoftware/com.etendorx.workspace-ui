@@ -72,7 +72,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
   const collapsed = !activeLevels.includes(current.tabLevel);
   const isTopExpanded = !collapsed && isTopGroup;
   const showResizeHandle = !isTopExpanded && !collapsed;
-  
+
   const isExpanded = activeLevels.length === 1 && activeLevels[0] === current.tabLevel && current.tabLevel > 0;
 
   const handleClick = useCallback(
