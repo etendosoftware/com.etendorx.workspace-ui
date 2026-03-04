@@ -17,7 +17,14 @@
 
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTab } from "@/hooks/useTab";
-import type { EntityData, EntityValue, Column, Tab, Criteria } from "@workspaceui/api-client/src/api/types";
+import {
+  type EntityData,
+  type EntityValue,
+  type Column,
+  type Tab,
+  type Criteria,
+  UIPattern,
+} from "@workspaceui/api-client/src/api/types";
 import {
   MaterialReactTable,
   useMaterialReactTable,
@@ -192,11 +199,12 @@ const InteractiveGridCellRenderer = ({ row, cell, column }: any) => {
   const isSelected = row.getIsSelected();
   // Get dbColumnName from column definition (passed via custom property)
   const dbColumnName = column.columnDef?.dbColumnName;
+  const isFieldReadOnly = column.columnDef?.isFieldReadOnly;
 
   // glItems are always local/editable
   const isAlwaysEditable = dbColumnName === "glitem";
 
-  if (isSelected || isAlwaysEditable) {
+  if ((isSelected || isAlwaysEditable) && !isFieldReadOnly) {
     return (
       <StableGridCellEditorRenderer
         row={row}
@@ -428,6 +436,32 @@ function applyRecordValues(
 }
 
 /**
+ * Evaluates the readOnlyLogicExpression for a grid field.
+ * Returns true if the field should be read-only.
+ *
+ * Logic mirrors ProcessParameterSelector's readOnly evaluation:
+ * 1. Check field-level static flags (readOnly, isReadOnly)
+ * 2. Evaluate readOnlyLogicExpression || column.readOnlyLogic via compileExpression
+ */
+function evaluateFieldReadOnlyLogic(field: any, context: Record<string, unknown>): boolean {
+  // Static flags
+  if (field.readOnly === true || field.isReadOnly === true) return true;
+
+  // Dynamic expression
+  const expression = field.readOnlyLogicExpression || field.column?.readOnlyLogic;
+  if (!expression) return false;
+
+  try {
+    const compiled = compileExpression(expression);
+    const result = !!compiled(context, context);
+    return result;
+  } catch (e) {
+    console.warn(`Error evaluating readOnlyLogic for field ${field.name}:`, e);
+    return false; // default to editable on error
+  }
+}
+
+/**
  * Builds the filter criteria array for a single grid parameter by looking up
  * its column name in the `filterExpressions` config returned by the backend.
  */
@@ -571,6 +605,32 @@ const WindowReferenceGrid = ({
     if (!visualOnly || Object.keys(visualOnly).length === 0) return stableFilterExpressions;
     return deepMergeFilterExpressions(stableFilterExpressions, visualOnly);
   }, [stableFilterExpressions, processConfig?._filterExpressions]);
+
+  // Build expression evaluation context (similar to ProcessParameterSelector)
+  const fieldReadOnlyContext = useMemo(
+    () => ({
+      ...session,
+      ...recordValues,
+      ...currentValues,
+    }),
+    [session, recordValues, currentValues]
+  );
+
+  // Compute read-only status for all grid fields
+  const fieldReadOnlyMap = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    if (!stableWindowReferenceTab?.fields) return map;
+
+    const fields = Object.values(stableWindowReferenceTab.fields);
+    for (const field of fields) {
+      const key = (field as any).columnName || (field as any).hqlName;
+      if (key) {
+        map[key] = evaluateFieldReadOnlyLogic(field, fieldReadOnlyContext);
+      }
+    }
+
+    return map;
+  }, [stableWindowReferenceTab?.fields, fieldReadOnlyContext]);
 
   useEffect(() => {
     if (!processConfigLoading && processConfig) {
@@ -990,10 +1050,16 @@ const WindowReferenceGrid = ({
       // This ensures our CellEditorFactory is used for all columns, including those with Filters (TableDir, etc.)
       return {
         ...columnConfig,
+        isFieldReadOnly:
+          fieldReadOnlyMap[columnConfig.columnName] || fieldReadOnlyMap[columnConfig.accessorKey as string] || false,
         enableEditing: () => {
           // Basic read-only check based on field definition
           // Ideally this should use field.readOnly or similar prop if available
-          const isReadOnly = columnConfig.readOnly || columnConfig.isReadOnly;
+          const isReadOnly =
+            columnConfig.readOnly ||
+            columnConfig.isReadOnly ||
+            fieldReadOnlyMap[columnConfig.columnName] ||
+            fieldReadOnlyMap[columnConfig.accessorKey as string];
           if (isReadOnly) return false;
 
           if (columnConfig.columnName === "id" || columnConfig.columnName.includes("identifier")) return false;
@@ -1031,7 +1097,7 @@ const WindowReferenceGrid = ({
     });
 
     return sortedColumns;
-  }, [columnsFromHook, rawColumns, stableWindowReferenceTab]);
+  }, [columnsFromHook, rawColumns, stableWindowReferenceTab, fieldReadOnlyMap]);
 
   const shouldSkipFetch = !isDataReady || processConfigLoading || !entityName;
 
@@ -1569,8 +1635,9 @@ const WindowReferenceGrid = ({
       validations,
       session,
       tabId,
+      fieldReadOnlyMap,
     }),
-    [tabId, session, validations]
+    [tabId, session, validations, fieldReadOnlyMap]
   );
 
   const finalColumns = useMemo(() => {
@@ -1602,8 +1669,14 @@ const WindowReferenceGrid = ({
           });
 
           if (field) {
-            // Check explicit metadata
-            if (field.readOnly === true || field.isReadOnly === true || field.uIPattern === "RO") {
+            // Check explicit metadata or dynamic logic
+            if (
+              field.readOnly === true ||
+              field.isReadOnly === true ||
+              field.uIPattern === UIPattern.READ_ONLY ||
+              fieldReadOnlyMap[field.columnName] ||
+              fieldReadOnlyMap[field.hqlName]
+            ) {
               isReadOnly = true;
             }
           }
@@ -1627,7 +1700,7 @@ const WindowReferenceGrid = ({
 
         return newCol;
       });
-  }, [columns, handleRecordChange, parameter.window]);
+  }, [columns, handleRecordChange, parameter.window, fieldReadOnlyMap]);
 
   const renderTopToolbar = useCallback(
     (props: MRT_TopToolbarProps<EntityData>) => {
@@ -1792,8 +1865,13 @@ const WindowReferenceGrid = ({
           }
 
           // Check Read Only status
-          // @ts-ignore
-          if (field.readOnly === true || field.isReadOnly === true || field.uIPattern === "RO") {
+          if (
+            field.readOnly === true ||
+            field.isReadOnly === true ||
+            field.uIPattern === UIPattern.READ_ONLY ||
+            fieldReadOnlyMap[field.columnName] ||
+            fieldReadOnlyMap[field.hqlName]
+          ) {
             return false;
           }
 
