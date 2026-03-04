@@ -59,8 +59,10 @@ export const compileExpression = (expression: string) => {
         PropertyStore: {
           get: (key) => {
             // 1. Check context (session attributes with #/$ prefixes)
+            // Note: the SmartContext Proxy returns "" for unknown keys (not undefined/null),
+            // so we must also skip "" to allow the localStorage fallback to work.
             const fromContext = context[key] ?? context['#' + key] ?? context['$' + key];
-            if (fromContext !== undefined && fromContext !== null) return normalize(fromContext);
+            if (fromContext !== undefined && fromContext !== null && fromContext !== '') return normalize(fromContext);
             // 2. Check preferences loaded from backend (stored in localStorage at login)
             try {
               const prefs = JSON.parse(localStorage.getItem('etendo_preferences') || '{}');
@@ -70,6 +72,8 @@ export const compileExpression = (expression: string) => {
               for (const k of Object.keys(prefs)) {
                 if (k.toLowerCase() === lowerKey) return normalize(prefs[k]);
               }
+              // DEBUG: log when a preference key is not found
+              console.warn('[OB.PropertyStore.get] Key not found in localStorage prefs:', key, '| available keys with ETAWIM:', Object.keys(prefs).filter(k => k.toUpperCase().includes('ETAWIM')));
             } catch (e) { /* ignore parse errors */ }
             return undefined;
           }
