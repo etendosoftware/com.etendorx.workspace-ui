@@ -117,10 +117,10 @@ export class ProcessParameterMapper {
 
     // Map reference types to appropriate datasource names
     const datasourceMap: Record<string, string> = {
-      [FIELD_REFERENCE_CODES.PRODUCT]: "ProductByPriceAndWarehouse",
-      [FIELD_REFERENCE_CODES.TABLE_DIR_19]: "ComboTableDatasourceService",
-      [FIELD_REFERENCE_CODES.TABLE_DIR_18]: "ComboTableDatasourceService",
-      [FIELD_REFERENCE_CODES.SELECT_30]: "ComboTableDatasourceService",
+      [FIELD_REFERENCE_CODES.PRODUCT.id]: "ProductByPriceAndWarehouse",
+      [FIELD_REFERENCE_CODES.TABLE_DIR_19.id]: "ComboTableDatasourceService",
+      [FIELD_REFERENCE_CODES.TABLE_DIR_18.id]: "ComboTableDatasourceService",
+      [FIELD_REFERENCE_CODES.SELECT_30.id]: "ComboTableDatasourceService",
     };
 
     const datasourceName = datasourceMap[reference];
@@ -149,42 +149,42 @@ export class ProcessParameterMapper {
     // Map textual references from process definition to reference codes
     const referenceMap: Record<string, string> = {
       // Boolean types
-      "Yes/No": FIELD_REFERENCE_CODES.BOOLEAN,
-      YesNo: FIELD_REFERENCE_CODES.BOOLEAN,
-      Boolean: FIELD_REFERENCE_CODES.BOOLEAN,
+      "Yes/No": FIELD_REFERENCE_CODES.BOOLEAN.id,
+      YesNo: FIELD_REFERENCE_CODES.BOOLEAN.id,
+      Boolean: FIELD_REFERENCE_CODES.BOOLEAN.id,
 
       // Numeric types
-      Amount: FIELD_REFERENCE_CODES.DECIMAL,
-      Number: FIELD_REFERENCE_CODES.DECIMAL,
-      Decimal: FIELD_REFERENCE_CODES.DECIMAL,
-      Integer: FIELD_REFERENCE_CODES.INTEGER,
-      Quantity: FIELD_REFERENCE_CODES.QUANTITY_29,
+      Amount: FIELD_REFERENCE_CODES.DECIMAL.id,
+      Number: FIELD_REFERENCE_CODES.DECIMAL.id,
+      Decimal: FIELD_REFERENCE_CODES.DECIMAL.id,
+      Integer: FIELD_REFERENCE_CODES.INTEGER.id,
+      Quantity: FIELD_REFERENCE_CODES.QUANTITY_29.id,
 
       // Date types
-      Date: FIELD_REFERENCE_CODES.DATE,
-      DateTime: FIELD_REFERENCE_CODES.DATETIME,
+      Date: FIELD_REFERENCE_CODES.DATE.id,
+      DateTime: FIELD_REFERENCE_CODES.DATETIME.id,
 
       // List types
-      List: FIELD_REFERENCE_CODES.LIST_17,
+      List: FIELD_REFERENCE_CODES.LIST_17.id,
 
       // Select types
-      Select: FIELD_REFERENCE_CODES.SELECT_30,
+      Select: FIELD_REFERENCE_CODES.SELECT_30.id,
 
       // Product types
-      Product: FIELD_REFERENCE_CODES.PRODUCT,
+      Product: FIELD_REFERENCE_CODES.PRODUCT.id,
 
       // Table Directory types
-      TableDir: FIELD_REFERENCE_CODES.TABLE_DIR_19,
-      "Table Directory": FIELD_REFERENCE_CODES.TABLE_DIR_19,
+      TableDir: FIELD_REFERENCE_CODES.TABLE_DIR_19.id,
+      "Table Directory": FIELD_REFERENCE_CODES.TABLE_DIR_19.id,
 
       // Password
-      Password: FIELD_REFERENCE_CODES.PASSWORD,
+      Password: FIELD_REFERENCE_CODES.PASSWORD.id,
 
       // Window reference
-      Window: FIELD_REFERENCE_CODES.WINDOW,
+      Window: FIELD_REFERENCE_CODES.WINDOW.id,
 
       // Attribute Set Instance
-      PAttribute: FIELD_REFERENCE_CODES.PATTRIBUTE,
+      PAttribute: FIELD_REFERENCE_CODES.PATTRIBUTE.id,
 
       // String/Text (default)
       String: "10", // Text reference
@@ -233,7 +233,7 @@ export class ProcessParameterMapper {
     return (
       !parameter.reference ||
       supportedReferences.includes(parameter.reference) ||
-      (Object.values(FIELD_REFERENCE_CODES) as string[]).includes(parameter.reference)
+      (Object.values(FIELD_REFERENCE_CODES).map((v) => v.id) as string[]).includes(parameter.reference)
     );
   }
 
@@ -257,26 +257,26 @@ export class ProcessParameterMapper {
       return "tabledir";
     }
 
-    if (reference === FIELD_REFERENCE_CODES.PASSWORD) return "password";
-    if (reference === FIELD_REFERENCE_CODES.BOOLEAN) return "boolean";
-    if (reference === FIELD_REFERENCE_CODES.DECIMAL || reference === FIELD_REFERENCE_CODES.INTEGER) {
+    if (reference === FIELD_REFERENCE_CODES.PASSWORD.id) return "password";
+    if (reference === FIELD_REFERENCE_CODES.BOOLEAN.id) return "boolean";
+    if (reference === FIELD_REFERENCE_CODES.DECIMAL.id || reference === FIELD_REFERENCE_CODES.INTEGER.id) {
       return "numeric";
     }
-    if (reference === FIELD_REFERENCE_CODES.QUANTITY_29 || reference === FIELD_REFERENCE_CODES.QUANTITY_22) {
+    if (reference === FIELD_REFERENCE_CODES.QUANTITY_29.id || reference === FIELD_REFERENCE_CODES.QUANTITY_22.id) {
       return "quantity";
     }
-    if (reference === FIELD_REFERENCE_CODES.DATE) return "date";
-    if (reference === FIELD_REFERENCE_CODES.DATETIME) return "datetime";
-    if (reference === FIELD_REFERENCE_CODES.SELECT_30) return "select";
-    if (reference === FIELD_REFERENCE_CODES.PRODUCT) return "product";
-    if (reference === FIELD_REFERENCE_CODES.TABLE_DIR_19 || reference === FIELD_REFERENCE_CODES.TABLE_DIR_18) {
+    if (reference === FIELD_REFERENCE_CODES.DATE.id) return "date";
+    if (reference === FIELD_REFERENCE_CODES.DATETIME.id) return "datetime";
+    if (reference === FIELD_REFERENCE_CODES.SELECT_30.id) return "select";
+    if (reference === FIELD_REFERENCE_CODES.PRODUCT.id) return "product";
+    if (reference === FIELD_REFERENCE_CODES.TABLE_DIR_19.id || reference === FIELD_REFERENCE_CODES.TABLE_DIR_18.id) {
       return "tabledir";
     }
-    if (reference === FIELD_REFERENCE_CODES.LIST_17 || reference === FIELD_REFERENCE_CODES.LIST_13) {
+    if (reference === FIELD_REFERENCE_CODES.LIST_17.id || reference === FIELD_REFERENCE_CODES.LIST_13.id) {
       return "list";
     }
-    if (reference === FIELD_REFERENCE_CODES.WINDOW) return "window";
-    if (reference === FIELD_REFERENCE_CODES.PATTRIBUTE) return "pattribute";
+    if (reference === FIELD_REFERENCE_CODES.WINDOW.id) return "window";
+    if (reference === FIELD_REFERENCE_CODES.PATTRIBUTE.id) return "pattribute";
 
     return "text"; // Default fallback
   }
@@ -400,7 +400,7 @@ export class ProcessParameterMapper {
           }
           if (isSimpleValue(processDefaultValue)) {
             if (
-              parameter?.reference === FIELD_REFERENCE_CODES.BOOLEAN ||
+              parameter?.reference === FIELD_REFERENCE_CODES.BOOLEAN.id ||
               parameter?.reference === "Yes/No" ||
               parameter?.reference === "Boolean"
             ) {

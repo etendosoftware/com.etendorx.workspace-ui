@@ -35,7 +35,7 @@ import { GenericSelector } from "./GenericSelector";
 import useDisplayLogic from "@/hooks/useDisplayLogic";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 import useFormParent from "@/hooks/useFormParent";
-import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { FIELD_REFERENCE_CODES, CALLOUT_TRIGGERS } from "@/utils/form/constants";
 import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.svg";
 
 export const compileExpression = (expression: string) => {
@@ -114,6 +114,11 @@ export const compileExpression = (expression: string) => {
   }
 };
 
+const isImmediateCalloutField = (reference: string) => {
+  const fieldEntry = Object.values(FIELD_REFERENCE_CODES).find((code) => code.id === reference);
+  return fieldEntry?.calloutTrigger === CALLOUT_TRIGGERS.ON_CHANGE;
+};
+
 const BaseSelectorComp = ({
   field,
   formMode = FormMode.EDIT,
@@ -146,7 +151,6 @@ const BaseSelectorComp = ({
   const value = watch(field.hqlName);
   const values = watch();
   const previousValue = useRef(value);
-  const ready = useRef(false);
   const fieldsByHqlName = useMemo(() => tab?.fields || {}, [tab?.fields]);
   const optionData = watch(`${field.hqlName}_data`);
 
@@ -291,49 +295,42 @@ const BaseSelectorComp = ({
     applyAuxiliaryInputValues,
   ]);
 
-  const shouldExecuteCallout = useCallback((): boolean => {
-    if (!field.column.callout) return false;
-    if (isSettingFromCallout.current) return false;
-    if (globalCalloutManager.isSuppressed()) return false;
+  const shouldExecuteCallout = useCallback(
+    (currentValue: any): boolean => {
+      if (!field.column.callout) return false;
+      if (isSettingFromCallout.current) return false;
+      if (globalCalloutManager.isSuppressed()) return false;
 
-    if (isFormInitializing) return false;
-    if (isSettingInitialValues) return false;
+      if (isFormInitializing) return false;
+      if (isSettingInitialValues) return false;
 
-    if (formMode === FormMode.NEW) {
-      const fieldState = formState.dirtyFields[field.hqlName];
-      if (!fieldState) {
-        if (isDebugCallouts()) {
-          logger.debug(`[Callout] Skipped (field not dirty in NEW mode): ${field.hqlName}`, {
-            formState: formState.dirtyFields,
-            fieldState,
-          });
+      if (formMode === FormMode.NEW) {
+        const fieldState = formState.dirtyFields[field.hqlName];
+        if (!fieldState) {
+          if (isDebugCallouts()) {
+            logger.debug(`[Callout] Skipped (field not dirty in NEW mode): ${field.hqlName}`, {
+              formState: formState.dirtyFields,
+              fieldState,
+            });
+          }
+          return false;
         }
-        return false;
       }
-    }
 
-    if (previousValue.current === value) return false;
+      if (previousValue.current === currentValue) return false;
 
-    return true;
-  }, [
-    field.hqlName,
-    field.column.callout,
-    value,
-    isFormInitializing,
-    isSettingInitialValues,
-    formMode,
-    formState.dirtyFields,
-    ready,
-  ]);
+      return true;
+    },
+    [field.hqlName, field.column.callout, isFormInitializing, isSettingInitialValues, formMode, formState.dirtyFields]
+  );
 
   const runCallout = useCallback(async () => {
-    // Prevent callout execution if component is not ready or data is still loading
-    if (!ready.current) return;
+    const currentValue = getValues(field.hqlName);
 
     if (isDebugCallouts()) {
       logger.debug(`[Callout] Attempting to run callout for field: ${field.hqlName}`, {
         hasCallout: !!field.column.callout,
-        value,
+        value: currentValue,
         previousValue: previousValue.current,
         isSettingFromCallout: isSettingFromCallout.current,
         isFormInitializing,
@@ -347,16 +344,16 @@ const BaseSelectorComp = ({
     if (isFormInitializing || isSettingInitialValues) {
       if (isDebugCallouts()) {
         logger.debug(`[Callout] Skipped & Synced (Init): ${field.hqlName}`, {
-          value,
+          value: currentValue,
           isFormInitializing,
           isSettingInitialValues,
         });
       }
-      previousValue.current = value;
+      previousValue.current = currentValue;
       return;
     }
 
-    if (!shouldExecuteCallout()) return;
+    if (!shouldExecuteCallout(currentValue)) return;
 
     if (globalCalloutManager.isCalloutRunning()) {
       if (isDebugCallouts()) logger.debug(`[Callout] Deferred (callout running): ${field.hqlName}`);
@@ -364,15 +361,16 @@ const BaseSelectorComp = ({
       return;
     }
 
-    previousValue.current = value;
+    previousValue.current = currentValue;
 
-    if (isDebugCallouts()) logger.debug(`[Callout] Executing callout for field: ${field.hqlName}`, { value });
+    if (isDebugCallouts())
+      logger.debug(`[Callout] Executing callout for field: ${field.hqlName}`, { value: currentValue });
     await globalCalloutManager.executeCallout(field.hqlName, executeCallout);
   }, [
     field.hqlName,
     field.column.callout,
     shouldExecuteCallout,
-    value,
+    getValues,
     executeCallout,
     isFormInitializing,
     isSettingInitialValues,
@@ -380,12 +378,12 @@ const BaseSelectorComp = ({
   ]);
 
   useEffect(() => {
-    if (ready.current) {
+    if (isFormInitializing || isSettingInitialValues) {
+      previousValue.current = value;
+    } else if (isImmediateCalloutField(field.column.reference)) {
       runCallout();
-    } else {
-      ready.current = true;
     }
-  }, [runCallout, value]);
+  }, [isFormInitializing, isSettingInitialValues, value, field.column.reference, runCallout]);
 
   useEffect(() => {
     if (isFormInitializing) {
@@ -396,13 +394,18 @@ const BaseSelectorComp = ({
   }, [isFormInitializing, setIsSettingInitialValues]);
 
   if (isDisplayed) {
-    const isTextLong = field.column.reference === FIELD_REFERENCE_CODES.TEXT_LONG;
+    const isTextLong = field.column.reference === FIELD_REFERENCE_CODES.TEXT_LONG.id;
     const containerClasses = isTextLong ? "row-span-3 flex items-start pt-2" : "h-12 flex items-center";
 
     return (
       <div
         className={`${containerClasses} title={field.helpComment || ''}`}
-        aria-describedby={field.helpComment ? `${field.name}-help` : ""}>
+        aria-describedby={field.helpComment ? `${field.name}-help` : ""}
+        onBlurCapture={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) {
+            runCallout();
+          }
+        }}>
         <div className="w-1/3 flex items-center gap-2 pr-2">
           <Label field={field} data-testid="Label__38060a" />
           {field.isMandatory && (
