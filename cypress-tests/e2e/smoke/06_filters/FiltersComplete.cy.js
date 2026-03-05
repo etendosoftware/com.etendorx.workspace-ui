@@ -93,7 +93,7 @@ describe("Advanced Filters - Complete Test", () => {
     cy.get("button.toolbar-button-advanced-filters").should("be.visible");
     cy.log("TEST 3: All filters cleared successfully");
 
-    cy.log("TEST 4: OR - Document No. Contains '68' OR Total Gross Amount > '34'");
+    cy.log("TEST 4: OR - Document No. Contains '20' OR Total Gross Amount > '34'");
 
     cy.openAdvancedFilters();
 
@@ -106,7 +106,7 @@ describe("Advanced Filters - Complete Test", () => {
       .contains(/contains/i)
       .click();
 
-    cy.get('input[placeholder="Value"]').filter(":visible").type("68");
+    cy.get('input[placeholder="Value"]').filter(":visible").type("20");
 
     cy.get("button").contains("Add condition").click();
 
@@ -128,7 +128,7 @@ describe("Advanced Filters - Complete Test", () => {
 
     cy.get("div").contains("Advanced Filters").should("not.exist");
     cy.get("table tbody tr").should("have.length.greaterThan", 0);
-    cy.get("table tbody").should("contain.text", "68");
-    cy.log("TEST 4: OR filter applied - Document No. Contains 68 OR Total Gross Amount > 34");
+    cy.get("table tbody").should("contain.text", "20");
+    cy.log("TEST 4: OR filter applied - Document No. Contains 20 OR Total Gross Amount > 34");
   });
 });
