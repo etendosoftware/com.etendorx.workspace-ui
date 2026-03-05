@@ -46,7 +46,7 @@ describe("Metadata Utils", () => {
 
     it("should return empty array if no tabs", () => {
       expect(groupTabsByLevel({} as any)).toEqual([]);
-      expect(groupTabsByLevel(undefined)).toEqual([]);
+      expect(groupTabsByLevel()).toEqual([]);
     });
   });
 

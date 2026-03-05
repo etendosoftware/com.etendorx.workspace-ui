@@ -20,7 +20,11 @@ import SearchIcon from "@workspaceui/componentlibrary/src/assets/icons/search.sv
 import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import { memo, useState } from "react";
-import { CUSTOM_SELECTORS_IDENTIFIERS, FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import {
+  CUSTOM_SELECTORS_IDENTIFIERS,
+  FIELD_REFERENCE_CODES,
+  PRODUCT_STOCK_VIEW_REFERENCE_IDS,
+} from "@/utils/form/constants";
 import { getSelectorFieldName, updateSelectorValue } from "@/utils/form/selectors/utils";
 import { toCamelCase } from "@/utils/commons";
 import { BooleanSelector } from "./BooleanSelector";
@@ -29,6 +33,8 @@ import { ListSelector } from "./ListSelector";
 import { NumericSelector } from "./NumericSelector";
 import QuantitySelector from "./QuantitySelector";
 import { SelectSelector } from "./SelectSelector";
+
+import { ProductStockModalSelector } from "./ProductStockModalSelector";
 import { StringSelector } from "./StringSelector";
 import { TextLongSelector } from "./TextLongSelector";
 import { PasswordSelector } from "./PasswordSelector";
@@ -37,6 +43,7 @@ import DatetimeSelector from "./DatetimeSelector";
 import LocationSelector from "./LocationSelector";
 import { TimeSelector } from "./TimeSelector";
 import SelectorModal from "./SelectorModal";
+import AttributeSetInstanceSelector from "./AttributeSetInstance";
 
 import { useFormContext } from "react-hook-form";
 
@@ -64,6 +71,21 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   }
 
   const { reference } = effectiveField.column;
+
+  const isProductStockModal =
+    effectiveField.selector?.datasourceName === "ProductStockView" ||
+    (PRODUCT_STOCK_VIEW_REFERENCE_IDS as readonly string[]).includes(effectiveField.column.referenceSearchKey);
+
+  if (isProductStockModal) {
+    return (
+      <ProductStockModalSelector
+        field={effectiveField}
+        isReadOnly={isReadOnly}
+        data-testid={`ProductStockModalSelector__${field.id}`}
+      />
+    );
+  }
+
   const SelectorComponent = (() => {
     switch (reference) {
       case FIELD_REFERENCE_CODES.PASSWORD:
@@ -128,6 +150,14 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
             type="integer"
             readOnly={isReadOnly}
             data-testid="NumericSelector__6e80fa"
+          />
+        );
+      case FIELD_REFERENCE_CODES.PATTRIBUTE:
+        return (
+          <AttributeSetInstanceSelector
+            field={effectiveField}
+            isReadOnly={isReadOnly}
+            data-testid="AttributeSetInstanceSelector__6e80fa"
           />
         );
       case FIELD_REFERENCE_CODES.TEXT_LONG:

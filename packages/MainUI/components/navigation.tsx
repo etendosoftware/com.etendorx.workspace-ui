@@ -82,7 +82,7 @@ const Navigation: React.FC = () => {
   const { isOpen: aboutModalOpen, openModal: openAboutModal, closeModal: closeAboutModal } = useAboutModalOpen();
   const { aboutUrl } = useAboutModal();
 
-  const { assistants, getAssistants, invalidateCache, hasAssistants, isLoading: isLoadingAssistants } = useAssistants();
+  const { assistants, getAssistants, invalidateCache, isLoading: isLoadingAssistants } = useAssistants();
   const { labels, getLabels } = useCopilotLabels();
 
   const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {

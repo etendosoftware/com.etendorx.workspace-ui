@@ -48,7 +48,7 @@ export interface DatasourceParams {
   startRow?: number;
   endRow?: number;
   sortBy?: string;
-  criteria?: Criteria[];
+  criteria?: Criteria[] | string | Record<string, unknown>;
   operationType?: "fetch" | "add" | "update" | "remove";
   isSorting?: boolean;
   isImplicitFilterApplied?: boolean;
@@ -59,7 +59,7 @@ export interface DatasourceParams {
 export interface DatasourceOptions {
   columns?: string[];
   sortBy?: string;
-  criteria?: Criteria[];
+  criteria?: Criteria[] | string | Record<string, unknown>;
   operationType?: "fetch" | "add" | "update" | "remove";
   isSorting?: boolean;
   isImplicitFilterApplied?: boolean;
@@ -312,6 +312,8 @@ export interface Tab {
   obuiappCloneChildren?: boolean;
   process?: string;
   process$_identifier?: string;
+  disableParentKeyProperty?: boolean;
+  defaultEditMode?: boolean;
 }
 
 export interface WindowMetadata {

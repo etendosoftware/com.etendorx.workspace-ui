@@ -140,27 +140,15 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
 
     // Sync the hidden date input value with the display value
     useEffect(() => {
-      if (hiddenDateInputRef.current) {
-        const isoValue = hiddenDateInputRef.current.value;
-        // Only update display value if it's not currently being edited (focused)
-        // OR if the isoValue corresponds to what is currently displayed (to avoid overwriting user typing)
-        // Actually, we should update if the external value changes.
-        // But we need to be careful not to fight with user typing.
-        // The `value` prop from react-hook-form is passed via `...props` to the hidden input.
-        // So `hiddenDateInputRef.current.value` reflects the form state.
+      // Use the explicitly passed currentValue if available, otherwise fallback to the native input value
+      const isoValue = currentValue || hiddenDateInputRef.current?.value || "";
 
-        if (isoValue) {
-          const formatted = formatClassicDate(isoValue, false);
-          // Only update display value if it differs and we are not focused (or if it's a completely new value)
-          // To keep it simple: if we are not focused, always sync.
-          if (!isFocused) {
-            setDisplayValue(formatted);
-          }
-        } else if (!isFocused) {
-          setDisplayValue("");
-        }
+      if (isoValue && !isFocused) {
+        setDisplayValue(formatClassicDate(isoValue, false));
+      } else if (!isoValue && !isFocused) {
+        setDisplayValue("");
       }
-    }, [currentValue, isFocused]); // props.value should be the controlled value
+    }, [currentValue, isFocused]);
 
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {

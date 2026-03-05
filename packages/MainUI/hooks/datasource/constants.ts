@@ -47,6 +47,7 @@ export const INVOICE_FIELD_MAPPINGS: Record<string, string> = {
   costcenter: "inpcCostcenterId",
   salesCampaign: "inpcCampaignId",
   activity: "inpcActivityId",
+  warehouse: "inpmWarehouseId",
   asset: "inpaAssetId",
   withholding: "inpwithholding",
   orderReference: "inporderReference",

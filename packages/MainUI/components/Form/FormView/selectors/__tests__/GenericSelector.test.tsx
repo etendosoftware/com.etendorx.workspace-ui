@@ -1,0 +1,124 @@
+import { render } from "@testing-library/react";
+import { GenericSelector } from "../GenericSelector";
+import { useFormContext } from "react-hook-form";
+import { FIELD_REFERENCE_CODES, PRODUCT_STOCK_VIEW_REFERENCE_IDS } from "@/utils/form/constants";
+
+// Mocks
+jest.mock("react-hook-form");
+jest.mock("../ProductStockModalSelector", () => ({
+  ProductStockModalSelector: () => <div data-testid="ProductStockModalSelector">ProductStockModalSelector</div>,
+}));
+jest.mock("../SelectSelector", () => ({
+  SelectSelector: () => <div data-testid="SelectSelector">SelectSelector</div>,
+}));
+jest.mock("../StringSelector", () => ({
+  StringSelector: () => <div data-testid="StringSelector">StringSelector</div>,
+}));
+jest.mock("../NumericSelector", () => ({
+  NumericSelector: () => <div data-testid="NumericSelector">NumericSelector</div>,
+}));
+jest.mock("../TableDirSelector", () => ({
+  TableDirSelector: () => <div data-testid="TableDirSelector">TableDirSelector</div>,
+}));
+jest.mock("../DateSelector", () => ({
+  DateSelector: () => <div data-testid="DateSelector">DateSelector</div>,
+}));
+jest.mock("../DatetimeSelector", () => ({
+  DatetimeSelector: () => <div data-testid="DatetimeSelector">DatetimeSelector</div>,
+}));
+jest.mock("../BooleanSelector", () => ({
+  BooleanSelector: () => <div data-testid="BooleanSelector">BooleanSelector</div>,
+}));
+jest.mock("../QuantitySelector", () => ({
+  __esModule: true,
+  default: () => <div data-testid="QuantitySelector">QuantitySelector</div>,
+}));
+jest.mock("../TimeSelector", () => ({
+  TimeSelector: () => <div data-testid="TimeSelector">TimeSelector</div>,
+}));
+jest.mock("../ListSelector", () => ({
+  ListSelector: () => <div data-testid="ListSelector">ListSelector</div>,
+}));
+jest.mock("../LocationSelector", () => ({
+  __esModule: true,
+  default: () => <div data-testid="LocationSelector">LocationSelector</div>,
+}));
+
+describe("GenericSelector", () => {
+  const getValues = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useFormContext as jest.Mock).mockReturnValue({
+      getValues,
+    });
+    getValues.mockReturnValue({});
+  });
+
+  it("handles camelCase fallback for hqlName", () => {
+    const field = { hqlName: "field_name", column: { reference: "UNKNOWN" } } as any;
+    getValues.mockReturnValue({ fieldName: "some value" });
+    const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
+    expect(getByTestId("StringSelector")).toBeInTheDocument();
+  });
+
+  const cases = [
+    {
+      title: "datasourceName is ProductStockView",
+      expected: "ProductStockModalSelector",
+      field: { column: { reference: "30" }, selector: { datasourceName: "ProductStockView" } },
+    },
+    {
+      title: "referenceSearchKey is a ProductStockView reference",
+      expected: "ProductStockModalSelector",
+      field: { column: { reference: "30", referenceSearchKey: PRODUCT_STOCK_VIEW_REFERENCE_IDS[0] } },
+    },
+    {
+      title: "inputName is inpmProductId (renders as dropdown like Classic)",
+      expected: "SelectSelector",
+      field: { inputName: "inpmProductId", column: { reference: "30" } },
+    },
+    {
+      title: "generic SELECT_30 fields",
+      expected: "SelectSelector",
+      field: { inputName: "genericField", column: { reference: FIELD_REFERENCE_CODES.SELECT_30 } },
+    },
+    { title: "unknown references", expected: "StringSelector", field: { column: { reference: "UNKNOWN" } } },
+    {
+      title: "numeric fields",
+      expected: "NumericSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.NUMERIC } },
+    },
+    {
+      title: "TABLE_DIR_19 fields",
+      expected: "TableDirSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.TABLE_DIR_19 } },
+    },
+    { title: "DATE fields", expected: "DateSelector", field: { column: { reference: FIELD_REFERENCE_CODES.DATE } } },
+    {
+      title: "BOOLEAN fields",
+      expected: "BooleanSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.BOOLEAN } },
+    },
+    {
+      title: "QUANTITY_29 fields",
+      expected: "QuantitySelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.QUANTITY_29 } },
+    },
+    {
+      title: "TIME fields",
+      expected: "TimeSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.TIME }, id: "1" },
+    },
+    {
+      title: "LIST_17 fields",
+      expected: "ListSelector",
+      field: { column: { reference: FIELD_REFERENCE_CODES.LIST_17 } },
+    },
+  ];
+
+  test.each(cases)("renders $expected when $title", ({ expected, field }: any) => {
+    const { getByTestId } = render(<GenericSelector field={field} isReadOnly={false} />);
+    expect(getByTestId(expected)).toBeInTheDocument();
+  });
+});

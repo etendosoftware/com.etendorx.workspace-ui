@@ -25,7 +25,13 @@ import Info from "@workspaceui/componentlibrary/src/assets/icons/info.svg";
 import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
 import AttachmentIcon from "@workspaceui/componentlibrary/src/assets/icons/paperclip.svg";
-import { FormMode, type EntityData, type EntityValue, UIPattern } from "@workspaceui/api-client/src/api/types";
+import {
+  FormMode,
+  type Tab,
+  type EntityData,
+  type EntityValue,
+  UIPattern,
+} from "@workspaceui/api-client/src/api/types";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import useFormFields from "@/hooks/useFormFields";
 import { useFormInitialState } from "@/hooks/useFormInitialState";
@@ -86,11 +92,17 @@ const processFormData = (
   // If fields definition is provided, ensure all fields are present with at least empty string
   // This forces controlled inputs to clear visually when resetting the form
   if (fields) {
-    for (const field of Object.values(fields) as any[]) {
+    for (const field of Object.values(fields)) {
       // Use hqlName if available (standard for form fields), fallback to other identifiers
       const key = field.hqlName || field.columnName || field.name;
+
+      // If key is hqlName but data has columnName, map it
       if (key && processedData[key] === undefined) {
-        processedData[key] = "";
+        if (field.columnName && processedData[field.columnName] !== undefined) {
+          processedData[key] = processedData[field.columnName];
+        } else {
+          processedData[key] = "";
+        }
       }
     }
   }
@@ -109,8 +121,10 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const [currentMode, setCurrentMode] = useState<FormMode>(mode);
   const [currentRecordId, setCurrentRecordId] = useState<string | undefined>(recordId);
   const [waitingForRefetch, setWaitingForRefetch] = useState<string | null>(null);
+  const [graphVersion, setGraphVersion] = useState(0);
 
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+  const lastSelectedRecordRef = useRef<string | null>(null);
 
   const { graph } = useSelected();
   const { activeWindow, setSelectedRecord, getSelectedRecord, setSelectedRecordAndClearChildren } = useWindowContext();
@@ -131,6 +145,23 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     setCurrentRecordId(recordId);
   }, [recordId]);
 
+  // Listen to graph selection changes to trigger a re-render when a process refreshes the record
+  useEffect(() => {
+    const handleSelected = (selectedTab: Tab, selectedRecord: EntityData) => {
+      if (selectedTab.id === tab.id && String(selectedRecord.id) === currentRecordId) {
+        const nextRecordString = JSON.stringify(selectedRecord);
+        if (lastSelectedRecordRef.current !== nextRecordString) {
+          lastSelectedRecordRef.current = nextRecordString;
+          setGraphVersion((v) => v + 1);
+        }
+      }
+    };
+    graph.on("selected", handleSelected);
+    return () => {
+      graph.off("selected", handleSelected);
+    };
+  }, [graph, tab.id, currentRecordId]);
+
   const {
     formInitialization,
     refetch,
@@ -142,9 +173,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   });
   const initialState = useFormInitialState(formInitialization) || undefined;
 
-  // Debug: Log when formInitialization changes
-  useEffect(() => {}, [formInitialization, currentRecordId]);
-
   // Effect to detect when form initialization completes after save
   useEffect(() => {
     if (waitingForRefetch && !loadingFormInitialization && currentRecordId === waitingForRefetch) {
@@ -155,7 +183,10 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   }, [waitingForRefetch, loadingFormInitialization, currentRecordId]);
 
   const refreshRecordAndSession = useCallback(async () => {
-    if (!recordId || recordId === NEW_RECORD_ID) return;
+    if (!recordId || recordId === NEW_RECORD_ID) {
+      await refetch();
+      return;
+    }
 
     try {
       const result = (await datasource.get(tab.entityName, {
@@ -165,18 +196,31 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         pageSize: 1,
       })) as { data: { response?: { data?: EntityData[] } } };
 
+      const currentlySelectedId = activeWindow?.windowIdentifier
+        ? getSelectedRecord(activeWindow.windowIdentifier, tab.id)
+        : null;
+
+      if (currentlySelectedId && currentlySelectedId !== recordId) {
+        // Stop right here if the user has navigated or cloned to another record while we fetched.
+        return;
+      }
+
       const responseData = result.data.response?.data;
       if (responseData && responseData.length > 0) {
         const updatedRecord = responseData[0];
 
         graph.setSelected(tab, updatedRecord);
         graph.setSelectedMultiple(tab, [updatedRecord]);
+
+        // ALso update the datasource's main records list so the Table component doesn't show old values
+        // when navigating back from the form to the grid.
+        updateRecordInDatasource(tab.id, updatedRecord);
       }
       await refetch();
     } catch (error) {
       logger.warn("Error refreshing record and session:", error);
     }
-  }, [recordId, tab, graph, refetch]);
+  }, [recordId, tab, graph, refetch, updateRecordInDatasource, activeWindow?.windowIdentifier, getSelectedRecord]);
 
   useEffect(() => {
     if (registerFormViewRefetch) {
@@ -273,6 +317,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
     const selectedRecordId = getSelectedRecord(windowIdentifier, tab.id);
     if (selectedRecordId && selectedRecordId === currentRecordId) {
+      // First try to get the currently selected active record.
+      // After a process executes, refreshRecordAndSession assigns the fresh API response to graph.setSelected.
+      const selectedNodeRecord = graph.getSelected(tab);
+      if (selectedNodeRecord && String(selectedNodeRecord.id) === currentRecordId) {
+        return selectedNodeRecord;
+      }
+
+      // Fallback to the grid records cache
       const graphRecord = graph.getRecord(tab, selectedRecordId);
       if (graphRecord && String(graphRecord.id) === currentRecordId) {
         return graphRecord;
@@ -285,7 +337,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     }
 
     return null;
-  }, [activeWindow?.windowIdentifier, getSelectedRecord, tab, currentRecordId, graph]);
+  }, [activeWindow?.windowIdentifier, getSelectedRecord, tab, currentRecordId, graph, graphVersion]);
 
   /**
    * Merges record data with form initialization data to create complete form state.
@@ -307,9 +359,10 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
     if (initialState) {
       for (const [key, value] of Object.entries(initialState)) {
-        // record value wins if it's not undefined
-        // "" and null are valid values and should override initialState
-        if (value !== undefined && value !== null && value !== "") {
+        // If the record from the DB completely lacks this field (undefined),
+        // only then we fallback to the default initialState value.
+        // Null and "" are valid values from the database and MUST OVERRIDE initialState
+        if (formattedResult[key] === undefined && value !== undefined) {
           formattedResult[key] = value;
         }
       }
@@ -393,16 +446,26 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   }, [availableFormData, tab.id, stableReset, loadingFormInitialization, currentRecordId, currentMode]);
 
   /**
-   * Update graph selection when navigating to a different record
-   * This ensures child tabs know about the parent record change
+   * Update graph selection when navigating to a different record.
+   * This ensures child tabs and processButtons (useToolbar) see the correct record data.
+   *
+   * IMPORTANT: We guard with `currentRecordId === recordId` to avoid syncing the graph
+   * while `currentRecordId` (useState) is still catching up with the new `recordId` prop.
+   * If we update the graph before `currentRecordId` is in sync, `availableFormData` still
+   * contains the previous record's data, which would poison `graph.setSelectedMultiple` and
+   * cause `processButtons` to evaluate their displayLogic against the old record.
    */
   useEffect(() => {
     if (!recordId || recordId === NEW_RECORD_ID || !availableFormData) return;
 
+    // Only sync graph when internal state has caught up with the new recordId prop.
+    // During duplication, recordId prop changes one render before currentRecordId updates.
+    if (currentRecordId !== recordId) return;
+
     // Update graph with current record data so child tabs can see the parent selection
     graph.setSelected(tab, availableFormData);
     graph.setSelectedMultiple(tab, [availableFormData]);
-  }, [recordId, tab, availableFormData, graph]);
+  }, [recordId, currentRecordId, tab, availableFormData, graph]);
 
   /**
    * Enhanced setValue function with controlled dirty state management.
@@ -783,7 +846,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
             <FormActions
               tab={tab}
               onNew={handleNewRecord}
-              refetch={refetch}
+              refetch={refreshRecordAndSession}
               onSave={handleSave}
               showErrorModal={showErrorModal}
               mode={currentMode}

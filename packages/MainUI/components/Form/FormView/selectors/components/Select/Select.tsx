@@ -45,7 +45,6 @@ function SelectCmp({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
-  const loadingRef = useRef<HTMLLIElement>(null);
 
   const dropdownId = useMemo(() => `dropdown-${name}`, [name]);
 
@@ -109,6 +108,7 @@ function SelectCmp({
       const option = options.find((opt) => opt.id === id);
       updateSelectorValue(setValue, name, id, option?.data);
       setSelectedLabel(label);
+
       setIsOpen(false);
       setHighlightedIndex(-1);
       setIsFocused(false);
@@ -250,13 +250,14 @@ function SelectCmp({
     }
 
     if (filteredOptions.length > 0) {
-      const optionsList = filteredOptions.map(({ id, label }, index) => (
+      const optionsList = filteredOptions.map((option, index) => (
         <OptionItem
-          key={id}
-          id={id}
-          label={label}
+          key={option.id}
+          id={option.id}
+          label={option.label}
+          data={option.data}
           index={index}
-          isSelected={selectedValue === id}
+          isSelected={selectedValue === option.id}
           isHighlighted={highlightedIndex === index}
           onOptionClick={handleOptionClick}
           onMouseEnter={handleOptionMouseEnter}
@@ -334,9 +335,6 @@ function SelectCmp({
           listRef={listRef as React.RefObject<HTMLUListElement>}
           handleScroll={handleScroll}
           renderedOptions={renderedOptions}
-          loading={loading}
-          hasMore={hasMore}
-          loadingRef={loadingRef as React.RefObject<HTMLLIElement>}
           dropdownId={dropdownId}
           data-testid={`DropdownPortal__${field.id}`}
         />
