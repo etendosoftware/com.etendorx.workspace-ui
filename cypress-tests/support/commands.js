@@ -476,6 +476,6 @@ Cypress.Commands.add("closeSuccessOverlay", () => {
 
 // Command to open Advanced Filters
 Cypress.Commands.add("openAdvancedFilters", () => {
-  cy.get('button.toolbar-button-advanced-filters').first().click();
-  cy.get('div').contains('Advanced Filters').should('be.visible');
+  cy.get("button.toolbar-button-advanced-filters").first().click();
+  cy.get("div").contains("Advanced Filters").should("be.visible");
 });
