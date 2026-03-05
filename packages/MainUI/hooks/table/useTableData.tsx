@@ -23,7 +23,7 @@ import type {
   MRT_VisibilityState,
   MRT_SortingState,
 } from "material-react-table";
-import type { Criteria, DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
+import { type DatasourceOptions, type EntityData, type Column, UIPattern } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useSearch } from "../../contexts/searchContext";
@@ -43,7 +43,6 @@ import { isEmptyObject } from "@/utils/commons";
 import { mapSummariesToBackend, getSummaryCriteria } from "@/utils/table/utils";
 import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { buildEtendoContext } from "@/utils/contextUtils";
-import { buildBaseCriteria } from "@/utils/criteriaUtils";
 import { useSelected } from "../../hooks/useSelected";
 
 interface UseTableDataParams {
@@ -394,6 +393,34 @@ export const useTableData = ({
     return null;
   }, [tab]);
 
+  // Helper to find parent field name
+  const getParentFieldName = useCallback((): { fieldName: string; directReference: boolean } => {
+    if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
+      // SR (Single Record) tabs share the same entity/table as the parent and have
+      // empty parentColumns. Filter by "id" so only the parent's own record is shown.
+      if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab) {
+        return { fieldName: "id", directReference: true };
+      }
+      return { fieldName: "_dummy", directReference: false };
+    }
+
+    if (!parentTab) {
+      return { fieldName: tab.parentColumns[0] || "id", directReference: true };
+    }
+
+    const matchingField = tab.parentColumns.find((colName) => {
+      const field = tab.fields[colName];
+      return field?.referencedEntity === parentTab.entityName;
+    });
+
+    return {
+      fieldName: matchingField || tab.parentColumns[0] || "id",
+      // directReference is true only when a field directly referencing the parent was found.
+      // When false, the server-side hqlwhereclause handles filtering via context variables.
+      directReference: Boolean(matchingField),
+    };
+  }, [tab.parentColumns, tab.fields, tab.uIPattern, parentTab]);
+
   // Helper to apply sort options to query
   const applySortToOptions = useCallback(
     (options: DatasourceOptions, sort: ReturnType<typeof getDefaultSort>) => {
@@ -409,6 +436,10 @@ export const useTableData = ({
   );
 
   const query: DatasourceOptions = useMemo(() => {
+    const { fieldName, directReference: fieldDirectlyReferencesParent } = getParentFieldName();
+    const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
+    const operator = "equals";
+
     const options: DatasourceOptions = {
       windowId: tab.window,
       tabId: tab.id,
@@ -425,13 +456,19 @@ export const useTableData = ({
       options.language = language;
     }
 
-    // Build base criteria (handling Parent-Child or Dummy fallback)
-    const baseCriteria = buildBaseCriteria({ tab, parentTab, parentId });
-    if (baseCriteria.length > 0) {
-      options.criteria = baseCriteria as unknown as Criteria[];
+    if (value && value !== "" && value !== undefined) {
+      if (fieldDirectlyReferencesParent) {
+        // Direct FK: standard criteria filter
+        options.criteria = [{ fieldName, value, operator }];
+      }
+      // else: no criteria — server-side hqlwhereclause handles filtering via context variable
 
-      if (parentTab?.entityName && parentId) {
-        options[`@${parentTab.entityName}.id@`] = parentId;
+      if (parentTab?.entityName) {
+        // Keep existing format for backward compat (e.g. Process Request datasource)
+        options[`@${parentTab.entityName}.id@`] = value;
+        // OB Classic context variable format for hqlwhereclause substitution
+        // e.g. ETASK_Task → @ETASK_TASK_ID@
+        options[`@${parentTab.entityName.toUpperCase()}_ID@`] = value;
       }
     }
 
@@ -444,8 +481,6 @@ export const useTableData = ({
         // @ts-ignore - advancedCriteria is compatible with Criteria
         options.criteria = [advancedCriteria];
       }
-    } else {
-      console.log("useTableData: No advancedCriteria found");
     }
 
     // Apply sorting
@@ -457,8 +492,7 @@ export const useTableData = ({
 
     return options;
   }, [
-    tab.window,
-    tab.id,
+    tab,
     initialIsFilterApplied,
     isImplicitFilterApplied,
     parentId,
@@ -469,6 +503,7 @@ export const useTableData = ({
     applySortToOptions,
     graph,
     parentTab,
+    getParentFieldName,
   ]);
 
   // Tree options
