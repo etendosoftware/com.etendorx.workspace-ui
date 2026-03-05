@@ -298,6 +298,7 @@ const es = {
     messageTitle: "Proceso",
     completedSuccessfully: "Proceso completado exítosamente",
     processError: "Error mientras se cargaba la informacion del proceso",
+    warning: "Advertencia",
   },
   drawer: {
     recentlyViewed: "Visto recientemente",
