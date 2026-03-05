@@ -48,6 +48,7 @@ import {
   ADD_PAYMENT_ORDER_PROCESS_ID,
 } from "@/utils/processes/definition/constants";
 import { GenericWarehouseProcess, useWarehousePlugin } from "./Custom/GenericWarehouseProcess";
+import { parseSmartClientMessage } from "./Custom/shared/processModalUtils";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
@@ -55,6 +56,10 @@ import { datasource } from "@workspaceui/api-client/src/api/datasource";
 
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useWindowContext } from "@/contexts/window";
+import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { appendWindowToUrl } from "@/utils/url/utils";
 import { FormProvider, useForm, useFormState } from "react-hook-form";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
@@ -257,6 +262,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const { graph } = useSelected();
   const { tab, record } = useTabContext();
   const { session, token, getCsrfToken } = useUserContext();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { triggerRecovery, isRecoveryLoading } = useWindowContext();
 
   const [processDefinition, setProcessDefinition] = useState(button.processDefinition);
   const { onProcess, onLoad } = processDefinition;
@@ -716,10 +724,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     // Check for showMsgInProcessView (standard format)
     const msgView = actionWithMsg?.showMsgInProcessView;
     if (msgView) {
+      const parsed = parseSmartClientMessage(msgView.msgText || "");
       return {
-        message: msgView.msgText,
+        message: parsed.text || msgView.msgText,
         messageType: msgView.msgType,
         isHtml: false,
+        linkTabId: parsed.tabId,
+        linkRecordId: parsed.recordId,
       };
     }
 
@@ -774,13 +785,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   const parseProcessResponse = useCallback(
     (res: ExecuteProcessResult) => {
       const viewMessage = extractMessageFromProcessView(res);
-      const { message, messageType, isHtml } = viewMessage || extractMessageFromData(res);
+      const { message, messageType, isHtml, linkTabId, linkRecordId } = viewMessage || extractMessageFromData(res);
 
       return {
         success: res.success && messageType === "success",
         data: message,
         error: messageType !== "success" ? message || res.error : undefined,
-        isHtml: isHtml || false, // Pass through the HTML flag
+        isHtml: isHtml || false,
+        messageType,
+        linkTabId,
+        linkRecordId,
       };
     },
     [extractMessageFromProcessView, extractMessageFromData]
@@ -1632,11 +1646,44 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     }
   }, [autoSelectConfig, autoSelectApplied, gridSelection, selectedRecords]);
 
+  const handleNavigateToTab = useCallback(
+    async (tabId: string, recordId: string) => {
+      if (isRecoveryLoading) return;
+      try {
+        const res = await fetch(`/api/erp/meta/tab/${tabId}?language=en_US`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        });
+        const tabData = await res.json();
+        const resolvedWindowId = tabData?.window || tabData?.windowId || tabId;
+        setResult(null);
+        onClose();
+        const newWindowIdentifier = getNewWindowIdentifier(resolvedWindowId);
+        triggerRecovery();
+        const newUrlParams = appendWindowToUrl(searchParams, {
+          windowIdentifier: newWindowIdentifier,
+          tabId,
+          recordId,
+        });
+        router.replace(`window?${newUrlParams}`);
+      } catch (e) {
+        logger.warn("[ProcessDefinitionModal] Tab navigation failed, falling back", e);
+        window.location.href = `/window?wi_0=${tabId}_${Date.now()}&ri_0=${recordId}`;
+      }
+    },
+    [token, isRecoveryLoading, triggerRecovery, searchParams, router, onClose]
+  );
+
   const renderResponse = () => {
     if (!result) return null;
 
     const isSuccessMessage = result.success;
-    const msgTitle = isSuccessMessage ? t("process.completedSuccessfully") : t("process.processError");
+    const isWarning = result.messageType === "warning";
+    const msgTitle = isSuccessMessage
+      ? t("process.completedSuccessfully")
+      : isWarning
+        ? t("process.warning")
+        : t("process.processError");
     let msgText: string;
     if (isSuccessMessage) {
       msgText =
@@ -1654,11 +1701,20 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
       return null;
     }
 
-    // Error message - keep the simple style
+    const borderColor = isWarning ? "border-(--color-warning-main)" : "border-(--color-error-main)";
+
     return (
-      <div className="p-3 rounded mb-4 border-l-4 bg-gray-50 border-(--color-error-main)">
+      <div className={`p-3 rounded mb-4 border-l-4 bg-gray-50 ${borderColor}`}>
         <h4 className="font-bold text-sm">{msgTitle}</h4>
         <p className="text-sm border-(--color-active-40) rounded whitespace-pre-line p-2">{displayText}</p>
+        {isWarning && result.linkTabId && result.linkRecordId && (
+          <button
+            type="button"
+            onClick={() => handleNavigateToTab(result.linkTabId as string, result.linkRecordId as string)}
+            className="text-blue-600 underline hover:text-blue-800 font-medium text-sm mt-1">
+            {t("packing.checkStatus")}
+          </button>
+        )}
       </div>
     );
   };
