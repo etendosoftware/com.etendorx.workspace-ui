@@ -100,30 +100,46 @@ function ensureCriteriaConstructor(item: string): string {
   return item;
 }
 
+// Appends a single criteria array to formData and returns whether any items were added.
+function appendCriteriaEntries(formData: URLSearchParams, value: unknown[]): boolean {
+  for (const item of value) {
+    formData.append("criteria", ensureCriteriaConstructor(String(item)));
+  }
+  return value.length > 0;
+}
+
+// Appends a generic array param (one entry per item).
+function appendArrayEntry(formData: URLSearchParams, key: string, value: unknown[]): void {
+  for (const item of value) {
+    formData.append(key, String(item));
+  }
+}
+
+// Appends AdvancedCriteria top-level markers required by OBPickAndExecuteDataSource.
+function appendAdvancedCriteriaMarkers(formData: URLSearchParams): void {
+  if (!formData.has("_constructor")) {
+    formData.append("_constructor", "AdvancedCriteria");
+    formData.append("operator", "and");
+  }
+}
+
 // Function to convert params to form data for non-JSON requests
 function createFormData(params: DatasourceRequestParams): URLSearchParams {
   const formData = new URLSearchParams();
   let hasCriteria = false;
   for (const [key, value] of Object.entries(params || {})) {
     if (key === "criteria" && Array.isArray(value)) {
-      // Classic backend expects multiple criteria= params (one per criterion), not a JSON array
-      for (const item of value) {
-        formData.append("criteria", ensureCriteriaConstructor(String(item)));
-      }
-      if (value.length > 0) hasCriteria = true;
+      hasCriteria = appendCriteriaEntries(formData, value);
     } else if (Array.isArray(value)) {
-      for (const item of value) {
-        formData.append(key, String(item));
-      }
-    } else if (typeof value !== "undefined" && value !== null) {
+      appendArrayEntry(formData, key, value);
+    } else if (value !== undefined && value !== null) {
       formData.append(key, String(value));
     }
   }
   // Classic AdvancedCriteria requires top-level operator and _constructor when criteria is present.
   // Without these, OBPickAndExecuteDataSource leaves criteriaOperator null and throws.
-  if (hasCriteria && !formData.has("_constructor")) {
-    formData.append("_constructor", "AdvancedCriteria");
-    formData.append("operator", "and");
+  if (hasCriteria) {
+    appendAdvancedCriteriaMarkers(formData);
   }
   return formData;
 }
