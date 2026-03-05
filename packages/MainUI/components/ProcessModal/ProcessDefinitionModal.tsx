@@ -49,8 +49,6 @@ import {
   // Next.js
   useRouter,
   useSearchParams,
-  // Actions
-  revalidateDopoProcess,
   // Utilities
   buildPayloadByInputName,
   buildProcessPayload,
@@ -69,12 +67,9 @@ import {
   Metadata,
   // Constants
   BUTTON_LIST_REFERENCE_ID,
-  PROCESS_DEFINITION_DATA,
-  WINDOW_SPECIFIC_KEYS,
   PROCESS_TYPES,
   // Components
   GenericWarehouseProcess,
-  ToastContent,
   createProcessExpressionContext,
   executeStringFunction,
   // Types
@@ -554,8 +549,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     form,
     parameters,
     gridSelection,
-    record,
-    recordValues: recordValues || undefined,
+    record: record ?? undefined,
+    recordValues: recordValues ?? undefined,
     processId,
     selectedRecords: selectedRecords as EntityData[],
   });
@@ -564,29 +559,21 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   // Execution handlers
   // -------------------------------------------------------------------------
 
-  const {
-    handleExecute,
-    handleWindowReferenceExecute,
-    handleDirectJavaProcessExecute,
-    handleReportProcessExecute,
-    handleSuccessClose,
-    handleNavigateToTab,
-    parseProcessResponse,
-  } = useProcessExecution({
+  const { handleExecute, handleReportProcessExecute, handleNavigateToTab } = useProcessExecution({
     processId,
     javaClassName,
     windowId,
     tabId,
     onProcess,
     tab,
-    record,
-    initialState,
+    record: record ?? undefined,
+    initialState: initialState ?? undefined,
     selectedRecords: selectedRecords as EntityData[],
     processScriptContext,
     button,
     parameters,
     form,
-    token,
+    token: token ?? undefined,
     getCsrfToken,
     router,
     searchParams,

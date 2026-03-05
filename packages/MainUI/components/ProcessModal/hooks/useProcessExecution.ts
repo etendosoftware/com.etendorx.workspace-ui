@@ -20,7 +20,7 @@
  * parsing helpers, success/close handling, and tab navigation.
  */
 
-import { useCallback } from "react";
+import React, { useCallback } from "react";
 import { toast } from "sonner";
 import type { UseFormReturn } from "react-hook-form";
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
@@ -44,7 +44,29 @@ import { ToastContent } from "@/components/ToastContent";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { createOBShim } from "@/utils/propertyStore";
-import React from "react";
+
+// ---------------------------------------------------------------------------
+// Internal types for response action shapes
+// ---------------------------------------------------------------------------
+
+interface ProcessViewMsg {
+  msgType?: string;
+  msgTitle?: string;
+  msgText?: string;
+}
+
+interface ResponseAction {
+  showMsgInProcessView?: ProcessViewMsg;
+  smartclientSay?: { message?: string };
+}
+
+interface ExtractedMessage {
+  message: unknown;
+  messageType: string | undefined;
+  isHtml: boolean;
+  linkTabId?: string;
+  linkRecordId?: string;
+}
 
 // ---------------------------------------------------------------------------
 // Param / return types
@@ -161,20 +183,20 @@ export function useProcessExecution({
   // Response parsing
   // -------------------------------------------------------------------------
 
-  const extractMessageFromProcessView = useCallback((res: ExecuteProcessResult) => {
+  const extractMessageFromProcessView = useCallback((res: ExecuteProcessResult): ExtractedMessage | null => {
     const data = res.data;
     const responseActions =
       data?.responseActions || data?.response?.responseActions || data?.response?.data?.responseActions;
 
     if (!responseActions) return null;
 
-    let actionWithMsg: Record<string, unknown> | undefined;
+    let actionWithMsg: ResponseAction | undefined;
     if (Array.isArray(responseActions)) {
       actionWithMsg = responseActions.find(
-        (action: Record<string, unknown>) => action.showMsgInProcessView || action.smartclientSay
+        (action: ResponseAction) => action.showMsgInProcessView || action.smartclientSay
       );
     } else if (typeof responseActions === "object") {
-      actionWithMsg = responseActions;
+      actionWithMsg = responseActions as ResponseAction;
     }
 
     const msgView = actionWithMsg?.showMsgInProcessView;
@@ -201,7 +223,7 @@ export function useProcessExecution({
     return null;
   }, []);
 
-  const extractMessageFromData = useCallback((res: ExecuteProcessResult) => {
+  const extractMessageFromData = useCallback((res: ExecuteProcessResult): ExtractedMessage => {
     if (res.data?.response?.error) {
       return {
         message: res.data.response.error.message,
@@ -243,7 +265,7 @@ export function useProcessExecution({
       return {
         success: res.success && messageType === "success",
         data: message,
-        error: messageType !== "success" ? message || res.error : undefined,
+        error: messageType !== "success" ? (message as string | undefined) || res.error : undefined,
         isHtml: isHtml || false,
         messageType,
         linkTabId,
@@ -362,10 +384,8 @@ export function useProcessExecution({
               ? parsedResult.data
               : parsedResult.data?.message || parsedResult.data?.msgText || "";
           toast.success(t("process.completedSuccessfully"), {
-            description: React.createElement(ToastContent, {
-              message,
-              "data-testid": "ToastContent__761503",
-            }),
+            // biome-ignore lint/suspicious/noExplicitAny: data-testid is a valid HTML attribute not in component props type
+            description: React.createElement(ToastContent, { message, "data-testid": "ToastContent__761503" } as any),
             duration: Number.POSITIVE_INFINITY,
           });
           setShouldTriggerSuccess(true);
@@ -543,10 +563,11 @@ export function useProcessExecution({
           const success = responseMessage.msgType === "success";
           if (success) {
             toast.success(t("process.completedSuccessfully"), {
+              // biome-ignore lint/suspicious/noExplicitAny: data-testid is a valid HTML attribute not in component props type
               description: React.createElement(ToastContent, {
                 message: responseMessage.msgText || t("process.completedSuccessfully"),
                 "data-testid": "ToastContent__761503",
-              }),
+              } as any),
               duration: Number.POSITIVE_INFINITY,
             });
             setShouldTriggerSuccess(true);
@@ -633,10 +654,11 @@ export function useProcessExecution({
           const success = status.result === 1;
           if (success) {
             toast.success(t("process.completedSuccessfully"), {
+              // biome-ignore lint/suspicious/noExplicitAny: data-testid is a valid HTML attribute not in component props type
               description: React.createElement(ToastContent, {
                 message: status.errorMsg,
                 "data-testid": "ToastContent__761503",
-              }),
+              } as any),
               duration: Number.POSITIVE_INFINITY,
             });
             setShouldTriggerSuccess(true);

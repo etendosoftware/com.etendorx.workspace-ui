@@ -138,10 +138,9 @@ export function useProcessPayload({
         val = null;
       }
 
+      // targetKey is always defined: p.name is guaranteed truthy by the `continue` above
       const targetKey = p.dBColumnName || p.name;
-      if (targetKey) {
-        mappedValues[targetKey] = val !== undefined ? val : null;
-      }
+      mappedValues[targetKey] = val !== undefined ? val : null;
 
       const identifierKey = `${p.name}$_identifier`;
       if (rawValues[identifierKey] !== undefined) {
