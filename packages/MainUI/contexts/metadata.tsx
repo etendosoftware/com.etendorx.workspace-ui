@@ -39,7 +39,14 @@ export const MetadataSynchronizer = () => {
         }
       });
     }
-  }, [activeWindow?.windowId, activeWindow?.windowIdentifier, windowsData, isWindowLoading, loadWindowData, cleanupWindow]);
+  }, [
+    activeWindow?.windowId,
+    activeWindow?.windowIdentifier,
+    windowsData,
+    isWindowLoading,
+    loadWindowData,
+    cleanupWindow,
+  ]);
 
   return null;
 };

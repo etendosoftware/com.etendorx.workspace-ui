@@ -319,18 +319,19 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   useEffect(() => {
     const interceptor = (response: Response) => {
-      const isIgnorableError = 
-        (response.status === HTTP_CODES.INTERNAL_SERVER_ERROR || response.status === HTTP_CODES.UNAUTHORIZED) && 
-        (
-          response.url.includes("meta/window") || 
-          response.url.includes("meta/tab") || 
-          response.url.includes("meta/toolbar") || 
+      const isIgnorableError =
+        (response.status === HTTP_CODES.INTERNAL_SERVER_ERROR || response.status === HTTP_CODES.UNAUTHORIZED) &&
+        (response.url.includes("meta/window") ||
+          response.url.includes("meta/tab") ||
+          response.url.includes("meta/toolbar") ||
           response.url.includes("api/datasource") ||
           response.url.includes("org.openbravo.client.kernel") ||
-          response.url.includes("meta/labels")
-        );
+          response.url.includes("meta/labels"));
 
-      if ((response.status === HTTP_CODES.UNAUTHORIZED || response.status === HTTP_CODES.INTERNAL_SERVER_ERROR) && !isIgnorableError) {
+      if (
+        (response.status === HTTP_CODES.UNAUTHORIZED || response.status === HTTP_CODES.INTERNAL_SERVER_ERROR) &&
+        !isIgnorableError
+      ) {
         logout();
         setLoginErrorText(t("login.errors.defaultLogout.title"));
         setLoginErrorDescription(t("login.errors.defaultLogout.description"));
