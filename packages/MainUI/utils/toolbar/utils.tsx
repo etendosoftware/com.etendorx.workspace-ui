@@ -205,10 +205,6 @@ export const createButtonByType = ({
         return {};
       }
 
-      if (button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE && saveButtonState?.isCalloutLoading) {
-        return { iconText: "Loading callouts..." };
-      }
-
       return { iconText: button.name };
     }
 
@@ -252,9 +248,7 @@ export const createButtonByType = ({
       [TOOLBAR_BUTTONS_ACTIONS.SAVE]: () => {
         const patternDisabled = isReadOnly;
         const baseDisabled = !isFormView || !hasFormChanges || !hasParentRecordSelected || patternDisabled;
-        const additionalDisabled = saveButtonState
-          ? saveButtonState.isCalloutLoading || saveButtonState.isSaving
-          : false;
+        const additionalDisabled = saveButtonState ? saveButtonState.isSaving : false;
         return buildDisableConfig(baseDisabled || additionalDisabled);
       },
       [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: () => {
