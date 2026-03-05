@@ -553,8 +553,13 @@ const WindowReferenceGrid = ({
     }
   }, [processConfigLoading, processConfig]);
 
-  // Stabilize effectiveRecordValues to prevent unnecessary re-fetches
-  const stableRecordValues = useMemo(() => effectiveRecordValues, [JSON.stringify(effectiveRecordValues)]);
+  // Stabilize effectiveRecordValues — join scalar values (cheaper than full JSON.stringify)
+  const recordValuesKey = Object.entries(effectiveRecordValues || {})
+    .filter(([, v]) => v !== null && v !== undefined && typeof v !== "object")
+    .map(([k, v]) => `${k}:${v}`)
+    .join("|");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableRecordValues = useMemo(() => effectiveRecordValues, [recordValuesKey]);
 
   const datasourceOptions = useMemo(() => {
     const options: DatasourceParams = {
@@ -619,7 +624,7 @@ const WindowReferenceGrid = ({
     recordValues?.inpcCurrencyId,
     stableRecordValues,
     parameters,
-    JSON.stringify(currentValues),
+    currentValues,
     stableWindowReferenceTab,
     fields,
   ]);
@@ -709,10 +714,10 @@ const WindowReferenceGrid = ({
     return parsed;
   }, [stableWindowReferenceTab?.fields, isFieldVisible]); // isFieldVisible changes often, but we check result below
 
-  // Stablize the array reference
-  const stableVisibleFields = useMemo(() => {
-    return visibleFieldsFromTab;
-  }, [JSON.stringify(visibleFieldsFromTab.map((f: any) => f.id))]); // Only update if IDs change
+  // Stabilize the array reference — join IDs into a string (cheaper than JSON.stringify of full objects)
+  const visibleFieldIds = visibleFieldsFromTab.map((f: any) => f.id).join(",");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableVisibleFields = useMemo(() => visibleFieldsFromTab, [visibleFieldIds]);
 
   // Compute raw columns from fields
   const rawColumns = useMemo(() => {
@@ -773,7 +778,9 @@ const WindowReferenceGrid = ({
   }, [fields]);
 
   // Column filters hook - needs stable columns reference
-  const stableRawColumns = useMemo(() => rawColumns, [JSON.stringify(rawColumns.map((c: Column) => c.id))]);
+  const rawColumnIds = rawColumns.map((c: Column) => c.id).join(",");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableRawColumns = useMemo(() => rawColumns, [rawColumnIds]);
 
   // Build extra params for filter options requests (process context needed by Classic datasource)
   const filterExtraParams = useMemo(() => {
