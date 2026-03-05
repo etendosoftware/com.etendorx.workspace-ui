@@ -29,10 +29,11 @@ import { type Field, type FormInitializationResponse, FormMode } from "@workspac
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import { useParams } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import Label from "../Label";
 import { GenericSelector } from "./GenericSelector";
 import useDisplayLogic from "@/hooks/useDisplayLogic";
+import { useExpressionDependencies } from "@/hooks/useExpressionDependencies";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 import useFormParent from "@/hooks/useFormParent";
 import { FIELD_REFERENCE_CODES, CALLOUT_TRIGGERS } from "@/utils/form/constants";
@@ -149,12 +150,13 @@ const BaseSelectorComp = ({
   });
   const debouncedCallout = useDebounce(executeCalloutBase, 300);
   const value = watch(field.hqlName);
-  const values = watch();
   const previousValue = useRef(value);
   const fieldsByHqlName = useMemo(() => tab?.fields || {}, [tab?.fields]);
-  const optionData = watch(`${field.hqlName}_data`);
+  const optionData = useWatch({ name: `${field.hqlName}_data` });
 
   const isSettingFromCallout = useRef(false);
+
+  const readOnlyValues = useExpressionDependencies(field.readOnlyLogicExpression);
 
   const isDisplayed = useDisplayLogic({ field });
 
@@ -167,7 +169,7 @@ const BaseSelectorComp = ({
 
     try {
       const smartContext = createSmartContext({
-        values: { ...record, ...values },
+        values: { ...record, ...readOnlyValues },
         fields: tab.fields,
         parentValues: parentRecord || undefined,
         parentFields: parentTab?.fields,
@@ -178,7 +180,7 @@ const BaseSelectorComp = ({
       logger.warn("Error executing expression:", compiledExpr, error);
       return true;
     }
-  }, [field, formMode, session, values, forceReadOnly, record, parentRecord, parentTab, tab]);
+  }, [field, formMode, session, readOnlyValues, forceReadOnly, record, parentRecord, parentTab, tab]);
 
   const applyColumnValues = useCallback(
     (columnValues: FormInitializationResponse["columnValues"]) => {
