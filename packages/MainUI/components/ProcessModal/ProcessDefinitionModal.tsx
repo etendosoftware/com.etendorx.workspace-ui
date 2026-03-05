@@ -54,7 +54,7 @@ import { convertToISODateFormat } from "@/utils/process/processDefaultsUtils";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { FormProvider, useForm, useFormState } from "react-hook-form";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
@@ -299,6 +299,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
 
   const [gridSelection, setGridSelectionInternal] = useState<GridSelectionStructure>({});
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
+
+  // Ref (not state) to store _filterExpressions returned by JS onLoad scripts.
+  // Using a ref avoids triggering re-renders that would cause infinite loops.
+  const onLoadFilterExpressionsRef = useRef<Record<string, Record<string, string>>>({});
 
   const setGridSelection = useCallback((updater: GridSelectionUpdater) => {
     setGridSelectionInternal((prev) => {
@@ -1447,6 +1451,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
         setGridSelection((prev) => applyGridSelection(prev, result._gridSelection as Record<string, string[]>));
       }
 
+      // Store JS-returned filter expressions in a ref (no re-render trigger).
+      // The value is picked up on the next natural render caused by setParameters below.
+      if (result._filterExpressions && typeof result._filterExpressions === "object") {
+        onLoadFilterExpressionsRef.current = result._filterExpressions as Record<string, Record<string, string>>;
+      }
+
       if (result.autoSelectConfig) {
         setAutoSelectConfig(result.autoSelectConfig as AutoSelectConfig);
       }
@@ -1471,7 +1481,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             effectiveOnLoad,
             { Metadata, ...processScriptContext },
             button.processDefinition,
-            { selectedRecords, tabId: tab.id || "", tableId: tab.table || "" }
+            { selectedRecords, tabId: tab.id || "", tableId: tab.table || "", parentRecord: recordValues }
           );
 
           if (result) {
@@ -1493,6 +1503,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     onLoad,
     open,
     selectedRecords,
+    recordValues,
     tab,
     isBulkCompletion,
     processScriptContext,
@@ -1710,6 +1721,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             processConfig={{
               processId: processConfig?.processId || "",
               ...processConfig,
+              filterExpressions: processConfig?.filterExpressions,
+              _filterExpressions: onLoadFilterExpressionsRef.current,
               defaults: (processInitialization?.defaults || {}) as Record<
                 string,
                 { value: string; identifier: string }

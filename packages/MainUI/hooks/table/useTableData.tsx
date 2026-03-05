@@ -429,7 +429,6 @@ export const useTableData = ({
     const baseCriteria = buildBaseCriteria({ tab, parentTab, parentId });
     if (baseCriteria.length > 0) {
       options.criteria = baseCriteria as unknown as Criteria[];
-
       if (parentTab?.entityName && parentId) {
         options[`@${parentTab.entityName}.id@`] = parentId;
       }
