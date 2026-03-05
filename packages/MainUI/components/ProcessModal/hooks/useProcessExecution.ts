@@ -99,6 +99,7 @@ export interface UseProcessExecutionParams {
   triggerRecovery: () => void;
   onClose: () => void;
   onSuccess: (() => void) | undefined;
+  keepOpenOnSuccess?: boolean;
   // Payload builders (from useProcessPayload)
   getMergedProcessValues: (extra?: Record<string, any>) => Record<string, any>;
   getRecordIds: () => string[];
@@ -159,6 +160,7 @@ export function useProcessExecution({
   triggerRecovery,
   onClose,
   onSuccess,
+  keepOpenOnSuccess,
   getMergedProcessValues,
   getRecordIds,
   buildProcessSpecificFields,
@@ -288,15 +290,22 @@ export function useProcessExecution({
         onSuccess?.();
       }
 
+      setShouldTriggerSuccess(false);
       setResult(null);
+
+      if (keepOpenOnSuccess) {
+        setGridRefreshKey((prev) => prev + 1);
+        return;
+      }
+
       setLoading(true);
       setParameters(initialParameters);
-      setShouldTriggerSuccess(false);
       onClose();
     },
     [
       initialParameters,
       isPending,
+      keepOpenOnSuccess,
       onClose,
       shouldTriggerSuccess,
       onSuccess,
@@ -304,6 +313,7 @@ export function useProcessExecution({
       setLoading,
       setParameters,
       setShouldTriggerSuccess,
+      setGridRefreshKey,
     ]
   );
 

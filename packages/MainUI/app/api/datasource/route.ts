@@ -85,15 +85,32 @@ const getCachedDatasource = unstable_cache(
   ["datasource_v2"]
 );
 
+// Ensures a criteria item string includes _constructor so classic datasources
+// like OBPickAndExecuteDataSource can parse the criteriaOperator correctly.
+function ensureCriteriaConstructor(item: string): string {
+  try {
+    const parsed = JSON.parse(item);
+    if (parsed && typeof parsed === "object" && !parsed._constructor) {
+      parsed._constructor = "AdvancedCriteria";
+      return JSON.stringify(parsed);
+    }
+  } catch {
+    // Not valid JSON — return as-is
+  }
+  return item;
+}
+
 // Function to convert params to form data for non-JSON requests
 function createFormData(params: DatasourceRequestParams): URLSearchParams {
   const formData = new URLSearchParams();
+  let hasCriteria = false;
   for (const [key, value] of Object.entries(params || {})) {
     if (key === "criteria" && Array.isArray(value)) {
       // Classic backend expects multiple criteria= params (one per criterion), not a JSON array
       for (const item of value) {
-        formData.append("criteria", String(item));
+        formData.append("criteria", ensureCriteriaConstructor(String(item)));
       }
+      if (value.length > 0) hasCriteria = true;
     } else if (Array.isArray(value)) {
       for (const item of value) {
         formData.append(key, String(item));
@@ -101,6 +118,12 @@ function createFormData(params: DatasourceRequestParams): URLSearchParams {
     } else if (typeof value !== "undefined" && value !== null) {
       formData.append(key, String(value));
     }
+  }
+  // Classic AdvancedCriteria requires top-level operator and _constructor when criteria is present.
+  // Without these, OBPickAndExecuteDataSource leaves criteriaOperator null and throws.
+  if (hasCriteria && !formData.has("_constructor")) {
+    formData.append("_constructor", "AdvancedCriteria");
+    formData.append("operator", "and");
   }
   return formData;
 }
