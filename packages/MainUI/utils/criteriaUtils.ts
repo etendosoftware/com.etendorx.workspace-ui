@@ -54,19 +54,22 @@ export const buildBaseCriteria = ({ tab, parentTab, parentId }: BaseCriteriaOpti
   }
 
   const getParentFieldName = () => {
-    if (tab.fields && tab.parentColumns && tab.parentColumns.length > 0) {
+    if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
+      return "id";
+    }
+
+    // Without a parentTab we cannot match by referencedEntity — fall back to first column.
+    if (!parentTab) {
       return tab.parentColumns[0] || "id";
     }
 
-    const matchingField =
-      tab.fields && tab.parentColumns
-        ? tab.parentColumns.find((colName) => {
-            const field = tab.fields[colName];
-            return field?.referencedEntity === parentTab.entityName;
-          })
-        : undefined;
+    // Find the FK column that references the parent entity.
+    const matchingField = tab.parentColumns.find((colName) => {
+      const field = tab.fields[colName];
+      return field?.referencedEntity === parentTab.entityName;
+    });
 
-    return matchingField || tab.parentColumns?.[0] || "id";
+    return matchingField || tab.parentColumns[0] || "id";
   };
 
   const fieldName = getParentFieldName();

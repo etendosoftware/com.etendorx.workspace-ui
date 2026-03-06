@@ -213,6 +213,15 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       (data as unknown as Record<string, unknown>)[fieldName] = String(value);
     }
 
+    // Propagate _readOnly from the datasource record into the FIC response.
+    // The datasource marks records as _readOnly: true when the DAL security layer
+    // determines the current role cannot edit this specific record (e.g. system
+    // records with org='0'). If the FIC didn't already set _readOnly, we mirror
+    // the record-level flag so FormView can correctly render in read-only mode.
+    if (record._readOnly === true) {
+      data._readOnly = true;
+    }
+
     return data;
   }
 
