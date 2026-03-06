@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import TabsComponent from "./Tabs";
 import WindowProvider from "@/contexts/window";
 
@@ -53,7 +53,9 @@ jest.mock("next/navigation", () => ({
 
 // Mock subcomponents to reduce rendering complexity
 jest.mock("@/components/window/SubTabsSwitch", () => ({
-  SubTabsSwitch: () => <div data-testid="subtabs" />,
+  SubTabsSwitch: ({ onClick, tabs: subTabs }: any) => (
+    <div data-testid="subtabs" onClick={() => subTabs?.length > 1 && onClick?.(subTabs[1])} />
+  ),
 }));
 
 jest.mock("@/components/window/TabContainer", () => ({
@@ -82,13 +84,15 @@ jest.mock("@/hooks/useTableStatePersistenceTab", () => ({
   useTableStatePersistenceTab: () => ({
     activeLevels: [1],
     setActiveLevel: jest.fn(),
+    setActiveTabsByLevel: jest.fn(),
   }),
 }));
 
-// Force React.useTransition to always be pending
+// Force React.useTransition to always be pending and never execute the callback,
+// so activeTabId updates immediately but current.id stays the same (simulating real pending state)
 jest.mock("react", () => {
   const actual = jest.requireActual("react");
-  return { ...actual, useTransition: () => [true, (cb: any) => cb()] };
+  return { ...actual, useTransition: () => [true, jest.fn()] };
 });
 
 describe("Tabs - pending state skeleton", () => {
@@ -104,6 +108,9 @@ describe("Tabs - pending state skeleton", () => {
     renderTabsComponent(tabs);
 
     expect(screen.getByTestId("tab-container")).toBeInTheDocument();
+    // Click second tab: activeTabId updates immediately, but startTransition is a no-op
+    // so current.id stays as tabs[0].id → isPending && current.id !== activeTabId → skeleton shows
+    fireEvent.click(screen.getByTestId("subtabs"));
     const skeleton = document.querySelector(".animate-pulse");
     expect(skeleton).toBeInTheDocument();
   });
