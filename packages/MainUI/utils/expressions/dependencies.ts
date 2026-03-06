@@ -24,6 +24,51 @@ const findHqlNameByDbColumn = (token: string, fields: Record<string, Field>): st
 };
 
 /**
+ * Maps a token (which could be a DB column name) back to its HQL field name.
+ */
+const resolveHqlName = (token: string, fields?: Record<string, Field>): string => {
+  if (!fields || fields[token]) return token;
+  return findHqlNameByDbColumn(token, fields) || token;
+};
+
+/**
+ * Extracts patterns like @FieldName@ from Classic Etendo expressions.
+ */
+const extractClassicTokens = (expression: string, fields?: Record<string, Field>): string[] => {
+  const matches = expression.match(/@([\w#$]+)@/g) || [];
+  return matches
+    .map((m) => m.replace(/@/g, ""))
+    .filter((token) => !token.startsWith("#") && !token.startsWith("$"))
+    .map((token) => resolveHqlName(token, fields));
+};
+
+/**
+ * Extracts patterns like currentValues.fieldName or currentValues["fieldName"].
+ */
+const extractJsAccessors = (expression: string): string[] => {
+  const matches = expression.match(/currentValues(?:\[\s*['"]|(?:\.))(\w+)(?:['"]\s*\])?/g) || [];
+  const results: string[] = [];
+  for (const match of matches) {
+    const fieldNameMatch = match.match(/currentValues(?:\[\s*['"]|(?:\.))(\w+)/);
+    if (fieldNameMatch?.[1]) results.push(fieldNameMatch[1]);
+  }
+  return results;
+};
+
+/**
+ * Extracts patterns like OB.Utilities.getValue(currentValues, 'fieldName').
+ */
+const extractObUtilityAccessors = (expression: string): string[] => {
+  const matches = expression.match(/getValue\(\s*currentValues\s*,\s*['"](\w+)['"]\s*\)/g) || [];
+  const results: string[] = [];
+  for (const match of matches) {
+    const fieldNameMatch = match.match(/getValue\(\s*currentValues\s*,\s*['"](\w+)['"]\s*\)/);
+    if (fieldNameMatch?.[1]) results.push(fieldNameMatch[1]);
+  }
+  return results;
+};
+
+/**
  * Extracts dependency field names from an Etendo Classic expression.
  * It looks for variables bounded by `@` (e.g., `@C_BPartner_ID@`, `@#User_Client@`).
  * It maps database column names back to their HQL form names using the provided fields metadata.
@@ -33,62 +78,18 @@ const findHqlNameByDbColumn = (token: string, fields: Record<string, Field>): st
  * @returns Array of unique HQL field names that this expression depends on
  */
 export const extractDependenciesFromExpression = (expression?: string, fields?: Record<string, Field>): string[] => {
-  if (!expression || typeof expression !== "string") {
-    return [];
-  }
+  if (!expression || typeof expression !== "string") return [];
 
-  const dependencies = new Set<string>();
+  const dependencies = new Set<string>([
+    ...extractClassicTokens(expression, fields),
+    ...extractJsAccessors(expression),
+    ...extractObUtilityAccessors(expression),
+  ]);
 
-  // 1. Classic Etendo tokens: @Field_Name@
-  const classicMatches = expression.match(/@([a-zA-Z0-9_#$]+)@/g);
-  if (classicMatches) {
-    for (const match of classicMatches) {
-      const token = match.replace(/@/g, "");
-      if (token.startsWith("#") || token.startsWith("$")) continue;
-      if (fields?.[token]) {
-        dependencies.add(token);
-      } else if (fields) {
-        const hqlName = findHqlNameByDbColumn(token, fields);
-        dependencies.add(hqlName || token);
-      } else {
-        dependencies.add(token);
-      }
-    }
-  }
-
-  // 2. JavaScript Direct Accessors: currentValues.fieldName or currentValues["fieldName"]
-  const jsDirectMatches = expression.match(/currentValues(?:\[\s*['"]|(?:\.))([a-zA-Z0-9_]+)(?:['"]\s*\])?/g);
-  if (jsDirectMatches) {
-    for (const match of jsDirectMatches) {
-      const fieldNameMatch = match.match(/currentValues(?:\[\s*['"]|(?:\.))([a-zA-Z0-9_]+)/);
-      if (fieldNameMatch?.[1]) {
-        dependencies.add(fieldNameMatch[1]);
-      }
-    }
-  }
-
-  // 3. OB/Etendo Utility: OB.Utilities.getValue(currentValues, 'fieldName')
-  const obMatches = expression.match(/getValue\(\s*currentValues\s*,\s*['"]([a-zA-Z0-9_]+)['"]\s*\)/g);
-  if (obMatches) {
-    for (const match of obMatches) {
-      const fieldNameMatch = match.match(/getValue\(\s*currentValues\s*,\s*['"]([a-zA-Z0-9_]+)['"]\s*\)/);
-      if (fieldNameMatch?.[1]) {
-        dependencies.add(fieldNameMatch[1]);
-      }
-    }
-  }
-
-  // Map any found dependencies back to HQL names if they were DB columns
+  // Ensure all extracted dependencies are resolved to HQL names if possible
   const finalDependencies = new Set<string>();
-  for (const token of dependencies) {
-    if (fields?.[token]) {
-      finalDependencies.add(token);
-    } else if (fields) {
-      const hqlName = findHqlNameByDbColumn(token, fields);
-      finalDependencies.add(hqlName || token);
-    } else {
-      finalDependencies.add(token);
-    }
+  for (const dep of dependencies) {
+    finalDependencies.add(resolveHqlName(dep, fields));
   }
 
   return Array.from(finalDependencies);
