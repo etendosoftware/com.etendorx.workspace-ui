@@ -146,10 +146,11 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const handleProcessMenuClick = useCallback(
     async (button: ProcessButton) => {
-      if (!selectedRecord) return;
+      const record = selectedRecord || selectedRecords[0];
+      if (!record) return;
 
       if (ProcessButtonType.PROCESS_ACTION in button) {
-        const response = await handleProcessClick(button, String(selectedRecord.id));
+        const response = await handleProcessClick(button, String(record.id));
         setProcessResponse(response);
         setSelectedProcessActionButton(button);
         setOpenIframeModal(true);
@@ -162,7 +163,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
       handleMenuClose();
     },
-    [handleMenuClose, handleProcessClick, selectedRecord]
+    [handleMenuClose, handleProcessClick, selectedRecord, selectedRecords]
   );
 
   const handleSearchChange = useCallback(
@@ -349,6 +350,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           processButtons={processButtons}
           onProcessClick={handleProcessMenuClick}
           selectedRecord={selectedRecord}
+          hasSelection={!!(selectedRecord || selectedRecords.length > 0)}
           data-testid="ProcessMenu__a2dd07"
         />
       )}

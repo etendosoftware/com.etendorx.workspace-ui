@@ -176,6 +176,7 @@ export interface WindowReferenceGridProps {
   recordValues: RecordValues | null;
   currentValues?: Record<string, unknown>; // Current form values for dynamic filtering
   fields?: Field[]; // Optional fields array for advanced field configuration
+  showTitle?: boolean; // Whether to show the parameter name in the toolbar (default true)
 }
 
 export type RowProps = (props: {

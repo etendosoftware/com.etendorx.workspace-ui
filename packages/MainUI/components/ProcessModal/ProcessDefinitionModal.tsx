@@ -32,6 +32,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import { FormProvider, useForm, useFormState } from "react-hook-form";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
+import ChevronDownIcon from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import {
   // Contexts
@@ -88,6 +89,24 @@ import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import { useProcessPayload, isDateReference, convertParameterDateFields } from "./hooks/useProcessPayload";
 import { useProcessExecution } from "./hooks/useProcessExecution";
+
+const CollapsibleSection = ({ title, children }: { title: string; children: import("react").ReactNode }) => {
+  const [expanded, setExpanded] = useState(true);
+  return (
+    <div className="w-full">
+      <button
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
+        className="w-full flex items-center gap-2 px-3 py-1.5 text-left cursor-pointer select-none">
+        <ChevronDownIcon
+          className={`h-3.5 w-3.5 text-gray-500 flex-shrink-0 transition-transform duration-200 ${expanded ? "" : "-rotate-90"}`}
+        />
+        <span className="text-sm font-medium text-gray-700">{title}</span>
+      </button>
+      <div style={{ display: expanded ? "block" : "none" }}>{children}</div>
+    </div>
+  );
+};
 
 // ---------------------------------------------------------------------------
 // Exported types (consumed by hooks and external components)
@@ -148,10 +167,8 @@ const evaluateWindowReferenceDisplay = (options: EvaluateWindowReferenceDisplayO
   const defaultsDisplayLogic = logicFields?.[`${parameter.name}.display`];
 
   if (parameter.displayLogic) {
-    const hasFormValues = formValues && Object.keys(formValues).length > 0;
-    const hasAvailableData = availableFormData && Object.keys(availableFormData).length > 0;
-    const hasData = hasFormValues || hasAvailableData;
-
+    const mergedValues = { ...availableFormData, ...formValues };
+    const hasData = Object.keys(mergedValues).length > 0;
     const isMalformedLogic = parameter.displayLogic.includes("_logic") && !parameter.displayLogic.includes("@");
 
     if (!isMalformedLogic && hasData) {
@@ -159,7 +176,7 @@ const evaluateWindowReferenceDisplay = (options: EvaluateWindowReferenceDisplayO
         const compiledExpr = compileExpression(parameter.displayLogic);
 
         const smartContext = createProcessExpressionContext({
-          values: hasFormValues ? formValues : availableFormData,
+          values: mergedValues,
           parameters,
           recordValues,
           parentFields,
@@ -947,23 +964,27 @@ function ProcessDefinitionModalContent({
 
         const parameterTab = getTabForParameter(parameter);
         windowReferences.push(
-          <WindowReferenceGrid
+          <CollapsibleSection
             key={`window-ref-${parameter.id || parameter.name}-${gridRefreshKey}`}
-            parameter={parameter}
-            parameters={parameters}
-            onSelectionChange={setGridSelection}
-            gridSelection={gridSelection}
-            tabId={parameterTab?.id || ""}
-            entityName={parameterTab?.entityName || ""}
-            windowReferenceTab={parameterTab || windowReferenceTab}
-            processConfig={stableProcessConfig}
-            processConfigLoading={processConfigLoading}
-            processConfigError={processConfigError}
-            recordValues={recordValues}
-            currentValues={formValues}
-            originTab={tab}
-            data-testid="WindowReferenceGrid__761503"
-          />
+            title={parameter.name}>
+            <WindowReferenceGrid
+              parameter={parameter}
+              parameters={parameters}
+              onSelectionChange={setGridSelection}
+              gridSelection={gridSelection}
+              tabId={parameterTab?.id || ""}
+              entityName={parameterTab?.entityName || ""}
+              windowReferenceTab={parameterTab || windowReferenceTab}
+              processConfig={stableProcessConfig}
+              processConfigLoading={processConfigLoading}
+              processConfigError={processConfigError}
+              recordValues={recordValues}
+              currentValues={formValues}
+              originTab={tab}
+              showTitle={false}
+              data-testid="WindowReferenceGrid__761503"
+            />
+          </CollapsibleSection>
         );
       } else {
         selectors.push(

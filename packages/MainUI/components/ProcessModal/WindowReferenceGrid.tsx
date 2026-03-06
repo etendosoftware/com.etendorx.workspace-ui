@@ -16,10 +16,15 @@
  */
 
 import { useTranslation } from "@/hooks/useTranslation";
+import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { useTab } from "@/hooks/useTab";
 import type { EntityData, EntityValue, Column, Tab, Criteria } from "@workspaceui/api-client/src/api/types";
 import {
   MaterialReactTable,
+  MRT_ShowHideColumnsButton,
+  MRT_ToggleDensePaddingButton,
+  MRT_ToggleFiltersButton,
+  MRT_ToggleFullScreenButton,
   useMaterialReactTable,
   type MRT_RowSelectionState,
   type MRT_ColumnFiltersState,
@@ -28,6 +33,7 @@ import {
   type MRT_TopToolbarProps,
   type MRT_ColumnDef,
 } from "material-react-table";
+
 import { useDatasource } from "@/hooks/useDatasource";
 import { useGridColumnFilters } from "@/hooks/table/useGridColumnFilters";
 import { useColumns } from "@/hooks/table/useColumns";
@@ -39,7 +45,6 @@ import Loading from "../loading";
 import { tableStyles } from "./styles";
 import type { WindowReferenceGridProps } from "./types";
 import type { GridSelectionStructure } from "./ProcessDefinitionModal";
-import PlusIcon from "../../../ComponentLibrary/src/assets/icons/plus.svg";
 import { saveRecord } from "../Table/utils/saveOperations";
 import type { SaveOperation } from "../Table/types/inlineEditing";
 import { useUserContext } from "@/hooks/useUserContext";
@@ -181,11 +186,17 @@ const resolveParentContextId = (
 };
 
 // Stable renderer for read-only cells
-const ReadOnlyCellRenderer = ({ renderedCellValue }: any) => (
-  <span className="text-gray-700 block truncate" title={String(renderedCellValue ?? "")}>
-    {renderedCellValue}
-  </span>
-);
+const ReadOnlyCellRenderer = ({ renderedCellValue }: any) => {
+  const displayValue =
+    typeof renderedCellValue === "string" && /^\d{4}-\d{2}-\d{2}T/.test(renderedCellValue)
+      ? formatClassicDate(renderedCellValue, false) || renderedCellValue
+      : renderedCellValue;
+  return (
+    <span className="text-gray-700 block truncate" title={String(displayValue ?? "")}>
+      {displayValue}
+    </span>
+  );
+};
 
 // Stable renderer for interactive cells
 const InteractiveGridCellRenderer = ({ row, cell, column }: any) => {
@@ -207,7 +218,14 @@ const InteractiveGridCellRenderer = ({ row, cell, column }: any) => {
     );
   }
 
-  return cell.getValue();
+  const value = cell.getValue();
+
+  // Fallback date formatting: detect ISO datetime strings and format them
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
+    return <span>{formatClassicDate(value, false) || value}</span>;
+  }
+
+  return value;
 };
 
 const updateLocalRecordFromSelection = (record: EntityData, selectionItem: any): EntityData | null => {
@@ -462,6 +480,7 @@ const WindowReferenceGrid = ({
   processConfigError,
   recordValues,
   originTab,
+  showTitle = true,
 }: WindowReferenceGridProps & { originTab?: Tab }) => {
   const { t } = useTranslation();
   // ... rest of component
@@ -519,6 +538,19 @@ const WindowReferenceGrid = ({
     stableWindowReferenceTabRef.current = windowReferenceTab;
   }
   const stableWindowReferenceTab = stableWindowReferenceTabRef.current;
+
+  const initialIsFilterApplied = useMemo(
+    () => !!(stableWindowReferenceTab?.hqlfilterclause || stableWindowReferenceTab?.sQLWhereClause),
+    [stableWindowReferenceTab]
+  );
+
+  const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState<boolean | undefined>(undefined);
+
+  useEffect(() => {
+    if (isImplicitFilterApplied === undefined) {
+      setIsImplicitFilterApplied(initialIsFilterApplied);
+    }
+  }, [initialIsFilterApplied, isImplicitFilterApplied]);
 
   const stableProcessDefaults = useMemo<Record<string, EntityValue>>(() => {
     const defaults = (processConfig?.defaults as unknown as Record<string, EntityValue>) || {};
@@ -597,11 +629,14 @@ const WindowReferenceGrid = ({
     if (options.ad_org_id && !options._org) options._org = options.ad_org_id;
 
     // 7. Build filter criteria (explicit expressions take precedence over base criteria)
-    const criteria = buildGridCriteria(stableFilterExpressions, parameter.dBColumnName || "");
+    const filterCriteria = buildGridCriteria(stableFilterExpressions, parameter.dBColumnName || "");
     const baseCriteria = buildBaseCriteria({
       tab: stableWindowReferenceTab || ({ fields: {}, parentColumns: [] } as any),
     });
-    const finalCriteria = criteria.length > 0 ? criteria : baseCriteria;
+    // When implicit filter is active (or no implicit filters defined), use filterExpressions criteria.
+    // When the user deactivates the filter, fall back to baseCriteria only (show all related records).
+    const applyImplicitFilter = isImplicitFilterApplied !== false;
+    const finalCriteria = applyImplicitFilter && filterCriteria.length > 0 ? filterCriteria : baseCriteria;
     if (finalCriteria.length > 0) {
       options.criteria = finalCriteria as unknown as Criteria[];
       options.orderBy = "documentNo desc";
@@ -627,6 +662,7 @@ const WindowReferenceGrid = ({
     currentValues,
     stableWindowReferenceTab,
     fields,
+    isImplicitFilterApplied,
   ]);
 
   // Helper to determine ACCT_DIMENSION_DISPLAY for specific columns
@@ -807,7 +843,7 @@ const WindowReferenceGrid = ({
       entityName: entityName ? String(entityName) : undefined,
       setAppliedTableFilters,
       setColumnFilters,
-      isImplicitFilterApplied: false,
+      isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
       extraParams: filterExtraParams,
     });
 
@@ -967,11 +1003,21 @@ const WindowReferenceGrid = ({
 
       // ALWAYS add custom editing logic (Edit and enableEditing)
       // This ensures our CellEditorFactory is used for all columns, including those with Filters (TableDir, etc.)
+      const existingCell = columnConfig.Cell;
+      const colType = columnConfig.type as string | undefined;
+      const colReference = (columnConfig.column as any)?.reference as string | undefined;
+      const isDateCol =
+        colType === "date" ||
+        colType === "datetime" ||
+        colReference === "15" || // DATE reference code
+        colReference === "16"; // DATETIME reference code
+      const includeTimeForCol = colType === "datetime" || colReference === "16";
+      const colColumnName = columnConfig.columnName as string | undefined;
+
       return {
         ...columnConfig,
         enableEditing: () => {
           // Basic read-only check based on field definition
-          // Ideally this should use field.readOnly or similar prop if available
           const isReadOnly = columnConfig.readOnly || columnConfig.isReadOnly;
           if (isReadOnly) return false;
 
@@ -979,15 +1025,35 @@ const WindowReferenceGrid = ({
 
           return true;
         },
-        // Use custom editor for both display (Cell) and editing (Edit) to ensure "always edit" feel
-        // This matches user request: "puts you in edit mode immediately"
-        // Use stable static component for editing
         Edit: StableGridCellEditorRenderer,
-        // Pass context via column definition
         dbColumnName: parameter.dBColumnName,
-        // For display (Cell), only show editor if row is selected OR for specific grids like glItem
-        // Otherwise use default display
-        Cell: InteractiveGridCellRenderer,
+        Cell: (props: any) => {
+          const isSelected = props.row.getIsSelected();
+          const isAlwaysEditable = (props.column.columnDef as any)?.dbColumnName === "glitem";
+
+          if (isSelected || isAlwaysEditable) {
+            return <StableGridCellEditorRenderer {...props} />;
+          }
+
+          // For date columns, apply formatting directly to avoid closure/accessorFn issues
+          if (isDateCol) {
+            let value = props.cell?.getValue();
+            if (value === undefined || value === null) {
+              value = colColumnName ? props.row?.original?.[colColumnName] : undefined;
+            }
+            if (typeof value === "string" && value) {
+              const formatted = formatClassicDate(value, includeTimeForCol);
+              return <span>{formatted || value}</span>;
+            }
+            return <span>{value ? String(value) : ""}</span>;
+          }
+
+          // For non-date columns: use column-specific Cell (e.g. reference link) or fall back
+          if (existingCell) {
+            return (existingCell as (props: any) => any)(props);
+          }
+          return <InteractiveGridCellRenderer {...props} />;
+        },
       };
     });
 
@@ -1270,28 +1336,26 @@ const WindowReferenceGrid = ({
         }
       }
 
-      setRowSelection((prev) => {
-        const newSelection = { ...prev };
-        newSelection[row.id] = !newSelection[row.id];
+      const newSelection = { ...rowSelection };
+      newSelection[row.id] = !newSelection[row.id];
 
-        const selectedItems = records.filter((record) => {
-          const recordId = String(record.id);
-          return newSelection[recordId];
-        });
-
-        // Update with the new structure
-        onSelectionChange((prev: GridSelectionStructure) => ({
-          ...prev,
-          [parameter.dBColumnName]: {
-            _selection: selectedItems,
-            _allRows: records,
-          },
-        }));
-
-        return newSelection;
+      const selectedItems = records.filter((record) => {
+        const recordId = String(record.id);
+        return newSelection[recordId];
       });
+
+      setRowSelection(newSelection);
+
+      // Update with the new structure
+      onSelectionChange((prev: GridSelectionStructure) => ({
+        ...prev,
+        [parameter.dBColumnName]: {
+          _selection: selectedItems,
+          _allRows: records,
+        },
+      }));
     },
-    [records, onSelectionChange, parameter.dBColumnName]
+    [records, onSelectionChange, parameter.dBColumnName, rowSelection]
   );
 
   const handleCreateRow = useCallback(
@@ -1428,30 +1492,6 @@ const WindowReferenceGrid = ({
     [localRecords, parameter.dBColumnName, rowSelection, onSelectionChange]
   );
 
-  const handleAddNewRecord = useCallback(() => {
-    // Logic for adding new empty record to localRecords directly
-    const generateUUID = () => {
-      // Distinct implementation for local temporary records
-      const timestamp = Date.now().toString(36);
-      const randomPart = Math.random().toString(36).substring(2, 10);
-      return `local_${timestamp}_${randomPart}`.toUpperCase();
-    };
-
-    const newId = generateUUID();
-    const newRecord = {
-      id: newId,
-    };
-
-    // Add to local datasource
-    addRecordLocally(newRecord);
-
-    // Auto-select
-    setRowSelection((prev) => ({
-      ...prev,
-      [newId]: true,
-    }));
-  }, [addRecordLocally]);
-
   // Refs for state accessed in handlers to allow stable handler identity
   const localRecordsRef = useRef(localRecords);
   const rowSelectionRef = useRef(rowSelection);
@@ -1579,24 +1619,26 @@ const WindowReferenceGrid = ({
   const renderTopToolbar = useCallback(
     (props: MRT_TopToolbarProps<EntityData>) => {
       const selectedCount = props.table.getSelectedRowModel().rows.length;
+      const currentColumnFilters = props.table.getState().columnFilters;
+      const hasColumnFilters = currentColumnFilters.length > 0;
+      const effectiveImplicitFilter = isImplicitFilterApplied ?? initialIsFilterApplied;
+      const isFilterActive = effectiveImplicitFilter || hasColumnFilters;
+
+      const handleFilterClick = () => {
+        if (effectiveImplicitFilter) {
+          // First: remove implicit filter
+          setIsImplicitFilterApplied(false);
+        } else {
+          // Then: clear column filters
+          props.table.setColumnFilters([]);
+          handleMRTColumnFiltersChange([]);
+        }
+      };
+
       return (
-        <div className="flex justify-between items-center px-4 py-2 bg-gray-50 border-b max-h-[2.5rem]">
-          <div className="text-base font-medium text-gray-800">{parameter.name}</div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                if (parameter.dBColumnName === "glitem") {
-                  handleAddNewRecord();
-                } else {
-                  props.table.setCreatingRow(true);
-                }
-              }}
-              className="hidden flex items-center gap-1.5 px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-colors cursor-pointer">
-              <PlusIcon className="w-4 h-4" data-testid="PlusIcon__ce8544" />
-              {/* @ts-ignore */}
-              <span>{t("common.new")}</span>
-            </button>
+        <div className="flex items-center justify-between border-b border-b-transparent-neutral-10 bg-gray-50 h-[2.5rem]">
+          <div className="flex items-center px-2">
+            {showTitle && <div className="text-base font-medium text-gray-800 mr-4">{parameter.name}</div>}
             {selectedCount > 0 && (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600">
@@ -1611,10 +1653,20 @@ const WindowReferenceGrid = ({
               </div>
             )}
           </div>
+          <div className="flex items-center">
+            <MRT_ToggleFiltersButton
+              table={props.table}
+              onClick={handleFilterClick}
+              sx={{ color: effectiveImplicitFilter ? "var(--color-etendo-main)" : undefined }}
+            />
+            <MRT_ShowHideColumnsButton table={props.table} />
+            <MRT_ToggleDensePaddingButton table={props.table} />
+            <MRT_ToggleFullScreenButton table={props.table} />
+          </div>
         </div>
       );
     },
-    [parameter.name, t, handleClearSelections]
+    [parameter.name, showTitle, t, handleClearSelections, isImplicitFilterApplied, initialIsFilterApplied, handleMRTColumnFiltersChange]
   );
 
   const fetchMoreOnBottomReached = useCallback(
@@ -1641,10 +1693,6 @@ const WindowReferenceGrid = ({
     () => ({
       muiTablePaperProps: {
         className: tableStyles.paper,
-        style: {
-          borderRadius: "1rem",
-          boxShadow: "none",
-        },
       },
       muiTableHeadCellProps: {
         className: tableStyles.headCell,
@@ -1665,10 +1713,15 @@ const WindowReferenceGrid = ({
       },
       muiTableContainerProps: {
         className: tableStyles.container,
-        style: {
-          minHeight: "300px",
-          maxHeight: "500px",
-        },
+        style: (() => {
+          const ROW_HEIGHT = 52;
+          const HEADER_HEIGHT = 53;
+          const FILTER_HEIGHT = 49;
+          const MAX_HEIGHT = 500;
+          const rowCount = records?.length ?? 0;
+          const contentHeight = HEADER_HEIGHT + FILTER_HEIGHT + rowCount * ROW_HEIGHT;
+          return { height: `${Math.min(contentHeight, MAX_HEIGHT)}px`, maxHeight: `${MAX_HEIGHT}px` };
+        })(),
         onScroll: fetchMoreOnBottomReached,
       },
       layoutMode: "semantic",
@@ -1679,7 +1732,9 @@ const WindowReferenceGrid = ({
       positionToolbarAlertBanner: "none",
       enablePagination: false,
       enableStickyHeader: true,
-      enableStickyFooter: true,
+      enableStickyFooter: false,
+      renderBottomToolbar: () => null,
+      muiBottomToolbarProps: { sx: { display: "none" } },
       enableColumnFilters: true,
       enableSorting: true,
       enableColumnActions: true,
@@ -1763,14 +1818,14 @@ const WindowReferenceGrid = ({
       records,
       rowSelection,
       columnFilters,
-      hasMoreRecords,
       renderTopToolbar,
-      fetchMore,
       handleRowSelection,
       handleMRTColumnFiltersChange,
       handleRowClick,
       handleCreateRow,
       handleSaveRow,
+      fetchMoreOnBottomReached,
+      windowReferenceTab?.fields,
     ]
   );
 
@@ -1810,7 +1865,7 @@ const WindowReferenceGrid = ({
   return (
     <WindowReferenceGridProvider value={gridContextValue} data-testid="WindowReferenceGridProvider__ce8544">
       <div
-        className={`flex flex-col w-full overflow-hidden max-h-4xl h-full transition duration-100 ${
+        className={`flex flex-col w-full overflow-hidden transition duration-100 ${
           datasourceLoading ? "opacity-40 cursor-wait cursor-to-children" : "opacity-100"
         }`}
         ref={contentRef}>
