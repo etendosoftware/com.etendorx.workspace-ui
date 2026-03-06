@@ -1666,7 +1666,15 @@ const WindowReferenceGrid = ({
         </div>
       );
     },
-    [parameter.name, showTitle, t, handleClearSelections, isImplicitFilterApplied, initialIsFilterApplied, handleMRTColumnFiltersChange]
+    [
+      parameter.name,
+      showTitle,
+      t,
+      handleClearSelections,
+      isImplicitFilterApplied,
+      initialIsFilterApplied,
+      handleMRTColumnFiltersChange,
+    ]
   );
 
   const fetchMoreOnBottomReached = useCallback(
