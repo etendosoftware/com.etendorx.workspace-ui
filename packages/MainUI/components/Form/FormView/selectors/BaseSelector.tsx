@@ -124,6 +124,22 @@ const BaseSelectorComp = ({
   const { isFormInitializing, isSettingInitialValues, setIsSettingInitialValues } = useFormInitializationContext();
   const { tab, record, parentRecord, parentTab } = useTabContext();
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
+
+  // Lookup map for property field keys returned by FIC in columnValues.
+  // FIC CHANGE/EDIT responses use "_propertyField_{propertyPath}_{columnName}" as the key.
+  // e.g. "_propertyField_type_Type" → the "Type" field (hqlName = "type").
+  const fieldsByPropertyFieldKey = useMemo(() => {
+    return Object.values(tab.fields).reduce(
+      (acc, f) => {
+        if (f.column?.propertyPath && f.inputName) {
+          // inputName is "inp_propertyField_type_Type" → strip "inp" → "_propertyField_type_Type"
+          acc[f.inputName.replace(/^inp/, "")] = f;
+        }
+        return acc;
+      },
+      {} as Record<string, Field>
+    );
+  }, [tab.fields]);
   const { recordId } = useParams<{ recordId: string }>();
   const { session } = useUserContext();
   const parentData = useFormParent();
@@ -148,6 +164,18 @@ const BaseSelectorComp = ({
   const fieldsByHqlName = useMemo(() => tab?.fields || {}, [tab?.fields]);
   const optionData = watch(`${field.hqlName}_data`);
 
+  // Find all property fields that derive their value from this FK field.
+  // e.g., if this field is "file" (hqlName) and another tab field has
+  // column.propertyPath = "file.type", that field depends on this one.
+  const dependentPropertyFields = useMemo(
+    () =>
+      Object.values(tab.fields).filter((f) => {
+        if (!f.column?.propertyPath) return false;
+        return f.column.propertyPath.startsWith(`${field.hqlName}.`);
+      }),
+    [tab.fields, field.hqlName]
+  );
+
   const isSettingFromCallout = useRef(false);
 
   const isDisplayed = useDisplayLogic({ field });
@@ -155,6 +183,11 @@ const BaseSelectorComp = ({
   const isReadOnly = useMemo(() => {
     if (forceReadOnly) return true;
     if (field.isReadOnly) return true;
+    // Property fields (column.propertyPath, e.g. "file.type") are always read-only.
+    // They display a derived property of a related entity and cannot be edited directly
+    // in this form — the value is auto-populated by the FIC when the related entity is
+    // selected, exactly matching Etendo Classic behaviour.
+    if (field.column?.propertyPath) return true;
     if (!field.isUpdatable) return FormMode.NEW !== formMode;
     if (!field.readOnlyLogicExpression) return false;
     const compiledExpr = compileExpression(field.readOnlyLogicExpression);
@@ -177,7 +210,9 @@ const BaseSelectorComp = ({
   const applyColumnValues = useCallback(
     (columnValues: FormInitializationResponse["columnValues"]) => {
       for (const [column, { value, identifier }] of Object.entries(columnValues ?? {})) {
-        const targetField = fieldsByColumnName[column];
+        // Regular column lookup first; fall back to property-field key lookup so that
+        // FIC responses with "_propertyField_{path}_{col}" keys correctly update the field.
+        const targetField = fieldsByColumnName[column] ?? fieldsByPropertyFieldKey[column];
         const hqlName = targetField?.hqlName ?? column;
 
         setValue(hqlName, value, { shouldDirty: false });
@@ -201,7 +236,7 @@ const BaseSelectorComp = ({
         }
       }
     },
-    [fieldsByColumnName, setValue]
+    [fieldsByColumnName, fieldsByPropertyFieldKey, setValue]
   );
 
   const applyAuxiliaryInputValues = useCallback(
@@ -215,12 +250,26 @@ const BaseSelectorComp = ({
   );
 
   const executeCallout = useCallback(async () => {
-    if (!tab || !field.column.callout) return;
+    if (!tab || (!field.column.callout && dependentPropertyFields.length === 0)) return;
 
     try {
       if (isDebugCallouts()) logger.debug(`[Callout] Trigger by user on field: ${field.hqlName}`);
       const entityKeyColumn = tab.fields.id.columnName;
       const payload = buildPayloadByInputName(getValues(), fieldsByHqlName);
+
+      // Build _gridVisibleProperties so that the FIC in CHANGE mode can identify
+      // property fields and compute their values from DB when a related FK field
+      // changes (e.g. selecting a new "file" populates the read-only "Type" field).
+      // Classic always sends this list in callout payloads.
+      const gridVisibleProperties = Object.values(tab.fields)
+        .filter((f) => f.displayed && f.columnName)
+        .flatMap((f) => {
+          const propertyPath = f.column?.propertyPath;
+          if (propertyPath) {
+            return [f.columnName, propertyPath.replace(/\./g, "$")];
+          }
+          return [f.columnName];
+        });
 
       const calloutData = {
         ...session,
@@ -232,7 +281,8 @@ const BaseSelectorComp = ({
         keyColumnName: entityKeyColumn,
         _entityName: tab.entityName,
         inpwindowId: tab.window,
-      } as Record<string, string>;
+        _gridVisibleProperties: gridVisibleProperties,
+      } as Record<string, any>;
 
       //TODO: This will imply the evaluation of out fiels inside the fieldBuilder an it's implementation in metadata module
       if (field.inputName === "inpmProductId" && optionData) {
@@ -287,10 +337,11 @@ const BaseSelectorComp = ({
     debouncedCallout,
     applyColumnValues,
     applyAuxiliaryInputValues,
+    dependentPropertyFields.length,
   ]);
 
   const shouldExecuteCallout = useCallback((): boolean => {
-    if (!field.column.callout) return false;
+    if (!field.column.callout && dependentPropertyFields.length === 0) return false;
     if (isSettingFromCallout.current) return false;
     if (globalCalloutManager.isSuppressed()) return false;
 
@@ -322,6 +373,7 @@ const BaseSelectorComp = ({
     formMode,
     formState.dirtyFields,
     ready,
+    dependentPropertyFields.length,
   ]);
 
   const runCallout = useCallback(async () => {
@@ -331,6 +383,7 @@ const BaseSelectorComp = ({
     if (isDebugCallouts()) {
       logger.debug(`[Callout] Attempting to run callout for field: ${field.hqlName}`, {
         hasCallout: !!field.column.callout,
+        hasDependentProperties: dependentPropertyFields.length > 0,
         value,
         previousValue: previousValue.current,
         isSettingFromCallout: isSettingFromCallout.current,

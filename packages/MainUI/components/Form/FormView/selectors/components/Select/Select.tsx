@@ -107,7 +107,8 @@ function SelectCmp({
       const option = options.find((opt) => opt.id === id);
 
       setValue(`${name}_data`, option?.data);
-      setValue(name, id);
+      setValue(`${name}$_identifier`, label, { shouldDirty: false });
+      setValue(name, id, { shouldDirty: true, shouldValidate: true });
       setSelectedLabel(label);
 
       setIsOpen(false);
@@ -195,7 +196,9 @@ function SelectCmp({
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      setValue(name, "");
+      setValue(`${name}$_identifier`, "", { shouldDirty: false });
+      setValue(`${name}_data`, null);
+      setValue(name, "", { shouldDirty: true, shouldValidate: true });
       setSelectedLabel("");
     },
     [name, setValue]
