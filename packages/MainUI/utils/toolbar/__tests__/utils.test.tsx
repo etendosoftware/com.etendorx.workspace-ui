@@ -37,4 +37,13 @@ describe("Toolbar utils createButtonByType", () => {
     // This allows the user to click the button to trigger waitForIdle
     expect(result.disabled).toBe(false);
   });
+
+  it("should NOT show 'Loading callouts...' text when isCalloutLoading is true", () => {
+    const result = createButtonByType({
+      ...defaultProps,
+      saveButtonState: { isSaving: false, isCalloutLoading: true },
+    });
+    // It should now return the default button name
+    expect(result.iconText).toBe("Save");
+  });
 });
