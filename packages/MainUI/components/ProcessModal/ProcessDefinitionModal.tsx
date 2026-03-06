@@ -100,6 +100,7 @@ const CollapsibleSection = ({ title, children }: { title: string; children: impo
         className="w-full flex items-center gap-2 px-3 py-1.5 text-left cursor-pointer select-none">
         <ChevronDownIcon
           className={`h-3.5 w-3.5 text-gray-500 flex-shrink-0 transition-transform duration-200 ${expanded ? "" : "-rotate-90"}`}
+          data-testid="ChevronDownIcon__761503"
         />
         <span className="text-sm font-medium text-gray-700">{title}</span>
       </button>
@@ -966,7 +967,8 @@ function ProcessDefinitionModalContent({
         windowReferences.push(
           <CollapsibleSection
             key={`window-ref-${parameter.id || parameter.name}-${gridRefreshKey}`}
-            title={parameter.name}>
+            title={parameter.name}
+            data-testid="CollapsibleSection__761503">
             <WindowReferenceGrid
               parameter={parameter}
               parameters={parameters}

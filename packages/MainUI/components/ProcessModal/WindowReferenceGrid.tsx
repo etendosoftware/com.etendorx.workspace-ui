@@ -1032,7 +1032,7 @@ const WindowReferenceGrid = ({
           const isAlwaysEditable = (props.column.columnDef as any)?.dbColumnName === "glitem";
 
           if (isSelected || isAlwaysEditable) {
-            return <StableGridCellEditorRenderer {...props} />;
+            return <StableGridCellEditorRenderer {...props} data-testid="StableGridCellEditorRenderer__ce8544" />;
           }
 
           // For date columns, apply formatting directly to avoid closure/accessorFn issues
@@ -1052,7 +1052,7 @@ const WindowReferenceGrid = ({
           if (existingCell) {
             return (existingCell as (props: any) => any)(props);
           }
-          return <InteractiveGridCellRenderer {...props} />;
+          return <InteractiveGridCellRenderer {...props} data-testid="InteractiveGridCellRenderer__ce8544" />;
         },
       };
     });
@@ -1658,10 +1658,11 @@ const WindowReferenceGrid = ({
               table={props.table}
               onClick={handleFilterClick}
               sx={{ color: effectiveImplicitFilter ? "var(--color-etendo-main)" : undefined }}
+              data-testid="MRT_ToggleFiltersButton__ce8544"
             />
-            <MRT_ShowHideColumnsButton table={props.table} />
-            <MRT_ToggleDensePaddingButton table={props.table} />
-            <MRT_ToggleFullScreenButton table={props.table} />
+            <MRT_ShowHideColumnsButton table={props.table} data-testid="MRT_ShowHideColumnsButton__ce8544" />
+            <MRT_ToggleDensePaddingButton table={props.table} data-testid="MRT_ToggleDensePaddingButton__ce8544" />
+            <MRT_ToggleFullScreenButton table={props.table} data-testid="MRT_ToggleFullScreenButton__ce8544" />
           </div>
         </div>
       );
