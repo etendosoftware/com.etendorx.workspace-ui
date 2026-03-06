@@ -84,6 +84,6 @@ describe("MainUI Utils - getFieldReference", () => {
   });
 
   it("should return FieldType.TEXT for undefined reference", () => {
-    expect(getFieldReference(undefined)).toBe(FieldType.TEXT);
+    expect(getFieldReference()).toBe(FieldType.TEXT);
   });
 });
