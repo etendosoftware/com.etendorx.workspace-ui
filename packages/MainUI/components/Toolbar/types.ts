@@ -75,6 +75,7 @@ export interface ProcessMenuProps {
   processButtons: ProcessButton[];
   onProcessClick: (button: ProcessButton) => void;
   selectedRecord: EntityData | undefined;
+  hasSelection?: boolean;
 }
 
 export interface BasicToolbarButton {

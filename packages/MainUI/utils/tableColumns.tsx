@@ -87,7 +87,10 @@ const getRawCellValue = (value: Record<string, unknown>, column: Field) => {
   const columnHqlNameValue = value[columnHqlName];
   const columnNameValue = value[columnNameKey];
 
-  return columnHqlIdentifierValue ?? columnHqlNameValue ?? columnNameValue;
+  // Try columnName before hqlName: some entities (e.g. process definitions) return display
+  // values under the columnName key (e.g. "businessPartnerName") instead of the standard
+  // "${hqlName}$_identifier" pattern, while hqlName maps to the raw ID.
+  return columnHqlIdentifierValue ?? columnNameValue ?? columnHqlNameValue;
 };
 
 export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[] => {
