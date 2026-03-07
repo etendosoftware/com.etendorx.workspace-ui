@@ -59,10 +59,10 @@ const extractJsAccessors = (expression: string): string[] => {
  * Extracts patterns like OB.Utilities.getValue(currentValues, 'fieldName').
  */
 const extractObUtilityAccessors = (expression: string): string[] => {
-  const matches = expression.match(/getValue\(\s*currentValues\s*,\s*['"](\w+)['"]\s*\)/g) || [];
+  const matches = expression.match(/getValue\(\s*[\w#$]+\s*,\s*['"]([\w#$]+)['"]\s*\)/gi) || [];
   const results: string[] = [];
   for (const match of matches) {
-    const fieldNameMatch = match.match(/getValue\(\s*currentValues\s*,\s*['"](\w+)['"]\s*\)/);
+    const fieldNameMatch = match.match(/getValue\(\s*[\w#$]+\s*,\s*['"]([\w#$]+)['"]\s*\)/i);
     if (fieldNameMatch?.[1]) results.push(fieldNameMatch[1]);
   }
   return results;
