@@ -126,7 +126,7 @@ export function useProcessCallouts({
           const parameter = parameters && Object.values(parameters).find((p) => p.name === field);
 
           // Check if this field corresponds to a grid parameter
-          const isGridParameter = parameter && parameter.reference === FIELD_REFERENCE_CODES.WINDOW;
+          const isGridParameter = parameter && parameter.reference === FIELD_REFERENCE_CODES.WINDOW.id;
 
           // We also need to handle 'order_invoice' explicitly if mapping missing or specific key usage
           // The most robust way is to check if we have an onGridUpdate handler AND if the value looks like grid data (array)

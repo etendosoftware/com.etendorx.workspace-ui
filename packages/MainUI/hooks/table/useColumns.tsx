@@ -58,9 +58,9 @@ const AUDIT_DATE_COLUMNS_WITH_TIME = ["creationDate", "updated"];
 const shouldFormatDateColumn = (column: Column): boolean => {
   // Check column.column.reference (primary check)
   if (
-    column.column?.reference === FIELD_REFERENCE_CODES.DATE ||
-    column.column?.reference === FIELD_REFERENCE_CODES.DATETIME ||
-    column.column?.reference === FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME
+    column.column?.reference === FIELD_REFERENCE_CODES.DATE.id ||
+    column.column?.reference === FIELD_REFERENCE_CODES.DATETIME.id ||
+    column.column?.reference === FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME.id
   ) {
     return true;
   }
@@ -143,7 +143,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         // Include time for audit date columns (creationDate, updated) or datetime type columns
         const includeTime =
           AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName) ||
-          column.column?.reference === FIELD_REFERENCE_CODES.DATETIME;
+          column.column?.reference === FIELD_REFERENCE_CODES.DATETIME.id;
         const isAuditField = AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName);
         columnConfig = {
           ...columnConfig,
