@@ -27,7 +27,7 @@ export interface CacheStore<T> extends Map<string, CachedData<T>> {}
 export interface BaseCriteria {
   fieldName: string;
   operator: string;
-  value: string | number | undefined;
+  value: string | number | string[] | undefined;
 }
 
 export interface CompositeCriteria {

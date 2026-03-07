@@ -189,7 +189,14 @@ const evaluateWindowReferenceDisplay = (options: EvaluateWindowReferenceDisplayO
  * 2. Direct Java Processes - Executes servlet directly using javaClassName
  * 3. String Function Processes - Executes client-side JavaScript functions
  */
-function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type }: ProcessDefinitionModalContentProps) {
+function ProcessDefinitionModalContent({
+  onClose,
+  button,
+  open,
+  onSuccess,
+  type,
+  keepOpenOnSuccess,
+}: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
   const { graph } = useSelected();
   const { tab, record } = useTabContext();
@@ -317,7 +324,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
           const mappedButtons = responseData.map((item: any) => ({
             value: item.searchKey,
             label: item.name,
-            isFilter: ["filter", "apply", "search", "refresh"].includes(item.searchKey?.toLowerCase()),
+            isFilter: ["filter", "search", "refresh"].includes(item.searchKey?.toLowerCase()),
           }));
           setAvailableButtons(mappedButtons);
         } else if (active) {
@@ -396,6 +403,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     [processDefinition, parameters]
   );
 
+  // Stable processConfig object for WindowReferenceGrid — prevents new reference on every render.
+  const stableProcessConfig = useMemo(
+    () => ({
+      processId: processConfig?.processId || "",
+      ...processConfig,
+      defaults: (processInitialization?.defaults || {}) as Record<string, { value: string; identifier: string }>,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(processConfig), JSON.stringify(processInitialization?.defaults)]
+  );
+
   // Combined form data: record values + process defaults
   const availableFormData = useMemo(() => {
     if (!record || !tab) {
@@ -462,7 +480,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
   }, [open, filterExpressions, setGridSelection]);
 
   const { isSubmitting } = useFormState({ control: form.control });
-  const formValues = form.watch();
+  const rawFormValues = form.watch();
+  // Stabilize reference: only change identity when values actually change (deep equality).
+  // Prevents WindowReferenceGrid and display-logic from re-running on every unrelated render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const formValues = useMemo(() => rawFormValues, [JSON.stringify(rawFormValues)]);
 
   const handleGridUpdate = useCallback(
     (gridName: string, data: unknown) => {
@@ -581,6 +603,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
     triggerRecovery,
     onClose,
     onSuccess,
+    keepOpenOnSuccess,
     getMergedProcessValues,
     getRecordIds,
     buildProcessSpecificFields,
@@ -933,14 +956,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess, type 
             tabId={parameterTab?.id || ""}
             entityName={parameterTab?.entityName || ""}
             windowReferenceTab={parameterTab || windowReferenceTab}
-            processConfig={{
-              processId: processConfig?.processId || "",
-              ...processConfig,
-              defaults: (processInitialization?.defaults || {}) as Record<
-                string,
-                { value: string; identifier: string }
-              >,
-            }}
+            processConfig={stableProcessConfig}
             processConfigLoading={processConfigLoading}
             processConfigError={processConfigError}
             recordValues={recordValues}
