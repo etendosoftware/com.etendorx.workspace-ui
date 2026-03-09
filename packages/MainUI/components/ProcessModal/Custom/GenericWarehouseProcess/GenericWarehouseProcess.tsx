@@ -61,6 +61,7 @@ import type {
   WarehouseProcessSchema,
   WarehousePayScriptPlugin,
   WarehouseLine,
+  WarehouseScannedInput,
   OnScanResult,
   OnScanError,
 } from "./types";
@@ -170,7 +171,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
         return;
       }
 
-      const { matchField, matchValue, qty: qtyToAdd, scannedCode } = result as OnScanResult;
+      const { matchField, matchValue, qty: qtyToAdd, scannedCode, aiId, algorithmId } = result as OnScanResult;
       // Use the backend-normalized code if provided, otherwise fall back to raw user input
       const codeToRecord = scannedCode ?? barcodeInput;
 
@@ -194,8 +195,8 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
         // Track scannedInputs if feature enabled
         if (schema.features.trackScannedInputs) {
           line.scannedInputs = [
-            ...((line.scannedInputs as { code: string; qty: number }[]) || []),
-            { code: codeToRecord, qty: qtyToAdd },
+            ...((line.scannedInputs as WarehouseScannedInput[]) || []),
+            { code: codeToRecord, qty: qtyToAdd, aiId: aiId ?? null, algorithmId: algorithmId ?? null },
           ];
         }
 
@@ -258,7 +259,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
         line.qtyVerified = newVal;
         line.qtyPending = line.quantity - newVal;
         if (schema.features.trackScannedInputs) {
-          const inputs = [...((line.scannedInputs as { code: string; qty: number }[]) || [])];
+          const inputs = [...((line.scannedInputs as WarehouseScannedInput[]) || [])];
           if (delta > 0) {
             inputs.push({ code: "", qty: delta });
           } else if (delta < 0) {
