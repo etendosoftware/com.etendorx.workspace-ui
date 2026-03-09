@@ -210,22 +210,69 @@ const InteractiveGridCellRenderer = ({ row, cell, column }: any) => {
   if (isSelected || isAlwaysEditable) {
     return (
       <StableGridCellEditorRenderer
-        row={row}
         cell={cell}
+        row={row}
         column={column}
         data-testid="StableGridCellEditorRenderer__ce8544"
       />
     );
   }
 
-  const value = cell.getValue();
+  return <ReadOnlyCellRenderer renderedCellValue={cell.getValue()} />;
+};
 
-  // Fallback date formatting: detect ISO datetime strings and format them
-  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
-    return <span>{formatClassicDate(value, false) || value}</span>;
+// Helper to get boolean edit props for MRT
+const getBooleanEditProps = (cell: any) => {
+  return {
+    select: true,
+    children: [
+      <option key="Y" value="Y">
+        Yes
+      </option>,
+      <option key="N" value="N">
+        No
+      </option>,
+    ],
+    SelectProps: {
+      native: true,
+    },
+  };
+};
+
+const GridCellRenderer = (props: any) => {
+  const { row, column, cell } = props;
+  const isSelected = row.getIsSelected();
+  const isAlwaysEditable = column.columnDef.dbColumnName === "glitem";
+
+  if (isSelected || isAlwaysEditable) {
+    return <StableGridCellEditorRenderer {...props} data-testid="StableGridCellEditorRenderer__ce8544" />;
   }
 
-  return value;
+  // Handle date columns
+  const colType = column.columnDef.type;
+  const colReference = column.columnDef.column?.reference;
+  const isDateCol = colType === "date" || colType === "datetime" || colReference === "15" || colReference === "16";
+  const includeTimeForCol = colType === "datetime" || colReference === "16";
+  const colColumnName = column.columnDef.columnName;
+
+  if (isDateCol) {
+    let value = cell?.getValue();
+    if (value === undefined || value === null) {
+      value = colColumnName ? row?.original?.[colColumnName] : undefined;
+    }
+    if (typeof value === "string" && value) {
+      const formatted = formatClassicDate(value, includeTimeForCol);
+      return <span>{formatted || value}</span>;
+    }
+    return <span>{value ? String(value) : ""}</span>;
+  }
+
+  const existingCell = column.columnDef.Cell;
+  if (existingCell && typeof existingCell === "function" && existingCell !== GridCellRenderer) {
+    return existingCell(props);
+  }
+
+  return <InteractiveGridCellRenderer {...props} data-testid="InteractiveGridCellRenderer__ce8544" />;
 };
 
 const updateLocalRecordFromSelection = (record: EntityData, selectionItem: any): EntityData | null => {
@@ -513,18 +560,18 @@ const WindowReferenceGrid = ({
 
   const effectiveRecordValuesRef = useRef(effectiveRecordValues);
   const parametersRef = useRef(parameters);
-  const validationsRef = useRef<any[]>((effectiveRecordValues?._validations as unknown as any[]) || []);
+  const validationsRef = useRef<any[]>((effectiveRecordValues?._validations as any[]) || []);
   // Sync refs ensures GridCellEditor has latest values without triggering re-render via Context
   useEffect(() => {
     effectiveRecordValuesRef.current = effectiveRecordValues;
     parametersRef.current = parameters;
-    validationsRef.current = (effectiveRecordValues?._validations as unknown as any[]) || [];
+    validationsRef.current = (effectiveRecordValues?._validations as any[]) || [];
   }, [effectiveRecordValues, parameters]);
 
   // Get validations array for context (to trigger updates)
   const validations = useMemo(() => {
     // biome-ignore lint/suspicious/noExplicitAny: explicit cast
-    return (effectiveRecordValues?._validations as unknown as any[]) || [];
+    return (effectiveRecordValues?._validations as any[]) || [];
   }, [effectiveRecordValues]);
 
   const [isDataReady, setIsDataReady] = useState(false);
@@ -638,7 +685,7 @@ const WindowReferenceGrid = ({
     const applyImplicitFilter = isImplicitFilterApplied !== false;
     const finalCriteria = applyImplicitFilter && filterCriteria.length > 0 ? filterCriteria : baseCriteria;
     if (finalCriteria.length > 0) {
-      options.criteria = finalCriteria as unknown as Criteria[];
+      options.criteria = finalCriteria;
       options.orderBy = "documentNo desc";
     }
 
@@ -853,7 +900,7 @@ const WindowReferenceGrid = ({
       return {
         id: tabId,
         fields: {},
-      } as Tab;
+      } as any;
     }
 
     const correctedFields = Object.fromEntries(
@@ -956,7 +1003,7 @@ const WindowReferenceGrid = ({
       const rawCol = rawColumns.find((r: Column) => r.header === col.header);
       return {
         ...col,
-        filterFieldName: (rawCol as any)?.filterFieldName || col.columnName,
+        filterFieldName: rawCol?.filterFieldName || col.columnName,
       };
     });
 
@@ -981,20 +1028,7 @@ const WindowReferenceGrid = ({
               ["Y", "N"].includes(String(cell.getValue()));
 
             if (isBoolean) {
-              return {
-                select: true,
-                children: [
-                  <option key="Y" value="Y">
-                    Yes
-                  </option>,
-                  <option key="N" value="N">
-                    No
-                  </option>,
-                ],
-                SelectProps: {
-                  native: true,
-                },
-              };
+              return getBooleanEditProps(cell);
             }
             return {};
           },
@@ -1003,17 +1037,6 @@ const WindowReferenceGrid = ({
 
       // ALWAYS add custom editing logic (Edit and enableEditing)
       // This ensures our CellEditorFactory is used for all columns, including those with Filters (TableDir, etc.)
-      const existingCell = columnConfig.Cell;
-      const colType = columnConfig.type as string | undefined;
-      const colReference = (columnConfig.column as any)?.reference as string | undefined;
-      const isDateCol =
-        colType === "date" ||
-        colType === "datetime" ||
-        colReference === "15" || // DATE reference code
-        colReference === "16"; // DATETIME reference code
-      const includeTimeForCol = colType === "datetime" || colReference === "16";
-      const colColumnName = columnConfig.columnName as string | undefined;
-
       return {
         ...columnConfig,
         enableEditing: () => {
@@ -1027,33 +1050,7 @@ const WindowReferenceGrid = ({
         },
         Edit: StableGridCellEditorRenderer,
         dbColumnName: parameter.dBColumnName,
-        Cell: (props: any) => {
-          const isSelected = props.row.getIsSelected();
-          const isAlwaysEditable = (props.column.columnDef as any)?.dbColumnName === "glitem";
-
-          if (isSelected || isAlwaysEditable) {
-            return <StableGridCellEditorRenderer {...props} data-testid="StableGridCellEditorRenderer__ce8544" />;
-          }
-
-          // For date columns, apply formatting directly to avoid closure/accessorFn issues
-          if (isDateCol) {
-            let value = props.cell?.getValue();
-            if (value === undefined || value === null) {
-              value = colColumnName ? props.row?.original?.[colColumnName] : undefined;
-            }
-            if (typeof value === "string" && value) {
-              const formatted = formatClassicDate(value, includeTimeForCol);
-              return <span>{formatted || value}</span>;
-            }
-            return <span>{value ? String(value) : ""}</span>;
-          }
-
-          // For non-date columns: use column-specific Cell (e.g. reference link) or fall back
-          if (existingCell) {
-            return (existingCell as (props: any) => any)(props);
-          }
-          return <InteractiveGridCellRenderer {...props} data-testid="InteractiveGridCellRenderer__ce8544" />;
-        },
+        Cell: GridCellRenderer,
       };
     });
 
@@ -1616,68 +1613,6 @@ const WindowReferenceGrid = ({
       });
   }, [columns, handleRecordChange, parameter.window]);
 
-  const renderTopToolbar = useCallback(
-    (props: MRT_TopToolbarProps<EntityData>) => {
-      const selectedCount = props.table.getSelectedRowModel().rows.length;
-      const currentColumnFilters = props.table.getState().columnFilters;
-      const hasColumnFilters = currentColumnFilters.length > 0;
-      const effectiveImplicitFilter = isImplicitFilterApplied ?? initialIsFilterApplied;
-      const isFilterActive = effectiveImplicitFilter || hasColumnFilters;
-
-      const handleFilterClick = () => {
-        if (effectiveImplicitFilter) {
-          // First: remove implicit filter
-          setIsImplicitFilterApplied(false);
-        } else {
-          // Then: clear column filters
-          props.table.setColumnFilters([]);
-          handleMRTColumnFiltersChange([]);
-        }
-      };
-
-      return (
-        <div className="flex items-center justify-between border-b border-b-transparent-neutral-10 bg-gray-50 h-[2.5rem]">
-          <div className="flex items-center px-2">
-            {showTitle && <div className="text-base font-medium text-gray-800 mr-4">{parameter.name}</div>}
-            {selectedCount > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">
-                  {selectedCount} {t("table.selection.multiple")}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleClearSelections}
-                  className="px-3 py-1 text-sm cursor-pointer text-gray-700 border border-gray-300 rounded-full hover:bg-(--color-etendo-main) hover:text-(--color-baseline-0) transition-colors">
-                  {t("common.clear")}
-                </button>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center">
-            <MRT_ToggleFiltersButton
-              table={props.table}
-              onClick={handleFilterClick}
-              sx={{ color: effectiveImplicitFilter ? "var(--color-etendo-main)" : undefined }}
-              data-testid="MRT_ToggleFiltersButton__ce8544"
-            />
-            <MRT_ShowHideColumnsButton table={props.table} data-testid="MRT_ShowHideColumnsButton__ce8544" />
-            <MRT_ToggleDensePaddingButton table={props.table} data-testid="MRT_ToggleDensePaddingButton__ce8544" />
-            <MRT_ToggleFullScreenButton table={props.table} data-testid="MRT_ToggleFullScreenButton__ce8544" />
-          </div>
-        </div>
-      );
-    },
-    [
-      parameter.name,
-      showTitle,
-      t,
-      handleClearSelections,
-      isImplicitFilterApplied,
-      initialIsFilterApplied,
-      handleMRTColumnFiltersChange,
-    ]
-  );
-
   const fetchMoreOnBottomReached = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
       const containerRefElement = event.currentTarget as HTMLDivElement;
@@ -1752,7 +1687,19 @@ const WindowReferenceGrid = ({
       columns: finalColumns, // Use modified columns with handler
       data: records || [],
       getRowId: (row) => String(row.id),
-      renderTopToolbar,
+      renderTopToolbar: (props: MRT_TopToolbarProps<EntityData>) => (
+        <GridTopToolbar
+          {...props}
+          parameterName={parameter.name}
+          showTitle={showTitle}
+          t={t}
+          handleClearSelections={handleClearSelections}
+          isImplicitFilterApplied={isImplicitFilterApplied}
+          initialIsFilterApplied={initialIsFilterApplied}
+          handleMRTColumnFiltersChange={handleMRTColumnFiltersChange}
+          setIsImplicitFilterApplied={setIsImplicitFilterApplied}
+        />
+      ),
       renderEmptyRowsFallback: () => (
         <div className="flex justify-center items-center p-8 text-gray-500">
           <EmptyState maxWidth={MAX_WIDTH} data-testid="EmptyState__ce8544" />
@@ -1827,7 +1774,6 @@ const WindowReferenceGrid = ({
       records,
       rowSelection,
       columnFilters,
-      renderTopToolbar,
       handleRowSelection,
       handleMRTColumnFiltersChange,
       handleRowClick,
@@ -1885,3 +1831,62 @@ const WindowReferenceGrid = ({
 };
 
 export default WindowReferenceGrid;
+
+// Separate component for TopToolbar to avoid being re-defined on every render
+const GridTopToolbar = ({
+  table,
+  parameterName,
+  showTitle,
+  t,
+  handleClearSelections,
+  isImplicitFilterApplied,
+  initialIsFilterApplied,
+  handleMRTColumnFiltersChange,
+  setIsImplicitFilterApplied,
+}: any) => {
+  const selectedCount = table.getSelectedRowModel().rows.length;
+  const effectiveImplicitFilter = isImplicitFilterApplied ?? initialIsFilterApplied;
+
+  const handleFilterClick = () => {
+    if (effectiveImplicitFilter) {
+      // First: remove implicit filter
+      setIsImplicitFilterApplied(false);
+    } else {
+      // Then: clear column filters
+      table.setColumnFilters([]);
+      handleMRTColumnFiltersChange([]);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between border-b border-b-transparent-neutral-10 bg-gray-50 h-[2.5rem]">
+      <div className="flex items-center px-2">
+        {showTitle && <div className="text-base font-medium text-gray-800 mr-4">{parameterName}</div>}
+        {selectedCount > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">
+              {selectedCount} {t("table.selection.multiple")}
+            </span>
+            <button
+              type="button"
+              onClick={handleClearSelections}
+              className="px-3 py-1 text-sm cursor-pointer text-gray-700 border border-gray-300 rounded-full hover:bg-(--color-etendo-main) hover:text-(--color-baseline-0) transition-colors">
+              {t("common.clear")}
+            </button>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center">
+        <MRT_ToggleFiltersButton
+          table={table}
+          onClick={handleFilterClick}
+          sx={{ color: effectiveImplicitFilter ? "var(--color-etendo-main)" : undefined }}
+          data-testid="MRT_ToggleFiltersButton__ce8544"
+        />
+        <MRT_ShowHideColumnsButton table={table} data-testid="MRT_ShowHideColumnsButton__ce8544" />
+        <MRT_ToggleDensePaddingButton table={table} data-testid="MRT_ToggleDensePaddingButton__ce8544" />
+        <MRT_ToggleFullScreenButton table={table} data-testid="MRT_ToggleFullScreenButton__ce8544" />
+      </div>
+    </div>
+  );
+};
