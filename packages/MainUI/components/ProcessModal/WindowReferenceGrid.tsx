@@ -69,7 +69,7 @@ const PAGE_SIZE = 100;
 /**
  * Extracts the actual value from a wrapped value object or returns the value directly
  */
-function extractActualValue(value: unknown): EntityValue {
+export function extractActualValue(value: unknown): EntityValue {
   if (typeof value === "object" && value !== null && "value" in value) {
     return (value as { value: EntityValue }).value;
   }
@@ -79,7 +79,10 @@ function extractActualValue(value: unknown): EntityValue {
 /**
  * Merges default values into the params object
  */
-function mergeDefaultsIntoParams(defaults: Record<string, unknown>, mergedParams: Record<string, EntityValue>): void {
+export function mergeDefaultsIntoParams(
+  defaults: Record<string, unknown>,
+  mergedParams: Record<string, EntityValue>
+): void {
   for (const [key, value] of Object.entries(defaults)) {
     mergedParams[key] = extractActualValue(value);
   }
@@ -88,7 +91,7 @@ function mergeDefaultsIntoParams(defaults: Record<string, unknown>, mergedParams
 /**
  * Merges current values into the params object, overriding defaults
  */
-function mergeCurrentValuesIntoParams(
+export function mergeCurrentValuesIntoParams(
   currentValues: Record<string, unknown>,
   mergedParams: Record<string, EntityValue>
 ): void {
@@ -136,7 +139,7 @@ const StableGridCellEditorRenderer = ({ cell, row, column }: any) => {
 };
 
 // Helper to resolve parent context ID
-const resolveParentContextId = (
+export const resolveParentContextId = (
   dbName: string,
   effectiveRecordValues: any,
   currentValues: any
@@ -222,7 +225,7 @@ const InteractiveGridCellRenderer = ({ row, cell, column }: any) => {
 };
 
 // Helper to get boolean edit props for MRT
-const getBooleanEditProps = (cell: any) => {
+export const getBooleanEditProps = (cell: any) => {
   return {
     select: true,
     children: [
@@ -275,7 +278,7 @@ const GridCellRenderer = (props: any) => {
   return <InteractiveGridCellRenderer {...props} data-testid="InteractiveGridCellRenderer__ce8544" />;
 };
 
-const updateLocalRecordFromSelection = (record: EntityData, selectionItem: any): EntityData | null => {
+export const updateLocalRecordFromSelection = (record: EntityData, selectionItem: any): EntityData | null => {
   let updated = false;
   const newRecord = { ...record };
 
@@ -294,7 +297,7 @@ const updateLocalRecordFromSelection = (record: EntityData, selectionItem: any):
   return null;
 };
 
-const resetLocalRecordFields = (record: EntityData): EntityData | null => {
+export const resetLocalRecordFields = (record: EntityData): EntityData | null => {
   let changed = false;
   const newRecord = { ...record };
 
@@ -1834,7 +1837,7 @@ const WindowReferenceGrid = ({
 export default WindowReferenceGrid;
 
 // Separate component for TopToolbar to avoid being re-defined on every render
-const GridTopToolbar = ({
+export const GridTopToolbar = ({
   table,
   parameterName,
   showTitle,
