@@ -44,7 +44,8 @@ const OptionItem = memo(
          ${isHighlighted ? "bg-baseline-10" : ""}
          ${isSelected ? "bg-baseline-10 font-medium" : ""}
          hover:bg-baseline-10`}>
-        <span className={`truncate mr-2 flex items-center gap-2 ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>
+        <span
+          className={`truncate mr-2 flex items-center gap-2 ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>
           {resolvedColor && (
             <span
               className="inline-block w-3 h-3 rounded-full flex-shrink-0"

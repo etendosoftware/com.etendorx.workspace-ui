@@ -25,7 +25,9 @@ import { formatNumber, getFieldReference } from "@/utils";
  */
 export const useFieldValue = (field: Field) => {
   const { watch } = useFormContext();
-  const colorWatchKey = field.colorFieldName ? `${field.hqlName}$${field.colorFieldName}` : `${field.hqlName}$__color_noop__`;
+  const colorWatchKey = field.colorFieldName
+    ? `${field.hqlName}$${field.colorFieldName}`
+    : `${field.hqlName}$__color_noop__`;
   const [value, identifier, colorValue] = watch([field.hqlName, `${field.hqlName}$_identifier`, colorWatchKey]);
 
   const displayValue = useMemo(() => {

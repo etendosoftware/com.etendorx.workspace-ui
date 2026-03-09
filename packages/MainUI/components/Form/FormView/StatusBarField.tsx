@@ -58,7 +58,12 @@ export default function StatusBarField({ field }: { field: Field }) {
         {field.name}:
       </label>
       {tagColor ? (
-        <Tag label={formattedValue} tagColor={tagColor} textColor={textColor} data-testid={`StatusBarTag__${field.hqlName}`} />
+        <Tag
+          label={formattedValue}
+          tagColor={tagColor}
+          textColor={textColor}
+          data-testid={`StatusBarTag__${field.hqlName}`}
+        />
       ) : (
         <span className="" {...register(field.hqlName)}>
           {formattedValue}

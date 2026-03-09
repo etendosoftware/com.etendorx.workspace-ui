@@ -391,7 +391,12 @@ function SelectCmp({
             (() => {
               const { tagColor, textColor } = resolveOptionColor(selectedColor);
               return tagColor ? (
-                <Tag label={selectedLabel} tagColor={tagColor} textColor={textColor} data-testid={`SelectTag__${field.id}`} />
+                <Tag
+                  label={selectedLabel}
+                  tagColor={tagColor}
+                  textColor={textColor}
+                  data-testid={`SelectTag__${field.id}`}
+                />
               ) : (
                 <span className={selectedLabelClassNames}>{selectedLabel}</span>
               );
