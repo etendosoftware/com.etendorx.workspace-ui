@@ -151,7 +151,8 @@ export function mapKeysWithDefaults(source: SourceObject): TargetObject {
     inpfinPaymentmethodId: { target: "fin_paymentmethod_id", default: null },
     fin_payment_id: { target: "fin_payment_id", default: null },
     inpgrandtotal: { target: "actual_payment", default: 0 },
-    inpdateacct: { target: "payment_date", default: null },
+    inpdateacct: { target: "payment_date", default: undefined },
+    "Payment Date": { target: "payment_date", default: undefined },
     inptotallines: { target: "amount_inv_ords", default: 0 },
     inpissotrx: { target: "issotrx", default: false },
     inpcOrderId: { target: "c_order_id", default: null },
@@ -164,7 +165,7 @@ export function mapKeysWithDefaults(source: SourceObject): TargetObject {
     POReference: { target: "POReference", default: "" },
     "Converted Amount": { target: "converted_amount", default: null },
     "Deposit To": { target: "fin_financial_account_id", default: null },
-    "Invoice Date": { target: "invoiceDate", default: null },
+    "Invoice Date": { target: "invoiceDate", default: undefined },
     "Lines Include Taxes": { target: "linesIncludeTaxes", default: false },
     overpayment_action: { target: "overpayment_action", default: null },
   };
@@ -173,13 +174,19 @@ export function mapKeysWithDefaults(source: SourceObject): TargetObject {
 
   for (const [key, value] of Object.entries(source)) {
     let mappedValue: PrimitiveValue | NestedObject | SelectionItem[] =
-      value !== "" && value !== undefined ? value : keyMap[key]?.default;
+      value !== "" && value !== undefined && value !== null ? value : (keyMap[key]?.default ?? value);
     if (mappedValue === "Y") {
       mappedValue = true;
     } else if (mappedValue === "N") {
       mappedValue = false;
     }
     if (keyMap[key]) {
+      // Skip date fields that have no valid value — the server cannot parse "" or null as a date
+      if (mappedValue === "" || mappedValue === null || mappedValue === undefined) {
+        if (keyMap[key].target === "payment_date" || keyMap[key].target === "invoiceDate") {
+          continue;
+        }
+      }
       result[keyMap[key].target] = mappedValue;
     } else {
       result[key] = mappedValue;
@@ -187,7 +194,7 @@ export function mapKeysWithDefaults(source: SourceObject): TargetObject {
   }
 
   for (const { target, default: defaultValue } of Object.values(keyMap)) {
-    if (!(target in result)) {
+    if (!(target in result) && defaultValue !== undefined) {
       result[target] = defaultValue;
     }
   }
