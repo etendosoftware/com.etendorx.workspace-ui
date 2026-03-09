@@ -171,8 +171,16 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
             return renderListField(v, column);
           }
 
-          if (column.colorFieldName) {
-            return renderColoredFkField(v, column);
+          // Dynamically check if the backend returned a color for this foreign key
+          // This allows rendering colored tags even if `colorFieldName` is missing in the ADWindow metadata.
+          let detectedColorField = column.colorFieldName;
+          if (!detectedColorField) {
+            if (v[`${column.hqlName}$color`]) detectedColorField = "color";
+            else if (v[`${column.hqlName}$smfColor`]) detectedColorField = "smfColor";
+          }
+
+          if (detectedColorField) {
+            return renderColoredFkField(v, { ...column, colorFieldName: detectedColorField });
           }
 
           const rawValue = getRawCellValue(v, column);

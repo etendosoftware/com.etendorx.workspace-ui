@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { parseColumns } from "@/utils/tableColumns";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Cell } from "material-react-table";
@@ -23,6 +23,8 @@ import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
 import { getFieldReference } from "@/utils";
+import Tag from "@workspaceui/componentlibrary/src/components/Tag";
+import { isColorString, getContrastTextColor } from "@/utils/color/utils";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
@@ -185,21 +187,62 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
             const recordData = row?.original as EntityData;
             const selectedRecordId = recordData?.[column.columnName as keyof EntityData];
             const identifierKey = `${column.columnName}$_identifier`;
-            const displayValue =
-              cell?.getValue() != null
-                ? String(cell.getValue())
+
+            const cellValue = cell?.getValue();
+            let displayNode: React.ReactNode;
+
+            const displayString =
+              cellValue != null && !React.isValidElement(cellValue)
+                ? String(cellValue)
                 : String(
                     recordData?.[identifierKey as keyof EntityData] ||
                       recordData?.[column.columnName as keyof EntityData] ||
                       ""
                   );
 
+            const isAlreadyReactElement = React.isValidElement(cellValue);
+            if (isAlreadyReactElement) {
+              displayNode = cellValue;
+            } else {
+              displayNode = displayString;
+            }
+
+            // Check dynamically if the row contains color for this column
+            let rawColor: string | undefined;
+            if (recordData?.[`${column.columnName}$color`])
+              rawColor = recordData[`${column.columnName}$color`] as string;
+            else if (recordData?.[`${column.columnName}$smfColor`])
+              rawColor = recordData[`${column.columnName}$smfColor`] as string;
+            else if (column.colorFieldName && recordData?.[`${column.columnName}$${column.colorFieldName}`]) {
+              rawColor = recordData[`${column.columnName}$${column.colorFieldName}`] as string;
+            }
+
+            const hasColorMatch = Boolean(
+              rawColor && typeof rawColor === "string" && isColorString(rawColor.trim().toLowerCase())
+            );
+
+            if (!isAlreadyReactElement && hasColorMatch && rawColor) {
+              const normalizedColor = rawColor.trim().toLowerCase();
+              displayNode = (
+                <Tag
+                  label={displayString}
+                  tagColor={normalizedColor}
+                  textColor={getContrastTextColor(normalizedColor)}
+                  data-testid="Tag__2b5175"
+                />
+              );
+            }
+
+            const usePlainLinkStyle = !isAlreadyReactElement && !hasColorMatch;
+
             return (
               <button
                 type="button"
                 tabIndex={0}
                 aria-label="Navigate to referenced window"
-                className="bg-transparent border-none p-0 text-(--color-dynamic-main) hover:underline text-left"
+                className={`bg-transparent border-none p-0 text-left pointer-events-auto ${
+                  usePlainLinkStyle ? "text-(--color-dynamic-main) hover:underline" : ""
+                }`}
                 onClick={(e) => {
                   handleClickRedirect({
                     e,
@@ -218,7 +261,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                     selectedRecordId: String(selectedRecordId ?? ""),
                   })
                 }>
-                {displayValue}
+                {displayNode}
               </button>
             );
           },

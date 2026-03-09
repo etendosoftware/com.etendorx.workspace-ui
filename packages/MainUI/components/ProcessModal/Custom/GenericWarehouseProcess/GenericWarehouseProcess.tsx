@@ -164,6 +164,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
         currentBox,
         lines,
         callAction,
+        OB: {},
       });
 
       if ("error" in result && result.error) {
@@ -642,7 +643,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
                 className="w-48 flex items-center justify-center gap-2"
                 data-testid="Button__cad053">
                 {processing && <span className="animate-spin mr-2">⟳</span>}
-                {t("packing.generatePack")}
+                {schema.features.trackScannedInputs ? t("pickValidate.process") : t("packing.generatePack")}
               </Button>
             </div>
           </div>
