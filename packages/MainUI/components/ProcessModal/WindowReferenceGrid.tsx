@@ -218,7 +218,7 @@ const InteractiveGridCellRenderer = ({ row, cell, column }: any) => {
     );
   }
 
-  return <ReadOnlyCellRenderer renderedCellValue={cell.getValue()} />;
+  return <ReadOnlyCellRenderer renderedCellValue={cell.getValue()} data-testid="ReadOnlyCellRenderer__ce8544" />;
 };
 
 // Helper to get boolean edit props for MRT
@@ -1698,6 +1698,7 @@ const WindowReferenceGrid = ({
           initialIsFilterApplied={initialIsFilterApplied}
           handleMRTColumnFiltersChange={handleMRTColumnFiltersChange}
           setIsImplicitFilterApplied={setIsImplicitFilterApplied}
+          data-testid="GridTopToolbar__ce8544"
         />
       ),
       renderEmptyRowsFallback: () => (
