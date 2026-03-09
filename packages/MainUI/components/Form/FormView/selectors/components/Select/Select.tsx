@@ -18,6 +18,15 @@ import type { SelectProps } from "../types";
 import { useDropdownPosition } from "@/components/Form/FormView/selectors/hooks/useDropdownPosition";
 import OptionItem from "@/components/Form/FormView/selectors/components/Select/OptionItem";
 import DropdownPortal from "@/components/Form/FormView/selectors/components/Select/DropdownPortal";
+import Tag from "@workspaceui/componentlibrary/src/components/Tag";
+import { isColorString, getContrastTextColor } from "@/utils/color/utils";
+
+const resolveOptionColor = (color?: string) => {
+  if (!color) return { tagColor: undefined, textColor: undefined };
+  const normalized = color.trim().toLowerCase();
+  if (!isColorString(normalized)) return { tagColor: undefined, textColor: undefined };
+  return { tagColor: normalized, textColor: getContrastTextColor(normalized) };
+};
 
 function SelectCmp({
   name,
@@ -36,6 +45,7 @@ function SelectCmp({
   const selectedValue = watch(name);
   const currentIdentifier = watch(`${name}$_identifier`);
   const [selectedLabel, setSelectedLabel] = useState("");
+  const [selectedColor, setSelectedColor] = useState<string | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
@@ -108,12 +118,14 @@ function SelectCmp({
 
   const handleSelect = useCallback(
     (id: string, label: string, explicitData?: EntityData) => {
-      const data = explicitData ?? options.find((opt) => opt.id === id)?.data;
+      const option = options.find((opt) => opt.id === id);
+      const data = explicitData ?? option?.data;
 
       setValue(`${name}_data`, data);
       setValue(name, id);
       setSelectedLabel(label);
       setSelectedDataRowId(((data as Record<string, unknown>)?.id as string) ?? null);
+      setSelectedColor(option?.color);
 
       setIsOpen(false);
       setHighlightedIndex(-1);
@@ -202,6 +214,7 @@ function SelectCmp({
       e.stopPropagation();
       setValue(name, "");
       setSelectedLabel("");
+      setSelectedColor(undefined);
     },
     [name, setValue]
   );
@@ -238,8 +251,10 @@ function SelectCmp({
     const selectedOption = options.find((option) => option.id === selectedValue);
     if (!selectedOption && selectedValue) {
       setSelectedLabel(currentIdentifier || selectedValue);
+      setSelectedColor(undefined);
     } else {
       setSelectedLabel(selectedOption?.label ?? "");
+      setSelectedColor(selectedOption?.color);
     }
   }, [selectedValue, options, currentIdentifier]);
 
@@ -315,6 +330,7 @@ function SelectCmp({
               id={option.id}
               label={option.label}
               data={option.data}
+              color={option.color}
               index={index}
               isSelected={selectedValue === option.id}
               isHighlighted={highlightedIndex === index}
@@ -371,9 +387,20 @@ function SelectCmp({
           onFocus={handleFocus}
           tabIndex={isReadOnly ? -1 : 0}
           className={mainDivClassNames}>
-          <span className={selectedLabelClassNames}>
-            {selectedLabel || (!isReadOnly ? t("form.select.placeholder") : "")}
-          </span>
+          {selectedLabel && selectedColor ? (
+            (() => {
+              const { tagColor, textColor } = resolveOptionColor(selectedColor);
+              return tagColor ? (
+                <Tag label={selectedLabel} tagColor={tagColor} textColor={textColor} data-testid={`SelectTag__${field.id}`} />
+              ) : (
+                <span className={selectedLabelClassNames}>{selectedLabel}</span>
+              );
+            })()
+          ) : (
+            <span className={selectedLabelClassNames}>
+              {selectedLabel || (!isReadOnly ? t("form.select.placeholder") : "")}
+            </span>
+          )}
           <div className="flex items-center flex-shrink-0 ml-2">
             {shouldShowClearButton && (
               <button

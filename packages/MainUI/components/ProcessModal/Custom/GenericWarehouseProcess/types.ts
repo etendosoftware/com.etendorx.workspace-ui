@@ -105,6 +105,7 @@ export interface OnScanContext {
   currentBox: number;
   lines: WarehouseLine[];
   callAction: (actionHandler: string, params: Record<string, unknown>) => Promise<Record<string, unknown>>;
+  OB: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------

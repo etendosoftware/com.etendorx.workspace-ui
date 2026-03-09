@@ -67,9 +67,17 @@ export interface ColumnDef {
   header: string;
 }
 
+export interface SelectOption {
+  id: string;
+  label: string;
+  data?: EntityData;
+  /** Optional color value (hex or CSS color) for badge/Tag rendering */
+  color?: string;
+}
+
 export interface SelectProps {
   name: string;
-  options: Array<{ id: string; label: string; data?: EntityData }>;
+  options: Array<SelectOption>;
   onFocus?: () => void;
   onSearch?: (term: string) => void;
   isReadOnly?: boolean;

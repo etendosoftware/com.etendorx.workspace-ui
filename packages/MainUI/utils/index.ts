@@ -269,20 +269,26 @@ export const buildQueryString = ({
   windowMetadata?: WindowMetadata;
   tab: Tab;
   mode: FormMode;
-}) =>
-  new URLSearchParams({
+}) => {
+  const extraProperties = Object.values(tab.fields || {})
+    .filter((f) => f.colorFieldName)
+    .map((f) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
+    .join(",");
+
+  return new URLSearchParams({
     windowId: String(windowMetadata?.id || ""),
     tabId: String(tab.id),
     moduleId: String(tab.module),
     _operationType: mode === FormMode.NEW ? "add" : "update",
     _noActiveFilter: String(true),
     sendOriginalIDBack: String(true),
-    _extraProperties: "",
+    _extraProperties: extraProperties,
     Constants_FIELDSEPARATOR: "$",
     _className: "OBViewDataSource",
     Constants_IDENTIFIER: "_identifier",
     isc_dataFormat: "json",
   });
+};
 
 export const buildFormPayload = ({
   values,
