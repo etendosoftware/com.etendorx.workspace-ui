@@ -1,5 +1,5 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
-import { ModalSelector } from "./ModalSelector";
+import { SelectSelector } from "./SelectSelector";
 import { useMemo } from "react";
 import { DATASOURCE_REFERENCE_CODES, PRODUCT_STOCK_VIEW_REFERENCE_IDS } from "@/utils/form/constants";
 
@@ -36,7 +36,16 @@ export const ProductStockModalSelector = ({
         ...field.selector,
         datasourceName,
         _selectorDefinitionId: field.selector?._selectorDefinitionId || DATASOURCE_REFERENCE_CODES.FALLBACK_SELECTOR_ID,
-        ...(isStockView ? { skipWarehouseFilter: "true" } : {}),
+        ...(isStockView
+          ? {
+              skipWarehouseFilter: "true",
+              valueField: (field.selector?.valueField as string) || "product.id",
+              displayField: (field.selector?.displayField as string) || "_identifier",
+            }
+          : {
+              valueField: (field.selector?.valueField as string) || "id",
+              displayField: (field.selector?.displayField as string) || "_identifier",
+            }),
       },
     };
   }, [field, isStockView]);
@@ -44,11 +53,11 @@ export const ProductStockModalSelector = ({
   const columns = isStockView ? PRODUCT_STOCK_COLUMNS : PRODUCT_SIMPLE_COLUMNS;
 
   return (
-    <ModalSelector
+    <SelectSelector
       field={effectiveField}
       isReadOnly={isReadOnly}
-      customColumns={columns}
-      data-testid={`ModalSelector__${field.id}`}
+      columns={columns}
+      data-testid={`SelectSelector__${field.id}`}
     />
   );
 };

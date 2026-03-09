@@ -16,6 +16,7 @@ const DropdownPortal = memo(
     handleScroll,
     renderedOptions,
     dropdownId,
+    minWidth,
   }: {
     isOpen: boolean;
     position: { top: number; left: number; width: number; showAbove: boolean };
@@ -29,6 +30,7 @@ const DropdownPortal = memo(
     handleScroll: (e: React.UIEvent<HTMLUListElement>) => void;
     renderedOptions: React.ReactNode;
     dropdownId: string;
+    minWidth?: number;
   }) => {
     if (!isOpen) return null;
 
@@ -59,7 +61,7 @@ const DropdownPortal = memo(
         style={{
           top: `${position.top}px`,
           left: `${position.left}px`,
-          width: `${position.width}px`,
+          width: `${Math.max(position.width, minWidth ?? 0)}px`,
           maxHeight: "300px",
           transformOrigin: position.showAbove ? "bottom" : "top",
         }}

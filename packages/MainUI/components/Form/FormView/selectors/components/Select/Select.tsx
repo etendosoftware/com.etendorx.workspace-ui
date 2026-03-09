@@ -13,6 +13,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import ChevronDown from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
 import XIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { SelectProps } from "../types";
 import { useDropdownPosition } from "@/components/Form/FormView/selectors/hooks/useDropdownPosition";
 import OptionItem from "@/components/Form/FormView/selectors/components/Select/OptionItem";
@@ -28,6 +29,7 @@ function SelectCmp({
   loading = false,
   hasMore = true,
   field,
+  columns,
 }: SelectProps) {
   const { t } = useTranslation();
   const { register, setValue, watch } = useFormContext();
@@ -39,6 +41,7 @@ function SelectCmp({
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const [isHovering, setIsHovering] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [selectedDataRowId, setSelectedDataRowId] = useState<string | null>(null);
 
   const listRef = useRef<HTMLUListElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -103,12 +106,13 @@ function SelectCmp({
   }, [isFocused, isOpen]);
 
   const handleSelect = useCallback(
-    (id: string, label: string) => {
-      const option = options.find((opt) => opt.id === id);
+    (id: string, label: string, explicitData?: EntityData) => {
+      const data = explicitData ?? options.find((opt) => opt.id === id)?.data;
 
-      setValue(`${name}_data`, option?.data);
+      setValue(`${name}_data`, data);
       setValue(name, id);
       setSelectedLabel(label);
+      setSelectedDataRowId(((data as Record<string, unknown>)?.id as string) ?? null);
 
       setIsOpen(false);
       setHighlightedIndex(-1);
@@ -118,8 +122,8 @@ function SelectCmp({
   );
 
   const handleOptionClick = useCallback(
-    (id: string, label: string) => {
-      handleSelect(id, label);
+    (id: string, label: string, explicitData?: EntityData) => {
+      handleSelect(id, label, explicitData);
     },
     [handleSelect]
   );
@@ -132,7 +136,7 @@ function SelectCmp({
     filteredOptions,
     highlightedIndex,
     setHighlightedIndex,
-    (option) => handleSelect(option.id, option.label),
+    (option) => handleSelect(option.id, option.label, option.data as EntityData | undefined),
     () => {
       setIsOpen(false);
       setHighlightedIndex(-1);
@@ -245,26 +249,71 @@ function SelectCmp({
     searchInputRef as React.RefObject<HTMLInputElement>
   );
 
+  const gridStyle = useMemo(
+    () => (columns?.length ? { gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` } : undefined),
+    [columns]
+  );
+
   const renderedOptions = useMemo(() => {
     if (loading && filteredOptions.length === 0) {
       return <li className="px-4 py-3 text-sm text-baseline-60">Loading...</li>;
     }
 
     if (filteredOptions.length > 0) {
-      const optionsList = filteredOptions.map((option, index) => (
-        <OptionItem
-          key={option.id}
-          id={option.id}
-          label={option.label}
-          data={option.data}
-          index={index}
-          isSelected={selectedValue === option.id}
-          isHighlighted={highlightedIndex === index}
-          onOptionClick={handleOptionClick}
-          onMouseEnter={handleOptionMouseEnter}
-          data-testid="OptionItem__ff38f9"
-        />
-      ));
+      const optionsList = columns?.length
+        ? filteredOptions.map((option, index) => {
+            const dataRowId = (option.data as Record<string, unknown>)?.id as string | undefined;
+            const isSelected = selectedDataRowId ? selectedDataRowId === dataRowId : selectedValue === option.id;
+            const isHighlighted = highlightedIndex === index;
+            return (
+              <li
+                key={`${option.id}-${index}`}
+                data-testid={`OptionItem__${option.id}`}
+                aria-selected={isSelected}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOptionClick(option.id, option.label, option.data as EntityData | undefined);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleOptionClick(option.id, option.label, option.data as EntityData | undefined);
+                  }
+                }}
+                onMouseEnter={() => handleOptionMouseEnter(index)}
+                className={`px-4 py-2 text-sm cursor-pointer grid gap-2 focus:outline-none
+                  ${isHighlighted ? "bg-baseline-10" : ""}
+                  ${isSelected ? "bg-baseline-10 font-medium" : ""}
+                  hover:bg-baseline-10`}
+                style={gridStyle}>
+                {columns.map((col) => {
+                  const raw = (option.data as Record<string, unknown>)?.[col.accessorKey];
+                  const ident = (option.data as Record<string, unknown>)?.[`${col.accessorKey}$_identifier`];
+                  return (
+                    <span
+                      key={col.accessorKey}
+                      className={`truncate ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>
+                      {((ident ?? raw) as string) || "-"}
+                    </span>
+                  );
+                })}
+              </li>
+            );
+          })
+        : filteredOptions.map((option, index) => (
+            <OptionItem
+              key={option.id}
+              id={option.id}
+              label={option.label}
+              data={option.data}
+              index={index}
+              isSelected={selectedValue === option.id}
+              isHighlighted={highlightedIndex === index}
+              onOptionClick={handleOptionClick}
+              onMouseEnter={handleOptionMouseEnter}
+              data-testid="OptionItem__ff38f9"
+            />
+          ));
 
       if (loading) {
         optionsList.push(
@@ -277,7 +326,17 @@ function SelectCmp({
       return optionsList;
     }
     return <li className="px-4 py-3 text-sm text-baseline-60">No options found</li>;
-  }, [filteredOptions, highlightedIndex, selectedValue, handleOptionClick, handleOptionMouseEnter, loading]);
+  }, [
+    filteredOptions,
+    highlightedIndex,
+    selectedValue,
+    selectedDataRowId,
+    handleOptionClick,
+    handleOptionMouseEnter,
+    loading,
+    columns,
+    gridStyle,
+  ]);
 
   const shouldShowClearButton = selectedLabel && (isHovering || isOpen) && !isReadOnly;
 
@@ -335,8 +394,24 @@ function SelectCmp({
           handleFocus={handleFocus}
           listRef={listRef as React.RefObject<HTMLUListElement>}
           handleScroll={handleScroll}
-          renderedOptions={renderedOptions}
+          renderedOptions={
+            <>
+              {columns?.length ? (
+                <li
+                  className="px-4 py-2 grid gap-2 border-b-2 border-gray-300 bg-gray-50 sticky top-0 z-10"
+                  style={gridStyle}>
+                  {columns.map((col) => (
+                    <span key={col.accessorKey} className="text-xs font-semibold text-gray-500 uppercase truncate">
+                      {col.header}
+                    </span>
+                  ))}
+                </li>
+              ) : null}
+              {renderedOptions}
+            </>
+          }
           dropdownId={dropdownId}
+          minWidth={columns?.length ? columns.length * 160 : undefined}
           data-testid={`DropdownPortal__${field.id}`}
         />
       )}
