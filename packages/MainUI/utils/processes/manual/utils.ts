@@ -164,7 +164,7 @@ const KEY_MAP: KeyMapConfig = {
   POReference: { target: "POReference", default: "" },
   "Converted Amount": { target: "converted_amount", default: null },
   "Deposit To": { target: "fin_financial_account_id", default: null },
-  "Invoice Date": { target: "invoiceDate", default: undefined },
+  "Invoice Date": { target: "invoiceDate", default: null },
   "Lines Include Taxes": { target: "linesIncludeTaxes", default: false },
   overpayment_action: { target: "overpayment_action", default: null },
 };
