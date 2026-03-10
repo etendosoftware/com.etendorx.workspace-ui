@@ -79,38 +79,25 @@ const DropdownPortal = memo(
       />
     );
 
-    const optionsListComponent = (
-      <ul ref={listRef} className="max-h-60 overflow-y-auto focus:outline-none" onScroll={handleScroll}>
-        {renderedOptions}
-      </ul>
-    );
-
     return createPortal(
       <div
         ref={containerRef}
         data-dropdown-portal={dropdownId}
-        className="fixed z-[9999] bg-white rounded shadow-lg border border-gray-200 overflow-hidden"
+        className="fixed z-[9999] bg-white rounded shadow-lg border border-gray-200 overflow-hidden flex"
         style={{
           top: `${top}px`,
           left: `${left}px`,
           width: `${dropdownWidth}px`,
           maxHeight: `${maxHeight}px`,
+          flexDirection: showAbove ? "column-reverse" : "column",
           transform: showAbove ? "translateY(-100%)" : undefined,
           transformOrigin: showAbove ? "bottom" : "top",
           visibility: isPositioned ? "visible" : "hidden",
-        }}
-        onMouseDown={(e) => e.preventDefault()}>
-        {showAbove ? (
-          <>
-            {optionsListComponent}
-            {searchInputComponent}
-          </>
-        ) : (
-          <>
-            {searchInputComponent}
-            {optionsListComponent}
-          </>
-        )}
+        }}>
+        {searchInputComponent}
+        <ul ref={listRef} className="max-h-60 overflow-y-auto focus:outline-none flex-1 min-h-0" onScroll={handleScroll} onMouseDown={(e) => e.preventDefault()}>
+          {renderedOptions}
+        </ul>
       </div>,
       document.body
     );
