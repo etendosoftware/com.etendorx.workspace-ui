@@ -35,8 +35,8 @@ import {
 import type {
   GetParamsProps,
   KeyMapConfig,
+  MappedValue,
   NestedObject,
-  PrimitiveValue,
   ProcessActionData,
   SelectionItem,
   SourceObject,
@@ -169,10 +169,7 @@ const KEY_MAP: KeyMapConfig = {
   overpayment_action: { target: "overpayment_action", default: null },
 };
 
-function resolveRawValue(
-  key: string,
-  value: PrimitiveValue | NestedObject | SelectionItem[]
-): PrimitiveValue | NestedObject | SelectionItem[] {
+function resolveRawValue(key: string, value: MappedValue): MappedValue {
   const resolved = value !== "" && value !== undefined && value !== null ? value : (KEY_MAP[key]?.default ?? value);
   if (resolved === "Y") return true;
   if (resolved === "N") return false;
@@ -181,7 +178,7 @@ function resolveRawValue(
 
 // Skip date fields that have no valid value — the server cannot parse "" or null as a date
 const DATE_TARGETS = new Set(["payment_date", "invoiceDate"]);
-function isEmptyDateField(target: string, value: PrimitiveValue | NestedObject | SelectionItem[]): boolean {
+function isEmptyDateField(target: string, value: MappedValue): boolean {
   return DATE_TARGETS.has(target) && (value === "" || value === null || value === undefined);
 }
 
