@@ -163,9 +163,9 @@ describe("getMessageType", () => {
 });
 
 describe("buildPayloadByInputName", () => {
-  it("returns null when values is null or undefined", () => {
+  it("returns null when values is null or not provided", () => {
     expect(buildPayloadByInputName(null)).toBeNull();
-    expect(buildPayloadByInputName(undefined)).toBeNull();
+    expect(buildPayloadByInputName()).toBeNull();
   });
 
   it("maps field values using inputName from field metadata", () => {
