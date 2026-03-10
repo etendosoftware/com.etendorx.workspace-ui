@@ -44,6 +44,7 @@ import { mapSummariesToBackend, getSummaryCriteria } from "@/utils/table/utils";
 import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { buildEtendoContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
+import { buildBaseCriteria } from "@/utils/criteriaUtils";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -456,20 +457,27 @@ export const useTableData = ({
       options.language = language;
     }
 
-    if (value && value !== "" && value !== undefined) {
-      if (fieldDirectlyReferencesParent) {
+    // Build base criteria (handling Parent-Child or Dummy fallback via disableParentKeyProperty)
+    const baseCriteria = buildBaseCriteria({ tab, parentTab, parentId });
+    if (baseCriteria.length > 0) {
+      const criteriaItem = baseCriteria[0];
+      if (criteriaItem?.fieldName === "_dummy") {
+        options.criteria = baseCriteria as any;
+      } else if (fieldDirectlyReferencesParent && value && value !== "") {
         // Direct FK: standard criteria filter
-        options.criteria = [{ fieldName, value, operator }];
+        options.criteria = [{ fieldName, value, operator }] as any;
       }
-      // else: no criteria — server-side hqlwhereclause handles filtering via context variable
+    } else if (value && value !== "" && value !== undefined && fieldDirectlyReferencesParent) {
+      // Fallback: standard criteria filter
+      options.criteria = [{ fieldName, value, operator }] as any;
+    }
 
-      if (parentTab?.entityName) {
-        // Keep existing format for backward compat (e.g. Process Request datasource)
-        options[`@${parentTab.entityName}.id@`] = value;
-        // OB Classic context variable format for hqlwhereclause substitution
-        // e.g. ETASK_Task → @ETASK_TASK_ID@
-        options[`@${parentTab.entityName.toUpperCase()}_ID@`] = value;
-      }
+    if (parentTab?.entityName && parentId) {
+      // Keep existing format for backward compat (e.g. Process Request datasource)
+      options[`@${parentTab.entityName}.id@`] = parentId;
+      // OB Classic context variable format for hqlwhereclause substitution
+      // e.g. ETASK_Task → @ETASK_TASK_ID@
+      options[`@${parentTab.entityName.toUpperCase()}_ID@`] = parentId;
     }
 
     // Apply advanced criteria
@@ -676,14 +684,14 @@ export const useTableData = ({
       const newExpanded: MRT_ExpandedState = {};
       let hasChanges = false;
 
-      records.forEach((r) => {
+      for (const r of records) {
         const id = String(r.id);
         // If this record's ID is used as a parentId by another record in the list, it's a parent path node.
         if (parentIds.has(id)) {
           newExpanded[id] = true;
           hasChanges = true;
         }
-      });
+      }
 
       if (hasChanges) {
         setExpanded((prev) => {
