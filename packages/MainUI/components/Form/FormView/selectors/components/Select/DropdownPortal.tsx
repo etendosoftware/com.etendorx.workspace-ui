@@ -95,7 +95,11 @@ const DropdownPortal = memo(
           visibility: isPositioned ? "visible" : "hidden",
         }}>
         {searchInputComponent}
-        <ul ref={listRef} className="max-h-60 overflow-y-auto focus:outline-none flex-1 min-h-0" onScroll={handleScroll} onMouseDown={(e) => e.preventDefault()}>
+        <ul
+          ref={listRef}
+          className="max-h-60 overflow-y-auto focus:outline-none flex-1 min-h-0"
+          onScroll={handleScroll}
+          onMouseDown={(e) => e.preventDefault()}>
           {renderedOptions}
         </ul>
       </div>,
