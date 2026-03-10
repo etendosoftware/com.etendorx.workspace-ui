@@ -684,14 +684,13 @@ const WindowReferenceGrid = ({
     // 6. Ensure _org mirrors ad_org_id (required by backend datasource)
     if (options.ad_org_id && !options._org) options._org = options.ad_org_id;
 
-    // 7. Build filter criteria (explicit expressions take precedence over base criteria)
-    const criteria = buildGridCriteria(stableFilterExpressions, parameter.dBColumnName || "");
+    // 7. Build filter criteria (base parent-child criteria only)
+    // Default filters are completely handled by the UI column filters initialized from stableVisualFilterExpressions
     const baseCriteria = buildBaseCriteria({
       tab: stableWindowReferenceTab || ({ fields: {}, parentColumns: [] } as any),
     });
-    const finalCriteria = criteria.length > 0 ? criteria : baseCriteria;
-    if (finalCriteria.length > 0) {
-      options.criteria = finalCriteria as unknown as Criteria[];
+    if (baseCriteria.length > 0) {
+      options.criteria = baseCriteria as unknown as Criteria[];
       options.orderBy = "documentNo desc";
     }
 
