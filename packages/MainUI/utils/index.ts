@@ -205,9 +205,13 @@ export const parseDynamicExpression = (expr: string) => {
   // Replace | with || (unless it's already ||)
   const exprLogic = expr.replace(/(?<!&)&(?!&)/g, "&&").replace(/(?<!\|)\|(?!\|)/g, "||");
 
+  // Handle @Var1@!@Var2@ pattern (inequality between two field references, no spaces).
+  // e.g. @INVENTORYSTATUS@!@To_State_ID@ -> @INVENTORYSTATUS@ != @To_State_ID@
+  const exprNormalized = exprLogic.replace(/@([#$]?[a-zA-Z_]\w*)@!@([#$]?[a-zA-Z_]\w*)@/g, "@$1@ != @$2@");
+
   // Transform @field_name@ syntax to valid JavaScript references
   // Supports: @fieldName@, @#sessionVar@, @$contextVar@
-  let expr0 = exprLogic.replace(/@([#$]?[a-zA-Z_]\w*)@/g, (_, fieldName) => {
+  let expr0 = exprNormalized.replace(/@([#$]?[a-zA-Z_]\w*)@/g, (_, fieldName) => {
     return `(currentValues["${fieldName}"] || context["${fieldName}"])`;
   });
 

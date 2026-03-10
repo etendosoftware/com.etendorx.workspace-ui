@@ -1,63 +1,52 @@
 import { useEffect, useState } from "react";
 
+export interface DropdownViewportData {
+  triggerTop: number;
+  triggerBottom: number;
+  left: number;
+  width: number;
+  spaceAbove: number;
+  spaceBelow: number;
+}
+
 export const useDropdownPosition = (
   isOpen: boolean,
   triggerRef: React.RefObject<HTMLDivElement>,
-  filteredOptionsCount: number,
-  hasSearchInput = true
-) => {
-  const [position, setPosition] = useState({
-    top: 0,
+  minWidth?: number
+): DropdownViewportData => {
+  const [data, setData] = useState<DropdownViewportData>({
+    triggerTop: 0,
+    triggerBottom: 0,
     left: 0,
     width: 0,
-    showAbove: false,
+    spaceAbove: 0,
+    spaceBelow: 0,
   });
 
-  const [fixedOrientation, setFixedOrientation] = useState<boolean | null>(null);
-
   useEffect(() => {
-    if (!isOpen || !triggerRef.current) {
-      setFixedOrientation(null);
-      return;
-    }
+    if (!isOpen || !triggerRef.current) return;
 
     const updatePosition = () => {
       const current = triggerRef.current;
       if (!current) return;
       const rect = current.getBoundingClientRect();
-      const searchInputHeight = hasSearchInput ? 56 : 0;
-      const optionHeight = 44;
-      const maxOptionsVisible = 6;
 
-      const visibleOptions = Math.min(filteredOptionsCount || 1, maxOptionsVisible);
-      const dynamicDropdownHeight = searchInputHeight + visibleOptions * optionHeight;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
 
-      let shouldShowAbove: boolean;
+      const dropdownWidth = Math.max(rect.width, minWidth ?? 0);
+      const viewportWidth = window.innerWidth;
+      const leftAligned = rect.left;
+      const rightAligned = rect.right - dropdownWidth;
+      const left = leftAligned + dropdownWidth > viewportWidth ? Math.max(0, rightAligned) : leftAligned;
 
-      if (fixedOrientation !== null) {
-        shouldShowAbove = fixedOrientation;
-      } else {
-        const viewportHeight = window.innerHeight;
-        const spaceBelow = viewportHeight - rect.bottom;
-        const spaceAbove = rect.top;
-
-        shouldShowAbove = spaceBelow < dynamicDropdownHeight && spaceAbove > spaceBelow;
-
-        setFixedOrientation(shouldShowAbove);
-      }
-
-      let top: number;
-      if (shouldShowAbove) {
-        top = rect.top + window.scrollY - dynamicDropdownHeight - 4;
-      } else {
-        top = rect.bottom + window.scrollY + 4;
-      }
-
-      setPosition({
-        top,
-        left: rect.left + window.scrollX,
+      setData({
+        triggerTop: rect.top,
+        triggerBottom: rect.bottom,
+        left,
         width: rect.width,
-        showAbove: shouldShowAbove,
+        spaceAbove,
+        spaceBelow,
       });
     };
 
@@ -69,7 +58,7 @@ export const useDropdownPosition = (
       window.removeEventListener("scroll", updatePosition, true);
       window.removeEventListener("resize", updatePosition);
     };
-  }, [isOpen, triggerRef, filteredOptionsCount, hasSearchInput, fixedOrientation]);
+  }, [isOpen, triggerRef, minWidth]);
 
-  return position;
+  return data;
 };

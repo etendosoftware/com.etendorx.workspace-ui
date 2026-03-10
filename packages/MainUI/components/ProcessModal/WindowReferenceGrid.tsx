@@ -460,11 +460,6 @@ export function applyDynamicKeys(
  * Includes fields from the window reference tab, the `fields` prop, and a set
  * of standard Etendo context keys.
  */
-/**
- * Builds the set of column names that are valid filter targets for a given grid.
- * Includes fields from the window reference tab, the `fields` prop, and a set
- * of standard Etendo context keys.
- */
 export function buildValidColumnNames(
   tabFields: Record<string, any> | undefined,
   propFields: any[] | undefined

@@ -62,6 +62,11 @@ export interface Option {
   label: string;
 }
 
+export interface ColumnDef {
+  accessorKey: string;
+  header: string;
+}
+
 export interface SelectProps {
   name: string;
   options: Array<{ id: string; label: string; data?: EntityData }>;
@@ -72,4 +77,5 @@ export interface SelectProps {
   hasMore?: boolean;
   onLoadMore?: () => void;
   field: Field;
+  columns?: ColumnDef[];
 }
