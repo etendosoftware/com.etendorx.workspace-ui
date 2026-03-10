@@ -399,23 +399,18 @@ export function buildValidColumnNames(
   tabFields: Record<string, any> | undefined,
   propFields: any[] | undefined
 ): Set<string> {
-  const validColumnNames = new Set<string>();
+  const validColumnNames = new Set<string>(STANDARD_FILTER_KEYS);
 
-  if (tabFields) {
-    for (const f of Object.values(tabFields)) {
-      if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
-      if (f.hqlName) validColumnNames.add(f.hqlName.toLowerCase());
-    }
+  for (const f of Object.values(tabFields || {})) {
+    if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
+    if (f.hqlName) validColumnNames.add(f.hqlName.toLowerCase());
   }
 
-  if (propFields) {
-    for (const f of propFields) {
-      if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
-      if (f.name) validColumnNames.add(f.name.toLowerCase());
-    }
+  for (const f of propFields || []) {
+    if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
+    if (f.name) validColumnNames.add(f.name.toLowerCase());
   }
 
-  for (const k of STANDARD_FILTER_KEYS) validColumnNames.add(k);
   return validColumnNames;
 }
 
