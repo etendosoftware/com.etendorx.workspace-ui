@@ -682,6 +682,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    */
   const handleSave = useCallback(
     async (options: SaveOptions) => {
+      if (!globalCalloutManager.arePendingCalloutsEmpty() || globalCalloutManager.isCalloutRunning()) {
+        await globalCalloutManager.waitForIdle();
+      }
       await save(options);
     },
     [save]

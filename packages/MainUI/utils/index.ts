@@ -34,36 +34,36 @@ export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve
 
 export const getFieldReference = (reference?: string): FieldType => {
   switch (reference) {
-    case FIELD_REFERENCE_CODES.STRING:
+    case FIELD_REFERENCE_CODES.STRING.id:
       return FieldType.TEXT;
-    case FIELD_REFERENCE_CODES.TABLE_DIR_19:
-    case FIELD_REFERENCE_CODES.PRODUCT:
-    case FIELD_REFERENCE_CODES.SELECTOR:
-    case FIELD_REFERENCE_CODES.TABLE_DIR_18:
+    case FIELD_REFERENCE_CODES.TABLE_DIR_19.id:
+    case FIELD_REFERENCE_CODES.PRODUCT.id:
+    case FIELD_REFERENCE_CODES.SELECTOR.id:
+    case FIELD_REFERENCE_CODES.TABLE_DIR_18.id:
       return FieldType.TABLEDIR;
-    case FIELD_REFERENCE_CODES.DATE:
+    case FIELD_REFERENCE_CODES.DATE.id:
       return FieldType.DATE;
-    case FIELD_REFERENCE_CODES.DATETIME:
+    case FIELD_REFERENCE_CODES.DATETIME.id:
       return FieldType.DATETIME;
-    case FIELD_REFERENCE_CODES.BOOLEAN:
+    case FIELD_REFERENCE_CODES.BOOLEAN.id:
       return FieldType.BOOLEAN;
-    case FIELD_REFERENCE_CODES.INTEGER:
-    case FIELD_REFERENCE_CODES.NUMERIC:
-    case FIELD_REFERENCE_CODES.DECIMAL:
+    case FIELD_REFERENCE_CODES.INTEGER.id:
+    case FIELD_REFERENCE_CODES.NUMERIC.id:
+    case FIELD_REFERENCE_CODES.DECIMAL.id:
       return FieldType.NUMBER;
-    case FIELD_REFERENCE_CODES.QUANTITY_22:
-    case FIELD_REFERENCE_CODES.QUANTITY_29:
+    case FIELD_REFERENCE_CODES.QUANTITY_22.id:
+    case FIELD_REFERENCE_CODES.QUANTITY_29.id:
       return FieldType.QUANTITY;
-    case FIELD_REFERENCE_CODES.LIST_17:
-    case FIELD_REFERENCE_CODES.LIST_13:
+    case FIELD_REFERENCE_CODES.LIST_17.id:
+    case FIELD_REFERENCE_CODES.LIST_13.id:
       return FieldType.LIST;
-    case FIELD_REFERENCE_CODES.TIME:
+    case FIELD_REFERENCE_CODES.TIME.id:
       return FieldType.TIME;
     case "28":
       return FieldType.BUTTON;
-    case FIELD_REFERENCE_CODES.SELECT_30:
+    case FIELD_REFERENCE_CODES.SELECT_30.id:
       return FieldType.SELECT;
-    case FIELD_REFERENCE_CODES.WINDOW:
+    case FIELD_REFERENCE_CODES.WINDOW.id:
       return FieldType.WINDOW;
     default:
       return FieldType.TEXT;
@@ -216,13 +216,11 @@ export const parseDynamicExpression = (expr: string) => {
   });
 
   // Transform legacy Etendo/OB '!' comparison to '!=' (e.g., @Col@!'Y' -> ...!='Y')
-  expr0 = expr0.replace(/!'/g, "!='");
+  // Covers cases like @Col@!'Y', @Col@!0, @Col@!undefined
+  expr0 = expr0.replace(/!([^=])/g, "!=$1");
 
   // Transform space-surrounded '!' to '!=' (e.g. @Col@ ! @Col2@)
   expr0 = expr0.replace(/\s!\s/g, " != ");
-
-  // Transform '!undefined' to '!= undefined' covers common case @Col@!undefined
-  expr0 = expr0.replace(/!undefined/g, "!= undefined");
 
   // Transform Etendo comparison operators to JavaScript
   // Convert single = to == for comparison (avoiding conflicts with assignment)

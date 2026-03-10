@@ -1,62 +1,90 @@
-import { FieldType } from "@workspaceui/api-client/src/api/types";
+import { FieldType, type Field } from "@workspaceui/api-client/src/api/types";
 import { getFieldReference, sanitizeValue, formatLabel, getMessageType, buildPayloadByInputName } from "../index";
 import { FIELD_REFERENCE_CODES } from "../form/constants";
 
-describe("getFieldReference", () => {
-  it("returns TEXT for STRING reference", () => {
-    expect(getFieldReference(FIELD_REFERENCE_CODES.STRING)).toBe(FieldType.TEXT);
+describe("MainUI Utils - getFieldReference", () => {
+  it("should map STRING.id to FieldType.TEXT", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.STRING.id)).toBe(FieldType.TEXT);
   });
 
-  it("returns TABLEDIR for TABLE_DIR and PRODUCT and SELECTOR references", () => {
-    expect(getFieldReference(FIELD_REFERENCE_CODES.TABLE_DIR_19)).toBe(FieldType.TABLEDIR);
-    expect(getFieldReference(FIELD_REFERENCE_CODES.TABLE_DIR_18)).toBe(FieldType.TABLEDIR);
-    expect(getFieldReference(FIELD_REFERENCE_CODES.PRODUCT)).toBe(FieldType.TABLEDIR);
-    expect(getFieldReference(FIELD_REFERENCE_CODES.SELECTOR)).toBe(FieldType.TABLEDIR);
+  it("should map TABLE_DIR_19.id to FieldType.TABLEDIR", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.TABLE_DIR_19.id)).toBe(FieldType.TABLEDIR);
   });
 
-  it("returns DATE for DATE reference", () => {
-    expect(getFieldReference(FIELD_REFERENCE_CODES.DATE)).toBe(FieldType.DATE);
+  it("should map PRODUCT.id to FieldType.TABLEDIR", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.PRODUCT.id)).toBe(FieldType.TABLEDIR);
   });
 
-  it("returns DATETIME for DATETIME reference", () => {
-    expect(getFieldReference(FIELD_REFERENCE_CODES.DATETIME)).toBe(FieldType.DATETIME);
+  it("should map SELECTOR.id to FieldType.TABLEDIR", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.SELECTOR.id)).toBe(FieldType.TABLEDIR);
   });
 
-  it("returns BOOLEAN for BOOLEAN reference", () => {
-    expect(getFieldReference(FIELD_REFERENCE_CODES.BOOLEAN)).toBe(FieldType.BOOLEAN);
+  it("should map TABLE_DIR_18.id to FieldType.TABLEDIR", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.TABLE_DIR_18.id)).toBe(FieldType.TABLEDIR);
   });
 
-  it("returns NUMBER for INTEGER, NUMERIC, and DECIMAL references", () => {
-    expect(getFieldReference(FIELD_REFERENCE_CODES.INTEGER)).toBe(FieldType.NUMBER);
-    expect(getFieldReference(FIELD_REFERENCE_CODES.NUMERIC)).toBe(FieldType.NUMBER);
-    expect(getFieldReference(FIELD_REFERENCE_CODES.DECIMAL)).toBe(FieldType.NUMBER);
+  it("should map DATE.id to FieldType.DATE", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.DATE.id)).toBe(FieldType.DATE);
   });
 
-  it("returns QUANTITY for QUANTITY references", () => {
-    expect(getFieldReference(FIELD_REFERENCE_CODES.QUANTITY_22)).toBe(FieldType.QUANTITY);
-    expect(getFieldReference(FIELD_REFERENCE_CODES.QUANTITY_29)).toBe(FieldType.QUANTITY);
+  it("should map DATETIME.id to FieldType.DATETIME", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.DATETIME.id)).toBe(FieldType.DATETIME);
   });
 
-  it("returns LIST for LIST references", () => {
-    expect(getFieldReference(FIELD_REFERENCE_CODES.LIST_17)).toBe(FieldType.LIST);
-    expect(getFieldReference(FIELD_REFERENCE_CODES.LIST_13)).toBe(FieldType.LIST);
+  it("should map BOOLEAN.id to FieldType.BOOLEAN", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.BOOLEAN.id)).toBe(FieldType.BOOLEAN);
   });
 
-  it("returns TIME for TIME reference", () => {
-    expect(getFieldReference(FIELD_REFERENCE_CODES.TIME)).toBe(FieldType.TIME);
+  it("should map INTEGER.id to FieldType.NUMBER", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.INTEGER.id)).toBe(FieldType.NUMBER);
   });
 
-  it("returns BUTTON for reference '28'", () => {
+  it("should map NUMERIC.id to FieldType.NUMBER", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.NUMERIC.id)).toBe(FieldType.NUMBER);
+  });
+
+  it("should map DECIMAL.id to FieldType.NUMBER", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.DECIMAL.id)).toBe(FieldType.NUMBER);
+  });
+
+  it("should map QUANTITY_22.id to FieldType.QUANTITY", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.QUANTITY_22.id)).toBe(FieldType.QUANTITY);
+  });
+
+  it("should map QUANTITY_29.id to FieldType.QUANTITY", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.QUANTITY_29.id)).toBe(FieldType.QUANTITY);
+  });
+
+  it("should map LIST_17.id to FieldType.LIST", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.LIST_17.id)).toBe(FieldType.LIST);
+  });
+
+  it("should map LIST_13.id to FieldType.LIST", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.LIST_13.id)).toBe(FieldType.LIST);
+  });
+
+  it("should map TIME.id to FieldType.TIME", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.TIME.id)).toBe(FieldType.TIME);
+  });
+
+  it("should map '28' to FieldType.BUTTON", () => {
     expect(getFieldReference("28")).toBe(FieldType.BUTTON);
   });
 
-  it("returns SELECT for SELECT_30 reference", () => {
-    expect(getFieldReference(FIELD_REFERENCE_CODES.SELECT_30)).toBe(FieldType.SELECT);
+  it("should map SELECT_30.id to FieldType.SELECT", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.SELECT_30.id)).toBe(FieldType.SELECT);
   });
 
-  it("returns TEXT for unknown reference", () => {
+  it("should map WINDOW.id to FieldType.WINDOW", () => {
+    expect(getFieldReference(FIELD_REFERENCE_CODES.WINDOW.id)).toBe(FieldType.WINDOW);
+  });
+
+  it("should return FieldType.TEXT for unknown reference", () => {
     expect(getFieldReference("unknown")).toBe(FieldType.TEXT);
-    expect(getFieldReference(undefined)).toBe(FieldType.TEXT);
+  });
+
+  it("should return FieldType.TEXT for undefined reference", () => {
+    expect(getFieldReference()).toBe(FieldType.TEXT);
   });
 });
 
@@ -75,30 +103,30 @@ describe("sanitizeValue", () => {
   });
 
   it("converts DATE field value from yyyy-mm-dd to dd-mm-yyyy", () => {
-    const field = { column: { reference: FIELD_REFERENCE_CODES.DATE } } as any;
+    const field = { column: { reference: FIELD_REFERENCE_CODES.DATE.id } } as unknown as Field;
     expect(sanitizeValue("2024-03-15", field)).toBe("15-03-2024");
   });
 
   it("returns null for empty DATE field value", () => {
-    const field = { column: { reference: FIELD_REFERENCE_CODES.DATE } } as any;
+    const field = { column: { reference: FIELD_REFERENCE_CODES.DATE.id } } as unknown as Field;
     expect(sanitizeValue("", field)).toBeNull();
     expect(sanitizeValue(null, field)).toBeNull();
   });
 
   it("converts numeric string to number for NUMBER field", () => {
-    const field = { column: { reference: FIELD_REFERENCE_CODES.INTEGER } } as any;
+    const field = { column: { reference: FIELD_REFERENCE_CODES.INTEGER.id } } as unknown as Field;
     expect(sanitizeValue("42", field)).toBe(42);
     expect(sanitizeValue("3.14", field)).toBeCloseTo(3.14);
   });
 
   it("returns null for empty QUANTITY field value", () => {
-    const field = { column: { reference: FIELD_REFERENCE_CODES.QUANTITY_22 } } as any;
+    const field = { column: { reference: FIELD_REFERENCE_CODES.QUANTITY_22.id } } as unknown as Field;
     expect(sanitizeValue("", field)).toBeNull();
     expect(sanitizeValue(null, field)).toBeNull();
   });
 
   it("handles consumptionDays field by name", () => {
-    const field = { inputName: "consumptionDays", column: {} } as any;
+    const field = { inputName: "consumptionDays", column: {} } as unknown as Field;
     expect(sanitizeValue("5", field)).toBe(5);
     expect(sanitizeValue("", field)).toBeNull();
     expect(sanitizeValue(null, field)).toBeNull();
@@ -141,7 +169,7 @@ describe("buildPayloadByInputName", () => {
   });
 
   it("maps field values using inputName from field metadata", () => {
-    const fields = { businessPartner: { inputName: "inpcBpartnerId" } } as any;
+    const fields = { businessPartner: { inputName: "inpcBpartnerId" } } as unknown as Record<string, Field>;
     const result = buildPayloadByInputName({ businessPartner: "123" }, fields);
     expect(result).toHaveProperty("inpcBpartnerId", "123");
     expect(result).not.toHaveProperty("businessPartner");
@@ -164,7 +192,7 @@ describe("buildPayloadByInputName", () => {
   });
 
   it("sanitizes boolean values to Y/N via field metadata", () => {
-    const fields = { isActive: { column: { reference: FIELD_REFERENCE_CODES.BOOLEAN } } } as any;
+    const fields = { isActive: { column: { reference: FIELD_REFERENCE_CODES.BOOLEAN.id } } } as unknown as Record<string, Field>;
     const result = buildPayloadByInputName({ isActive: true }, fields);
     expect(result?.isActive).toBe("Y");
   });
