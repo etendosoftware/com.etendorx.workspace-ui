@@ -7,6 +7,7 @@ import {
   type Tab,
   type FormInitializationResponse,
   type Field,
+  type ISession,
 } from "@workspaceui/api-client/src/api/types";
 import { ACTION_FORM_INITIALIZATION } from "./constants";
 import { logger } from "@/utils/logger";
@@ -139,4 +140,50 @@ export const buildSessionAttributes = (data: FormInitializationResponse | null):
   }
 
   return result;
+};
+
+/**
+ * Determines if a session key is a global (login/profile-level) attribute
+ * that should be preserved across form initialization calls.
+ *
+ * Global keys use standard prefixes set at login time:
+ * - `$` prefix: Accounting dimension flags (e.g. $Element_OO, $Element_BP)
+ * - `#` prefix: System session attributes (e.g. #AD_Org_ID)
+ * - `_` prefix: Internal metadata (e.g. _attachmentCount, _ShowAcct)
+ * - `adOrgId`: Explicit organization ID set at login
+ *
+ * Record-specific keys (e.g. Processed, DOCSTATUS, HAS_M_INOUTLINES) do NOT
+ * have these prefixes and must be replaced when switching contexts.
+ */
+const isGlobalSessionKey = (key: string): boolean => {
+  return key.startsWith("$") || key.startsWith("#") || key.startsWith("_") || key === "adOrgId";
+};
+
+/**
+ * Merges new session attributes into the existing session while preventing
+ * cross-window state pollution.
+ *
+ * Problem: The session is global and shared across all open windows. When a form
+ * initialization runs (e.g. opening a record in Window A), it stores record-specific
+ * attributes like `Processed: "Y"` into the session. If the user then opens Window B
+ * and creates a new record, the stale `Processed: "Y"` persists and incorrectly marks
+ * fields as read-only.
+ *
+ * Solution: Instead of blindly merging (`{...prev, ...new}`), this function:
+ * 1. Preserves only global session keys (prefixed with $, #, _ or known globals)
+ * 2. Discards stale record-specific keys from previous windows/tabs
+ * 3. Merges in the fresh attributes returned by the backend
+ *
+ * @param prev - The current session state
+ * @param newAttributes - Fresh session attributes from the backend
+ * @returns A clean session with global keys preserved and record-specific keys replaced
+ */
+export const mergeSessionAttributes = (prev: ISession, newAttributes: Record<string, string>): ISession => {
+  const preserved: Record<string, string | number | boolean | null> = {};
+  for (const [key, value] of Object.entries(prev)) {
+    if (isGlobalSessionKey(key)) {
+      preserved[key] = value;
+    }
+  }
+  return { ...preserved, ...newAttributes } as ISession;
 };

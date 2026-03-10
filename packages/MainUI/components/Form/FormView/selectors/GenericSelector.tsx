@@ -81,20 +81,20 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   }
 
   switch (reference) {
-    case FIELD_REFERENCE_CODES.PASSWORD:
+    case FIELD_REFERENCE_CODES.PASSWORD.id:
       return <PasswordSelector field={effectiveField} readOnly={isReadOnly} data-testid="PasswordSelector__6e80fa" />;
-    case FIELD_REFERENCE_CODES.SELECTOR:
-    case FIELD_REFERENCE_CODES.TABLE_DIR_19:
-    case FIELD_REFERENCE_CODES.TABLE_DIR_18:
+    case FIELD_REFERENCE_CODES.SELECTOR.id:
+    case FIELD_REFERENCE_CODES.TABLE_DIR_19.id:
+    case FIELD_REFERENCE_CODES.TABLE_DIR_18.id:
       return <TableDirSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="TableDirSelector__6e80fa" />;
-    case FIELD_REFERENCE_CODES.DATE:
+    case FIELD_REFERENCE_CODES.DATE.id:
       return <DateSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="DateSelector__6e80fa" />;
-    case FIELD_REFERENCE_CODES.DATETIME:
+    case FIELD_REFERENCE_CODES.DATETIME.id:
       return <DatetimeSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="DatetimeSelector__6e80fa" />;
-    case FIELD_REFERENCE_CODES.BOOLEAN:
+    case FIELD_REFERENCE_CODES.BOOLEAN.id:
       return <BooleanSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="BooleanSelector__6e80fa" />;
-    case FIELD_REFERENCE_CODES.QUANTITY_29:
-    case FIELD_REFERENCE_CODES.QUANTITY_22:
+    case FIELD_REFERENCE_CODES.QUANTITY_29.id:
+    case FIELD_REFERENCE_CODES.QUANTITY_22.id:
       return (
         <QuantitySelector
           allowNegative={true}
@@ -105,14 +105,14 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           data-testid="QuantitySelector__6e80fa"
         />
       );
-    case FIELD_REFERENCE_CODES.TIME:
+    case FIELD_REFERENCE_CODES.TIME.id:
       return <TimeSelector field={field} isReadOnly={isReadOnly} data-testid={`TimeSelector__${field.id}`} />;
-    case FIELD_REFERENCE_CODES.LIST_17:
-    case FIELD_REFERENCE_CODES.LIST_13:
+    case FIELD_REFERENCE_CODES.LIST_17.id:
+    case FIELD_REFERENCE_CODES.LIST_13.id:
       return <ListSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="ListSelector__6e80fa" />;
-    case FIELD_REFERENCE_CODES.SELECT_30:
+    case FIELD_REFERENCE_CODES.SELECT_30.id:
       if (
-        effectiveField.column.referenceSearchKey === FIELD_REFERENCE_CODES.LOCATION_21 ||
+        effectiveField.column.referenceSearchKey === FIELD_REFERENCE_CODES.LOCATION_21.id ||
         effectiveField.column.referenceSearchKey$_identifier === CUSTOM_SELECTORS_IDENTIFIERS.LOCATION
       ) {
         return (
@@ -120,9 +120,9 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         );
       }
       return <SelectSelector field={effectiveField} isReadOnly={isReadOnly} data-testid="SelectSelector__6e80fa" />;
-    case FIELD_REFERENCE_CODES.DECIMAL:
-    case FIELD_REFERENCE_CODES.NUMERIC:
-    case FIELD_REFERENCE_CODES.RATE:
+    case FIELD_REFERENCE_CODES.DECIMAL.id:
+    case FIELD_REFERENCE_CODES.NUMERIC.id:
+    case FIELD_REFERENCE_CODES.RATE.id:
       return (
         <NumericSelector
           field={effectiveField}
@@ -131,7 +131,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           data-testid="NumericSelector__6e80fa"
         />
       );
-    case FIELD_REFERENCE_CODES.INTEGER:
+    case FIELD_REFERENCE_CODES.INTEGER.id:
       return (
         <NumericSelector
           field={effectiveField}
@@ -140,7 +140,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           data-testid="NumericSelector__6e80fa"
         />
       );
-    case FIELD_REFERENCE_CODES.PATTRIBUTE:
+    case FIELD_REFERENCE_CODES.PATTRIBUTE.id:
       return (
         <AttributeSetInstanceSelector
           field={effectiveField}
@@ -148,7 +148,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           data-testid="AttributeSetInstanceSelector__6e80fa"
         />
       );
-    case FIELD_REFERENCE_CODES.TEXT_LONG:
+    case FIELD_REFERENCE_CODES.TEXT_LONG.id:
       return <TextLongSelector field={effectiveField} readOnly={isReadOnly} data-testid="TextLongSelector__6e80fa" />;
     default:
       return <StringSelector field={effectiveField} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;

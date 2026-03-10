@@ -20,6 +20,7 @@ import {
   buildFormInitializationPayload,
   buildFormInitializationParams,
   buildSessionAttributes,
+  mergeSessionAttributes,
 } from "@/utils/hooks/useFormInitialization/utils";
 import { SessionMode, type Tab, type EntityData, type ISession } from "@workspaceui/api-client/src/api/types";
 import { logger } from "@/utils/logger";
@@ -91,10 +92,7 @@ export const syncSelectedRecordsToSession = async ({
     const responseData = await fetchFormInitialization(params, payload);
 
     const sessionAttributes = buildSessionAttributes(responseData);
-    setSession((prev) => ({
-      ...prev,
-      ...sessionAttributes,
-    }));
+    setSession((prev) => mergeSessionAttributes(prev, sessionAttributes));
 
     logger.info(`Successfully synced ${selectedRecords.length} records to session`);
   } catch (error) {

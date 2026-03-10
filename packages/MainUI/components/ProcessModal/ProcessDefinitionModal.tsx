@@ -124,7 +124,7 @@ type AutoSelectConfig = {
 export const FALLBACK_RESULT = {};
 
 /** Reference ID for window reference field types */
-const WINDOW_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW;
+const WINDOW_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW.id;
 
 // ---------------------------------------------------------------------------
 // evaluateWindowReferenceDisplay — display-logic evaluation for grid params
