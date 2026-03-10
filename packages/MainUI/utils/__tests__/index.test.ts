@@ -181,7 +181,10 @@ describe("buildPayloadByInputName", () => {
   });
 
   it("sanitizes boolean values to Y/N via field metadata", () => {
-    const fields = { isActive: { column: { reference: FIELD_REFERENCE_CODES.BOOLEAN.id } } } as unknown as Record<string, Field>;
+    const fields = { isActive: { column: { reference: FIELD_REFERENCE_CODES.BOOLEAN.id } } } as unknown as Record<
+      string,
+      Field
+    >;
     const result = buildPayloadByInputName({ isActive: true }, fields);
     expect(result?.isActive).toBe("Y");
   });
