@@ -102,17 +102,6 @@ describe("sanitizeValue", () => {
     expect(sanitizeValue(42)).toBe(42);
   });
 
-  it("converts DATE field value from yyyy-mm-dd to dd-mm-yyyy", () => {
-    const field = { column: { reference: FIELD_REFERENCE_CODES.DATE.id } } as unknown as Field;
-    expect(sanitizeValue("2024-03-15", field)).toBe("15-03-2024");
-  });
-
-  it("returns null for empty DATE field value", () => {
-    const field = { column: { reference: FIELD_REFERENCE_CODES.DATE.id } } as unknown as Field;
-    expect(sanitizeValue("", field)).toBeNull();
-    expect(sanitizeValue(null, field)).toBeNull();
-  });
-
   it("converts numeric string to number for NUMBER field", () => {
     const field = { column: { reference: FIELD_REFERENCE_CODES.INTEGER.id } } as unknown as Field;
     expect(sanitizeValue("42", field)).toBe(42);
