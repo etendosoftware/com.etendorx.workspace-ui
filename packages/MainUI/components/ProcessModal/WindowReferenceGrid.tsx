@@ -81,7 +81,10 @@ export function extractActualValue(value: unknown): EntityValue {
 /**
  * Merges default values into the params object
  */
-export function mergeDefaultsIntoParams(defaults: Record<string, unknown>, mergedParams: Record<string, EntityValue>): void {
+export function mergeDefaultsIntoParams(
+  defaults: Record<string, unknown>,
+  mergedParams: Record<string, EntityValue>
+): void {
   for (const [key, value] of Object.entries(defaults)) {
     mergedParams[key] = extractActualValue(value);
   }
@@ -392,7 +395,10 @@ export function applyDynamicKeys(
  * Includes fields from the window reference tab, the `fields` prop, and a set
  * of standard Etendo context keys.
  */
-export function buildValidColumnNames(tabFields: Record<string, any> | undefined, propFields: any[] | undefined): Set<string> {
+export function buildValidColumnNames(
+  tabFields: Record<string, any> | undefined,
+  propFields: any[] | undefined
+): Set<string> {
   const validColumnNames = new Set<string>();
 
   if (tabFields) {

@@ -1,13 +1,13 @@
-import { 
-  extractActualValue, 
-  mergeDefaultsIntoParams, 
-  mergeCurrentValuesIntoParams, 
+import {
+  extractActualValue,
+  mergeDefaultsIntoParams,
+  mergeCurrentValuesIntoParams,
   resolveParentContextId,
   applyDynamicKeys,
   buildValidColumnNames,
   applyRecordValues,
   evaluateFieldReadOnlyLogic,
-  buildGridCriteria
+  buildGridCriteria,
 } from "../WindowReferenceGrid";
 
 describe("WindowReferenceGrid Utilities", () => {
@@ -105,7 +105,7 @@ describe("WindowReferenceGrid Utilities", () => {
 
     it("builds criteria from filter expressions map", () => {
       const filterExpressions = {
-        grid1: { field1: "val1" }
+        grid1: { field1: "val1" },
       };
       const result = buildGridCriteria(filterExpressions, "grid1");
       expect(result).toHaveLength(1);
