@@ -141,78 +141,84 @@ export const getParams = ({
   return params;
 };
 
-export function mapKeysWithDefaults(source: SourceObject): TargetObject {
-  const keyMap: KeyMapConfig = {
-    inpporeference: { target: "POReference", default: "" },
-    inpcCurrencyId: { target: "c_currency_id", default: null },
-    inpcBpartnerId: { target: "received_from", default: null },
-    "Payment Document No": { target: "payment_documentno", default: null },
-    "Payment Document No.": { target: "payment_documentno", default: null },
-    inpfinPaymentmethodId: { target: "fin_paymentmethod_id", default: null },
-    fin_payment_id: { target: "fin_payment_id", default: null },
-    inpgrandtotal: { target: "actual_payment", default: 0 },
-    inpdateacct: { target: "payment_date", default: undefined },
-    "Payment Date": { target: "payment_date", default: undefined },
-    inptotallines: { target: "amount_inv_ords", default: 0 },
-    inpissotrx: { target: "issotrx", default: false },
-    inpcOrderId: { target: "c_order_id", default: null },
-    DOCBASETYPE: { target: "DOCBASETYPE", default: "ARR" },
-    inpadOrgId: { target: "ad_org_id", default: null },
-    converted_amount: { target: "conversion_rate", default: 0 },
-    conversion_rate: { target: "conversion_rate", default: 0 },
-    "Action Regarding Document": { target: "document_action", default: null },
-    reference_no: { target: "reference_no", default: "" },
-    POReference: { target: "POReference", default: "" },
-    "Converted Amount": { target: "converted_amount", default: null },
-    "Deposit To": { target: "fin_financial_account_id", default: null },
-    "Invoice Date": { target: "invoiceDate", default: undefined },
-    "Lines Include Taxes": { target: "linesIncludeTaxes", default: false },
-    overpayment_action: { target: "overpayment_action", default: null },
-  };
+const KEY_MAP: KeyMapConfig = {
+  inpporeference: { target: "POReference", default: "" },
+  inpcCurrencyId: { target: "c_currency_id", default: null },
+  inpcBpartnerId: { target: "received_from", default: null },
+  "Payment Document No": { target: "payment_documentno", default: null },
+  "Payment Document No.": { target: "payment_documentno", default: null },
+  inpfinPaymentmethodId: { target: "fin_paymentmethod_id", default: null },
+  fin_payment_id: { target: "fin_payment_id", default: null },
+  inpgrandtotal: { target: "actual_payment", default: 0 },
+  inpdateacct: { target: "payment_date", default: undefined },
+  "Payment Date": { target: "payment_date", default: undefined },
+  inptotallines: { target: "amount_inv_ords", default: 0 },
+  inpissotrx: { target: "issotrx", default: false },
+  inpcOrderId: { target: "c_order_id", default: null },
+  DOCBASETYPE: { target: "DOCBASETYPE", default: "ARR" },
+  inpadOrgId: { target: "ad_org_id", default: null },
+  converted_amount: { target: "conversion_rate", default: 0 },
+  conversion_rate: { target: "conversion_rate", default: 0 },
+  "Action Regarding Document": { target: "document_action", default: null },
+  reference_no: { target: "reference_no", default: "" },
+  POReference: { target: "POReference", default: "" },
+  "Converted Amount": { target: "converted_amount", default: null },
+  "Deposit To": { target: "fin_financial_account_id", default: null },
+  "Invoice Date": { target: "invoiceDate", default: undefined },
+  "Lines Include Taxes": { target: "linesIncludeTaxes", default: false },
+  overpayment_action: { target: "overpayment_action", default: null },
+};
 
+function resolveRawValue(
+  key: string,
+  value: PrimitiveValue | NestedObject | SelectionItem[]
+): PrimitiveValue | NestedObject | SelectionItem[] {
+  const resolved = value !== "" && value !== undefined && value !== null ? value : (KEY_MAP[key]?.default ?? value);
+  if (resolved === "Y") return true;
+  if (resolved === "N") return false;
+  return resolved;
+}
+
+// Skip date fields that have no valid value — the server cannot parse "" or null as a date
+const DATE_TARGETS = new Set(["payment_date", "invoiceDate"]);
+function isEmptyDateField(target: string, value: PrimitiveValue | NestedObject | SelectionItem[]): boolean {
+  return DATE_TARGETS.has(target) && (value === "" || value === null || value === undefined);
+}
+
+function recursiveUpdateSelection(obj: NestedObject, parentActualPayment?: number): void {
+  if (!obj || typeof obj !== "object") return;
+
+  const currentActualPayment = obj.actual_payment ?? parentActualPayment;
+
+  for (const [key, value] of Object.entries(obj)) {
+    if (key === "_selection" && Array.isArray(value)) {
+      obj[key] = value.map((item: SelectionItem) => ({
+        ...item,
+        amount: currentActualPayment ?? 0,
+      }));
+    } else if (value && typeof value === "object" && !Array.isArray(value)) {
+      recursiveUpdateSelection(value as NestedObject, currentActualPayment);
+    }
+  }
+}
+
+export function mapKeysWithDefaults(source: SourceObject): TargetObject {
   const result: TargetObject = {};
 
   for (const [key, value] of Object.entries(source)) {
-    let mappedValue: PrimitiveValue | NestedObject | SelectionItem[] =
-      value !== "" && value !== undefined && value !== null ? value : (keyMap[key]?.default ?? value);
-    if (mappedValue === "Y") {
-      mappedValue = true;
-    } else if (mappedValue === "N") {
-      mappedValue = false;
-    }
-    if (keyMap[key]) {
-      // Skip date fields that have no valid value — the server cannot parse "" or null as a date
-      if (mappedValue === "" || mappedValue === null || mappedValue === undefined) {
-        if (keyMap[key].target === "payment_date" || keyMap[key].target === "invoiceDate") {
-          continue;
-        }
+    const mappedValue = resolveRawValue(key, value);
+    if (KEY_MAP[key]) {
+      if (!isEmptyDateField(KEY_MAP[key].target, mappedValue)) {
+        result[KEY_MAP[key].target] = mappedValue;
       }
-      result[keyMap[key].target] = mappedValue;
     } else {
       result[key] = mappedValue;
     }
   }
 
-  for (const { target, default: defaultValue } of Object.values(keyMap)) {
+  for (const { target, default: defaultValue } of Object.values(KEY_MAP)) {
     if (!(target in result) && defaultValue !== undefined) {
       result[target] = defaultValue;
-    }
-  }
-
-  function recursiveUpdateSelection(obj: NestedObject, parentActualPayment?: number): void {
-    if (!obj || typeof obj !== "object") return;
-
-    const currentActualPayment = obj.actual_payment ?? parentActualPayment;
-
-    for (const [key, value] of Object.entries(obj)) {
-      if (key === "_selection" && Array.isArray(value)) {
-        obj[key] = value.map((item: SelectionItem) => ({
-          ...item,
-          amount: currentActualPayment ?? 0,
-        }));
-      } else if (value && typeof value === "object" && !Array.isArray(value)) {
-        recursiveUpdateSelection(value as NestedObject, currentActualPayment);
-      }
     }
   }
 
