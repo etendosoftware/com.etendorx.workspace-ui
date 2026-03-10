@@ -28,30 +28,25 @@
  *   - payscript  → declares the onScan hook
  */
 
-import type React from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
 import { executeStringFunction } from "@/utils/functions";
 import { createCallAction } from "./warehouseApiHelpers";
+import { toast } from "sonner";
+import { ToastContent } from "@/components/ToastContent";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useWindowContext } from "@/contexts/window";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { appendWindowToUrl } from "@/utils/url/utils";
-import {
-  parseSmartClientMessage,
-  INITIAL_CONFIRM_DIALOG,
-  type ResultMessage,
-  type ConfirmDialogState,
-} from "../shared/processModalUtils";
+import { parseSmartClientMessage, INITIAL_CONFIRM_DIALOG, type ConfirmDialogState } from "../shared/processModalUtils";
 import { useBoxManager } from "../shared/useBoxManager";
 import {
   ErrorAlert,
   ConfirmDialog,
-  ResultMessageModal,
   BoxSelector,
   AddBoxButton,
   FormInput,
@@ -106,7 +101,6 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
   const [checkCalculate, setCheckCalculate] = useState(schema.initialData.valuecheck ?? false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [resultMessage, setResultMessage] = useState<ResultMessage | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>(INITIAL_CONFIRM_DIALOG);
 
   // Form state
@@ -280,6 +274,36 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
   );
 
   // ---------------------------------------------------------------------------
+  // Navigation helper (for result message link)
+  // ---------------------------------------------------------------------------
+
+  const handleNavigateToTab = useCallback(
+    async (tabId: string, recordId: string) => {
+      if (isRecoveryLoading) return;
+      try {
+        const res = await fetch(`/api/erp/meta/tab/${tabId}?language=en_US`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        });
+        const tabData = await res.json();
+        const resolvedWindowId = tabData?.window || tabData?.windowId || tabId;
+        const newWindowIdentifier = getNewWindowIdentifier(resolvedWindowId);
+        triggerRecovery();
+        const newUrlParams = appendWindowToUrl(searchParams, {
+          windowIdentifier: newWindowIdentifier,
+          tabId,
+          recordId,
+        });
+        router.replace(`window?${newUrlParams}`);
+      } catch (e) {
+        logger.warn("[GenericWarehouseProcess] Tab navigation failed, falling back", e);
+        window.location.href = `/window?wi_0=${tabId}_${Date.now()}&ri_0=${recordId}`;
+      }
+    },
+    [token, isRecoveryLoading, triggerRecovery, searchParams, router]
+  );
+
+  // ---------------------------------------------------------------------------
   // Execute process — delegates to onProcess string function
   // ---------------------------------------------------------------------------
 
@@ -316,16 +340,36 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
       } else {
         const parsed = parseSmartClientMessage(showMsg?.msgText || "");
         const msgType = showMsg?.msgType;
-        setResultMessage({
-          type: (msgType === "success" || msgType === "warning" || msgType === "error"
-            ? msgType
-            : "success") satisfies ResultMessage["type"],
-          // biome-ignore lint/suspicious/noExplicitAny: titleKey is a dynamic schema string — not a static translation key
-          title: showMsg?.msgTitle || t(schema.titleKey as any),
-          text: parsed.text || t("process.processError"),
-          linkTabId: parsed.tabId,
-          linkRecordId: parsed.recordId,
+        const title = showMsg?.msgTitle || t(schema.titleKey as any) || t("process.completedSuccessfully");
+        const text = parsed.text || t("process.processError");
+
+        const isError = msgType === "error";
+        const isWarning = msgType === "warning";
+        const toastFn = isError ? toast.error : isWarning ? toast.warning : toast.success;
+
+        toastFn(title, {
+          // biome-ignore lint/suspicious/noExplicitAny: data-testid is a valid HTML attribute not in component props type
+          description: React.createElement(
+            "div",
+            { className: "flex flex-col gap-1 mt-1" },
+            React.createElement(ToastContent, { message: text, "data-testid": "ToastContent__warehouse" } as any),
+            parsed.tabId && parsed.recordId
+              ? React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: () => handleNavigateToTab(parsed.tabId as string, parsed.recordId as string),
+                    className: "text-blue-600 underline hover:text-blue-800 font-medium text-left text-sm mt-1",
+                  },
+                  t("packing.checkStatus")
+                )
+              : null
+          ),
+          duration: Number.POSITIVE_INFINITY,
         });
+
+        onSuccess?.();
+        onClose();
       }
     } catch (e) {
       logger.error("[GenericWarehouseProcess] executeProcess error", e);
@@ -333,7 +377,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
     } finally {
       setProcessing(false);
     }
-  }, [onProcessCode, callAction, lines, boxCount, schema, checkCalculate, t]);
+  }, [onProcessCode, callAction, lines, boxCount, schema, checkCalculate, t, handleNavigateToTab, onSuccess, onClose]);
 
   // ---------------------------------------------------------------------------
   // Handle process button click — validates before executing
@@ -358,44 +402,6 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
     },
     [handleValidate]
   );
-
-  // ---------------------------------------------------------------------------
-  // Navigation helper (for result message link)
-  // ---------------------------------------------------------------------------
-
-  const handleNavigateToTab = useCallback(
-    async (tabId: string, recordId: string) => {
-      if (isRecoveryLoading) return;
-      try {
-        const res = await fetch(`/api/erp/meta/tab/${tabId}?language=en_US`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        });
-        const tabData = await res.json();
-        const resolvedWindowId = tabData?.window || tabData?.windowId || tabId;
-        setResultMessage(null);
-        onClose();
-        const newWindowIdentifier = getNewWindowIdentifier(resolvedWindowId);
-        triggerRecovery();
-        const newUrlParams = appendWindowToUrl(searchParams, {
-          windowIdentifier: newWindowIdentifier,
-          tabId,
-          recordId,
-        });
-        router.replace(`window?${newUrlParams}`);
-      } catch (e) {
-        logger.warn("[GenericWarehouseProcess] Tab navigation failed, falling back", e);
-        window.location.href = `/window?wi_0=${tabId}_${Date.now()}&ri_0=${recordId}`;
-      }
-    },
-    [token, isRecoveryLoading, triggerRecovery, searchParams, router, onClose]
-  );
-
-  const handleResultClose = useCallback(async () => {
-    setResultMessage(null);
-    onSuccess?.();
-    onClose();
-  }, [onClose, onSuccess]);
 
   // ---------------------------------------------------------------------------
   // Derive visible columns from schema
@@ -657,29 +663,6 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
         testIdPrefix="warehouse"
         data-testid="ConfirmDialog__cad053"
       />
-      {resultMessage && (
-        <ResultMessageModal
-          result={resultMessage}
-          closeLabel={t("packing.close")}
-          onClose={handleResultClose}
-          testIdPrefix="warehouse"
-          navigationLink={
-            resultMessage.linkTabId && resultMessage.linkRecordId ? (
-              <p className="text-sm text-center mt-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleNavigateToTab(resultMessage.linkTabId as string, resultMessage.linkRecordId as string)
-                  }
-                  className="text-blue-600 underline hover:text-blue-800 font-medium">
-                  {t("packing.checkStatus")}
-                </button>
-              </p>
-            ) : undefined
-          }
-          data-testid="ResultMessageModal__cad053"
-        />
-      )}
     </>
   );
 };
