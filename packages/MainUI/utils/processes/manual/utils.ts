@@ -178,7 +178,7 @@ function resolveRawValue(key: string, value: MappedValue): MappedValue {
 // Skip date fields that have no valid value — the server cannot parse "" or null as a date
 const DATE_TARGETS = new Set(["payment_date", "invoiceDate"]);
 function isEmptyDateField(target: string, value: MappedValue): boolean {
-  return DATE_TARGETS.has(target) && (value === "" || value === null || value === undefined);
+  return DATE_TARGETS.has(target) && (value === "" || value === undefined);
 }
 
 function recursiveUpdateSelection(obj: NestedObject, parentActualPayment?: number): void {
