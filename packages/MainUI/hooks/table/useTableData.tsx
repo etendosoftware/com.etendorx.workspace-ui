@@ -441,10 +441,17 @@ export const useTableData = ({
     const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
     const operator = "equals";
 
-    const extraProperties = Object.values(tab.fields || {})
-      .filter((f: any) => f.colorFieldName)
-      .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
-      .join(",");
+    const extraPropertiesSet = new Set<string>();
+    Object.values(tab.fields || {}).forEach((f: any) => {
+      const prefix = f.hqlName || f.columnName;
+      if (f.colorFieldName) {
+        extraPropertiesSet.add(`${prefix}$${f.colorFieldName}`);
+      } else if (["17", "18", "19", "30", "800011"].includes(f.column?.reference)) {
+        extraPropertiesSet.add(`${prefix}$color`);
+        extraPropertiesSet.add(`${prefix}$smfColor`);
+      }
+    });
+    const extraProperties = Array.from(extraPropertiesSet).join(",");
 
     const options: DatasourceOptions = {
       windowId: tab.window,

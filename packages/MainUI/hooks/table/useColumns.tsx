@@ -207,33 +207,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
               displayNode = displayString;
             }
 
-            // Check dynamically if the row contains color for this column
-            let rawColor: string | undefined;
-            if (recordData?.[`${column.columnName}$color`])
-              rawColor = recordData[`${column.columnName}$color`] as string;
-            else if (recordData?.[`${column.columnName}$smfColor`])
-              rawColor = recordData[`${column.columnName}$smfColor`] as string;
-            else if (column.colorFieldName && recordData?.[`${column.columnName}$${column.colorFieldName}`]) {
-              rawColor = recordData[`${column.columnName}$${column.colorFieldName}`] as string;
-            }
-
-            const hasColorMatch = Boolean(
-              rawColor && typeof rawColor === "string" && isColorString(rawColor.trim().toLowerCase())
-            );
-
-            if (!isAlreadyReactElement && hasColorMatch && rawColor) {
-              const normalizedColor = rawColor.trim().toLowerCase();
-              displayNode = (
-                <Tag
-                  label={displayString}
-                  tagColor={normalizedColor}
-                  textColor={getContrastTextColor(normalizedColor)}
-                  data-testid="Tag__2b5175"
-                />
-              );
-            }
-
-            const usePlainLinkStyle = !isAlreadyReactElement && !hasColorMatch;
+            const usePlainLinkStyle = !isAlreadyReactElement;
 
             return (
               <button
@@ -349,6 +323,92 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
           ),
           columnFilterModeOptions: ["contains", "startsWith", "endsWith"],
           filterFn: "contains",
+        };
+      }
+
+      // --------------------------------------------------------------------------
+      // GLOBAL COLOR RENDERING
+      // --------------------------------------------------------------------------
+      // This applies to any column. If the backend sent a property that looks like
+      // "columnName$color", "columnName$smfColor", or "columnName$anythingColor",
+      // and its value is a valid CSS color, we render a Tag instead of raw text.
+      {
+        const wrappedCell = columnConfig.Cell;
+        columnConfig = {
+          ...columnConfig,
+          Cell: (cellProps: any) => {
+            const { row, cell, renderedCellValue } = cellProps;
+            const recordData = row?.original as EntityData;
+            
+            let rawColor: string | undefined;
+            let finalDisplayValue = "";
+
+            if (recordData && typeof recordData === "object") {
+              // Extract all valid color keys from the record
+              const allColorKeys = Object.keys(recordData).filter((key) => {
+                const lowerK = key.toLowerCase();
+                if (lowerK.includes("color")) {
+                  const val = recordData[key];
+                  return typeof val === "string" && isColorString(val.trim());
+                }
+                return false;
+              });
+
+              if (allColorKeys.length > 0) {
+                // Potential strict prefixes this column could go by
+                const potentialPrefixes = [
+                  column.columnName,
+                  column.name,
+                  column.hqlName,
+                ].filter(Boolean).map((p) => String(p).toLowerCase());
+
+                // Find the best matching color key strictly belonging to this column
+                let chosenColorKey: string | undefined = allColorKeys.find((ck) => {
+                  const prefix = ck.toLowerCase().split("$")[0];
+                  return potentialPrefixes.includes(prefix);
+                });
+
+                if (chosenColorKey) {
+                  rawColor = String(recordData[chosenColorKey]).trim();
+                  
+                  // Deduce the best display value using the true prefix of the color
+                  const prefixMatch = chosenColorKey.match(/^(.*?)\$(smf)?color/i);
+                  const truePrefix = prefixMatch ? prefixMatch[1] : column.columnName;
+                  const identifierKey = `${truePrefix}$_identifier`;
+                  
+                  if (recordData[identifierKey] != null && String(recordData[identifierKey]).trim() !== "") {
+                    finalDisplayValue = String(recordData[identifierKey]).trim();
+                  } else if (cellProps.cell?.getValue() != null && String(cellProps.cell?.getValue()).trim() !== "") {
+                    finalDisplayValue = String(cellProps.cell.getValue());
+                  } else {
+                    finalDisplayValue = String(recordData[truePrefix] || "");
+                  }
+                }
+              }
+            }
+
+            if (rawColor) {
+              const normalizedColor = rawColor.toLowerCase();
+              if (!finalDisplayValue) {
+                  finalDisplayValue = String(cellProps.cell?.getValue() ?? "");
+              }
+
+              return (
+                <Tag
+                  label={finalDisplayValue}
+                  tagColor={normalizedColor}
+                  textColor={getContrastTextColor(normalizedColor)}
+                  data-testid={`Tag__${column.columnName}`}
+                />
+              );
+            }
+
+            // Fallback to the regular column component (e.g. Reference Button, Date strings, etc.)
+            if (typeof wrappedCell === "function") {
+              return wrappedCell(cellProps as any);
+            }
+            return <>{renderedCellValue ?? cell?.getValue()}</>;
+          },
         };
       }
 
