@@ -345,7 +345,13 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
 
         const isError = msgType === "error";
         const isWarning = msgType === "warning";
-        const toastFn = isError ? toast.error : isWarning ? toast.warning : toast.success;
+
+        let toastFn = toast.success;
+        if (isError) {
+          toastFn = toast.error;
+        } else if (isWarning) {
+          toastFn = toast.warning;
+        }
 
         toastFn(title, {
           // biome-ignore lint/suspicious/noExplicitAny: data-testid is a valid HTML attribute not in component props type
