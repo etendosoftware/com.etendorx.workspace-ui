@@ -360,6 +360,25 @@ export class GlobalCalloutManager {
     return this.state.isCalloutInProgress;
   }
 
+  /**
+   * Wait until all pending callouts are completed
+   */
+  async waitForIdle(): Promise<void> {
+    if (this.arePendingCalloutsEmpty() && !this.state.isCalloutInProgress) {
+      return;
+    }
+
+    return new Promise((resolve) => {
+      const listener = (data?: Record<string, unknown>) => {
+        if (data?.allCompleted || data?.cleared) {
+          this.off("calloutEnd", listener);
+          resolve();
+        }
+      };
+      this.on("calloutEnd", listener);
+    });
+  }
+
   clearPendingCallouts(): void {
     this.state = clearPending(this.state);
   }

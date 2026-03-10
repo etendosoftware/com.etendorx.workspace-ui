@@ -81,39 +81,39 @@ describe("GenericSelector", () => {
     {
       title: "generic SELECT_30 fields",
       expected: "SelectSelector",
-      field: { inputName: "genericField", column: { reference: FIELD_REFERENCE_CODES.SELECT_30 } },
+      field: { inputName: "genericField", column: { reference: FIELD_REFERENCE_CODES.SELECT_30.id } },
     },
     { title: "unknown references", expected: "StringSelector", field: { column: { reference: "UNKNOWN" } } },
     {
       title: "numeric fields",
       expected: "NumericSelector",
-      field: { column: { reference: FIELD_REFERENCE_CODES.NUMERIC } },
+      field: { column: { reference: FIELD_REFERENCE_CODES.NUMERIC.id } },
     },
     {
       title: "TABLE_DIR_19 fields",
       expected: "TableDirSelector",
-      field: { column: { reference: FIELD_REFERENCE_CODES.TABLE_DIR_19 } },
+      field: { column: { reference: FIELD_REFERENCE_CODES.TABLE_DIR_19.id } },
     },
-    { title: "DATE fields", expected: "DateSelector", field: { column: { reference: FIELD_REFERENCE_CODES.DATE } } },
+    { title: "DATE fields", expected: "DateSelector", field: { column: { reference: FIELD_REFERENCE_CODES.DATE.id } } },
     {
       title: "BOOLEAN fields",
       expected: "BooleanSelector",
-      field: { column: { reference: FIELD_REFERENCE_CODES.BOOLEAN } },
+      field: { column: { reference: FIELD_REFERENCE_CODES.BOOLEAN.id } },
     },
     {
       title: "QUANTITY_29 fields",
       expected: "QuantitySelector",
-      field: { column: { reference: FIELD_REFERENCE_CODES.QUANTITY_29 } },
+      field: { column: { reference: FIELD_REFERENCE_CODES.QUANTITY_29.id } },
     },
     {
       title: "TIME fields",
       expected: "TimeSelector",
-      field: { column: { reference: FIELD_REFERENCE_CODES.TIME }, id: "1" },
+      field: { column: { reference: FIELD_REFERENCE_CODES.TIME.id }, id: "1" },
     },
     {
       title: "LIST_17 fields",
       expected: "ListSelector",
-      field: { column: { reference: FIELD_REFERENCE_CODES.LIST_17 } },
+      field: { column: { reference: FIELD_REFERENCE_CODES.LIST_17.id } },
     },
   ];
 
