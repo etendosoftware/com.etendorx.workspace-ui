@@ -8,6 +8,11 @@ import {
   resolveParentContextId,
   updateLocalRecordFromSelection,
   resetLocalRecordFields,
+  applyDynamicKeys,
+  buildValidColumnNames,
+  applyRecordValues,
+  evaluateFieldReadOnlyLogic,
+  buildGridCriteria,
 } from "../WindowReferenceGrid";
 import "@testing-library/jest-dom";
 
@@ -74,6 +79,46 @@ describe("WindowReferenceGrid Coverage Tests", () => {
       const reset = resetLocalRecordFields(record as any);
       expect(reset?.amount).toBe(0);
       expect(reset?.paymentAmount).toBe(0);
+    });
+
+    it("applyDynamicKeys should apply org and client keys", () => {
+      const recordValues = { inpadOrgId: "ORG1", inpadClientId: "CLIENT1" };
+      const options: any = {};
+      applyDynamicKeys(recordValues, undefined, options);
+      expect(options.ad_org_id).toBe("ORG1");
+      expect(options.ad_client_id).toBe("CLIENT1");
+    });
+
+    it("buildValidColumnNames should build a set of valid column names", () => {
+      const tabFields = { f1: { columnName: "COL1" } };
+      const propFields = [{ name: "PROP1" }];
+      const result = buildValidColumnNames(tabFields, propFields);
+      expect(result.has("col1")).toBe(true);
+      expect(result.has("prop1")).toBe(true);
+      expect(result.has("ad_org_id")).toBe(true);
+    });
+
+    it("applyRecordValues should apply record values to options", () => {
+      const parameters = { p1: { name: "param1", dBColumnName: "COL1" } };
+      const recordValues = { param1: "VAL1" };
+      const validColumnNames = new Set(["col1"]);
+      const options: any = {};
+      applyRecordValues(parameters, recordValues, validColumnNames, options);
+      expect(options.COL1).toBe("VAL1");
+    });
+
+    it("evaluateFieldReadOnlyLogic should return true for static read-only flags", () => {
+      expect(evaluateFieldReadOnlyLogic({ readOnly: true }, {})).toBe(true);
+      expect(evaluateFieldReadOnlyLogic({ isReadOnly: true }, {})).toBe(true);
+    });
+
+    it("buildGridCriteria should build criteria from filter expressions map", () => {
+      const filterExpressions = {
+        grid1: { field1: "val1" },
+      };
+      const result = buildGridCriteria(filterExpressions, "grid1");
+      expect(result).toHaveLength(1);
+      expect(result[0].fieldName).toBe("field1");
     });
   });
 

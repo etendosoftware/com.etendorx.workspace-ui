@@ -188,6 +188,7 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
       // In Classic, unresolved context variables always resolve to '' (empty string).
       // parseDynamicExpression replaces OB.Utilities.getValue(obj, prop) with obj["prop"],
       // removing the null->'' conversion that getValue provided. The Proxy must handle it.
+
       return defaultValue !== undefined ? defaultValue : "";
     },
     has(target, prop) {

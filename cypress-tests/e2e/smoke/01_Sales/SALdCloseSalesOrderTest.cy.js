@@ -125,7 +125,7 @@ describe("Sales Orders - Create, Complete and Close", () => {
     cy.get('[data-testid="IconButtonWithText__process-menu"] > span').click();
     cy.wait(500);
 
-    cy.get(".rounded-2xl > :nth-child(1)").click();
+    cy.get(".rounded-2xl").contains("div", "Close").click();
     cy.wait(500);
 
     // Verify Process Order popup

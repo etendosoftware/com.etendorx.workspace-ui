@@ -18,7 +18,14 @@
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { useTab } from "@/hooks/useTab";
-import type { EntityData, EntityValue, Column, Tab, Criteria } from "@workspaceui/api-client/src/api/types";
+import {
+  type EntityData,
+  type EntityValue,
+  type Column,
+  type Tab,
+  type Criteria,
+  UIPattern,
+} from "@workspaceui/api-client/src/api/types";
 import {
   MaterialReactTable,
   MRT_ShowHideColumnsButton,
@@ -206,11 +213,12 @@ const InteractiveGridCellRenderer = ({ row, cell, column }: any) => {
   const isSelected = row.getIsSelected();
   // Get dbColumnName from column definition (passed via custom property)
   const dbColumnName = column.columnDef?.dbColumnName;
+  const isFieldReadOnly = column.columnDef?.isFieldReadOnly;
 
   // glItems are always local/editable
   const isAlwaysEditable = dbColumnName === "glitem";
 
-  if (isSelected || isAlwaysEditable) {
+  if ((isSelected || isAlwaysEditable) && !isFieldReadOnly) {
     return (
       <StableGridCellEditorRenderer
         cell={cell}
@@ -436,7 +444,7 @@ function applyProcessDynamicKeys(
  * Applies all dynamic context variables (org, client, and process-specific keys)
  * to the datasource options object.
  */
-function applyDynamicKeys(
+export function applyDynamicKeys(
   recordValues: Record<string, unknown>,
   processId: string | undefined,
   options: DatasourceParams
@@ -452,24 +460,27 @@ function applyDynamicKeys(
  * Includes fields from the window reference tab, the `fields` prop, and a set
  * of standard Etendo context keys.
  */
-function buildValidColumnNames(tabFields: Record<string, any> | undefined, propFields: any[] | undefined): Set<string> {
-  const validColumnNames = new Set<string>();
+/**
+ * Builds the set of column names that are valid filter targets for a given grid.
+ * Includes fields from the window reference tab, the `fields` prop, and a set
+ * of standard Etendo context keys.
+ */
+export function buildValidColumnNames(
+  tabFields: Record<string, any> | undefined,
+  propFields: any[] | undefined
+): Set<string> {
+  const validColumnNames = new Set<string>(STANDARD_FILTER_KEYS);
 
-  if (tabFields) {
-    for (const f of Object.values(tabFields)) {
-      if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
-      if (f.hqlName) validColumnNames.add(f.hqlName.toLowerCase());
-    }
+  for (const f of Object.values(tabFields || {})) {
+    if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
+    if (f.hqlName) validColumnNames.add(f.hqlName.toLowerCase());
   }
 
-  if (propFields) {
-    for (const f of propFields) {
-      if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
-      if (f.name) validColumnNames.add(f.name.toLowerCase());
-    }
+  for (const f of propFields || []) {
+    if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
+    if (f.name) validColumnNames.add(f.name.toLowerCase());
   }
 
-  for (const k of STANDARD_FILTER_KEYS) validColumnNames.add(k);
   return validColumnNames;
 }
 
@@ -478,7 +489,7 @@ function buildValidColumnNames(tabFields: Record<string, any> | undefined, propF
  * the value to `options[dBColumnName]` — but only when the column name is in the
  * set of valid filter columns for this grid.
  */
-function applyRecordValues(
+export function applyRecordValues(
   parameters: Record<string, any>,
   recordValues: Record<string, unknown>,
   validColumnNames: Set<string>,
@@ -496,10 +507,36 @@ function applyRecordValues(
 }
 
 /**
+ * Evaluates the readOnlyLogicExpression for a grid field.
+ * Returns true if the field should be read-only.
+ *
+ * Logic mirrors ProcessParameterSelector's readOnly evaluation:
+ * 1. Check field-level static flags (readOnly, isReadOnly)
+ * 2. Evaluate readOnlyLogicExpression || column.readOnlyLogic via compileExpression
+ */
+export function evaluateFieldReadOnlyLogic(field: any, context: Record<string, unknown>): boolean {
+  // Static flags
+  if (field.readOnly === true || field.isReadOnly === true) return true;
+
+  // Dynamic expression
+  const expression = field.readOnlyLogicExpression || field.column?.readOnlyLogic;
+  if (!expression) return false;
+
+  try {
+    const compiled = compileExpression(expression);
+    const result = !!compiled(context, context);
+    return result;
+  } catch (e) {
+    console.warn(`Error evaluating readOnlyLogic for field ${field.name}:`, e);
+    return false; // default to editable on error
+  }
+}
+
+/**
  * Builds the filter criteria array for a single grid parameter by looking up
  * its column name in the `filterExpressions` config returned by the backend.
  */
-function buildGridCriteria(
+export function buildGridCriteria(
   filterExpressions: Record<string, Record<string, unknown>> | undefined,
   gridColumnName: string
 ): Array<{ fieldName: string; operator: string; value: EntityValue }> {
@@ -513,6 +550,23 @@ function buildGridCriteria(
       buildFilterCriteriaEntry(fieldName, value) as { fieldName: string; operator: string; value: EntityValue }
   );
 }
+
+/**
+ * Deep-merges two filter expression maps by grid key.
+ * Returns `base` as-is when override is empty → stable reference, no new object.
+ */
+const deepMergeFilterExpressions = (
+  base?: Record<string, Record<string, string>>,
+  override?: Record<string, Record<string, string>>
+): Record<string, Record<string, string>> => {
+  if (!override || Object.keys(override).length === 0) return base || {};
+  if (!base || Object.keys(base).length === 0) return override;
+  const merged: Record<string, Record<string, string>> = { ...base };
+  for (const [gridKey, fields] of Object.entries(override)) {
+    merged[gridKey] = { ...merged[gridKey], ...fields };
+  }
+  return merged;
+};
 
 const WindowReferenceGrid = ({
   parameter,
@@ -581,6 +635,7 @@ const WindowReferenceGrid = ({
 
   const lastDefaultsRef = useRef<string>("");
   const lastFilterExpressionsRef = useRef<string>("");
+  const lastFilterExpressionsObjRef = useRef<Record<string, Record<string, string>>>({});
   const stableWindowReferenceTabRef = useRef<typeof windowReferenceTab | undefined>(windowReferenceTab);
 
   // Stabilize windowReferenceTab reference to prevent infinite re-renders
@@ -620,11 +675,47 @@ const WindowReferenceGrid = ({
 
     if (filtersString !== lastFilterExpressionsRef.current) {
       lastFilterExpressionsRef.current = filtersString;
+      lastFilterExpressionsObjRef.current = filters;
       return filters;
     }
 
-    return lastFilterExpressionsRef.current ? JSON.parse(lastFilterExpressionsRef.current) : {};
+    return lastFilterExpressionsObjRef.current;
   }, [processConfig?.filterExpressions]);
+
+  // Visual-only filter expressions: merges criteria filters with _filterExpressions
+  // (e.g. expectedDate from JS onLoad). Used only for MRT column header display,
+  // NOT sent as backend criteria.
+  const stableVisualFilterExpressions = useMemo(() => {
+    const visualOnly = (processConfig?._filterExpressions || {}) as Record<string, Record<string, string>>;
+    if (!visualOnly || Object.keys(visualOnly).length === 0) return stableFilterExpressions;
+    return deepMergeFilterExpressions(stableFilterExpressions, visualOnly);
+  }, [stableFilterExpressions, processConfig?._filterExpressions]);
+
+  // Build expression evaluation context (similar to ProcessParameterSelector)
+  const fieldReadOnlyContext = useMemo(
+    () => ({
+      ...session,
+      ...recordValues,
+      ...currentValues,
+    }),
+    [session, recordValues, currentValues]
+  );
+
+  // Compute read-only status for all grid fields
+  const fieldReadOnlyMap = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    if (!stableWindowReferenceTab?.fields) return map;
+
+    const fields = Object.values(stableWindowReferenceTab.fields);
+    for (const field of fields) {
+      const key = (field as any).columnName || (field as any).hqlName;
+      if (key) {
+        map[key] = evaluateFieldReadOnlyLogic(field, fieldReadOnlyContext);
+      }
+    }
+
+    return map;
+  }, [stableWindowReferenceTab?.fields, fieldReadOnlyContext]);
 
   useEffect(() => {
     if (!processConfigLoading && processConfig) {
@@ -688,7 +779,7 @@ const WindowReferenceGrid = ({
     const applyImplicitFilter = isImplicitFilterApplied !== false;
     const finalCriteria = applyImplicitFilter && filterCriteria.length > 0 ? filterCriteria : baseCriteria;
     if (finalCriteria.length > 0) {
-      options.criteria = finalCriteria;
+      options.criteria = finalCriteria as unknown as Criteria[];
       options.orderBy = "documentNo desc";
     }
 
@@ -1042,9 +1133,16 @@ const WindowReferenceGrid = ({
       // This ensures our CellEditorFactory is used for all columns, including those with Filters (TableDir, etc.)
       return {
         ...columnConfig,
+        isFieldReadOnly:
+          fieldReadOnlyMap[columnConfig.columnName] || fieldReadOnlyMap[columnConfig.accessorKey as string] || false,
         enableEditing: () => {
           // Basic read-only check based on field definition
-          const isReadOnly = columnConfig.readOnly || columnConfig.isReadOnly;
+          // Ideally this should use field.readOnly or similar prop if available
+          const isReadOnly =
+            columnConfig.readOnly ||
+            columnConfig.isReadOnly ||
+            fieldReadOnlyMap[columnConfig.columnName] ||
+            fieldReadOnlyMap[columnConfig.accessorKey as string];
           if (isReadOnly) return false;
 
           if (columnConfig.columnName === "id" || columnConfig.columnName.includes("identifier")) return false;
@@ -1076,7 +1174,7 @@ const WindowReferenceGrid = ({
     });
 
     return sortedColumns;
-  }, [columnsFromHook, rawColumns, stableWindowReferenceTab]);
+  }, [columnsFromHook, rawColumns, stableWindowReferenceTab, fieldReadOnlyMap]);
 
   const shouldSkipFetch = !isDataReady || processConfigLoading || !entityName;
 
@@ -1215,9 +1313,41 @@ const WindowReferenceGrid = ({
 
   // Reset selection and filters on mount or when entity changes
   useEffect(() => {
+    // Map initial filterExpressions from OnLoad to visual tableColumnFilters (MRT)
+    let initialFilters: MRT_ColumnFiltersState = [];
+    if (stableVisualFilterExpressions?.[parameter.dBColumnName || ""]) {
+      const fieldExpressions = stableVisualFilterExpressions[parameter.dBColumnName || ""];
+      initialFilters = Object.entries(fieldExpressions).map(([fieldName, logic]: [string, any]) => {
+        let filterValue = "";
+
+        if (logic !== null && typeof logic === "object" && !Array.isArray(logic)) {
+          filterValue = logic.value ?? logic.values ?? "";
+        } else if (logic !== undefined && logic !== null) {
+          filterValue = String(logic);
+        }
+
+        // MRT columnFilters need to match the exact column `id` (often the Header name in this app)
+        // rather than the raw database field name. We look it up in rawColumns.
+        const matchingColumn = rawColumns?.find(
+          (col: Column & { hqlName?: string }) =>
+            col.columnName?.toLowerCase() === fieldName.toLowerCase() ||
+            col.hqlName?.toLowerCase() === fieldName.toLowerCase() ||
+            col.id?.toLowerCase() === fieldName.toLowerCase()
+        );
+
+        const columnId = matchingColumn?.id || matchingColumn?.header || fieldName;
+
+        return {
+          id: columnId,
+          value: filterValue,
+        };
+      });
+    }
+
     setRowSelection({});
-    setColumnFilters([]);
-    setAppliedTableFilters([]);
+    setColumnFilters(initialFilters);
+    setAppliedTableFilters(initialFilters);
+
     // Call onSelectionChange with the structure for this entityName
     onSelectionChange((prev: GridSelectionStructure) => ({
       ...prev,
@@ -1226,7 +1356,7 @@ const WindowReferenceGrid = ({
         _allRows: [],
       },
     }));
-  }, [onSelectionChange, entityName, parameter.dBColumnName]);
+  }, [onSelectionChange, entityName, parameter.dBColumnName, stableVisualFilterExpressions, rawColumns]);
 
   const handleMRTColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
@@ -1378,7 +1508,7 @@ const WindowReferenceGrid = ({
           return "xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx"
             .replace(/[xy]/g, (c) => {
               const r = (Math.random() * 16) | 0;
-              const v = c == "x" ? r : (r & 0x3) | 0x8;
+              const v = c === "x" ? r : (r & 0x3) | 0x8;
               return v.toString(16);
             })
             .toUpperCase();
@@ -1556,8 +1686,9 @@ const WindowReferenceGrid = ({
       validations,
       session,
       tabId,
+      fieldReadOnlyMap,
     }),
-    [tabId, session, validations]
+    [tabId, session, validations, fieldReadOnlyMap]
   );
 
   const finalColumns = useMemo(() => {
@@ -1589,8 +1720,14 @@ const WindowReferenceGrid = ({
           });
 
           if (field) {
-            // Check explicit metadata
-            if (field.readOnly === true || field.isReadOnly === true || field.uIPattern === "RO") {
+            // Check explicit metadata or dynamic logic
+            if (
+              field.readOnly === true ||
+              field.isReadOnly === true ||
+              field.uIPattern === UIPattern.READ_ONLY ||
+              fieldReadOnlyMap[field.columnName] ||
+              fieldReadOnlyMap[field.hqlName]
+            ) {
               isReadOnly = true;
             }
           }
@@ -1614,7 +1751,7 @@ const WindowReferenceGrid = ({
 
         return newCol;
       });
-  }, [columns, handleRecordChange, parameter.window]);
+  }, [columns, handleRecordChange, parameter.window, fieldReadOnlyMap]);
 
   const fetchMoreOnBottomReached = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
@@ -1719,7 +1856,7 @@ const WindowReferenceGrid = ({
       },
       onRowSelectionChange: handleRowSelection,
       onColumnFiltersChange: handleMRTColumnFiltersChange,
-      enableEditing: (row) => {
+      enableEditing: (_row) => {
         // Robust check for row editability based on field metadata
         const hasEditableField = finalColumns.some((col) => {
           if (col.id === "mrt-row-actions" || col.id === "mrt-row-select") return false;
@@ -1754,8 +1891,13 @@ const WindowReferenceGrid = ({
           }
 
           // Check Read Only status
-          // @ts-ignore
-          if (field.readOnly === true || field.isReadOnly === true || field.uIPattern === "RO") {
+          if (
+            field.readOnly === true ||
+            field.isReadOnly === true ||
+            field.uIPattern === UIPattern.READ_ONLY ||
+            fieldReadOnlyMap[field.columnName] ||
+            fieldReadOnlyMap[field.hqlName]
+          ) {
             return false;
           }
 

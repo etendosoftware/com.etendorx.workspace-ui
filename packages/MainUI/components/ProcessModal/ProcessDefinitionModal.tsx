@@ -28,7 +28,7 @@
  * - Response message display and success/error states
  *
  */
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { FormProvider, useForm, useFormState } from "react-hook-form";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
@@ -144,7 +144,7 @@ type AutoSelectConfig = {
 export const FALLBACK_RESULT = {};
 
 /** Reference ID for window reference field types */
-const WINDOW_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW;
+const WINDOW_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW.id;
 
 // ---------------------------------------------------------------------------
 // evaluateWindowReferenceDisplay — display-logic evaluation for grid params
@@ -186,7 +186,7 @@ const evaluateWindowReferenceDisplay = (options: EvaluateWindowReferenceDisplayO
 
         isDisplayed = compiledExpr(smartContext, smartContext);
       } catch (error) {
-        logger.warn("Error evaluating display logic for " + parameter.name, error);
+        logger.warn(`Error evaluating display logic for ${parameter.name}`, error);
       }
     }
   } else if (defaultsDisplayLogic !== undefined) {
@@ -262,6 +262,10 @@ function ProcessDefinitionModalContent({
 
   const [gridSelection, setGridSelectionInternal] = useState<GridSelectionStructure>({});
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
+
+  // Ref (not state) to store _filterExpressions returned by JS onLoad scripts.
+  // Using a ref avoids triggering re-renders that would cause infinite loops.
+  const onLoadFilterExpressionsRef = useRef<Record<string, Record<string, string>>>({});
 
   const setGridSelection = useCallback((updater: GridSelectionUpdater) => {
     setGridSelectionInternal((prev) => {
@@ -426,10 +430,15 @@ function ProcessDefinitionModalContent({
     () => ({
       processId: processConfig?.processId || "",
       ...processConfig,
+      _filterExpressions: onLoadFilterExpressionsRef.current,
       defaults: (processInitialization?.defaults || {}) as Record<string, { value: string; identifier: string }>,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify(processConfig), JSON.stringify(processInitialization?.defaults)]
+    [
+      JSON.stringify(processConfig),
+      JSON.stringify(processInitialization?.defaults),
+      JSON.stringify(onLoadFilterExpressionsRef.current),
+    ]
   );
 
   // Combined form data: record values + process defaults
@@ -645,6 +654,10 @@ function ProcessDefinitionModalContent({
   // useEffect — onLoad execution
   // -------------------------------------------------------------------------
 
+  /**
+   * Dispatches the raw result from an onLoad script to the appropriate state setters.
+   * Returns true if processing should stop early (e.g., the result contained an error).
+   */
   const handleOnLoadResult = useCallback(
     (result: Record<string, unknown>): boolean => {
       if (result.error) {
@@ -655,11 +668,17 @@ function ProcessDefinitionModalContent({
           data: result.error,
         });
         setLoading(false);
-        return true;
+        return true; // stop early
       }
 
       if (result._gridSelection && typeof result._gridSelection === "object") {
         setGridSelection((prev) => applyGridSelection(prev, result._gridSelection as Record<string, string[]>));
+      }
+
+      // Store JS-returned filter expressions in a ref (no re-render trigger).
+      // The value is picked up on the next natural render caused by setParameters below.
+      if (result._filterExpressions && typeof result._filterExpressions === "object") {
+        onLoadFilterExpressionsRef.current = result._filterExpressions as Record<string, Record<string, string>>;
       }
 
       if (result.autoSelectConfig) {
@@ -769,6 +788,7 @@ function ProcessDefinitionModalContent({
               selectedRecords,
               tabId: tab.id || "",
               tableId: tab.table || "",
+              parentRecord: recordValues,
             }
           );
 
@@ -791,6 +811,7 @@ function ProcessDefinitionModalContent({
     onLoad,
     open,
     selectedRecords,
+    recordValues,
     tab,
     isBulkCompletion,
     processScriptContext,
