@@ -57,11 +57,12 @@ function SelectCmp({
     [options, searchTerm]
   );
 
-  const dropdownPosition = useDropdownPosition(
+  const columnsMinWidth = columns?.length ? columns.length * 160 : 0;
+
+  const dropdownViewportData = useDropdownPosition(
     isOpen,
     triggerRef as React.RefObject<HTMLDivElement>,
-    filteredOptions.length,
-    true
+    columnsMinWidth
   );
 
   const mainDivClassNames = useMemo(() => {
@@ -249,6 +250,14 @@ function SelectCmp({
     searchInputRef as React.RefObject<HTMLInputElement>
   );
 
+  // Scroll highlighted item into view when navigating with keyboard
+  useEffect(() => {
+    if (highlightedIndex < 0 || !listRef.current) return;
+    const headerOffset = columns?.length ? 1 : 0;
+    const item = listRef.current.children[highlightedIndex + headerOffset] as HTMLElement | undefined;
+    item?.scrollIntoView({ block: "nearest" });
+  }, [highlightedIndex, columns]);
+
   const gridStyle = useMemo(
     () => (columns?.length ? { gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` } : undefined),
     [columns]
@@ -385,7 +394,7 @@ function SelectCmp({
       {!isReadOnly && (
         <DropdownPortal
           isOpen={isOpen}
-          position={dropdownPosition}
+          viewportData={dropdownViewportData}
           searchTerm={searchTerm}
           searchInputRef={searchInputRef as React.RefObject<HTMLInputElement>}
           handleSetSearchTerm={handleSetSearchTerm}
@@ -411,7 +420,7 @@ function SelectCmp({
             </>
           }
           dropdownId={dropdownId}
-          minWidth={columns?.length ? columns.length * 160 : undefined}
+          minWidth={columnsMinWidth}
           data-testid={`DropdownPortal__${field.id}`}
         />
       )}

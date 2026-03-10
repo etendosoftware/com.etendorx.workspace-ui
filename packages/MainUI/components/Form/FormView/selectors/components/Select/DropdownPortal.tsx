@@ -1,11 +1,15 @@
-import { memo } from "react";
+import { memo, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import SearchInput from "@/components/Form/FormView/selectors/components/Select/SearchInput";
+import type { DropdownViewportData } from "@/components/Form/FormView/selectors/hooks/useDropdownPosition";
+
+const GAP = 4;
+const MAX_DROPDOWN_HEIGHT = 300;
 
 const DropdownPortal = memo(
   ({
     isOpen,
-    position,
+    viewportData,
     searchTerm,
     searchInputRef,
     handleSetSearchTerm,
@@ -19,7 +23,7 @@ const DropdownPortal = memo(
     minWidth,
   }: {
     isOpen: boolean;
-    position: { top: number; left: number; width: number; showAbove: boolean };
+    viewportData: DropdownViewportData;
     searchTerm: string;
     searchInputRef: React.RefObject<HTMLInputElement>;
     handleSetSearchTerm: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -32,7 +36,36 @@ const DropdownPortal = memo(
     dropdownId: string;
     minWidth?: number;
   }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [showAbove, setShowAbove] = useState(false);
+    const [isPositioned, setIsPositioned] = useState(false);
+
+    // After each render, measure actual height and decide above/below
+    useLayoutEffect(() => {
+      if (!isOpen) {
+        setIsPositioned(false);
+        return;
+      }
+      const container = containerRef.current;
+      if (!container) return;
+
+      const actualHeight = Math.min(container.scrollHeight, MAX_DROPDOWN_HEIGHT);
+      const { spaceBelow, spaceAbove } = viewportData;
+
+      const shouldShowAbove = spaceBelow < actualHeight + GAP && spaceAbove > spaceBelow;
+      setShowAbove(shouldShowAbove);
+      setIsPositioned(true);
+    });
+
     if (!isOpen) return null;
+
+    const { triggerTop, triggerBottom, left, width, spaceBelow, spaceAbove } = viewportData;
+    const dropdownWidth = Math.max(width, minWidth ?? 0);
+
+    const top = showAbove ? triggerTop - GAP : triggerBottom + GAP;
+    const maxHeight = showAbove
+      ? Math.min(MAX_DROPDOWN_HEIGHT, spaceAbove - GAP)
+      : Math.min(MAX_DROPDOWN_HEIGHT, spaceBelow - GAP);
 
     const searchInputComponent = (
       <SearchInput
@@ -54,19 +87,20 @@ const DropdownPortal = memo(
 
     return createPortal(
       <div
+        ref={containerRef}
         data-dropdown-portal={dropdownId}
-        className={`fixed z-[9999] bg-white rounded shadow-lg border border-gray-200 overflow-hidden ${
-          position.showAbove ? "shadow-lg shadow-black/10" : "shadow-lg"
-        }`}
+        className="fixed z-[9999] bg-white rounded shadow-lg border border-gray-200 overflow-hidden"
         style={{
-          top: `${position.top}px`,
-          left: `${position.left}px`,
-          width: `${Math.max(position.width, minWidth ?? 0)}px`,
-          maxHeight: "300px",
-          transformOrigin: position.showAbove ? "bottom" : "top",
+          top: `${top}px`,
+          left: `${left}px`,
+          width: `${dropdownWidth}px`,
+          maxHeight: `${maxHeight}px`,
+          transform: showAbove ? "translateY(-100%)" : undefined,
+          transformOrigin: showAbove ? "bottom" : "top",
+          visibility: isPositioned ? "visible" : "hidden",
         }}
         onMouseDown={(e) => e.preventDefault()}>
-        {position.showAbove ? (
+        {showAbove ? (
           <>
             {optionsListComponent}
             {searchInputComponent}
