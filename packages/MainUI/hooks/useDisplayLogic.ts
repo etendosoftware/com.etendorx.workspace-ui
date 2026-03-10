@@ -3,9 +3,9 @@ import { useUserContext } from "./useUserContext";
 import { useTabContext } from "@/contexts/tab";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useMemo } from "react";
-import { useFormContext } from "react-hook-form";
 import { logger } from "@/utils/logger";
 import { createSmartContext } from "@/utils/expressions";
+import { useExpressionDependencies } from "./useExpressionDependencies";
 
 interface UseDisplayLogicProps {
   field: Field;
@@ -16,8 +16,7 @@ export default function useDisplayLogic({ field, values }: UseDisplayLogicProps)
   const { session } = useUserContext();
   const { tab, record, parentRecord, parentTab } = useTabContext();
 
-  const formContext = useFormContext();
-  const formValues = formContext?.watch?.();
+  const formValues = useExpressionDependencies(field.displayLogicExpression);
 
   const isDisplayed: boolean = useMemo(() => {
     if (!tab) {
@@ -42,31 +41,6 @@ export default function useDisplayLogic({ field, values }: UseDisplayLogicProps)
       });
 
       const result = compiledExpr(smartContext, smartContext);
-
-      // DEBUG: Tax Category display logic
-      if (field.name?.toLowerCase().includes("tax") || field.hqlName?.toLowerCase().includes("tax")) {
-        console.warn(`[DEBUG DisplayLogic] Field: ${field.name} (${field.hqlName})`);
-        console.warn(`  Expression: ${field.displayLogicExpression}`);
-        console.warn(`  Result: ${result}`);
-        console.warn(`  sale (raw):`, currentValues.sale, `type:`, typeof currentValues.sale);
-        console.warn(`  purchase (raw):`, currentValues.purchase, `type:`, typeof currentValues.purchase);
-        console.warn(`  summaryLevel (raw):`, currentValues.summaryLevel, `type:`, typeof currentValues.summaryLevel);
-        console.warn(`  sale (context):`, smartContext.sale, `type:`, typeof smartContext.sale);
-        console.warn(`  purchase (context):`, smartContext.purchase, `type:`, typeof smartContext.purchase);
-        console.warn(`  summaryLevel (context):`, smartContext.summaryLevel, `type:`, typeof smartContext.summaryLevel);
-        console.warn(
-          `  record:`,
-          JSON.stringify({ sale: record?.sale, purchase: record?.purchase, summaryLevel: record?.summaryLevel })
-        );
-        console.warn(
-          `  formValues:`,
-          JSON.stringify({
-            sale: formValues?.sale,
-            purchase: formValues?.purchase,
-            summaryLevel: formValues?.summaryLevel,
-          })
-        );
-      }
 
       return result;
     } catch (error) {

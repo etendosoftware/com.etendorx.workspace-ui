@@ -10,7 +10,21 @@ import type {
   GridProps,
 } from "@workspaceui/api-client/src/api/types";
 
-jest.mock("@/utils/hooks/useFormInitialization/utils");
+jest.mock("@/utils/hooks/useFormInitialization/utils", () => ({
+  fetchFormInitialization: jest.fn(),
+  buildFormInitializationPayload: jest.fn(),
+  buildFormInitializationParams: jest.fn(),
+  buildSessionAttributes: jest.fn(),
+  mergeSessionAttributes: jest.fn((prev, next) => {
+    const preserved: any = {};
+    for (const [key, value] of Object.entries(prev)) {
+      if (key.startsWith("$") || key.startsWith("#") || key.startsWith("_") || key === "adOrgId") {
+        preserved[key] = value;
+      }
+    }
+    return { ...preserved, ...next };
+  }),
+}));
 jest.mock("@/utils/logger", () => ({
   logger: {
     info: jest.fn(),
@@ -230,10 +244,10 @@ describe("syncSelectedRecordsToSession", () => {
 
     // Test the function passed to setSession
     const updateFunction = mockSetSession.mock.calls[0][0];
-    const result = updateFunction({ existingAttr: "existingValue" } as ISession);
+    const result = updateFunction({ $existingAttr: "existingValue" } as ISession);
 
     expect(result).toEqual({
-      existingAttr: "existingValue",
+      $existingAttr: "existingValue",
       field1: "value1",
       field2: "value2",
       attr1: "attrValue1",

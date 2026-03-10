@@ -32,7 +32,8 @@ describe("User Management - Create user and assign role", () => {
 
     cy.get("@nameInput").clear();
 
-    cy.get('input[name="name"]').should("be.visible").type(name);
+    cy.get('input[name="name"]').should("be.visible").type(name).blur();
+    cy.wait(1000); // Wait for callout to auto-fill username
 
     cy.get('input[name="username"]').should("be.visible").clear().type(username);
 

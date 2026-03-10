@@ -29,13 +29,14 @@ import { type Field, type FormInitializationResponse, FormMode } from "@workspac
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import { useParams } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import Label from "../Label";
 import { GenericSelector } from "./GenericSelector";
 import useDisplayLogic from "@/hooks/useDisplayLogic";
+import { useExpressionDependencies } from "@/hooks/useExpressionDependencies";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 import useFormParent from "@/hooks/useFormParent";
-import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { FIELD_REFERENCE_CODES, CALLOUT_TRIGGERS } from "@/utils/form/constants";
 import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.svg";
 
 export const compileExpression = (expression: string) => {
@@ -59,8 +60,10 @@ export const compileExpression = (expression: string) => {
         PropertyStore: {
           get: (key) => {
             // 1. Check context (session attributes with #/$ prefixes)
+            // Note: the SmartContext Proxy returns "" for unknown keys (not undefined/null),
+            // so we must also skip "" to allow the localStorage fallback to work.
             const fromContext = context[key] ?? context['#' + key] ?? context['$' + key];
-            if (fromContext !== undefined && fromContext !== null) return normalize(fromContext);
+            if (fromContext !== undefined && fromContext !== null && fromContext !== '') return normalize(fromContext);
             // 2. Check preferences loaded from backend (stored in localStorage at login)
             try {
               const prefs = JSON.parse(localStorage.getItem('etendo_preferences') || '{}');
@@ -112,6 +115,11 @@ export const compileExpression = (expression: string) => {
   }
 };
 
+const isImmediateCalloutField = (reference: string) => {
+  const fieldEntry = Object.values(FIELD_REFERENCE_CODES).find((code) => code.id === reference);
+  return fieldEntry?.calloutTrigger === CALLOUT_TRIGGERS.ON_CHANGE;
+};
+
 const BaseSelectorComp = ({
   field,
   formMode = FormMode.EDIT,
@@ -142,13 +150,13 @@ const BaseSelectorComp = ({
   });
   const debouncedCallout = useDebounce(executeCalloutBase, 300);
   const value = watch(field.hqlName);
-  const values = watch();
   const previousValue = useRef(value);
-  const ready = useRef(false);
   const fieldsByHqlName = useMemo(() => tab?.fields || {}, [tab?.fields]);
-  const optionData = watch(`${field.hqlName}_data`);
+  const optionData = useWatch({ name: `${field.hqlName}_data` });
 
   const isSettingFromCallout = useRef(false);
+
+  const readOnlyValues = useExpressionDependencies(field.readOnlyLogicExpression);
 
   const isDisplayed = useDisplayLogic({ field });
 
@@ -161,7 +169,7 @@ const BaseSelectorComp = ({
 
     try {
       const smartContext = createSmartContext({
-        values: { ...record, ...values },
+        values: { ...record, ...readOnlyValues },
         fields: tab.fields,
         parentValues: parentRecord || undefined,
         parentFields: parentTab?.fields,
@@ -172,7 +180,7 @@ const BaseSelectorComp = ({
       logger.warn("Error executing expression:", compiledExpr, error);
       return true;
     }
-  }, [field, formMode, session, values, forceReadOnly, record, parentRecord, parentTab, tab]);
+  }, [field, formMode, session, readOnlyValues, forceReadOnly, record, parentRecord, parentTab, tab]);
 
   const applyColumnValues = useCallback(
     (columnValues: FormInitializationResponse["columnValues"]) => {
@@ -214,176 +222,179 @@ const BaseSelectorComp = ({
     [fieldsByColumnName, setValue]
   );
 
-  const executeCallout = useCallback(async () => {
-    if (!tab || !field.column.callout) return;
+  const executeCallout = useCallback(
+    async (skipDebounce = false) => {
+      if (!tab || !field.column.callout) return;
 
-    try {
-      if (isDebugCallouts()) logger.debug(`[Callout] Trigger by user on field: ${field.hqlName}`);
-      const entityKeyColumn = tab.fields.id.columnName;
-      const payload = buildPayloadByInputName(getValues(), fieldsByHqlName);
+      try {
+        if (isDebugCallouts())
+          logger.debug(`[Callout] Trigger by user on field: ${field.hqlName} (skipDebounce: ${skipDebounce})`);
+        const entityKeyColumn = tab.fields.id.columnName;
+        const payload = buildPayloadByInputName(getValues(), fieldsByHqlName);
 
-      const calloutData = {
-        ...session,
-        ...payload,
-        inpKeyName: fieldsByColumnName[entityKeyColumn].inputName,
-        inpTabId: tab.id,
-        inpTableId: tab.table,
-        inpkeyColumnId: entityKeyColumn,
-        keyColumnName: entityKeyColumn,
-        _entityName: tab.entityName,
-        inpwindowId: tab.window,
-      } as Record<string, string>;
+        const calloutData = {
+          ...session,
+          ...payload,
+          inpKeyName: fieldsByColumnName[entityKeyColumn].inputName,
+          inpTabId: tab.id,
+          inpTableId: tab.table,
+          inpkeyColumnId: entityKeyColumn,
+          keyColumnName: entityKeyColumn,
+          _entityName: tab.entityName,
+          inpwindowId: tab.window,
+        } as Record<string, string>;
 
-      //TODO: This will imply the evaluation of out fiels inside the fieldBuilder an it's implementation in metadata module
-      if (field.inputName === "inpmProductId" && optionData) {
-        // Pricing fields (for order/invoice windows)
-        calloutData.inpmProductId_CURR =
-          optionData.product$currency$id || optionData.currency || session.$C_Currency_ID;
-        calloutData.inpmProductId_UOM = optionData.product$uOM$id || optionData.uOM || session["#C_UOM_ID"];
-        calloutData.inpmProductId_PSTD = String(optionData.standardPrice || optionData.netListPrice || 0);
-        calloutData.inpmProductId_PLIST = String(optionData.netListPrice || 0);
-        calloutData.inpmProductId_PLIM = String(optionData.priceLimit || 0);
+        //TODO: This will imply the evaluation of out fiels inside the fieldBuilder an it's implementation in metadata module
+        if (field.inputName === "inpmProductId" && optionData) {
+          // Pricing fields (for order/invoice windows)
+          calloutData.inpmProductId_CURR =
+            optionData.product$currency$id || optionData.currency || session.$C_Currency_ID;
+          calloutData.inpmProductId_UOM = optionData.product$uOM$id || optionData.uOM || session["#C_UOM_ID"];
+          calloutData.inpmProductId_PSTD = String(optionData.standardPrice || optionData.netListPrice || 0);
+          calloutData.inpmProductId_PLIST = String(optionData.netListPrice || 0);
+          calloutData.inpmProductId_PLIM = String(optionData.priceLimit || 0);
 
-        // Inventory/warehouse fields (from ProductStockView data)
-        calloutData.inpmProductId_ATR = String(optionData.attributeSetValue || optionData.attributeSetValue$id || "");
-        calloutData.inpmProductId_LOC = String(optionData.storageBin || optionData.storageBin$id || "");
-        calloutData.inpmProductId_QTY = String(optionData.quantityOnHand || 0);
-        calloutData.inpmProductId_PUOM = "";
-        calloutData.inpmProductId_PQTY = "";
+          // Inventory/warehouse fields (from ProductStockView data)
+          calloutData.inpmProductId_ATR = String(optionData.attributeSetValue || optionData.attributeSetValue$id || "");
+          calloutData.inpmProductId_LOC = String(optionData.storageBin || optionData.storageBin$id || "");
+          calloutData.inpmProductId_QTY = String(optionData.quantityOnHand || 0);
+          calloutData.inpmProductId_PUOM = "";
+          calloutData.inpmProductId_PQTY = "";
+        }
+
+        const data = skipDebounce ? await executeCalloutBase(calloutData) : await debouncedCallout(calloutData);
+
+        if (data) {
+          // Prevent cascading callouts across fields while applying server-driven values
+          globalCalloutManager.suppress();
+          isSettingFromCallout.current = true;
+          try {
+            if (isDebugCallouts()) logger.debug(`[Callout] Applying values for field: ${field.hqlName}`, data);
+            applyColumnValues(data.columnValues);
+            applyAuxiliaryInputValues(data.auxiliaryInputValues);
+          } finally {
+            // Resume after react-hook-form state updates flush
+            setTimeout(() => {
+              isSettingFromCallout.current = false;
+              globalCalloutManager.resume();
+            }, 0);
+          }
+        }
+      } catch (err) {
+        logger.error("Callout execution failed:", err);
+        throw err;
       }
+    },
+    [
+      field.column.callout,
+      field.inputName,
+      field.hqlName,
+      tab,
+      getValues,
+      fieldsByHqlName,
+      session,
+      fieldsByColumnName,
+      optionData,
+      debouncedCallout,
+      executeCalloutBase,
+      applyColumnValues,
+      applyAuxiliaryInputValues,
+    ]
+  );
 
-      const data = await debouncedCallout(calloutData);
+  const shouldExecuteCallout = useCallback(
+    (currentValue: any): boolean => {
+      if (!field.column.callout) return false;
+      if (isSettingFromCallout.current) return false;
+      if (globalCalloutManager.isSuppressed()) return false;
 
-      if (data) {
-        // Prevent cascading callouts across fields while applying server-driven values
-        globalCalloutManager.suppress();
-        isSettingFromCallout.current = true;
-        try {
-          if (isDebugCallouts()) logger.debug(`[Callout] Applying values for field: ${field.hqlName}`, data);
-          applyColumnValues(data.columnValues);
-          applyAuxiliaryInputValues(data.auxiliaryInputValues);
-        } finally {
-          // Resume after react-hook-form state updates flush
-          setTimeout(() => {
-            isSettingFromCallout.current = false;
-            globalCalloutManager.resume();
-          }, 0);
+      if (isFormInitializing) return false;
+      if (isSettingInitialValues) return false;
+
+      if (formMode === FormMode.NEW) {
+        const fieldState = formState.dirtyFields[field.hqlName];
+        if (!fieldState) {
+          if (isDebugCallouts()) {
+            logger.debug(`[Callout] Skipped (field not dirty in NEW mode): ${field.hqlName}`, {
+              formState: formState.dirtyFields,
+              fieldState,
+            });
+          }
+          return false;
         }
       }
-    } catch (err) {
-      logger.error("Callout execution failed:", err);
-      throw err;
-    }
-  }, [
-    field.column.callout,
-    field.inputName,
-    field.hqlName,
-    tab,
-    getValues,
-    fieldsByHqlName,
-    session,
-    fieldsByColumnName,
-    optionData,
-    debouncedCallout,
-    applyColumnValues,
-    applyAuxiliaryInputValues,
-  ]);
 
-  const shouldExecuteCallout = useCallback((): boolean => {
-    if (!field.column.callout) return false;
-    if (isSettingFromCallout.current) return false;
-    if (globalCalloutManager.isSuppressed()) return false;
+      if (previousValue.current === currentValue) return false;
 
-    if (isFormInitializing) return false;
-    if (isSettingInitialValues) return false;
+      return true;
+    },
+    [field.hqlName, field.column.callout, isFormInitializing, isSettingInitialValues, formMode, formState.dirtyFields]
+  );
 
-    if (formMode === FormMode.NEW) {
-      const fieldState = formState.dirtyFields[field.hqlName];
-      if (!fieldState) {
-        if (isDebugCallouts()) {
-          logger.debug(`[Callout] Skipped (field not dirty in NEW mode): ${field.hqlName}`, {
-            formState: formState.dirtyFields,
-            fieldState,
-          });
-        }
-        return false;
-      }
-    }
+  const runCallout = useCallback(
+    async (skipDebounce = false) => {
+      const currentValue = getValues(field.hqlName);
 
-    if (previousValue.current === value) return false;
-
-    return true;
-  }, [
-    field.hqlName,
-    field.column.callout,
-    value,
-    isFormInitializing,
-    isSettingInitialValues,
-    formMode,
-    formState.dirtyFields,
-    ready,
-  ]);
-
-  const runCallout = useCallback(async () => {
-    // Prevent callout execution if component is not ready or data is still loading
-    if (!ready.current) return;
-
-    if (isDebugCallouts()) {
-      logger.debug(`[Callout] Attempting to run callout for field: ${field.hqlName}`, {
-        hasCallout: !!field.column.callout,
-        value,
-        previousValue: previousValue.current,
-        isSettingFromCallout: isSettingFromCallout.current,
-        isFormInitializing,
-        isSettingInitialValues,
-        fieldDirty: formState.dirtyFields[field.hqlName],
-        isCalloutRunning: globalCalloutManager.isCalloutRunning(),
-        isSuppressed: globalCalloutManager.isSuppressed(),
-      });
-    }
-
-    if (isFormInitializing || isSettingInitialValues) {
       if (isDebugCallouts()) {
-        logger.debug(`[Callout] Skipped & Synced (Init): ${field.hqlName}`, {
-          value,
+        logger.debug(`[Callout] Attempting to run callout for field: ${field.hqlName}`, {
+          hasCallout: !!field.column.callout,
+          value: currentValue,
+          previousValue: previousValue.current,
+          isSettingFromCallout: isSettingFromCallout.current,
           isFormInitializing,
           isSettingInitialValues,
+          fieldDirty: formState.dirtyFields[field.hqlName],
+          isCalloutRunning: globalCalloutManager.isCalloutRunning(),
+          isSuppressed: globalCalloutManager.isSuppressed(),
+          skipDebounce,
         });
       }
-      previousValue.current = value;
-      return;
-    }
 
-    if (!shouldExecuteCallout()) return;
+      if (isFormInitializing || isSettingInitialValues) {
+        if (isDebugCallouts()) {
+          logger.debug(`[Callout] Skipped & Synced (Init): ${field.hqlName}`, {
+            value: currentValue,
+            isFormInitializing,
+            isSettingInitialValues,
+          });
+        }
+        previousValue.current = currentValue;
+        return;
+      }
 
-    if (globalCalloutManager.isCalloutRunning()) {
-      if (isDebugCallouts()) logger.debug(`[Callout] Deferred (callout running): ${field.hqlName}`);
-      await globalCalloutManager.executeCallout(field.hqlName, executeCallout);
-      return;
-    }
+      if (!shouldExecuteCallout(currentValue)) return;
 
-    previousValue.current = value;
+      if (globalCalloutManager.isCalloutRunning()) {
+        if (isDebugCallouts()) logger.debug(`[Callout] Deferred (callout running): ${field.hqlName}`);
+        await globalCalloutManager.executeCallout(field.hqlName, () => executeCallout(skipDebounce));
+        return;
+      }
 
-    if (isDebugCallouts()) logger.debug(`[Callout] Executing callout for field: ${field.hqlName}`, { value });
-    await globalCalloutManager.executeCallout(field.hqlName, executeCallout);
-  }, [
-    field.hqlName,
-    field.column.callout,
-    shouldExecuteCallout,
-    value,
-    executeCallout,
-    isFormInitializing,
-    isSettingInitialValues,
-    formState.dirtyFields,
-  ]);
+      previousValue.current = currentValue;
+
+      if (isDebugCallouts())
+        logger.debug(`[Callout] Executing callout for field: ${field.hqlName}`, { value: currentValue });
+      await globalCalloutManager.executeCallout(field.hqlName, () => executeCallout(skipDebounce));
+    },
+    [
+      field.hqlName,
+      field.column.callout,
+      shouldExecuteCallout,
+      getValues,
+      executeCallout,
+      isFormInitializing,
+      isSettingInitialValues,
+      formState.dirtyFields,
+    ]
+  );
 
   useEffect(() => {
-    if (ready.current) {
+    if (isFormInitializing || isSettingInitialValues) {
+      previousValue.current = value;
+    } else if (isImmediateCalloutField(field.column.reference)) {
       runCallout();
-    } else {
-      ready.current = true;
     }
-  }, [runCallout, value]);
+  }, [isFormInitializing, isSettingInitialValues, value, field.column.reference, runCallout]);
 
   useEffect(() => {
     if (isFormInitializing) {
@@ -394,13 +405,18 @@ const BaseSelectorComp = ({
   }, [isFormInitializing, setIsSettingInitialValues]);
 
   if (isDisplayed) {
-    const isTextLong = field.column.reference === FIELD_REFERENCE_CODES.TEXT_LONG;
+    const isTextLong = field.column.reference === FIELD_REFERENCE_CODES.TEXT_LONG.id;
     const containerClasses = isTextLong ? "row-span-3 flex items-start pt-2" : "h-12 flex items-center";
 
     return (
       <div
         className={`${containerClasses} title={field.helpComment || ''}`}
-        aria-describedby={field.helpComment ? `${field.name}-help` : ""}>
+        aria-describedby={field.helpComment ? `${field.name}-help` : ""}
+        onBlurCapture={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) {
+            runCallout(true);
+          }
+        }}>
         <div className="w-1/3 flex items-center gap-2 pr-2">
           <Label field={field} data-testid="Label__38060a" />
           {field.isMandatory && (

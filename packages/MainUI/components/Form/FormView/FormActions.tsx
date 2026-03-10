@@ -135,11 +135,11 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode 
         // Set saving state
         setSaveButtonState((prev) => ({ ...prev, isSaving: true }));
 
-        // Check if any callouts are currently running
+        // Wait if any callouts are currently running
         const globalCalloutState = globalCalloutManager.getState();
-        if (globalCalloutState.isRunning) {
-          logger.warn("Cannot save while callouts are running");
-          return;
+        if (globalCalloutState.isRunning || globalCalloutState.pendingCount > 0 || globalCalloutState.queueLength > 0) {
+          logger.info("Waiting for callouts to finish before saving...");
+          await globalCalloutManager.waitForIdle();
         }
 
         // Perform required field validation

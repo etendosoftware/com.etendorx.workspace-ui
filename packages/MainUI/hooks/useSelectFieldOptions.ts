@@ -63,13 +63,13 @@ export const useSelectFieldOptions = (field: Field, records: EntityData[]) => {
   const { watch } = useFormContext();
   const idKey = (field.selector?.valueField ?? "") as string;
   const identifierKey = (field.selector?.displayField ?? "") as string;
-  const selectorId = field.selector?._selectorDefinitionId;
+  const selectorId = field.selector?._selectorDefinitionId as string | undefined;
   const fieldName = field.hqlName || field.columnName || field.name;
   const [currentValue, currentIdentifier, injectedEntries] = watch([
     fieldName,
     `${fieldName}$_identifier`,
     `${fieldName}$_entries`,
-  ]);
+  ]) as [string, string, any[]];
 
   return useMemo(() => {
     const injected = Array.isArray(injectedEntries) ? injectedEntries : [];

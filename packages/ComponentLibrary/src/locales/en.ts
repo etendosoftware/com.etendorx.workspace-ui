@@ -295,6 +295,7 @@ const en = {
     messageTitle: "Process",
     completedSuccessfully: "Process completed successfully",
     processError: "Process failed",
+    warning: "Warning",
     refreshGrid: "Refresh the grid to see the changes.",
   },
   drawer: {

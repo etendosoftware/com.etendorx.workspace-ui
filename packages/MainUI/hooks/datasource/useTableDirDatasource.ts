@@ -259,7 +259,8 @@ export const useTableDirDatasource = ({
       const applySelectorCriteria = () => {
         if (!field.selector?.criteria) return;
         try {
-          const existingCriteria = JSON.parse(field.selector.criteria);
+          const existingCriteria =
+            typeof field.selector.criteria === "string" ? JSON.parse(field.selector.criteria) : field.selector.criteria;
           const criteriaList = Array.isArray(existingCriteria) ? existingCriteria : [existingCriteria];
           for (const c of criteriaList) {
             body.append("criteria", JSON.stringify(c));
