@@ -34,10 +34,13 @@ describe("Requisition flow - Create and generate Purchase Order", () => {
     cy.get('button[aria-label="Lines"]').click();
     cy.wait(1000);
     cy.clickNewRecord();
-    cy.get('[aria-label="Select Product"]').click();
+    cy.get('[aria-label="Product"] [tabindex="0"]').click();
     cy.wait(1000);
-    cy.contains("td", "BOM Product").click();
+
+    cy.get('[aria-label="Search options"]').scrollIntoView().type("BOM Product", { force: true });
     cy.wait(1000);
+
+    cy.get('[data-testid^="OptionItem__"]').contains("BOM Product").click({ force: true });
 
     cy.get('[aria-describedby="Business Partner-help"]')
       .contains("span", /Vendor A|Select|Search/i)

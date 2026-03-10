@@ -71,7 +71,7 @@ const PAGE_SIZE = 100;
 /**
  * Extracts the actual value from a wrapped value object or returns the value directly
  */
-function extractActualValue(value: unknown): EntityValue {
+export function extractActualValue(value: unknown): EntityValue {
   if (typeof value === "object" && value !== null && "value" in value) {
     return (value as { value: EntityValue }).value;
   }
@@ -81,7 +81,10 @@ function extractActualValue(value: unknown): EntityValue {
 /**
  * Merges default values into the params object
  */
-function mergeDefaultsIntoParams(defaults: Record<string, unknown>, mergedParams: Record<string, EntityValue>): void {
+export function mergeDefaultsIntoParams(
+  defaults: Record<string, unknown>,
+  mergedParams: Record<string, EntityValue>
+): void {
   for (const [key, value] of Object.entries(defaults)) {
     mergedParams[key] = extractActualValue(value);
   }
@@ -90,7 +93,7 @@ function mergeDefaultsIntoParams(defaults: Record<string, unknown>, mergedParams
 /**
  * Merges current values into the params object, overriding defaults
  */
-function mergeCurrentValuesIntoParams(
+export function mergeCurrentValuesIntoParams(
   currentValues: Record<string, unknown>,
   mergedParams: Record<string, EntityValue>
 ): void {
@@ -138,7 +141,7 @@ const StableGridCellEditorRenderer = ({ cell, row, column }: any) => {
 };
 
 // Helper to resolve parent context ID
-const resolveParentContextId = (
+export const resolveParentContextId = (
   dbName: string,
   effectiveRecordValues: any,
   currentValues: any
@@ -376,7 +379,7 @@ function applyProcessDynamicKeys(
  * Applies all dynamic context variables (org, client, and process-specific keys)
  * to the datasource options object.
  */
-function applyDynamicKeys(
+export function applyDynamicKeys(
   recordValues: Record<string, unknown>,
   processId: string | undefined,
   options: DatasourceParams
@@ -392,24 +395,22 @@ function applyDynamicKeys(
  * Includes fields from the window reference tab, the `fields` prop, and a set
  * of standard Etendo context keys.
  */
-function buildValidColumnNames(tabFields: Record<string, any> | undefined, propFields: any[] | undefined): Set<string> {
-  const validColumnNames = new Set<string>();
+export function buildValidColumnNames(
+  tabFields: Record<string, any> | undefined,
+  propFields: any[] | undefined
+): Set<string> {
+  const validColumnNames = new Set<string>(STANDARD_FILTER_KEYS);
 
-  if (tabFields) {
-    for (const f of Object.values(tabFields)) {
-      if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
-      if (f.hqlName) validColumnNames.add(f.hqlName.toLowerCase());
-    }
+  for (const f of Object.values(tabFields || {})) {
+    if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
+    if (f.hqlName) validColumnNames.add(f.hqlName.toLowerCase());
   }
 
-  if (propFields) {
-    for (const f of propFields) {
-      if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
-      if (f.name) validColumnNames.add(f.name.toLowerCase());
-    }
+  for (const f of propFields || []) {
+    if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
+    if (f.name) validColumnNames.add(f.name.toLowerCase());
   }
 
-  for (const k of STANDARD_FILTER_KEYS) validColumnNames.add(k);
   return validColumnNames;
 }
 
@@ -418,7 +419,7 @@ function buildValidColumnNames(tabFields: Record<string, any> | undefined, propF
  * the value to `options[dBColumnName]` — but only when the column name is in the
  * set of valid filter columns for this grid.
  */
-function applyRecordValues(
+export function applyRecordValues(
   parameters: Record<string, any>,
   recordValues: Record<string, unknown>,
   validColumnNames: Set<string>,
@@ -443,7 +444,7 @@ function applyRecordValues(
  * 1. Check field-level static flags (readOnly, isReadOnly)
  * 2. Evaluate readOnlyLogicExpression || column.readOnlyLogic via compileExpression
  */
-function evaluateFieldReadOnlyLogic(field: any, context: Record<string, unknown>): boolean {
+export function evaluateFieldReadOnlyLogic(field: any, context: Record<string, unknown>): boolean {
   // Static flags
   if (field.readOnly === true || field.isReadOnly === true) return true;
 
@@ -465,7 +466,7 @@ function evaluateFieldReadOnlyLogic(field: any, context: Record<string, unknown>
  * Builds the filter criteria array for a single grid parameter by looking up
  * its column name in the `filterExpressions` config returned by the backend.
  */
-function buildGridCriteria(
+export function buildGridCriteria(
   filterExpressions: Record<string, Record<string, unknown>> | undefined,
   gridColumnName: string
 ): Array<{ fieldName: string; operator: string; value: EntityValue }> {
