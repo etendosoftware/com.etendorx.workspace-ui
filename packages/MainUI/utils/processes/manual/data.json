@@ -148,5 +148,11 @@
     "additionalParameters": {
       "inpprocessed": "N"
     }
+  },
+  "A0417A0E9254CA28E040007F01003C18": {
+    "url": "/org.openbravo.advpaymentmngt.ad_actionbutton/ImportBankFile.html",
+    "command": "DEFAULT",
+    "inpkeyColumnId": "Fin_Financial_Account_ID",
+    "keyColumnName": "Fin_Financial_Account_ID"
   }
 }

@@ -159,7 +159,7 @@ export interface GridCellEditorProps {
  * Uses context for shared grid data and refs for dynamic data to prevent unnecessary re-renders
  */
 const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validationError }: GridCellEditorProps) => {
-  const { effectiveRecordValuesRef, parametersRef, tabId, session } = useWindowReferenceGridContext();
+  const { effectiveRecordValuesRef, parametersRef, tabId, session, fieldReadOnlyMap } = useWindowReferenceGridContext();
   const { t } = useTranslation();
 
   // Find matched field definition
@@ -247,6 +247,8 @@ const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validation
   const rawErrorMessage = validationError?.message;
   const errorMessage = rawErrorMessage ? t(rawErrorMessage) : undefined;
 
+  const isFieldReadOnly = fieldReadOnlyMap?.[col.columnName] || fieldReadOnlyMap?.[col.accessorKey] || false;
+
   return (
     <div className="w-full min-w-[200px]" title={errorMessage}>
       <CellEditorFactory
@@ -257,7 +259,7 @@ const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validation
         rowId={row.id}
         columnId={cell.column.id}
         loadOptions={loadOptions}
-        disabled={false}
+        disabled={isFieldReadOnly}
         hasError={hasError}
         onBlur={() => {}}
         id={fieldId}
