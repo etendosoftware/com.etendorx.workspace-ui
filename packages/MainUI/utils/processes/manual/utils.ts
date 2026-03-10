@@ -150,8 +150,7 @@ const KEY_MAP: KeyMapConfig = {
   inpfinPaymentmethodId: { target: "fin_paymentmethod_id", default: null },
   fin_payment_id: { target: "fin_payment_id", default: null },
   inpgrandtotal: { target: "actual_payment", default: 0 },
-  inpdateacct: { target: "payment_date", default: null },
-  "Payment Date": { target: "payment_date", default: null },
+  inpdateacct: { target: "payment_date", default: undefined },
   inptotallines: { target: "amount_inv_ords", default: 0 },
   inpissotrx: { target: "issotrx", default: false },
   inpcOrderId: { target: "c_order_id", default: null },
@@ -164,13 +163,13 @@ const KEY_MAP: KeyMapConfig = {
   POReference: { target: "POReference", default: "" },
   "Converted Amount": { target: "converted_amount", default: null },
   "Deposit To": { target: "fin_financial_account_id", default: null },
-  "Invoice Date": { target: "invoiceDate", default: null },
+  "Invoice Date": { target: "invoiceDate", default: undefined },
   "Lines Include Taxes": { target: "linesIncludeTaxes", default: false },
   overpayment_action: { target: "overpayment_action", default: null },
 };
 
 function resolveRawValue(key: string, value: MappedValue): MappedValue {
-  const resolved = value !== "" && value !== undefined && value !== null ? value : (KEY_MAP[key]?.default ?? value);
+  const resolved = value !== "" && value !== undefined ? value : KEY_MAP[key]?.default;
   if (resolved === "Y") return true;
   if (resolved === "N") return false;
   return resolved;
