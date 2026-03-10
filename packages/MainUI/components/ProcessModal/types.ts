@@ -109,6 +109,7 @@ export interface ProcessDefinitionModalProps {
   onSuccess?: () => void;
   onError?: () => void;
   type: ProcessType;
+  keepOpenOnSuccess?: boolean;
 }
 
 export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {

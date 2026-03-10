@@ -19,6 +19,7 @@ import { executeLogic } from "@/payscript";
 import type { PayScriptRules } from "@/payscript";
 import type { ProcessCalloutFunction } from "./processCallouts";
 import { logger } from "@/utils/logger";
+import { getStoredPreferences } from "@/utils/propertyStore";
 /**
  * Registry of PayScript rules by process ID
  * In the future, this will be loaded from the backend dynamically
@@ -73,6 +74,7 @@ export const genericPayScriptCallout: ProcessCalloutFunction = async (formValues
       ...formValues,
       _gridSelection: gridSelection,
       _processId: processId,
+      _preferences: getStoredPreferences(),
     };
 
     // Execute PayScript rules

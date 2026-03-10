@@ -59,8 +59,10 @@ export const compileExpression = (expression: string) => {
         PropertyStore: {
           get: (key) => {
             // 1. Check context (session attributes with #/$ prefixes)
+            // Note: the SmartContext Proxy returns "" for unknown keys (not undefined/null),
+            // so we must also skip "" to allow the localStorage fallback to work.
             const fromContext = context[key] ?? context['#' + key] ?? context['$' + key];
-            if (fromContext !== undefined && fromContext !== null) return normalize(fromContext);
+            if (fromContext !== undefined && fromContext !== null && fromContext !== '') return normalize(fromContext);
             // 2. Check preferences loaded from backend (stored in localStorage at login)
             try {
               const prefs = JSON.parse(localStorage.getItem('etendo_preferences') || '{}');
