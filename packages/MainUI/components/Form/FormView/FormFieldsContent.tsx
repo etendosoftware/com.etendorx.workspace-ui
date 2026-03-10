@@ -76,6 +76,16 @@ export function FormFields({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Track whether sections have been displayed at least once.
+  // After the first successful load, data refreshes (e.g. post-save refetches)
+  // update fields silently via setValue — no spinner needed.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  useEffect(() => {
+    if (!loading) {
+      setHasLoadedOnce(true);
+    }
+  }, [loading]);
+
   // Update local noteCount when initialNoteCount changes
   useEffect(() => {
     setNoteCount(initialNoteCount);
@@ -138,7 +148,10 @@ export function FormFields({
     }
   }, [selectedTab, expandedSections]);
 
-  if (loading) {
+  // Only block rendering with a spinner on the very first load.
+  // Subsequent refreshes (e.g. after save) update fields silently via setValue,
+  // so sections should stay mounted to avoid visual reconstruction.
+  if (loading && !hasLoadedOnce) {
     return <Spinner data-testid="Spinner__38e4a6" />;
   }
 
@@ -153,7 +166,9 @@ export function FormFields({
 
           const compiledExpr = compileExpression(field.displayLogicExpression);
           try {
-            return compiledExpr(session, watch());
+            // Reuse the formData snapshot captured at component level (watch() is already
+            // called once above); avoids calling watch() N times inside the render loop.
+            return compiledExpr(session, formData);
           } catch (error) {
             console.warn("Error executing expression:", field.displayLogicExpression, error);
             return true;

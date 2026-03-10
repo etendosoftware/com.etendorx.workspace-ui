@@ -39,7 +39,16 @@ import useFormParent from "@/hooks/useFormParent";
 import { FIELD_REFERENCE_CODES, CALLOUT_TRIGGERS } from "@/utils/form/constants";
 import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.svg";
 
+// Module-level cache: expressions come from fixed application-dictionary metadata and
+// never change at runtime, so a compiled Function can be reused indefinitely.
+// This avoids repeated `new Function()` calls (which are expensive) on every render.
+// biome-ignore lint/complexity/noBannedTypes: new Function() returns Function, not a narrower callable type
+const compiledExpressionCache = new Map<string, Function>();
+
 export const compileExpression = (expression: string) => {
+  const cached = compiledExpressionCache.get(expression);
+  if (cached) return cached;
+
   try {
     // Shim for legacy OpenBravo/Etendo functions used in expressions
     const obShim = `
@@ -104,14 +113,18 @@ export const compileExpression = (expression: string) => {
 
     // NOSONAR: This dynamic execution is required to evaluate business logic defined in the Application Dictionary.
     // The Input 'expression' comes from the system metadata (trusted source) and is not user-supplied.
-    return new Function(
+    const compiled = new Function(
       "context",
       "currentValues",
       `${securityShim} ${obShim} return ${parseDynamicExpression(expression)};`
     );
+    compiledExpressionCache.set(expression, compiled);
+    return compiled;
   } catch (error) {
     logger.error("Error compiling expression:", expression, error);
-    return () => true;
+    const fallback = () => true;
+    compiledExpressionCache.set(expression, fallback);
+    return fallback;
   }
 };
 
