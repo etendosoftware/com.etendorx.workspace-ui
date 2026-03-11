@@ -89,6 +89,58 @@ const shouldFormatDateColumn = (column: Column): boolean => {
   return false;
 };
 
+/**
+ * Extracts the color context (rawColor, finalDisplayValue) for a specific column and record.
+ * Helper function to reduce cognitive complexity of the useColumns hook.
+ */
+const extractColorContext = (recordData: EntityData | undefined, column: Column, cellValue: any) => {
+  if (!recordData || typeof recordData !== "object") {
+    return { rawColor: undefined, finalDisplayValue: "" };
+  }
+
+  const allColorKeys = Object.keys(recordData).filter((key) => {
+    const lowerK = key.toLowerCase();
+    if (lowerK.includes("color")) {
+      const val = recordData[key];
+      return typeof val === "string" && isColorString(val.trim());
+    }
+    return false;
+  });
+
+  if (allColorKeys.length === 0) {
+    return { rawColor: undefined, finalDisplayValue: "" };
+  }
+
+  const potentialPrefixes = [column.columnName, column.name, column.hqlName]
+    .filter(Boolean)
+    .map((p) => String(p).toLowerCase());
+
+  const chosenColorKey = allColorKeys.find((ck) => {
+    const prefix = ck.toLowerCase().split("$")[0];
+    return potentialPrefixes.includes(prefix);
+  });
+
+  if (!chosenColorKey) {
+    return { rawColor: undefined, finalDisplayValue: "" };
+  }
+
+  const rawColor = String(recordData[chosenColorKey]).trim();
+  const prefixMatch = chosenColorKey.match(/^(.*?)\$(smf)?color/i);
+  const truePrefix = prefixMatch ? prefixMatch[1] : column.columnName;
+  const identifierKey = `${truePrefix}$_identifier`;
+
+  let finalDisplayValue = "";
+  if (recordData[identifierKey] != null && String(recordData[identifierKey]).trim() !== "") {
+    finalDisplayValue = String(recordData[identifierKey]).trim();
+  } else if (cellValue != null && String(cellValue).trim() !== "") {
+    finalDisplayValue = String(cellValue);
+  } else {
+    finalDisplayValue = String(recordData[truePrefix] || "");
+  }
+
+  return { rawColor, finalDisplayValue };
+};
+
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
   const {
@@ -340,60 +392,19 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
             const { row, cell, renderedCellValue } = cellProps;
             const recordData = row?.original as EntityData;
 
-            let rawColor: string | undefined;
-            let finalDisplayValue = "";
-
-            if (recordData && typeof recordData === "object") {
-              // Extract all valid color keys from the record
-              const allColorKeys = Object.keys(recordData).filter((key) => {
-                const lowerK = key.toLowerCase();
-                if (lowerK.includes("color")) {
-                  const val = recordData[key];
-                  return typeof val === "string" && isColorString(val.trim());
-                }
-                return false;
-              });
-
-              if (allColorKeys.length > 0) {
-                // Potential strict prefixes this column could go by
-                const potentialPrefixes = [column.columnName, column.name, column.hqlName]
-                  .filter(Boolean)
-                  .map((p) => String(p).toLowerCase());
-
-                // Find the best matching color key strictly belonging to this column
-                let chosenColorKey: string | undefined = allColorKeys.find((ck) => {
-                  const prefix = ck.toLowerCase().split("$")[0];
-                  return potentialPrefixes.includes(prefix);
-                });
-
-                if (chosenColorKey) {
-                  rawColor = String(recordData[chosenColorKey]).trim();
-
-                  // Deduce the best display value using the true prefix of the color
-                  const prefixMatch = chosenColorKey.match(/^(.*?)\$(smf)?color/i);
-                  const truePrefix = prefixMatch ? prefixMatch[1] : column.columnName;
-                  const identifierKey = `${truePrefix}$_identifier`;
-
-                  if (recordData[identifierKey] != null && String(recordData[identifierKey]).trim() !== "") {
-                    finalDisplayValue = String(recordData[identifierKey]).trim();
-                  } else if (cellProps.cell?.getValue() != null && String(cellProps.cell?.getValue()).trim() !== "") {
-                    finalDisplayValue = String(cellProps.cell.getValue());
-                  } else {
-                    finalDisplayValue = String(recordData[truePrefix] || "");
-                  }
-                }
-              }
-            }
+            const { rawColor, finalDisplayValue: deducedValue } = extractColorContext(
+              recordData,
+              column,
+              cell?.getValue()
+            );
 
             if (rawColor) {
               const normalizedColor = rawColor.toLowerCase();
-              if (!finalDisplayValue) {
-                finalDisplayValue = String(cellProps.cell?.getValue() ?? "");
-              }
+              const displayValue = deducedValue || String(cell?.getValue() ?? "");
 
               return (
                 <Tag
-                  label={finalDisplayValue}
+                  label={displayValue}
                   tagColor={normalizedColor}
                   textColor={getContrastTextColor(normalizedColor)}
                   data-testid={`Tag__${column.columnName}`}
@@ -403,7 +414,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
             // Fallback to the regular column component (e.g. Reference Button, Date strings, etc.)
             if (typeof wrappedCell === "function") {
-              return wrappedCell(cellProps as any);
+              return wrappedCell(cellProps);
             }
             return <>{renderedCellValue ?? cell?.getValue()}</>;
           },
