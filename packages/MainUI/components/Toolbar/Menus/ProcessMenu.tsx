@@ -113,7 +113,9 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
   processButtons,
   onProcessClick,
   selectedRecord,
+  hasSelection,
 }) => {
+  const isDisabled = hasSelection !== undefined ? !hasSelection : !selectedRecord;
   return (
     <Menu anchorEl={anchorEl} onClose={onClose} className="rounded-xl" data-testid="Menu__541926">
       <div className="rounded-2xl px-2 py-4">
@@ -124,7 +126,7 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
               button={button}
               onProcessClick={onProcessClick}
               selectedRecord={selectedRecord}
-              disabled={!selectedRecord}
+              disabled={isDisabled}
               data-testid="ProcessMenuItem__541926"
             />
           ) : (
@@ -132,7 +134,7 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
               key={`${button.id}-${index}`}
               button={button}
               onProcessClick={onProcessClick}
-              disabled={!selectedRecord}
+              disabled={isDisabled}
               data-testid="ProcessDefinitionMenuItem__541926"
             />
           )

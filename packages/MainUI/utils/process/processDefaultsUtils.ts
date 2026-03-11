@@ -111,6 +111,8 @@ function isDateField(parameter: ProcessParameter | undefined): boolean {
  */
 function processSimpleValue(value: FieldValue, parameter: ProcessParameter | undefined): FieldValue {
   if (isDateField(parameter)) {
+    // Guard against null/undefined/empty reaching us at runtime (TypeScript doesn't enforce at JS level)
+    if (!value || value === "null") return "";
     return typeof value === "string" ? convertToISODateFormat(value) : String(value);
   }
   return typeof value === "boolean" ? value : String(value);
