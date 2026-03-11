@@ -15,7 +15,7 @@ import { buildEtendoContext } from "@/utils/contextUtils";
 import { useTabContext } from "@/contexts/tab";
 import { useStyle } from "../../../Table/styles";
 import { useTranslation } from "@/hooks/useTranslation";
-import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
+import { DEFAULT_PAGE_SIZE, SELECTOR_SAFE_PARAMS, DEFAULT_SORT_BY } from "@/utils/table/constants";
 import { useLanguage } from "@/contexts/language";
 
 interface SelectorModalProps {
@@ -49,7 +49,9 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
   }, [isOpen, currentDisplayValue, field.selector?.displayField]);
 
   // Extract datasource and grid columns from field definition
-  const targetEntity = field.referencedEntity || (field.selector?.datasourceName as string);
+  // We prioritize the specific datasourceName of the Selector because the backend uses it to generate tailored JSON responses
+  // based on the injected _selectedProperties and filterClass.
+  const targetEntity = (field.selector?.datasourceName as string) || field.referencedEntity;
   const gridColumns = (field.selector?.gridColumns as SelectorColumn[]) || [];
 
   const columns = useMemo<MRT_ColumnDef<EntityData>[]>(
@@ -87,10 +89,12 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
 
   // Combine context with current form values
   const datasourceParams = useMemo(() => {
+    const selector = field.selector as Record<string, any> | undefined;
+
     const params: Record<string, any> = {
       isSorting: true,
       language: language,
-      _sortBy: field.selector?._sortBy || "name",
+      _sortBy: selector?._sortBy || DEFAULT_SORT_BY,
       pageSize: DEFAULT_PAGE_SIZE,
     };
 
@@ -99,6 +103,14 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
     }
     if (field.referencedTabId) {
       params.tabId = field.referencedTabId;
+    }
+
+    if (selector) {
+      for (const param of SELECTOR_SAFE_PARAMS) {
+        if (selector[param] !== undefined && selector[param] !== null) {
+          params[param] = selector[param];
+        }
+      }
     }
 
     if (sorting.length > 0) {
