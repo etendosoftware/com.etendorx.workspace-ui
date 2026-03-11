@@ -99,6 +99,8 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
       language: language,
       _sortBy: selector?._sortBy || DEFAULT_SORT_BY,
       pageSize: DEFAULT_PAGE_SIZE,
+      IsSelectorItem: "true",
+      _requestType: "Window",
       targetProperty: field.hqlName || field.columnName,
       columnName: field.column?.dBColumnName || field.columnName,
     };
@@ -116,11 +118,12 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
       }
     }
 
-    if (field.referencedWindowId) {
-      params.windowId = field.referencedWindowId;
-    }
-    if (field.referencedTabId) {
-      params.tabId = field.referencedTabId;
+    if (currentTab) {
+      params.windowId = currentTab.window;
+      params.tabId = currentTab.id;
+      params.inpwindowId = currentTab.window;
+      params.inpTabId = currentTab.id;
+      params.adTabId = currentTab.id;
     }
 
     if (selector) {
@@ -139,7 +142,7 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
     if (params.inpadOrgId && !params._org) params._org = params.inpadOrgId;
 
     return params;
-  }, [language, sorting, field, _etendoContext, currentTab, getValues]);
+  }, [language, sorting, field, _etendoContext, currentTab, getValues, isOpen]);
 
   const { records, loading, error, fetchMore, hasMoreRecords } = useDatasource({
     entity: targetEntity,
