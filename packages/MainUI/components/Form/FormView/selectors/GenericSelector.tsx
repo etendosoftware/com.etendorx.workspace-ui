@@ -207,6 +207,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           isOpen={isSearchModalOpen}
           onClose={() => setIsSearchModalOpen(false)}
           onSelect={handleSelect}
+          currentDisplayValue={getValues(`${getSelectorFieldName(effectiveField)}$_identifier`)}
           data-testid={`SelectorModal__${field.id}`}
         />
       )}

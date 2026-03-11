@@ -45,6 +45,7 @@ import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/sr
 import { buildEtendoContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
 import { buildBaseCriteria } from "@/utils/criteriaUtils";
+import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -445,7 +446,7 @@ export const useTableData = ({
       windowId: tab.window,
       tabId: tab.id,
       isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
-      pageSize: 100,
+      pageSize: DEFAULT_PAGE_SIZE,
     };
 
     // Add Etendo Classic Context Variables
