@@ -339,7 +339,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
           Cell: (cellProps: any) => {
             const { row, cell, renderedCellValue } = cellProps;
             const recordData = row?.original as EntityData;
-            
+
             let rawColor: string | undefined;
             let finalDisplayValue = "";
 
@@ -356,11 +356,9 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
               if (allColorKeys.length > 0) {
                 // Potential strict prefixes this column could go by
-                const potentialPrefixes = [
-                  column.columnName,
-                  column.name,
-                  column.hqlName,
-                ].filter(Boolean).map((p) => String(p).toLowerCase());
+                const potentialPrefixes = [column.columnName, column.name, column.hqlName]
+                  .filter(Boolean)
+                  .map((p) => String(p).toLowerCase());
 
                 // Find the best matching color key strictly belonging to this column
                 let chosenColorKey: string | undefined = allColorKeys.find((ck) => {
@@ -370,12 +368,12 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
                 if (chosenColorKey) {
                   rawColor = String(recordData[chosenColorKey]).trim();
-                  
+
                   // Deduce the best display value using the true prefix of the color
                   const prefixMatch = chosenColorKey.match(/^(.*?)\$(smf)?color/i);
                   const truePrefix = prefixMatch ? prefixMatch[1] : column.columnName;
                   const identifierKey = `${truePrefix}$_identifier`;
-                  
+
                   if (recordData[identifierKey] != null && String(recordData[identifierKey]).trim() !== "") {
                     finalDisplayValue = String(recordData[identifierKey]).trim();
                   } else if (cellProps.cell?.getValue() != null && String(cellProps.cell?.getValue()).trim() !== "") {
@@ -390,7 +388,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
             if (rawColor) {
               const normalizedColor = rawColor.toLowerCase();
               if (!finalDisplayValue) {
-                  finalDisplayValue = String(cellProps.cell?.getValue() ?? "");
+                finalDisplayValue = String(cellProps.cell?.getValue() ?? "");
               }
 
               return (

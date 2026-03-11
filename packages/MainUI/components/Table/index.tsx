@@ -1828,7 +1828,7 @@ const DynamicTable = ({
             .filter((f: any) => f.colorFieldName)
             .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
             .join(",");
-            
+
           const fetchId = editingRowData.isNew ? saveResult.data?.id : rowId;
           if (!fetchId) {
             await refetch();
@@ -1854,9 +1854,11 @@ const DynamicTable = ({
             } else {
               updateRecordLocally?.(rowId, completeRecord);
             }
-            
-            setOptimisticRecords((prev) => 
-              prev.map((r) => (String(r.id) === rowId || String(r.id) === String(completeRecord.id)) ? completeRecord : r)
+
+            setOptimisticRecords((prev) =>
+              prev.map((r) =>
+                String(r.id) === rowId || String(r.id) === String(completeRecord.id) ? completeRecord : r
+              )
             );
           } else {
             await refetch();
@@ -1868,15 +1870,15 @@ const DynamicTable = ({
       })();
     },
     [
-      editingRowUtils, 
-      refetch, 
-      showSuccessModal, 
-      screenReaderAnnouncer, 
+      editingRowUtils,
+      refetch,
+      showSuccessModal,
+      screenReaderAnnouncer,
       preserveClientSideIdentifiers,
       tab,
       updateRecordLocally,
       addRecordLocally,
-      removeRecordLocally
+      removeRecordLocally,
     ]
   );
 
