@@ -176,7 +176,8 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
 
     if (resolvedId) {
       const fieldName = getSelectorFieldName(effectiveField);
-      updateSelectorValue(setValue, fieldName, resolvedId, record);
+      const displayField = effectiveField.selector?.displayField as string | undefined;
+      updateSelectorValue(setValue, fieldName, resolvedId, record, displayField);
     }
   };
 

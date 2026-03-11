@@ -38,7 +38,8 @@ export const updateSelectorValue = (
   setValue: UseFormSetValue<FieldValues>,
   fieldName: string,
   value: any,
-  data?: any
+  data?: any,
+  displayField?: string
 ) => {
   // Update the main ID field
   setValue(fieldName, value, {
@@ -49,5 +50,16 @@ export const updateSelectorValue = (
   // Update the associated data field if provided
   if (data !== undefined) {
     setValue(`${fieldName}_data`, data);
+
+    // Update the associated _identifier field
+    const identifierValue =
+      displayField && data[displayField] ? data[displayField] : data._identifier || data.name || data.id || value;
+
+    if (identifierValue !== undefined) {
+      setValue(`${fieldName}$_identifier`, identifierValue, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+    }
   }
 };
