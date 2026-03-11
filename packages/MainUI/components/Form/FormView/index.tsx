@@ -189,22 +189,17 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     }
 
     try {
-      const extraPropertiesSet = new Set<string>();
-      Object.values(tab.fields || {}).forEach((f: any) => {
-        const prefix = f.hqlName || f.columnName;
-        if (f.colorFieldName) {
-          extraPropertiesSet.add(`${prefix}$${f.colorFieldName}`);
-        } else if (["17", "18", "19", "30", "800011"].includes(f.column?.reference)) {
-          extraPropertiesSet.add(`${prefix}$color`);
-          extraPropertiesSet.add(`${prefix}$smfColor`);
-        }
-      });
-      const extraProperties = Array.from(extraPropertiesSet).join(",");
+      const extraProperties = Object.values(tab.fields || {})
+        .filter((f: any) => f.colorFieldName)
+        .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
+        .join(",");
       const result = (await datasource.get(tab.entityName, {
         criteria: [{ fieldName: "id", operator: "equals", value: recordId }],
         windowId: tab.window,
         tabId: tab.id,
         pageSize: 1,
+        startRow: 0,
+        endRow: 1,
         ...(extraProperties ? { _extraProperties: extraProperties } : {}),
       })) as { data: { response?: { data?: EntityData[] } } };
 
@@ -634,19 +629,10 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       resetFormChanges();
 
       // Fetch the complete updated record with _extraProperties so the Table can correctly show formatted fields (colors/references).
-      const extraPropertiesSet = new Set<string>();
-      Object.values(tab.fields || {}).forEach((f: any) => {
-        const prefix = f.hqlName || f.columnName;
-        if (f.colorFieldName) {
-          extraPropertiesSet.add(`${prefix}$${f.colorFieldName}`);
-        } else if (["17", "18", "19", "30", "800011"].includes(f.column?.reference)) {
-          // Ensure we don't lose color markers randomly on save.
-          // By default we check if standard color derivations exist only for Reference columns.
-          extraPropertiesSet.add(`${prefix}$color`);
-          extraPropertiesSet.add(`${prefix}$smfColor`);
-        }
-      });
-      const extraProperties = Array.from(extraPropertiesSet).join(",");
+      const extraProperties = Object.values(tab.fields || {})
+        .filter((f: any) => f.colorFieldName)
+        .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
+        .join(",");
 
       let completeRecord = data;
       try {
@@ -655,6 +641,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
           windowId: tab.window,
           tabId: tab.id,
           pageSize: 1,
+          startRow: 0,
+          endRow: 1,
           ...(extraProperties ? { _extraProperties: extraProperties } : {}),
         })) as { data: { response?: { data?: EntityData[] } } };
 

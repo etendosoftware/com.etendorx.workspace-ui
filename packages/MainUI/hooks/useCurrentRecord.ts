@@ -90,6 +90,8 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
           windowId: tab.window,
           tabId: tab.id,
           pageSize: 1,
+          startRow: 0,
+          endRow: 1,
         })) as DatasourceResponse;
 
         if (cancelled) return;
