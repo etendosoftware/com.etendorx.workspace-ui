@@ -170,9 +170,13 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   const { hasTableRelated, hasProcessDefinitionRelated } = effectiveField.selector || {};
 
   const handleSelect = (record: EntityData) => {
-    if (record?.id) {
+    // Dynamic extraction: The selector metadata explicitly defines which column holds the true ID
+    const valueField = effectiveField.selector?.valueField as string | undefined;
+    const resolvedId = (valueField ? record[valueField] : record.id) as string;
+
+    if (resolvedId) {
       const fieldName = getSelectorFieldName(effectiveField);
-      updateSelectorValue(setValue, fieldName, record.id, record);
+      updateSelectorValue(setValue, fieldName, resolvedId, record);
     }
   };
 

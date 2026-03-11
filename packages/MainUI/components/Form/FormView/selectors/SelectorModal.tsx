@@ -139,7 +139,7 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
     if (params.inpadOrgId && !params._org) params._org = params.inpadOrgId;
 
     return params;
-  }, [language, sorting, field, _etendoContext, currentTab, getValues, isOpen]);
+  }, [language, sorting, field, _etendoContext, currentTab, getValues]);
 
   const { records, loading, error, fetchMore, hasMoreRecords } = useDatasource({
     entity: targetEntity,
