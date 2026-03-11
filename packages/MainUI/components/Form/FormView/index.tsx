@@ -189,11 +189,18 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     }
 
     try {
+      const extraProperties = Object.values(tab.fields || {})
+        .filter((f: any) => f.colorFieldName)
+        .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
+        .join(",");
       const result = (await datasource.get(tab.entityName, {
         criteria: [{ fieldName: "id", operator: "equals", value: recordId }],
         windowId: tab.window,
         tabId: tab.id,
         pageSize: 1,
+        startRow: 0,
+        endRow: 1,
+        ...(extraProperties ? { _extraProperties: extraProperties } : {}),
       })) as { data: { response?: { data?: EntityData[] } } };
 
       const currentlySelectedId = activeWindow?.windowIdentifier
@@ -621,12 +628,39 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
       resetFormChanges();
 
+      // Fetch the complete updated record with _extraProperties so the Table can correctly show formatted fields (colors/references).
+      const extraProperties = Object.values(tab.fields || {})
+        .filter((f: any) => f.colorFieldName)
+        .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
+        .join(",");
+
+      let completeRecord = data;
+      try {
+        const fullRecordResult = (await datasource.get(tab.entityName, {
+          criteria: [{ fieldName: "id", operator: "equals", value: data.id }],
+          windowId: tab.window,
+          tabId: tab.id,
+          pageSize: 1,
+          startRow: 0,
+          endRow: 1,
+          ...(extraProperties ? { _extraProperties: extraProperties } : {}),
+        })) as { data: { response?: { data?: EntityData[] } } };
+
+        if (fullRecordResult.data.response?.data?.[0]) {
+          completeRecord = fullRecordResult.data.response.data[0];
+          // Update the graph again just in case there are missing pieces in the partial save payload
+          graph.setSelected(tab, completeRecord);
+        }
+      } catch (e) {
+        console.error("Could not fetch full record after save to update table properties:", e);
+      }
+
       // Update the record in the Table's datasource in-place
       // This ensures the table shows updated data without losing pagination state
       if (currentMode === FormMode.NEW) {
-        addRecordToDatasource(tab.id, data);
+        addRecordToDatasource(tab.id, completeRecord);
       } else {
-        updateRecordInDatasource(tab.id, data);
+        updateRecordInDatasource(tab.id, completeRecord);
       }
 
       // Refresh parent tab datasource if this is a child tab

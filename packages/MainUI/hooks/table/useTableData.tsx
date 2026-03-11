@@ -441,11 +441,17 @@ export const useTableData = ({
     const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
     const operator = "equals";
 
+    const extraProperties = Object.values(tab.fields || {})
+      .filter((f: any) => f.colorFieldName)
+      .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
+      .join(",");
+
     const options: DatasourceOptions = {
       windowId: tab.window,
       tabId: tab.id,
       isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
       pageSize: 100,
+      ...(extraProperties ? { _extraProperties: extraProperties } : {}),
     };
 
     // Add Etendo Classic Context Variables

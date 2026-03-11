@@ -54,6 +54,20 @@ const processTagColors = (color?: string) => {
   };
 };
 
+// Helper function to handle FK/TABLEDIR field rendering when the referenced entity has a color field
+const renderColoredFkField = (value: Record<string, unknown>, column: Field) => {
+  const identifierKey = `${column.hqlName}$${IDENTIFIER_KEY}`;
+  const label = (value[identifierKey] ?? value[column.hqlName] ?? value[column.columnName]) as string | undefined;
+
+  if (!label) return "";
+
+  const colorKey = `${column.hqlName}$${column.colorFieldName}`;
+  const color = value[colorKey] as string | undefined;
+  const { tagColor, textColor } = processTagColors(color);
+
+  return <Tag label={label} tagColor={tagColor} textColor={textColor} data-testid="Tag__2b5175" />;
+};
+
 // Helper function to handle list field rendering
 const renderListField = (value: Record<string, unknown>, column: Field) => {
   // Use hqlName or fallback to columnName
@@ -139,6 +153,7 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         datasourceId: column.targetEntity || column.referencedEntity, // Use targetEntity if available
         customJs: column.etmetaCustomjs,
         referencedTabId: column.referencedTabId,
+        colorFieldName: column.colorFieldName,
         // Include additional field properties needed for inline editing
         isReadOnly: column.isReadOnly,
         isUpdatable: column.isUpdatable,
@@ -154,6 +169,18 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
 
           if (reference === FieldType.LIST && column.refList && Array.isArray(column.refList)) {
             return renderListField(v, column);
+          }
+
+          // Dynamically check if the backend returned a color for this foreign key
+          // This allows rendering colored tags even if `colorFieldName` is missing in the ADWindow metadata.
+          let detectedColorField = column.colorFieldName;
+          if (!detectedColorField) {
+            if (v[`${column.hqlName}$color`]) detectedColorField = "color";
+            else if (v[`${column.hqlName}$smfColor`]) detectedColorField = "smfColor";
+          }
+
+          if (detectedColorField) {
+            return renderColoredFkField(v, { ...column, colorFieldName: detectedColorField });
           }
 
           const rawValue = getRawCellValue(v, column);

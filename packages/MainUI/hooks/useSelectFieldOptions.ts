@@ -34,14 +34,16 @@ const buildOptionsFromRecords = (
   records: EntityData[],
   idKey: string,
   identifierKey: string,
+  colorFieldName?: string,
   _selectorId?: string
 ): SelectProps["options"] => {
   const result: SelectProps["options"] = [];
   for (const record of records) {
     const label = record[identifierKey] as string;
     const id = record[idKey] as string;
+    const color = colorFieldName ? (record[colorFieldName] as string | undefined) : undefined;
     if (id && label) {
-      result.push({ id, label, data: record });
+      result.push({ id, label, data: record, color });
     }
   }
   return result;
@@ -64,6 +66,7 @@ export const useSelectFieldOptions = (field: Field, records: EntityData[]) => {
   const idKey = (field.selector?.valueField ?? "") as string;
   const identifierKey = (field.selector?.displayField ?? "") as string;
   const selectorId = field.selector?._selectorDefinitionId;
+  const colorFieldName = field.colorFieldName;
   const fieldName = field.hqlName || field.columnName || field.name;
   const [currentValue, currentIdentifier, injectedEntries] = watch([
     fieldName,
@@ -78,9 +81,9 @@ export const useSelectFieldOptions = (field: Field, records: EntityData[]) => {
     if (injected.length > 0) {
       result = buildOptionsFromInjected(injected);
     } else {
-      result = buildOptionsFromRecords(records, idKey, identifierKey, selectorId);
+      result = buildOptionsFromRecords(records, idKey, identifierKey, colorFieldName, selectorId);
     }
 
     return addCurrentValueIfMissing(result, currentValue, currentIdentifier);
-  }, [currentIdentifier, currentValue, idKey, identifierKey, records, injectedEntries, selectorId]);
+  }, [currentIdentifier, currentValue, idKey, identifierKey, colorFieldName, records, injectedEntries, selectorId]);
 };
