@@ -13,6 +13,7 @@ import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import { useSelected } from "@/hooks/useSelected";
 import { buildEtendoContext } from "@/utils/contextUtils";
 import { useTabContext } from "@/contexts/tab";
+import { useFormContext } from "react-hook-form";
 import { useStyle } from "../../../Table/styles";
 import { useTranslation } from "@/hooks/useTranslation";
 import { DEFAULT_PAGE_SIZE, SELECTOR_SAFE_PARAMS, DEFAULT_SORT_BY } from "@/utils/table/constants";
@@ -35,6 +36,7 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
   const { tab: currentTab } = useTabContext();
   const { t } = useTranslation();
   const { language } = useLanguage();
+  const { getValues } = useFormContext();
 
   // Initialize filters based on current value
   useEffect(() => {
@@ -92,11 +94,27 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
     const selector = field.selector as Record<string, any> | undefined;
 
     const params: Record<string, any> = {
+      ..._etendoContext,
       isSorting: true,
       language: language,
       _sortBy: selector?._sortBy || DEFAULT_SORT_BY,
       pageSize: DEFAULT_PAGE_SIZE,
+      targetProperty: field.hqlName || field.columnName,
+      columnName: field.column?.dBColumnName || field.columnName,
     };
+
+    // Parse and inject INP context parameters from the form state
+    const values = getValues();
+    if (currentTab?.fields) {
+      for (const tabField of Object.values(currentTab.fields)) {
+        if (tabField.inputName) {
+          const val = values[tabField.hqlName] ?? values[tabField.inputName] ?? values[tabField.id];
+          if (val !== undefined && val !== null) {
+            params[tabField.inputName] = String(val);
+          }
+        }
+      }
+    }
 
     if (field.referencedWindowId) {
       params.windowId = field.referencedWindowId;
@@ -121,7 +139,7 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
     if (params.inpadOrgId && !params._org) params._org = params.inpadOrgId;
 
     return params;
-  }, [language, sorting, field]);
+  }, [language, sorting, field, _etendoContext, currentTab, getValues, isOpen]);
 
   const { records, loading, error, fetchMore, hasMoreRecords } = useDatasource({
     entity: targetEntity,
