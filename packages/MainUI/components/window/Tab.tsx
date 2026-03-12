@@ -90,13 +90,15 @@ const handleEditRecordFormState = (
   const newTabFormState = getNewTabFormState(newValue, TAB_MODES.FORM, formMode);
 
   if (selectedRecordId !== newValue) {
-    // Record selection changed - update selection first, then form state
+    // Record selection changed — call both synchronously so React 18 batches them into
+    // a single state update. Previously setTabFormState was deferred 50ms via setTimeout,
+    // which caused two separate renders and two router.replace() calls (= 2 RSC re-renders
+    // per navigation). With automatic batching in React 18, calling both together produces
+    // a single render and a single URL update.
     setSelectedRecord(windowId, tabId, newValue);
-    setTimeout(() => {
-      setTabFormState(windowId, tabId, newTabFormState);
-    }, 50);
+    setTabFormState(windowId, tabId, newTabFormState);
   } else {
-    // Same record - just open form
+    // Same record — just open form view (selection already set)
     setTabFormState(windowId, tabId, newTabFormState);
   }
 };

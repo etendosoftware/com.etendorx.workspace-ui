@@ -441,7 +441,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       return;
     }
 
-    if (!availableFormData || loadingFormInitialization) {
+    if (!availableFormData) {
       return;
     }
 
@@ -473,17 +473,30 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     }
     const lastCtx = lastInitializedContextRef.current;
     const isDataRefresh =
-      isPostNewSave ||
-      (lastCtx !== null && lastCtx.recordId === currentRecordId && lastCtx.mode === currentMode);
+      isPostNewSave || (lastCtx !== null && lastCtx.recordId === currentRecordId && lastCtx.mode === currentMode);
 
     lastInitializedContextRef.current = { recordId: currentRecordId, mode: currentMode };
 
     if (isDataRefresh) {
+      // For data-only refreshes, update changed fields immediately via setValue — even while
+      // loadingFormInitialization is true (i.e. a background refetch is in progress).
+      // This is key for fast parent-tab updates: datasource.get() completes quickly and
+      // updates the graph (graphVersion → record → availableFormData), but a concurrent
+      // refetch() would block this useEffect via the loadingFormInitialization guard and
+      // delay the visual update by the full refetch round-trip (~1-3s).
+      // Safety: we skip undefined values (fields absent from the intermediate availableFormData
+      // while initialState is null/stale) and $_entries (dropdown lists) to avoid clearing
+      // fields that come only from formInitialization and haven't been re-fetched yet.
       const currentValues = form.getValues();
       for (const [key, newValue] of Object.entries(processedData)) {
         // Skip dropdown option lists: they are very large arrays that don't change during a
         // record refresh (they are populated on initial load / callout execution only).
         if (key.endsWith("$_entries")) continue;
+
+        // Skip fields absent from the current availableFormData (e.g. session attributes that
+        // come only from formInitialization while it is being re-fetched). We'll pick those up
+        // in the second pass once loadingFormInitialization becomes false.
+        if (newValue === undefined) continue;
 
         const currentVal = currentValues[key];
 
@@ -498,6 +511,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
           setValue(key, newValue as EntityValue, { shouldDirty: false });
         }
       }
+      return;
+    }
+
+    // For full resets (initial load, navigation to a different record) wait until form
+    // initialization data is ready — premature resets with stale data would populate
+    // dropdowns incorrectly and cause a double-reset flash.
+    if (loadingFormInitialization) {
       return;
     }
 
@@ -528,12 +548,25 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * contains the previous record's data, which would poison `graph.setSelectedMultiple` and
    * cause `processButtons` to evaluate their displayLogic against the old record.
    */
+  const lastGraphSyncDataRef = useRef<string>("");
+
   useEffect(() => {
     if (!recordId || recordId === NEW_RECORD_ID || !availableFormData) return;
 
     // Only sync graph when internal state has caught up with the new recordId prop.
     // During duplication, recordId prop changes one render before currentRecordId updates.
     if (currentRecordId !== recordId) return;
+
+    // Prevent re-syncing the graph if the data hasn't actually changed.
+    // This stops cascading updates (like child tab SETSESSION) when availableFormData
+    // changes reference but not actual data content.
+    const currentDataString = JSON.stringify(availableFormData, (_key, value) =>
+      _key.endsWith("$_entries") ? undefined : value
+    );
+    if (lastGraphSyncDataRef.current === currentDataString) {
+      return;
+    }
+    lastGraphSyncDataRef.current = currentDataString;
 
     // Update graph with current record data so child tabs can see the parent selection
     graph.setSelected(tab, availableFormData);

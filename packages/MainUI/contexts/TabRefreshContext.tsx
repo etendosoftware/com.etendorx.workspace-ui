@@ -19,7 +19,7 @@
 
 import { createContext, useContext, useCallback, useRef, useMemo } from "react";
 import { logger } from "@/utils/logger";
-import type { RefreshType } from "@/utils/toolbar/constants";
+import { REFRESH_TYPES, type RefreshType } from "@/utils/toolbar/constants";
 
 /**
  * Interface for the TabRefreshContext functionality
@@ -126,24 +126,48 @@ export const TabRefreshProvider = ({ children }: React.PropsWithChildren) => {
     }
   }, []);
 
-  const triggerParentRefreshes = useCallback(
-    async (currentLevel: number) => {
-      if (currentLevel <= 0) {
-        logger.debug("TabRefreshContext: No parent levels to refresh");
-        return;
+  const triggerParentRefreshes = useCallback(async (currentLevel: number) => {
+    if (currentLevel <= 0) {
+      logger.debug("TabRefreshContext: No parent levels to refresh");
+      return;
+    }
+
+    logger.debug(`TabRefreshContext: Starting parent refreshes for level ${currentLevel}`);
+
+    // Refresh parents sequentially from direct parent (currentLevel - 1) up to level 0
+    for (let level = currentLevel - 1; level >= 0; level--) {
+      const levelMap = refreshCallbacksRef.current.get(level);
+
+      if (!levelMap || levelMap.size === 0) {
+        logger.debug(`TabRefreshContext: No refresh callbacks found for level ${level}`);
+        continue;
       }
 
-      logger.debug(`TabRefreshContext: Starting parent refreshes for level ${currentLevel}`);
-
-      // Refresh parents sequentially from direct parent (currentLevel - 1) up to level 0
-      for (let level = currentLevel - 1; level >= 0; level--) {
-        await executeAllRefreshesForLevel(level);
+      // For parent tabs, prefer FORM refresh which updates the single selected record
+      // and automatically syncs the table datasource in-place without a full requery.
+      if (levelMap.has(REFRESH_TYPES.FORM)) {
+        try {
+          logger.debug(`TabRefreshContext: Executing FORM refresh for parent level ${level}`);
+          const refreshCallback = levelMap.get(REFRESH_TYPES.FORM)!;
+          await refreshCallback();
+          logger.debug(`TabRefreshContext: Successfully executed FORM refresh for parent level ${level}`);
+        } catch (error) {
+          logger.warn(`TabRefreshContext: Failed to execute FORM refresh at parent level ${level}:`, error);
+        }
+      } else if (levelMap.has(REFRESH_TYPES.TABLE)) {
+        try {
+          logger.debug(`TabRefreshContext: Executing TABLE refresh for parent level ${level}`);
+          const refreshCallback = levelMap.get(REFRESH_TYPES.TABLE)!;
+          await refreshCallback();
+          logger.debug(`TabRefreshContext: Successfully executed TABLE refresh for parent level ${level}`);
+        } catch (error) {
+          logger.warn(`TabRefreshContext: Failed to execute TABLE refresh at parent level ${level}:`, error);
+        }
       }
+    }
 
-      logger.debug(`TabRefreshContext: Completed parent refreshes for level ${currentLevel}`);
-    },
-    [executeAllRefreshesForLevel]
-  );
+    logger.debug(`TabRefreshContext: Completed parent refreshes for level ${currentLevel}`);
+  }, []);
 
   const triggerCurrentRefresh = useCallback(
     async (currentLevel: number) => {
