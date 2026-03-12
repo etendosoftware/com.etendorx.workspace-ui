@@ -67,7 +67,8 @@ const constructPayload = (
   session: any,
   parameters: any,
   isSelector: boolean,
-  selectorId: string | undefined
+  selectorId: string | undefined,
+  shouldSendOrg: boolean
 ) => {
   const payload: any = {
     _startRow: "0",
@@ -83,7 +84,7 @@ const constructPayload = (
     _constructor: "AdvancedCriteria",
     _OrExpression: "true",
     operator: "or",
-    _org: effectiveRecordValues?.inpadOrgId || session.adOrgId,
+    ...(shouldSendOrg && { _org: effectiveRecordValues?.inpadOrgId || session.adOrgId }),
     inpPickAndExecuteTableId: effectiveRecordValues?.inpTableId,
     ...effectiveRecordValues,
   };
@@ -159,7 +160,8 @@ export interface GridCellEditorProps {
  * Uses context for shared grid data and refs for dynamic data to prevent unnecessary re-renders
  */
 const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validationError }: GridCellEditorProps) => {
-  const { effectiveRecordValuesRef, parametersRef, tabId, session, fieldReadOnlyMap } = useWindowReferenceGridContext();
+  const { effectiveRecordValuesRef, parametersRef, tabId, session, fieldReadOnlyMap, shouldSendOrg } =
+    useWindowReferenceGridContext();
   const { t } = useTranslation();
 
   // Find matched field definition
@@ -222,7 +224,8 @@ const GridCellEditorBase = ({ cell, row, col, fields, onRecordChange, validation
           session,
           parametersRef.current,
           isSelector,
-          selectorId
+          selectorId,
+          shouldSendOrg
         );
 
         const data = await fetchOptionsFromDatasource(apiUrl, payload, searchQuery);

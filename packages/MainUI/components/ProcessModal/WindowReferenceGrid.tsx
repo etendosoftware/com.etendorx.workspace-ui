@@ -506,6 +506,7 @@ const WindowReferenceGrid = ({
   gridSelection,
   onSelectionChange,
   parameters,
+  selectedRecordsCount,
   // Added back missing props
   entityName,
   windowReferenceTab,
@@ -536,6 +537,7 @@ const WindowReferenceGrid = ({
   );
 
   const { graph } = useSelected();
+  const shouldSendOrg = selectedRecordsCount === 1;
 
   const etendoContext = useMemo(() => {
     return originTab ? buildEtendoContext(originTab, graph) : {};
@@ -683,7 +685,7 @@ const WindowReferenceGrid = ({
     applyRecordValues(parameters, effectiveRecordValues, validColumnNames, options);
 
     // 6. Ensure _org mirrors ad_org_id (required by backend datasource)
-    if (options.ad_org_id && !options._org) options._org = options.ad_org_id;
+    if (shouldSendOrg && options.ad_org_id && !options._org) options._org = options.ad_org_id;
 
     // 7. Build filter criteria (base parent-child criteria only)
     // Default filters are completely handled by the UI column filters initialized from stableVisualFilterExpressions
@@ -695,8 +697,8 @@ const WindowReferenceGrid = ({
       options.orderBy = "documentNo desc";
     }
 
-    if (options.ad_org_id) {
-      options._org = options.ad_org_id;
+    if (!shouldSendOrg && options._org) {
+      options._org = undefined;
     }
 
     return options;
@@ -713,6 +715,7 @@ const WindowReferenceGrid = ({
     stableRecordValues,
     parameters,
     currentValues,
+    shouldSendOrg,
     stableWindowReferenceTab,
     fields,
   ]);
@@ -872,7 +875,7 @@ const WindowReferenceGrid = ({
 
   // Build extra params for filter options requests (process context needed by Classic datasource)
   const filterExtraParams = useMemo(() => {
-    const extra: Record<string, unknown> = { noActiveFilter: true };
+    const extra: Record<string, unknown> = { noActiveFilter: true, allowOrgParam: shouldSendOrg };
     if (datasourceOptions.processId) extra.processId = datasourceOptions.processId;
     if (datasourceOptions.windowId) extra.windowId = datasourceOptions.windowId;
     if (datasourceOptions.ad_org_id) extra.ad_org_id = datasourceOptions.ad_org_id;
@@ -885,6 +888,7 @@ const WindowReferenceGrid = ({
     datasourceOptions.ad_org_id,
     datasourceOptions.ad_client_id,
     datasourceOptions.criteria,
+    shouldSendOrg,
   ]);
 
   // Use grid column filters hook to avoid code duplication with useTableData
@@ -1643,8 +1647,9 @@ const WindowReferenceGrid = ({
       session,
       tabId,
       fieldReadOnlyMap,
+      shouldSendOrg,
     }),
-    [tabId, session, validations, fieldReadOnlyMap]
+    [tabId, session, validations, fieldReadOnlyMap, shouldSendOrg]
   );
 
   const finalColumns = useMemo(() => {
