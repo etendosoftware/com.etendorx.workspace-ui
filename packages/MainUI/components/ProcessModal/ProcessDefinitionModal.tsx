@@ -37,6 +37,7 @@ import Button from "../../../ComponentLibrary/src/components/Button/Button";
 import {
   // Contexts
   useTabContext,
+  TabContext,
   useWindowContext,
   useUserContext,
   // Hooks
@@ -626,6 +627,7 @@ function ProcessDefinitionModalContent({
     getCsrfToken,
     router,
     searchParams,
+    type,
     isRecoveryLoading,
     triggerRecovery,
     onClose,
@@ -1193,11 +1195,21 @@ function ProcessDefinitionModalContent({
     );
   };
 
+  const processParamNames = useMemo(() => Object.keys(parameters), [parameters]);
+
   return (
     <>
       {open && !result?.success && (
         <Modal open={open && !result?.success} onClose={handleClose} data-testid="Modal__761503">
-          {renderModalContent()}
+          <TabContext.Provider
+            value={{
+              ...useTabContext(),
+              isProcessModal: true,
+              processParamNames,
+            }}
+          >
+            {renderModalContent()}
+          </TabContext.Provider>
         </Modal>
       )}
     </>

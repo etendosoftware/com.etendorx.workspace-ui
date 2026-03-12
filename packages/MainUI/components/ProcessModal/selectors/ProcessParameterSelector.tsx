@@ -227,7 +227,6 @@ export const ProcessParameterSelector = ({
             <TableDirSelector
               field={mappedField}
               isReadOnly={isReadOnly}
-              isProcessModal={true}
               staticOptions={staticOptions}
               data-testid="TableDirSelector__dac06b"
             />
@@ -248,12 +247,24 @@ export const ProcessParameterSelector = ({
 
         default:
           // Fallback to GenericSelector for text, window references, and unknown types
-          return <GenericSelector parameter={parameter} readOnly={isReadOnly} data-testid="GenericSelector__dac06b" />;
+          return (
+            <GenericSelector
+              parameter={parameter}
+              readOnly={isReadOnly}
+              data-testid="GenericSelector__dac06b"
+            />
+          );
       }
     } catch (error) {
       logger.error("Error rendering selector for parameter:", parameter.name, error);
       // Fallback to GenericSelector on error
-      return <GenericSelector parameter={parameter} readOnly={isReadOnly} data-testid="GenericSelector__dac06b" />;
+      return (
+        <GenericSelector
+          parameter={parameter}
+          readOnly={isReadOnly}
+          data-testid="GenericSelector__dac06b"
+        />
+      );
     }
   };
 

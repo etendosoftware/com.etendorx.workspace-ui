@@ -41,6 +41,11 @@ export type MRT_ColumnFiltersState = {
   id: string;
   value: unknown;
 }[];
+
+export type MRT_SortingState = {
+  id: string;
+  desc: boolean;
+}[];
 export interface DatasourceParams {
   windowId?: string;
   tabId?: string;

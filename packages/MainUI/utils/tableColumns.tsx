@@ -128,33 +128,33 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
       // Field type mapping now uses corrected reference codes
 
       result.push({
+        ...column,
         header: column.name ?? column.hqlName,
-        id: column.name,
+        id: column.hqlName || column.id || column.name,
         fieldId: column.id,
-        columnName: column.hqlName,
-        isMandatory: column.isMandatory,
+        columnName: column.hqlName || column.columnName,
+        isMandatory: column.isMandatory || (column as any).required,
         _identifier: column.name,
         column: {
           _identifier: columnType || "",
           reference: column.column?.reference,
-          ...(column.readOnlyLogicExpression ? { readOnlyLogicExpression: column.readOnlyLogicExpression } : {}), // Include for inline editing
+          ...(column.readOnlyLogicExpression ? { readOnlyLogicExpression: column.readOnlyLogicExpression } : {}),
+          ...((column.column as any) || {}),
         },
         shownInStatusBar: column.shownInStatusBar,
         showInGridView: column.showInGridView,
-        enableHiding: true, // Allow all columns to be hidden/shown from menu
+        enableHiding: true,
         displayed: column.displayed,
         name: column.name,
-        type: fieldType, // Use the properly mapped field type
+        type: fieldType,
         referencedWindowId: column.referencedWindowId,
-        refList: column.refList, // Include refList for SELECT fields
-        referencedEntity: column.referencedEntity, // Include referencedEntity for TABLEDIR fields
-        // Include selector information for TABLEDIR filters
-        selectorDefinitionId: column.selector?.id,
-        datasourceId: column.targetEntity || column.referencedEntity, // Use targetEntity if available
-        customJs: column.etmetaCustomjs,
+        refList: column.refList,
+        referencedEntity: column.referencedEntity,
+        selectorDefinitionId: column.selector?.id || (column as any).selectorDefinitionId,
+        datasourceId: column.targetEntity || column.referencedEntity || (column as any).datasourceId,
+        customJs: column.etmetaCustomjs || (column as any).customJs,
         referencedTabId: column.referencedTabId,
         colorFieldName: column.colorFieldName,
-        // Include additional field properties needed for inline editing
         isReadOnly: column.isReadOnly,
         isUpdatable: column.isUpdatable,
         readOnlyLogicExpression: column.readOnlyLogicExpression,

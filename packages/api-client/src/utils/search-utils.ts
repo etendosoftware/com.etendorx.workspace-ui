@@ -585,6 +585,16 @@ export class LegacyColumnFilterUtils {
       ];
     }
 
+    if (LegacyColumnFilterUtils.isBooleanField(column)) {
+      return [
+        {
+          fieldName,
+          operator: "equals",
+          value: formattedValue,
+        },
+      ];
+    }
+
     return [
       {
         fieldName,

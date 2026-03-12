@@ -33,8 +33,10 @@ import { buildProcessParameters } from "@/utils/process/processPayloadMapper";
 import {
   BUTTON_LIST_REFERENCE_ID,
   PROCESS_DEFINITION_DATA,
+  PROCESS_TYPES,
   WINDOW_SPECIFIC_KEYS,
 } from "@/utils/processes/definition/constants";
+import type { ProcessType } from "../types";
 import { logger } from "@/utils/logger";
 import { useTranslation } from "@/hooks/useTranslation";
 import { parseSmartClientMessage } from "../Custom/shared/processModalUtils";
@@ -97,6 +99,7 @@ export interface UseProcessExecutionParams {
   searchParams: ReadonlyURLSearchParams;
   isRecoveryLoading: boolean;
   triggerRecovery: () => void;
+  type: ProcessType;
   onClose: () => void;
   onSuccess: (() => void) | undefined;
   keepOpenOnSuccess?: boolean;
@@ -156,6 +159,7 @@ export function useProcessExecution({
   getCsrfToken,
   router,
   searchParams,
+  type,
   isRecoveryLoading,
   triggerRecovery,
   onClose,
@@ -293,7 +297,9 @@ export function useProcessExecution({
       setShouldTriggerSuccess(false);
       setResult(null);
 
-      if (keepOpenOnSuccess) {
+      const isProcessDefinition = type === PROCESS_TYPES.PROCESS_DEFINITION;
+
+      if (keepOpenOnSuccess && !isProcessDefinition) {
         setGridRefreshKey((prev) => prev + 1);
         return;
       }
@@ -303,6 +309,7 @@ export function useProcessExecution({
       onClose();
     },
     [
+      type,
       initialParameters,
       isPending,
       keepOpenOnSuccess,
@@ -395,11 +402,30 @@ export function useProcessExecution({
               : parsedResult.data?.message || parsedResult.data?.msgText || "";
           toast.success(t("process.completedSuccessfully"), {
             // biome-ignore lint/suspicious/noExplicitAny: data-testid is a valid HTML attribute not in component props type
-            description: React.createElement(ToastContent, { message, "data-testid": "ToastContent__761503" } as any),
+            description: React.createElement(ToastContent, { message, isHtml: parsedResult.isHtml, "data-testid": "ToastContent__761503" } as any),
             duration: Number.POSITIVE_INFINITY,
           });
           setShouldTriggerSuccess(true);
           handleSuccessClose(true);
+        } else if (parsedResult.messageType === "warning" && type === PROCESS_TYPES.PROCESS_DEFINITION) {
+          const message = parsedResult.error || "";
+          const hasLink = !!(parsedResult.linkTabId && parsedResult.linkRecordId);
+          toast.warning(t("process.warning"), {
+            // biome-ignore lint/suspicious/noExplicitAny: data-testid is a valid HTML attribute not in component props type
+            description: React.createElement(ToastContent, {
+              message,
+              isHtml: parsedResult.isHtml,
+              action: hasLink
+                ? {
+                    label: t("packing.checkStatus"),
+                    onClick: () => handleNavigateToTab(parsedResult.linkTabId as string, parsedResult.linkRecordId as string),
+                  }
+                : undefined,
+              "data-testid": "ToastContent__761503",
+            } as any),
+            duration: Number.POSITIVE_INFINITY,
+          });
+          handleSuccessClose(false);
         } else {
           setResult(parsedResult);
         }
@@ -417,7 +443,9 @@ export function useProcessExecution({
       parseProcessResponse,
       setShouldTriggerSuccess,
       handleSuccessClose,
+      handleNavigateToTab,
       setResult,
+      type,
       t,
     ]
   );

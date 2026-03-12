@@ -20,7 +20,7 @@
  */
 
 // --- Contexts ---
-export { useTabContext } from "@/contexts/tab";
+export { useTabContext, TabContext } from "@/contexts/tab";
 export { useWindowContext } from "@/contexts/window";
 export { useUserContext } from "@/hooks/useUserContext";
 

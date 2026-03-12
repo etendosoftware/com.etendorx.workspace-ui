@@ -38,14 +38,21 @@ export const useTableDirDatasource = ({
   field,
   pageSize = 75,
   initialPageSize = 75,
-  isProcessModal = false,
+  isProcessModal: isProcessModalProp,
   staticOptions,
 }: UseTableDirDatasourceParams) => {
   // If static options are provided, use them instead of fetching
   const hasStaticOptions = staticOptions !== undefined;
 
   const { getValues, watch } = useFormContext();
-  const { tab, parentTab, parentRecord } = useTabContext();
+  const {
+    tab,
+    parentTab,
+    parentRecord,
+    isProcessModal: isProcessModalContext,
+    processParamNames,
+  } = useTabContext();
+  const isProcessModal = isProcessModalProp ?? isProcessModalContext ?? false;
   const windowId = tab?.window;
   const [records, setRecords] = useState<Record<string, string>[]>(
     hasStaticOptions ? staticOptions.map((opt) => ({ id: opt.id, _identifier: opt.name })) : []
@@ -170,26 +177,43 @@ export const useTableDirDatasource = ({
         _org: formValues.inpadOrgId || (parentData as any).inpadOrgId || "",
       };
 
+      // In process modal, we capture the keys of the initial structural payload (IDs and selector config).
+      // This forms our dynamic "Zero-Hardcoding" whitelist.
+      const structuralKeys = isProcessModal ? Object.keys(baseBody) : [];
+
       if (isProductField) {
         Object.assign(baseBody, {
           _noCount: "true",
           ...(selectorId && { _selectorDefinitionId: selectorId }),
           ...formValues,
-          ...invoiceValue,
+          ...(!isProcessModal ? invoiceValue : {}),
         });
       } else {
         Object.assign(baseBody, {
           _textMatchStyle: "substring",
-          ...parentData,
-          ...invoiceValue,
+          ...(!isProcessModal ? { ...parentData, ...invoiceValue } : {}),
           ...formValues,
         });
       }
 
-      // Only apply field transformation when inside process modal
-      if (isProcessModal) {
-        baseBody = transformPayloadFields(baseBody);
+      // In process modal, filter the payload to only include structural keys,
+      // actual process parameters, and standard datasource parameters.
+      if (isProcessModal && processParamNames) {
+        const filteredBody: BaseBody = {};
+        for (const key of Object.keys(baseBody)) {
+          const isStandardParam = key.startsWith("_") && key !== "_identifier" && key !== "_entityName" && key !== "$ref";
+          const isProcessParam = processParamNames.includes(key);
+          const isStructuralKey = structuralKeys.includes(key);
+
+          if (isStandardParam || isProcessParam || isStructuralKey) {
+            filteredBody[key] = baseBody[key];
+          }
+        }
+        baseBody = filteredBody;
       }
+
+      // Final transformation of specialized fields
+      baseBody = transformPayloadFields(baseBody);
 
       return baseBody;
     },
@@ -331,6 +355,7 @@ export const useTableDirDatasource = ({
   const processApiResponse = useCallback(
     (data: { response?: { data?: Record<string, string>[]; metadata?: { fields?: any[] } } }, reset: boolean) => {
       if (!data?.response?.data) {
+        logger.error("Datasource error response:", data);
         throw new Error(JSON.stringify(data));
       }
 
@@ -429,11 +454,6 @@ export const useTableDirDatasource = ({
         const body = new URLSearchParams(baseBody as Record<string, string>);
 
         applyCriteria(body, search);
-
-        const bodyObj: Record<string, string> = {};
-        for (const [k, v] of body.entries()) {
-          bodyObj[k] = v;
-        }
 
         const { data } = await datasource.client.request(`/api/datasource/${field.selector?.datasourceName ?? ""}`, {
           method: "POST",

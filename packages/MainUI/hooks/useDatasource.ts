@@ -22,6 +22,7 @@ import type {
   DatasourceOptions,
   EntityData,
   MRT_ColumnFiltersState,
+  MRT_SortingState,
 } from "@workspaceui/api-client/src/api/types";
 import { LegacyColumnFilterUtils, SearchUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -86,39 +87,49 @@ const defaultParams: DatasourceOptions = {
 
 const EMPTY_FILTERS: MRT_ColumnFiltersState = [];
 
+export type UseDatasourceTreeOptions = {
+  isTreeMode: boolean;
+  windowId?: string;
+  tabId?: string;
+  referencedTableId?: string;
+  parentId?: string | number;
+};
+
 export type UseDatasourceOptions = {
   entity: string;
   params?: DatasourceOptions;
   searchQuery?: string;
   columns?: Column[];
   skip?: boolean;
-  treeOptions?: {
-    isTreeMode: boolean;
-    windowId?: string;
-    tabId?: string;
-    referencedTableId?: string;
-    parentId?: string | number;
-  };
+  treeOptions?: UseDatasourceTreeOptions;
   activeColumnFilters?: MRT_ColumnFiltersState;
+  activeSorting?: MRT_SortingState;
   isImplicitFilterApplied?: boolean;
   setIsImplicitFilterApplied?: (value: boolean) => void;
+  isFiltering?: boolean;
 };
 
 export function useDatasource({
   entity,
   params = defaultParams,
-  columns,
   searchQuery,
+  columns,
   skip,
   treeOptions,
   activeColumnFilters = EMPTY_FILTERS,
+  activeSorting,
   isImplicitFilterApplied = false,
   setIsImplicitFilterApplied,
+  isFiltering: isFilteringProp,
 }: UseDatasourceOptions) {
   // Detect if user is filtering (search or column filters)
   const isFiltering = useMemo(() => {
-    return (!!searchQuery && searchQuery.trim().length > 0) || (activeColumnFilters && activeColumnFilters.length > 0);
-  }, [searchQuery, activeColumnFilters]);
+    return (
+      isFilteringProp ||
+      (!!searchQuery && searchQuery.trim().length > 0) ||
+      (activeColumnFilters && activeColumnFilters.length > 0)
+    );
+  }, [isFilteringProp, searchQuery, activeColumnFilters]);
 
   const [loading, setLoading] = useState(!skip);
   const [loaded, setLoaded] = useState(false);
@@ -211,17 +222,40 @@ export function useDatasource({
     const finalParams: any = {
       ...stableParams,
       ...idParams,
-      ...(allCriteria.length > 0 ? { criteria: allCriteria.length === 1 ? allCriteria[0] : allCriteria } : {}),
       isImplicitFilterApplied,
       noActiveFilter: true,
     };
 
     if (allCriteria.length > 0) {
-      finalParams.criteria = allCriteria;
+      // Merge with existing criteria to avoid overwriting parent/context filters
+      const existingCriteria = stableParams.criteria
+        ? Array.isArray(stableParams.criteria)
+          ? stableParams.criteria
+          : [stableParams.criteria]
+        : [];
+
+      // Avoid double-applying criteria for the same field if possible
+      // (Simplified: just concatenate for now as backend handles multiple criteria for same field)
+      const mergedCriteria = [...existingCriteria, ...allCriteria];
+      finalParams.criteria = mergedCriteria.length === 1 ? mergedCriteria[0] : mergedCriteria;
+    }
+
+    if (activeSorting && activeSorting.length > 0) {
+      const sort = activeSorting[0];
+      finalParams.sortBy = sort.desc ? `-${sort.id}` : sort.id;
+      finalParams.isSorting = true;
     }
 
     return finalParams;
-  }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, activeColumnFilters]);
+  }, [
+    stableParams,
+    searchQuery,
+    columns,
+    columnFilterCriteria,
+    isImplicitFilterApplied,
+    activeColumnFilters,
+    activeSorting,
+  ]);
 
   const fetchData = useCallback(
     async (targetPage: number = page) => {
@@ -250,7 +284,7 @@ export function useDatasource({
           throw data;
         }
         setHasMoreRecords(data.response.data.length >= safePageSize);
-        setRecords((prev) => (page === 1 || searchQuery ? data.response.data : prev.concat(data.response.data)));
+        setRecords((prev) => (targetPage === 1 ? data.response.data : prev.concat(data.response.data)));
         setLoaded(true);
       } catch (e) {
         logger.warn(e);
@@ -298,7 +332,7 @@ export function useDatasource({
     // avoiding the blank-grid flash that reinit() would cause.
     setPage(1);
     setHasMoreRecords(true);
-  }, [activeColumnFilters, searchQuery]);
+  }, [activeColumnFilters, searchQuery, activeSorting]);
 
   const refetch = useCallback(
     async (options?: { silent?: boolean }) => {
@@ -333,5 +367,7 @@ export function useDatasource({
     addRecordLocally,
     refetch,
     hasMoreRecords,
+    setHasMoreRecords,
+    setPage,
   };
 }

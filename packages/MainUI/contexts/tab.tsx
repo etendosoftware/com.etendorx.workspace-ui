@@ -23,7 +23,7 @@ import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 
-interface TabContextI {
+export interface TabContextI {
   tab: Tab;
   record?: EntityData | null;
   parentTab?: Tab | null;
@@ -32,9 +32,11 @@ interface TabContextI {
   hasFormChanges: boolean;
   markFormAsChanged: () => void;
   resetFormChanges: () => void;
+  isProcessModal?: boolean;
+  processParamNames?: string[];
 }
 
-const TabContext = createContext<TabContextI>({} as TabContextI);
+export const TabContext = createContext<TabContextI>({} as TabContextI);
 
 export default function TabContextProvider({ tab, children }: React.PropsWithChildren<{ tab: Tab }>) {
   const [hasFormChanges, setHasFormChanges] = useState(false);
@@ -58,6 +60,7 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
       hasFormChanges,
       markFormAsChanged,
       resetFormChanges,
+      isProcessModal: false,
     }),
     [parentRecord, parentTab, parentRecords, record, tab, hasFormChanges, markFormAsChanged, resetFormChanges]
   );

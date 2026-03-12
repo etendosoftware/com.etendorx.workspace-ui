@@ -23,17 +23,14 @@ import { useSelectFieldOptions } from "@/hooks/useSelectFieldOptions";
 export const TableDirSelector = ({
   field,
   isReadOnly,
-  isProcessModal,
   staticOptions,
 }: {
   field: Field;
   isReadOnly: boolean;
-  isProcessModal?: boolean;
   staticOptions?: Array<{ id: string; name: string }>;
 }) => {
   const { records, loading, refetch, loadMore, hasMore, search } = useTableDirDatasource({
     field,
-    isProcessModal,
     staticOptions,
   });
   const options = useSelectFieldOptions(field, records);

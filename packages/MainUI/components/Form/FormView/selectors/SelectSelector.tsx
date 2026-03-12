@@ -35,7 +35,11 @@ export const SelectSelector = ({
   initialPageSize?: number;
   columns?: ColumnDef[];
 }) => {
-  const { records, loading, refetch, loadMore, hasMore } = useTableDirDatasource({ field, pageSize, initialPageSize });
+  const { records, loading, refetch, loadMore, hasMore } = useTableDirDatasource({
+    field,
+    pageSize,
+    initialPageSize,
+  });
   const options = useSelectFieldOptions(field, records);
 
   return (

@@ -20,7 +20,13 @@ import { FieldType, type ProcessParameter } from "@workspaceui/api-client/src/ap
 import { useFormContext } from "react-hook-form";
 import RadioSelector from "./RadioSelector";
 
-const GenericSelector = ({ parameter, readOnly }: { parameter: ProcessParameter; readOnly?: boolean }) => {
+const GenericSelector = ({
+  parameter,
+  readOnly,
+}: {
+  parameter: ProcessParameter;
+  readOnly?: boolean;
+}) => {
   const { register, watch } = useFormContext();
   const reference = getFieldReference(parameter.reference);
 

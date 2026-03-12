@@ -35,11 +35,13 @@ import {
   useMaterialReactTable,
   type MRT_RowSelectionState,
   type MRT_ColumnFiltersState,
+  type MRT_SortingState,
   type MRT_TableOptions,
   type MRT_Row,
   type MRT_TopToolbarProps,
   type MRT_ColumnDef,
 } from "material-react-table";
+import type { Updater } from "@tanstack/react-table";
 
 import { useDatasource } from "@/hooks/useDatasource";
 import { useGridColumnFilters } from "@/hooks/table/useGridColumnFilters";
@@ -590,6 +592,7 @@ const WindowReferenceGrid = ({
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [appliedTableFilters, setAppliedTableFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
+  const [sorting, setSorting] = useState<MRT_SortingState>([]);
 
   // Merge recordValues (static context) with currentValues (live form state)
   // currentValues takes precedence for parameters being edited
@@ -775,7 +778,6 @@ const WindowReferenceGrid = ({
     const finalCriteria = applyImplicitFilter && filterCriteria.length > 0 ? filterCriteria : baseCriteria;
     if (finalCriteria.length > 0) {
       options.criteria = finalCriteria as unknown as Criteria[];
-      options.orderBy = "documentNo desc";
     }
 
     if (options.ad_org_id) {
@@ -879,8 +881,8 @@ const WindowReferenceGrid = ({
     const parsed = visibleEntries.map(([key, field]: [string, any]) => ({
       ...field,
       _key: key, // Store the key to be used as ID
-      // Ensure hqlName is consistent for grid columns
-      hqlName: field.columnName || field.hqlName,
+      // Ensure hqlName is consistent for grid columns, defaulting to key if both are missing
+      hqlName: field.hqlName || field.columnName || key,
       label: field.name,
     }));
     return parsed;
@@ -907,13 +909,10 @@ const WindowReferenceGrid = ({
           enableColumnFilter: true,
           enableSorting: true,
           ...field,
-          // id must come AFTER the spread so it overrides the metadata field's UUID id.
-          // Use display name (field.name) to match what parseColumns sets as column.id,
-          // ensuring filter state IDs align with the MRT column IDs used in useColumns.
-          id: field.name || field._key || field.columnName,
+          // Critical: id must be a programmatic property name for sorting to work.
+          id: field.hqlName || field._key || field.columnName || field.name,
           // filterFieldName must come AFTER the spread to preserve HQL property name
-          // Classic backend expects HQL names (e.g. "businessPartner") not DB names ("C_BPartner_ID")
-          filterFieldName: field._key || field.hqlName || field.columnName,
+          filterFieldName: field.hqlName || field._key || field.columnName,
         };
       });
       return enriched;
@@ -982,6 +981,11 @@ const WindowReferenceGrid = ({
       isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
       extraParams: filterExtraParams,
     });
+
+
+  const handleMRTSortingChange = useCallback((updaterOrValue: Updater<MRT_SortingState>) => {
+    setSorting(updaterOrValue);
+  }, []);
 
   // Create a minimal tab object for useColumns with corrected field hqlNames
   const mockTab = useMemo(() => {
@@ -1181,11 +1185,13 @@ const WindowReferenceGrid = ({
     hasMoreRecords,
     fetchMore,
     addRecordLocally,
+    setHasMoreRecords,
   } = useDatasource({
     entity: String(entityName),
     params: datasourceOptions,
     columns: rawColumns,
     activeColumnFilters: appliedTableFilters,
+    activeSorting: sorting,
     skip: shouldSkipFetch,
   });
 
@@ -1342,6 +1348,7 @@ const WindowReferenceGrid = ({
     setRowSelection({});
     setColumnFilters(initialFilters);
     setAppliedTableFilters(initialFilters);
+    setSorting([]); // Reset sorting on entity change
 
     // Call onSelectionChange with the structure for this entityName
     onSelectionChange((prev: GridSelectionStructure) => ({
@@ -1815,9 +1822,10 @@ const WindowReferenceGrid = ({
       renderBottomToolbar: () => null,
       muiBottomToolbarProps: { sx: { display: "none" } },
       enableColumnFilters: true,
-      enableSorting: true,
-      enableColumnActions: true,
       manualFiltering: true,
+      manualSorting: true,
+      enableSorting: true,
+      onSortingChange: handleMRTSortingChange,
       enableRowVirtualization: true,
       columns: finalColumns, // Use modified columns with handler
       data: records || [],
@@ -1847,6 +1855,7 @@ const WindowReferenceGrid = ({
       state: {
         rowSelection,
         columnFilters,
+        sorting,
         showColumnFilters: true,
       },
       onRowSelectionChange: handleRowSelection,
