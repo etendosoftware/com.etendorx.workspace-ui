@@ -40,6 +40,7 @@ export const useTableDirDatasource = ({
   initialPageSize = 75,
   isProcessModal = false,
   staticOptions,
+  selectedRecordsCount,
 }: UseTableDirDatasourceParams) => {
   // If static options are provided, use them instead of fetching
   const hasStaticOptions = staticOptions !== undefined;
@@ -152,6 +153,7 @@ export const useTableDirDatasource = ({
 
       const formValues = transformFormValues(getValues());
       const invoiceValue = transformFormValues(invoiceContext);
+      const shouldSendOrg = !isProcessModal || selectedRecordsCount === 1;
       let baseBody: BaseBody = {
         _startRow: startRow.toString(),
         _endRow: endRow.toString(),
@@ -167,7 +169,7 @@ export const useTableDirDatasource = ({
         _constructor: "AdvancedCriteria",
         _OrExpression: "true",
         ...(typeof currentValue !== "undefined" ? { _currentValue: currentValue } : {}),
-        _org: formValues.inpadOrgId || (parentData as any).inpadOrgId || "",
+        ...(shouldSendOrg && { _org: formValues.inpadOrgId || (parentData as any).inpadOrgId || "" }),
       };
 
       if (isProductField) {
@@ -207,6 +209,7 @@ export const useTableDirDatasource = ({
       isProcessModal,
       selectorId,
       parentData,
+      selectedRecordsCount,
     ]
   );
 

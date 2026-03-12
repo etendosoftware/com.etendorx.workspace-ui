@@ -163,6 +163,7 @@ export type RecordValues = { [key: string]: EntityValue };
 export interface WindowReferenceGridProps {
   parameter: ProcessParameter;
   parameters: Record<string, ProcessParameter>; // Added to enable generic parameter mapping
+  selectedRecordsCount?: number;
   onSelectionChange: (selection: GridSelectionUpdater) => void;
   gridSelection: GridSelectionStructure;
   entityName?: EntityValue;
