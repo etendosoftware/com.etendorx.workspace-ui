@@ -18,7 +18,7 @@
 "use client";
 
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import type { ProcessButton, ProcessActionButton, ProcessDefinitionButton } from "../../ProcessModal/types";
 import { isProcessActionButton } from "../../ProcessModal/types";
 import type { ProcessMenuProps } from "../types";
@@ -34,7 +34,10 @@ import type { EntityData } from "@workspaceui/api-client/src/api/types";
  * @param selectedRecord - The currently selected record to derive the name from
  * @returns The resolved button label, or the default button name if no match is found
  */
-const getManualProcessButtonName = (button: ProcessActionButton, selectedRecord: EntityData | undefined): string => {
+const getProcessButtonName = (
+  button: ProcessActionButton | ProcessDefinitionButton,
+  selectedRecord: EntityData | undefined
+): string => {
   const refListOptions = button.buttonRefList;
 
   // Early return if no record or no dynamic name options configured
@@ -54,18 +57,17 @@ interface ProcessMenuItemProps {
   button: ProcessActionButton;
   onProcessClick: (button: ProcessButton) => void;
   disabled: boolean;
-  selectedRecord: EntityData | undefined;
+  buttonName: string;
 }
 
 interface ProcessDefinitionMenuItemProps {
   button: ProcessDefinitionButton;
   onProcessClick: (button: ProcessButton) => void;
   disabled: boolean;
+  buttonName: string;
 }
 
-const ProcessMenuItem = ({ button, onProcessClick, disabled, selectedRecord }: ProcessMenuItemProps) => {
-  const buttonName = useMemo(() => getManualProcessButtonName(button, selectedRecord), [button, selectedRecord]);
-
+const ProcessMenuItem = ({ button, onProcessClick, disabled, buttonName }: ProcessMenuItemProps) => {
   const handleClick = useCallback(() => {
     onProcessClick(button);
   }, [button, onProcessClick]);
@@ -87,7 +89,12 @@ const ProcessMenuItem = ({ button, onProcessClick, disabled, selectedRecord }: P
 
 ProcessMenuItem.displayName = "ProcessMenuItem";
 
-const ProcessDefinitionMenuItem = ({ button, onProcessClick, disabled }: ProcessDefinitionMenuItemProps) => {
+const ProcessDefinitionMenuItem = ({
+  button,
+  onProcessClick,
+  disabled,
+  buttonName,
+}: ProcessDefinitionMenuItemProps) => {
   const handleClick = useCallback(() => {
     onProcessClick(button);
   }, [button, onProcessClick]);
@@ -102,7 +109,7 @@ const ProcessDefinitionMenuItem = ({ button, onProcessClick, disabled }: Process
           handleClick();
         }
       }}>
-      {button.name}
+      {buttonName}
     </div>
   );
 };
@@ -116,29 +123,36 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
   hasSelection,
 }) => {
   const isDisabled = hasSelection !== undefined ? !hasSelection : !selectedRecord;
+
   return (
     <Menu anchorEl={anchorEl} onClose={onClose} className="rounded-xl" data-testid="Menu__541926">
       <div className="rounded-2xl px-2 py-4">
-        {processButtons.map((button: ProcessButton, index: number) =>
-          isProcessActionButton(button) ? (
-            <ProcessMenuItem
-              key={`${button.id}-${index}`}
-              button={button}
-              onProcessClick={onProcessClick}
-              selectedRecord={selectedRecord}
-              disabled={isDisabled}
-              data-testid="ProcessMenuItem__541926"
-            />
-          ) : (
+        {processButtons.map((button: ProcessButton, index: number) => {
+          const buttonName = getProcessButtonName(button, selectedRecord);
+
+          if (isProcessActionButton(button)) {
+            return (
+              <ProcessMenuItem
+                key={`${button.id}-${index}`}
+                button={button}
+                onProcessClick={onProcessClick}
+                buttonName={buttonName}
+                disabled={isDisabled}
+                data-testid="ProcessMenuItem__541926"
+              />
+            );
+          }
+          return (
             <ProcessDefinitionMenuItem
               key={`${button.id}-${index}`}
               button={button}
               onProcessClick={onProcessClick}
+              buttonName={buttonName}
               disabled={isDisabled}
               data-testid="ProcessDefinitionMenuItem__541926"
             />
-          )
-        )}
+          );
+        })}
       </div>
     </Menu>
   );
