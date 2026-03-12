@@ -153,7 +153,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         const response = await handleProcessClick(button, String(record.id));
         setProcessResponse(response);
         setSelectedProcessActionButton(button);
-        setOpenIframeModal(true);
+        if (response.showInIframe) {
+          setOpenIframeModal(true);
+        } else if (response.responseActions?.[0]?.showMsgInProcessView) {
+          // If there's an error and not an iframe, show it in actionModal or similar.
+          // For now, logging it clearly, as the previous logic just hung infinitely.
+          console.error("Process error:", response.responseActions[0].showMsgInProcessView);
+        }
       } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
         setSelectedProcessDefinitionButton(button);
         setShowProcessDefinitionModal(true);

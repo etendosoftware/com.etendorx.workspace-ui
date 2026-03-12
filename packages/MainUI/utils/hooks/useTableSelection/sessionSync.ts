@@ -91,8 +91,10 @@ export const syncSelectedRecordsToSession = async ({
     // Send single request with all selected record information
     const responseData = await fetchFormInitialization(params, payload);
 
-    const sessionAttributes = buildSessionAttributes(responseData);
-    setSession((prev) => mergeSessionAttributes(prev, sessionAttributes));
+    if (tab.tabLevel === 0) {
+      const sessionAttributes = buildSessionAttributes(responseData);
+      setSession((prev) => mergeSessionAttributes(prev, sessionAttributes));
+    }
 
     logger.info(`Successfully synced ${selectedRecords.length} records to session`);
   } catch (error) {

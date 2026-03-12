@@ -43,7 +43,6 @@ import type {
   TargetObject,
   TransformableValue,
 } from "@/utils/processes/manual/types";
-import data from "@/utils/processes/manual/data.json";
 
 export const getDocumentStatus = (record: Record<string, unknown>) => {
   return extractValue(record, DEFAULT_DOCUMENTS_KEYS, DEFAULT_DOC_STATUS);
@@ -71,6 +70,7 @@ export const checkIfRecordIsPosted = (record: Record<string, unknown>) => {
 
 export const getParams = ({
   currentButtonId,
+  processAction,
   record,
   recordId,
   windowId,
@@ -78,8 +78,8 @@ export const getParams = ({
   tableId,
   token,
   isPostedProcess,
-}: GetParamsProps): URLSearchParams => {
-  const processActionData = (data as Record<string, ProcessActionData>)[currentButtonId];
+}: GetParamsProps & { processAction?: ProcessActionData }): URLSearchParams => {
+  const processActionData = processAction;
 
   if (!processActionData) {
     console.warn(`[ManualProcess] No configuration found for button ID: ${currentButtonId}`);
