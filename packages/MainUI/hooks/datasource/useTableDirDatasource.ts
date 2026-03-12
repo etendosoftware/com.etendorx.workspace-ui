@@ -45,13 +45,7 @@ export const useTableDirDatasource = ({
   const hasStaticOptions = staticOptions !== undefined;
 
   const { getValues, watch } = useFormContext();
-  const {
-    tab,
-    parentTab,
-    parentRecord,
-    isProcessModal: isProcessModalContext,
-    processParamNames,
-  } = useTabContext();
+  const { tab, parentTab, parentRecord, isProcessModal: isProcessModalContext, processParamNames } = useTabContext();
   const isProcessModal = isProcessModalProp ?? isProcessModalContext ?? false;
   const windowId = tab?.window;
   const [records, setRecords] = useState<Record<string, string>[]>(
@@ -201,7 +195,8 @@ export const useTableDirDatasource = ({
       if (isProcessModal && processParamNames) {
         const filteredBody: BaseBody = {};
         for (const key of Object.keys(baseBody)) {
-          const isStandardParam = key.startsWith("_") && key !== "_identifier" && key !== "_entityName" && key !== "$ref";
+          const isStandardParam =
+            key.startsWith("_") && key !== "_identifier" && key !== "_entityName" && key !== "$ref";
           const isProcessParam = processParamNames.includes(key);
           const isStructuralKey = structuralKeys.includes(key);
 

@@ -402,7 +402,11 @@ export function useProcessExecution({
               : parsedResult.data?.message || parsedResult.data?.msgText || "";
           toast.success(t("process.completedSuccessfully"), {
             // biome-ignore lint/suspicious/noExplicitAny: data-testid is a valid HTML attribute not in component props type
-            description: React.createElement(ToastContent, { message, isHtml: parsedResult.isHtml, "data-testid": "ToastContent__761503" } as any),
+            description: React.createElement(ToastContent, {
+              message,
+              isHtml: parsedResult.isHtml,
+              "data-testid": "ToastContent__761503",
+            } as any),
             duration: Number.POSITIVE_INFINITY,
           });
           setShouldTriggerSuccess(true);
@@ -418,7 +422,8 @@ export function useProcessExecution({
               action: hasLink
                 ? {
                     label: t("packing.checkStatus"),
-                    onClick: () => handleNavigateToTab(parsedResult.linkTabId as string, parsedResult.linkRecordId as string),
+                    onClick: () =>
+                      handleNavigateToTab(parsedResult.linkTabId as string, parsedResult.linkRecordId as string),
                   }
                 : undefined,
               "data-testid": "ToastContent__761503",

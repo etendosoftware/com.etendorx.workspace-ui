@@ -1206,8 +1206,7 @@ function ProcessDefinitionModalContent({
               ...useTabContext(),
               isProcessModal: true,
               processParamNames,
-            }}
-          >
+            }}>
             {renderModalContent()}
           </TabContext.Provider>
         </Modal>

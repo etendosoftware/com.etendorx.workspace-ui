@@ -982,7 +982,6 @@ const WindowReferenceGrid = ({
       extraParams: filterExtraParams,
     });
 
-
   const handleMRTSortingChange = useCallback((updaterOrValue: Updater<MRT_SortingState>) => {
     setSorting(updaterOrValue);
   }, []);
