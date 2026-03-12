@@ -14,13 +14,13 @@ describe("ToastContent", () => {
 
   it("renders text normally and auto-detects HTML", () => {
     const { container } = render(<ToastContent message="<strong>Hello</strong>" />);
-    expect(container.innerHTML).toContain("<strong>Hello</strong>");
+    expect(container.innerHTML).toContain('<strong data-testid="Element__4d7de7">Hello</strong>');
   });
 
   it("renders properly with explicit isHtml prop", () => {
     const { container } = render(<ToastContent message="<b>Test html</b><br />newline" isHtml />);
     // Testing library replaces inner <br />
-    expect(container.innerHTML).toContain("<b>Test html</b><br>newline");
+    expect(container.innerHTML).toContain('<b data-testid="Element__4d7de7">Test html</b><br>newline');
   });
 
   it("does not render html tags when not passing html", () => {
