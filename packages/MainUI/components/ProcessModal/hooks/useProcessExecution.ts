@@ -362,6 +362,46 @@ export function useProcessExecution({
 
   const executeJavaProcess = useCallback(
     async (payload: any, logContext = "process") => {
+      const handleSuccess = (parsedResult: ExecuteProcessResult) => {
+        const message =
+          typeof parsedResult.data === "string"
+            ? parsedResult.data
+            : parsedResult.data?.message || parsedResult.data?.msgText || "";
+
+        toast.success(t("process.completedSuccessfully"), {
+          description: React.createElement(ToastContent, {
+            message,
+            isHtml: parsedResult.isHtml,
+            "data-testid": "ToastContent__761503",
+          } as any),
+          duration: Number.POSITIVE_INFINITY,
+        });
+        setShouldTriggerSuccess(true);
+        handleSuccessClose(true);
+      };
+
+      const handleWarning = (parsedResult: ExecuteProcessResult) => {
+        const message = parsedResult.error || "";
+        const hasLink = !!(parsedResult.linkTabId && parsedResult.linkRecordId);
+
+        toast.warning(t("process.warning"), {
+          description: React.createElement(ToastContent, {
+            message,
+            isHtml: parsedResult.isHtml,
+            action: hasLink
+              ? {
+                  label: t("packing.checkStatus"),
+                  onClick: () =>
+                    handleNavigateToTab(parsedResult.linkTabId as string, parsedResult.linkRecordId as string),
+                }
+              : undefined,
+            "data-testid": "ToastContent__761503",
+          } as any),
+          duration: Number.POSITIVE_INFINITY,
+        });
+        handleSuccessClose(false);
+      };
+
       try {
         const baseUrl = "/api/erp/org.openbravo.client.kernel";
         const queryParams = new URLSearchParams();
@@ -396,41 +436,9 @@ export function useProcessExecution({
 
         if (parsedResult.success) {
           await revalidateDopoProcess();
-          const message =
-            typeof parsedResult.data === "string"
-              ? parsedResult.data
-              : parsedResult.data?.message || parsedResult.data?.msgText || "";
-          toast.success(t("process.completedSuccessfully"), {
-            // biome-ignore lint/suspicious/noExplicitAny: data-testid is a valid HTML attribute not in component props type
-            description: React.createElement(ToastContent, {
-              message,
-              isHtml: parsedResult.isHtml,
-              "data-testid": "ToastContent__761503",
-            } as any),
-            duration: Number.POSITIVE_INFINITY,
-          });
-          setShouldTriggerSuccess(true);
-          handleSuccessClose(true);
+          handleSuccess(parsedResult);
         } else if (parsedResult.messageType === "warning" && type === PROCESS_TYPES.PROCESS_DEFINITION) {
-          const message = parsedResult.error || "";
-          const hasLink = !!(parsedResult.linkTabId && parsedResult.linkRecordId);
-          toast.warning(t("process.warning"), {
-            // biome-ignore lint/suspicious/noExplicitAny: data-testid is a valid HTML attribute not in component props type
-            description: React.createElement(ToastContent, {
-              message,
-              isHtml: parsedResult.isHtml,
-              action: hasLink
-                ? {
-                    label: t("packing.checkStatus"),
-                    onClick: () =>
-                      handleNavigateToTab(parsedResult.linkTabId as string, parsedResult.linkRecordId as string),
-                  }
-                : undefined,
-              "data-testid": "ToastContent__761503",
-            } as any),
-            duration: Number.POSITIVE_INFINITY,
-          });
-          handleSuccessClose(false);
+          handleWarning(parsedResult);
         } else {
           setResult(parsedResult);
         }

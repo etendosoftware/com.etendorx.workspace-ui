@@ -1184,7 +1184,6 @@ const WindowReferenceGrid = ({
     hasMoreRecords,
     fetchMore,
     addRecordLocally,
-    setHasMoreRecords,
   } = useDatasource({
     entity: String(entityName),
     params: datasourceOptions,

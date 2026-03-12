@@ -219,26 +219,28 @@ export function useDatasource({
     const hasIdFilter = Boolean(filterById);
     const idParams = hasIdFilter ? { targetRecordId: filterById?.value, directNavigation: true } : {};
 
+    const getMergedCriteria = () => {
+      if (allCriteria.length === 0) {
+        return stableParams.criteria;
+      }
+
+      // Extract existing criteria as an array
+      let existingCriteria: any[] = [];
+      if (stableParams.criteria) {
+        existingCriteria = Array.isArray(stableParams.criteria) ? stableParams.criteria : [stableParams.criteria];
+      }
+
+      const merged = [...existingCriteria, ...allCriteria];
+      return merged.length === 1 ? merged[0] : merged;
+    };
+
     const finalParams: any = {
       ...stableParams,
       ...idParams,
       isImplicitFilterApplied,
       noActiveFilter: true,
+      criteria: getMergedCriteria(),
     };
-
-    if (allCriteria.length > 0) {
-      // Merge with existing criteria to avoid overwriting parent/context filters
-      const existingCriteria = stableParams.criteria
-        ? Array.isArray(stableParams.criteria)
-          ? stableParams.criteria
-          : [stableParams.criteria]
-        : [];
-
-      // Avoid double-applying criteria for the same field if possible
-      // (Simplified: just concatenate for now as backend handles multiple criteria for same field)
-      const mergedCriteria = [...existingCriteria, ...allCriteria];
-      finalParams.criteria = mergedCriteria.length === 1 ? mergedCriteria[0] : mergedCriteria;
-    }
 
     if (activeSorting && activeSorting.length > 0) {
       const sort = activeSorting[0];

@@ -1196,19 +1196,21 @@ function ProcessDefinitionModalContent({
   };
 
   const processParamNames = useMemo(() => Object.keys(parameters), [parameters]);
+  const parentTabContext = useTabContext();
+  const tabContextValue = useMemo(
+    () => ({
+      ...parentTabContext,
+      isProcessModal: true,
+      processParamNames,
+    }),
+    [parentTabContext, processParamNames]
+  );
 
   return (
     <>
       {open && !result?.success && (
         <Modal open={open && !result?.success} onClose={handleClose} data-testid="Modal__761503">
-          <TabContext.Provider
-            value={{
-              ...useTabContext(),
-              isProcessModal: true,
-              processParamNames,
-            }}>
-            {renderModalContent()}
-          </TabContext.Provider>
+          <TabContext.Provider value={tabContextValue}>{renderModalContent()}</TabContext.Provider>
         </Modal>
       )}
     </>

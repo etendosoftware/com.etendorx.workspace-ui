@@ -127,33 +127,7 @@ export const useTableDirDatasource = ({
 
   const buildRequestBody = useCallback(
     (startRow: number, endRow: number, currentValue: typeof value) => {
-      const transformPayloadFields = (baseBody: BaseBody): BaseBody => {
-        // Remove fields that will be transformed to avoid duplicates
-        const { inpfinPaymentmethodId, inpissotrx, windowId, ...rest } = baseBody;
-        const depositTo = baseBody["Deposit To"];
-        const salesTransaction = baseBody["Sales Transaction"];
-
-        // Determine issotrx value from either inpissotrx or Sales Transaction
-        let issotrxValue: boolean | undefined;
-        if (inpissotrx !== undefined && inpissotrx !== null && inpissotrx !== "") {
-          issotrxValue = inpissotrx === "Y";
-        } else if (salesTransaction !== undefined && salesTransaction !== null && salesTransaction !== "") {
-          issotrxValue = salesTransaction === "Y";
-        }
-
-        const result: BaseBody = {
-          ...rest,
-          ...(inpfinPaymentmethodId && { fin_paymentmethod_id: inpfinPaymentmethodId }),
-          ...(depositTo && { fin_financial_account_id: depositTo }),
-          ...(issotrxValue !== undefined && { issotrx: issotrxValue }),
-        };
-
-        return result;
-      };
-
-      const formValues = transformFormValues(getValues());
-      const invoiceValue = transformFormValues(invoiceContext);
-      let baseBody: BaseBody = {
+      const getInitialStructuralBody = (): BaseBody => ({
         _startRow: startRow.toString(),
         _endRow: endRow.toString(),
         _operationType: "fetch",
@@ -168,49 +142,75 @@ export const useTableDirDatasource = ({
         _constructor: "AdvancedCriteria",
         _OrExpression: "true",
         ...(typeof currentValue !== "undefined" ? { _currentValue: currentValue } : {}),
-        _org: formValues.inpadOrgId || (parentData as any).inpadOrgId || "",
+        _org: getValues().inpadOrgId || (parentData as any).inpadOrgId || "",
+      });
+
+      const applyFormContext = (body: BaseBody, formVals: Record<string, any>, invoiceVals: Record<string, any>) => {
+        if (isProductField) {
+          Object.assign(body, {
+            _noCount: "true",
+            ...(selectorId && { _selectorDefinitionId: selectorId }),
+            ...formVals,
+            ...(!isProcessModal ? invoiceVals : {}),
+          });
+        } else {
+          Object.assign(body, {
+            _textMatchStyle: "substring",
+            ...(!isProcessModal ? { ...parentData, ...invoiceVals } : {}),
+            ...formVals,
+          });
+        }
       };
 
-      // In process modal, we capture the keys of the initial structural payload (IDs and selector config).
-      // This forms our dynamic "Zero-Hardcoding" whitelist.
-      const structuralKeys = isProcessModal ? Object.keys(baseBody) : [];
+      const filterProcessModalPayload = (body: BaseBody, structuralKeys: string[]) => {
+        if (!isProcessModal || !processParamNames) {
+          return body;
+        }
 
-      if (isProductField) {
-        Object.assign(baseBody, {
-          _noCount: "true",
-          ...(selectorId && { _selectorDefinitionId: selectorId }),
-          ...formValues,
-          ...(!isProcessModal ? invoiceValue : {}),
-        });
-      } else {
-        Object.assign(baseBody, {
-          _textMatchStyle: "substring",
-          ...(!isProcessModal ? { ...parentData, ...invoiceValue } : {}),
-          ...formValues,
-        });
-      }
-
-      // In process modal, filter the payload to only include structural keys,
-      // actual process parameters, and standard datasource parameters.
-      if (isProcessModal && processParamNames) {
         const filteredBody: BaseBody = {};
-        for (const key of Object.keys(baseBody)) {
+        for (const key of Object.keys(body)) {
           const isStandardParam =
             key.startsWith("_") && key !== "_identifier" && key !== "_entityName" && key !== "$ref";
           const isProcessParam = processParamNames.includes(key);
           const isStructuralKey = structuralKeys.includes(key);
 
           if (isStandardParam || isProcessParam || isStructuralKey) {
-            filteredBody[key] = baseBody[key];
+            filteredBody[key] = body[key];
           }
         }
-        baseBody = filteredBody;
-      }
+        return filteredBody;
+      };
 
-      // Final transformation of specialized fields
-      baseBody = transformPayloadFields(baseBody);
+      const transformPayloadFields = (body: BaseBody): BaseBody => {
+        const { inpfinPaymentmethodId, inpissotrx, windowId: _winId, ...rest } = body;
+        const depositTo = body["Deposit To"];
+        const salesTransaction = body["Sales Transaction"];
 
-      return baseBody;
+        let issotrxValue: boolean | undefined;
+        if (inpissotrx !== undefined && inpissotrx !== null && inpissotrx !== "") {
+          issotrxValue = inpissotrx === "Y";
+        } else if (salesTransaction !== undefined && salesTransaction !== null && salesTransaction !== "") {
+          issotrxValue = salesTransaction === "Y";
+        }
+
+        return {
+          ...rest,
+          ...(inpfinPaymentmethodId && { fin_paymentmethod_id: inpfinPaymentmethodId }),
+          ...(depositTo && { fin_financial_account_id: depositTo }),
+          ...(issotrxValue !== undefined && { issotrx: issotrxValue }),
+        };
+      };
+
+      const formValues = transformFormValues(getValues());
+      const invoiceValues = transformFormValues(invoiceContext);
+
+      let baseBody = getInitialStructuralBody();
+      const structuralKeys = isProcessModal ? Object.keys(baseBody) : [];
+
+      applyFormContext(baseBody, formValues, invoiceValues);
+      baseBody = filterProcessModalPayload(baseBody, structuralKeys);
+
+      return transformPayloadFields(baseBody);
     },
     [
       transformFormValues,
