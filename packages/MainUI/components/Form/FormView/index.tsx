@@ -519,9 +519,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       justSavedFromNewRef.current = false;
     }
     const lastCtx = lastInitializedContextRef.current;
-    return (
-      isPostNewSave || (lastCtx !== null && lastCtx.recordId === currentRecordId && lastCtx.mode === currentMode)
-    );
+    return isPostNewSave || (lastCtx !== null && lastCtx.recordId === currentRecordId && lastCtx.mode === currentMode);
   }, [currentRecordId, currentMode]);
 
   useEffect(() => {
