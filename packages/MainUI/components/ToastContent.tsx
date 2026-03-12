@@ -6,41 +6,16 @@ function parseHtmlToReact(html: string): React.ReactNode[] {
   let key = 0;
   let currentAnchor: { href: string; content: string } | null = null;
 
-  while (lastIndex < html.length) {
-    const nextTagStart = html.indexOf("<", lastIndex);
-
-    if (nextTagStart === -1) {
-      // No more tags, append the rest
-      const remaining = html.slice(lastIndex);
-      if (currentAnchor) {
-        currentAnchor.content += remaining;
-      } else {
-        nodes.push(remaining);
-      }
-      break;
-    }
-
-    // Process text before the tag
-    const textBefore = html.slice(lastIndex, nextTagStart);
+  const appendText = (text: string) => {
+    if (!text) return;
     if (currentAnchor) {
-      currentAnchor.content += textBefore;
-    } else if (textBefore) {
-      nodes.push(textBefore);
+      currentAnchor.content += text;
+    } else {
+      nodes.push(text);
     }
+  };
 
-    const nextTagEnd = html.indexOf(">", nextTagStart);
-    if (nextTagEnd === -1) {
-      // Unclosed tag, treat the rest as plain text
-      const remaining = html.slice(nextTagStart);
-      if (currentAnchor) {
-        currentAnchor.content += remaining;
-      } else {
-        nodes.push(remaining);
-      }
-      break;
-    }
-
-    const tag = html.slice(nextTagStart, nextTagEnd + 1);
+  const handleTag = (tag: string) => {
     const tagName = tag.match(/^<(\/?[a-z0-9]+)/i)?.[1].toLowerCase();
 
     if (tagName === "br") {
@@ -54,23 +29,38 @@ function parseHtmlToReact(html: string): React.ReactNode[] {
         const hrefMatch = tag.match(/href=["']([^"']*)["']/i);
         currentAnchor = { href: hrefMatch?.[1] ?? "#", content: "" };
       }
-    } else if (tagName === "/a") {
-      if (currentAnchor) {
-        nodes.push(
-          <a
-            key={key++}
-            href={currentAnchor.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 underline hover:text-blue-800">
-            {currentAnchor.content}
-          </a>
-        );
-        currentAnchor = null;
-      }
+    } else if (tagName === "/a" && currentAnchor) {
+      nodes.push(
+        <a
+          key={key++}
+          href={currentAnchor.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 underline hover:text-blue-800">
+          {currentAnchor.content}
+        </a>
+      );
+      currentAnchor = null;
     }
-    // Other tags are naturally ignored/stripped
+  };
 
+  while (lastIndex < html.length) {
+    const nextTagStart = html.indexOf("<", lastIndex);
+
+    if (nextTagStart === -1) {
+      appendText(html.slice(lastIndex));
+      break;
+    }
+
+    appendText(html.slice(lastIndex, nextTagStart));
+
+    const nextTagEnd = html.indexOf(">", nextTagStart);
+    if (nextTagEnd === -1) {
+      appendText(html.slice(nextTagStart));
+      break;
+    }
+
+    handleTag(html.slice(nextTagStart, nextTagEnd + 1));
     lastIndex = nextTagEnd + 1;
   }
 
