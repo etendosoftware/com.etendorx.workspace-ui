@@ -2,38 +2,59 @@ import type React from "react";
 
 function parseHtmlToReact(html: string): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
-  // Match any tag: <...>. This is linear and safe against ReDoS.
-  const tagRegex = /<[^>]*>/gi;
   let lastIndex = 0;
   let key = 0;
-  let match: RegExpExecArray | null;
-
   let currentAnchor: { href: string; content: string } | null = null;
 
-  // biome-ignore lint/suspicious/noAssignInExpressions: standard exec loop pattern
-  while ((match = tagRegex.exec(html)) !== null) {
-    const textBefore = html.slice(lastIndex, match.index);
-    const tag = match[0];
+  while (lastIndex < html.length) {
+    const nextTagStart = html.indexOf("<", lastIndex);
 
-    // Append text since the last tag to the appropriate node
+    if (nextTagStart === -1) {
+      // No more tags, append the rest
+      const remaining = html.slice(lastIndex);
+      if (currentAnchor) {
+        currentAnchor.content += remaining;
+      } else {
+        nodes.push(remaining);
+      }
+      break;
+    }
+
+    // Process text before the tag
+    const textBefore = html.slice(lastIndex, nextTagStart);
     if (currentAnchor) {
       currentAnchor.content += textBefore;
     } else if (textBefore) {
       nodes.push(textBefore);
     }
 
-    if (/^<br/i.test(tag)) {
+    const nextTagEnd = html.indexOf(">", nextTagStart);
+    if (nextTagEnd === -1) {
+      // Unclosed tag, treat the rest as plain text
+      const remaining = html.slice(nextTagStart);
+      if (currentAnchor) {
+        currentAnchor.content += remaining;
+      } else {
+        nodes.push(remaining);
+      }
+      break;
+    }
+
+    const tag = html.slice(nextTagStart, nextTagEnd + 1);
+    const tagName = tag.match(/^<(\/?[a-z0-9]+)/i)?.[1].toLowerCase();
+
+    if (tagName === "br") {
       if (currentAnchor) {
         currentAnchor.content += "\n";
       } else {
         nodes.push(<br key={key++} />);
       }
-    } else if (/^<a\b/i.test(tag)) {
+    } else if (tagName === "a") {
       if (!currentAnchor) {
-        const hrefMatch = /href=["']([^"']*)["']/i.exec(tag);
+        const hrefMatch = tag.match(/href=["']([^"']*)["']/i);
         currentAnchor = { href: hrefMatch?.[1] ?? "#", content: "" };
       }
-    } else if (/^<\/a>/i.test(tag)) {
+    } else if (tagName === "/a") {
       if (currentAnchor) {
         nodes.push(
           <a
@@ -48,19 +69,9 @@ function parseHtmlToReact(html: string): React.ReactNode[] {
         currentAnchor = null;
       }
     }
-    // Note: Other tags (like <b>, <strong>) are matched by tagRegex but ignored here,
-    // which effectively strips them, preserving the original component's behavior.
+    // Other tags are naturally ignored/stripped
 
-    lastIndex = tagRegex.lastIndex;
-  }
-
-  // Handle any remaining text after the last match
-  const remaining = html.slice(lastIndex);
-  if (currentAnchor) {
-    // If an <a> was left open, treat its content as plain text
-    nodes.push(currentAnchor.content + remaining);
-  } else if (remaining) {
-    nodes.push(remaining);
+    lastIndex = nextTagEnd + 1;
   }
 
   return nodes;
@@ -77,7 +88,7 @@ export const ToastContent = ({
 }) => {
   if (!message) return null;
 
-  const hasHtmlTags = isHtml || /<[a-z][^>]*>/i.test(message);
+  const hasHtmlTags = isHtml || message.includes("<");
 
   return (
     <div className="flex flex-col gap-1">
