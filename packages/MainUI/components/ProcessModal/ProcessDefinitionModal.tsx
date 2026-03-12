@@ -365,6 +365,7 @@ function ProcessDefinitionModalContent({
 
   // Handle case when modal is opened from sidebar (no tab context)
   const selectedRecords = useMemo(() => (tab ? graph.getSelectedMultiple(tab) : []), [graph, tab]);
+  const selectedRecordsCount = (selectedRecords || []).length;
 
   const firstWindowReferenceParam = useMemo(
     () => Object.values(parameters).find((param) => param.reference === WINDOW_REFERENCE_ID),
@@ -993,6 +994,7 @@ function ProcessDefinitionModalContent({
             <WindowReferenceGrid
               parameter={parameter}
               parameters={parameters}
+              selectedRecordsCount={selectedRecordsCount}
               onSelectionChange={setGridSelection}
               gridSelection={gridSelection}
               tabId={parameterTab?.id || ""}
@@ -1018,6 +1020,7 @@ function ProcessDefinitionModalContent({
             parameters={parameters}
             recordValues={recordValues || undefined}
             parentFields={tab?.fields}
+            selectedRecordsCount={selectedRecordsCount}
             data-testid="ProcessParameterSelector__761503"
           />
         );
