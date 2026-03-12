@@ -31,9 +31,15 @@ jest.mock("@/hooks/useUserContext", () => ({
 }));
 
 // Mock other hooks
-jest.mock("@/contexts/tab", () => ({
-  useTabContext: () => require("../testUtils").mockTabContextData,
-}));
+jest.mock("@/contexts/tab", () => {
+  const React = require("react");
+  return {
+    useTabContext: () => require("../testUtils").mockTabContextData,
+    TabContext: {
+      Provider: ({ children }: { children: any }) => <div>{children}</div>,
+    },
+  };
+});
 
 jest.mock("@/contexts/window", () => ({
   useWindowContext: () => ({ triggerRecovery: jest.fn(), isRecoveryLoading: false }),

@@ -133,7 +133,7 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         id: column.hqlName || column.id || column.name,
         fieldId: column.id,
         columnName: column.hqlName || column.columnName,
-        isMandatory: column.isMandatory || (column as any).required,
+        isMandatory: Boolean(column.isMandatory || (column as any).required),
         _identifier: column.name,
         column: {
           _identifier: columnType || "",

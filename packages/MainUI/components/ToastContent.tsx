@@ -1,70 +1,73 @@
 import type React from "react";
 
 function parseHtmlToReact(html: string): React.ReactNode[] {
-  const nodes: React.ReactNode[] = [];
+  const stack: { name: string; props: any; children: React.ReactNode[] }[] = [
+    { name: "root", props: {}, children: [] },
+  ];
   let lastIndex = 0;
   let key = 0;
-  let currentAnchor: { href: string; content: string } | null = null;
 
-  const appendText = (text: string) => {
-    if (!text) return;
-    if (currentAnchor) {
-      currentAnchor.content += text;
-    } else {
-      nodes.push(text);
+  const current = () => stack[stack.length - 1];
+
+  const handleStartTag = (tag: string, name: string) => {
+    const props: any = { key: key++ };
+    if (name === "a") {
+      const hrefMatch = tag.match(/href=["']([^"']*)["']/i);
+      Object.assign(props, {
+        href: hrefMatch?.[1] ?? "#",
+        target: "_blank",
+        rel: "noopener noreferrer",
+        className: "text-blue-600 underline hover:text-blue-800",
+      });
+    }
+    stack.push({ name, props, children: [] });
+  };
+
+  const handleEndTag = (name: string) => {
+    if (stack.length > 1 && current().name === name) {
+      const { name: tagName, props, children } = stack.pop()!;
+      const Element = tagName as any;
+      current().children.push(
+        <Element {...props} data-testid="Element__4d7de7">
+          {children}
+        </Element>
+      );
     }
   };
 
   const handleTag = (tag: string) => {
-    const tagName = tag.match(/^<(\/?[a-z0-9]+)/i)?.[1].toLowerCase();
-
-    if (tagName === "br") {
-      if (currentAnchor) {
-        currentAnchor.content += "\n";
-      } else {
-        nodes.push(<br key={key++} />);
-      }
-    } else if (tagName === "a") {
-      if (!currentAnchor) {
-        const hrefMatch = tag.match(/href=["']([^"']*)["']/i);
-        currentAnchor = { href: hrefMatch?.[1] ?? "#", content: "" };
-      }
-    } else if (tagName === "/a" && currentAnchor) {
-      nodes.push(
-        <a
-          key={key++}
-          href={currentAnchor.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 underline hover:text-blue-800">
-          {currentAnchor.content}
-        </a>
-      );
-      currentAnchor = null;
+    const match = tag.match(/^<(\/?)([a-z0-9]+)/i);
+    if (!match) return;
+    const [_, isEnd, name] = match.map((s) => s?.toLowerCase());
+    if (name === "br") {
+      current().children.push(<br key={key++} />);
+    } else if (["a", "b", "strong", "i", "em", "u"].includes(name)) {
+      if (isEnd) handleEndTag(name);
+      else handleStartTag(tag, name);
     }
   };
 
   while (lastIndex < html.length) {
-    const nextTagStart = html.indexOf("<", lastIndex);
-
-    if (nextTagStart === -1) {
-      appendText(html.slice(lastIndex));
+    const start = html.indexOf("<", lastIndex);
+    if (start === -1) {
+      current().children.push(html.slice(lastIndex));
       break;
     }
-
-    appendText(html.slice(lastIndex, nextTagStart));
-
-    const nextTagEnd = html.indexOf(">", nextTagStart);
-    if (nextTagEnd === -1) {
-      appendText(html.slice(nextTagStart));
+    current().children.push(html.slice(lastIndex, start));
+    const end = html.indexOf(">", start);
+    if (end === -1) {
+      current().children.push(html.slice(start));
       break;
     }
-
-    handleTag(html.slice(nextTagStart, nextTagEnd + 1));
-    lastIndex = nextTagEnd + 1;
+    handleTag(html.slice(start, end + 1));
+    lastIndex = end + 1;
   }
 
-  return nodes;
+  while (stack.length > 1) {
+    const { children } = stack.pop()!;
+    current().children.push(...children);
+  }
+  return stack[0].children;
 }
 
 export const ToastContent = ({

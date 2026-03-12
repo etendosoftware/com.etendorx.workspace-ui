@@ -67,17 +67,23 @@ jest.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }));
 
-jest.mock("@/contexts/tab", () => ({
-  useTabContext: () => ({
-    tab: {
-      window: "W123",
-      entityName: "EntityX",
-      fields: {},
-      id: "T1",
+jest.mock("@/contexts/tab", () => {
+  const React = require("react");
+  return {
+    useTabContext: () => ({
+      tab: {
+        window: "W123",
+        entityName: "EntityX",
+        fields: {},
+        id: "T1",
+      },
+      record: { id: "R1" },
+    }),
+    TabContext: {
+      Provider: ({ children }: { children: any }) => <div>{children}</div>,
     },
-    record: { id: "R1" },
-  }),
-}));
+  };
+});
 
 jest.mock("@/contexts/window", () => ({
   useWindowContext: () => ({ triggerRecovery: jest.fn(), isRecoveryLoading: false }),
