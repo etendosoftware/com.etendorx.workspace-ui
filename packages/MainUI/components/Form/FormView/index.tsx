@@ -430,54 +430,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   // for the same record can use setValue instead of reset (avoids full re-render).
   const lastInitializedContextRef = useRef<{ recordId: string | undefined; mode: FormMode } | null>(null);
 
-  useEffect(() => {
-    // If we are in a "hidden" state (empty recordId and not NEW mode), just reset and return
-    // This prevents unnecessary initialization logic and potential loops
-    if (!currentRecordId && currentMode !== FormMode.NEW) {
-      stableReset({}, { keepDirty: false });
-      setIsFormInitializing(false);
-      lastInitializedDataRef.current = "";
-      lastInitializedContextRef.current = null;
-      return;
-    }
-
-    if (!availableFormData) {
-      return;
-    }
-
-    // Prevent resetting if the data hasn't actually changed.
-    // Exclude `$_entries` keys (dropdown option lists) from the comparison: they can be
-    // very large arrays (100+ items per selector field) and they don't change on record
-    // data refreshes — only on initial load or callout execution.
-    const currentDataString = JSON.stringify(availableFormData, (_key, value) =>
-      _key.endsWith("$_entries") ? undefined : value
-    );
-    if (lastInitializedDataRef.current === currentDataString) {
-      return;
-    }
-    lastInitializedDataRef.current = currentDataString;
-
-    const processedData = processFormData(availableFormData, tab.fields);
-
-    // Determine whether this is a navigation/initial load or a data-only refresh.
-    // A data refresh happens when the same record in the same mode receives new data
-    // (e.g. parent tab refreshing after a child tab save). In that case we update
-    // only the changed fields via setValue to avoid re-rendering every input.
-    //
-    // We also treat the first re-initialization after a NEW→EDIT post-save transition
-    // as a data refresh, because the server just confirmed the data we sent — only
-    // server-computed deltas need to be applied, no full reconstruction needed.
-    const isPostNewSave = justSavedFromNewRef.current;
-    if (isPostNewSave) {
-      justSavedFromNewRef.current = false;
-    }
-    const lastCtx = lastInitializedContextRef.current;
-    const isDataRefresh =
-      isPostNewSave || (lastCtx !== null && lastCtx.recordId === currentRecordId && lastCtx.mode === currentMode);
-
-    lastInitializedContextRef.current = { recordId: currentRecordId, mode: currentMode };
-
-    if (isDataRefresh) {
+  const applyDataRefresh = useCallback(
+    (processedData: Record<string, EntityValue>) => {
       // For data-only refreshes, update changed fields immediately via setValue — even while
       // loadingFormInitialization is true (i.e. a background refetch is in progress).
       // This is key for fast parent-tab updates: datasource.get() completes quickly and
@@ -511,6 +465,92 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
           setValue(key, newValue as EntityValue, { shouldDirty: false });
         }
       }
+    },
+    [form, setValue]
+  );
+
+  const applyFullInitialization = useCallback(
+    (processedData: Record<string, EntityValue>) => {
+      setIsFormInitializing(true);
+
+      // Suppress callouts during initial value setting to prevent cascading changes
+      globalCalloutManager.suppress();
+
+      // Reset with keepDirty: false for initial load to prevent false dirty state
+      stableReset(processedData, { keepDirty: false });
+
+      queueMicrotask(() => {
+        setIsFormInitializing(false);
+        // Allow callouts after values have settled
+        setTimeout(() => {
+          globalCalloutManager.resume();
+        }, 100); // Delay to allow all values to settle before enabling callouts
+      });
+    },
+    [stableReset]
+  );
+
+  const hasDataChanged = useCallback((formData: any) => {
+    // Prevent resetting if the data hasn't actually changed.
+    // Exclude `$_entries` keys (dropdown option lists) from the comparison: they can be
+    // very large arrays (100+ items per selector field) and they don't change on record
+    // data refreshes — only on initial load or callout execution.
+    const currentDataString = JSON.stringify(formData, (_key, value) =>
+      _key.endsWith("$_entries") ? undefined : value
+    );
+    if (lastInitializedDataRef.current === currentDataString) {
+      return false;
+    }
+    lastInitializedDataRef.current = currentDataString;
+    return true;
+  }, []);
+
+  const checkIsDataRefresh = useCallback(() => {
+    // Determine whether this is a navigation/initial load or a data-only refresh.
+    // A data refresh happens when the same record in the same mode receives new data
+    // (e.g. parent tab refreshing after a child tab save). In that case we update
+    // only the changed fields via setValue to avoid re-rendering every input.
+    //
+    // We also treat the first re-initialization after a NEW→EDIT post-save transition
+    // as a data refresh, because the server just confirmed the data we sent — only
+    // server-computed deltas need to be applied, no full reconstruction needed.
+    const isPostNewSave = justSavedFromNewRef.current;
+    if (isPostNewSave) {
+      justSavedFromNewRef.current = false;
+    }
+    const lastCtx = lastInitializedContextRef.current;
+    return (
+      isPostNewSave || (lastCtx !== null && lastCtx.recordId === currentRecordId && lastCtx.mode === currentMode)
+    );
+  }, [currentRecordId, currentMode]);
+
+  useEffect(() => {
+    // If we are in a "hidden" state (empty recordId and not NEW mode), just reset and return
+    // This prevents unnecessary initialization logic and potential loops
+    if (!currentRecordId && currentMode !== FormMode.NEW) {
+      stableReset({}, { keepDirty: false });
+      setIsFormInitializing(false);
+      lastInitializedDataRef.current = "";
+      lastInitializedContextRef.current = null;
+      return;
+    }
+
+    if (!availableFormData) {
+      return;
+    }
+
+    if (!hasDataChanged(availableFormData)) {
+      return;
+    }
+
+    const processedData = processFormData(availableFormData, tab.fields);
+
+    const isDataRefresh = checkIsDataRefresh();
+
+    lastInitializedContextRef.current = { recordId: currentRecordId, mode: currentMode };
+
+    if (isDataRefresh) {
+      applyDataRefresh(processedData);
       return;
     }
 
@@ -521,22 +561,20 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       return;
     }
 
-    setIsFormInitializing(true);
-
-    // Suppress callouts during initial value setting to prevent cascading changes
-    globalCalloutManager.suppress();
-
-    // Reset with keepDirty: false for initial load to prevent false dirty state
-    stableReset(processedData, { keepDirty: false });
-
-    queueMicrotask(() => {
-      setIsFormInitializing(false);
-      // Allow callouts after values have settled
-      setTimeout(() => {
-        globalCalloutManager.resume();
-      }, 100); // Delay to allow all values to settle before enabling callouts
-    });
-  }, [availableFormData, tab.id, stableReset, loadingFormInitialization, currentRecordId, currentMode, form, setValue]);
+    applyFullInitialization(processedData);
+  }, [
+    availableFormData,
+    tab.id,
+    tab.fields,
+    loadingFormInitialization,
+    currentRecordId,
+    currentMode,
+    applyDataRefresh,
+    applyFullInitialization,
+    hasDataChanged,
+    checkIsDataRefresh,
+    stableReset,
+  ]);
 
   /**
    * Update graph selection when navigating to a different record.
