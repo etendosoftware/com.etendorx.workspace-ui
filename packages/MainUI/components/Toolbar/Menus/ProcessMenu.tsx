@@ -18,7 +18,7 @@
 "use client";
 
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
-import { useCallback } from "react";
+import { useCallback, type HTMLAttributes, type KeyboardEvent, type MouseEvent } from "react";
 import type { ProcessButton, ProcessActionButton, ProcessDefinitionButton } from "../../ProcessModal/types";
 import { isProcessActionButton } from "../../ProcessModal/types";
 import type { ProcessMenuProps } from "../types";
@@ -53,66 +53,75 @@ const getProcessButtonName = (
   return matchingOption?.label ?? button.name;
 };
 
-interface ProcessMenuItemProps {
-  button: ProcessActionButton;
+type ProcessMenuItemBaseProps<T extends ProcessButton> = {
+  button: T;
   onProcessClick: (button: ProcessButton) => void;
   disabled: boolean;
   buttonName: string;
-}
+} & HTMLAttributes<HTMLDivElement>;
 
-interface ProcessDefinitionMenuItemProps {
-  button: ProcessDefinitionButton;
-  onProcessClick: (button: ProcessButton) => void;
-  disabled: boolean;
-  buttonName: string;
-}
-
-const ProcessMenuItem = ({ button, onProcessClick, disabled, buttonName }: ProcessMenuItemProps) => {
-  const handleClick = useCallback(() => {
-    onProcessClick(button);
-  }, [button, onProcessClick]);
-
-  return (
-    <div
-      onClick={disabled ? undefined : handleClick}
-      className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          handleClick();
-        }
-      }}>
-      {buttonName}
-    </div>
-  );
-};
-
-ProcessMenuItem.displayName = "ProcessMenuItem";
-
-const ProcessDefinitionMenuItem = ({
+const ProcessMenuItemBase = <T extends ProcessButton>({
   button,
   onProcessClick,
   disabled,
   buttonName,
-}: ProcessDefinitionMenuItemProps) => {
-  const handleClick = useCallback(() => {
-    onProcessClick(button);
-  }, [button, onProcessClick]);
+  onClick,
+  onKeyDown,
+  className,
+  ...divProps
+}: ProcessMenuItemBaseProps<T>) => {
+  const handleClick = useCallback(
+    (event: MouseEvent<HTMLDivElement>) => {
+      if (disabled) {
+        return;
+      }
+      onClick?.(event);
+      if (!event.defaultPrevented) {
+        onProcessClick(button);
+      }
+    },
+    [button, disabled, onClick, onProcessClick]
+  );
+
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      onKeyDown?.(event);
+      if (event.defaultPrevented || disabled) {
+        return;
+      }
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onProcessClick(button);
+      }
+    },
+    [button, disabled, onKeyDown, onProcessClick]
+  );
 
   return (
     <div
+      {...divProps}
       onClick={disabled ? undefined : handleClick}
-      className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          handleClick();
-        }
-      }}>
+      className={
+        className
+          ? `cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20) ${className}`
+          : "cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
+      }
+      onKeyDown={handleKeyDown}>
       {buttonName}
     </div>
   );
 };
+
+type ProcessMenuItemProps = ProcessMenuItemBaseProps<ProcessActionButton>;
+type ProcessDefinitionMenuItemProps = ProcessMenuItemBaseProps<ProcessDefinitionButton>;
+
+const ProcessMenuItem = (props: ProcessMenuItemProps) => <ProcessMenuItemBase {...props} />;
+const ProcessDefinitionMenuItem = (props: ProcessDefinitionMenuItemProps) => (
+  <ProcessMenuItemBase {...props} />
+);
+
+ProcessMenuItem.displayName = "ProcessMenuItem";
+ProcessDefinitionMenuItem.displayName = "ProcessDefinitionMenuItem";
 
 const ProcessMenu: React.FC<ProcessMenuProps> = ({
   anchorEl,
