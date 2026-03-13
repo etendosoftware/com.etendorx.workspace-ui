@@ -39,6 +39,7 @@ import {
   type MRT_Row,
   type MRT_TopToolbarProps,
   type MRT_ColumnDef,
+  type MRT_SortingState,
 } from "material-react-table";
 
 import { useDatasource } from "@/hooks/useDatasource";
@@ -107,6 +108,27 @@ export function mergeCurrentValuesIntoParams(
       mergedParams[key] = extractActualValue(value);
     }
   }
+}
+
+/**
+ * Builds the sortBy string for the backend based on MRT sorting state and columns.
+ * @returns {string | undefined} The sortBy string or undefined if no sorting/criteria.
+ */
+export function getSortByString(
+  sorting: MRT_SortingState,
+  rawColumns: Column[],
+  hasCriteria: boolean
+): string | undefined {
+  if (sorting.length > 0) {
+    const sortItem = sorting[0];
+    const column = rawColumns?.find((col: Column) => col.id === sortItem.id || col.header === sortItem.id);
+    const fieldName = (column as any)?.filterFieldName || column?.columnName || sortItem.id;
+    return sortItem.desc ? `-${fieldName}` : fieldName;
+  }
+  if (hasCriteria) {
+    return "-documentNo";
+  }
+  return undefined;
 }
 
 /**
@@ -591,6 +613,7 @@ const WindowReferenceGrid = ({
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [appliedTableFilters, setAppliedTableFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
+  const [sorting, setSorting] = useState<MRT_SortingState>([]);
 
   // Merge recordValues (static context) with currentValues (live form state)
   // currentValues takes precedence for parameters being edited
@@ -730,79 +753,6 @@ const WindowReferenceGrid = ({
     .join("|");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stableRecordValues = useMemo(() => effectiveRecordValues, [recordValuesKey]);
-
-  const datasourceOptions = useMemo(() => {
-    const options: DatasourceParams = {
-      pageSize: PAGE_SIZE,
-      tabId: parameter.tab || tabId,
-    };
-
-    if (processConfig?.processId) options.processId = processConfig.processId;
-    if (tabId) options.windowId = tabId;
-
-    // 2. Inject Etendo session context (org, client, user, etc.)
-    Object.assign(options, etendoContext);
-
-    // 3. Apply dynamic keys from record context and process-specific mappings
-    //    (mimics verifyInput in SmartClient — resolves @VARIABLE@ placeholders)
-    applyDynamicKeys(stableRecordValues, processConfig?.processId, options);
-
-    // 4. Apply parameter defaults and current form values
-    const mergedParams: Record<string, EntityValue> = {};
-    if (stableProcessDefaults && Object.keys(stableProcessDefaults).length > 0) {
-      mergeDefaultsIntoParams(stableProcessDefaults, mergedParams);
-    }
-    if (currentValues && Object.keys(currentValues).length > 0) {
-      mergeCurrentValuesIntoParams(currentValues, mergedParams);
-    }
-    for (const [key, value] of Object.entries(mergedParams)) {
-      applyMergedParam(key, value, parameters, options);
-    }
-
-    // 5. Apply record-level values for parameters whose column exists in this grid
-    const validColumnNames = buildValidColumnNames(stableWindowReferenceTab?.fields, fields);
-    applyRecordValues(parameters, effectiveRecordValues, validColumnNames, options);
-
-    // 6. Ensure _org mirrors ad_org_id (required by backend datasource)
-    if (shouldSendOrg && options.ad_org_id && !options._org) options._org = options.ad_org_id;
-
-    // 7. Build filter criteria (explicit expressions take precedence over base criteria)
-    const filterCriteria = buildGridCriteria(stableFilterExpressions, parameter.dBColumnName || "");
-    const baseCriteria = buildBaseCriteria({
-      tab: stableWindowReferenceTab || ({ fields: {}, parentColumns: [] } as any),
-    });
-    // When implicit filter is active (or no implicit filters defined), use filterExpressions criteria.
-    // When the user deactivates the filter, fall back to baseCriteria only (show all related records).
-    const applyImplicitFilter = isImplicitFilterApplied !== false;
-    const finalCriteria = applyImplicitFilter && filterCriteria.length > 0 ? filterCriteria : baseCriteria;
-    if (finalCriteria.length > 0) {
-      options.criteria = finalCriteria as unknown as Criteria[];
-      options.orderBy = "documentNo desc";
-    }
-
-    if (!shouldSendOrg && options._org) {
-      options._org = undefined;
-    }
-
-    return options;
-  }, [
-    processConfig?.processId,
-    parameter.tab,
-    parameter.dBColumnName,
-    tabId,
-    stableProcessDefaults,
-    stableFilterExpressions,
-    recordValues?.inpadClientId,
-    recordValues?.inpmPricelistId,
-    recordValues?.inpcCurrencyId,
-    stableRecordValues,
-    parameters,
-    currentValues,
-    shouldSendOrg,
-    stableWindowReferenceTab,
-    fields,
-    isImplicitFilterApplied,
-  ]);
 
   // Helper to determine ACCT_DIMENSION_DISPLAY for specific columns
   const getAcctDimensionDisplay = useCallback(
@@ -956,6 +906,84 @@ const WindowReferenceGrid = ({
   const rawColumnIds = rawColumns.map((c: Column) => c.id).join(",");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stableRawColumns = useMemo(() => rawColumns, [rawColumnIds]);
+
+  const datasourceOptions = useMemo(() => {
+    const options: DatasourceParams = {
+      pageSize: PAGE_SIZE,
+      tabId: parameter.tab || tabId,
+    };
+
+    if (processConfig?.processId) options.processId = processConfig.processId;
+    if (tabId) options.windowId = tabId;
+
+    // 2. Inject Etendo session context (org, client, user, etc.)
+    Object.assign(options, etendoContext);
+
+    // 3. Apply dynamic keys from record context and process-specific mappings
+    //    (mimics verifyInput in SmartClient — resolves @VARIABLE@ placeholders)
+    applyDynamicKeys(stableRecordValues, processConfig?.processId, options);
+
+    // 4. Apply parameter defaults and current form values
+    const mergedParams: Record<string, EntityValue> = {};
+    if (stableProcessDefaults && Object.keys(stableProcessDefaults).length > 0) {
+      mergeDefaultsIntoParams(stableProcessDefaults, mergedParams);
+    }
+    if (currentValues && Object.keys(currentValues).length > 0) {
+      mergeCurrentValuesIntoParams(currentValues, mergedParams);
+    }
+    for (const [key, value] of Object.entries(mergedParams)) {
+      applyMergedParam(key, value, parameters, options);
+    }
+
+    // 5. Apply record-level values for parameters whose column exists in this grid
+    const validColumnNames = buildValidColumnNames(stableWindowReferenceTab?.fields, fields);
+    applyRecordValues(parameters, effectiveRecordValues, validColumnNames, options);
+
+    // 6. Ensure _org mirrors ad_org_id (required by backend datasource)
+    if (options.ad_org_id && !options._org) options._org = options.ad_org_id;
+
+    // 7. Build filter criteria (explicit expressions take precedence over base criteria)
+    const filterCriteria = buildGridCriteria(stableFilterExpressions, parameter.dBColumnName || "");
+    const baseCriteria = buildBaseCriteria({
+      tab: stableWindowReferenceTab || ({ fields: {}, parentColumns: [] } as any),
+    });
+    // When implicit filter is active (or no implicit filters defined), use filterExpressions criteria.
+    // When the user deactivates the filter, fall back to baseCriteria only (show all related records).
+    const applyImplicitFilter = isImplicitFilterApplied !== false;
+    const finalCriteria = applyImplicitFilter && filterCriteria.length > 0 ? filterCriteria : baseCriteria;
+    if (finalCriteria.length > 0) {
+      options.criteria = finalCriteria as unknown as Criteria[];
+    }
+
+    // 8. Handle sorting
+    const sortBy = getSortByString(sorting, stableRawColumns, finalCriteria.length > 0);
+    if (sortBy) {
+      options.sortBy = sortBy;
+      options.isSorting = true;
+    }
+
+    if (options.ad_org_id) {
+      options._org = options.ad_org_id;
+    }
+
+    return options;
+  }, [
+    processConfig?.processId,
+    parameter.tab,
+    parameter.dBColumnName,
+    tabId,
+    stableProcessDefaults,
+    stableFilterExpressions,
+    stableRecordValues,
+    parameters,
+    currentValues,
+    stableWindowReferenceTab,
+    fields,
+    isImplicitFilterApplied,
+    sorting,
+    stableRawColumns,
+    etendoContext,
+  ]);
 
   // Build extra params for filter options requests (process context needed by Classic datasource)
   const filterExtraParams = useMemo(() => {
@@ -1821,8 +1849,10 @@ const WindowReferenceGrid = ({
       muiBottomToolbarProps: { sx: { display: "none" } },
       enableColumnFilters: true,
       enableSorting: true,
+      manualSorting: true,
       enableColumnActions: true,
       manualFiltering: true,
+      onSortingChange: setSorting,
       enableRowVirtualization: true,
       columns: finalColumns, // Use modified columns with handler
       data: records || [],
@@ -1853,6 +1883,7 @@ const WindowReferenceGrid = ({
         rowSelection,
         columnFilters,
         showColumnFilters: true,
+        sorting,
       },
       onRowSelectionChange: handleRowSelection,
       onColumnFiltersChange: handleMRTColumnFiltersChange,
