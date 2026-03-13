@@ -74,6 +74,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [isProcessRefreshing, setIsProcessRefreshing] = useState(false);
 
   const selectedRecord = useSelectedRecord(tab);
   const selectedRecords = useSelectedRecords(tab) || [];
@@ -210,33 +211,35 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   );
 
   const handleCompleteRefresh = useCallback(async () => {
-    const childTabs = graph.getChildren(tab);
-    const childTabIdsInFormView: string[] = [];
+    setIsProcessRefreshing(true);
+    try {
+      const childTabs = graph.getChildren(tab);
+      const childTabIdsInFormView: string[] = [];
+      const hasChildTabs = childTabs && childTabs.length > 0;
+      const windowIdentifier = activeWindow?.windowIdentifier;
 
-    const hasChildTabs = childTabs && childTabs.length > 0;
-    const windowIdentifier = activeWindow?.windowIdentifier;
-
-    if (hasChildTabs && windowIdentifier) {
-      childTabIdsInFormView.push(...processChildTabsInFormView(childTabs, windowIdentifier));
-    }
-
-    if (isFormView && formViewRefetch) {
-      await formViewRefetch();
-    } else {
-      refetchDatasource(tab.id);
-    }
-
-    if (hasChildTabs) {
-      for (const childTab of childTabs) {
-        refetchDatasource(childTab.id);
+      if (hasChildTabs && windowIdentifier) {
+        childTabIdsInFormView.push(...processChildTabsInFormView(childTabs, windowIdentifier));
       }
-    }
 
-    Metadata.clearToolbarCache();
-    await refetchToolbar();
+      if (isFormView && formViewRefetch) {
+        await formViewRefetch();
+      } else {
+        await refetchDatasource(tab.id);
+      }
 
-    if (childTabIdsInFormView.length > 0 && windowIdentifier) {
-      clearChildrenSelections(windowIdentifier, childTabIdsInFormView);
+      if (hasChildTabs) {
+        await Promise.all(childTabs.map((childTab) => refetchDatasource(childTab.id)));
+      }
+
+      Metadata.clearToolbarCache();
+      await refetchToolbar();
+
+      if (childTabIdsInFormView.length > 0 && windowIdentifier) {
+        clearChildrenSelections(windowIdentifier, childTabIdsInFormView);
+      }
+    } finally {
+      setIsProcessRefreshing(false);
     }
   }, [
     graph,
@@ -300,7 +303,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
               handleMenuToggle,
               t,
               anchorEl,
-              isSessionSyncLoading
+              isSessionSyncLoading || isProcessRefreshing
             )
           : undefined,
     };
@@ -329,6 +332,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     showFilterTooltip,
     showShareLinkTooltip,
     isAdvancedFilterApplied,
+    isProcessRefreshing,
   ]);
 
   if (loading) {
