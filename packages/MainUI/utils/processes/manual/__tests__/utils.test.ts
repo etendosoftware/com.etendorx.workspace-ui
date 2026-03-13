@@ -72,6 +72,16 @@ describe("mapKeysWithDefaults", () => {
     expect(result.payment_date).toBeNull();
   });
 
+  it("maps 'Payment Date' to payment_date and converts format", () => {
+    const result = mapKeysWithDefaults({ "Payment Date": "15-03-2024" });
+    expect(result.payment_date).toBe("2024-03-15");
+  });
+
+  it("maps inppaymentdate to payment_date without changing ISO format", () => {
+    const result = mapKeysWithDefaults({ inppaymentdate: "2014-07-18" });
+    expect(result.payment_date).toBe("2014-07-18");
+  });
+
   it("propagates actual_payment into nested _selection items", () => {
     const result = mapKeysWithDefaults({
       inpgrandtotal: 250,
