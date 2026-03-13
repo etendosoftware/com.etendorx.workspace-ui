@@ -469,10 +469,9 @@ export const useTableData = ({
       const criteriaItem = baseCriteria[0];
       if (criteriaItem?.fieldName === "_dummy") {
         options.criteria = baseCriteria as any;
-      } else if (fieldDirectlyReferencesParent && value && value !== "") {
-        // Direct FK: standard criteria filter
-        options.criteria = [{ fieldName, value, operator }] as any;
       }
+      // Always use baseCriteria for parent-child filtering (Classic behavior)
+      options.criteria = baseCriteria as any;
     } else if (value && value !== "" && value !== undefined && fieldDirectlyReferencesParent) {
       // Fallback: standard criteria filter
       options.criteria = [{ fieldName, value, operator }] as any;
