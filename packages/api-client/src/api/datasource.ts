@@ -144,6 +144,7 @@ export class Datasource {
         "org",
         "sqlWhere",
         "isPickAndEdit",
+        "isSorting",
       ]);
 
       if (keysToPrefix.has(key)) {

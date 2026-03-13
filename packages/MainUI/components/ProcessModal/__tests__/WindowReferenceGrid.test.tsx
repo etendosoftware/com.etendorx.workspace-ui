@@ -8,6 +8,7 @@ import {
   applyRecordValues,
   evaluateFieldReadOnlyLogic,
   buildGridCriteria,
+  getSortByString,
 } from "../WindowReferenceGrid";
 
 describe("WindowReferenceGrid Utilities", () => {
@@ -110,6 +111,41 @@ describe("WindowReferenceGrid Utilities", () => {
       const result = buildGridCriteria(filterExpressions, "grid1");
       expect(result).toHaveLength(1);
       expect(result[0].fieldName).toBe("field1");
+    });
+  });
+
+  describe("getSortByString", () => {
+    const mockColumns: any[] = [
+      { id: "col1", columnName: "COL1", filterFieldName: "field1" },
+      { id: "col2", header: "Header2", columnName: "COL2" },
+    ];
+
+    it("returns undefined when no sorting and no criteria", () => {
+      expect(getSortByString([], mockColumns, false)).toBeUndefined();
+    });
+
+    it("returns default -documentNo when has criteria but no sorting", () => {
+      expect(getSortByString([], mockColumns, true)).toBe("-documentNo");
+    });
+
+    it("returns correctly formatted sorting string for ascending order", () => {
+      const sorting = [{ id: "col1", desc: false }];
+      expect(getSortByString(sorting, mockColumns, false)).toBe("field1");
+    });
+
+    it("returns correctly formatted sorting string for descending order", () => {
+      const sorting = [{ id: "col1", desc: true }];
+      expect(getSortByString(sorting, mockColumns, false)).toBe("-field1");
+    });
+
+    it("uses header as fallback if id doesn't match", () => {
+      const sorting = [{ id: "Header2", desc: false }];
+      expect(getSortByString(sorting, mockColumns, false)).toBe("COL2");
+    });
+
+    it("uses id as fallback if column not found", () => {
+      const sorting = [{ id: "Unknown", desc: true }];
+      expect(getSortByString(sorting, mockColumns, false)).toBe("-Unknown");
     });
   });
 });
