@@ -336,5 +336,3 @@ export const markWindowAsInitialized = (windowState: WindowState): WindowState =
 export const isWindowReady = (windowState: WindowState): boolean => {
   return windowState.initialized;
 };
-
-

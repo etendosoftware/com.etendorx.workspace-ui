@@ -71,7 +71,7 @@ function LabelCmp({ field }: { field: Field }) {
             "field.referencedWindowId": field.referencedWindowId,
             "field.referencedTabId": field.referencedTabId,
             "tab.window": tab.window,
-            "referencedLinkContext": referencedLinkContext,
+            referencedLinkContext: referencedLinkContext,
             selectedRecordId,
           });
           handleClickRedirect({ e, windowId, windowTitle, referencedTabId, selectedRecordId, referencedLinkContext });

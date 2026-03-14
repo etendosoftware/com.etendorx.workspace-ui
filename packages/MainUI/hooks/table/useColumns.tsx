@@ -286,14 +286,15 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                     windowTitle: columnTitle,
                     referencedTabId,
                     selectedRecordId: selectedId,
-                    referencedLinkContext: column.fieldId && column.referencedEntity
-                      ? {
-                          entityName: column.referencedEntity as string,
-                          fieldId: column.fieldId as string,
-                          currentWindowId: tab.window,
-                          columnName: (column.dbColumnName || column.columnName) as string,
-                        }
-                      : undefined,
+                    referencedLinkContext:
+                      column.fieldId && column.referencedEntity
+                        ? {
+                            entityName: column.referencedEntity as string,
+                            fieldId: column.fieldId as string,
+                            currentWindowId: tab.window,
+                            columnName: (column.dbColumnName || column.columnName) as string,
+                          }
+                        : undefined,
                   });
                 }}
                 onKeyDown={(e) => {
@@ -304,17 +305,17 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                     windowTitle: columnTitle,
                     referencedTabId,
                     selectedRecordId: selectedId,
-                    referencedLinkContext: column.fieldId && column.referencedEntity
-                      ? {
-                          entityName: column.referencedEntity as string,
-                          fieldId: column.fieldId as string,
-                          currentWindowId: tab.window,
-                          columnName: (column.dbColumnName || column.columnName) as string,
-                        }
-                      : undefined,
+                    referencedLinkContext:
+                      column.fieldId && column.referencedEntity
+                        ? {
+                            entityName: column.referencedEntity as string,
+                            fieldId: column.fieldId as string,
+                            currentWindowId: tab.window,
+                            columnName: (column.dbColumnName || column.columnName) as string,
+                          }
+                        : undefined,
                   });
-                }}
-                >
+                }}>
                 {displayNode}
               </button>
             );

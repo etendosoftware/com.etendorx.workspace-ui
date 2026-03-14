@@ -84,7 +84,10 @@ export const useRedirect = () => {
    * to ensure authentication headers and session cookies are correctly applied.
    */
   const resolveViaReferencedLink = useCallback(
-    async (context: HandleActionProps["referencedLinkContext"], recordId: string): Promise<ReferencedLinkResponse | null> => {
+    async (
+      context: HandleActionProps["referencedLinkContext"],
+      recordId: string
+    ): Promise<ReferencedLinkResponse | null> => {
       if (!context) return null;
 
       const { entityName, fieldId, currentWindowId, columnName } = context;
