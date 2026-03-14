@@ -3326,7 +3326,7 @@ const DynamicTable = ({
       registerActions({
         refresh: refetch,
         filter: toggleImplicitFilters,
-        save: async () => {},
+        save: async () => false,
         columnFilters: toggleColumnsDropdown,
       });
     }
