@@ -23,9 +23,11 @@ import { getFieldReference } from "@/utils";
 import BaseLabel from "@/components/Label";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
 import { CUSTOM_SELECTORS_IDENTIFIERS } from "@/utils/form/constants";
+import { useTabContext } from "@/contexts/tab";
 
 function LabelCmp({ field }: { field: Field }) {
   const { watch } = useFormContext();
+  const { tab } = useTabContext();
   const value = watch(field.hqlName);
   const isReference = useMemo(() => isEntityReference(getFieldReference(field.column?.reference)), [field]);
   const isAccessible = field.isReferencedWindowAccessible ?? false;
@@ -42,12 +44,41 @@ function LabelCmp({ field }: { field: Field }) {
     const windowTitle = field.name;
     const referencedTabId = field.referencedTabId || "";
     const selectedRecordId = String(value);
+
+    // Build context for ReferencedLink resolution (same as Etendo Classic)
+    const referencedLinkContext =
+      field.id && field.referencedEntity
+        ? {
+            entityName: field.referencedEntity,
+            fieldId: field.id,
+            currentWindowId: tab.window,
+            // field.column contains the full ADColumn JSON — dBColumnName is the DB column name
+            // (e.g. "C_Orderline_ID"), which is what inpKeyReferenceColumnName expects
+            columnName: (field.column as Record<string, unknown>)?.dBColumnName as string,
+          }
+        : undefined;
+
     return (
       <BaseLabel
         name={`${field.name}`}
         htmlFor={field.hqlName}
-        onClick={(e) => handleClickRedirect({ e, windowId, windowTitle, referencedTabId, selectedRecordId })}
-        onKeyDown={(e) => handleKeyDownRedirect({ e, windowId, windowTitle, referencedTabId, selectedRecordId })}
+        onClick={(e) => {
+          console.debug("[Label] Reference clicked - field properties:", {
+            "field.id": field.id,
+            "field.referencedEntity": field.referencedEntity,
+            "field.refColumnName": field.refColumnName,
+            "field.column": field.column,
+            "field.referencedWindowId": field.referencedWindowId,
+            "field.referencedTabId": field.referencedTabId,
+            "tab.window": tab.window,
+            "referencedLinkContext": referencedLinkContext,
+            selectedRecordId,
+          });
+          handleClickRedirect({ e, windowId, windowTitle, referencedTabId, selectedRecordId, referencedLinkContext });
+        }}
+        onKeyDown={(e) =>
+          handleKeyDownRedirect({ e, windowId, windowTitle, referencedTabId, selectedRecordId, referencedLinkContext })
+        }
         link
         data-testid="BaseLabel__40c6fe"
       />
