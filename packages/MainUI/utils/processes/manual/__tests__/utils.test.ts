@@ -86,14 +86,33 @@ describe("mapKeysWithDefaults", () => {
     const result = mapKeysWithDefaults({
       inpgrandtotal: 250,
       nested: {
-        _selection: [{ id: "1" }, { id: "2" }],
+        _selection: [{ id: "1" }, { id: "2", amount: 25 }],
       },
     } as Record<string, unknown>);
 
     const nested = result.nested as Record<string, unknown>;
     const selection = nested._selection as Array<Record<string, unknown>>;
     expect(selection[0].amount).toBe(250);
-    expect(selection[1].amount).toBe(250);
+    expect(selection[1].amount).toBe(25);
+  });
+
+  it('maps "Actual Payment" to actual_payment', () => {
+    const result = mapKeysWithDefaults({ "Actual Payment": "28.92" });
+    expect(result.actual_payment).toBe("28.92");
+  });
+
+  it("fills selection amount only when missing", () => {
+    const result = mapKeysWithDefaults({
+      actual_payment: 100,
+      nested: {
+        _selection: [{ id: "1", amount: 0 }, { id: "2" }],
+      },
+    } as Record<string, unknown>);
+
+    const nested = result.nested as Record<string, unknown>;
+    const selection = nested._selection as Array<Record<string, unknown>>;
+    expect(selection[0].amount).toBe(0);
+    expect(selection[1].amount).toBe(100);
   });
 
   it("handles multiple payment document no key variants", () => {
