@@ -300,7 +300,9 @@ export default function useTableSelection(
     const { selectedRecords, lastSelected } = processSelectedRecords(rowSelection, recordsMap);
 
     // 4. Detect changes (ignore order changes)
-    const currentSelectionIds = selectedRecords.map((r) => String(r.id));
+    // Use rowSelection keys directly instead of selectedRecords to avoid jitter
+    // when records temporarily empty out during data refetching.
+    const currentSelectionIds = Object.keys(rowSelection).filter((id) => rowSelection[id]);
     const hasSelectionIdChanged = !compareArraysAlphabetically(currentSelectionIds, previousSelectionRef.current);
 
     // Check if the actual record objects have changed (e.g. updated data/attachments)
@@ -356,8 +358,12 @@ export default function useTableSelection(
     // DON'T call onSelectionChange to avoid infinite loop
     updateGraphSelection(graph, tab, lastSelected, selectedRecords);
 
-    // Sync to session for backend state
-    if (selectedRecords.length > 0) {
+    // Sync to session for backend state — ONLY when the selected record IDs change.
+    // Record content changes (e.g. updated field values after a save) are already handled
+    // by the form's FormInitializationComponent MODE=EDIT refetch, which fully syncs
+    // session attributes. Firing SETSESSION on every content update causes redundant
+    // sequential requests after each save without any additional benefit.
+    if (selectedRecords.length > 0 && hasSelectionIdChanged) {
       syncSelectedRecordsToSession({
         tab,
         selectedRecords,

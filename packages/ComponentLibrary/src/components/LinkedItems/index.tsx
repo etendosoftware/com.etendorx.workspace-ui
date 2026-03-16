@@ -87,6 +87,11 @@ export const LinkedItems = memo(
     );
 
     useEffect(() => {
+      // Skip fetch when windowId or recordId are not yet stable (e.g., during session
+      // updates triggered by callouts). This prevents redundant UsedByLink requests
+      // that fire every time the session refreshes between callout processing.
+      if (!windowId || !recordId || recordId === "new") return;
+
       let isMounted = true;
 
       const fetchCategories = async () => {

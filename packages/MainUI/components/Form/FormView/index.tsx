@@ -123,8 +123,16 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const [waitingForRefetch, setWaitingForRefetch] = useState<string | null>(null);
   const [graphVersion, setGraphVersion] = useState(0);
 
+  // Incremented only on explicit user navigation (not on post-save NEW→EDIT transition)
+  // so the form element key does NOT change when saving a new record.
+  const [formInstanceKey, setFormInstanceKey] = useState(0);
+
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const lastSelectedRecordRef = useRef<string | null>(null);
+  // Set to true in onSuccess when saving a NEW record so the first re-initialization
+  // triggered by the NEW→EDIT transition is treated as a data refresh (uses setValue
+  // instead of form.reset) rather than a full form reconstruction.
+  const justSavedFromNewRef = useRef(false);
 
   const { graph } = useSelected();
   const { activeWindow, setSelectedRecord, getSelectedRecord, setSelectedRecordAndClearChildren } = useWindowContext();
@@ -193,7 +201,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         .filter((f: any) => f.colorFieldName)
         .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
         .join(",");
-      const result = (await datasource.get(tab.entityName, {
+
+      // Fetch the record first so the graph is updated before refetch() runs.
+      // Running them in parallel caused a race: if refetch() completed first, the graph-sync
+      // useEffect would compute availableFormData from the stale graph record and cache that
+      // hash in lastGraphSyncDataRef. When datasource.get() then returned the updated record
+      // the guard could block the final setSelectedMultiple call, leaving processButtons stale.
+      const getResult = (await datasource.get(tab.entityName, {
         criteria: [{ fieldName: "id", operator: "equals", value: recordId }],
         windowId: tab.window,
         tabId: tab.id,
@@ -212,17 +226,20 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         return;
       }
 
-      const responseData = result.data.response?.data;
+      const responseData = getResult.data.response?.data;
       if (responseData && responseData.length > 0) {
         const updatedRecord = responseData[0];
 
         graph.setSelected(tab, updatedRecord);
         graph.setSelectedMultiple(tab, [updatedRecord]);
 
-        // ALso update the datasource's main records list so the Table component doesn't show old values
-        // when navigating back from the form to the grid.
+        // Also update the datasource's main records list so the Table component doesn't show old
+        // values when navigating back from the form to the grid.
         updateRecordInDatasource(tab.id, updatedRecord);
       }
+
+      // Run refetch() after the graph holds the fresh record so availableFormData (and thus
+      // lastGraphSyncDataRef) is based on up-to-date data when form initialization returns.
       await refetch();
     } catch (error) {
       logger.warn("Error refreshing record and session:", error);
@@ -410,6 +427,101 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * Dependencies: availableFormData, tab.id, stableReset
    */
   const lastInitializedDataRef = useRef<string>("");
+  // Tracks the record+mode context of the last full reset, so data-only refreshes
+  // for the same record can use setValue instead of reset (avoids full re-render).
+  const lastInitializedContextRef = useRef<{ recordId: string | undefined; mode: FormMode } | null>(null);
+
+  const applyDataRefresh = useCallback(
+    (processedData: Record<string, EntityValue>) => {
+      // For data-only refreshes, update changed fields immediately via setValue — even while
+      // loadingFormInitialization is true (i.e. a background refetch is in progress).
+      // This is key for fast parent-tab updates: datasource.get() completes quickly and
+      // updates the graph (graphVersion → record → availableFormData), but a concurrent
+      // refetch() would block this useEffect via the loadingFormInitialization guard and
+      // delay the visual update by the full refetch round-trip (~1-3s).
+      // Safety: we skip undefined values (fields absent from the intermediate availableFormData
+      // while initialState is null/stale) and $_entries (dropdown lists) to avoid clearing
+      // fields that come only from formInitialization and haven't been re-fetched yet.
+      const currentValues = form.getValues();
+      for (const [key, newValue] of Object.entries(processedData)) {
+        // Skip dropdown option lists: they are very large arrays that don't change during a
+        // record refresh (they are populated on initial load / callout execution only).
+        if (key.endsWith("$_entries")) continue;
+
+        // Skip fields absent from the current availableFormData (e.g. session attributes that
+        // come only from formInitialization while it is being re-fetched). We'll pick those up
+        // in the second pass once loadingFormInitialization becomes false.
+        if (newValue === undefined) continue;
+
+        const currentVal = currentValues[key];
+
+        // Fast path for primitives (string/number/boolean/null/undefined): direct equality.
+        // Only fall back to JSON.stringify for objects, avoiding serialising large structures.
+        const hasChanged =
+          newValue !== null && typeof newValue === "object"
+            ? JSON.stringify(currentVal) !== JSON.stringify(newValue)
+            : currentVal !== newValue;
+
+        if (hasChanged) {
+          setValue(key, newValue as EntityValue, { shouldDirty: false });
+        }
+      }
+    },
+    [form, setValue]
+  );
+
+  const applyFullInitialization = useCallback(
+    (processedData: Record<string, EntityValue>) => {
+      setIsFormInitializing(true);
+
+      // Suppress callouts during initial value setting to prevent cascading changes
+      globalCalloutManager.suppress();
+
+      // Reset with keepDirty: false for initial load to prevent false dirty state
+      stableReset(processedData, { keepDirty: false });
+
+      queueMicrotask(() => {
+        setIsFormInitializing(false);
+        // Allow callouts after values have settled
+        setTimeout(() => {
+          globalCalloutManager.resume();
+        }, 100); // Delay to allow all values to settle before enabling callouts
+      });
+    },
+    [stableReset]
+  );
+
+  const hasDataChanged = useCallback((formData: any) => {
+    // Prevent resetting if the data hasn't actually changed.
+    // Exclude `$_entries` keys (dropdown option lists) from the comparison: they can be
+    // very large arrays (100+ items per selector field) and they don't change on record
+    // data refreshes — only on initial load or callout execution.
+    const currentDataString = JSON.stringify(formData, (_key, value) =>
+      _key.endsWith("$_entries") ? undefined : value
+    );
+    if (lastInitializedDataRef.current === currentDataString) {
+      return false;
+    }
+    lastInitializedDataRef.current = currentDataString;
+    return true;
+  }, []);
+
+  const checkIsDataRefresh = useCallback(() => {
+    // Determine whether this is a navigation/initial load or a data-only refresh.
+    // A data refresh happens when the same record in the same mode receives new data
+    // (e.g. parent tab refreshing after a child tab save). In that case we update
+    // only the changed fields via setValue to avoid re-rendering every input.
+    //
+    // We also treat the first re-initialization after a NEW→EDIT post-save transition
+    // as a data refresh, because the server just confirmed the data we sent — only
+    // server-computed deltas need to be applied, no full reconstruction needed.
+    const isPostNewSave = justSavedFromNewRef.current;
+    if (isPostNewSave) {
+      justSavedFromNewRef.current = false;
+    }
+    const lastCtx = lastInitializedContextRef.current;
+    return isPostNewSave || (lastCtx !== null && lastCtx.recordId === currentRecordId && lastCtx.mode === currentMode);
+  }, [currentRecordId, currentMode]);
 
   useEffect(() => {
     // If we are in a "hidden" state (empty recordId and not NEW mode), just reset and return
@@ -418,39 +530,50 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       stableReset({}, { keepDirty: false });
       setIsFormInitializing(false);
       lastInitializedDataRef.current = "";
+      lastInitializedContextRef.current = null;
       return;
     }
 
-    if (!availableFormData || loadingFormInitialization) {
+    if (!availableFormData) {
       return;
     }
 
-    // Prevent resetting if the data hasn't actually changed
-    // This safeguards against spurious re-renders or upstream reference changes
-    // that would otherwise overwrite user edits or callout results
-    const currentDataString = JSON.stringify(availableFormData);
-    if (lastInitializedDataRef.current === currentDataString) {
+    if (!hasDataChanged(availableFormData)) {
       return;
     }
-    lastInitializedDataRef.current = currentDataString;
 
-    setIsFormInitializing(true);
     const processedData = processFormData(availableFormData, tab.fields);
 
-    // Suppress callouts during initial value setting to prevent cascading changes
-    globalCalloutManager.suppress();
+    const isDataRefresh = checkIsDataRefresh();
 
-    // Reset with keepDirty: false for initial load to prevent false dirty state
-    stableReset(processedData, { keepDirty: false });
+    lastInitializedContextRef.current = { recordId: currentRecordId, mode: currentMode };
 
-    queueMicrotask(() => {
-      setIsFormInitializing(false);
-      // Allow callouts after values have settled
-      setTimeout(() => {
-        globalCalloutManager.resume();
-      }, 100); // Delay to allow all values to settle before enabling callouts
-    });
-  }, [availableFormData, tab.id, stableReset, loadingFormInitialization, currentRecordId, currentMode]);
+    if (isDataRefresh) {
+      applyDataRefresh(processedData);
+      return;
+    }
+
+    // For full resets (initial load, navigation to a different record) wait until form
+    // initialization data is ready — premature resets with stale data would populate
+    // dropdowns incorrectly and cause a double-reset flash.
+    if (loadingFormInitialization) {
+      return;
+    }
+
+    applyFullInitialization(processedData);
+  }, [
+    availableFormData,
+    tab.id,
+    tab.fields,
+    loadingFormInitialization,
+    currentRecordId,
+    currentMode,
+    applyDataRefresh,
+    applyFullInitialization,
+    hasDataChanged,
+    checkIsDataRefresh,
+    stableReset,
+  ]);
 
   /**
    * Update graph selection when navigating to a different record.
@@ -462,12 +585,25 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * contains the previous record's data, which would poison `graph.setSelectedMultiple` and
    * cause `processButtons` to evaluate their displayLogic against the old record.
    */
+  const lastGraphSyncDataRef = useRef<string>("");
+
   useEffect(() => {
     if (!recordId || recordId === NEW_RECORD_ID || !availableFormData) return;
 
     // Only sync graph when internal state has caught up with the new recordId prop.
     // During duplication, recordId prop changes one render before currentRecordId updates.
     if (currentRecordId !== recordId) return;
+
+    // Prevent re-syncing the graph if the data hasn't actually changed.
+    // This stops cascading updates (like child tab SETSESSION) when availableFormData
+    // changes reference but not actual data content.
+    const currentDataString = JSON.stringify(availableFormData, (_key, value) =>
+      _key.endsWith("$_entries") ? undefined : value
+    );
+    if (lastGraphSyncDataRef.current === currentDataString) {
+      return;
+    }
+    lastGraphSyncDataRef.current = currentDataString;
 
     // Update graph with current record data so child tabs can see the parent selection
     graph.setSelected(tab, availableFormData);
@@ -605,6 +741,11 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       const newRecordId = String(data.id);
 
       if (currentMode === FormMode.NEW) {
+        // Mark that the next availableFormData change is a post-save update, not navigation.
+        // This prevents the form from doing a full reset (and visual reconstruction) when
+        // transitioning from NEW to EDIT mode after a successful save.
+        justSavedFromNewRef.current = true;
+
         if (!skipFormStateUpdate) {
           // For new records, change to EDIT mode with the new record ID first
           setCurrentMode(FormMode.EDIT);
@@ -648,8 +789,12 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
         if (fullRecordResult.data.response?.data?.[0]) {
           completeRecord = fullRecordResult.data.response.data[0];
-          // Update the graph again just in case there are missing pieces in the partial save payload
+          // Update the graph again just in case there are missing pieces in the partial save payload.
+          // Also call setSelectedMultiple so useToolbar's processButtons re-evaluates displayLogic
+          // against the complete record (the lastGraphSyncDataRef guard in the graph-sync useEffect
+          // may block the indirect update when completeRecord content equals the save response).
           graph.setSelected(tab, completeRecord);
+          graph.setSelectedMultiple(tab, [completeRecord]);
         }
       } catch (e) {
         console.error("Could not fetch full record after save to update table properties:", e);
@@ -663,10 +808,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         updateRecordInDatasource(tab.id, completeRecord);
       }
 
-      // Refresh parent tab datasource if this is a child tab
-      if (parentTab) {
-        refetchDatasource(parentTab.id);
-      }
+      // Parent tab refresh is handled by wrappedOnSave in ToolbarContext
+      // after a successful save, preventing a double refresh on success
+      // and an incorrect refresh on failure.
     },
     [
       currentMode,
@@ -677,8 +821,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       setRecordId,
       setSelectedRecord,
       resetFormChanges,
-      parentTab,
-      refetchDatasource,
       updateRecordInDatasource,
       addRecordToDatasource,
       refetch,
@@ -715,11 +857,11 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * @param options - Save options including showModal and skipFormStateUpdate flags
    */
   const handleSave = useCallback(
-    async (options: SaveOptions) => {
+    async (options: SaveOptions): Promise<boolean> => {
       if (!globalCalloutManager.arePendingCalloutsEmpty() || globalCalloutManager.isCalloutRunning()) {
         await globalCalloutManager.waitForIdle();
       }
-      await save(options);
+      return await save(options);
     },
     [save]
   );
@@ -746,6 +888,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    */
   const handleNavigateToRecord = useCallback(
     (newRecordId: string) => {
+      // Force a fresh form mount so stale field state doesn't bleed into the new record.
+      setFormInstanceKey((prev) => prev + 1);
+
       // Get child tabs that need to be cleared
       const children = graph.getChildren(tab);
       const childIds =
@@ -782,6 +927,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   });
 
   const handleNewRecord = useCallback(() => {
+    // Force a fresh form mount so the previous record's field state doesn't carry over.
+    setFormInstanceKey((prev) => prev + 1);
+
     setCurrentMode(FormMode.NEW);
     setCurrentRecordId(NEW_RECORD_ID);
     setRecordId(NEW_RECORD_ID); // This prop update might be async/delayed
@@ -847,7 +995,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
           {...form}
           data-testid="FormProvider__1a0853">
           <form
-            key={`form-${tab.id}-${recordId}`}
+            key={`form-${tab.id}-${formInstanceKey}`}
             className={`flex h-full max-h-full w-full flex-col gap-2 overflow-hidden transition duration-300 ${
               loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
             }`}>
@@ -867,7 +1015,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               tab={tab}
               mode={currentMode}
               groups={groups}
-              loading={isLoading}
+              loading={loadingFormInitialization}
               recordId={recordId ?? ""}
               initialNoteCount={initialNoteCount}
               initialAttachmentCount={initialAttachmentCount}

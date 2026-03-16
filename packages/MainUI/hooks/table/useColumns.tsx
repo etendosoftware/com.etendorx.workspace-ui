@@ -98,27 +98,39 @@ const extractColorContext = (recordData: EntityData | undefined, column: Column,
     return { rawColor: undefined, finalDisplayValue: "" };
   }
 
-  const allColorKeys = Object.keys(recordData).filter((key) => {
-    const lowerK = key.toLowerCase();
-    if (lowerK.includes("color")) {
-      const val = recordData[key];
-      return typeof val === "string" && isColorString(val.trim());
-    }
-    return false;
-  });
+  let chosenColorKey: string | undefined;
 
-  if (allColorKeys.length === 0) {
-    return { rawColor: undefined, finalDisplayValue: "" };
+  // 1. Explicit checking based on predefined reference/metadata (highest priority)
+  if (column.colorFieldName) {
+    const explicitKey = `${column.hqlName || column.columnName}$${column.colorFieldName}`;
+    const val = recordData[explicitKey];
+    if (typeof val === "string" && isColorString(val.trim())) {
+      chosenColorKey = explicitKey;
+    }
   }
 
-  const potentialPrefixes = [column.columnName, column.name, column.hqlName]
-    .filter(Boolean)
-    .map((p) => String(p).toLowerCase());
+  // 2. Fallback: Magical scanning for color-related suffixes in the payload (legacy support / resilience)
+  if (!chosenColorKey) {
+    const allColorKeys = Object.keys(recordData).filter((key) => {
+      const lowerK = key.toLowerCase();
+      if (lowerK.includes("color")) {
+        const val = recordData[key];
+        return typeof val === "string" && isColorString(val.trim());
+      }
+      return false;
+    });
 
-  const chosenColorKey = allColorKeys.find((ck) => {
-    const prefix = ck.toLowerCase().split("$")[0];
-    return potentialPrefixes.includes(prefix);
-  });
+    if (allColorKeys.length > 0) {
+      const potentialPrefixes = [column.columnName, column.name, column.hqlName]
+        .filter(Boolean)
+        .map((p) => String(p).toLowerCase());
+
+      chosenColorKey = allColorKeys.find((ck) => {
+        const prefix = ck.toLowerCase().split("$")[0];
+        return potentialPrefixes.includes(prefix);
+      });
+    }
+  }
 
   if (!chosenColorKey) {
     return { rawColor: undefined, finalDisplayValue: "" };
