@@ -202,22 +202,20 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
         .join(",");
 
-      // Run the record fetch and the form-initialization refetch in parallel.
-      // Previously these were sequential (datasource.get → await → refetch), doubling latency.
-      // The record fetch updates the graph + table datasource with raw entity data;
-      // the form-initialization refetch updates field metadata and session context.
-      const [getResult] = await Promise.all([
-        datasource.get(tab.entityName, {
-          criteria: [{ fieldName: "id", operator: "equals", value: recordId }],
-          windowId: tab.window,
-          tabId: tab.id,
-          pageSize: 1,
-          startRow: 0,
-          endRow: 1,
-          ...(extraProperties ? { _extraProperties: extraProperties } : {}),
-        }),
-        refetch(),
-      ]);
+      // Fetch the record first so the graph is updated before refetch() runs.
+      // Running them in parallel caused a race: if refetch() completed first, the graph-sync
+      // useEffect would compute availableFormData from the stale graph record and cache that
+      // hash in lastGraphSyncDataRef. When datasource.get() then returned the updated record
+      // the guard could block the final setSelectedMultiple call, leaving processButtons stale.
+      const getResult = (await datasource.get(tab.entityName, {
+        criteria: [{ fieldName: "id", operator: "equals", value: recordId }],
+        windowId: tab.window,
+        tabId: tab.id,
+        pageSize: 1,
+        startRow: 0,
+        endRow: 1,
+        ...(extraProperties ? { _extraProperties: extraProperties } : {}),
+      })) as { data: { response?: { data?: EntityData[] } } };
 
       const currentlySelectedId = activeWindow?.windowIdentifier
         ? getSelectedRecord(activeWindow.windowIdentifier, tab.id)
@@ -228,8 +226,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         return;
       }
 
-      const result = getResult as { data: { response?: { data?: EntityData[] } } };
-      const responseData = result.data.response?.data;
+      const responseData = getResult.data.response?.data;
       if (responseData && responseData.length > 0) {
         const updatedRecord = responseData[0];
 
@@ -240,6 +237,10 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         // values when navigating back from the form to the grid.
         updateRecordInDatasource(tab.id, updatedRecord);
       }
+
+      // Run refetch() after the graph holds the fresh record so availableFormData (and thus
+      // lastGraphSyncDataRef) is based on up-to-date data when form initialization returns.
+      await refetch();
     } catch (error) {
       logger.warn("Error refreshing record and session:", error);
     }
@@ -788,8 +789,12 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
         if (fullRecordResult.data.response?.data?.[0]) {
           completeRecord = fullRecordResult.data.response.data[0];
-          // Update the graph again just in case there are missing pieces in the partial save payload
+          // Update the graph again just in case there are missing pieces in the partial save payload.
+          // Also call setSelectedMultiple so useToolbar's processButtons re-evaluates displayLogic
+          // against the complete record (the lastGraphSyncDataRef guard in the graph-sync useEffect
+          // may block the indirect update when completeRecord content equals the save response).
           graph.setSelected(tab, completeRecord);
+          graph.setSelectedMultiple(tab, [completeRecord]);
         }
       } catch (e) {
         console.error("Could not fetch full record after save to update table properties:", e);
