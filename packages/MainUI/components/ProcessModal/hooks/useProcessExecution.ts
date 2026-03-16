@@ -386,18 +386,27 @@ export function useProcessExecution({
 
         const res: ExecuteProcessResult = { success: true, data: resultData };
         const parsedResult = parseProcessResponse(res);
+        const { messageType, linkTabId, linkRecordId } = parsedResult;
 
-        if (parsedResult.success) {
+        if (messageType === "success" || messageType === "warning") {
           await revalidateDopoProcess();
           const message =
             typeof parsedResult.data === "string"
               ? parsedResult.data
               : parsedResult.data?.message || parsedResult.data?.msgText || "";
-          toast.success(t("process.completedSuccessfully"), {
-            // biome-ignore lint/suspicious/noExplicitAny: data-testid is a valid HTML attribute not in component props type
-            description: React.createElement(ToastContent, { message, "data-testid": "ToastContent__761503" } as any),
-            duration: Number.POSITIVE_INFINITY,
+
+          const toastFn = messageType === "success" ? toast.success : toast.warning;
+          toastFn(messageType === "success" ? t("process.completedSuccessfully") : t("process.warning"), {
+            description: React.createElement(ToastContent, {
+              message,
+              linkTabId,
+              linkRecordId,
+              onNavigate: handleNavigateToTab,
+              "data-testid": "ToastContent__761503",
+            } as any),
+            duration: linkTabId ? Number.POSITIVE_INFINITY : 5000,
           });
+
           setShouldTriggerSuccess(true);
           handleSuccessClose(true);
         } else {
@@ -570,20 +579,32 @@ export function useProcessExecution({
             responseMessage = { msgType: "success", msgText: t("process.completedSuccessfully") };
           }
 
-          const success = responseMessage.msgType === "success";
-          if (success) {
-            toast.success(t("process.completedSuccessfully"), {
-              // biome-ignore lint/suspicious/noExplicitAny: data-testid is a valid HTML attribute not in component props type
+          const msgType = responseMessage.msgType || responseMessage.severity;
+          const isSuccess = msgType === "success";
+          const isWarning = msgType === "warning";
+
+          if (isSuccess || isWarning) {
+            const toastFn = isSuccess ? toast.success : toast.warning;
+            const message = responseMessage.msgText || responseMessage.text || t("process.completedSuccessfully");
+
+            // String functions might return links in their own result structure
+            // For now, we try to parse it if it's HTML
+            const parsed = typeof message === "string" ? parseSmartClientMessage(message) : { text: message };
+
+            toastFn(isSuccess ? t("process.completedSuccessfully") : t("process.warning"), {
               description: React.createElement(ToastContent, {
-                message: responseMessage.msgText || t("process.completedSuccessfully"),
+                message: parsed.text || message,
+                linkTabId: (result as any)?.linkTabId || parsed.tabId,
+                linkRecordId: (result as any)?.linkRecordId || parsed.recordId,
+                onNavigate: handleNavigateToTab,
                 "data-testid": "ToastContent__761503",
               } as any),
-              duration: Number.POSITIVE_INFINITY,
+              duration: (result as any)?.linkTabId || parsed.tabId ? Number.POSITIVE_INFINITY : 5000,
             });
             setShouldTriggerSuccess(true);
             handleSuccessClose(true);
           } else {
-            setResult({ success, data: responseMessage, error: responseMessage.msgText });
+            setResult({ success: false, data: responseMessage, error: responseMessage.msgText });
           }
         } catch (error) {
           logger.warn("Error executing process:", error);
@@ -661,20 +682,29 @@ export function useProcessExecution({
             return;
           }
 
-          const success = status.result === 1;
-          if (success) {
-            toast.success(t("process.completedSuccessfully"), {
-              // biome-ignore lint/suspicious/noExplicitAny: data-testid is a valid HTML attribute not in component props type
+          const isSuccess = status.result === 1;
+          const isWarning = status.result === 2; // Warning code in report-and-process
+
+          if (isSuccess || isWarning) {
+            const toastFn = isSuccess ? toast.success : toast.warning;
+            const message = status.errorMsg || (isSuccess ? t("process.completedSuccessfully") : "");
+
+            const parsed = typeof message === "string" ? parseSmartClientMessage(message) : { text: message };
+
+            toastFn(isSuccess ? t("process.completedSuccessfully") : t("process.warning"), {
               description: React.createElement(ToastContent, {
-                message: status.errorMsg,
+                message: parsed.text || message,
+                linkTabId: parsed.tabId,
+                linkRecordId: parsed.recordId,
+                onNavigate: handleNavigateToTab,
                 "data-testid": "ToastContent__761503",
               } as any),
-              duration: Number.POSITIVE_INFINITY,
+              duration: parsed.tabId ? Number.POSITIVE_INFINITY : 5000,
             });
             setShouldTriggerSuccess(true);
             handleSuccessClose(true);
           } else {
-            setResult({ success, data: status.errorMsg, error: status.errorMsg });
+            setResult({ success: isSuccess, data: status.errorMsg, error: status.errorMsg });
           }
         };
 
