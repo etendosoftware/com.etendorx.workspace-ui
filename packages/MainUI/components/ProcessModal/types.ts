@@ -47,6 +47,7 @@ export interface BaseProcessButton extends BaseButton {
 }
 
 export interface ProcessDefinitionButton extends BaseProcessButton {
+  buttonRefList: RefListField[];
   processDefinition: ProcessDefinition;
 }
 

@@ -203,11 +203,12 @@ export function useProcessExecution({
 
     const msgView = actionWithMsg?.showMsgInProcessView;
     if (msgView) {
-      const parsed = parseSmartClientMessage(msgView.msgText || "");
+      const rawMsg = msgView.msgText || "";
+      const parsed = parseSmartClientMessage(rawMsg);
       return {
-        message: parsed.text || msgView.msgText,
+        message: rawMsg || parsed.text,
         messageType: msgView.msgType,
-        isHtml: false,
+        isHtml: /<[a-z][\s\S]*>/i.test(rawMsg),
         linkTabId: parsed.tabId,
         linkRecordId: parsed.recordId,
       };

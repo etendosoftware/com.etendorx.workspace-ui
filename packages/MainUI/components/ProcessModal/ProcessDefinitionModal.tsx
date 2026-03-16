@@ -85,6 +85,7 @@ import {
 } from "./imports";
 import Modal from "../Modal";
 import Loading from "../loading";
+import { ToastContent } from "../ToastContent";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import { useProcessPayload, isDateReference, convertParameterDateFields } from "./hooks/useProcessPayload";
@@ -922,16 +923,21 @@ function ProcessDefinitionModalContent({
     if (result.success) return null;
 
     const isWarning = result.messageType === "warning";
-    const msgTitle = isWarning ? t("process.warning") : t("process.processError");
-    const msgText =
-      result.error || result.data?.msgText || result.data?.message || t("errors.internalServerError.title");
-    const displayText = msgText.replace(/<br\s*\/?>/gi, "\n");
-    const borderColor = isWarning ? "border-(--color-warning-main)" : "border-(--color-error-main)";
+    const msgTitle = t("process.warning");
+    const rawMsg =
+      result.error ||
+      (typeof result.data === "string" ? result.data : result.data?.msgText || result.data?.message) ||
+      t("errors.internalServerError.title");
+    const msgText = typeof rawMsg === "string" ? rawMsg : JSON.stringify(rawMsg);
+    const isHtml = Boolean(result.isHtml) || /<[a-z][\s\S]*>/i.test(msgText);
+    const borderColor = "border-(--color-warning-main)";
 
     return (
       <div className={`p-3 rounded mb-4 border-l-4 bg-gray-50 ${borderColor}`}>
         <h4 className="font-bold text-sm">{msgTitle}</h4>
-        <p className="text-sm border-(--color-active-40) rounded whitespace-pre-line p-2">{displayText}</p>
+        <div className="border-(--color-active-40) rounded p-2">
+          <ToastContent message={msgText} isHtml={isHtml} data-testid="ToastContent__761503" />
+        </div>
         {isWarning && result.linkTabId && result.linkRecordId && (
           <button
             type="button"
