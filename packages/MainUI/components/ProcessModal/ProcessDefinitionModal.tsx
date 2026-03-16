@@ -923,14 +923,14 @@ function ProcessDefinitionModalContent({
     if (result.success) return null;
 
     const isWarning = result.messageType === "warning";
-    const msgTitle = isWarning ? t("process.warning") : t("process.processError");
+    const msgTitle = t("process.warning");
     const rawMsg =
       result.error ||
       (typeof result.data === "string" ? result.data : result.data?.msgText || result.data?.message) ||
       t("errors.internalServerError.title");
     const msgText = typeof rawMsg === "string" ? rawMsg : JSON.stringify(rawMsg);
     const isHtml = Boolean(result.isHtml) || /<[a-z][\s\S]*>/i.test(msgText);
-    const borderColor = isWarning ? "border-(--color-warning-main)" : "border-(--color-error-main)";
+    const borderColor = "border-(--color-warning-main)";
 
     return (
       <div className={`p-3 rounded mb-4 border-l-4 bg-gray-50 ${borderColor}`}>
