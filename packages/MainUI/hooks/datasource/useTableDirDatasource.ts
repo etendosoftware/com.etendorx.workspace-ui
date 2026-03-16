@@ -176,7 +176,18 @@ export const useTableDirDatasource = ({
       // 2. Build and Merge Context based on type
       const getSpecializedContext = (): Partial<BaseBody> => {
         if (isProcessModal) {
-          // Lean payload for processes - dependencies are handled via criteria or explicitly
+          // ADList (List-type references) requires parent tab/table context so the
+          // SelectorDataSourceFilter can look up the AD_Reference for the field.
+          // Custom entity datasources (e.g. ETASK_Task_Priority) break when given
+          // inpTabId/inpTableId — they use lean payload instead.
+          if (field.selector?.datasourceName === "ADList") {
+            return {
+              _textMatchStyle: "substring",
+              ...parentData,
+              ...invoiceValue,
+              ...formValues,
+            };
+          }
           return {};
         }
 
