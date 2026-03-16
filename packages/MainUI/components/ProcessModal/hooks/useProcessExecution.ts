@@ -355,9 +355,8 @@ export function useProcessExecution({
       message: string;
       linkTabId?: string;
       linkRecordId?: string;
-      customData?: any;
     }) => {
-      const { isSuccess, message, linkTabId, linkRecordId, customData } = params;
+      const { isSuccess, message, linkTabId, linkRecordId } = params;
       const toastFn = isSuccess ? toast.success : toast.warning;
       const title = isSuccess ? t("process.completedSuccessfully") : t("process.warning");
 
@@ -623,7 +622,6 @@ export function useProcessExecution({
               message,
               linkTabId: (result as any)?.linkTabId,
               linkRecordId: (result as any)?.linkRecordId,
-              customData: result,
             });
 
             setShouldTriggerSuccess(true);
