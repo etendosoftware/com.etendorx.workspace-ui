@@ -278,6 +278,38 @@ export function useProcessExecution({
   );
 
   // -------------------------------------------------------------------------
+  // Tab navigation (for openDirectTab warning links)
+  // -------------------------------------------------------------------------
+
+  const handleNavigateToTab = useCallback(
+    async (targetTabId: string, recordId: string) => {
+      if (isRecoveryLoading) return;
+      try {
+        const res = await fetch(`/api/erp/meta/tab/${targetTabId}?language=en_US`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        });
+        const tabData = await res.json();
+        const resolvedWindowId = tabData?.window || tabData?.windowId || targetTabId;
+        setResult(null);
+        onClose();
+        const newWindowIdentifier = getNewWindowIdentifier(resolvedWindowId);
+        triggerRecovery();
+        const newUrlParams = appendWindowToUrl(searchParams, {
+          windowIdentifier: newWindowIdentifier,
+          tabId: targetTabId,
+          recordId,
+        });
+        router.replace(`window?${newUrlParams}`);
+      } catch (e) {
+        logger.warn("[ProcessDefinitionModal] Tab navigation failed, falling back", e);
+        window.location.href = `/window?wi_0=${targetTabId}_${Date.now()}&ri_0=${recordId}`;
+      }
+    },
+    [token, isRecoveryLoading, triggerRecovery, searchParams, router, onClose, setResult]
+  );
+
+  // -------------------------------------------------------------------------
   // Success / close handling
   // -------------------------------------------------------------------------
 
@@ -285,7 +317,7 @@ export function useProcessExecution({
     (triggerSuccess?: boolean) => {
       if (isPending) return;
 
-      const shouldRefresh = triggerSuccess ?? shouldTriggerSuccess;
+      const shouldRefresh = triggerSuccess || shouldTriggerSuccess;
       if (shouldRefresh) {
         onSuccess?.();
       }
@@ -317,36 +349,35 @@ export function useProcessExecution({
     ]
   );
 
-  // -------------------------------------------------------------------------
-  // Tab navigation (for openDirectTab warning links)
-  // -------------------------------------------------------------------------
+  const showProcessToast = useCallback(
+    (params: {
+      isSuccess: boolean;
+      message: string;
+      linkTabId?: string;
+      linkRecordId?: string;
+      customData?: any;
+    }) => {
+      const { isSuccess, message, linkTabId, linkRecordId, customData } = params;
+      const toastFn = isSuccess ? toast.success : toast.warning;
+      const title = isSuccess ? t("process.completedSuccessfully") : t("process.warning");
 
-  const handleNavigateToTab = useCallback(
-    async (targetTabId: string, recordId: string) => {
-      if (isRecoveryLoading) return;
-      try {
-        const res = await fetch(`/api/erp/meta/tab/${targetTabId}?language=en_US`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        });
-        const tabData = await res.json();
-        const resolvedWindowId = tabData?.window || tabData?.windowId || targetTabId;
-        setResult(null);
-        onClose();
-        const newWindowIdentifier = getNewWindowIdentifier(resolvedWindowId);
-        triggerRecovery();
-        const newUrlParams = appendWindowToUrl(searchParams, {
-          windowIdentifier: newWindowIdentifier,
-          tabId: targetTabId,
-          recordId,
-        });
-        router.replace(`window?${newUrlParams}`);
-      } catch (e) {
-        logger.warn("[ProcessDefinitionModal] Tab navigation failed, falling back", e);
-        window.location.href = `/window?wi_0=${targetTabId}_${Date.now()}&ri_0=${recordId}`;
-      }
+      const parsed =
+        typeof message === "string"
+          ? parseSmartClientMessage(message)
+          : { text: message, tabId: undefined, recordId: undefined };
+
+      toastFn(title, {
+        description: React.createElement(ToastContent, {
+          message: parsed.text || message,
+          linkTabId: linkTabId || parsed.tabId,
+          linkRecordId: linkRecordId || parsed.recordId,
+          onNavigate: handleNavigateToTab,
+          "data-testid": "ToastContent__761503",
+        } as any),
+        duration: linkTabId || parsed.tabId ? Number.POSITIVE_INFINITY : 5000,
+      });
     },
-    [token, isRecoveryLoading, triggerRecovery, searchParams, router, onClose, setResult]
+    [t, handleNavigateToTab]
   );
 
   // -------------------------------------------------------------------------
@@ -395,16 +426,11 @@ export function useProcessExecution({
               ? parsedResult.data
               : parsedResult.data?.message || parsedResult.data?.msgText || "";
 
-          const toastFn = messageType === "success" ? toast.success : toast.warning;
-          toastFn(messageType === "success" ? t("process.completedSuccessfully") : t("process.warning"), {
-            description: React.createElement(ToastContent, {
-              message,
-              linkTabId,
-              linkRecordId,
-              onNavigate: handleNavigateToTab,
-              "data-testid": "ToastContent__761503",
-            } as any),
-            duration: linkTabId ? Number.POSITIVE_INFINITY : 5000,
+          showProcessToast({
+            isSuccess: messageType === "success",
+            message,
+            linkTabId,
+            linkRecordId,
           });
 
           setShouldTriggerSuccess(true);
@@ -427,7 +453,7 @@ export function useProcessExecution({
       setShouldTriggerSuccess,
       handleSuccessClose,
       setResult,
-      t,
+      showProcessToast,
     ]
   );
 
@@ -521,6 +547,22 @@ export function useProcessExecution({
     ]
   );
 
+  const extractResponseMessage = useCallback(
+    (result: any) => {
+      if (result?.responseActions?.[0]?.showMsgInProcessView) {
+        return result.responseActions[0].showMsgInProcessView;
+      }
+      if (result?.severity) {
+        return { msgType: result.severity, msgText: result.text };
+      }
+      if (result?.error) {
+        return { msgType: "error", msgText: result.error.msgText || result.error };
+      }
+      return { msgType: "success", msgText: t("process.completedSuccessfully") };
+    },
+    [t]
+  );
+
   const handleExecute = useCallback(
     async (actionValue?: string) => {
       const actionButton = availableButtons.find((b) => b.value === actionValue);
@@ -567,40 +609,23 @@ export function useProcessExecution({
           );
 
           const result = stringFnResult?.data ?? stringFnResult;
-          let responseMessage: { msgType?: string; msgText?: string; severity?: string; text?: string };
-
-          if (result?.responseActions?.[0]?.showMsgInProcessView) {
-            responseMessage = result.responseActions[0].showMsgInProcessView;
-          } else if (result?.severity) {
-            responseMessage = { msgType: result.severity, msgText: result.text };
-          } else if (result?.error) {
-            responseMessage = { msgType: "error", msgText: result.error.msgText || result.error };
-          } else {
-            responseMessage = { msgType: "success", msgText: t("process.completedSuccessfully") };
-          }
+          const responseMessage = extractResponseMessage(result);
 
           const msgType = responseMessage.msgType || responseMessage.severity;
           const isSuccess = msgType === "success";
           const isWarning = msgType === "warning";
 
           if (isSuccess || isWarning) {
-            const toastFn = isSuccess ? toast.success : toast.warning;
             const message = responseMessage.msgText || responseMessage.text || t("process.completedSuccessfully");
 
-            // String functions might return links in their own result structure
-            // For now, we try to parse it if it's HTML
-            const parsed = typeof message === "string" ? parseSmartClientMessage(message) : { text: message };
-
-            toastFn(isSuccess ? t("process.completedSuccessfully") : t("process.warning"), {
-              description: React.createElement(ToastContent, {
-                message: parsed.text || message,
-                linkTabId: (result as any)?.linkTabId || parsed.tabId,
-                linkRecordId: (result as any)?.linkRecordId || parsed.recordId,
-                onNavigate: handleNavigateToTab,
-                "data-testid": "ToastContent__761503",
-              } as any),
-              duration: (result as any)?.linkTabId || parsed.tabId ? Number.POSITIVE_INFINITY : 5000,
+            showProcessToast({
+              isSuccess,
+              message,
+              linkTabId: (result as any)?.linkTabId,
+              linkRecordId: (result as any)?.linkRecordId,
+              customData: result,
             });
+
             setShouldTriggerSuccess(true);
             handleSuccessClose(true);
           } else {
@@ -635,6 +660,8 @@ export function useProcessExecution({
       handleSuccessClose,
       startTransition,
       t,
+      extractResponseMessage,
+      showProcessToast,
     ]
   );
 
@@ -686,21 +713,13 @@ export function useProcessExecution({
           const isWarning = status.result === 2; // Warning code in report-and-process
 
           if (isSuccess || isWarning) {
-            const toastFn = isSuccess ? toast.success : toast.warning;
             const message = status.errorMsg || (isSuccess ? t("process.completedSuccessfully") : "");
 
-            const parsed = typeof message === "string" ? parseSmartClientMessage(message) : { text: message };
-
-            toastFn(isSuccess ? t("process.completedSuccessfully") : t("process.warning"), {
-              description: React.createElement(ToastContent, {
-                message: parsed.text || message,
-                linkTabId: parsed.tabId,
-                linkRecordId: parsed.recordId,
-                onNavigate: handleNavigateToTab,
-                "data-testid": "ToastContent__761503",
-              } as any),
-              duration: parsed.tabId ? Number.POSITIVE_INFINITY : 5000,
+            showProcessToast({
+              isSuccess,
+              message,
             });
+
             setShouldTriggerSuccess(true);
             handleSuccessClose(true);
           } else {
@@ -724,6 +743,7 @@ export function useProcessExecution({
     handleSuccessClose,
     startTransition,
     t,
+    showProcessToast,
   ]);
 
   return {
