@@ -10,10 +10,10 @@ describe("processModalUtils", () => {
       expect(result.recordId).toBeUndefined();
     });
 
-    it("should strip out anchor tags entirely when extracting plain text", () => {
+    it("should strip out anchor tags BUT keep the text inside when extracting plain text", () => {
       const html = "Process <a href='#'>details</a> completed.";
       const result = parseSmartClientMessage(html);
-      expect(result.text).toBe("Process  completed.");
+      expect(result.text).toBe("Process details completed.");
     });
 
     it("should extract tabId and recordId from openDirectTab", () => {

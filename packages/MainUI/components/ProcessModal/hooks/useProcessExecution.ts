@@ -278,6 +278,38 @@ export function useProcessExecution({
   );
 
   // -------------------------------------------------------------------------
+  // Tab navigation (for openDirectTab warning links)
+  // -------------------------------------------------------------------------
+
+  const handleNavigateToTab = useCallback(
+    async (targetTabId: string, recordId: string) => {
+      if (isRecoveryLoading) return;
+      try {
+        const res = await fetch(`/api/erp/meta/tab/${targetTabId}?language=en_US`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        });
+        const tabData = await res.json();
+        const resolvedWindowId = tabData?.window || tabData?.windowId || targetTabId;
+        setResult(null);
+        onClose();
+        const newWindowIdentifier = getNewWindowIdentifier(resolvedWindowId);
+        triggerRecovery();
+        const newUrlParams = appendWindowToUrl(searchParams, {
+          windowIdentifier: newWindowIdentifier,
+          tabId: targetTabId,
+          recordId,
+        });
+        router.replace(`window?${newUrlParams}`);
+      } catch (e) {
+        logger.warn("[ProcessDefinitionModal] Tab navigation failed, falling back", e);
+        window.location.href = `/window?wi_0=${targetTabId}_${Date.now()}&ri_0=${recordId}`;
+      }
+    },
+    [token, isRecoveryLoading, triggerRecovery, searchParams, router, onClose, setResult]
+  );
+
+  // -------------------------------------------------------------------------
   // Success / close handling
   // -------------------------------------------------------------------------
 
@@ -285,7 +317,7 @@ export function useProcessExecution({
     (triggerSuccess?: boolean) => {
       if (isPending) return;
 
-      const shouldRefresh = triggerSuccess ?? shouldTriggerSuccess;
+      const shouldRefresh = triggerSuccess || shouldTriggerSuccess;
       if (shouldRefresh) {
         onSuccess?.();
       }
@@ -317,36 +349,34 @@ export function useProcessExecution({
     ]
   );
 
-  // -------------------------------------------------------------------------
-  // Tab navigation (for openDirectTab warning links)
-  // -------------------------------------------------------------------------
+  const showProcessToast = useCallback(
+    (params: {
+      isSuccess: boolean;
+      message: string;
+      linkTabId?: string;
+      linkRecordId?: string;
+    }) => {
+      const { isSuccess, message, linkTabId, linkRecordId } = params;
+      const toastFn = isSuccess ? toast.success : toast.warning;
+      const title = isSuccess ? t("process.completedSuccessfully") : t("process.warning");
 
-  const handleNavigateToTab = useCallback(
-    async (targetTabId: string, recordId: string) => {
-      if (isRecoveryLoading) return;
-      try {
-        const res = await fetch(`/api/erp/meta/tab/${targetTabId}?language=en_US`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        });
-        const tabData = await res.json();
-        const resolvedWindowId = tabData?.window || tabData?.windowId || targetTabId;
-        setResult(null);
-        onClose();
-        const newWindowIdentifier = getNewWindowIdentifier(resolvedWindowId);
-        triggerRecovery();
-        const newUrlParams = appendWindowToUrl(searchParams, {
-          windowIdentifier: newWindowIdentifier,
-          tabId: targetTabId,
-          recordId,
-        });
-        router.replace(`window?${newUrlParams}`);
-      } catch (e) {
-        logger.warn("[ProcessDefinitionModal] Tab navigation failed, falling back", e);
-        window.location.href = `/window?wi_0=${targetTabId}_${Date.now()}&ri_0=${recordId}`;
-      }
+      const parsed =
+        typeof message === "string"
+          ? parseSmartClientMessage(message)
+          : { text: message, tabId: undefined, recordId: undefined };
+
+      toastFn(title, {
+        description: React.createElement(ToastContent, {
+          message: parsed.text || message,
+          linkTabId: linkTabId || parsed.tabId,
+          linkRecordId: linkRecordId || parsed.recordId,
+          onNavigate: handleNavigateToTab,
+          "data-testid": "ToastContent__761503",
+        } as any),
+        duration: linkTabId || parsed.tabId ? Number.POSITIVE_INFINITY : 5000,
+      });
     },
-    [token, isRecoveryLoading, triggerRecovery, searchParams, router, onClose, setResult]
+    [t, handleNavigateToTab]
   );
 
   // -------------------------------------------------------------------------
@@ -386,18 +416,22 @@ export function useProcessExecution({
 
         const res: ExecuteProcessResult = { success: true, data: resultData };
         const parsedResult = parseProcessResponse(res);
+        const { messageType, linkTabId, linkRecordId } = parsedResult;
 
-        if (parsedResult.success) {
+        if (messageType === "success" || messageType === "warning") {
           await revalidateDopoProcess();
           const message =
             typeof parsedResult.data === "string"
               ? parsedResult.data
               : parsedResult.data?.message || parsedResult.data?.msgText || "";
-          toast.success(t("process.completedSuccessfully"), {
-            // biome-ignore lint/suspicious/noExplicitAny: data-testid is a valid HTML attribute not in component props type
-            description: React.createElement(ToastContent, { message, "data-testid": "ToastContent__761503" } as any),
-            duration: Number.POSITIVE_INFINITY,
+
+          showProcessToast({
+            isSuccess: messageType === "success",
+            message,
+            linkTabId,
+            linkRecordId,
           });
+
           setShouldTriggerSuccess(true);
           handleSuccessClose(true);
         } else {
@@ -418,7 +452,7 @@ export function useProcessExecution({
       setShouldTriggerSuccess,
       handleSuccessClose,
       setResult,
-      t,
+      showProcessToast,
     ]
   );
 
@@ -512,6 +546,22 @@ export function useProcessExecution({
     ]
   );
 
+  const extractResponseMessage = useCallback(
+    (result: any) => {
+      if (result?.responseActions?.[0]?.showMsgInProcessView) {
+        return result.responseActions[0].showMsgInProcessView;
+      }
+      if (result?.severity) {
+        return { msgType: result.severity, msgText: result.text };
+      }
+      if (result?.error) {
+        return { msgType: "error", msgText: result.error.msgText || result.error };
+      }
+      return { msgType: "success", msgText: t("process.completedSuccessfully") };
+    },
+    [t]
+  );
+
   const handleExecute = useCallback(
     async (actionValue?: string) => {
       const actionButton = availableButtons.find((b) => b.value === actionValue);
@@ -558,32 +608,26 @@ export function useProcessExecution({
           );
 
           const result = stringFnResult?.data ?? stringFnResult;
-          let responseMessage: { msgType?: string; msgText?: string; severity?: string; text?: string };
+          const responseMessage = extractResponseMessage(result);
 
-          if (result?.responseActions?.[0]?.showMsgInProcessView) {
-            responseMessage = result.responseActions[0].showMsgInProcessView;
-          } else if (result?.severity) {
-            responseMessage = { msgType: result.severity, msgText: result.text };
-          } else if (result?.error) {
-            responseMessage = { msgType: "error", msgText: result.error.msgText || result.error };
-          } else {
-            responseMessage = { msgType: "success", msgText: t("process.completedSuccessfully") };
-          }
+          const msgType = responseMessage.msgType || responseMessage.severity;
+          const isSuccess = msgType === "success";
+          const isWarning = msgType === "warning";
 
-          const success = responseMessage.msgType === "success";
-          if (success) {
-            toast.success(t("process.completedSuccessfully"), {
-              // biome-ignore lint/suspicious/noExplicitAny: data-testid is a valid HTML attribute not in component props type
-              description: React.createElement(ToastContent, {
-                message: responseMessage.msgText || t("process.completedSuccessfully"),
-                "data-testid": "ToastContent__761503",
-              } as any),
-              duration: Number.POSITIVE_INFINITY,
+          if (isSuccess || isWarning) {
+            const message = responseMessage.msgText || responseMessage.text || t("process.completedSuccessfully");
+
+            showProcessToast({
+              isSuccess,
+              message,
+              linkTabId: (result as any)?.linkTabId,
+              linkRecordId: (result as any)?.linkRecordId,
             });
+
             setShouldTriggerSuccess(true);
             handleSuccessClose(true);
           } else {
-            setResult({ success, data: responseMessage, error: responseMessage.msgText });
+            setResult({ success: false, data: responseMessage, error: responseMessage.msgText });
           }
         } catch (error) {
           logger.warn("Error executing process:", error);
@@ -614,6 +658,8 @@ export function useProcessExecution({
       handleSuccessClose,
       startTransition,
       t,
+      extractResponseMessage,
+      showProcessToast,
     ]
   );
 
@@ -661,20 +707,21 @@ export function useProcessExecution({
             return;
           }
 
-          const success = status.result === 1;
-          if (success) {
-            toast.success(t("process.completedSuccessfully"), {
-              // biome-ignore lint/suspicious/noExplicitAny: data-testid is a valid HTML attribute not in component props type
-              description: React.createElement(ToastContent, {
-                message: status.errorMsg,
-                "data-testid": "ToastContent__761503",
-              } as any),
-              duration: Number.POSITIVE_INFINITY,
+          const isSuccess = status.result === 1;
+          const isWarning = status.result === 2; // Warning code in report-and-process
+
+          if (isSuccess || isWarning) {
+            const message = status.errorMsg || (isSuccess ? t("process.completedSuccessfully") : "");
+
+            showProcessToast({
+              isSuccess,
+              message,
             });
+
             setShouldTriggerSuccess(true);
             handleSuccessClose(true);
           } else {
-            setResult({ success, data: status.errorMsg, error: status.errorMsg });
+            setResult({ success: isSuccess, data: status.errorMsg, error: status.errorMsg });
           }
         };
 
@@ -694,6 +741,7 @@ export function useProcessExecution({
     handleSuccessClose,
     startTransition,
     t,
+    showProcessToast,
   ]);
 
   return {
