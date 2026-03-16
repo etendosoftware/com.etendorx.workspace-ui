@@ -936,7 +936,7 @@ function ProcessDefinitionModalContent({
       <div className={`p-3 rounded mb-4 border-l-4 bg-gray-50 ${borderColor}`}>
         <h4 className="font-bold text-sm">{msgTitle}</h4>
         <div className="border-(--color-active-40) rounded p-2">
-          <ToastContent message={msgText} isHtml={isHtml} />
+          <ToastContent message={msgText} isHtml={isHtml} data-testid="ToastContent__761503" />
         </div>
         {isWarning && result.linkTabId && result.linkRecordId && (
           <button
