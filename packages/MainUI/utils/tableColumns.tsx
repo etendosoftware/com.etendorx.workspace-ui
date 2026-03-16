@@ -132,6 +132,13 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         id: column.name,
         fieldId: column.id,
         columnName: column.hqlName,
+        /**
+         * DB column name (e.g. "C_Orderline_ID") — distinct from columnName which is the HQL/property name.
+         * The backend FieldBuilderWithColumn puts the DB name in the top-level `columnName` field,
+         * while tableColumns maps it to `dbColumnName` to avoid the naming collision.
+         * Used by ReferencedLink resolution in useRedirect.
+         */
+        dbColumnName: column.columnName,
         isMandatory: column.isMandatory,
         _identifier: column.name,
         column: {

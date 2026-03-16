@@ -282,23 +282,52 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                   usePlainLinkStyle ? "text-(--color-dynamic-main) hover:underline" : ""
                 }`}
                 onClick={(e) => {
+                  const selectedId = String(selectedRecordId ?? "");
+                  console.debug("[useColumns] Reference cell clicked:", {
+                    columnName: column.columnName,
+                    fieldId: column.fieldId,
+                    referencedWindowId: windowId,
+                    referencedTabId,
+                    selectedRecordId: selectedId,
+                    referencedEntity: column.referencedEntity,
+                    currentWindowId: tab.window,
+                  });
                   handleClickRedirect({
                     e,
                     windowId,
                     windowTitle: columnTitle,
                     referencedTabId,
-                    selectedRecordId: String(selectedRecordId ?? ""),
+                    selectedRecordId: selectedId,
+                    referencedLinkContext:
+                      column.fieldId && column.referencedEntity
+                        ? {
+                            entityName: column.referencedEntity as string,
+                            fieldId: column.fieldId as string,
+                            currentWindowId: tab.window,
+                            columnName: (column.dbColumnName || column.columnName) as string,
+                          }
+                        : undefined,
                   });
                 }}
-                onKeyDown={(e) =>
+                onKeyDown={(e) => {
+                  const selectedId = String(selectedRecordId ?? "");
                   handleKeyDownRedirect({
                     e,
                     windowId,
                     windowTitle: columnTitle,
                     referencedTabId,
-                    selectedRecordId: String(selectedRecordId ?? ""),
-                  })
-                }>
+                    selectedRecordId: selectedId,
+                    referencedLinkContext:
+                      column.fieldId && column.referencedEntity
+                        ? {
+                            entityName: column.referencedEntity as string,
+                            fieldId: column.fieldId as string,
+                            currentWindowId: tab.window,
+                            columnName: (column.dbColumnName || column.columnName) as string,
+                          }
+                        : undefined,
+                  });
+                }}>
                 {displayNode}
               </button>
             );
