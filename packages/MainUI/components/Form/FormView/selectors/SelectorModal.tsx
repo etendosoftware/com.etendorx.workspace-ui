@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type UIEvent, useEffect } from "react";
+import { useMemo, useState, type UIEvent } from "react";
 import { Dialog, DialogContent, IconButton, Box, Typography } from "@mui/material";
 import {
   MaterialReactTable,
@@ -7,8 +7,7 @@ import {
   type MRT_SortingState,
 } from "material-react-table";
 import { useDatasource } from "../../../../hooks/useDatasource";
-import type { Field, EntityData, SelectorColumn, Column } from "@workspaceui/api-client/src/api/types";
-import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import type { Field, EntityData, SelectorColumn } from "@workspaceui/api-client/src/api/types";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import { useSelected } from "@/hooks/useSelected";
 import { buildEtendoContext } from "@/utils/contextUtils";
@@ -16,21 +15,15 @@ import { useTabContext } from "@/contexts/tab";
 import { useFormContext } from "react-hook-form";
 import { useStyle } from "../../../Table/styles";
 import { useTranslation } from "@/hooks/useTranslation";
-import { DEFAULT_PAGE_SIZE, SELECTOR_SAFE_PARAMS, DEFAULT_SORT_BY } from "@/utils/table/constants";
 import { useLanguage } from "@/contexts/language";
 import { useUserContext } from "@/hooks/useUserContext";
 import {
-  fetchSelectorDefaultFilters,
-  buildCriteriaFromDefaults,
-  type SelectorCriteria,
-  type DefaultFilterResponse,
-} from "@/utils/form/selectors/defaultFilters";
-import {
   buildSelectorColumnDefs,
-  preloadFiltersFromCriteria,
-  getHiddenDefaultCriteria,
+  buildDatasourceColumns,
+  buildSelectorDatasourceParams,
 } from "@/utils/form/selectors/selectorColumns";
-import { logger } from "@/utils/logger";
+import { useSelectorDefaultCriteria } from "./hooks/useSelectorDefaultCriteria";
+import { useSelectorFilterHandlers } from "./hooks/useSelectorFilterHandlers";
 
 interface SelectorModalProps {
   field: Field;
@@ -52,106 +45,35 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
   const { getValues } = useFormContext();
   const { session } = useUserContext();
 
-  // Fetch default criteria from SelectorDefaultFilterActionHandler (replicates Classic two-step flow)
-  const [defaultCriteria, setDefaultCriteria] = useState<SelectorCriteria[] | null>(null);
-  const [defaultFilterResponse, setDefaultFilterResponse] = useState<DefaultFilterResponse | null>(null);
-  const selectorDefinitionId = field.selector?._selectorDefinitionId as string | undefined;
-
-  useEffect(() => {
-    if (!isOpen || !selectorDefinitionId) {
-      setDefaultCriteria(selectorDefinitionId ? null : []);
-      return;
-    }
-
-    let cancelled = false;
-
-    const fetchDefaults = async () => {
-      try {
-        const values = getValues();
-        const context: Record<string, unknown> = {};
-
-        // INP context parameters with proper types (empty string → null to match Classic)
-        if (currentTab?.fields) {
-          for (const tabField of Object.values(currentTab.fields)) {
-            if (tabField.inputName) {
-              const val = values[tabField.hqlName] ?? values[tabField.inputName] ?? values[tabField.id];
-              context[tabField.inputName] = val === "" || val === undefined ? null : val;
-            }
-          }
-        }
-
-        // Tab metadata
-        if (currentTab) {
-          context.inpTabId = currentTab.id;
-          context.inpwindowId = currentTab.window;
-          context.inpTableId = currentTab.table;
-        }
-
-        // Session variables (includes $Element_*, DOCBASETYPE, ORDERTYPE, etc.)
-        if (session) {
-          for (const [key, value] of Object.entries(session)) {
-            if (!(key in context)) {
-              context[key] = value === "" ? null : value;
-            }
-          }
-        }
-
-        context._isFilterByIdSupported = true;
-
-        const response = await fetchSelectorDefaultFilters(selectorDefinitionId, context);
-
-        if (!cancelled) {
-          const criteria = buildCriteriaFromDefaults(response, selectorDefinitionId);
-          setDefaultFilterResponse(response);
-          setDefaultCriteria(criteria);
-          // Preload visible filter values synchronously to avoid race with first datasource fetch
-          const cols = (field.selector?.gridColumns as SelectorColumn[]) || [];
-          const preloaded = preloadFiltersFromCriteria(criteria, cols, response, t);
-          if (preloaded.length > 0) {
-            setColumnFilters((prev) => {
-              const existingIds = new Set(prev.map((f) => f.id));
-              const newFilters = preloaded.filter((f) => !existingIds.has(f.id));
-              return newFilters.length > 0 ? [...prev, ...newFilters] : prev;
-            });
-          }
-        }
-      } catch (err) {
-        logger.warn("Failed to fetch selector default filters", err);
-        if (!cancelled) {
-          setDefaultCriteria([]);
-        }
-      }
-    };
-
-    fetchDefaults();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, selectorDefinitionId, currentTab, getValues, session, field.selector?.gridColumns, t]);
-
-  // Extract datasource and grid columns from field definition
-  // We prioritize the specific datasourceName of the Selector because the backend uses it to generate tailored JSON responses
-  // based on the injected _selectedProperties and filterClass.
   const targetEntity = (field.selector?.datasourceName as string) || field.referencedEntity;
   const gridColumns = (field.selector?.gridColumns as SelectorColumn[]) || [];
 
-  // Filter change handlers for custom filter components
-  const handleTextFilterChange = useCallback((columnId: string, filterValue: string) => {
-    setColumnFilters((prev) => {
-      const filtered = prev.filter((f) => f.id !== columnId);
-      return filterValue?.trim() ? [...filtered, { id: columnId, value: filterValue }] : filtered;
-    });
-  }, []);
+  const datasourceColumns = useMemo(() => buildDatasourceColumns(gridColumns), [gridColumns]);
 
-  const handleBooleanFilterChange = useCallback((columnId: string, selectedOptions: FilterOption[]) => {
-    setColumnFilters((prev) => {
-      const filtered = prev.filter((f) => f.id !== columnId);
-      return selectedOptions.length > 0 ? [...filtered, { id: columnId, value: selectedOptions }] : filtered;
-    });
-  }, []);
+  const { defaultCriteria, defaultFilterResponse, selectorDefinitionId } = useSelectorDefaultCriteria({
+    field,
+    isOpen,
+    currentTab,
+    getValues,
+    session,
+    t,
+    setColumnFilters,
+  });
 
-  // Map idFilter fieldName → _identifier for display in TextFilter (read-only visual)
+  const {
+    advancedColumnFilters,
+    handleTextFilterChange,
+    handleBooleanFilterChange,
+    handleDropdownFilterChange,
+    handleLoadFilterOptions,
+    handleLoadMoreFilterOptions,
+  } = useSelectorFilterHandlers({
+    datasourceColumns,
+    targetEntity,
+    currentTabId: currentTab?.id,
+    setColumnFilters,
+  });
+
   const idFilterDisplayValues = useMemo(() => {
     const map = new Map<string, string>();
     for (const f of defaultFilterResponse?.idFilters ?? []) {
@@ -160,102 +82,64 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
     return map;
   }, [defaultFilterResponse]);
 
-  // Build MRT column definitions with custom filter components (TextFilter, DateSelector, ColumnFilter)
   const columns = useMemo(
     () =>
       buildSelectorColumnDefs(gridColumns, {
         onTextFilterChange: handleTextFilterChange,
         onBooleanFilterChange: handleBooleanFilterChange,
+        onDropdownFilterChange: handleDropdownFilterChange,
+        onLoadFilterOptions: handleLoadFilterOptions,
+        onLoadMoreFilterOptions: handleLoadMoreFilterOptions,
+        columnFilterStates: advancedColumnFilters,
         columnFilters,
         t,
         idFilterDisplayValues,
       }),
-    [gridColumns, handleTextFilterChange, handleBooleanFilterChange, columnFilters, t, idFilterDisplayValues]
-  );
-
-  const datasourceColumns = useMemo(
-    () =>
-      gridColumns.map(
-        (col) =>
-          ({
-            id: col.id,
-            name: col.header,
-            header: col.header,
-            columnName: col.accessorKey,
-            _identifier: col.accessorKey,
-            accessorFn: (v: Record<string, unknown>) => v[col.accessorKey],
-            referencedTabId: null,
-            reference: col.referenceId,
-          }) as Column
-      ),
-    [gridColumns]
+    [
+      gridColumns,
+      handleTextFilterChange,
+      handleBooleanFilterChange,
+      handleDropdownFilterChange,
+      handleLoadFilterOptions,
+      handleLoadMoreFilterOptions,
+      advancedColumnFilters,
+      columnFilters,
+      t,
+      idFilterDisplayValues,
+    ]
   );
 
   const _etendoContext = useMemo(() => {
     return currentTab ? buildEtendoContext(currentTab, graph) : ({} as Record<string, string>);
   }, [currentTab, graph]);
 
-  // Combine context with current form values
-  const datasourceParams = useMemo(() => {
-    const selector = field.selector as Record<string, any> | undefined;
-
-    const params: Record<string, any> = {
-      ..._etendoContext,
-      isSorting: true,
-      language: language,
-      _sortBy: selector?._sortBy || DEFAULT_SORT_BY,
-      pageSize: DEFAULT_PAGE_SIZE,
-      IsSelectorItem: "true",
-      _requestType: "Window",
-      targetProperty: field.hqlName || field.columnName,
-      columnName: field.column?.dBColumnName || field.columnName,
-    };
-
-    // Parse and inject INP context parameters from the form state
-    const values = getValues();
-    if (currentTab?.fields) {
-      for (const tabField of Object.values(currentTab.fields)) {
-        if (tabField.inputName) {
-          const val = values[tabField.hqlName] ?? values[tabField.inputName] ?? values[tabField.id];
-          if (val !== undefined && val !== null) {
-            params[tabField.inputName] = String(val);
-          }
-        }
-      }
-    }
-
-    if (currentTab) {
-      params.windowId = currentTab.window;
-      params.tabId = currentTab.id;
-      params.inpwindowId = currentTab.window;
-      params.inpTabId = currentTab.id;
-      params.adTabId = currentTab.id;
-    }
-
-    if (selector) {
-      for (const param of SELECTOR_SAFE_PARAMS) {
-        if (selector[param] !== undefined && selector[param] !== null) {
-          params[param] = selector[param];
-        }
-      }
-    }
-
-    if (sorting.length > 0) {
-      params.sortBy = `${sorting[0].id}${sorting[0].desc ? " desc" : ""}`;
-    }
-
-    // Ensure _org mirrors ad_org_id (required by backend datasource)
-    if (params.inpadOrgId && !params._org) params._org = params.inpadOrgId;
-
-    // Include only hidden default criteria (those without a visible column filter)
-    // Visible criteria are handled by columnFilters state via LegacyColumnFilterUtils
-    const hiddenCriteria = getHiddenDefaultCriteria(defaultCriteria ?? [], gridColumns, defaultFilterResponse);
-    if (hiddenCriteria.length > 0) {
-      params.criteria = hiddenCriteria;
-    }
-
-    return params;
-  }, [language, sorting, field, _etendoContext, currentTab, getValues, isOpen, defaultCriteria, gridColumns, defaultFilterResponse]);
+  const datasourceParams = useMemo(
+    () =>
+      buildSelectorDatasourceParams({
+        field,
+        etendoContext: _etendoContext,
+        language,
+        sorting,
+        currentTab,
+        formValues: getValues(),
+        columnFilters,
+        defaultCriteria,
+        defaultFilterResponse,
+        gridColumns,
+      }),
+    [
+      field,
+      _etendoContext,
+      language,
+      sorting,
+      currentTab,
+      getValues,
+      columnFilters,
+      defaultCriteria,
+      defaultFilterResponse,
+      gridColumns,
+    ]
+  );
 
   const { records, loading, error, fetchMore, hasMoreRecords } = useDatasource({
     entity: targetEntity,
@@ -266,7 +150,6 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
     skip: !isOpen || !targetEntity || (Boolean(selectorDefinitionId) && defaultCriteria === null),
   });
 
-  // Handle infinite scroll
   const fetchMoreOnBottomReached = (containerRefElement?: HTMLDivElement | null) => {
     if (containerRefElement) {
       const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
@@ -279,7 +162,7 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
   const table = useMaterialReactTable({
     columns,
     data: records,
-    enableTopToolbar: false, // Match table behavior by hiding top toolbar
+    enableTopToolbar: false,
     enableColumnFilters: true,
     enableColumnFilterModes: false,
     enableSorting: true,
@@ -297,20 +180,12 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
       globalFilter,
       columnFilters,
       sorting,
-      showColumnFilters: true, // Force column filters visible to match table
+      showColumnFilters: true,
     },
-    muiTablePaperProps: {
-      sx: sx.tablePaper,
-    },
-    muiTableHeadCellProps: {
-      sx: sx.tableHeadCell,
-    },
-    muiTableBodyCellProps: {
-      sx: sx.tableBodyCell,
-    },
-    muiTableBodyProps: {
-      sx: sx.tableBody,
-    },
+    muiTablePaperProps: { sx: sx.tablePaper },
+    muiTableHeadCellProps: { sx: sx.tableHeadCell },
+    muiTableBodyCellProps: { sx: sx.tableBodyCell },
+    muiTableBodyProps: { sx: sx.tableBody },
     muiTableContainerProps: {
       onScroll: (event: UIEvent<HTMLDivElement>) => fetchMoreOnBottomReached(event.currentTarget),
       sx: { maxHeight: "60vh" },
@@ -320,26 +195,16 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
         onSelect(row.original);
         onClose();
       },
-      sx: {
-        cursor: "pointer",
-        ...sx.tableBodyRow,
-      },
+      sx: { cursor: "pointer", ...sx.tableBodyRow },
     }),
-    initialState: {
-      density: "compact", // Match table density
-    },
+    initialState: { density: "compact" },
   });
 
   return (
     <Dialog open={isOpen} onClose={onClose} maxWidth="lg" fullWidth data-testid={`Dialog__${field.id}`}>
       <Box className="relative flex justify-center items-center p-4 border-b" data-testid={`Box__${field.id}`}>
         <Typography
-          sx={{
-            fontSize: "1.125rem",
-            fontWeight: 700,
-            textTransform: "none",
-            color: "text.primary",
-          }}
+          sx={{ fontSize: "1.125rem", fontWeight: 700, textTransform: "none", color: "text.primary" }}
           data-testid={`Typography__${field.id}`}>
           {field.name}
         </Typography>

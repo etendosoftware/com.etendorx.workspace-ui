@@ -5,17 +5,20 @@ import type { TranslateFunction } from "@/hooks/types";
 import { TextFilter } from "../../../components/Table/TextFilter";
 import { DateSelector } from "../../../components/Table/DateSelector";
 import { ColumnFilter } from "../../../components/Table/ColumnFilter";
+import { DEFAULT_PAGE_SIZE, SELECTOR_SAFE_PARAMS, DEFAULT_SORT_BY } from "@/utils/table/constants";
 import type { SelectorCriteria, DefaultFilterResponse } from "./defaultFilters";
 
 const DATE_REFERENCE_IDS = new Set(["15", "16", "478169542A1747BD942DD70C8B45089C"]);
 const BOOLEAN_REFERENCE_ID = "20";
+const TABLEDIR_REFERENCE_IDS = new Set(["18", "19"]);
 
-type FilterType = "boolean" | "date" | "text";
+type FilterType = "boolean" | "date" | "text" | "dropdown";
 
-function getFilterType(referenceId?: string): FilterType {
+export function getFilterType(referenceId?: string): FilterType {
   if (!referenceId) return "text";
   if (referenceId === BOOLEAN_REFERENCE_ID) return "boolean";
   if (DATE_REFERENCE_IDS.has(referenceId)) return "date";
+  if (TABLEDIR_REFERENCE_IDS.has(referenceId)) return "dropdown";
   return "text";
 }
 
@@ -30,6 +33,9 @@ function buildMinimalColumn(col: SelectorColumn, filterType: FilterType): Column
   if (filterType === "boolean") {
     base.type = "boolean";
     base.column = { reference: col.referenceId, _identifier: "YesNo" };
+  } else if (filterType === "dropdown") {
+    base.type = "tabledir";
+    base.referencedEntity = "true";
   }
 
   return base as Column;
@@ -38,6 +44,10 @@ function buildMinimalColumn(col: SelectorColumn, filterType: FilterType): Column
 interface BuildSelectorColumnDefsOptions {
   onTextFilterChange: (columnId: string, value: string) => void;
   onBooleanFilterChange: (columnId: string, selectedOptions: FilterOption[]) => void;
+  onDropdownFilterChange?: (columnId: string, selectedOptions: FilterOption[]) => void;
+  onLoadFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
+  onLoadMoreFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
+  columnFilterStates?: ColumnFilterState[];
   columnFilters: MRT_ColumnFiltersState;
   t: TranslateFunction;
   idFilterDisplayValues?: Map<string, string>;
@@ -47,7 +57,17 @@ export function buildSelectorColumnDefs(
   gridColumns: SelectorColumn[],
   options: BuildSelectorColumnDefsOptions
 ): MRT_ColumnDef<EntityData>[] {
-  const { onTextFilterChange, onBooleanFilterChange, columnFilters, t, idFilterDisplayValues } = options;
+  const {
+    onTextFilterChange,
+    onBooleanFilterChange,
+    onDropdownFilterChange,
+    onLoadFilterOptions,
+    onLoadMoreFilterOptions,
+    columnFilterStates,
+    columnFilters,
+    t,
+    idFilterDisplayValues,
+  } = options;
 
   return gridColumns.map((col) => {
     const filterType = getFilterType(col.referenceId);
@@ -90,6 +110,32 @@ export function buildSelectorColumnDefs(
           />
         );
       };
+    } else if (filterType === "dropdown") {
+      columnDef.Filter = () => {
+        const currentFilter = columnFilters.find((f) => f.id === col.accessorKey);
+        const filterState = columnFilterStates?.find((f) => f.id === col.accessorKey);
+        const selectedOptions = Array.isArray(currentFilter?.value) ? (currentFilter.value as FilterOption[]) : [];
+
+        const effectiveFilterState: ColumnFilterState = {
+          id: col.accessorKey,
+          selectedOptions,
+          availableOptions: filterState?.availableOptions || [],
+          isMultiSelect: true,
+          loading: filterState?.loading || false,
+          hasMore: filterState?.hasMore || false,
+          searchQuery: filterState?.searchQuery || "",
+        };
+
+        return (
+          <ColumnFilter
+            column={minimalCol}
+            filterState={effectiveFilterState}
+            onFilterChange={(selected: FilterOption[]) => onDropdownFilterChange?.(col.accessorKey, selected)}
+            onLoadOptions={(q?: string) => onLoadFilterOptions?.(col.accessorKey, q)}
+            onLoadMoreOptions={(q?: string) => onLoadMoreFilterOptions?.(col.accessorKey, q)}
+          />
+        );
+      };
     } else if (filterType === "date") {
       columnDef.Filter = () => {
         const currentFilter = columnFilters.find((f) => f.id === col.accessorKey);
@@ -107,9 +153,11 @@ export function buildSelectorColumnDefs(
       columnDef.filterFn = "contains";
     } else {
       columnDef.Filter = () => {
-        const idDisplayValue = idFilterDisplayValues?.get(col.accessorKey);
         const currentFilter = columnFilters.find((f) => f.id === col.accessorKey);
-        const filterValue = idDisplayValue ?? (typeof currentFilter?.value === "string" ? currentFilter.value : undefined);
+        // Show idFilter _identifier only if the user hasn't interacted with this filter yet
+        const idDisplayValue = !currentFilter ? idFilterDisplayValues?.get(col.accessorKey) : undefined;
+        const filterValue =
+          idDisplayValue ?? (typeof currentFilter?.value === "string" ? currentFilter.value : undefined);
 
         return (
           <TextFilter
@@ -165,13 +213,132 @@ export function preloadFiltersFromCriteria(
   return filters;
 }
 
+export function buildDatasourceColumns(gridColumns: SelectorColumn[]): Column[] {
+  return gridColumns.map((col) => {
+    const filterType = getFilterType(col.referenceId);
+    return {
+      id: col.id,
+      name: col.header,
+      header: col.header,
+      columnName: col.accessorKey,
+      _identifier: col.accessorKey,
+      accessorFn: (v: Record<string, unknown>) => v[col.accessorKey],
+      referencedTabId: null,
+      reference: col.referenceId,
+      type: filterType === "dropdown" ? "tabledir" : undefined,
+      referencedEntity: filterType === "dropdown" ? "true" : undefined,
+    } as Column;
+  });
+}
+
 export function getHiddenDefaultCriteria(
   criteria: SelectorCriteria[],
   gridColumns: SelectorColumn[],
-  rawResponse: DefaultFilterResponse | null
+  rawResponse: DefaultFilterResponse | null,
+  activeColumnFilterIds?: Set<string>
 ): SelectorCriteria[] {
   const visibleAccessorKeys = new Set(gridColumns.map((col) => col.accessorKey));
   const idFilterFields = new Set((rawResponse?.idFilters ?? []).map((f) => f.fieldName));
-  // Keep criteria that either have no visible column OR are idFilters (always sent with original ID)
-  return criteria.filter((c) => !visibleAccessorKeys.has(c.fieldName) || idFilterFields.has(c.fieldName));
+  return criteria.filter((c) => {
+    // If the user edited this column's filter, drop the hidden default so the user's takes over
+    if (idFilterFields.has(c.fieldName) && activeColumnFilterIds?.has(c.fieldName)) return false;
+    // Keep criteria that have no visible column OR are idFilters (not yet edited)
+    return !visibleAccessorKeys.has(c.fieldName) || idFilterFields.has(c.fieldName);
+  });
+}
+
+export interface BuildSelectorDatasourceParamsInput {
+  field: {
+    selector?: Record<string, unknown>;
+    hqlName?: string;
+    columnName?: string;
+    column?: { dBColumnName?: string };
+  };
+  etendoContext: Record<string, unknown>;
+  language: string | null;
+  sorting: { id: string; desc: boolean }[];
+  currentTab: {
+    id: string;
+    window: string;
+    fields: Record<string, { inputName?: string; hqlName?: string; id: string }>;
+  } | null;
+  formValues: Record<string, unknown>;
+  columnFilters: { id: string; value: unknown }[];
+  defaultCriteria: SelectorCriteria[] | null;
+  defaultFilterResponse: DefaultFilterResponse | null;
+  gridColumns: SelectorColumn[];
+}
+
+export function buildSelectorDatasourceParams(input: BuildSelectorDatasourceParamsInput): Record<string, unknown> {
+  const {
+    field,
+    etendoContext,
+    language,
+    sorting,
+    currentTab,
+    formValues,
+    columnFilters,
+    defaultCriteria,
+    defaultFilterResponse,
+    gridColumns,
+  } = input;
+  const selector = field.selector;
+
+  const params: Record<string, unknown> = {
+    ...etendoContext,
+    isSorting: true,
+    language,
+    _sortBy: (selector?._sortBy as string) || DEFAULT_SORT_BY,
+    pageSize: DEFAULT_PAGE_SIZE,
+    IsSelectorItem: "true",
+    _requestType: "Window",
+    targetProperty: field.hqlName || field.columnName,
+    columnName: field.column?.dBColumnName || field.columnName,
+  };
+
+  if (currentTab?.fields) {
+    for (const tabField of Object.values(currentTab.fields)) {
+      if (tabField.inputName) {
+        const val = formValues[tabField.hqlName ?? ""] ?? formValues[tabField.inputName] ?? formValues[tabField.id];
+        if (val !== undefined && val !== null) {
+          params[tabField.inputName] = String(val);
+        }
+      }
+    }
+  }
+
+  if (currentTab) {
+    params.windowId = currentTab.window;
+    params.tabId = currentTab.id;
+    params.inpwindowId = currentTab.window;
+    params.inpTabId = currentTab.id;
+    params.adTabId = currentTab.id;
+  }
+
+  if (selector) {
+    for (const param of SELECTOR_SAFE_PARAMS) {
+      if (selector[param] !== undefined && selector[param] !== null) {
+        params[param] = selector[param];
+      }
+    }
+  }
+
+  if (sorting.length > 0) {
+    params.sortBy = `${sorting[0].id}${sorting[0].desc ? " desc" : ""}`;
+  }
+
+  if (params.inpadOrgId && !params._org) params._org = params.inpadOrgId;
+
+  const activeFilterIds = new Set(columnFilters.map((f) => f.id));
+  const hiddenCriteria = getHiddenDefaultCriteria(
+    defaultCriteria ?? [],
+    gridColumns,
+    defaultFilterResponse,
+    activeFilterIds
+  );
+  if (hiddenCriteria.length > 0) {
+    params.criteria = hiddenCriteria;
+  }
+
+  return params;
 }
