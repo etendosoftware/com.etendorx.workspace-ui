@@ -1,14 +1,14 @@
-import { useMemo, useState, type UIEvent, useEffect } from "react";
+import { useCallback, useMemo, useState, type UIEvent, useEffect } from "react";
 import { Dialog, DialogContent, IconButton, Box, Typography } from "@mui/material";
 import {
   MaterialReactTable,
   useMaterialReactTable,
-  type MRT_ColumnDef,
   type MRT_ColumnFiltersState,
   type MRT_SortingState,
 } from "material-react-table";
 import { useDatasource } from "../../../../hooks/useDatasource";
 import type { Field, EntityData, SelectorColumn, Column } from "@workspaceui/api-client/src/api/types";
+import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import { useSelected } from "@/hooks/useSelected";
 import { buildEtendoContext } from "@/utils/contextUtils";
@@ -23,7 +23,13 @@ import {
   fetchSelectorDefaultFilters,
   buildCriteriaFromDefaults,
   type SelectorCriteria,
+  type DefaultFilterResponse,
 } from "@/utils/form/selectors/defaultFilters";
+import {
+  buildSelectorColumnDefs,
+  preloadFiltersFromCriteria,
+  getHiddenDefaultCriteria,
+} from "@/utils/form/selectors/selectorColumns";
 import { logger } from "@/utils/logger";
 
 interface SelectorModalProps {
@@ -34,7 +40,7 @@ interface SelectorModalProps {
   currentDisplayValue?: string;
 }
 
-const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }: SelectorModalProps) => {
+const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps) => {
   const [globalFilter, setGlobalFilter] = useState("");
   const { sx } = useStyle();
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
@@ -48,6 +54,7 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
 
   // Fetch default criteria from SelectorDefaultFilterActionHandler (replicates Classic two-step flow)
   const [defaultCriteria, setDefaultCriteria] = useState<SelectorCriteria[] | null>(null);
+  const [defaultFilterResponse, setDefaultFilterResponse] = useState<DefaultFilterResponse | null>(null);
   const selectorDefinitionId = field.selector?._selectorDefinitionId as string | undefined;
 
   useEffect(() => {
@@ -94,7 +101,19 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
         const response = await fetchSelectorDefaultFilters(selectorDefinitionId, context);
 
         if (!cancelled) {
-          setDefaultCriteria(buildCriteriaFromDefaults(response, selectorDefinitionId));
+          const criteria = buildCriteriaFromDefaults(response, selectorDefinitionId);
+          setDefaultFilterResponse(response);
+          setDefaultCriteria(criteria);
+          // Preload visible filter values synchronously to avoid race with first datasource fetch
+          const cols = (field.selector?.gridColumns as SelectorColumn[]) || [];
+          const preloaded = preloadFiltersFromCriteria(criteria, cols, response, t);
+          if (preloaded.length > 0) {
+            setColumnFilters((prev) => {
+              const existingIds = new Set(prev.map((f) => f.id));
+              const newFilters = preloaded.filter((f) => !existingIds.has(f.id));
+              return newFilters.length > 0 ? [...prev, ...newFilters] : prev;
+            });
+          }
         }
       } catch (err) {
         logger.warn("Failed to fetch selector default filters", err);
@@ -109,19 +128,7 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
     return () => {
       cancelled = true;
     };
-  }, [isOpen, selectorDefinitionId, currentTab, getValues, session]);
-
-  // Initialize filters based on current value
-  useEffect(() => {
-    if (isOpen && currentDisplayValue && field.selector?.displayField) {
-      setColumnFilters([
-        {
-          id: field.selector.displayField as string,
-          value: [currentDisplayValue],
-        },
-      ]);
-    }
-  }, [isOpen, currentDisplayValue, field.selector?.displayField]);
+  }, [isOpen, selectorDefinitionId, currentTab, getValues, session, field.selector?.gridColumns, t]);
 
   // Extract datasource and grid columns from field definition
   // We prioritize the specific datasourceName of the Selector because the backend uses it to generate tailored JSON responses
@@ -129,15 +136,41 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
   const targetEntity = (field.selector?.datasourceName as string) || field.referencedEntity;
   const gridColumns = (field.selector?.gridColumns as SelectorColumn[]) || [];
 
-  const columns = useMemo<MRT_ColumnDef<EntityData>[]>(
+  // Filter change handlers for custom filter components
+  const handleTextFilterChange = useCallback((columnId: string, filterValue: string) => {
+    setColumnFilters((prev) => {
+      const filtered = prev.filter((f) => f.id !== columnId);
+      return filterValue?.trim() ? [...filtered, { id: columnId, value: filterValue }] : filtered;
+    });
+  }, []);
+
+  const handleBooleanFilterChange = useCallback((columnId: string, selectedOptions: FilterOption[]) => {
+    setColumnFilters((prev) => {
+      const filtered = prev.filter((f) => f.id !== columnId);
+      return selectedOptions.length > 0 ? [...filtered, { id: columnId, value: selectedOptions }] : filtered;
+    });
+  }, []);
+
+  // Map idFilter fieldName → _identifier for display in TextFilter (read-only visual)
+  const idFilterDisplayValues = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const f of defaultFilterResponse?.idFilters ?? []) {
+      map.set(f.fieldName, f._identifier);
+    }
+    return map;
+  }, [defaultFilterResponse]);
+
+  // Build MRT column definitions with custom filter components (TextFilter, DateSelector, ColumnFilter)
+  const columns = useMemo(
     () =>
-      gridColumns.map((col) => ({
-        accessorKey: col.accessorKey,
-        header: col.header,
-        enableSorting: col.enableSorting ?? true,
-        enableColumnFilter: col.enableFiltering ?? true,
-      })),
-    [gridColumns]
+      buildSelectorColumnDefs(gridColumns, {
+        onTextFilterChange: handleTextFilterChange,
+        onBooleanFilterChange: handleBooleanFilterChange,
+        columnFilters,
+        t,
+        idFilterDisplayValues,
+      }),
+    [gridColumns, handleTextFilterChange, handleBooleanFilterChange, columnFilters, t, idFilterDisplayValues]
   );
 
   const datasourceColumns = useMemo(
@@ -214,13 +247,15 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
     // Ensure _org mirrors ad_org_id (required by backend datasource)
     if (params.inpadOrgId && !params._org) params._org = params.inpadOrgId;
 
-    // Include default criteria from SelectorDefaultFilterActionHandler
-    if (defaultCriteria && defaultCriteria.length > 0) {
-      params.criteria = defaultCriteria;
+    // Include only hidden default criteria (those without a visible column filter)
+    // Visible criteria are handled by columnFilters state via LegacyColumnFilterUtils
+    const hiddenCriteria = getHiddenDefaultCriteria(defaultCriteria ?? [], gridColumns, defaultFilterResponse);
+    if (hiddenCriteria.length > 0) {
+      params.criteria = hiddenCriteria;
     }
 
     return params;
-  }, [language, sorting, field, _etendoContext, currentTab, getValues, isOpen, defaultCriteria]);
+  }, [language, sorting, field, _etendoContext, currentTab, getValues, isOpen, defaultCriteria, gridColumns, defaultFilterResponse]);
 
   const { records, loading, error, fetchMore, hasMoreRecords } = useDatasource({
     entity: targetEntity,
@@ -246,6 +281,7 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
     data: records,
     enableTopToolbar: false, // Match table behavior by hiding top toolbar
     enableColumnFilters: true,
+    enableColumnFilterModes: false,
     enableSorting: true,
     enablePagination: false,
     enableRowSelection: false,

@@ -9,13 +9,13 @@ export interface SelectorCriteria {
   value: unknown;
 }
 
-interface IdFilter {
+export interface IdFilter {
   fieldName: string;
   id: string;
   _identifier: string;
 }
 
-interface DefaultFilterResponse {
+export interface DefaultFilterResponse {
   idFilters?: IdFilter[];
   [key: string]: string | IdFilter[] | undefined;
 }
