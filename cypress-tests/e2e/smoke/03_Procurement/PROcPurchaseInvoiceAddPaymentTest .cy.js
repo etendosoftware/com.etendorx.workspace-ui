@@ -46,14 +46,15 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
 
     cy.get('[data-testid="TextInput__3374"]').type("11,2", { force: true });
 
+    cy.intercept("POST", "**/api/datasource**").as("saveLineDatasource");
     cy.get("button.toolbar-button-save").eq(1).click();
+    cy.wait("@saveLineDatasource", { timeout: 30000 });
     cy.wait(500);
 
     cy.closeToastIfPresent();
+    cy.wait(500);
 
-    cy.get('[data-testid="IconButtonWithText__process-menu"]').should("be.visible").click();
-
-    cy.get(".rounded-2xl > :nth-child(1)").click();
+    cy.openProcessMenu(4, "Complete");
     cy.wait(500);
 
     cy.get(".h-\\[625px\\] > .items-center > .font-semibold").should("be.visible");
@@ -61,11 +62,15 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
 
     cy.clickOkInLegacyPopup();
     cy.wait(500);
+
     cy.get('[data-testid="close-button"]').click();
     cy.closeToastIfPresent();
-
-    cy.get("button.toolbar-button-refresh").filter(":visible").first().should("be.enabled").click();
     cy.wait(500);
+
+    cy.get("button.toolbar-button-refresh:visible", { timeout: 10000 }).first().should("be.enabled").click();
+    cy.wait(1000);
+
+    cy.contains(".MuiChip-label", "Completed", { timeout: 20000 }).should("exist");
 
     cy.contains("button", "Available Process").click();
 
