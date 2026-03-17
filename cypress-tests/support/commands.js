@@ -485,3 +485,21 @@ Cypress.Commands.add("openAdvancedFilters", () => {
   cy.get("button.toolbar-button-advanced-filters").first().click();
   cy.get("div").contains("Advanced Filters").should("be.visible");
 });
+
+Cypress.Commands.add("openProcessMenu", (expectedCount, processName, retries = 3) => {
+  cy.contains("button", "Available Process", { timeout: 15000 }).should("be.visible").click();
+  cy.wait(500);
+
+  cy.get('[data-testid="ProcessMenuItemBase__541926"]', { timeout: 5000 }).then(($items) => {
+    if ($items.length < expectedCount && retries > 0) {
+      cy.get("body").click(0, 0);
+      cy.wait(500);
+      cy.get("button.toolbar-button-refresh:visible", { timeout: 10000 }).first().should("be.enabled").click();
+      cy.wait(1000);
+      cy.openProcessMenu(expectedCount, processName, retries - 1);
+    } else {
+      expect($items.length).to.be.gte(expectedCount);
+      cy.contains('[data-testid="ProcessMenuItemBase__541926"]', processName).click();
+    }
+  });
+});
