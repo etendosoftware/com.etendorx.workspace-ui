@@ -409,10 +409,36 @@ export const useTableData = ({
       return { fieldName: tab.parentColumns[0] || "id", directReference: true };
     }
 
-    const matchingField = tab.parentColumns.find((colName) => {
-      const field = tab.fields[colName];
-      return field?.referencedEntity === parentTab.entityName;
+    let matchingFields = tab.parentColumns.filter((colName) => {
+      const field = tab.fields?.[colName];
+      return field?.referencedEntity === parentTab.entityName || field?.targetEntity === parentTab.entityName;
     });
+
+    // Fallback: if no field matches by referenced entity, try matching by name
+    if (matchingFields.length === 0) {
+      matchingFields = tab.parentColumns.filter((colName) =>
+        colName.toLowerCase().includes(parentTab.entityName.toLowerCase())
+      );
+    }
+
+    // If multiple fields remain, prioritize the one whose name exactly matches the entity
+    const matchingField =
+      matchingFields.length > 1
+        ? matchingFields.find((f) => f.toLowerCase() === parentTab.entityName.toLowerCase()) ||
+          matchingFields.find((f) => f.toLowerCase().includes(parentTab.entityName.toLowerCase())) ||
+          matchingFields[0]
+        : matchingFields[0];
+
+    // Final fallback: if no field was found in parentColumns, try to find any field in the tab
+    // whose name matches the parent entity name (common in Rx/Classic property mapping)
+    if (!matchingField) {
+      const entityMatch = Object.keys(tab.fields || {}).find(
+        (f) => f.toLowerCase() === parentTab.entityName.toLowerCase()
+      );
+      if (entityMatch) {
+        return { fieldName: entityMatch, directReference: true };
+      }
+    }
 
     return {
       fieldName: matchingField || tab.parentColumns[0] || "id",
@@ -452,6 +478,9 @@ export const useTableData = ({
       isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
       pageSize: 100,
       ...(extraProperties ? { _extraProperties: extraProperties } : {}),
+      _className: "OBViewDataSource",
+      Constants_IDENTIFIER: "_identifier",
+      Constants_FIELDSEPARATOR: "$",
     };
 
     // Add Etendo Classic Context Variables
@@ -466,16 +495,25 @@ export const useTableData = ({
     // Build base criteria (handling Parent-Child or Dummy fallback via disableParentKeyProperty)
     const baseCriteria = buildBaseCriteria({ tab, parentTab, parentId });
     if (baseCriteria.length > 0) {
-      const criteriaItem = baseCriteria[0];
-      if (criteriaItem?.fieldName === "_dummy") {
-        options.criteria = baseCriteria as any;
-      }
-      // Always use baseCriteria for parent-child filtering (Classic behavior)
-      options.criteria = baseCriteria as any;
-    } else if (value && value !== "" && value !== undefined && fieldDirectlyReferencesParent) {
+      options.criteria = baseCriteria.map((c) => ({
+        ...c,
+        _constructor: "AdvancedCriteria",
+      })) as any;
+    } else if (value && value !== "" && value !== undefined && fieldName !== "_dummy") {
       // Fallback: standard criteria filter
-      options.criteria = [{ fieldName, value, operator }] as any;
+      options.criteria = [
+        {
+          fieldName,
+          value,
+          operator,
+          _constructor: "AdvancedCriteria",
+        },
+      ] as any;
     }
+
+    // Set constructor and operator for AdvancedCriteria compatibility
+    options._constructor = "AdvancedCriteria";
+    options.operator = "and";
 
     if (parentTab?.entityName && parentId) {
       // Keep existing format for backward compat (e.g. Process Request datasource)

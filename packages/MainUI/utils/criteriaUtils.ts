@@ -54,19 +54,42 @@ export const buildBaseCriteria = ({ tab, parentTab, parentId }: BaseCriteriaOpti
   }
 
   const getParentFieldName = () => {
-    if (tab.fields && tab.parentColumns && tab.parentColumns.length > 0) {
-      return tab.parentColumns[0] || "id";
+    if (!tab.parentColumns || tab.parentColumns.length === 0) {
+      return "id";
     }
 
-    const matchingField =
-      tab.fields && tab.parentColumns
-        ? tab.parentColumns.find((colName) => {
-            const field = tab.fields[colName];
-            return field?.referencedEntity === parentTab.entityName;
-          })
-        : undefined;
+    let matchingFields = tab.parentColumns.filter((colName) => {
+      const field = tab.fields?.[colName];
+      return field?.referencedEntity === parentTab.entityName || field?.targetEntity === parentTab.entityName;
+    });
 
-    return matchingField || tab.parentColumns?.[0] || "id";
+    // Fallback: if no field matches by referenced entity, try matching by name
+    if (matchingFields.length === 0) {
+      matchingFields = tab.parentColumns.filter((colName) =>
+        colName.toLowerCase().includes(parentTab.entityName.toLowerCase())
+      );
+    }
+
+    // If multiple fields remain, prioritize the one whose name exactly matches the entity
+    const matchingField =
+      matchingFields.length > 1
+        ? matchingFields.find((f) => f.toLowerCase() === parentTab.entityName.toLowerCase()) ||
+          matchingFields.find((f) => f.toLowerCase().includes(parentTab.entityName.toLowerCase())) ||
+          matchingFields[0]
+        : matchingFields[0];
+
+    // Final fallback: if no field was found in parentColumns, try to find any field in the tab
+    // whose name matches the parent entity name (common in Rx/Classic property mapping)
+    if (!matchingField) {
+      const entityMatch = Object.keys(tab.fields || {}).find(
+        (f) => f.toLowerCase() === parentTab.entityName.toLowerCase()
+      );
+      if (entityMatch) {
+        return entityMatch;
+      }
+    }
+
+    return matchingField || tab.parentColumns[0] || "id";
   };
 
   const fieldName = getParentFieldName();
