@@ -216,10 +216,6 @@ export function useDatasource({
       noActiveFilter: true,
     };
 
-    if (allCriteria.length > 0) {
-      finalParams.criteria = allCriteria;
-    }
-
     return finalParams;
   }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, activeColumnFilters]);
 

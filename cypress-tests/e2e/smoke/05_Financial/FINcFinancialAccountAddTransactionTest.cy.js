@@ -142,8 +142,8 @@ describe("Financial Account - Add Transaction from Purchase Invoice", () => {
     // Step 6: Verify Payment Out Plan
     // -------------------------
     cy.get('button[title="Payment Plan"]', { timeout: 10000 }).should("be.visible").click();
-    cy.wait(500);
-    cy.get("button.toolbar-button-refresh").filter(":visible").first().should("be.enabled").click();
+    cy.wait(1000);
+    cy.get("button.toolbar-button-refresh:visible", { timeout: 10000 }).first().should("be.enabled").click();
     cy.wait(1000);
 
     // Verify Expected: 24.64

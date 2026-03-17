@@ -44,8 +44,8 @@ import { mapSummariesToBackend, getSummaryCriteria } from "@/utils/table/utils";
 import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { buildEtendoContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
-import { buildBaseCriteria } from "@/utils/criteriaUtils";
 import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
+import { buildBaseCriteria, resolveParentFieldName } from "@/utils/criteriaUtils";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -410,18 +410,9 @@ export const useTableData = ({
       return { fieldName: tab.parentColumns[0] || "id", directReference: true };
     }
 
-    const matchingField = tab.parentColumns.find((colName) => {
-      const field = tab.fields[colName];
-      return field?.referencedEntity === parentTab.entityName;
-    });
-
-    return {
-      fieldName: matchingField || tab.parentColumns[0] || "id",
-      // directReference is true only when a field directly referencing the parent was found.
-      // When false, the server-side hqlwhereclause handles filtering via context variables.
-      directReference: Boolean(matchingField),
-    };
-  }, [tab.parentColumns, tab.fields, tab.uIPattern, parentTab]);
+    const fieldName = resolveParentFieldName(tab, parentTab);
+    return { fieldName, directReference: true };
+  }, [tab, parentTab]);
 
   // Helper to apply sort options to query
   const applySortToOptions = useCallback(
@@ -453,6 +444,9 @@ export const useTableData = ({
       isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
       pageSize: DEFAULT_PAGE_SIZE,
       ...(extraProperties ? { _extraProperties: extraProperties } : {}),
+      _className: "OBViewDataSource",
+      Constants_IDENTIFIER: "_identifier",
+      Constants_FIELDSEPARATOR: "$",
     };
 
     // Add Etendo Classic Context Variables
@@ -467,16 +461,25 @@ export const useTableData = ({
     // Build base criteria (handling Parent-Child or Dummy fallback via disableParentKeyProperty)
     const baseCriteria = buildBaseCriteria({ tab, parentTab, parentId });
     if (baseCriteria.length > 0) {
-      const criteriaItem = baseCriteria[0];
-      if (criteriaItem?.fieldName === "_dummy") {
-        options.criteria = baseCriteria as any;
-      }
-      // Always use baseCriteria for parent-child filtering (Classic behavior)
-      options.criteria = baseCriteria as any;
-    } else if (value && value !== "" && value !== undefined && fieldDirectlyReferencesParent) {
+      options.criteria = baseCriteria.map((c) => ({
+        ...c,
+        _constructor: "AdvancedCriteria",
+      })) as any;
+    } else if (value && value !== "" && value !== undefined && fieldName !== "_dummy") {
       // Fallback: standard criteria filter
-      options.criteria = [{ fieldName, value, operator }] as any;
+      options.criteria = [
+        {
+          fieldName,
+          value,
+          operator,
+          _constructor: "AdvancedCriteria",
+        },
+      ] as any;
     }
+
+    // Set constructor and operator for AdvancedCriteria compatibility
+    options._constructor = "AdvancedCriteria";
+    options.operator = "and";
 
     if (parentTab?.entityName && parentId) {
       // Keep existing format for backward compat (e.g. Process Request datasource)
