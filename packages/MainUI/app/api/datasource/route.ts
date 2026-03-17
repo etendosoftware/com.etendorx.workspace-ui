@@ -5,7 +5,6 @@ import { shouldCacheDatasource } from "@/app/api/_utils/datasourceCache";
 import { shouldPassthroughJson, getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
 import { executeWithSessionAndCsrfRetry } from "@/app/api/_utils/sessionRetryWithCsrf";
 import { getDatasourceUrl } from "../_utils/endpoints";
-import { logCurl } from "@/app/api/_utils/loguing/utils";
 import type { DatasourceParams } from "@workspaceui/api-client/src/api/types";
 import type { SmartClientPayload } from "@/app/api/_utils/datasource";
 export const runtime = "nodejs";
@@ -156,8 +155,6 @@ async function fetchDatasource(
   const headers = createHeaders(userToken, cookieHeader, csrfToken, "application/x-www-form-urlencoded");
   const formData = createFormData(params);
 
-  logCurl(erpUrl, "POST", headers, formData);
-
   const response = await fetch(erpUrl, {
     method: "POST",
     headers,
@@ -186,8 +183,6 @@ async function fetchDatasourceJson(
   if (csrfToken && params && typeof params === "object" && "csrfToken" in params) {
     processedParams = { ...params, csrfToken };
   }
-
-  logCurl(erpUrl, "POST", headers, processedParams);
 
   const response = await fetch(erpUrl, {
     method: "POST",
