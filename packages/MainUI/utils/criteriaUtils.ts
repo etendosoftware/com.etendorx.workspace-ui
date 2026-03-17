@@ -30,6 +30,55 @@ export interface CriteriaItem {
 }
 
 /**
+ * Resolves the field name in `tab` that references `parentTab`.
+ * Shared by `buildBaseCriteria` and `useTableData`'s parent field resolution.
+ *
+ * Resolution order:
+ *  1. parentColumns whose field directly references the parent entity (referencedEntity / targetEntity)
+ *  2. parentColumns whose name contains the parent entity name (substring match)
+ *  3. Any field in tab.fields whose name exactly matches the parent entity name
+ *  4. First entry in parentColumns, or "id" as final fallback
+ */
+export const resolveParentFieldName = (tab: Tab, parentTab: Tab): string => {
+  if (!tab.parentColumns || tab.parentColumns.length === 0) {
+    return "id";
+  }
+
+  let matchingFields = tab.parentColumns.filter((colName) => {
+    const field = tab.fields?.[colName];
+    return field?.referencedEntity === parentTab.entityName || field?.targetEntity === parentTab.entityName;
+  });
+
+  // Fallback: if no field matches by referenced entity, try matching by name
+  if (matchingFields.length === 0) {
+    matchingFields = tab.parentColumns.filter((colName) =>
+      colName.toLowerCase().includes(parentTab.entityName.toLowerCase())
+    );
+  }
+
+  // If multiple fields remain, prioritize the one whose name exactly matches the entity
+  const matchingField =
+    matchingFields.length > 1
+      ? matchingFields.find((f) => f.toLowerCase() === parentTab.entityName.toLowerCase()) ||
+        matchingFields.find((f) => f.toLowerCase().includes(parentTab.entityName.toLowerCase())) ||
+        matchingFields[0]
+      : matchingFields[0];
+
+  // Final fallback: if no field was found in parentColumns, try to find any field in the tab
+  // whose name matches the parent entity name (common in Rx/Classic property mapping)
+  if (!matchingField) {
+    const entityMatch = Object.keys(tab.fields || {}).find(
+      (f) => f.toLowerCase() === parentTab.entityName.toLowerCase()
+    );
+    if (entityMatch) {
+      return entityMatch;
+    }
+  }
+
+  return matchingField || tab.parentColumns[0] || "id";
+};
+
+/**
  * Builds the base criteria for a datasource request.
  * Handles the logic for Parent-Child relationships.
  *
@@ -39,7 +88,7 @@ export interface CriteriaItem {
  * The actual filtering is done server-side via session variables (e.g. `@EntityName.id@`)
  * set separately in `useTableData`.
  *
- * The `getParentFieldName` logic below is preserved as a fallback for cases where
+ * The `resolveParentFieldName` logic is used as a fallback for cases where
  * `parentId` is not set but a tab/parentColumns relationship is defined.
  */
 export const buildBaseCriteria = ({ tab, parentTab, parentId }: BaseCriteriaOptions): [] | [CriteriaItem] => {
@@ -53,27 +102,10 @@ export const buildBaseCriteria = ({ tab, parentTab, parentId }: BaseCriteriaOpti
     return [{ fieldName: "_dummy", value: Date.now() as EntityValue, operator: "equals" }];
   }
 
-  const getParentFieldName = () => {
-    if (tab.fields && tab.parentColumns && tab.parentColumns.length > 0) {
-      return tab.parentColumns[0] || "id";
-    }
-
-    const matchingField =
-      tab.fields && tab.parentColumns
-        ? tab.parentColumns.find((colName) => {
-            const field = tab.fields[colName];
-            return field?.referencedEntity === parentTab.entityName;
-          })
-        : undefined;
-
-    return matchingField || tab.parentColumns?.[0] || "id";
-  };
-
-  const fieldName = getParentFieldName();
-  const operator = "equals";
+  const fieldName = resolveParentFieldName(tab, parentTab);
 
   if (parentId && parentId !== "") {
-    return [{ fieldName, value: parentId as EntityValue, operator }];
+    return [{ fieldName, value: parentId as EntityValue, operator: "equals" }];
   }
 
   return [];
