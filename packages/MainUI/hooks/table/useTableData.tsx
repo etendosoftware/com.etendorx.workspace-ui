@@ -44,7 +44,7 @@ import { mapSummariesToBackend, getSummaryCriteria } from "@/utils/table/utils";
 import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { buildEtendoContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
-import { buildBaseCriteria } from "@/utils/criteriaUtils";
+import { buildBaseCriteria, resolveParentFieldName } from "@/utils/criteriaUtils";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -409,44 +409,9 @@ export const useTableData = ({
       return { fieldName: tab.parentColumns[0] || "id", directReference: true };
     }
 
-    let matchingFields = tab.parentColumns.filter((colName) => {
-      const field = tab.fields?.[colName];
-      return field?.referencedEntity === parentTab.entityName || field?.targetEntity === parentTab.entityName;
-    });
-
-    // Fallback: if no field matches by referenced entity, try matching by name
-    if (matchingFields.length === 0) {
-      matchingFields = tab.parentColumns.filter((colName) =>
-        colName.toLowerCase().includes(parentTab.entityName.toLowerCase())
-      );
-    }
-
-    // If multiple fields remain, prioritize the one whose name exactly matches the entity
-    const matchingField =
-      matchingFields.length > 1
-        ? matchingFields.find((f) => f.toLowerCase() === parentTab.entityName.toLowerCase()) ||
-          matchingFields.find((f) => f.toLowerCase().includes(parentTab.entityName.toLowerCase())) ||
-          matchingFields[0]
-        : matchingFields[0];
-
-    // Final fallback: if no field was found in parentColumns, try to find any field in the tab
-    // whose name matches the parent entity name (common in Rx/Classic property mapping)
-    if (!matchingField) {
-      const entityMatch = Object.keys(tab.fields || {}).find(
-        (f) => f.toLowerCase() === parentTab.entityName.toLowerCase()
-      );
-      if (entityMatch) {
-        return { fieldName: entityMatch, directReference: true };
-      }
-    }
-
-    return {
-      fieldName: matchingField || tab.parentColumns[0] || "id",
-      // directReference is true only when a field directly referencing the parent was found.
-      // When false, the server-side hqlwhereclause handles filtering via context variables.
-      directReference: Boolean(matchingField),
-    };
-  }, [tab.parentColumns, tab.fields, tab.uIPattern, parentTab]);
+    const fieldName = resolveParentFieldName(tab, parentTab);
+    return { fieldName, directReference: true };
+  }, [tab, parentTab]);
 
   // Helper to apply sort options to query
   const applySortToOptions = useCallback(
