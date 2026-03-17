@@ -18,6 +18,13 @@ import { useStyle } from "../../../Table/styles";
 import { useTranslation } from "@/hooks/useTranslation";
 import { DEFAULT_PAGE_SIZE, SELECTOR_SAFE_PARAMS, DEFAULT_SORT_BY } from "@/utils/table/constants";
 import { useLanguage } from "@/contexts/language";
+import { useUserContext } from "@/hooks/useUserContext";
+import {
+  fetchSelectorDefaultFilters,
+  buildCriteriaFromDefaults,
+  type SelectorCriteria,
+} from "@/utils/form/selectors/defaultFilters";
+import { logger } from "@/utils/logger";
 
 interface SelectorModalProps {
   field: Field;
@@ -37,6 +44,72 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { getValues } = useFormContext();
+  const { session } = useUserContext();
+
+  // Fetch default criteria from SelectorDefaultFilterActionHandler (replicates Classic two-step flow)
+  const [defaultCriteria, setDefaultCriteria] = useState<SelectorCriteria[] | null>(null);
+  const selectorDefinitionId = field.selector?._selectorDefinitionId as string | undefined;
+
+  useEffect(() => {
+    if (!isOpen || !selectorDefinitionId) {
+      setDefaultCriteria(selectorDefinitionId ? null : []);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchDefaults = async () => {
+      try {
+        const values = getValues();
+        const context: Record<string, unknown> = {};
+
+        // INP context parameters with proper types (empty string → null to match Classic)
+        if (currentTab?.fields) {
+          for (const tabField of Object.values(currentTab.fields)) {
+            if (tabField.inputName) {
+              const val = values[tabField.hqlName] ?? values[tabField.inputName] ?? values[tabField.id];
+              context[tabField.inputName] = val === "" || val === undefined ? null : val;
+            }
+          }
+        }
+
+        // Tab metadata
+        if (currentTab) {
+          context.inpTabId = currentTab.id;
+          context.inpwindowId = currentTab.window;
+          context.inpTableId = currentTab.table;
+        }
+
+        // Session variables (includes $Element_*, DOCBASETYPE, ORDERTYPE, etc.)
+        if (session) {
+          for (const [key, value] of Object.entries(session)) {
+            if (!(key in context)) {
+              context[key] = value === "" ? null : value;
+            }
+          }
+        }
+
+        context._isFilterByIdSupported = true;
+
+        const response = await fetchSelectorDefaultFilters(selectorDefinitionId, context);
+
+        if (!cancelled) {
+          setDefaultCriteria(buildCriteriaFromDefaults(response, selectorDefinitionId));
+        }
+      } catch (err) {
+        logger.warn("Failed to fetch selector default filters", err);
+        if (!cancelled) {
+          setDefaultCriteria([]);
+        }
+      }
+    };
+
+    fetchDefaults();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, selectorDefinitionId, currentTab, getValues, session]);
 
   // Initialize filters based on current value
   useEffect(() => {
@@ -141,8 +214,13 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
     // Ensure _org mirrors ad_org_id (required by backend datasource)
     if (params.inpadOrgId && !params._org) params._org = params.inpadOrgId;
 
+    // Include default criteria from SelectorDefaultFilterActionHandler
+    if (defaultCriteria && defaultCriteria.length > 0) {
+      params.criteria = defaultCriteria;
+    }
+
     return params;
-  }, [language, sorting, field, _etendoContext, currentTab, getValues, isOpen]);
+  }, [language, sorting, field, _etendoContext, currentTab, getValues, isOpen, defaultCriteria]);
 
   const { records, loading, error, fetchMore, hasMoreRecords } = useDatasource({
     entity: targetEntity,
@@ -150,7 +228,7 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect, currentDisplayValue }
     searchQuery: globalFilter,
     activeColumnFilters: columnFilters,
     columns: datasourceColumns,
-    skip: !isOpen || !targetEntity,
+    skip: !isOpen || !targetEntity || (Boolean(selectorDefinitionId) && defaultCriteria === null),
   });
 
   // Handle infinite scroll
