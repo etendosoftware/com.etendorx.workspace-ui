@@ -147,9 +147,19 @@ const KEY_MAP: KeyMapConfig = {
   inpcBpartnerId: { target: "received_from", default: null },
   "Payment Document No": { target: "payment_documentno", default: null },
   "Payment Document No.": { target: "payment_documentno", default: null },
+  "Actual Payment": { target: "actual_payment", default: 0 },
+  "Conversion Rate": { target: "conversion_rate", default: 0 },
+  "Overpayment Action": { target: "overpayment_action", default: null },
+  "Received From": { target: "received_from", default: null },
+  "Payment Method": { target: "fin_paymentmethod_id", default: null },
+  Currency: { target: "c_currency_id", default: null },
+  "Sales Transaction": { target: "issotrx", default: false },
+  "Payment Date": { target: "payment_date", default: undefined },
   inpfinPaymentmethodId: { target: "fin_paymentmethod_id", default: null },
   fin_payment_id: { target: "fin_payment_id", default: null },
   inpgrandtotal: { target: "actual_payment", default: 0 },
+  inppaymentdate: { target: "payment_date", default: undefined },
+  inpPaymentDate: { target: "payment_date", default: undefined },
   inpdateacct: { target: "payment_date", default: undefined },
   inptotallines: { target: "amount_inv_ords", default: 0 },
   inpissotrx: { target: "issotrx", default: false },
@@ -190,7 +200,7 @@ function recursiveUpdateSelection(obj: NestedObject, parentActualPayment?: numbe
     if (key === "_selection" && Array.isArray(value)) {
       obj[key] = value.map((item: SelectionItem) => ({
         ...item,
-        amount: currentActualPayment ?? 0,
+        amount: item.amount ?? currentActualPayment ?? 0,
       }));
     } else if (value && typeof value === "object" && !Array.isArray(value)) {
       recursiveUpdateSelection(value as NestedObject, currentActualPayment);

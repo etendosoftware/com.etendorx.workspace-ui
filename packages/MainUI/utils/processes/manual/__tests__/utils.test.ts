@@ -72,18 +72,47 @@ describe("mapKeysWithDefaults", () => {
     expect(result.payment_date).toBeNull();
   });
 
+  it("maps 'Payment Date' to payment_date and converts format", () => {
+    const result = mapKeysWithDefaults({ "Payment Date": "15-03-2024" });
+    expect(result.payment_date).toBe("2024-03-15");
+  });
+
+  it("maps inppaymentdate to payment_date without changing ISO format", () => {
+    const result = mapKeysWithDefaults({ inppaymentdate: "2014-07-18" });
+    expect(result.payment_date).toBe("2014-07-18");
+  });
+
   it("propagates actual_payment into nested _selection items", () => {
     const result = mapKeysWithDefaults({
       inpgrandtotal: 250,
       nested: {
-        _selection: [{ id: "1" }, { id: "2" }],
+        _selection: [{ id: "1" }, { id: "2", amount: 25 }],
       },
     } as Record<string, unknown>);
 
     const nested = result.nested as Record<string, unknown>;
     const selection = nested._selection as Array<Record<string, unknown>>;
     expect(selection[0].amount).toBe(250);
-    expect(selection[1].amount).toBe(250);
+    expect(selection[1].amount).toBe(25);
+  });
+
+  it('maps "Actual Payment" to actual_payment', () => {
+    const result = mapKeysWithDefaults({ "Actual Payment": "28.92" });
+    expect(result.actual_payment).toBe("28.92");
+  });
+
+  it("fills selection amount only when missing", () => {
+    const result = mapKeysWithDefaults({
+      actual_payment: 100,
+      nested: {
+        _selection: [{ id: "1", amount: 0 }, { id: "2" }],
+      },
+    } as Record<string, unknown>);
+
+    const nested = result.nested as Record<string, unknown>;
+    const selection = nested._selection as Array<Record<string, unknown>>;
+    expect(selection[0].amount).toBe(0);
+    expect(selection[1].amount).toBe(100);
   });
 
   it("handles multiple payment document no key variants", () => {
