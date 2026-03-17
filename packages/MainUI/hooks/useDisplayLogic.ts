@@ -9,7 +9,7 @@ import { useExpressionDependencies } from "./useExpressionDependencies";
 
 interface UseDisplayLogicProps {
   field: Field;
-  values?: any; // Changed from Field to any/Record to be safer with spread, though original was Field
+  values?: any;
 }
 
 export default function useDisplayLogic({ field, values }: UseDisplayLogicProps) {
@@ -30,7 +30,11 @@ export default function useDisplayLogic({ field, values }: UseDisplayLogicProps)
     const compiledExpr = compileExpression(field.displayLogicExpression);
 
     try {
-      const currentValues = { ...record, ...formValues, ...values };
+      // Filter out undefined values from formValues to avoid overriding valid record values.
+      // useWatch returns undefined for fields not yet registered or not yet initialized in RHF,
+      // which would otherwise shadow the actual boolean values (false) from the record.
+      const definedFormValues = Object.fromEntries(Object.entries(formValues || {}).filter(([, v]) => v !== undefined));
+      const currentValues = { ...record, ...definedFormValues, ...values };
 
       const smartContext = createSmartContext({
         values: currentValues,
@@ -40,9 +44,7 @@ export default function useDisplayLogic({ field, values }: UseDisplayLogicProps)
         context: session,
       });
 
-      const result = compiledExpr(smartContext, smartContext);
-
-      return result;
+      return compiledExpr(smartContext, smartContext);
     } catch (error) {
       console.error(`[DisplayLogic Error] Field: ${field.name}`, error);
       return logger.error("Unexpected error", error);

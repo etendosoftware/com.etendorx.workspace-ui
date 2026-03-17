@@ -201,7 +201,15 @@ const BaseSelectorComp = ({
         const targetField = fieldsByColumnName[column];
         const hqlName = targetField?.hqlName ?? column;
 
-        setValue(hqlName, value, { shouldDirty: false });
+        // Etendo encodes boolean (YES_NO, reference "20") as "" for false and "Y" for true.
+        // Convert to JS booleans so SmartContext normalizes them correctly for display logic.
+        let processedValue: string | boolean = value;
+        if (targetField?.column?.reference === FIELD_REFERENCE_CODES.BOOLEAN.id) {
+          if (value === "" || value === "false") processedValue = false;
+          else if (value === "Y" || value === "true") processedValue = true;
+        }
+
+        setValue(hqlName, processedValue, { shouldDirty: false });
 
         if (targetField && identifier) {
           setValue(`${hqlName}$_identifier`, identifier, { shouldDirty: false });
@@ -229,7 +237,8 @@ const BaseSelectorComp = ({
     (auxiliaryInputValues: FormInitializationResponse["auxiliaryInputValues"]) => {
       for (const [column, { value }] of Object.entries(auxiliaryInputValues ?? {})) {
         const targetField = fieldsByColumnName[column];
-        setValue(targetField?.hqlName || column, value, { shouldDirty: false });
+        const hqlName = targetField?.hqlName || column;
+        setValue(hqlName, value, { shouldDirty: false });
       }
     },
     [fieldsByColumnName, setValue]

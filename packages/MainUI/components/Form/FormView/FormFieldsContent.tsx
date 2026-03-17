@@ -22,6 +22,7 @@ import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
 import Collapsible from "@/components/Form/Collapsible";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import { useFormViewContext } from "./contexts/FormViewContext";
+import { createSmartContext } from "@/utils/expressions";
 import { useRef, useEffect, useState } from "react";
 import LinkIcon from "@workspaceui/componentlibrary/src/assets/icons/link.svg";
 import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
@@ -166,9 +167,11 @@ export function FormFields({
 
           const compiledExpr = compileExpression(field.displayLogicExpression);
           try {
-            // Reuse the formData snapshot captured at component level (watch() is already
-            // called once above); avoids calling watch() N times inside the render loop.
-            return compiledExpr(session, formData);
+            // Use SmartContext to normalize boolean values (false → 'N', true → 'Y') so that
+            // displayLogicExpressions comparing against 'N'/'Y' (after parseDynamicExpression
+            // transforms === false → === 'N') evaluate correctly against raw RHF form data.
+            const sectionCtx = createSmartContext({ values: formData, fields: tab.fields, context: session });
+            return compiledExpr(sectionCtx, sectionCtx);
           } catch (error) {
             console.warn("Error executing expression:", field.displayLogicExpression, error);
             return true;
