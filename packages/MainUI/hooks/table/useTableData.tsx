@@ -442,11 +442,17 @@ export const useTableData = ({
     const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
     const operator = "equals";
 
+    const extraProperties = Object.values(tab.fields || {})
+      .filter((f: any) => f.colorFieldName)
+      .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
+      .join(",");
+
     const options: DatasourceOptions = {
       windowId: tab.window,
       tabId: tab.id,
       isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
       pageSize: DEFAULT_PAGE_SIZE,
+      ...(extraProperties ? { _extraProperties: extraProperties } : {}),
     };
 
     // Add Etendo Classic Context Variables
@@ -464,10 +470,9 @@ export const useTableData = ({
       const criteriaItem = baseCriteria[0];
       if (criteriaItem?.fieldName === "_dummy") {
         options.criteria = baseCriteria as any;
-      } else if (fieldDirectlyReferencesParent && value && value !== "") {
-        // Direct FK: standard criteria filter
-        options.criteria = [{ fieldName, value, operator }] as any;
       }
+      // Always use baseCriteria for parent-child filtering (Classic behavior)
+      options.criteria = baseCriteria as any;
     } else if (value && value !== "" && value !== undefined && fieldDirectlyReferencesParent) {
       // Fallback: standard criteria filter
       options.criteria = [{ fieldName, value, operator }] as any;

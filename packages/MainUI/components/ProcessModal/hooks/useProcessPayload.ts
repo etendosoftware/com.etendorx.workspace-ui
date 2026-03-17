@@ -71,6 +71,8 @@ const shouldConvertEmptyToNull = (reference: string): boolean =>
 
 const convertDateFieldValue = (fieldValue: unknown): unknown => {
   if (!fieldValue || typeof fieldValue !== "string") return fieldValue;
+  // Treat the literal string "null" as an absent value — the server cannot parse it as a date
+  if (fieldValue === "null") return null;
   const originalValue = String(fieldValue);
   const convertedValue = convertToISODateFormat(originalValue);
   return convertedValue !== originalValue ? convertedValue : fieldValue;
@@ -134,7 +136,7 @@ export function useProcessPayload({
         val = rawValues[p.dBColumnName];
       }
 
-      if (val === "" && p.reference && shouldConvertEmptyToNull(p.reference)) {
+      if ((val === "" || val === "null") && p.reference && shouldConvertEmptyToNull(p.reference)) {
         val = null;
       }
 

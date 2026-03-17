@@ -16,6 +16,7 @@
  */
 
 import { useTranslation } from "@/hooks/useTranslation";
+import { formatClassicDate } from "@workspaceui/componentlibrary/src/utils/dateFormatter";
 import { useTab } from "@/hooks/useTab";
 import {
   type EntityData,
@@ -27,6 +28,10 @@ import {
 } from "@workspaceui/api-client/src/api/types";
 import {
   MaterialReactTable,
+  MRT_ShowHideColumnsButton,
+  MRT_ToggleDensePaddingButton,
+  MRT_ToggleFiltersButton,
+  MRT_ToggleFullScreenButton,
   useMaterialReactTable,
   type MRT_RowSelectionState,
   type MRT_ColumnFiltersState,
@@ -34,7 +39,9 @@ import {
   type MRT_Row,
   type MRT_TopToolbarProps,
   type MRT_ColumnDef,
+  type MRT_SortingState,
 } from "material-react-table";
+
 import { useDatasource } from "@/hooks/useDatasource";
 import { useGridColumnFilters } from "@/hooks/table/useGridColumnFilters";
 import { useColumns } from "@/hooks/table/useColumns";
@@ -46,7 +53,6 @@ import Loading from "../loading";
 import { tableStyles } from "./styles";
 import type { WindowReferenceGridProps } from "./types";
 import type { GridSelectionStructure } from "./ProcessDefinitionModal";
-import PlusIcon from "../../../ComponentLibrary/src/assets/icons/plus.svg";
 import { saveRecord } from "../Table/utils/saveOperations";
 import type { SaveOperation } from "../Table/types/inlineEditing";
 import { useUserContext } from "@/hooks/useUserContext";
@@ -71,7 +77,7 @@ const PAGE_SIZE = 100;
 /**
  * Extracts the actual value from a wrapped value object or returns the value directly
  */
-function extractActualValue(value: unknown): EntityValue {
+export function extractActualValue(value: unknown): EntityValue {
   if (typeof value === "object" && value !== null && "value" in value) {
     return (value as { value: EntityValue }).value;
   }
@@ -81,7 +87,10 @@ function extractActualValue(value: unknown): EntityValue {
 /**
  * Merges default values into the params object
  */
-function mergeDefaultsIntoParams(defaults: Record<string, unknown>, mergedParams: Record<string, EntityValue>): void {
+export function mergeDefaultsIntoParams(
+  defaults: Record<string, unknown>,
+  mergedParams: Record<string, EntityValue>
+): void {
   for (const [key, value] of Object.entries(defaults)) {
     mergedParams[key] = extractActualValue(value);
   }
@@ -90,7 +99,7 @@ function mergeDefaultsIntoParams(defaults: Record<string, unknown>, mergedParams
 /**
  * Merges current values into the params object, overriding defaults
  */
-function mergeCurrentValuesIntoParams(
+export function mergeCurrentValuesIntoParams(
   currentValues: Record<string, unknown>,
   mergedParams: Record<string, EntityValue>
 ): void {
@@ -99,6 +108,27 @@ function mergeCurrentValuesIntoParams(
       mergedParams[key] = extractActualValue(value);
     }
   }
+}
+
+/**
+ * Builds the sortBy string for the backend based on MRT sorting state and columns.
+ * @returns {string | undefined} The sortBy string or undefined if no sorting/criteria.
+ */
+export function getSortByString(
+  sorting: MRT_SortingState,
+  rawColumns: Column[],
+  hasCriteria: boolean
+): string | undefined {
+  if (sorting.length > 0) {
+    const sortItem = sorting[0];
+    const column = rawColumns?.find((col: Column) => col.id === sortItem.id || col.header === sortItem.id);
+    const fieldName = (column as any)?.filterFieldName || column?.columnName || sortItem.id;
+    return sortItem.desc ? `-${fieldName}` : fieldName;
+  }
+  if (hasCriteria) {
+    return "-documentNo";
+  }
+  return undefined;
 }
 
 /**
@@ -138,7 +168,7 @@ const StableGridCellEditorRenderer = ({ cell, row, column }: any) => {
 };
 
 // Helper to resolve parent context ID
-const resolveParentContextId = (
+export const resolveParentContextId = (
   dbName: string,
   effectiveRecordValues: any,
   currentValues: any
@@ -188,11 +218,17 @@ const resolveParentContextId = (
 };
 
 // Stable renderer for read-only cells
-const ReadOnlyCellRenderer = ({ renderedCellValue }: any) => (
-  <span className="text-gray-700 block truncate" title={String(renderedCellValue ?? "")}>
-    {renderedCellValue}
-  </span>
-);
+const ReadOnlyCellRenderer = ({ renderedCellValue }: any) => {
+  const displayValue =
+    typeof renderedCellValue === "string" && /^\d{4}-\d{2}-\d{2}T/.test(renderedCellValue)
+      ? formatClassicDate(renderedCellValue, false) || renderedCellValue
+      : renderedCellValue;
+  return (
+    <span className="text-gray-700 block truncate" title={String(displayValue ?? "")}>
+      {displayValue}
+    </span>
+  );
+};
 
 // Stable renderer for interactive cells
 const InteractiveGridCellRenderer = ({ row, cell, column }: any) => {
@@ -207,18 +243,72 @@ const InteractiveGridCellRenderer = ({ row, cell, column }: any) => {
   if ((isSelected || isAlwaysEditable) && !isFieldReadOnly) {
     return (
       <StableGridCellEditorRenderer
-        row={row}
         cell={cell}
+        row={row}
         column={column}
         data-testid="StableGridCellEditorRenderer__ce8544"
       />
     );
   }
 
-  return cell.getValue();
+  return <ReadOnlyCellRenderer renderedCellValue={cell.getValue()} data-testid="ReadOnlyCellRenderer__ce8544" />;
 };
 
-const updateLocalRecordFromSelection = (record: EntityData, selectionItem: any): EntityData | null => {
+// Helper to get boolean edit props for MRT
+export const getBooleanEditProps = (_cell: any) => {
+  return {
+    select: true,
+    children: [
+      <option key="Y" value="Y">
+        Yes
+      </option>,
+      <option key="N" value="N">
+        No
+      </option>,
+    ],
+    SelectProps: {
+      native: true,
+    },
+  };
+};
+
+const GridCellRenderer = (props: any) => {
+  const { row, column, cell } = props;
+  const isSelected = row.getIsSelected();
+  const isAlwaysEditable = column.columnDef.dbColumnName === "glitem";
+
+  if (isSelected || isAlwaysEditable) {
+    return <StableGridCellEditorRenderer {...props} data-testid="StableGridCellEditorRenderer__ce8544" />;
+  }
+
+  // Handle date columns
+  const colType = column.columnDef.type;
+  const colReference = column.columnDef.column?.reference;
+  const isDateCol = colType === "date" || colType === "datetime" || colReference === "15" || colReference === "16";
+  const includeTimeForCol = colType === "datetime" || colReference === "16";
+  const colColumnName = column.columnDef.columnName;
+
+  if (isDateCol) {
+    let value = cell?.getValue();
+    if (value === undefined || value === null) {
+      value = colColumnName ? row?.original?.[colColumnName] : undefined;
+    }
+    if (typeof value === "string" && value) {
+      const formatted = formatClassicDate(value, includeTimeForCol);
+      return <span>{formatted || value}</span>;
+    }
+    return <span>{value ? String(value) : ""}</span>;
+  }
+
+  const existingCell = column.columnDef.Cell;
+  if (existingCell && typeof existingCell === "function" && existingCell !== GridCellRenderer) {
+    return existingCell(props);
+  }
+
+  return <InteractiveGridCellRenderer {...props} data-testid="InteractiveGridCellRenderer__ce8544" />;
+};
+
+export const updateLocalRecordFromSelection = (record: EntityData, selectionItem: any): EntityData | null => {
   let updated = false;
   const newRecord = { ...record };
 
@@ -237,7 +327,7 @@ const updateLocalRecordFromSelection = (record: EntityData, selectionItem: any):
   return null;
 };
 
-const resetLocalRecordFields = (record: EntityData): EntityData | null => {
+export const resetLocalRecordFields = (record: EntityData): EntityData | null => {
   let changed = false;
   const newRecord = { ...record };
 
@@ -376,7 +466,7 @@ function applyProcessDynamicKeys(
  * Applies all dynamic context variables (org, client, and process-specific keys)
  * to the datasource options object.
  */
-function applyDynamicKeys(
+export function applyDynamicKeys(
   recordValues: Record<string, unknown>,
   processId: string | undefined,
   options: DatasourceParams
@@ -392,24 +482,22 @@ function applyDynamicKeys(
  * Includes fields from the window reference tab, the `fields` prop, and a set
  * of standard Etendo context keys.
  */
-function buildValidColumnNames(tabFields: Record<string, any> | undefined, propFields: any[] | undefined): Set<string> {
-  const validColumnNames = new Set<string>();
+export function buildValidColumnNames(
+  tabFields: Record<string, any> | undefined,
+  propFields: any[] | undefined
+): Set<string> {
+  const validColumnNames = new Set<string>(STANDARD_FILTER_KEYS);
 
-  if (tabFields) {
-    for (const f of Object.values(tabFields)) {
-      if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
-      if (f.hqlName) validColumnNames.add(f.hqlName.toLowerCase());
-    }
+  for (const f of Object.values(tabFields || {})) {
+    if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
+    if (f.hqlName) validColumnNames.add(f.hqlName.toLowerCase());
   }
 
-  if (propFields) {
-    for (const f of propFields) {
-      if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
-      if (f.name) validColumnNames.add(f.name.toLowerCase());
-    }
+  for (const f of propFields || []) {
+    if (f.columnName) validColumnNames.add(f.columnName.toLowerCase());
+    if (f.name) validColumnNames.add(f.name.toLowerCase());
   }
 
-  for (const k of STANDARD_FILTER_KEYS) validColumnNames.add(k);
   return validColumnNames;
 }
 
@@ -418,7 +506,7 @@ function buildValidColumnNames(tabFields: Record<string, any> | undefined, propF
  * the value to `options[dBColumnName]` — but only when the column name is in the
  * set of valid filter columns for this grid.
  */
-function applyRecordValues(
+export function applyRecordValues(
   parameters: Record<string, any>,
   recordValues: Record<string, unknown>,
   validColumnNames: Set<string>,
@@ -443,7 +531,7 @@ function applyRecordValues(
  * 1. Check field-level static flags (readOnly, isReadOnly)
  * 2. Evaluate readOnlyLogicExpression || column.readOnlyLogic via compileExpression
  */
-function evaluateFieldReadOnlyLogic(field: any, context: Record<string, unknown>): boolean {
+export function evaluateFieldReadOnlyLogic(field: any, context: Record<string, unknown>): boolean {
   // Static flags
   if (field.readOnly === true || field.isReadOnly === true) return true;
 
@@ -465,7 +553,7 @@ function evaluateFieldReadOnlyLogic(field: any, context: Record<string, unknown>
  * Builds the filter criteria array for a single grid parameter by looking up
  * its column name in the `filterExpressions` config returned by the backend.
  */
-function buildGridCriteria(
+export function buildGridCriteria(
   filterExpressions: Record<string, Record<string, unknown>> | undefined,
   gridColumnName: string
 ): Array<{ fieldName: string; operator: string; value: EntityValue }> {
@@ -505,6 +593,7 @@ const WindowReferenceGrid = ({
   gridSelection,
   onSelectionChange,
   parameters,
+  selectedRecordsCount,
   // Added back missing props
   entityName,
   windowReferenceTab,
@@ -513,6 +602,7 @@ const WindowReferenceGrid = ({
   processConfigError,
   recordValues,
   originTab,
+  showTitle = true,
 }: WindowReferenceGridProps & { originTab?: Tab }) => {
   const { t } = useTranslation();
   // ... rest of component
@@ -523,6 +613,7 @@ const WindowReferenceGrid = ({
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [appliedTableFilters, setAppliedTableFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
+  const [sorting, setSorting] = useState<MRT_SortingState>([]);
 
   // Merge recordValues (static context) with currentValues (live form state)
   // currentValues takes precedence for parameters being edited
@@ -535,6 +626,7 @@ const WindowReferenceGrid = ({
   );
 
   const { graph } = useSelected();
+  const shouldSendOrg = selectedRecordsCount === 1;
 
   const etendoContext = useMemo(() => {
     return originTab ? buildEtendoContext(originTab, graph) : {};
@@ -545,18 +637,18 @@ const WindowReferenceGrid = ({
 
   const effectiveRecordValuesRef = useRef(effectiveRecordValues);
   const parametersRef = useRef(parameters);
-  const validationsRef = useRef<any[]>((effectiveRecordValues?._validations as unknown as any[]) || []);
+  const validationsRef = useRef<any[]>((effectiveRecordValues?._validations as any[]) || []);
   // Sync refs ensures GridCellEditor has latest values without triggering re-render via Context
   useEffect(() => {
     effectiveRecordValuesRef.current = effectiveRecordValues;
     parametersRef.current = parameters;
-    validationsRef.current = (effectiveRecordValues?._validations as unknown as any[]) || [];
+    validationsRef.current = (effectiveRecordValues?._validations as any[]) || [];
   }, [effectiveRecordValues, parameters]);
 
   // Get validations array for context (to trigger updates)
   const validations = useMemo(() => {
     // biome-ignore lint/suspicious/noExplicitAny: explicit cast
-    return (effectiveRecordValues?._validations as unknown as any[]) || [];
+    return (effectiveRecordValues?._validations as any[]) || [];
   }, [effectiveRecordValues]);
 
   const [isDataReady, setIsDataReady] = useState(false);
@@ -571,6 +663,19 @@ const WindowReferenceGrid = ({
     stableWindowReferenceTabRef.current = windowReferenceTab;
   }
   const stableWindowReferenceTab = stableWindowReferenceTabRef.current;
+
+  const initialIsFilterApplied = useMemo(
+    () => !!(stableWindowReferenceTab?.hqlfilterclause || stableWindowReferenceTab?.sQLWhereClause),
+    [stableWindowReferenceTab]
+  );
+
+  const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState<boolean | undefined>(undefined);
+
+  useEffect(() => {
+    if (isImplicitFilterApplied === undefined) {
+      setIsImplicitFilterApplied(initialIsFilterApplied);
+    }
+  }, [initialIsFilterApplied, isImplicitFilterApplied]);
 
   const stableProcessDefaults = useMemo<Record<string, EntityValue>>(() => {
     const defaults = (processConfig?.defaults as unknown as Record<string, EntityValue>) || {};
@@ -648,73 +753,6 @@ const WindowReferenceGrid = ({
     .join("|");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stableRecordValues = useMemo(() => effectiveRecordValues, [recordValuesKey]);
-
-  const datasourceOptions = useMemo(() => {
-    const options: DatasourceParams = {
-      pageSize: PAGE_SIZE,
-      tabId: parameter.tab || tabId,
-    };
-
-    if (processConfig?.processId) options.processId = processConfig.processId;
-    if (tabId) options.windowId = tabId;
-
-    // 2. Inject Etendo session context (org, client, user, etc.)
-    Object.assign(options, etendoContext);
-
-    // 3. Apply dynamic keys from record context and process-specific mappings
-    //    (mimics verifyInput in SmartClient — resolves @VARIABLE@ placeholders)
-    applyDynamicKeys(stableRecordValues, processConfig?.processId, options);
-
-    // 4. Apply parameter defaults and current form values
-    const mergedParams: Record<string, EntityValue> = {};
-    if (stableProcessDefaults && Object.keys(stableProcessDefaults).length > 0) {
-      mergeDefaultsIntoParams(stableProcessDefaults, mergedParams);
-    }
-    if (currentValues && Object.keys(currentValues).length > 0) {
-      mergeCurrentValuesIntoParams(currentValues, mergedParams);
-    }
-    for (const [key, value] of Object.entries(mergedParams)) {
-      applyMergedParam(key, value, parameters, options);
-    }
-
-    // 5. Apply record-level values for parameters whose column exists in this grid
-    const validColumnNames = buildValidColumnNames(stableWindowReferenceTab?.fields, fields);
-    applyRecordValues(parameters, effectiveRecordValues, validColumnNames, options);
-
-    // 6. Ensure _org mirrors ad_org_id (required by backend datasource)
-    if (options.ad_org_id && !options._org) options._org = options.ad_org_id;
-
-    // 7. Build filter criteria (base parent-child criteria only)
-    // Default filters are completely handled by the UI column filters initialized from stableVisualFilterExpressions
-    const baseCriteria = buildBaseCriteria({
-      tab: stableWindowReferenceTab || ({ fields: {}, parentColumns: [] } as any),
-    });
-    if (baseCriteria.length > 0) {
-      options.criteria = baseCriteria as unknown as Criteria[];
-      options.orderBy = "documentNo desc";
-    }
-
-    if (options.ad_org_id) {
-      options._org = options.ad_org_id;
-    }
-
-    return options;
-  }, [
-    processConfig?.processId,
-    parameter.tab,
-    parameter.dBColumnName,
-    tabId,
-    stableProcessDefaults,
-    stableFilterExpressions,
-    recordValues?.inpadClientId,
-    recordValues?.inpmPricelistId,
-    recordValues?.inpcCurrencyId,
-    stableRecordValues,
-    parameters,
-    currentValues,
-    stableWindowReferenceTab,
-    fields,
-  ]);
 
   // Helper to determine ACCT_DIMENSION_DISPLAY for specific columns
   const getAcctDimensionDisplay = useCallback(
@@ -869,9 +907,87 @@ const WindowReferenceGrid = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stableRawColumns = useMemo(() => rawColumns, [rawColumnIds]);
 
+  const datasourceOptions = useMemo(() => {
+    const options: DatasourceParams = {
+      pageSize: PAGE_SIZE,
+      tabId: parameter.tab || tabId,
+    };
+
+    if (processConfig?.processId) options.processId = processConfig.processId;
+    if (tabId) options.windowId = tabId;
+
+    // 2. Inject Etendo session context (org, client, user, etc.)
+    Object.assign(options, etendoContext);
+
+    // 3. Apply dynamic keys from record context and process-specific mappings
+    //    (mimics verifyInput in SmartClient — resolves @VARIABLE@ placeholders)
+    applyDynamicKeys(stableRecordValues, processConfig?.processId, options);
+
+    // 4. Apply parameter defaults and current form values
+    const mergedParams: Record<string, EntityValue> = {};
+    if (stableProcessDefaults && Object.keys(stableProcessDefaults).length > 0) {
+      mergeDefaultsIntoParams(stableProcessDefaults, mergedParams);
+    }
+    if (currentValues && Object.keys(currentValues).length > 0) {
+      mergeCurrentValuesIntoParams(currentValues, mergedParams);
+    }
+    for (const [key, value] of Object.entries(mergedParams)) {
+      applyMergedParam(key, value, parameters, options);
+    }
+
+    // 5. Apply record-level values for parameters whose column exists in this grid
+    const validColumnNames = buildValidColumnNames(stableWindowReferenceTab?.fields, fields);
+    applyRecordValues(parameters, effectiveRecordValues, validColumnNames, options);
+
+    // 6. Ensure _org mirrors ad_org_id (required by backend datasource)
+    if (options.ad_org_id && !options._org) options._org = options.ad_org_id;
+
+    // 7. Build filter criteria (explicit expressions take precedence over base criteria)
+    const filterCriteria = buildGridCriteria(stableFilterExpressions, parameter.dBColumnName || "");
+    const baseCriteria = buildBaseCriteria({
+      tab: stableWindowReferenceTab || ({ fields: {}, parentColumns: [] } as any),
+    });
+    // When implicit filter is active (or no implicit filters defined), use filterExpressions criteria.
+    // When the user deactivates the filter, fall back to baseCriteria only (show all related records).
+    const applyImplicitFilter = isImplicitFilterApplied !== false;
+    const finalCriteria = applyImplicitFilter && filterCriteria.length > 0 ? filterCriteria : baseCriteria;
+    if (finalCriteria.length > 0) {
+      options.criteria = finalCriteria as unknown as Criteria[];
+    }
+
+    // 8. Handle sorting
+    const sortBy = getSortByString(sorting, stableRawColumns, finalCriteria.length > 0);
+    if (sortBy) {
+      options.sortBy = sortBy;
+      options.isSorting = true;
+    }
+
+    if (options.ad_org_id) {
+      options._org = options.ad_org_id;
+    }
+
+    return options;
+  }, [
+    processConfig?.processId,
+    parameter.tab,
+    parameter.dBColumnName,
+    tabId,
+    stableProcessDefaults,
+    stableFilterExpressions,
+    stableRecordValues,
+    parameters,
+    currentValues,
+    stableWindowReferenceTab,
+    fields,
+    isImplicitFilterApplied,
+    sorting,
+    stableRawColumns,
+    etendoContext,
+  ]);
+
   // Build extra params for filter options requests (process context needed by Classic datasource)
   const filterExtraParams = useMemo(() => {
-    const extra: Record<string, unknown> = { noActiveFilter: true };
+    const extra: Record<string, unknown> = { noActiveFilter: true, allowOrgParam: shouldSendOrg };
     if (datasourceOptions.processId) extra.processId = datasourceOptions.processId;
     if (datasourceOptions.windowId) extra.windowId = datasourceOptions.windowId;
     if (datasourceOptions.ad_org_id) extra.ad_org_id = datasourceOptions.ad_org_id;
@@ -884,6 +1000,7 @@ const WindowReferenceGrid = ({
     datasourceOptions.ad_org_id,
     datasourceOptions.ad_client_id,
     datasourceOptions.criteria,
+    shouldSendOrg,
   ]);
 
   // Use grid column filters hook to avoid code duplication with useTableData
@@ -894,7 +1011,7 @@ const WindowReferenceGrid = ({
       entityName: entityName ? String(entityName) : undefined,
       setAppliedTableFilters,
       setColumnFilters,
-      isImplicitFilterApplied: false,
+      isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
       extraParams: filterExtraParams,
     });
 
@@ -904,7 +1021,7 @@ const WindowReferenceGrid = ({
       return {
         id: tabId,
         fields: {},
-      } as Tab;
+      } as any;
     }
 
     const correctedFields = Object.fromEntries(
@@ -1007,7 +1124,7 @@ const WindowReferenceGrid = ({
       const rawCol = rawColumns.find((r: Column) => r.header === col.header);
       return {
         ...col,
-        filterFieldName: (rawCol as any)?.filterFieldName || col.columnName,
+        filterFieldName: rawCol?.filterFieldName || col.columnName,
       };
     });
 
@@ -1032,20 +1149,7 @@ const WindowReferenceGrid = ({
               ["Y", "N"].includes(String(cell.getValue()));
 
             if (isBoolean) {
-              return {
-                select: true,
-                children: [
-                  <option key="Y" value="Y">
-                    Yes
-                  </option>,
-                  <option key="N" value="N">
-                    No
-                  </option>,
-                ],
-                SelectProps: {
-                  native: true,
-                },
-              };
+              return getBooleanEditProps(cell);
             }
             return {};
           },
@@ -1072,15 +1176,9 @@ const WindowReferenceGrid = ({
 
           return true;
         },
-        // Use custom editor for both display (Cell) and editing (Edit) to ensure "always edit" feel
-        // This matches user request: "puts you in edit mode immediately"
-        // Use stable static component for editing
         Edit: StableGridCellEditorRenderer,
-        // Pass context via column definition
         dbColumnName: parameter.dBColumnName,
-        // For display (Cell), only show editor if row is selected OR for specific grids like glItem
-        // Otherwise use default display
-        Cell: InteractiveGridCellRenderer,
+        Cell: GridCellRenderer,
       };
     });
 
@@ -1395,28 +1493,26 @@ const WindowReferenceGrid = ({
         }
       }
 
-      setRowSelection((prev) => {
-        const newSelection = { ...prev };
-        newSelection[row.id] = !newSelection[row.id];
+      const newSelection = { ...rowSelection };
+      newSelection[row.id] = !newSelection[row.id];
 
-        const selectedItems = records.filter((record) => {
-          const recordId = String(record.id);
-          return newSelection[recordId];
-        });
-
-        // Update with the new structure
-        onSelectionChange((prev: GridSelectionStructure) => ({
-          ...prev,
-          [parameter.dBColumnName]: {
-            _selection: selectedItems,
-            _allRows: records,
-          },
-        }));
-
-        return newSelection;
+      const selectedItems = records.filter((record) => {
+        const recordId = String(record.id);
+        return newSelection[recordId];
       });
+
+      setRowSelection(newSelection);
+
+      // Update with the new structure
+      onSelectionChange((prev: GridSelectionStructure) => ({
+        ...prev,
+        [parameter.dBColumnName]: {
+          _selection: selectedItems,
+          _allRows: records,
+        },
+      }));
     },
-    [records, onSelectionChange, parameter.dBColumnName]
+    [records, onSelectionChange, parameter.dBColumnName, rowSelection]
   );
 
   const handleCreateRow = useCallback(
@@ -1553,30 +1649,6 @@ const WindowReferenceGrid = ({
     [localRecords, parameter.dBColumnName, rowSelection, onSelectionChange]
   );
 
-  const handleAddNewRecord = useCallback(() => {
-    // Logic for adding new empty record to localRecords directly
-    const generateUUID = () => {
-      // Distinct implementation for local temporary records
-      const timestamp = Date.now().toString(36);
-      const randomPart = Math.random().toString(36).substring(2, 10);
-      return `local_${timestamp}_${randomPart}`.toUpperCase();
-    };
-
-    const newId = generateUUID();
-    const newRecord = {
-      id: newId,
-    };
-
-    // Add to local datasource
-    addRecordLocally(newRecord);
-
-    // Auto-select
-    setRowSelection((prev) => ({
-      ...prev,
-      [newId]: true,
-    }));
-  }, [addRecordLocally]);
-
   // Refs for state accessed in handlers to allow stable handler identity
   const localRecordsRef = useRef(localRecords);
   const rowSelectionRef = useRef(rowSelection);
@@ -1642,8 +1714,9 @@ const WindowReferenceGrid = ({
       session,
       tabId,
       fieldReadOnlyMap,
+      shouldSendOrg,
     }),
-    [tabId, session, validations, fieldReadOnlyMap]
+    [tabId, session, validations, fieldReadOnlyMap, shouldSendOrg]
   );
 
   const finalColumns = useMemo(() => {
@@ -1708,47 +1781,6 @@ const WindowReferenceGrid = ({
       });
   }, [columns, handleRecordChange, parameter.window, fieldReadOnlyMap]);
 
-  const renderTopToolbar = useCallback(
-    (props: MRT_TopToolbarProps<EntityData>) => {
-      const selectedCount = props.table.getSelectedRowModel().rows.length;
-      return (
-        <div className="flex justify-between items-center px-4 py-2 bg-gray-50 border-b max-h-[2.5rem]">
-          <div className="text-base font-medium text-gray-800">{parameter.name}</div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                if (parameter.dBColumnName === "glitem") {
-                  handleAddNewRecord();
-                } else {
-                  props.table.setCreatingRow(true);
-                }
-              }}
-              className="hidden flex items-center gap-1.5 px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-colors cursor-pointer">
-              <PlusIcon className="w-4 h-4" data-testid="PlusIcon__ce8544" />
-              {/* @ts-ignore */}
-              <span>{t("common.new")}</span>
-            </button>
-            {selectedCount > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">
-                  {selectedCount} {t("table.selection.multiple")}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleClearSelections}
-                  className="px-3 py-1 text-sm cursor-pointer text-gray-700 border border-gray-300 rounded-full hover:bg-(--color-etendo-main) hover:text-(--color-baseline-0) transition-colors">
-                  {t("common.clear")}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    },
-    [parameter.name, t, handleClearSelections]
-  );
-
   const fetchMoreOnBottomReached = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
       const containerRefElement = event.currentTarget as HTMLDivElement;
@@ -1773,10 +1805,6 @@ const WindowReferenceGrid = ({
     () => ({
       muiTablePaperProps: {
         className: tableStyles.paper,
-        style: {
-          borderRadius: "1rem",
-          boxShadow: "none",
-        },
       },
       muiTableHeadCellProps: {
         className: tableStyles.headCell,
@@ -1797,10 +1825,15 @@ const WindowReferenceGrid = ({
       },
       muiTableContainerProps: {
         className: tableStyles.container,
-        style: {
-          minHeight: "300px",
-          maxHeight: "500px",
-        },
+        style: (() => {
+          const ROW_HEIGHT = 52;
+          const HEADER_HEIGHT = 53;
+          const FILTER_HEIGHT = 49;
+          const MAX_HEIGHT = 500;
+          const rowCount = records?.length ?? 0;
+          const contentHeight = HEADER_HEIGHT + FILTER_HEIGHT + rowCount * ROW_HEIGHT;
+          return { height: `${Math.min(contentHeight, MAX_HEIGHT)}px`, maxHeight: `${MAX_HEIGHT}px` };
+        })(),
         onScroll: fetchMoreOnBottomReached,
       },
       layoutMode: "semantic",
@@ -1811,16 +1844,33 @@ const WindowReferenceGrid = ({
       positionToolbarAlertBanner: "none",
       enablePagination: false,
       enableStickyHeader: true,
-      enableStickyFooter: true,
+      enableStickyFooter: false,
+      renderBottomToolbar: () => null,
+      muiBottomToolbarProps: { sx: { display: "none" } },
       enableColumnFilters: true,
       enableSorting: true,
+      manualSorting: true,
       enableColumnActions: true,
       manualFiltering: true,
+      onSortingChange: setSorting,
       enableRowVirtualization: true,
       columns: finalColumns, // Use modified columns with handler
       data: records || [],
       getRowId: (row) => String(row.id),
-      renderTopToolbar,
+      renderTopToolbar: (props: MRT_TopToolbarProps<EntityData>) => (
+        <GridTopToolbar
+          {...props}
+          parameterName={parameter.name}
+          showTitle={showTitle}
+          t={t}
+          handleClearSelections={handleClearSelections}
+          isImplicitFilterApplied={isImplicitFilterApplied}
+          initialIsFilterApplied={initialIsFilterApplied}
+          handleMRTColumnFiltersChange={handleMRTColumnFiltersChange}
+          setIsImplicitFilterApplied={setIsImplicitFilterApplied}
+          data-testid="GridTopToolbar__ce8544"
+        />
+      ),
       renderEmptyRowsFallback: () => (
         <div className="flex justify-center items-center p-8 text-gray-500">
           <EmptyState maxWidth={MAX_WIDTH} data-testid="EmptyState__ce8544" />
@@ -1833,6 +1883,7 @@ const WindowReferenceGrid = ({
         rowSelection,
         columnFilters,
         showColumnFilters: true,
+        sorting,
       },
       onRowSelectionChange: handleRowSelection,
       onColumnFiltersChange: handleMRTColumnFiltersChange,
@@ -1900,14 +1951,13 @@ const WindowReferenceGrid = ({
       records,
       rowSelection,
       columnFilters,
-      hasMoreRecords,
-      renderTopToolbar,
-      fetchMore,
       handleRowSelection,
       handleMRTColumnFiltersChange,
       handleRowClick,
       handleCreateRow,
       handleSaveRow,
+      fetchMoreOnBottomReached,
+      windowReferenceTab?.fields,
     ]
   );
 
@@ -1947,7 +1997,7 @@ const WindowReferenceGrid = ({
   return (
     <WindowReferenceGridProvider value={gridContextValue} data-testid="WindowReferenceGridProvider__ce8544">
       <div
-        className={`flex flex-col w-full overflow-hidden max-h-4xl h-full transition duration-100 ${
+        className={`flex flex-col w-full overflow-hidden transition duration-100 ${
           datasourceLoading ? "opacity-40 cursor-wait cursor-to-children" : "opacity-100"
         }`}
         ref={contentRef}>
@@ -1958,3 +2008,62 @@ const WindowReferenceGrid = ({
 };
 
 export default WindowReferenceGrid;
+
+// Separate component for TopToolbar to avoid being re-defined on every render
+export const GridTopToolbar = ({
+  table,
+  parameterName,
+  showTitle,
+  t,
+  handleClearSelections,
+  isImplicitFilterApplied,
+  initialIsFilterApplied,
+  handleMRTColumnFiltersChange,
+  setIsImplicitFilterApplied,
+}: any) => {
+  const selectedCount = table.getSelectedRowModel().rows.length;
+  const effectiveImplicitFilter = isImplicitFilterApplied ?? initialIsFilterApplied;
+
+  const handleFilterClick = () => {
+    if (effectiveImplicitFilter) {
+      // First: remove implicit filter
+      setIsImplicitFilterApplied(false);
+    } else {
+      // Then: clear column filters
+      table.setColumnFilters([]);
+      handleMRTColumnFiltersChange([]);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between border-b border-b-transparent-neutral-10 bg-gray-50 h-[2.5rem]">
+      <div className="flex items-center px-2">
+        {showTitle && <div className="text-base font-medium text-gray-800 mr-4">{parameterName}</div>}
+        {selectedCount > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">
+              {selectedCount} {t("table.selection.multiple")}
+            </span>
+            <button
+              type="button"
+              onClick={handleClearSelections}
+              className="px-3 py-1 text-sm cursor-pointer text-gray-700 border border-gray-300 rounded-full hover:bg-(--color-etendo-main) hover:text-(--color-baseline-0) transition-colors">
+              {t("common.clear")}
+            </button>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center">
+        <MRT_ToggleFiltersButton
+          table={table}
+          onClick={handleFilterClick}
+          sx={{ color: effectiveImplicitFilter ? "var(--color-etendo-main)" : undefined }}
+          data-testid="MRT_ToggleFiltersButton__ce8544"
+        />
+        <MRT_ShowHideColumnsButton table={table} data-testid="MRT_ShowHideColumnsButton__ce8544" />
+        <MRT_ToggleDensePaddingButton table={table} data-testid="MRT_ToggleDensePaddingButton__ce8544" />
+        <MRT_ToggleFullScreenButton table={table} data-testid="MRT_ToggleFullScreenButton__ce8544" />
+      </div>
+    </div>
+  );
+};

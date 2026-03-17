@@ -181,6 +181,13 @@ export interface Field {
    */
   isReferencedWindowAccessible?: boolean;
   isAuditField?: boolean;
+  /**
+   * The hqlName of the color field in the referenced entity.
+   * When set, the UI will look for `{fieldHqlName}${colorFieldName}` in row data
+   * and render the value as a colored badge/tag.
+   * Only relevant for TABLEDIR/FK fields pointing to entities with a Color reference field.
+   */
+  colorFieldName?: string;
 }
 
 export interface Option<T extends string = string> {
@@ -213,6 +220,12 @@ export interface Column {
   referencedTabId: string | null;
   isReferencedWindowAccessible?: boolean;
   isAuditField?: boolean;
+  /**
+   * The hqlName of the color field in the referenced entity.
+   * When set, the cell will render as a colored Tag using the color from
+   * `{columnName}${colorFieldName}` in the row data.
+   */
+  colorFieldName?: string;
 }
 
 export interface MappedField {

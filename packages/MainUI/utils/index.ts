@@ -205,9 +205,13 @@ export const parseDynamicExpression = (expr: string) => {
   // Replace | with || (unless it's already ||)
   const exprLogic = expr.replace(/(?<!&)&(?!&)/g, "&&").replace(/(?<!\|)\|(?!\|)/g, "||");
 
+  // Handle @Var1@!@Var2@ pattern (inequality between two field references, no spaces).
+  // e.g. @INVENTORYSTATUS@!@To_State_ID@ -> @INVENTORYSTATUS@ != @To_State_ID@
+  const exprNormalized = exprLogic.replace(/@([#$]?[a-zA-Z_]\w*)@!@([#$]?[a-zA-Z_]\w*)@/g, "@$1@ != @$2@");
+
   // Transform @field_name@ syntax to valid JavaScript references
   // Supports: @fieldName@, @#sessionVar@, @$contextVar@
-  let expr0 = exprLogic.replace(/@([#$]?[a-zA-Z_]\w*)@/g, (_, fieldName) => {
+  let expr0 = exprNormalized.replace(/@([#$]?[a-zA-Z_]\w*)@/g, (_, fieldName) => {
     return `(currentValues["${fieldName}"] || context["${fieldName}"])`;
   });
 
@@ -265,20 +269,26 @@ export const buildQueryString = ({
   windowMetadata?: WindowMetadata;
   tab: Tab;
   mode: FormMode;
-}) =>
-  new URLSearchParams({
+}) => {
+  const extraProperties = Object.values(tab.fields || {})
+    .filter((f) => f.colorFieldName)
+    .map((f) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
+    .join(",");
+
+  return new URLSearchParams({
     windowId: String(windowMetadata?.id || ""),
     tabId: String(tab.id),
     moduleId: String(tab.module),
     _operationType: mode === FormMode.NEW ? "add" : "update",
     _noActiveFilter: String(true),
     sendOriginalIDBack: String(true),
-    _extraProperties: "",
+    _extraProperties: extraProperties,
     Constants_FIELDSEPARATOR: "$",
     _className: "OBViewDataSource",
     Constants_IDENTIFIER: "_identifier",
     isc_dataFormat: "json",
   });
+};
 
 export const buildFormPayload = ({
   values,
