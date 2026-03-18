@@ -1,4 +1,4 @@
-import type { MRT_ColumnDef, MRT_ColumnFiltersState } from "material-react-table";
+import type { MRT_ColumnDef, MRT_ColumnFiltersState, MRT_Cell } from "material-react-table";
 import type { EntityData, SelectorColumn, Column } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import type { TranslateFunction } from "@/hooks/types";
@@ -113,6 +113,12 @@ export function buildSelectorColumnDefs(
         );
       };
     } else if (filterType === "dropdown") {
+      columnDef.Cell = ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: { original: EntityData } }) => {
+        const identifierKey = `${col.accessorKey}$_identifier`;
+        const label = (row.original[identifierKey] ?? cell.getValue()) as string | undefined;
+        return <>{label ?? ""}</>;
+      };
+
       columnDef.Filter = () => {
         const currentFilter = columnFilters.find((f) => f.id === col.accessorKey);
         const filterState = columnFilterStates?.find((f) => f.id === col.accessorKey);
