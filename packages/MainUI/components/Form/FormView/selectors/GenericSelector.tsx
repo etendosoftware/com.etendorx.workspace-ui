@@ -285,6 +285,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
             setIsProcessModalOpen(false);
             setProcessButtonData(null);
           }}
+          data-testid={"ProcessDefinitionModal__" + field.id}
         />
       )}
     </>

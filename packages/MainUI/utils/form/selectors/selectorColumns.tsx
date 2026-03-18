@@ -109,6 +109,7 @@ export function buildSelectorColumnDefs(
             column={minimalCol}
             filterState={filterState}
             onFilterChange={(selected: FilterOption[]) => onBooleanFilterChange(col.accessorKey, selected)}
+            data-testid="ColumnFilter__ea08b7"
           />
         );
       };
@@ -145,6 +146,7 @@ export function buildSelectorColumnDefs(
             onFilterChange={(selected: FilterOption[]) => onDropdownFilterChange?.(col.accessorKey, selected)}
             onLoadOptions={(q?: string) => onLoadFilterOptions?.(col.accessorKey, q)}
             onLoadMoreOptions={(q?: string) => onLoadMoreFilterOptions?.(col.accessorKey, q)}
+            data-testid="ColumnFilter__ea08b7"
           />
         );
       };
@@ -158,6 +160,7 @@ export function buildSelectorColumnDefs(
             column={minimalCol}
             filterValue={filterValue}
             onFilterChange={(value: string) => onTextFilterChange(col.accessorKey, value)}
+            data-testid="DateSelector__ea08b7"
           />
         );
       };
@@ -176,6 +179,7 @@ export function buildSelectorColumnDefs(
             column={minimalCol}
             filterValue={filterValue}
             onFilterChange={(value: string) => onTextFilterChange(col.accessorKey, value)}
+            data-testid="TextFilter__ea08b7"
           />
         );
       };

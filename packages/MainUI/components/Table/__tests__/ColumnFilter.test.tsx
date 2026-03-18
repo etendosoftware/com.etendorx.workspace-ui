@@ -95,9 +95,7 @@ describe("ColumnFilter - Boolean columns", () => {
       searchQuery: "",
     };
 
-    render(
-      <ColumnFilter column={column} filterState={filterState} onFilterChange={jest.fn()} />
-    );
+    render(<ColumnFilter column={column} filterState={filterState} onFilterChange={jest.fn()} />);
 
     expect(screen.getByTestId("multi-select")).toBeInTheDocument();
   });
@@ -128,9 +126,7 @@ describe("ColumnFilter - Boolean columns", () => {
       searchQuery: "",
     };
 
-    render(
-      <ColumnFilter column={column} filterState={filterState} onFilterChange={handleFilterChange} />
-    );
+    render(<ColumnFilter column={column} filterState={filterState} onFilterChange={handleFilterChange} />);
 
     const yesOption = screen.getByTestId("option-true");
     const checkbox = yesOption.querySelector("input[type='checkbox']") as HTMLInputElement;
@@ -170,9 +166,7 @@ describe("ColumnFilter - Dropdown columns (TABLEDIR)", () => {
       searchQuery: "",
     };
 
-    render(
-      <ColumnFilter column={column} filterState={filterState} onFilterChange={jest.fn()} />
-    );
+    render(<ColumnFilter column={column} filterState={filterState} onFilterChange={jest.fn()} />);
 
     expect(screen.getByTestId("option-wh-1")).toBeInTheDocument();
     expect(screen.getByTestId("option-wh-2")).toBeInTheDocument();
@@ -191,18 +185,14 @@ describe("ColumnFilter - Dropdown columns (TABLEDIR)", () => {
     const filterState: ColumnFilterState = {
       id: "warehouse",
       selectedOptions: [],
-      availableOptions: [
-        { id: "wh-1", label: "Warehouse 1", value: "wh-1" },
-      ],
+      availableOptions: [{ id: "wh-1", label: "Warehouse 1", value: "wh-1" }],
       isMultiSelect: true,
       loading: false,
       hasMore: false,
       searchQuery: "",
     };
 
-    render(
-      <ColumnFilter column={column} filterState={filterState} onFilterChange={handleFilterChange} />
-    );
+    render(<ColumnFilter column={column} filterState={filterState} onFilterChange={handleFilterChange} />);
 
     const whOption = screen.getByTestId("option-wh-1");
     const checkbox = whOption.querySelector("input[type='checkbox']") as HTMLInputElement;
@@ -248,9 +238,7 @@ describe("ColumnFilter - Dropdown columns (TABLEDIR)", () => {
       searchQuery: "",
     };
 
-    render(
-      <ColumnFilter column={column} filterState={filterState} onFilterChange={jest.fn()} />
-    );
+    render(<ColumnFilter column={column} filterState={filterState} onFilterChange={jest.fn()} />);
 
     // Preloaded option should be in the options list
     expect(screen.getByTestId("option-wh-preload")).toBeInTheDocument();
@@ -382,9 +370,7 @@ describe("ColumnFilter - Text columns", () => {
       searchQuery: "",
     };
 
-    const { container } = render(
-      <ColumnFilter column={column} filterState={filterState} onFilterChange={jest.fn()} />
-    );
+    const { container } = render(<ColumnFilter column={column} filterState={filterState} onFilterChange={jest.fn()} />);
 
     // Should not render MultiSelect for non-supported columns
     expect(container.firstChild).toBeNull();
@@ -411,9 +397,7 @@ describe("ColumnFilter - Loading states", () => {
       searchQuery: "",
     };
 
-    render(
-      <ColumnFilter column={column} filterState={filterState} onFilterChange={jest.fn()} />
-    );
+    render(<ColumnFilter column={column} filterState={filterState} onFilterChange={jest.fn()} />);
 
     expect(screen.getByTestId("loading")).toBeInTheDocument();
   });
@@ -443,9 +427,7 @@ describe("ColumnFilter - Multiple selections", () => {
       searchQuery: "",
     };
 
-    render(
-      <ColumnFilter column={column} filterState={filterState} onFilterChange={handleFilterChange} />
-    );
+    render(<ColumnFilter column={column} filterState={filterState} onFilterChange={handleFilterChange} />);
 
     // Select first option
     const option1 = screen.getByTestId("option-wh-1");

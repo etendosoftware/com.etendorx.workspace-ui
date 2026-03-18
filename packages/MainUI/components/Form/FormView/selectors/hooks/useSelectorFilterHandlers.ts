@@ -98,7 +98,15 @@ export function useSelectorFilterHandlers({
         extraParams,
       });
     },
-    [datasourceColumns, currentTabId, targetEntity, fetchFilterOptions, setFilterOptions, advancedColumnFilters, extraParams]
+    [
+      datasourceColumns,
+      currentTabId,
+      targetEntity,
+      fetchFilterOptions,
+      setFilterOptions,
+      advancedColumnFilters,
+      extraParams,
+    ]
   );
 
   return {

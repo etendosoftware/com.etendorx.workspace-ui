@@ -153,9 +153,7 @@ describe("useSelectorFilterHandlers", () => {
     );
 
     act(() => {
-      result.current.handleBooleanFilterChange("status", [
-        { id: "true", label: "Yes", value: "true" },
-      ]);
+      result.current.handleBooleanFilterChange("status", [{ id: "true", label: "Yes", value: "true" }]);
     });
 
     expect(mockSetColumnFilters).toHaveBeenCalled();
@@ -172,9 +170,7 @@ describe("useSelectorFilterHandlers", () => {
     );
 
     act(() => {
-      result.current.handleDropdownFilterChange("warehouse", [
-        { id: "wh-1", label: "Warehouse 1", value: "wh-1" },
-      ]);
+      result.current.handleDropdownFilterChange("warehouse", [{ id: "wh-1", label: "Warehouse 1", value: "wh-1" }]);
     });
 
     expect(mockSetColumnFilters).toHaveBeenCalled();

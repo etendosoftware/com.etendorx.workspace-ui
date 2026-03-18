@@ -3,7 +3,13 @@
  * Covers filter type detection, column building, and selector column utilities
  */
 
-import { getFilterType, buildSelectorColumnDefs, preloadFiltersFromCriteria, buildDatasourceColumns, getHiddenDefaultCriteria } from "../selectorColumns";
+import {
+  getFilterType,
+  buildSelectorColumnDefs,
+  preloadFiltersFromCriteria,
+  buildDatasourceColumns,
+  getHiddenDefaultCriteria,
+} from "../selectorColumns";
 import {
   createMockSelectorColumn,
   createMockFilterOption,

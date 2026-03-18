@@ -123,9 +123,11 @@ describe("SelectorModal", () => {
       advancedColumnFilters: [],
     });
 
-    const { buildDatasourceColumns, buildSelectorColumnDefs, buildSelectorDatasourceParams } = require(
-      "@/utils/form/selectors/selectorColumns"
-    );
+    const {
+      buildDatasourceColumns,
+      buildSelectorColumnDefs,
+      buildSelectorDatasourceParams,
+    } = require("@/utils/form/selectors/selectorColumns");
     buildDatasourceColumns.mockReturnValue([]);
     buildSelectorColumnDefs.mockReturnValue([]);
     buildSelectorDatasourceParams.mockReturnValue({});
@@ -186,12 +188,7 @@ describe("SelectorModal", () => {
     });
 
     render(
-      <SelectorModal
-        field={fieldWithoutDatasourceName}
-        isOpen={true}
-        onClose={mockOnClose}
-        onSelect={mockOnSelect}
-      />
+      <SelectorModal field={fieldWithoutDatasourceName} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />
     );
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
@@ -233,9 +230,7 @@ describe("SelectorModal", () => {
       },
     });
 
-    render(
-      <SelectorModal field={fieldWithoutColumns} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />
-    );
+    render(<SelectorModal field={fieldWithoutColumns} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />);
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
@@ -255,12 +250,7 @@ describe("SelectorModal", () => {
     });
 
     render(
-      <SelectorModal
-        field={fieldWithUnsortedColumns}
-        isOpen={true}
-        onClose={mockOnClose}
-        onSelect={mockOnSelect}
-      />
+      <SelectorModal field={fieldWithUnsortedColumns} isOpen={true} onClose={mockOnClose} onSelect={mockOnSelect} />
     );
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
