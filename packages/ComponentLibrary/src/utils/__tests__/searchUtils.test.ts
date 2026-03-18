@@ -106,11 +106,7 @@ describe("searchUtils", () => {
   });
 
   describe("filterItems", () => {
-    const items = [
-      makeMenu("id1", "Sales Invoice"),
-      makeMenu("id2", "Purchase Order"),
-      makeMenu("id3", "Sales Order"),
-    ];
+    const items = [makeMenu("id1", "Sales Invoice"), makeMenu("id2", "Purchase Order"), makeMenu("id3", "Sales Order")];
 
     it("returns all items when searchValue is empty", () => {
       const index = createSearchIndex(items);

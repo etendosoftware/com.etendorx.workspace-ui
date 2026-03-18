@@ -39,7 +39,7 @@ describe("menuUtils", () => {
 
     it("returns null when identifier is undefined", () => {
       const items = [makeMenu({ id: "id1", windowId: "win1", type: "Window" })];
-      expect(findItemByIdentifier(items, undefined)).toBeNull();
+      expect(findItemByIdentifier(items)).toBeNull();
     });
 
     it("finds a Window item by windowId", () => {

@@ -67,7 +67,6 @@ describe("dateFormatter", () => {
       expect(parseOBDate("not-a-date")).toBeNull();
       expect(parseOBDate("06/10/2025")).toBeNull();
     });
-
   });
 
   describe("formatBrowserDate", () => {
