@@ -130,27 +130,14 @@ describe("mapKeysWithDefaults", () => {
 });
 
 describe("columnNameToInpKey", () => {
-  it("converts multi-segment column name to inp camelCase key", () => {
-    expect(columnNameToInpKey("Fin_Payment_Proposal_ID")).toBe("inpfinPaymentProposalId");
-  });
-
-  it("converts C_Order_ID to inpcOrderId", () => {
-    expect(columnNameToInpKey("C_Order_ID")).toBe("inpcOrderId");
-  });
-
-  it("converts C_Invoice_ID to inpcInvoiceId", () => {
-    expect(columnNameToInpKey("C_Invoice_ID")).toBe("inpcInvoiceId");
-  });
-
-  it("converts single-segment name to inp prefix with lowercase", () => {
-    expect(columnNameToInpKey("name")).toBe("inpname");
-  });
-
-  it("converts all-uppercase single segment to lowercase", () => {
-    expect(columnNameToInpKey("DOCBASETYPE")).toBe("inpdocbasetype");
-  });
-
-  it("converts two-segment name correctly", () => {
-    expect(columnNameToInpKey("AD_Org_ID")).toBe("inpadOrgId");
+  it.each([
+    ["Fin_Payment_Proposal_ID", "inpfinPaymentProposalId"],
+    ["C_Order_ID", "inpcOrderId"],
+    ["C_Invoice_ID", "inpcInvoiceId"],
+    ["name", "inpname"],
+    ["DOCBASETYPE", "inpdocbasetype"],
+    ["AD_Org_ID", "inpadOrgId"],
+  ])("columnNameToInpKey(%s) === %s", (input, expected) => {
+    expect(columnNameToInpKey(input)).toBe(expected);
   });
 });
