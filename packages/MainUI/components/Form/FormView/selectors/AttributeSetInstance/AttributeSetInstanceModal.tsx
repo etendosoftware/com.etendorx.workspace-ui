@@ -24,6 +24,7 @@ interface AttributeSetInstanceModalProps {
   productId?: string | null;
   windowId?: string;
   field: Field;
+  isResolvingAttributeSet?: boolean;
 }
 
 const INITIAL_FORM_DATA: AttributeSetInstanceFormData = {
@@ -80,6 +81,7 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
   productId,
   windowId,
   field,
+  isResolvingAttributeSet = false,
 }) => {
   const {
     config,
@@ -337,7 +339,7 @@ const AttributeSetInstanceModal: React.FC<AttributeSetInstanceModalProps> = ({
   };
 
   const combinedError = configError || dataError || saveError || saveHookError;
-  const isLoading = configLoading || dataLoading;
+  const isLoading = configLoading || dataLoading || isResolvingAttributeSet;
 
   return (
     <Modal
