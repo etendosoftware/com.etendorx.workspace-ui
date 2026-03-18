@@ -22,6 +22,7 @@ import {
   buildDatasourceColumns,
   buildSelectorDatasourceParams,
 } from "@/utils/form/selectors/selectorColumns";
+import { SELECTOR_SAFE_PARAMS } from "@/utils/table/constants";
 import { useSelectorDefaultCriteria } from "./hooks/useSelectorDefaultCriteria";
 import { useSelectorFilterHandlers } from "./hooks/useSelectorFilterHandlers";
 
@@ -60,6 +61,57 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
     setColumnFilters,
   });
 
+  const _etendoContext = useMemo(() => {
+    return currentTab ? buildEtendoContext(currentTab, graph) : ({} as Record<string, string>);
+  }, [currentTab, graph]);
+
+  const filterExtraParams = useMemo(() => {
+    const selector = field.selector;
+    const params: Record<string, unknown> = {
+      ..._etendoContext,
+      IsSelectorItem: "true",
+      _requestType: "Window",
+      _noActiveFilter: "true",
+      language,
+      targetProperty: field.hqlName || field.columnName,
+      columnName: field.column?.dBColumnName || field.columnName,
+    };
+
+    if (selector) {
+      for (const param of SELECTOR_SAFE_PARAMS) {
+        if (param === "_extraProperties") continue;
+        if (selector[param] !== undefined && selector[param] !== null) {
+          params[param] = selector[param];
+        }
+      }
+    }
+
+    if (currentTab) {
+      params.windowId = currentTab.window;
+      params.inpwindowId = currentTab.window;
+      params.inpTabId = currentTab.id;
+      params.adTabId = currentTab.id;
+
+      const formValues = getValues();
+      for (const tabField of Object.values(currentTab.fields)) {
+        const f = tabField as unknown as Record<string, unknown>;
+        if (f.inputName) {
+          const val =
+            formValues[f.hqlName as string] ?? formValues[f.inputName as string] ?? formValues[f.id as string];
+          if (val !== undefined && val !== null) {
+            params[f.inputName as string] = String(val);
+          }
+        }
+      }
+    }
+
+    if (params.inpadOrgId && !params._org) {
+      params._org = params.inpadOrgId;
+    }
+
+    return params;
+  }, [_etendoContext, currentTab, getValues, field, language]);
+
   const {
     advancedColumnFilters,
     handleTextFilterChange,
@@ -72,6 +124,7 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
     targetEntity,
     currentTabId: currentTab?.id,
     setColumnFilters,
+    extraParams: filterExtraParams,
   });
 
   const idFilterDisplayValues = useMemo(() => {
@@ -108,10 +161,6 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
       idFilterDisplayValues,
     ]
   );
-
-  const _etendoContext = useMemo(() => {
-    return currentTab ? buildEtendoContext(currentTab, graph) : ({} as Record<string, string>);
-  }, [currentTab, graph]);
 
   const datasourceParams = useMemo(
     () =>

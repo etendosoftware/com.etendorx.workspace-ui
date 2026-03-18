@@ -429,7 +429,7 @@ export const useTableData = ({
   );
 
   const query: DatasourceOptions = useMemo(() => {
-    const { fieldName, directReference: fieldDirectlyReferencesParent } = getParentFieldName();
+    const { fieldName } = getParentFieldName();
     const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
     const operator = "equals";
 

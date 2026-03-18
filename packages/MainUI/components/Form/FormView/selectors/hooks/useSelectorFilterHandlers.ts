@@ -11,6 +11,7 @@ interface UseSelectorFilterHandlersParams {
   targetEntity: string | undefined;
   currentTabId: string | undefined;
   setColumnFilters: React.Dispatch<React.SetStateAction<MRT_ColumnFiltersState>>;
+  extraParams?: Record<string, unknown>;
 }
 
 export function useSelectorFilterHandlers({
@@ -18,6 +19,7 @@ export function useSelectorFilterHandlers({
   targetEntity,
   currentTabId,
   setColumnFilters,
+  extraParams,
 }: UseSelectorFilterHandlersParams) {
   const { fetchFilterOptions } = useColumnFilterData();
   const {
@@ -70,9 +72,10 @@ export function useSelectorFilterHandlers({
         fetchFilterOptions,
         setFilterOptions,
         isImplicitFilterApplied: false,
+        extraParams,
       });
     },
-    [datasourceColumns, currentTabId, targetEntity, fetchFilterOptions, setFilterOptions]
+    [datasourceColumns, currentTabId, targetEntity, fetchFilterOptions, setFilterOptions, extraParams]
   );
 
   const handleLoadMoreFilterOptions = useCallback(
@@ -91,9 +94,10 @@ export function useSelectorFilterHandlers({
         setFilterOptions,
         offset,
         isImplicitFilterApplied: false,
+        extraParams,
       });
     },
-    [datasourceColumns, currentTabId, targetEntity, fetchFilterOptions, setFilterOptions, advancedColumnFilters]
+    [datasourceColumns, currentTabId, targetEntity, fetchFilterOptions, setFilterOptions, advancedColumnFilters, extraParams]
   );
 
   return {
