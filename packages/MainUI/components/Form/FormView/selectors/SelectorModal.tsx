@@ -21,7 +21,9 @@ import {
   buildSelectorColumnDefs,
   buildDatasourceColumns,
   buildSelectorDatasourceParams,
+  getFilterType,
 } from "@/utils/form/selectors/selectorColumns";
+import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { SELECTOR_SAFE_PARAMS } from "@/utils/table/constants";
 import { useSelectorDefaultCriteria } from "./hooks/useSelectorDefaultCriteria";
 import { useSelectorFilterHandlers } from "./hooks/useSelectorFilterHandlers";
@@ -135,6 +137,17 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
     return map;
   }, [defaultFilterResponse]);
 
+  const idFilterPreloadedOptions = useMemo(() => {
+    const map = new Map<string, FilterOption[]>();
+    for (const f of defaultFilterResponse?.idFilters ?? []) {
+      const col = gridColumns.find((c) => c.accessorKey === f.fieldName);
+      if (col && getFilterType(col.referenceId) === "dropdown") {
+        map.set(f.fieldName, [{ id: f.id, label: f._identifier, value: f.id }]);
+      }
+    }
+    return map;
+  }, [defaultFilterResponse, gridColumns]);
+
   const columns = useMemo(
     () =>
       buildSelectorColumnDefs(gridColumns, {
@@ -147,6 +160,7 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
         columnFilters,
         t,
         idFilterDisplayValues,
+        idFilterPreloadedOptions,
       }),
     [
       gridColumns,
@@ -159,6 +173,7 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
       columnFilters,
       t,
       idFilterDisplayValues,
+      idFilterPreloadedOptions,
     ]
   );
 

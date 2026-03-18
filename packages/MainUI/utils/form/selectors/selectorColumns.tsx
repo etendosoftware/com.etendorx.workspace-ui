@@ -51,6 +51,7 @@ interface BuildSelectorColumnDefsOptions {
   columnFilters: MRT_ColumnFiltersState;
   t: TranslateFunction;
   idFilterDisplayValues?: Map<string, string>;
+  idFilterPreloadedOptions?: Map<string, FilterOption[]>;
 }
 
 export function buildSelectorColumnDefs(
@@ -67,6 +68,7 @@ export function buildSelectorColumnDefs(
     columnFilters,
     t,
     idFilterDisplayValues,
+    idFilterPreloadedOptions,
   } = options;
 
   return gridColumns.map((col) => {
@@ -114,7 +116,11 @@ export function buildSelectorColumnDefs(
       columnDef.Filter = () => {
         const currentFilter = columnFilters.find((f) => f.id === col.accessorKey);
         const filterState = columnFilterStates?.find((f) => f.id === col.accessorKey);
-        const selectedOptions = Array.isArray(currentFilter?.value) ? (currentFilter.value as FilterOption[]) : [];
+        const selectedOptions = currentFilter
+          ? Array.isArray(currentFilter.value)
+            ? (currentFilter.value as FilterOption[])
+            : []
+          : (idFilterPreloadedOptions?.get(col.accessorKey) ?? []);
 
         const effectiveFilterState: ColumnFilterState = {
           id: col.accessorKey,
@@ -217,7 +223,7 @@ export function buildDatasourceColumns(gridColumns: SelectorColumn[]): Column[] 
   return gridColumns.map((col) => {
     const filterType = getFilterType(col.referenceId);
     return {
-      id: col.id,
+      id: col.accessorKey,
       name: col.header,
       header: col.header,
       columnName: col.accessorKey,

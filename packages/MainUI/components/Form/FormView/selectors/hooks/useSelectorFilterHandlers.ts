@@ -53,7 +53,8 @@ export function useSelectorFilterHandlers({
       setColumnFilter(columnId, selectedOptions);
       setColumnFilters((prev) => {
         const filtered = prev.filter((f) => f.id !== columnId);
-        return selectedOptions.length > 0 ? [...filtered, { id: columnId, value: selectedOptions }] : filtered;
+        // Always keep the entry (even empty) so the preloaded default is not restored
+        return [...filtered, { id: columnId, value: selectedOptions }];
       });
     },
     [setColumnFilter, setColumnFilters]
