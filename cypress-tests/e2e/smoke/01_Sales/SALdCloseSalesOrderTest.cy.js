@@ -37,7 +37,7 @@ describe("Sales Orders - Create, Complete and Close", () => {
     // Step 3: Fill Sales Order Header
     // -------------------------
     // Select Business Partner
-    cy.get('[aria-describedby="Business Partner-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
+    cy.get('[aria-label="Business Partner"] > div[tabindex="0"]').click();
     cy.wait(500);
 
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295F40CFE1031B"] > .truncate').click();
@@ -67,7 +67,7 @@ describe("Sales Orders - Create, Complete and Close", () => {
     cy.wait(500);
 
     // Select Product
-    cy.get('[aria-describedby="Product-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
+    cy.get('[aria-label="Product"] > div[tabindex="0"]').click();
     cy.wait(500);
 
     cy.intercept("POST", /FormInitializationComponent/).as("productFormInit");
