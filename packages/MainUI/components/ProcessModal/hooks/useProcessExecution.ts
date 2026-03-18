@@ -474,12 +474,25 @@ export function useProcessExecution({
         const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
         const skipParamsLevel = processDefConfig?.skipParamsLevel;
 
+        // Classic's OBPickAndExecuteActionHandler reads grid data from _params.grid.
+        // New UI keys grid entries by parameter.dBColumnName — remap them to "grid".
+        const normalizedValues: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(mergedValues)) {
+          const isGridEntry =
+            value !== null &&
+            typeof value === "object" &&
+            "_selection" in (value as object) &&
+            "_allRows" in (value as object);
+          normalizedValues[isGridEntry ? "grid" : key] = value;
+        }
+
         const payload: Record<string, unknown> = {
           recordIds: getRecordIds(),
-          _buttonValue: actionValue || "DONE",
+          // Classic SmartClient sends "newVersion" as the Done button value for Pick & Execute
+          _buttonValue: actionValue || "newVersion",
           ...(skipParamsLevel
-            ? { ...mergedValues, ...buttonParams }
-            : { _params: { ...mergedValues, ...buttonParams } }),
+            ? { ...normalizedValues, ...buttonParams }
+            : { _params: { ...normalizedValues, ...buttonParams } }),
           _entityName: tab?.entityName || "",
           windowId: tab?.window || "",
           ...buildProcessSpecificFields(processId),

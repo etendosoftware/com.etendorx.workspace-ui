@@ -68,6 +68,24 @@ export const checkIfRecordIsPosted = (record: Record<string, unknown>) => {
   return extractValue(record, DEFAULT_POSTED_KEYS, DEFAULT_POSTED);
 };
 
+/**
+ * Converts a DB column name to Classic's inp* parameter name.
+ * e.g. "Fin_Payment_Proposal_ID" → "inpfinPaymentProposalId"
+ *      "C_Order_ID"              → "inpcOrderId"
+ */
+export const columnNameToInpKey = (columnName: string): string => {
+  const camel = columnName
+    .split("_")
+    .map((segment, i) => {
+      const lower = segment.toLowerCase();
+      if (i === 0) return lower;
+      // Capitalize first letter; keep "id" as "Id"
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join("");
+  return `inp${camel}`;
+};
+
 export const getParams = ({
   currentButtonId,
   processAction,
@@ -98,7 +116,8 @@ export const getParams = ({
 
   params.append(REQUIRED_PARAMS_KEYS.isPopUpCall, DEFAULT_REQUIRED_PARAMS_KEYS.isPopUpCall);
   params.append(REQUIRED_PARAMS_KEYS.command, commandAction);
-  params.append(REQUIRED_PARAMS_KEYS.inpcOrderId, recordId);
+  const inpKeyName = processActionData.inpKeyName ?? columnNameToInpKey(processActionData.inpkeyColumnId);
+  params.append(inpKeyName, recordId);
   params.append(REQUIRED_PARAMS_KEYS.inpKey, recordId);
   params.append(REQUIRED_PARAMS_KEYS.inpWindowId, windowId);
   params.append(REQUIRED_PARAMS_KEYS.inpwindowId, windowId);

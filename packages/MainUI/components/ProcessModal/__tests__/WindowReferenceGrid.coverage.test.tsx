@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
+import type { Column, EntityData } from "@workspaceui/api-client/src/api/types";
 import {
   getBooleanEditProps,
   GridTopToolbar,
@@ -13,6 +14,8 @@ import {
   applyRecordValues,
   evaluateFieldReadOnlyLogic,
   buildGridCriteria,
+  resolveSortBy,
+  buildDeselectedRecord,
 } from "../WindowReferenceGrid";
 import "@testing-library/jest-dom";
 
@@ -119,6 +122,89 @@ describe("WindowReferenceGrid Coverage Tests", () => {
       const result = buildGridCriteria(filterExpressions, "grid1");
       expect(result).toHaveLength(1);
       expect(result[0].fieldName).toBe("field1");
+    });
+  });
+
+  describe("resolveSortBy", () => {
+    const rawColumns = [{ id: "col1", columnName: "col1", header: "Col 1" }] as Column[];
+
+    it("returns getSortByString result when sorting is active", () => {
+      const sorting = [{ id: "col1", desc: false }];
+      const result = resolveSortBy(sorting, rawColumns, [], undefined);
+      expect(result).toBe("col1");
+    });
+
+    it("returns descending sort when desc=true", () => {
+      const sorting = [{ id: "col1", desc: true }];
+      const result = resolveSortBy(sorting, rawColumns, [], undefined);
+      expect(result).toBe("-col1");
+    });
+
+    it("returns tabOrderBy when no sorting and no criteria", () => {
+      const result = resolveSortBy([], rawColumns, [], "documentDate");
+      expect(result).toBe("documentDate");
+    });
+
+    it("returns -documentNo fallback when no sorting and criteria present", () => {
+      const result = resolveSortBy([], rawColumns, [{ fieldName: "x" }], undefined);
+      expect(result).toBe("-documentNo");
+    });
+
+    it("returns tabOrderBy over -documentNo fallback when both apply", () => {
+      const result = resolveSortBy([], rawColumns, [{ fieldName: "x" }], "myOrder");
+      expect(result).toBe("myOrder");
+    });
+
+    it("returns undefined when no sorting, no criteria and no tabOrderBy", () => {
+      const result = resolveSortBy([], rawColumns, [], undefined);
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe("buildDeselectedRecord", () => {
+    it("clears obSelected when true", () => {
+      const record = { id: "1", obSelected: true } as EntityData;
+      const { updated, changed } = buildDeselectedRecord(record);
+      expect(updated.obSelected).toBe(false);
+      expect(changed).toBe(true);
+    });
+
+    it("resets payment to 0 when non-zero", () => {
+      const record = { id: "1", payment: 100 } as EntityData;
+      const { updated, changed } = buildDeselectedRecord(record);
+      expect(updated.payment).toBe(0);
+      expect(changed).toBe(true);
+    });
+
+    it("resets amount to 0 when non-zero", () => {
+      const record = { id: "1", amount: 50 } as EntityData;
+      const { updated, changed } = buildDeselectedRecord(record);
+      expect(updated.amount).toBe(0);
+      expect(changed).toBe(true);
+    });
+
+    it("resets paymentAmount to 0 when non-zero", () => {
+      const record = { id: "1", paymentAmount: 75 } as EntityData;
+      const { updated, changed } = buildDeselectedRecord(record);
+      expect(updated.paymentAmount).toBe(0);
+      expect(changed).toBe(true);
+    });
+
+    it("does not mutate record when all fields are already reset", () => {
+      const record = { id: "1", obSelected: false, payment: 0, amount: 0, paymentAmount: 0 } as EntityData;
+      const { updated, changed } = buildDeselectedRecord(record);
+      expect(changed).toBe(false);
+      expect(updated).toEqual(record);
+    });
+
+    it("resets all payment fields at once", () => {
+      const record = { id: "1", obSelected: true, payment: 10, amount: 20, paymentAmount: 30 } as EntityData;
+      const { updated, changed } = buildDeselectedRecord(record);
+      expect(changed).toBe(true);
+      expect(updated.obSelected).toBe(false);
+      expect(updated.payment).toBe(0);
+      expect(updated.amount).toBe(0);
+      expect(updated.paymentAmount).toBe(0);
     });
   });
 
