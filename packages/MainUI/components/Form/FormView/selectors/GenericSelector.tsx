@@ -19,7 +19,7 @@ import type { Field, EntityData } from "@workspaceui/api-client/src/api/types";
 import SearchIcon from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
 import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
-import { memo, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import {
   CUSTOM_SELECTORS_IDENTIFIERS,
   FIELD_REFERENCE_CODES,
@@ -44,7 +44,10 @@ import LocationSelector from "./LocationSelector";
 import { TimeSelector } from "./TimeSelector";
 import SelectorModal from "./SelectorModal";
 import AttributeSetInstanceSelector from "./AttributeSetInstance";
-
+import ProcessDefinitionModal from "@/components/ProcessModal/ProcessDefinitionModal";
+import type { ProcessDefinitionButton } from "@/components/ProcessModal/types";
+import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useFormContext } from "react-hook-form";
 
 export type GenericSelectorProps = {
@@ -55,6 +58,8 @@ export type GenericSelectorProps = {
 const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   const { getValues, setValue } = useFormContext();
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
+  const [processButtonData, setProcessButtonData] = useState<ProcessDefinitionButton | null>(null);
 
   // if hqlName data is missing, try camelCase version
   let effectiveField = field;
@@ -169,6 +174,56 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
 
   const { hasTableRelated, hasProcessDefinitionRelated } = effectiveField.selector || {};
 
+  const handleProcessClick = useCallback(async () => {
+    const processId = effectiveField.selector?.processDefinitionId as string | undefined;
+    if (!processId) return;
+
+    try {
+      const response = await Metadata.client.post(`meta/process/${processId}`);
+      if (response.ok && response.data) {
+        const processData = response.data;
+        const name = processData.name || effectiveField.name || "";
+
+        const button = {
+          ...effectiveField,
+          id: effectiveField.id,
+          name,
+          action: "P",
+          enabled: true,
+          visible: true,
+          processId,
+          buttonText: name,
+          buttonRefList: [],
+          processInfo: {
+            loadFunction: processData.loadFunction || "",
+            searchKey: processData.searchKey || "",
+            clientSideValidation: processData.clientSideValidation || "",
+            _entityName: processData._entityName || "OBUIAPP_Process",
+            id: processId,
+            name,
+            javaClassName: processData.javaClassName || "",
+            parameters: [],
+          },
+          processDefinition: {
+            id: processId,
+            name,
+            description: processData.description || "",
+            javaClassName: processData.javaClassName || "",
+            parameters: processData.parameters || {},
+            onLoad: processData.onLoad || "",
+            onProcess: processData.onProcess || "",
+            ...processData,
+          },
+        } as unknown as ProcessDefinitionButton;
+
+        setProcessButtonData(button);
+        setIsProcessModalOpen(true);
+      }
+    } catch (error) {
+      console.error("Failed to load process definition:", error);
+    }
+  }, [effectiveField]);
+
   const handleSelect = (record: EntityData) => {
     // Dynamic extraction: The selector metadata explicitly defines which column holds the true ID
     const valueField = effectiveField.selector?.valueField as string | undefined;
@@ -197,7 +252,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         )}
         {hasProcessDefinitionRelated && !isReadOnly && (
           <IconButton
-            onClick={() => console.log("Process clicked")}
+            onClick={handleProcessClick}
             className="w-8 h-8 flex-shrink-0"
             tooltip="Add"
             tooltipPosition="top"
@@ -214,6 +269,22 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           onSelect={handleSelect}
           currentDisplayValue={getValues(`${getSelectorFieldName(effectiveField)}$_identifier`)}
           data-testid={`SelectorModal__${field.id}`}
+        />
+      )}
+      {isProcessModalOpen && processButtonData && (
+        <ProcessDefinitionModal
+          type={PROCESS_TYPES.PROCESS_DEFINITION}
+          open={isProcessModalOpen}
+          onClose={() => {
+            setIsProcessModalOpen(false);
+            setProcessButtonData(null);
+          }}
+          button={processButtonData}
+          contextRecord={getValues()}
+          onSuccess={() => {
+            setIsProcessModalOpen(false);
+            setProcessButtonData(null);
+          }}
         />
       )}
     </>
