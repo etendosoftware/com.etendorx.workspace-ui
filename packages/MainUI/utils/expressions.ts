@@ -67,12 +67,19 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
       const normalizedKey = lowerKey.replace(/_/g, "");
 
       // 3. Case-Insensitive Overwrite (Strict & Loose)
+      // Guard: do not overwrite an existing non-empty value with an empty one.
+      // Session attributes (e.g. PRODUCTTYPE:"") can case-insensitively match real field keys
+      // (e.g. productType:"I") and must not corrupt them.
       Object.keys(evalContext).forEach((existingKey) => {
         if (existingKey === key) return;
         const existingLower = existingKey.toLowerCase();
 
         if (existingLower === lowerKey || existingLower.replace(/_/g, "") === normalizedKey) {
-          evalContext[existingKey] = normalizedVal;
+          const existingVal = evalContext[existingKey];
+          const existingIsEmpty = existingVal === "" || existingVal === null || existingVal === undefined;
+          if (existingIsEmpty || (normalizedVal !== "" && normalizedVal !== null && normalizedVal !== undefined)) {
+            evalContext[existingKey] = normalizedVal;
+          }
         }
       });
 
