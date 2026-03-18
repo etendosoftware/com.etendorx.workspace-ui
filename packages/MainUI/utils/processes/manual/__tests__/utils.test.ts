@@ -1,4 +1,4 @@
-import { mapKeysWithDefaults, transformDates } from "@/utils/processes/manual/utils";
+import { mapKeysWithDefaults, transformDates, columnNameToInpKey } from "@/utils/processes/manual/utils";
 
 describe("transformDates", () => {
   it("converts dd-mm-yyyy string to yyyy-mm-dd", () => {
@@ -126,5 +126,31 @@ describe("mapKeysWithDefaults", () => {
   it("maps converted_amount and conversion_rate to the same target", () => {
     const result = mapKeysWithDefaults({ conversion_rate: 1.5 });
     expect(result.conversion_rate).toBe(1.5);
+  });
+});
+
+describe("columnNameToInpKey", () => {
+  it("converts multi-segment column name to inp camelCase key", () => {
+    expect(columnNameToInpKey("Fin_Payment_Proposal_ID")).toBe("inpfinPaymentProposalId");
+  });
+
+  it("converts C_Order_ID to inpcOrderId", () => {
+    expect(columnNameToInpKey("C_Order_ID")).toBe("inpcOrderId");
+  });
+
+  it("converts C_Invoice_ID to inpcInvoiceId", () => {
+    expect(columnNameToInpKey("C_Invoice_ID")).toBe("inpcInvoiceId");
+  });
+
+  it("converts single-segment name to inp prefix with lowercase", () => {
+    expect(columnNameToInpKey("name")).toBe("inpname");
+  });
+
+  it("converts all-uppercase single segment to lowercase", () => {
+    expect(columnNameToInpKey("DOCBASETYPE")).toBe("inpdocbasetype");
+  });
+
+  it("converts two-segment name correctly", () => {
+    expect(columnNameToInpKey("AD_Org_ID")).toBe("inpadOrgId");
   });
 });
