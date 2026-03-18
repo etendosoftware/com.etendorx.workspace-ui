@@ -139,7 +139,7 @@ export function resolveSortBy(
   sorting: MRT_SortingState,
   rawColumns: Column[],
   finalCriteria: unknown[],
-  tabOrderBy: string | undefined,
+  tabOrderBy: string | undefined
 ): string | undefined {
   if (sorting.length > 0) {
     return getSortByString(sorting, rawColumns, finalCriteria.length > 0);
