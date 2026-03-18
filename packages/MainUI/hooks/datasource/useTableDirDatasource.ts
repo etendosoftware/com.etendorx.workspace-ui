@@ -155,6 +155,11 @@ export const useTableDirDatasource = ({
       const shouldSendOrg = !isProcessModal || selectedRecordsCount === 1;
 
       // 1. Build Base Metadata
+      // Use field.tab/field.column.table from metadata; fall back to the current tab
+      // context when those are absent (common for custom-module fields).
+      const effectiveTabId = field.tab || tab?.id || "";
+      const effectiveTableId = field.column?.table || tab?.table || "";
+
       const baseBody: BaseBody = {
         _startRow: startRow.toString(),
         _endRow: endRow.toString(),
@@ -162,10 +167,10 @@ export const useTableDirDatasource = ({
         ...field.selector,
         moduleId: field.module,
         windowId,
-        tabId: field.tab,
-        inpTabId: field.tab,
+        tabId: effectiveTabId,
+        inpTabId: effectiveTabId,
         inpwindowId: windowId,
-        inpTableId: field.column.table,
+        inpTableId: effectiveTableId,
         initiatorField: field.hqlName,
         _constructor: "AdvancedCriteria",
         _OrExpression: "true",
@@ -176,11 +181,15 @@ export const useTableDirDatasource = ({
       // 2. Build and Merge Context based on type
       const getSpecializedContext = (): Partial<BaseBody> => {
         if (isProcessModal) {
-          // ADList (List-type references) requires parent tab/table context so the
-          // SelectorDataSourceFilter can look up the AD_Reference for the field.
+          // Datasources using the standard SelectorDataSourceFilter need form context
+          // to resolve org/client security and field references.
           // Custom entity datasources (e.g. ETASK_Task_Priority) break when given
-          // inpTabId/inpTableId — they use lean payload instead.
-          if (field.selector?.datasourceName === "ADList") {
+          // full context — they use lean payload instead.
+          const usesStandardFilter =
+            field.selector?.datasourceName === "ADList" ||
+            field.selector?.filterClass === "org.openbravo.userinterface.selector.SelectorDataSourceFilter";
+
+          if (usesStandardFilter) {
             return {
               _textMatchStyle: "substring",
               ...parentData,

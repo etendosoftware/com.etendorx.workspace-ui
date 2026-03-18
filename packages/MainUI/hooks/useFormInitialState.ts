@@ -18,6 +18,7 @@
 import { useTabContext } from "@/contexts/tab";
 import type { EntityData, EntityValue, FormInitializationResponse } from "@workspaceui/api-client/src/api/types";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { useMemo } from "react";
 import { FieldName } from "./types";
 import useFormParent from "./useFormParent";
@@ -42,7 +43,15 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
       const field = fieldsByColumnName?.[key];
       const newKey = field?.hqlName ?? key;
 
-      acc[newKey] = value;
+      // Etendo encodes boolean (YES_NO, reference "20") column values as "" for false and "Y" for true.
+      // Convert to JS booleans so SmartContext can normalize them to 'N'/'Y' for display logic evaluation.
+      let processedValue: EntityValue = value;
+      if (field?.column?.reference === FIELD_REFERENCE_CODES.BOOLEAN.id) {
+        if (value === "" || value === "false") processedValue = false;
+        else if (value === "Y" || value === "true") processedValue = true;
+      }
+
+      acc[newKey] = processedValue;
 
       if (entries) {
         acc[`${newKey}$_entries`] = entries.map((e) => ({ id: e.id, label: e._identifier })) as unknown as EntityValue;
