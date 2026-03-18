@@ -44,6 +44,7 @@ import { ToastContent } from "@/components/ToastContent";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { createOBShim } from "@/utils/propertyStore";
+import { normalizeGridValues } from "@/utils/process/gridNormalization";
 
 // ---------------------------------------------------------------------------
 // Internal types for response action shapes
@@ -475,22 +476,7 @@ export function useProcessExecution({
         const skipParamsLevel = processDefConfig?.skipParamsLevel;
 
         // Classic's OBPickAndExecuteActionHandler reads grid data from _params.grid.
-        // New UI keys grid entries by parameter.dBColumnName — keep all original keys and
-        // additionally expose the main grid under "grid" for Classic compatibility.
-        // Secondary grids (e.g. credit_to_use) must remain under their original keys.
-        const normalizedValues: Record<string, unknown> = { ...mergedValues };
-        let mainGridSet = false;
-        for (const [key, value] of Object.entries(mergedValues)) {
-          const isGridEntry =
-            value !== null &&
-            typeof value === "object" &&
-            "_selection" in (value as object) &&
-            "_allRows" in (value as object);
-          if (isGridEntry && key !== "credit_to_use" && !mainGridSet) {
-            normalizedValues.grid = value;
-            mainGridSet = true;
-          }
-        }
+        const normalizedValues = normalizeGridValues(mergedValues);
 
         const payload: Record<string, unknown> = {
           recordIds: getRecordIds(),
