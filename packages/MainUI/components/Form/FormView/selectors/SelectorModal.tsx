@@ -49,7 +49,10 @@ const SelectorModal = ({ field, isOpen, onClose, onSelect }: SelectorModalProps)
   const { session } = useUserContext();
 
   const targetEntity = (field.selector?.datasourceName as string) || field.referencedEntity;
-  const gridColumns = (field.selector?.gridColumns as SelectorColumn[]) || [];
+  const gridColumns = useMemo(() => {
+    const cols = (field.selector?.gridColumns as SelectorColumn[]) || [];
+    return [...cols].sort((a, b) => (a.sortNo ?? 0) - (b.sortNo ?? 0));
+  }, [field.selector?.gridColumns]);
 
   const datasourceColumns = useMemo(() => buildDatasourceColumns(gridColumns), [gridColumns]);
 

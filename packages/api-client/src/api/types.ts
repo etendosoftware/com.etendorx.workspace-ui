@@ -118,6 +118,7 @@ export interface SelectorColumn {
   enableSorting?: boolean;
   enableFiltering?: boolean;
   referenceId?: string;
+  sortNo?: number;
   [key: string]: unknown;
 }
 
