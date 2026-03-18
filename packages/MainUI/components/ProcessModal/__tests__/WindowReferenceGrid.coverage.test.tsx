@@ -16,6 +16,8 @@ import {
   buildGridCriteria,
   resolveSortBy,
   buildDeselectedRecord,
+  syncGridSelectionToLocalRecords,
+  findMatchingRecord,
 } from "../WindowReferenceGrid";
 import "@testing-library/jest-dom";
 
@@ -266,5 +268,96 @@ describe("WindowReferenceGrid Coverage Tests", () => {
 
       expect(mockProps.handleClearSelections).toHaveBeenCalled();
     });
+  });
+});
+
+describe("syncGridSelectionToLocalRecords", () => {
+  const makeRecord = (overrides?: Partial<EntityData>): EntityData =>
+    ({ id: "1", amount: 0, paymentAmount: 0, obSelected: false, ...overrides }) as EntityData;
+
+  it("calls setLocalRecords when a matching selection updates a record", () => {
+    const setLocalRecords = jest.fn();
+    const localRecords = [makeRecord({ id: "1", amount: 0 })];
+    const externalSelection = [{ id: "1", amount: 50 }];
+    syncGridSelectionToLocalRecords(externalSelection, localRecords, setLocalRecords);
+    expect(setLocalRecords).toHaveBeenCalledTimes(1);
+    const updated = setLocalRecords.mock.calls[0][0] as EntityData[];
+    expect(updated[0].amount).toBe(50);
+  });
+
+  it("resets amount and paymentAmount for records not present in externalSelection", () => {
+    const setLocalRecords = jest.fn();
+    const localRecords = [makeRecord({ id: "2", amount: 100, paymentAmount: 20 })];
+    syncGridSelectionToLocalRecords([], localRecords, setLocalRecords);
+    expect(setLocalRecords).toHaveBeenCalledTimes(1);
+    const updated = setLocalRecords.mock.calls[0][0] as EntityData[];
+    expect(updated[0].amount).toBe(0);
+    expect(updated[0].paymentAmount).toBe(0);
+  });
+
+  it("does not call setLocalRecords when nothing changed", () => {
+    const setLocalRecords = jest.fn();
+    // Record already at default zeroed values — resetLocalRecordFields returns null (no change)
+    const localRecords = [makeRecord({ id: "1", amount: 0, paymentAmount: 0, obSelected: false })];
+    syncGridSelectionToLocalRecords([], localRecords, setLocalRecords);
+    expect(setLocalRecords).not.toHaveBeenCalled();
+  });
+
+  it("handles empty localRecords without calling setLocalRecords", () => {
+    const setLocalRecords = jest.fn();
+    syncGridSelectionToLocalRecords([{ id: "1", amount: 10 }], [], setLocalRecords);
+    expect(setLocalRecords).not.toHaveBeenCalled();
+  });
+
+  it("updates only the matching record and leaves others unchanged", () => {
+    const setLocalRecords = jest.fn();
+    const localRecords = [
+      makeRecord({ id: "1", amount: 0 }),
+      makeRecord({ id: "2", amount: 99, paymentAmount: 5, obSelected: true }),
+    ];
+    const externalSelection = [{ id: "1", amount: 30 }];
+    syncGridSelectionToLocalRecords(externalSelection, localRecords, setLocalRecords);
+    expect(setLocalRecords).toHaveBeenCalledTimes(1);
+    const updated = setLocalRecords.mock.calls[0][0] as EntityData[];
+    expect(updated[0].amount).toBe(30);
+    // record id=2 not in selection → reset amount/paymentAmount
+    expect(updated[1].amount).toBe(0);
+    expect(updated[1].paymentAmount).toBe(0);
+  });
+});
+
+describe("findMatchingRecord", () => {
+  it("returns undefined for an empty array", () => {
+    expect(findMatchingRecord([], "id1", undefined)).toBeUndefined();
+  });
+
+  it("returns undefined for null/undefined rawRecords", () => {
+    expect(findMatchingRecord(null as unknown as never[], "id1", undefined)).toBeUndefined();
+    expect(findMatchingRecord(undefined as unknown as never[], "id1", undefined)).toBeUndefined();
+  });
+
+  it("matches by r.id", () => {
+    const records = [{ id: "abc" }, { id: "xyz" }];
+    expect(findMatchingRecord(records, "abc", undefined)).toEqual({ id: "abc" });
+  });
+
+  it("matches by r.order", () => {
+    const records = [{ id: "1", order: "ORD-001" }];
+    expect(findMatchingRecord(records, "ORD-001", undefined)).toEqual({ id: "1", order: "ORD-001" });
+  });
+
+  it("matches by r.c_order_id._identifier (edge case)", () => {
+    const records = [{ id: "1", c_order_id: { _identifier: "SO-999" } }];
+    expect(findMatchingRecord(records, "SO-999", undefined)).toBeDefined();
+  });
+
+  it("matches by r.documentNo when contextDocNo is provided", () => {
+    const records = [{ id: "1", documentNo: "DOC-42" }];
+    expect(findMatchingRecord(records, undefined, "DOC-42")).toEqual({ id: "1", documentNo: "DOC-42" });
+  });
+
+  it("returns undefined when neither parentContextId nor contextDocNo match any record", () => {
+    const records = [{ id: "1", documentNo: "DOC-1" }];
+    expect(findMatchingRecord(records, "NOPE", "NOPE")).toBeUndefined();
   });
 });

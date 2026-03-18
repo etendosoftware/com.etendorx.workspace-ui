@@ -387,7 +387,7 @@ export const resetLocalRecordFields = (record: EntityData): EntityData | null =>
 };
 
 // Logic extracted to reduce cognitive complexity of useEffect
-const syncGridSelectionToLocalRecords = (
+export const syncGridSelectionToLocalRecords = (
   externalSelection: any[],
   localRecords: EntityData[],
   setLocalRecords: (records: EntityData[]) => void
@@ -421,7 +421,7 @@ const syncGridSelectionToLocalRecords = (
 };
 
 // Helper to find valid matching record in grid
-const findMatchingRecord = (
+export const findMatchingRecord = (
   rawRecords: any[],
   parentContextId: string | undefined,
   contextDocNo: string | undefined
@@ -656,6 +656,10 @@ const WindowReferenceGrid = ({
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [appliedTableFilters, setAppliedTableFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
+  // Persistent cache of all selected rows across pages and filter changes.
+  // Survives filter apply/remove and infinite-scroll page resets; cleared only when
+  // the user explicitly deselects a row or calls handleClearSelections.
+  const persistentSelectionRef = useRef<Map<string, EntityData>>(new Map());
   const [sorting, setSorting] = useState<MRT_SortingState>([]);
 
   // Merge recordValues (static context) with currentValues (live form state)
@@ -1354,21 +1358,37 @@ const WindowReferenceGrid = ({
   // Initialize rowSelection from obSelected field when records arrive from the datasource.
   // Classic sends obSelected=true for rows that were previously selected, so we pre-check them.
   // This is generic: any Pick & Execute datasource can use obSelected to restore prior selection.
+  // We also consult persistentSelectionRef so selections from other pages (e.g. row 101 when
+  // currently showing page 1 after a filter change) are restored as soon as those rows scroll
+  // back into view.
   useEffect(() => {
     if (!rawRecords?.length) return;
-    const initialSelection: MRT_RowSelectionState = {};
+
+    // 1. Seed persistent cache from backend-flagged rows (obSelected=true).
     for (const record of rawRecords) {
       if (record.obSelected) {
+        persistentSelectionRef.current.set(String(record.id), record);
+      }
+    }
+
+    // 2. Rebuild MRT rowSelection for currently visible rows using the cache.
+    const initialSelection: MRT_RowSelectionState = {};
+    for (const record of rawRecords) {
+      if (persistentSelectionRef.current.has(String(record.id))) {
         initialSelection[String(record.id)] = true;
       }
     }
-    if (Object.keys(initialSelection).length === 0) return;
+
+    const hasPersistentSelection = persistentSelectionRef.current.size > 0;
+    if (Object.keys(initialSelection).length === 0 && !hasPersistentSelection) return;
+
     setRowSelection(initialSelection);
-    const selectedItems = rawRecords.filter((r) => initialSelection[String(r.id)]);
+
+    // 3. Send ALL persistently selected rows (including off-page ones) to the parent.
     onSelectionChange((prev: GridSelectionStructure) => ({
       ...prev,
       [parameter.dBColumnName]: {
-        _selection: selectedItems,
+        _selection: Array.from(persistentSelectionRef.current.values()),
         _allRows: rawRecords,
       },
     }));
@@ -1507,17 +1527,22 @@ const WindowReferenceGrid = ({
       }
       setRowSelection(newSelection);
 
-      // 3. Calculate selected subset from the NEW records
-      const selectedItems = newRecords.filter((record) => {
-        const recordId = String(record.id);
-        return newSelection[recordId];
-      });
+      // 3. Update the persistent cache for rows on the current page.
+      // Only rows currently in `records` are touched; off-page selections are preserved.
+      for (const record of newRecords) {
+        const id = String(record.id);
+        if (newSelection[id]) {
+          persistentSelectionRef.current.set(id, record);
+        } else {
+          persistentSelectionRef.current.delete(id);
+        }
+      }
 
-      // 4. Propagate to parent with the updated (zeroed) records
+      // 4. Propagate ALL persistently selected rows (including off-page) to the parent.
       onSelectionChange((prev: GridSelectionStructure) => ({
         ...prev,
         [parameter.dBColumnName]: {
-          _selection: selectedItems,
+          _selection: Array.from(persistentSelectionRef.current.values()),
           _allRows: newRecords,
         },
       }));
@@ -1526,6 +1551,7 @@ const WindowReferenceGrid = ({
   );
 
   const handleClearSelections = useCallback(() => {
+    persistentSelectionRef.current.clear();
     setRowSelection({});
     // Clear selections for this entityName
     onSelectionChange((prev: GridSelectionStructure) => ({
