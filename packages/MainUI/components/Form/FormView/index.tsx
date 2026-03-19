@@ -140,8 +140,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const { resetFormChanges, parentTab } = useTabContext();
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
     useToolbarContext();
-  const { refetchDatasource, registerRefetchFunction, updateRecordInDatasource, addRecordToDatasource } =
-    useDatasourceContext();
+  const { registerRefetchFunction, updateRecordInDatasource, addRecordToDatasource } = useDatasourceContext();
   const { registerRefresh } = useTabRefreshContext();
 
   // Sync currentMode and currentRecordId with props when they change (e.g., navigating to a different record)
@@ -865,8 +864,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     },
     [save]
   );
-
-  const isLoading = loading || loadingFormInitialization;
 
   /**
    * Get navigation records from DatasourceContext

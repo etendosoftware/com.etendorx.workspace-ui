@@ -121,6 +121,8 @@ export interface UseProcessExecutionParams {
   setGridRefreshKey: (fn: (prev: number) => number) => void;
   /** Original button.processDefinition.parameters — used to reset on close */
   initialParameters: Record<string, ProcessParameter>;
+  /** File objects from Upload File parameters, keyed by parameter dBColumnName */
+  fileParams: Record<string, File>;
 }
 
 export interface UseProcessExecutionReturn {
@@ -178,6 +180,7 @@ export function useProcessExecution({
   setShouldTriggerSuccess,
   setGridRefreshKey,
   initialParameters,
+  fileParams,
 }: UseProcessExecutionParams): UseProcessExecutionReturn {
   const { t } = useTranslation();
 
@@ -395,15 +398,52 @@ export function useProcessExecution({
 
         const apiUrl = `${baseUrl}?${queryParams.toString()}`;
 
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json;charset=UTF-8",
-            Authorization: `Bearer ${token}`,
-            "X-CSRF-Token": getCsrfToken(),
-          },
-          body: JSON.stringify(payload),
-        });
+        const hasFiles = Object.keys(fileParams).length > 0;
+        let response: Response;
+
+        if (hasFiles) {
+          const formData = new FormData();
+
+          // Append each file with its parameter name as key
+          for (const [paramName, file] of Object.entries(fileParams)) {
+            formData.append(paramName, file, file.name);
+          }
+
+          // Append process metadata as separate fields
+          formData.append("processId", processId || "");
+          formData.append("reportId", "null");
+          formData.append("windowId", String(tab?.window || ""));
+
+          // In _params, replace file values with fakepath (Etendo Classic expects this)
+          if (payload._params) {
+            for (const [paramName, file] of Object.entries(fileParams)) {
+              payload._params[paramName] = `C:\\fakepath\\${(file as File).name}`;
+            }
+          }
+
+          // Append the full payload as "paramValues" JSON string
+          formData.append("paramValues", JSON.stringify(payload));
+
+          response = await fetch(apiUrl, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "X-CSRF-Token": getCsrfToken(),
+              // No Content-Type — browser sets multipart boundary automatically
+            },
+            body: formData,
+          });
+        } else {
+          response = await fetch(apiUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json;charset=UTF-8",
+              Authorization: `Bearer ${token}`,
+              "X-CSRF-Token": getCsrfToken(),
+            },
+            body: JSON.stringify(payload),
+          });
+        }
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -454,6 +494,7 @@ export function useProcessExecution({
       handleSuccessClose,
       setResult,
       showProcessToast,
+      fileParams,
     ]
   );
 
