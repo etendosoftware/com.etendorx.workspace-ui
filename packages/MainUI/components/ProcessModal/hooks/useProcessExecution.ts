@@ -44,6 +44,7 @@ import { ToastContent } from "@/components/ToastContent";
 import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { createOBShim } from "@/utils/propertyStore";
+import { normalizeGridValues } from "@/utils/process/gridNormalization";
 
 // ---------------------------------------------------------------------------
 // Internal types for response action shapes
@@ -474,12 +475,16 @@ export function useProcessExecution({
         const processDefConfig = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
         const skipParamsLevel = processDefConfig?.skipParamsLevel;
 
+        // Classic's OBPickAndExecuteActionHandler reads grid data from _params.grid.
+        const normalizedValues = normalizeGridValues(mergedValues);
+
         const payload: Record<string, unknown> = {
           recordIds: getRecordIds(),
-          _buttonValue: actionValue || "DONE",
+          // Classic SmartClient sends "newVersion" as the Done button value for Pick & Execute
+          _buttonValue: actionValue || "newVersion",
           ...(skipParamsLevel
-            ? { ...mergedValues, ...buttonParams }
-            : { _params: { ...mergedValues, ...buttonParams } }),
+            ? { ...normalizedValues, ...buttonParams }
+            : { _params: { ...normalizedValues, ...buttonParams } }),
           _entityName: tab?.entityName || "",
           windowId: tab?.window || "",
           ...buildProcessSpecificFields(processId),

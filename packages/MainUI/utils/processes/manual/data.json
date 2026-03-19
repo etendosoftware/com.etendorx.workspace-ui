@@ -154,5 +154,11 @@
     "command": "DEFAULT",
     "inpkeyColumnId": "Fin_Financial_Account_ID",
     "keyColumnName": "Fin_Financial_Account_ID"
+  },
+  "7DC34559B40AB45BE040007F0100784A": {
+    "url": "/org.openbravo.advpaymentmngt.ad_actionbutton/ProcessPaymentProposal.html",
+    "command": "DEFAULT",
+    "inpkeyColumnId": "Fin_Payment_Proposal_ID",
+    "keyColumnName": "Fin_Payment_Proposal_ID"
   }
 }
