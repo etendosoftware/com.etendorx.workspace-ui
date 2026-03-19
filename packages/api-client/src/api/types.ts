@@ -52,6 +52,7 @@ export interface DatasourceParams {
   operationType?: "fetch" | "add" | "update" | "remove";
   isSorting?: boolean;
   isImplicitFilterApplied?: boolean;
+  isPickAndEdit?: boolean;
   operator?: "and" | "or";
   parentId?: string;
 }

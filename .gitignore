@@ -29,6 +29,7 @@ junit.xml
 .claude/settings.local.json
 .claude/memory/
 .claude/.ralph-loop.local.md
+.claude-flow
 .idea/
 .env
 app.log
