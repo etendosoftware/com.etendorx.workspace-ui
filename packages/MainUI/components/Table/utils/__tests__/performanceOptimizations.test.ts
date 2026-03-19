@@ -142,7 +142,7 @@ describe("LazyLoadingManager", () => {
   it("loadEditor deduplicates concurrent loads", async () => {
     const mgr = new LazyLoadingManager();
     const loader = jest.fn().mockResolvedValue({});
-    const [p1, p2] = await Promise.all([mgr.loadEditor("ed", loader), mgr.loadEditor("ed", loader)]);
+    await Promise.all([mgr.loadEditor("ed", loader), mgr.loadEditor("ed", loader)]);
     expect(loader).toHaveBeenCalledTimes(1);
   });
 
