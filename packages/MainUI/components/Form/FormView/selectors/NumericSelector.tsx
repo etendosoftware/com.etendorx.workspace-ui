@@ -20,6 +20,7 @@ import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { useLanguage } from "@/contexts/language";
+import { getNumericFormatOptions } from "@/utils";
 import { TextInput } from "./components/TextInput";
 
 type NumericType = "integer" | "decimal";
@@ -44,23 +45,30 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
 
   const isInteger = type === "integer" || field.column.reference === "11";
 
-  const getDecimalSeparator = useCallback(() => {
-    return language === "es_ES" ? "," : ".";
+  const getDecimalSeparator = useCallback((): string => {
+    const locale = (language ?? "en_US").replace("_", "-");
+    const parts = new Intl.NumberFormat(locale).formatToParts(1.1);
+    return parts.find(p => p.type === "decimal")?.value ?? ".";
   }, [language]);
 
-  const normalizeDecimalInput = useCallback((value: string): string => {
-    return value.replace(",", ".");
-  }, []);
+  const normalizeDecimalInput = useCallback(
+    (value: string): string => {
+      const separator = getDecimalSeparator();
+      return separator === "," ? value.replace(",", ".") : value;
+    },
+    [getDecimalSeparator]
+  );
 
   const formatDisplayValue = useCallback(
     (value: number): string => {
       if (isInteger) {
         return String(value);
       }
-      const separator = getDecimalSeparator();
-      return String(value).replace(".", separator);
+      const locale = (language ?? "en_US").replace("_", "-");
+      const formatOptions = getNumericFormatOptions(field.column?.reference, field.column?.valueFormat);
+      return new Intl.NumberFormat(locale, { ...formatOptions, useGrouping: false }).format(value);
     },
-    [isInteger, getDecimalSeparator]
+    [isInteger, language, field.column]
   );
 
   useEffect(() => {
