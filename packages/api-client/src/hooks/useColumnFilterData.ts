@@ -89,11 +89,11 @@ const applySelectorParams = (
 
 const mergeExtraParams = (params: Record<string, unknown>, extraParams: Record<string, unknown>): void => {
   for (const [key, value] of Object.entries(extraParams)) {
-    if (key !== "criteria" && value !== undefined && value !== null) {
+    if (key !== "criteria" && key !== "allowOrgParam" && value !== undefined && value !== null) {
       params[key] = value;
     }
   }
-  if (extraParams.ad_org_id && !params._org) {
+  if (extraParams.ad_org_id && !params._org && extraParams.allowOrgParam !== false) {
     params._org = extraParams.ad_org_id;
   }
 };

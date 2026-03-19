@@ -47,6 +47,7 @@ export interface BaseProcessButton extends BaseButton {
 }
 
 export interface ProcessDefinitionButton extends BaseProcessButton {
+  buttonRefList: RefListField[];
   processDefinition: ProcessDefinition;
 }
 
@@ -109,6 +110,7 @@ export interface ProcessDefinitionModalProps {
   onSuccess?: () => void;
   onError?: () => void;
   type: ProcessType;
+  keepOpenOnSuccess?: boolean;
 }
 
 export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
@@ -162,6 +164,7 @@ export type RecordValues = { [key: string]: EntityValue };
 export interface WindowReferenceGridProps {
   parameter: ProcessParameter;
   parameters: Record<string, ProcessParameter>; // Added to enable generic parameter mapping
+  selectedRecordsCount?: number;
   onSelectionChange: (selection: GridSelectionUpdater) => void;
   gridSelection: GridSelectionStructure;
   entityName?: EntityValue;
@@ -175,6 +178,7 @@ export interface WindowReferenceGridProps {
   recordValues: RecordValues | null;
   currentValues?: Record<string, unknown>; // Current form values for dynamic filtering
   fields?: Field[]; // Optional fields array for advanced field configuration
+  showTitle?: boolean; // Whether to show the parameter name in the toolbar (default true)
 }
 
 export type RowProps = (props: {

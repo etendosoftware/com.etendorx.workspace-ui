@@ -32,7 +32,7 @@ interface FormActionsProps {
   tab: Tab;
   onNew: () => void;
   refetch: () => Promise<void>;
-  onSave: (options: SaveOptions) => Promise<void>;
+  onSave: (options: SaveOptions) => Promise<boolean>;
   showErrorModal: (message: string) => void;
   mode: FormMode;
 }
@@ -130,16 +130,16 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode 
   }, [isFormInitializing]);
 
   const handleSave = useCallback(
-    async (options: SaveOptions) => {
+    async (options: SaveOptions): Promise<boolean> => {
       try {
         // Set saving state
         setSaveButtonState((prev) => ({ ...prev, isSaving: true }));
 
-        // Check if any callouts are currently running
+        // Wait if any callouts are currently running
         const globalCalloutState = globalCalloutManager.getState();
-        if (globalCalloutState.isRunning) {
-          logger.warn("Cannot save while callouts are running");
-          return;
+        if (globalCalloutState.isRunning || globalCalloutState.pendingCount > 0 || globalCalloutState.queueLength > 0) {
+          logger.info("Waiting for callouts to finish before saving...");
+          await globalCalloutManager.waitForIdle();
         }
 
         // Perform required field validation
@@ -148,13 +148,15 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode 
         if (!validationResult.isValid) {
           const missingFields = validationResult.missingFields.map((field) => field.fieldLabel).join(", ");
           showErrorModal(`The following required fields are missing: ${missingFields}`);
-          return;
+          return false;
         }
 
         // Proceed with save if validation passes
-        await onSave(options);
+        const succeeded = await onSave(options);
+        return succeeded;
       } catch (error) {
         logger.error("Error during save operation:", error);
+        return false;
       } finally {
         // Clear saving state
         setSaveButtonState((prev) => ({ ...prev, isSaving: false }));

@@ -262,7 +262,13 @@ export function applyStaticParameterValues(param: ProcessParameter, rawValues: u
 }
 
 /** Keys from the onLoad result that are handled separately and must not be treated as parameter values */
-const RESERVED_RESULT_KEYS = new Set(["_gridSelection", "autoSelectConfig", "_dynamicParameters", "error"]);
+const RESERVED_RESULT_KEYS = new Set([
+  "_gridSelection",
+  "autoSelectConfig",
+  "_dynamicParameters",
+  "_filterExpressions",
+  "error",
+]);
 
 /**
  * Pure reducer that computes the next `parameters` state from an onLoad result.

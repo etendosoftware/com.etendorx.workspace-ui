@@ -74,6 +74,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [isProcessRefreshing, setIsProcessRefreshing] = useState(false);
 
   const selectedRecord = useSelectedRecord(tab);
   const selectedRecords = useSelectedRecords(tab) || [];
@@ -146,13 +147,20 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const handleProcessMenuClick = useCallback(
     async (button: ProcessButton) => {
-      if (!selectedRecord) return;
+      const record = selectedRecord || selectedRecords[0];
+      if (!record) return;
 
       if (ProcessButtonType.PROCESS_ACTION in button) {
-        const response = await handleProcessClick(button, String(selectedRecord.id));
+        const response = await handleProcessClick(button, String(record.id));
         setProcessResponse(response);
         setSelectedProcessActionButton(button);
-        setOpenIframeModal(true);
+        if (response.showInIframe) {
+          setOpenIframeModal(true);
+        } else if (response.responseActions?.[0]?.showMsgInProcessView) {
+          // If there's an error and not an iframe, show it in actionModal or similar.
+          // For now, logging it clearly, as the previous logic just hung infinitely.
+          console.error("Process error:", response.responseActions[0].showMsgInProcessView);
+        }
       } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
         setSelectedProcessDefinitionButton(button);
         setShowProcessDefinitionModal(true);
@@ -162,7 +170,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
       handleMenuClose();
     },
-    [handleMenuClose, handleProcessClick, selectedRecord]
+    [handleMenuClose, handleProcessClick, selectedRecord, selectedRecords]
   );
 
   const handleSearchChange = useCallback(
@@ -203,33 +211,35 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   );
 
   const handleCompleteRefresh = useCallback(async () => {
-    const childTabs = graph.getChildren(tab);
-    const childTabIdsInFormView: string[] = [];
+    setIsProcessRefreshing(true);
+    try {
+      const childTabs = graph.getChildren(tab);
+      const childTabIdsInFormView: string[] = [];
+      const hasChildTabs = childTabs && childTabs.length > 0;
+      const windowIdentifier = activeWindow?.windowIdentifier;
 
-    const hasChildTabs = childTabs && childTabs.length > 0;
-    const windowIdentifier = activeWindow?.windowIdentifier;
-
-    if (hasChildTabs && windowIdentifier) {
-      childTabIdsInFormView.push(...processChildTabsInFormView(childTabs, windowIdentifier));
-    }
-
-    if (isFormView && formViewRefetch) {
-      await formViewRefetch();
-    } else {
-      refetchDatasource(tab.id);
-    }
-
-    if (hasChildTabs) {
-      for (const childTab of childTabs) {
-        refetchDatasource(childTab.id);
+      if (hasChildTabs && windowIdentifier) {
+        childTabIdsInFormView.push(...processChildTabsInFormView(childTabs, windowIdentifier));
       }
-    }
 
-    Metadata.clearToolbarCache();
-    await refetchToolbar();
+      if (isFormView && formViewRefetch) {
+        await formViewRefetch();
+      } else {
+        await refetchDatasource(tab.id);
+      }
 
-    if (childTabIdsInFormView.length > 0 && windowIdentifier) {
-      clearChildrenSelections(windowIdentifier, childTabIdsInFormView);
+      if (hasChildTabs) {
+        await Promise.all(childTabs.map((childTab) => refetchDatasource(childTab.id)));
+      }
+
+      Metadata.clearToolbarCache();
+      await refetchToolbar();
+
+      if (childTabIdsInFormView.length > 0 && windowIdentifier) {
+        clearChildrenSelections(windowIdentifier, childTabIdsInFormView);
+      }
+    } finally {
+      setIsProcessRefreshing(false);
     }
   }, [
     graph,
@@ -293,7 +303,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
               handleMenuToggle,
               t,
               anchorEl,
-              isSessionSyncLoading
+              isSessionSyncLoading || isProcessRefreshing
             )
           : undefined,
     };
@@ -322,6 +332,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     showFilterTooltip,
     showShareLinkTooltip,
     isAdvancedFilterApplied,
+    isProcessRefreshing,
   ]);
 
   if (loading) {
@@ -349,6 +360,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           processButtons={processButtons}
           onProcessClick={handleProcessMenuClick}
           selectedRecord={selectedRecord}
+          hasSelection={!!(selectedRecord || selectedRecords.length > 0)}
           data-testid="ProcessMenu__a2dd07"
         />
       )}

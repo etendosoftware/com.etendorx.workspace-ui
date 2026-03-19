@@ -54,6 +54,20 @@ const processTagColors = (color?: string) => {
   };
 };
 
+// Helper function to handle FK/TABLEDIR field rendering when the referenced entity has a color field
+const renderColoredFkField = (value: Record<string, unknown>, column: Field) => {
+  const identifierKey = `${column.hqlName}$${IDENTIFIER_KEY}`;
+  const label = (value[identifierKey] ?? value[column.hqlName] ?? value[column.columnName]) as string | undefined;
+
+  if (!label) return "";
+
+  const colorKey = `${column.hqlName}$${column.colorFieldName}`;
+  const color = value[colorKey] as string | undefined;
+  const { tagColor, textColor } = processTagColors(color);
+
+  return <Tag label={label} tagColor={tagColor} textColor={textColor} data-testid="Tag__2b5175" />;
+};
+
 // Helper function to handle list field rendering
 const renderListField = (value: Record<string, unknown>, column: Field) => {
   // Use hqlName or fallback to columnName
@@ -87,7 +101,10 @@ const getRawCellValue = (value: Record<string, unknown>, column: Field) => {
   const columnHqlNameValue = value[columnHqlName];
   const columnNameValue = value[columnNameKey];
 
-  return columnHqlIdentifierValue ?? columnHqlNameValue ?? columnNameValue;
+  // Try columnName before hqlName: some entities (e.g. process definitions) return display
+  // values under the columnName key (e.g. "businessPartnerName") instead of the standard
+  // "${hqlName}$_identifier" pattern, while hqlName maps to the raw ID.
+  return columnHqlIdentifierValue ?? columnNameValue ?? columnHqlNameValue;
 };
 
 export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[] => {
@@ -115,6 +132,13 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         id: column.name,
         fieldId: column.id,
         columnName: column.hqlName,
+        /**
+         * DB column name (e.g. "C_Orderline_ID") — distinct from columnName which is the HQL/property name.
+         * The backend FieldBuilderWithColumn puts the DB name in the top-level `columnName` field,
+         * while tableColumns maps it to `dbColumnName` to avoid the naming collision.
+         * Used by ReferencedLink resolution in useRedirect.
+         */
+        dbColumnName: column.columnName,
         isMandatory: column.isMandatory,
         _identifier: column.name,
         column: {
@@ -136,6 +160,7 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         datasourceId: column.targetEntity || column.referencedEntity, // Use targetEntity if available
         customJs: column.etmetaCustomjs,
         referencedTabId: column.referencedTabId,
+        colorFieldName: column.colorFieldName,
         // Include additional field properties needed for inline editing
         isReadOnly: column.isReadOnly,
         isUpdatable: column.isUpdatable,
@@ -151,6 +176,18 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
 
           if (reference === FieldType.LIST && column.refList && Array.isArray(column.refList)) {
             return renderListField(v, column);
+          }
+
+          // Dynamically check if the backend returned a color for this foreign key
+          // This allows rendering colored tags even if `colorFieldName` is missing in the ADWindow metadata.
+          let detectedColorField = column.colorFieldName;
+          if (!detectedColorField) {
+            if (v[`${column.hqlName}$color`]) detectedColorField = "color";
+            else if (v[`${column.hqlName}$smfColor`]) detectedColorField = "smfColor";
+          }
+
+          if (detectedColorField) {
+            return renderColoredFkField(v, { ...column, colorFieldName: detectedColorField });
           }
 
           const rawValue = getRawCellValue(v, column);

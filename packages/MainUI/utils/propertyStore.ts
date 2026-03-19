@@ -66,3 +66,29 @@ export function getStoredPreferences(): Record<string, any> {
   }
   return {};
 }
+
+/**
+ * Creates an OB shim object compatible with legacy Openbravo/Etendo expressions.
+ * Provides `OB.PropertyStore.get(key)` so that onLoad, onProcess and PayScript
+ * scripts can read preferences using the same API as the classic UI.
+ *
+ * @example
+ * // Inside an onLoad or onProcess script (injected via executeStringFunction context):
+ * const showUOM = OB.PropertyStore.get('UomManagement') === 'Y';
+ */
+export function createOBShim(): Record<string, unknown> {
+  return {
+    PropertyStore: {
+      get: (key: string): string | undefined => {
+        const prefs = getStoredPreferences();
+        if (prefs[key] !== undefined) return String(prefs[key]);
+        // Case-insensitive fallback
+        const lowerKey = key.toLowerCase();
+        for (const k of Object.keys(prefs)) {
+          if (k.toLowerCase() === lowerKey) return String(prefs[k]);
+        }
+        return undefined;
+      },
+    },
+  };
+}
