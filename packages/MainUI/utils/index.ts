@@ -372,15 +372,15 @@ export const getNumericFormatOptions = (
     return { minimumFractionDigits: min, maximumFractionDigits: max };
   }
   switch (reference) {
-    case "12":     // Amount
+    case "12": // Amount
     case "800008": // Decimal
       return { minimumFractionDigits: 2, maximumFractionDigits: 2 };
     case "800019": // Rate
       return { minimumFractionDigits: 2, maximumFractionDigits: 10 };
-    case "22":     // Quantity
-    case "29":     // Quantity
+    case "22": // Quantity
+    case "29": // Quantity
       return { minimumFractionDigits: 0, maximumFractionDigits: 2 };
-    case "11":     // Integer
+    case "11": // Integer
       return { minimumFractionDigits: 0, maximumFractionDigits: 0 };
     default:
       return { minimumFractionDigits: 0, maximumFractionDigits: 2 };

@@ -48,7 +48,7 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
   const getDecimalSeparator = useCallback((): string => {
     const locale = (language ?? "en_US").replace("_", "-");
     const parts = new Intl.NumberFormat(locale).formatToParts(1.1);
-    return parts.find(p => p.type === "decimal")?.value ?? ".";
+    return parts.find((p) => p.type === "decimal")?.value ?? ".";
   }, [language]);
 
   const normalizeDecimalInput = useCallback(
