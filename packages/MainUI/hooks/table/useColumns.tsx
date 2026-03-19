@@ -336,10 +336,8 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
             );
           },
         };
-      }
-
-      // clientclass-based link columns (e.g. "SalesOrderTabLink" from Classic SmartClient)
-      if (!isReference && column.clientclass) {
+      } else if (column.clientclass) {
+        // clientclass-based link columns (e.g. "SalesOrderTabLink" from Classic SmartClient)
         const clientclass = column.clientclass as string;
         columnConfig = {
           ...columnConfig,
