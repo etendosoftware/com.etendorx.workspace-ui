@@ -45,6 +45,8 @@ interface UseColumnsOptions {
   onLoadMoreFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   columnFilterStates?: ColumnFilterState[];
   tableColumnFilters?: Array<{ id: string; value: unknown }>;
+  /** Called after a clientclass-based navigation (e.g. SalesOrderTabLink) so the parent can close itself. */
+  onNavigate?: () => void;
 }
 
 // Columnas booleanas conocidas
@@ -154,7 +156,7 @@ const extractColorContext = (recordData: EntityData | undefined, column: Column,
 };
 
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
-  const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
+  const { handleClickRedirect, handleKeyDownRedirect, handleClientclassNavigation } = useRedirect();
   const {
     onColumnFilter,
     onDateTextFilterChange,
@@ -162,6 +164,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     onLoadMoreFilterOptions,
     columnFilterStates,
     tableColumnFilters,
+    onNavigate,
   } = options || {};
   const { t } = useTranslation();
 
@@ -335,6 +338,41 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         };
       }
 
+      // clientclass-based link columns (e.g. "SalesOrderTabLink" from Classic SmartClient)
+      if (!isReference && column.clientclass) {
+        const clientclass = column.clientclass as string;
+        columnConfig = {
+          ...columnConfig,
+          Cell: ({ row, cell }: { row: { original: EntityData }; cell: MRT_Cell<EntityData, unknown> }) => {
+            const recordId = String((row.original as Record<string, unknown>).id ?? "");
+            const displayValue = String(cell?.getValue?.() ?? "");
+            return (
+              <button
+                type="button"
+                tabIndex={0}
+                aria-label="Navigate to referenced record"
+                className="bg-transparent border-none p-0 text-left pointer-events-auto text-(--color-dynamic-main) hover:underline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  handleClientclassNavigation({ clientclass, recordId });
+                  onNavigate?.();
+                }}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  if (e.key === "Enter" || e.key === " ") {
+                    handleClientclassNavigation({ clientclass, recordId });
+                    onNavigate?.();
+                  }
+                }}>
+                {displayValue}
+              </button>
+            );
+          },
+        };
+      }
+
       // Advanced filters
       if (supportsDropdownFilter && onColumnFilter && onLoadFilterOptions) {
         columnConfig = {
@@ -436,12 +474,12 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
             const { rawColor, finalDisplayValue: deducedValue } = extractColorContext(
               recordData,
               column,
-              cell?.getValue()
+              cell?.getValue?.()
             );
 
             if (rawColor) {
               const normalizedColor = rawColor.toLowerCase();
-              const displayValue = deducedValue || String(cell?.getValue() ?? "");
+              const displayValue = deducedValue || String(cell?.getValue?.() ?? "");
 
               return (
                 <Tag
@@ -477,8 +515,11 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     t,
     handleClickRedirect,
     handleKeyDownRedirect,
+    handleClientclassNavigation,
+    onNavigate,
     onLoadMoreFilterOptions,
     tableColumnFilters,
+    tab.window,
   ]);
 
   return columns;
