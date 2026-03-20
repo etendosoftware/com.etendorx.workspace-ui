@@ -48,6 +48,7 @@ export const useFormAction = ({
 }: UseFormActionParams) => {
   const [loading, setLoading] = useState(false);
   const controller = useRef<AbortController>(new AbortController());
+  const lastSaveSucceeded = useRef(false);
   const { user, logout, setLoginErrorText, setLoginErrorDescription } = useUserContext();
   const { t } = useTranslation();
 
@@ -92,6 +93,7 @@ export const useFormAction = ({
         const { ok, data } = await Metadata.datasourceServletClient.request(url, requestOptions);
 
         if (ok && data?.response?.status === 0 && !controller.current.signal.aborted) {
+          lastSaveSucceeded.current = true;
           setLoading(false);
           onSuccess?.(data.response.data[0], saveOptions);
         } else {
@@ -130,7 +132,14 @@ export const useFormAction = ({
     ]
   );
 
-  const save = useCallback((options: SaveOptions) => submit((values) => execute(values, options))(), [execute, submit]);
+  const save = useCallback(
+    async (options: SaveOptions): Promise<boolean> => {
+      lastSaveSucceeded.current = false;
+      await submit((values) => execute(values, options))();
+      return lastSaveSucceeded.current;
+    },
+    [execute, submit]
+  );
 
   useEffect(() => {
     const _controller = controller.current;

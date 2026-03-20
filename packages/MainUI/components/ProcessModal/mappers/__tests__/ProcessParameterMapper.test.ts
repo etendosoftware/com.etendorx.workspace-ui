@@ -53,15 +53,15 @@ describe("ProcessParameterMapper", () => {
     it("should map reference types correctly", () => {
       const passwordParam = { ...mockParameter, reference: "Password" };
       const passwordField = ProcessParameterMapper.mapToField(passwordParam);
-      expect(passwordField.column.reference).toBe(FIELD_REFERENCE_CODES.PASSWORD);
+      expect(passwordField.column.reference).toBe(FIELD_REFERENCE_CODES.PASSWORD.id);
 
       const booleanParam = { ...mockParameter, reference: "Yes/No" };
       const booleanField = ProcessParameterMapper.mapToField(booleanParam);
-      expect(booleanField.column.reference).toBe(FIELD_REFERENCE_CODES.BOOLEAN);
+      expect(booleanField.column.reference).toBe(FIELD_REFERENCE_CODES.BOOLEAN.id);
 
       const numericParam = { ...mockParameter, reference: "Amount" };
       const numericField = ProcessParameterMapper.mapToField(numericParam);
-      expect(numericField.column.reference).toBe(FIELD_REFERENCE_CODES.DECIMAL);
+      expect(numericField.column.reference).toBe(FIELD_REFERENCE_CODES.DECIMAL.id);
     });
 
     it("should preserve refList for list fields", () => {

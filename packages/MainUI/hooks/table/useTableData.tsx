@@ -23,7 +23,7 @@ import type {
   MRT_VisibilityState,
   MRT_SortingState,
 } from "material-react-table";
-import type { Criteria, DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
+import { type DatasourceOptions, type EntityData, type Column, UIPattern } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useSearch } from "../../contexts/searchContext";
@@ -43,8 +43,8 @@ import { isEmptyObject } from "@/utils/commons";
 import { mapSummariesToBackend, getSummaryCriteria } from "@/utils/table/utils";
 import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { buildEtendoContext } from "@/utils/contextUtils";
-import { buildBaseCriteria } from "@/utils/criteriaUtils";
 import { useSelected } from "../../hooks/useSelected";
+import { buildBaseCriteria, resolveParentFieldName } from "@/utils/criteriaUtils";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -394,6 +394,25 @@ export const useTableData = ({
     return null;
   }, [tab]);
 
+  // Helper to find parent field name
+  const getParentFieldName = useCallback((): { fieldName: string; directReference: boolean } => {
+    if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
+      // SR (Single Record) tabs share the same entity/table as the parent and have
+      // empty parentColumns. Filter by "id" so only the parent's own record is shown.
+      if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab) {
+        return { fieldName: "id", directReference: true };
+      }
+      return { fieldName: "_dummy", directReference: false };
+    }
+
+    if (!parentTab) {
+      return { fieldName: tab.parentColumns[0] || "id", directReference: true };
+    }
+
+    const fieldName = resolveParentFieldName(tab, parentTab);
+    return { fieldName, directReference: true };
+  }, [tab, parentTab]);
+
   // Helper to apply sort options to query
   const applySortToOptions = useCallback(
     (options: DatasourceOptions, sort: ReturnType<typeof getDefaultSort>) => {
@@ -409,11 +428,24 @@ export const useTableData = ({
   );
 
   const query: DatasourceOptions = useMemo(() => {
+    const { fieldName } = getParentFieldName();
+    const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
+    const operator = "equals";
+
+    const extraProperties = Object.values(tab.fields || {})
+      .filter((f: any) => f.colorFieldName)
+      .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
+      .join(",");
+
     const options: DatasourceOptions = {
       windowId: tab.window,
       tabId: tab.id,
       isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
       pageSize: 100,
+      ...(extraProperties ? { _extraProperties: extraProperties } : {}),
+      _className: "OBViewDataSource",
+      Constants_IDENTIFIER: "_identifier",
+      Constants_FIELDSEPARATOR: "$",
     };
 
     // Add Etendo Classic Context Variables
@@ -425,14 +457,35 @@ export const useTableData = ({
       options.language = language;
     }
 
-    // Build base criteria (handling Parent-Child or Dummy fallback)
+    // Build base criteria (handling Parent-Child or Dummy fallback via disableParentKeyProperty)
     const baseCriteria = buildBaseCriteria({ tab, parentTab, parentId });
     if (baseCriteria.length > 0) {
-      options.criteria = baseCriteria as unknown as Criteria[];
+      options.criteria = baseCriteria.map((c) => ({
+        ...c,
+        _constructor: "AdvancedCriteria",
+      })) as any;
+    } else if (value && value !== "" && value !== undefined && fieldName !== "_dummy") {
+      // Fallback: standard criteria filter
+      options.criteria = [
+        {
+          fieldName,
+          value,
+          operator,
+          _constructor: "AdvancedCriteria",
+        },
+      ] as any;
+    }
 
-      if (parentTab?.entityName && parentId) {
-        options[`@${parentTab.entityName}.id@`] = parentId;
-      }
+    // Set constructor and operator for AdvancedCriteria compatibility
+    options._constructor = "AdvancedCriteria";
+    options.operator = "and";
+
+    if (parentTab?.entityName && parentId) {
+      // Keep existing format for backward compat (e.g. Process Request datasource)
+      options[`@${parentTab.entityName}.id@`] = parentId;
+      // OB Classic context variable format for hqlwhereclause substitution
+      // e.g. ETASK_Task → @ETASK_TASK_ID@
+      options[`@${parentTab.entityName.toUpperCase()}_ID@`] = parentId;
     }
 
     // Apply advanced criteria
@@ -444,8 +497,6 @@ export const useTableData = ({
         // @ts-ignore - advancedCriteria is compatible with Criteria
         options.criteria = [advancedCriteria];
       }
-    } else {
-      console.log("useTableData: No advancedCriteria found");
     }
 
     // Apply sorting
@@ -457,8 +508,7 @@ export const useTableData = ({
 
     return options;
   }, [
-    tab.window,
-    tab.id,
+    tab,
     initialIsFilterApplied,
     isImplicitFilterApplied,
     parentId,
@@ -469,6 +519,7 @@ export const useTableData = ({
     applySortToOptions,
     graph,
     parentTab,
+    getParentFieldName,
   ]);
 
   // Tree options
@@ -641,14 +692,14 @@ export const useTableData = ({
       const newExpanded: MRT_ExpandedState = {};
       let hasChanges = false;
 
-      records.forEach((r) => {
+      for (const r of records) {
         const id = String(r.id);
         // If this record's ID is used as a parentId by another record in the list, it's a parent path node.
         if (parentIds.has(id)) {
           newExpanded[id] = true;
           hasChanges = true;
         }
-      });
+      }
 
       if (hasChanges) {
         setExpanded((prev) => {

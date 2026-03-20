@@ -295,6 +295,7 @@ const en = {
     messageTitle: "Process",
     completedSuccessfully: "Process completed successfully",
     processError: "Process failed",
+    warning: "Warning",
     refreshGrid: "Refresh the grid to see the changes.",
   },
   drawer: {
@@ -608,7 +609,7 @@ const en = {
     calculateWeight: "Calculate Weight",
     generatePack: "Pack",
     validationError: "Error while processing",
-    wrongBarcode: "Wrong Barcode",
+    wrongBarcode: "The barcode entered doesn't match any product in the shipment.",
     pendingToPack: "All items must be fully packed before generating. Please complete the pending quantities.",
     checkStatus: "Check status here",
     warning: "Warning",

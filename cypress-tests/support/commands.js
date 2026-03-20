@@ -448,11 +448,17 @@ Cypress.Commands.add("clickSave", () => {
 Cypress.Commands.add("closeToastIfPresent", () => {
   const toastClose = "[data-sonner-toast] [data-close-button]";
 
-  cy.get("body", { timeout: 20000 }).then(($body) => {
-    if ($body.find(toastClose).length) {
-      cy.get(toastClose).should("be.visible").click({ force: true });
-    }
-  });
+  const closeNext = () => {
+    cy.get("body").then(($body) => {
+      if ($body.find(toastClose).length) {
+        cy.get(toastClose).first().click({ force: true });
+        cy.wait(300);
+        closeNext();
+      }
+    });
+  };
+
+  closeNext();
   cy.get(toastClose, { timeout: 20000 }).should("not.exist");
 });
 
@@ -465,11 +471,35 @@ Cypress.Commands.add("closeSuccessOverlay", () => {
 
   cy.get("body").then(($body) => {
     if ($body.find(closeButton).length > 0) {
-      cy.get(closeButton).click({ force: true });
+      cy.get(closeButton).click({ force: true, multiple: true });
     } else {
       cy.get(closeIcon).click({ force: true });
     }
   });
 
   cy.contains(modalText).should("not.exist");
+});
+
+// Command to open Advanced Filters
+Cypress.Commands.add("openAdvancedFilters", () => {
+  cy.get("button.toolbar-button-advanced-filters").first().click();
+  cy.get("div").contains("Advanced Filters").should("be.visible");
+});
+
+Cypress.Commands.add("openProcessMenu", (expectedCount, processName, retries = 3) => {
+  cy.contains("button", "Available Process", { timeout: 15000 }).should("be.visible").click();
+  cy.wait(500);
+
+  cy.get('[data-testid="ProcessMenuItemBase__541926"]', { timeout: 5000 }).then(($items) => {
+    if ($items.length < expectedCount && retries > 0) {
+      cy.get("body").click(0, 0);
+      cy.wait(500);
+      cy.get("button.toolbar-button-refresh:visible", { timeout: 10000 }).first().should("be.enabled").click();
+      cy.wait(1000);
+      cy.openProcessMenu(expectedCount, processName, retries - 1);
+    } else {
+      expect($items.length).to.be.gte(expectedCount);
+      cy.contains('[data-testid="ProcessMenuItemBase__541926"]', processName).click();
+    }
+  });
 });

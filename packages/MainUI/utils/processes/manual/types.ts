@@ -30,7 +30,7 @@ export type TransformableValue = string | number | boolean | null | undefined | 
 
 type KeyMapping = {
   target: string;
-  default: string | number | boolean | null;
+  default: string | number | boolean | null | undefined;
 };
 
 // Tipo para el mapa de claves
@@ -54,8 +54,10 @@ export type KeyMapConfig = Record<string, KeyMapping>;
 // Tipo para el objeto fuente (entrada)
 export type SourceObject = Record<string, PrimitiveValue | NestedObject>;
 
+export type MappedValue = PrimitiveValue | NestedObject | SelectionItem[];
+
 // Tipo para el objeto objetivo (salida)
-export type TargetObject = Record<string, PrimitiveValue | NestedObject | SelectionItem[]>;
+export type TargetObject = Record<string, MappedValue>;
 
 export interface ProcessActionData {
   url: string;

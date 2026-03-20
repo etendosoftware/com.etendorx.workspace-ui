@@ -34,36 +34,36 @@ export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve
 
 export const getFieldReference = (reference?: string): FieldType => {
   switch (reference) {
-    case FIELD_REFERENCE_CODES.STRING:
+    case FIELD_REFERENCE_CODES.STRING.id:
       return FieldType.TEXT;
-    case FIELD_REFERENCE_CODES.TABLE_DIR_19:
-    case FIELD_REFERENCE_CODES.PRODUCT:
-    case FIELD_REFERENCE_CODES.SELECTOR:
-    case FIELD_REFERENCE_CODES.TABLE_DIR_18:
+    case FIELD_REFERENCE_CODES.TABLE_DIR_19.id:
+    case FIELD_REFERENCE_CODES.PRODUCT.id:
+    case FIELD_REFERENCE_CODES.SELECTOR.id:
+    case FIELD_REFERENCE_CODES.TABLE_DIR_18.id:
       return FieldType.TABLEDIR;
-    case FIELD_REFERENCE_CODES.DATE:
+    case FIELD_REFERENCE_CODES.DATE.id:
       return FieldType.DATE;
-    case FIELD_REFERENCE_CODES.DATETIME:
+    case FIELD_REFERENCE_CODES.DATETIME.id:
       return FieldType.DATETIME;
-    case FIELD_REFERENCE_CODES.BOOLEAN:
+    case FIELD_REFERENCE_CODES.BOOLEAN.id:
       return FieldType.BOOLEAN;
-    case FIELD_REFERENCE_CODES.INTEGER:
-    case FIELD_REFERENCE_CODES.NUMERIC:
-    case FIELD_REFERENCE_CODES.DECIMAL:
+    case FIELD_REFERENCE_CODES.INTEGER.id:
+    case FIELD_REFERENCE_CODES.NUMERIC.id:
+    case FIELD_REFERENCE_CODES.DECIMAL.id:
       return FieldType.NUMBER;
-    case FIELD_REFERENCE_CODES.QUANTITY_22:
-    case FIELD_REFERENCE_CODES.QUANTITY_29:
+    case FIELD_REFERENCE_CODES.QUANTITY_22.id:
+    case FIELD_REFERENCE_CODES.QUANTITY_29.id:
       return FieldType.QUANTITY;
-    case FIELD_REFERENCE_CODES.LIST_17:
-    case FIELD_REFERENCE_CODES.LIST_13:
+    case FIELD_REFERENCE_CODES.LIST_17.id:
+    case FIELD_REFERENCE_CODES.LIST_13.id:
       return FieldType.LIST;
-    case FIELD_REFERENCE_CODES.TIME:
+    case FIELD_REFERENCE_CODES.TIME.id:
       return FieldType.TIME;
     case "28":
       return FieldType.BUTTON;
-    case FIELD_REFERENCE_CODES.SELECT_30:
+    case FIELD_REFERENCE_CODES.SELECT_30.id:
       return FieldType.SELECT;
-    case FIELD_REFERENCE_CODES.WINDOW:
+    case FIELD_REFERENCE_CODES.WINDOW.id:
       return FieldType.WINDOW;
     default:
       return FieldType.TEXT;
@@ -219,20 +219,22 @@ export const parseDynamicExpression = (expr: string) => {
   // Replace | with || (unless it's already ||)
   const exprLogic = expr.replace(/(?<!&)&(?!&)/g, "&&").replace(/(?<!\|)\|(?!\|)/g, "||");
 
+  // Handle @Var1@!@Var2@ pattern (inequality between two field references, no spaces).
+  // e.g. @INVENTORYSTATUS@!@To_State_ID@ -> @INVENTORYSTATUS@ != @To_State_ID@
+  const exprNormalized = exprLogic.replace(/@([#$]?[a-zA-Z_]\w*)@!@([#$]?[a-zA-Z_]\w*)@/g, "@$1@ != @$2@");
+
   // Transform @field_name@ syntax to valid JavaScript references
   // Supports: @fieldName@, @#sessionVar@, @$contextVar@
-  let expr0 = exprLogic.replace(/@([#$]?[a-zA-Z_]\w*)@/g, (_, fieldName) => {
+  let expr0 = exprNormalized.replace(/@([#$]?[a-zA-Z_]\w*)@/g, (_, fieldName) => {
     return `(currentValues["${fieldName}"] || context["${fieldName}"])`;
   });
 
   // Transform legacy Etendo/OB '!' comparison to '!=' (e.g., @Col@!'Y' -> ...!='Y')
-  expr0 = expr0.replace(/!'/g, "!='");
+  // Covers cases like @Col@!'Y', @Col@!0, @Col@!undefined
+  expr0 = expr0.replace(/!([^=])/g, "!=$1");
 
   // Transform space-surrounded '!' to '!=' (e.g. @Col@ ! @Col2@)
   expr0 = expr0.replace(/\s!\s/g, " != ");
-
-  // Transform '!undefined' to '!= undefined' covers common case @Col@!undefined
-  expr0 = expr0.replace(/!undefined/g, "!= undefined");
 
   // Transform Etendo comparison operators to JavaScript
   // Convert single = to == for comparison (avoiding conflicts with assignment)
@@ -281,20 +283,26 @@ export const buildQueryString = ({
   windowMetadata?: WindowMetadata;
   tab: Tab;
   mode: FormMode;
-}) =>
-  new URLSearchParams({
+}) => {
+  const extraProperties = Object.values(tab.fields || {})
+    .filter((f) => f.colorFieldName)
+    .map((f) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
+    .join(",");
+
+  return new URLSearchParams({
     windowId: String(windowMetadata?.id || ""),
     tabId: String(tab.id),
     moduleId: String(tab.module),
     _operationType: mode === FormMode.NEW ? "add" : "update",
     _noActiveFilter: String(true),
     sendOriginalIDBack: String(true),
-    _extraProperties: "",
+    _extraProperties: extraProperties,
     Constants_FIELDSEPARATOR: "$",
     _className: "OBViewDataSource",
     Constants_IDENTIFIER: "_identifier",
     isc_dataFormat: "json",
   });
+};
 
 export const buildFormPayload = ({
   values,
@@ -361,7 +369,43 @@ export const buildFormPayload = ({
   return payload;
 };
 
-export const formatNumber = (value: number) => new Intl.NumberFormat(navigator.language).format(value);
+const parseJavaFormatPattern = (pattern: string): { min: number; max: number } => {
+  const decimalIndex = pattern.indexOf(".");
+  if (decimalIndex === -1) return { min: 0, max: 0 };
+  const decimalPart = pattern.slice(decimalIndex + 1);
+  const min = (decimalPart.match(/0/g) ?? []).length;
+  return { min, max: decimalPart.length };
+};
+
+export const getNumericFormatOptions = (
+  reference?: string,
+  valueFormat?: string | null
+): { minimumFractionDigits: number; maximumFractionDigits: number } => {
+  if (valueFormat) {
+    const { min, max } = parseJavaFormatPattern(valueFormat);
+    return { minimumFractionDigits: min, maximumFractionDigits: max };
+  }
+  switch (reference) {
+    case "12": // Amount
+    case "800008": // Decimal
+      return { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+    case "800019": // Rate
+      return { minimumFractionDigits: 2, maximumFractionDigits: 10 };
+    case "22": // Quantity
+    case "29": // Quantity
+      return { minimumFractionDigits: 0, maximumFractionDigits: 2 };
+    case "11": // Integer
+      return { minimumFractionDigits: 0, maximumFractionDigits: 0 };
+    default:
+      return { minimumFractionDigits: 0, maximumFractionDigits: 2 };
+  }
+};
+
+export const formatNumber = (value: number, locale?: string, reference?: string, valueFormat?: string | null) =>
+  new Intl.NumberFormat(
+    (locale ?? navigator.language).replace("_", "-"),
+    getNumericFormatOptions(reference, valueFormat)
+  ).format(value);
 
 export const formatTime = (input: string | Date): string => {
   const date = typeof input === "string" ? new Date(input) : input;

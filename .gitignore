@@ -25,8 +25,11 @@ jest-html-reporters-attach/
 # Jest files
 junit.xml
 
-# Claude Code
-.claude/
+# Claude Code - ignore personal/runtime files, track shared config
+.claude/settings.local.json
+.claude/memory/
+.claude/.ralph-loop.local.md
+.claude-flow
 .idea/
 .env
 app.log

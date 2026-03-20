@@ -10,6 +10,9 @@ export interface ExecuteProcessResult<T = any> {
   data?: T;
   error?: string;
   isHtml?: boolean; // Flag to indicate if the message contains HTML content
+  messageType?: string; // e.g. "success" | "warning" | "error"
+  linkTabId?: string; // Tab ID for openDirectTab navigation links
+  linkRecordId?: string; // Record ID for openDirectTab navigation links
 }
 
 /**

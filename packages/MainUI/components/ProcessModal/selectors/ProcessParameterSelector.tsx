@@ -30,6 +30,7 @@ interface ProcessParameterSelectorProps {
   parameters?: Record<string, ProcessParameter>;
   recordValues?: Record<string, unknown>;
   parentFields?: Record<string, Field>;
+  selectedRecordsCount?: number;
 }
 
 import { createProcessExpressionContext } from "../utils/processExpressionUtils";
@@ -46,6 +47,7 @@ export const ProcessParameterSelector = ({
   parameters,
   recordValues,
   parentFields,
+  selectedRecordsCount,
 }: ProcessParameterSelectorProps) => {
   const { session } = useUserContext();
   const { watch, register } = useFormContext();
@@ -228,6 +230,7 @@ export const ProcessParameterSelector = ({
               field={mappedField}
               isReadOnly={isReadOnly}
               isProcessModal={true}
+              selectedRecordsCount={selectedRecordsCount}
               staticOptions={staticOptions}
               data-testid="TableDirSelector__dac06b"
             />

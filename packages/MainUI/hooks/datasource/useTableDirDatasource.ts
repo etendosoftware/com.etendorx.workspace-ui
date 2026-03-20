@@ -40,6 +40,7 @@ export const useTableDirDatasource = ({
   initialPageSize = 75,
   isProcessModal = false,
   staticOptions,
+  selectedRecordsCount,
 }: UseTableDirDatasourceParams) => {
   // If static options are provided, use them instead of fetching
   const hasStaticOptions = staticOptions !== undefined;
@@ -126,13 +127,14 @@ export const useTableDirDatasource = ({
 
   const buildRequestBody = useCallback(
     (startRow: number, endRow: number, currentValue: typeof value) => {
-      const transformPayloadFields = (baseBody: BaseBody): BaseBody => {
-        // Remove fields that will be transformed to avoid duplicates
-        const { inpfinPaymentmethodId, inpissotrx, windowId, ...rest } = baseBody;
-        const depositTo = baseBody["Deposit To"];
-        const salesTransaction = baseBody["Sales Transaction"];
+      /**
+       * Internal helper to transform payload fields for process modals.
+       */
+      const applyProcessModalTransformations = (body: BaseBody): BaseBody => {
+        const { inpfinPaymentmethodId, inpissotrx, windowId, ...rest } = body;
+        const depositTo = body["Deposit To"];
+        const salesTransaction = body["Sales Transaction"];
 
-        // Determine issotrx value from either inpissotrx or Sales Transaction
         let issotrxValue: boolean | undefined;
         if (inpissotrx !== undefined && inpissotrx !== null && inpissotrx !== "") {
           issotrxValue = inpissotrx === "Y";
@@ -140,58 +142,90 @@ export const useTableDirDatasource = ({
           issotrxValue = salesTransaction === "Y";
         }
 
-        const result: BaseBody = {
+        return {
           ...rest,
           ...(inpfinPaymentmethodId && { fin_paymentmethod_id: inpfinPaymentmethodId }),
           ...(depositTo && { fin_financial_account_id: depositTo }),
           ...(issotrxValue !== undefined && { issotrx: issotrxValue }),
-        };
-
-        return result;
+        } as BaseBody;
       };
 
       const formValues = transformFormValues(getValues());
       const invoiceValue = transformFormValues(invoiceContext);
-      let baseBody: BaseBody = {
+      const shouldSendOrg = !isProcessModal || selectedRecordsCount === 1;
+
+      // 1. Build Base Metadata
+      // Use field.tab/field.column.table from metadata; fall back to the current tab
+      // context when those are absent (common for custom-module fields).
+      const effectiveTabId = field.tab || tab?.id || "";
+      const effectiveTableId = field.column?.table || tab?.table || "";
+
+      const baseBody: BaseBody = {
         _startRow: startRow.toString(),
         _endRow: endRow.toString(),
         _operationType: "fetch",
         ...field.selector,
         moduleId: field.module,
         windowId,
-        tabId: field.tab,
-        inpTabId: field.tab,
+        tabId: effectiveTabId,
+        inpTabId: effectiveTabId,
         inpwindowId: windowId,
-        inpTableId: field.column.table,
+        inpTableId: effectiveTableId,
         initiatorField: field.hqlName,
         _constructor: "AdvancedCriteria",
         _OrExpression: "true",
         ...(typeof currentValue !== "undefined" ? { _currentValue: currentValue } : {}),
-        _org: formValues.inpadOrgId || (parentData as any).inpadOrgId || "",
+        ...(shouldSendOrg && { _org: formValues.inpadOrgId || (parentData as any).inpadOrgId || "" }),
       };
 
-      if (isProductField) {
-        Object.assign(baseBody, {
-          _noCount: "true",
-          ...(selectorId && { _selectorDefinitionId: selectorId }),
-          ...formValues,
-          ...invoiceValue,
-        });
-      } else {
-        Object.assign(baseBody, {
+      // 2. Build and Merge Context based on type
+      const getSpecializedContext = (): Partial<BaseBody> => {
+        if (isProcessModal) {
+          // Datasources using the standard SelectorDataSourceFilter need form context
+          // to resolve org/client security and field references.
+          // Custom entity datasources (e.g. ETASK_Task_Priority) break when given
+          // full context — they use lean payload instead.
+          const usesStandardFilter =
+            field.selector?.datasourceName === "ADList" ||
+            field.selector?.filterClass === "org.openbravo.userinterface.selector.SelectorDataSourceFilter";
+
+          if (usesStandardFilter) {
+            return {
+              _textMatchStyle: "substring",
+              ...parentData,
+              ...invoiceValue,
+              ...formValues,
+            };
+          }
+          return {};
+        }
+
+        if (isProductField) {
+          return {
+            _noCount: "true",
+            ...(selectorId && { _selectorDefinitionId: selectorId }),
+            ...formValues,
+            ...invoiceValue,
+          };
+        }
+
+        // Standard window context
+        return {
           _textMatchStyle: "substring",
           ...parentData,
           ...invoiceValue,
           ...formValues,
-        });
-      }
+        };
+      };
 
-      // Only apply field transformation when inside process modal
+      let finalBody = { ...baseBody, ...getSpecializedContext() };
+
+      // 3. Post-processing transformations
       if (isProcessModal) {
-        baseBody = transformPayloadFields(baseBody);
+        finalBody = applyProcessModalTransformations(finalBody);
       }
 
-      return baseBody;
+      return finalBody;
     },
     [
       transformFormValues,
@@ -207,6 +241,7 @@ export const useTableDirDatasource = ({
       isProcessModal,
       selectorId,
       parentData,
+      selectedRecordsCount,
     ]
   );
 
@@ -429,11 +464,6 @@ export const useTableDirDatasource = ({
         const body = new URLSearchParams(baseBody as Record<string, string>);
 
         applyCriteria(body, search);
-
-        const bodyObj: Record<string, string> = {};
-        for (const [k, v] of body.entries()) {
-          bodyObj[k] = v;
-        }
 
         const { data } = await datasource.client.request(`/api/datasource/${field.selector?.datasourceName ?? ""}`, {
           method: "POST",

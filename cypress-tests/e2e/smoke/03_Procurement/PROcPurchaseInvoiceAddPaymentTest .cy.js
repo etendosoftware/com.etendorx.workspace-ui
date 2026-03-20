@@ -46,16 +46,15 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
 
     cy.get('[data-testid="TextInput__3374"]').type("11,2", { force: true });
 
+    cy.intercept("POST", "**/api/datasource**").as("saveLineDatasource");
     cy.get("button.toolbar-button-save").eq(1).click();
+    cy.wait("@saveLineDatasource", { timeout: 30000 });
     cy.wait(500);
 
     cy.closeToastIfPresent();
     cy.wait(500);
 
-    cy.get('[data-testid="IconButtonWithText__process-menu"] > span').click();
-    cy.wait(500);
-
-    cy.get(".rounded-2xl > :nth-child(1)").click();
+    cy.openProcessMenu(4, "Complete");
     cy.wait(500);
 
     cy.get(".h-\\[625px\\] > .items-center > .font-semibold").should("be.visible");
@@ -63,17 +62,34 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
 
     cy.clickOkInLegacyPopup();
     cy.wait(500);
+
     cy.get('[data-testid="close-button"]').click();
     cy.closeToastIfPresent();
-
-    cy.get("button.toolbar-button-refresh").filter(":visible").first().should("be.enabled").click();
     cy.wait(500);
+
+    cy.get("button.toolbar-button-refresh:visible", { timeout: 10000 }).first().should("be.enabled").click();
+    cy.wait(1000);
+
+    cy.contains(".MuiChip-label", "Completed", { timeout: 20000 }).should("exist");
 
     cy.contains("button", "Available Process").click();
 
-    cy.get(".rounded-2xl > :nth-child(1)").click();
-    cy.wait(2000);
-    cy.get('div[aria-label="Action Regarding Document"]').should("be.visible").find('div[tabindex="0"]').click();
+    cy.intercept("POST", /DefaultsProcessActionHandler/).as("processDefaults");
+    cy.contains("div.cursor-pointer", "Add Payment").should("be.visible").click();
+    cy.wait("@processDefaults", { timeout: 30000 }).its("response.statusCode").should("be.oneOf", [200, 304]);
+
+    cy.get("tbody.MuiTableBody-root tr.MuiTableRow-root", { timeout: 30000 }).should("have.length.gte", 1);
+
+    cy.get('div[aria-label="Action Regarding Document"]', { timeout: 10000 })
+      .should("be.visible")
+      .find('div[tabindex="0"]')
+      .should("not.be.disabled")
+      .click();
+
+    cy.get('div[data-dropdown-portal] li[data-testid^="OptionItem__"]', { timeout: 15000 }).should(
+      "have.length.gte",
+      1
+    );
 
     cy.contains('li[data-testid^="OptionItem__"] span', "Process Made Payment(s)", { timeout: 20000 })
       .should("be.visible")

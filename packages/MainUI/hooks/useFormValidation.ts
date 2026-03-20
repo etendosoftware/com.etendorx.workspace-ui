@@ -166,8 +166,8 @@ export const useFormValidation = (tab: Tab) => {
    */
   const isReferenceField = (field: Field): boolean => {
     return (
-      field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_18 ||
-      field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_19
+      field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_18.id ||
+      field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_19.id
     );
   };
 
@@ -176,8 +176,8 @@ export const useFormValidation = (tab: Tab) => {
    */
   const isStringField = (field: Field): boolean => {
     return (
-      field.column?.reference === FIELD_REFERENCE_CODES.STRING ||
-      field.column?.reference === FIELD_REFERENCE_CODES.TEXT_LONG
+      field.column?.reference === FIELD_REFERENCE_CODES.STRING.id ||
+      field.column?.reference === FIELD_REFERENCE_CODES.TEXT_LONG.id
     );
   };
 
@@ -186,9 +186,9 @@ export const useFormValidation = (tab: Tab) => {
    */
   const isNumericField = (field: Field): boolean => {
     return (
-      field.column?.reference === FIELD_REFERENCE_CODES.INTEGER ||
-      field.column?.reference === FIELD_REFERENCE_CODES.NUMERIC ||
-      field.column?.reference === FIELD_REFERENCE_CODES.QUANTITY_22
+      field.column?.reference === FIELD_REFERENCE_CODES.INTEGER.id ||
+      field.column?.reference === FIELD_REFERENCE_CODES.NUMERIC.id ||
+      field.column?.reference === FIELD_REFERENCE_CODES.QUANTITY_22.id
     );
   };
 
@@ -196,7 +196,7 @@ export const useFormValidation = (tab: Tab) => {
    * Check if field is boolean type
    */
   const isBooleanField = (field: Field): boolean => {
-    return field.column?.reference === FIELD_REFERENCE_CODES.BOOLEAN;
+    return field.column?.reference === FIELD_REFERENCE_CODES.BOOLEAN.id;
   };
 
   /**

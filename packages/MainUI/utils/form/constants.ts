@@ -29,63 +29,70 @@ export const CUSTOM_SELECTORS_IDENTIFIERS = {
  */
 export const PASSWORD_PLACEHOLDER = "***";
 
+export const CALLOUT_TRIGGERS = {
+  ON_BLUR: "ON_BLUR",
+  ON_CHANGE: "ON_CHANGE",
+} as const;
+
+export type CalloutTrigger = (typeof CALLOUT_TRIGGERS)[keyof typeof CALLOUT_TRIGGERS];
+
 /**
  * Field reference codes used in form field type identification
  */
 export const FIELD_REFERENCE_CODES = {
   // Password field reference
-  PASSWORD: "C5C21C28B39E4683A91779F16C112E40",
+  PASSWORD: { id: "C5C21C28B39E4683A91779F16C112E40", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
 
   // Product reference to datasource
-  PRODUCT: "95E2A8B50A254B2AAE6774B8C2F28120",
+  PRODUCT: { id: "95E2A8B50A254B2AAE6774B8C2F28120", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
   // Generic Selector reference
-  SELECTOR: "95E2A8B50A254B2AAE6774B8C2F28120",
+  SELECTOR: { id: "95E2A8B50A254B2AAE6774B8C2F28120", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
 
   // Window reference
-  WINDOW: "FF80818132D8F0F30132D9BC395D0038",
+  WINDOW: { id: "FF80818132D8F0F30132D9BC395D0038", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
 
   // String/Text field references
-  STRING: "10",
-  TEXT_LONG: "14",
+  STRING: { id: "10", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
+  TEXT_LONG: { id: "14", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
 
   // Table directory references
-  TABLE_DIR_19: "19",
-  TABLE_DIR_18: "18",
+  TABLE_DIR_19: { id: "19", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
+  TABLE_DIR_18: { id: "18", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
 
   // Date and time references
-  DATE: "15",
-  DATETIME: "16",
-  ABSOLUTE_DATETIME: "478169542A1747BD942DD70C8B45089C",
-  TIME: "24",
+  DATE: { id: "15", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
+  DATETIME: { id: "16", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
+  ABSOLUTE_DATETIME: { id: "478169542A1747BD942DD70C8B45089C", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
+  TIME: { id: "24", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
 
   // Boolean reference
-  BOOLEAN: "20",
+  BOOLEAN: { id: "20", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
 
   // Numeric references
-  INTEGER: "11",
-  NUMERIC: "12",
-  QUANTITY_22: "22",
-  QUANTITY_29: "29",
+  INTEGER: { id: "11", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
+  NUMERIC: { id: "12", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
+  QUANTITY_22: { id: "22", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
+  QUANTITY_29: { id: "29", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
 
   // List references
-  LIST_13: "13",
-  LIST_17: "17",
+  LIST_13: { id: "13", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
+  LIST_17: { id: "17", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
 
   // Select reference with location support
-  LOCATION_21: "21",
-  SELECT_30: "30",
+  LOCATION_21: { id: "21", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
+  SELECT_30: { id: "30", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
 
   // Attribute Set Instance (PAttribute) reference
-  PATTRIBUTE: "35",
+  PATTRIBUTE: { id: "35", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
 
   // Advanced numeric types
-  DECIMAL: "800008",
+  DECIMAL: { id: "800008", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
 
   // Rate type
-  RATE: "800019",
+  RATE: { id: "800019", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
 
   // Button reference
-  BUTTON: "28",
+  BUTTON: { id: "28", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
 } as const;
 
 /**
@@ -143,7 +150,7 @@ export const getPasswordFieldNames = (tab?: Tab): Set<string> => {
   if (!tab?.fields) return passwordFields;
 
   for (const field of Object.values(tab.fields)) {
-    if (field.column?.reference === FIELD_REFERENCE_CODES.PASSWORD && field.hqlName) {
+    if (field.column?.reference === FIELD_REFERENCE_CODES.PASSWORD.id && field.hqlName) {
       passwordFields.add(field.hqlName);
     }
   }
