@@ -118,6 +118,9 @@ export const sanitizeValue = (value: unknown, field?: Field) => {
  *
  * ## Transformations:
  * - Maps field values to corresponding `field.inputName` key
+ * - For property fields (those with `column.propertyPath`), uses the
+ *   `inp_propertyField_{columnName}_{propertyPath}` key format that
+ *   FormInitializationComponent expects
  * - Converts `documentAction` → `DocAction`
  * - Sanitizes boolean values to Y/N format
  * - Handles numeric field conversions
@@ -138,6 +141,17 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
     (acc, [key, value]) => {
       const field = fields?.[key];
       let newKey = field?.inputName ?? key;
+
+      // For property fields, override the inputName with the correct format expected by
+      // FormInitializationComponent's setValuesInRequest method.
+      // Property fields read a property from a related entity (e.g. documentType.docBaseType).
+      // The FIC expects the key: inp_propertyField_{columnName}_{propertyPath}
+      //
+      // NOTE: This requires the metadata module to expose `propertyPath` in the field's
+      // `column` object for fields where AD_Column.Property_Path is set.
+      if (field?.column?.propertyPath) {
+        newKey = field.inputName; // "inp_propertyField_type_Type"
+      }
 
       // Transform documentAction to DocAction and inpporeference to POReference
       if (key === "documentAction" || newKey === "documentAction") {
@@ -355,7 +369,43 @@ export const buildFormPayload = ({
   return payload;
 };
 
-export const formatNumber = (value: number) => new Intl.NumberFormat(navigator.language).format(value);
+const parseJavaFormatPattern = (pattern: string): { min: number; max: number } => {
+  const decimalIndex = pattern.indexOf(".");
+  if (decimalIndex === -1) return { min: 0, max: 0 };
+  const decimalPart = pattern.slice(decimalIndex + 1);
+  const min = (decimalPart.match(/0/g) ?? []).length;
+  return { min, max: decimalPart.length };
+};
+
+export const getNumericFormatOptions = (
+  reference?: string,
+  valueFormat?: string | null
+): { minimumFractionDigits: number; maximumFractionDigits: number } => {
+  if (valueFormat) {
+    const { min, max } = parseJavaFormatPattern(valueFormat);
+    return { minimumFractionDigits: min, maximumFractionDigits: max };
+  }
+  switch (reference) {
+    case "12": // Amount
+    case "800008": // Decimal
+      return { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+    case "800019": // Rate
+      return { minimumFractionDigits: 2, maximumFractionDigits: 10 };
+    case "22": // Quantity
+    case "29": // Quantity
+      return { minimumFractionDigits: 0, maximumFractionDigits: 2 };
+    case "11": // Integer
+      return { minimumFractionDigits: 0, maximumFractionDigits: 0 };
+    default:
+      return { minimumFractionDigits: 0, maximumFractionDigits: 2 };
+  }
+};
+
+export const formatNumber = (value: number, locale?: string, reference?: string, valueFormat?: string | null) =>
+  new Intl.NumberFormat(
+    (locale ?? navigator.language).replace("_", "-"),
+    getNumericFormatOptions(reference, valueFormat)
+  ).format(value);
 
 export const formatTime = (input: string | Date): string => {
   const date = typeof input === "string" ? new Date(input) : input;

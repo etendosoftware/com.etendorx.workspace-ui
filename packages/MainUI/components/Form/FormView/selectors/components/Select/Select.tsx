@@ -212,7 +212,9 @@ function SelectCmp({
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      setValue(name, "");
+      setValue(`${name}$_identifier`, "", { shouldDirty: false });
+      setValue(`${name}_data`, null);
+      setValue(name, "", { shouldDirty: true, shouldValidate: true });
       setSelectedLabel("");
       setSelectedColor(undefined);
     },
