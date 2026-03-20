@@ -9,6 +9,7 @@ import {
   preloadFiltersFromCriteria,
   buildDatasourceColumns,
   getHiddenDefaultCriteria,
+  buildSelectorDatasourceParams,
 } from "../selectorColumns";
 import {
   createMockSelectorColumn,
@@ -483,5 +484,194 @@ describe("selectorColumns - getHiddenDefaultCriteria", () => {
     const hidden = getHiddenDefaultCriteria(criteria, gridColumns, null, undefined);
 
     expect(hidden).toContainEqual(criteria[0]);
+  });
+});
+
+describe("selectorColumns - buildSelectorDatasourceParams", () => {
+  const baseInput = {
+    field: { selector: {}, hqlName: "product", columnName: "product" },
+    etendoContext: {},
+    language: "en_US",
+    sorting: [] as { id: string; desc: boolean }[],
+    currentTab: null,
+    formValues: {},
+    columnFilters: [] as { id: string; value: unknown }[],
+    defaultCriteria: null,
+    defaultFilterResponse: null,
+    gridColumns: [],
+  };
+
+  it("sets isSorting, IsSelectorItem, _requestType, pageSize in output", () => {
+    const params = buildSelectorDatasourceParams(baseInput);
+    expect(params.isSorting).toBe(true);
+    expect(params.IsSelectorItem).toBe("true");
+    expect(params._requestType).toBe("Window");
+    expect(params.pageSize).toBe(100);
+  });
+
+  it("sets language from input", () => {
+    const params = buildSelectorDatasourceParams(baseInput);
+    expect(params.language).toBe("en_US");
+  });
+
+  it("sets targetProperty from hqlName when available", () => {
+    const params = buildSelectorDatasourceParams(baseInput);
+    expect(params.targetProperty).toBe("product");
+  });
+
+  it("uses columnName as targetProperty when hqlName is absent", () => {
+    const input = { ...baseInput, field: { selector: {}, columnName: "productCol" } };
+    const params = buildSelectorDatasourceParams(input);
+    expect(params.targetProperty).toBe("productCol");
+  });
+
+  it("uses field.column.dBColumnName as columnName when provided", () => {
+    const input = {
+      ...baseInput,
+      field: { selector: {}, columnName: "product", column: { dBColumnName: "M_Product_ID" } },
+    };
+    const params = buildSelectorDatasourceParams(input);
+    expect(params.columnName).toBe("M_Product_ID");
+  });
+
+  it("falls back to field.columnName when dBColumnName is absent", () => {
+    const params = buildSelectorDatasourceParams(baseInput);
+    expect(params.columnName).toBe("product");
+  });
+
+  it("uses DEFAULT_SORT_BY when selector._sortBy is not set", () => {
+    const params = buildSelectorDatasourceParams(baseInput);
+    expect(params._sortBy).toBe("name");
+  });
+
+  it("uses selector._sortBy when provided", () => {
+    const input = { ...baseInput, field: { selector: { _sortBy: "description" }, columnName: "product" } };
+    const params = buildSelectorDatasourceParams(input);
+    expect(params._sortBy).toBe("description");
+  });
+
+  it("sets tab params when currentTab is provided", () => {
+    const input = {
+      ...baseInput,
+      currentTab: { id: "tab-123", window: "win-456", fields: {} },
+    };
+    const params = buildSelectorDatasourceParams(input);
+    expect(params.windowId).toBe("win-456");
+    expect(params.tabId).toBe("tab-123");
+    expect(params.inpwindowId).toBe("win-456");
+    expect(params.inpTabId).toBe("tab-123");
+    expect(params.adTabId).toBe("tab-123");
+  });
+
+  it("does not set tab params when currentTab is null", () => {
+    const params = buildSelectorDatasourceParams(baseInput);
+    expect(params.windowId).toBeUndefined();
+    expect(params.tabId).toBeUndefined();
+  });
+
+  it("applies ascending sorting when sorting provided", () => {
+    const input = { ...baseInput, sorting: [{ id: "name", desc: false }] };
+    const params = buildSelectorDatasourceParams(input);
+    expect(params.sortBy).toBe("name");
+  });
+
+  it("applies descending sorting with ' desc' suffix", () => {
+    const input = { ...baseInput, sorting: [{ id: "name", desc: true }] };
+    const params = buildSelectorDatasourceParams(input);
+    expect(params.sortBy).toBe("name desc");
+  });
+
+  it("does not set sortBy when sorting is empty", () => {
+    const params = buildSelectorDatasourceParams(baseInput);
+    expect(params.sortBy).toBeUndefined();
+  });
+
+  it("copies SELECTOR_SAFE_PARAMS from selector", () => {
+    const input = {
+      ...baseInput,
+      field: {
+        selector: {
+          _selectorDefinitionId: "sel-id-1",
+          fieldId: "field-456",
+          filterClass: "SomeFilter",
+        },
+        columnName: "product",
+      },
+    };
+    const params = buildSelectorDatasourceParams(input);
+    expect(params._selectorDefinitionId).toBe("sel-id-1");
+    expect(params.fieldId).toBe("field-456");
+    expect(params.filterClass).toBe("SomeFilter");
+  });
+
+  it("propagates etendoContext values into params", () => {
+    const input = {
+      ...baseInput,
+      etendoContext: { inpadOrgId: "org-1", inpcBpartnerId: "bp-1" },
+    };
+    const params = buildSelectorDatasourceParams(input);
+    expect(params.inpadOrgId).toBe("org-1");
+    expect(params.inpcBpartnerId).toBe("bp-1");
+  });
+
+  it("copies inpadOrgId to _org when _org is not already set", () => {
+    const input = {
+      ...baseInput,
+      etendoContext: { inpadOrgId: "org-1" },
+    };
+    const params = buildSelectorDatasourceParams(input);
+    expect(params._org).toBe("org-1");
+  });
+
+  it("does not override _org when already present in etendoContext", () => {
+    const input = {
+      ...baseInput,
+      etendoContext: { inpadOrgId: "org-1", _org: "explicit-org" },
+    };
+    const params = buildSelectorDatasourceParams(input);
+    expect(params._org).toBe("explicit-org");
+  });
+
+  it("does not add criteria when defaultCriteria is null", () => {
+    const params = buildSelectorDatasourceParams(baseInput);
+    expect(params.criteria).toBeUndefined();
+  });
+
+  it("adds hidden criteria for fields with no visible column", () => {
+    const input = {
+      ...baseInput,
+      defaultCriteria: [{ fieldName: "hiddenField", operator: "equals", value: "val" }] as SelectorCriteria[],
+    };
+    const params = buildSelectorDatasourceParams(input);
+    expect(params.criteria).toBeDefined();
+    expect(Array.isArray(params.criteria)).toBe(true);
+  });
+
+  it("does not add criteria when all defaultCriteria match visible columns", () => {
+    const visibleColumns = createMockGridColumns();
+    const input = {
+      ...baseInput,
+      gridColumns: visibleColumns,
+      defaultCriteria: [{ fieldName: "name", operator: "equals", value: "test" }] as SelectorCriteria[],
+    };
+    const params = buildSelectorDatasourceParams(input);
+    // "name" is visible and not an idFilter, so it is dropped from hidden criteria
+    expect(params.criteria).toBeUndefined();
+  });
+
+  it("maps form values to tab field inputNames", () => {
+    const input = {
+      ...baseInput,
+      currentTab: {
+        id: "tab-1",
+        window: "win-1",
+        fields: {
+          org: { inputName: "inpadOrgId", hqlName: "org", id: "org" },
+        },
+      },
+      formValues: { org: "org-value" },
+    };
+    const params = buildSelectorDatasourceParams(input);
+    expect(params.inpadOrgId).toBe("org-value");
   });
 });
