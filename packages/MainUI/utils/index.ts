@@ -369,7 +369,43 @@ export const buildFormPayload = ({
   return payload;
 };
 
-export const formatNumber = (value: number) => new Intl.NumberFormat(navigator.language).format(value);
+const parseJavaFormatPattern = (pattern: string): { min: number; max: number } => {
+  const decimalIndex = pattern.indexOf(".");
+  if (decimalIndex === -1) return { min: 0, max: 0 };
+  const decimalPart = pattern.slice(decimalIndex + 1);
+  const min = (decimalPart.match(/0/g) ?? []).length;
+  return { min, max: decimalPart.length };
+};
+
+export const getNumericFormatOptions = (
+  reference?: string,
+  valueFormat?: string | null
+): { minimumFractionDigits: number; maximumFractionDigits: number } => {
+  if (valueFormat) {
+    const { min, max } = parseJavaFormatPattern(valueFormat);
+    return { minimumFractionDigits: min, maximumFractionDigits: max };
+  }
+  switch (reference) {
+    case "12": // Amount
+    case "800008": // Decimal
+      return { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+    case "800019": // Rate
+      return { minimumFractionDigits: 2, maximumFractionDigits: 10 };
+    case "22": // Quantity
+    case "29": // Quantity
+      return { minimumFractionDigits: 0, maximumFractionDigits: 2 };
+    case "11": // Integer
+      return { minimumFractionDigits: 0, maximumFractionDigits: 0 };
+    default:
+      return { minimumFractionDigits: 0, maximumFractionDigits: 2 };
+  }
+};
+
+export const formatNumber = (value: number, locale?: string, reference?: string, valueFormat?: string | null) =>
+  new Intl.NumberFormat(
+    (locale ?? navigator.language).replace("_", "-"),
+    getNumericFormatOptions(reference, valueFormat)
+  ).format(value);
 
 export const formatTime = (input: string | Date): string => {
   const date = typeof input === "string" ? new Date(input) : input;

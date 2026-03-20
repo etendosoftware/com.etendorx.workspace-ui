@@ -138,6 +138,19 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
   }, [boxCount, setBoxCount, setCurrentBox, barcodeInputRef]);
 
   // ---------------------------------------------------------------------------
+  // Helper: effective base qty for qtyPending calculation
+  // When useOperativeQty is true, use operationQty (alternative UOM) instead of quantity (base UOM)
+  // ---------------------------------------------------------------------------
+
+  const getEffectiveBaseQty = useCallback(
+    (line: WarehouseLine): number =>
+      schema.features.useOperativeQty
+        ? Number(line.operationQty) || Number(line.operativeQty) || line.quantity
+        : line.quantity,
+    [schema.features.useOperativeQty]
+  );
+
+  // ---------------------------------------------------------------------------
   // Validate barcode — delegates to Payscript onScan hook
   // ---------------------------------------------------------------------------
 
@@ -185,7 +198,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
         for (let i = 1; i <= boxCount; i++) totalBoxed += Number(line[`box${i}`] || 0);
         line.qtyVerified = totalBoxed;
         line.boxed = totalBoxed;
-        line.qtyPending = line.quantity - totalBoxed;
+        line.qtyPending = getEffectiveBaseQty(line) - totalBoxed;
 
         // Track scannedInputs if feature enabled
         if (schema.features.trackScannedInputs) {
@@ -219,6 +232,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
     schema.features.trackScannedInputs,
     t,
     barcodeInputRef,
+    getEffectiveBaseQty,
   ]);
 
   // ---------------------------------------------------------------------------
@@ -235,12 +249,12 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
         for (let b = 1; b <= boxCount; b++) totalBoxed += Number(line[`box${b}`] || 0);
         line.qtyVerified = totalBoxed;
         line.boxed = totalBoxed;
-        line.qtyPending = line.quantity - totalBoxed;
+        line.qtyPending = getEffectiveBaseQty(line) - totalBoxed;
         next[lineIdx] = line;
         return next;
       });
     },
-    [boxCount]
+    [boxCount, getEffectiveBaseQty]
   );
 
   // Handle the editable qtyVerified column (used in picking)
@@ -252,7 +266,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
         const oldVal = line.qtyVerified || 0;
         const delta = newVal - oldVal;
         line.qtyVerified = newVal;
-        line.qtyPending = line.quantity - newVal;
+        line.qtyPending = getEffectiveBaseQty(line) - newVal;
         if (schema.features.trackScannedInputs) {
           const inputs = [...((line.scannedInputs as WarehouseScannedInput[]) || [])];
           if (delta > 0) {
@@ -270,7 +284,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
         return next;
       });
     },
-    [schema.features.trackScannedInputs]
+    [schema.features.trackScannedInputs, getEffectiveBaseQty]
   );
 
   // ---------------------------------------------------------------------------
@@ -538,7 +552,8 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
                     lines.map((line, idx) => {
                       const isComplete = line.qtyPending === 0 && (line.qtyVerified > 0 || Number(line.boxed ?? 0) > 0);
                       const isOver =
-                        line.qtyPending < 0 || (hasQtyVerifiedCol && Number(line.qtyVerified) > line.quantity);
+                        line.qtyPending < 0 ||
+                        (hasQtyVerifiedCol && Number(line.qtyVerified) > getEffectiveBaseQty(line));
 
                       let rowBg = "";
                       if (isOver) rowBg = "bg-red-50";
