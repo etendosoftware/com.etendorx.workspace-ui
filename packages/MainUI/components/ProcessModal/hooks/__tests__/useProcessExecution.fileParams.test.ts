@@ -85,7 +85,7 @@ const installFetchMock = (ok = true, body: object = {}) => {
   global.fetch = ((url: string, options: RequestInit) => {
     lastFetch = {
       url: String(url),
-      method: (options?.method ?? "GET") as string,
+      method: options?.method ?? "",
       headers: (options?.headers ?? {}) as Record<string, string>,
       body: options?.body ?? null,
     };
@@ -106,8 +106,7 @@ afterEach(() => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const makeTestFile = (name = "upload.csv") =>
-  new File(["data"], name, { type: "text/csv" });
+const makeTestFile = (name = "upload.csv") => new File(["data"], name, { type: "text/csv" });
 
 // ---------------------------------------------------------------------------
 // Tests — executeJavaProcess: JSON path (no fileParams)
@@ -150,9 +149,7 @@ describe("useProcessExecution — executeJavaProcess without fileParams", () => 
 describe("useProcessExecution — executeJavaProcess with fileParams", () => {
   it("sends a FormData body when fileParams has entries", async () => {
     const file = makeTestFile("report.csv");
-    const { result } = renderHook(() =>
-      useProcessExecution(makeParams({ fileParams: { upload_col: file } }))
-    );
+    const { result } = renderHook(() => useProcessExecution(makeParams({ fileParams: { upload_col: file } })));
     await result.current.executeJavaProcess({});
 
     expect(lastFetch?.body).toBeInstanceOf(FormData);
@@ -160,9 +157,7 @@ describe("useProcessExecution — executeJavaProcess with fileParams", () => {
 
   it("does NOT set Content-Type header (lets browser set multipart boundary)", async () => {
     const file = makeTestFile();
-    const { result } = renderHook(() =>
-      useProcessExecution(makeParams({ fileParams: { col: file } }))
-    );
+    const { result } = renderHook(() => useProcessExecution(makeParams({ fileParams: { col: file } })));
     await result.current.executeJavaProcess({});
 
     expect(lastFetch?.headers["Content-Type"]).toBeUndefined();
@@ -181,9 +176,7 @@ describe("useProcessExecution — executeJavaProcess with fileParams", () => {
 
   it("appends the file to FormData under its parameter column name", async () => {
     const file = makeTestFile("data.csv");
-    const { result } = renderHook(() =>
-      useProcessExecution(makeParams({ fileParams: { my_col: file } }))
-    );
+    const { result } = renderHook(() => useProcessExecution(makeParams({ fileParams: { my_col: file } })));
     await result.current.executeJavaProcess({});
 
     const fd = lastFetch?.body as FormData;
@@ -204,9 +197,7 @@ describe("useProcessExecution — executeJavaProcess with fileParams", () => {
 
   it("appends reportId as the string 'null' to FormData", async () => {
     const file = makeTestFile();
-    const { result } = renderHook(() =>
-      useProcessExecution(makeParams({ fileParams: { col: file } }))
-    );
+    const { result } = renderHook(() => useProcessExecution(makeParams({ fileParams: { col: file } })));
     await result.current.executeJavaProcess({});
 
     const fd = lastFetch?.body as FormData;
@@ -216,9 +207,7 @@ describe("useProcessExecution — executeJavaProcess with fileParams", () => {
   it("appends a paramValues JSON string containing the payload", async () => {
     const file = makeTestFile();
     const payload = { _buttonValue: "execute", _params: { note: "test" } };
-    const { result } = renderHook(() =>
-      useProcessExecution(makeParams({ fileParams: { col: file } }))
-    );
+    const { result } = renderHook(() => useProcessExecution(makeParams({ fileParams: { col: file } })));
     await result.current.executeJavaProcess(payload);
 
     const fd = lastFetch?.body as FormData;
@@ -229,9 +218,7 @@ describe("useProcessExecution — executeJavaProcess with fileParams", () => {
   it("replaces _params file value with C:\\fakepath\\<name> in the paramValues JSON", async () => {
     const file = makeTestFile("invoice.pdf");
     const payload = { _params: { doc_col: "placeholder" } };
-    const { result } = renderHook(() =>
-      useProcessExecution(makeParams({ fileParams: { doc_col: file } }))
-    );
+    const { result } = renderHook(() => useProcessExecution(makeParams({ fileParams: { doc_col: file } })));
     await result.current.executeJavaProcess(payload);
 
     const fd = lastFetch?.body as FormData;
@@ -256,9 +243,7 @@ describe("useProcessExecution — executeJavaProcess with fileParams", () => {
     installFetchMock(false);
     const setResult = jest.fn();
     const file = makeTestFile();
-    const { result } = renderHook(() =>
-      useProcessExecution(makeParams({ fileParams: { col: file }, setResult }))
-    );
+    const { result } = renderHook(() => useProcessExecution(makeParams({ fileParams: { col: file }, setResult })));
     await result.current.executeJavaProcess({});
 
     expect(setResult).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
