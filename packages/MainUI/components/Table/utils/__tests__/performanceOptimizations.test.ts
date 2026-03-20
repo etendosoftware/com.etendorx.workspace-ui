@@ -8,19 +8,41 @@ import {
   MemoryManager,
 } from "../performanceOptimizations";
 
+jest.mock("@/utils/logger", () => ({
+  logger: { debug: jest.fn(), warn: jest.fn(), error: jest.fn() },
+}));
+
 jest.useFakeTimers();
 
 describe("debounce", () => {
-  it("delays function execution", () => {
+  it("delays function execution by the specified delay", () => {
     const fn = jest.fn();
-    const debounced = debounce(fn, 100);
-    debounced("a");
+    const debounced = debounce(fn, 200);
+    debounced();
     expect(fn).not.toHaveBeenCalled();
-    jest.advanceTimersByTime(100);
-    expect(fn).toHaveBeenCalledWith("a");
+    jest.advanceTimersByTime(200);
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it("cancels previous call when called multiple times", () => {
+  it("resets timer when called multiple times", () => {
+    const fn = jest.fn();
+    const debounced = debounce(fn, 200);
+    debounced();
+    debounced();
+    debounced();
+    jest.advanceTimersByTime(200);
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes arguments to the debounced function", () => {
+    const fn = jest.fn();
+    const debounced = debounce(fn, 100);
+    debounced("a", "b");
+    jest.advanceTimersByTime(100);
+    expect(fn).toHaveBeenCalledWith("a", "b");
+  });
+
+  it("cancels previous call and uses last arguments", () => {
     const fn = jest.fn();
     const debounced = debounce(fn, 100);
     debounced("a");
@@ -33,93 +55,121 @@ describe("debounce", () => {
 });
 
 describe("throttle", () => {
-  it("executes immediately on first call", () => {
+  it("executes function immediately on first call", () => {
     const fn = jest.fn();
-    const throttled = throttle(fn, 100);
-    throttled("first");
-    expect(fn).toHaveBeenCalledWith("first");
-  });
-
-  it("skips rapid subsequent calls", () => {
-    const fn = jest.fn();
-    const throttled = throttle(fn, 100);
-    throttled("first");
-    throttled("second");
-    throttled("third");
+    const throttled = throttle(fn, 200);
+    throttled();
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it("executes after interval has passed", () => {
+  it("skips calls within the interval", () => {
+    const fn = jest.fn();
+    const throttled = throttle(fn, 200);
+    throttled();
+    throttled();
+    throttled();
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("schedules trailing call when invoked during cooldown", () => {
+    const fn = jest.fn();
+    const throttled = throttle(fn, 200);
+    throttled();
+    throttled();
+    jest.advanceTimersByTime(200);
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it("allows execution again after interval has passed", () => {
     const fn = jest.fn();
     const throttled = throttle(fn, 100);
-    throttled("first");
+    throttled();
     jest.advanceTimersByTime(110);
-    throttled("second");
+    throttled();
     expect(fn).toHaveBeenCalledTimes(2);
   });
 });
 
-describe("LazyLoadingManager", () => {
-  it("createLazyLoadingManager returns an instance", () => {
-    const manager = createLazyLoadingManager();
-    expect(manager).toBeInstanceOf(LazyLoadingManager);
-  });
-
-  it("isEditorLoaded returns false for unknown key", () => {
-    const manager = new LazyLoadingManager();
-    expect(manager.isEditorLoaded("key1")).toBe(false);
-  });
-
-  it("loadEditor marks key as loaded after resolution", async () => {
-    const manager = new LazyLoadingManager();
-    await manager.loadEditor("key1", () => Promise.resolve("result"));
-    expect(manager.isEditorLoaded("key1")).toBe(true);
-  });
-
-  it("loadEditor returns existing promise for pending key", async () => {
-    const manager = new LazyLoadingManager();
-    let resolve: (v: any) => void;
-    const promise = new Promise((r) => {
-      resolve = r;
-    });
-    const load1 = manager.loadEditor("key1", () => promise);
-    const load2 = manager.loadEditor("key1", () => promise);
-    resolve!("done");
-    await Promise.all([load1, load2]);
-  });
-
-  it("loadEditor handles loader failure", async () => {
-    const manager = new LazyLoadingManager();
-    await expect(manager.loadEditor("key1", () => Promise.reject(new Error("fail")))).rejects.toThrow("fail");
-    expect(manager.isEditorLoaded("key1")).toBe(false);
-  });
-
-  it("clearLoadedEditors removes all loaded editors", async () => {
-    const manager = new LazyLoadingManager();
-    await manager.loadEditor("key1", () => Promise.resolve());
-    manager.clearLoadedEditors();
-    expect(manager.isEditorLoaded("key1")).toBe(false);
-  });
-});
-
 describe("calculateVisibleRange", () => {
-  const config = { itemHeight: 50, containerHeight: 200, overscan: 2 };
-
-  it("calculates start and end indices from scrollTop 0", () => {
-    const result = calculateVisibleRange(0, config, 100);
+  it("calculates correct range for scrollTop=0", () => {
+    const result = calculateVisibleRange(0, { itemHeight: 50, containerHeight: 300, overscan: 2 }, 100);
     expect(result.startIndex).toBe(0);
-    expect(result.visibleItems).toBe(4);
-    expect(result.endIndex).toBe(8); // startIndex(0) + visibleItems(4) + overscan*2(4) = 8
+    expect(result.visibleItems).toBe(6);
   });
 
-  it("calculates range with scroll offset", () => {
-    const result = calculateVisibleRange(100, config, 100);
-    expect(result.startIndex).toBe(0); // max(0, floor(100/50) - 2) = max(0, 0) = 0
+  it("calculates start index with overscan when scrolled", () => {
+    const result = calculateVisibleRange(200, { itemHeight: 50, containerHeight: 300, overscan: 2 }, 100);
+    expect(result.startIndex).toBe(2);
+  });
+
+  it("clamps startIndex to 0 when overscan exceeds position", () => {
+    const result = calculateVisibleRange(0, { itemHeight: 50, containerHeight: 300, overscan: 10 }, 100);
+    expect(result.startIndex).toBe(0);
   });
 
   it("clamps endIndex to totalItems - 1", () => {
-    const result = calculateVisibleRange(0, config, 5);
+    const result = calculateVisibleRange(0, { itemHeight: 50, containerHeight: 10000, overscan: 0 }, 5);
     expect(result.endIndex).toBe(4);
+  });
+
+  it("calculates endIndex correctly with overscan", () => {
+    const result = calculateVisibleRange(0, { itemHeight: 50, containerHeight: 200, overscan: 2 }, 100);
+    expect(result.startIndex).toBe(0);
+    expect(result.visibleItems).toBe(4);
+    expect(result.endIndex).toBe(8);
+  });
+
+  it("calculates range with scroll offset", () => {
+    const result = calculateVisibleRange(100, { itemHeight: 50, containerHeight: 200, overscan: 2 }, 100);
+    expect(result.startIndex).toBe(0);
+  });
+});
+
+describe("LazyLoadingManager", () => {
+  it("createLazyLoadingManager returns a new instance", () => {
+    const mgr = createLazyLoadingManager();
+    expect(mgr).toBeInstanceOf(LazyLoadingManager);
+  });
+
+  it("isEditorLoaded returns false for unknown editor", () => {
+    const mgr = new LazyLoadingManager();
+    expect(mgr.isEditorLoaded("editor1")).toBe(false);
+  });
+
+  it("loadEditor resolves and marks editor as loaded", async () => {
+    const mgr = new LazyLoadingManager();
+    const loader = jest.fn().mockResolvedValue({ component: "MockEditor" });
+    await mgr.loadEditor("editor1", loader);
+    expect(mgr.isEditorLoaded("editor1")).toBe(true);
+    expect(loader).toHaveBeenCalledTimes(1);
+  });
+
+  it("loadEditor returns cached result without calling loader again", async () => {
+    const mgr = new LazyLoadingManager();
+    const loader = jest.fn().mockResolvedValue({});
+    await mgr.loadEditor("editor1", loader);
+    await mgr.loadEditor("editor1", loader);
+    expect(loader).toHaveBeenCalledTimes(1);
+  });
+
+  it("loadEditor deduplicates concurrent loads", async () => {
+    const mgr = new LazyLoadingManager();
+    const loader = jest.fn().mockResolvedValue({});
+    await Promise.all([mgr.loadEditor("ed", loader), mgr.loadEditor("ed", loader)]);
+    expect(loader).toHaveBeenCalledTimes(1);
+  });
+
+  it("loadEditor handles loader failure", async () => {
+    const mgr = new LazyLoadingManager();
+    await expect(mgr.loadEditor("editor1", () => Promise.reject(new Error("fail")))).rejects.toThrow("fail");
+    expect(mgr.isEditorLoaded("editor1")).toBe(false);
+  });
+
+  it("clearLoadedEditors resets all state", async () => {
+    const mgr = new LazyLoadingManager();
+    await mgr.loadEditor("ed", jest.fn().mockResolvedValue({}));
+    mgr.clearLoadedEditors();
+    expect(mgr.isEditorLoaded("ed")).toBe(false);
   });
 });
 
@@ -154,44 +204,53 @@ describe("PerformanceMonitor", () => {
 });
 
 describe("MemoryManager", () => {
-  it("set and get work correctly", () => {
-    const mm = new MemoryManager();
-    mm.set("key1", { data: "value" });
-    expect(mm.get("key1")).toEqual({ data: "value" });
+  it("set and get returns stored value", () => {
+    const mgr = new MemoryManager();
+    mgr.set("key1", { value: 42 });
+    expect(mgr.get("key1")).toEqual({ value: 42 });
   });
 
-  it("get returns undefined for unknown key", () => {
-    const mm = new MemoryManager();
-    expect(mm.get("missing")).toBeUndefined();
+  it("get returns undefined for missing key", () => {
+    const mgr = new MemoryManager();
+    expect(mgr.get("missing")).toBeUndefined();
   });
 
-  it("delete removes item", () => {
-    const mm = new MemoryManager();
-    mm.set("key1", "value");
-    mm.delete("key1");
-    expect(mm.get("key1")).toBeUndefined();
+  it("delete removes an item", () => {
+    const mgr = new MemoryManager();
+    mgr.set("key1", "data");
+    mgr.delete("key1");
+    expect(mgr.get("key1")).toBeUndefined();
   });
 
-  it("delete is a no-op for unknown key", () => {
-    const mm = new MemoryManager();
-    expect(() => mm.delete("missing")).not.toThrow();
+  it("delete is a no-op for missing key", () => {
+    const mgr = new MemoryManager();
+    expect(() => mgr.delete("nonexistent")).not.toThrow();
   });
 
-  it("clear removes all items", () => {
-    const mm = new MemoryManager();
-    mm.set("k1", "v1");
-    mm.set("k2", "v2");
-    mm.clear();
-    expect(mm.get("k1")).toBeUndefined();
-    expect(mm.getStats().items).toBe(0);
+  it("clear empties the cache", () => {
+    const mgr = new MemoryManager();
+    mgr.set("a", 1);
+    mgr.set("b", 2);
+    mgr.clear();
+    expect(mgr.get("a")).toBeUndefined();
+    expect(mgr.getStats().items).toBe(0);
   });
 
-  it("getStats returns correct counts", () => {
-    const mm = new MemoryManager();
-    mm.set("k1", "val");
-    const stats = mm.getStats();
+  it("getStats returns correct item count and size", () => {
+    const mgr = new MemoryManager();
+    mgr.set("k1", "hello");
+    const stats = mgr.getStats();
     expect(stats.items).toBe(1);
     expect(stats.size).toBeGreaterThan(0);
     expect(stats.maxSize).toBe(50 * 1024 * 1024);
+  });
+
+  it("overwriting a key updates size correctly", () => {
+    const mgr = new MemoryManager();
+    mgr.set("key", "small");
+    const sizeBefore = mgr.getStats().size;
+    mgr.set("key", "much larger value to replace");
+    const sizeAfter = mgr.getStats().size;
+    expect(sizeAfter).toBeGreaterThan(sizeBefore);
   });
 });

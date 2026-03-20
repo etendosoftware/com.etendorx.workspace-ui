@@ -1013,6 +1013,7 @@ function ProcessDefinitionModalContent({
               currentValues={formValues}
               originTab={tab}
               showTitle={false}
+              onClose={onClose}
               data-testid="WindowReferenceGrid__761503"
             />
           </CollapsibleSection>

@@ -64,5 +64,7 @@ export interface ProcessActionData {
   command: string;
   inpkeyColumnId: string;
   keyColumnName: string;
+  /** Classic's inpKeyName — the actual input param name for the record ID (e.g. "inpfinPaymentProposalId"). Defaults to "inpcOrderId". */
+  inpKeyName?: string;
   additionalParameters?: Record<string, string>;
 }

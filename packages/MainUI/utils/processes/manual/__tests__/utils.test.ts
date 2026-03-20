@@ -1,4 +1,4 @@
-import { mapKeysWithDefaults, transformDates } from "@/utils/processes/manual/utils";
+import { mapKeysWithDefaults, transformDates, columnNameToInpKey, getParams } from "@/utils/processes/manual/utils";
 
 describe("transformDates", () => {
   it("converts dd-mm-yyyy string to yyyy-mm-dd", () => {
@@ -126,5 +126,93 @@ describe("mapKeysWithDefaults", () => {
   it("maps converted_amount and conversion_rate to the same target", () => {
     const result = mapKeysWithDefaults({ conversion_rate: 1.5 });
     expect(result.conversion_rate).toBe(1.5);
+  });
+});
+
+describe("columnNameToInpKey", () => {
+  it.each([
+    ["Fin_Payment_Proposal_ID", "inpfinPaymentProposalId"],
+    ["C_Order_ID", "inpcOrderId"],
+    ["C_Invoice_ID", "inpcInvoiceId"],
+    ["name", "inpname"],
+    ["DOCBASETYPE", "inpdocbasetype"],
+    ["AD_Org_ID", "inpadOrgId"],
+  ])("columnNameToInpKey(%s) === %s", (input, expected) => {
+    expect(columnNameToInpKey(input)).toBe(expected);
+  });
+});
+
+describe("getParams", () => {
+  const baseProps = {
+    currentButtonId: "btn1",
+    record: {},
+    recordId: "REC-001",
+    windowId: "WIN-001",
+    tabId: "TAB-001",
+    tableId: "TBL-001",
+    token: null,
+    isPostedProcess: false,
+  };
+
+  const baseProcessAction = {
+    url: "/process",
+    command: "PROCESS",
+    inpkeyColumnId: "C_Order_ID",
+    keyColumnName: "c_order_id",
+  };
+
+  it("returns empty URLSearchParams when processAction is undefined", () => {
+    const result = getParams({ ...baseProps, processAction: undefined });
+    expect(result.toString()).toBe("");
+  });
+
+  it("uses inpKeyName when provided instead of deriving it", () => {
+    const result = getParams({
+      ...baseProps,
+      processAction: { ...baseProcessAction, inpKeyName: "inpfinPaymentProposalId" },
+    });
+    expect(result.get("inpfinPaymentProposalId")).toBe("REC-001");
+    expect(result.get("inpcOrderId")).toBeNull();
+  });
+
+  it("derives inpKeyName from inpkeyColumnId when inpKeyName is not set", () => {
+    const result = getParams({ ...baseProps, processAction: baseProcessAction });
+    expect(result.get("inpcOrderId")).toBe("REC-001");
+  });
+
+  it("appends additionalParameters with placeholder substitution", () => {
+    const result = getParams({
+      ...baseProps,
+      processAction: {
+        ...baseProcessAction,
+        additionalParameters: {
+          customParam: "$recordId",
+          staticParam: "staticValue",
+        },
+      },
+    });
+    expect(result.get("customParam")).toBe("REC-001");
+    expect(result.get("staticParam")).toBe("staticValue");
+  });
+
+  it("appends additionalParameters with $windowId placeholder", () => {
+    const result = getParams({
+      ...baseProps,
+      processAction: {
+        ...baseProcessAction,
+        additionalParameters: { myWindowParam: "$windowId" },
+      },
+    });
+    expect(result.get("myWindowParam")).toBe("WIN-001");
+  });
+
+  it("appends token when provided", () => {
+    const result = getParams({ ...baseProps, token: "my-token", processAction: baseProcessAction });
+    expect(result.get("token")).toBe("my-token");
+  });
+
+  it("appends posted docaction when isPostedProcess is true", () => {
+    const result = getParams({ ...baseProps, isPostedProcess: true, processAction: baseProcessAction });
+    expect(result.get("inpdocaction")).toBeTruthy();
   });
 });

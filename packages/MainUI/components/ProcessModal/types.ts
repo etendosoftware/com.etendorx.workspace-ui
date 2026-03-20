@@ -167,6 +167,7 @@ export interface WindowReferenceGridProps {
   selectedRecordsCount?: number;
   onSelectionChange: (selection: GridSelectionUpdater) => void;
   gridSelection: GridSelectionStructure;
+  onClose?: () => void;
   entityName?: EntityValue;
   recordId?: EntityValue;
   tabId: string;

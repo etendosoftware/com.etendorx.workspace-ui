@@ -17,6 +17,7 @@
 
 import { useCallback } from "react";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { useWindowContext } from "@/contexts/window";
 import { getNewWindowIdentifier, createDefaultTabState } from "@/utils/window/utils";
 import { FORM_MODES, TAB_MODES } from "@/utils/url/constants";
@@ -142,7 +143,8 @@ export const useRedirect = () => {
       tabLevel = 0,
       referencedLinkContext,
     }: HandleActionProps) => {
-      if (!windowId) {
+      // Allow proceeding without windowId if referencedLinkContext is available to resolve it
+      if (!windowId && !referencedLinkContext) {
         console.warn("No windowId found");
         return;
       }
@@ -163,6 +165,11 @@ export const useRedirect = () => {
             to: { windowId: resolvedWindowId, tabId: resolvedTabId },
           });
         }
+      }
+
+      if (!resolvedWindowId) {
+        console.warn("[useRedirect] Could not resolve windowId via ReferencedLink");
+        return;
       }
 
       console.debug("[useRedirect] Navigating to:", {
@@ -227,8 +234,66 @@ export const useRedirect = () => {
     [handleAction]
   );
 
+  /**
+   * Navigates to the window associated with a SmartClient `clientclass` value (e.g. "SalesOrderTabLink").
+   * Resolves the target window by matching its display name against the cached menu, then fetches
+   * the window metadata to obtain the root tab ID before navigating.
+   *
+   * @param clientclass - The clientclass string from field metadata (e.g. "SalesOrderTabLink")
+   * @param recordId - The primary key of the record to open (row.original.id)
+   */
+  const handleClientclassNavigation = useCallback(
+    async ({ clientclass, recordId }: { clientclass: string; recordId: string }) => {
+      // "SalesOrderTabLink" → "SalesOrder" → "Sales Order"
+      const entityPart = clientclass.replaceAll(/TabLink$/g, "");
+      const displayName = entityPart.replaceAll(/([A-Z])/g, " $1").trim();
+
+      const flattenMenu = (items: Menu[]): Menu[] =>
+        items.flatMap((m) => [m, ...(m.children ? flattenMenu(m.children) : [])]);
+
+      const flat = flattenMenu(Metadata.getCachedMenu());
+      const menuItem = flat.find((item) => item.windowId && item.name?.toLowerCase() === displayName.toLowerCase());
+
+      if (!menuItem?.windowId) {
+        console.warn("[useRedirect] Could not find window for clientclass:", clientclass);
+        return;
+      }
+
+      const resolvedWindowId = menuItem.windowId;
+      let rootTabId = "";
+
+      try {
+        const windowMeta = await Metadata.getWindow(resolvedWindowId);
+        const rootTab = windowMeta.tabs?.find((t) => t.tabLevel === 0);
+        rootTabId = rootTab?.id ?? "";
+      } catch (err) {
+        console.warn("[useRedirect] Could not load window metadata for clientclass navigation:", err);
+      }
+
+      const newWindowIdentifier = getNewWindowIdentifier(resolvedWindowId);
+      const defaultTabState = createDefaultTabState(0);
+      const tabs = rootTabId
+        ? {
+            [rootTabId]: {
+              ...defaultTabState,
+              form: {
+                recordId,
+                mode: TAB_MODES.FORM,
+                formMode: FORM_MODES.EDIT,
+              },
+              selectedRecord: recordId,
+            } as TabState,
+          }
+        : {};
+
+      setWindowActive({ windowIdentifier: newWindowIdentifier, windowData: { title: menuItem.name, tabs } });
+    },
+    [setWindowActive]
+  );
+
   return {
     handleClickRedirect,
     handleKeyDownRedirect,
+    handleClientclassNavigation,
   };
 };
