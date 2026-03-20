@@ -49,6 +49,10 @@ jest.mock("@/contexts/tab", () => ({
   useTabContext: jest.fn(() => mockTabContext),
 }));
 
+// Common expression strings used in tests
+const EXPR_IS_ACTIVE_Y = "OB.Utilities.getValue(x,'isActive')=='Y'";
+const EXPR_USER_HAS_NAME_1 = "OB.Utilities.getValue(x,'UserHasName')=='1'";
+
 // Helpers
 const createMockField = (overrides: Partial<Field>): Field =>
   ({
@@ -110,6 +114,11 @@ const createMockTab = (overrides: Partial<Tab> = {}): Tab => ({
   ...overrides,
 });
 
+const renderDisplayLogic = (overrides: Partial<Field> = {}) => {
+  const field = createMockField({ displayed: true, ...overrides });
+  return renderHook(() => useDisplayLogic({ field }));
+};
+
 describe("useDisplayLogic", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -126,34 +135,23 @@ describe("useDisplayLogic", () => {
   describe("Basic display conditions", () => {
     it("should return false when tab is null", () => {
       mockTabContext.tab = null;
-      const field = createMockField({ displayed: true });
-
-      const { result } = renderHook(() => useDisplayLogic({ field }));
-
+      const { result } = renderDisplayLogic();
       expect(result.current).toBe(false);
     });
 
     it("should return false when field.displayed is false", () => {
       const field = createMockField({ displayed: false });
-
       const { result } = renderHook(() => useDisplayLogic({ field }));
-
       expect(result.current).toBe(false);
     });
 
     it("should return true when field is displayed and has no displayLogicExpression", () => {
-      const field = createMockField({ displayed: true, displayLogicExpression: "" });
-
-      const { result } = renderHook(() => useDisplayLogic({ field }));
-
+      const { result } = renderDisplayLogic({ displayLogicExpression: "" });
       expect(result.current).toBe(true);
     });
 
     it("should return true when field is displayed and displayLogicExpression is undefined", () => {
-      const field = createMockField({ displayed: true, displayLogicExpression: undefined });
-
-      const { result } = renderHook(() => useDisplayLogic({ field }));
-
+      const { result } = renderDisplayLogic({ displayLogicExpression: undefined });
       expect(result.current).toBe(true);
     });
   });
@@ -161,36 +159,19 @@ describe("useDisplayLogic", () => {
   describe("Display logic expression evaluation", () => {
     it("should return true when compiledExpr returns true", () => {
       mockCompiledExpr.mockReturnValue(true);
-      const field = createMockField({
-        displayed: true,
-        displayLogicExpression: "OB.Utilities.getValue(x,'isActive')=='Y'",
-      });
-
-      const { result } = renderHook(() => useDisplayLogic({ field }));
-
+      const { result } = renderDisplayLogic({ displayLogicExpression: EXPR_IS_ACTIVE_Y });
       expect(result.current).toBe(true);
     });
 
     it("should return false when compiledExpr returns false", () => {
       mockCompiledExpr.mockReturnValue(false);
-      const field = createMockField({
-        displayed: true,
-        displayLogicExpression: "OB.Utilities.getValue(x,'isActive')=='Y'",
-      });
-
-      const { result } = renderHook(() => useDisplayLogic({ field }));
-
+      const { result } = renderDisplayLogic({ displayLogicExpression: EXPR_IS_ACTIVE_Y });
       expect(result.current).toBe(false);
     });
 
     it("should pass smartContext to the compiled expression", () => {
       mockTabContext.record = { isActive: "Y" };
-      const field = createMockField({
-        displayed: true,
-        displayLogicExpression: "OB.Utilities.getValue(x,'isActive')=='Y'",
-      });
-
-      renderHook(() => useDisplayLogic({ field }));
+      renderDisplayLogic({ displayLogicExpression: EXPR_IS_ACTIVE_Y });
 
       // The compiled expression must have been called with a proxy-based smartContext
       expect(mockCompiledExpr).toHaveBeenCalledTimes(1);
@@ -203,39 +184,21 @@ describe("useDisplayLogic", () => {
     it("should make auxiliaryInputs accessible inside the expression context", () => {
       mockTabContext.auxiliaryInputs = { UserHasName: "1" };
       mockCompiledExpr.mockImplementation((ctx: Record<string, unknown>) => ctx.UserHasName === "1");
-      const field = createMockField({
-        displayed: true,
-        displayLogicExpression: "OB.Utilities.getValue(x,'UserHasName')=='1'",
-      });
-
-      const { result } = renderHook(() => useDisplayLogic({ field }));
-
+      const { result } = renderDisplayLogic({ displayLogicExpression: EXPR_USER_HAS_NAME_1 });
       expect(result.current).toBe(true);
     });
 
     it("should return false when auxiliaryInputs value does not satisfy the expression", () => {
       mockTabContext.auxiliaryInputs = { UserHasName: "0" };
       mockCompiledExpr.mockImplementation((ctx: Record<string, unknown>) => ctx.UserHasName === "1");
-      const field = createMockField({
-        displayed: true,
-        displayLogicExpression: "OB.Utilities.getValue(x,'UserHasName')=='1'",
-      });
-
-      const { result } = renderHook(() => useDisplayLogic({ field }));
-
+      const { result } = renderDisplayLogic({ displayLogicExpression: EXPR_USER_HAS_NAME_1 });
       expect(result.current).toBe(false);
     });
 
     it("should return false when auxiliaryInputs is empty and expression depends on it", () => {
       mockTabContext.auxiliaryInputs = {};
       mockCompiledExpr.mockImplementation((ctx: Record<string, unknown>) => ctx.UserHasName === "1");
-      const field = createMockField({
-        displayed: true,
-        displayLogicExpression: "OB.Utilities.getValue(x,'UserHasName')=='1'",
-      });
-
-      const { result } = renderHook(() => useDisplayLogic({ field }));
-
+      const { result } = renderDisplayLogic({ displayLogicExpression: EXPR_USER_HAS_NAME_1 });
       expect(result.current).toBe(false);
     });
 
@@ -244,13 +207,7 @@ describe("useDisplayLogic", () => {
       mockTabContext.auxiliaryInputs = { UserHasName: "1" };
       mockTabContext.record = { UserHasName: "0" };
       mockCompiledExpr.mockImplementation((ctx: Record<string, unknown>) => ctx.UserHasName === "1");
-      const field = createMockField({
-        displayed: true,
-        displayLogicExpression: "OB.Utilities.getValue(x,'UserHasName')=='1'",
-      });
-
-      const { result } = renderHook(() => useDisplayLogic({ field }));
-
+      const { result } = renderDisplayLogic({ displayLogicExpression: EXPR_USER_HAS_NAME_1 });
       // Record value "0" overrides auxiliaryInput "1", so expression resolves to false
       expect(result.current).toBe(false);
     });
@@ -261,13 +218,9 @@ describe("useDisplayLogic", () => {
       mockTabContext.record = { name: "initial" };
       mockExpressionDeps.mockReturnValue({ name: "updated" });
       mockCompiledExpr.mockImplementation((ctx: Record<string, unknown>) => ctx.name === "updated");
-      const field = createMockField({
-        displayed: true,
+      const { result } = renderDisplayLogic({
         displayLogicExpression: "OB.Utilities.getValue(x,'name')=='updated'",
       });
-
-      const { result } = renderHook(() => useDisplayLogic({ field }));
-
       expect(result.current).toBe(true);
     });
 
@@ -276,13 +229,9 @@ describe("useDisplayLogic", () => {
       // RHF returns undefined for fields not yet registered
       mockExpressionDeps.mockReturnValue({ isActive: undefined });
       mockCompiledExpr.mockImplementation((ctx: Record<string, unknown>) => ctx.isActive === "N");
-      const field = createMockField({
-        displayed: true,
+      const { result } = renderDisplayLogic({
         displayLogicExpression: "OB.Utilities.getValue(x,'isActive')=='N'",
       });
-
-      const { result } = renderHook(() => useDisplayLogic({ field }));
-
       // undefined from formValues must NOT overwrite false from record (which becomes 'N' via normalize)
       expect(result.current).toBe(true);
     });
@@ -293,12 +242,7 @@ describe("useDisplayLogic", () => {
       mockCompiledExpr.mockImplementation(() => {
         throw new Error("evaluation error");
       });
-      const field = createMockField({
-        displayed: true,
-        displayLogicExpression: "throw new Error()",
-      });
-
-      expect(() => renderHook(() => useDisplayLogic({ field }))).not.toThrow();
+      expect(() => renderDisplayLogic({ displayLogicExpression: "throw new Error()" })).not.toThrow();
     });
   });
 });
