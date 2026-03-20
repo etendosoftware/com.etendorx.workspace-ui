@@ -14,7 +14,7 @@ interface UseDisplayLogicProps {
 
 export default function useDisplayLogic({ field, values }: UseDisplayLogicProps) {
   const { session } = useUserContext();
-  const { tab, record, parentRecord, parentTab } = useTabContext();
+  const { tab, record, parentRecord, parentTab, auxiliaryInputs } = useTabContext();
 
   const formValues = useExpressionDependencies(field.displayLogicExpression);
 
@@ -39,6 +39,7 @@ export default function useDisplayLogic({ field, values }: UseDisplayLogicProps)
       const smartContext = createSmartContext({
         values: currentValues,
         fields: tab.fields,
+        auxiliaryInputs,
         parentValues: parentRecord || undefined,
         parentFields: parentTab?.fields,
         context: session,
@@ -60,6 +61,7 @@ export default function useDisplayLogic({ field, values }: UseDisplayLogicProps)
     values,
     parentRecord,
     parentTab,
+    auxiliaryInputs,
   ]);
 
   return isDisplayed;

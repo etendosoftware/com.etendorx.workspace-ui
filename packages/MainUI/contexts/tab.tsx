@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import { ToolbarProvider } from "./ToolbarContext";
 import { SearchProvider } from "./searchContext";
@@ -32,12 +32,15 @@ interface TabContextI {
   hasFormChanges: boolean;
   markFormAsChanged: () => void;
   resetFormChanges: () => void;
+  auxiliaryInputs: Record<string, string>;
+  setAuxiliaryInputs: Dispatch<SetStateAction<Record<string, string>>>;
 }
 
 const TabContext = createContext<TabContextI>({} as TabContextI);
 
 export default function TabContextProvider({ tab, children }: React.PropsWithChildren<{ tab: Tab }>) {
   const [hasFormChanges, setHasFormChanges] = useState(false);
+  const [auxiliaryInputs, setAuxiliaryInputs] = useState<Record<string, string>>({});
 
   const { graph } = useSelected();
   const record = useSelectedRecord(tab);
@@ -58,8 +61,20 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
       hasFormChanges,
       markFormAsChanged,
       resetFormChanges,
+      auxiliaryInputs,
+      setAuxiliaryInputs,
     }),
-    [parentRecord, parentTab, parentRecords, record, tab, hasFormChanges, markFormAsChanged, resetFormChanges]
+    [
+      parentRecord,
+      parentTab,
+      parentRecords,
+      record,
+      tab,
+      hasFormChanges,
+      markFormAsChanged,
+      resetFormChanges,
+      auxiliaryInputs,
+    ]
   );
 
   return (
