@@ -181,24 +181,27 @@ describe("useDisplayLogic", () => {
   });
 
   describe("Auxiliary inputs integration", () => {
+    const renderWithUserHasName = () => renderDisplayLogic({ displayLogicExpression: EXPR_USER_HAS_NAME_1 });
+
+    beforeEach(() => {
+      mockCompiledExpr.mockImplementation((ctx: Record<string, unknown>) => ctx.UserHasName === "1");
+    });
+
     it("should make auxiliaryInputs accessible inside the expression context", () => {
       mockTabContext.auxiliaryInputs = { UserHasName: "1" };
-      mockCompiledExpr.mockImplementation((ctx: Record<string, unknown>) => ctx.UserHasName === "1");
-      const { result } = renderDisplayLogic({ displayLogicExpression: EXPR_USER_HAS_NAME_1 });
+      const { result } = renderWithUserHasName();
       expect(result.current).toBe(true);
     });
 
     it("should return false when auxiliaryInputs value does not satisfy the expression", () => {
       mockTabContext.auxiliaryInputs = { UserHasName: "0" };
-      mockCompiledExpr.mockImplementation((ctx: Record<string, unknown>) => ctx.UserHasName === "1");
-      const { result } = renderDisplayLogic({ displayLogicExpression: EXPR_USER_HAS_NAME_1 });
+      const { result } = renderWithUserHasName();
       expect(result.current).toBe(false);
     });
 
     it("should return false when auxiliaryInputs is empty and expression depends on it", () => {
       mockTabContext.auxiliaryInputs = {};
-      mockCompiledExpr.mockImplementation((ctx: Record<string, unknown>) => ctx.UserHasName === "1");
-      const { result } = renderDisplayLogic({ displayLogicExpression: EXPR_USER_HAS_NAME_1 });
+      const { result } = renderWithUserHasName();
       expect(result.current).toBe(false);
     });
 
@@ -206,8 +209,7 @@ describe("useDisplayLogic", () => {
       // Record value "0" should take priority over auxiliaryInput "1"
       mockTabContext.auxiliaryInputs = { UserHasName: "1" };
       mockTabContext.record = { UserHasName: "0" };
-      mockCompiledExpr.mockImplementation((ctx: Record<string, unknown>) => ctx.UserHasName === "1");
-      const { result } = renderDisplayLogic({ displayLogicExpression: EXPR_USER_HAS_NAME_1 });
+      const { result } = renderWithUserHasName();
       // Record value "0" overrides auxiliaryInput "1", so expression resolves to false
       expect(result.current).toBe(false);
     });
