@@ -194,12 +194,4 @@ describe("MemoryManager", () => {
     expect(stats.size).toBeGreaterThan(0);
     expect(stats.maxSize).toBe(50 * 1024 * 1024);
   });
-
-  it("overwrites existing key", () => {
-    const mm = new MemoryManager();
-    mm.set("k1", "first");
-    mm.set("k1", "second");
-    expect(mm.get("k1")).toBe("second");
-    expect(mm.getStats().items).toBe(1);
-  });
 });

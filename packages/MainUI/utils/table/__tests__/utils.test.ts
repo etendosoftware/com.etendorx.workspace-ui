@@ -95,7 +95,7 @@ describe("mapSummariesToBackend", () => {
 
   it("maps summaries using columnName", () => {
     const summaries = { column_one: "sum", column_two: "avg" };
-    const { summaryRequest, columnMapping } = mapSummariesToBackend(summaries, baseColumns);
+    const { summaryRequest } = mapSummariesToBackend(summaries, baseColumns);
     expect(summaryRequest.column_one).toBe("sum");
     expect(summaryRequest.column_two).toBe("avg");
   });
