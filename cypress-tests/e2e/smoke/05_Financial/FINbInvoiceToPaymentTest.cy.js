@@ -201,14 +201,19 @@ describe("Financial Test 2 - Sales Invoice to Payment In", () => {
       1
     );
 
+    cy.intercept("POST", /AddPaymentActionHandler/).as("executePaymentProcess");
+
     cy.contains('li[data-testid^="OptionItem__"] span', "Process Received Payment(s)", { timeout: 20000 })
       .should("be.visible")
       .click();
 
     cy.get('[data-testid="ExecuteButton__761503"]', { timeout: 10000 }).should("be.visible").click();
+    cy.wait("@executePaymentProcess", { timeout: 60000 });
 
     cy.get('[data-sonner-toast][data-type="success"]', { timeout: 30000 }).should("be.visible");
     cy.closeToastIfPresent();
+
+    cy.get("button.toolbar-button-refresh").filter(":visible").first().should("be.enabled").click();
 
     // Verify Status: Payment Received
     cy.get('[data-testid="status-bar-container"] span[name="status"]', { timeout: 20000 })
