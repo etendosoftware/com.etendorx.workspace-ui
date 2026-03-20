@@ -34,6 +34,7 @@ import {
   buildFormInitializationParams,
   fetchFormInitialization,
   buildSessionAttributes,
+  mergeSessionAttributes,
 } from "@/utils/hooks/useFormInitialization/utils";
 import type { RecordData, State, Action } from "@/utils/hooks/useFormInitialization/types";
 
@@ -151,12 +152,12 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       const enrichedData = enrichWithAuditFields(data, record, mode);
       const storedInSessionAttributes = buildSessionAttributes(enrichedData);
 
-      setSession((prev) => ({
-        ...prev,
-        ...storedInSessionAttributes,
-      }));
+      setSession((prev) => mergeSessionAttributes(prev, storedInSessionAttributes));
 
       dispatch({ type: "FETCH_SUCCESS", payload: enrichedData });
+      // Restore guard so the main useEffect cannot re-fetch with the same params
+      // after refetch() cleared lastFetchParamsRef.current = null
+      lastFetchParamsRef.current = params.toString();
     } catch (err) {
       logger.warn(err);
       dispatch({ type: "FETCH_ERROR", payload: err instanceof Error ? err : new Error("Unknown error") });

@@ -5,6 +5,7 @@ import {
   buildFormInitializationPayload,
   buildSessionAttributes,
   fetchFormInitialization,
+  mergeSessionAttributes,
 } from "../utils";
 import * as utils from "@/utils/form/entityConfig";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
@@ -431,6 +432,57 @@ describe("FormInitialization Utils - SessionMode Support", () => {
         "?MODE=SETSESSION&TAB_ID=test-tab&ROW_ID=record-123&PARENT_ID=parent-456",
         payload
       );
+    });
+  });
+
+  describe("mergeSessionAttributes", () => {
+    it("should preserve global keys and merge new attributes", () => {
+      const prevSession = {
+        $GlobalVar: "val1",
+        "#OrgID": "123",
+        _internal: "true",
+        adOrgId: "org-1",
+        StaleRecordField: "old-value",
+      } as any;
+
+      const newAttributes = {
+        NewField: "new-value",
+        Processed: "Y",
+      };
+
+      const result = mergeSessionAttributes(prevSession, newAttributes);
+
+      expect(result).toEqual({
+        $GlobalVar: "val1",
+        "#OrgID": "123",
+        _internal: "true",
+        adOrgId: "org-1",
+        NewField: "new-value",
+        Processed: "Y",
+      });
+
+      expect(result.StaleRecordField).toBeUndefined();
+    });
+
+    it("should handle empty previous session", () => {
+      const prevSession = {} as any;
+      const newAttributes = { field1: "val1" };
+
+      const result = mergeSessionAttributes(prevSession, newAttributes);
+
+      expect(result).toEqual({ field1: "val1" });
+    });
+
+    it("should handle empty new attributes", () => {
+      const prevSession = {
+        $Global: "val",
+        RecordField: "stale",
+      } as any;
+
+      const result = mergeSessionAttributes(prevSession, {});
+
+      expect(result).toEqual({ $Global: "val" });
+      expect(result.RecordField).toBeUndefined();
     });
   });
 });

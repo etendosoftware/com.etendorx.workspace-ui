@@ -1814,18 +1814,72 @@ const DynamicTable = ({
 
       editingRowUtils.removeEditingRow(rowId);
 
-      refetch().catch((error: unknown) => {
-        logger.warn("[InlineEditing] Failed to refetch after save:", error);
-      });
-
       const successMessage = editingRowData.isNew ? "Created" : "Saved";
       showSuccessModal(successMessage);
 
       if (screenReaderAnnouncer) {
         screenReaderAnnouncer.announceSaveOperation(rowId, true, editingRowData.isNew);
       }
+
+      // Fetch the updated single record to get color variables and complex fields back
+      (async () => {
+        try {
+          const extraProperties = Object.values(tab.fields || {})
+            .filter((f: any) => f.colorFieldName)
+            .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
+            .join(",");
+
+          const fetchId = editingRowData.isNew ? saveResult.data?.id : rowId;
+          if (!fetchId) {
+            await refetch();
+            return;
+          }
+
+          const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
+          const fullRecordResult = (await datasource.get(tab.entityName, {
+            criteria: [{ fieldName: "id", operator: "equals", value: fetchId }],
+            windowId: tab.window,
+            tabId: tab.id,
+            pageSize: 1,
+            startRow: 0,
+            endRow: 1,
+            ...(extraProperties ? { _extraProperties: extraProperties } : {}),
+          })) as { data: { response?: { data?: EntityData[] } } };
+
+          const completeRecord = fullRecordResult.data?.response?.data?.[0];
+          if (completeRecord) {
+            if (editingRowData.isNew) {
+              addRecordLocally?.(completeRecord);
+              removeRecordLocally?.(rowId);
+            } else {
+              updateRecordLocally?.(rowId, completeRecord);
+            }
+
+            setOptimisticRecords((prev) =>
+              prev.map((r) =>
+                String(r.id) === rowId || String(r.id) === String(completeRecord.id) ? completeRecord : r
+              )
+            );
+          } else {
+            await refetch();
+          }
+        } catch (error: unknown) {
+          logger.warn("[InlineEditing] Failed to fetch updated record after save:", error);
+          await refetch();
+        }
+      })();
     },
-    [editingRowUtils, refetch, showSuccessModal, screenReaderAnnouncer, preserveClientSideIdentifiers]
+    [
+      editingRowUtils,
+      refetch,
+      showSuccessModal,
+      screenReaderAnnouncer,
+      preserveClientSideIdentifiers,
+      tab,
+      updateRecordLocally,
+      addRecordLocally,
+      removeRecordLocally,
+    ]
   );
 
   /**
@@ -3272,7 +3326,7 @@ const DynamicTable = ({
       registerActions({
         refresh: refetch,
         filter: toggleImplicitFilters,
-        save: async () => {},
+        save: async () => false,
         columnFilters: toggleColumnsDropdown,
       });
     }

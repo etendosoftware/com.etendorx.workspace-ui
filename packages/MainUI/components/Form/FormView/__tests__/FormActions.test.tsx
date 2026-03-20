@@ -122,6 +122,7 @@ jest.mock("@/services/callouts", () => ({
       queueLength: 0,
       pendingCount: 0,
     })),
+    waitForIdle: jest.fn(() => Promise.resolve()),
   },
 }));
 

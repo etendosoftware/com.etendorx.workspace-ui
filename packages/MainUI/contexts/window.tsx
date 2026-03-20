@@ -569,7 +569,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       const newState = { ...prevState };
 
       // Check if the window being deleted is the active one
-      const windowToDelete: WindowState = newState[windowIdentifier];
+      const windowToDelete: WindowState | undefined = newState[windowIdentifier];
+      if (!windowToDelete) {
+        return newState;
+      }
       const wasActive = windowToDelete.isActive;
 
       // Get all window identifiers in order (implicit order from state)

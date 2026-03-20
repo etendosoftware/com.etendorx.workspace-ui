@@ -4,6 +4,7 @@ import { useFormContext } from "react-hook-form";
 import SearchOutlined from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import AttributeSetInstanceModal from "./AttributeSetInstanceModal";
+import { useProductAttributeSet } from "@/hooks/useProductAttributeSet";
 
 interface AttributeSetInstanceSelectorProps {
   field: Field;
@@ -125,7 +126,7 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
   );
 
   const formValues = getValues();
-  const attributeSetId = resolveAttributeSetId(formValues);
+  const formAttributeSetId = resolveAttributeSetId(formValues);
   let productId = resolveProductId(formValues);
 
   // Fallback for productId if we are in the Product window
@@ -133,6 +134,12 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
   if (!productId && entityName === "Product" && formValues.id) {
     productId = String(formValues.id);
   }
+
+  // Step 3 fallback: fetch attributeSetId from backend when form values don't contain it
+  const { attributeSetId: fetchedAttributeSetId, loading: fetchingAttributeSet } = useProductAttributeSet(
+    !formAttributeSetId ? productId : null
+  );
+  const attributeSetId = formAttributeSetId ?? fetchedAttributeSetId;
 
   // Resolve the current instance ID: prefer form value, then fallback to locally saved ID
   const resolvedInstanceId = value || lastSavedInstanceId || null;
@@ -175,6 +182,7 @@ const AttributeSetInstanceSelector: React.FC<AttributeSetInstanceSelectorProps> 
         currentInstanceId={resolvedInstanceId}
         productId={productId}
         field={field}
+        isResolvingAttributeSet={fetchingAttributeSet}
         data-testid={"AttributeSetInstanceModal__" + field.id}
       />
     </>

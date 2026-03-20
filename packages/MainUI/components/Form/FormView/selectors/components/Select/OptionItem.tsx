@@ -1,10 +1,12 @@
 import { memo } from "react";
 import CheckIcon from "@workspaceui/componentlibrary/src/assets/icons/check-circle-filled.svg";
+import { isColorString } from "@/utils/color/utils";
 
 const OptionItem = memo(
   ({
     id,
     label,
+    color,
     index,
     isSelected,
     isHighlighted,
@@ -14,12 +16,15 @@ const OptionItem = memo(
     id: string;
     label: string;
     data?: any;
+    color?: string;
     index: number;
     isSelected: boolean;
     isHighlighted: boolean;
     onOptionClick: (id: string, label: string) => void;
     onMouseEnter: (index: number) => void;
   }) => {
+    const resolvedColor = color && isColorString(color.trim().toLowerCase()) ? color.trim() : undefined;
+
     return (
       <li
         data-testid={`OptionItem__${id}`}
@@ -39,7 +44,17 @@ const OptionItem = memo(
          ${isHighlighted ? "bg-baseline-10" : ""}
          ${isSelected ? "bg-baseline-10 font-medium" : ""}
          hover:bg-baseline-10`}>
-        <span className={`truncate mr-2 ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>{label}</span>
+        <span
+          className={`truncate mr-2 flex items-center gap-2 ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>
+          {resolvedColor && (
+            <span
+              className="inline-block w-3 h-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: resolvedColor }}
+              aria-hidden="true"
+            />
+          )}
+          {label}
+        </span>
         {isSelected && (
           <CheckIcon
             alt="Selected Item"

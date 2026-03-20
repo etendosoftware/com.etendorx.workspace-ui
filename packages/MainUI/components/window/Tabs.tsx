@@ -79,6 +79,13 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
     (tab: TabType) => {
       // Immediate visual feedback
       setActiveTabId(tab.id);
+
+      // If clicking the currently active tab, just ensure it's visible without re-triggering heavy updates
+      if (current.id === tab.id) {
+        setActiveLevel(tab.tabLevel);
+        return;
+      }
+
       // Defer heavy content update so the UI responds instantly
       startTransition(() => {
         setCustomHeight(50);
@@ -89,7 +96,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
         setActiveTabsByLevel(tab);
       });
     },
-    [setActiveLevel, setActiveTabsByLevel]
+    [setActiveLevel, startTransition, setActiveTabsByLevel, current.id]
   );
 
   const handleDoubleClick = useCallback(
@@ -167,9 +174,11 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
           <div className="flex-1 bg-(--color-transparent-neutral-10) rounded-md" />
         </div>
       ) : (
-        <TabContextProvider tab={current} data-testid={`TabContextProvider__${current?.id ?? activeTabId ?? "6fa401"}`}>
-          <Tab tab={current} collapsed={collapsed} data-testid={`Tab__${current?.id ?? activeTabId ?? "6fa401"}`} />
-        </TabContextProvider>
+        <div className="flex flex-col flex-1 h-full min-h-0">
+          <TabContextProvider tab={current} data-testid={`TabContextProvider__${current?.id ?? activeTabId ?? "6fa401"}`}>
+            <Tab tab={current} collapsed={collapsed} data-testid={`Tab__${current?.id ?? activeTabId ?? "6fa401"}`} />
+          </TabContextProvider>
+        </div>
       )}
     </TabContainer>
   );

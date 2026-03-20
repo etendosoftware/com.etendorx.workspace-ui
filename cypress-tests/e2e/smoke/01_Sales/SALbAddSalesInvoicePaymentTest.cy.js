@@ -124,17 +124,32 @@ describe("Sales Order Automation - Complete Flow", () => {
     // Step 6: Navigate to Add Payment
     // -------------------------
     cy.contains("button", "Available Process").click();
-    cy.get(".rounded-2xl > :nth-child(1)").click();
+
+    cy.intercept("POST", /DefaultsProcessActionHandler/).as("processDefaults");
+    cy.contains("div.cursor-pointer", "Add Payment").should("be.visible").click();
+    cy.wait("@processDefaults", { timeout: 30000 }).its("response.statusCode").should("be.oneOf", [200, 304]);
+
+    cy.get("tbody.MuiTableBody-root tr.MuiTableRow-root", { timeout: 30000 }).should("have.length.gte", 1);
+
+    cy.get('div[aria-label="Action Regarding Document"]', { timeout: 10000 })
+      .should("be.visible")
+      .find('div[tabindex="0"]')
+      .should("not.be.disabled")
+      .click();
 
     // -------------------------
     // Step 7: Configure Payment Transaction
-    // -------------------------
+    // ------------------------
 
-    cy.get(
-      '[title="A drop down list box indicating the actions regarding document"] > .w-2\\/3 > .relative > .w-full > .text-sm'
-    ).click();
-    cy.wait(500);
-    cy.get('[data-testid="OptionItem__7AC4F4FF644247B7BD320BBF67C4F066"] > .truncate').click();
+    cy.get('div[data-dropdown-portal] li[data-testid^="OptionItem__"]', { timeout: 15000 }).should(
+      "have.length.gte",
+      1
+    );
+
+    cy.contains('li[data-testid^="OptionItem__"] span', "Process Received Payment(s)", { timeout: 20000 })
+      .should("be.visible")
+      .click();
+
     cy.get('[data-testid="ExecuteButton__761503"]').click();
 
     //verify payment transaction

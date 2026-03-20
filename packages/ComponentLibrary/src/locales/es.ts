@@ -298,6 +298,7 @@ const es = {
     messageTitle: "Proceso",
     completedSuccessfully: "Proceso completado exítosamente",
     processError: "Error mientras se cargaba la informacion del proceso",
+    warning: "Advertencia",
   },
   drawer: {
     recentlyViewed: "Visto recientemente",
@@ -607,7 +608,7 @@ const es = {
     calculateWeight: "Calcular Peso",
     generatePack: "Empacar",
     validationError: "Error al procesar",
-    wrongBarcode: "Código de barras incorrecto",
+    wrongBarcode: "El código de barras no coincide con ningún producto en el envío.",
     pendingToPack:
       "Todos los items deben estar completamente empacados antes de generar. Por favor completá las cantidades pendientes.",
     checkStatus: "Ver estado aquí",

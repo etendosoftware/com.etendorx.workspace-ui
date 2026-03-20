@@ -216,10 +216,6 @@ export function useDatasource({
       noActiveFilter: true,
     };
 
-    if (allCriteria.length > 0) {
-      finalParams.criteria = allCriteria;
-    }
-
     return finalParams;
   }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, activeColumnFilters]);
 
@@ -294,8 +290,11 @@ export function useDatasource({
   }, [entity, page, pageSize, queryParams, skip, memoizedTreeOptions, isImplicitFilterApplied, activeColumnFilters]);
 
   useEffect(() => {
-    reinit();
-  }, [activeColumnFilters, searchQuery, reinit]);
+    // Reset pagination but keep existing records visible until new data arrives,
+    // avoiding the blank-grid flash that reinit() would cause.
+    setPage(1);
+    setHasMoreRecords(true);
+  }, [activeColumnFilters, searchQuery]);
 
   const refetch = useCallback(
     async (options?: { silent?: boolean }) => {

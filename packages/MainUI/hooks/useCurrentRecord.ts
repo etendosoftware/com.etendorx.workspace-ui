@@ -123,6 +123,8 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
           windowId: tab.window,
           tabId: tab.id,
           pageSize: 1,
+          startRow: 0,
+          endRow: 1,
           // Request property field values via _extraProperties. The backend returns them
           // under "$"-format keys (e.g. "file$type").
           ...(extraProperties && { extraProperties }),

@@ -104,7 +104,7 @@ describe("Tabs - pending state skeleton", () => {
     setupWindowParams();
   });
 
-  it("renders skeleton content when transition is pending", () => {
+  it("renders pending opacity style when transition is pending", () => {
     renderTabsComponent(tabs);
 
     expect(screen.getByTestId("tab-container")).toBeInTheDocument();
