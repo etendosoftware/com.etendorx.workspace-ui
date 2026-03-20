@@ -38,8 +38,8 @@ describe("useFormInitialization", () => {
   const mockTab = {
     id: "tabId",
     fields: {
-      id: { column: { keyColumn: true } }
-    }
+      id: { column: { keyColumn: true } },
+    },
   } as any;
 
   const mockSetSession = jest.fn();
@@ -98,7 +98,7 @@ describe("useFormInitialization", () => {
       updatedBy$_identifier: "User2",
     };
     (useCurrentRecord as jest.Mock).mockReturnValue({ record: mockRecord, loading: false });
-    
+
     const mockData = { auxiliaryInputValues: {} };
     (fetchFormInitialization as jest.Mock).mockResolvedValue(mockData);
 
@@ -108,10 +108,12 @@ describe("useFormInitialization", () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(result.current.formInitialization).toEqual(expect.objectContaining({
-      creationDate: "2023-01-01",
-      createdBy$_identifier: "User1",
-    }));
+    expect(result.current.formInitialization).toEqual(
+      expect.objectContaining({
+        creationDate: "2023-01-01",
+        createdBy$_identifier: "User1",
+      })
+    );
   });
 
   it("should refetch when manually triggered", async () => {

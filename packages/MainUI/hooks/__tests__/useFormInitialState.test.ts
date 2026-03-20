@@ -34,16 +34,16 @@ describe("useFormInitialState", () => {
       propField: {
         hqlName: "propField",
         inputName: "inp_propertyField_type_Type",
-        column: { propertyPath: "file.type" }
-      }
-    }
+        column: { propertyPath: "file.type" },
+      },
+    },
   } as any;
 
   beforeEach(() => {
     jest.clearAllMocks();
     (useTabContext as jest.Mock).mockReturnValue({ tab: mockTab });
     (getFieldsByColumnName as jest.Mock).mockReturnValue({
-      COL1: mockTab.fields.field1
+      COL1: mockTab.fields.field1,
     });
     (useFormParent as jest.Mock).mockReturnValue({ parentId: "123" });
   });
@@ -56,46 +56,50 @@ describe("useFormInitialState", () => {
   it("should process column values correctly", () => {
     const formInit = {
       columnValues: {
-        COL1: { value: "val1", identifier: "ID1" }
-      }
+        COL1: { value: "val1", identifier: "ID1" },
+      },
     } as any;
 
     const { result } = renderHook(() => useFormInitialState(formInit));
 
-    expect(result.current).toEqual(expect.objectContaining({
-      field1: "val1",
-      field1$_identifier: "ID1",
-      parentId: "123"
-    }));
+    expect(result.current).toEqual(
+      expect.objectContaining({
+        field1: "val1",
+        field1$_identifier: "ID1",
+        parentId: "123",
+      })
+    );
   });
 
   it("should handle property fields by stripping 'inp' prefix", () => {
     const formInit = {
       columnValues: {
-        _propertyField_type_Type: { value: "propVal", identifier: "PropID" }
-      }
+        _propertyField_type_Type: { value: "propVal", identifier: "PropID" },
+      },
     } as any;
 
     const { result } = renderHook(() => useFormInitialState(formInit));
 
-    expect(result.current).toEqual(expect.objectContaining({
-      propField: "propVal",
-      propField$_identifier: "PropID"
-    }));
+    expect(result.current).toEqual(
+      expect.objectContaining({
+        propField: "propVal",
+        propField$_identifier: "PropID",
+      })
+    );
   });
 
   it("should convert boolean values from Etendo format", () => {
     (getFieldsByColumnName as jest.Mock).mockReturnValue({
       BOOL_COL: {
         hqlName: "boolField",
-        column: { reference: "20" } // Boolean reference
-      }
+        column: { reference: "20" }, // Boolean reference
+      },
     });
 
     const formInit = {
       columnValues: {
-        BOOL_COL: { value: "Y" }
-      }
+        BOOL_COL: { value: "Y" },
+      },
     } as any;
 
     const { result } = renderHook(() => useFormInitialState(formInit));
@@ -103,8 +107,8 @@ describe("useFormInitialState", () => {
 
     const formInit2 = {
       columnValues: {
-        BOOL_COL: { value: "" }
-      }
+        BOOL_COL: { value: "" },
+      },
     } as any;
 
     const { result: result2 } = renderHook(() => useFormInitialState(formInit2));
@@ -116,22 +120,20 @@ describe("useFormInitialState", () => {
       columnValues: {
         COL1: {
           value: "val1",
-          entries: [{ id: "e1", _identifier: "Entry 1" }]
-        }
-      }
+          entries: [{ id: "e1", _identifier: "Entry 1" }],
+        },
+      },
     } as any;
 
     const { result } = renderHook(() => useFormInitialState(formInit));
 
-    expect(result.current?.field1$_entries).toEqual([
-      { id: "e1", label: "Entry 1" }
-    ]);
+    expect(result.current?.field1$_entries).toEqual([{ id: "e1", label: "Entry 1" }]);
   });
 
   it("should merge session attributes", () => {
     const formInit = {
       sessionAttributes: { sessionKey: "sessionVal" },
-      columnValues: {}
+      columnValues: {},
     } as any;
 
     const { result } = renderHook(() => useFormInitialState(formInit));

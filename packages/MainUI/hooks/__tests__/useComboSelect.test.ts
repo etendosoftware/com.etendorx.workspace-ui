@@ -16,7 +16,7 @@
  *************************************************************************
  */
 
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { useComboSelect } from "../useComboSelect";
 import { useTabContext } from "@/contexts/tab";
 import { useFormContext } from "react-hook-form";
@@ -62,7 +62,7 @@ describe("useComboSelect hook", () => {
 
     expect(datasource.client.request).toHaveBeenCalledWith("ds1", expect.any(Object));
     expect(result.current.records).toEqual([{ id: "1", name: "Rec 1" }]);
-    
+
     // NOTE: loading: false is not currently expected as the hook does not reset it
     // expect(result.current.loading).toBe(false);
   });

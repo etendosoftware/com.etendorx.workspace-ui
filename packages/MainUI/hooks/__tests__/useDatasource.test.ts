@@ -48,9 +48,9 @@ describe("useDatasource hook", () => {
     const { result } = renderHook(() => useDatasource({ entity: mockEntity }));
 
     expect(result.current.loading).toBe(true);
-    
+
     await waitFor(() => expect(result.current.loading).toBe(false));
-    
+
     expect(datasource.get).toHaveBeenCalledWith(mockEntity, expect.any(Object));
     expect(result.current.records).toEqual(mockRecords);
   });
@@ -61,7 +61,7 @@ describe("useDatasource hook", () => {
     const { result } = renderHook(() => useDatasource({ entity: mockEntity }));
 
     await waitFor(() => expect(result.current.loading).toBe(false));
-    
+
     expect(result.current.error).toBeDefined();
   });
 

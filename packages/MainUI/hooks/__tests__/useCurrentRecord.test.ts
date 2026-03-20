@@ -53,9 +53,7 @@ describe("useCurrentRecord", () => {
     const cachedRecord = { id: "record1", name: "test" };
     mockGraph.getRecord.mockReturnValue(cachedRecord);
 
-    const { result } = renderHook(() =>
-      useCurrentRecord({ tab: mockTab, recordId: "record1" })
-    );
+    const { result } = renderHook(() => useCurrentRecord({ tab: mockTab, recordId: "record1" }));
 
     expect(mockGraph.getRecord).toHaveBeenCalledWith(mockTab, "record1");
     expect(result.current.record).toEqual(cachedRecord);
@@ -75,15 +73,16 @@ describe("useCurrentRecord", () => {
 
     let hookResult: any;
     await act(async () => {
-      hookResult = renderHook(() =>
-        useCurrentRecord({ tab: mockTab, recordId: "record1" })
-      );
+      hookResult = renderHook(() => useCurrentRecord({ tab: mockTab, recordId: "record1" }));
     });
 
-    expect(datasource.get).toHaveBeenCalledWith("testEntity", expect.objectContaining({
-      criteria: [{ fieldName: "id", operator: "equals", value: "record1" }]
-    }));
-    
+    expect(datasource.get).toHaveBeenCalledWith(
+      "testEntity",
+      expect.objectContaining({
+        criteria: [{ fieldName: "id", operator: "equals", value: "record1" }],
+      })
+    );
+
     expect(hookResult.result.current.record).toEqual(fetchedRecord);
     expect(hookResult.result.current.loading).toBe(false);
   });
@@ -95,12 +94,12 @@ describe("useCurrentRecord", () => {
         field1: {
           displayed: true,
           hqlName: "field1",
-          column: { propertyPath: "file.type" }
-        }
-      }
+          column: { propertyPath: "file.type" },
+        },
+      },
     };
 
-    const fetchedRecord = { id: "record1", "file$type": "RF" };
+    const fetchedRecord = { id: "record1", file$type: "RF" };
     (datasource.get as jest.Mock).mockResolvedValue({
       data: {
         response: {
@@ -111,16 +110,17 @@ describe("useCurrentRecord", () => {
 
     let hookResult: any;
     await act(async () => {
-      hookResult = renderHook(() =>
-        useCurrentRecord({ tab: tabWithProps, recordId: "record1" })
-      );
+      hookResult = renderHook(() => useCurrentRecord({ tab: tabWithProps, recordId: "record1" }));
     });
 
     expect(mockGraph.getRecord).not.toHaveBeenCalled();
-    expect(datasource.get).toHaveBeenCalledWith("testEntity", expect.objectContaining({
-      extraProperties: "file.type"
-    }));
-    
+    expect(datasource.get).toHaveBeenCalledWith(
+      "testEntity",
+      expect.objectContaining({
+        extraProperties: "file.type",
+      })
+    );
+
     // Check normalization
     expect(hookResult.result.current.record).toEqual({ id: "record1", field1: "RF" });
   });
@@ -131,9 +131,7 @@ describe("useCurrentRecord", () => {
 
     let hookResult: any;
     await act(async () => {
-      hookResult = renderHook(() =>
-        useCurrentRecord({ tab: mockTab, recordId: "record1" })
-      );
+      hookResult = renderHook(() => useCurrentRecord({ tab: mockTab, recordId: "record1" }));
     });
 
     expect(hookResult.result.current.record).toEqual({});

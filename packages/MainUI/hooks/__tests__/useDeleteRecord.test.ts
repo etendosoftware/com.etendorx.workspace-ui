@@ -68,10 +68,12 @@ describe("useDeleteRecord", () => {
       data: { response: { status: 0 } },
     });
 
-    const { result } = renderHook(() => useDeleteRecord({
-      tab: mockTab,
-      onSuccess: mockOnSuccess,
-    }));
+    const { result } = renderHook(() =>
+      useDeleteRecord({
+        tab: mockTab,
+        onSuccess: mockOnSuccess,
+      })
+    );
 
     await act(async () => {
       await result.current.deleteRecord({ id: "r1" });
@@ -88,10 +90,12 @@ describe("useDeleteRecord", () => {
       data: { response: { error: { message: "Error message" } } },
     });
 
-    const { result } = renderHook(() => useDeleteRecord({
-      tab: mockTab,
-      onError: mockOnError,
-    }));
+    const { result } = renderHook(() =>
+      useDeleteRecord({
+        tab: mockTab,
+        onError: mockOnError,
+      })
+    );
 
     await act(async () => {
       await result.current.deleteRecord({ id: "r1" });
@@ -107,10 +111,12 @@ describe("useDeleteRecord", () => {
       data: { response: { error: { message: "InvalidCSRFToken" } } },
     });
 
-    const { result } = renderHook(() => useDeleteRecord({
-      tab: mockTab,
-      onError: mockOnError,
-    }));
+    const { result } = renderHook(() =>
+      useDeleteRecord({
+        tab: mockTab,
+        onError: mockOnError,
+      })
+    );
 
     await act(async () => {
       await result.current.deleteRecord({ id: "r1" });

@@ -41,65 +41,31 @@ describe("TabButton", () => {
   });
 
   it("should render the tab name when tabLevel > 0", () => {
-    render(
-      <TabButton
-        tab={mockTab}
-        onClick={mockOnClick}
-        onDoubleClick={mockOnDoubleClick}
-        active={false}
-      />
-    );
+    render(<TabButton tab={mockTab} onClick={mockOnClick} onDoubleClick={mockOnDoubleClick} active={false} />);
     expect(screen.getByText("Tab Name")).toBeInTheDocument();
   });
 
   it("should render the window name when tabLevel === 0", () => {
     const rootTab = { ...mockTab, tabLevel: 0 };
-    render(
-      <TabButton
-        tab={rootTab}
-        onClick={mockOnClick}
-        onDoubleClick={mockOnDoubleClick}
-        active={false}
-      />
-    );
+    render(<TabButton tab={rootTab} onClick={mockOnClick} onDoubleClick={mockOnDoubleClick} active={false} />);
     expect(screen.getByText("Window Name")).toBeInTheDocument();
   });
 
   it("should render the tab title when isWindow is true", () => {
     render(
-      <TabButton
-        tab={mockTab}
-        onClick={mockOnClick}
-        onDoubleClick={mockOnDoubleClick}
-        active={false}
-        isWindow={true}
-      />
+      <TabButton tab={mockTab} onClick={mockOnClick} onDoubleClick={mockOnDoubleClick} active={false} isWindow={true} />
     );
     expect(screen.getByText("Tab Title")).toBeInTheDocument();
   });
 
   it("should call onClick when clicked", () => {
-    render(
-      <TabButton
-        tab={mockTab}
-        onClick={mockOnClick}
-        onDoubleClick={mockOnDoubleClick}
-        active={false}
-      />
-    );
+    render(<TabButton tab={mockTab} onClick={mockOnClick} onDoubleClick={mockOnDoubleClick} active={false} />);
     fireEvent.click(screen.getByRole("button"));
     expect(mockOnClick).toHaveBeenCalledWith(mockTab);
   });
 
   it("should call onDoubleClick when double clicked", () => {
-    render(
-      <TabButton
-        tab={mockTab}
-        onClick={mockOnClick}
-        onDoubleClick={mockOnDoubleClick}
-        active={false}
-      />
-    );
+    render(<TabButton tab={mockTab} onClick={mockOnClick} onDoubleClick={mockOnDoubleClick} active={false} />);
     fireEvent.doubleClick(screen.getByRole("button"));
     expect(mockOnDoubleClick).toHaveBeenCalledWith(mockTab);
   });

@@ -64,7 +64,7 @@ describe("useStateReconciliation", () => {
 
   it("should reconcile URL only: clear URL if record not found", () => {
     const { result } = renderHook(() => useStateReconciliation(defaultProps));
-    
+
     act(() => {
       result.current.reconcileStates("r3", []);
     });
@@ -74,7 +74,7 @@ describe("useStateReconciliation", () => {
 
   it("should reconcile Table only: update URL if record exists", () => {
     const { result } = renderHook(() => useStateReconciliation(defaultProps));
-    
+
     act(() => {
       result.current.reconcileStates(null, ["r1"]);
     });
@@ -87,7 +87,7 @@ describe("useStateReconciliation", () => {
     mockGraph.getSelected.mockReturnValue(null); // No parent selection
 
     const { result } = renderHook(() => useStateReconciliation(defaultProps));
-    
+
     act(() => {
       result.current.reconcileStates(null, ["r1"]);
     });
@@ -97,7 +97,7 @@ describe("useStateReconciliation", () => {
 
   it("should handle sync errors by clearing state", () => {
     const { result } = renderHook(() => useStateReconciliation(defaultProps));
-    
+
     act(() => {
       result.current.handleSyncError(new Error("test"), "context");
     });

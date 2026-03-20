@@ -49,9 +49,9 @@ describe("useQueryParams", () => {
     (useSearchParams as jest.Mock).mockReturnValue(params);
     const { result, rerender } = renderHook(() => useQueryParams());
     const firstResult = result.current;
-    
+
     rerender();
-    
+
     expect(result.current).toBe(firstResult);
   });
 });

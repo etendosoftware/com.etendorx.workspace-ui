@@ -16,12 +16,7 @@
  *************************************************************************
  */
 
-import {
-  getFieldReference,
-  sanitizeValue,
-  parseDynamicExpression,
-  buildPayloadByInputName,
-} from "../index";
+import { getFieldReference, sanitizeValue, parseDynamicExpression, buildPayloadByInputName } from "../index";
 import { FieldType } from "@workspaceui/api-client/src/api/types";
 
 describe("utils index", () => {
@@ -117,8 +112,8 @@ describe("utils index", () => {
       const fields = {
         propField: {
           inputName: "inp_propertyField_type_Type",
-          column: { propertyPath: "file.type" }
-        }
+          column: { propertyPath: "file.type" },
+        },
       } as any;
 
       const payload = buildPayloadByInputName(values, fields);

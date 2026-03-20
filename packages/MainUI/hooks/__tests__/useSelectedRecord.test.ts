@@ -85,7 +85,7 @@ describe("useSelectedRecord", () => {
 
   it("should not update if the event is for a different tab", () => {
     const { result } = renderHook(() => useSelectedRecord(mockTab));
-    
+
     act(() => {
       if (mockListeners["selected"]) {
         mockListeners["selected"].forEach((cb) => cb({ id: "otherTab" }, mockRecord));

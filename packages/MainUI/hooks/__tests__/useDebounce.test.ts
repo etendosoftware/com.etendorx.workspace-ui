@@ -58,12 +58,7 @@ describe("useDebounce", () => {
     const delay = 500;
     const { result } = renderHook(() => useDebounce(fn, delay));
 
-    let promise1: Promise<string> | undefined;
     let promise2: Promise<string> | undefined;
-
-    act(() => {
-      promise1 = result.current("test1");
-    });
 
     act(() => {
       jest.advanceTimersByTime(250);
@@ -87,7 +82,7 @@ describe("useDebounce", () => {
 
   it("should return undefined if the function is not provided", () => {
     const { result } = renderHook(() => useDebounce(undefined));
-    
+
     let returnValue: any;
     act(() => {
       returnValue = result.current("test");

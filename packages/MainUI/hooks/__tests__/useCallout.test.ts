@@ -46,13 +46,10 @@ describe("useCallout hook", () => {
 
     const { result } = renderHook(() => useCallout({ field: mockField }));
     const payload = { inpField1: "newVal" };
-    
+
     const response = await result.current(payload);
 
-    expect(Metadata.kernelClient.post).toHaveBeenCalledWith(
-      expect.stringContaining("TAB_ID=tab1"),
-      payload
-    );
+    expect(Metadata.kernelClient.post).toHaveBeenCalledWith(expect.stringContaining("TAB_ID=tab1"), payload);
     expect(response).toEqual({ columnValues: { f1: "v1" } });
   });
 

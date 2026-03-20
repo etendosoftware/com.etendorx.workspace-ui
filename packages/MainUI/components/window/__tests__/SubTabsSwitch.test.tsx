@@ -34,7 +34,11 @@ jest.mock("@workspaceui/componentlibrary/src/components", () => ({
 }));
 
 jest.mock("../../../ComponentLibrary/src/assets/icons/chevron-down.svg", () => {
-  return ({ onClick, "data-testid": testId }: any) => <div data-testid={testId} onClick={onClick}>Chevron</div>;
+  return ({ onClick, "data-testid": testId }: any) => (
+    <div data-testid={testId} onClick={onClick}>
+      Chevron
+    </div>
+  );
 });
 
 describe("SubTabsSwitch", () => {

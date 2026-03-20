@@ -91,7 +91,7 @@ describe("table utils", () => {
     it("should check __isParent and showDropIcon in normal mode", () => {
       const row = { original: { __isParent: true, showDropIcon: true } };
       expect(getCurrentRowCanExpand({ shouldUseTreeMode: false, row: row as any })).toBe(true);
-      
+
       const row2 = { original: { __isParent: true, showDropIcon: false } };
       expect(getCurrentRowCanExpand({ shouldUseTreeMode: false, row: row2 as any })).toBe(false);
     });
@@ -162,9 +162,9 @@ describe("table utils", () => {
         { id: "col2", columnName: "COL_2" },
       ] as any;
       const summaries = { col1: "sum", col2: "avg" };
-      
+
       const result = mapSummariesToBackend(summaries, baseColumns);
-      
+
       expect(result.summaryRequest).toEqual({ COL_1: "sum", COL_2: "avg" });
       expect(result.columnMapping).toEqual({ COL_1: "col1", COL_2: "col2" });
     });
@@ -175,22 +175,19 @@ describe("table utils", () => {
       const query = { criteria: [{ field: "f1", value: "v1" }] };
       const tableColumnFilters = [{ id: "f2", value: "v2" }] as any;
       const baseColumns = [] as any;
-      
+
       const mockColumnFilterCriteria = [{ field: "f2", operator: "eq", value: "v2" }];
       (LegacyColumnFilterUtils.createColumnFilterCriteria as jest.Mock).mockReturnValue(mockColumnFilterCriteria);
-      
+
       const criteria = getSummaryCriteria(query as any, tableColumnFilters, baseColumns);
-      
-      expect(criteria).toEqual([
-        { field: "f1", value: "v1" },
-        ...mockColumnFilterCriteria,
-      ]);
+
+      expect(criteria).toEqual([{ field: "f1", value: "v1" }, ...mockColumnFilterCriteria]);
     });
 
     it("should handle query criteria as single object", () => {
       const query = { criteria: { field: "f1", value: "v1" } };
       (LegacyColumnFilterUtils.createColumnFilterCriteria as jest.Mock).mockReturnValue([]);
-      
+
       const criteria = getSummaryCriteria(query as any, [], []);
       expect(criteria).toEqual([{ field: "f1", value: "v1" }]);
     });

@@ -79,9 +79,9 @@ describe("useDisplayLogic", () => {
   it("should compile and execute the expression", () => {
     const mockCompiledExpr = jest.fn(() => true);
     (compileExpression as jest.Mock).mockReturnValue(mockCompiledExpr);
-    
+
     const { result } = renderHook(() => useDisplayLogic({ field: mockField }));
-    
+
     expect(compileExpression).toHaveBeenCalledWith("someExpression");
     expect(mockCompiledExpr).toHaveBeenCalled();
     expect(result.current).toBe(true);
@@ -97,9 +97,11 @@ describe("useDisplayLogic", () => {
 
     renderHook(() => useDisplayLogic({ field: mockField, values: extraValues }));
 
-    expect(createSmartContext).toHaveBeenCalledWith(expect.objectContaining({
-      values: { ...record, ...formValues, ...extraValues },
-    }));
+    expect(createSmartContext).toHaveBeenCalledWith(
+      expect.objectContaining({
+        values: { ...record, ...formValues, ...extraValues },
+      })
+    );
   });
 
   it("should handle expression errors and return false", () => {
@@ -109,7 +111,7 @@ describe("useDisplayLogic", () => {
     (compileExpression as jest.Mock).mockReturnValue(mockCompiledExpr);
 
     const { result } = renderHook(() => useDisplayLogic({ field: mockField }));
-    
+
     expect(result.current).toBe(false);
   });
 
@@ -122,8 +124,10 @@ describe("useDisplayLogic", () => {
 
     renderHook(() => useDisplayLogic({ field: mockField }));
 
-    expect(createSmartContext).toHaveBeenCalledWith(expect.objectContaining({
-      values: { field1: "recordVal", field2: "formVal" },
-    }));
+    expect(createSmartContext).toHaveBeenCalledWith(
+      expect.objectContaining({
+        values: { field1: "recordVal", field2: "formVal" },
+      })
+    );
   });
 });

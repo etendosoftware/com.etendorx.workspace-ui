@@ -47,8 +47,8 @@ describe("tabUtils", () => {
         tabLevel: 1,
         parentColumns: ["ORDER_ID"],
         fields: {
-          ORDER_ID: {}
-        }
+          ORDER_ID: {},
+        },
       } as any;
       expect(shouldShowTab(tab, parentTab)).toBe(true);
     });
@@ -58,8 +58,8 @@ describe("tabUtils", () => {
         tabLevel: 1,
         parentColumns: ["custom_field"],
         fields: {
-          custom_field: { referencedEntity: "Order" }
-        }
+          custom_field: { referencedEntity: "Order" },
+        },
       } as any;
       expect(shouldShowTab(tab, parentTab)).toBe(true);
     });
@@ -68,7 +68,7 @@ describe("tabUtils", () => {
       const tab = {
         tabLevel: 1,
         parentColumns: ["MISMATCH"],
-        fields: {}
+        fields: {},
       } as any;
       expect(shouldShowTab(tab, parentTab)).toBe(false);
     });

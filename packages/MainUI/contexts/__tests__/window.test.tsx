@@ -79,9 +79,7 @@ describe("WindowProvider", () => {
   });
 
   it("should update state when recoveredWindows change", async () => {
-    const recoveredWindows = [
-      { windowIdentifier: "143_1", windowId: "143", isActive: true, tabs: {} }
-    ];
+    const recoveredWindows = [{ windowIdentifier: "143_1", windowId: "143", isActive: true, tabs: {} }];
     (useGlobalUrlStateRecovery as jest.Mock).mockReturnValue({
       recoveredWindows,
       isRecoveryLoading: false,
@@ -94,7 +92,7 @@ describe("WindowProvider", () => {
         <TestComponent onResult={() => {}} />
       </WindowProvider>
     );
-    
+
     await act(async () => {
       // Wait for effects
     });
@@ -131,9 +129,11 @@ describe("WindowProvider", () => {
       </WindowProvider>
     );
 
-    expect(mockOnResult).toHaveBeenCalledWith(expect.objectContaining({
-      setWindowActive: expect.any(Function),
-      getTableState: expect.any(Function),
-    }));
+    expect(mockOnResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        setWindowActive: expect.any(Function),
+        getTableState: expect.any(Function),
+      })
+    );
   });
 });
