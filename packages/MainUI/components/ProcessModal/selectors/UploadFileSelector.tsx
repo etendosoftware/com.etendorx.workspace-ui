@@ -55,7 +55,7 @@ export const UploadFileSelector = ({ field, disabled, onFileChange }: UploadFile
       />
 
       {selectedFile ? (
-        <div className="flex items-center gap-2 w-full h-9 px-3 rounded-lg border border-gray-200 bg-gray-50">
+        <div className="flex items-center gap-2 w-full h-10.5 px-3 py-2 border border-gray-200 rounded-md bg-gray-50">
           <FileTextIcon className="h-4 w-4 text-gray-500 flex-shrink-0" data-testid="UploadFileSelector__file_icon" />
           <span className="text-sm text-gray-700 truncate flex-1" data-testid="UploadFileSelector__filename">
             {selectedFile.name}
@@ -78,7 +78,7 @@ export const UploadFileSelector = ({ field, disabled, onFileChange }: UploadFile
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled}
-          className="flex items-center gap-2 h-9 px-3 rounded-lg border border-dashed border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 w-full h-10.5 px-3 py-2 border border-gray-200 rounded-md bg-white hover:bg-gray-50 hover:border-gray-400 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           data-testid="UploadFileSelector__select_button">
           <UploadIcon className="h-4 w-4 text-gray-400" data-testid="UploadFileSelector__upload_icon" />
           <span className="text-sm text-gray-500">{t("process.selectFile")}</span>
