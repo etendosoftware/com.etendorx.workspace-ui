@@ -401,7 +401,15 @@ const BaseSelectorComp = ({
 
       return true;
     },
-    [field.hqlName, field.column.callout, isFormInitializing, isSettingInitialValues, formMode, formState.dirtyFields, dependentPropertyFields.length]
+    [
+      field.hqlName,
+      field.column.callout,
+      isFormInitializing,
+      isSettingInitialValues,
+      formMode,
+      formState.dirtyFields,
+      dependentPropertyFields.length,
+    ]
   );
 
   const runCallout = useCallback(

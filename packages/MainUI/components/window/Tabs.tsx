@@ -175,7 +175,9 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
         </div>
       ) : (
         <div className="flex flex-col flex-1 h-full min-h-0">
-          <TabContextProvider tab={current} data-testid={`TabContextProvider__${current?.id ?? activeTabId ?? "6fa401"}`}>
+          <TabContextProvider
+            tab={current}
+            data-testid={`TabContextProvider__${current?.id ?? activeTabId ?? "6fa401"}`}>
             <Tab tab={current} collapsed={collapsed} data-testid={`Tab__${current?.id ?? activeTabId ?? "6fa401"}`} />
           </TabContextProvider>
         </div>
