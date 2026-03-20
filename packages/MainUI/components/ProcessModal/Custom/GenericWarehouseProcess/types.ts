@@ -56,6 +56,8 @@ export interface WarehouseProcessFeatures {
   calculateWeight?: boolean;
   /** Whether to track scannedInputs per line (default: false, used in picking) */
   trackScannedInputs?: boolean;
+  /** When true, use operationQty (alternative UOM) instead of quantity for qtyPending calculation */
+  useOperativeQty?: boolean;
 }
 
 // ---------------------------------------------------------------------------
