@@ -22,7 +22,7 @@ import type { SelectorCriteria, DefaultFilterResponse } from "../defaultFilters"
 
 describe("selectorColumns - getFilterType", () => {
   it("returns 'text' for undefined referenceId", () => {
-    expect(getFilterType(undefined)).toBe("text");
+    expect(getFilterType()).toBe("text");
   });
 
   it("returns 'boolean' for boolean reference ID", () => {
@@ -481,7 +481,7 @@ describe("selectorColumns - getHiddenDefaultCriteria", () => {
       },
     ];
 
-    const hidden = getHiddenDefaultCriteria(criteria, gridColumns, null, undefined);
+    const hidden = getHiddenDefaultCriteria(criteria, gridColumns, null);
 
     expect(hidden).toContainEqual(criteria[0]);
   });

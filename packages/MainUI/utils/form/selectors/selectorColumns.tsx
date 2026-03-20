@@ -123,11 +123,12 @@ export function buildSelectorColumnDefs(
       columnDef.Filter = () => {
         const currentFilter = columnFilters.find((f) => f.id === col.accessorKey);
         const filterState = columnFilterStates?.find((f) => f.id === col.accessorKey);
-        const selectedOptions = currentFilter
-          ? Array.isArray(currentFilter.value)
-            ? (currentFilter.value as FilterOption[])
-            : []
-          : (idFilterPreloadedOptions?.get(col.accessorKey) ?? []);
+        let selectedOptions: FilterOption[];
+        if (currentFilter) {
+          selectedOptions = Array.isArray(currentFilter.value) ? (currentFilter.value as FilterOption[]) : [];
+        } else {
+          selectedOptions = idFilterPreloadedOptions?.get(col.accessorKey) ?? [];
+        }
 
         const effectiveFilterState: ColumnFilterState = {
           id: col.accessorKey,
@@ -285,22 +286,13 @@ export interface BuildSelectorDatasourceParamsInput {
   gridColumns: SelectorColumn[];
 }
 
-export function buildSelectorDatasourceParams(input: BuildSelectorDatasourceParamsInput): Record<string, unknown> {
-  const {
-    field,
-    etendoContext,
-    language,
-    sorting,
-    currentTab,
-    formValues,
-    columnFilters,
-    defaultCriteria,
-    defaultFilterResponse,
-    gridColumns,
-  } = input;
+function buildDatasourceBaseParams(
+  field: BuildSelectorDatasourceParamsInput["field"],
+  etendoContext: Record<string, unknown>,
+  language: string | null
+): Record<string, unknown> {
   const selector = field.selector;
-
-  const params: Record<string, unknown> = {
+  return {
     ...etendoContext,
     isSorting: true,
     language,
@@ -311,32 +303,48 @@ export function buildSelectorDatasourceParams(input: BuildSelectorDatasourcePara
     targetProperty: field.hqlName || field.columnName,
     columnName: field.column?.dBColumnName || field.columnName,
   };
+}
 
-  if (currentTab?.fields) {
-    for (const tabField of Object.values(currentTab.fields)) {
-      if (tabField.inputName) {
-        const val = formValues[tabField.hqlName ?? ""] ?? formValues[tabField.inputName] ?? formValues[tabField.id];
-        if (val !== undefined && val !== null) {
-          params[tabField.inputName] = String(val);
-        }
+function applyTabFieldValues(
+  params: Record<string, unknown>,
+  currentTab: BuildSelectorDatasourceParamsInput["currentTab"],
+  formValues: Record<string, unknown>
+): void {
+  if (!currentTab) return;
+
+  for (const tabField of Object.values(currentTab.fields)) {
+    if (tabField.inputName) {
+      const val = formValues[tabField.hqlName ?? ""] ?? formValues[tabField.inputName] ?? formValues[tabField.id];
+      if (val !== undefined && val !== null) {
+        params[tabField.inputName] = String(val);
       }
     }
   }
 
-  if (currentTab) {
-    params.windowId = currentTab.window;
-    params.tabId = currentTab.id;
-    params.inpwindowId = currentTab.window;
-    params.inpTabId = currentTab.id;
-    params.adTabId = currentTab.id;
-  }
+  params.windowId = currentTab.window;
+  params.tabId = currentTab.id;
+  params.inpwindowId = currentTab.window;
+  params.inpTabId = currentTab.id;
+  params.adTabId = currentTab.id;
+}
 
-  if (selector) {
-    for (const param of SELECTOR_SAFE_PARAMS) {
-      if (selector[param] !== undefined && selector[param] !== null) {
-        params[param] = selector[param];
-      }
+function applySelectorParams(params: Record<string, unknown>, selector: Record<string, unknown>): void {
+  for (const param of SELECTOR_SAFE_PARAMS) {
+    if (selector[param] !== undefined && selector[param] !== null) {
+      params[param] = selector[param];
     }
+  }
+}
+
+export function buildSelectorDatasourceParams(input: BuildSelectorDatasourceParamsInput): Record<string, unknown> {
+  const { field, etendoContext, language, sorting, currentTab, formValues, columnFilters, defaultCriteria, defaultFilterResponse, gridColumns } = input;
+
+  const params = buildDatasourceBaseParams(field, etendoContext, language);
+
+  applyTabFieldValues(params, currentTab, formValues);
+
+  if (field.selector) {
+    applySelectorParams(params, field.selector);
   }
 
   if (sorting.length > 0) {
@@ -346,12 +354,7 @@ export function buildSelectorDatasourceParams(input: BuildSelectorDatasourcePara
   if (params.inpadOrgId && !params._org) params._org = params.inpadOrgId;
 
   const activeFilterIds = new Set(columnFilters.map((f) => f.id));
-  const hiddenCriteria = getHiddenDefaultCriteria(
-    defaultCriteria ?? [],
-    gridColumns,
-    defaultFilterResponse,
-    activeFilterIds
-  );
+  const hiddenCriteria = getHiddenDefaultCriteria(defaultCriteria ?? [], gridColumns, defaultFilterResponse, activeFilterIds);
   if (hiddenCriteria.length > 0) {
     params.criteria = hiddenCriteria;
   }

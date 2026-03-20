@@ -10,6 +10,7 @@ import {
 } from "@/utils/form/selectors/defaultFilters";
 import { preloadFiltersFromCriteria } from "@/utils/form/selectors/selectorColumns";
 import { logger } from "@/utils/logger";
+import { buildSelectorDefaultContext } from "@/utils/form/selectors/utils";
 
 interface UseSelectorDefaultCriteriaParams {
   field: Field;
@@ -50,35 +51,7 @@ export function useSelectorDefaultCriteria({
 
     const fetchDefaults = async () => {
       try {
-        const values = getValues();
-        const context: Record<string, unknown> = {};
-
-        if (currentTab?.fields) {
-          for (const tabField of Object.values(currentTab.fields)) {
-            const f = tabField as Record<string, unknown>;
-            if (f.inputName) {
-              const val = values[f.hqlName as string] ?? values[f.inputName as string] ?? values[f.id as string];
-              context[f.inputName as string] = val === "" || val === undefined ? null : val;
-            }
-          }
-        }
-
-        if (currentTab) {
-          context.inpTabId = currentTab.id;
-          context.inpwindowId = currentTab.window;
-          context.inpTableId = currentTab.table;
-        }
-
-        if (session) {
-          for (const [key, value] of Object.entries(session)) {
-            if (!(key in context)) {
-              context[key] = value === "" ? null : value;
-            }
-          }
-        }
-
-        context._isFilterByIdSupported = true;
-
+        const context = buildSelectorDefaultContext(getValues(), currentTab, session);
         const response = await fetchSelectorDefaultFilters(selectorDefinitionId, context);
 
         if (!cancelled) {

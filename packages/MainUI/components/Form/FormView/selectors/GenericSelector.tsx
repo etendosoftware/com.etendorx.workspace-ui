@@ -81,6 +81,56 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
     effectiveField.selector?.datasourceName === "ProductStockView" ||
     (PRODUCT_STOCK_VIEW_REFERENCE_IDS as readonly string[]).includes(effectiveField.column.referenceSearchKey);
 
+  const handleProcessClick = useCallback(async () => {
+    const processId = effectiveField.selector?.processDefinitionId as string | undefined;
+    if (!processId) return;
+
+    try {
+      const response = await Metadata.client.post(`meta/process/${processId}`);
+      if (response.ok && response.data) {
+        const processData = response.data;
+        const name = processData.name || effectiveField.name || "";
+
+        const button = {
+          ...effectiveField,
+          id: effectiveField.id,
+          name,
+          action: "P",
+          enabled: true,
+          visible: true,
+          processId,
+          buttonText: name,
+          buttonRefList: [],
+          processInfo: {
+            loadFunction: processData.loadFunction || "",
+            searchKey: processData.searchKey || "",
+            clientSideValidation: processData.clientSideValidation || "",
+            _entityName: processData._entityName || "OBUIAPP_Process",
+            id: processId,
+            name,
+            javaClassName: processData.javaClassName || "",
+            parameters: [],
+          },
+          processDefinition: {
+            id: processId,
+            name,
+            description: processData.description || "",
+            javaClassName: processData.javaClassName || "",
+            parameters: processData.parameters || {},
+            onLoad: processData.onLoad || "",
+            onProcess: processData.onProcess || "",
+            ...processData,
+          },
+        } as unknown as ProcessDefinitionButton;
+
+        setProcessButtonData(button);
+        setIsProcessModalOpen(true);
+      }
+    } catch (error) {
+      console.error("Failed to load process definition:", error);
+    }
+  }, [effectiveField]);
+
   if (isProductStockModal) {
     return (
       <ProductStockModalSelector
@@ -173,56 +223,6 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   })();
 
   const { hasTableRelated, hasProcessDefinitionRelated } = effectiveField.selector || {};
-
-  const handleProcessClick = useCallback(async () => {
-    const processId = effectiveField.selector?.processDefinitionId as string | undefined;
-    if (!processId) return;
-
-    try {
-      const response = await Metadata.client.post(`meta/process/${processId}`);
-      if (response.ok && response.data) {
-        const processData = response.data;
-        const name = processData.name || effectiveField.name || "";
-
-        const button = {
-          ...effectiveField,
-          id: effectiveField.id,
-          name,
-          action: "P",
-          enabled: true,
-          visible: true,
-          processId,
-          buttonText: name,
-          buttonRefList: [],
-          processInfo: {
-            loadFunction: processData.loadFunction || "",
-            searchKey: processData.searchKey || "",
-            clientSideValidation: processData.clientSideValidation || "",
-            _entityName: processData._entityName || "OBUIAPP_Process",
-            id: processId,
-            name,
-            javaClassName: processData.javaClassName || "",
-            parameters: [],
-          },
-          processDefinition: {
-            id: processId,
-            name,
-            description: processData.description || "",
-            javaClassName: processData.javaClassName || "",
-            parameters: processData.parameters || {},
-            onLoad: processData.onLoad || "",
-            onProcess: processData.onProcess || "",
-            ...processData,
-          },
-        } as unknown as ProcessDefinitionButton;
-
-        setProcessButtonData(button);
-        setIsProcessModalOpen(true);
-      }
-    } catch (error) {
-      console.error("Failed to load process definition:", error);
-    }
-  }, [effectiveField]);
 
   const handleSelect = (record: EntityData) => {
     // Dynamic extraction: The selector metadata explicitly defines which column holds the true ID
