@@ -53,7 +53,6 @@ export const UploadFileSelector = ({ field, disabled, onFileChange }: UploadFile
         disabled={disabled}
         data-testid="UploadFileSelector__input"
       />
-
       {selectedFile ? (
         <div className="flex items-center gap-2 w-full h-10.5 px-3 py-2 border border-gray-200 rounded-md bg-gray-50">
           <FileTextIcon className="h-4 w-4 text-gray-500 flex-shrink-0" data-testid="UploadFileSelector__file_icon" />
@@ -69,7 +68,7 @@ export const UploadFileSelector = ({ field, disabled, onFileChange }: UploadFile
               onClick={handleRemove}
               className="p-0.5 rounded hover:bg-gray-200 transition-colors cursor-pointer border-none bg-transparent"
               data-testid="UploadFileSelector__remove">
-              <XIcon className="h-3.5 w-3.5 text-gray-400" />
+              <XIcon className="h-3.5 w-3.5 text-gray-400" data-testid={"XIcon__" + field.id} />
             </button>
           )}
         </div>
