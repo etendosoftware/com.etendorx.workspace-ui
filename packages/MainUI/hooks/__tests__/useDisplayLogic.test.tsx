@@ -18,6 +18,7 @@
 import { renderHook } from "@testing-library/react";
 import useDisplayLogic from "../useDisplayLogic";
 import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
+import { createMockField as baseCreateMockField, createMockTab as baseCreateMockTab } from "@/utils/tests/mockHelpers";
 
 // Mock compileExpression — returns a jest.fn() so individual tests can override its return value
 const mockCompiledExpr = jest.fn();
@@ -54,65 +55,15 @@ const EXPR_IS_ACTIVE_Y = "OB.Utilities.getValue(x,'isActive')=='Y'";
 const EXPR_USER_HAS_NAME_1 = "OB.Utilities.getValue(x,'UserHasName')=='1'";
 
 // Helpers
-const createMockField = (overrides: Partial<Field>): Field =>
-  ({
-    id: "mock-id",
-    hqlName: "mockField",
-    name: "Mock Field",
-    inputName: "mockField",
-    columnName: "MOCK_FIELD",
-    process: "",
-    isMandatory: false,
-    displayed: true,
-    isReadOnly: false,
-    shownInStatusBar: false,
-    isParent: false,
-    isTransient: false,
-    seqno: 0,
-    startRow: 0,
-    startRowStandardWindow: 0,
-    updatable: true,
-    isActive: true,
-    column: { reference: "10" },
-    firstFocused: false,
-    isEncrypted: false,
-    isSecondaryKey: false,
-    isSortable: false,
-    isStoredInSession: false,
-    isSummary: false,
-    maxLength: 0,
-    displayLength: 0,
-    callout: "",
-    defaultValue: "",
-    descriptionField: "",
+const createMockField = (overrides: Partial<Field> = {}): Field =>
+  baseCreateMockField({
     displayLogicExpression: "",
     mandatoryLogicExpression: "",
     readOnlyLogicExpression: "",
-    validationCode: "",
-    valueMapValueExpression: "",
-    inpColumnName: "",
     ...overrides,
   }) as Field;
 
-const createMockTab = (overrides: Partial<Tab> = {}): Tab => ({
-  id: "mock-tab",
-  name: "Mock Tab",
-  title: "Mock Tab Title",
-  window: "mock-window",
-  entityName: "MockEntity",
-  uIPattern: "STD" as const,
-  parentColumns: [],
-  table: "mock_table",
-  tabLevel: 0,
-  _identifier: "mock-identifier",
-  records: {},
-  hqlfilterclause: "",
-  hqlwhereclause: "",
-  sQLWhereClause: "",
-  module: "mock-module",
-  fields: {},
-  ...overrides,
-});
+const createMockTab = (overrides: Partial<Tab> = {}): Tab => baseCreateMockTab(overrides);
 
 const renderDisplayLogic = (overrides: Partial<Field> = {}) => {
   const field = createMockField({ displayed: true, ...overrides });
