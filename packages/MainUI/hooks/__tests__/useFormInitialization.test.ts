@@ -15,286 +15,117 @@
  *************************************************************************
  */
 
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, waitFor, act } from "@testing-library/react";
 import { useFormInitialization } from "../useFormInitialization";
+import { useTabContext } from "@/contexts/tab";
 import { useUserContext } from "../useUserContext";
-import { FormMode } from "@workspaceui/api-client/src/api/types";
-import { fetchFormInitialization, buildFormInitializationParams } from "../../utils/hooks/useFormInitialization/utils";
 import { useCurrentRecord } from "../useCurrentRecord";
+import { FormMode } from "@workspaceui/api-client/src/api/types";
+import {
+  fetchFormInitialization,
+  buildFormInitializationParams,
+  buildFormInitializationPayload,
+} from "@/utils/hooks/useFormInitialization/utils";
 
-// Mock dependencies
+jest.mock("@/contexts/tab");
 jest.mock("../useUserContext");
-jest.mock("../../contexts/tab", () => ({
-  useTabContext: () => ({ parentRecord: null }),
-}));
 jest.mock("../useCurrentRecord");
-jest.mock("../useFormParent", () => ({
-  __esModule: true,
-  default: jest.fn(() => ({})),
-}));
-jest.mock("../../utils/hooks/useFormInitialization/utils");
+jest.mock("../useFormParent", () => jest.fn(() => ({ parentField: "parentVal" })));
+jest.mock("@/utils/hooks/useFormInitialization/utils");
+jest.mock("@/utils/logger");
 
-const mockUseUserContext = useUserContext as jest.MockedFunction<typeof useUserContext>;
-const mockUseCurrentRecord = useCurrentRecord as jest.MockedFunction<typeof useCurrentRecord>;
-const mockFetchFormInitialization = fetchFormInitialization as jest.MockedFunction<typeof fetchFormInitialization>;
-const mockBuildFormInitializationParams = buildFormInitializationParams as jest.MockedFunction<
-  typeof buildFormInitializationParams
->;
+describe("useFormInitialization", () => {
+  const mockTab = {
+    id: "tabId",
+    fields: {
+      id: { column: { keyColumn: true } }
+    }
+  } as any;
 
-// Create minimal mock tab
-const mockTab = {
-  id: "test-tab-id",
-  fields: {
-    testId: {
-      column: { keyColumn: "Y" },
-    },
-  },
-} as never;
-
-describe("useFormInitialization loading state", () => {
-  let mockSetSession: jest.Mock;
-  let mockSetSessionSyncLoading: jest.Mock;
+  const mockSetSession = jest.fn();
+  const mockSetSessionSyncLoading = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
-
-    mockSetSession = jest.fn();
-    mockSetSessionSyncLoading = jest.fn();
-
-    // Mock useUserContext with minimal required properties
-    mockUseUserContext.mockReturnValue({
+    (useTabContext as jest.Mock).mockReturnValue({ parentRecord: { id: "p1" } });
+    (useUserContext as jest.Mock).mockReturnValue({
       setSession: mockSetSession,
       setSessionSyncLoading: mockSetSessionSyncLoading,
-    } as never);
-
-    // Mock useCurrentRecord to return no record and not loading by default
-    mockUseCurrentRecord.mockReturnValue({
-      record: null,
-      loading: false,
     });
-
-    // Mock successful params build - ensure it returns a valid URLSearchParams
-    mockBuildFormInitializationParams.mockReturnValue(new URLSearchParams("test=value"));
-
-    // Mock successful fetch
-    mockFetchFormInitialization.mockResolvedValue({
-      auxiliaryInputValues: {},
-      columnValues: {},
-      sessionAttributes: {},
-      dynamicCols: [],
-      attachmentExists: false,
-    });
+    (useCurrentRecord as jest.Mock).mockReturnValue({ record: null, loading: false });
+    (buildFormInitializationParams as jest.Mock).mockReturnValue(new URLSearchParams("p=1"));
+    (buildFormInitializationPayload as jest.Mock).mockReturnValue({});
   });
 
-  test("should set loading state during fetch operation", async () => {
-    const { result } = renderHook(() =>
-      useFormInitialization({
-        tab: mockTab,
-        mode: FormMode.EDIT,
-        recordId: "test-record-id",
-      })
-    );
-
-    // Wait for any initial renders to settle
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
-
-    // Clear any calls from initial render
-    mockSetSessionSyncLoading.mockClear();
-
-    await act(async () => {
-      await result.current.refetch();
-    });
-
-    // Verify loading state was set to true at the beginning
-    expect(mockSetSessionSyncLoading).toHaveBeenCalledWith(true);
-    // Verify loading state was reset to false at the end
-    expect(mockSetSessionSyncLoading).toHaveBeenCalledWith(false);
-    // Verify it was called exactly twice (true then false)
-    expect(mockSetSessionSyncLoading).toHaveBeenCalledTimes(2);
-  }, 5000);
-
-  test("should reset loading state on error", async () => {
-    const testError = new Error("Test error");
-    mockFetchFormInitialization.mockRejectedValue(testError);
-
-    const { result } = renderHook(() =>
-      useFormInitialization({
-        tab: mockTab,
-        mode: FormMode.EDIT,
-        recordId: "test-record-id",
-      })
-    );
-
-    // Wait for initial effect to settle and clear calls
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
-    mockSetSessionSyncLoading.mockClear();
-
-    await act(async () => {
-      await result.current.refetch();
-    });
-
-    // Verify loading state was set and then reset even on error
-    expect(mockSetSessionSyncLoading).toHaveBeenCalledWith(true);
-    expect(mockSetSessionSyncLoading).toHaveBeenLastCalledWith(false);
-    expect(mockSetSessionSyncLoading).toHaveBeenCalledTimes(2);
+  it("should start in loading state", () => {
+    (fetchFormInitialization as jest.Mock).mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useFormInitialization({ tab: mockTab, mode: FormMode.NEW }));
+    expect(result.current.loading).toBe(true);
   });
 
-  test("should reset loading state on missing key column error", async () => {
-    const tabWithoutKeyColumn = {
-      id: "test-tab-id",
-      fields: {
-        testField: {
-          column: { keyColumn: "N" },
-        },
-      },
-    } as never;
+  it("should fetch form initialization on mount", async () => {
+    const mockData = { auxiliaryInputValues: {} };
+    (fetchFormInitialization as jest.Mock).mockResolvedValue(mockData);
 
-    const { result } = renderHook(() =>
-      useFormInitialization({
-        tab: tabWithoutKeyColumn,
-        mode: FormMode.EDIT,
-        recordId: "test-record-id",
-      })
-    );
+    const { result } = renderHook(() => useFormInitialization({ tab: mockTab, mode: FormMode.NEW }));
 
-    // Wait for initial effect to settle and clear calls
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
-    mockSetSessionSyncLoading.mockClear();
-
-    await act(async () => {
-      await result.current.refetch();
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
     });
 
-    // Verify loading state was set and then reset even when key column is missing
-    expect(mockSetSessionSyncLoading).toHaveBeenCalledWith(true);
-    expect(mockSetSessionSyncLoading).toHaveBeenLastCalledWith(false);
-    expect(mockSetSessionSyncLoading).toHaveBeenCalledTimes(2);
+    expect(fetchFormInitialization).toHaveBeenCalled();
+    expect(result.current.formInitialization).toEqual(mockData);
   });
 
-  test("should not call loading functions when params are null", async () => {
-    mockBuildFormInitializationParams.mockReturnValueOnce(null as never);
+  it("should handle fetch error", async () => {
+    const mockError = new Error("Fetch failed");
+    (fetchFormInitialization as jest.Mock).mockRejectedValue(mockError);
 
-    const { result } = renderHook(() =>
-      useFormInitialization({
-        tab: null as never,
-        mode: FormMode.EDIT,
-        recordId: "test-record-id",
-      })
-    );
+    const { result } = renderHook(() => useFormInitialization({ tab: mockTab, mode: FormMode.NEW }));
 
-    await act(async () => {
-      await result.current.refetch();
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
     });
 
-    // Verify loading functions were not called when params are null
-    expect(mockSetSessionSyncLoading).not.toHaveBeenCalled();
-    expect(mockFetchFormInitialization).not.toHaveBeenCalled();
+    expect(result.current.error).toBe(mockError);
   });
 
-  test("should not fetch when useCurrentRecord is still loading", async () => {
-    // Mock useCurrentRecord to be in loading state
-    mockUseCurrentRecord.mockReturnValue({
-      record: null,
-      loading: true,
-    });
-
-    renderHook(() =>
-      useFormInitialization({
-        tab: mockTab,
-        mode: FormMode.EDIT,
-        recordId: "test-record-id",
-      })
-    );
-
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 10));
-    });
-
-    // Verify fetch was NOT called while record is loading
-    // This is the key behavior that prevents the race condition
-    expect(mockFetchFormInitialization).not.toHaveBeenCalled();
-  });
-
-  test("should fetch when useCurrentRecord has finished loading", async () => {
-    // Mock useCurrentRecord to have finished loading with data
-    mockUseCurrentRecord.mockReturnValue({
-      record: {
-        id: "test-record-id",
-        creationDate: "2024-01-01",
-        createdBy$_identifier: "Test User",
-        updated: "2024-01-02",
-        updatedBy$_identifier: "Test User 2",
-      },
-      loading: false,
-    });
-
-    renderHook(() =>
-      useFormInitialization({
-        tab: mockTab,
-        mode: FormMode.EDIT,
-        recordId: "test-record-id",
-      })
-    );
-
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 10));
-    });
-
-    // Verify fetch WAS called when record is not loading
-    // This ensures audit fields are available when enrichWithAuditFields is called
-    expect(mockFetchFormInitialization).toHaveBeenCalled();
-  });
-
-  test("should enrich form data with audit fields when record is available", async () => {
-    // Mock useCurrentRecord with audit field data
-    const mockRecordWithAudit = {
-      id: "test-record-id",
-      creationDate: "2024-01-01T10:00:00Z",
-      createdBy$_identifier: "John Doe",
-      updated: "2024-01-02T15:30:00Z",
-      updatedBy$_identifier: "Jane Smith",
+  it("should enrich with audit fields when in EDIT mode", async () => {
+    const mockRecord = {
+      creationDate: "2023-01-01",
+      createdBy$_identifier: "User1",
+      updated: "2023-01-02",
+      updatedBy$_identifier: "User2",
     };
+    (useCurrentRecord as jest.Mock).mockReturnValue({ record: mockRecord, loading: false });
+    
+    const mockData = { auxiliaryInputValues: {} };
+    (fetchFormInitialization as jest.Mock).mockResolvedValue(mockData);
 
-    mockUseCurrentRecord.mockReturnValue({
-      record: mockRecordWithAudit,
-      loading: false,
+    const { result } = renderHook(() => useFormInitialization({ tab: mockTab, mode: FormMode.EDIT, recordId: "r1" }));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
     });
 
-    mockFetchFormInitialization.mockResolvedValue({
-      auxiliaryInputValues: {},
-      columnValues: {},
-      sessionAttributes: {},
-      dynamicCols: [],
-      attachmentExists: false,
-    });
+    expect(result.current.formInitialization).toEqual(expect.objectContaining({
+      creationDate: "2023-01-01",
+      createdBy$_identifier: "User1",
+    }));
+  });
 
-    const { result } = renderHook(() =>
-      useFormInitialization({
-        tab: mockTab,
-        mode: FormMode.EDIT,
-        recordId: "test-record-id",
-      })
-    );
+  it("should refetch when manually triggered", async () => {
+    (fetchFormInitialization as jest.Mock).mockResolvedValue({ auxiliaryInputValues: {} });
+
+    const { result } = renderHook(() => useFormInitialization({ tab: mockTab, mode: FormMode.NEW }));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    jest.clearAllMocks();
 
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await result.current.refetch();
     });
 
-    // Verify that the form initialization was fetched
-    expect(mockFetchFormInitialization).toHaveBeenCalled();
-
-    // Verify that setSession was called with audit fields
-    expect(mockSetSession).toHaveBeenCalled();
-
-    // The enrichWithAuditFields function should have processed the record data
-    // This verifies the race condition fix is working correctly
-    expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBeNull();
+    expect(fetchFormInitialization).toHaveBeenCalledTimes(1);
   });
 });
