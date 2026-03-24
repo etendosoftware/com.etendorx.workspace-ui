@@ -1,45 +1,65 @@
-const openSelectExpectedPaymentsWithRetry = (retries = 3) => {
-  cy.intercept("POST", "**/api/datasource**").as("selectExpectedPaymentsData");
+const closeProcessModal = () => {
+  cy.get("body").then(($b) => {
+    const retryBtn = $b.find("button:contains('Retry')");
+    if (retryBtn.length > 0) {
+      const closeBtn = $b.find("button:contains('Close')");
+      if (closeBtn.length > 0) {
+        cy.contains("button", "Close").click({ force: true });
+        return;
+      }
+    }
+    const closeX = $b.find("svg.lucide-x").closest("button");
+    if (closeX.length > 0) {
+      cy.wrap(closeX.first()).click({ force: true });
+      return;
+    }
+    const closeButton = $b.find("button:contains('Close')");
+    if (closeButton.length > 0) {
+      cy.contains("button", "Close").click({ force: true });
+      return;
+    }
+    cy.get("body").type("{esc}");
+  });
+};
 
+const openSelectExpectedPaymentsWithRetry = (retries = 3) => {
   cy.contains("button", "Available Process").click();
   cy.wait(500);
 
+  cy.intercept("POST", "**/api/datasource**").as(`selectPaymentsData_${retries}`);
+
   cy.contains("div.cursor-pointer", "Select Expected Payments").should("be.visible").click();
 
-  cy.wait("@selectExpectedPaymentsData", { timeout: 30000 }).then((interception) => {
-    cy.get("body").then(($body) => {
-      const hasError = $body.find(":contains('errors.missingData')").length > 0;
-      const hasRows = $body.find("tbody.MuiTableBody-root tr.MuiTableRow-root").length > 0;
+  cy.wait(`@selectPaymentsData_${retries}`, { timeout: 30000 });
 
-      if (hasError || !hasRows) {
-        if (retries <= 0) {
-          throw new Error("Select Expected Payments failed after retries: errors.missingData or no rows");
-        }
+  cy.wait(2000);
 
-        cy.log(`Select Expected Payments showed error/no data, retrying (${retries} left)...`);
+  cy.get("body").then(($body) => {
+    const bodyText = $body.text();
+    const hasError = bodyText.includes("errors.missingData") || bodyText.includes("missingData");
+    const dataRows = $body.find("tbody.MuiTableBody-root tr.MuiTableRow-root td").length;
+    const hasData = dataRows > 0;
 
-        cy.get("body").then(($b) => {
-          if ($b.find('button:contains("Close")').length > 0) {
-            cy.contains("button", "Close").click();
-          } else if ($b.find('[data-testid="close-button"]').length > 0) {
-            cy.get('[data-testid="close-button"]').click();
-          } else if ($b.find("button.MuiIconButton-root[aria-label='close']").length > 0) {
-            cy.get("button.MuiIconButton-root[aria-label='close']").click();
-          } else {
-            cy.get(".fixed.inset-0").click("topLeft", { force: true });
-          }
-        });
-
-        cy.wait(2000);
-
-        cy.get("button.toolbar-button-refresh:visible", { timeout: 10000 }).first().should("be.enabled").click();
-        cy.wait(2000);
-
-        openSelectExpectedPaymentsWithRetry(retries - 1);
-      } else {
-        cy.get("tbody.MuiTableBody-root tr.MuiTableRow-root", { timeout: 30000 }).should("have.length.gte", 1);
+    if (hasError || !hasData) {
+      if (retries <= 0) {
+        throw new Error("Select Expected Payments failed after retries: errors.missingData or no data rows");
       }
-    });
+
+      cy.log(`Select Expected Payments: error=${hasError}, dataRows=${dataRows}. Retrying (${retries} left)...`);
+
+      closeProcessModal();
+
+      cy.wait(2000);
+
+      cy.get("tbody.MuiTableBody-root", { timeout: 5000 }).should("not.exist");
+
+      cy.get("button.toolbar-button-refresh:visible", { timeout: 10000 }).first().should("be.enabled").click();
+      cy.wait(3000);
+
+      openSelectExpectedPaymentsWithRetry(retries - 1);
+    } else {
+      cy.log(`Select Expected Payments loaded successfully with ${dataRows} data cells`);
+    }
   });
 };
 
