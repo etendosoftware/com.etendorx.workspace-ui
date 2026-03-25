@@ -212,8 +212,7 @@ describe("FormActions", () => {
 
   describe("keyboard shortcuts", () => {
     // biome-ignore lint/suspicious/noExplicitAny: jest require
-    const toolbarContextMock = () =>
-      (require("@/contexts/ToolbarContext").useToolbarContext as jest.Mock);
+    const toolbarContextMock = () => require("@/contexts/ToolbarContext").useToolbarContext as jest.Mock;
 
     it("Ctrl+S calls onSave with showModal: true", async () => {
       const mockOnSave = jest.fn().mockResolvedValue(true);
@@ -221,9 +220,7 @@ describe("FormActions", () => {
 
       fireEvent.keyDown(document, { key: "s", ctrlKey: true });
 
-      await waitFor(() =>
-        expect(mockOnSave).toHaveBeenCalledWith({ showModal: true })
-      );
+      await waitFor(() => expect(mockOnSave).toHaveBeenCalledWith({ showModal: true }));
     });
 
     it("Ctrl+S fires even when an input has focus", async () => {
@@ -294,9 +291,7 @@ describe("FormActions", () => {
 
       fireEvent.keyDown(document, { key: "Escape" });
 
-      await waitFor(() =>
-        expect(mockOnSave).toHaveBeenCalledWith({ showModal: false })
-      );
+      await waitFor(() => expect(mockOnSave).toHaveBeenCalledWith({ showModal: false }));
       expect(mockClearTabFormState).toHaveBeenCalledWith("WIN1", "TAB1");
     });
 

@@ -36,18 +36,10 @@ function normalizeKey(event: KeyboardEvent): string {
 function isInputTarget(target: EventTarget | null): boolean {
   if (!target || !(target instanceof Element)) return false;
   const tag = target.tagName.toLowerCase();
-  return (
-    tag === "input" ||
-    tag === "textarea" ||
-    tag === "select" ||
-    target.getAttribute("contenteditable") === "true"
-  );
+  return tag === "input" || tag === "textarea" || tag === "select" || target.getAttribute("contenteditable") === "true";
 }
 
-export function useKeyboardShortcuts(
-  shortcuts: ShortcutMap,
-  enabled = true
-): void {
+export function useKeyboardShortcuts(shortcuts: ShortcutMap, enabled = true): void {
   const shortcutsRef = useRef(shortcuts);
   shortcutsRef.current = shortcuts;
 

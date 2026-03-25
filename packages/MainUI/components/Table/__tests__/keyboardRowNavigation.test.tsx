@@ -7,7 +7,7 @@ import { useCallback } from "react";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 
 // Helper to build a minimal EntityData record
-const makeRecord = (id: string): EntityData => ({ id } as EntityData);
+const makeRecord = (id: string): EntityData => ({ id }) as EntityData;
 
 // We test the row navigation logic by extracting it into a testable form.
 // The actual Table component wires these handlers into useKeyboardShortcuts.
@@ -73,9 +73,7 @@ describe("keyboard row navigation", () => {
   it("ArrowDown selects the next record", () => {
     const setRowSelection = jest.fn();
     const getRowSelection = () => ({ "1": true });
-    const { result } = renderHook(() =>
-      useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0)
-    );
+    const { result } = renderHook(() => useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0));
 
     act(() => result.current("down", makeEvent(insideElement)));
 
@@ -85,9 +83,7 @@ describe("keyboard row navigation", () => {
   it("ArrowUp selects the previous record", () => {
     const setRowSelection = jest.fn();
     const getRowSelection = () => ({ "2": true });
-    const { result } = renderHook(() =>
-      useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0)
-    );
+    const { result } = renderHook(() => useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0));
 
     act(() => result.current("up", makeEvent(insideElement)));
 
@@ -97,9 +93,7 @@ describe("keyboard row navigation", () => {
   it("ArrowDown on last record does nothing", () => {
     const setRowSelection = jest.fn();
     const getRowSelection = () => ({ "3": true });
-    const { result } = renderHook(() =>
-      useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0)
-    );
+    const { result } = renderHook(() => useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0));
 
     act(() => result.current("down", makeEvent(insideElement)));
 
@@ -109,9 +103,7 @@ describe("keyboard row navigation", () => {
   it("ArrowUp on first record does nothing", () => {
     const setRowSelection = jest.fn();
     const getRowSelection = () => ({ "1": true });
-    const { result } = renderHook(() =>
-      useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0)
-    );
+    const { result } = renderHook(() => useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0));
 
     act(() => result.current("up", makeEvent(insideElement)));
 
@@ -121,9 +113,7 @@ describe("keyboard row navigation", () => {
   it("does nothing when no row is selected", () => {
     const setRowSelection = jest.fn();
     const getRowSelection = () => ({});
-    const { result } = renderHook(() =>
-      useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0)
-    );
+    const { result } = renderHook(() => useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0));
 
     act(() => result.current("down", makeEvent(insideElement)));
 
@@ -133,9 +123,7 @@ describe("keyboard row navigation", () => {
   it("does nothing when in inline edit mode (editingRowsCount > 0)", () => {
     const setRowSelection = jest.fn();
     const getRowSelection = () => ({ "1": true });
-    const { result } = renderHook(() =>
-      useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 1)
-    );
+    const { result } = renderHook(() => useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 1));
 
     act(() => result.current("down", makeEvent(insideElement)));
 
@@ -148,9 +136,7 @@ describe("keyboard row navigation", () => {
     const outsideElement = document.createElement("div");
     document.body.appendChild(outsideElement);
 
-    const { result } = renderHook(() =>
-      useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0)
-    );
+    const { result } = renderHook(() => useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0));
 
     act(() => result.current("down", makeEvent(outsideElement)));
 
