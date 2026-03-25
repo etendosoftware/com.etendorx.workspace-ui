@@ -79,10 +79,7 @@ export const buildBaseFilterParams = (
   columnName: field.column?.dBColumnName || field.columnName,
 });
 
-export const applySelectorSafeParams = (
-  params: Record<string, unknown>,
-  selector: Record<string, unknown>
-): void => {
+export const applySelectorSafeParams = (params: Record<string, unknown>, selector: Record<string, unknown>): void => {
   for (const param of SELECTOR_SAFE_PARAMS) {
     if (param === "_extraProperties") continue;
     if (selector[param] !== undefined && selector[param] !== null) {
@@ -104,8 +101,7 @@ export const applyTabContextParams = (
   for (const tabField of Object.values(currentTab.fields)) {
     const f = tabField as unknown as Record<string, unknown>;
     if (f.inputName) {
-      const val =
-        formValues[f.hqlName as string] ?? formValues[f.inputName as string] ?? formValues[f.id as string];
+      const val = formValues[f.hqlName as string] ?? formValues[f.inputName as string] ?? formValues[f.id as string];
       if (val !== undefined && val !== null) {
         params[f.inputName as string] = String(val);
       }

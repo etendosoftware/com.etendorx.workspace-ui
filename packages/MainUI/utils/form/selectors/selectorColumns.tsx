@@ -337,7 +337,18 @@ function applySelectorParams(params: Record<string, unknown>, selector: Record<s
 }
 
 export function buildSelectorDatasourceParams(input: BuildSelectorDatasourceParamsInput): Record<string, unknown> {
-  const { field, etendoContext, language, sorting, currentTab, formValues, columnFilters, defaultCriteria, defaultFilterResponse, gridColumns } = input;
+  const {
+    field,
+    etendoContext,
+    language,
+    sorting,
+    currentTab,
+    formValues,
+    columnFilters,
+    defaultCriteria,
+    defaultFilterResponse,
+    gridColumns,
+  } = input;
 
   const params = buildDatasourceBaseParams(field, etendoContext, language);
 
@@ -354,7 +365,12 @@ export function buildSelectorDatasourceParams(input: BuildSelectorDatasourcePara
   if (params.inpadOrgId && !params._org) params._org = params.inpadOrgId;
 
   const activeFilterIds = new Set(columnFilters.map((f) => f.id));
-  const hiddenCriteria = getHiddenDefaultCriteria(defaultCriteria ?? [], gridColumns, defaultFilterResponse, activeFilterIds);
+  const hiddenCriteria = getHiddenDefaultCriteria(
+    defaultCriteria ?? [],
+    gridColumns,
+    defaultFilterResponse,
+    activeFilterIds
+  );
   if (hiddenCriteria.length > 0) {
     params.criteria = hiddenCriteria;
   }
