@@ -16,6 +16,7 @@
  */
 
 import { useCallback, useEffect, useState, useMemo } from "react";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useFormContext, useWatch } from "react-hook-form";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import type { SaveOptions } from "@/contexts/ToolbarContext";
@@ -42,7 +43,7 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode 
   const { isDirty } = formContext.formState;
 
   const { activeWindow, clearTabFormState } = useWindowContext();
-  const { registerActions, setSaveButtonState } = useToolbarContext();
+  const { registerActions, setSaveButtonState, saveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
   const { isFormInitializing, isSettingInitialValues } = useFormInitializationContext();
 
@@ -181,6 +182,26 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode 
   const handleNew = useCallback(() => {
     onNew();
   }, [onNew]);
+
+  const handleKeyboardSave = useCallback(async () => {
+    if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
+    await handleSave({ showModal: true });
+  }, [handleSave, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
+
+  const handleKeyboardEscape = useCallback(async () => {
+    if (saveButtonState.isSaving || saveButtonState.isCalloutLoading) return;
+    if (isDirty) {
+      const saved = await handleSave({ showModal: false });
+      if (!saved) return;
+    }
+    handleBack();
+  }, [isDirty, handleSave, handleBack, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
+
+  useKeyboardShortcuts({
+    "ctrl+s": { handler: handleKeyboardSave, allowInInputs: true },
+    "ctrl+n": { handler: handleNew, allowInInputs: true },
+    Escape: { handler: handleKeyboardEscape },
+  });
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: actions need to change every Tab change
   useEffect(() => {
