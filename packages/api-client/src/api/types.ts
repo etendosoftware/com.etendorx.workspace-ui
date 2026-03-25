@@ -52,6 +52,7 @@ export interface DatasourceParams {
   operationType?: "fetch" | "add" | "update" | "remove";
   isSorting?: boolean;
   isImplicitFilterApplied?: boolean;
+  isPickAndEdit?: boolean;
   operator?: "and" | "or";
   parentId?: string;
 }
@@ -173,6 +174,11 @@ export interface Field {
    * Only relevant for TABLEDIR/FK fields pointing to entities with a Color reference field.
    */
   colorFieldName?: string;
+  /**
+   * SmartClient client-side class name (e.g. "SalesOrderTabLink").
+   * When set, the field should be rendered as a navigable link in the grid.
+   */
+  clientclass?: string | null;
 }
 
 export interface Option<T extends string = string> {
@@ -211,6 +217,11 @@ export interface Column {
    * `{columnName}${colorFieldName}` in the row data.
    */
   colorFieldName?: string;
+  /**
+   * SmartClient client-side class name (e.g. "SalesOrderTabLink").
+   * When set, the column should be rendered as a navigable link in the grid.
+   */
+  clientclass?: string | null;
 }
 
 export interface MappedField {

@@ -132,6 +132,49 @@ export function getSortByString(
 }
 
 /**
+ * Resolves the sortBy string for the datasource options.
+ * Extracted to reduce cognitive complexity of the datasourceOptions memo.
+ */
+export function resolveSortBy(
+  sorting: MRT_SortingState,
+  rawColumns: Column[],
+  finalCriteria: unknown[],
+  tabOrderBy: string | undefined
+): string | undefined {
+  if (sorting.length > 0) {
+    return getSortByString(sorting, rawColumns, finalCriteria.length > 0);
+  }
+  const fallback = finalCriteria.length > 0 ? "-documentNo" : undefined;
+  return tabOrderBy ?? fallback;
+}
+
+/**
+ * Resets payment-related fields on a deselected record.
+ * Extracted to reduce cognitive complexity of handleRowSelection.
+ */
+export function buildDeselectedRecord(record: EntityData): { updated: EntityData; changed: boolean } {
+  let updated = record;
+  let changed = false;
+  if (updated.obSelected) {
+    updated = { ...updated, obSelected: false };
+    changed = true;
+  }
+  if (updated.payment !== undefined && updated.payment !== 0) {
+    updated = { ...updated, payment: 0 };
+    changed = true;
+  }
+  if (updated.amount !== undefined && updated.amount !== 0) {
+    updated = { ...updated, amount: 0 };
+    changed = true;
+  }
+  if (updated.paymentAmount !== undefined && updated.paymentAmount !== 0) {
+    updated = { ...updated, paymentAmount: 0 };
+    changed = true;
+  }
+  return { updated, changed };
+}
+
+/**
  * WindowReferenceGrid Component
  * Displays a grid of referenced records that can be selected
  */
@@ -344,7 +387,7 @@ export const resetLocalRecordFields = (record: EntityData): EntityData | null =>
 };
 
 // Logic extracted to reduce cognitive complexity of useEffect
-const syncGridSelectionToLocalRecords = (
+export const syncGridSelectionToLocalRecords = (
   externalSelection: any[],
   localRecords: EntityData[],
   setLocalRecords: (records: EntityData[]) => void
@@ -378,7 +421,7 @@ const syncGridSelectionToLocalRecords = (
 };
 
 // Helper to find valid matching record in grid
-const findMatchingRecord = (
+export const findMatchingRecord = (
   rawRecords: any[],
   parentContextId: string | undefined,
   contextDocNo: string | undefined
@@ -603,6 +646,7 @@ const WindowReferenceGrid = ({
   recordValues,
   originTab,
   showTitle = true,
+  onClose,
 }: WindowReferenceGridProps & { originTab?: Tab }) => {
   const { t } = useTranslation();
   // ... rest of component
@@ -613,6 +657,10 @@ const WindowReferenceGrid = ({
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [appliedTableFilters, setAppliedTableFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
+  // Persistent cache of all selected rows across pages and filter changes.
+  // Survives filter apply/remove and infinite-scroll page resets; cleared only when
+  // the user explicitly deselects a row or calls handleClearSelections.
+  const persistentSelectionRef = useRef<Map<string, EntityData>>(new Map());
   const [sorting, setSorting] = useState<MRT_SortingState>([]);
 
   // Merge recordValues (static context) with currentValues (live form state)
@@ -956,7 +1004,11 @@ const WindowReferenceGrid = ({
     }
 
     // 8. Handle sorting
-    const sortBy = getSortByString(sorting, stableRawColumns, finalCriteria.length > 0);
+    // When the user has sorted a column, use that; otherwise fall back to the tab's
+    // defined order-by clause (matching Classic's _orderBy on initial load), and
+    // finally to the documentNo fallback when criteria are active.
+    const tabOrderBy = stableWindowReferenceTab?.hqlorderbyclause || stableWindowReferenceTab?.sQLOrderByClause;
+    const sortBy = resolveSortBy(sorting, stableRawColumns, finalCriteria, tabOrderBy);
     if (sortBy) {
       options.sortBy = sortBy;
       options.isSorting = true;
@@ -965,6 +1017,11 @@ const WindowReferenceGrid = ({
     if (options.ad_org_id) {
       options._org = options.ad_org_id;
     }
+
+    // Required for OBPickAndExecuteDataSource to apply Pick & Execute-specific fetching logic
+    options.isPickAndEdit = true;
+    // Match Classic default: send true unless the user has explicitly toggled the filter off
+    options.isImplicitFilterApplied = isImplicitFilterApplied ?? true;
 
     return options;
   }, [
@@ -1082,6 +1139,7 @@ const WindowReferenceGrid = ({
       onLoadMoreFilterOptions: handleLoadMoreFilterOptions,
       columnFilterStates: advancedColumnFilters,
       tableColumnFilters: columnFilters,
+      onNavigate: onClose,
     }),
     [
       handleColumnFilterChange,
@@ -1090,6 +1148,7 @@ const WindowReferenceGrid = ({
       handleLoadMoreFilterOptions,
       advancedColumnFilters,
       columnFilters,
+      onClose,
     ]
   );
 
@@ -1178,7 +1237,7 @@ const WindowReferenceGrid = ({
         },
         Edit: StableGridCellEditorRenderer,
         dbColumnName: parameter.dBColumnName,
-        Cell: GridCellRenderer,
+        Cell: (col as any).Cell ?? GridCellRenderer,
       };
     });
 
@@ -1299,6 +1358,45 @@ const WindowReferenceGrid = ({
     }
   }, [rawRecords]);
 
+  // Initialize rowSelection from obSelected field when records arrive from the datasource.
+  // Classic sends obSelected=true for rows that were previously selected, so we pre-check them.
+  // This is generic: any Pick & Execute datasource can use obSelected to restore prior selection.
+  // We also consult persistentSelectionRef so selections from other pages (e.g. row 101 when
+  // currently showing page 1 after a filter change) are restored as soon as those rows scroll
+  // back into view.
+  useEffect(() => {
+    if (!rawRecords?.length) return;
+
+    // 1. Seed persistent cache from backend-flagged rows (obSelected=true).
+    for (const record of rawRecords) {
+      if (record.obSelected) {
+        persistentSelectionRef.current.set(String(record.id), record);
+      }
+    }
+
+    // 2. Rebuild MRT rowSelection for currently visible rows using the cache.
+    const initialSelection: MRT_RowSelectionState = {};
+    for (const record of rawRecords) {
+      if (persistentSelectionRef.current.has(String(record.id))) {
+        initialSelection[String(record.id)] = true;
+      }
+    }
+
+    const hasPersistentSelection = persistentSelectionRef.current.size > 0;
+    if (Object.keys(initialSelection).length === 0 && !hasPersistentSelection) return;
+
+    setRowSelection(initialSelection);
+
+    // 3. Send ALL persistently selected rows (including off-page ones) to the parent.
+    onSelectionChange((prev: GridSelectionStructure) => ({
+      ...prev,
+      [parameter.dBColumnName]: {
+        _selection: Array.from(persistentSelectionRef.current.values()),
+        _allRows: rawRecords,
+      },
+    }));
+  }, [rawRecords, onSelectionChange, parameter.dBColumnName]);
+
   // Ref to track last processed selection to prevent redundant updates
   const lastSelectionStringRef = useRef<string>("");
 
@@ -1404,19 +1502,24 @@ const WindowReferenceGrid = ({
         const recordId = String(record.id);
         const isSelected = newSelection[recordId];
 
-        // Aggressively reset amount to 0 if deselected, regardless of current value
-        // Also handle 'paymentAmount' field which is used by Credit grid in Classic
-        if (!isSelected) {
-          let changed = false;
-          if (record.amount !== undefined && record.amount !== 0) {
-            record = { ...record, amount: 0 };
-            changed = true;
+        if (isSelected) {
+          // Mirror Classic SmartClient: set obSelected=true and payment=expectedAmount when checked
+          const defaultPayment =
+            record.payment && Number(record.payment) !== 0
+              ? record.payment
+              : (record.expectedAmount ?? record.outstanding ?? 0);
+          if (!record.obSelected || record.payment !== defaultPayment) {
+            recordsChanged = true;
+            return { ...record, obSelected: true, payment: defaultPayment };
           }
-          if (record.paymentAmount !== undefined && record.paymentAmount !== 0) {
-            record = { ...record, paymentAmount: 0 };
-            changed = true;
+        } else {
+          // Aggressively reset amount to 0 if deselected, regardless of current value
+          // Also handle 'paymentAmount' field which is used by Credit grid in Classic
+          const { updated, changed } = buildDeselectedRecord(record);
+          if (changed) {
+            record = updated;
+            recordsChanged = true;
           }
-          if (changed) recordsChanged = true;
         }
         return record;
       });
@@ -1427,17 +1530,22 @@ const WindowReferenceGrid = ({
       }
       setRowSelection(newSelection);
 
-      // 3. Calculate selected subset from the NEW records
-      const selectedItems = newRecords.filter((record) => {
-        const recordId = String(record.id);
-        return newSelection[recordId];
-      });
+      // 3. Update the persistent cache for rows on the current page.
+      // Only rows currently in `records` are touched; off-page selections are preserved.
+      for (const record of newRecords) {
+        const id = String(record.id);
+        if (newSelection[id]) {
+          persistentSelectionRef.current.set(id, record);
+        } else {
+          persistentSelectionRef.current.delete(id);
+        }
+      }
 
-      // 4. Propagate to parent with the updated (zeroed) records
+      // 4. Propagate ALL persistently selected rows (including off-page) to the parent.
       onSelectionChange((prev: GridSelectionStructure) => ({
         ...prev,
         [parameter.dBColumnName]: {
-          _selection: selectedItems,
+          _selection: Array.from(persistentSelectionRef.current.values()),
           _allRows: newRecords,
         },
       }));
@@ -1446,6 +1554,7 @@ const WindowReferenceGrid = ({
   );
 
   const handleClearSelections = useCallback(() => {
+    persistentSelectionRef.current.clear();
     setRowSelection({});
     // Clear selections for this entityName
     onSelectionChange((prev: GridSelectionStructure) => ({
@@ -1496,7 +1605,23 @@ const WindowReferenceGrid = ({
       const newSelection = { ...rowSelection };
       newSelection[row.id] = !newSelection[row.id];
 
-      const selectedItems = records.filter((record) => {
+      // Mirror Classic SmartClient: update obSelected and payment on each record
+      const updatedRecords = records.map((record) => {
+        const rid = String(record.id);
+        if (newSelection[rid]) {
+          const defaultPayment =
+            record.payment && Number(record.payment) !== 0
+              ? record.payment
+              : (record.expectedAmount ?? record.outstanding ?? 0);
+          return { ...record, obSelected: true, payment: defaultPayment };
+        }
+        if (record.obSelected) {
+          return { ...record, obSelected: false, payment: 0 };
+        }
+        return record;
+      });
+
+      const selectedItems = updatedRecords.filter((record) => {
         const recordId = String(record.id);
         return newSelection[recordId];
       });
@@ -1508,7 +1633,7 @@ const WindowReferenceGrid = ({
         ...prev,
         [parameter.dBColumnName]: {
           _selection: selectedItems,
-          _allRows: records,
+          _allRows: updatedRecords,
         },
       }));
     },
@@ -1769,7 +1894,10 @@ const WindowReferenceGrid = ({
 
         if (isReadOnly) {
           // For Read-Only fields, override the Cell renderer
-          newCol.Cell = ReadOnlyCellRenderer;
+          // Exception: preserve custom Cell renderers from clientclass-based link columns
+          if (!col.clientclass) {
+            newCol.Cell = ReadOnlyCellRenderer;
+          }
           // Ensure Edit component is removed so it cannot be triggered
           newCol.Edit = undefined;
         } else if (!newCol.Cell) {
