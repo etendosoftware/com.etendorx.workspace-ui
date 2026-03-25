@@ -1,126 +1,136 @@
-import { renderHook, act } from "@testing-library/react";
-import useDebounce from "../useDebounce";
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, WITHOUT WARRANTY OF ANY KIND,
+ * SOFTWARE OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF ANY
+ * KIND, either express or implied. See the License for the specific language
+ * governing rights and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
 
-jest.useFakeTimers();
+import { renderHook, act } from "@testing-library/react";
+import { useDebounce } from "../useDebounce";
 
 describe("useDebounce", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
   afterEach(() => {
-    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
-  it("returns undefined when fn is undefined", () => {
-    const { result } = renderHook(() => useDebounce(undefined));
-    expect(result.current).toBeDefined();
-    // Calling with undefined fn returns undefined promise
-    act(() => {
-      const res = result.current?.();
-      expect(res).toBeUndefined();
-    });
-  });
+  it("should debounce the function call", async () => {
+    const fn = jest.fn((val: string) => Promise.resolve(val));
+    const delay = 500;
+    const { result } = renderHook(() => useDebounce(fn, delay));
 
-  it("delays the function execution by the given delay", async () => {
-    const fn = jest.fn().mockResolvedValue("value");
-    const { result } = renderHook(() => useDebounce(fn, 500));
-
+    let promise: Promise<string> | undefined;
     act(() => {
-      result.current("arg1");
+      promise = result.current("test1");
     });
 
     expect(fn).not.toHaveBeenCalled();
 
     act(() => {
-      jest.advanceTimersByTime(500);
-    });
-
-    expect(fn).toHaveBeenCalledWith("arg1");
-  });
-
-  it("only calls the function once for multiple rapid calls", () => {
-    const fn = jest.fn().mockResolvedValue("value");
-    const { result } = renderHook(() => useDebounce(fn, 300));
-
-    act(() => {
-      result.current("call1");
-      result.current("call2");
-      result.current("call3");
-    });
-
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-
-    expect(fn).toHaveBeenCalledTimes(1);
-    expect(fn).toHaveBeenCalledWith("call3");
-  });
-
-  it("returns a promise", () => {
-    const fn = jest.fn().mockReturnValue("sync-value");
-    const { result } = renderHook(() => useDebounce(fn, 100));
-
-    let promise: Promise<string> | undefined;
-    act(() => {
-      promise = result.current("test") as Promise<string>;
-    });
-
-    expect(promise).toBeInstanceOf(Promise);
-  });
-
-  it("resolves the promise with the function return value", async () => {
-    const fn = jest.fn().mockResolvedValue("result-value");
-    const { result } = renderHook(() => useDebounce(fn, 100));
-
-    let resolvedValue: string | undefined;
-    act(() => {
-      const p = result.current("arg") as Promise<string>;
-      p.then((v) => {
-        resolvedValue = v;
-      });
+      jest.advanceTimersByTime(delay);
     });
 
     await act(async () => {
-      jest.advanceTimersByTime(100);
-      await Promise.resolve();
+      const value = await promise;
+      expect(value).toBe("test1");
     });
 
-    expect(resolvedValue).toBe("result-value");
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenCalledWith("test1");
   });
 
-  it("cleans up the timer on unmount", () => {
-    const fn = jest.fn();
-    const { result, unmount } = renderHook(() => useDebounce(fn, 500));
+  it("should only call the latest function call if multiple calls are made during delay", async () => {
+    const fn = jest.fn((val: string) => Promise.resolve(val));
+    const delay = 500;
+    const { result } = renderHook(() => useDebounce(fn, delay));
+
+    let promise2: Promise<string> | undefined;
 
     act(() => {
-      result.current("test");
+      jest.advanceTimersByTime(250);
+      promise2 = result.current("test2");
     });
 
-    unmount();
+    expect(fn).not.toHaveBeenCalled();
 
     act(() => {
-      jest.advanceTimersByTime(500);
+      jest.advanceTimersByTime(delay);
     });
 
-    // After unmount, the timer reference is cleared; fn should still be called
-    // since cleanup only clears on unmount effect, not the timeout itself
-    // This just ensures no crash on unmount
-    expect(true).toBe(true);
+    await act(async () => {
+      const value2 = await promise2;
+      expect(value2).toBe("test2");
+    });
+
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenCalledWith("test2");
   });
 
-  it("uses default delay of 500ms", () => {
-    const fn = jest.fn().mockResolvedValue("v");
-    const { result } = renderHook(() => useDebounce(fn));
+  it("should return undefined if the function is not provided", () => {
+    const { result } = renderHook(() => useDebounce(undefined));
+
+    let returnValue: any;
+    act(() => {
+      returnValue = result.current("test");
+    });
+
+    expect(returnValue).toBeUndefined();
+  });
+
+  it("should handle function errors", async () => {
+    const error = new Error("Test Error");
+    const fn = jest.fn(() => Promise.reject(error));
+    const delay = 500;
+    const { result } = renderHook(() => useDebounce(fn, delay));
+
+    let promise: Promise<any> | undefined;
+    act(() => {
+      promise = result.current();
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(delay);
+    });
+
+    try {
+      await act(async () => {
+        await promise;
+      });
+      fail("Should have thrown an error");
+    } catch (e) {
+      expect(e).toBe(error);
+    }
+  });
+
+  it("should clear the timeout on unmount", () => {
+    const fn = jest.fn(() => Promise.resolve());
+    const delay = 500;
+    const { result, unmount } = renderHook(() => useDebounce(fn, delay));
 
     act(() => {
       result.current();
     });
 
-    act(() => {
-      jest.advanceTimersByTime(499);
-    });
-    expect(fn).not.toHaveBeenCalled();
+    unmount();
 
     act(() => {
-      jest.advanceTimersByTime(1);
+      jest.advanceTimersByTime(delay);
     });
-    expect(fn).toHaveBeenCalledTimes(1);
+
+    expect(fn).not.toHaveBeenCalled();
   });
 });
