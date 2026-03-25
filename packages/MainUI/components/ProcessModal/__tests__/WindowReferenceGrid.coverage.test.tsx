@@ -1,3 +1,13 @@
+// Mock Next.js server dependencies
+jest.mock("next/cache", () => ({
+  revalidatePath: jest.fn(),
+  revalidateTag: jest.fn(),
+}));
+
+jest.mock("@/app/actions/revalidate", () => ({
+  revalidateDopoProcess: jest.fn(),
+}));
+
 import { render, screen, fireEvent } from "@testing-library/react";
 import {
   getBooleanEditProps,

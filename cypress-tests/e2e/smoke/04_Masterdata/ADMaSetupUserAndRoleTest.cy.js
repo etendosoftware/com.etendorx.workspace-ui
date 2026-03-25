@@ -41,9 +41,9 @@ describe("User Management - Create user and assign role", () => {
       .click()
       .clear()
       .then(($input) => {
-        [...pwd].forEach((ch) => {
+        for (const ch of [...pwd]) {
           cy.wrap($input).type(ch, { delay: 120 });
-        });
+        }
       });
 
     cy.get('input[name="password"]').should("have.value", pwd).blur();
@@ -56,7 +56,7 @@ describe("User Management - Create user and assign role", () => {
     cy.wait(1000);
     cy.get('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"] > span').click();
     cy.wait(1000);
-    cy.get('[aria-describedby="Role-help"] > .w-2\\/3 > .relative > .w-full').click();
+    cy.get('[aria-label="Role"] > div[tabindex="0"]').click();
     cy.wait(1000);
     cy.get('[data-testid="OptionItem__FA057013C10148828D2430F66F42EF1A"] > .truncate').click();
     cy.wait(1000);
