@@ -2993,8 +2993,8 @@ const DynamicTable = ({
   const lastArrowNavTimeRef = useRef(0);
   const ARROW_NAV_THROTTLE_MS = 120;
 
-  const handleArrowDown = useCallback(
-    (_event: KeyboardEvent) => {
+  const navigateRow = useCallback(
+    (direction: 1 | -1) => {
       if (!tableContainerRef.current?.contains(document.activeElement)) return;
       const now = performance.now();
       if (now - lastArrowNavTimeRef.current < ARROW_NAV_THROTTLE_MS) return;
@@ -3002,30 +3002,16 @@ const DynamicTable = ({
       const currentSelection = tableRef.current.getState().rowSelection;
       const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
       if (selectedIds.length !== 1) return;
-      const currentId = selectedIds[0];
-      const currentIndex = effectiveRecords.findIndex((r) => String(r.id) === currentId);
-      if (currentIndex === -1 || currentIndex === effectiveRecords.length - 1) return;
-      tableRef.current.setRowSelection({ [String(effectiveRecords[currentIndex + 1].id)]: true });
+      const currentIndex = effectiveRecords.findIndex((r) => String(r.id) === selectedIds[0]);
+      const nextIndex = currentIndex + direction;
+      if (currentIndex === -1 || nextIndex < 0 || nextIndex >= effectiveRecords.length) return;
+      tableRef.current.setRowSelection({ [String(effectiveRecords[nextIndex].id)]: true });
     },
     [effectiveRecords, tableContainerRef]
   );
 
-  const handleArrowUp = useCallback(
-    (_event: KeyboardEvent) => {
-      if (!tableContainerRef.current?.contains(document.activeElement)) return;
-      const now = performance.now();
-      if (now - lastArrowNavTimeRef.current < ARROW_NAV_THROTTLE_MS) return;
-      lastArrowNavTimeRef.current = now;
-      const currentSelection = tableRef.current.getState().rowSelection;
-      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
-      if (selectedIds.length !== 1) return;
-      const currentId = selectedIds[0];
-      const currentIndex = effectiveRecords.findIndex((r) => String(r.id) === currentId);
-      if (currentIndex <= 0) return;
-      tableRef.current.setRowSelection({ [String(effectiveRecords[currentIndex - 1].id)]: true });
-    },
-    [effectiveRecords, tableContainerRef]
-  );
+  const handleArrowDown = useCallback((_event: KeyboardEvent) => navigateRow(1), [navigateRow]);
+  const handleArrowUp = useCallback((_event: KeyboardEvent) => navigateRow(-1), [navigateRow]);
 
   const handleEnter = useCallback(
     (_event: KeyboardEvent) => {
