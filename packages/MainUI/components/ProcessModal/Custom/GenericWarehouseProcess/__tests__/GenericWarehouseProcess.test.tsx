@@ -219,7 +219,10 @@ describe("GenericWarehouseProcess", () => {
 
     const buttons = screen.getAllByTestId("Button__cad053");
     const generateBtn = buttons.find((b) => b.textContent?.includes("packing.generatePack"));
-    fireEvent.click(generateBtn!);
+    if (!generateBtn) {
+      throw new Error("Generate pack button not found");
+    }
+    fireEvent.click(generateBtn);
 
     expect(screen.getByTestId("ConfirmDialog__cad053")).toBeInTheDocument();
   });
@@ -247,7 +250,10 @@ describe("GenericWarehouseProcess", () => {
 
     const buttons = screen.getAllByTestId("Button__cad053");
     const generateBtn = buttons.find((b) => b.textContent?.includes("packing.generatePack"));
-    fireEvent.click(generateBtn!);
+    if (!generateBtn) {
+      throw new Error("Generate pack button not found");
+    }
+    fireEvent.click(generateBtn);
 
     await waitFor(() => {
       expect(executeStringFunction).toHaveBeenCalled();
