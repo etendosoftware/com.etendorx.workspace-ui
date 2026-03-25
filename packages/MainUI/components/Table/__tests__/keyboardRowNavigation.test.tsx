@@ -70,76 +70,55 @@ describe("keyboard row navigation", () => {
     return event;
   };
 
-  it("ArrowDown selects the next record", () => {
+  const setupHook = (getRowSelection: () => Record<string, boolean>, editingRowsCount = 0) => {
     const setRowSelection = jest.fn();
-    const getRowSelection = () => ({ "1": true });
-    const { result } = renderHook(() => useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0));
+    const { result } = renderHook(() =>
+      useRowNavigation(records, getRowSelection, setRowSelection, containerRef, editingRowsCount)
+    );
+    return { result, setRowSelection };
+  };
 
+  it("ArrowDown selects the next record", () => {
+    const { result, setRowSelection } = setupHook(() => ({ "1": true }));
     act(() => result.current("down", makeEvent(insideElement)));
-
     expect(setRowSelection).toHaveBeenCalledWith({ "2": true });
   });
 
   it("ArrowUp selects the previous record", () => {
-    const setRowSelection = jest.fn();
-    const getRowSelection = () => ({ "2": true });
-    const { result } = renderHook(() => useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0));
-
+    const { result, setRowSelection } = setupHook(() => ({ "2": true }));
     act(() => result.current("up", makeEvent(insideElement)));
-
     expect(setRowSelection).toHaveBeenCalledWith({ "1": true });
   });
 
   it("ArrowDown on last record does nothing", () => {
-    const setRowSelection = jest.fn();
-    const getRowSelection = () => ({ "3": true });
-    const { result } = renderHook(() => useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0));
-
+    const { result, setRowSelection } = setupHook(() => ({ "3": true }));
     act(() => result.current("down", makeEvent(insideElement)));
-
     expect(setRowSelection).not.toHaveBeenCalled();
   });
 
   it("ArrowUp on first record does nothing", () => {
-    const setRowSelection = jest.fn();
-    const getRowSelection = () => ({ "1": true });
-    const { result } = renderHook(() => useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0));
-
+    const { result, setRowSelection } = setupHook(() => ({ "1": true }));
     act(() => result.current("up", makeEvent(insideElement)));
-
     expect(setRowSelection).not.toHaveBeenCalled();
   });
 
   it("does nothing when no row is selected", () => {
-    const setRowSelection = jest.fn();
-    const getRowSelection = () => ({});
-    const { result } = renderHook(() => useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0));
-
+    const { result, setRowSelection } = setupHook(() => ({}));
     act(() => result.current("down", makeEvent(insideElement)));
-
     expect(setRowSelection).not.toHaveBeenCalled();
   });
 
   it("does nothing when in inline edit mode (editingRowsCount > 0)", () => {
-    const setRowSelection = jest.fn();
-    const getRowSelection = () => ({ "1": true });
-    const { result } = renderHook(() => useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 1));
-
+    const { result, setRowSelection } = setupHook(() => ({ "1": true }), 1);
     act(() => result.current("down", makeEvent(insideElement)));
-
     expect(setRowSelection).not.toHaveBeenCalled();
   });
 
   it("does nothing when event.target is outside the table container", () => {
-    const setRowSelection = jest.fn();
-    const getRowSelection = () => ({ "1": true });
     const outsideElement = document.createElement("div");
     document.body.appendChild(outsideElement);
-
-    const { result } = renderHook(() => useRowNavigation(records, getRowSelection, setRowSelection, containerRef, 0));
-
+    const { result, setRowSelection } = setupHook(() => ({ "1": true }));
     act(() => result.current("down", makeEvent(outsideElement)));
-
     expect(setRowSelection).not.toHaveBeenCalled();
     document.body.removeChild(outsideElement);
   });

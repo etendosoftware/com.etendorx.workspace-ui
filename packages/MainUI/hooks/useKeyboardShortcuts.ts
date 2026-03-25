@@ -58,7 +58,7 @@ export function useKeyboardShortcuts(shortcuts: ShortcutMap, enabled = true): vo
         event.preventDefault();
       }
 
-      void config.handler(event);
+      config.handler(event);
     };
 
     document.addEventListener("keydown", handleKeyDown);
