@@ -44,6 +44,7 @@ import { useDatasourceContext } from "@/contexts/datasourceContext";
 import EmptyState from "./EmptyState";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import useTableSelection from "@/hooks/useTableSelection";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { ErrorDisplay } from "../ErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
@@ -2579,6 +2580,9 @@ const DynamicTable = ({
             return;
           }
 
+          // Transfer DOM focus to the table container so keyboard shortcuts work
+          tableContainerRef.current?.focus();
+
           // Clear any existing timeout for this row
           const existingTimeout = clickTimeoutsRef.current.get(rowId);
           if (existingTimeout) {
@@ -2764,6 +2768,7 @@ const DynamicTable = ({
 
   // Generate ARIA attributes for the table container
   const editingRowsCount = Object.keys(editingRows).length;
+
   const tableAriaAttributes = useMemo(
     () => generateAriaAttributes.tableContainer(effectiveRecords.length, editingRowsCount),
     [effectiveRecords.length, editingRowsCount]
@@ -2790,7 +2795,8 @@ const DynamicTable = ({
   const muiTableContainerProps = useMemo(
     () => ({
       ref: tableContainerRef,
-      sx: { flex: 1, maxHeight: "100%" },
+      tabIndex: -1,
+      sx: { flex: 1, maxHeight: "100%", outline: "none" },
       onScroll: fetchMoreOnBottomReached,
     }),
     [fetchMoreOnBottomReached]
@@ -2978,11 +2984,109 @@ const DynamicTable = ({
     autoResetRowSelection: false,
   });
 
-  useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange);
+  useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange, isVisible);
 
   // Use ref for table to prevent infinite loop of registrations
   const tableRef = useRef(table);
   tableRef.current = table;
+
+  const lastArrowNavTimeRef = useRef(0);
+  const ARROW_NAV_THROTTLE_MS = 120;
+
+  const handleArrowDown = useCallback(
+    (_event: KeyboardEvent) => {
+      if (!tableContainerRef.current?.contains(document.activeElement)) return;
+      const now = performance.now();
+      if (now - lastArrowNavTimeRef.current < ARROW_NAV_THROTTLE_MS) return;
+      lastArrowNavTimeRef.current = now;
+      const currentSelection = tableRef.current.getState().rowSelection;
+      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
+      if (selectedIds.length !== 1) return;
+      const currentId = selectedIds[0];
+      const currentIndex = effectiveRecords.findIndex((r) => String(r.id) === currentId);
+      if (currentIndex === -1 || currentIndex === effectiveRecords.length - 1) return;
+      tableRef.current.setRowSelection({ [String(effectiveRecords[currentIndex + 1].id)]: true });
+    },
+    [effectiveRecords, tableContainerRef]
+  );
+
+  const handleArrowUp = useCallback(
+    (_event: KeyboardEvent) => {
+      if (!tableContainerRef.current?.contains(document.activeElement)) return;
+      const now = performance.now();
+      if (now - lastArrowNavTimeRef.current < ARROW_NAV_THROTTLE_MS) return;
+      lastArrowNavTimeRef.current = now;
+      const currentSelection = tableRef.current.getState().rowSelection;
+      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
+      if (selectedIds.length !== 1) return;
+      const currentId = selectedIds[0];
+      const currentIndex = effectiveRecords.findIndex((r) => String(r.id) === currentId);
+      if (currentIndex <= 0) return;
+      tableRef.current.setRowSelection({ [String(effectiveRecords[currentIndex - 1].id)]: true });
+    },
+    [effectiveRecords, tableContainerRef]
+  );
+
+  const handleEnter = useCallback(
+    (_event: KeyboardEvent) => {
+      if (!tableContainerRef.current?.contains(document.activeElement)) return;
+      const currentSelection = tableRef.current.getState().rowSelection;
+      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
+      if (selectedIds.length !== 1) return;
+      const recordId = selectedIds[0];
+      const record = effectiveRecords.find((r) => String(r.id) === recordId);
+      if (!record) return;
+
+      const parent = graph.getParent(tab);
+      if (parent) {
+        const windowIdentifier = activeWindow?.windowIdentifier;
+        const parentSelectedInURL = windowIdentifier ? getSelectedRecord(windowIdentifier, parent.id) : undefined;
+        if (!parentSelectedInURL) return;
+      }
+
+      const parentSelection = parent ? graph.getSelected(parent) : undefined;
+      graph.setSelected(tab, record);
+      graph.setSelectedMultiple(tab, [record]);
+      if (parent && parentSelection) {
+        setTimeout(() => graph.setSelected(parent, parentSelection), 10);
+      }
+
+      setRecordId(record.id as string);
+    },
+    [effectiveRecords, tableContainerRef, graph, tab, activeWindow, getSelectedRecord, setRecordId]
+  );
+
+  useKeyboardShortcuts(
+    {
+      ArrowDown: { handler: handleArrowDown },
+      ArrowUp: { handler: handleArrowUp },
+      Enter: { handler: handleEnter },
+    },
+    editingRowsCount === 0
+  );
+
+  // When the table becomes visible again (e.g. after returning from FormView via Escape),
+  // restore focus to the container if a row is already selected so arrow keys work immediately.
+  // setTimeout(0) runs after all synchronous React effects and FormView unmount focus changes,
+  // ensuring we win any focus race after the transition.
+  useEffect(() => {
+    if (!isVisible) return;
+    const timerId = setTimeout(() => {
+      const rowSelection = tableRef.current.getState().rowSelection;
+      const hasSelection = Object.keys(rowSelection).some((id) => rowSelection[id]);
+      // Only focus if nothing meaningful has captured focus (don't steal from inputs/buttons)
+      const activeEl = document.activeElement;
+      const userFocusedElsewhere =
+        activeEl &&
+        activeEl !== document.body &&
+        activeEl !== document.documentElement &&
+        !tableContainerRef.current?.contains(activeEl);
+      if (hasSelection && tableContainerRef.current && !userFocusedElsewhere) {
+        tableContainerRef.current.focus();
+      }
+    }, 0);
+    return () => clearTimeout(timerId);
+  }, [isVisible]);
 
   // Register attachment action for toolbar to handle interactions from TableView
   useEffect(() => {

@@ -242,7 +242,8 @@ export default function useTableSelection(
   tab: Tab,
   records: EntityData[],
   rowSelection: MRT_RowSelectionState,
-  _onSelectionChange?: (recordId: string) => void
+  _onSelectionChange?: (recordId: string) => void,
+  isTableVisible = true
 ) {
   const { graph } = useSelected();
   const { activeWindow, clearSelectedRecord, getTabFormState, setSelectedRecord, getSelectedRecord } =
@@ -358,12 +359,14 @@ export default function useTableSelection(
     // DON'T call onSelectionChange to avoid infinite loop
     updateGraphSelection(graph, tab, lastSelected, selectedRecords);
 
-    // Sync to session for backend state — ONLY when the selected record IDs change.
-    // Record content changes (e.g. updated field values after a save) are already handled
-    // by the form's FormInitializationComponent MODE=EDIT refetch, which fully syncs
-    // session attributes. Firing SETSESSION on every content update causes redundant
-    // sequential requests after each save without any additional benefit.
-    if (selectedRecords.length > 0 && hasSelectionIdChanged) {
+    // Sync to session for backend state — ONLY when:
+    // 1. The selected record IDs have changed, AND
+    // 2. The table is NOT the primary visible view (i.e. FormView is showing).
+    //    When the table is visible (grid navigation mode), session sync is deferred
+    //    because FormView's own EDIT-mode initialization handles session setup when
+    //    it opens. Calling SETSESSION on every arrow-key navigation triggers redundant
+    //    API requests and cascading UserContext re-renders that can cause update depth errors.
+    if (selectedRecords.length > 0 && hasSelectionIdChanged && !isTableVisible) {
       syncSelectedRecordsToSession({
         tab,
         selectedRecords,
@@ -386,5 +389,6 @@ export default function useTableSelection(
     setSession,
     setSessionSyncLoading,
     windowId,
+    isTableVisible,
   ]);
 }
