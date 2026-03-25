@@ -32,9 +32,7 @@ describe("useKeyboardShortcuts", () => {
 
   it("does NOT fire when focus is in an input and allowInInputs is false", () => {
     const handler = jest.fn();
-    renderHook(() =>
-      useKeyboardShortcuts({ "ctrl+s": { handler, allowInInputs: false } })
-    );
+    renderHook(() => useKeyboardShortcuts({ "ctrl+s": { handler, allowInInputs: false } }));
 
     const input = document.createElement("input");
     document.body.appendChild(input);
@@ -46,9 +44,7 @@ describe("useKeyboardShortcuts", () => {
 
   it("DOES fire when focus is in an input and allowInInputs is true", () => {
     const handler = jest.fn();
-    renderHook(() =>
-      useKeyboardShortcuts({ "ctrl+s": { handler, allowInInputs: true } })
-    );
+    renderHook(() => useKeyboardShortcuts({ "ctrl+s": { handler, allowInInputs: true } }));
 
     const input = document.createElement("input");
     document.body.appendChild(input);
@@ -60,9 +56,7 @@ describe("useKeyboardShortcuts", () => {
 
   it("does NOT fire when enabled is false", () => {
     const handler = jest.fn();
-    renderHook(() =>
-      useKeyboardShortcuts({ "ctrl+s": { handler } }, false)
-    );
+    renderHook(() => useKeyboardShortcuts({ "ctrl+s": { handler } }, false));
 
     fireEvent.keyDown(document, { key: "s", ctrlKey: true });
 
@@ -82,9 +76,7 @@ describe("useKeyboardShortcuts", () => {
 
   it("does NOT call preventDefault when preventDefault is false", () => {
     const handler = jest.fn();
-    renderHook(() =>
-      useKeyboardShortcuts({ Escape: { handler, preventDefault: false } })
-    );
+    renderHook(() => useKeyboardShortcuts({ Escape: { handler, preventDefault: false } }));
 
     const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true });
     const preventDefaultSpy = jest.spyOn(event, "preventDefault");
@@ -95,9 +87,7 @@ describe("useKeyboardShortcuts", () => {
 
   it("removes listener on unmount", () => {
     const handler = jest.fn();
-    const { unmount } = renderHook(() =>
-      useKeyboardShortcuts({ "ctrl+s": { handler } })
-    );
+    const { unmount } = renderHook(() => useKeyboardShortcuts({ "ctrl+s": { handler } }));
 
     unmount();
     fireEvent.keyDown(document, { key: "s", ctrlKey: true });
