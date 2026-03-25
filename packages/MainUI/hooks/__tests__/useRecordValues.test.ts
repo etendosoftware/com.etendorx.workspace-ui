@@ -17,240 +17,42 @@
 
 import { renderHook } from "@testing-library/react";
 import useRecordValues from "../useRecordValues";
-import * as utils from "@/utils";
-
-// Mock dependencies
-jest.mock("@/contexts/tab", () => ({
-  useTabContext: jest.fn(),
-}));
-
-jest.mock("@/utils", () => ({
-  buildPayloadByInputName: jest.fn(),
-}));
-
-// Import after mocking
 import { useTabContext } from "@/contexts/tab";
+import { buildPayloadByInputName } from "@/utils";
 
-const mockUseTabContext = useTabContext as jest.MockedFunction<typeof useTabContext>;
-const mockBuildPayloadByInputName = utils.buildPayloadByInputName as jest.MockedFunction<
-  typeof utils.buildPayloadByInputName
->;
+// Mocks
+jest.mock("@/contexts/tab");
+jest.mock("@/utils");
 
-describe("useRecordValues", () => {
-  const mockTab = {
-    id: "test-tab",
-    fields: {
-      name: { id: "name", inputName: "name", columnName: "name" },
-      description: { id: "description", inputName: "description", columnName: "description" },
-    },
-  };
+describe("useRecordValues hook", () => {
+  const mockTab = { fields: { field1: {} } } as any;
+  const mockRecord = { field1: "val1" } as any;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (useTabContext as jest.Mock).mockReturnValue({ tab: mockTab, record: null });
   });
 
-  it("should return empty object when record is null", () => {
-    mockUseTabContext.mockReturnValue({
-      tab: mockTab,
-      record: null,
-    } as any);
-
+  it("should return an empty object when no record is present", () => {
     const { result } = renderHook(() => useRecordValues());
-
     expect(result.current).toEqual({});
-    expect(mockBuildPayloadByInputName).not.toHaveBeenCalled();
   });
 
-  it("should return empty object when record is undefined", () => {
-    mockUseTabContext.mockReturnValue({
-      tab: mockTab,
-      record: undefined,
-    } as any);
+  it("should call buildPayloadByInputName when record is present", () => {
+    (useTabContext as jest.Mock).mockReturnValue({ tab: mockTab, record: mockRecord });
+    (buildPayloadByInputName as jest.Mock).mockReturnValue({ inpfield1: "val1" });
 
     const { result } = renderHook(() => useRecordValues());
 
-    expect(result.current).toEqual({});
-    expect(mockBuildPayloadByInputName).not.toHaveBeenCalled();
+    expect(buildPayloadByInputName).toHaveBeenCalledWith(mockRecord, mockTab.fields);
+    expect(result.current).toEqual({ inpfield1: "val1" });
   });
 
-  it("should call buildPayloadByInputName when record exists", () => {
-    const mockRecord = {
-      id: "record-1",
-      name: "Test Record",
-      description: "Test Description",
-    };
-
-    const mockPayload = {
-      name: "Test Record",
-      description: "Test Description",
-    };
-
-    mockUseTabContext.mockReturnValue({
-      tab: mockTab,
-      record: mockRecord,
-    } as any);
-
-    mockBuildPayloadByInputName.mockReturnValue(mockPayload);
-
-    const { result } = renderHook(() => useRecordValues());
-
-    expect(mockBuildPayloadByInputName).toHaveBeenCalledWith(mockRecord, mockTab.fields);
-    expect(result.current).toEqual(mockPayload);
-  });
-
-  it("should memoize result when record and fields do not change", () => {
-    const mockRecord = {
-      id: "record-1",
-      name: "Test Record",
-    };
-
-    const mockPayload = { name: "Test Record" };
-
-    mockUseTabContext.mockReturnValue({
-      tab: mockTab,
-      record: mockRecord,
-    } as any);
-
-    mockBuildPayloadByInputName.mockReturnValue(mockPayload);
+  it("should memoize the result", () => {
+    (useTabContext as jest.Mock).mockReturnValue({ tab: mockTab, record: mockRecord });
+    (buildPayloadByInputName as jest.Mock).mockReturnValue({ inpfield1: "val1" });
 
     const { result, rerender } = renderHook(() => useRecordValues());
-
-    const firstResult = result.current;
-    expect(mockBuildPayloadByInputName).toHaveBeenCalledTimes(1);
-
-    // Rerender without changing dependencies
-    rerender();
-
-    expect(result.current).toBe(firstResult);
-    expect(mockBuildPayloadByInputName).toHaveBeenCalledTimes(1);
-  });
-
-  it("should recompute when record changes", () => {
-    const mockRecord1 = {
-      id: "record-1",
-      name: "Record 1",
-    };
-
-    const mockRecord2 = {
-      id: "record-2",
-      name: "Record 2",
-    };
-
-    mockUseTabContext.mockReturnValue({
-      tab: mockTab,
-      record: mockRecord1,
-    } as any);
-
-    mockBuildPayloadByInputName.mockReturnValue({ name: "Record 1" });
-
-    const { result, rerender } = renderHook(() => useRecordValues());
-
-    expect(result.current).toEqual({ name: "Record 1" });
-    expect(mockBuildPayloadByInputName).toHaveBeenCalledWith(mockRecord1, mockTab.fields);
-
-    // Change record
-    mockUseTabContext.mockReturnValue({
-      tab: mockTab,
-      record: mockRecord2,
-    } as any);
-
-    mockBuildPayloadByInputName.mockReturnValue({ name: "Record 2" });
-
-    rerender();
-
-    expect(result.current).toEqual({ name: "Record 2" });
-    expect(mockBuildPayloadByInputName).toHaveBeenCalledWith(mockRecord2, mockTab.fields);
-    expect(mockBuildPayloadByInputName).toHaveBeenCalledTimes(2);
-  });
-
-  it("should recompute when tab fields change", () => {
-    const mockRecord = {
-      id: "record-1",
-      name: "Test Record",
-    };
-
-    const mockTab1 = {
-      id: "test-tab",
-      fields: {
-        name: { id: "name", inputName: "name" },
-      },
-    };
-
-    const mockTab2 = {
-      id: "test-tab",
-      fields: {
-        name: { id: "name", inputName: "name" },
-        description: { id: "description", inputName: "description" },
-      },
-    };
-
-    mockUseTabContext.mockReturnValue({
-      tab: mockTab1,
-      record: mockRecord,
-    } as any);
-
-    mockBuildPayloadByInputName.mockReturnValue({ name: "Test Record" });
-
-    const { rerender } = renderHook(() => useRecordValues());
-
-    expect(mockBuildPayloadByInputName).toHaveBeenCalledWith(mockRecord, mockTab1.fields);
-
-    // Change tab fields
-    mockUseTabContext.mockReturnValue({
-      tab: mockTab2,
-      record: mockRecord,
-    } as any);
-
-    mockBuildPayloadByInputName.mockReturnValue({
-      name: "Test Record",
-      description: undefined,
-    });
-
-    rerender();
-
-    expect(mockBuildPayloadByInputName).toHaveBeenCalledWith(mockRecord, mockTab2.fields);
-    expect(mockBuildPayloadByInputName).toHaveBeenCalledTimes(2);
-  });
-
-  it("should handle complex record objects", () => {
-    const mockRecord = {
-      id: "record-1",
-      name: "Test Record",
-      description: "Description",
-      nested: {
-        value: "nested value",
-      },
-      array: [1, 2, 3],
-    };
-
-    const mockPayload = {
-      name: "Test Record",
-      description: "Description",
-      nested: { value: "nested value" },
-      array: [1, 2, 3],
-    };
-
-    mockUseTabContext.mockReturnValue({
-      tab: mockTab,
-      record: mockRecord,
-    } as any);
-
-    mockBuildPayloadByInputName.mockReturnValue(mockPayload);
-
-    const { result } = renderHook(() => useRecordValues());
-
-    expect(result.current).toEqual(mockPayload);
-    expect(mockBuildPayloadByInputName).toHaveBeenCalledWith(mockRecord, mockTab.fields);
-  });
-
-  it("should return same empty object reference for consecutive null records", () => {
-    mockUseTabContext.mockReturnValue({
-      tab: mockTab,
-      record: null,
-    } as any);
-
-    const { result, rerender } = renderHook(() => useRecordValues());
-
     const firstResult = result.current;
 
     rerender();

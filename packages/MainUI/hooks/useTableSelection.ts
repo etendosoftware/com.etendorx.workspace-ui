@@ -44,6 +44,7 @@ import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/se
 import { useUserContext } from "@/hooks/useUserContext";
 import { logger } from "@/utils/logger";
 import { useWindowContext } from "@/contexts/window";
+import type { TabFormState } from "@/utils/url/constants";
 
 /**
  * Compares two arrays of strings alphabetically to detect content changes while ignoring order.
@@ -143,6 +144,34 @@ const processSelectedRecords = (
  * });
  * ```
  */
+/**
+ * Handles clearing the selected record in context when table selection becomes empty.
+ * Guards against clearing parent selection while a child tab is in FormView mode.
+ */
+const handleDeselectInContext = (
+  windowIdentifier: string,
+  tab: Tab,
+  rowSelection: MRT_RowSelectionState,
+  graph: ReturnType<typeof useSelected>["graph"],
+  getTabFormState: ((windowIdentifier: string, tabId: string) => TabFormState | undefined) | undefined,
+  clearSelectedRecord: (windowIdentifier: string, tabId: string) => void
+): void => {
+  const hasTableSelection = Object.keys(rowSelection).length > 0;
+  if (hasTableSelection) return;
+
+  const children = graph.getChildren(tab);
+  const hasChildInFormView = children?.some((child) => {
+    if (!getTabFormState) return false;
+    return getTabFormState(windowIdentifier, child.id)?.mode === "form";
+  });
+
+  if (!hasChildInFormView) {
+    clearSelectedRecord(windowIdentifier, tab.id);
+  } else {
+    logger.debug(`[useTableSelection] NOT clearing parent selection for tab ${tab.id} - child is in FormView`);
+  }
+};
+
 const updateGraphSelection = (
   graph: ReturnType<typeof useSelected>["graph"],
   tab: Tab,
@@ -242,7 +271,8 @@ export default function useTableSelection(
   tab: Tab,
   records: EntityData[],
   rowSelection: MRT_RowSelectionState,
-  _onSelectionChange?: (recordId: string) => void
+  _onSelectionChange?: (recordId: string) => void,
+  isTableVisible = true
 ) {
   const { graph } = useSelected();
   const { activeWindow, clearSelectedRecord, getTabFormState, setSelectedRecord, getSelectedRecord } =
@@ -331,26 +361,9 @@ export default function useTableSelection(
         setSelectedRecord(windowIdentifier, tab.id, recordId);
       } else if (selectedRecords.length === 0) {
         // Case B: No Selection (Deselect All)
-        // Only clear if the table selection state is actually empty
-        // If rowSelection has keys but selectedRecords is empty, it means the selected record
-        // is not in the current page of data, so we should PRESERVE the global selection.
-        const hasTableSelection = Object.keys(rowSelection).length > 0;
-
-        if (!hasTableSelection) {
-          // Guard: Check if any child tab is in "Form Mode"
-          const children = graph.getChildren(tab);
-          const hasChildInFormView = children?.some((child) => {
-            if (!getTabFormState) return false;
-            const childState = getTabFormState(windowIdentifier, child.id);
-            return childState?.mode === "form";
-          });
-
-          if (!hasChildInFormView) {
-            clearSelectedRecord(windowIdentifier, tab.id);
-          } else {
-            logger.debug(`[useTableSelection] NOT clearing parent selection for tab ${tab.id} - child is in FormView`);
-          }
-        }
+        // If rowSelection has keys but selectedRecords is empty, the selected record
+        // is not in the current page — PRESERVE the global selection.
+        handleDeselectInContext(windowIdentifier, tab, rowSelection, graph, getTabFormState, clearSelectedRecord);
       }
     }
 
@@ -358,12 +371,14 @@ export default function useTableSelection(
     // DON'T call onSelectionChange to avoid infinite loop
     updateGraphSelection(graph, tab, lastSelected, selectedRecords);
 
-    // Sync to session for backend state — ONLY when the selected record IDs change.
-    // Record content changes (e.g. updated field values after a save) are already handled
-    // by the form's FormInitializationComponent MODE=EDIT refetch, which fully syncs
-    // session attributes. Firing SETSESSION on every content update causes redundant
-    // sequential requests after each save without any additional benefit.
-    if (selectedRecords.length > 0 && hasSelectionIdChanged) {
+    // Sync to session for backend state — ONLY when:
+    // 1. The selected record IDs have changed, AND
+    // 2. The table is NOT the primary visible view (i.e. FormView is showing).
+    //    When the table is visible (grid navigation mode), session sync is deferred
+    //    because FormView's own EDIT-mode initialization handles session setup when
+    //    it opens. Calling SETSESSION on every arrow-key navigation triggers redundant
+    //    API requests and cascading UserContext re-renders that can cause update depth errors.
+    if (selectedRecords.length > 0 && hasSelectionIdChanged && !isTableVisible) {
       syncSelectedRecordsToSession({
         tab,
         selectedRecords,
@@ -386,5 +401,6 @@ export default function useTableSelection(
     setSession,
     setSessionSyncLoading,
     windowId,
+    isTableVisible,
   ]);
 }
