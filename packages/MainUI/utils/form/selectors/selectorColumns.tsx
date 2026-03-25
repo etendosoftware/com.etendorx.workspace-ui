@@ -81,6 +81,11 @@ export function buildSelectorColumnDefs(
       header: col.header,
       enableSorting: col.enableSorting ?? true,
       enableColumnFilter: col.enableFiltering ?? true,
+      Cell: ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: { original: EntityData } }) => {
+        const identifierKey = `${col.accessorKey}$_identifier`;
+        const label = (row.original[identifierKey] ?? cell.getValue()) as string | undefined;
+        return <>{label ?? ""}</>;
+      },
     };
 
     if (!(col.enableFiltering ?? true)) return columnDef;
@@ -139,12 +144,6 @@ export function buildSelectorColumnDefs(
         );
       };
     } else if (filterType === "dropdown") {
-      columnDef.Cell = ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: { original: EntityData } }) => {
-        const identifierKey = `${col.accessorKey}$_identifier`;
-        const label = (row.original[identifierKey] ?? cell.getValue()) as string | undefined;
-        return <>{label ?? ""}</>;
-      };
-
       columnDef.Filter = () => {
         const currentFilter = columnFilters.find((f) => f.id === col.accessorKey);
         const filterState = columnFilterStates?.find((f) => f.id === col.accessorKey);
