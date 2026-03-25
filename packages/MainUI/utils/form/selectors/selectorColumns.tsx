@@ -5,6 +5,7 @@ import type { TranslateFunction } from "@/hooks/types";
 import { TextFilter } from "../../../components/Table/TextFilter";
 import { DateSelector } from "../../../components/Table/DateSelector";
 import { ColumnFilter } from "../../../components/Table/ColumnFilter";
+import CheckIcon from "@workspaceui/componentlibrary/src/assets/icons/check.svg";
 import { DEFAULT_PAGE_SIZE, SELECTOR_SAFE_PARAMS, DEFAULT_SORT_BY } from "@/utils/table/constants";
 import type { SelectorCriteria, DefaultFilterResponse } from "./defaultFilters";
 
@@ -89,6 +90,30 @@ export function buildSelectorColumnDefs(
         { id: "true", label: t("common.trueText"), value: "true" },
         { id: "false", label: t("common.falseText"), value: "false" },
       ];
+
+      columnDef.Cell = ({ cell }: { cell: MRT_Cell<EntityData, unknown> }) => {
+        const val = cell.getValue();
+        const isTrue = val === true || val === "true" || val === "Y" || val === "1" || val === "Yes";
+
+        return (
+          <div className="flex items-center justify-center w-full">
+            <div className="relative flex items-end">
+              <input
+                type="checkbox"
+                checked={isTrue}
+                readOnly
+                className="min-w-4 min-h-4 cursor-default rounded border-[1.67px] border-[rgba(0,3,13,0.4)] appearance-none bg-white checked:bg-[#004ACA] checked:border-[#004ACA]"
+              />
+              {isTrue && (
+                <CheckIcon
+                  className="absolute top-0.5 left-0.5 w-3 h-3 pointer-events-none fill-white"
+                  data-testid="CheckIcon__selector"
+                />
+              )}
+            </div>
+          </div>
+        );
+      };
 
       columnDef.Filter = () => {
         const currentFilter = columnFilters.find((f) => f.id === col.accessorKey);
