@@ -44,6 +44,7 @@ import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/se
 import { useUserContext } from "@/hooks/useUserContext";
 import { logger } from "@/utils/logger";
 import { useWindowContext } from "@/contexts/window";
+import type { TabFormState } from "@/utils/url/constants";
 
 /**
  * Compares two arrays of strings alphabetically to detect content changes while ignoring order.
@@ -152,7 +153,7 @@ const handleDeselectInContext = (
   tab: Tab,
   rowSelection: MRT_RowSelectionState,
   graph: ReturnType<typeof useSelected>["graph"],
-  getTabFormState: ((windowIdentifier: string, tabId: string) => { mode: string } | undefined) | undefined,
+  getTabFormState: ((windowIdentifier: string, tabId: string) => TabFormState | undefined) | undefined,
   clearSelectedRecord: (windowIdentifier: string, tabId: string) => void
 ): void => {
   const hasTableSelection = Object.keys(rowSelection).length > 0;
