@@ -112,7 +112,6 @@ const processFormData = (
 
 export function FormView({ window: windowMetadata, tab, mode, recordId, setRecordId, uIPattern }: FormViewProps) {
   const theme = useTheme();
-  const isReadOnly = uIPattern === UIPattern.READ_ONLY;
 
   const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
   const [selectedTab, setSelectedTab] = useState<string>("");
@@ -180,6 +179,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     recordId: currentRecordId,
   });
   const initialState = useFormInitialState(formInitialization) || undefined;
+
+  // Determine read-only state from two sources:
+  // 1. Tab-level uIPattern "RO" — the tab itself is defined as read-only
+  // 2. Record-level _readOnly — the backend security layer (DAL) marks this specific
+  //    record as read-only for the current role (e.g. system records with org='0'
+  //    are not writable by non-system roles even if the window access is isreadwrite='Y')
+  const isReadOnly = uIPattern === UIPattern.READ_ONLY || formInitialization?._readOnly === true;
 
   // Effect to detect when form initialization completes after save
   useEffect(() => {

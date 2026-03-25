@@ -80,9 +80,9 @@ export const ModalSelector = ({
       const realId = (recordData[valueField] || record.id) as string;
       const displayValue = (recordData[displayField] || record._identifier) as string;
 
-      setValue(field.hqlName, realId);
-      setValue(`${field.hqlName}$_identifier`, displayValue);
       setValue(`${field.hqlName}_data`, record);
+      setValue(`${field.hqlName}$_identifier`, displayValue, { shouldDirty: false });
+      setValue(field.hqlName, realId, { shouldDirty: true, shouldValidate: true });
 
       const formValues = getValues();
       for (const [key, val] of Object.entries(recordData)) {
@@ -91,10 +91,10 @@ export const ModalSelector = ({
         if (val === undefined || val === null) continue;
 
         if (key in formValues) {
-          setValue(key, val);
+          setValue(key, val, { shouldDirty: true, shouldValidate: true });
           const identifierKey = `${key}$_identifier`;
           if (recordData[identifierKey]) {
-            setValue(identifierKey, recordData[identifierKey]);
+            setValue(identifierKey, recordData[identifierKey], { shouldDirty: false });
           }
         }
       }

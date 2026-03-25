@@ -122,7 +122,8 @@ function SelectCmp({
       const data = explicitData ?? option?.data;
 
       setValue(`${name}_data`, data);
-      setValue(name, id);
+      setValue(`${name}$_identifier`, label, { shouldDirty: false });
+      setValue(name, id, { shouldDirty: true, shouldValidate: true });
       setSelectedLabel(label);
       setSelectedDataRowId(((data as Record<string, unknown>)?.id as string) ?? null);
       setSelectedColor(option?.color);
@@ -212,7 +213,9 @@ function SelectCmp({
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      setValue(name, "");
+      setValue(`${name}$_identifier`, "", { shouldDirty: false });
+      setValue(`${name}_data`, null);
+      setValue(name, "", { shouldDirty: true, shouldValidate: true });
       setSelectedLabel("");
       setSelectedColor(undefined);
     },
