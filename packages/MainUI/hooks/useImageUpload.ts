@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useUserContext } from "./useUserContext";
+import { useTranslation } from "./useTranslation";
 
 interface UploadImageParams {
   file: File;
@@ -30,13 +31,14 @@ function parseImageIdFromHtml(html: string): string | null {
 
 export const useImageUpload = (): UseImageUploadReturn => {
   const { token } = useUserContext();
+  const { t } = useTranslation();
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const uploadImage = useCallback(
     async (params: UploadImageParams): Promise<UploadResult> => {
       if (!token) {
-        throw new Error("Authentication token not available");
+        throw new Error(t("errors.authentication.message"));
       }
 
       setIsUploading(true);
@@ -66,14 +68,14 @@ export const useImageUpload = (): UseImageUploadReturn => {
         });
 
         if (!uploadResponse.ok) {
-          throw new Error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
+          throw new Error(`${t("image.upload.errors.uploadFailed")}: ${uploadResponse.status} ${uploadResponse.statusText}`);
         }
 
         const responseText = await uploadResponse.text();
         const imageId = parseImageIdFromHtml(responseText);
 
         if (!imageId) {
-          throw new Error("Failed to parse image ID from upload response");
+          throw new Error(t("image.upload.errors.parseIdFailed"));
         }
 
         // Step 2: Call GETSIZE for backend compatibility
@@ -105,14 +107,14 @@ export const useImageUpload = (): UseImageUploadReturn => {
 
         return { imageId, width, height };
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Image upload failed";
+        const message = err instanceof Error ? err.message : t("image.upload.errors.uploadFailed");
         setError(message);
         throw err;
       } finally {
         setIsUploading(false);
       }
     },
-    [token]
+    [token, t]
   );
 
   return { uploadImage, isUploading, error };

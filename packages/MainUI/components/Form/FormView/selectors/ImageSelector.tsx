@@ -7,6 +7,7 @@ import { useTabContext } from "@/contexts/tab";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useAuthenticatedImage } from "@/hooks/useAuthenticatedImage";
 import { useImageUpload } from "@/hooks/useImageUpload";
+import { useTranslation } from "@/hooks/useTranslation";
 import ImageUploadModal from "./ImageUploadModal";
 import ImagePreviewModal from "./ImagePreviewModal";
 
@@ -16,6 +17,7 @@ interface ImageSelectorProps {
 }
 
 const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
+  const { t } = useTranslation();
   const { setValue, watch } = useFormContext();
   const { tab } = useTabContext();
   const { session, currentOrganization } = useUserContext();
@@ -83,8 +85,8 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
             <circle cx="8.5" cy="8.5" r="1.5" />
             <polyline points="21 15 16 10 5 21" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          {!isReadOnly && <span className="text-sm text-gray-500">Click to upload image</span>}
-          {isReadOnly && <span className="text-sm text-gray-400">No image</span>}
+          {!isReadOnly && <span className="text-sm text-gray-500">{t("image.selector.clickToUpload")}</span>}
+          {isReadOnly && <span className="text-sm text-gray-400">{t("image.selector.noImage")}</span>}
         </button>
 
         <ImageUploadModal
@@ -114,7 +116,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
           onClick={handleOpenPreview}>
           <img
             src={imageUrl || ""}
-            alt={field.name || "Image"}
+            alt={field.name || t("image.selector.altText")}
             className="w-full h-full object-cover"
             data-testid={`ImageSelector__thumbnail__${field.id}`}
           />
@@ -126,7 +128,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
           onClick={handleOpenPreview}
           className="flex-1 text-left text-sm text-[var(--color-etendo-main)] hover:underline truncate"
           data-testid={`ImageSelector__viewBtn__${field.id}`}>
-          View image
+          {t("image.selector.viewImage")}
         </button>
 
         {/* Action buttons */}
@@ -136,7 +138,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
               type="button"
               onClick={handleOpenUpload}
               className="p-1 text-gray-500 hover:text-[var(--color-etendo-main)] rounded transition-colors"
-              title="Replace image"
+              title={t("image.preview.replaceImage")}
               data-testid={`ImageSelector__editBtn__${field.id}`}>
               <svg
                 aria-hidden="true"
@@ -162,7 +164,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
               type="button"
               onClick={handleDelete}
               className="p-1 text-gray-500 hover:text-red-500 rounded transition-colors"
-              title="Remove image"
+              title={t("image.selector.removeImage")}
               data-testid={`ImageSelector__deleteBtn__${field.id}`}>
               <svg
                 aria-hidden="true"

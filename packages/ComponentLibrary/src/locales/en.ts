@@ -589,6 +589,40 @@ const en = {
     cancel: "Cancel",
     close: "Close",
   },
+  image: {
+    upload: {
+      titleNew: "Upload Image",
+      titleReplace: "Replace Image",
+      dropZoneText: "Drag and drop an image here, or click to select",
+      supportedFormats: "Supports JPG, PNG, GIF, SVG, WebP",
+      uploadButton: "Upload",
+      uploading: "Uploading...",
+      errors: {
+        invalidFile: "Please select an image file",
+        uploadFailed: "Upload failed",
+        parseIdFailed: "Failed to parse image ID from upload response",
+      },
+    },
+    preview: {
+      altText: "Preview",
+      zoomOut: "Zoom out",
+      zoomIn: "Zoom in",
+      resetZoom: "Reset zoom",
+      replaceImage: "Replace image",
+      deleteImage: "Delete image",
+      deleteConfirm: {
+        title: "Delete Image",
+        message: "Are you sure you want to remove this image?",
+      },
+    },
+    selector: {
+      clickToUpload: "Click to upload image",
+      noImage: "No image",
+      viewImage: "View image",
+      removeImage: "Remove image",
+      altText: "Image",
+    },
+  },
   packing: {
     title: "Packing Process",
     box: "Boxes",

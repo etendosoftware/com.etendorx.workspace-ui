@@ -588,6 +588,40 @@ const es = {
     cancel: "Cancelar",
     close: "Cerrar",
   },
+  image: {
+    upload: {
+      titleNew: "Cargar imagen",
+      titleReplace: "Reemplazar imagen",
+      dropZoneText: "Arrastra y suelta una imagen aquí, o haz clic para seleccionar",
+      supportedFormats: "Admite JPG, PNG, GIF, SVG, WebP",
+      uploadButton: "Cargar",
+      uploading: "Cargando...",
+      errors: {
+        invalidFile: "Por favor selecciona un archivo de imagen",
+        uploadFailed: "Error al cargar",
+        parseIdFailed: "No se pudo obtener el ID de imagen de la respuesta",
+      },
+    },
+    preview: {
+      altText: "Vista previa",
+      zoomOut: "Alejar",
+      zoomIn: "Acercar",
+      resetZoom: "Restablecer zoom",
+      replaceImage: "Reemplazar imagen",
+      deleteImage: "Eliminar imagen",
+      deleteConfirm: {
+        title: "Eliminar imagen",
+        message: "¿Estás seguro de que deseas eliminar esta imagen?",
+      },
+    },
+    selector: {
+      clickToUpload: "Haz clic para cargar una imagen",
+      noImage: "Sin imagen",
+      viewImage: "Ver imagen",
+      removeImage: "Eliminar imagen",
+      altText: "Imagen",
+    },
+  },
   packing: {
     title: "Proceso de Empaque",
     box: "Cajas",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, type WheelEvent, type MouseEvent } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ImagePreviewModalProps {
   open: boolean;
@@ -16,6 +17,7 @@ const MAX_ZOOM = 5;
 const ZOOM_STEP = 0.25;
 
 const ImagePreviewModal = ({ open, onClose, imageUrl, isReadOnly, onEdit, onDelete }: ImagePreviewModalProps) => {
+  const { t } = useTranslation();
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -111,7 +113,7 @@ const ImagePreviewModal = ({ open, onClose, imageUrl, isReadOnly, onEdit, onDele
             type="button"
             onClick={handleZoomOut}
             className="text-white/80 hover:text-white p-1.5 rounded hover:bg-white/10 transition-colors"
-            title="Zoom out"
+            title={t("image.preview.zoomOut")}
             data-testid="ImagePreviewModal__zoomOut">
             <svg
               aria-hidden="true"
@@ -129,7 +131,7 @@ const ImagePreviewModal = ({ open, onClose, imageUrl, isReadOnly, onEdit, onDele
             type="button"
             onClick={handleResetZoom}
             className="text-white/80 hover:text-white px-2 py-1 rounded hover:bg-white/10 transition-colors text-sm font-medium min-w-[60px] text-center"
-            title="Reset zoom"
+            title={t("image.preview.resetZoom")}
             data-testid="ImagePreviewModal__zoomReset">
             {Math.round(zoom * 100)}%
           </button>
@@ -137,7 +139,7 @@ const ImagePreviewModal = ({ open, onClose, imageUrl, isReadOnly, onEdit, onDele
             type="button"
             onClick={handleZoomIn}
             className="text-white/80 hover:text-white p-1.5 rounded hover:bg-white/10 transition-colors"
-            title="Zoom in"
+            title={t("image.preview.zoomIn")}
             data-testid="ImagePreviewModal__zoomIn">
             <svg
               aria-hidden="true"
@@ -163,7 +165,7 @@ const ImagePreviewModal = ({ open, onClose, imageUrl, isReadOnly, onEdit, onDele
                 onClose();
               }}
               className="text-white/80 hover:text-white p-1.5 rounded hover:bg-white/10 transition-colors"
-              title="Replace image"
+              title={t("image.preview.replaceImage")}
               data-testid="ImagePreviewModal__editBtn">
               <svg
                 aria-hidden="true"
@@ -191,7 +193,7 @@ const ImagePreviewModal = ({ open, onClose, imageUrl, isReadOnly, onEdit, onDele
               type="button"
               onClick={() => setShowDeleteConfirm(true)}
               className="text-white/80 hover:text-red-400 p-1.5 rounded hover:bg-white/10 transition-colors"
-              title="Delete image"
+              title={t("image.preview.deleteImage")}
               data-testid="ImagePreviewModal__deleteBtn">
               <svg
                 aria-hidden="true"
@@ -216,7 +218,7 @@ const ImagePreviewModal = ({ open, onClose, imageUrl, isReadOnly, onEdit, onDele
             type="button"
             onClick={onClose}
             className="text-white/80 hover:text-white p-1.5 rounded hover:bg-white/10 transition-colors ml-2"
-            title="Close"
+            title={t("common.close")}
             data-testid="ImagePreviewModal__closeBtn">
             <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -238,7 +240,7 @@ const ImagePreviewModal = ({ open, onClose, imageUrl, isReadOnly, onEdit, onDele
         data-testid="ImagePreviewModal__imageContainer">
         <img
           src={imageUrl}
-          alt="Preview"
+          alt={t("image.preview.altText")}
           className="max-w-full max-h-full object-contain pointer-events-none"
           style={{
             transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
@@ -263,22 +265,22 @@ const ImagePreviewModal = ({ open, onClose, imageUrl, isReadOnly, onEdit, onDele
           <div
             className="relative bg-white rounded-lg shadow-xl p-6 max-w-sm mx-4"
             data-testid="ImagePreviewModal__deleteConfirm">
-            <h4 className="text-lg font-semibold text-gray-900 mb-2">Delete Image</h4>
-            <p className="text-sm text-gray-600 mb-4">Are you sure you want to remove this image?</p>
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">{t("image.preview.deleteConfirm.title")}</h4>
+            <p className="text-sm text-gray-600 mb-4">{t("image.preview.deleteConfirm.message")}</p>
             <div className="flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(false)}
                 className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
                 data-testid="ImagePreviewModal__deleteCancelBtn">
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
                 onClick={handleDelete}
                 className="px-4 py-2 text-sm text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
                 data-testid="ImagePreviewModal__deleteConfirmBtn">
-                Delete
+                {t("common.delete")}
               </button>
             </div>
           </div>
