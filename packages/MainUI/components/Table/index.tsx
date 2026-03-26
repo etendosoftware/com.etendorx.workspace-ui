@@ -3049,7 +3049,7 @@ const DynamicTable = ({
 
   const handleNewWithParentGuard = useCallback(() => {
     if (parentTab && !parentRecord) return;
-    onNew();
+    onNew?.();
   }, [parentTab, parentRecord, onNew]);
 
   useKeyboardShortcuts(

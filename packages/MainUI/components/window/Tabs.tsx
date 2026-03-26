@@ -179,7 +179,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
           <div className="flex-1 bg-(--color-transparent-neutral-10) rounded-md" />
         </div>
       ) : (
-        <div className="flex flex-col flex-1 h-full min-h-0" onClick={() => setFocus(current.id)}>
+        <div className="flex flex-col flex-1 h-full min-h-0" onClick={() => current?.id && setFocus(current.id)}>
           <TabContextProvider
             tab={current}
             data-testid={`TabContextProvider__${current?.id ?? activeTabId ?? "6fa401"}`}>
