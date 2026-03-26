@@ -16,7 +16,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FormProvider, type SetValueConfig, useForm } from "react-hook-form";
+import { FormProvider, type SetValueConfig, type KeepStateOptions, useForm } from "react-hook-form";
 import { useTheme } from "@mui/material";
 import InfoIcon from "@workspaceui/componentlibrary/src/assets/icons/file-text.svg";
 import FileIcon from "@workspaceui/componentlibrary/src/assets/icons/file.svg";
@@ -110,7 +110,16 @@ const processFormData = (
   return processedData;
 };
 
-export function FormView({ window: windowMetadata, tab, mode, recordId, setRecordId, uIPattern }: FormViewProps) {
+export function FormView({
+  window: windowMetadata,
+  tab,
+  mode,
+  recordId,
+  setRecordId,
+  uIPattern,
+  isFocused,
+  onFocusAcquire,
+}: FormViewProps) {
   const theme = useTheme();
 
   const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
@@ -417,7 +426,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * @param data - Form data to reset the form with
    * @param options - Reset options, defaults to keepDirty: false for initial load
    */
-  const stableReset = useCallback((data: EntityData, options = { keepDirty: false }) => {
+  const stableReset = useCallback((data: EntityData, options: KeepStateOptions = { keepDirty: false }) => {
     resetRef.current(data, options);
   }, []);
 
@@ -550,12 +559,23 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
     const processedData = processFormData(availableFormData, tab.fields);
 
+    // Read BEFORE checkIsDataRefresh consumes and clears the ref
+    const isPostNewSave = justSavedFromNewRef.current;
     const isDataRefresh = checkIsDataRefresh();
 
     lastInitializedContextRef.current = { recordId: currentRecordId, mode: currentMode };
 
     if (isDataRefresh) {
       applyDataRefresh(processedData);
+      if (isPostNewSave) {
+        // After a NEW→EDIT save, update defaultValues to match ALL current form values
+        // (including $\_entries dropdown arrays not present in processedData) so that
+        // react-hook-form's isDirty correctly becomes false. keepValues: true avoids
+        // re-rendering form inputs — only formState subscribers (e.g. save button) update.
+        // Using getValues() instead of processedData ensures $\_entries and other keys
+        // not in processedData don't cause a defaultValues/currentValues mismatch.
+        stableReset(formMethods.getValues(), { keepValues: true, keepDirty: false });
+      }
       return;
     }
 
@@ -1002,6 +1022,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
           data-testid="FormProvider__1a0853">
           <form
             key={`form-${tab.id}-${formInstanceKey}`}
+            onClick={onFocusAcquire}
             className={`flex h-full max-h-full w-full flex-col gap-2 overflow-hidden transition duration-300 ${
               loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
             }`}>
@@ -1041,6 +1062,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               onSave={handleSave}
               showErrorModal={showErrorModal}
               mode={currentMode}
+              isFocused={isFocused}
               data-testid="FormActions__1a0853"
             />
           </form>
