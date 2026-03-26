@@ -66,7 +66,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
           type="button"
           onClick={isReadOnly ? undefined : handleOpenUpload}
           disabled={isReadOnly}
-          className={`flex items-center gap-3 h-10 px-3 border border-dashed rounded-md transition-colors w-full ${
+          className={`flex flex-col items-center justify-center gap-2 w-full h-full min-h-[120px] border border-dashed rounded-md transition-colors ${
             isReadOnly
               ? "border-gray-200 bg-gray-50 cursor-default"
               : "border-gray-300 hover:border-[var(--color-etendo-main)] cursor-pointer"
@@ -103,47 +103,38 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
     );
   }
 
-  // Image exists - show thumbnail with actions
+  // Image exists - show preview with overlay actions
   return (
     <>
       <div
-        className="group relative flex items-center gap-3 h-10 px-3 border border-gray-200 rounded-md bg-gray-50 overflow-hidden"
+        className="group relative w-full h-full min-h-[120px] border border-gray-200 rounded-md bg-gray-50 overflow-hidden flex items-center justify-center"
         data-testid={`ImageSelector__filled__${field.id}`}>
-        {/* Thumbnail */}
+        {/* Full preview image */}
         <button
           type="button"
-          className="w-8 h-8 flex-shrink-0 rounded overflow-hidden cursor-pointer p-0 border-0 bg-transparent"
+          className="w-full h-full p-0 border-0 bg-transparent cursor-pointer flex items-center justify-center"
           onClick={handleOpenPreview}>
           <img
             src={imageUrl || ""}
             alt={field.name || t("image.selector.altText")}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
             data-testid={`ImageSelector__thumbnail__${field.id}`}
           />
         </button>
 
-        {/* Click area to preview */}
-        <button
-          type="button"
-          onClick={handleOpenPreview}
-          className="flex-1 text-left text-sm text-[var(--color-etendo-main)] hover:underline truncate"
-          data-testid={`ImageSelector__viewBtn__${field.id}`}>
-          {t("image.selector.viewImage")}
-        </button>
-
-        {/* Action buttons */}
+        {/* Action buttons - top right overlay on hover */}
         {!isReadOnly && (
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               type="button"
               onClick={handleOpenUpload}
-              className="p-1 text-gray-500 hover:text-[var(--color-etendo-main)] rounded transition-colors"
+              className="p-2 bg-white/90 text-gray-700 rounded-full shadow-md border border-gray-200 hover:bg-[var(--color-etendo-main)] hover:text-white hover:border-transparent transition-colors"
               title={t("image.preview.replaceImage")}
               data-testid={`ImageSelector__editBtn__${field.id}`}>
               <svg
                 aria-hidden="true"
-                width="16"
-                height="16"
+                width="18"
+                height="18"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -163,13 +154,13 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
             <button
               type="button"
               onClick={handleDelete}
-              className="p-1 text-gray-500 hover:text-red-500 rounded transition-colors"
+              className="p-2 bg-white/90 text-gray-700 rounded-full shadow-md border border-gray-200 hover:bg-red-600 hover:text-white hover:border-transparent transition-colors"
               title={t("image.selector.removeImage")}
               data-testid={`ImageSelector__deleteBtn__${field.id}`}>
               <svg
                 aria-hidden="true"
-                width="16"
-                height="16"
+                width="18"
+                height="18"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
