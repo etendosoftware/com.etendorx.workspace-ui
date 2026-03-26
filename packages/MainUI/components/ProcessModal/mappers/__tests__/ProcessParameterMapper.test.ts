@@ -62,6 +62,10 @@ describe("ProcessParameterMapper", () => {
       const numericParam = { ...mockParameter, reference: "Amount" };
       const numericField = ProcessParameterMapper.mapToField(numericParam);
       expect(numericField.column.reference).toBe(FIELD_REFERENCE_CODES.DECIMAL.id);
+
+      const imageParam = { ...mockParameter, reference: "Image" };
+      const imageField = ProcessParameterMapper.mapToField(imageParam);
+      expect(imageField.column.reference).toBe(FIELD_REFERENCE_CODES.IMAGE.id);
     });
 
     it("should preserve refList for list fields", () => {
@@ -126,6 +130,7 @@ describe("ProcessParameterMapper", () => {
         "TableDir",
         "Table Directory",
         "Window",
+        "Image",
       ];
 
       supportedTypes.forEach((referenceType) => {
@@ -160,6 +165,7 @@ describe("ProcessParameterMapper", () => {
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Window" })).toBe("window");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "String" })).toBe("text");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Unknown" })).toBe("text");
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Image" })).toBe("image");
     });
 
     it("should default to text for undefined reference", () => {
