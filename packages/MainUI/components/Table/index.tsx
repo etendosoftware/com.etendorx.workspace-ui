@@ -624,6 +624,8 @@ interface DynamicTableProps {
   isVisible?: boolean;
   areFiltersDisabled?: boolean;
   uIPattern?: UIPattern;
+  isFocused?: boolean;
+  onFocusAcquire?: () => void;
 }
 
 const getExpandIcon = (canExpand: boolean, isExpanded: boolean) => {
@@ -683,6 +685,8 @@ const DynamicTable = ({
   isVisible = true,
   areFiltersDisabled = false,
   uIPattern,
+  isFocused,
+  onFocusAcquire,
 }: DynamicTableProps) => {
   const { sx } = useStyle();
   const { t } = useTranslation();
@@ -743,7 +747,7 @@ const DynamicTable = ({
     registerUpdateRecord,
     registerAddRecord,
   } = useDatasourceContext();
-  const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal } = useToolbarContext();
+  const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal, onNew } = useToolbarContext();
   const { activeWindow, getSelectedRecord, getTabFormState } = useWindowContext();
   const { tab, parentTab, parentRecord } = useTabContext();
   const { registerRefresh } = useTabRefreshContext();
@@ -2581,6 +2585,7 @@ const DynamicTable = ({
           }
 
           // Transfer DOM focus to the table container so keyboard shortcuts work
+          onFocusAcquire?.();
           tableContainerRef.current?.focus();
 
           // Clear any existing timeout for this row
@@ -3042,13 +3047,19 @@ const DynamicTable = ({
     [effectiveRecords, tableContainerRef, graph, tab, activeWindow, getSelectedRecord, setRecordId]
   );
 
+  const handleNewWithParentGuard = useCallback(() => {
+    if (parentTab && !parentRecord) return;
+    onNew?.();
+  }, [parentTab, parentRecord, onNew]);
+
   useKeyboardShortcuts(
     {
       ArrowDown: { handler: handleArrowDown },
       ArrowUp: { handler: handleArrowUp },
       Enter: { handler: handleEnter },
+      "ctrl+n": { handler: handleNewWithParentGuard, allowInInputs: true },
     },
-    editingRowsCount === 0
+    editingRowsCount === 0 && (isFocused ?? true)
   );
 
   // When the table becomes visible again (e.g. after returning from FormView via Escape),
@@ -3515,7 +3526,8 @@ const DynamicTable = ({
     <div
       className={`h-full overflow-hidden rounded-3xl transition-opacity flex flex-col ${
         loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
-      }`}>
+      }`}
+      onClick={onFocusAcquire}>
       <RecordCounterBar
         totalRecords={totalRecords}
         loadedRecords={loadedRecords}

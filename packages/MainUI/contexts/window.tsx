@@ -17,6 +17,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { FocusProvider } from "@/contexts/focus";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { MRT_VisibilityState, MRT_ColumnFiltersState, MRT_SortingState } from "material-react-table";
 import { type TabFormState, TAB_MODES } from "@/utils/url/constants";
@@ -892,7 +893,11 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     ]
   );
 
-  return <WindowContext.Provider value={value}>{children}</WindowContext.Provider>;
+  return (
+    <WindowContext.Provider value={value}>
+      <FocusProvider data-testid="FocusProvider__77fd99">{children}</FocusProvider>
+    </WindowContext.Provider>
+  );
 }
 
 export const useWindowContext = () => {
