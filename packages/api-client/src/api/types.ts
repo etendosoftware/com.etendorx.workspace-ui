@@ -246,6 +246,7 @@ export enum FieldType {
   WINDOW = "window",
   DATETIME = "datetime",
   TIME = "time",
+  IMAGE = "image",
 }
 
 export interface MappedTab {

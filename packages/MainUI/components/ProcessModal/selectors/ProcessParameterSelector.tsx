@@ -17,6 +17,7 @@ import { SelectSelector } from "@/components/Form/FormView/selectors/SelectSelec
 import { TableDirSelector } from "@/components/Form/FormView/selectors/TableDirSelector";
 import QuantitySelector from "@/components/Form/FormView/selectors/QuantitySelector";
 import { ListSelector } from "@/components/Form/FormView/selectors/ListSelector";
+import { ImageSelector } from "@/components/Form/FormView/selectors/ImageSelector";
 
 // Import mapper
 import { ProcessParameterMapper } from "../mappers/ProcessParameterMapper";
@@ -239,6 +240,9 @@ export const ProcessParameterSelector = ({
 
         case "quantity":
           return <QuantitySelector allowNegative={true} field={mappedField} data-testid="QuantitySelector__dac06b" />;
+
+        case "image":
+          return <ImageSelector field={mappedField} isReadOnly={isReadOnly} data-testid="ImageSelector__dac06b" />;
 
         case "list":
           if (!mappedField.refList || mappedField.refList.length === 0) {

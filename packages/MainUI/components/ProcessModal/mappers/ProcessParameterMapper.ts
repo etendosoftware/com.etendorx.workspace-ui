@@ -186,6 +186,9 @@ export class ProcessParameterMapper {
       // Attribute Set Instance
       PAttribute: FIELD_REFERENCE_CODES.PATTRIBUTE.id,
 
+      // Image
+      Image: FIELD_REFERENCE_CODES.IMAGE.id,
+
       // String/Text (default)
       String: "10", // Text reference
       Text: "10",
@@ -228,6 +231,7 @@ export class ProcessParameterMapper {
       "Table Directory",
       "Window",
       "PAttribute",
+      "Image",
     ];
 
     return (
@@ -277,6 +281,7 @@ export class ProcessParameterMapper {
     }
     if (reference === FIELD_REFERENCE_CODES.WINDOW.id) return "window";
     if (reference === FIELD_REFERENCE_CODES.PATTRIBUTE.id) return "pattribute";
+    if (reference === FIELD_REFERENCE_CODES.IMAGE.id) return "image";
 
     return "text"; // Default fallback
   }

@@ -39,6 +39,7 @@ import DatetimeSelector from "./DatetimeSelector";
 import LocationSelector from "./LocationSelector";
 import { TimeSelector } from "./TimeSelector";
 import AttributeSetInstanceSelector from "./AttributeSetInstance";
+import { ImageSelector } from "./ImageSelector";
 
 import { useFormContext } from "react-hook-form";
 
@@ -150,6 +151,10 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
       );
     case FIELD_REFERENCE_CODES.TEXT_LONG.id:
       return <TextLongSelector field={effectiveField} readOnly={isReadOnly} data-testid="TextLongSelector__6e80fa" />;
+    case FIELD_REFERENCE_CODES.IMAGE.id:
+      return (
+        <ImageSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={`ImageSelector__${field.id}`} />
+      );
     default:
       return <StringSelector field={effectiveField} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;
   }
