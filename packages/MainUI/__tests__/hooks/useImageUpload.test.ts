@@ -92,9 +92,11 @@ describe("useImageUpload", () => {
 
     const { result } = renderHook(() => useImageUpload());
 
-    await expect(async () => {
-      await result.current.uploadImage(uploadParams);
-    }).rejects.toThrow("image.upload.errors.parseIdFailed");
+    await act(async () => {
+      await expect(result.current.uploadImage(uploadParams)).rejects.toThrow(
+        "image.upload.errors.parseIdFailed"
+      );
+    });
   });
 
   it("should handle HTTP upload failure", async () => {
@@ -102,9 +104,11 @@ describe("useImageUpload", () => {
 
     const { result } = renderHook(() => useImageUpload());
 
-    await expect(async () => {
-      await result.current.uploadImage(uploadParams);
-    }).rejects.toThrow("image.upload.errors.uploadFailed: 500 Internal Server Error");
+    await act(async () => {
+      await expect(result.current.uploadImage(uploadParams)).rejects.toThrow(
+        "image.upload.errors.uploadFailed: 500 Internal Server Error"
+      );
+    });
   });
 
   it("should handle network exception", async () => {
@@ -112,8 +116,8 @@ describe("useImageUpload", () => {
 
     const { result } = renderHook(() => useImageUpload());
 
-    await expect(async () => {
-      await result.current.uploadImage(uploadParams);
-    }).rejects.toThrow("Network error");
+    await act(async () => {
+      await expect(result.current.uploadImage(uploadParams)).rejects.toThrow("Network error");
+    });
   });
 });
