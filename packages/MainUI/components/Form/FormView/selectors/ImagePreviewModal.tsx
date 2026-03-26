@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, type WheelEvent, type MouseEvent } from "react";
+import { useState, useCallback, useRef, useEffect, type WheelEvent, type MouseEvent, useMemo } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface ImagePreviewModalProps {
@@ -90,6 +90,14 @@ const ImagePreviewModal = ({ open, onClose, imageUrl, isReadOnly, onEdit, onDele
     onDelete?.();
     onClose();
   }, [onDelete, onClose]);
+
+  const getCursor = useCallback(() => {
+    if (zoom <= 1) return "default";
+    if (isDragging) return "grabbing";
+    return "grab";
+  }, [zoom, isDragging]);
+
+  const cursor = useMemo(() => getCursor(), [getCursor]);
 
   if (!open) return null;
 
@@ -236,7 +244,7 @@ const ImagePreviewModal = ({ open, onClose, imageUrl, isReadOnly, onEdit, onDele
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        style={{ cursor: zoom > 1 ? (isDragging ? "grabbing" : "grab") : "default" }}
+        style={{ cursor }}
         data-testid="ImagePreviewModal__imageContainer">
         <img
           src={imageUrl}

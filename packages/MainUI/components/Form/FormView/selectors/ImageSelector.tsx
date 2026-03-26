@@ -132,6 +132,16 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
     />
   );
 
+  const getButtonClasses = useCallback(() => {
+    if (isUploading) return "border-gray-300 bg-gray-50 cursor-wait";
+    if (isDragging) return "border-[var(--color-etendo-main)] bg-[var(--color-etendo-main)]/5 cursor-copy";
+    if (isReadOnly) return "border-gray-200 bg-gray-50 cursor-default";
+    return "border-gray-300 hover:border-[var(--color-etendo-main)] cursor-pointer";
+  }, [isUploading, isDragging, isReadOnly]);
+
+  const buttonDynamicClasses = useMemo(() => getButtonClasses(), [getButtonClasses]);
+
+
   // No image - show upload placeholder
   if (!imageId) {
     return (
@@ -144,15 +154,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
           onDragLeave={isReadOnly ? undefined : handleDragLeave}
           onDrop={isReadOnly ? undefined : handleDrop}
           disabled={isReadOnly || isUploading}
-          className={`flex flex-col items-center justify-center gap-2 w-full h-full min-h-[150px] border border-dashed rounded-md transition-colors ${
-            isUploading
-              ? "border-gray-300 bg-gray-50 cursor-wait"
-              : isDragging
-                ? "border-[var(--color-etendo-main)] bg-[var(--color-etendo-main)]/5 cursor-copy"
-                : isReadOnly
-                  ? "border-gray-200 bg-gray-50 cursor-default"
-                  : "border-gray-300 hover:border-[var(--color-etendo-main)] cursor-pointer"
-          }`}
+          className={`flex flex-col items-center justify-center gap-2 w-full h-full min-h-[150px] border border-dashed rounded-md transition-colors ${buttonDynamicClasses}`}
           data-testid={`ImageSelector__empty__${field.id}`}>
           {isUploading ? (
             <Spinner size={24} />
