@@ -7,6 +7,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import { useAuthenticatedImage } from "@/hooks/useAuthenticatedImage";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { useTranslation } from "@/hooks/useTranslation";
+import { toast } from "sonner";
 
 jest.mock("react-hook-form");
 jest.mock("@/contexts/tab");
@@ -14,37 +15,33 @@ jest.mock("@/hooks/useUserContext");
 jest.mock("@/hooks/useAuthenticatedImage");
 jest.mock("@/hooks/useImageUpload");
 jest.mock("@/hooks/useTranslation");
-
-jest.mock("../ImageUploadModal", () => ({
-  __esModule: true,
-  default: ({ open, onClose, onUploadComplete }: any) => {
-    if (!open) return null;
-    return (
-      <div data-testid="ImageUploadModal">
-        <button onClick={() => onClose()} data-testid="ImageUploadModal__close">
-          Close
-        </button>
-        <button onClick={() => onUploadComplete("new-img-id")} data-testid="ImageUploadModal__upload">
-          Upload
-        </button>
-      </div>
-    );
-  },
+jest.mock("sonner", () => ({
+  toast: { success: jest.fn(), error: jest.fn() },
 }));
 
 jest.mock("../ImagePreviewModal", () => ({
   __esModule: true,
-  default: ({ open, onClose, onEdit, onDelete }: any) => {
+  default: ({
+    open,
+    onClose,
+    onEdit,
+    onDelete,
+  }: {
+    open: boolean;
+    onClose: () => void;
+    onEdit: () => void;
+    onDelete: () => void;
+  }) => {
     if (!open) return null;
     return (
       <div data-testid="ImagePreviewModal">
-        <button onClick={() => onClose()} data-testid="ImagePreviewModal__close">
+        <button type="button" onClick={() => onClose()} data-testid="ImagePreviewModal__close">
           Close Preview
         </button>
-        <button onClick={() => onEdit()} data-testid="ImagePreviewModal__edit">
+        <button type="button" onClick={() => onEdit()} data-testid="ImagePreviewModal__edit">
           Edit
         </button>
-        <button onClick={() => onDelete()} data-testid="ImagePreviewModal__delete">
+        <button type="button" onClick={() => onDelete()} data-testid="ImagePreviewModal__delete">
           Delete
         </button>
       </div>
@@ -62,12 +59,14 @@ const mockField = {
 describe("ImageSelector", () => {
   let watchMock: jest.Mock;
   let setValueMock: jest.Mock;
+  let uploadImageMock: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
     watchMock = jest.fn();
     setValueMock = jest.fn();
+    uploadImageMock = jest.fn();
 
     (useFormContext as jest.Mock).mockReturnValue({
       watch: watchMock,
@@ -88,7 +87,7 @@ describe("ImageSelector", () => {
     });
 
     (useImageUpload as jest.Mock).mockReturnValue({
-      uploadImage: jest.fn(),
+      uploadImage: uploadImageMock,
       isUploading: false,
     });
 
@@ -113,34 +112,54 @@ describe("ImageSelector", () => {
     expect(thumbnail.src).toBe("blob:http://localhost/existing-img-id");
   });
 
-  it("should open upload modal from empty state", () => {
+  it("should call uploadImage and set value on valid file selection", async () => {
     watchMock.mockReturnValue(null);
+    uploadImageMock.mockResolvedValue({ imageId: "new-img-id" });
     render(<ImageSelector field={mockField} />);
 
-    const emptyBtn = screen.getByTestId("ImageSelector__empty__col-1");
-    fireEvent.click(emptyBtn);
+    const file = new File(["dummy"], "test.png", { type: "image/png" });
+    const fileInput = screen.getByTestId("ImageSelector__fileInput__col-1");
+    fireEvent.change(fileInput, { target: { files: [file] } });
 
-    expect(screen.getByTestId("ImageUploadModal")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(uploadImageMock).toHaveBeenCalledWith({
+        file,
+        columnName: "AD_Image_ID",
+        tabId: "tab-123",
+        orgId: "org-foo",
+        existingImageId: undefined,
+      });
+      expect(setValueMock).toHaveBeenCalledWith("imageId", "new-img-id", { shouldDirty: true });
+      expect(toast.success).toHaveBeenCalledWith("image.upload.success");
+    });
   });
 
-  it("should close upload modal when triggered", () => {
+  it("should show error toast on invalid file type", async () => {
     watchMock.mockReturnValue(null);
     render(<ImageSelector field={mockField} />);
 
-    fireEvent.click(screen.getByTestId("ImageSelector__empty__col-1"));
-    fireEvent.click(screen.getByTestId("ImageUploadModal__close"));
+    const file = new File(["dummy"], "test.txt", { type: "text/plain" });
+    const fileInput = screen.getByTestId("ImageSelector__fileInput__col-1");
+    fireEvent.change(fileInput, { target: { files: [file] } });
 
-    expect(screen.queryByTestId("ImageUploadModal")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("image.upload.errors.invalidFile");
+    });
+    expect(uploadImageMock).not.toHaveBeenCalled();
   });
 
-  it("should handle upload complete and set value", () => {
+  it("should show error toast on upload failure", async () => {
     watchMock.mockReturnValue(null);
+    uploadImageMock.mockRejectedValue(new Error("Upload failed"));
     render(<ImageSelector field={mockField} />);
 
-    fireEvent.click(screen.getByTestId("ImageSelector__empty__col-1"));
-    fireEvent.click(screen.getByTestId("ImageUploadModal__upload"));
+    const file = new File(["dummy"], "test.png", { type: "image/png" });
+    const fileInput = screen.getByTestId("ImageSelector__fileInput__col-1");
+    fireEvent.change(fileInput, { target: { files: [file] } });
 
-    expect(setValueMock).toHaveBeenCalledWith("imageId", "new-img-id", { shouldDirty: true });
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Upload failed");
+    });
   });
 
   it("should open preview modal when clicking existing image thumbnail", () => {
@@ -149,8 +168,7 @@ describe("ImageSelector", () => {
 
     render(<ImageSelector field={mockField} />);
 
-    const thumbnail = screen.getByTestId("ImageSelector__thumbnail__col-1");
-    fireEvent.click(thumbnail);
+    fireEvent.click(screen.getByTestId("ImageSelector__thumbnail__col-1"));
 
     expect(screen.getByTestId("ImagePreviewModal")).toBeInTheDocument();
   });
@@ -166,7 +184,7 @@ describe("ImageSelector", () => {
     expect(screen.queryByTestId("ImagePreviewModal")).not.toBeInTheDocument();
   });
 
-  it("should handle delete from preview buttons", () => {
+  it("should handle delete from overlay button", () => {
     watchMock.mockReturnValue("existing-img-id");
     (useAuthenticatedImage as jest.Mock).mockReturnValue("blob:http://localhostUrl");
 
@@ -176,27 +194,14 @@ describe("ImageSelector", () => {
     expect(setValueMock).toHaveBeenCalledWith("imageId", null, { shouldDirty: true });
   });
 
-  it("should handle open upload modal from edit action overlay", () => {
-    watchMock.mockReturnValue("existing-img-id");
-    (useAuthenticatedImage as jest.Mock).mockReturnValue("blob:http://localhostUrl");
-
-    render(<ImageSelector field={mockField} />);
-    fireEvent.click(screen.getByTestId("ImageSelector__editBtn__col-1"));
-
-    expect(screen.getByTestId("ImageUploadModal")).toBeInTheDocument();
-  });
-
-  it("disabled in readOnly mode", () => {
+  it("should not render file input in readOnly mode", () => {
     watchMock.mockReturnValue(null);
     render(<ImageSelector field={mockField} isReadOnly={true} />);
 
-    const emptyBtn = screen.getByTestId("ImageSelector__empty__col-1");
-    fireEvent.click(emptyBtn); // should not open modal
-
-    expect(screen.queryByTestId("ImageUploadModal")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ImageSelector__fileInput__col-1")).not.toBeInTheDocument();
   });
 
-  it("hides action buttons in readOnly mode when a filled image is present", () => {
+  it("should hide action buttons in readOnly mode when a filled image is present", () => {
     watchMock.mockReturnValue("existing-img-id");
     (useAuthenticatedImage as jest.Mock).mockReturnValue("blob:http://localhostUrl");
 

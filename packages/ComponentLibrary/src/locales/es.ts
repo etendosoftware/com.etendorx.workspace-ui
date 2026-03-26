@@ -596,6 +596,7 @@ const es = {
       supportedFormats: "Admite JPG, PNG, GIF, SVG, WebP",
       uploadButton: "Cargar",
       uploading: "Cargando...",
+      success: "Imagen cargada exitosamente",
       errors: {
         invalidFile: "Por favor selecciona un archivo de imagen",
         uploadFailed: "Error al cargar",

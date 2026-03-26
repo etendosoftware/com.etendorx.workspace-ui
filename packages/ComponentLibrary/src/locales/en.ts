@@ -597,6 +597,7 @@ const en = {
       supportedFormats: "Supports JPG, PNG, GIF, SVG, WebP",
       uploadButton: "Upload",
       uploading: "Uploading...",
+      success: "Image uploaded successfully",
       errors: {
         invalidFile: "Please select an image file",
         uploadFailed: "Upload failed",
