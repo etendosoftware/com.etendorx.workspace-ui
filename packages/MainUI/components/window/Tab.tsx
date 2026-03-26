@@ -23,6 +23,8 @@ import { Toolbar } from "../Toolbar/Toolbar";
 import DynamicTable from "../Table";
 import { useMetadataContext } from "../../hooks/useMetadataContext";
 import { FormView } from "@/components/Form/FormView";
+import { useFocusRegion } from "@/hooks/useFocusRegion";
+import { useTabContext } from "@/contexts/tab";
 import { FormMode, UIPattern } from "@workspaceui/api-client/src/api/types";
 import { AttachmentProvider } from "@/contexts/AttachmentContext";
 import type { TabLevelProps } from "@/components/window/types";
@@ -121,7 +123,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     getTableState,
     setTableAdvancedCriteria,
   } = useWindowContext();
-  const { registerActions, setIsAdvancedFilterApplied } = useToolbarContext();
+  const { registerActions, setIsAdvancedFilterApplied, onSave } = useToolbarContext();
+  const { hasFormChanges } = useTabContext();
   const { graph } = useSelected();
   const { unregisterRefresh } = useTabRefreshContext();
   const { token } = useUserContext();
@@ -138,6 +141,21 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const srAutoOpenedForParentRef = useRef<string | undefined>(undefined);
 
   const windowIdentifier = activeWindow?.windowIdentifier;
+
+  const { isFocused, acquire } = useFocusRegion(tab.id, {
+    onBlur: async () => {
+      if (hasFormChanges) {
+        await onSave({ showModal: true });
+      }
+    },
+  });
+
+  // Level-0 tab (header) acquires focus on mount — sets initial focus for the window
+  useEffect(() => {
+    if (tab.tabLevel === 0) {
+      acquire();
+    }
+  }, [tab.tabLevel, acquire]);
 
   const tabFormState = windowIdentifier ? getTabFormState(windowIdentifier, tab.id) : undefined;
   const selectedRecordId = windowIdentifier ? getSelectedRecord(windowIdentifier, tab.id) : undefined;
@@ -1114,6 +1132,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     handleSetRecordId(parentSelectedRecordId);
   }, [tab.uIPattern, tab.defaultEditMode, parentSelectedRecordId, handleSetRecordId]);
 
+  const focusBorderColor = isFocused ? "border-l-[var(--color-secondary-500)]" : "border-l-transparent";
+  const tableWrapperClassName = !shouldShowForm
+    ? `flex-1 h-full min-h-0 rounded-l-3xl transition-[border-left-color] duration-200 border-l-4 ${focusBorderColor}`
+    : "absolute top-0 left-0 w-full h-full invisible opacity-0 z-[-1] pointer-events-none";
+
   return (
     <div
       className={`relative bg-(linear-gradient(180deg, #C6CFFF 0%, #FCFCFD 55.65%)) flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${
@@ -1126,7 +1149,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         data-testid="Toolbar__5893c8"
       />
       {shouldShowForm && (
-        <div className="flex-1 h-full min-h-0 relative z-10">
+        <div
+          className={`flex-1 h-full min-h-0 relative z-10 transition-[border-left-color] duration-200 border-l-4 ${isFocused ? "border-l-[var(--color-secondary-500)]" : "border-l-transparent"}`}>
           <FormView
             mode={formMode}
             tab={tab}
@@ -1134,16 +1158,13 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
             recordId={currentRecordId}
             setRecordId={handleSetRecordId}
             uIPattern={tab.uIPattern}
+            isFocused={isFocused}
+            onFocusAcquire={acquire}
             data-testid="FormView__5893c8"
           />
         </div>
       )}
-      <div
-        className={
-          !shouldShowForm
-            ? "flex-1 h-full min-h-0"
-            : "absolute top-0 left-0 w-full h-full invisible opacity-0 z-[-1] pointer-events-none"
-        }>
+      <div className={tableWrapperClassName}>
         <AttachmentProvider data-testid="AttachmentProvider__5893c8">
           <DynamicTable
             isTreeMode={toggle}
@@ -1152,6 +1173,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
             isVisible={!shouldShowForm}
             areFiltersDisabled={advancedFilters.length > 0}
             uIPattern={tab.uIPattern}
+            isFocused={isFocused}
+            onFocusAcquire={acquire}
             data-testid="DynamicTable__5893c8"
           />
         </AttachmentProvider>

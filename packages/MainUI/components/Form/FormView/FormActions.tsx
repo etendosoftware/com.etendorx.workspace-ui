@@ -36,9 +36,10 @@ interface FormActionsProps {
   onSave: (options: SaveOptions) => Promise<boolean>;
   showErrorModal: (message: string) => void;
   mode: FormMode;
+  isFocused?: boolean;
 }
 
-export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode }: FormActionsProps) {
+export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode, isFocused }: FormActionsProps) {
   const formContext = useFormContext();
   const { isDirty } = formContext.formState;
 
@@ -197,11 +198,14 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode 
     handleBack();
   }, [isDirty, handleSave, handleBack, saveButtonState.isSaving, saveButtonState.isCalloutLoading]);
 
-  useKeyboardShortcuts({
-    "ctrl+s": { handler: handleKeyboardSave, allowInInputs: true },
-    "ctrl+n": { handler: handleNew, allowInInputs: true },
-    Escape: { handler: handleKeyboardEscape },
-  });
+  useKeyboardShortcuts(
+    {
+      "ctrl+s": { handler: handleKeyboardSave, allowInInputs: true },
+      "ctrl+n": { handler: handleNew, allowInInputs: true },
+      Escape: { handler: handleKeyboardEscape },
+    },
+    isFocused ?? true
+  );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: actions need to change every Tab change
   useEffect(() => {
