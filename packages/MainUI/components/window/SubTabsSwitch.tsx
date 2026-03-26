@@ -28,14 +28,14 @@ export const SubTabsSwitch = ({
   current,
   activeTabId,
   onClick,
-  onClose,
   onDoubleClick,
   collapsed,
+  isExpanded,
 }: TabsSwitchProps) => {
   return (
     <div
       onDoubleClick={() => {
-        collapsed ? onClick(current) : onClose();
+        onDoubleClick(current);
       }}
       className="flex items-center justify-between px-2 py-2 bg-(--color-transparent-neutral-5) max-h-[2.75rem]">
       <div
@@ -58,8 +58,14 @@ export const SubTabsSwitch = ({
       </div>
       <IconButton className="bg-transparent" data-testid={`IconButton__${current?.id ?? activeTabId ?? "a89627"}`}>
         <ChevronDown
-          onClick={collapsed ? () => onClick(current) : onClose}
-          className={`transition-transform duration-300 ease-in-out ${collapsed ? "rotate-180" : "rotate-0"}`}
+          onClick={() => {
+            if (collapsed) {
+              onClick(current);
+            } else {
+              onDoubleClick(current);
+            }
+          }}
+          className={`transition-transform duration-300 ease-in-out ${!isExpanded ? "rotate-180" : "rotate-0"}`}
           data-testid={`ChevronDown__${current?.id ?? activeTabId ?? "a89627"}`}
         />
       </IconButton>

@@ -28,7 +28,7 @@ describe("Purchase Order to Invoice flow", () => {
 
     cy.contains("Main Section").should("be.visible");
 
-    cy.get('[aria-describedby="Business Partner-help"] > .w-2\\/3 > .relative > .w-full').click();
+    cy.get('[aria-label="Business Partner"] > div[tabindex="0"]').click();
 
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295F40BDDF02E3"]').click();
 
@@ -37,7 +37,7 @@ describe("Purchase Order to Invoice flow", () => {
     cy.get('button[aria-label="Lines"]').click();
     cy.clickNewRecord();
 
-    cy.get('[aria-describedby="Product-help"] > .w-2\\/3 > .relative > .w-full').click();
+    cy.get('[aria-label="Product"] > div[tabindex="0"]').click();
     cy.intercept("POST", /FormInitializationComponent/).as("productFormInit");
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"] > .truncate').click();
     cy.wait("@productFormInit", { timeout: 60000 });

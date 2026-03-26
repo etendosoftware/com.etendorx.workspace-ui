@@ -69,7 +69,8 @@ export const useFormValidation = (tab: Tab) => {
     if (!tab?.fields) return [];
 
     return Object.values(tab.fields).filter((field: Field) => {
-      return field.isMandatory && field.displayed && !field.isReadOnly;
+      const isPropertyField = !!field.column?.propertyPath;
+      return field.isMandatory && field.displayed && !field.isReadOnly && !isPropertyField;
     });
   }, [tab?.fields]);
 

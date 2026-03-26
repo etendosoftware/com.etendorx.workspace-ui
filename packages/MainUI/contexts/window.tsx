@@ -689,6 +689,14 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     }
   }, [isRecoveryLoading]);
 
+  const hasAppliedWindowsRef = useRef(false);
+
+  useEffect(() => {
+    if (windows.length > 0) {
+      hasAppliedWindowsRef.current = true;
+    }
+  }, [windows]);
+
   /**
    * Initialize state from recovered windows
    *
@@ -760,6 +768,12 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
   useEffect(() => {
     // Only update URL if not recovering and all windows are initialized
     if (isRecoveryLoading) {
+      return;
+    }
+
+    // Wait for state to catch up to recovered windows before syncing URL.
+    // This prevents clearing the URL before the first render with Windows finishes.
+    if (recoveredWindows.length > 0 && windows.length === 0 && !hasAppliedWindowsRef.current) {
       return;
     }
 
