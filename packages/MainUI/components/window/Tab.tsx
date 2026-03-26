@@ -1132,8 +1132,9 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     handleSetRecordId(parentSelectedRecordId);
   }, [tab.uIPattern, tab.defaultEditMode, parentSelectedRecordId, handleSetRecordId]);
 
+  const focusBorderColor = isFocused ? "border-l-[var(--color-secondary-500)]" : "border-l-transparent";
   const tableWrapperClassName = !shouldShowForm
-    ? `flex-1 h-full min-h-0 rounded-l-3xl transition-[border-left-color] duration-200 border-l-4 ${isFocused ? "border-l-[var(--color-secondary-500)]" : "border-l-transparent"}`
+    ? `flex-1 h-full min-h-0 rounded-l-3xl transition-[border-left-color] duration-200 border-l-4 ${focusBorderColor}`
     : "absolute top-0 left-0 w-full h-full invisible opacity-0 z-[-1] pointer-events-none";
 
   return (
