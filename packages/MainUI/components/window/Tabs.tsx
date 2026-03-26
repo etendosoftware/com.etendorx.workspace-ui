@@ -20,6 +20,7 @@
 
 import { useCallback, useState, useTransition, useEffect } from "react";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
+import { useFocusContext } from "@/contexts/focus";
 import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
 import { SubTabsSwitch } from "@/components/window/SubTabsSwitch";
@@ -64,6 +65,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
   }, [initialActiveTab, tabs, current.id]); // dependency on tabs ensures re-eval when filter changes
 
   const { activeWindow } = useWindowContext();
+  const { setFocus } = useFocusContext();
   const { activeLevels, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
     windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: "",
@@ -77,6 +79,9 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
 
   const handleClick = useCallback(
     (tab: TabType) => {
+      // Transfer focus (triggers onBlur/auto-save on the previously focused tab)
+      setFocus(tab.id);
+
       // Immediate visual feedback
       setActiveTabId(tab.id);
 
@@ -96,7 +101,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
         setActiveTabsByLevel(tab);
       });
     },
-    [setActiveLevel, startTransition, setActiveTabsByLevel, current.id]
+    [setActiveLevel, startTransition, setActiveTabsByLevel, current.id, setFocus]
   );
 
   const handleDoubleClick = useCallback(
@@ -174,7 +179,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
           <div className="flex-1 bg-(--color-transparent-neutral-10) rounded-md" />
         </div>
       ) : (
-        <div className="flex flex-col flex-1 h-full min-h-0">
+        <div className="flex flex-col flex-1 h-full min-h-0" onClick={() => setFocus(current.id)}>
           <TabContextProvider
             tab={current}
             data-testid={`TabContextProvider__${current?.id ?? activeTabId ?? "6fa401"}`}>
