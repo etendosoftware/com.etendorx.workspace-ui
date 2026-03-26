@@ -141,7 +141,6 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
 
   const buttonDynamicClasses = useMemo(() => getButtonClasses(), [getButtonClasses]);
 
-
   // No image - show upload placeholder
   if (!imageId) {
     return (
@@ -157,7 +156,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
           className={`flex flex-col items-center justify-center gap-2 w-full h-full min-h-[150px] border border-dashed rounded-md transition-colors ${buttonDynamicClasses}`}
           data-testid={`ImageSelector__empty__${field.id}`}>
           {isUploading ? (
-            <Spinner size={24} />
+            <Spinner size={24} data-testid={"Spinner__" + field.id} />
           ) : (
             <svg
               aria-hidden="true"
@@ -174,7 +173,9 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
             </svg>
           )}
           {isUploading && <span className="text-sm text-gray-500">{t("image.upload.uploading")}</span>}
-          {!isUploading && !isReadOnly && <span className="text-sm text-gray-500">{t("image.selector.clickToUpload")}</span>}
+          {!isUploading && !isReadOnly && (
+            <span className="text-sm text-gray-500">{t("image.selector.clickToUpload")}</span>
+          )}
           {!isUploading && isReadOnly && <span className="text-sm text-gray-400">{t("image.selector.noImage")}</span>}
         </button>
       </>
@@ -209,7 +210,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
         {/* Spinner overlay while uploading */}
         {isUploading && (
           <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
-            <Spinner size={28} />
+            <Spinner size={28} data-testid={"Spinner__" + field.id} />
           </div>
         )}
 
@@ -222,9 +223,24 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
               className="p-2 bg-white/90 text-gray-700 rounded-full shadow-md border border-gray-200 hover:bg-[var(--color-etendo-main)] hover:text-white hover:border-transparent transition-colors"
               title={t("image.preview.replaceImage")}
               data-testid={`ImageSelector__editBtn__${field.id}`}>
-              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" strokeLinecap="round" strokeLinejoin="round" />
+              <svg
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2">
+                <path
+                  d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
             <button
@@ -233,15 +249,25 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
               className="p-2 bg-white/90 text-gray-700 rounded-full shadow-md border border-gray-200 hover:bg-red-600 hover:text-white hover:border-transparent transition-colors"
               title={t("image.selector.removeImage")}
               data-testid={`ImageSelector__deleteBtn__${field.id}`}>
-              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2">
                 <polyline points="3 6 5 6 21 6" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
           </div>
         )}
       </div>
-
       {imageUrl && (
         <ImagePreviewModal
           open={showPreviewModal}

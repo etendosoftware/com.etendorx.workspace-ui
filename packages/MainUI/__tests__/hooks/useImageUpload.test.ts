@@ -93,9 +93,7 @@ describe("useImageUpload", () => {
     const { result } = renderHook(() => useImageUpload());
 
     await act(async () => {
-      await expect(result.current.uploadImage(uploadParams)).rejects.toThrow(
-        "image.upload.errors.parseIdFailed"
-      );
+      await expect(result.current.uploadImage(uploadParams)).rejects.toThrow("image.upload.errors.parseIdFailed");
     });
   });
 
