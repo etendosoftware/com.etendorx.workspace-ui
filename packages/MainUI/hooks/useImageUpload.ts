@@ -68,7 +68,9 @@ export const useImageUpload = (): UseImageUploadReturn => {
         });
 
         if (!uploadResponse.ok) {
-          throw new Error(`${t("image.upload.errors.uploadFailed")}: ${uploadResponse.status} ${uploadResponse.statusText}`);
+          throw new Error(
+            `${t("image.upload.errors.uploadFailed")}: ${uploadResponse.status} ${uploadResponse.statusText}`
+          );
         }
 
         const responseText = await uploadResponse.text();
@@ -78,34 +80,7 @@ export const useImageUpload = (): UseImageUploadReturn => {
           throw new Error(t("image.upload.errors.parseIdFailed"));
         }
 
-        // Step 2: Call GETSIZE for backend compatibility
-        let width: number | undefined;
-        let height: number | undefined;
-
-        try {
-          const getSizeResponse = await fetch(
-            `/api/erp/org.openbravo.client.kernel?inpimageId=${imageId}&command=GETSIZE&_action=org.openbravo.client.application.window.ImagesActionHandler`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json;charset=UTF-8",
-              },
-              body: "{}",
-            }
-          );
-
-          if (getSizeResponse.ok) {
-            const sizeData = await getSizeResponse.json();
-            width = sizeData.width;
-            height = sizeData.height;
-          }
-        } catch {
-          // GETSIZE failure is non-critical
-          console.error("GETSIZE request failed");
-        }
-
-        return { imageId, width, height };
+        return { imageId };
       } catch (err) {
         const message = err instanceof Error ? err.message : t("image.upload.errors.uploadFailed");
         setError(message);
