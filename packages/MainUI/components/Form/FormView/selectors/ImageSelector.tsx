@@ -88,7 +88,6 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
           {!isReadOnly && <span className="text-sm text-gray-500">{t("image.selector.clickToUpload")}</span>}
           {isReadOnly && <span className="text-sm text-gray-400">{t("image.selector.noImage")}</span>}
         </button>
-
         <ImageUploadModal
           open={showUploadModal}
           onClose={() => setShowUploadModal(false)}
@@ -98,6 +97,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
           columnName={columnName}
           tabId={tabId}
           orgId={orgId}
+          data-testid={"ImageUploadModal__" + field.id}
         />
       </>
     );
@@ -176,7 +176,6 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
           </div>
         )}
       </div>
-
       {/* Upload Modal */}
       <ImageUploadModal
         open={showUploadModal}
@@ -188,8 +187,8 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
         tabId={tabId}
         orgId={orgId}
         existingImageId={imageId}
+        data-testid={"ImageUploadModal__" + field.id}
       />
-
       {/* Preview Modal */}
       {imageUrl && (
         <ImagePreviewModal
@@ -199,6 +198,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
           isReadOnly={isReadOnly}
           onEdit={handleOpenUpload}
           onDelete={handleDelete}
+          data-testid={"ImagePreviewModal__" + field.id}
         />
       )}
     </>

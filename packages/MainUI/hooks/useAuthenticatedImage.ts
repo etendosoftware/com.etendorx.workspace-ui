@@ -16,7 +16,10 @@ export function useAuthenticatedImage(imageId: string | null, cacheKey?: number)
     let revoked = false;
     let currentBlobUrl: string | null = null;
 
-    const url = cacheKey !== undefined ? `/api/erp/utility/ShowImage?id=${imageId}&nocache=${cacheKey}` : `/api/erp/utility/ShowImage?id=${imageId}`;
+    const url =
+      cacheKey !== undefined
+        ? `/api/erp/utility/ShowImage?id=${imageId}&nocache=${cacheKey}`
+        : `/api/erp/utility/ShowImage?id=${imageId}`;
     fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
     })

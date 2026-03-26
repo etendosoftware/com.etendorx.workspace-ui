@@ -1,6 +1,11 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { useAuthenticatedImage } from "../../hooks/useAuthenticatedImage";
-import { createMockURL, mockUserContextState, createFetchMock, createFetchRejectMock } from "../../hooks/test-utils/imageMockHelpers";
+import {
+  createMockURL,
+  mockUserContextState,
+  createFetchMock,
+  createFetchRejectMock,
+} from "../../hooks/test-utils/imageMockHelpers";
 
 let currentToken: string | null = "mock-token";
 
@@ -37,11 +42,11 @@ describe("useAuthenticatedImage", () => {
 
   it("should fetch image and create object URL", async () => {
     const fetchMock = createFetchMock(true, "some image data");
-    
+
     const { result, unmount } = renderHook(() => useAuthenticatedImage("img-123"));
-    
+
     expect(result.current).toBe(null);
-    
+
     await waitFor(() => {
       expect(result.current).toBe("blob:http://localhost/mock-blob-url");
     });
@@ -57,9 +62,9 @@ describe("useAuthenticatedImage", () => {
 
   it("should handle fetch error gracefully", async () => {
     const fetchMock = createFetchMock(false, null, 500, "Server Error");
-    
+
     const { result } = renderHook(() => useAuthenticatedImage("img-123"));
-    
+
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalled();
       // Should remain null
@@ -69,9 +74,9 @@ describe("useAuthenticatedImage", () => {
 
   it("should include nocache param when cacheKey is provided", async () => {
     const fetchMock = createFetchMock(true, "data");
-    
+
     const { result } = renderHook(() => useAuthenticatedImage("img-123", 12345));
-    
+
     await waitFor(() => {
       expect(result.current).toBe("blob:http://localhost/mock-blob-url");
     });
@@ -83,9 +88,9 @@ describe("useAuthenticatedImage", () => {
 
   it("should catch fetch promise rejection gracefully", async () => {
     createFetchRejectMock("Network Error");
-    
+
     const { result } = renderHook(() => useAuthenticatedImage("img-123"));
-    
+
     await waitFor(() => {
       expect(result.current).toBe(null);
     });

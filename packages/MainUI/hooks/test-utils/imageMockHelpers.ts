@@ -1,7 +1,7 @@
 export const createMockURL = () => {
   const createObjectURLMock = jest.fn().mockReturnValue("blob:http://localhost/mock-blob-url");
   const revokeObjectURLMock = jest.fn();
-  
+
   global.URL.createObjectURL = createObjectURLMock;
   global.URL.revokeObjectURL = revokeObjectURLMock;
 
@@ -13,7 +13,7 @@ export const mockUserContextState = (token: string | null = "mock-token") => ({
 });
 
 export const mockTranslationState = () => ({
-  t: (key: string) => key
+  t: (key: string) => key,
 });
 
 export const createFetchMock = (ok: boolean, response: any, status: number = 200, statusText: string = "OK") => {

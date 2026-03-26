@@ -21,8 +21,12 @@ jest.mock("../ImageUploadModal", () => ({
     if (!open) return null;
     return (
       <div data-testid="ImageUploadModal">
-        <button onClick={() => onClose()} data-testid="ImageUploadModal__close">Close</button>
-        <button onClick={() => onUploadComplete("new-img-id")} data-testid="ImageUploadModal__upload">Upload</button>
+        <button onClick={() => onClose()} data-testid="ImageUploadModal__close">
+          Close
+        </button>
+        <button onClick={() => onUploadComplete("new-img-id")} data-testid="ImageUploadModal__upload">
+          Upload
+        </button>
       </div>
     );
   },
@@ -34,9 +38,15 @@ jest.mock("../ImagePreviewModal", () => ({
     if (!open) return null;
     return (
       <div data-testid="ImagePreviewModal">
-        <button onClick={() => onClose()} data-testid="ImagePreviewModal__close">Close Preview</button>
-        <button onClick={() => onEdit()} data-testid="ImagePreviewModal__edit">Edit</button>
-        <button onClick={() => onDelete()} data-testid="ImagePreviewModal__delete">Delete</button>
+        <button onClick={() => onClose()} data-testid="ImagePreviewModal__close">
+          Close Preview
+        </button>
+        <button onClick={() => onEdit()} data-testid="ImagePreviewModal__edit">
+          Edit
+        </button>
+        <button onClick={() => onDelete()} data-testid="ImagePreviewModal__delete">
+          Delete
+        </button>
       </div>
     );
   },

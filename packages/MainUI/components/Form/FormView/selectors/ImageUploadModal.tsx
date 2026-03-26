@@ -232,7 +232,7 @@ const ImageUploadModal = ({
             disabled={!selectedFile || isUploading}
             className="px-4 py-2 text-sm text-white bg-[var(--color-etendo-main)] rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
             data-testid="ImageUploadModal__uploadBtn">
-            {isUploading && <CircularProgress size={14} color="inherit" />}
+            {isUploading && <CircularProgress size={14} color="inherit" data-testid="CircularProgress__3d0722" />}
             {isUploading ? t("image.upload.uploading") : t("image.upload.uploadButton")}
           </button>
         </div>

@@ -47,14 +47,14 @@ describe("ImageUploadModal", () => {
   it("handles image upload and calls onUploadComplete", async () => {
     mockUploadImage.mockResolvedValue({ imageId: "new-img-id" });
     render(<ImageUploadModal {...defaultProps} />);
-    
+
     const file = new File(["dummy content"], "test.png", { type: "image/png" });
     const fileInput = screen.getByTestId("ImageUploadModal__fileInput");
-    
+
     fireEvent.change(fileInput, { target: { files: [file] } });
-    
+
     expect(screen.getByTestId("ImageUploadModal__preview")).toBeInTheDocument();
-    
+
     fireEvent.click(screen.getByTestId("ImageUploadModal__uploadBtn"));
     expect(mockUploadImage).toHaveBeenCalledWith({
       file,
@@ -63,7 +63,7 @@ describe("ImageUploadModal", () => {
       orgId: "org-1",
       existingImageId: undefined,
     });
-    
+
     await waitFor(() => {
       expect(mockOnUploadComplete).toHaveBeenCalledWith("new-img-id");
       expect(mockOnClose).toHaveBeenCalled();
@@ -75,11 +75,11 @@ describe("ImageUploadModal", () => {
     const file = new File(["dummy content"], "test.png", { type: "image/png" });
     const fileInput = screen.getByTestId("ImageUploadModal__fileInput");
     fireEvent.change(fileInput, { target: { files: [file] } });
-    
+
     mockUploadImage.mockRejectedValue(new Error("Upload failed"));
-    
+
     fireEvent.click(screen.getByTestId("ImageUploadModal__uploadBtn"));
-    
+
     await waitFor(() => {
       expect(screen.getByTestId("ImageUploadModal__error")).toHaveTextContent("Upload failed");
     });
@@ -89,9 +89,9 @@ describe("ImageUploadModal", () => {
     render(<ImageUploadModal {...defaultProps} />);
     const file = new File(["dummy content"], "test.txt", { type: "text/plain" });
     const fileInput = screen.getByTestId("ImageUploadModal__fileInput");
-    
+
     fireEvent.change(fileInput, { target: { files: [file] } });
-    
+
     expect(screen.getByTestId("ImageUploadModal__error")).toHaveTextContent("image.upload.errors.invalidFile");
   });
 });
