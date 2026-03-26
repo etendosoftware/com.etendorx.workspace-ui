@@ -66,7 +66,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
           type="button"
           onClick={isReadOnly ? undefined : handleOpenUpload}
           disabled={isReadOnly}
-          className={`flex flex-col items-center justify-center gap-2 w-full h-full min-h-[120px] border border-dashed rounded-md transition-colors ${
+          className={`flex flex-col items-center justify-center gap-2 w-full h-full min-h-[150px] border border-dashed rounded-md transition-colors ${
             isReadOnly
               ? "border-gray-200 bg-gray-50 cursor-default"
               : "border-gray-300 hover:border-[var(--color-etendo-main)] cursor-pointer"
@@ -107,17 +107,17 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
   return (
     <>
       <div
-        className="group relative w-full h-full min-h-[120px] border border-gray-200 rounded-md bg-gray-50 overflow-hidden flex items-center justify-center"
+        className="group relative w-full h-full min-h-[150px] border border-gray-200 rounded-md bg-gray-50 overflow-hidden flex items-center justify-center"
         data-testid={`ImageSelector__filled__${field.id}`}>
         {/* Full preview image */}
         <button
           type="button"
-          className="w-full h-full p-0 border-0 bg-transparent cursor-pointer flex items-center justify-center"
+          className="p-0 border-0 bg-transparent cursor-pointer flex items-center justify-center"
           onClick={handleOpenPreview}>
           <img
             src={imageUrl || ""}
             alt={field.name || t("image.selector.altText")}
-            className="w-full h-full object-contain"
+            className="max-h-[100px] w-auto max-w-full object-contain"
             data-testid={`ImageSelector__thumbnail__${field.id}`}
           />
         </button>
