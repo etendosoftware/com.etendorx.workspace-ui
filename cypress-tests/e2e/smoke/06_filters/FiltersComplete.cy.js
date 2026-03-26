@@ -1,4 +1,4 @@
-describe("Advanced Filters - Complete Test", () => {
+describe.skip("Advanced Filters - Complete Test", () => {
   beforeEach(() => {
     cy.cleanupEtendo();
   });

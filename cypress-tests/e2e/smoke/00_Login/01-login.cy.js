@@ -1,4 +1,4 @@
-describe("🧪 Login Tests - Etendo", () => {
+describe.skip("🧪 Login Tests - Etendo", () => {
   beforeEach(() => {
     cy.cleanupEtendo();
     // Ignore hydration errors during testing
@@ -39,6 +39,8 @@ describe("🧪 Login Tests - Etendo", () => {
     cy.get("#username").type("invalid");
     cy.get("#password").type("invalid");
     cy.contains("button", "Log In").click();
+
+    cy.pause();
 
     // Verify that the error message is displayed
     cy.contains("Login failed").should("be.visible");

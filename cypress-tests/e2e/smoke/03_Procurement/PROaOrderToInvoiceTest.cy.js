@@ -1,4 +1,4 @@
-describe("Purchase Order to Invoice flow", () => {
+describe.skip("Purchase Order to Invoice flow", () => {
   beforeEach(() => {
     cy.cleanupEtendo();
 

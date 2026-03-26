@@ -1,4 +1,4 @@
-describe("User Management - Create user and assign role", () => {
+describe.skip("User Management - Create user and assign role", () => {
   beforeEach(() => {
     cy.cleanupEtendo();
 

@@ -423,6 +423,14 @@ Cypress.Commands.add("selectDocumentInAddPayment", (documentAlias = "documentNum
   });
 });
 
+Cypress.Commands.add("openDrawer", () => {
+  cy.get('button:has(svg path[d*="M4 8h8"])', { timeout: 10000 }).should("be.visible").click();
+  cy.get('input[placeholder="Search"]:not([disabled])', { timeout: 30000 })
+    .filter(":visible")
+    .first()
+    .should("be.visible");
+});
+
 Cypress.Commands.add("typeInGlobalSearch", (text) => {
   cy.get('input[placeholder="Search"]', { timeout: 10000 })
     .filter(":visible")

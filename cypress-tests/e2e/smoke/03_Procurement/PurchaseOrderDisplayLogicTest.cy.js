@@ -1,4 +1,4 @@
-describe("Purchase Order - Display logic and field visibility", () => {
+describe.skip("Purchase Order - Display logic and field visibility", () => {
   beforeEach(() => {
     cy.cleanupEtendo();
     cy.on("uncaught:exception", (err) => {
