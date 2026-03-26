@@ -646,6 +646,7 @@ const WindowReferenceGrid = ({
   recordValues,
   originTab,
   showTitle = true,
+  onClose,
 }: WindowReferenceGridProps & { originTab?: Tab }) => {
   const { t } = useTranslation();
   // ... rest of component
@@ -1138,6 +1139,7 @@ const WindowReferenceGrid = ({
       onLoadMoreFilterOptions: handleLoadMoreFilterOptions,
       columnFilterStates: advancedColumnFilters,
       tableColumnFilters: columnFilters,
+      onNavigate: onClose,
     }),
     [
       handleColumnFilterChange,
@@ -1146,6 +1148,7 @@ const WindowReferenceGrid = ({
       handleLoadMoreFilterOptions,
       advancedColumnFilters,
       columnFilters,
+      onClose,
     ]
   );
 
@@ -1234,7 +1237,7 @@ const WindowReferenceGrid = ({
         },
         Edit: StableGridCellEditorRenderer,
         dbColumnName: parameter.dBColumnName,
-        Cell: GridCellRenderer,
+        Cell: (col as any).Cell ?? GridCellRenderer,
       };
     });
 
@@ -1891,7 +1894,10 @@ const WindowReferenceGrid = ({
 
         if (isReadOnly) {
           // For Read-Only fields, override the Cell renderer
-          newCol.Cell = ReadOnlyCellRenderer;
+          // Exception: preserve custom Cell renderers from clientclass-based link columns
+          if (!col.clientclass) {
+            newCol.Cell = ReadOnlyCellRenderer;
+          }
           // Ensure Edit component is removed so it cannot be triggered
           newCol.Edit = undefined;
         } else if (!newCol.Cell) {

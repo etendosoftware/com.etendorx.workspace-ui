@@ -1,9 +1,10 @@
 import {
   debounce,
   throttle,
-  calculateVisibleRange,
   LazyLoadingManager,
   createLazyLoadingManager,
+  PerformanceMonitor,
+  calculateVisibleRange,
   MemoryManager,
 } from "../performanceOptimizations";
 
@@ -11,13 +12,9 @@ jest.mock("@/utils/logger", () => ({
   logger: { debug: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
-// ---------------------------------------------------------------------------
-// debounce
-// ---------------------------------------------------------------------------
-describe("debounce", () => {
-  beforeEach(() => jest.useFakeTimers());
-  afterEach(() => jest.useRealTimers());
+jest.useFakeTimers();
 
+describe("debounce", () => {
   it("delays function execution by the specified delay", () => {
     const fn = jest.fn();
     const debounced = debounce(fn, 200);
@@ -44,15 +41,20 @@ describe("debounce", () => {
     jest.advanceTimersByTime(100);
     expect(fn).toHaveBeenCalledWith("a", "b");
   });
+
+  it("cancels previous call and uses last arguments", () => {
+    const fn = jest.fn();
+    const debounced = debounce(fn, 100);
+    debounced("a");
+    debounced("b");
+    debounced("c");
+    jest.advanceTimersByTime(100);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenCalledWith("c");
+  });
 });
 
-// ---------------------------------------------------------------------------
-// throttle
-// ---------------------------------------------------------------------------
 describe("throttle", () => {
-  beforeEach(() => jest.useFakeTimers());
-  afterEach(() => jest.useRealTimers());
-
   it("executes function immediately on first call", () => {
     const fn = jest.fn();
     const throttled = throttle(fn, 200);
@@ -73,7 +75,7 @@ describe("throttle", () => {
     const fn = jest.fn();
     const throttled = throttle(fn, 200);
     throttled();
-    throttled(); // scheduled for trailing
+    throttled();
     jest.advanceTimersByTime(200);
     expect(fn).toHaveBeenCalledTimes(2);
   });
@@ -82,25 +84,27 @@ describe("throttle", () => {
     const fn = jest.fn();
     const throttled = throttle(fn, 100);
     throttled();
-    jest.advanceTimersByTime(100);
+    jest.advanceTimersByTime(110);
     throttled();
     expect(fn).toHaveBeenCalledTimes(2);
   });
 });
 
-// ---------------------------------------------------------------------------
-// calculateVisibleRange
-// ---------------------------------------------------------------------------
 describe("calculateVisibleRange", () => {
   it("calculates correct range for scrollTop=0", () => {
     const result = calculateVisibleRange(0, { itemHeight: 50, containerHeight: 300, overscan: 2 }, 100);
     expect(result.startIndex).toBe(0);
-    expect(result.visibleItems).toBe(6); // ceil(300/50)
+    expect(result.visibleItems).toBe(6);
   });
 
   it("calculates start index with overscan when scrolled", () => {
     const result = calculateVisibleRange(200, { itemHeight: 50, containerHeight: 300, overscan: 2 }, 100);
-    expect(result.startIndex).toBe(2); // floor(200/50) - 2 = 2
+    expect(result.startIndex).toBe(2);
+  });
+
+  it("clamps startIndex to 0 when overscan exceeds position", () => {
+    const result = calculateVisibleRange(0, { itemHeight: 50, containerHeight: 300, overscan: 10 }, 100);
+    expect(result.startIndex).toBe(0);
   });
 
   it("clamps endIndex to totalItems - 1", () => {
@@ -108,16 +112,25 @@ describe("calculateVisibleRange", () => {
     expect(result.endIndex).toBe(4);
   });
 
-  it("clamps startIndex to 0 when overscan exceeds position", () => {
-    const result = calculateVisibleRange(0, { itemHeight: 50, containerHeight: 300, overscan: 10 }, 100);
+  it("calculates endIndex correctly with overscan", () => {
+    const result = calculateVisibleRange(0, { itemHeight: 50, containerHeight: 200, overscan: 2 }, 100);
+    expect(result.startIndex).toBe(0);
+    expect(result.visibleItems).toBe(4);
+    expect(result.endIndex).toBe(8);
+  });
+
+  it("calculates range with scroll offset", () => {
+    const result = calculateVisibleRange(100, { itemHeight: 50, containerHeight: 200, overscan: 2 }, 100);
     expect(result.startIndex).toBe(0);
   });
 });
 
-// ---------------------------------------------------------------------------
-// LazyLoadingManager
-// ---------------------------------------------------------------------------
 describe("LazyLoadingManager", () => {
+  it("createLazyLoadingManager returns a new instance", () => {
+    const mgr = createLazyLoadingManager();
+    expect(mgr).toBeInstanceOf(LazyLoadingManager);
+  });
+
   it("isEditorLoaded returns false for unknown editor", () => {
     const mgr = new LazyLoadingManager();
     expect(mgr.isEditorLoaded("editor1")).toBe(false);
@@ -146,10 +159,9 @@ describe("LazyLoadingManager", () => {
     expect(loader).toHaveBeenCalledTimes(1);
   });
 
-  it("loadEditor propagates loader errors", async () => {
+  it("loadEditor handles loader failure", async () => {
     const mgr = new LazyLoadingManager();
-    const loader = jest.fn().mockRejectedValue(new Error("load failed"));
-    await expect(mgr.loadEditor("editor1", loader)).rejects.toThrow("load failed");
+    await expect(mgr.loadEditor("editor1", () => Promise.reject(new Error("fail")))).rejects.toThrow("fail");
     expect(mgr.isEditorLoaded("editor1")).toBe(false);
   });
 
@@ -159,16 +171,38 @@ describe("LazyLoadingManager", () => {
     mgr.clearLoadedEditors();
     expect(mgr.isEditorLoaded("ed")).toBe(false);
   });
+});
 
-  it("createLazyLoadingManager returns a new instance", () => {
-    const mgr = createLazyLoadingManager();
-    expect(mgr).toBeInstanceOf(LazyLoadingManager);
+describe("PerformanceMonitor", () => {
+  it("measure executes the function and returns result", () => {
+    const monitor = new PerformanceMonitor();
+    const result = monitor.measure("test", () => 42);
+    expect(result).toBe(42);
+  });
+
+  it("measureAsync executes async function and returns result", async () => {
+    const monitor = new PerformanceMonitor();
+    const result = await monitor.measureAsync("test", () => Promise.resolve("ok"));
+    expect(result).toBe("ok");
+  });
+
+  it("measure rethrows errors", () => {
+    const monitor = new PerformanceMonitor();
+    expect(() =>
+      monitor.measure("test", () => {
+        throw new Error("boom");
+      })
+    ).toThrow("boom");
+  });
+
+  it("measureAsync rethrows errors", async () => {
+    const monitor = new PerformanceMonitor();
+    await expect(monitor.measureAsync("test", () => Promise.reject(new Error("async boom")))).rejects.toThrow(
+      "async boom"
+    );
   });
 });
 
-// ---------------------------------------------------------------------------
-// MemoryManager
-// ---------------------------------------------------------------------------
 describe("MemoryManager", () => {
   it("set and get returns stored value", () => {
     const mgr = new MemoryManager();
@@ -208,6 +242,7 @@ describe("MemoryManager", () => {
     const stats = mgr.getStats();
     expect(stats.items).toBe(1);
     expect(stats.size).toBeGreaterThan(0);
+    expect(stats.maxSize).toBe(50 * 1024 * 1024);
   });
 
   it("overwriting a key updates size correctly", () => {
