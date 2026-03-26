@@ -77,7 +77,7 @@ describe("Financial Test 2 - Sales Invoice to Payment In", () => {
 
     // Invoiced Quantity: 13.13
     cy.get('[data-testid="TextInput__2999"]').clear({ force: true });
-    cy.get('[data-testid="TextInput__2999"]').type("13,13", { force: true });
+    cy.get('[data-testid="TextInput__2999"]').type("13.13", { force: true });
 
     // Save line
     cy.get("button.toolbar-button-save").eq(1).click();
@@ -91,9 +91,9 @@ describe("Financial Test 2 - Sales Invoice to Payment In", () => {
     // -------------------------
     cy.contains("button", "Available Process").click();
 
-    cy.get(".rounded-2xl > :nth-child(1)").click();
+    cy.contains('[data-testid^="ProcessMenuItemBase__"]', "Complete", { timeout: 10000 }).should("be.visible").click();
 
-    cy.get(".h-\\[625px\\] > .items-center > .font-semibold").should("be.visible");
+    cy.contains("h2", "Process Invoices", { timeout: 15000 }).should("be.visible");
 
     cy.clickOkInLegacyPopup();
 
@@ -142,7 +142,7 @@ describe("Financial Test 2 - Sales Invoice to Payment In", () => {
     cy.closeToastIfPresent();
 
     // Amount: 28.92
-    cy.get('[data-testid="TextInput__329fab"]').scrollIntoView().clear({ force: true }).type("28,92", { force: true });
+    cy.get('[data-testid="TextInput__329fab"]').scrollIntoView().clear({ force: true }).type("28.92", { force: true });
 
     // Save Payment In
     cy.clickSave();
@@ -166,6 +166,7 @@ describe("Financial Test 2 - Sales Invoice to Payment In", () => {
 
     cy.get("@invoiceNumber").then((invoiceNumber) => {
       const invoiceStr = String(invoiceNumber);
+      const fullInvoiceNo = `I/${invoiceStr}`;
 
       cy.intercept("POST", "**/api/datasource**").as("filterRequest");
 
@@ -174,20 +175,29 @@ describe("Financial Test 2 - Sales Invoice to Payment In", () => {
         .should("be.visible")
         .click({ force: true })
         .clear({ force: true })
-        .type(invoiceStr, { force: true, delay: 150 });
+        .type(fullInvoiceNo, { force: true, delay: 150 });
 
       cy.wait("@filterRequest", { timeout: 30000 });
 
-      cy.contains("tbody.MuiTableBody-root tr", invoiceStr, { timeout: 30000 })
-        .should("exist")
+      // eslint-disable-next-line cypress/no-unnecessary-waiting
+      cy.wait(3000);
+
+      cy.contains("tbody.MuiTableBody-root tr.MuiTableRow-root", fullInvoiceNo, { timeout: 30000 })
+        .should("have.length", 1)
         .scrollIntoView()
         .find('input[aria-label="Toggle select row"]')
+        .scrollIntoView()
         .click({ force: true });
 
-      cy.contains("tbody.MuiTableBody-root tr", invoiceStr, { timeout: 10000 })
+      cy.contains("tbody.MuiTableBody-root tr.MuiTableRow-root", fullInvoiceNo, { timeout: 15000 })
         .find('input[aria-label="Toggle select row"]')
         .should("be.checked");
+
+      cy.get('input[name="Expected Payment"]', { timeout: 30000 }).should("not.have.value", "0.00");
     });
+
+    cy.intercept("POST", "**/api/datasource/ADList**").as("loadActionDefaults");
+    cy.intercept("POST", /AddPaymentActionHandler/).as("executePaymentProcess");
 
     cy.get('div[aria-label="Action Regarding Document"]', { timeout: 15000 })
       .scrollIntoView()
@@ -196,12 +206,12 @@ describe("Financial Test 2 - Sales Invoice to Payment In", () => {
       .should("not.be.disabled")
       .click();
 
+    cy.wait("@loadActionDefaults", { timeout: 30000 });
+
     cy.get('div[data-dropdown-portal] li[data-testid^="OptionItem__"]', { timeout: 15000 }).should(
       "have.length.gte",
       1
     );
-
-    cy.intercept("POST", /AddPaymentActionHandler/).as("executePaymentProcess");
 
     cy.contains('li[data-testid^="OptionItem__"] span', "Process Received Payment(s)", { timeout: 20000 })
       .should("be.visible")
