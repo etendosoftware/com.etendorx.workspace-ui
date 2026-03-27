@@ -2956,8 +2956,8 @@ const DynamicTable = ({
       if (isFullScreen) {
         return (
           <div className="flex justify-end items-center px-2 py-1 bg-white border-b border-gray-100">
-            <MRT_ToggleDensePaddingButton table={mrtTable} />
-            <MRT_ToggleFullScreenButton table={mrtTable} />
+            <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
+            <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
             <button
               type="button"
               onClick={() => mrtTable.setIsFullScreen(false)}
@@ -2988,10 +2988,11 @@ const DynamicTable = ({
           labels={labels}
           actions={
             <>
-              <MRT_ToggleDensePaddingButton table={mrtTable} />
-              <MRT_ToggleFullScreenButton table={mrtTable} />
+              <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
+              <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
             </>
           }
+          data-testid="RecordCounterBar__8ca888"
         />
       );
     },
