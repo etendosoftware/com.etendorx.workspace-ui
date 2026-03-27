@@ -47,7 +47,7 @@ interface RenderOptions {
 function renderDateInput(
   { currentValue, isReadOnly = false }: RenderOptions = {},
   onChange = jest.fn(),
-  onBlur = jest.fn(),
+  onBlur = jest.fn()
 ) {
   const result = render(
     <DateInput
@@ -57,13 +57,11 @@ function renderDateInput(
       isReadOnly={isReadOnly}
       onChange={onChange}
       onBlur={onBlur}
-    />,
+    />
   );
 
-  const getVisibleInput = () =>
-    result.container.querySelector('input[type="text"]') as HTMLInputElement;
-  const getHiddenInput = () =>
-    result.container.querySelector('input[type="date"]') as HTMLInputElement;
+  const getVisibleInput = () => result.container.querySelector('input[type="text"]') as HTMLInputElement;
+  const getHiddenInput = () => result.container.querySelector('input[type="date"]') as HTMLInputElement;
 
   return { ...result, getVisibleInput, getHiddenInput, onChange, onBlur };
 }
@@ -187,7 +185,7 @@ describe("DateInput", () => {
           currentValue={NEW_ISO}
           onChange={jest.fn()}
           onBlur={jest.fn()}
-        />,
+        />
       );
 
       expect(getVisibleInput().value).toBe(expectedDisplay(NEW_ISO));
@@ -205,7 +203,7 @@ describe("DateInput", () => {
           currentValue=""
           onChange={jest.fn()}
           onBlur={jest.fn()}
-        />,
+        />
       );
 
       expect(getVisibleInput().value).toBe("");
