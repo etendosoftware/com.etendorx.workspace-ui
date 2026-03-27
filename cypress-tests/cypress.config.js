@@ -69,7 +69,13 @@ export default defineConfig({
     // ✨ CYPRESS STUDIO
     experimentalStudio: true,
 
-    setupNodeEvents(_on, config) {
+    setupNodeEvents(on, config) {
+      on("task", {
+        log(message) {
+          console.log(message);
+          return null;
+        },
+      });
       return config;
     },
 

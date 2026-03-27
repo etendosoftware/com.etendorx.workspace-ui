@@ -40,8 +40,6 @@ describe.skip("🧪 Login Tests - Etendo", () => {
     cy.get("#password").type("invalid");
     cy.contains("button", "Log In").click();
 
-    cy.pause();
-
     // Verify that the error message is displayed
     cy.contains("Login failed").should("be.visible");
 

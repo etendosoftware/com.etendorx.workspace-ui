@@ -494,6 +494,56 @@ Cypress.Commands.add("openAdvancedFilters", () => {
   cy.get("div").contains("Advanced Filters").should("be.visible");
 });
 
+Cypress.Commands.add("waitForSelectExpectedPaymentsData", (retries = 3) => {
+  cy.get("body", { timeout: 10000 }).then(($body) => {
+    const hasMissingData = $body.text().includes("errors.missingData");
+    const rowCount = $body.find("tbody.MuiTableBody-root tr.MuiTableRow-root").length;
+    const hasRows = rowCount > 0;
+    const visibleText = $body.find(".MuiDialogContent-root, [role='dialog']").text().substring(0, 200);
+
+    cy.task(
+      "log",
+      `[waitForSelectExpectedPaymentsData] retry=${3 - retries}/3 | missingData=${hasMissingData} | rows=${rowCount} | dialogText="${visibleText}"`,
+      { log: false }
+    );
+
+    if (hasMissingData || !hasRows) {
+      if (retries > 0) {
+        cy.log(`Data not loaded yet (missingData=${hasMissingData}, rows=${rowCount}), retrying... (${retries} left)`);
+        cy.get("body").then(($b) => {
+          const retryBtn = $b.find('button:contains("Retry")');
+          if (retryBtn.length > 0) {
+            cy.task("log", "[waitForSelectExpectedPaymentsData] Clicking Retry button", { log: false });
+            cy.intercept("POST", "**/api/datasource").as("datasourceRetry");
+            cy.wrap(retryBtn.first()).click();
+            cy.wait("@datasourceRetry", { timeout: 30000 }).then((interception) => {
+              const status = interception?.response?.statusCode;
+              const bodyLen = JSON.stringify(interception?.response?.body || "").length;
+              cy.task(
+                "log",
+                `[waitForSelectExpectedPaymentsData] Retry datasource response: status=${status} bodyLength=${bodyLen}`,
+                { log: false }
+              );
+            });
+            cy.wait(2000);
+          } else {
+            cy.task("log", "[waitForSelectExpectedPaymentsData] No Retry button found, waiting 3s", { log: false });
+            cy.wait(3000);
+          }
+          cy.waitForSelectExpectedPaymentsData(retries - 1);
+        });
+      } else {
+        cy.task("log", "[waitForSelectExpectedPaymentsData] FAILED after all retries", { log: false });
+        throw new Error("Select Expected Payments failed to load data after retries");
+      }
+    } else {
+      cy.task("log", `[waitForSelectExpectedPaymentsData] SUCCESS - ${rowCount} rows loaded`, { log: false });
+      cy.get("tbody.MuiTableBody-root tr.MuiTableRow-root", { timeout: 15000 }).should("have.length.gte", 1);
+      cy.get("body").should("not.contain.text", "errors.missingData");
+    }
+  });
+});
+
 Cypress.Commands.add("openProcessMenu", (expectedCount, processName, retries = 3) => {
   cy.contains("button", "Available Process", { timeout: 15000 }).should("be.visible").click();
   cy.wait(500);
