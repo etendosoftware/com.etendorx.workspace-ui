@@ -1,4 +1,4 @@
-describe.skip("Requisition flow - Create and generate Purchase Order", () => {
+describe("Requisition flow - Create and generate Purchase Order", () => {
   beforeEach(() => {
     cy.cleanupEtendo();
 

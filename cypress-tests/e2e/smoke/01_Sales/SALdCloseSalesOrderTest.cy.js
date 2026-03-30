@@ -1,4 +1,4 @@
-describe.skip("Sales Orders - Create, Complete and Close", () => {
+describe("Sales Orders - Create, Complete and Close", () => {
   beforeEach(() => {
     cy.cleanupEtendo();
   });

@@ -1,4 +1,4 @@
-describe.skip("Master Data - Business Partner Setup", () => {
+describe("Master Data - Business Partner Setup", () => {
   beforeEach(() => {
     cy.cleanupEtendo();
   });

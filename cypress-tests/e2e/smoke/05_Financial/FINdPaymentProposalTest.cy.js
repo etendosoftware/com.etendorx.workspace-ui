@@ -9,7 +9,7 @@ describe("Financial - Payment Proposal - Select Expected Payments", () => {
     });
   });
 
-  it("Creates two Purchase Invoices, completes them, then opens Select Expected Payments", () => {
+  it("Creates two Purchase Invoices, completes them, selects both in one go and generates payment", () => {
     cy.loginToEtendo("admin", "admin", { useSession: false });
 
     cy.selectRoleOrgWarehouse();
@@ -99,9 +99,9 @@ describe("Financial - Payment Proposal - Select Expected Payments", () => {
     cy.contains("Main Section").should("be.visible");
 
     cy.get('[aria-describedby="Business Partner-help"]', { timeout: 15000 })
-      .should("exist")
-      .scrollIntoView()
+      .should("be.visible")
       .find('div[tabindex="0"]')
+      .scrollIntoView()
       .click({ force: true });
     cy.wait(1000);
 
@@ -175,7 +175,7 @@ describe("Financial - Payment Proposal - Select Expected Payments", () => {
     cy.wait(500);
 
     // =========================
-    // Payment Proposal + Select Expected Payments
+    // Payment Proposal + Select Expected Payments (both at once)
     // =========================
     cy.typeInGlobalSearch("payment prop");
     cy.wait(500);
@@ -209,73 +209,45 @@ describe("Financial - Payment Proposal - Select Expected Payments", () => {
     cy.contains("button", "Available Process").click();
     cy.wait(500);
 
-    cy.intercept("POST", "**/api/datasource").as("datasourceA");
+    cy.intercept("POST", "**/api/datasource").as("datasourcePlanB");
     cy.contains("div.cursor-pointer", "Select Expected Payments").should("be.visible").click();
-    cy.wait("@datasourceA", { timeout: 30000 });
+    cy.wait("@datasourcePlanB", { timeout: 30000 });
 
     cy.waitForSelectExpectedPaymentsData();
 
-    cy.get("@invoiceNumberA").then((invoiceNumberA) => {
-      const invoiceStr = String(invoiceNumberA);
+    cy.contains(".Mui-TableHeadCell-Content-Wrapper", "Due Date", { timeout: 10000 })
+      .closest("th")
+      .find(".MuiTableSortLabel-root")
+      .click();
+    cy.wait(1500);
 
-      cy.get('input[placeholder="Filter Invoice Document No...."]', { timeout: 15000 })
-        .should("be.visible")
-        .should("not.be.disabled")
-        .as("filterInputA");
-      cy.get("@filterInputA").type(invoiceStr, { delay: 150 });
+    cy.contains(".Mui-TableHeadCell-Content-Wrapper", "Due Date", { timeout: 10000 })
+      .closest("th")
+      .find(".MuiTableSortLabel-root")
+      .click();
+    cy.wait(2000);
 
-      cy.wait(1000);
+    cy.get("@invoiceNumberA").then((invA) => {
+      cy.get("@invoiceNumberB").then((invB) => {
+        const invAStr = String(invA);
+        const invBStr = String(invB);
 
-      cy.contains("tbody.MuiTableBody-root tr.MuiTableRow-root", invoiceStr, { timeout: 30000 })
-        .should("have.length", 1)
-        .scrollIntoView()
-        .find('input[aria-label="Toggle select row"]')
-        .scrollIntoView()
-        .click({ force: true });
+        cy.contains("tbody.MuiTableBody-root tr", invAStr, { timeout: 15000 })
+          .find('input[aria-label="Toggle select row"]')
+          .click({ force: true });
 
-      cy.contains("tbody.MuiTableBody-root tr.MuiTableRow-root", invoiceStr, { timeout: 15000 })
-        .find('input[aria-label="Toggle select row"]')
-        .should("be.checked");
-    });
+        cy.contains("tbody.MuiTableBody-root tr", invAStr, { timeout: 10000 })
+          .find('input[aria-label="Toggle select row"]')
+          .should("be.checked");
 
-    cy.get('[data-testid="ExecuteButton__761503"]', { timeout: 10000 }).should("be.visible").click();
+        cy.contains("tbody.MuiTableBody-root tr", invBStr, { timeout: 15000 })
+          .find('input[aria-label="Toggle select row"]')
+          .click({ force: true });
 
-    cy.get('[data-sonner-toast][data-type="success"]', { timeout: 30000 }).should("be.visible");
-    cy.closeToastIfPresent();
-
-    // =========================
-    // Select Expected Payments - Invoice B
-    // =========================
-    cy.contains("button", "Available Process").click();
-    cy.wait(500);
-
-    cy.intercept("POST", "**/api/datasource").as("datasourceB");
-    cy.contains("div.cursor-pointer", "Select Expected Payments").should("be.visible").click();
-    cy.wait("@datasourceB", { timeout: 30000 });
-
-    cy.waitForSelectExpectedPaymentsData();
-
-    cy.get("@invoiceNumberB").then((invoiceNumberB) => {
-      const invoiceStr = String(invoiceNumberB);
-
-      cy.get('input[placeholder="Filter Invoice Document No...."]', { timeout: 15000 })
-        .should("be.visible")
-        .should("not.be.disabled")
-        .as("filterInputB");
-      cy.get("@filterInputB").type(invoiceStr, { delay: 150 });
-
-      cy.wait(1000);
-
-      cy.contains("tbody.MuiTableBody-root tr.MuiTableRow-root", invoiceStr, { timeout: 30000 })
-        .should("have.length", 1)
-        .scrollIntoView()
-        .find('input[aria-label="Toggle select row"]')
-        .scrollIntoView()
-        .click({ force: true });
-
-      cy.contains("tbody.MuiTableBody-root tr.MuiTableRow-root", invoiceStr, { timeout: 15000 })
-        .find('input[aria-label="Toggle select row"]')
-        .should("be.checked");
+        cy.contains("tbody.MuiTableBody-root tr", invBStr, { timeout: 10000 })
+          .find('input[aria-label="Toggle select row"]')
+          .should("be.checked");
+      });
     });
 
     cy.get('[data-testid="ExecuteButton__761503"]', { timeout: 10000 }).should("be.visible").click();

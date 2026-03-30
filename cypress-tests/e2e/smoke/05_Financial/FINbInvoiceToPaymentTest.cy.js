@@ -1,4 +1,4 @@
-describe.skip("Financial Test 2 - Sales Invoice to Payment In", () => {
+describe("Financial Test 2 - Sales Invoice to Payment In", () => {
   beforeEach(() => {
     cy.cleanupEtendo();
 

@@ -1,4 +1,4 @@
-describe.skip("Sales Order Automation - Complete Flow", () => {
+describe("Sales Order Automation - Complete Flow", () => {
   beforeEach(() => {
     cy.cleanupEtendo();
   });

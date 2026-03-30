@@ -1,4 +1,4 @@
-describe.skip("🧪 Login Tests - Etendo", () => {
+describe("🧪 Login Tests - Etendo", () => {
   beforeEach(() => {
     cy.cleanupEtendo();
     // Ignore hydration errors during testing

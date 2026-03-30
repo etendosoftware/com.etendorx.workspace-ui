@@ -1,4 +1,4 @@
-describe.skip("Sales flow - Generate invoices from multiple sales orders", () => {
+describe("Sales flow - Generate invoices from multiple sales orders", () => {
   beforeEach(() => {
     cy.cleanupEtendo();
     cy.on("uncaught:exception", (err) => {

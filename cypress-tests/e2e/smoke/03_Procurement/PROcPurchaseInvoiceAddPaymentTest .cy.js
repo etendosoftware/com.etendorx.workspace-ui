@@ -1,4 +1,4 @@
-describe.skip("Procurement flow - Purchase Invoice with payment registration", () => {
+describe("Procurement flow - Purchase Invoice with payment registration", () => {
   beforeEach(() => {
     cy.cleanupEtendo();
 

@@ -1,4 +1,4 @@
-describe.skip("Financial Account - Add Transaction from Purchase Invoice", () => {
+describe("Financial Account - Add Transaction from Purchase Invoice", () => {
   beforeEach(() => {
     cy.cleanupEtendo();
 
