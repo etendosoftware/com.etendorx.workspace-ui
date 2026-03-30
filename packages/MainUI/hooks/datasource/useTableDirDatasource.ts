@@ -334,9 +334,7 @@ export const useTableDirDatasource = ({
         if (field.selector?.skipWarehouseFilter) return;
 
         const hasWarehouseInContext =
-          params.inpmWarehouseId !== undefined ||
-          params.mWarehouseId !== undefined ||
-          params.warehouse !== undefined;
+          params.inpmWarehouseId !== undefined || params.mWarehouseId !== undefined || params.warehouse !== undefined;
 
         if (hasWarehouseInContext) {
           return;
