@@ -196,7 +196,7 @@ describe("Financial Test 2 - Sales Invoice to Payment In", () => {
       cy.get('input[name="Expected Payment"]', { timeout: 30000 }).should("not.have.value", "0.00");
     });
 
-    cy.intercept("POST", "**/api/datasource/ADList**").as("loadActionDefaults");
+    cy.intercept("POST", "**/api/datasource**").as("loadActionDefaults");
     cy.intercept("POST", /AddPaymentActionHandler/).as("executePaymentProcess");
 
     cy.get('div[aria-label="Action Regarding Document"]', { timeout: 15000 })
