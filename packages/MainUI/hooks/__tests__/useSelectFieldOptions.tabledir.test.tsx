@@ -1,7 +1,11 @@
-import type React from "react";
 import { render, screen } from "@testing-library/react";
 import { useSelectFieldOptions } from "@/hooks/useSelectFieldOptions";
-import { FormProvider, useForm } from "react-hook-form";
+import {
+  FormContextWrapper,
+  createFieldMock,
+  createRecordMock,
+  createDefaultFormValues,
+} from "../__test-helpers__/useSelectFieldOptions.helpers";
 
 const TestComp = ({ field, records }: any) => {
   const options = useSelectFieldOptions(field, records);
@@ -19,31 +23,16 @@ const TestComp = ({ field, records }: any) => {
 
 describe("useSelectFieldOptions - TableDir without selector", () => {
   it("uses default idKey='id' and identifierKey='_identifier' when selector is undefined", () => {
-    const field = {
-      hqlName: "table",
-      // selector is undefined - simulating TableDir field without selector
-      column: { reference: 19 },
-    } as any;
-
+    const field = createFieldMock();
     const records = [
-      { id: "REC1", _identifier: "Table 1", name: "table1" },
-      { id: "REC2", _identifier: "Table 2", name: "table2" },
+      createRecordMock("REC1", "Table 1", { name: "table1" }),
+      createRecordMock("REC2", "Table 2", { name: "table2" }),
     ];
 
-    const Wrapper: React.FC = ({ children }) => {
-      const methods = useForm({
-        defaultValues: {
-          table: "REC1",
-          table$_identifier: "Table 1",
-        },
-      });
-      return <FormProvider {...methods}>{children}</FormProvider>;
-    };
-
     render(
-      <Wrapper>
+      <FormContextWrapper defaultValues={createDefaultFormValues("table", "REC1", "Table 1")}>
         <TestComp field={field} records={records} />
-      </Wrapper>
+      </FormContextWrapper>
     );
 
     expect(screen.getByTestId("count").textContent).toBe("2");
@@ -52,57 +41,32 @@ describe("useSelectFieldOptions - TableDir without selector", () => {
   });
 
   it("uses selector values when selector is defined", () => {
-    const field = {
+    const field = createFieldMock({
       hqlName: "emailProcess",
       selector: { valueField: "id", displayField: "_identifier" },
-    } as any;
-
+    });
     const records = [
-      { id: "PROC1", _identifier: "Process 1" },
-      { id: "PROC2", _identifier: "Process 2" },
+      createRecordMock("PROC1", "Process 1"),
+      createRecordMock("PROC2", "Process 2"),
     ];
 
-    const Wrapper: React.FC = ({ children }) => {
-      const methods = useForm({
-        defaultValues: {
-          emailProcess: "PROC1",
-          emailProcess$_identifier: "Process 1",
-        },
-      });
-      return <FormProvider {...methods}>{children}</FormProvider>;
-    };
-
     render(
-      <Wrapper>
+      <FormContextWrapper defaultValues={createDefaultFormValues("emailProcess", "PROC1", "Process 1")}>
         <TestComp field={field} records={records} />
-      </Wrapper>
+      </FormContextWrapper>
     );
 
     expect(screen.getByTestId("count").textContent).toBe("2");
   });
 
   it("includes current value even if missing from records", () => {
-    const field = {
-      hqlName: "table",
-      // No selector
-    } as any;
-
-    const records = [{ id: "REC1", _identifier: "Table 1" }];
-
-    const Wrapper: React.FC = ({ children }) => {
-      const methods = useForm({
-        defaultValues: {
-          table: "REC2",
-          table$_identifier: "Table 2 (missing)",
-        },
-      });
-      return <FormProvider {...methods}>{children}</FormProvider>;
-    };
+    const field = createFieldMock();
+    const records = [createRecordMock("REC1", "Table 1")];
 
     render(
-      <Wrapper>
+      <FormContextWrapper defaultValues={createDefaultFormValues("table", "REC2", "Table 2 (missing)")}>
         <TestComp field={field} records={records} />
-      </Wrapper>
+      </FormContextWrapper>
     );
 
     // Should have both the record from API and the current value
