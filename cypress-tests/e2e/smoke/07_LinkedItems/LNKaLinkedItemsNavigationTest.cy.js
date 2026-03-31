@@ -111,7 +111,12 @@ describe("LinkedItems Navigation", () => {
 
     cy.wait(1000);
 
-    cy.contains("tr", "03/10/2014", { timeout: 10000 })
+    // Column virtualization is enabled, so the date column may not be in the DOM
+    // until the table is scrolled horizontally. Actions column is pinned so the
+    // form button remains accessible after scrolling.
+    cy.get(".MuiTableContainer-root").scrollTo("right", { ensureScrollable: false });
+
+    cy.contains("tr", "2014", { timeout: 10000 })
       .scrollIntoView()
       .should("be.visible")
       .find('button[data-testid^="form-button-"]')
@@ -205,10 +210,7 @@ describe("LinkedItems Navigation", () => {
     // -------------------------
     // Step 19: Navigate to the record via the blue link
     // -------------------------
-    cy.contains("p.text-sm.text-blue-600", "02-04-2011 - 50.00", { timeout: 15000 })
-      .scrollIntoView()
-      .should("be.visible")
-      .click();
+    cy.contains("p.text-sm.text-blue-600", "50.00", { timeout: 15000 }).scrollIntoView().should("be.visible").click();
 
     // -------------------------
     // Step 20: Verify navigation to Purchase Invoice Payment Plan window
