@@ -112,12 +112,10 @@ export function useProcessMessage(tabId: string) {
 
   const fetchProcessMessage = useCallback(async (): Promise<ProcessMessage | null> => {
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      const response: Response & { data?: any } = await fetch(
-        `${publicHost}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?_action=org.openbravo.client.application.window.GetTabMessageActionHandler&language=en_US`,
+      const response = await fetch(
+        `/api/erp/org.openbravo.client.kernel?_action=org.openbravo.client.application.window.GetTabMessageActionHandler&language=en_US`,
         {
           method: "POST",
-          credentials: "include",
           headers: {
             "Content-Type": "application/json;charset=UTF-8",
             Authorization: `Bearer ${token}`,
@@ -132,7 +130,35 @@ export function useProcessMessage(tabId: string) {
     } catch (error) {
       return handleFetchError(error);
     }
-  }, [publicHost, token, tabId, processResponseData, handleFetchError]);
+  }, [token, tabId, processResponseData, handleFetchError]);
 
-  return { fetchProcessMessage };
+  const fetchMetadataMessage = useCallback(async (): Promise<ProcessMessage | null> => {
+    try {
+      const response = await fetch(`/api/erp/meta/message?tabId=${tabId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      if (!data || (data.message === "" && !data.type)) {
+        return null;
+      }
+
+      return processResponseData({
+        text: data.message,
+        type: data.type || "info",
+        title: data.title || "",
+      });
+    } catch (error) {
+      return handleFetchError(error);
+    }
+  }, [token, tabId, processResponseData, handleFetchError]);
+
+  return { fetchProcessMessage, fetchMetadataMessage };
 }
