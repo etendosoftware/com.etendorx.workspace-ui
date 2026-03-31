@@ -45,10 +45,7 @@ describe("useSelectFieldOptions - TableDir without selector", () => {
       hqlName: "emailProcess",
       selector: { valueField: "id", displayField: "_identifier" },
     });
-    const records = [
-      createRecordMock("PROC1", "Process 1"),
-      createRecordMock("PROC2", "Process 2"),
-    ];
+    const records = [createRecordMock("PROC1", "Process 1"), createRecordMock("PROC2", "Process 2")];
 
     render(
       <FormContextWrapper defaultValues={createDefaultFormValues("emailProcess", "PROC1", "Process 1")}>

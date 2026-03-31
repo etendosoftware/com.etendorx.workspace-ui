@@ -43,6 +43,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [displayValue, setDisplayValue] = useState<string>("");
+    const isTypingRef = useRef(false);
 
     const datePlaceholder = useMemo(() => getLocaleDatePlaceholder(), []);
 
@@ -148,7 +149,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       } else if (!isoValue && !isFocused) {
         setDisplayValue("");
       }
-    }, [currentValue, isFocused]);
+    }, [currentValue]);
 
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -208,7 +209,9 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
           // If we have a valid date, update the hidden input
           // This will trigger handleHiddenDateChange -> props.onChange -> callout
           if (hiddenDateInputRef.current && hiddenDateInputRef.current.value !== isoDate) {
+            isTypingRef.current = true;
             setNativeInputValue(isoDate);
+            isTypingRef.current = false;
           }
         }
       },
@@ -218,10 +221,12 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     const handleHiddenDateChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
         props.onChange?.(e);
-        // Also update display value immediately if picked from calendar
-        // But NOT if we are typing (isFocused), to avoid disrupting user input
-        if (e.target.value && !isFocused) {
-          setDisplayValue(formatClassicDate(e.target.value, false));
+        if (!isTypingRef.current) {
+          if (e.target.value) {
+            setDisplayValue(formatClassicDate(e.target.value, false));
+          } else {
+            setDisplayValue("");
+          }
         }
       },
       [props]
@@ -251,6 +256,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
           {/* Hidden date input connected to react-hook-form */}
           <input
             type="date"
+            {...props}
             ref={(node) => {
               hiddenDateInputRef.current = node;
               handleRef(node);
@@ -261,7 +267,6 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             tabIndex={-1}
             readOnly={isReadOnly}
             disabled={isReadOnly}
-            {...props}
           />
           <button type="button" onClick={handleCalendarClick} className={buttonClassNames} disabled={isReadOnly}>
             <CalendarIcon fill={"currentColor"} className="h-5 w-5" data-testid="CalendarIcon__417e7f" />

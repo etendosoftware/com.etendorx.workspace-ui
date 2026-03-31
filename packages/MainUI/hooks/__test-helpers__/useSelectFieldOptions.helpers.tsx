@@ -13,7 +13,11 @@ export const FormContextWrapper = ({
   defaultValues: Record<string, unknown>;
 }) => {
   const methods = useForm({ defaultValues });
-  return <FormProvider {...methods}>{children}</FormProvider>;
+  return (
+    <FormProvider {...methods} data-testid="FormProvider__4131fc">
+      {children}
+    </FormProvider>
+  );
 };
 
 /**
@@ -37,11 +41,7 @@ export const createRecordMock = (id: string, identifier: string, overrides: Reco
 /**
  * Creates default form values for a field with optional current value
  */
-export const createDefaultFormValues = (
-  fieldName: string,
-  currentValue?: string,
-  currentIdentifier?: string
-) => ({
+export const createDefaultFormValues = (fieldName: string, currentValue?: string, currentIdentifier?: string) => ({
   [fieldName]: currentValue || undefined,
   [`${fieldName}$_identifier`]: currentIdentifier || undefined,
 });

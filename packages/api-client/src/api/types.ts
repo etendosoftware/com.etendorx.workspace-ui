@@ -292,6 +292,12 @@ export enum UIPattern {
   STANDARD = "STD",
 }
 
+export interface AuxiliaryInput {
+  id: string;
+  name: string;
+  validationCode: string;
+}
+
 export interface Tab {
   uIPattern: UIPattern;
   window: string;
@@ -323,6 +329,7 @@ export interface Tab {
   process$_identifier?: string;
   disableParentKeyProperty?: boolean;
   defaultEditMode?: boolean;
+  auxiliaryInputs?: AuxiliaryInput[];
 }
 
 export interface WindowMetadata {
