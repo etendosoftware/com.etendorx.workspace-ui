@@ -5,7 +5,7 @@ import { getErpAuthHeaders } from "../../_utils/forwardConfig";
 import { SLUGS_CATEGORIES, SLUGS_METHODS, URL_MUTATION } from "@/app/api/_utils/slug/constants";
 import { detectCharset, isBinaryContentType, createHtmlResponse, rewriteHtmlResourceUrls } from "./route.helpers";
 
-type requestBody = string | ReadableStream<Uint8Array> | undefined;
+type requestBody = string | ReadableStream<Uint8Array> | Uint8Array | undefined;
 // Custom error class for ERP requests
 class ErpRequestError extends Error {
   public readonly status: number;
@@ -334,6 +334,7 @@ async function handleMutationRequest(
   };
 
   if (typeof ReadableStream !== "undefined" && requestBody instanceof ReadableStream) {
+    // duplex is required for streaming bodies in Node.js fetch
     // @ts-expect-error - duplex is required for streaming but not in types yet
     fetchOptions.duplex = "half";
   }
@@ -458,9 +459,11 @@ async function getRequestBody(
 
   const contentType = request.headers.get("Content-Type") || "";
 
-  // For multipart/form-data (file uploads), preserve the binary stream
+  // For multipart/form-data, buffer the entire body to prevent ReadableStream
+  // locking issues when the stream is forwarded through the Next.js proxy.
   if (contentType.includes("multipart/form-data")) {
-    return request.body || undefined;
+    const buffer = await request.arrayBuffer();
+    return new Uint8Array(buffer);
   }
 
   // For other content types, read as text

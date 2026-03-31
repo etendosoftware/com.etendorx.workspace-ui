@@ -23,6 +23,8 @@ import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useUserContext } from "@/hooks/useUserContext";
+import { toast } from "sonner";
+import { ToastContent } from "@/components/ToastContent";
 import { EMPTY_ARRAY } from "@/utils/defaults";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
 import type React from "react";
@@ -40,12 +42,14 @@ import {
   type ProcessDefinitionButton,
   type ProcessResponse,
 } from "../ProcessModal/types";
+import EmailSendModal, { type EmailFormData } from "./Modals/EmailSendModal";
 import ProcessMenu from "./Menus/ProcessMenu";
 import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar/TopToolbar";
 import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
 import { getToolbarSections } from "@/utils/toolbar/utils";
 import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
+import { IconSize } from "./types";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
@@ -53,10 +57,30 @@ import { TAB_MODES } from "@/utils/url/constants";
 import { useWindowContext } from "@/contexts/window";
 import ActionModal from "@workspaceui/componentlibrary/src/components/ActionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
+import EmailIcon from "@mui/icons-material/Email";
+
+interface EmailConfig {
+  to: string;
+  toName: string;
+  bcc: string;
+  bccName: string;
+  replyTo: string;
+  senderAddress: string;
+  subject: string;
+  body: string;
+  reportFileName: string;
+  templates: { id: string; name: string }[];
+  recordAttachments: { id: string; name: string }[];
+}
+
+const SEND_EMAIL_ENTITIES = new Set(["Invoice", "Order"]);
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailConfig, setEmailConfig] = useState<EmailConfig | null>(null);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
   const [selectedProcessActionButton, setSelectedProcessActionButton] = useState<ProcessButton | null>(null);
   const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
@@ -70,7 +94,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { activeWindow, getTabFormState, clearChildrenSelections } = useWindowContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
-  const { isSessionSyncLoading, isCopilotInstalled, session } = useUserContext();
+  const { isSessionSyncLoading, isCopilotInstalled, session, token } = useUserContext();
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -255,6 +279,134 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const handleCloseSearch = useCallback(() => setSearchOpen(false), [setSearchOpen]);
 
+  // entityName in Etendo DAL uses the entity class name, not the table name:
+  // C_Invoice → "Invoice", C_Order → "Order"
+  const showEmailButton = SEND_EMAIL_ENTITIES.has(tab?.entityName ?? "");
+
+  const handleCloseEmailModal = useCallback(() => {
+    setEmailModalOpen(false);
+    setEmailConfig(null);
+  }, []);
+
+  const handleFetchRecordAttachments = useCallback(async () => {
+    if (!selectedRecord?.id || !tab?.id) return [];
+    try {
+      const response = await fetch(
+        `/api/erp/meta/email/attachments?recordId=${String(selectedRecord.id)}&tabId=${tab.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      return (data.attachments ?? []) as { id: string; name: string }[];
+    } catch {
+      return [];
+    }
+  }, [selectedRecord, tab, token]);
+
+  const handleSendEmail = useCallback(async () => {
+    if (!selectedRecord?.id || !tab?.id) return;
+    try {
+      const configResponse = await fetch(
+        `/api/erp/meta/email/config?recordId=${String(selectedRecord.id)}&tabId=${tab.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const configResult = await configResponse.json();
+      if (!configResponse.ok || configResult.success === false) {
+        toast.error(t("process.processError"), {
+          description: (
+            <ToastContent
+              message={configResult.message || configResult.error || t("email.errorMessage")}
+              data-testid="ToastContent__a2dd07"
+            />
+          ),
+        });
+        return;
+      }
+      setEmailConfig(configResult as EmailConfig);
+      setEmailModalOpen(true);
+    } catch (e) {
+      toast.error(t("email.errorMessage"), {
+        description: (
+          <ToastContent
+            message={e instanceof Error ? e.message : t("errors.internalServerError.title")}
+            data-testid="ToastContent__a2dd07"
+          />
+        ),
+      });
+    }
+  }, [tab, selectedRecord, token, t]);
+
+  const handleEmailSend = useCallback(
+    async (data: EmailFormData, files: File[], recordAttachmentIds: string[]) => {
+      if (!selectedRecord?.id || !tab?.id) return;
+      setIsSendingEmail(true);
+      try {
+        const params = new URLSearchParams({
+          recordId: String(selectedRecord.id),
+          tabId: tab.id,
+          to: data.to,
+          cc: data.cc ?? "",
+          bcc: data.bcc ?? "",
+          replyTo: data.replyTo ?? "",
+          subject: data.subject,
+          notes: data.body ?? "",
+          archive: data.archive ? "Y" : "N",
+          templateId: data.templateId ?? "",
+        });
+
+        const hasFiles = files.length > 0;
+        const hasRecordAttachments = recordAttachmentIds.length > 0;
+        const needsMultipart = hasFiles || hasRecordAttachments;
+        let body: BodyInit = params.toString();
+        const headers: Record<string, string> = {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Bearer ${token}`,
+        };
+
+        if (needsMultipart) {
+          const formData = new FormData();
+          params.forEach((value, key) => formData.append(key, value));
+          files.forEach((file, idx) => formData.append(`attachment_${idx}`, file, file.name));
+          recordAttachmentIds.forEach((id) => formData.append("recordAttachmentId", id));
+          body = formData;
+          delete headers["Content-Type"]; // Let browser set multipart boundary
+        }
+
+        const response = await fetch(`/api/erp/meta/email/send?${params.toString()}`, {
+          method: "POST",
+          headers,
+          body,
+        });
+        const result = await response.json();
+        if (!response.ok || result.success === false) {
+          toast.error(t("email.errorMessage"), {
+            description: (
+              <ToastContent
+                message={result.message || t("errors.internalServerError.title")}
+                data-testid="ToastContent__a2dd07"
+              />
+            ),
+          });
+          return;
+        }
+        toast.success(t("email.successMessage"));
+        setEmailModalOpen(false);
+        handleCompleteRefresh();
+      } catch (error) {
+        toast.error(t("email.errorMessage"), {
+          description: (
+            <ToastContent
+              message={error instanceof Error ? error.message : t("errors.internalServerError.title")}
+              data-testid="ToastContent__a2dd07"
+            />
+          ),
+        });
+      } finally {
+        setIsSendingEmail(false);
+      }
+    },
+    [tab, selectedRecord, token, t, handleCompleteRefresh]
+  );
+
   const handleActionWithTooltip = useCallback(
     (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => {
       if (action === "SHARE_LINK") {
@@ -291,6 +443,21 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       t: t,
       isAdvancedFilterApplied: isAdvancedFilterApplied,
     });
+
+    if (showEmailButton) {
+      baseConfig.centerSection.buttons = [
+        ...baseConfig.centerSection.buttons,
+        {
+          key: "send-email",
+          icon: <EmailIcon sx={{ fontSize: "1rem" }} data-testid="EmailIcon__a2dd07" />,
+          tooltip: t("email.sendEmail"),
+          disabled: !hasSelectedRecord,
+          height: IconSize,
+          width: IconSize,
+          onClick: handleSendEmail,
+        },
+      ];
+    }
 
     const config = {
       ...baseConfig,
@@ -333,6 +500,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     showShareLinkTooltip,
     isAdvancedFilterApplied,
     isProcessRefreshing,
+    showEmailButton,
+    handleSendEmail,
   ]);
 
   if (loading) {
@@ -392,6 +561,29 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         onSuccess={handleCompleteRefresh}
         onError={handleCompleteRefresh}
         data-testid="ProcessDefinitionModal__a2dd07"
+      />
+      <EmailSendModal
+        isOpen={emailModalOpen}
+        onClose={handleCloseEmailModal}
+        onSend={handleEmailSend}
+        onFetchRecordAttachments={handleFetchRecordAttachments}
+        loading={isSendingEmail}
+        initialData={
+          emailConfig
+            ? {
+                to: emailConfig.to,
+                toName: emailConfig.toName,
+                bcc: emailConfig.bcc,
+                bccName: emailConfig.bccName,
+                replyTo: emailConfig.replyTo,
+                subject: emailConfig.subject,
+                body: emailConfig.body,
+                reportFileName: emailConfig.reportFileName,
+                templates: emailConfig.templates,
+              }
+            : undefined
+        }
+        data-testid="EmailSendModal__a2dd07"
       />
       {actionModal.isOpen && (
         <ActionModal
