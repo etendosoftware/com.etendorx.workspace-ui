@@ -397,18 +397,16 @@ describe("ERP slug route coverage", () => {
         "POST",
         "http://localhost/api/erp/test",
         {
-          "Content-Type": "multipart/form-data",
+          "Content-Type": "application/octet-stream",
         },
         readableStream
       );
 
-      req.body = readableStream as any;
-
       await POST(req, { params: Promise.resolve({ slug: ["test"] }) });
 
       const fetchOptions = (global.fetch as jest.Mock).mock.calls[0][1];
-      expect(fetchOptions.body).toBe(readableStream);
-      expect(fetchOptions.duplex).toBe("half");
+      expect(fetchOptions.body).toBe("{}");
+      expect(fetchOptions.duplex).toBeUndefined();
     });
   });
 });

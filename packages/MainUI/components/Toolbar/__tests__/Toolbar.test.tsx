@@ -84,7 +84,7 @@ jest.mock("../Modals/EmailSendModal", () => ({
   default: ({ isOpen, onSend, initialData }: any) =>
     isOpen ? (
       <div data-testid="email-modal">
-        <button onClick={() => onSend({ to: "test@test.com" })}>Send Action</button>
+        <button onClick={() => onSend({ to: "test@test.com" }, [], [])}>Send Action</button>
         {initialData?.to && <span>To: {initialData.to}</span>}
       </div>
     ) : null,
@@ -180,15 +180,26 @@ describe("Toolbar - Email Integration", () => {
   });
 
   it("sends email and shows success toast", async () => {
-    // 1st fetch: get config
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ to: "test@test.com", success: true }),
-    });
-    // 2nd fetch: send email
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ success: true }),
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (url.includes("/api/erp/meta/email/config")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ to: "test@test.com", success: true }),
+        });
+      }
+      if (url.includes("/api/erp/meta/email/attachments")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      }
+      if (url.includes("/api/erp/meta/email/send")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ success: true }),
+        });
+      }
+      return Promise.resolve({ ok: false });
     });
 
     render(<Toolbar windowId="win-id" isFormView={true} />);
@@ -200,6 +211,7 @@ describe("Toolbar - Email Integration", () => {
     fireEvent.click(screen.getByText("Send Action"));
 
     await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledTimes(2);
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining("/api/erp/meta/email/send"),
         expect.objectContaining({ method: "POST" })

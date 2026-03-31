@@ -111,10 +111,9 @@ describe("EmailSendModal", () => {
   });
 
   it("submits the form with correct data", async () => {
-    render(<EmailSendModal {...defaultProps} />);
-
-    const sendButton = screen.getByText("email.send");
-    fireEvent.click(sendButton);
+    const { container } = render(<EmailSendModal {...defaultProps} />);
+    const form = container.querySelector("#email-form")!;
+    fireEvent.submit(form);
 
     await waitFor(() => {
       expect(mockOnSend).toHaveBeenCalledWith(
@@ -122,7 +121,9 @@ describe("EmailSendModal", () => {
           to: "test@example.com",
           subject: "Test Subject",
           body: "Test Body",
-        })
+        }),
+        [],
+        []
       );
     });
   });

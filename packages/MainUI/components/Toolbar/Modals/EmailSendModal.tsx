@@ -61,9 +61,17 @@ const BODY_REFERENCES = [
   { token: "@doc_lastduedate@", desc: "The last due date (if any)" },
 ];
 
-const INPUT_CLASS = "w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-(--color-etendo-main)";
+const INPUT_CLASS =
+  "w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-(--color-etendo-main)";
 
-const EmailSendModal: React.FC<EmailSendModalProps> = ({ isOpen, onClose, onSend, onFetchRecordAttachments, loading, initialData }) => {
+const EmailSendModal: React.FC<EmailSendModalProps> = ({
+  isOpen,
+  onClose,
+  onSend,
+  onFetchRecordAttachments,
+  loading,
+  initialData,
+}) => {
   const { t } = useTranslation();
   const [showMoreFields, setShowMoreFields] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
@@ -80,8 +88,7 @@ const EmailSendModal: React.FC<EmailSendModalProps> = ({ isOpen, onClose, onSend
   // Enabled if: not yet fetched, OR there are fetched attachments not yet added
   const canAddRecordAttachments =
     !isFetchingAttachments &&
-    (fetchedAttachments === null ||
-      fetchedAttachments.some((a) => !addedRecordAttachmentIds.includes(a.id)));
+    (fetchedAttachments === null || fetchedAttachments.some((a) => !addedRecordAttachmentIds.includes(a.id)));
 
   const {
     control,
@@ -163,14 +170,17 @@ const EmailSendModal: React.FC<EmailSendModalProps> = ({ isOpen, onClose, onSend
             id="email-form"
             onSubmit={handleSubmit(onSubmit)}
             className="flex-1 overflow-y-auto p-4 space-y-3 text-sm">
-
             {/* To */}
             <div className="h-12 flex items-center">
               <div className="w-[15%] flex items-center gap-2 pr-2">
-                <label htmlFor="to" className="overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] text-gray-700">
+                <label
+                  htmlFor="to"
+                  className="overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] text-gray-700">
                   {t("email.to")}
                 </label>
-                <span className="text-[#DC143C] font-bold min-w-[12px]" aria-required>*</span>
+                <span className="text-[#DC143C] font-bold min-w-[12px]" aria-required>
+                  *
+                </span>
               </div>
               <div className="w-[85%] flex items-center gap-2">
                 <Controller
@@ -195,7 +205,9 @@ const EmailSendModal: React.FC<EmailSendModalProps> = ({ isOpen, onClose, onSend
             {/* BCC */}
             <div className="h-12 flex items-center">
               <div className="w-[15%] flex items-center gap-2 pr-2">
-                <label htmlFor="bcc" className="overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] text-gray-700">
+                <label
+                  htmlFor="bcc"
+                  className="overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] text-gray-700">
                   {t("email.bcc")}
                 </label>
               </div>
@@ -215,7 +227,9 @@ const EmailSendModal: React.FC<EmailSendModalProps> = ({ isOpen, onClose, onSend
             {/* Reply-to */}
             <div className="h-12 flex items-center">
               <div className="w-[15%] flex items-center gap-2 pr-2">
-                <label htmlFor="replyTo" className="overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] text-gray-700">
+                <label
+                  htmlFor="replyTo"
+                  className="overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] text-gray-700">
                   {t("email.replyTo")}
                 </label>
               </div>
@@ -224,7 +238,13 @@ const EmailSendModal: React.FC<EmailSendModalProps> = ({ isOpen, onClose, onSend
                   name="replyTo"
                   control={control}
                   render={({ field }) => (
-                    <input {...field} id="replyTo" type="text" placeholder="email@example.com" className={INPUT_CLASS} />
+                    <input
+                      {...field}
+                      id="replyTo"
+                      type="text"
+                      placeholder="email@example.com"
+                      className={INPUT_CLASS}
+                    />
                   )}
                   data-testid="Controller__387282"
                 />
@@ -248,7 +268,9 @@ const EmailSendModal: React.FC<EmailSendModalProps> = ({ isOpen, onClose, onSend
             {showMoreFields && (
               <div className="h-12 flex items-center">
                 <div className="w-[15%] flex items-center gap-2 pr-2">
-                  <label htmlFor="cc" className="overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] text-gray-700">
+                  <label
+                    htmlFor="cc"
+                    className="overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] text-gray-700">
                     {t("email.cc")}
                   </label>
                 </div>
@@ -268,10 +290,14 @@ const EmailSendModal: React.FC<EmailSendModalProps> = ({ isOpen, onClose, onSend
             {/* Subject */}
             <div className="h-12 flex items-center">
               <div className="w-[15%] flex items-center gap-2 pr-2">
-                <label htmlFor="subject" className="overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] text-gray-700">
+                <label
+                  htmlFor="subject"
+                  className="overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] text-gray-700">
                   {t("email.subject")}
                 </label>
-                <span className="text-[#DC143C] font-bold min-w-[12px]" aria-required>*</span>
+                <span className="text-[#DC143C] font-bold min-w-[12px]" aria-required>
+                  *
+                </span>
               </div>
               <div className="w-[85%]">
                 <Controller
@@ -294,7 +320,9 @@ const EmailSendModal: React.FC<EmailSendModalProps> = ({ isOpen, onClose, onSend
             {/* Message Body + reference panel */}
             <div className="flex items-start">
               <div className="w-[15%] flex items-start gap-2 pr-2 pt-2">
-                <label htmlFor="body" className="overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] text-gray-700">
+                <label
+                  htmlFor="body"
+                  className="overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] text-gray-700">
                   {t("email.body")}
                 </label>
               </div>
@@ -327,7 +355,9 @@ const EmailSendModal: React.FC<EmailSendModalProps> = ({ isOpen, onClose, onSend
             {/* Template to use */}
             <div className="h-12 flex items-center">
               <div className="w-[15%] flex items-center gap-2 pr-2">
-                <label htmlFor="templateId" className="overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] text-gray-700">
+                <label
+                  htmlFor="templateId"
+                  className="overflow-hidden text-ellipsis whitespace-nowrap block text-sm font-medium select-none truncate pr-[2px] text-gray-700">
                   {t("email.template")}
                 </label>
               </div>
@@ -348,14 +378,16 @@ const EmailSendModal: React.FC<EmailSendModalProps> = ({ isOpen, onClose, onSend
                           <>
                             <option value="">{t("email.selectTemplate")}</option>
                             {templates.map((tpl) => (
-                              <option key={tpl.id} value={tpl.id}>{tpl.name}</option>
+                              <option key={tpl.id} value={tpl.id}>
+                                {tpl.name}
+                              </option>
                             ))}
                           </>
                         )}
                       </select>
                       {templates.length > 0 && (
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                          <ChevronDown className="w-4 h-4 text-gray-500" />
+                          <ChevronDown className="w-4 h-4 text-gray-500" data-testid={"ChevronDown__" + field.name} />
                         </div>
                       )}
                     </div>
@@ -417,7 +449,7 @@ const EmailSendModal: React.FC<EmailSendModalProps> = ({ isOpen, onClose, onSend
                             onClick={() => handleRemoveRecordAttachment(att.id)}
                             className="p-1 text-gray-400 hover:text-red-500 rounded"
                             aria-label="Remove attachment">
-                            <CloseIcon className="w-3 h-3" />
+                            <CloseIcon className="w-3 h-3" data-testid="CloseIcon__387282" />
                           </button>
                         </td>
                       </tr>
@@ -433,26 +465,23 @@ const EmailSendModal: React.FC<EmailSendModalProps> = ({ isOpen, onClose, onSend
                             onClick={() => handleRemoveLocalFile(idx)}
                             className="p-1 text-gray-400 hover:text-red-500 rounded"
                             aria-label="Remove attachment">
-                            <CloseIcon className="w-3 h-3" />
+                            <CloseIcon className="w-3 h-3" data-testid="CloseIcon__387282" />
                           </button>
                         </td>
                       </tr>
                     ))}
                     {!reportFileName && addedRecordAttachments.length === 0 && attachedFiles.length === 0 && (
                       <tr>
-                        <td colSpan={3} className="px-3 py-2 text-gray-400 text-center">—</td>
+                        <td colSpan={3} className="px-3 py-2 text-gray-400 text-center">
+                          —
+                        </td>
                       </tr>
                     )}
                   </tbody>
                 </table>
 
                 {/* Hidden file input — auto-adds on selection */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
+                <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
 
                 {/* Choose File row */}
                 <div className="flex items-center gap-2">
@@ -480,30 +509,28 @@ const EmailSendModal: React.FC<EmailSendModalProps> = ({ isOpen, onClose, onSend
                 </Button>
               </div>
             </div>
+            {/* Footer included in form to support submit outside on JSDOM */}
+            <div className="flex gap-3 justify-end mx-3 my-3">
+              <Button
+                variant="outlined"
+                size="large"
+                className="w-49"
+                onClick={onClose}
+                disabled={loading}
+                data-testid="Button__387282">
+                {t("common.cancel")}
+              </Button>
+              <Button
+                variant="filled"
+                size="large"
+                className="w-49"
+                type="submit"
+                disabled={loading}
+                data-testid="Button__387282">
+                {loading ? t("email.sending") : t("email.send")}
+              </Button>
+            </div>
           </form>
-
-          {/* Footer */}
-          <div className="flex gap-3 justify-end mx-3 my-3">
-            <Button
-              variant="outlined"
-              size="large"
-              className="w-49"
-              onClick={onClose}
-              disabled={loading}
-              data-testid="Button__387282">
-              {t("common.cancel")}
-            </Button>
-            <Button
-              variant="filled"
-              size="large"
-              className="w-49"
-              type="submit"
-              form="email-form"
-              disabled={loading}
-              data-testid="Button__387282">
-              {loading ? t("email.sending") : t("email.send")}
-            </Button>
-          </div>
         </div>
       </div>
     </Modal>
