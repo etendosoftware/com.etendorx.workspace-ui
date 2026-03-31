@@ -60,7 +60,7 @@ describe("Financial - Payment Proposal - Select Expected Payments", () => {
     cy.wait(500);
 
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"]').scrollIntoView().click({ force: true });
-    cy.wait(3000);
+    cy.wait(1000);
 
     cy.get('[data-testid="TextInput__3374"]').clear({ force: true });
     cy.wait(500);
@@ -68,7 +68,7 @@ describe("Financial - Payment Proposal - Select Expected Payments", () => {
     cy.wait(500);
 
     cy.get("button.toolbar-button-save").eq(1).click();
-    cy.wait(3000);
+    cy.wait(1000);
     cy.closeToastIfPresent();
 
     cy.openProcessMenu(4, "Complete");
@@ -99,6 +99,8 @@ describe("Financial - Payment Proposal - Select Expected Payments", () => {
     cy.contains("Main Section").should("be.visible");
 
     cy.get('[aria-describedby="Business Partner-help"]', { timeout: 15000 })
+      .first()
+      .scrollIntoView()
       .should("be.visible")
       .find('div[tabindex="0"]')
       .scrollIntoView()
@@ -144,7 +146,7 @@ describe("Financial - Payment Proposal - Select Expected Payments", () => {
     cy.contains('[data-testid^="OptionItem__"]', /Raw material B/, { timeout: 10000 })
       .scrollIntoView()
       .click({ force: true });
-    cy.wait(3000);
+    cy.wait(1000);
 
     cy.get('[data-testid="TextInput__3374"]').clear({ force: true });
     cy.wait(500);
@@ -152,7 +154,7 @@ describe("Financial - Payment Proposal - Select Expected Payments", () => {
     cy.wait(500);
 
     cy.get("button.toolbar-button-save").eq(1).click();
-    cy.wait(3000);
+    cy.wait(1000);
     cy.closeToastIfPresent();
 
     cy.openProcessMenu(4, "Complete");
