@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import { useState, useMemo, type ChangeEvent } from "react";
 import X from "../../../../../../ComponentLibrary/src/assets/icons/x.svg";
 import type { TextAreaInputProps } from "./types";
@@ -87,6 +104,23 @@ export const TextAreaInput = ({
   // Separate value from other props to ensure it's never null
   const { value: _, ...restProps } = props;
 
+  const maxLength = useMemo<number | undefined>(() => {
+    const raw = field?.column?.length;
+    if (!raw) return undefined;
+    const parsed = Number(raw);
+    return !Number.isNaN(parsed) && parsed > 0 ? parsed : undefined;
+  }, [field]);
+
+  const charCount = currentValue.length;
+
+  const counterColorClass = useMemo<string>(() => {
+    if (maxLength === undefined) return "";
+    const ratio = charCount / maxLength;
+    if (ratio >= 1) return "text-red-500";
+    if (ratio > 0.8) return "text-orange-400";
+    return "text-(--color-baseline-60)";
+  }, [charCount, maxLength]);
+
   return (
     <div className="w-full font-['Inter'] font-medium">
       {label && (
@@ -111,6 +145,7 @@ export const TextAreaInput = ({
           rows={rows}
           aria-label={field.name}
           aria-required={field.isMandatory}
+          maxLength={maxLength}
           onChange={handleChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
@@ -130,6 +165,11 @@ export const TextAreaInput = ({
         {endAdornment}
       </div>
       <div className="h-0">{errorText && <p className="text-xs text-red-500 mt-1">{errorText}</p>}</div>
+      {maxLength !== undefined && !isDisabled && (
+        <p className={`text-xs mt-1 text-right ${counterColorClass}`} data-testid="char-counter">
+          {charCount} / {maxLength}
+        </p>
+      )}
     </div>
   );
 };
