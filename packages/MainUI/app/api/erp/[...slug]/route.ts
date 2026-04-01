@@ -247,7 +247,7 @@ async function followRedirects(
   const nextFetchOptions: RequestInit = {
     method: nextMethod,
     headers: nextHeaders,
-    body: isPostToGet ? undefined : requestBody,
+    body: (isPostToGet ? undefined : requestBody) as any,
     redirect: "manual",
   };
 
@@ -329,7 +329,7 @@ async function handleMutationRequest(
   const fetchOptions: RequestInit = {
     method,
     headers,
-    body: requestBody,
+    body: requestBody as any,
     redirect: "manual",
   };
 
@@ -452,7 +452,7 @@ function buildErpUrl(slug: string, requestUrl: string): string {
 async function getRequestBody(
   request: Request,
   method: string
-): Promise<string | ReadableStream<Uint8Array> | undefined> {
+): Promise<requestBody> {
   if (method === "GET") {
     return undefined;
   }
@@ -490,7 +490,7 @@ async function fetchErpData({
   userToken: string;
   erpUrl: string;
   request: Request;
-  requestBody: string | ReadableStream<Uint8Array> | undefined;
+  requestBody: requestBody;
   contentType: string;
 }): Promise<unknown> {
   if (isMutationRoute(slug, method) || isMutationUrl(erpUrl)) {
