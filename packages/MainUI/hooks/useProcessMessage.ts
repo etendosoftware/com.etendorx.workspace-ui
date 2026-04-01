@@ -112,18 +112,15 @@ export function useProcessMessage(tabId: string) {
 
   const fetchProcessMessage = useCallback(async (): Promise<ProcessMessage | null> => {
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      const response: Response & { data?: any } = await fetch(
-        `${publicHost}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?_action=org.openbravo.client.application.window.GetTabMessageActionHandler&language=en_US`,
+      const response = await fetch(
+        "/api/erp/org.openbravo.client.kernel?_action=org.openbravo.client.application.window.GetTabMessageActionHandler&language=en_US",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json;charset=UTF-8",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            tabId,
-          }),
+          body: JSON.stringify({ tabId }),
         }
       );
       const data = await response.json();
