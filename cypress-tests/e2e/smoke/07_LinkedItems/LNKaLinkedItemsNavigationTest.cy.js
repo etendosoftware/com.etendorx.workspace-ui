@@ -173,11 +173,11 @@ describe("LinkedItems Navigation", () => {
       .filter(":visible")
       .should("be.visible")
       .clear()
-      .type("10000000{enter}", { force: true });
+      .type("10000017{enter}", { force: true });
 
     cy.wait(1000);
 
-    cy.contains("tr", "10000000", { timeout: 10000 })
+    cy.contains("tr", "10000017", { timeout: 10000 })
       .should("be.visible")
       .find('button[data-testid^="form-button-"]')
       .click();
@@ -192,9 +192,9 @@ describe("LinkedItems Navigation", () => {
     cy.wait("@linkedItemsLoad3");
 
     // -------------------------
-    // Step 17: Click on Purchase Invoice Payment Plan - Payment Plan
+    // Step 17: Click on Purchase Invoice - Basic Discounts
     // -------------------------
-    cy.contains("button", "Purchase Invoice Payment Plan - Payment Plan", { timeout: 15000 })
+    cy.contains("button", "Purchase Invoice - Basic Discounts", { timeout: 15000 })
       .scrollIntoView()
       .should("be.visible")
       .click();
@@ -202,19 +202,21 @@ describe("LinkedItems Navigation", () => {
     // -------------------------
     // Step 18: Click on the linked record detail
     // -------------------------
-    cy.contains("p", /50\.00/, { timeout: 15000 })
+    cy.contains("p", "10000017", { timeout: 15000 }).scrollIntoView().should("be.visible").click();
+
+    // -------------------------
+    // Step 19: Navigate to the record via the blue link
+    // -------------------------
+    cy.contains("p.text-sm.text-blue-600", "10000017", { timeout: 15000 })
       .scrollIntoView()
       .should("be.visible")
       .click();
 
     // -------------------------
-    // Step 19: Navigate to the record via the blue link
+    // Step 20: Verify navigation to Purchase Invoice window
     // -------------------------
-    cy.contains("p.text-sm.text-blue-600", "50.00", { timeout: 15000 }).scrollIntoView().should("be.visible").click();
+    cy.contains("p", "Purchase Invoice", { timeout: 15000 }).should("be.visible");
 
-    // -------------------------
-    // Step 20: Verify navigation to Purchase Invoice Payment Plan window
-    // -------------------------
-    cy.contains("p", "Purchase Invoice Payment Plan", { timeout: 15000 }).should("be.visible");
+    cy.contains("button", "Basic Discounts", { timeout: 10000 }).should("be.visible");
   });
 });
