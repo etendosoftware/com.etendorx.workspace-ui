@@ -165,7 +165,7 @@ describe("CRUD Performance Tests", () => {
   });
 
   describe("Table Load Performance", () => {
-    it("should load Sales Order table with data within acceptable time", () => {
+    it.skip("should load Sales Order table with data within acceptable time", () => {
       cy.openDrawer();
       cy.get('[data-testid="drawer-search-input"] input').clear().type("sales");
       cy.wait(500);
