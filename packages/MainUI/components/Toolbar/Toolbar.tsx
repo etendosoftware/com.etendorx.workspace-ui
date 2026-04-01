@@ -371,7 +371,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           delete headers["Content-Type"]; // Let browser set multipart boundary
         }
 
-        const response = await fetch(`/api/erp/meta/email/send?${params.toString()}`, {
+        const response = await fetch(`/api/erp/meta/email/send`, {
           method: "POST",
           headers,
           body,

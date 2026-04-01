@@ -169,7 +169,10 @@ describe("ERP slug route coverage", () => {
       const req = createMockRequest("GET", "https://localhost/api/erp/org.openbravo.client.kernel/x");
       await GET(req, { params: Promise.resolve({ slug: ["org.openbravo.client.kernel", "x"] }) });
 
-      expect(global.fetch).toHaveBeenCalledWith("https://erp.example/org.openbravo.client.kernel/x", expect.any(Object));
+      expect(global.fetch).toHaveBeenCalledWith(
+        "https://erp.example/org.openbravo.client.kernel/x",
+        expect.any(Object)
+      );
     });
 
     it("handles static resources slug web/...", async () => {
@@ -405,8 +408,8 @@ describe("ERP slug route coverage", () => {
       await POST(req, { params: Promise.resolve({ slug: ["test"] }) });
 
       const fetchOptions = (global.fetch as jest.Mock).mock.calls[0][1];
-      expect(fetchOptions.body).toBe("{}");
-      expect(fetchOptions.duplex).toBeUndefined();
+      expect(fetchOptions.body).toBe(readableStream);
+      expect(fetchOptions.duplex).toBe("half");
     });
   });
 });

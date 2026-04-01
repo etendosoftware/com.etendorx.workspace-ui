@@ -154,7 +154,8 @@ describe("API: /api/erp base forward", () => {
     });
 
     it("handles custom action handlers correctly", async () => {
-      const url = "https://localhost:3000/api/erp?processId=TEST123&_action=com.etendoerp.copilot.process.SyncAssistant";
+      const url =
+        "https://localhost:3000/api/erp?processId=TEST123&_action=com.etendoerp.copilot.process.SyncAssistant";
       const body = '{"recordIds":["REC123"],"_buttonValue":"DONE","_params":{},"_entityName":"ETCOP_App"}';
       const req = makeRequest(url, "token-with-session", body);
 
