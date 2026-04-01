@@ -16,7 +16,7 @@ jest.mock("../useUserContext", () => ({
 
 jest.mock("../../contexts/RuntimeConfigContext", () => ({
   useRuntimeConfig: () => ({
-    config: { etendoClassicHost: "http://classic-host" },
+    config: { etendoClassicHost: "https://classic-host" },
   }),
 }));
 

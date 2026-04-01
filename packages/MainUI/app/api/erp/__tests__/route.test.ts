@@ -46,7 +46,7 @@ describe("API: /api/erp base forward", () => {
 
   beforeEach(() => {
     jest.resetModules();
-    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: "http://erp.example/etendo" };
+    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: "https://erp.example/etendo" };
     (global as any).fetch = jest.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -80,12 +80,12 @@ describe("API: /api/erp base forward", () => {
       csrfToken: "CSRF-TEST-123",
     });
     const url =
-      "http://localhost:3000/api/erp?MODE=NEW&TAB_ID=186&_action=org.openbravo.client.application.window.FormInitializationComponent&language=en_US";
+      "https://localhost:3000/api/erp?MODE=NEW&TAB_ID=186&_action=org.openbravo.client.application.window.FormInitializationComponent&language=en_US";
     const req = makeRequest(url, BEARER_TOKEN, '{"foo":"bar"}');
     await POST(req as any);
     const [dest] = (global as any).fetch.mock.calls[0];
     expect(String(dest)).toBe(
-      "http://erp.example/etendo/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?MODE=NEW&TAB_ID=186&_action=org.openbravo.client.application.window.FormInitializationComponent&language=en_US"
+      "https://erp.example/etendo/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?MODE=NEW&TAB_ID=186&_action=org.openbravo.client.application.window.FormInitializationComponent&language=en_US"
     );
   });
 
@@ -95,12 +95,12 @@ describe("API: /api/erp base forward", () => {
       cookieHeader: "JSESSIONID=ABC123DEF456; Path=/; HttpOnly",
       csrfToken: "CSRF-TEST-123",
     });
-    const url = "http://localhost:3000/api/erp?foo=bar&x=1";
+    const url = "https://localhost:3000/api/erp?foo=bar&x=1";
     const req = makeRequest(url, "token-abc", '{"k":"v"}');
     await POST(req as any);
     const [dest, init] = (global as any).fetch.mock.calls[0];
     expect(String(dest)).toBe(
-      "http://erp.example/etendo/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?foo=bar&x=1"
+      "https://erp.example/etendo/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?foo=bar&x=1"
     );
     expect(init.method).toBe("POST");
     expect(init.headers["Cookie"]).toBeUndefined(); // No session for token-abc
@@ -108,7 +108,7 @@ describe("API: /api/erp base forward", () => {
   });
 
   it("forwards GET to base ERP URL + query with Authorization", async () => {
-    const url = "http://localhost:3000/api/erp?foo=bar&x=1";
+    const url = "https://localhost:3000/api/erp?foo=bar&x=1";
     const headers = new Map<string, string>();
     headers.set("Authorization", "Bearer get-token");
     const req = {
@@ -121,7 +121,7 @@ describe("API: /api/erp base forward", () => {
     await GET(req as any);
     const [dest, init] = (global as any).fetch.mock.calls[0];
     expect(String(dest)).toBe(
-      "http://erp.example/etendo/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?foo=bar&x=1"
+      "https://erp.example/etendo/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?foo=bar&x=1"
     );
     expect(init.method).toBe("GET");
     expect(init.headers["Authorization"]).toBe("Bearer get-token");
@@ -129,14 +129,14 @@ describe("API: /api/erp base forward", () => {
 
   describe("Process execution", () => {
     it("forwards process execution to kernel with correct parameters", async () => {
-      const url = "http://localhost:3000/api/erp?processId=EC2C48FB84274D3CB3A3F5FD49808926";
+      const url = "https://localhost:3000/api/erp?processId=EC2C48FB84274D3CB3A3F5FD49808926";
       const req = makeRequest(url, "process-token", '{"param1":"value1","param2":"value2"}');
 
       await POST(req as any);
 
       const [dest, init] = (global as any).fetch.mock.calls[0];
       expect(String(dest)).toBe(
-        "http://erp.example/etendo/org.openbravo.client.kernel?processId=EC2C48FB84274D3CB3A3F5FD49808926&_action=org.openbravo.client.application.process.ExecuteProcessActionHandler"
+        "https://erp.example/etendo/org.openbravo.client.kernel?processId=EC2C48FB84274D3CB3A3F5FD49808926&_action=org.openbravo.client.application.process.ExecuteProcessActionHandler"
       );
       expect(init.method).toBe("POST");
       expect(init.headers["Cookie"]).toBeUndefined(); // No session for process-token
@@ -144,7 +144,7 @@ describe("API: /api/erp base forward", () => {
     });
 
     it("includes cookies when token has session", async () => {
-      const url = "http://localhost:3000/api/erp?processId=EC2C48FB84274D3CB3A3F5FD49808926";
+      const url = "https://localhost:3000/api/erp?processId=EC2C48FB84274D3CB3A3F5FD49808926";
       const req = makeRequest(url, "token-with-session", '{"param":"value"}');
 
       await POST(req as any);
@@ -154,7 +154,7 @@ describe("API: /api/erp base forward", () => {
     });
 
     it("handles custom action handlers correctly", async () => {
-      const url = "http://localhost:3000/api/erp?processId=TEST123&_action=com.etendoerp.copilot.process.SyncAssistant";
+      const url = "https://localhost:3000/api/erp?processId=TEST123&_action=com.etendoerp.copilot.process.SyncAssistant";
       const body = '{"recordIds":["REC123"],"_buttonValue":"DONE","_params":{},"_entityName":"ETCOP_App"}';
       const req = makeRequest(url, "token-with-session", body);
 
@@ -162,14 +162,14 @@ describe("API: /api/erp base forward", () => {
 
       const [dest, init] = (global as any).fetch.mock.calls[0];
       expect(String(dest)).toBe(
-        "http://erp.example/etendo/org.openbravo.client.kernel?processId=TEST123&_action=com.etendoerp.copilot.process.SyncAssistant"
+        "https://erp.example/etendo/org.openbravo.client.kernel?processId=TEST123&_action=com.etendoerp.copilot.process.SyncAssistant"
       );
       expect(init.body).toBe(body);
       expect(init.headers["Cookie"]).toBe("JSESSIONID=test-session-id; other=cookie");
     });
 
     it("returns 401 when no Bearer token provided for process execution", async () => {
-      const url = "http://localhost:3000/api/erp?processId=SOME_PROCESS_ID";
+      const url = "https://localhost:3000/api/erp?processId=SOME_PROCESS_ID";
       const headers = new Map<string, string>();
       headers.set("Content-Type", "application/json");
       const req = {
@@ -192,7 +192,7 @@ describe("API: /api/erp base forward", () => {
         text: async () => "Process execution failed",
       });
 
-      const url = "http://localhost:3000/api/erp?processId=FAILING_PROCESS";
+      const url = "https://localhost:3000/api/erp?processId=FAILING_PROCESS";
       const req = makeRequest(url, "valid-token", '{"param":"value"}');
 
       const result = (await POST(req as any)) as any;
@@ -207,7 +207,7 @@ describe("API: /api/erp base forward", () => {
         text: async () => "OK - Process completed successfully",
       });
 
-      const url = "http://localhost:3000/api/erp?processId=TEXT_RESPONSE_PROCESS";
+      const url = "https://localhost:3000/api/erp?processId=TEXT_RESPONSE_PROCESS";
       const req = makeRequest(url, "valid-token", '{"param":"value"}');
 
       const result = (await POST(req as any)) as any;
