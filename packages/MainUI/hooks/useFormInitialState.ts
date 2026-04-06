@@ -123,7 +123,7 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
   // with the leading "inp" stripped (e.g. "inp_propertyField_type_Type" → "_propertyField_type_Type").
   const fieldsByPropertyFieldKey = useMemo(() => {
     if (!tab?.fields) return {} as FieldMap;
-    return Object.values(tab.fields).reduce((acc, field) => {
+    return Object.values(tab?.fields).reduce((acc, field) => {
       if (field.column?.propertyPath && field.inputName) {
         acc[field.inputName.replace(/^inp/, "")] = field;
       }
