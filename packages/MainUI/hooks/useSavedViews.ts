@@ -69,10 +69,14 @@ async function postToEntityDatasource(
   payload: SmartClientWritePayload
 ): Promise<DatasourceWriteResponse> {
   const token = getAuthToken();
-  const url = `/api/datasource/${ENTITY}?_operationType=${operationType}&isc_dataFormat=json`;
+  // Use PUT without _operationType in the URL so the Next.js proxy routes through
+  // the kernel SWS path (sws/com.smf.securewebservices.kernel/...) which authenticates
+  // via Bearer token without requiring a session cookie or CSRF token.
+  // The operationType is carried in the request body for the datasource servlet.
+  const url = `/api/datasource/${ENTITY}`;
 
   const response = await fetch(url, {
-    method: "POST",
+    method: "PUT",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
