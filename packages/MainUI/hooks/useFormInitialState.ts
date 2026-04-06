@@ -16,7 +16,13 @@
  */
 
 import { useTabContext } from "@/contexts/tab";
-import type { EntityData, EntityValue, Field, FormInitializationResponse, Tab } from "@workspaceui/api-client/src/api/types";
+import type {
+  EntityData,
+  EntityValue,
+  Field,
+  FormInitializationResponse,
+  Tab,
+} from "@workspaceui/api-client/src/api/types";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { useMemo } from "react";
@@ -55,11 +61,19 @@ function applyAuxiliaryInputs(
 /**
  * Writes a single column value entry (value, identifier, entries) into the accumulator.
  */
-function applyColumnValueEntry(acc: EntityData, newKey: string, entry: ColumnValueEntry, field: Field | undefined): void {
+function applyColumnValueEntry(
+  acc: EntityData,
+  newKey: string,
+  entry: ColumnValueEntry,
+  field: Field | undefined
+): void {
   acc[newKey] = toBooleanEntityValue(entry.value, field);
 
   if (entry.entries) {
-    acc[`${newKey}$_entries`] = entry.entries.map((e) => ({ id: e.id, label: e._identifier })) as unknown as EntityValue;
+    acc[`${newKey}$_entries`] = entry.entries.map((e) => ({
+      id: e.id,
+      label: e._identifier,
+    })) as unknown as EntityValue;
   }
 
   // Always set the identifier key — even when empty — so a previously set identifier
