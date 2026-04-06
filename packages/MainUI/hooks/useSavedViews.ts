@@ -58,7 +58,16 @@ interface DatasourceWriteResponse {
  */
 function getAuthToken(): string {
   try {
-    return localStorage.getItem("token") ?? "";
+    const raw = localStorage.getItem("token");
+    if (!raw) return "";
+    // localStorage stores JSON-stringified values (e.g. `"eyJ..."` with surrounding quotes).
+    // Parse to extract the plain token string.
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      return typeof parsed === "string" ? parsed : raw;
+    } catch {
+      return raw;
+    }
   } catch {
     return "";
   }
