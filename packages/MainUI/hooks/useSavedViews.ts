@@ -93,16 +93,27 @@ async function postToEntityDatasource(
     body: JSON.stringify(payload),
   });
 
+  const text = await response.text();
+
   if (!response.ok) {
-    const text = await response.text();
     throw new Error(`Datasource request failed (${response.status}): ${text}`);
   }
 
-  // Receive as unknown first, then validate shape before returning
-  const json: unknown = await response.json();
+  // Backend may return an empty body on success (204-style but with 200)
+  if (!text.trim()) {
+    return {};
+  }
+
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    // Non-JSON success response — treat as success
+    return {};
+  }
 
   if (!json || typeof json !== "object") {
-    throw new Error("Datasource response is not a valid object");
+    return {};
   }
 
   return json as DatasourceWriteResponse;
