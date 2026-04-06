@@ -16,7 +16,6 @@
  */
 
 import { useCallback, useState } from "react";
-import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } from "material-react-table";
 import { logger } from "@/utils/logger";
 import { buildGridConfiguration, parseGridConfiguration, rawRecordToSavedView } from "@/utils/savedViews/transform";
@@ -74,7 +73,7 @@ function getAuthToken(): string {
 }
 
 async function postToEntityDatasource(
-  operationType: "add" | "update" | "remove",
+  _operationType: "add" | "update" | "remove",
   payload: SmartClientWritePayload
 ): Promise<DatasourceWriteResponse> {
   const token = getAuthToken();
@@ -188,16 +187,35 @@ export function useSavedViews(): UseSavedViewsReturn {
     setError(null);
 
     try {
-      const raw = await datasource.get(ENTITY, {
-        criteria: [
-          {
-            fieldName: "tab",
-            operator: "equals",
-            value: tabId,
-          },
-        ],
-        _noActiveFilter: "true",
+      // Use the kernel SWS path via the [entity] route (GET) so that Bearer token
+      // auth is used. The /api/datasource POST route goes through the metadata-forward
+      // path which does not expose OBUIAPP_SavedSearch.
+      const token = getAuthToken();
+      const criteriaJson = JSON.stringify({
+        _constructor: "AdvancedCriteria",
+        fieldName: "tab",
+        operator: "equals",
+        value: tabId,
       });
+      const qs = new URLSearchParams({
+        _operationType: "fetch",
+        _noActiveFilter: "true",
+        _constructor: "AdvancedCriteria",
+        operator: "and",
+        criteria: criteriaJson,
+      });
+      const fetchResponse = await fetch(`/api/datasource/${ENTITY}?${qs.toString()}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+      const fetchText = await fetchResponse.text();
+      if (!fetchResponse.ok) {
+        throw new Error(`Fetch saved views failed (${fetchResponse.status}): ${fetchText}`);
+      }
+      const raw: unknown = fetchText.trim() ? JSON.parse(fetchText) : {};
 
       const savedViews = extractViewsFromResponse(raw);
 
