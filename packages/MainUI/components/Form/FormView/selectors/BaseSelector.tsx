@@ -143,7 +143,7 @@ const BaseSelectorComp = ({
   const formMethods = useFormContext();
   const { watch, getValues, setValue, register, formState } = formMethods;
   const { isFormInitializing, isSettingInitialValues, setIsSettingInitialValues } = useFormInitializationContext();
-  const { tab, record, parentRecord, parentTab } = useTabContext();
+  const { tab, record, parentRecord, parentTab, setAuxiliaryInputs } = useTabContext();
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
 
   // Lookup map for property field keys returned by FIC in columnValues.
@@ -270,13 +270,17 @@ const BaseSelectorComp = ({
 
   const applyAuxiliaryInputValues = useCallback(
     (auxiliaryInputValues: FormInitializationResponse["auxiliaryInputValues"]) => {
+      const auxUpdates: Record<string, string> = {};
       for (const [column, { value }] of Object.entries(auxiliaryInputValues ?? {})) {
         const targetField = fieldsByColumnName[column];
         const hqlName = targetField?.hqlName || column;
         setValue(hqlName, value, { shouldDirty: false });
+        auxUpdates[column] = value;
+        if (hqlName !== column) auxUpdates[hqlName] = value;
       }
+      setAuxiliaryInputs((prev) => ({ ...prev, ...auxUpdates }));
     },
-    [fieldsByColumnName, setValue]
+    [fieldsByColumnName, setValue, setAuxiliaryInputs]
   );
 
   const executeCallout = useCallback(
