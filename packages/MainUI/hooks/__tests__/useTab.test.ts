@@ -2,7 +2,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { useTab } from "../useTab";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { logger } from "@/utils/logger";
-import { Tab } from "@workspaceui/api-client/src/api/types";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 
 jest.mock("@workspaceui/api-client/src/api/metadata");
 jest.mock("@/utils/logger");

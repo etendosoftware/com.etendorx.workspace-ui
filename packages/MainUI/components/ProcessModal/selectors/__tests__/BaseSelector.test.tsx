@@ -3,7 +3,6 @@ import BaseSelector from "../BaseSelector";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useForm } from "react-hook-form";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
-import React from "react";
 
 jest.mock("@/hooks/useUserContext");
 jest.mock("react-hook-form");
