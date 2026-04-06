@@ -31,6 +31,18 @@ export const TABLEDIR_SELECTOR_DEFAULTS = {
   SEARCH_FIELDS: ["name", "value", "description"],
 } as const;
 
+export const COMBO_TABLE_DATASOURCE = "ComboTableDatasourceService";
+
+export const COMBO_TABLE_SELECTOR_DEFAULTS = {
+  datasourceName: COMBO_TABLE_DATASOURCE,
+  displayField: "_identifier",
+  valueField: "id",
+  _noCount: true,
+  _sortBy: "_identifier",
+  _selectedProperties: "id",
+  _extraProperties: "id,",
+} as const;
+
 export const INVOICE_FIELD_MAPPINGS: Record<string, string> = {
   priceList: "inpmPricelistId",
   currency: "inpcCurrencyId",

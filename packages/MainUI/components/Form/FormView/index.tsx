@@ -136,7 +136,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const { graph } = useSelected();
   const { activeWindow, setSelectedRecord, getSelectedRecord, setSelectedRecordAndClearChildren } = useWindowContext();
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
-  const { resetFormChanges, parentTab } = useTabContext();
+  const { resetFormChanges, parentTab, setAuxiliaryInputs } = useTabContext();
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
     useToolbarContext();
   const { refetchDatasource, registerRefetchFunction, updateRecordInDatasource, addRecordToDatasource } =
@@ -195,6 +195,16 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       setIsFormInitializing(false);
     }
   }, [waitingForRefetch, loadingFormInitialization, currentRecordId]);
+
+  // Sync auxiliary input values from form initialization into tab-scoped context
+  useEffect(() => {
+    if (!formInitialization?.auxiliaryInputValues) return;
+    const aux: Record<string, string> = {};
+    for (const [key, { value }] of Object.entries(formInitialization.auxiliaryInputValues)) {
+      aux[key] = value;
+    }
+    setAuxiliaryInputs(aux);
+  }, [formInitialization, setAuxiliaryInputs]);
 
   const refreshRecordAndSession = useCallback(async () => {
     if (!recordId || recordId === NEW_RECORD_ID) {
