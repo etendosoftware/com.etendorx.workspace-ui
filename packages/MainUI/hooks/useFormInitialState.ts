@@ -16,7 +16,7 @@
  */
 
 import { useTabContext } from "@/contexts/tab";
-import type { EntityData, EntityValue, FormInitializationResponse } from "@workspaceui/api-client/src/api/types";
+import type { EntityData, EntityValue, Field, FormInitializationResponse } from "@workspaceui/api-client/src/api/types";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { useMemo } from "react";
@@ -27,6 +27,27 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
   const { tab } = useTabContext();
   const parentData = useFormParent(FieldName.HQL_NAME);
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
+
+  // Build a secondary lookup for property fields using the FIC response key format.
+  // The FIC returns property field values in columnValues under the key
+  // `_propertyField_{propertyPath}_{columnName}`, which is the field's `inputName`
+  // with the leading "inp" stripped (e.g. "inp_propertyField_type_Type" → "_propertyField_type_Type").
+  // This map lets us find the field and obtain its hqlName so the value ends up
+  // in the form state under the right key.
+  const fieldsByPropertyFieldKey = useMemo(() => {
+    if (!tab?.fields) return {} as Record<string, Field>;
+    return Object.values(tab.fields).reduce(
+      (acc, field) => {
+        if (field.column?.propertyPath && field.inputName) {
+          // Strip the "inp" prefix: "inp_propertyField_type_Type" → "_propertyField_type_Type"
+          const ficKey = field.inputName.replace(/^inp/, "");
+          acc[ficKey] = field;
+        }
+        return acc;
+      },
+      {} as Record<string, Field>
+    );
+  }, [tab?.fields]);
 
   const initialState = useMemo(() => {
     if (!formInitialization) return null;
@@ -40,7 +61,10 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
     }
 
     for (const [key, { value, identifier, entries }] of Object.entries(formInitialization.columnValues || {})) {
-      const field = fieldsByColumnName?.[key];
+      // Primary lookup: by columnName (handles regular fields and most cases)
+      // Secondary lookup: by stripped inputName (handles property fields whose FIC key
+      // is "_propertyField_*" rather than the plain columnName)
+      const field = fieldsByColumnName?.[key] ?? fieldsByPropertyFieldKey[key];
       const newKey = field?.hqlName ?? key;
 
       // Etendo encodes boolean (YES_NO, reference "20") column values as "" for false and "Y" for true.
@@ -67,10 +91,37 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
       }
     }
 
+    // Second pass: resolve @ColumnName@ default references for fields that came back
+    // empty from the FIC. This handles cases where a field's column.defaultValue
+    // references another field on the same form (e.g. @DateInvoiced@), but the backend
+    // can't resolve it because the referenced field's value isn't in the FIC request
+    // context for NEW records (the payload carries no record data in NEW mode).
+    // At this point acc already contains all FIC-resolved values (e.g. dateInvoiced →
+    // today's date from @#Date@), so cross-field references can be satisfied here.
+    for (const field of Object.values(tab.fields)) {
+      if (!field?.column?.defaultValue || !field.hqlName) continue;
+
+      const match = /^@(\w+)@$/.exec(field.column.defaultValue);
+      if (!match) continue;
+
+      // Only apply the fallback when the FIC returned an empty value for this field.
+      const currentValue = acc[field.hqlName];
+      if (currentValue !== undefined && currentValue !== "") continue;
+
+      // Resolve the referenced field's value from the already-computed acc.
+      const referencedField = fieldsByColumnName?.[match[1]];
+      if (!referencedField?.hqlName) continue;
+
+      const referencedValue = acc[referencedField.hqlName];
+      if (referencedValue !== undefined && referencedValue !== "") {
+        acc[field.hqlName] = referencedValue;
+      }
+    }
+
     const processedParentData = { ...parentData };
 
     return { ...processedParentData, ...acc };
-  }, [fieldsByColumnName, formInitialization, parentData]);
+  }, [fieldsByColumnName, fieldsByPropertyFieldKey, formInitialization, parentData, tab.fields]);
 
   return initialState;
 };
