@@ -537,6 +537,7 @@ const es = {
     saveSuccess: "Vista guardada correctamente",
     loadSuccess: "Vista aplicada",
     error: "Error al guardar la vista",
+    deleteError: "Error al eliminar la vista",
   },
   advancedFilters: {
     title: "Filtros avanzados",

@@ -538,6 +538,7 @@ const en = {
     saveSuccess: "View saved successfully",
     loadSuccess: "View applied",
     error: "Error saving view",
+    deleteError: "Error deleting view",
   },
   advancedFilters: {
     title: "Advanced Filters",

@@ -420,7 +420,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           currentSorting={tableColumnSorting}
           currentOrder={tableColumnOrder}
           onApplyView={handleApplyView}
-          data-testid="SaveViewMenu__a2dd07"
         />
       )}
       {confirmAction && (
