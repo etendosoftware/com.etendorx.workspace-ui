@@ -73,18 +73,17 @@ function getAuthToken(): string {
 }
 
 async function postToEntityDatasource(
-  _operationType: "add" | "update" | "remove",
+  operationType: "add" | "update" | "remove",
   payload: SmartClientWritePayload
 ): Promise<DatasourceWriteResponse> {
   const token = getAuthToken();
-  // Use PUT without _operationType in the URL so the Next.js proxy routes through
-  // the kernel SWS path (sws/com.smf.securewebservices.kernel/...) which authenticates
-  // via Bearer token without requiring a session cookie or CSRF token.
-  // The operationType is carried in the request body for the datasource servlet.
-  const url = `/api/datasource/${ENTITY}`;
+  // POST with _operationType in the URL so the [entity] route uses the direct
+  // datasource servlet (org.openbravo.service.datasource/OBUIAPP_SavedSearch).
+  // The session cookie + CSRF token are injected server-side by the route handler.
+  const url = `/api/datasource/${ENTITY}?_operationType=${operationType}&isc_dataFormat=json`;
 
   const response = await fetch(url, {
-    method: "PUT",
+    method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
