@@ -4,7 +4,7 @@ import { getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
 import { shouldAttemptCsrfRecovery } from "@/app/api/_utils/sessionValidator";
 import { recoverFromCsrfError } from "@/app/api/_utils/csrfRecovery";
 import { getErpCsrfToken } from "../../_utils/sessionStore";
-import { getKernelDatasourceUrl } from "../../_utils/endpoints";
+import { getDirectDatasourceUrl } from "../../_utils/endpoints";
 
 // Type definitions for better code clarity
 interface ProcessedRequestData {
@@ -53,12 +53,11 @@ function buildErpUrl(
   const params = new URLSearchParams(requestUrl.search);
   const operationType = params.get("_operationType");
 
-  // Always use the kernel SWS path for Bearer-token-authenticated requests.
-  // This path (sws/com.smf.securewebservices.kernel/org.openbravo.service.datasource/<entity>)
-  // supports all datasource operations (fetch, add, update, remove) without requiring a
-  // session cookie or CSRF token, making it the correct route for the new UI which
-  // authenticates exclusively via JWT Bearer tokens.
-  const baseUrl = getKernelDatasourceUrl(entity);
+  // Use the direct datasource servlet for all operations on this route.
+  // The metadata-forward SWS path only exposes registered business entities;
+  // UI entities like OBUIAPP_SavedSearch require the direct servlet.
+  // Session cookie + CSRF (from the session store) provide ERP-level auth.
+  const baseUrl = getDirectDatasourceUrl(entity);
 
   if (operationType && !params.has("_startRow") && !params.has("_endRow")) {
     params.set("_startRow", "0");
@@ -104,8 +103,12 @@ async function processRequestData(
     headers["X-CSRF-Token"] = csrf;
   }
 
-  // GET requests don't have a body
+  // GET requests don't have a body, but still need the session cookie so the
+  // direct datasource servlet can authenticate the request.
   if (method === "GET") {
+    if (combinedCookie) {
+      headers.Cookie = combinedCookie;
+    }
     return { headers };
   }
 
