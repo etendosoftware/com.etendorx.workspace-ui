@@ -19,6 +19,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useSavedViews } from "@/hooks/useSavedViews";
 import type { ParsedSavedView } from "@/utils/savedViews/types";
@@ -86,6 +87,11 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
     const trimmedName = newViewName.trim();
     if (!trimmedName) return;
 
+    if (trimmedName.length > 100) {
+      setOperationError(t("savedViews.error"));
+      return;
+    }
+
     setOperationError(null);
 
     try {
@@ -133,7 +139,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
         await deleteView(viewId);
         setConfirmDeleteId(null);
       } catch {
-        setOperationError(t("savedViews.error"));
+        setOperationError(t("savedViews.deleteError"));
       }
     },
     [deleteView, t]
@@ -179,6 +185,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
               value={newViewName}
               onChange={(e) => setNewViewName(e.target.value)}
               onKeyDown={handleKeyDownSaveInput}
+              maxLength={100}
               data-testid="SaveViewMenu__name-input"
             />
             <div className="flex gap-1">
@@ -270,8 +277,9 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
                     type="button"
                     className="text-xs text-(--color-transparent-neutral-40) hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                     onClick={() => handleDeleteClick(view.id)}
+                    aria-label={t("savedViews.delete")}
                     data-testid="SaveViewMenu__view-delete">
-                    ✕
+                    <DeleteOutlineIcon fontSize="small" />
                   </button>
                 </>
               )}

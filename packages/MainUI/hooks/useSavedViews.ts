@@ -47,6 +47,15 @@ interface DatasourceWriteResponse {
   [key: string]: unknown;
 }
 
+/**
+ * Reads the auth token from localStorage.
+ *
+ * DELIBERATE BYPASS: The datasource api-client (`Datasource.get()`) only supports
+ * read (fetch) operations. Write operations (add/remove) are not exposed by the
+ * api-client, so a raw fetch is used here instead of routing through `datasource`.
+ * The token key "token" MUST remain in sync with the key used in
+ * `packages/MainUI/contexts/user.tsx` (`useLocalStorage<string | null>("token", null)`).
+ */
 function getAuthToken(): string {
   try {
     return localStorage.getItem("token") ?? "";
@@ -76,7 +85,14 @@ async function postToEntityDatasource(
     throw new Error(`Datasource request failed (${response.status}): ${text}`);
   }
 
-  return response.json() as Promise<DatasourceWriteResponse>;
+  // Receive as unknown first, then validate shape before returning
+  const json: unknown = await response.json();
+
+  if (!json || typeof json !== "object") {
+    throw new Error("Datasource response is not a valid object");
+  }
+
+  return json as DatasourceWriteResponse;
 }
 
 /**
@@ -92,7 +108,12 @@ function extractViewsFromResponse(raw: unknown): SavedView[] {
   const data = response.data;
   if (!Array.isArray(data)) return [];
 
-  return data.map((record: unknown) => rawRecordToSavedView(record as RawSavedViewRecord));
+  return data
+    .filter(
+      (record: unknown): record is Record<string, unknown> =>
+        typeof record === "object" && record !== null && typeof (record as Record<string, unknown>).id === "string"
+    )
+    .map((record) => rawRecordToSavedView(record as RawSavedViewRecord));
 }
 
 export interface UseSavedViewsReturn {
