@@ -4,7 +4,7 @@ import { getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
 import { shouldAttemptCsrfRecovery } from "@/app/api/_utils/sessionValidator";
 import { recoverFromCsrfError } from "@/app/api/_utils/csrfRecovery";
 import { getErpCsrfToken } from "../../_utils/sessionStore";
-import { getDatasourceUrl, getKernelDatasourceUrl } from "../../_utils/endpoints";
+import { getKernelDatasourceUrl } from "../../_utils/endpoints";
 
 // Type definitions for better code clarity
 interface ProcessedRequestData {
@@ -48,19 +48,17 @@ function buildErpUrl(
   requestUrl: URL,
   body?: string,
   userToken?: string | null,
-  method?: string
+  _method?: string
 ): string {
   const params = new URLSearchParams(requestUrl.search);
   const operationType = params.get("_operationType");
 
-  // For write methods that carry a body but have no explicit _operationType in the URL
-  // (e.g. tree node drag-and-drop PUT requests), use the kernel SWS path so that the
-  // request is authenticated purely via Bearer token without a CSRF token requirement.
-  const isWriteWithBody = body && method && ["PUT", "PATCH", "DELETE"].includes(method.toUpperCase()) && !operationType;
-
-  const baseUrl = isWriteWithBody
-    ? getKernelDatasourceUrl(entity)
-    : getDatasourceUrl(entity, operationType || undefined);
+  // Always use the kernel SWS path for Bearer-token-authenticated requests.
+  // This path (sws/com.smf.securewebservices.kernel/org.openbravo.service.datasource/<entity>)
+  // supports all datasource operations (fetch, add, update, remove) without requiring a
+  // session cookie or CSRF token, making it the correct route for the new UI which
+  // authenticates exclusively via JWT Bearer tokens.
+  const baseUrl = getKernelDatasourceUrl(entity);
 
   if (operationType && !params.has("_startRow") && !params.has("_endRow")) {
     params.set("_startRow", "0");
