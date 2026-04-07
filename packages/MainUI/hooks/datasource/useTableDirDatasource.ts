@@ -28,6 +28,8 @@ import {
   PRODUCT_SELECTOR_DEFAULTS,
   TABLEDIR_SELECTOR_DEFAULTS,
   INVOICE_FIELD_MAPPINGS,
+  COMBO_TABLE_DATASOURCE,
+  COMBO_TABLE_SELECTOR_DEFAULTS,
 } from "./constants";
 import { transformValueToClassicFormat } from "@/utils/datasourceUtils";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
@@ -160,11 +162,13 @@ export const useTableDirDatasource = ({
       const effectiveTabId = field.tab || tab?.id || "";
       const effectiveTableId = field.column?.table || tab?.table || "";
 
+      const effectiveSelector = field.selector ?? { ...COMBO_TABLE_SELECTOR_DEFAULTS, fieldId: field.id };
+
       const baseBody: BaseBody = {
         _startRow: startRow.toString(),
         _endRow: endRow.toString(),
         _operationType: "fetch",
-        ...field.selector,
+        ...effectiveSelector,
         moduleId: field.module,
         windowId,
         tabId: effectiveTabId,
@@ -231,6 +235,7 @@ export const useTableDirDatasource = ({
       transformFormValues,
       getValues,
       invoiceContext,
+      field.id,
       field.selector,
       field.module,
       field.tab,
@@ -259,12 +264,14 @@ export const useTableDirDatasource = ({
       const searchFields: string[] = [];
 
       // 1. Prioritize Selector Configuration
-      if (field.selector?.extraSearchFields) {
-        searchFields.push(...field.selector.extraSearchFields.split(",").map((f) => f.trim()));
+      const extraSearchFields = field.selector?.extraSearchFields as string | undefined;
+      if (extraSearchFields) {
+        searchFields.push(...extraSearchFields.split(",").map((f) => f.trim()));
       }
 
-      if (field.selector?.displayField && !searchFields.includes(field.selector.displayField)) {
-        searchFields.push(field.selector.displayField);
+      const displayField = field.selector?.displayField as string | undefined;
+      if (displayField && !searchFields.includes(displayField)) {
+        searchFields.push(displayField);
       }
 
       // 2. Fallbacks if no fields defined in selector
@@ -288,14 +295,20 @@ export const useTableDirDatasource = ({
   );
 
   const applyCriteria = useCallback(
-    (body: URLSearchParams, search: string) => {
+    (params: Record<string, unknown>, search: string) => {
+      if (!Array.isArray(params.criteria)) {
+        params.criteria = [];
+      }
+      let criteria = params.criteria as string[];
+
       const applySelectorCriteria = () => {
         if (!field.selector?.criteria) return;
         try {
-          const existingCriteria = JSON.parse(field.selector.criteria);
+          const existingCriteria =
+            typeof field.selector.criteria === "string" ? JSON.parse(field.selector.criteria) : field.selector.criteria;
           const criteriaList = Array.isArray(existingCriteria) ? existingCriteria : [existingCriteria];
           for (const c of criteriaList) {
-            body.append("criteria", JSON.stringify(c));
+            criteria.push(JSON.stringify(c));
           }
         } catch (e) {
           logger.warn("Failed to parse selector criteria", e);
@@ -304,15 +317,16 @@ export const useTableDirDatasource = ({
 
       const applySearchCriteria = () => {
         if (!search) return;
-        const { dummyId, criteria } = buildSearchCriteria(search, isProductField);
+        const { dummyId, criteria: searchCriteria } = buildSearchCriteria(search, isProductField);
 
         if (isProductField) {
-          body.set("criteria", JSON.stringify({ fieldName: "_dummy", operator: "equals", value: dummyId }));
-          body.set("operator", "or");
+          params.criteria = [JSON.stringify({ fieldName: "_dummy", operator: "equals", value: dummyId })];
+          criteria = params.criteria as string[];
+          params.operator = "or";
         }
 
-        for (const criterion of criteria) {
-          body.append("criteria", JSON.stringify(criterion));
+        for (const criterion of searchCriteria) {
+          criteria.push(JSON.stringify(criterion));
         }
       };
 
@@ -322,7 +336,8 @@ export const useTableDirDatasource = ({
         // Check if we should skip the warehouse filter (e.g. for Requisition)
         if (field.selector?.skipWarehouseFilter) return;
 
-        const hasWarehouseInContext = body.has("inpmWarehouseId") || body.has("mWarehouseId") || body.has("warehouse");
+        const hasWarehouseInContext =
+          params.inpmWarehouseId !== undefined || params.mWarehouseId !== undefined || params.warehouse !== undefined;
 
         if (hasWarehouseInContext) {
           return;
@@ -339,8 +354,7 @@ export const useTableDirDatasource = ({
         }
 
         if (warehouseId) {
-          body.append(
-            "criteria",
+          criteria.push(
             JSON.stringify({
               fieldName: "storageBin.warehouse",
               operator: "equals",
@@ -460,14 +474,14 @@ export const useTableDirDatasource = ({
         const startRow = reset ? 0 : currentPage * pageSize;
         const endRow = reset ? initialPageSize : startRow + pageSize;
 
-        const baseBody = buildRequestBody(startRow, endRow, _currentValue);
-        const body = new URLSearchParams(baseBody as Record<string, string>);
+        const params = buildRequestBody(startRow, endRow, _currentValue);
+        applyCriteria(params, search);
 
-        applyCriteria(body, search);
-
-        const { data } = await datasource.client.request(`/api/datasource/${field.selector?.datasourceName ?? ""}`, {
-          method: "POST",
-          body,
+        const entityName =
+          field.selector?.datasourceName || String(field.selector?._entityName ?? "") || COMBO_TABLE_DATASOURCE;
+        const { data } = await datasource.client.post("/api/datasource", {
+          entity: entityName,
+          params,
         });
 
         processApiResponse(data, reset);
