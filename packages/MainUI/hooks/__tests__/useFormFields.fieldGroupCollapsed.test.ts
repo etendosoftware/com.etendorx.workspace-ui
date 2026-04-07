@@ -71,9 +71,7 @@ describe("useFormFields — fieldGroupCollapsed threading", () => {
       field1: makeField({ hqlName: "field1", fieldGroupCollapsed: true }),
     });
 
-    const { result } = renderHook(() =>
-      useFormFields(tab, "rec1", FormMode.EDIT)
-    );
+    const { result } = renderHook(() => useFormFields(tab, "rec1", FormMode.EDIT));
 
     const group = result.current.groups.find(([id]) => id === "group1");
     expect(group).toBeDefined();
@@ -85,9 +83,7 @@ describe("useFormFields — fieldGroupCollapsed threading", () => {
       field1: makeField({ hqlName: "field1", fieldGroupCollapsed: false }),
     });
 
-    const { result } = renderHook(() =>
-      useFormFields(tab, "rec1", FormMode.EDIT)
-    );
+    const { result } = renderHook(() => useFormFields(tab, "rec1", FormMode.EDIT));
 
     const group = result.current.groups.find(([id]) => id === "group1");
     expect(group).toBeDefined();
@@ -99,9 +95,7 @@ describe("useFormFields — fieldGroupCollapsed threading", () => {
       field1: makeField({ hqlName: "field1" }),
     });
 
-    const { result } = renderHook(() =>
-      useFormFields(tab, "rec1", FormMode.EDIT)
-    );
+    const { result } = renderHook(() => useFormFields(tab, "rec1", FormMode.EDIT));
 
     const group = result.current.groups.find(([id]) => id === "group1");
     expect(group).toBeDefined();
@@ -114,9 +108,7 @@ describe("useFormFields — fieldGroupCollapsed threading", () => {
       field2: makeField({ hqlName: "field2", sequenceNumber: 20, fieldGroupCollapsed: false }),
     });
 
-    const { result } = renderHook(() =>
-      useFormFields(tab, "rec1", FormMode.EDIT)
-    );
+    const { result } = renderHook(() => useFormFields(tab, "rec1", FormMode.EDIT));
 
     // The group is created on first encounter (field1), so collapsed = true
     const group = result.current.groups.find(([id]) => id === "group1");
@@ -130,9 +122,7 @@ describe("useFormFields — fieldGroupCollapsed threading", () => {
       field2: makeField({ hqlName: "field2", fieldGroup: "g2", fieldGroupCollapsed: false }),
     });
 
-    const { result } = renderHook(() =>
-      useFormFields(tab, "rec1", FormMode.EDIT)
-    );
+    const { result } = renderHook(() => useFormFields(tab, "rec1", FormMode.EDIT));
 
     const g1 = result.current.groups.find(([id]) => id === "g1");
     const g2 = result.current.groups.find(([id]) => id === "g2");

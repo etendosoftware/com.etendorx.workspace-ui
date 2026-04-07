@@ -112,8 +112,7 @@ const baseProps = {
   onAttachmentsChange: jest.fn(),
 };
 
-const renderFormFields = (mode: FormMode) =>
-  render(<FormFields {...baseProps} mode={mode} />);
+const renderFormFields = (mode: FormMode) => render(<FormFields {...baseProps} mode={mode} />);
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
