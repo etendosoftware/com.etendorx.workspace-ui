@@ -332,8 +332,7 @@ function ProcessDefinitionModalContent({
 
     const getDynamicButtons = async (buttonListParam: any) => {
       const rawRefKey = buttonListParam.referenceSearchKey;
-      const referenceId =
-        rawRefKey && typeof rawRefKey === "object" ? (rawRefKey as { id: string }).id : rawRefKey;
+      const referenceId = rawRefKey && typeof rawRefKey === "object" ? (rawRefKey as { id: string }).id : rawRefKey;
 
       if (!referenceId) return [];
 
