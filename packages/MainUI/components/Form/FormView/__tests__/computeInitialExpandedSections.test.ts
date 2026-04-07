@@ -48,11 +48,10 @@ const computeInitialExpandedSections = (currentGroups: GroupEntry[]): string[] =
     .filter(([id, group]) => id === "_main" || group.fieldGroupCollapsed === false)
     .map(([id]) => String(id ?? "_main"));
 
-const makeGroup = (
-  id: string | null,
-  identifier: string,
-  fieldGroupCollapsed?: boolean
-): GroupEntry => [id, { identifier, fieldGroupCollapsed, fields: {} }];
+const makeGroup = (id: string | null, identifier: string, fieldGroupCollapsed?: boolean): GroupEntry => [
+  id,
+  { identifier, fieldGroupCollapsed, fields: {} },
+];
 
 describe("computeInitialExpandedSections", () => {
   it("returns an empty array when no groups are provided", () => {
@@ -60,7 +59,7 @@ describe("computeInitialExpandedSections", () => {
   });
 
   it("excludes a group whose fieldGroupCollapsed is undefined (default collapsed)", () => {
-    const groups = [makeGroup("g1", "Group 1", undefined)];
+    const groups = [makeGroup("g1", "Group 1")];
     expect(computeInitialExpandedSections(groups)).toEqual([]);
   });
 
@@ -76,7 +75,7 @@ describe("computeInitialExpandedSections", () => {
 
   it("includes main section (_main id) regardless of fieldGroupCollapsed — undefined", () => {
     // useFormFields assigns "_main" as the explicit key for fields with no fieldGroup set.
-    const groups = [makeGroup("_main", "Main Section", undefined)];
+    const groups = [makeGroup("_main", "Main Section")];
     expect(computeInitialExpandedSections(groups)).toEqual(["_main"]);
   });
 
@@ -92,10 +91,10 @@ describe("computeInitialExpandedSections", () => {
 
   it("handles a mix of collapsed and expanded groups, returning only expanded ids", () => {
     const groups: GroupEntry[] = [
-      makeGroup("_main", "Main", undefined), // always expanded
+      makeGroup("_main", "Main"), // always expanded
       makeGroup("g1", "Expanded", false),
       makeGroup("g2", "Collapsed", true),
-      makeGroup("g3", "Default", undefined),
+      makeGroup("g3", "Default"),
     ];
     expect(computeInitialExpandedSections(groups)).toEqual(["_main", "g1"]);
   });
@@ -110,18 +109,15 @@ describe("computeInitialExpandedSections", () => {
   });
 
   it("returns an empty array when all groups are collapsed", () => {
-    const groups: GroupEntry[] = [
-      makeGroup("g1", "Sec1", true),
-      makeGroup("g2", "Sec2", true),
-    ];
+    const groups: GroupEntry[] = [makeGroup("g1", "Sec1", true), makeGroup("g2", "Sec2", true)];
     expect(computeInitialExpandedSections(groups)).toEqual([]);
   });
 
   it("returns empty array for synthetic groups (notes, attachments, linked-items) with undefined fieldGroupCollapsed", () => {
     const groups: GroupEntry[] = [
-      makeGroup("notes_group", "Notes", undefined),
-      makeGroup("attachments_group", "Attachments", undefined),
-      makeGroup("linked-items", "Linked Items", undefined),
+      makeGroup("notes_group", "Notes"),
+      makeGroup("attachments_group", "Attachments"),
+      makeGroup("linked-items", "Linked Items"),
     ];
     expect(computeInitialExpandedSections(groups)).toEqual([]);
   });
