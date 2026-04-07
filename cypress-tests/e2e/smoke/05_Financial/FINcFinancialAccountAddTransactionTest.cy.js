@@ -191,7 +191,7 @@ describe("Financial Account - Add Transaction from Purchase Invoice", () => {
 
     // Link with Payment Number from step 6
     cy.get("@paymentNumber").then((paymentNumber) => {
-      cy.get('[aria-describedby="Payment-help"] > .w-2\\/3 > .relative > .w-full').click();
+      cy.get('[aria-label="Payment"] > div[tabindex="0"]').click();
       cy.wait(500);
 
       cy.get('input[aria-label="Search options"]', { timeout: 10000 })

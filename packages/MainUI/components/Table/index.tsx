@@ -730,7 +730,7 @@ const DynamicTable = ({
   const { confirmationState, confirmDiscardChanges, confirmSaveWithErrors } = useTableConfirmation();
 
   // Status modal for showing save errors and success messages
-  const { statusModal, hideStatusModal, showErrorModal, showSuccessModal } = useStatusModal();
+  const { showErrorModal, showSuccessModal } = useStatusModal();
 
   const {
     registerDatasource,
