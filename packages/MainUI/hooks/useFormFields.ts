@@ -174,11 +174,12 @@ export default function useFormFields(
     >;
 
     for (const [fieldName, field] of Object.entries(fields.formFields)) {
-      const [id = "", identifier = ""] = [field.fieldGroup, field.fieldGroup$_identifier];
+      const [rawId = "", identifier = ""] = [field.fieldGroup, field.fieldGroup$_identifier];
+      const id = rawId || "_main";
 
       if (!groups[id]) {
         groups[id] = {
-          id: id || null,
+          id,
           identifier: identifier || t("forms.sections.main"),
           sequenceNumber: Number.MAX_SAFE_INTEGER,
           fields: {},
