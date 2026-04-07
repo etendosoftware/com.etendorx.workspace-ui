@@ -18,124 +18,73 @@
 import { useCallback, useState } from "react";
 import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } from "material-react-table";
 import { logger } from "@/utils/logger";
-import { buildGridConfiguration, parseGridConfiguration, rawRecordToSavedView } from "@/utils/savedViews/transform";
-import type { ParsedSavedView, RawSavedViewRecord, SavedView } from "@/utils/savedViews/types";
-
-const ENTITY = "OBUIAPP_SavedSearch";
+import { buildGridConfiguration, parseGridConfiguration } from "@/utils/savedViews/transform";
+import type { ParsedSavedView } from "@/utils/savedViews/types";
 
 /**
- * Shape of a SmartClient-style write payload sent to the datasource entity route.
- */
-interface SmartClientWritePayload {
-  dataSource: string;
-  operationType: "add" | "update" | "remove";
-  data: Record<string, unknown>;
-  csrfToken?: string;
-}
-
-/**
- * Response shape from datasource entity writes.
- * Classic SmartClient responses wrap the result in `response`.
- */
-interface DatasourceWriteResponse {
-  response?: {
-    status?: number;
-    data?: unknown;
-    error?: string;
-  };
-  [key: string]: unknown;
-}
-
-/**
- * Reads the auth token from localStorage.
+ * localStorage key prefix for saved views.
+ * Format: `savedViews_<tabId>` → JSON array of StoredView.
  *
- * DELIBERATE BYPASS: The datasource api-client (`Datasource.get()`) only supports
- * read (fetch) operations. Write operations (add/remove) are not exposed by the
- * api-client, so a raw fetch is used here instead of routing through `datasource`.
- * The token key "token" MUST remain in sync with the key used in
- * `packages/MainUI/contexts/user.tsx` (`useLocalStorage<string | null>("token", null)`).
+ * NOTE: This implementation uses localStorage for persistence.
+ * When the backend entity OBUIAPP_SavedSearch is available in the Etendo
+ * installation, the storage can be migrated to backend by replacing the
+ * localStorage helpers below with API calls to /api/datasource/OBUIAPP_SavedSearch.
+ * The data structure is intentionally identical to what OBUIAPP_SavedSearch stores.
  */
-function getAuthToken(): string {
+const LS_KEY_PREFIX = "savedViews_";
+
+/** Shape stored in localStorage — mirrors OBUIAPP_SavedSearch columns exactly. */
+interface StoredView {
+  id: string;
+  name: string;
+  tabId: string;
+  isDefault: boolean;
+  filterClause: string;
+  gridConfiguration: string;
+}
+
+function lsKey(tabId: string): string {
+  return `${LS_KEY_PREFIX}${tabId}`;
+}
+
+function loadFromStorage(tabId: string): StoredView[] {
   try {
-    const raw = localStorage.getItem("token");
-    if (!raw) return "";
-    // localStorage stores JSON-stringified values (e.g. `"eyJ..."` with surrounding quotes).
-    // Parse to extract the plain token string.
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      return typeof parsed === "string" ? parsed : raw;
-    } catch {
-      return raw;
-    }
+    const raw = localStorage.getItem(lsKey(tabId));
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed as StoredView[];
   } catch {
-    return "";
+    return [];
   }
 }
 
-async function postToEntityDatasource(
-  operationType: "add" | "update" | "remove",
-  payload: SmartClientWritePayload
-): Promise<DatasourceWriteResponse> {
-  const token = getAuthToken();
-  // POST with _operationType in the URL so the [entity] route uses the direct
-  // datasource servlet (org.openbravo.service.datasource/OBUIAPP_SavedSearch).
-  // The session cookie + CSRF token are injected server-side by the route handler.
-  const url = `/api/datasource/${ENTITY}?_operationType=${operationType}&isc_dataFormat=json`;
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const text = await response.text();
-
-  if (!response.ok) {
-    throw new Error(`Datasource request failed (${response.status}): ${text}`);
-  }
-
-  // Backend may return an empty body on success (204-style but with 200)
-  if (!text.trim()) {
-    return {};
-  }
-
-  let json: unknown;
+function saveToStorage(tabId: string, views: StoredView[]): void {
   try {
-    json = JSON.parse(text);
-  } catch {
-    // Non-JSON success response — treat as success
-    return {};
+    localStorage.setItem(lsKey(tabId), JSON.stringify(views));
+  } catch (err) {
+    logger.error("[useSavedViews] Failed to write localStorage:", err);
   }
-
-  if (!json || typeof json !== "object") {
-    return {};
-  }
-
-  return json as DatasourceWriteResponse;
 }
 
-/**
- * Converts a raw datasource fetch response into SavedView array.
- */
-function extractViewsFromResponse(raw: unknown): SavedView[] {
-  if (!raw || typeof raw !== "object") return [];
+function generateId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    // Fallback for environments without crypto.randomUUID
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+}
 
-  const resp = raw as Record<string, unknown>;
-  const response = resp.response as Record<string, unknown> | undefined;
-  if (!response) return [];
-
-  const data = response.data;
-  if (!Array.isArray(data)) return [];
-
-  return data
-    .filter(
-      (record: unknown): record is Record<string, unknown> =>
-        typeof record === "object" && record !== null && typeof (record as Record<string, unknown>).id === "string"
-    )
-    .map((record) => rawRecordToSavedView(record as RawSavedViewRecord));
+function storedToView(s: StoredView): ParsedSavedView {
+  return {
+    id: s.id,
+    name: s.name,
+    tabId: s.tabId,
+    isDefault: s.isDefault,
+    filterClause: s.filterClause,
+    config: parseGridConfiguration(s.gridConfiguration),
+  };
 }
 
 export interface UseSavedViewsReturn {
@@ -164,13 +113,11 @@ export interface UseSavedViewsReturn {
 }
 
 /**
- * CRUD hook for saved views stored in OBUIAPP_SavedSearch entity.
+ * CRUD hook for saved views.
  *
- * Responsibilities:
- * - Fetch saved views for a given tab
- * - Save the current grid state as a named view
- * - Apply a saved view (returns the state to set)
- * - Delete a saved view
+ * Currently persists to localStorage using the same field structure as the
+ * OBUIAPP_SavedSearch entity so migration to backend storage is straightforward
+ * once that entity is available in the Etendo installation.
  */
 export function useSavedViews(): UseSavedViewsReturn {
   const [views, setViews] = useState<ParsedSavedView[]>([]);
@@ -186,48 +133,8 @@ export function useSavedViews(): UseSavedViewsReturn {
     setError(null);
 
     try {
-      // Use the kernel SWS path via the [entity] route (GET) so that Bearer token
-      // auth is used. The /api/datasource POST route goes through the metadata-forward
-      // path which does not expose OBUIAPP_SavedSearch.
-      const token = getAuthToken();
-      const criteriaJson = JSON.stringify({
-        _constructor: "AdvancedCriteria",
-        fieldName: "tab",
-        operator: "equals",
-        value: tabId,
-      });
-      const qs = new URLSearchParams({
-        _operationType: "fetch",
-        _noActiveFilter: "true",
-        _constructor: "AdvancedCriteria",
-        operator: "and",
-        criteria: criteriaJson,
-      });
-      const fetchResponse = await fetch(`/api/datasource/${ENTITY}?${qs.toString()}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
-      });
-      const fetchText = await fetchResponse.text();
-      if (!fetchResponse.ok) {
-        throw new Error(`Fetch saved views failed (${fetchResponse.status}): ${fetchText}`);
-      }
-      const raw: unknown = fetchText.trim() ? JSON.parse(fetchText) : {};
-
-      const savedViews = extractViewsFromResponse(raw);
-
-      const parsed: ParsedSavedView[] = savedViews.map((view) => ({
-        id: view.id,
-        name: view.name,
-        tabId: view.tabId,
-        isDefault: view.isDefault,
-        filterClause: view.filterClause,
-        config: parseGridConfiguration(view.gridConfiguration),
-      }));
-
-      setViews(parsed);
+      const stored = loadFromStorage(tabId);
+      setViews(stored.map(storedToView));
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error fetching saved views";
       logger.error("[useSavedViews] fetchViews failed:", err);
@@ -261,22 +168,23 @@ export function useSavedViews(): UseSavedViewsReturn {
       try {
         const gridConfiguration = buildGridConfiguration(filters, visibility, sorting, order);
 
-        const payload: SmartClientWritePayload = {
-          dataSource: ENTITY,
-          operationType: "add",
-          data: {
-            obuiappTab: tabId,
-            name,
-            obuiappIsdefault: isDefault,
-            obuiappFilterclause: "",
-            obuiappGridconfiguration: gridConfiguration,
-          },
+        const newView: StoredView = {
+          id: generateId(),
+          name,
+          tabId,
+          isDefault,
+          filterClause: "",
+          gridConfiguration,
         };
 
-        await postToEntityDatasource("add", payload);
+        const existing = loadFromStorage(tabId);
 
-        // Refresh the list after saving
-        await fetchViews(tabId);
+        // If the new view is default, clear default flag on others
+        const updated = isDefault ? existing.map((v) => ({ ...v, isDefault: false })) : [...existing];
+        updated.push(newView);
+
+        saveToStorage(tabId, updated);
+        setViews(updated.map(storedToView));
       } catch (err) {
         const message = err instanceof Error ? err.message : "Error saving view";
         logger.error("[useSavedViews] saveView failed:", err);
@@ -286,7 +194,7 @@ export function useSavedViews(): UseSavedViewsReturn {
         setIsSaving(false);
       }
     },
-    [fetchViews]
+    []
   );
 
   const applyView = useCallback(
@@ -321,21 +229,14 @@ export function useSavedViews(): UseSavedViewsReturn {
       const viewToDelete = views.find((v) => v.id === viewId);
 
       try {
-        const payload: SmartClientWritePayload = {
-          dataSource: ENTITY,
-          operationType: "remove",
-          data: { id: viewId },
-        };
-
-        await postToEntityDatasource("remove", payload);
-
-        // Update local state immediately for responsive UX
-        setViews((prev) => prev.filter((v) => v.id !== viewId));
-
-        // Refresh if we know the tabId
-        if (viewToDelete?.tabId) {
-          await fetchViews(viewToDelete.tabId);
+        if (!viewToDelete?.tabId) {
+          throw new Error("Cannot delete view: tabId unknown");
         }
+
+        const existing = loadFromStorage(viewToDelete.tabId);
+        const updated = existing.filter((v) => v.id !== viewId);
+        saveToStorage(viewToDelete.tabId, updated);
+        setViews(updated.map(storedToView));
       } catch (err) {
         const message = err instanceof Error ? err.message : "Error deleting view";
         logger.error("[useSavedViews] deleteView failed:", err);
@@ -345,7 +246,7 @@ export function useSavedViews(): UseSavedViewsReturn {
         setIsDeleting(false);
       }
     },
-    [views, fetchViews]
+    [views]
   );
 
   return {
