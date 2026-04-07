@@ -38,7 +38,7 @@ the groups returned by `useFormFields` and builds the initial `expandedSections`
 // FormView/index.tsx
 const computeInitialExpandedSections = (groups) =>
   groups
-    .filter(([id, group]) => id === null || group.fieldGroupCollapsed === false)
+    .filter(([id, group]) => !id || group.fieldGroupCollapsed === false)
     .map(([id]) => String(id ?? "null"));
 ```
 
@@ -46,10 +46,14 @@ Expansion rules:
 
 | Condition | Result |
 |-----------|--------|
-| `id === null` (main section) | Always expanded |
+| `!id` — empty string `""` or `null` (main section key from `Object.entries`) | Always expanded |
 | `fieldGroupCollapsed === false` | Expanded |
 | `fieldGroupCollapsed === true` | Collapsed |
 | `fieldGroupCollapsed === undefined` (no metadata, e.g. synthetic sections) | Collapsed |
+
+> **Note:** `useFormFields` uses `Object.entries(fieldGroups)` to build the groups array. The
+> main group has no `fieldGroup` set on its fields, so its key is the empty string `""` — not
+> `null`. The `!id` check handles both `""` and `null` safely.
 
 Permanent sections (Notes, Attachments, Linked Items) are synthetic — they carry no
 `fieldGroupCollapsed` attribute — so they always start **collapsed**.

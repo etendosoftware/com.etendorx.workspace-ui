@@ -39,14 +39,14 @@ type GroupEntry = [
  * catch the divergence.
  *
  * Rules:
- * - id === null (main section) → always expanded
+ * - id === "_main" (main section — explicit key set in useFormFields) → always expanded
  * - fieldGroupCollapsed === false → explicitly expanded
  * - fieldGroupCollapsed === true or undefined → collapsed
  */
 const computeInitialExpandedSections = (currentGroups: GroupEntry[]): string[] =>
   currentGroups
-    .filter(([id, group]) => id === null || group.fieldGroupCollapsed === false)
-    .map(([id]) => String(id ?? "null"));
+    .filter(([id, group]) => id === "_main" || group.fieldGroupCollapsed === false)
+    .map(([id]) => String(id ?? "_main"));
 
 const makeGroup = (
   id: string | null,
@@ -74,24 +74,30 @@ describe("computeInitialExpandedSections", () => {
     expect(computeInitialExpandedSections(groups)).toEqual([]);
   });
 
-  it("maps a null id to the string 'null' and always includes it regardless of fieldGroupCollapsed", () => {
-    const groups = [makeGroup(null, "Main Section", undefined)];
-    expect(computeInitialExpandedSections(groups)).toEqual(["null"]);
+  it("includes main section (_main id) regardless of fieldGroupCollapsed — undefined", () => {
+    // useFormFields assigns "_main" as the explicit key for fields with no fieldGroup set.
+    const groups = [makeGroup("_main", "Main Section", undefined)];
+    expect(computeInitialExpandedSections(groups)).toEqual(["_main"]);
   });
 
-  it("includes null-id section even when fieldGroupCollapsed is true", () => {
-    const groups = [makeGroup(null, "Main Section", true)];
-    expect(computeInitialExpandedSections(groups)).toEqual(["null"]);
+  it("includes main section (_main id) even when fieldGroupCollapsed is true", () => {
+    const groups = [makeGroup("_main", "Main Section", true)];
+    expect(computeInitialExpandedSections(groups)).toEqual(["_main"]);
+  });
+
+  it("includes main section (_main id) when fieldGroupCollapsed is false", () => {
+    const groups = [makeGroup("_main", "Main Section", false)];
+    expect(computeInitialExpandedSections(groups)).toEqual(["_main"]);
   });
 
   it("handles a mix of collapsed and expanded groups, returning only expanded ids", () => {
     const groups: GroupEntry[] = [
+      makeGroup("_main", "Main", undefined), // always expanded
       makeGroup("g1", "Expanded", false),
       makeGroup("g2", "Collapsed", true),
       makeGroup("g3", "Default", undefined),
-      makeGroup(null, "Main", undefined),
     ];
-    expect(computeInitialExpandedSections(groups)).toEqual(["g1", "null"]);
+    expect(computeInitialExpandedSections(groups)).toEqual(["_main", "g1"]);
   });
 
   it("preserves the original ordering of non-collapsed sections", () => {
