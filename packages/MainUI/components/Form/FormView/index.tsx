@@ -117,7 +117,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const computeInitialExpandedSections = useCallback(
     (currentGroups: ReturnType<typeof useFormFields>["groups"]): string[] => {
       return currentGroups
-        .filter(([, group]) => group.fieldGroupCollapsed !== true)
+        .filter(([id, group]) => id === null || group.fieldGroupCollapsed === false)
         .map(([id]) => String(id ?? "null"));
     },
     []

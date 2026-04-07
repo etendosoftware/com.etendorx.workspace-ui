@@ -38,12 +38,21 @@ the groups returned by `useFormFields` and builds the initial `expandedSections`
 // FormView/index.tsx
 const computeInitialExpandedSections = (groups) =>
   groups
-    .filter(([, group]) => group.fieldGroupCollapsed !== true)
+    .filter(([id, group]) => id === null || group.fieldGroupCollapsed === false)
     .map(([id]) => String(id ?? "null"));
 ```
 
-A group is expanded by default unless `fieldGroupCollapsed === true` in its metadata. Groups
-where the property is `false` or `undefined` start expanded.
+Expansion rules:
+
+| Condition | Result |
+|-----------|--------|
+| `id === null` (main section) | Always expanded |
+| `fieldGroupCollapsed === false` | Expanded |
+| `fieldGroupCollapsed === true` | Collapsed |
+| `fieldGroupCollapsed === undefined` (no metadata, e.g. synthetic sections) | Collapsed |
+
+Permanent sections (Notes, Attachments, Linked Items) are synthetic — they carry no
+`fieldGroupCollapsed` attribute — so they always start **collapsed**.
 
 The state is seeded with an empty array on the first render and then corrected by a `useEffect`
 that fires when `tab.id` changes:
@@ -87,8 +96,10 @@ once the record is saved and the form transitions to `FormMode.EDIT`.
 ## Key Behaviors
 
 - **Subsection collapse is metadata-driven.** The `fieldGroupCollapsed` flag on a `Field` entry
-  controls whether its parent group starts collapsed. The flag is read from the first field
-  encountered in the group; all fields in a group share the same flag.
+  controls whether its parent group starts expanded (`false`) or collapsed (`true` or absent).
+  The flag is read from the first field encountered in the group; all fields in a group share the
+  same flag. Synthetic sections (Notes, Attachments, Linked Items) have no flag and always start
+  collapsed.
 - **Permanent sections are mode-gated.** Notes, Attachments, and Linked Items are not rendered
   at all in `FormMode.NEW`. Do not add data-fetching logic to these sections that assumes they
   will always be present.
