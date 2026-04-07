@@ -114,7 +114,20 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const theme = useTheme();
   const isReadOnly = uIPattern === UIPattern.READ_ONLY;
 
-  const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
+  const computeInitialExpandedSections = useCallback(
+    (currentGroups: ReturnType<typeof useFormFields>["groups"]): string[] => {
+      return currentGroups
+        .filter(([, group]) => group.fieldGroupCollapsed !== true)
+        .map(([id]) => String(id ?? "null"));
+    },
+    []
+  );
+
+  const [expandedSections, setExpandedSections] = useState<string[]>(() =>
+    computeInitialExpandedSections(
+      [] // groups not yet computed; will be corrected by the tab.id useEffect below
+    )
+  );
   const [selectedTab, setSelectedTab] = useState<string>("");
   const [isFormInitializing, setIsFormInitializing] = useState(false);
   const [openAttachmentModal, setOpenAttachmentModal] = useState(false);
@@ -406,6 +419,17 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   }, [record, initialState, currentRecordId]);
 
   const { fields, groups } = useFormFields(tab, currentRecordId, currentMode, true, availableFormData);
+
+  // Reset expanded sections whenever the tab changes so each tab opens with the
+  // correct collapsed/expanded state driven by fieldGroupCollapsed metadata.
+  // We track the previous tab.id so we only reset on a genuine tab navigation,
+  // not on every groups/availableFormData change within the same tab.
+  const lastTabIdForSectionsRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (lastTabIdForSectionsRef.current === tab.id) return;
+    lastTabIdForSectionsRef.current = tab.id;
+    setExpandedSections(computeInitialExpandedSections(groups));
+  }, [tab.id, computeInitialExpandedSections, groups]);
 
   const formMethods = useForm({ defaultValues: availableFormData as EntityData });
   const { reset, setValue, formState, ...form } = formMethods;

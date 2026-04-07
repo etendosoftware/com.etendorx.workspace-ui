@@ -179,6 +179,11 @@ export interface Field {
    * When set, the field should be rendered as a navigable link in the grid.
    */
   clientclass?: string | null;
+  /**
+   * When true, the field group (subsection) starts collapsed in the form.
+   * When false or undefined, the field group starts expanded.
+   */
+  fieldGroupCollapsed?: boolean;
 }
 
 export interface Option<T extends string = string> {

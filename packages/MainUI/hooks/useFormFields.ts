@@ -76,6 +76,7 @@ interface UseFormFieldsReturn {
         identifier: string;
         sequenceNumber: number;
         fields: Record<string, Field>;
+        fieldGroupCollapsed?: boolean;
       },
     ]
   >;
@@ -163,7 +164,13 @@ export default function useFormFields(
   const fieldGroups = useMemo(() => {
     const groups = {} as Record<
       string,
-      { id: string | null; identifier: string; sequenceNumber: number; fields: Record<string, Field> }
+      {
+        id: string | null;
+        identifier: string;
+        sequenceNumber: number;
+        fields: Record<string, Field>;
+        fieldGroupCollapsed?: boolean;
+      }
     >;
 
     for (const [fieldName, field] of Object.entries(fields.formFields)) {
@@ -175,6 +182,7 @@ export default function useFormFields(
           identifier: identifier || t("forms.sections.main"),
           sequenceNumber: Number.MAX_SAFE_INTEGER,
           fields: {},
+          fieldGroupCollapsed: field.fieldGroupCollapsed,
         };
       }
 

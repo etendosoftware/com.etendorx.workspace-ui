@@ -17,7 +17,7 @@
 
 import { useFormContext } from "react-hook-form";
 import { useUserContext } from "@/hooks/useUserContext";
-import type { FormMode, Field, Tab } from "@workspaceui/api-client/src/api/types";
+import { FormMode, type Field, type Tab } from "@workspaceui/api-client/src/api/types";
 import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
 import Collapsible from "@/components/Form/Collapsible";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
@@ -206,74 +206,82 @@ export function FormFields({
           </div>
         );
       })}
-      {/* Notes Section */}
-      <div ref={handleSectionRef("notes_group")} data-section-id="notes_group">
-        <Collapsible
-          title={noteCount > 0 ? `${t("forms.notes.title")} (${noteCount})` : t("forms.notes.title")}
-          isExpanded={isSectionExpanded("notes_group")}
-          sectionId="notes_group"
-          icon={<NoteIcon data-testid="NoteIcon__38e4a6" />}
-          onToggle={(isOpen: boolean) => handleAccordionChange("notes_group", isOpen)}
-          data-testid="Collapsible__38e4a6">
-          <NoteSection
+      {/* Notes Section — only visible in EDIT/VIEW mode, not during record creation */}
+      {mode !== FormMode.NEW && (
+        <div ref={handleSectionRef("notes_group")} data-section-id="notes_group">
+          <Collapsible
+            title={noteCount > 0 ? `${t("forms.notes.title")} (${noteCount})` : t("forms.notes.title")}
+            isExpanded={isSectionExpanded("notes_group")}
             sectionId="notes_group"
-            addNoteButtonText={undefined}
-            modalTitleText={undefined}
-            modalDescriptionText={undefined}
-            noteInputPlaceholder={undefined}
-            addNoteSubmitText={undefined}
-            recordId={recordId}
-            tableId={tab.table}
-            initialNoteCount={noteCount}
-            isSectionExpanded={isSectionExpanded("notes_group")}
-            onNotesChange={onNotesChange}
-            showErrorModal={showErrorModal}
-            data-testid="NoteSection__38e4a6"
-          />
-        </Collapsible>
-      </div>
-      {/* Attachments Section */}
-      <div ref={handleSectionRef("attachments_group")} data-section-id="attachments_group">
-        <Collapsible
-          title={
-            attachmentCount > 0 ? `${t("forms.attachments.title")} (${attachmentCount})` : t("forms.attachments.title")
-          }
-          isExpanded={isSectionExpanded("attachments_group")}
-          sectionId="attachments_group"
-          icon={<AttachmentIcon data-testid="AttachmentIcon__attachments" />}
-          onToggle={(isOpen: boolean) => handleAccordionChange("attachments_group", isOpen)}
-          data-testid="Collapsible__attachments">
-          <AttachmentSection
-            recordId={recordId}
-            tabId={tab.id}
-            initialAttachmentCount={attachmentCount}
-            isSectionExpanded={isSectionExpanded("attachments_group")}
-            onAttachmentsChange={onAttachmentsChange}
-            showErrorModal={showErrorModal}
-            openAddModal={openAttachmentModal}
-            onAddModalClose={onAttachmentModalClose}
-            recordIdentifier={recordIdentifier}
-            data-testid="AttachmentSection__attachments"
-          />
-        </Collapsible>
-      </div>
-      {/* Linked Items Section */}
-      <div ref={handleSectionRef("linked-items")} data-section-id="linked-items">
-        <Collapsible
-          title={t("forms.sections.linkedItems")}
-          isExpanded={isSectionExpanded("linked-items")}
-          sectionId="linked-items"
-          icon={<LinkIcon data-testid="LinkIcon__linkeditems" />}
-          onToggle={(isOpen: boolean) => handleAccordionChange("linked-items", isOpen)}
-          data-testid="Collapsible__linkeditems">
-          <LinkedItemsSection
-            tabId={tab.id}
-            entityName={tab.entityName}
-            recordId={recordId}
-            data-testid="LinkedItemsSection__38e4a6"
-          />
-        </Collapsible>
-      </div>
+            icon={<NoteIcon data-testid="NoteIcon__38e4a6" />}
+            onToggle={(isOpen: boolean) => handleAccordionChange("notes_group", isOpen)}
+            data-testid="Collapsible__38e4a6">
+            <NoteSection
+              sectionId="notes_group"
+              addNoteButtonText={undefined}
+              modalTitleText={undefined}
+              modalDescriptionText={undefined}
+              noteInputPlaceholder={undefined}
+              addNoteSubmitText={undefined}
+              recordId={recordId}
+              tableId={tab.table}
+              initialNoteCount={noteCount}
+              isSectionExpanded={isSectionExpanded("notes_group")}
+              onNotesChange={onNotesChange}
+              showErrorModal={showErrorModal}
+              data-testid="NoteSection__38e4a6"
+            />
+          </Collapsible>
+        </div>
+      )}
+      {/* Attachments Section — only visible in EDIT/VIEW mode, not during record creation */}
+      {mode !== FormMode.NEW && (
+        <div ref={handleSectionRef("attachments_group")} data-section-id="attachments_group">
+          <Collapsible
+            title={
+              attachmentCount > 0
+                ? `${t("forms.attachments.title")} (${attachmentCount})`
+                : t("forms.attachments.title")
+            }
+            isExpanded={isSectionExpanded("attachments_group")}
+            sectionId="attachments_group"
+            icon={<AttachmentIcon data-testid="AttachmentIcon__attachments" />}
+            onToggle={(isOpen: boolean) => handleAccordionChange("attachments_group", isOpen)}
+            data-testid="Collapsible__attachments">
+            <AttachmentSection
+              recordId={recordId}
+              tabId={tab.id}
+              initialAttachmentCount={attachmentCount}
+              isSectionExpanded={isSectionExpanded("attachments_group")}
+              onAttachmentsChange={onAttachmentsChange}
+              showErrorModal={showErrorModal}
+              openAddModal={openAttachmentModal}
+              onAddModalClose={onAttachmentModalClose}
+              recordIdentifier={recordIdentifier}
+              data-testid="AttachmentSection__attachments"
+            />
+          </Collapsible>
+        </div>
+      )}
+      {/* Linked Items Section — only visible in EDIT/VIEW mode, not during record creation */}
+      {mode !== FormMode.NEW && (
+        <div ref={handleSectionRef("linked-items")} data-section-id="linked-items">
+          <Collapsible
+            title={t("forms.sections.linkedItems")}
+            isExpanded={isSectionExpanded("linked-items")}
+            sectionId="linked-items"
+            icon={<LinkIcon data-testid="LinkIcon__linkeditems" />}
+            onToggle={(isOpen: boolean) => handleAccordionChange("linked-items", isOpen)}
+            data-testid="Collapsible__linkeditems">
+            <LinkedItemsSection
+              tabId={tab.id}
+              entityName={tab.entityName}
+              recordId={recordId}
+              data-testid="LinkedItemsSection__38e4a6"
+            />
+          </Collapsible>
+        </div>
+      )}
     </div>
   );
 }
