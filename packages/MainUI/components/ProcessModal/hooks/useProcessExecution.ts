@@ -416,6 +416,13 @@ export function useProcessExecution({
           resultData = await response.json();
         } catch {}
 
+        // retryExecution is a top-level boolean on the ResponseActionsBuilder result,
+        // NOT inside the responseActions array (see ResponseActionsBuilder.build())
+        const hasRetryExecution =
+          resultData?.retryExecution === true ||
+          resultData?.response?.retryExecution === true ||
+          resultData?.response?.data?.retryExecution === true;
+
         const res: ExecuteProcessResult = { success: true, data: resultData };
         const parsedResult = parseProcessResponse(res);
         const { messageType, linkTabId, linkRecordId } = parsedResult;
@@ -427,15 +434,20 @@ export function useProcessExecution({
               ? parsedResult.data
               : parsedResult.data?.message || parsedResult.data?.msgText || "";
 
-          showProcessToast({
-            isSuccess: messageType === "success",
-            message,
-            linkTabId,
-            linkRecordId,
-          });
+          if (hasRetryExecution) {
+            setShouldTriggerSuccess(true);
+            setResult({ ...parsedResult, keepOpen: true });
+          } else {
+            showProcessToast({
+              isSuccess: messageType === "success",
+              message,
+              linkTabId,
+              linkRecordId,
+            });
 
-          setShouldTriggerSuccess(true);
-          handleSuccessClose(true);
+            setShouldTriggerSuccess(true);
+            handleSuccessClose(true);
+          }
         } else {
           setResult(parsedResult);
         }
