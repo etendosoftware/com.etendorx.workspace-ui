@@ -112,6 +112,17 @@ export interface RefListField {
   color?: string;
 }
 
+export interface SelectorColumn {
+  id: string;
+  header: string;
+  accessorKey: string;
+  enableSorting?: boolean;
+  enableFiltering?: boolean;
+  referenceId?: string;
+  sortNo?: number;
+  [key: string]: unknown;
+}
+
 export interface Field {
   hqlName: string;
   inputName: string;
@@ -136,7 +147,12 @@ export interface Field {
   gridProps: GridProps;
   type: string;
   field: unknown[];
-  selector?: Record<string, string>;
+  selector?: {
+    hasTableRelated?: boolean;
+    hasProcessDefinitionRelated?: boolean;
+    gridColumns?: SelectorColumn[];
+    [key: string]: unknown;
+  };
   refList: RefListField[];
   referencedEntity: string;
   referencedWindowId: string;
@@ -292,6 +308,12 @@ export enum UIPattern {
   STANDARD = "STD",
 }
 
+export interface AuxiliaryInput {
+  id: string;
+  name: string;
+  validationCode: string;
+}
+
 export interface Tab {
   uIPattern: UIPattern;
   window: string;
@@ -323,6 +345,7 @@ export interface Tab {
   process$_identifier?: string;
   disableParentKeyProperty?: boolean;
   defaultEditMode?: boolean;
+  auxiliaryInputs?: AuxiliaryInput[];
 }
 
 export interface WindowMetadata {

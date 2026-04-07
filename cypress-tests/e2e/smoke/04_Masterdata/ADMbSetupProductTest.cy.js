@@ -166,23 +166,23 @@ describe("Master Data - Product and Pricing Setup", () => {
     cy.wait(1000);
     cy.typeName("Platinum");
     cy.wait(1000);
-    cy.get('[aria-describedby="Product Category-help"] > .w-2\\/3 > .relative > .w-full').click();
+    cy.get('[aria-label="Product Category"] > div[tabindex="0"]').click();
 
     cy.get('input[placeholder="Search..."]').type("Precious Metals");
 
     cy.contains('[data-testid^="OptionItem"]', "Precious Metals").click();
     cy.wait(1000);
-    cy.get('[aria-describedby="UOM-help"] > .w-2\\/3 > .relative > .w-full').click();
+    cy.get('[aria-label="UOM"] > div[tabindex="0"]').click();
     cy.get('input[aria-label="Search options"]').type("Carat");
 
     cy.contains('[data-testid^="OptionItem"]', "Carat").click();
     cy.wait(1000);
-    cy.get('[aria-describedby="Tax Category-help"] > .w-2\\/3 > .relative > .w-full > .flex').click();
+    cy.get('[aria-label="Tax Category"] > div[tabindex="0"]').click();
     cy.get('input[aria-label="Search options"]').type("VAT 3%");
 
     cy.contains('[data-testid^="OptionItem"]', "VAT 3%").click();
     cy.wait(1000);
-    cy.get('[aria-describedby="Attribute Set-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
+    cy.get('[aria-label="Attribute Set"] > div[tabindex="0"]').click();
     cy.get('input[aria-label="Search options"]').type("Lots");
 
     cy.contains('[data-testid^="OptionItem"]', "Lots").click();

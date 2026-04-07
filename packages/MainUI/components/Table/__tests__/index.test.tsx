@@ -28,6 +28,16 @@
  * - tableFeatureIntegration.test.tsx - Feature compatibility and integration
  */
 
+// Mock Next.js server dependencies
+jest.mock("next/cache", () => ({
+  revalidatePath: jest.fn(),
+  revalidateTag: jest.fn(),
+}));
+
+jest.mock("@/app/actions/revalidate", () => ({
+  revalidateDopoProcess: jest.fn(),
+}));
+
 import React from "react";
 import { screen, waitFor } from "@testing-library/react";
 import DynamicTable from "../index";

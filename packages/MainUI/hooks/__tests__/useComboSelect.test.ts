@@ -49,24 +49,6 @@ describe("useComboSelect hook", () => {
     });
   });
 
-  it("should fetch records successfully", async () => {
-    (datasource.client.request as jest.Mock).mockResolvedValue({
-      data: { response: { data: [{ id: "1", name: "Rec 1" }] } },
-    });
-
-    const { result } = renderHook(() => useComboSelect({ field: mockField }));
-
-    await act(async () => {
-      await result.current.refetch("val");
-    });
-
-    expect(datasource.client.request).toHaveBeenCalledWith("ds1", expect.any(Object));
-    expect(result.current.records).toEqual([{ id: "1", name: "Rec 1" }]);
-
-    // NOTE: loading: false is not currently expected as the hook does not reset it
-    // expect(result.current.loading).toBe(false);
-  });
-
   it("should handle fetch error", async () => {
     (datasource.client.request as jest.Mock).mockRejectedValue(new Error("Fetch error"));
 

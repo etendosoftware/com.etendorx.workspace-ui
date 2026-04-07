@@ -24,7 +24,7 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
     cy.wait(500);
     cy.clickNewRecord();
     cy.wait(500);
-    cy.get('[aria-describedby="Business Partner-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
+    cy.get('[aria-label="Business Partner"] > div[tabindex="0"]').click();
     cy.wait(500);
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295F40BDDF02E3"]').click();
     cy.wait(500);
@@ -36,7 +36,7 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
     cy.wait(500);
     cy.clickNewRecord();
     cy.wait(500);
-    cy.get('[aria-describedby="Product-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
+    cy.get('[aria-label="Product"] > div[tabindex="0"]').click();
     cy.wait(500);
     cy.intercept("POST", /FormInitializationComponent/).as("productFormInit");
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"]').click();

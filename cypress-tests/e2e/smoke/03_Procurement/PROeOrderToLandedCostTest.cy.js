@@ -30,7 +30,7 @@ describe.skip("Purchase Order to Landed Cost flow", () => {
 
     cy.contains("Main Section").should("be.visible");
 
-    cy.get('[aria-describedby="Business Partner-help"] > .w-2\\/3 > .relative > .w-full').click();
+    cy.get('[aria-label="Business Partner"] > div[tabindex="0"]').click();
 
     cy.get('[data-testid="OptionItem__9C91AE200EFA4A61836D79A2E99E29DB"] > .truncate').click();
 
@@ -41,7 +41,7 @@ describe.skip("Purchase Order to Landed Cost flow", () => {
     cy.get(
       '[style="height: 50%;"] > .bg-\\(linear-gradient\\(180deg\\, > .h-10.gap-1 > :nth-child(1) > [data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"] > span'
     ).click();
-    cy.get('[aria-describedby="Product-help"] > .w-2\\/3 > .relative > .w-full').click();
+    cy.get('[aria-label="Product"] > div[tabindex="0"]').click();
 
     cy.get('[data-testid="OptionItem__61047A6B06B3452B85260C7BCF08E78D"] > .truncate').click();
     cy.get('[data-testid="TextInput__3389"]').clear("10");
@@ -83,7 +83,7 @@ describe.skip("Purchase Order to Landed Cost flow", () => {
       '.m-0.flex-1 > .bg-\\(linear-gradient\\(180deg\\, > .h-10.gap-1 > :nth-child(1) > [data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"] > span'
     ).click();
     cy.wait(2000);
-    cy.get('[aria-describedby="Business Partner-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
+    cy.get('[aria-label="Business Partner"] > div[tabindex="0"]').click();
 
     cy.get('[data-testid="OptionItem__9C91AE200EFA4A61836D79A2E99E29DB"] > .truncate').click();
 
@@ -245,7 +245,7 @@ describe.skip("Purchase Order to Landed Cost flow", () => {
       '.m-0.flex-1 > .bg-\\(linear-gradient\\(180deg\\, > .h-10.gap-1 > :nth-child(1) > [data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"]'
     ).click();
 
-    cy.get('[aria-describedby="Document Type-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
+    cy.get('[aria-label="Document Type"] > div[tabindex="0"]').click();
     cy.get('[data-testid="OptionItem__699BB430EAE24D9AB9524817C7314B2A"] > .truncate').click();
 
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]').click();
