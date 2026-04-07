@@ -31,7 +31,7 @@
  * no-op and returns the current values unchanged — so it is safe to call for all fields.
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
@@ -94,6 +94,15 @@ export function useProcessFICCallout({
   const isInitialMountRef = useRef(true);
 
   const formValues = form.watch();
+  const [debouncedValues, setDebouncedValues] = useState(formValues);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValues(formValues);
+    }, 300); // 300ms debounce to avoid flooding the network on every keystroke
+
+    return () => clearTimeout(timer);
+  }, [formValues]);
 
   const executeCallout = useCallback(
     async (changedField: string) => {
@@ -103,7 +112,7 @@ export function useProcessFICCallout({
       if (!param) return;
 
       const columnName = param.dBColumnName || param.name;
-      const payload = buildFICPayload(formValues, parameters);
+      const payload = buildFICPayload(form.getValues(), parameters);
 
       const ficParams = new URLSearchParams({
         _action: FIC_ACTION,
@@ -143,7 +152,7 @@ export function useProcessFICCallout({
         isExecutingRef.current = false;
       }
     },
-    [tabId, parameters, formValues, onCalloutResponse]
+    [tabId, parameters, form, onCalloutResponse]
   );
 
   useEffect(() => {
@@ -152,15 +161,15 @@ export function useProcessFICCallout({
     // Skip on initial mount to avoid overwriting values just set from DefaultsProcessActionHandler
     if (isInitialMountRef.current) {
       isInitialMountRef.current = false;
-      previousValuesRef.current = { ...formValues };
+      previousValuesRef.current = { ...debouncedValues };
       return;
     }
 
     if (isExecutingRef.current) return;
 
     // Detect which fields changed since last render
-    const changedFields = Object.keys(formValues).filter((key) => {
-      const curr = formValues[key];
+    const changedFields = Object.keys(debouncedValues).filter((key) => {
+      const curr = debouncedValues[key];
       const prev = previousValuesRef.current[key];
       if (typeof curr === "object" && curr !== null) {
         return JSON.stringify(curr) !== JSON.stringify(prev);
@@ -168,14 +177,18 @@ export function useProcessFICCallout({
       return curr !== prev;
     });
 
-    previousValuesRef.current = { ...formValues };
+    previousValuesRef.current = { ...debouncedValues };
 
     if (changedFields.length === 0) return;
 
     // Fire the FIC callout for each changed field sequentially
     // (matching Classic behavior: one callout per changed field)
-    for (const changedField of changedFields) {
-      executeCallout(changedField);
-    }
-  }, [formValues, enabled, tabId, executeCallout]);
+    const runSequentially = async () => {
+      for (const changedField of changedFields) {
+        await executeCallout(changedField);
+      }
+    };
+
+    runSequentially();
+  }, [debouncedValues, enabled, tabId, executeCallout]);
 }
