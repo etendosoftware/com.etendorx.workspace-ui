@@ -122,12 +122,12 @@ export function useProcessFICCallout({
         const rawData = response?.data;
         if (!rawData) return;
 
-        const data =
-          rawData.columnValues !== undefined
-            ? rawData
-            : rawData.response?.columnValues !== undefined
-              ? rawData.response
-              : null;
+        let data = null;
+        if (rawData.columnValues !== undefined) {
+          data = rawData;
+        } else if (rawData.response?.columnValues !== undefined) {
+          data = rawData.response;
+        }
 
         if (data?.columnValues) {
           logger.debug(`[useProcessFICCallout] Received FIC response for: ${changedField}`, data.columnValues);

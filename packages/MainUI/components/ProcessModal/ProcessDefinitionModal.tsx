@@ -323,6 +323,30 @@ function ProcessDefinitionModalContent({
       }
     };
 
+    const getListButtons = (refList: any[]): any[] => {
+      return refList.map((item) => ({
+        value: item.value,
+        label: item.label,
+      }));
+    };
+
+    const getDynamicButtons = async (buttonListParam: any) => {
+      const rawRefKey = buttonListParam.referenceSearchKey;
+      const referenceId =
+        rawRefKey && typeof rawRefKey === "object" ? (rawRefKey as { id: string }).id : rawRefKey;
+
+      if (!referenceId) return [];
+
+      const responseData = await fetchDynamicButtons(referenceId);
+      if (!responseData || responseData.length === 0) return [];
+
+      return responseData.map((item: any) => ({
+        value: item.searchKey,
+        label: item.name,
+        isFilter: ["filter", "search", "refresh"].includes(item.searchKey?.toLowerCase()),
+      }));
+    };
+
     const loadButtons = async () => {
       const allParameters = Object.values(parameters);
       const buttonListParam = allParameters.find((p) => p.reference === BUTTON_LIST_REFERENCE_ID);
@@ -337,39 +361,18 @@ function ProcessDefinitionModalContent({
 
       if (buttonListParam) {
         if (buttonListParam.refList && buttonListParam.refList.length > 0) {
-          buttons.push(
-            ...buttonListParam.refList.map((item) => ({
-              value: item.value,
-              label: item.label,
-            }))
-          );
+          buttons.push(...getListButtons(buttonListParam.refList));
         } else {
-          // referenceSearchKey may be serialized as a plain string ID or as an object { id: "...", _identifier: "..." }
-          const rawRefKey = (buttonListParam as any).referenceSearchKey;
-          const referenceId = rawRefKey && typeof rawRefKey === "object" ? rawRefKey.id : rawRefKey;
-
-          if (referenceId) {
-            const responseData = await fetchDynamicButtons(referenceId);
-            if (responseData && responseData.length > 0) {
-              const mappedButtons = responseData.map((item: any) => ({
-                value: item.searchKey,
-                label: item.name,
-                isFilter: ["filter", "search", "refresh"].includes(item.searchKey?.toLowerCase()),
-              }));
-              buttons.push(...mappedButtons);
-            }
-          }
+          const dynamicButtons = await getDynamicButtons(buttonListParam);
+          buttons.push(...dynamicButtons);
         }
       }
 
-      if (individualButtons.length > 0) {
-        buttons.push(
-          ...individualButtons.map((p) => ({
-            value: p.dBColumnName,
-            label: p.name,
-          }))
-        );
-      }
+      const individualMapped = individualButtons.map((p) => ({
+        value: p.dBColumnName,
+        label: p.name,
+      }));
+      buttons.push(...individualMapped);
 
       if (active) {
         setAvailableButtons(buttons);
