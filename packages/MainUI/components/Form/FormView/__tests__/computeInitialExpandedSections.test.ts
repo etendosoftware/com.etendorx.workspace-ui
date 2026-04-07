@@ -37,10 +37,15 @@ type GroupEntry = [
  * Pure reimplementation that mirrors the source exactly.
  * Any change to the source logic must be reflected here — the test will
  * catch the divergence.
+ *
+ * Rules:
+ * - id === null (main section) → always expanded
+ * - fieldGroupCollapsed === false → explicitly expanded
+ * - fieldGroupCollapsed === true or undefined → collapsed
  */
 const computeInitialExpandedSections = (currentGroups: GroupEntry[]): string[] =>
   currentGroups
-    .filter(([, group]) => group.fieldGroupCollapsed !== true)
+    .filter(([id, group]) => id === null || group.fieldGroupCollapsed === false)
     .map(([id]) => String(id ?? "null"));
 
 const makeGroup = (
@@ -54,9 +59,9 @@ describe("computeInitialExpandedSections", () => {
     expect(computeInitialExpandedSections([])).toEqual([]);
   });
 
-  it("includes a group whose fieldGroupCollapsed is undefined (default expanded)", () => {
+  it("excludes a group whose fieldGroupCollapsed is undefined (default collapsed)", () => {
     const groups = [makeGroup("g1", "Group 1", undefined)];
-    expect(computeInitialExpandedSections(groups)).toEqual(["g1"]);
+    expect(computeInitialExpandedSections(groups)).toEqual([]);
   });
 
   it("includes a group whose fieldGroupCollapsed is false (explicitly expanded)", () => {
@@ -69,8 +74,13 @@ describe("computeInitialExpandedSections", () => {
     expect(computeInitialExpandedSections(groups)).toEqual([]);
   });
 
-  it("maps a null id to the string 'null'", () => {
-    const groups = [makeGroup(null, "Main Section", false)];
+  it("maps a null id to the string 'null' and always includes it regardless of fieldGroupCollapsed", () => {
+    const groups = [makeGroup(null, "Main Section", undefined)];
+    expect(computeInitialExpandedSections(groups)).toEqual(["null"]);
+  });
+
+  it("includes null-id section even when fieldGroupCollapsed is true", () => {
+    const groups = [makeGroup(null, "Main Section", true)];
     expect(computeInitialExpandedSections(groups)).toEqual(["null"]);
   });
 
@@ -79,9 +89,9 @@ describe("computeInitialExpandedSections", () => {
       makeGroup("g1", "Expanded", false),
       makeGroup("g2", "Collapsed", true),
       makeGroup("g3", "Default", undefined),
-      makeGroup(null, "Main", false),
+      makeGroup(null, "Main", undefined),
     ];
-    expect(computeInitialExpandedSections(groups)).toEqual(["g1", "g3", "null"]);
+    expect(computeInitialExpandedSections(groups)).toEqual(["g1", "null"]);
   });
 
   it("preserves the original ordering of non-collapsed sections", () => {
@@ -101,16 +111,12 @@ describe("computeInitialExpandedSections", () => {
     expect(computeInitialExpandedSections(groups)).toEqual([]);
   });
 
-  it("returns all ids when no group has fieldGroupCollapsed set to true", () => {
+  it("returns empty array for synthetic groups (notes, attachments, linked-items) with undefined fieldGroupCollapsed", () => {
     const groups: GroupEntry[] = [
       makeGroup("notes_group", "Notes", undefined),
       makeGroup("attachments_group", "Attachments", undefined),
       makeGroup("linked-items", "Linked Items", undefined),
     ];
-    expect(computeInitialExpandedSections(groups)).toEqual([
-      "notes_group",
-      "attachments_group",
-      "linked-items",
-    ]);
+    expect(computeInitialExpandedSections(groups)).toEqual([]);
   });
 });

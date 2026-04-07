@@ -147,7 +147,7 @@ export function FormFields({
         });
       }
     }
-  }, [selectedTab, expandedSections]);
+  }, [selectedTab]);
 
   // Only block rendering with a spinner on the very first load.
   // Subsequent refreshes (e.g. after save) update fields silently via setValue,
