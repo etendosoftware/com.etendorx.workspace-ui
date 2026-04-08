@@ -172,7 +172,7 @@ describe("useToolbarConfig", () => {
       expect(handleCopyRecordResponse).toHaveBeenCalled();
     });
 
-    it("clears graph selection and sets new record on onSingleRecord callback", async () => {
+    it("sets new record and navigates to form on onSingleRecord callback without clearing graph selection", async () => {
       const mockClearSelected = jest.fn();
       const mockClearSelectedMultiple = jest.fn();
       (useSelected as jest.Mock).mockReturnValue({
@@ -194,21 +194,20 @@ describe("useToolbarConfig", () => {
         await result.current.actionModal.buttons[0].onClick();
       });
 
-      // Verify ordering: setSelectedRecord must come BEFORE graph clears, and graph
-      // clears must come BEFORE setTabFormState (new correct ordering)
-      const setSelectedRecordOrder = mockSetSelectedRecord.mock.invocationCallOrder[0];
-      const clearSelectedOrder = mockClearSelected.mock.invocationCallOrder[0];
-      const clearSelectedMultipleOrder = mockClearSelectedMultiple.mock.invocationCallOrder[0];
-      const setTabFormStateOrder = mockSetTabFormState.mock.invocationCallOrder[0];
-      expect(setSelectedRecordOrder).toBeLessThan(clearSelectedOrder);
-      expect(setSelectedRecordOrder).toBeLessThan(clearSelectedMultipleOrder);
-      expect(clearSelectedOrder).toBeLessThan(setTabFormStateOrder);
-      expect(clearSelectedMultipleOrder).toBeLessThan(setTabFormStateOrder);
+      // graph.clearSelected / clearSelectedMultiple must NOT be called in the single-record
+      // clone path. Calling them emits "unselected" → table.setRowSelection({}) →
+      // useTableSelection → clearSelectedRecord, which wipes the newRecordId from the
+      // window context and breaks grid selection on return from form view.
+      expect(mockClearSelected).not.toHaveBeenCalled();
+      expect(mockClearSelectedMultiple).not.toHaveBeenCalled();
 
-      expect(mockClearSelected).toHaveBeenCalledWith(mockTab);
-      expect(mockClearSelectedMultiple).toHaveBeenCalledWith(mockTab);
       expect(mockSetSelectedRecord).toHaveBeenCalledWith(mockActiveWindow.windowIdentifier, "tab1", "newRecord123");
       expect(mockSetTabFormState).toHaveBeenCalled();
+
+      // Verify ordering: setSelectedRecord before setTabFormState
+      const setSelectedRecordOrder = mockSetSelectedRecord.mock.invocationCallOrder[0];
+      const setTabFormStateOrder = mockSetTabFormState.mock.invocationCallOrder[0];
+      expect(setSelectedRecordOrder).toBeLessThan(setTabFormStateOrder);
     });
 
     it("clears graph selection and clears selected record on onMultipleRecords callback", async () => {

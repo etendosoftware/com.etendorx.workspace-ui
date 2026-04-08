@@ -260,22 +260,17 @@ export const useToolbarConfig = ({
         onSingleRecord: (newRecordId) => {
           const formMode = FORM_MODES.EDIT;
           const newTabFormState = getNewTabFormState(newRecordId, TAB_MODES.FORM, formMode);
-          // 1. Establish new record ID in window context first — so that when
-          //    "unselected" fires (from clearSelected below), the window context
-          //    already points to the new record.
+          // 1. Establish new record ID in window context.
           setSelectedRecord(windowIdentifier, tabId, newRecordId);
-          // 2. Evict stale graph cache. "unselected" fires here but form state
-          //    already has newRecordId above, preventing clearSelectedRecord from
-          //    overwriting it in useTableSelection.
-          graph.clearSelected(tab);
-          graph.clearSelectedMultiple(tab);
-          // 3. Set form state (navigate to form view).
+          // 2. Navigate to form view of the clone.
           setTabFormState(windowIdentifier, tabId, newTabFormState);
-          // Note: Grid refresh is handled by Table/index.tsx when it becomes visible
-          // again (isVisible transition false→true), so we do not call onRefresh here.
-          // Calling onRefresh while the table is invisible (behind the form view) would
-          // trigger a refetch before the user returns to the grid, and the result might
-          // be stale or cause a double-fetch when the table does become visible.
+          // Note: We intentionally do NOT call graph.clearSelected / graph.clearSelectedMultiple
+          // here. Doing so emits "unselected", which causes table.setRowSelection({}) →
+          // useTableSelection → clearSelectedRecord, wiping the newRecordId we just set.
+          // The graph cache is already invalidated by the recordId change in useCurrentRecord
+          // (new paramsKey), and FormView will call graph.setSelected once it loads the clone.
+          // Grid refresh is handled by Table/index.tsx when it becomes visible again
+          // (isVisible false→true via Effect C).
         },
         onMultipleRecords: () => {
           clearSelectedRecord(windowIdentifier, tabId);
