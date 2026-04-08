@@ -152,6 +152,42 @@ function MyComponent() {
 }
 ```
 
+## Copy / Clone Record Behavior
+
+### Overview
+
+The Copy (clone) action in the toolbar duplicates the currently selected record(s) via an API request. After cloning, the graph selection state and the window's selected record reference must both be updated to point at the new clone — not the original. Failing to clear the previous selection causes the Breadcrumb to display the old identifier and the Grid to highlight the wrong row on return from Form view.
+
+### How It Works
+
+`handleCopyRecord` in `useToolbarConfig.ts` orchestrates the clone flow:
+
+1. A confirmation modal is shown. If the tab supports `obuiappCloneChildren`, the user can choose between a shallow clone and a deep clone (with child records).
+2. `copyRecordRequest` sends the clone request to the backend.
+3. On success, `handleCopyRecordResponse` dispatches one of two callbacks:
+
+| Callback | Condition | Actions taken |
+|---|---|---|
+| `onSingleRecord(newRecordId)` | Exactly one record was cloned | Clears graph selection, sets the new record as selected, transitions the tab to Form/Edit view for the clone |
+| `onMultipleRecords()` | Multiple records were cloned | Clears graph selection, clears the selected record reference |
+
+### Selection State Clearing
+
+Both callbacks call `graph.clearSelected(tab)` and `graph.clearSelectedMultiple(tab)` **before** updating `setSelectedRecord` / `clearSelectedRecord`. This ordering is required so that `useCurrentRecord` discards the stale selection and re-derives its value from the new record ID rather than the old one.
+
+Skipping either call before the window state update produces two known symptoms:
+- The Breadcrumb continues to display the identifier of the original record.
+- Returning from Form view to Grid view shows the original record highlighted instead of the clone.
+
+### Clone with Children
+
+When `tab.obuiappCloneChildren` is `true`, the confirmation modal offers three buttons: **Clone** (shallow), **Clone with Children** (deep), and **Cancel**. The `cloneWithChildren` boolean is forwarded to `copyRecordRequest` and controls the backend duplication depth.
+
+### Key Files
+
+- `packages/MainUI/hooks/Toolbar/useToolbarConfig.ts` — `handleCopyRecord` callback
+- `packages/MainUI/utils/processes/toolbar/utils.ts` — `copyRecordRequest`, `handleCopyRecordResponse`
+
 ## Component Architecture
 
 ### Main Components
