@@ -271,8 +271,11 @@ export const useToolbarConfig = ({
           graph.clearSelectedMultiple(tab);
           // 3. Set form state (navigate to form view).
           setTabFormState(windowIdentifier, tabId, newTabFormState);
-          // Refresh grid only on success, after all state is established
-          onRefresh?.();
+          // Note: Grid refresh is handled by Table/index.tsx when it becomes visible
+          // again (isVisible transition false→true), so we do not call onRefresh here.
+          // Calling onRefresh while the table is invisible (behind the form view) would
+          // trigger a refetch before the user returns to the grid, and the result might
+          // be stale or cause a double-fetch when the table does become visible.
         },
         onMultipleRecords: () => {
           clearSelectedRecord(windowIdentifier, tabId);
