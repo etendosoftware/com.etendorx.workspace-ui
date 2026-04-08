@@ -261,10 +261,14 @@ export const useToolbarConfig = ({
         onSingleRecord: (newRecordId) => {
           const formMode = FORM_MODES.EDIT;
           const newTabFormState = getNewTabFormState(newRecordId, TAB_MODES.FORM, formMode);
+          graph.clearSelected(tab);
+          graph.clearSelectedMultiple(tab);
           setSelectedRecord(windowIdentifier, tabId, newRecordId);
           setTabFormState(windowIdentifier, tabId, newTabFormState);
         },
         onMultipleRecords: () => {
+          graph.clearSelected(tab);
+          graph.clearSelectedMultiple(tab);
           clearSelectedRecord(windowIdentifier, tabId);
         },
       });
@@ -330,6 +334,7 @@ export const useToolbarConfig = ({
     triggerParentRefreshes,
     clearSelectedRecord,
     tabId,
+    graph,
   ]);
 
   useEffect(() => {
