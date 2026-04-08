@@ -244,7 +244,6 @@ export const useToolbarConfig = ({
       const { ok, data } = await copyRecordRequest(tab, selectedIds, activeWindow.windowId, cloneWithChildren);
 
       setActionModal((prev) => ({ ...prev, isLoading: false, isOpen: false }));
-      onRefresh?.();
 
       handleCopyRecordResponse({
         ok,
@@ -261,17 +260,23 @@ export const useToolbarConfig = ({
         onSingleRecord: (newRecordId) => {
           const formMode = FORM_MODES.EDIT;
           const newTabFormState = getNewTabFormState(newRecordId, TAB_MODES.FORM, formMode);
+          // FIRST: establish new selection in window context
+          setSelectedRecord(windowIdentifier, tabId, newRecordId);
+          // THEN: clear old graph cache (after setSelectedRecord, so "unselected"
+          //       event fires when form state is already pointing to new record)
           graph.clearSelected(tab);
           graph.clearSelectedMultiple(tab);
-          setSelectedRecord(windowIdentifier, tabId, newRecordId);
+          // LAST: set form state
           setTabFormState(windowIdentifier, tabId, newTabFormState);
         },
         onMultipleRecords: () => {
+          clearSelectedRecord(windowIdentifier, tabId);
           graph.clearSelected(tab);
           graph.clearSelectedMultiple(tab);
-          clearSelectedRecord(windowIdentifier, tabId);
         },
       });
+      // Refresh the grid AFTER selection state is fully established
+      onRefresh?.();
     };
 
     const buttons: ActionButton[] = [];

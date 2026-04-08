@@ -17,7 +17,7 @@
 
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import Breadcrumb from "@workspaceui/componentlibrary/src/components/Breadcrums";
 import type { BreadcrumbItem } from "@workspaceui/componentlibrary/src/components/Breadcrums/types";
 import { usePathname } from "next/navigation";
@@ -70,6 +70,10 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     recordId: currentRecordId,
   });
 
+  // Retains the last known valid _identifier so the breadcrumb doesn't go blank
+  // during the brief window while a new record is being fetched after a clone.
+  const lastValidLabelRef = useRef<string | undefined>(undefined);
+
   const isNewRecord = useCallback(() => pathname.includes("/NewRecord"), [pathname]);
 
   const handleWindowClick = useCallback(
@@ -110,10 +114,21 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
       const currentRecordId = tabFormState?.recordId || "";
       const currentLabel = record?._identifier?.toString();
 
-      if (currentRecordId && currentLabel && currentRecordId !== NEW_RECORD_ID) {
+      // If we navigated away from the record, clear the persisted label
+      if (!currentRecordId) {
+        lastValidLabelRef.current = undefined;
+      }
+      // Keep the ref updated whenever we have a fresh label
+      if (currentLabel) {
+        lastValidLabelRef.current = currentLabel;
+      }
+      // Fall back to the last known label while the new record is still loading
+      const displayLabel = currentLabel ?? (currentRecordId ? lastValidLabelRef.current : undefined);
+
+      if (currentRecordId && displayLabel && currentRecordId !== NEW_RECORD_ID) {
         items.push({
           id: currentRecordId.toString(),
-          label: currentLabel,
+          label: displayLabel,
         });
       }
     }
