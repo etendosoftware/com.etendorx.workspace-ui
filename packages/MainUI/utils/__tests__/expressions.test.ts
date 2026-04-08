@@ -172,6 +172,52 @@ describe("expressions - createEvaluationContext", () => {
     });
   });
 
+  describe("Auxiliary Inputs", () => {
+    it("should make auxiliaryInputs values accessible by name", () => {
+      const context = createEvaluationContext({
+        auxiliaryInputs: { UserHasName: "1" },
+      });
+      expect(context.UserHasName).toBe("1");
+    });
+
+    it("should generate SNAKE_CASE alias for camelCase auxiliary input keys", () => {
+      const context = createEvaluationContext({
+        auxiliaryInputs: { UserHasName: "1" },
+      });
+      expect(context.USER_HAS_NAME).toBe("1");
+    });
+
+    it("should override session context with auxiliaryInputs", () => {
+      const context = createEvaluationContext({
+        context: { UserHasName: "0" },
+        auxiliaryInputs: { UserHasName: "1" },
+      });
+      expect(context.UserHasName).toBe("1");
+    });
+
+    it("should be overridden by record values", () => {
+      const context = createEvaluationContext({
+        auxiliaryInputs: { UserHasName: "1" },
+        values: { UserHasName: "0" },
+      });
+      expect(context.UserHasName).toBe("0");
+    });
+
+    it("should normalize boolean auxiliary input values", () => {
+      const context = createEvaluationContext({
+        auxiliaryInputs: { IsActive: "Y" },
+      });
+      expect(context.IsActive).toBe("Y");
+    });
+
+    it("should return empty string for absent auxiliaryInputs key", () => {
+      const context = createEvaluationContext({
+        auxiliaryInputs: { UserHasName: "1" },
+      });
+      expect(context.OtherAux).toBe("");
+    });
+  });
+
   describe("Snake Case Generation", () => {
     it("should auto-generate snake case keys for camelCase values", () => {
       const context = createEvaluationContext({

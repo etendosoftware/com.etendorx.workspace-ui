@@ -26,6 +26,7 @@ interface SmartContextOptions {
   parentFields?: Record<string, Field>;
 
   context?: Record<string, unknown>; // Session/Global context
+  auxiliaryInputs?: Record<string, string>; // Tab-scoped evaluated auxiliary inputs
   normalizeValues?: boolean;
   defaultValue?: unknown;
 }
@@ -40,7 +41,16 @@ interface SmartContextOptions {
  * 3. Fallback across multiple data sources (Values > ParentValues > Context).
  */
 export const createEvaluationContext = (options: SmartContextOptions) => {
-  const { values, fields, parentValues, parentFields, context = {}, normalizeValues = true, defaultValue } = options;
+  const {
+    values,
+    fields,
+    parentValues,
+    parentFields,
+    context = {},
+    auxiliaryInputs,
+    normalizeValues = true,
+    defaultValue,
+  } = options;
 
   // Helper to normalize values (true -> 'Y', false -> 'N')
   const normalize = (val: unknown) => {
@@ -55,7 +65,17 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
     evalContext[key] = normalize(val);
   });
 
-  // 2. Merge & Normalize Values (Current & Parent)
+  // 2. Tab-scoped auxiliary inputs (higher priority than session, lower than record values)
+  if (auxiliaryInputs) {
+    Object.entries(auxiliaryInputs).forEach(([key, val]) => {
+      const normalizedVal = normalize(val);
+      evalContext[key] = normalizedVal;
+      const snakeKey = key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
+      evalContext[snakeKey] = normalizedVal;
+    });
+  }
+
+  // 3. Merge & Normalize Values (Current & Parent)
   const allValues = { ...parentValues, ...values };
 
   Object.entries(allValues).forEach(([key, val]) => {

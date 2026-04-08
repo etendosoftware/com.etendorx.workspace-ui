@@ -23,7 +23,7 @@ describe("Requisition flow - Create and generate Purchase Order", () => {
     cy.get('[data-testid="MenuTitle__800216"] > .flex.overflow-hidden > .relative > .ml-2').click();
     cy.wait(1000);
     cy.clickNewRecord();
-    cy.get('[aria-describedby="Business Partner-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
+    cy.get('[aria-label="Business Partner"] > div[tabindex="0"]').click();
     cy.wait(1000);
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295F40C5CF02F5"] > .truncate').click();
     cy.wait(1000);
