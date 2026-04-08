@@ -129,8 +129,13 @@ export const useTableData = ({
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
-  const { activeWindow, getTabFormState, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink } =
-    useWindowContext();
+  const {
+    activeWindow,
+    getTabFormState,
+    getTabInitializedWithDirectLink,
+    setTabInitializedWithDirectLink,
+    getSelectedRecord,
+  } = useWindowContext();
   const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
 
@@ -153,7 +158,19 @@ export const useTableData = ({
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
   // Computed values
-  const parentId = String(parentRecord?.id ?? "");
+  // When the graph hasn't been updated yet (e.g. parent cleared its children's selection on
+  // its own selection), fall back to the URL-persisted selected record ID for the parent tab.
+  // This prevents child tabs from showing an empty table while waiting for the graph to sync.
+  const parentIdFromUrl =
+    parentTab && activeWindow?.windowIdentifier
+      ? getSelectedRecord(activeWindow.windowIdentifier, parentTab.id)
+      : undefined;
+  const parentId = String(parentRecord?.id ?? parentIdFromUrl ?? "");
+
+  // DEBUG: trace skip-related values for child tabs
+  if (parentTab) {
+    console.log(`[useTableData][${tab.name}] parentTab=${parentTab.name} | parentRecord.id=${parentRecord?.id} | parentIdFromUrl=${parentIdFromUrl} | parentId=${parentId} | parentRecords.length=${parentRecords?.length}`);
+  }
   const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
   const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
 
@@ -539,9 +556,27 @@ export const useTableData = ({
   );
 
   // Skip condition
+  // A child tab should fetch data when:
+  //   - there IS a parent selection (from graph OR from URL state), AND
+  //   - the parent does NOT have multiple records selected simultaneously (ambiguous context).
+  // Using parentIdFromUrl as fallback handles the case where the graph cleared the parent's
+  // child selections (e.g. when a grandparent record was selected) but the URL still holds a
+  // valid parent record ID.
   const skip = useMemo(() => {
-    return parentTab ? Boolean(!parentRecord || (parentRecords && parentRecords.length !== 1)) : false;
-  }, [parentTab, parentRecord, parentRecords]);
+    if (!parentTab) return false;
+    const hasParentSelection = !!parentRecord || !!parentIdFromUrl;
+    if (!hasParentSelection) {
+      console.log(`[useTableData][${tab.name}] SKIP=true → no parent selection`);
+      return true;
+    }
+    // If the graph has multi-selection active (>1 records), skip to avoid ambiguity.
+    if (parentRecords && parentRecords.length > 1) {
+      console.log(`[useTableData][${tab.name}] SKIP=true → multiple parent records selected (${parentRecords.length})`);
+      return true;
+    }
+    console.log(`[useTableData][${tab.name}] SKIP=false → will fetch with parentId=${parentId}`);
+    return false;
+  }, [parentTab, parentRecord, parentRecords, parentIdFromUrl, tab.name, parentId]);
 
   // Stable columns for datasource
   const stableDatasourceColumns = useMemo(() => {

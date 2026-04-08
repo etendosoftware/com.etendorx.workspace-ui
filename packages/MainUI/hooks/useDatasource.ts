@@ -229,6 +229,8 @@ export function useDatasource({
       fetchInProgressRef.current = true;
       const safePageSize = pageSize ?? 1000;
 
+      console.log(`[useDatasource] fetchData → entity=${entity} | criteria=`, JSON.stringify(queryParams.criteria), `| @parentId keys=`, Object.keys(queryParams).filter(k => k.startsWith('@')).map(k => `${k}=${queryParams[k as keyof typeof queryParams]}`));
+
       try {
         const { ok, data } = (await loadData(
           entity,
@@ -245,6 +247,7 @@ export function useDatasource({
         if (!(ok && data.response.data)) {
           throw data;
         }
+        console.log(`[useDatasource] response → entity=${entity} | count=${data.response.data.length}`);
         setHasMoreRecords(data.response.data.length >= safePageSize);
         setRecords((prev) => (page === 1 || searchQuery ? data.response.data : prev.concat(data.response.data)));
         setLoaded(true);
@@ -275,6 +278,7 @@ export function useDatasource({
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
+    console.log(`[useDatasource] effect → entity=${entity} skip=${skip}`);
     if (skip) {
       setRecords([]);
       setPage(1);
