@@ -4,7 +4,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
 import { useWindowContext } from "@/contexts/window";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
-import React from "react";
+import type React from "react";
 
 jest.mock("@/hooks/useTranslation");
 jest.mock("@/contexts/tab");
