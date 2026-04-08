@@ -168,16 +168,18 @@ The Copy (clone) action in the toolbar duplicates the currently selected record(
 
 | Callback | Condition | Actions taken |
 |---|---|---|
-| `onSingleRecord(newRecordId)` | Exactly one record was cloned | Clears graph selection, sets the new record as selected, transitions the tab to Form/Edit view for the clone |
-| `onMultipleRecords()` | Multiple records were cloned | Clears graph selection, clears the selected record reference |
+| `onSingleRecord(newRecordId)` | Exactly one record was cloned | Sets the new record as selected in the window context, transitions the tab to Form/Edit view for the clone. Grid refresh is deferred until the Table becomes visible again. |
+| `onMultipleRecords()` | Multiple records were cloned | Clears graph selection, clears the selected record reference, triggers grid refresh immediately. |
 
 ### Selection State Clearing
 
-Both callbacks call `graph.clearSelected(tab)` and `graph.clearSelectedMultiple(tab)` **before** updating `setSelectedRecord` / `clearSelectedRecord`. This ordering is required so that `useCurrentRecord` discards the stale selection and re-derives its value from the new record ID rather than the old one.
+`onMultipleRecords` calls `graph.clearSelected(tab)` and `graph.clearSelectedMultiple(tab)` before `clearSelectedRecord`. This ordering ensures the graph cache is evicted before the window context is updated.
 
-Skipping either call before the window state update produces two known symptoms:
-- The Breadcrumb continues to display the identifier of the original record.
-- Returning from Form view to Grid view shows the original record highlighted instead of the clone.
+`onSingleRecord` does **not** call `graph.clearSelected` or `graph.clearSelectedMultiple`. Doing so emits an `"unselected"` event synchronously, which causes `table.setRowSelection({})` → `useTableSelection` → `clearSelectedRecord`, overwriting the new record ID just set in the window context. Instead, the graph cache is naturally invalidated by the record ID change in `useCurrentRecord` (new `paramsKey`), and `FormView` calls `graph.setSelected` once it loads the clone's data.
+
+### Grid Refresh After Single-Record Clone
+
+When one record is cloned, the user is navigated to Form view of the clone. The Table component remains mounted but hidden. A `useEffect` in `Table/index.tsx` detects the visibility transition (`isVisible: false → true`) when the user returns to Grid view, and triggers `refetch()` if a selected record exists. This guarantees the cloned record appears in the grid without requiring an immediate (and wasteful) refresh while the Table is invisible.
 
 ### Clone with Children
 
