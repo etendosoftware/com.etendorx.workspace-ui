@@ -169,7 +169,9 @@ export const useTableData = ({
 
   // DEBUG: trace skip-related values for child tabs
   if (parentTab) {
-    console.log(`[useTableData][${tab.name}] parentTab=${parentTab.name} | parentRecord.id=${parentRecord?.id} | parentIdFromUrl=${parentIdFromUrl} | parentId=${parentId} | parentRecords.length=${parentRecords?.length}`);
+    console.log(
+      `[useTableData][${tab.name}] parentTab=${parentTab.name} | parentRecord.id=${parentRecord?.id} | parentIdFromUrl=${parentIdFromUrl} | parentId=${parentId} | parentRecords.length=${parentRecords?.length}`
+    );
   }
   const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
   const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;

@@ -229,7 +229,14 @@ export function useDatasource({
       fetchInProgressRef.current = true;
       const safePageSize = pageSize ?? 1000;
 
-      console.log(`[useDatasource] fetchData → entity=${entity} | criteria=`, JSON.stringify(queryParams.criteria), `| @parentId keys=`, Object.keys(queryParams).filter(k => k.startsWith('@')).map(k => `${k}=${queryParams[k as keyof typeof queryParams]}`));
+      console.log(
+        `[useDatasource] fetchData → entity=${entity} | criteria=`,
+        JSON.stringify(queryParams.criteria),
+        `| @parentId keys=`,
+        Object.keys(queryParams)
+          .filter((k) => k.startsWith("@"))
+          .map((k) => `${k}=${queryParams[k as keyof typeof queryParams]}`)
+      );
 
       try {
         const { ok, data } = (await loadData(

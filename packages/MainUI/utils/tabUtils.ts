@@ -70,13 +70,17 @@ export function shouldShowTab(tab: TabWithParentInfo, activeParentTab: Tab | nul
   const pTabId = tab.parentTabId || (tab as any).parentTab;
   if (pTabId) {
     const match = pTabId === activeParentTab.id;
-    console.log(`[shouldShowTab] "${tab.name}" (lvl${tab.tabLevel}) parentTabId match="${match}" | tab.parentTabId=${pTabId} | activeParentTab.id=${activeParentTab.id} activeParentTab.name="${activeParentTab.name}"`);
+    console.log(
+      `[shouldShowTab] "${tab.name}" (lvl${tab.tabLevel}) parentTabId match="${match}" | tab.parentTabId=${pTabId} | activeParentTab.id=${activeParentTab.id} activeParentTab.name="${activeParentTab.name}"`
+    );
     return match;
   }
 
   // Check parentColumns if they exist and have values
   if (tab.parentColumns && tab.parentColumns.length > 0) {
-    console.log(`[shouldShowTab] "${tab.name}" (lvl${tab.tabLevel}) → checking parentColumns=${JSON.stringify(tab.parentColumns)} vs parentEntity="${activeParentTab.entityName}" parentTable="${activeParentTab.table$_identifier}"`);
+    console.log(
+      `[shouldShowTab] "${tab.name}" (lvl${tab.tabLevel}) → checking parentColumns=${JSON.stringify(tab.parentColumns)} vs parentEntity="${activeParentTab.entityName}" parentTable="${activeParentTab.table$_identifier}"`
+    );
     const hasMatch = tab.parentColumns.some((parentColumn) => {
       const normalizedColumn = normalizeIdentifier(parentColumn.replace(/_id$/i, "")).replace(/_/g, "");
       const normalizedEntity = normalizeIdentifier(activeParentTab.entityName || "").replace(/_/g, "");
