@@ -60,17 +60,23 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
   const { graph } = useSelected();
 
   // When the graph emits a "selected" event for this tab and the record's _identifier
-  // has changed (e.g. after a save that updates the identifier), reset the fetch guards
-  // so the main effect re-fetches the updated record.
+  // has changed (e.g. after a save that updates the identifier), update React state
+  // directly with the new record so the Breadcrumb re-renders immediately.
+  // Resetting refs alone does NOT trigger a re-render or re-run the fetch effect
+  // (because recordId and tab haven't changed), so we must call setRecord here.
   useEffect(() => {
     if (!tab) return;
 
     const handleSelected = (eventTab: Tab, newRecord: EntityData) => {
       if (eventTab.id !== tab.id) return;
       if (newRecord._identifier !== lastRecordIdentifierRef.current) {
+        lastRecordIdentifierRef.current = newRecord._identifier ?? null;
+        // Update React state so consumers (e.g. AppBreadcrumb) re-render with
+        // the new _identifier without waiting for a full datasource re-fetch.
+        setRecord(newRecord as unknown as Record<string, Field>);
+        // Also reset fetch guards so the next navigation to this record fetches fresh data.
         lastFetchParamsRef.current = null;
         fetchInProgressRef.current = false;
-        lastRecordIdentifierRef.current = newRecord._identifier ?? null;
       }
     };
 
