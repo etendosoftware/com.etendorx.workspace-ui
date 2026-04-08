@@ -139,7 +139,6 @@ describe("useFormInitialState", () => {
     const { result } = renderHook(() => useFormInitialState(formInit));
     expect(result.current?.sessionKey).toBe("sessionVal");
   });
-
   describe("@ColumnName@ default reference resolution (ETP-3643)", () => {
     // Simulates: EM_Etsg_Date_Operation has column.defaultValue = "@DateInvoiced@"
     // but FIC returns empty because DateInvoiced is not in the FIC request context

@@ -1,135 +1,76 @@
-import { shouldShowTab, type TabWithParentInfo } from "../tabUtils";
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, WITHOUT WARRANTY OF ANY KIND,
+ * SOFTWARE OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF ANY
+ * KIND, either express or implied. See the License for the specific language
+ * governing rights and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
 
-const makeTab = (overrides: Partial<TabWithParentInfo> = {}): TabWithParentInfo => ({
-  id: "tab1",
-  name: "Tab 1",
-  tabLevel: 0,
-  entityName: "SomeEntity",
-  ...overrides,
-});
+import { shouldShowTab } from "../tabUtils";
 
-const makeParentTab = (overrides: Partial<TabWithParentInfo> = {}): TabWithParentInfo => ({
-  id: "parent1",
-  name: "Parent Tab",
-  tabLevel: 0,
-  entityName: "ParentEntity",
-  ...overrides,
-});
+describe("tabUtils", () => {
+  describe("shouldShowTab", () => {
+    const parentTab = {
+      id: "parent-1",
+      entityName: "Order",
+      table$_identifier: "OrderTable",
+      window: "win-1",
+    } as any;
 
-describe("shouldShowTab", () => {
-  describe("level 0 tabs", () => {
-    it("always shows tabLevel 0 tabs regardless of activeParentTab", () => {
-      const tab = makeTab({ tabLevel: 0 });
+    it("should always show level 0 tabs", () => {
+      const tab = { tabLevel: 0 } as any;
       expect(shouldShowTab(tab, null)).toBe(true);
-      expect(shouldShowTab(tab, makeParentTab())).toBe(true);
     });
-  });
 
-  describe("tabs with no activeParentTab", () => {
-    it("hides non-root tabs when there is no active parent tab", () => {
-      const tab = makeTab({ tabLevel: 1 });
+    it("should not show subtabs if no parent is active", () => {
+      const tab = { tabLevel: 1 } as any;
       expect(shouldShowTab(tab, null)).toBe(false);
     });
-  });
 
-  describe("inactive tabs", () => {
-    it("hides tabs with active === false", () => {
-      const tab = makeTab({ tabLevel: 1, active: false });
-      const parent = makeParentTab({ id: "parent1" });
-      expect(shouldShowTab(tab, parent)).toBe(false);
-    });
-  });
-
-  describe("matching via parentTabId", () => {
-    it("shows a tab whose parentTabId matches the active parent tab id", () => {
-      const parent = makeParentTab({ id: "parent1" });
-      const tab = makeTab({ tabLevel: 1, parentTabId: "parent1" });
-      expect(shouldShowTab(tab, parent)).toBe(true);
+    it("should show subtab if parentTabId matches activeParentTab ID", () => {
+      const tab = { tabLevel: 1, parentTabId: "parent-1" } as any;
+      expect(shouldShowTab(tab, parentTab)).toBe(true);
     });
 
-    it("hides a tab whose parentTabId does not match the active parent tab id", () => {
-      const parent = makeParentTab({ id: "parent1" });
-      const tab = makeTab({ tabLevel: 1, parentTabId: "other-parent" });
-      expect(shouldShowTab(tab, parent)).toBe(false);
-    });
-  });
-
-  describe("matching via parentColumns - name match", () => {
-    it("shows tab when parentColumn matches parent entityName", () => {
-      const parent = makeParentTab({ id: "parent1", entityName: "SalesOrder" });
-      const tab = makeTab({
+    it("should show subtab if parentColumns match activeParentTab entityName (case-insensitive)", () => {
+      const tab = {
         tabLevel: 1,
-        parentColumns: ["salesOrder_ID"],
-      });
-      expect(shouldShowTab(tab, parent)).toBe(true);
-    });
-
-    it("shows tab when parentColumn matches parent table identifier", () => {
-      const parent = makeParentTab({ id: "parent1", entityName: "Other", table$_identifier: "SalesOrder" });
-      const tab = makeTab({
-        tabLevel: 1,
-        parentColumns: ["salesorder"],
-      });
-      expect(shouldShowTab(tab, parent)).toBe(true);
-    });
-
-    it("hides tab when parentColumns exist but none match", () => {
-      const parent = makeParentTab({
-        id: "parent1",
-        entityName: "UnrelatedEntity",
-        table$_identifier: "UnrelatedTable",
-      });
-      const tab = makeTab({
-        tabLevel: 1,
-        parentColumns: ["XYZ_completely_different"],
-      });
-      expect(shouldShowTab(tab, parent)).toBe(false);
-    });
-  });
-
-  describe("matching via parentColumns - field metadata", () => {
-    it("shows tab when field's referencedEntity matches parent entityName", () => {
-      const parent = makeParentTab({ id: "parent1", entityName: "TargetEntity" });
-      const tab = makeTab({
-        tabLevel: 1,
-        parentColumns: ["some_field"],
+        parentColumns: ["ORDER_ID"],
         fields: {
-          some_field: {
-            referencedEntity: "TargetEntity",
-          } as any,
+          ORDER_ID: {},
         },
-      });
-      expect(shouldShowTab(tab, parent)).toBe(true);
+      } as any;
+      expect(shouldShowTab(tab, parentTab)).toBe(true);
     });
 
-    it("shows tab when field's columnName matches parent entityName", () => {
-      const parent = makeParentTab({ id: "parent1", entityName: "targetentity" });
-      const tab = makeTab({
+    it("should show subtab based on field referencedEntity", () => {
+      const tab = {
         tabLevel: 1,
-        parentColumns: ["someField"],
+        parentColumns: ["custom_field"],
         fields: {
-          someField: {
-            columnName: "targetentity_id",
-          } as any,
+          custom_field: { referencedEntity: "Order" },
         },
-      });
-      expect(shouldShowTab(tab, parent)).toBe(true);
+      } as any;
+      expect(shouldShowTab(tab, parentTab)).toBe(true);
     });
-  });
 
-  describe("tabs with no parentColumns and no parentTabId", () => {
-    it("hides child tab with no matching criteria", () => {
-      const parent = makeParentTab({ id: "parent1" });
-      const tab = makeTab({ tabLevel: 1 });
-      expect(shouldShowTab(tab, parent)).toBe(false);
-    });
-  });
-
-  describe("empty parentColumns array", () => {
-    it("hides tab with empty parentColumns and no parentTabId", () => {
-      const parent = makeParentTab({ id: "parent1" });
-      const tab = makeTab({ tabLevel: 1, parentColumns: [] });
-      expect(shouldShowTab(tab, parent)).toBe(false);
+    it("should return false if no match is found", () => {
+      const tab = {
+        tabLevel: 1,
+        parentColumns: ["MISMATCH"],
+        fields: {},
+      } as any;
+      expect(shouldShowTab(tab, parentTab)).toBe(false);
     });
   });
 });

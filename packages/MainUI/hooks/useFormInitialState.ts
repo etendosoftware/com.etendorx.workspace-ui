@@ -135,11 +135,15 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
   // The FIC returns property field values in columnValues under the key
   // `_propertyField_{propertyPath}_{columnName}`, which is the field's `inputName`
   // with the leading "inp" stripped (e.g. "inp_propertyField_type_Type" → "_propertyField_type_Type").
+  // This map lets us find the field and obtain its hqlName so the value ends up
+  // in the form state under the right key.
   const fieldsByPropertyFieldKey = useMemo(() => {
     if (!tab?.fields) return {} as FieldMap;
-    return Object.values(tab?.fields).reduce((acc, field) => {
+    return Object.values(tab.fields).reduce((acc, field) => {
       if (field.column?.propertyPath && field.inputName) {
-        acc[field.inputName.replace(/^inp/, "")] = field;
+        // Strip the "inp" prefix: "inp_propertyField_type_Type" → "_propertyField_type_Type"
+        const ficKey = field.inputName.replace(/^inp/, "");
+        acc[ficKey] = field;
       }
       return acc;
     }, {} as FieldMap);

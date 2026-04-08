@@ -36,13 +36,13 @@ describe("Sales Order Automation - Complete Flow", () => {
     // -------------------------
     // Select Business Partner
     cy.wait(500);
-    cy.get('[aria-describedby="Business Partner-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
+    cy.get('[aria-label="Business Partner"] > div[tabindex="0"]').click();
     cy.wait(500);
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295F40C3CB02EC"] > .truncate').click();
     cy.wait(500);
 
     // Select Transaction Document
-    cy.get('[aria-describedby="Transaction Document-help"] > .w-2\\/3 > .relative > .w-full').click();
+    cy.get('[aria-label="Transaction Document"] > div[tabindex="0"]').click();
     cy.wait(500);
     cy.get('[data-testid="OptionItem__FF8080812C2ABFC6012C2B3BDF4D005A"] > .truncate').click();
     cy.wait(500);
@@ -54,7 +54,7 @@ describe("Sales Order Automation - Complete Flow", () => {
     cy.wait(500);
 
     // Select Invoice Terms
-    cy.get('[aria-describedby="Invoice Terms-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
+    cy.get('[aria-label="Invoice Terms"] > div[tabindex="0"]').click();
     cy.wait(500);
     cy.get('[data-testid="OptionItem__I"] > .truncate').click();
     cy.wait(500);
@@ -78,7 +78,7 @@ describe("Sales Order Automation - Complete Flow", () => {
     cy.wait(500);
 
     // Select Product
-    cy.get('[aria-describedby="Product-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
+    cy.get('[aria-label="Product"] > div[tabindex="0"]').click();
     cy.wait(500);
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295ADC1D07022A"] > .truncate').click();
     cy.wait(500);

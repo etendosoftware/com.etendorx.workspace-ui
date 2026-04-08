@@ -31,6 +31,7 @@ export type TabsSwitchProps = {
   tabs: Tab[];
   activeTabId?: string;
   collapsed?: boolean;
+  isExpanded?: boolean;
   onClick: (tab: Tab) => void;
   onDoubleClick: (tab: Tab) => void;
   onClose: () => void;

@@ -25,7 +25,7 @@ describe.skip("Purchase Order with advance payment flow", () => {
 
     cy.contains("Main Section").should("be.visible");
 
-    cy.get('[aria-describedby="Business Partner-help"] > .w-2\\/3 > .relative > .w-full').click();
+    cy.get('[aria-label="Business Partner"] > div[tabindex="0"]').click();
 
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295F40BDDF02E3"]').click();
 
@@ -38,7 +38,7 @@ describe.skip("Purchase Order with advance payment flow", () => {
     cy.get(
       '[style="height: 50%;"] > .bg-\\(linear-gradient\\(180deg\\, > .h-10.gap-1 > :nth-child(1) > [data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"] > span'
     ).click();
-    cy.get('[aria-describedby="Product-help"] > .w-2\\/3 > .relative > .w-full').click();
+    cy.get('[aria-label="Product"] > div[tabindex="0"]').click();
     cy.intercept("POST", /FormInitializationComponent/).as("productFormInit");
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"] > .truncate').click();
     cy.wait("@productFormInit", { timeout: 60000 });
@@ -76,7 +76,7 @@ describe.skip("Purchase Order with advance payment flow", () => {
 
     cy.get("button.toolbar-button-new").contains("New Record").first().should("be.visible").click();
 
-    cy.get('[aria-describedby="Paying To-help"] > .w-2\\/3 > .relative > .w-full').click();
+    cy.get('[aria-label="Paying To"] > div[tabindex="0"]').click();
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295F40BDDF02E3"]').click();
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     cy.closeToastIfPresent();
@@ -103,7 +103,7 @@ describe.skip("Purchase Order with advance payment flow", () => {
       '.m-0.flex-1 > .bg-\\(linear-gradient\\(180deg\\, > .h-10.gap-1 > :nth-child(1) > [data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"] > span'
     ).click();
     cy.wait(500);
-    cy.get('[aria-describedby="Business Partner-help"] > .w-2\\/3 > .relative > .w-full').click();
+    cy.get('[aria-label="Business Partner"] > div[tabindex="0"]').click();
     cy.get('[data-testid="OptionItem__4028E6C72959682B01295F40BDDF02E3"]').click();
     cy.wait(500);
     cy.get('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
