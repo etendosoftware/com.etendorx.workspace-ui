@@ -260,23 +260,28 @@ export const useToolbarConfig = ({
         onSingleRecord: (newRecordId) => {
           const formMode = FORM_MODES.EDIT;
           const newTabFormState = getNewTabFormState(newRecordId, TAB_MODES.FORM, formMode);
-          // FIRST: establish new selection in window context
+          // 1. Establish new record ID in window context first — so that when
+          //    "unselected" fires (from clearSelected below), the window context
+          //    already points to the new record.
           setSelectedRecord(windowIdentifier, tabId, newRecordId);
-          // THEN: clear old graph cache (after setSelectedRecord, so "unselected"
-          //       event fires when form state is already pointing to new record)
+          // 2. Evict stale graph cache. "unselected" fires here but form state
+          //    already has newRecordId above, preventing clearSelectedRecord from
+          //    overwriting it in useTableSelection.
           graph.clearSelected(tab);
           graph.clearSelectedMultiple(tab);
-          // LAST: set form state
+          // 3. Set form state (navigate to form view).
           setTabFormState(windowIdentifier, tabId, newTabFormState);
+          // Refresh grid only on success, after all state is established
+          onRefresh?.();
         },
         onMultipleRecords: () => {
           clearSelectedRecord(windowIdentifier, tabId);
           graph.clearSelected(tab);
           graph.clearSelectedMultiple(tab);
+          // Refresh grid only on success
+          onRefresh?.();
         },
       });
-      // Refresh the grid AFTER selection state is fully established
-      onRefresh?.();
     };
 
     const buttons: ActionButton[] = [];

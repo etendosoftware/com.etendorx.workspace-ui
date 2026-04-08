@@ -194,13 +194,14 @@ describe("useToolbarConfig", () => {
         await result.current.actionModal.buttons[0].onClick();
       });
 
-      // Verify ordering: graph clears must happen before setSelectedRecord/setTabFormState
+      // Verify ordering: setSelectedRecord must come BEFORE graph clears, and graph
+      // clears must come BEFORE setTabFormState (new correct ordering)
+      const setSelectedRecordOrder = mockSetSelectedRecord.mock.invocationCallOrder[0];
       const clearSelectedOrder = mockClearSelected.mock.invocationCallOrder[0];
       const clearSelectedMultipleOrder = mockClearSelectedMultiple.mock.invocationCallOrder[0];
-      const setSelectedRecordOrder = mockSetSelectedRecord.mock.invocationCallOrder[0];
       const setTabFormStateOrder = mockSetTabFormState.mock.invocationCallOrder[0];
-      expect(clearSelectedOrder).toBeLessThan(setSelectedRecordOrder);
-      expect(clearSelectedMultipleOrder).toBeLessThan(setSelectedRecordOrder);
+      expect(setSelectedRecordOrder).toBeLessThan(clearSelectedOrder);
+      expect(setSelectedRecordOrder).toBeLessThan(clearSelectedMultipleOrder);
       expect(clearSelectedOrder).toBeLessThan(setTabFormStateOrder);
       expect(clearSelectedMultipleOrder).toBeLessThan(setTabFormStateOrder);
 
@@ -232,12 +233,12 @@ describe("useToolbarConfig", () => {
         await result.current.actionModal.buttons[0].onClick();
       });
 
-      // Verify ordering: graph clears must happen before clearSelectedRecord
+      // Verify ordering: clearSelectedRecord must come BEFORE graph clears (new correct ordering)
+      const clearSelectedRecordOrder = mockClearSelectedRecord.mock.invocationCallOrder[0];
       const clearSelectedOrder = mockClearSelected.mock.invocationCallOrder[0];
       const clearSelectedMultipleOrder = mockClearSelectedMultiple.mock.invocationCallOrder[0];
-      const clearSelectedRecordOrder = mockClearSelectedRecord.mock.invocationCallOrder[0];
-      expect(clearSelectedOrder).toBeLessThan(clearSelectedRecordOrder);
-      expect(clearSelectedMultipleOrder).toBeLessThan(clearSelectedRecordOrder);
+      expect(clearSelectedRecordOrder).toBeLessThan(clearSelectedOrder);
+      expect(clearSelectedRecordOrder).toBeLessThan(clearSelectedMultipleOrder);
 
       expect(mockClearSelected).toHaveBeenCalledWith(mockTab);
       expect(mockClearSelectedMultiple).toHaveBeenCalledWith(mockTab);
