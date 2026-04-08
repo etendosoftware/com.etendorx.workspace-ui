@@ -167,12 +167,6 @@ export const useTableData = ({
       : undefined;
   const parentId = String(parentRecord?.id ?? parentIdFromUrl ?? "");
 
-  // DEBUG: trace skip-related values for child tabs
-  if (parentTab) {
-    console.log(
-      `[useTableData][${tab.name}] parentTab=${parentTab.name} | parentRecord.id=${parentRecord?.id} | parentIdFromUrl=${parentIdFromUrl} | parentId=${parentId} | parentRecords.length=${parentRecords?.length}`
-    );
-  }
   const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
   const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
 
@@ -568,15 +562,12 @@ export const useTableData = ({
     if (!parentTab) return false;
     const hasParentSelection = !!parentRecord || !!parentIdFromUrl;
     if (!hasParentSelection) {
-      console.log(`[useTableData][${tab.name}] SKIP=true → no parent selection`);
       return true;
     }
     // If the graph has multi-selection active (>1 records), skip to avoid ambiguity.
     if (parentRecords && parentRecords.length > 1) {
-      console.log(`[useTableData][${tab.name}] SKIP=true → multiple parent records selected (${parentRecords.length})`);
       return true;
     }
-    console.log(`[useTableData][${tab.name}] SKIP=false → will fetch with parentId=${parentId}`);
     return false;
   }, [parentTab, parentRecord, parentRecords, parentIdFromUrl, tab.name, parentId]);
 
