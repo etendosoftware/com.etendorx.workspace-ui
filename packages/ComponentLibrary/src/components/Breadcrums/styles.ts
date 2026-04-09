@@ -68,10 +68,6 @@ export const useStyle = () => {
           fontSize: "1.375rem",
           fontWeight: "600",
           color: theme.palette.baselineColor.neutral[100],
-          cursor: "pointer",
-          "&:hover": {
-            textDecoration: "underline",
-          },
         },
         textButton: {
           textDecoration: "none",

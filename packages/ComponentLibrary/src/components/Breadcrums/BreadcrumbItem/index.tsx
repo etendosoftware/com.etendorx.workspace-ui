@@ -65,7 +65,12 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
         <>
           <Typography
             noWrap
-            sx={sx.lastItemTypography}
+            sx={{
+              ...sx.lastItemTypography,
+              ...(item.onClick || (item.actions && item.actions.length > 0)
+                ? { cursor: "pointer", "&:hover": { textDecoration: "underline" } }
+                : {}),
+            }}
             onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
               if (item.actions && item.actions.length > 0) {
                 handleActionMenuOpen(e, item.actions);
