@@ -69,6 +69,8 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
             onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
               if (item.actions && item.actions.length > 0) {
                 handleActionMenuOpen(e, item.actions);
+              } else if (item.onClick) {
+                item.onClick();
               }
             }}>
             {item.label}

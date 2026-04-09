@@ -122,6 +122,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     clearChildrenSelections,
     getTableState,
     setTableAdvancedCriteria,
+    setAllWindowsInactive,
   } = useWindowContext();
   const { registerActions, setIsAdvancedFilterApplied, onSave } = useToolbarContext();
   const { hasFormChanges } = useTabContext();
@@ -264,6 +265,12 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       if (isInFormView) {
         clearTabFormState(windowIdentifier, tab.id);
       } else {
+        if (tab.tabLevel === 0) {
+          // Back on Level 0 Grid navigates Home
+          setAllWindowsInactive();
+          return;
+        }
+
         clearSelectedRecord(windowIdentifier, tab.id);
 
         // Also clear children if this tab has any
@@ -279,7 +286,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         graph.clearSelected(tab);
       }
     }
-  }, [windowIdentifier, clearTabFormState, tab, getTabFormState, clearSelectedRecord, clearChildrenSelections, graph]);
+  }, [windowIdentifier, clearTabFormState, tab, getTabFormState, clearSelectedRecord, clearChildrenSelections, graph, setAllWindowsInactive]);
 
   const handleTreeView = useCallback(() => {
     if (windowIdentifier) {
