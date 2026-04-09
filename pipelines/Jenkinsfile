@@ -20,7 +20,7 @@ pipeline {
 
     ACCESS_TOKEN = credentials('access_token_github')
 
-    NODE_VERSION = "18"
+    NODE_VERSION = "22"
 
     REPOSITORY_NAME = "com.etendorx.workspace-ui"
   }
@@ -92,13 +92,23 @@ spec:
               
               echo "-------------------------- Building Environment --------------------------"
               sh """
-                curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
-                apt-get install -y nodejs
-                npm install -g pnpm
-                npm config set registry \"https://registry.npmjs.org/\"
-                npm config set //registry.npmjs.org/:_authToken ${NPM_TOKEN}
-              """
+                export NVM_DIR="\$HOME/.nvm"
+                mkdir -p \$NVM_DIR
+                curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+                . \$NVM_DIR/nvm.sh
 
+                nvm install ${NODE_VERSION}
+                nvm use ${NODE_VERSION}
+
+                node -v
+                npm -v
+
+                npm install -g pnpm
+
+                npm config set registry "https://registry.npmjs.org/"
+                npm config set //registry.npmjs.org/:_authToken \$NPM_TOKEN
+              """
+              
               echo "-------------------------- Checking out the repository to GIT_COMMIT --------------------------"
               sh """
                 cd ${REPOSITORY_NAME}
@@ -107,12 +117,20 @@ spec:
 
               echo "-------------------------- Installing Dependencies --------------------------"
               sh """
+                export NVM_DIR="\$HOME/.nvm"
+                . \$NVM_DIR/nvm.sh
+                nvm use ${NODE_VERSION}
+
                 cd ${REPOSITORY_NAME}
                 pnpm install
                 pnpm add -D -w istanbul-lib-coverage istanbul-lib-report istanbul-reports
               """
               echo "-------------------------- Building Project --------------------------"
               sh """
+                export NVM_DIR="\$HOME/.nvm"
+                . \$NVM_DIR/nvm.sh
+                nvm use ${NODE_VERSION}
+
                 cd ${REPOSITORY_NAME}
                 pnpm build
               """
@@ -154,12 +172,20 @@ spec:
               env.STATUSTEST = "1"
               echo "-------------------------- Running Tests --------------------------"
               sh """
+                export NVM_DIR="\$HOME/.nvm"
+                . \$NVM_DIR/nvm.sh
+                nvm use ${NODE_VERSION}
+
                 cd ${REPOSITORY_NAME}
                 pnpm test:mainui:coverage
                 pnpm test:api-client:coverage
                 pnpm test:component-library:coverage
               """
               sh """
+                export NVM_DIR="\$HOME/.nvm"
+                . \$NVM_DIR/nvm.sh
+                nvm use ${NODE_VERSION}
+
                 cd ${REPOSITORY_NAME}
                 node pipelines/utils/merge-coverage.cjs
               """
@@ -192,6 +218,10 @@ spec:
               // Apply codemod and format; if this produces any git changes, mark UNSTABLE
               def shellScript = '''#!/usr/bin/env bash
 set -e
+export NVM_DIR="$HOME/.nvm"
+. $NVM_DIR/nvm.sh
+nvm use ''' + env.NODE_VERSION + '''
+
 cd ''' + env.REPOSITORY_NAME + '''
 # Apply data-testid codemod (writes files)
 pnpm run apply:data-testid || echo "❌ Codemod application failed, continuing..."
@@ -264,6 +294,10 @@ exit 0
             container('compiler') {
                 timeout(time: 25, unit: 'MINUTES') {
                     sh """
+                    export NVM_DIR="\$HOME/.nvm"
+                    . \$NVM_DIR/nvm.sh
+                    nvm use ${NODE_VERSION}
+
                     cd ${REPOSITORY_NAME}
 
                     pnpm run storybook -- --host 127.0.0.1 --port 6006 --quiet &

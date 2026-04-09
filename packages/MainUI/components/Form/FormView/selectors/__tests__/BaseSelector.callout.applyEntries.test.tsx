@@ -4,6 +4,16 @@ import { BaseSelector } from "@/components/Form/FormView/selectors/BaseSelector"
 import { FormInitializationProvider } from "@/contexts/FormInitializationContext";
 import WindowProvider from "@/contexts/window";
 
+// Mock Next.js server dependencies
+jest.mock("next/cache", () => ({
+  revalidatePath: jest.fn(),
+  revalidateTag: jest.fn(),
+}));
+
+jest.mock("@/app/actions/revalidate", () => ({
+  revalidateDopoProcess: jest.fn(),
+}));
+
 jest.mock("next/navigation", () => ({
   useParams: () => ({ recordId: "100" }),
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), prefetch: jest.fn() }),
@@ -12,6 +22,12 @@ jest.mock("next/navigation", () => ({
     get: jest.fn(),
     forEach: jest.fn(),
   }),
+}));
+
+// Mock ProcessDefinitionModal
+jest.mock("@/components/ProcessModal/ProcessDefinitionModal", () => ({
+  __esModule: true,
+  default: () => <div data-testid="ProcessDefinitionModal">ProcessDefinitionModal</div>,
 }));
 jest.mock("@/hooks/useDisplayLogic", () => ({ __esModule: true, default: () => true }));
 jest.mock("@/hooks/useFormParent", () => ({ __esModule: true, default: () => ({}) }));

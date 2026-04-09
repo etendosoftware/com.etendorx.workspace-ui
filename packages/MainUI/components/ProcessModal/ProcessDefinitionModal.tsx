@@ -215,10 +215,12 @@ function ProcessDefinitionModalContent({
   onSuccess,
   type,
   keepOpenOnSuccess,
+  contextRecord,
 }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
   const { graph } = useSelected();
-  const { tab, record } = useTabContext();
+  const { tab, record: tabRecord } = useTabContext();
+  const record = tabRecord ?? (contextRecord as typeof tabRecord);
   const { session, token, getCsrfToken } = useUserContext();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1024,6 +1026,7 @@ function ProcessDefinitionModalContent({
               currentValues={formValues}
               originTab={tab}
               showTitle={false}
+              onClose={onClose}
               data-testid="WindowReferenceGrid__761503"
             />
           </CollapsibleSection>

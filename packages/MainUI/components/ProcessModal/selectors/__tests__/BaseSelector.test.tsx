@@ -1,9 +1,18 @@
+// Mock Next.js server dependencies
+jest.mock("next/cache", () => ({
+  revalidatePath: jest.fn(),
+  revalidateTag: jest.fn(),
+}));
+
+jest.mock("@/app/actions/revalidate", () => ({
+  revalidateDopoProcess: jest.fn(),
+}));
+
 import { render, screen } from "@testing-library/react";
 import BaseSelector from "../BaseSelector";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useForm } from "react-hook-form";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
-import React from "react";
 
 jest.mock("@/hooks/useUserContext");
 jest.mock("react-hook-form");

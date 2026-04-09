@@ -161,6 +161,7 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         customJs: column.etmetaCustomjs,
         referencedTabId: column.referencedTabId,
         colorFieldName: column.colorFieldName,
+        clientclass: column.clientclass,
         // Include additional field properties needed for inline editing
         isReadOnly: column.isReadOnly,
         isUpdatable: column.isUpdatable,

@@ -326,7 +326,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
           response.url.includes("meta/toolbar") ||
           response.url.includes("api/datasource") ||
           response.url.includes("org.openbravo.client.kernel") ||
-          response.url.includes("meta/labels"));
+          response.url.includes("meta/labels") ||
+          response.url.includes("utility/ReferencedLink"));
 
       if (
         (response.status === HTTP_CODES.UNAUTHORIZED || response.status === HTTP_CODES.INTERNAL_SERVER_ERROR) &&

@@ -111,6 +111,8 @@ export interface ProcessDefinitionModalProps {
   onError?: () => void;
   type: ProcessType;
   keepOpenOnSuccess?: boolean;
+  /** Optional record override — used when the caller already has the record data (e.g. from form context) and the TabContext may not provide it. */
+  contextRecord?: Record<string, unknown>;
 }
 
 export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
@@ -167,6 +169,7 @@ export interface WindowReferenceGridProps {
   selectedRecordsCount?: number;
   onSelectionChange: (selection: GridSelectionUpdater) => void;
   gridSelection: GridSelectionStructure;
+  onClose?: () => void;
   entityName?: EntityValue;
   recordId?: EntityValue;
   tabId: string;

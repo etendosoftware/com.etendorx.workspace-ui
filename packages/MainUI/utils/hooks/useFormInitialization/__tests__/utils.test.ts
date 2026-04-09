@@ -146,6 +146,8 @@ describe("FormInitialization Utils - SessionMode Support", () => {
         keyColumnName: "test_column",
         _entityName: "TestEntity",
         inpwindowId: "TestWindow",
+        // _gridVisibleProperties is dynamically computed from displayed fields' column names
+        _gridVisibleProperties: ["test_column"],
         additionalField: "additionalValue",
       });
 
