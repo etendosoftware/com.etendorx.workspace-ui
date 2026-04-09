@@ -18,7 +18,7 @@
 import { type ProcessMessage, useProcessMessage } from "@/hooks/useProcessMessage";
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   type MessageStylesType,
   type ProcessIframeModalClosedProps,
@@ -45,15 +45,18 @@ const ProcessIframeOpenModal = ({
   const { fetchProcessMessage } = useProcessMessage(tabId);
   const [processWasSuccessful, setProcessWasSuccessful] = useState(false);
   const [progressWidth, setProgressWidth] = useState(100);
+  const loadCount = useRef<number>(0);
+  const [hasNavigated, setHasNavigated] = useState(false);
 
   const handleClose = useCallback(() => {
-    if (processWasSuccessful && onProcessSuccess) {
+    if ((processWasSuccessful || hasNavigated) && onProcessSuccess) {
       onProcessSuccess();
     }
 
     setProcessWasSuccessful(false);
+    setHasNavigated(false);
     onClose();
-  }, [onClose, onProcessSuccess, processWasSuccessful]);
+  }, [onClose, onProcessSuccess, processWasSuccessful, hasNavigated]);
 
   const handleReceivedMessage = useCallback(
     (message: ProcessMessage) => {
@@ -106,6 +109,10 @@ const ProcessIframeOpenModal = ({
   }, [fetchProcessMessage, handleReceivedMessage, handleMessageError]);
 
   const handleIframeLoad = useCallback(() => {
+    loadCount.current += 1;
+    if (loadCount.current > 1) {
+      setHasNavigated(true);
+    }
     setIframeLoading(false);
   }, []);
 
@@ -149,6 +156,8 @@ const ProcessIframeOpenModal = ({
       setIframeLoading(true);
       setProcessMessage(null);
     }
+    loadCount.current = 0;
+    setHasNavigated(false);
   }, [url]);
 
   useEffect(() => {
