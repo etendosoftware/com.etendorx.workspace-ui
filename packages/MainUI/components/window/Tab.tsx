@@ -286,7 +286,16 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         graph.clearSelected(tab);
       }
     }
-  }, [windowIdentifier, clearTabFormState, tab, getTabFormState, clearSelectedRecord, clearChildrenSelections, graph, setAllWindowsInactive]);
+  }, [
+    windowIdentifier,
+    clearTabFormState,
+    tab,
+    getTabFormState,
+    clearSelectedRecord,
+    clearChildrenSelections,
+    graph,
+    setAllWindowsInactive,
+  ]);
 
   const handleTreeView = useCallback(() => {
     if (windowIdentifier) {
