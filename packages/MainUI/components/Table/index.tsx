@@ -784,6 +784,8 @@ const DynamicTable = ({
   const hasScrolledToSelection = useRef<boolean>(false);
   const previousURLSelection = useRef<string | null>(null);
   const hasRestoredSelection = useRef(false);
+  const prevRestorationId = useRef<string | undefined>(undefined);
+  const wasVisibleRef = useRef(isVisible);
 
   // Use the table data hook
   const {
@@ -3187,6 +3189,44 @@ const DynamicTable = ({
       hasRestoredSelection.current = true;
     }
   }, [activeWindow, tab.window, records, getSelectedRecord, tab.id]);
+
+  /**
+   * Reset hasRestoredSelection when the target selected record ID changes.
+   * This unblocks the selection restoration effect when a new record is set
+   * (e.g., after cloning a record and navigating to the clone).
+   */
+  useEffect(() => {
+    const windowIdentifier = activeWindow?.windowIdentifier;
+    if (!windowIdentifier) return;
+    const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
+    if (urlSelectedId !== prevRestorationId.current) {
+      prevRestorationId.current = urlSelectedId;
+      hasRestoredSelection.current = false;
+    }
+  }, [activeWindow, getSelectedRecord, tab.id]);
+
+  /**
+   * When the table becomes visible again (user navigates back from form/clone view),
+   * check if the currently selected record exists in the loaded records.
+   * If not, trigger a refetch so the cloned record appears in the grid.
+   */
+  useEffect(() => {
+    const becameVisible = !wasVisibleRef.current && isVisible;
+    wasVisibleRef.current = isVisible;
+
+    if (!becameVisible) return;
+
+    const windowIdentifier = activeWindow?.windowIdentifier;
+    if (!windowIdentifier) return;
+
+    const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
+    if (!urlSelectedId) return;
+
+    const recordExists = records?.some((r: EntityData) => String(r.id) === urlSelectedId);
+    if (!recordExists) {
+      refetch();
+    }
+  }, [isVisible, activeWindow, getSelectedRecord, tab.id, records, refetch]);
 
   useEffect(() => {
     const handleGraphClear = (eventTab: typeof tab) => {
