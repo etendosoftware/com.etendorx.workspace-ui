@@ -419,6 +419,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const resetRef = useRef(reset);
   resetRef.current = reset;
 
+  const dirtyFieldsRef = useRef(formState.dirtyFields);
+  dirtyFieldsRef.current = formState.dirtyFields;
+
   /**
    * Creates a stable reference to the form reset function to prevent infinite loops.
    * The reset function from useForm can change on every render, so this wrapper
@@ -565,6 +568,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     lastInitializedContextRef.current = { recordId: currentRecordId, mode: currentMode };
 
     if (isDataRefresh) {
+      applyDataRefresh(processedData);
+      return;
+    }
+
+    // If the user has already interacted with a NEW-mode form before the FIC response arrived,
+    // use applyDataRefresh to avoid wiping dirty state with stableReset({ keepDirty: false }).
+    if (currentMode === FormMode.NEW && Object.keys(dirtyFieldsRef.current).length > 0) {
       applyDataRefresh(processedData);
       return;
     }
