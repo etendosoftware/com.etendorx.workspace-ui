@@ -538,6 +538,9 @@ const es = {
     loadSuccess: "Vista aplicada",
     error: "Error al guardar la vista",
     deleteError: "Error al eliminar la vista",
+    setAsDefault: "Establecer como predeterminada",
+    setDefaultError: "Error al establecer la vista predeterminada",
+    resetToStandard: "Restablecer vista estándar",
   },
   advancedFilters: {
     title: "Filtros avanzados",

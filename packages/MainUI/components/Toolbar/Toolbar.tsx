@@ -55,6 +55,7 @@ import { useWindowContext } from "@/contexts/window";
 import ActionModal from "@workspaceui/componentlibrary/src/components/ActionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
+import { useAutoApplyDefaultView } from "@/hooks/useAutoApplyDefaultView";
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
@@ -77,6 +78,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     setTableVisibility,
     setTableSorting,
     setTableOrder,
+    setTableImplicitFilterApplied,
   } = useWindowContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
@@ -185,6 +187,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       visibility: typeof tableColumnVisibility;
       sorting: typeof tableColumnSorting;
       order: typeof tableColumnOrder;
+      implicitFilterApplied: boolean;
     }) => {
       if (!activeWindow?.windowIdentifier || !tab?.id) return;
       const wi = activeWindow.windowIdentifier;
@@ -193,9 +196,24 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       setTableVisibility(wi, ti, state.visibility);
       setTableSorting(wi, ti, state.sorting);
       setTableOrder(wi, ti, state.order);
+      setTableImplicitFilterApplied(wi, ti, state.implicitFilterApplied);
     },
-    [activeWindow?.windowIdentifier, tab?.id, setTableFilters, setTableVisibility, setTableSorting, setTableOrder]
+    [
+      activeWindow?.windowIdentifier,
+      tab?.id,
+      setTableFilters,
+      setTableVisibility,
+      setTableSorting,
+      setTableOrder,
+      setTableImplicitFilterApplied,
+    ]
   );
+
+  useAutoApplyDefaultView({
+    tabId: tab?.id ?? "",
+    windowIdentifier,
+    onApplyView: handleApplyView,
+  });
 
   const handleProcessMenuClick = useCallback(
     async (button: ProcessButton) => {
@@ -315,9 +333,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           setShowShareLinkTooltip(false);
         }, 2000);
       }
+      if (action === "SAVE_VIEW") {
+        handleSaveViewMenuToggle(event as React.MouseEvent<HTMLButtonElement>);
+        return;
+      }
       handleAction(action, button, event);
     },
-    [handleAction]
+    [handleAction, handleSaveViewMenuToggle]
   );
 
   const toolbarConfig = useMemo(() => {
@@ -393,23 +415,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   return (
     <>
-      <div className="relative flex items-center gap-1">
-        <div className="flex-1">
-          <TopToolbar {...toolbarConfig} data-testid="TopToolbar__a2dd07" />
-        </div>
-        {!isFormView && tab?.id && (
-          <button
-            type="button"
-            className="h-8 w-8 flex items-center justify-center rounded-full bg-[var(--color-baseline-0)] border border-[var(--color-transparent-neutral-20)] hover:border-none hover:bg-[var(--color-dynamic-main)] hover:text-[var(--color-baseline-0)] transition-colors shrink-0"
-            title={t("table.tooltips.views")}
-            onClick={handleSaveViewMenuToggle}
-            data-testid="SaveViewMenu__trigger">
-            <span className="text-xs leading-none" aria-label={t("table.tooltips.views")}>
-              ≡
-            </span>
-          </button>
-        )}
-      </div>
+      <TopToolbar {...toolbarConfig} data-testid="TopToolbar__a2dd07" />
       {!isFormView && tab?.id && (
         <SaveViewMenu
           anchorEl={saveViewAnchorEl}
@@ -419,7 +425,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           currentVisibility={tableColumnVisibility}
           currentSorting={tableColumnSorting}
           currentOrder={tableColumnOrder}
+          isImplicitFilterApplied={isImplicitFilterApplied}
           onApplyView={handleApplyView}
+          data-testid="SaveViewMenu__a2dd07"
         />
       )}
       {confirmAction && (

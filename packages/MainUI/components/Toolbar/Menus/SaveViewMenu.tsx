@@ -20,6 +20,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import StarIcon from "@mui/icons-material/Star";
+import StarBorderIcon from "@mui/icons-material/StarBorder";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useSavedViews } from "@/hooks/useSavedViews";
 import type { ParsedSavedView } from "@/utils/savedViews/types";
@@ -33,11 +35,13 @@ export interface SaveViewMenuProps {
   currentVisibility: MRT_VisibilityState;
   currentSorting: MRT_SortingState;
   currentOrder: string[];
+  isImplicitFilterApplied: boolean;
   onApplyView: (state: {
     filters: MRT_ColumnFiltersState;
     visibility: MRT_VisibilityState;
     sorting: MRT_SortingState;
     order: string[];
+    implicitFilterApplied: boolean;
   }) => void;
 }
 
@@ -49,10 +53,23 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
   currentVisibility,
   currentSorting,
   currentOrder,
+  isImplicitFilterApplied,
   onApplyView,
 }) => {
   const { t } = useTranslation();
-  const { views, isLoading, isSaving, isDeleting, fetchViews, saveView, applyView, deleteView } = useSavedViews();
+  const {
+    views,
+    isLoading,
+    isSaving,
+    isDeleting,
+    isUpdatingDefault,
+    fetchViews,
+    saveView,
+    setDefaultView,
+    unsetDefaultView,
+    applyView,
+    deleteView,
+  } = useSavedViews();
 
   const [newViewName, setNewViewName] = useState("");
   const [showSaveInput, setShowSaveInput] = useState(false);
@@ -102,6 +119,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
         visibility: currentVisibility,
         sorting: currentSorting,
         order: currentOrder,
+        implicitFilterApplied: isImplicitFilterApplied,
       });
       setShowSaveInput(false);
       setNewViewName("");
@@ -115,6 +133,30 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
     setNewViewName("");
     setOperationError(null);
   }, []);
+
+  const handleSetDefault = useCallback(
+    async (viewId: string) => {
+      setOperationError(null);
+      try {
+        await setDefaultView(viewId);
+      } catch {
+        setOperationError(t("savedViews.setDefaultError"));
+      }
+    },
+    [setDefaultView, t]
+  );
+
+  const handleResetToStandard = useCallback(async () => {
+    setOperationError(null);
+    try {
+      await unsetDefaultView(tabId);
+    } catch {
+      setOperationError(t("savedViews.setDefaultError"));
+      return;
+    }
+    onApplyView({ filters: [], visibility: {}, sorting: [], order: [], implicitFilterApplied: true });
+    onClose();
+  }, [unsetDefaultView, tabId, onApplyView, onClose, t]);
 
   const handleApplyView = useCallback(
     (view: ParsedSavedView) => {
@@ -163,6 +205,18 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
   return (
     <Menu anchorEl={anchorEl} onClose={onClose} className="rounded-xl min-w-[220px]" data-testid="SaveViewMenu__menu">
       <div className="rounded-2xl px-2 py-4 flex flex-col gap-1" data-testid="SaveViewMenu__container">
+        {/* Reset to standard view */}
+        {!showSaveInput && (
+          <button
+            type="button"
+            className="w-full text-left cursor-pointer rounded-lg px-2 py-2 transition hover:bg-(--color-baseline-20) text-sm font-medium disabled:opacity-50"
+            onClick={handleResetToStandard}
+            disabled={isUpdatingDefault}
+            data-testid="SaveViewMenu__reset-button">
+            {isUpdatingDefault ? t("common.loading") : t("savedViews.resetToStandard")}
+          </button>
+        )}
+
         {/* Save current view action */}
         {!showSaveInput && (
           <button
@@ -267,10 +321,23 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
                     title={view.name}
                     data-testid="SaveViewMenu__view-apply">
                     {view.name}
-                    {view.isDefault && (
-                      <span className="ml-1 text-xs text-(--color-transparent-neutral-60)">
-                        ({t("savedViews.defaultView")})
-                      </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`text-xs shrink-0 transition-opacity disabled:opacity-40 ${
+                      view.isDefault
+                        ? "text-(--color-dynamic-main)"
+                        : "text-(--color-transparent-neutral-40) hover:text-(--color-dynamic-main) opacity-0 group-hover:opacity-100"
+                    }`}
+                    onClick={() => !view.isDefault && handleSetDefault(view.id)}
+                    disabled={isUpdatingDefault || view.isDefault}
+                    aria-label={t("savedViews.setAsDefault")}
+                    title={view.isDefault ? t("savedViews.defaultView") : t("savedViews.setAsDefault")}
+                    data-testid="SaveViewMenu__view-set-default">
+                    {view.isDefault ? (
+                      <StarIcon fontSize="small" data-testid="StarIcon__f77826" />
+                    ) : (
+                      <StarBorderIcon fontSize="small" data-testid="StarBorderIcon__f77826" />
                     )}
                   </button>
                   <button
@@ -279,7 +346,7 @@ const SaveViewMenu: React.FC<SaveViewMenuProps> = ({
                     onClick={() => handleDeleteClick(view.id)}
                     aria-label={t("savedViews.delete")}
                     data-testid="SaveViewMenu__view-delete">
-                    <DeleteOutlineIcon fontSize="small" />
+                    <DeleteOutlineIcon fontSize="small" data-testid="DeleteOutlineIcon__f77826" />
                   </button>
                 </>
               )}

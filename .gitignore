@@ -25,6 +25,14 @@ jest-html-reporters-attach/
 # Jest files
 junit.xml
 
+# AI Assistant files
+.claude/
+.claude-flow/
+.fyso/
+.gemini/
+.swarm/
+.mcp.json
+
 # Claude Code - ignore personal/runtime files, track shared config
 .claude/helpers/
 .claude/agents/

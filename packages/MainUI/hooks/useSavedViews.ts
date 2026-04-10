@@ -18,73 +18,26 @@
 import { useCallback, useState } from "react";
 import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } from "material-react-table";
 import { logger } from "@/utils/logger";
-import { buildGridConfiguration, parseGridConfiguration } from "@/utils/savedViews/transform";
-import type { ParsedSavedView } from "@/utils/savedViews/types";
+import { buildGridConfiguration, parseGridConfiguration, rawRecordToSavedView } from "@/utils/savedViews/transform";
+import type { ParsedSavedView, RawSavedViewRecord } from "@/utils/savedViews/types";
+import { useUserContext } from "@/hooks/useUserContext";
 
-/**
- * localStorage key prefix for saved views.
- * Format: `savedViews_<tabId>` → JSON array of StoredView.
- *
- * NOTE: This implementation uses localStorage for persistence.
- * When the backend entity OBUIAPP_SavedSearch is available in the Etendo
- * installation, the storage can be migrated to backend by replacing the
- * localStorage helpers below with API calls to /api/datasource/OBUIAPP_SavedSearch.
- * The data structure is intentionally identical to what OBUIAPP_SavedSearch stores.
- */
-const LS_KEY_PREFIX = "savedViews_";
+const BASE_URL = "/api/meta/saved-views";
 
-/** Shape stored in localStorage — mirrors OBUIAPP_SavedSearch columns exactly. */
-interface StoredView {
-  id: string;
-  name: string;
-  tabId: string;
-  isDefault: boolean;
-  filterClause: string;
-  gridConfiguration: string;
-}
-
-function lsKey(tabId: string): string {
-  return `${LS_KEY_PREFIX}${tabId}`;
-}
-
-function loadFromStorage(tabId: string): StoredView[] {
-  try {
-    const raw = localStorage.getItem(lsKey(tabId));
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed as StoredView[];
-  } catch {
-    return [];
+async function apiFetch(url: string, token: string, options?: RequestInit): Promise<unknown> {
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...(options?.headers ?? {}),
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
   }
-}
-
-function saveToStorage(tabId: string, views: StoredView[]): void {
-  try {
-    localStorage.setItem(lsKey(tabId), JSON.stringify(views));
-  } catch (err) {
-    logger.error("[useSavedViews] Failed to write localStorage:", err);
-  }
-}
-
-function generateId(): string {
-  try {
-    return crypto.randomUUID();
-  } catch {
-    // Fallback for environments without crypto.randomUUID
-    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  }
-}
-
-function storedToView(s: StoredView): ParsedSavedView {
-  return {
-    id: s.id,
-    name: s.name,
-    tabId: s.tabId,
-    isDefault: s.isDefault,
-    filterClause: s.filterClause,
-    config: parseGridConfiguration(s.gridConfiguration),
-  };
+  if (res.status === 204) return null;
+  return res.json();
 }
 
 export interface UseSavedViewsReturn {
@@ -92,8 +45,11 @@ export interface UseSavedViewsReturn {
   isLoading: boolean;
   isSaving: boolean;
   isDeleting: boolean;
+  isUpdatingDefault: boolean;
   error: string | null;
   fetchViews: (tabId: string) => Promise<void>;
+  setDefaultView: (viewId: string) => Promise<void>;
+  unsetDefaultView: (tabId: string) => Promise<void>;
   saveView: (params: {
     tabId: string;
     name: string;
@@ -101,6 +57,7 @@ export interface UseSavedViewsReturn {
     visibility: MRT_VisibilityState;
     sorting: MRT_SortingState;
     order: string[];
+    implicitFilterApplied: boolean;
     isDefault?: boolean;
   }) => Promise<void>;
   applyView: (view: ParsedSavedView) => {
@@ -108,41 +65,52 @@ export interface UseSavedViewsReturn {
     visibility: MRT_VisibilityState;
     sorting: MRT_SortingState;
     order: string[];
+    implicitFilterApplied: boolean;
   } | null;
   deleteView: (viewId: string) => Promise<void>;
 }
 
-/**
- * CRUD hook for saved views.
- *
- * Currently persists to localStorage using the same field structure as the
- * OBUIAPP_SavedSearch entity so migration to backend storage is straightforward
- * once that entity is available in the Etendo installation.
- */
 export function useSavedViews(): UseSavedViewsReturn {
+  const { token } = useUserContext();
   const [views, setViews] = useState<ParsedSavedView[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdatingDefault, setIsUpdatingDefault] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchViews = useCallback(async (tabId: string): Promise<void> => {
-    if (!tabId) return;
+  const fetchViews = useCallback(
+    async (tabId: string): Promise<void> => {
+      if (!tabId || !token) return;
 
-    setIsLoading(true);
-    setError(null);
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const stored = loadFromStorage(tabId);
-      setViews(stored.map(storedToView));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Error fetching saved views";
-      logger.error("[useSavedViews] fetchViews failed:", err);
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+      try {
+        const url = `${BASE_URL}?tab=${encodeURIComponent(tabId)}`;
+        const json = (await apiFetch(url, token)) as { response?: { status?: number; data?: unknown[] } };
+
+        if (json?.response?.status !== 0) {
+          throw new Error("Failed to fetch saved views");
+        }
+
+        const records = (json.response?.data ?? []) as RawSavedViewRecord[];
+        setViews(
+          records.map((r) => {
+            const sv = rawRecordToSavedView(r);
+            return { ...sv, config: parseGridConfiguration(sv.gridConfiguration) };
+          })
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Error fetching saved views";
+        logger.error("[useSavedViews] fetchViews failed:", err);
+        setError(message);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [token]
+  );
 
   const saveView = useCallback(
     async ({
@@ -152,6 +120,7 @@ export function useSavedViews(): UseSavedViewsReturn {
       visibility,
       sorting,
       order,
+      implicitFilterApplied,
       isDefault = false,
     }: {
       tabId: string;
@@ -160,31 +129,47 @@ export function useSavedViews(): UseSavedViewsReturn {
       visibility: MRT_VisibilityState;
       sorting: MRT_SortingState;
       order: string[];
+      implicitFilterApplied: boolean;
       isDefault?: boolean;
     }): Promise<void> => {
+      if (!token) throw new Error("Not authenticated");
+
       setIsSaving(true);
       setError(null);
 
       try {
-        const gridConfiguration = buildGridConfiguration(filters, visibility, sorting, order);
+        const gridConfiguration = buildGridConfiguration(filters, visibility, sorting, order, implicitFilterApplied);
 
-        const newView: StoredView = {
-          id: generateId(),
-          name,
-          tabId,
-          isDefault,
-          filterClause: "",
-          gridConfiguration,
-        };
+        // If saving as default, clear isDefault on existing default view first
+        if (isDefault) {
+          const currentDefault = views.find((v) => v.isDefault && v.tabId === tabId);
+          if (currentDefault) {
+            await apiFetch(`${BASE_URL}/${currentDefault.id}`, token, {
+              method: "PUT",
+              body: JSON.stringify({
+                name: currentDefault.name,
+                tab: tabId,
+                isdefault: false,
+                filterclause: currentDefault.filterClause,
+                gridconfiguration: currentDefault.config ? JSON.stringify(currentDefault.config) : "",
+              }),
+            });
+          }
+        }
 
-        const existing = loadFromStorage(tabId);
+        await apiFetch(BASE_URL, token, {
+          method: "POST",
+          body: JSON.stringify({
+            name,
+            tab: tabId,
+            isdefault: isDefault,
+            filterclause: "",
+            gridconfiguration: gridConfiguration,
+          }),
+        });
 
-        // If the new view is default, clear default flag on others
-        const updated = isDefault ? existing.map((v) => ({ ...v, isDefault: false })) : [...existing];
-        updated.push(newView);
-
-        saveToStorage(tabId, updated);
-        setViews(updated.map(storedToView));
+        // Refresh to get the persisted record with server-generated id
+        await fetchViews(tabId);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Error saving view";
         logger.error("[useSavedViews] saveView failed:", err);
@@ -194,7 +179,94 @@ export function useSavedViews(): UseSavedViewsReturn {
         setIsSaving(false);
       }
     },
-    []
+    [token, views, fetchViews]
+  );
+
+  const setDefaultView = useCallback(
+    async (viewId: string): Promise<void> => {
+      if (!token) throw new Error("Not authenticated");
+
+      const targetView = views.find((v) => v.id === viewId);
+      if (!targetView) throw new Error("View not found");
+
+      setIsUpdatingDefault(true);
+      setError(null);
+
+      try {
+        const tabId = targetView.tabId;
+
+        // Clear current default if different from target
+        const currentDefault = views.find((v) => v.isDefault && v.tabId === tabId && v.id !== viewId);
+        if (currentDefault) {
+          await apiFetch(`${BASE_URL}/${currentDefault.id}`, token, {
+            method: "PUT",
+            body: JSON.stringify({
+              name: currentDefault.name,
+              tab: tabId,
+              isdefault: false,
+              filterclause: currentDefault.filterClause,
+              gridconfiguration: currentDefault.config ? JSON.stringify(currentDefault.config) : "",
+            }),
+          });
+        }
+
+        await apiFetch(`${BASE_URL}/${viewId}`, token, {
+          method: "PUT",
+          body: JSON.stringify({
+            name: targetView.name,
+            tab: tabId,
+            isdefault: true,
+            filterclause: targetView.filterClause,
+            gridconfiguration: targetView.config ? JSON.stringify(targetView.config) : "",
+          }),
+        });
+
+        await fetchViews(tabId);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Error setting default view";
+        logger.error("[useSavedViews] setDefaultView failed:", err);
+        setError(message);
+        throw err;
+      } finally {
+        setIsUpdatingDefault(false);
+      }
+    },
+    [token, views, fetchViews]
+  );
+
+  const unsetDefaultView = useCallback(
+    async (tabId: string): Promise<void> => {
+      if (!token) throw new Error("Not authenticated");
+
+      const currentDefault = views.find((v) => v.isDefault && v.tabId === tabId);
+      if (!currentDefault) return;
+
+      setIsUpdatingDefault(true);
+      setError(null);
+
+      try {
+        await apiFetch(`${BASE_URL}/${currentDefault.id}`, token, {
+          method: "PUT",
+          body: JSON.stringify({
+            name: currentDefault.name,
+            tab: tabId,
+            isdefault: false,
+            filterclause: currentDefault.filterClause,
+            gridconfiguration: currentDefault.config ? JSON.stringify(currentDefault.config) : "",
+          }),
+        });
+
+        await fetchViews(tabId);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Error unsetting default view";
+        logger.error("[useSavedViews] unsetDefaultView failed:", err);
+        setError(message);
+        throw err;
+      } finally {
+        setIsUpdatingDefault(false);
+      }
+    },
+    [token, views, fetchViews]
   );
 
   const applyView = useCallback(
@@ -205,6 +277,7 @@ export function useSavedViews(): UseSavedViewsReturn {
       visibility: MRT_VisibilityState;
       sorting: MRT_SortingState;
       order: string[];
+      implicitFilterApplied: boolean;
     } | null => {
       if (!view.config) {
         logger.warn("[useSavedViews] Cannot apply view — no MRT config:", view.name);
@@ -216,6 +289,7 @@ export function useSavedViews(): UseSavedViewsReturn {
         visibility: view.config.visibility,
         sorting: view.config.sorting,
         order: view.config.order,
+        implicitFilterApplied: view.config.implicitFilterApplied,
       };
     },
     []
@@ -223,20 +297,20 @@ export function useSavedViews(): UseSavedViewsReturn {
 
   const deleteView = useCallback(
     async (viewId: string): Promise<void> => {
+      if (!token) throw new Error("Not authenticated");
+
       setIsDeleting(true);
       setError(null);
 
       const viewToDelete = views.find((v) => v.id === viewId);
 
       try {
-        if (!viewToDelete?.tabId) {
-          throw new Error("Cannot delete view: tabId unknown");
+        if (!viewToDelete) {
+          throw new Error("Cannot delete view: view not found");
         }
 
-        const existing = loadFromStorage(viewToDelete.tabId);
-        const updated = existing.filter((v) => v.id !== viewId);
-        saveToStorage(viewToDelete.tabId, updated);
-        setViews(updated.map(storedToView));
+        await apiFetch(`${BASE_URL}/${viewId}`, token, { method: "DELETE" });
+        setViews((prev) => prev.filter((v) => v.id !== viewId));
       } catch (err) {
         const message = err instanceof Error ? err.message : "Error deleting view";
         logger.error("[useSavedViews] deleteView failed:", err);
@@ -246,7 +320,7 @@ export function useSavedViews(): UseSavedViewsReturn {
         setIsDeleting(false);
       }
     },
-    [views]
+    [token, views]
   );
 
   return {
@@ -254,8 +328,11 @@ export function useSavedViews(): UseSavedViewsReturn {
     isLoading,
     isSaving,
     isDeleting,
+    isUpdatingDefault,
     error,
     fetchViews,
+    setDefaultView,
+    unsetDefaultView,
     saveView,
     applyView,
     deleteView,
