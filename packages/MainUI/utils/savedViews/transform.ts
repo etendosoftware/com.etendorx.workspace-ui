@@ -56,7 +56,8 @@ export function buildGridConfiguration(
   filters: MRT_ColumnFiltersState,
   visibility: MRT_VisibilityState,
   sorting: MRT_SortingState,
-  order: string[]
+  order: string[],
+  implicitFilterApplied: boolean
 ): string {
   const config: MRTViewConfig = {
     version: 1,
@@ -65,6 +66,7 @@ export function buildGridConfiguration(
     visibility,
     sorting,
     order,
+    implicitFilterApplied,
   };
   return JSON.stringify(config);
 }
@@ -98,9 +100,9 @@ export function rawRecordToSavedView(record: RawSavedViewRecord): SavedView {
   return {
     id: record.id,
     name: String(record.name ?? ""),
-    tabId: String(record.obuiappTab ?? ""),
-    isDefault: Boolean(record.obuiappIsdefault ?? false),
-    filterClause: String(record.obuiappFilterclause ?? ""),
-    gridConfiguration: String(record.obuiappGridconfiguration ?? ""),
+    tabId: String(record.tab ?? ""),
+    isDefault: Boolean(record.isdefault ?? false),
+    filterClause: String(record.filterclause ?? ""),
+    gridConfiguration: String(record.gridconfiguration ?? ""),
   };
 }

@@ -58,6 +58,8 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: "toolbar-button-print-record",
   [TOOLBAR_BUTTONS_ACTIONS.ADVANCED_FILTERS]: "toolbar-button-advanced-filters",
   [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: "toolbar-button-send-mail",
+  [TOOLBAR_BUTTONS_ACTIONS.SAVE_VIEW]:
+    "toolbar-button-save-view h-8 w-8 flex items-center justify-center rounded-full bg-[var(--color-baseline-0)] border border-[var(--color-transparent-neutral-20)] hover:border-none hover:bg-[var(--color-dynamic-main)] hover:text-[var(--color-baseline-0)] transition-colors shrink-0",
 } as const;
 
 export const DefaultIcon = () => (
@@ -113,6 +115,7 @@ const isVisibleButton = (
   const isPrintButtonInTransactionWindow =
     button.action === TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD && !tab?.process$_identifier?.includes("Print");
   const isCopilotButtonHidden = button.action === TOOLBAR_BUTTONS_ACTIONS.COPILOT && !isCopilotInstalled;
+  const isSaveViewButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE_VIEW;
 
   return (
     !isFindButtonInFormView &&
@@ -120,7 +123,8 @@ const isVisibleButton = (
     !isFilterButtonInFormView &&
     !isToggleTreeView &&
     !isPrintButtonInTransactionWindow &&
-    !isCopilotButtonHidden
+    !isCopilotButtonHidden &&
+    !isSaveViewButtonInFormView
   );
 };
 

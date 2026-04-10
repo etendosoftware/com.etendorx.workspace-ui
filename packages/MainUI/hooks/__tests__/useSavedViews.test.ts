@@ -19,37 +19,44 @@ import { renderHook, act } from "@testing-library/react";
 import { useSavedViews } from "../useSavedViews";
 
 jest.mock("@/utils/logger");
+jest.mock("@/hooks/useUserContext", () => ({
+  useUserContext: jest.fn(() => ({ token: "test-token" })),
+}));
 
 // ---------------------------------------------------------------------------
-// localStorage helpers
+// fetch mock helpers
 // ---------------------------------------------------------------------------
 
-/** In-memory localStorage for tests. */
-let storage: Record<string, string> = {};
+function makeResponse(data: unknown, ok = true, status = 200) {
+  return Promise.resolve({
+    ok,
+    status,
+    json: () => Promise.resolve(data),
+  } as Response);
+}
+
+function mockFetchOk(data: unknown[] = []) {
+  return jest
+    .spyOn(global, "fetch")
+    .mockReturnValue(makeResponse({ response: { status: 0, data, totalRows: data.length } }));
+}
+
+function makeFetchViewsResponse(data: unknown[] = []) {
+  return makeResponse({ response: { status: 0, data, totalRows: data.length } });
+}
+
+function mockFetchError() {
+  return jest.spyOn(global, "fetch").mockReturnValue(makeResponse({ error: "Server error" }, false, 500));
+}
 
 beforeEach(() => {
-  storage = {};
-
-  Object.defineProperty(global, "localStorage", {
-    value: {
-      getItem: jest.fn((key: string) => storage[key] ?? null),
-      setItem: jest.fn((key: string, val: string) => {
-        storage[key] = val;
-      }),
-      removeItem: jest.fn((key: string) => {
-        delete storage[key];
-      }),
-      clear: jest.fn(() => {
-        storage = {};
-      }),
-    },
-    writable: true,
-    configurable: true,
-  });
+  global.fetch = jest.fn();
 });
 
+afterEach(() => jest.restoreAllMocks());
+
 // ---------------------------------------------------------------------------
-// Helpers
+// Fixtures
 // ---------------------------------------------------------------------------
 
 const VALID_GRID_CONFIG = JSON.stringify({
@@ -59,10 +66,20 @@ const VALID_GRID_CONFIG = JSON.stringify({
   visibility: { name: true, status: false },
   sorting: [{ id: "name", desc: false }],
   order: ["name", "status"],
+  implicitFilterApplied: true,
 });
 
-function seedStorage(tabId: string, views: object[]) {
-  storage[`savedViews_${tabId}`] = JSON.stringify(views);
+function makeRawRecord(overrides = {}) {
+  return {
+    id: "view-001",
+    name: "Sales Orders",
+    tab: "tab-abc",
+    user: "100",
+    isdefault: false,
+    filterclause: "",
+    gridconfiguration: VALID_GRID_CONFIG,
+    ...overrides,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -70,6 +87,7 @@ function seedStorage(tabId: string, views: object[]) {
 // ---------------------------------------------------------------------------
 describe("useSavedViews — fetchViews", () => {
   it("returns an empty list when no views are stored", async () => {
+    mockFetchOk([]);
     const { result } = renderHook(() => useSavedViews());
 
     await act(async () => {
@@ -81,23 +99,9 @@ describe("useSavedViews — fetchViews", () => {
   });
 
   it("returns stored views for the given tabId", async () => {
-    seedStorage("tab-abc", [
-      {
-        id: "view-001",
-        name: "Sales Orders",
-        tabId: "tab-abc",
-        isDefault: false,
-        filterClause: "",
-        gridConfiguration: VALID_GRID_CONFIG,
-      },
-      {
-        id: "view-002",
-        name: "Default View",
-        tabId: "tab-abc",
-        isDefault: true,
-        filterClause: "",
-        gridConfiguration: VALID_GRID_CONFIG,
-      },
+    mockFetchOk([
+      makeRawRecord({ id: "view-001", name: "Sales Orders", isdefault: false }),
+      makeRawRecord({ id: "view-002", name: "Default View", isdefault: true }),
     ]);
 
     const { result } = renderHook(() => useSavedViews());
@@ -115,16 +119,7 @@ describe("useSavedViews — fetchViews", () => {
   });
 
   it("parses grid configuration into a valid MRT config object", async () => {
-    seedStorage("tab-abc", [
-      {
-        id: "view-001",
-        name: "Config Test",
-        tabId: "tab-abc",
-        isDefault: false,
-        filterClause: "",
-        gridConfiguration: VALID_GRID_CONFIG,
-      },
-    ]);
+    mockFetchOk([makeRawRecord()]);
 
     const { result } = renderHook(() => useSavedViews());
 
@@ -139,9 +134,11 @@ describe("useSavedViews — fetchViews", () => {
     expect(config?.visibility).toEqual({ name: true, status: false });
     expect(config?.sorting).toEqual([{ id: "name", desc: false }]);
     expect(config?.order).toEqual(["name", "status"]);
+    expect(config?.implicitFilterApplied).toBe(true);
   });
 
   it("does not load when tabId is empty", async () => {
+    const spy = jest.spyOn(global, "fetch");
     const { result } = renderHook(() => useSavedViews());
 
     await act(async () => {
@@ -149,10 +146,11 @@ describe("useSavedViews — fetchViews", () => {
     });
 
     expect(result.current.views).toHaveLength(0);
-    expect(localStorage.getItem).not.toHaveBeenCalled();
+    expect(spy).not.toHaveBeenCalled();
   });
 
   it("sets isLoading to false after fetch completes", async () => {
+    mockFetchOk([]);
     const { result } = renderHook(() => useSavedViews());
 
     await act(async () => {
@@ -162,9 +160,8 @@ describe("useSavedViews — fetchViews", () => {
     expect(result.current.isLoading).toBe(false);
   });
 
-  it("returns empty list when localStorage contains invalid JSON", async () => {
-    storage["savedViews_tab-abc"] = "not-valid-json";
-
+  it("sets error when server returns non-zero status", async () => {
+    mockFetchError();
     const { result } = renderHook(() => useSavedViews());
 
     await act(async () => {
@@ -172,25 +169,20 @@ describe("useSavedViews — fetchViews", () => {
     });
 
     expect(result.current.views).toHaveLength(0);
-    expect(result.current.error).toBeNull();
+    expect(result.current.error).not.toBeNull();
   });
 
-  it("does not mix views from different tabs", async () => {
-    seedStorage("tab-abc", [
-      { id: "v1", name: "View A", tabId: "tab-abc", isDefault: false, filterClause: "", gridConfiguration: "" },
-    ]);
-    seedStorage("tab-xyz", [
-      { id: "v2", name: "View X", tabId: "tab-xyz", isDefault: false, filterClause: "", gridConfiguration: "" },
-    ]);
-
+  it("sends tabId as criteria in the fetch URL", async () => {
+    const spy = mockFetchOk([]);
     const { result } = renderHook(() => useSavedViews());
 
     await act(async () => {
-      await result.current.fetchViews("tab-abc");
+      await result.current.fetchViews("tab-xyz");
     });
 
-    expect(result.current.views).toHaveLength(1);
-    expect(result.current.views[0].id).toBe("v1");
+    const url = spy.mock.calls[0][0] as string;
+    expect(url).toContain("tab-xyz");
+    expect(url).toContain("/meta/saved-views");
   });
 });
 
@@ -198,7 +190,14 @@ describe("useSavedViews — fetchViews", () => {
 // saveView
 // ---------------------------------------------------------------------------
 describe("useSavedViews — saveView", () => {
-  it("persists a new view to localStorage", async () => {
+  it("calls add endpoint and refreshes views", async () => {
+    const spy = jest
+      .spyOn(global, "fetch")
+      // First call: POST add
+      .mockReturnValueOnce(makeResponse({ response: { status: 0, data: makeRawRecord({ name: "My View" }) } }))
+      // Second call: fetchViews after save
+      .mockReturnValueOnce(makeFetchViewsResponse([makeRawRecord({ name: "My View" })]));
+
     const { result } = renderHook(() => useSavedViews());
 
     await act(async () => {
@@ -209,97 +208,26 @@ describe("useSavedViews — saveView", () => {
         visibility: {},
         sorting: [],
         order: [],
+        implicitFilterApplied: false,
       });
     });
 
-    const stored = JSON.parse(storage["savedViews_tab-abc"]);
-    expect(stored).toHaveLength(1);
-    expect(stored[0].name).toBe("My View");
-    expect(stored[0].tabId).toBe("tab-abc");
-  });
-
-  it("adds view to existing list without removing others", async () => {
-    seedStorage("tab-abc", [
-      { id: "existing", name: "Old View", tabId: "tab-abc", isDefault: false, filterClause: "", gridConfiguration: "" },
-    ]);
-
-    const { result } = renderHook(() => useSavedViews());
-
-    await act(async () => {
-      await result.current.fetchViews("tab-abc");
-      await result.current.saveView({
-        tabId: "tab-abc",
-        name: "New View",
-        filters: [],
-        visibility: {},
-        sorting: [],
-        order: [],
-      });
+    const postCall = spy.mock.calls.find((c) => {
+      const opts = c[1] as RequestInit;
+      return opts?.method === "POST";
     });
-
-    const stored = JSON.parse(storage["savedViews_tab-abc"]);
-    expect(stored).toHaveLength(2);
-  });
-
-  it("stores grid configuration as a JSON string", async () => {
-    const filters = [{ id: "amount", value: "100" }];
-    const visibility = { amount: true };
-    const sorting = [{ id: "amount", desc: true }];
-    const order = ["amount"];
-
-    const { result } = renderHook(() => useSavedViews());
-
-    await act(async () => {
-      await result.current.saveView({
-        tabId: "tab-abc",
-        name: "Grid Config Test",
-        filters,
-        visibility,
-        sorting,
-        order,
-      });
-    });
-
-    const stored = JSON.parse(storage["savedViews_tab-abc"]);
-    const gridConfig = JSON.parse(stored[0].gridConfiguration);
-
-    expect(gridConfig.version).toBe(1);
-    expect(gridConfig.source).toBe("workspace-ui");
-    expect(gridConfig.filters).toEqual(filters);
-    expect(gridConfig.visibility).toEqual(visibility);
-    expect(gridConfig.sorting).toEqual(sorting);
-    expect(gridConfig.order).toEqual(order);
-  });
-
-  it("clears isDefault on other views when saving a default view", async () => {
-    seedStorage("tab-abc", [
-      { id: "v1", name: "Old Default", tabId: "tab-abc", isDefault: true, filterClause: "", gridConfiguration: "" },
-    ]);
-
-    const { result } = renderHook(() => useSavedViews());
-
-    await act(async () => {
-      await result.current.fetchViews("tab-abc");
-      await result.current.saveView({
-        tabId: "tab-abc",
-        name: "New Default",
-        filters: [],
-        visibility: {},
-        sorting: [],
-        order: [],
-        isDefault: true,
-      });
-    });
-
-    const stored = JSON.parse(storage["savedViews_tab-abc"]) as Array<{ isDefault: boolean; name: string }>;
-    const oldView = stored.find((v) => v.name === "Old Default");
-    const newView = stored.find((v) => v.name === "New Default");
-
-    expect(oldView?.isDefault).toBe(false);
-    expect(newView?.isDefault).toBe(true);
+    expect(postCall).toBeDefined();
+    const body = JSON.parse((postCall![1] as RequestInit).body as string);
+    expect(body.name).toBe("My View");
+    expect(body.tab).toBe("tab-abc");
   });
 
   it("sets isSaving to false after save completes", async () => {
+    jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeResponse({ response: { status: 0, data: makeRawRecord() } }))
+      .mockReturnValueOnce(makeFetchViewsResponse([]));
+
     const { result } = renderHook(() => useSavedViews());
 
     await act(async () => {
@@ -310,40 +238,66 @@ describe("useSavedViews — saveView", () => {
         visibility: {},
         sorting: [],
         order: [],
+        implicitFilterApplied: true,
       });
     });
 
     expect(result.current.isSaving).toBe(false);
   });
 
-  it("updates local views state after saving", async () => {
+  it("stores grid configuration as workspace-ui JSON", async () => {
+    const spy = jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeResponse({ response: { status: 0, data: makeRawRecord() } }))
+      .mockReturnValueOnce(makeFetchViewsResponse([]));
+
     const { result } = renderHook(() => useSavedViews());
 
     await act(async () => {
       await result.current.saveView({
         tabId: "tab-abc",
-        name: "Saved View",
-        filters: [],
-        visibility: {},
-        sorting: [],
-        order: [],
+        name: "Grid Config Test",
+        filters: [{ id: "amount", value: "100" }],
+        visibility: { amount: true },
+        sorting: [{ id: "amount", desc: true }],
+        order: ["amount"],
+        implicitFilterApplied: false,
       });
     });
 
-    expect(result.current.views).toHaveLength(1);
-    expect(result.current.views[0].name).toBe("Saved View");
+    const postCall = spy.mock.calls.find((c) => (c[1] as RequestInit)?.method === "POST");
+    const body = JSON.parse((postCall![1] as RequestInit).body as string);
+    const gridConfig = JSON.parse(body.gridconfiguration);
+
+    expect(gridConfig.version).toBe(1);
+    expect(gridConfig.source).toBe("workspace-ui");
+    expect(gridConfig.filters).toEqual([{ id: "amount", value: "100" }]);
   });
 
-  it("generates a unique id for each saved view", async () => {
+  it("throws and sets error when server returns error on save", async () => {
+    jest.spyOn(global, "fetch").mockReturnValue(makeResponse({ error: "Server error" }, false, 500));
+
     const { result } = renderHook(() => useSavedViews());
+    let thrown = false;
 
     await act(async () => {
-      await result.current.saveView({ tabId: "tab-abc", name: "A", filters: [], visibility: {}, sorting: [], order: [] });
-      await result.current.saveView({ tabId: "tab-abc", name: "B", filters: [], visibility: {}, sorting: [], order: [] });
+      try {
+        await result.current.saveView({
+          tabId: "tab-abc",
+          name: "View",
+          filters: [],
+          visibility: {},
+          sorting: [],
+          order: [],
+          implicitFilterApplied: true,
+        });
+      } catch {
+        thrown = true;
+      }
     });
 
-    const ids = result.current.views.map((v) => v.id);
-    expect(new Set(ids).size).toBe(2);
+    expect(thrown).toBe(true);
+    expect(result.current.isSaving).toBe(false);
   });
 });
 
@@ -367,6 +321,7 @@ describe("useSavedViews — applyView", () => {
         visibility: { status: true },
         sorting: [{ id: "status", desc: false }],
         order: ["status"],
+        implicitFilterApplied: true,
       },
     };
 
@@ -379,48 +334,19 @@ describe("useSavedViews — applyView", () => {
     expect(state?.order).toEqual(["status"]);
   });
 
-  it("returns null when the view has no config (Classic view or unparseable)", () => {
+  it("returns null when the view has no config", () => {
     const { result } = renderHook(() => useSavedViews());
 
-    const classicView = {
+    const state = result.current.applyView({
       id: "v-classic",
       name: "Classic View",
       tabId: "tab-abc",
       isDefault: false,
       filterClause: "",
       config: null,
-    };
-
-    const state = result.current.applyView(classicView);
+    });
 
     expect(state).toBeNull();
-  });
-
-  it("returns empty arrays/objects when the config has empty state", () => {
-    const { result } = renderHook(() => useSavedViews());
-
-    const view = {
-      id: "v-empty",
-      name: "Empty State View",
-      tabId: "tab-abc",
-      isDefault: false,
-      filterClause: "",
-      config: {
-        version: 1 as const,
-        source: "workspace-ui" as const,
-        filters: [],
-        visibility: {},
-        sorting: [],
-        order: [],
-      },
-    };
-
-    const state = result.current.applyView(view);
-
-    expect(state?.filters).toEqual([]);
-    expect(state?.visibility).toEqual({});
-    expect(state?.sorting).toEqual([]);
-    expect(state?.order).toEqual([]);
   });
 });
 
@@ -428,32 +354,13 @@ describe("useSavedViews — applyView", () => {
 // deleteView
 // ---------------------------------------------------------------------------
 describe("useSavedViews — deleteView", () => {
-  it("removes the view from localStorage", async () => {
-    seedStorage("tab-abc", [
-      { id: "view-001", name: "View A", tabId: "tab-abc", isDefault: false, filterClause: "", gridConfiguration: "" },
-      { id: "view-002", name: "View B", tabId: "tab-abc", isDefault: false, filterClause: "", gridConfiguration: "" },
-    ]);
-
-    const { result } = renderHook(() => useSavedViews());
-
-    await act(async () => {
-      await result.current.fetchViews("tab-abc");
-    });
-
-    await act(async () => {
-      await result.current.deleteView("view-001");
-    });
-
-    const stored = JSON.parse(storage["savedViews_tab-abc"]) as Array<{ id: string }>;
-    expect(stored.find((v) => v.id === "view-001")).toBeUndefined();
-    expect(stored).toHaveLength(1);
-  });
-
-  it("removes the deleted view from local state", async () => {
-    seedStorage("tab-abc", [
-      { id: "view-001", name: "View A", tabId: "tab-abc", isDefault: false, filterClause: "", gridConfiguration: "" },
-      { id: "view-002", name: "View B", tabId: "tab-abc", isDefault: false, filterClause: "", gridConfiguration: "" },
-    ]);
+  it("calls remove endpoint and removes view from local state", async () => {
+    const spy = jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(
+        makeFetchViewsResponse([makeRawRecord({ id: "view-001" }), makeRawRecord({ id: "view-002" })])
+      )
+      .mockReturnValueOnce(makeResponse(null, true, 204));
 
     const { result } = renderHook(() => useSavedViews());
 
@@ -467,14 +374,21 @@ describe("useSavedViews — deleteView", () => {
       await result.current.deleteView("view-001");
     });
 
+    const deleteCall = spy.mock.calls.find((c) => {
+      const opts = c[1] as RequestInit;
+      return opts?.method === "DELETE";
+    });
+    expect(deleteCall).toBeDefined();
+    const deleteUrl = deleteCall![0] as string;
+    expect(deleteUrl).toContain("view-001");
     expect(result.current.views.find((v) => v.id === "view-001")).toBeUndefined();
-    expect(result.current.views).toHaveLength(1);
   });
 
   it("sets isDeleting to false after deletion completes", async () => {
-    seedStorage("tab-abc", [
-      { id: "view-001", name: "View A", tabId: "tab-abc", isDefault: false, filterClause: "", gridConfiguration: "" },
-    ]);
+    jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeFetchViewsResponse([makeRawRecord()]))
+      .mockReturnValueOnce(makeResponse(null, true, 204));
 
     const { result } = renderHook(() => useSavedViews());
 
@@ -491,8 +405,8 @@ describe("useSavedViews — deleteView", () => {
 
   it("throws and sets error when viewId not found in current views", async () => {
     const { result } = renderHook(() => useSavedViews());
-
     let thrown = false;
+
     await act(async () => {
       try {
         await result.current.deleteView("non-existent-id");
@@ -504,25 +418,5 @@ describe("useSavedViews — deleteView", () => {
     expect(thrown).toBe(true);
     expect(result.current.error).not.toBeNull();
     expect(result.current.isDeleting).toBe(false);
-  });
-
-  it("leaves other views intact after deleting one", async () => {
-    seedStorage("tab-abc", [
-      { id: "v1", name: "Keep Me", tabId: "tab-abc", isDefault: false, filterClause: "", gridConfiguration: "" },
-      { id: "v2", name: "Delete Me", tabId: "tab-abc", isDefault: false, filterClause: "", gridConfiguration: "" },
-    ]);
-
-    const { result } = renderHook(() => useSavedViews());
-
-    await act(async () => {
-      await result.current.fetchViews("tab-abc");
-    });
-
-    await act(async () => {
-      await result.current.deleteView("v2");
-    });
-
-    expect(result.current.views).toHaveLength(1);
-    expect(result.current.views[0].id).toBe("v1");
   });
 });

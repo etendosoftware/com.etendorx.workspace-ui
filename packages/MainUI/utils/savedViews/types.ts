@@ -28,6 +28,7 @@ export interface MRTViewConfig {
   visibility: MRT_VisibilityState;
   sorting: MRT_SortingState;
   order: string[];
+  implicitFilterApplied: boolean;
 }
 
 /**
@@ -88,15 +89,16 @@ export interface SavedViewPayload {
 }
 
 /**
- * Raw response record from the datasource fetch for OBUIAPP_SavedSearch.
+ * Raw response record from the datasource fetch for ETMETA_SavedView.
  */
 export interface RawSavedViewRecord {
   id: string;
-  obuiappTab?: string;
-  obuiappTab$_identifier?: string;
+  tab?: string;
+  tab$_identifier?: string;
+  user?: string;
   name?: string;
-  obuiappIsdefault?: boolean;
-  obuiappFilterclause?: string;
-  obuiappGridconfiguration?: string;
+  isdefault?: boolean;
+  filterclause?: string;
+  gridconfiguration?: string;
   [key: string]: unknown;
 }

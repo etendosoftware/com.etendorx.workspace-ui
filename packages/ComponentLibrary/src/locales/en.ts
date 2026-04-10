@@ -543,6 +543,9 @@ const en = {
     loadSuccess: "View applied",
     error: "Error saving view",
     deleteError: "Error deleting view",
+    setAsDefault: "Set as default",
+    setDefaultError: "Error setting default view",
+    resetToStandard: "Reset to standard view",
   },
   advancedFilters: {
     title: "Advanced Filters",

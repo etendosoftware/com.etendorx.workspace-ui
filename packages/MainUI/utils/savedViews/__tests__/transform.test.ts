@@ -136,7 +136,14 @@ describe("parseGridConfiguration", () => {
   });
 
   it("returns null when source is not workspace-ui", () => {
-    const raw = JSON.stringify({ version: 1, source: "other-system", filters: [], visibility: {}, sorting: [], order: [] });
+    const raw = JSON.stringify({
+      version: 1,
+      source: "other-system",
+      filters: [],
+      visibility: {},
+      sorting: [],
+      order: [],
+    });
     expect(parseGridConfiguration(raw)).toBeNull();
   });
 
@@ -281,11 +288,11 @@ describe("rawRecordToSavedView", () => {
   it("maps all raw fields to a normalized SavedView", () => {
     const raw: RawSavedViewRecord = {
       id: "view-1",
-      obuiappTab: "tab-abc",
+      tab: "tab-abc",
       name: "My View",
-      obuiappIsdefault: true,
-      obuiappFilterclause: "status='A'",
-      obuiappGridconfiguration: '{"version":1,"source":"workspace-ui","filters":[],"visibility":{},"sorting":[],"order":[]}',
+      isdefault: true,
+      filterclause: "status='A'",
+      gridconfiguration: '{"version":1,"source":"workspace-ui","filters":[],"visibility":{},"sorting":[],"order":[]}',
     };
 
     const result = rawRecordToSavedView(raw);
