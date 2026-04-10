@@ -284,8 +284,6 @@ describe("useAutoApplyDefaultView", () => {
       );
     });
 
-    expect(onApplyView).toHaveBeenCalledWith(
-      expect.objectContaining({ implicitFilterApplied: false })
-    );
+    expect(onApplyView).toHaveBeenCalledWith(expect.objectContaining({ implicitFilterApplied: false }));
   });
 });
