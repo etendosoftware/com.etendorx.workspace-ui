@@ -71,10 +71,11 @@ interface RenderOptions {
   windowIdentifier?: string;
 }
 
-async function renderAndWait(onApplyView: jest.Mock, { tabId = "tab-abc", windowIdentifier = "win-1" }: RenderOptions = {}) {
-  const hookResult = renderHook(() =>
-    useAutoApplyDefaultView({ tabId, windowIdentifier, onApplyView })
-  );
+async function renderAndWait(
+  onApplyView: jest.Mock,
+  { tabId = "tab-abc", windowIdentifier = "win-1" }: RenderOptions = {}
+) {
+  const hookResult = renderHook(() => useAutoApplyDefaultView({ tabId, windowIdentifier, onApplyView }));
   await act(async () => {});
   return hookResult;
 }
