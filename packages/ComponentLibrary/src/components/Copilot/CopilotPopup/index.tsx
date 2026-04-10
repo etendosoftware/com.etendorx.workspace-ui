@@ -47,9 +47,19 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
   onFileSelect,
   onRemoveFile,
   conversations = [],
+  archivedConversations = [],
   onSelectConversation,
   onLoadConversations,
   conversationsLoading = false,
+  onRenameConversation,
+  onDeleteConversation,
+  onRestoreConversation,
+  onPermanentDeleteConversation,
+  onToggleArchive,
+  archiveExpanded = false,
+  archivedLoading = false,
+  searchQuery = "",
+  onSearchQueryChange,
   translations,
 }) => {
   if (!open) return null;
@@ -153,9 +163,19 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
             onFileSelect={onFileSelect}
             onRemoveFile={onRemoveFile}
             conversations={conversations}
+            archivedConversations={archivedConversations}
             onSelectConversation={onSelectConversation}
             onLoadConversations={onLoadConversations}
             conversationsLoading={conversationsLoading}
+            onRenameConversation={onRenameConversation}
+            onDeleteConversation={onDeleteConversation}
+            onRestoreConversation={onRestoreConversation}
+            onPermanentDeleteConversation={onPermanentDeleteConversation}
+            onToggleArchive={onToggleArchive}
+            archiveExpanded={archiveExpanded}
+            archivedLoading={archivedLoading}
+            searchQuery={searchQuery}
+            onSearchQueryChange={onSearchQueryChange}
             translations={{
               selectedRegisters: translations.selectedRegisters,
               assistantSelector: translations.assistantSelector,

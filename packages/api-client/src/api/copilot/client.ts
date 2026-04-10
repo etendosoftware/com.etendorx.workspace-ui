@@ -18,6 +18,7 @@
 import { Client, type Interceptor, type ClientOptions } from "../client";
 import { COPILOT_ENDPOINTS, COPILOT_METHODS, isProduction } from "./constants";
 import type {
+  ConversationMutationResponse,
   IAssistant,
   ILabels,
   CopilotQuestionParams,
@@ -506,6 +507,111 @@ export class CopilotClient {
     } catch (error) {
       console.error("Error generating title:", error);
       return "Untitled Conversation";
+    }
+  }
+
+  public static async getArchivedConversations(appId: string): Promise<IConversationSummary[]> {
+    try {
+      const endpoint = `${COPILOT_ENDPOINTS.GET_ARCHIVED_CONVERSATIONS}?app_id=${encodeURIComponent(appId)}`;
+      const { data, ok } = await CopilotClient.request(endpoint, {
+        method: COPILOT_METHODS.GET,
+      });
+
+      if (!ok) {
+        throw new Error("Failed to fetch archived conversations");
+      }
+
+      return CopilotClient.parseArrayResponse<IConversationSummary>(data, "archived conversations");
+    } catch (error) {
+      console.error("Error fetching archived conversations:", error);
+      throw error;
+    }
+  }
+
+  public static async renameConversation(
+    conversationId: string,
+    title: string
+  ): Promise<ConversationMutationResponse> {
+    try {
+      const { data, ok } = await CopilotClient.request(COPILOT_ENDPOINTS.RENAME_CONVERSATION, {
+        method: COPILOT_METHODS.POST,
+        body: JSON.stringify({ conversation_id: conversationId, title }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!ok) {
+        throw new Error("Failed to rename conversation");
+      }
+
+      return typeof data === "string" ? JSON.parse(data) : (data as ConversationMutationResponse);
+    } catch (error) {
+      console.error("Error renaming conversation:", error);
+      throw error;
+    }
+  }
+
+  public static async deleteConversation(conversationId: string): Promise<ConversationMutationResponse> {
+    try {
+      const { data, ok } = await CopilotClient.request(COPILOT_ENDPOINTS.DELETE_CONVERSATION, {
+        method: COPILOT_METHODS.POST,
+        body: JSON.stringify({ conversation_id: conversationId }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!ok) {
+        throw new Error("Failed to delete conversation");
+      }
+
+      return typeof data === "string" ? JSON.parse(data) : (data as ConversationMutationResponse);
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      throw error;
+    }
+  }
+
+  public static async restoreConversation(conversationId: string): Promise<ConversationMutationResponse> {
+    try {
+      const { data, ok } = await CopilotClient.request(COPILOT_ENDPOINTS.RESTORE_CONVERSATION, {
+        method: COPILOT_METHODS.POST,
+        body: JSON.stringify({ conversation_id: conversationId }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!ok) {
+        throw new Error("Failed to restore conversation");
+      }
+
+      return typeof data === "string" ? JSON.parse(data) : (data as ConversationMutationResponse);
+    } catch (error) {
+      console.error("Error restoring conversation:", error);
+      throw error;
+    }
+  }
+
+  public static async permanentDeleteConversation(conversationId: string): Promise<ConversationMutationResponse> {
+    try {
+      const { data, ok } = await CopilotClient.request(COPILOT_ENDPOINTS.PERMANENT_DELETE_CONVERSATION, {
+        method: COPILOT_METHODS.POST,
+        body: JSON.stringify({ conversation_id: conversationId }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!ok) {
+        throw new Error("Failed to permanently delete conversation");
+      }
+
+      return typeof data === "string" ? JSON.parse(data) : (data as ConversationMutationResponse);
+    } catch (error) {
+      console.error("Error permanently deleting conversation:", error);
+      throw error;
     }
   }
 }
