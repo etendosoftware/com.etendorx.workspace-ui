@@ -34,7 +34,7 @@ describe("buildGridConfiguration", () => {
     const sorting = [{ id: "name", desc: false }];
     const order = ["name", "status", "date"];
 
-    const result = buildGridConfiguration(filters, visibility, sorting, order);
+    const result = buildGridConfiguration(filters, visibility, sorting, order, false);
     const parsed = JSON.parse(result) as MRTViewConfig;
 
     expect(parsed.version).toBe(1);
@@ -46,12 +46,12 @@ describe("buildGridConfiguration", () => {
   });
 
   it("produces a valid JSON string", () => {
-    const result = buildGridConfiguration([], {}, [], []);
+    const result = buildGridConfiguration([], {}, [], [], false);
     expect(() => JSON.parse(result)).not.toThrow();
   });
 
   it("handles empty state — all fields present and empty", () => {
-    const result = buildGridConfiguration([], {}, [], []);
+    const result = buildGridConfiguration([], {}, [], [], false);
     const parsed = JSON.parse(result) as MRTViewConfig;
 
     expect(parsed.version).toBe(1);
@@ -67,7 +67,7 @@ describe("buildGridConfiguration", () => {
       { id: "status", value: "active" },
       { id: "amount", value: "100" },
     ];
-    const result = buildGridConfiguration(filters, {}, [], []);
+    const result = buildGridConfiguration(filters, {}, [], [], false);
     const parsed = JSON.parse(result) as MRTViewConfig;
 
     expect(parsed.filters).toHaveLength(2);
@@ -77,10 +77,29 @@ describe("buildGridConfiguration", () => {
 
   it("serializes descending sort correctly", () => {
     const sorting = [{ id: "date", desc: true }];
-    const result = buildGridConfiguration([], {}, sorting, []);
+    const result = buildGridConfiguration([], {}, sorting, [], false);
     const parsed = JSON.parse(result) as MRTViewConfig;
 
     expect(parsed.sorting[0].desc).toBe(true);
+  });
+
+  it("serializes implicitFilterApplied:true correctly", () => {
+    const result = buildGridConfiguration([], {}, [], [], true);
+    const parsed = JSON.parse(result) as MRTViewConfig;
+    expect(parsed.implicitFilterApplied).toBe(true);
+  });
+
+  it("serializes implicitFilterApplied:false correctly", () => {
+    const result = buildGridConfiguration([], {}, [], [], false);
+    const parsed = JSON.parse(result) as MRTViewConfig;
+    expect(parsed.implicitFilterApplied).toBe(false);
+  });
+
+  it("round-trips implicitFilterApplied through parse/build cycle", () => {
+    const built = buildGridConfiguration([{ id: "status", value: "A" }], { status: true }, [], ["status"], true);
+    const parsed = JSON.parse(built) as MRTViewConfig;
+    expect(parsed.implicitFilterApplied).toBe(true);
+    expect(parsed.filters).toEqual([{ id: "status", value: "A" }]);
   });
 });
 
@@ -97,6 +116,7 @@ describe("parseGridConfiguration", () => {
       visibility: { col1: true, col2: false },
       sorting: [{ id: "name", desc: false }],
       order: ["col1", "col2"],
+      implicitFilterApplied: false,
       ...overrides,
     };
     return JSON.stringify(config);
@@ -113,6 +133,13 @@ describe("parseGridConfiguration", () => {
     expect(result?.visibility).toEqual({ col1: true, col2: false });
     expect(result?.sorting).toEqual([{ id: "name", desc: false }]);
     expect(result?.order).toEqual(["col1", "col2"]);
+    expect(result?.implicitFilterApplied).toBe(false);
+  });
+
+  it("parses implicitFilterApplied:true from a config", () => {
+    const raw = makeConfig({ implicitFilterApplied: true });
+    const result = parseGridConfiguration(raw);
+    expect(result?.implicitFilterApplied).toBe(true);
   });
 
   it("returns null for an empty string", () => {

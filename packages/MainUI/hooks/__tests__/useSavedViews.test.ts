@@ -351,6 +351,196 @@ describe("useSavedViews — applyView", () => {
 });
 
 // ---------------------------------------------------------------------------
+// setDefaultView
+// ---------------------------------------------------------------------------
+describe("useSavedViews — setDefaultView", () => {
+  it("calls PUT on the target view with isdefault:true and refreshes", async () => {
+    const spy = jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeFetchViewsResponse([makeRawRecord({ id: "view-001", isdefault: false })]))
+      .mockReturnValueOnce(makeResponse(null, true, 204))
+      .mockReturnValueOnce(makeFetchViewsResponse([makeRawRecord({ id: "view-001", isdefault: true })]));
+
+    const { result } = renderHook(() => useSavedViews());
+
+    await act(async () => {
+      await result.current.fetchViews("tab-abc");
+    });
+
+    await act(async () => {
+      await result.current.setDefaultView("view-001");
+    });
+
+    const putCall = spy.mock.calls.find((c) => (c[1] as RequestInit)?.method === "PUT");
+    expect(putCall).toBeDefined();
+    const putUrl = putCall![0] as string;
+    expect(putUrl).toContain("view-001");
+
+    const body = JSON.parse((putCall![1] as RequestInit).body as string);
+    expect(body.isdefault).toBe(true);
+    expect(result.current.isUpdatingDefault).toBe(false);
+  });
+
+  it("clears the previous default before setting the new one", async () => {
+    const spy = jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(
+        makeFetchViewsResponse([
+          makeRawRecord({ id: "view-001", isdefault: true }),
+          makeRawRecord({ id: "view-002", isdefault: false }),
+        ])
+      )
+      .mockReturnValueOnce(makeResponse(null, true, 204))
+      .mockReturnValueOnce(makeResponse(null, true, 204))
+      .mockReturnValueOnce(
+        makeFetchViewsResponse([
+          makeRawRecord({ id: "view-001", isdefault: false }),
+          makeRawRecord({ id: "view-002", isdefault: true }),
+        ])
+      );
+
+    const { result } = renderHook(() => useSavedViews());
+
+    await act(async () => {
+      await result.current.fetchViews("tab-abc");
+    });
+
+    await act(async () => {
+      await result.current.setDefaultView("view-002");
+    });
+
+    const putCalls = spy.mock.calls.filter((c) => (c[1] as RequestInit)?.method === "PUT");
+    expect(putCalls).toHaveLength(2);
+
+    const clearBody = JSON.parse((putCalls[0][1] as RequestInit).body as string);
+    expect(clearBody.isdefault).toBe(false);
+    expect(putCalls[0][0] as string).toContain("view-001");
+
+    const setBody = JSON.parse((putCalls[1][1] as RequestInit).body as string);
+    expect(setBody.isdefault).toBe(true);
+    expect(putCalls[1][0] as string).toContain("view-002");
+  });
+
+  it("throws when viewId is not found in current views", async () => {
+    const { result } = renderHook(() => useSavedViews());
+    let thrown = false;
+
+    await act(async () => {
+      try {
+        await result.current.setDefaultView("non-existent");
+      } catch {
+        thrown = true;
+      }
+    });
+
+    expect(thrown).toBe(true);
+    expect(result.current.isUpdatingDefault).toBe(false);
+  });
+
+  it("throws and sets error when server returns error", async () => {
+    jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeFetchViewsResponse([makeRawRecord({ id: "view-001", isdefault: false })]))
+      .mockReturnValueOnce(makeResponse({ error: "Server error" }, false, 500));
+
+    const { result } = renderHook(() => useSavedViews());
+
+    await act(async () => {
+      await result.current.fetchViews("tab-abc");
+    });
+
+    let thrown = false;
+    await act(async () => {
+      try {
+        await result.current.setDefaultView("view-001");
+      } catch {
+        thrown = true;
+      }
+    });
+
+    expect(thrown).toBe(true);
+    expect(result.current.error).not.toBeNull();
+    expect(result.current.isUpdatingDefault).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// unsetDefaultView
+// ---------------------------------------------------------------------------
+describe("useSavedViews — unsetDefaultView", () => {
+  it("calls PUT on the current default with isdefault:false and refreshes", async () => {
+    const spy = jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeFetchViewsResponse([makeRawRecord({ id: "view-001", isdefault: true })]))
+      .mockReturnValueOnce(makeResponse(null, true, 204))
+      .mockReturnValueOnce(makeFetchViewsResponse([makeRawRecord({ id: "view-001", isdefault: false })]));
+
+    const { result } = renderHook(() => useSavedViews());
+
+    await act(async () => {
+      await result.current.fetchViews("tab-abc");
+    });
+
+    await act(async () => {
+      await result.current.unsetDefaultView("tab-abc");
+    });
+
+    const putCall = spy.mock.calls.find((c) => (c[1] as RequestInit)?.method === "PUT");
+    expect(putCall).toBeDefined();
+    const body = JSON.parse((putCall![1] as RequestInit).body as string);
+    expect(body.isdefault).toBe(false);
+    expect(result.current.isUpdatingDefault).toBe(false);
+  });
+
+  it("does nothing when there is no default view for the tab", async () => {
+    const spy = jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeFetchViewsResponse([makeRawRecord({ id: "view-001", isdefault: false })]));
+
+    const { result } = renderHook(() => useSavedViews());
+
+    await act(async () => {
+      await result.current.fetchViews("tab-abc");
+    });
+
+    const callsBefore = spy.mock.calls.length;
+
+    await act(async () => {
+      await result.current.unsetDefaultView("tab-abc");
+    });
+
+    expect(spy.mock.calls.length).toBe(callsBefore);
+    expect(result.current.isUpdatingDefault).toBe(false);
+  });
+
+  it("throws and sets error when server returns error", async () => {
+    jest
+      .spyOn(global, "fetch")
+      .mockReturnValueOnce(makeFetchViewsResponse([makeRawRecord({ id: "view-001", isdefault: true })]))
+      .mockReturnValueOnce(makeResponse({ error: "Server error" }, false, 500));
+
+    const { result } = renderHook(() => useSavedViews());
+
+    await act(async () => {
+      await result.current.fetchViews("tab-abc");
+    });
+
+    let thrown = false;
+    await act(async () => {
+      try {
+        await result.current.unsetDefaultView("tab-abc");
+      } catch {
+        thrown = true;
+      }
+    });
+
+    expect(thrown).toBe(true);
+    expect(result.current.error).not.toBeNull();
+    expect(result.current.isUpdatingDefault).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // deleteView
 // ---------------------------------------------------------------------------
 describe("useSavedViews — deleteView", () => {
