@@ -264,12 +264,14 @@ export const useTableDirDatasource = ({
       const searchFields: string[] = [];
 
       // 1. Prioritize Selector Configuration
-      if (field.selector?.extraSearchFields) {
-        searchFields.push(...field.selector.extraSearchFields.split(",").map((f) => f.trim()));
+      const extraSearchFields = field.selector?.extraSearchFields as string | undefined;
+      if (extraSearchFields) {
+        searchFields.push(...extraSearchFields.split(",").map((f) => f.trim()));
       }
 
-      if (field.selector?.displayField && !searchFields.includes(field.selector.displayField)) {
-        searchFields.push(field.selector.displayField);
+      const displayField = field.selector?.displayField as string | undefined;
+      if (displayField && !searchFields.includes(displayField)) {
+        searchFields.push(displayField);
       }
 
       // 2. Fallbacks if no fields defined in selector
@@ -302,7 +304,8 @@ export const useTableDirDatasource = ({
       const applySelectorCriteria = () => {
         if (!field.selector?.criteria) return;
         try {
-          const existingCriteria = JSON.parse(field.selector.criteria);
+          const existingCriteria =
+            typeof field.selector.criteria === "string" ? JSON.parse(field.selector.criteria) : field.selector.criteria;
           const criteriaList = Array.isArray(existingCriteria) ? existingCriteria : [existingCriteria];
           for (const c of criteriaList) {
             criteria.push(JSON.stringify(c));

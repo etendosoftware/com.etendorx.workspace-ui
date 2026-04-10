@@ -18,6 +18,7 @@ import type { SelectProps } from "../types";
 import { useDropdownPosition } from "@/components/Form/FormView/selectors/hooks/useDropdownPosition";
 import OptionItem from "@/components/Form/FormView/selectors/components/Select/OptionItem";
 import DropdownPortal from "@/components/Form/FormView/selectors/components/Select/DropdownPortal";
+import { updateSelectorValue } from "@/utils/form/selectors/utils";
 import Tag from "@workspaceui/componentlibrary/src/components/Tag";
 import { isColorString, getContrastTextColor } from "@/utils/color/utils";
 
@@ -121,8 +122,7 @@ function SelectCmp({
       const option = options.find((opt) => opt.id === id);
       const data = explicitData ?? option?.data;
 
-      setValue(`${name}_data`, data);
-      setValue(name, id);
+      updateSelectorValue(setValue, name, id, data);
       setSelectedLabel(label);
       setSelectedDataRowId(((data as Record<string, unknown>)?.id as string) ?? null);
       setSelectedColor(option?.color);
@@ -212,7 +212,9 @@ function SelectCmp({
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      setValue(name, "");
+      setValue(`${name}$_identifier`, "", { shouldDirty: false });
+      setValue(`${name}_data`, null);
+      setValue(name, "", { shouldDirty: true, shouldValidate: true });
       setSelectedLabel("");
       setSelectedColor(undefined);
     },

@@ -354,6 +354,7 @@ export const GenericWarehouseProcess: React.FC<GenericWarehouseProcessProps> = (
       } else {
         const parsed = parseSmartClientMessage(showMsg?.msgText || "");
         const msgType = showMsg?.msgType;
+        // biome-ignore lint/suspicious/noExplicitAny: titleKey is a dynamic schema string — not a static translation key
         const title = showMsg?.msgTitle || t(schema.titleKey as any) || t("process.completedSuccessfully");
         const text = parsed.text || t("process.processError");
 

@@ -112,9 +112,21 @@ const processFormData = (
 
 export function FormView({ window: windowMetadata, tab, mode, recordId, setRecordId, uIPattern }: FormViewProps) {
   const theme = useTheme();
-  const isReadOnly = uIPattern === UIPattern.READ_ONLY;
 
-  const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
+  const computeInitialExpandedSections = useCallback(
+    (currentGroups: ReturnType<typeof useFormFields>["groups"]): string[] => {
+      return currentGroups
+        .filter(([id, group]) => id === "_main" || group.fieldGroupCollapsed === false)
+        .map(([id]) => String(id ?? "_main"));
+    },
+    []
+  );
+
+  const [expandedSections, setExpandedSections] = useState<string[]>(() =>
+    computeInitialExpandedSections(
+      [] // groups not yet computed; will be corrected by the tab.id useEffect below
+    )
+  );
   const [selectedTab, setSelectedTab] = useState<string>("");
   const [isFormInitializing, setIsFormInitializing] = useState(false);
   const [openAttachmentModal, setOpenAttachmentModal] = useState(false);
@@ -180,6 +192,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     recordId: currentRecordId,
   });
   const initialState = useFormInitialState(formInitialization) || undefined;
+
+  // Determine read-only state from two sources:
+  // 1. Tab-level uIPattern "RO" — the tab itself is defined as read-only
+  // 2. Record-level _readOnly — the backend security layer (DAL) marks this specific
+  //    record as read-only for the current role (e.g. system records with org='0'
+  //    are not writable by non-system roles even if the window access is isreadwrite='Y')
+  const isReadOnly = uIPattern === UIPattern.READ_ONLY || formInitialization?._readOnly === true;
 
   // Effect to detect when form initialization completes after save
   useEffect(() => {
@@ -406,6 +425,17 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   }, [record, initialState, currentRecordId]);
 
   const { fields, groups } = useFormFields(tab, currentRecordId, currentMode, true, availableFormData);
+
+  // Reset expanded sections whenever the tab changes so each tab opens with the
+  // correct collapsed/expanded state driven by fieldGroupCollapsed metadata.
+  // We track the previous tab.id so we only reset on a genuine tab navigation,
+  // not on every groups/availableFormData change within the same tab.
+  const lastTabIdForSectionsRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (lastTabIdForSectionsRef.current === tab.id) return;
+    lastTabIdForSectionsRef.current = tab.id;
+    setExpandedSections(computeInitialExpandedSections(groups));
+  }, [tab.id, computeInitialExpandedSections, groups]);
 
   const formMethods = useForm({ defaultValues: availableFormData as EntityData });
   const { reset, setValue, formState, ...form } = formMethods;

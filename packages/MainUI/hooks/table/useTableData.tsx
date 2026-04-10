@@ -44,6 +44,7 @@ import { mapSummariesToBackend, getSummaryCriteria } from "@/utils/table/utils";
 import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { buildEtendoContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
+import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
 import { buildBaseCriteria, resolveParentFieldName } from "@/utils/criteriaUtils";
 
 interface UseTableDataParams {
@@ -428,7 +429,7 @@ export const useTableData = ({
   );
 
   const query: DatasourceOptions = useMemo(() => {
-    const { fieldName, directReference: fieldDirectlyReferencesParent } = getParentFieldName();
+    const { fieldName } = getParentFieldName();
     const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
     const operator = "equals";
 
@@ -441,7 +442,7 @@ export const useTableData = ({
       windowId: tab.window,
       tabId: tab.id,
       isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
-      pageSize: 100,
+      pageSize: DEFAULT_PAGE_SIZE,
       ...(extraProperties ? { _extraProperties: extraProperties } : {}),
       _className: "OBViewDataSource",
       Constants_IDENTIFIER: "_identifier",
