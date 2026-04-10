@@ -75,7 +75,9 @@ export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }
   }
 
   if (isBase64Image(iconKey)) {
-    return <Base64Icon src={`data:image/png;base64,${iconKey}`} data-testid="Base64Icon__5aeccd" />;
+    const isSvg = atob(iconKey).trimStart().startsWith("<svg");
+    const mime = isSvg ? "image/svg+xml" : "image/png";
+    return <Base64Icon src={`data:${mime};base64,${iconKey}`} data-testid="Base64Icon__5aeccd" />;
   }
 
   return (
