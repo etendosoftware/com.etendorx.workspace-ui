@@ -66,6 +66,19 @@ function makeErrorResponse(status = 500) {
   } as Response);
 }
 
+interface RenderOptions {
+  tabId?: string;
+  windowIdentifier?: string;
+}
+
+async function renderAndWait(onApplyView: jest.Mock, { tabId = "tab-abc", windowIdentifier = "win-1" }: RenderOptions = {}) {
+  const hookResult = renderHook(() =>
+    useAutoApplyDefaultView({ tabId, windowIdentifier, onApplyView })
+  );
+  await act(async () => {});
+  return hookResult;
+}
+
 beforeEach(() => {
   global.fetch = jest.fn();
 });
@@ -79,18 +92,9 @@ afterEach(() => jest.restoreAllMocks());
 describe("useAutoApplyDefaultView", () => {
   it("fetches and applies the default view on mount", async () => {
     jest.spyOn(global, "fetch").mockReturnValue(makeSmartClientResponse([makeDefaultViewRecord()]));
-
     const onApplyView = jest.fn();
 
-    await act(async () => {
-      renderHook(() =>
-        useAutoApplyDefaultView({
-          tabId: "tab-abc",
-          windowIdentifier: "win-1",
-          onApplyView,
-        })
-      );
-    });
+    await renderAndWait(onApplyView);
 
     expect(onApplyView).toHaveBeenCalledTimes(1);
     expect(onApplyView).toHaveBeenCalledWith(
@@ -108,15 +112,7 @@ describe("useAutoApplyDefaultView", () => {
     const spy = jest.spyOn(global, "fetch");
     const onApplyView = jest.fn();
 
-    await act(async () => {
-      renderHook(() =>
-        useAutoApplyDefaultView({
-          tabId: "",
-          windowIdentifier: "win-1",
-          onApplyView,
-        })
-      );
-    });
+    await renderAndWait(onApplyView, { tabId: "" });
 
     expect(spy).not.toHaveBeenCalled();
     expect(onApplyView).not.toHaveBeenCalled();
@@ -126,15 +122,7 @@ describe("useAutoApplyDefaultView", () => {
     const spy = jest.spyOn(global, "fetch");
     const onApplyView = jest.fn();
 
-    await act(async () => {
-      renderHook(() =>
-        useAutoApplyDefaultView({
-          tabId: "tab-abc",
-          windowIdentifier: "",
-          onApplyView,
-        })
-      );
-    });
+    await renderAndWait(onApplyView, { windowIdentifier: "" });
 
     expect(spy).not.toHaveBeenCalled();
     expect(onApplyView).not.toHaveBeenCalled();
@@ -142,36 +130,18 @@ describe("useAutoApplyDefaultView", () => {
 
   it("does not apply view when the server returns no data", async () => {
     jest.spyOn(global, "fetch").mockReturnValue(makeSmartClientResponse([]));
-
     const onApplyView = jest.fn();
 
-    await act(async () => {
-      renderHook(() =>
-        useAutoApplyDefaultView({
-          tabId: "tab-abc",
-          windowIdentifier: "win-1",
-          onApplyView,
-        })
-      );
-    });
+    await renderAndWait(onApplyView);
 
     expect(onApplyView).not.toHaveBeenCalled();
   });
 
   it("does not apply view when the response is not ok", async () => {
     jest.spyOn(global, "fetch").mockReturnValue(makeErrorResponse(500));
-
     const onApplyView = jest.fn();
 
-    await act(async () => {
-      renderHook(() =>
-        useAutoApplyDefaultView({
-          tabId: "tab-abc",
-          windowIdentifier: "win-1",
-          onApplyView,
-        })
-      );
-    });
+    await renderAndWait(onApplyView);
 
     expect(onApplyView).not.toHaveBeenCalled();
   });
@@ -180,18 +150,9 @@ describe("useAutoApplyDefaultView", () => {
     jest
       .spyOn(global, "fetch")
       .mockReturnValue(makeSmartClientResponse([makeDefaultViewRecord({ gridconfiguration: "{invalid json}" })]));
-
     const onApplyView = jest.fn();
 
-    await act(async () => {
-      renderHook(() =>
-        useAutoApplyDefaultView({
-          tabId: "tab-abc",
-          windowIdentifier: "win-1",
-          onApplyView,
-        })
-      );
-    });
+    await renderAndWait(onApplyView);
 
     expect(onApplyView).not.toHaveBeenCalled();
   });
@@ -200,18 +161,9 @@ describe("useAutoApplyDefaultView", () => {
     jest
       .spyOn(global, "fetch")
       .mockReturnValue(makeSmartClientResponse([makeDefaultViewRecord({ gridconfiguration: "" })]));
-
     const onApplyView = jest.fn();
 
-    await act(async () => {
-      renderHook(() =>
-        useAutoApplyDefaultView({
-          tabId: "tab-abc",
-          windowIdentifier: "win-1",
-          onApplyView,
-        })
-      );
-    });
+    await renderAndWait(onApplyView);
 
     expect(onApplyView).not.toHaveBeenCalled();
   });
@@ -220,15 +172,7 @@ describe("useAutoApplyDefaultView", () => {
     const spy = jest.spyOn(global, "fetch").mockReturnValue(makeSmartClientResponse([]));
     const onApplyView = jest.fn();
 
-    await act(async () => {
-      renderHook(() =>
-        useAutoApplyDefaultView({
-          tabId: "tab-xyz",
-          windowIdentifier: "win-1",
-          onApplyView,
-        })
-      );
-    });
+    await renderAndWait(onApplyView, { tabId: "tab-xyz" });
 
     const url = spy.mock.calls[0][0] as string;
     expect(url).toContain("tab-xyz");
@@ -238,7 +182,6 @@ describe("useAutoApplyDefaultView", () => {
 
   it("applies the view only once per windowIdentifier+tabId combination", async () => {
     jest.spyOn(global, "fetch").mockReturnValue(makeSmartClientResponse([makeDefaultViewRecord()]));
-
     const onApplyView = jest.fn();
 
     const { rerender } = renderHook(
@@ -249,9 +192,7 @@ describe("useAutoApplyDefaultView", () => {
 
     await act(async () => {});
 
-    // Re-render with same props — should NOT apply again
     rerender({ tabId: "tab-abc", windowIdentifier: "win-1" });
-
     await act(async () => {});
 
     expect(onApplyView).toHaveBeenCalledTimes(1);
@@ -271,18 +212,9 @@ describe("useAutoApplyDefaultView", () => {
     jest
       .spyOn(global, "fetch")
       .mockReturnValue(makeSmartClientResponse([makeDefaultViewRecord({ gridconfiguration: configWithFalse })]));
-
     const onApplyView = jest.fn();
 
-    await act(async () => {
-      renderHook(() =>
-        useAutoApplyDefaultView({
-          tabId: "tab-abc",
-          windowIdentifier: "win-1",
-          onApplyView,
-        })
-      );
-    });
+    await renderAndWait(onApplyView);
 
     expect(onApplyView).toHaveBeenCalledWith(expect.objectContaining({ implicitFilterApplied: false }));
   });
