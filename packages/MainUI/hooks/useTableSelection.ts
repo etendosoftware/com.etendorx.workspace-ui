@@ -378,7 +378,16 @@ export default function useTableSelection(
     //    because FormView's own EDIT-mode initialization handles session setup when
     //    it opens. Calling SETSESSION on every arrow-key navigation triggers redundant
     //    API requests and cascading UserContext re-renders that can cause update depth errors.
-    if (selectedRecords.length > 0 && hasSelectionIdChanged && !isTableVisible) {
+    // 3. No child tab is currently in FormView mode.
+    //    When a child tab (e.g. Lines) is in FormView (e.g. new record mode), background
+    //    data refreshes on the parent table can trigger a spurious selection change and
+    //    fire SETSESSION with the wrong record ID, navigating away from the child form.
+    const hasChildInFormView = graph.getChildren(tab)?.some((child) => {
+      if (!getTabFormState) return false;
+      return getTabFormState(windowIdentifier, child.id)?.mode === "form";
+    });
+
+    if (selectedRecords.length > 0 && hasSelectionIdChanged && !isTableVisible && !hasChildInFormView) {
       syncSelectedRecordsToSession({
         tab,
         selectedRecords,

@@ -47,10 +47,6 @@ describe("Financial Test 2 - Sales Invoice to Payment In", () => {
     cy.clickSave();
     cy.closeToastIfPresent();
 
-    // Save all header fields
-    cy.clickSave();
-    cy.closeToastIfPresent();
-
     // Verify Draft status
     cy.contains(".MuiChip-label", "Draft", { timeout: 10000 }).should("exist");
 
@@ -58,8 +54,10 @@ describe("Financial Test 2 - Sales Invoice to Payment In", () => {
     // Step 3: Add Invoice Line
     // -------------------------
     cy.get('button[aria-label="Lines"]').click();
+    cy.wait(500);
 
     cy.clickNewRecord();
+    cy.wait(500);
 
     // Product: Final good A
     cy.get('[data-testid="ChevronDown__2996"]').scrollIntoView().click({ force: true });
