@@ -69,7 +69,7 @@ describe("BreadcrumbList", () => {
     expect(screen.getByText("Label 1")).toBeInTheDocument();
   });
 
-  it("renders only first and last items visibly for five entries; middle three are in the overflow menu", () => {
+  it("renders all items when the list has five entries — no collapse or ellipsis", () => {
     const items = makeItems(5);
     render(
       <BreadcrumbList
@@ -78,13 +78,12 @@ describe("BreadcrumbList", () => {
         handleHomeNavigation={handleHomeNavigation}
       />
     );
-    // First and last are always rendered directly
+    // All items are always rendered directly — no overflow menu
     expect(screen.getByText("Label 0")).toBeInTheDocument();
+    expect(screen.getByText("Label 1")).toBeInTheDocument();
+    expect(screen.getByText("Label 2")).toBeInTheDocument();
+    expect(screen.getByText("Label 3")).toBeInTheDocument();
     expect(screen.getByText("Label 4")).toBeInTheDocument();
-    // Middle items (Label 1, Label 2, Label 3) are hidden inside the closed overflow Menu
-    expect(screen.queryByText("Label 1")).not.toBeInTheDocument();
-    expect(screen.queryByText("Label 2")).not.toBeInTheDocument();
-    expect(screen.queryByText("Label 3")).not.toBeInTheDocument();
   });
 
   it("does not render a collapse button or ellipsis for long lists", () => {
@@ -95,7 +94,14 @@ describe("BreadcrumbList", () => {
         handleHomeNavigation={handleHomeNavigation}
       />
     );
-    // The old implementation replaced middle items with "…" — verify it is gone
+    // All labels visible — no overflow menu collapses anything
+    expect(screen.getByText("Label 0")).toBeInTheDocument();
+    expect(screen.getByText("Label 1")).toBeInTheDocument();
+    expect(screen.getByText("Label 2")).toBeInTheDocument();
+    expect(screen.getByText("Label 3")).toBeInTheDocument();
+    expect(screen.getByText("Label 4")).toBeInTheDocument();
+    expect(screen.getByText("Label 5")).toBeInTheDocument();
+    // No ellipsis text in the DOM
     expect(screen.queryByText("…")).not.toBeInTheDocument();
     expect(screen.queryByText("...")).not.toBeInTheDocument();
   });
@@ -108,14 +114,13 @@ describe("BreadcrumbList", () => {
         handleHomeNavigation={handleHomeNavigation}
       />
     );
-    // BreadcrumbList with 3+ items renders: first item + ellipsis menu button + last item.
-    // BreadcrumbItem for first item (position=0, isFirst=true, isLast=false):
-    //   → IconButton aria-label="Go back" (back-arrow) + MUI Button aria-label="Go back" (label)
-    // Middle items are hidden in a Menu (not rendered as direct buttons).
-    // Last item (position=2, isLast=true) → Typography only, no button.
-    // Total "Go back" buttons: 2 (IconButton + first-item MUI Button)
+    // With 3 items, all rendered linearly:
+    // index 0 (isFirst=true, isLast=false): IconButton "Go back" + MUI Button "Go back" aria-current="page"
+    // index 1 (isFirst=false, isLast=false): MUI Button "Go back" aria-current="page" only
+    // index 2 (isFirst=false, isLast=true): Typography only, no button
+    // Total "Go back" buttons: 3 (1 IconButton + 2 MUI Buttons)
     const backButtons = screen.getAllByRole("button", { name: "Go back" });
-    expect(backButtons).toHaveLength(2);
+    expect(backButtons).toHaveLength(3);
 
     // The IconButton (back-arrow) is the one without aria-current="page"
     const iconButton = backButtons.find((el) => el.getAttribute("aria-current") !== "page");
@@ -135,7 +140,7 @@ describe("BreadcrumbList", () => {
     expect(lastLabel.closest("button")).toBeNull();
   });
 
-  it("renders first and last items visibly; middle items are hidden in an overflow menu", () => {
+  it("renders items in the correct visual order", () => {
     const items: BreadcrumbItem[] = [
       { id: "win", label: "Sales Window" },
       { id: "rec", label: "Order #123" },
@@ -148,11 +153,9 @@ describe("BreadcrumbList", () => {
         handleHomeNavigation={handleHomeNavigation}
       />
     );
-    // BreadcrumbList collapses middle items behind an ellipsis Menu for 3+ items.
-    // First and last labels are rendered directly; middle item is in a closed Menu (not visible).
+    // All items are always rendered directly — simplified component never collapses
     expect(screen.getByText("Sales Window")).toBeInTheDocument();
+    expect(screen.getByText("Order #123")).toBeInTheDocument();
     expect(screen.getByText("Order Line")).toBeInTheDocument();
-    // "Order #123" is a middle item — it lives inside a closed MUI Menu, not in the visible DOM.
-    expect(screen.queryByText("Order #123")).not.toBeInTheDocument();
   });
 });

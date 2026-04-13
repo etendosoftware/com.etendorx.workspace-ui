@@ -466,7 +466,13 @@ describe("AppBreadcrumb", () => {
       })
     );
 
-    renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
+    const allTabsThreeLevels = [
+      ...mockTabs,
+      [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any],
+      [{ id: level2TabId, window: "test-window-id", tabLevel: 2 } as any],
+    ];
+
+    renderWithTheme(<AppBreadcrumb allTabs={allTabsThreeLevels} />);
 
     fireEvent.click(screen.getByTestId("item-test-window-id"));
 
