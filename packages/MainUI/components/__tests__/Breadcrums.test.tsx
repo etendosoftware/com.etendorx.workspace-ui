@@ -440,6 +440,41 @@ describe("AppBreadcrumb", () => {
     expect(screen.getByTestId(`item-level2-${level2TabId}`)).toBeInTheDocument();
   });
 
+  it("renders level1 record item via fallback when level1 tab is not in activeTabsByLevel but has a selectedRecord", () => {
+    const level1TabId = "tab-level1-auto";
+    const level1RecordId = "auto-record-1";
+
+    // activeTabsByLevel only has level 0 — level 1 was never explicitly clicked
+    mockedUseTableStatePersistenceTab.mockReturnValue({
+      setActiveLevel: mockSetActiveLevel,
+      activeTabsByLevel: new Map<number, string>([[0, "tab-1"]]),
+    } as any);
+
+    mockUseWindowContext.mockReturnValue(
+      buildWindowContextValue({
+        activeWindow: {
+          tabs: {
+            "tab-1": { selectedRecord: "record-0" },
+            [level1TabId]: { selectedRecord: level1RecordId },
+          },
+          windowIdentifier: "test-window-identifier",
+        },
+      })
+    );
+
+    const tabsWithLevel1 = [
+      ...mockTabs,
+      [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any],
+    ];
+
+    mockUseCurrentRecordCalls({ 1: { _identifier: "Auto Level1 Item" } });
+
+    renderWithTheme(<AppBreadcrumb allTabs={tabsWithLevel1} />);
+
+    expect(screen.getByTestId(`item-level1-${level1TabId}`)).toBeInTheDocument();
+    expect(screen.getByText("Auto Level1 Item")).toBeInTheDocument();
+  });
+
   it("calls clearTabFormState for every active level when window title is clicked with multiple active levels", () => {
     const level1TabId = "tab-level1";
     const level2TabId = "tab-level2";

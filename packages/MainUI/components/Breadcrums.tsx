@@ -37,6 +37,11 @@ interface BreadcrumbProps {
   allTabs: Tab[][];
 }
 
+// Maximum number of tab levels the breadcrumb supports.
+// React hooks must be called the same number of times every render,
+// so we pre-allocate this many useCurrentRecord calls.
+const MAX_BREADCRUMB_LEVELS = 5;
+
 const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { t } = useTranslation();
   const pathname = usePathname();
@@ -69,75 +74,72 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     return tab;
   }, [allTabsFormatted, windowId, window]);
 
-  // Level 0 tab id (the current active Level 0 tab)
   const level0TabId = activeTabsByLevel?.get(0) ?? currentTab?.id;
 
-  const MAX_BREADCRUMB_LEVELS = 5;
-
-  // Build tab object for each level slot (fixed-size array, levels beyond activeTabsByLevel are undefined)
+  // Build tab object for each level. For each level:
+  //   - Level 0: use activeTabsByLevel.get(0) ?? currentTab
+  //   - Level N≥1: use activeTabsByLevel.get(N) first; if absent (child tab was auto-shown
+  //     without an explicit tab-header click), fall back to the first tab at that level
+  //     that currently has a selected record in activeWindow.tabs.
   const tabByLevel = useMemo(() => {
     const result: Array<Tab | undefined> = [];
     for (let i = 0; i < MAX_BREADCRUMB_LEVELS; i++) {
-      const tabId = i === 0 ? level0TabId : activeTabsByLevel?.get(i);
-      result.push(tabId ? allTabsFormatted.find((t) => t.id === tabId) : undefined);
+      const tabIdFromMap = i === 0 ? level0TabId : activeTabsByLevel?.get(i);
+      if (tabIdFromMap) {
+        const tab = allTabsFormatted.find((t) => t.id === tabIdFromMap);
+        if (tab) {
+          result.push(tab);
+          continue;
+        }
+      }
+      // Fallback for levels ≥ 1: find any tab at this level that has a selected record
+      if (i > 0 && activeWindow?.tabs) {
+        result.push(
+          allTabsFormatted.find((t) => t.tabLevel === i && Boolean(activeWindow.tabs[t.id]?.selectedRecord))
+        );
+      } else {
+        result.push(undefined);
+      }
     }
     return result;
-  }, [level0TabId, activeTabsByLevel, allTabsFormatted]);
+  }, [level0TabId, activeTabsByLevel, allTabsFormatted, activeWindow]);
 
-  // Build selectedRecord id for each level slot
   const recordIdByLevel = useMemo(
     () => tabByLevel.map((tab) => (tab?.id ? activeWindow?.tabs?.[tab.id]?.selectedRecord : undefined)),
     [tabByLevel, activeWindow]
   );
 
-  // Fixed-count hook calls (React hooks rule: same count every render)
-  // Slots beyond the active level count receive tab=undefined, recordId=undefined — useCurrentRecord handles this gracefully
+  // Fixed-count hook calls — React rules require the same number of hooks every render.
+  // Slots beyond the active level count receive tab=undefined, recordId=undefined,
+  // which useCurrentRecord handles gracefully (returns empty record).
   const { record: record0 } = useCurrentRecord({ tab: tabByLevel[0], recordId: recordIdByLevel[0] });
   const { record: record1 } = useCurrentRecord({ tab: tabByLevel[1], recordId: recordIdByLevel[1] });
   const { record: record2 } = useCurrentRecord({ tab: tabByLevel[2], recordId: recordIdByLevel[2] });
   const { record: record3 } = useCurrentRecord({ tab: tabByLevel[3], recordId: recordIdByLevel[3] });
   const { record: record4 } = useCurrentRecord({ tab: tabByLevel[4], recordId: recordIdByLevel[4] });
 
-  const recordsByLevel = useMemo(
-    () => [record0, record1, record2, record3, record4],
-    [record0, record1, record2, record3, record4]
-  );
-
-  // Single Map ref for persisting last-valid labels across all N levels
-  // (replaces the two per-level refs that existed before)
-  const lastValidLabelByLevelRef = useRef<Map<number, string>>(new Map());
+  // One ref slot per level to persist last-valid labels across render cycles during fetches
+  const lastValidLabelsRef = useRef<Array<string | undefined>>(Array(MAX_BREADCRUMB_LEVELS).fill(undefined));
 
   const isNewRecord = useCallback(() => pathname.includes("/NewRecord"), [pathname]);
 
   const handleWindowTitleClick = useCallback(() => {
-    // 1. Collapse all levels except Level 0
     setActiveLevel(0);
-    // 2. Set focus to Level 0
     if (level0TabId) setFocus(level0TabId);
-    // 3. Clear form state for ALL active levels
     if (windowIdentifier && activeTabsByLevel) {
       for (const tabId of activeTabsByLevel.values()) {
         clearTabFormState(windowIdentifier, tabId);
       }
     }
-    // 4. Clear graph selections
     if (currentTab && graph) {
       graph.clear(currentTab);
       graph.clearSelected(currentTab);
     }
-  }, [
-    setActiveLevel,
-    setFocus,
-    level0TabId,
-    windowIdentifier,
-    currentTab,
-    clearTabFormState,
-    graph,
-    activeTabsByLevel,
-  ]);
+  }, [setActiveLevel, setFocus, level0TabId, windowIdentifier, currentTab, clearTabFormState, graph, activeTabsByLevel]);
 
   const breadcrumbItems = useMemo(() => {
     const items: BreadcrumbItem[] = [];
+    const recordsByLevel = [record0, record1, record2, record3, record4];
 
     // Window title (always first)
     if (windowId && window && windowIdentifier) {
@@ -156,27 +158,23 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
       });
     }
 
-    // One breadcrumb item per level that has a selected record with an identifier
+    // One item per level that has a selected record with a resolved identifier
     for (let i = 0; i < MAX_BREADCRUMB_LEVELS; i++) {
       const tab = tabByLevel[i];
-      if (!tab) break; // No tab at this level — all deeper levels are also absent
+      if (!tab) break; // No tab at this level — deeper levels are also absent
 
       const recordId = recordIdByLevel[i];
-      const rawLabel = recordsByLevel[i]?._identifier?.toString();
-
-      // Manage last-valid label: clear when record is gone, update when fresh label arrives
-      if (!recordId) {
-        lastValidLabelByLevelRef.current.delete(i);
-      } else if (rawLabel) {
-        lastValidLabelByLevelRef.current.set(i, rawLabel);
+      if (!recordId || recordId === NEW_RECORD_ID) {
+        lastValidLabelsRef.current[i] = undefined;
+        continue;
       }
 
-      if (!recordId || recordId === NEW_RECORD_ID) continue;
-
-      const displayLabel = rawLabel ?? lastValidLabelByLevelRef.current.get(i);
+      const rawLabel = recordsByLevel[i]?._identifier?.toString();
+      if (rawLabel) lastValidLabelsRef.current[i] = rawLabel;
+      const displayLabel = rawLabel ?? lastValidLabelsRef.current[i];
       if (!displayLabel) continue;
 
-      const tabId = tab.id; // capture for closure
+      const tabId = tab.id;
       items.push({
         id: `level${i}-${tabId}`,
         label: displayLabel,
@@ -191,7 +189,11 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     window,
     tabByLevel,
     recordIdByLevel,
-    recordsByLevel,
+    record0,
+    record1,
+    record2,
+    record3,
+    record4,
     isNewRecord,
     t,
     handleWindowTitleClick,
