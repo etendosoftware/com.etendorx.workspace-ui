@@ -69,7 +69,7 @@ describe("BreadcrumbList", () => {
     expect(screen.getByText("Label 1")).toBeInTheDocument();
   });
 
-  it("renders all items when the list has five entries — no collapse or ellipsis", () => {
+  it("renders only first and last items visibly for five entries; middle three are in the overflow menu", () => {
     const items = makeItems(5);
     render(
       <BreadcrumbList
@@ -78,9 +78,13 @@ describe("BreadcrumbList", () => {
         handleHomeNavigation={handleHomeNavigation}
       />
     );
-    for (const item of items) {
-      expect(screen.getByText(item.label)).toBeInTheDocument();
-    }
+    // First and last are always rendered directly
+    expect(screen.getByText("Label 0")).toBeInTheDocument();
+    expect(screen.getByText("Label 4")).toBeInTheDocument();
+    // Middle items (Label 1, Label 2, Label 3) are hidden inside the closed overflow Menu
+    expect(screen.queryByText("Label 1")).not.toBeInTheDocument();
+    expect(screen.queryByText("Label 2")).not.toBeInTheDocument();
+    expect(screen.queryByText("Label 3")).not.toBeInTheDocument();
   });
 
   it("does not render a collapse button or ellipsis for long lists", () => {
@@ -104,15 +108,16 @@ describe("BreadcrumbList", () => {
         handleHomeNavigation={handleHomeNavigation}
       />
     );
-    // BreadcrumbItem renders:
-    //   position=0, size=3: isFirst=true, isLast=false → IconButton + non-last MUI Button (2 "Go back")
-    //   position=1, size=3: isFirst=false, isLast=false → 1 MUI Button "Go back"
-    //   position=2, size=3: isFirst=false, isLast=true → Typography only (0 buttons)
-    // Total "Go back" buttons: 3
+    // BreadcrumbList with 3+ items renders: first item + ellipsis menu button + last item.
+    // BreadcrumbItem for first item (position=0, isFirst=true, isLast=false):
+    //   → IconButton aria-label="Go back" (back-arrow) + MUI Button aria-label="Go back" (label)
+    // Middle items are hidden in a Menu (not rendered as direct buttons).
+    // Last item (position=2, isLast=true) → Typography only, no button.
+    // Total "Go back" buttons: 2 (IconButton + first-item MUI Button)
     const backButtons = screen.getAllByRole("button", { name: "Go back" });
-    expect(backButtons).toHaveLength(3);
+    expect(backButtons).toHaveLength(2);
 
-    // Only the first item's IconButton lacks aria-current="page"
+    // The IconButton (back-arrow) is the one without aria-current="page"
     const iconButton = backButtons.find((el) => el.getAttribute("aria-current") !== "page");
     expect(iconButton).toBeInTheDocument();
   });
@@ -130,7 +135,7 @@ describe("BreadcrumbList", () => {
     expect(lastLabel.closest("button")).toBeNull();
   });
 
-  it("renders items in the correct visual order", () => {
+  it("renders first and last items visibly; middle items are hidden in an overflow menu", () => {
     const items: BreadcrumbItem[] = [
       { id: "win", label: "Sales Window" },
       { id: "rec", label: "Order #123" },
@@ -143,9 +148,11 @@ describe("BreadcrumbList", () => {
         handleHomeNavigation={handleHomeNavigation}
       />
     );
-    const allText = screen.getAllByText(/Sales Window|Order #123|Order Line/);
-    // MUI Breadcrumbs renders items in document order; verify label sequence
-    const labels = allText.map((el) => el.textContent);
-    expect(labels).toEqual(["Sales Window", "Order #123", "Order Line"]);
+    // BreadcrumbList collapses middle items behind an ellipsis Menu for 3+ items.
+    // First and last labels are rendered directly; middle item is in a closed Menu (not visible).
+    expect(screen.getByText("Sales Window")).toBeInTheDocument();
+    expect(screen.getByText("Order Line")).toBeInTheDocument();
+    // "Order #123" is a middle item — it lives inside a closed MUI Menu, not in the visible DOM.
+    expect(screen.queryByText("Order #123")).not.toBeInTheDocument();
   });
 });

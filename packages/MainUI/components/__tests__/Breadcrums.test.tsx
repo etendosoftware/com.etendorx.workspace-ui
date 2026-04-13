@@ -347,4 +347,132 @@ describe("AppBreadcrumb", () => {
 
     expect(screen.queryByTestId(`item-level1-${level1TabId}`)).not.toBeInTheDocument();
   });
+
+  it("renders level0, level1, and level2 record items when all three levels are active with selected records", () => {
+    const level1TabId = "tab-level1";
+    const level2TabId = "tab-level2";
+
+    mockedUseTableStatePersistenceTab.mockReturnValue({
+      setActiveLevel: mockSetActiveLevel,
+      activeTabsByLevel: new Map<number, string>([
+        [0, "tab-1"],
+        [1, level1TabId],
+        [2, level2TabId],
+      ]),
+    } as any);
+
+    mockUseWindowContext.mockReturnValue(
+      buildWindowContextValue({
+        activeWindow: {
+          tabs: {
+            "tab-1": { selectedRecord: "record-0" },
+            [level1TabId]: { selectedRecord: "record-1" },
+            [level2TabId]: { selectedRecord: "record-2" },
+          },
+          windowIdentifier: "test-window-identifier",
+        },
+      })
+    );
+
+    const allTabsThreeLevels = [
+      ...mockTabs,
+      [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any],
+      [{ id: level2TabId, window: "test-window-id", tabLevel: 2 } as any],
+    ];
+
+    mockUseCurrentRecordCalls({
+      0: { _identifier: "Level0 Item" },
+      1: { _identifier: "Level1 Item" },
+      2: { _identifier: "Level2 Item" },
+    });
+
+    renderWithTheme(<AppBreadcrumb allTabs={allTabsThreeLevels} />);
+
+    expect(screen.getByTestId("item-level0-tab-1")).toBeInTheDocument();
+    expect(screen.getByText("Level0 Item")).toBeInTheDocument();
+    expect(screen.getByTestId(`item-level1-${level1TabId}`)).toBeInTheDocument();
+    expect(screen.getByText("Level1 Item")).toBeInTheDocument();
+    expect(screen.getByTestId(`item-level2-${level2TabId}`)).toBeInTheDocument();
+    expect(screen.getByText("Level2 Item")).toBeInTheDocument();
+  });
+
+  it("skips levels that have no selectedRecord while rendering levels that do", () => {
+    const level1TabId = "tab-level1";
+    const level2TabId = "tab-level2";
+
+    mockedUseTableStatePersistenceTab.mockReturnValue({
+      setActiveLevel: mockSetActiveLevel,
+      activeTabsByLevel: new Map<number, string>([
+        [0, "tab-1"],
+        [1, level1TabId],
+        [2, level2TabId],
+      ]),
+    } as any);
+
+    // level1TabId has NO selectedRecord — only level0 and level2 have records
+    mockUseWindowContext.mockReturnValue(
+      buildWindowContextValue({
+        activeWindow: {
+          tabs: {
+            "tab-1": { selectedRecord: "record-0" },
+            [level2TabId]: { selectedRecord: "record-2" },
+          },
+          windowIdentifier: "test-window-identifier",
+        },
+      })
+    );
+
+    const allTabsThreeLevels = [
+      ...mockTabs,
+      [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any],
+      [{ id: level2TabId, window: "test-window-id", tabLevel: 2 } as any],
+    ];
+
+    mockUseCurrentRecordCalls({
+      0: { _identifier: "Level0 Item" },
+      2: { _identifier: "Level2 Item" },
+    });
+
+    renderWithTheme(<AppBreadcrumb allTabs={allTabsThreeLevels} />);
+
+    expect(screen.getByTestId("item-level0-tab-1")).toBeInTheDocument();
+    expect(screen.queryByTestId(`item-level1-${level1TabId}`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`item-level2-${level2TabId}`)).toBeInTheDocument();
+  });
+
+  it("calls clearTabFormState for every active level when window title is clicked with multiple active levels", () => {
+    const level1TabId = "tab-level1";
+    const level2TabId = "tab-level2";
+
+    mockedUseTableStatePersistenceTab.mockReturnValue({
+      setActiveLevel: mockSetActiveLevel,
+      activeTabsByLevel: new Map<number, string>([
+        [0, "tab-1"],
+        [1, level1TabId],
+        [2, level2TabId],
+      ]),
+    } as any);
+
+    mockUseWindowContext.mockReturnValue(
+      buildWindowContextValue({
+        activeWindow: {
+          tabs: {
+            "tab-1": { selectedRecord: "record-0" },
+            [level1TabId]: { selectedRecord: "record-1" },
+            [level2TabId]: { selectedRecord: "record-2" },
+          },
+          windowIdentifier: "test-window-identifier",
+        },
+      })
+    );
+
+    renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
+
+    fireEvent.click(screen.getByTestId("item-test-window-id"));
+
+    expect(mockClearTabFormState).toHaveBeenCalledTimes(3);
+    expect(mockClearTabFormState).toHaveBeenCalledWith("test-window-identifier", "tab-1");
+    expect(mockClearTabFormState).toHaveBeenCalledWith("test-window-identifier", level1TabId);
+    expect(mockClearTabFormState).toHaveBeenCalledWith("test-window-identifier", level2TabId);
+  });
 });
