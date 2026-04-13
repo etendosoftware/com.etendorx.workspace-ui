@@ -3096,6 +3096,7 @@ const DynamicTable = ({
   useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange, {
     isKeyboardNavigationSource,
     onStableSelection: handleStableKeyboardSelection,
+    isTableVisible: isVisible,
   });
 
   const handleEnter = useCallback(
