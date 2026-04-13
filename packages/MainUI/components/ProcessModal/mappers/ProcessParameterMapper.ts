@@ -245,7 +245,25 @@ export class ProcessParameterMapper {
   static getFieldType(parameter: ProcessParameter | ExtendedProcessParameter): string {
     const reference = ProcessParameterMapper.mapReferenceType(parameter.reference);
 
-    // Check if parameter has selector information - indicates it's a tabledir/selector field
+    // List and other scalar types must be checked BEFORE the selector/datasource check,
+    // because the API may return a selector object even for List-type parameters (e.g. Lead Status).
+    // If we let the selector check win, the parameter gets routed to TableDirSelector which
+    // tries to fetch from a datasource and fails.
+    if (reference === FIELD_REFERENCE_CODES.LIST_17.id || reference === FIELD_REFERENCE_CODES.LIST_13.id) {
+      return "list";
+    }
+    if (reference === FIELD_REFERENCE_CODES.PASSWORD.id) return "password";
+    if (reference === FIELD_REFERENCE_CODES.BOOLEAN.id) return "boolean";
+    if (reference === FIELD_REFERENCE_CODES.DECIMAL.id || reference === FIELD_REFERENCE_CODES.INTEGER.id) {
+      return "numeric";
+    }
+    if (reference === FIELD_REFERENCE_CODES.QUANTITY_29.id || reference === FIELD_REFERENCE_CODES.QUANTITY_22.id) {
+      return "quantity";
+    }
+    if (reference === FIELD_REFERENCE_CODES.DATE.id) return "date";
+    if (reference === FIELD_REFERENCE_CODES.DATETIME.id) return "datetime";
+
+    // Check if parameter has selector information - indicates it's a tabledir/select field
     if (parameter.selector?.datasourceName) {
       // Special case for Product selector
       if (
@@ -257,23 +275,10 @@ export class ProcessParameterMapper {
       return "tabledir";
     }
 
-    if (reference === FIELD_REFERENCE_CODES.PASSWORD.id) return "password";
-    if (reference === FIELD_REFERENCE_CODES.BOOLEAN.id) return "boolean";
-    if (reference === FIELD_REFERENCE_CODES.DECIMAL.id || reference === FIELD_REFERENCE_CODES.INTEGER.id) {
-      return "numeric";
-    }
-    if (reference === FIELD_REFERENCE_CODES.QUANTITY_29.id || reference === FIELD_REFERENCE_CODES.QUANTITY_22.id) {
-      return "quantity";
-    }
-    if (reference === FIELD_REFERENCE_CODES.DATE.id) return "date";
-    if (reference === FIELD_REFERENCE_CODES.DATETIME.id) return "datetime";
     if (reference === FIELD_REFERENCE_CODES.SELECT_30.id) return "select";
     if (reference === FIELD_REFERENCE_CODES.PRODUCT.id) return "product";
     if (reference === FIELD_REFERENCE_CODES.TABLE_DIR_19.id || reference === FIELD_REFERENCE_CODES.TABLE_DIR_18.id) {
       return "tabledir";
-    }
-    if (reference === FIELD_REFERENCE_CODES.LIST_17.id || reference === FIELD_REFERENCE_CODES.LIST_13.id) {
-      return "list";
     }
     if (reference === FIELD_REFERENCE_CODES.WINDOW.id) return "window";
     if (reference === FIELD_REFERENCE_CODES.PATTRIBUTE.id) return "pattribute";

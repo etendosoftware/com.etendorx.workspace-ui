@@ -468,6 +468,10 @@ function ProcessDefinitionModalContent({
     const basePayload = buildProcessPayload(record, tab, {}, {});
     const combined = {
       ...basePayload,
+      // Include raw parameter keys from DefaultsProcessActionHandler (e.g. "currentStatus")
+      // alongside the display-name-mapped versions (e.g. "Current Status").
+      // Selector filters on the backend use @currentStatus@ (the raw key), not the display name.
+      ...(processInitialization?.defaults || {}),
       ...initialState,
       _processId: processId,
     };

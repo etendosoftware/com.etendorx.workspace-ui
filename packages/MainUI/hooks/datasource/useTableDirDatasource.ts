@@ -187,11 +187,21 @@ export const useTableDirDatasource = ({
         if (isProcessModal) {
           // Datasources using the standard SelectorDataSourceFilter need form context
           // to resolve org/client security and field references.
-          // Custom entity datasources (e.g. ETASK_Task_Priority) break when given
-          // full context — they use lean payload instead.
+          // Custom entity datasources (e.g. ETASK_Task_Priority, ETCRM_LeadStatus) break
+          // when given full context because the backend NPEs on form fields that don't
+          // exist as entity properties. They use lean payload instead.
+          //
+          // Only send full context when:
+          //   1. datasourceName is "ADList" (reference list — explicitly needs form context)
+          //   2. datasourceName is "ComboTableDatasourceService" (standard TableDir combos)
+          //   3. No datasourceName is set but has SelectorDataSourceFilter (standard inline selectors)
+          //
+          // Custom entity datasources (any other datasourceName) always use lean payload.
           const usesStandardFilter =
             field.selector?.datasourceName === "ADList" ||
-            field.selector?.filterClass === "org.openbravo.userinterface.selector.SelectorDataSourceFilter";
+            field.selector?.datasourceName === "ComboTableDatasourceService" ||
+            (!field.selector?.datasourceName &&
+              field.selector?.filterClass === "org.openbravo.userinterface.selector.SelectorDataSourceFilter");
 
           if (usesStandardFilter) {
             return {
@@ -201,6 +211,81 @@ export const useTableDirDatasource = ({
               ...formValues,
             };
           }
+
+          // Custom entity datasources that use SelectorDataSourceFilter need context
+          // from the form to apply their HQL @param@ filters, but must NOT receive entity
+          // fields that don't exist on the selector's target entity — those cause backend
+          // NPE in SelectorDataSourceFilter.addWhereClause() on property.getPrimitiveObjectType().
+          if (field.selector?.filterClass === "org.openbravo.userinterface.selector.SelectorDataSourceFilter") {
+            // Strategy: extract @paramName@ placeholders from the selector's HQL
+            // (stored in selector.hqlWhere / selector.whereClause / selector.hql).
+            // Only send those specific params plus standard AD security fields.
+            // This mirrors Classic's buildExtraContext() which sends only what the HQL needs.
+            //
+            // Fallback: if no HQL is found in frontend metadata, the backend applies the
+            // HQL via _selectorDefinitionId. Send inp* fields + raw process parameter keys
+            // (e.g. isConverted: "Y", currentStatus: "UUID") so @param@ placeholders resolve.
+
+            const SAFE_AD_FIELD_PATTERN = /^inpad[A-Z]/;
+            const HQL_PARAM_PATTERN = /@([^@]+)@/g;
+
+            // Collect all HQL strings from the selector metadata (various possible property names)
+            const sel = field.selector as Record<string, unknown>;
+            const hqlSources = [
+              sel.hqlWhere,
+              sel.whereClause,
+              sel.hql,
+              sel.filterExpression,
+              sel.hqlFilterExpression,
+            ]
+              .filter((v): v is string => typeof v === "string" && v.length > 0)
+              .join(" ");
+
+            let contextFormValues: Record<string, unknown>;
+
+            if (hqlSources.length > 0) {
+              // Extract @paramName@ placeholders from HQL — only those params are needed
+              const hqlParams = new Set<string>();
+              let match: RegExpExecArray | null;
+              const regex = new RegExp(HQL_PARAM_PATTERN.source, "g");
+              while ((match = regex.exec(hqlSources)) !== null) {
+                hqlParams.add(match[1]);
+              }
+              contextFormValues = Object.fromEntries(
+                Object.entries(formValues).filter(([key]) => SAFE_AD_FIELD_PATTERN.test(key) || hqlParams.has(key))
+              );
+            } else {
+              // No HQL available in frontend metadata — the backend applies the HQL filter
+              // via _selectorDefinitionId and substitutes @param@ placeholders from
+              // the request params (e.g. @isConverted@, @currentStatus@).
+              //
+              // Include:
+              //   1. inp* fields — standard Classic-format context
+              //   2. Lowercase camelCase/underscore keys without $ — these are process
+              //      parameter raw keys from DefaultsProcessActionHandler (e.g.
+              //      isConverted: "Y", currentStatus: "UUID"). Classic sends these.
+              //
+              // Exclude: display-name keys with spaces ("Lead Status"), $Element_*,
+              // _processId, UPPERCASE keys — frontend-only constructs or system fields
+              // that the backend doesn't expect as HQL substitution params.
+              const INP_FIELD_PATTERN = /^inp/;
+              // Lowercase camelCase or underscore_case, no $ or spaces — process param raw keys
+              const PROCESS_PARAM_KEY_PATTERN = /^[a-z][a-zA-Z0-9_]*$/;
+              contextFormValues = Object.fromEntries(
+                Object.entries(formValues).filter(
+                  ([key]) => INP_FIELD_PATTERN.test(key) || PROCESS_PARAM_KEY_PATTERN.test(key)
+                )
+              );
+            }
+
+            return {
+              _textMatchStyle: "substring",
+              ...parentData,
+              ...invoiceValue,
+              ...contextFormValues,
+            };
+          }
+
           return {};
         }
 
@@ -479,6 +564,7 @@ export const useTableDirDatasource = ({
 
         const entityName =
           field.selector?.datasourceName || String(field.selector?._entityName ?? "") || COMBO_TABLE_DATASOURCE;
+
         const { data } = await datasource.client.post("/api/datasource", {
           entity: entityName,
           params,
