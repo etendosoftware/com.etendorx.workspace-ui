@@ -1,4 +1,4 @@
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { useImageUpload } from "../../hooks/useImageUpload";
 import {
   mockUserContextState,
@@ -72,7 +72,14 @@ describe("useImageUpload", () => {
       uploadResult = await result.current.uploadImage(uploadParams);
     });
 
-    expect(uploadResult).toEqual({ imageId: "A1B2C3" });
+    expect(uploadResult).toEqual({
+      imageId: "A1B2C3",
+      action: "dummy",
+      oldWidth: 0,
+      oldHeight: 0,
+      newWidth: 0,
+      newHeight: 0,
+    });
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     const callArgs = fetchMock.mock.calls[0];
@@ -117,5 +124,98 @@ describe("useImageUpload", () => {
     await act(async () => {
       await expect(result.current.uploadImage(uploadParams)).rejects.toThrow("Network error");
     });
+  });
+
+  it("parseCallbackFromHtml: parses full 6-argument response correctly", async () => {
+    const mockHtmlResponse =
+      "<html><body><script>selector.callback('AABBCCDD', 'RESIZE_EXACT', 800, 600, 400, 300);</script></body></html>";
+    createFetchMock(true, mockHtmlResponse);
+
+    const { result } = renderHook(() => useImageUpload());
+
+    let uploadResult: any;
+    await act(async () => {
+      uploadResult = await result.current.uploadImage(uploadParams);
+    });
+
+    expect(uploadResult).toEqual({
+      imageId: "AABBCCDD",
+      action: "RESIZE_EXACT",
+      oldWidth: 800,
+      oldHeight: 600,
+      newWidth: 400,
+      newHeight: 300,
+    });
+  });
+
+  it("parseCallbackFromHtml: parses response with quoted dimensions correctly", async () => {
+    const mockHtmlResponse =
+      "<html><body><script>selector.callback('541E82F9919C', 'RESIZE_ASPECTRATIONL', '470', '465', '34', '34');</script></body></html>";
+    createFetchMock(true, mockHtmlResponse);
+
+    const { result } = renderHook(() => useImageUpload());
+
+    let uploadResult: any;
+    await act(async () => {
+      uploadResult = await result.current.uploadImage(uploadParams);
+    });
+
+    expect(uploadResult).toEqual({
+      imageId: "541E82F9919C",
+      action: "RESIZE_ASPECTRATIONL",
+      oldWidth: 470,
+      oldHeight: 465,
+      newWidth: 34,
+      newHeight: 34,
+    });
+  });
+
+  it("parseCallbackFromHtml: parses short response (imageId + action only) with default 0 dimensions", async () => {
+    const mockHtmlResponse = "<html><body><script>selector.callback('AABBCCDD', 'N');</script></body></html>";
+    createFetchMock(true, mockHtmlResponse);
+
+    const { result } = renderHook(() => useImageUpload());
+
+    let uploadResult: any;
+    await act(async () => {
+      uploadResult = await result.current.uploadImage(uploadParams);
+    });
+
+    expect(uploadResult).toEqual({
+      imageId: "AABBCCDD",
+      action: "N",
+      oldWidth: 0,
+      oldHeight: 0,
+      newWidth: 0,
+      newHeight: 0,
+    });
+  });
+
+  it("deleteUploadedImage: calls endpoint with correct params when imageId is provided", async () => {
+    const fetchMock = createFetchMock(true, "");
+    const { result } = renderHook(() => useImageUpload());
+
+    await act(async () => {
+      await result.current.deleteUploadedImage("img-to-delete");
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const callArgs = fetchMock.mock.calls[0];
+    expect(callArgs[0]).toBe("/api/erp/utility/ImageInfoBLOB");
+    expect(callArgs[1].method).toBe("POST");
+    expect(callArgs[1].headers).toEqual({ Authorization: "Bearer mock-token" });
+    expect(callArgs[1].body.get("Command")).toBe("DELETE_OB3");
+    expect(callArgs[1].body.get("imageId")).toBe("img-to-delete");
+  });
+
+  it("deleteUploadedImage: does not call backend when imageId is empty", async () => {
+    const fetchMock = createFetchMock(true, "");
+    const { result } = renderHook(() => useImageUpload());
+
+    await act(async () => {
+      await result.current.deleteUploadedImage("");
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

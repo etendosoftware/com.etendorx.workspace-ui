@@ -10,23 +10,41 @@ interface UploadImageParams {
   tabId: string;
   orgId: string;
   existingImageId?: string;
+  imageSizeAction?: string;
+  imageWidth?: number;
+  imageHeight?: number;
 }
 
 interface UploadResult {
   imageId: string;
-  width?: number;
-  height?: number;
+  action: string;
+  oldWidth: number;
+  oldHeight: number;
+  newWidth: number;
+  newHeight: number;
 }
 
 interface UseImageUploadReturn {
   uploadImage: (params: UploadImageParams) => Promise<UploadResult>;
+  deleteUploadedImage: (imageId: string) => Promise<void>;
   isUploading: boolean;
   error: string | null;
 }
 
-function parseImageIdFromHtml(html: string): string | null {
-  const match = html.match(/selector\.callback\('([A-Fa-f0-9]+)'/);
-  return match?.[1] ?? null;
+function parseCallbackFromHtml(html: string): UploadResult | null {
+  const match = html.match(
+    /selector\.callback\('([A-Fa-f0-9]*)'\s*,\s*'([^']*)'\s*(?:,\s*'?(\d+)'?\s*,\s*'?(\d+)'?\s*,\s*'?(\d+)'?\s*,\s*'?(\d+)'?)?/
+  );
+  if (!match) return null;
+
+  const imageId = match[1] ?? "";
+  const action = match[2] ?? "N";
+  const oldWidth = match[3] ? Number(match[3]) : 0;
+  const oldHeight = match[4] ? Number(match[4]) : 0;
+  const newWidth = match[5] ? Number(match[5]) : 0;
+  const newHeight = match[6] ? Number(match[6]) : 0;
+
+  return { imageId, action, oldWidth, oldHeight, newWidth, newHeight };
 }
 
 export const useImageUpload = (): UseImageUploadReturn => {
@@ -54,9 +72,9 @@ export const useImageUpload = (): UseImageUploadReturn => {
         formData.append("inpadOrgId", params.orgId);
         formData.append("parentObjectId", "");
         formData.append("imageId", params.existingImageId || "");
-        formData.append("imageSizeAction", "N");
-        formData.append("imageWidthValue", "0");
-        formData.append("imageHeightValue", "0");
+        formData.append("imageSizeAction", params.imageSizeAction ?? "N");
+        formData.append("imageWidthValue", String(params.imageWidth ?? 0));
+        formData.append("imageHeightValue", String(params.imageHeight ?? 0));
         formData.append("inpSelectorId", "isc_OBImageSelector_0");
 
         const uploadResponse = await fetch("/api/erp/utility/ImageInfoBLOB", {
@@ -74,13 +92,13 @@ export const useImageUpload = (): UseImageUploadReturn => {
         }
 
         const responseText = await uploadResponse.text();
-        const imageId = parseImageIdFromHtml(responseText);
+        const parsed = parseCallbackFromHtml(responseText);
 
-        if (!imageId) {
+        if (!parsed || !parsed.imageId) {
           throw new Error(t("image.upload.errors.parseIdFailed"));
         }
 
-        return { imageId };
+        return parsed;
       } catch (err) {
         const message = err instanceof Error ? err.message : t("image.upload.errors.uploadFailed");
         setError(message);
@@ -92,5 +110,28 @@ export const useImageUpload = (): UseImageUploadReturn => {
     [token, t]
   );
 
-  return { uploadImage, isUploading, error };
+  const deleteUploadedImage = useCallback(
+    async (imageId: string): Promise<void> => {
+      if (!imageId) return;
+
+      const formData = new FormData();
+      formData.append("Command", "DELETE_OB3");
+      formData.append("imageId", imageId);
+
+      try {
+        await fetch("/api/erp/utility/ImageInfoBLOB", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+      } catch {
+        // fire-and-forget: ignore errors on delete
+      }
+    },
+    [token]
+  );
+
+  return { uploadImage, deleteUploadedImage, isUploading, error };
 };

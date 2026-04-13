@@ -1,7 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import ImagePreviewModal from "../ImagePreviewModal";
 import { useTranslation } from "@/hooks/useTranslation";
-import React from "react";
 
 jest.mock("@/hooks/useTranslation");
 

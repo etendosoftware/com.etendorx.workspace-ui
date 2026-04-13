@@ -32,14 +32,28 @@ describe("useCurrentRecord", () => {
     fields: {},
   } as any;
 
+  // Capture registered "selected" event listeners so tests can simulate graph events.
+  let selectedListeners: Array<(...args: any[]) => void> = [];
+
   const mockGraph = {
     getRecord: jest.fn(),
     setSelected: jest.fn(),
     setSelectedMultiple: jest.fn(),
+    on: jest.fn((event: string, listener: (...args: any[]) => void) => {
+      if (event === "selected") {
+        selectedListeners.push(listener);
+      }
+    }),
+    off: jest.fn((event: string, listener: (...args: any[]) => void) => {
+      if (event === "selected") {
+        selectedListeners = selectedListeners.filter((l) => l !== listener);
+      }
+    }),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    selectedListeners = [];
     (useSelected as jest.Mock).mockReturnValue({ graph: mockGraph });
   });
 
@@ -136,5 +150,77 @@ describe("useCurrentRecord", () => {
 
     expect(hookResult.result.current.record).toEqual({});
     expect(hookResult.result.current.loading).toBe(false);
+  });
+
+  it("should update record immediately via setRecord when graph emits selected with a new _identifier", async () => {
+    // Simulate the initial state: record is loaded from cache with original identifier.
+    const initialRecord = { id: "record1", _identifier: "Old Name", name: "Old Name" };
+    mockGraph.getRecord.mockReturnValue(initialRecord);
+
+    const { result } = renderHook(() => useCurrentRecord({ tab: mockTab, recordId: "record1" }));
+
+    // Verify initial state
+    expect(result.current.record).toEqual(initialRecord);
+
+    // Simulate save: graph.setSelected is called with the updated record (new _identifier).
+    // This emits the "selected" event, which the hook's listener catches.
+    const updatedRecord = { id: "record1", _identifier: "New Name", name: "New Name" };
+    await act(async () => {
+      for (const listener of selectedListeners) {
+        listener(mockTab, updatedRecord);
+      }
+    });
+
+    // The hook must update record state immediately without waiting for a re-fetch,
+    // so that AppBreadcrumb re-renders and shows the new _identifier.
+    expect(result.current.record).toEqual(updatedRecord);
+    expect((result.current.record as any)._identifier).toBe("New Name");
+  });
+
+  it("should NOT update record a second time when graph emits selected with the same _identifier again", async () => {
+    const initialRecord = { id: "record1", _identifier: "Old Name", name: "Old Name" };
+    mockGraph.getRecord.mockReturnValue(initialRecord);
+
+    const { result } = renderHook(() => useCurrentRecord({ tab: mockTab, recordId: "record1" }));
+
+    // First event: identifier changes from null → "New Name". State updates.
+    const updatedRecord = { id: "record1", _identifier: "New Name", name: "New Name" };
+    await act(async () => {
+      for (const listener of selectedListeners) {
+        listener(mockTab, updatedRecord);
+      }
+    });
+    expect((result.current.record as any)._identifier).toBe("New Name");
+
+    // Second event: same identifier "New Name" again — no state update expected.
+    const sameAgainRecord = { id: "record1", _identifier: "New Name", name: "Some other change" };
+    const recordBeforeSecondEvent = result.current.record;
+    await act(async () => {
+      for (const listener of selectedListeners) {
+        listener(mockTab, sameAgainRecord);
+      }
+    });
+
+    // Record object reference and content should be unchanged (setRecord was not called again)
+    expect(result.current.record).toBe(recordBeforeSecondEvent);
+    expect((result.current.record as any)._identifier).toBe("New Name");
+  });
+
+  it("should NOT update record when graph emits selected for a different tab", async () => {
+    const initialRecord = { id: "record1", _identifier: "Old Name" };
+    mockGraph.getRecord.mockReturnValue(initialRecord);
+
+    const { result } = renderHook(() => useCurrentRecord({ tab: mockTab, recordId: "record1" }));
+
+    const differentTab = { ...mockTab, id: "differentTabId" };
+    const updatedRecord = { id: "record1", _identifier: "New Name" };
+    await act(async () => {
+      for (const listener of selectedListeners) {
+        listener(differentTab, updatedRecord);
+      }
+    });
+
+    // Record must NOT change since the event was for a different tab
+    expect(result.current.record).toEqual(initialRecord);
   });
 });

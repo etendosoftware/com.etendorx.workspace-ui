@@ -16,7 +16,7 @@ export const mockTranslationState = () => ({
   t: (key: string) => key,
 });
 
-export const createFetchMock = (ok: boolean, response: any, status: number = 200, statusText: string = "OK") => {
+export const createFetchMock = (ok: boolean, response: any, status = 200, statusText = "OK") => {
   const fetchMock = jest.fn().mockImplementation(() =>
     Promise.resolve({
       ok,
