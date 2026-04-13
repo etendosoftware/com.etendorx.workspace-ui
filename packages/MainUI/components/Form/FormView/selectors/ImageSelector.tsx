@@ -58,60 +58,49 @@ function buildConstraintMessage(
   newH: number,
   t: TranslateFunction
 ): string {
+  const getConfigVars = () => ({
+    configWidth: dimStr(oldW),
+    configHeight: dimStr(oldH),
+    actualWidth: dimStr(newW),
+    actualHeight: dimStr(newH),
+  });
+
+  const getResizeVars = () => ({
+    originalWidth: dimStr(oldW),
+    originalHeight: dimStr(oldH),
+    targetWidth: dimStr(newW),
+    targetHeight: dimStr(newH),
+  });
+
   switch (action) {
     case "ALLOWED":
-      return interpolate(t("image.sizeConstraints.error.ALLOWED"), {
-        configWidth: dimStr(oldW),
-        configHeight: dimStr(oldH),
-        actualWidth: dimStr(newW),
-        actualHeight: dimStr(newH),
-      });
+      return interpolate(t("image.sizeConstraints.error.ALLOWED"), getConfigVars());
     case "ALLOWED_MINIMUM":
-      return interpolate(t("image.sizeConstraints.error.ALLOWED_MINIMUM"), {
-        configWidth: dimStr(oldW),
-        configHeight: dimStr(oldH),
-        actualWidth: dimStr(newW),
-        actualHeight: dimStr(newH),
-      });
+      return interpolate(t("image.sizeConstraints.error.ALLOWED_MINIMUM"), getConfigVars());
     case "ALLOWED_MAXIMUM":
-      return interpolate(t("image.sizeConstraints.error.ALLOWED_MAXIMUM"), {
-        configWidth: dimStr(oldW),
-        configHeight: dimStr(oldH),
-        actualWidth: dimStr(newW),
-        actualHeight: dimStr(newH),
-      });
+      return interpolate(t("image.sizeConstraints.error.ALLOWED_MAXIMUM"), getConfigVars());
     case "RECOMMENDED":
-      return interpolate(t("image.sizeConstraints.confirm.RECOMMENDED"), {
-        configWidth: dimStr(oldW),
-        configHeight: dimStr(oldH),
-        actualWidth: dimStr(newW),
-        actualHeight: dimStr(newH),
-      });
+      return interpolate(t("image.sizeConstraints.confirm.RECOMMENDED"), getConfigVars());
     case "RECOMMENDED_MINIMUM":
-      return interpolate(t("image.sizeConstraints.confirm.RECOMMENDED_MINIMUM"), {
-        configWidth: dimStr(oldW),
-        configHeight: dimStr(oldH),
-        actualWidth: dimStr(newW),
-        actualHeight: dimStr(newH),
-      });
+      return interpolate(t("image.sizeConstraints.confirm.RECOMMENDED_MINIMUM"), getConfigVars());
     case "RECOMMENDED_MAXIMUM":
-      return interpolate(t("image.sizeConstraints.confirm.RECOMMENDED_MAXIMUM"), {
-        configWidth: dimStr(oldW),
-        configHeight: dimStr(oldH),
-        actualWidth: dimStr(newW),
-        actualHeight: dimStr(newH),
-      });
+      return interpolate(t("image.sizeConstraints.confirm.RECOMMENDED_MAXIMUM"), getConfigVars());
     default:
       if (action.startsWith("RESIZE_")) {
-        return interpolate(t("image.sizeConstraints.confirm.RESIZE"), {
-          originalWidth: dimStr(oldW),
-          originalHeight: dimStr(oldH),
-          targetWidth: dimStr(newW),
-          targetHeight: dimStr(newH),
-        });
+        return interpolate(t("image.sizeConstraints.confirm.RESIZE"), getResizeVars());
       }
       return "";
   }
+}
+
+function isViolated(action: string, oldW: number, oldH: number, newW: number, newH: number): boolean {
+  if (action.endsWith("_MINIMUM")) {
+    return (oldW !== 0 && oldW > newW) || (oldH !== 0 && oldH > newH);
+  }
+  if (action.endsWith("_MAXIMUM")) {
+    return (oldW !== 0 && oldW < newW) || (oldH !== 0 && oldH < newH);
+  }
+  return (oldW !== 0 && oldW !== newW) || (oldH !== 0 && oldH !== newH);
 }
 
 const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
@@ -168,13 +157,13 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
         const action = result.action;
 
         if (action === "WRONGFORMAT") {
-          if (result.imageId) void deleteUploadedImage(result.imageId);
+          if (result.imageId) deleteUploadedImage(result.imageId);
           setPendingError({ message: t("image.sizeConstraints.error.WRONGFORMAT") });
           return;
         }
 
         if (action === "ERROR_UPLOADING") {
-          if (result.imageId) void deleteUploadedImage(result.imageId);
+          if (result.imageId) deleteUploadedImage(result.imageId);
           setPendingError({ message: t("image.sizeConstraints.error.ERROR_UPLOADING") });
           return;
         }
@@ -206,22 +195,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
         }
 
         if (action === "ALLOWED" || action === "ALLOWED_MINIMUM" || action === "ALLOWED_MAXIMUM") {
-          // oldWidth/oldHeight = configured dimension (p3/p4); newWidth/newHeight = actual uploaded dim (p5/p6)
-          let violated = false;
-          if (action === "ALLOWED") {
-            violated =
-              (result.oldWidth !== 0 && result.oldWidth !== result.newWidth) ||
-              (result.oldHeight !== 0 && result.oldHeight !== result.newHeight);
-          } else if (action === "ALLOWED_MINIMUM") {
-            violated =
-              (result.oldWidth !== 0 && result.oldWidth > result.newWidth) ||
-              (result.oldHeight !== 0 && result.oldHeight > result.newHeight);
-          } else {
-            // ALLOWED_MAXIMUM
-            violated =
-              (result.oldWidth !== 0 && result.oldWidth < result.newWidth) ||
-              (result.oldHeight !== 0 && result.oldHeight < result.newHeight);
-          }
+          const violated = isViolated(action, result.oldWidth, result.oldHeight, result.newWidth, result.newHeight);
 
           if (violated) {
             setPendingError({
@@ -234,7 +208,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
                 t
               ),
             });
-            void deleteUploadedImage(result.imageId);
+            deleteUploadedImage(result.imageId);
             return;
           }
           setValue(field.hqlName, result.imageId, { shouldDirty: true });
@@ -243,22 +217,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
         }
 
         if (action === "RECOMMENDED" || action === "RECOMMENDED_MINIMUM" || action === "RECOMMENDED_MAXIMUM") {
-          // oldWidth/oldHeight = configured dimension (p3/p4); newWidth/newHeight = actual uploaded dim (p5/p6)
-          let violated = false;
-          if (action === "RECOMMENDED") {
-            violated =
-              (result.oldWidth !== 0 && result.oldWidth !== result.newWidth) ||
-              (result.oldHeight !== 0 && result.oldHeight !== result.newHeight);
-          } else if (action === "RECOMMENDED_MINIMUM") {
-            violated =
-              (result.oldWidth !== 0 && result.oldWidth > result.newWidth) ||
-              (result.oldHeight !== 0 && result.oldHeight > result.newHeight);
-          } else {
-            // RECOMMENDED_MAXIMUM
-            violated =
-              (result.oldWidth !== 0 && result.oldWidth < result.newWidth) ||
-              (result.oldHeight !== 0 && result.oldHeight < result.newHeight);
-          }
+          const violated = isViolated(action, result.oldWidth, result.oldHeight, result.newWidth, result.newHeight);
 
           if (violated) {
             setPendingConfirm({
@@ -508,9 +467,10 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
             setPendingConfirm(null);
           }}
           onCancel={() => {
-            void deleteUploadedImage(pendingConfirm.imageId);
+            deleteUploadedImage(pendingConfirm.imageId);
             setPendingConfirm(null);
           }}
+          data-testid={"ConfirmModal__" + field.id}
         />
       )}
       {pendingError && (
@@ -521,6 +481,7 @@ const ImageSelector = ({ field, isReadOnly }: ImageSelectorProps) => {
           hideSecondaryButton={true}
           onConfirm={() => setPendingError(null)}
           onCancel={() => setPendingError(null)}
+          data-testid={"ConfirmModal__" + field.id}
         />
       )}
     </>

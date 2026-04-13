@@ -88,7 +88,26 @@ const mockField = {
   hqlName: "imageId",
   columnName: "AD_Image_ID",
   name: "My Image",
-} as any;
+};
+
+const mockFieldWithConstraints = (action: string, width = 200, height = 100) => ({
+  ...mockField,
+  column: {
+    imageSizeValuesAction: action,
+    imageWidth: width,
+    imageHeight: height,
+  },
+});
+
+const createUploadResult = (overrides = {}) => ({
+  imageId: "new-img-id",
+  action: "N",
+  oldWidth: 0,
+  oldHeight: 0,
+  newWidth: 0,
+  newHeight: 0,
+  ...overrides,
+});
 
 describe("ImageSelector", () => {
   let watchMock: jest.Mock;
@@ -131,6 +150,29 @@ describe("ImageSelector", () => {
     (useAuthenticatedImage as jest.Mock).mockReturnValue(null);
   });
 
+  const renderSelector = (field = mockField, props = {}) => {
+    return render(<ImageSelector field={field} {...props} />);
+  };
+
+  const simulateUpload = (fileName = "test.png", fileType = "image/png") => {
+    const file = new File(["dummy"], fileName, { type: fileType });
+    const fileInput = screen.getByTestId("ImageSelector__fileInput__col-1");
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    return file;
+  };
+
+  const setupFilledState = (imageId = "existing-img-id", url?: string) => {
+    watchMock.mockReturnValue(imageId);
+    (useAuthenticatedImage as jest.Mock).mockReturnValue(url || `blob:http://localhost/${imageId}`);
+  };
+
+  const setupConstraintTest = (action: string, resultOverrides = {}) => {
+    watchMock.mockReturnValue(null);
+    uploadImageMock.mockResolvedValue(createUploadResult({ action, ...resultOverrides }));
+    renderSelector(mockFieldWithConstraints(action));
+    simulateUpload();
+  };
+
   it("should render empty state if there is no imageId", () => {
     watchMock.mockReturnValue(null);
     render(<ImageSelector field={mockField} />);
@@ -139,10 +181,9 @@ describe("ImageSelector", () => {
   });
 
   it("should render preview state if there is an imageId", () => {
-    watchMock.mockReturnValue("existing-img-id");
-    (useAuthenticatedImage as jest.Mock).mockReturnValue("blob:http://localhost/existing-img-id");
+    setupFilledState("existing-img-id", "blob:http://localhost/existing-img-id");
 
-    render(<ImageSelector field={mockField} />);
+    renderSelector();
 
     expect(screen.getByTestId("ImageSelector__filled__col-1")).toBeInTheDocument();
     const thumbnail = screen.getByTestId("ImageSelector__thumbnail__col-1") as HTMLImageElement;
@@ -151,19 +192,10 @@ describe("ImageSelector", () => {
 
   it("should call uploadImage and set value on valid file selection", async () => {
     watchMock.mockReturnValue(null);
-    uploadImageMock.mockResolvedValue({
-      imageId: "new-img-id",
-      action: "N",
-      oldWidth: 0,
-      oldHeight: 0,
-      newWidth: 0,
-      newHeight: 0,
-    });
-    render(<ImageSelector field={mockField} />);
+    uploadImageMock.mockResolvedValue(createUploadResult({ imageId: "new-img-id" }));
+    renderSelector();
 
-    const file = new File(["dummy"], "test.png", { type: "image/png" });
-    const fileInput = screen.getByTestId("ImageSelector__fileInput__col-1");
-    fireEvent.change(fileInput, { target: { files: [file] } });
+    const file = simulateUpload();
 
     await waitFor(() => {
       expect(uploadImageMock).toHaveBeenCalledWith({
@@ -183,11 +215,9 @@ describe("ImageSelector", () => {
 
   it("should show error toast on invalid file type", async () => {
     watchMock.mockReturnValue(null);
-    render(<ImageSelector field={mockField} />);
+    renderSelector();
 
-    const file = new File(["dummy"], "test.txt", { type: "text/plain" });
-    const fileInput = screen.getByTestId("ImageSelector__fileInput__col-1");
-    fireEvent.change(fileInput, { target: { files: [file] } });
+    simulateUpload("test.txt", "text/plain");
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("image.upload.errors.invalidFile");
@@ -198,11 +228,9 @@ describe("ImageSelector", () => {
   it("should show error toast on upload failure", async () => {
     watchMock.mockReturnValue(null);
     uploadImageMock.mockRejectedValue(new Error("Upload failed"));
-    render(<ImageSelector field={mockField} />);
+    renderSelector();
 
-    const file = new File(["dummy"], "test.png", { type: "image/png" });
-    const fileInput = screen.getByTestId("ImageSelector__fileInput__col-1");
-    fireEvent.change(fileInput, { target: { files: [file] } });
+    simulateUpload();
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Upload failed");
@@ -210,10 +238,9 @@ describe("ImageSelector", () => {
   });
 
   it("should open preview modal when clicking existing image thumbnail", () => {
-    watchMock.mockReturnValue("existing-img-id");
-    (useAuthenticatedImage as jest.Mock).mockReturnValue("blob:http://localhostUrl");
+    setupFilledState("existing-img-id", "blob:http://localhostUrl");
 
-    render(<ImageSelector field={mockField} />);
+    renderSelector();
 
     fireEvent.click(screen.getByTestId("ImageSelector__thumbnail__col-1"));
 
@@ -221,10 +248,9 @@ describe("ImageSelector", () => {
   });
 
   it("should close preview modal", () => {
-    watchMock.mockReturnValue("existing-img-id");
-    (useAuthenticatedImage as jest.Mock).mockReturnValue("blob:http://localhostUrl");
+    setupFilledState("existing-img-id", "blob:http://localhostUrl");
 
-    render(<ImageSelector field={mockField} />);
+    renderSelector();
     fireEvent.click(screen.getByTestId("ImageSelector__thumbnail__col-1"));
     fireEvent.click(screen.getByTestId("ImagePreviewModal__close"));
 
@@ -232,10 +258,9 @@ describe("ImageSelector", () => {
   });
 
   it("should handle delete from overlay button", () => {
-    watchMock.mockReturnValue("existing-img-id");
-    (useAuthenticatedImage as jest.Mock).mockReturnValue("blob:http://localhostUrl");
+    setupFilledState("existing-img-id", "blob:http://localhostUrl");
 
-    render(<ImageSelector field={mockField} />);
+    renderSelector();
     fireEvent.click(screen.getByTestId("ImageSelector__deleteBtn__col-1"));
 
     expect(setValueMock).toHaveBeenCalledWith("imageId", null, { shouldDirty: true });
@@ -249,44 +274,24 @@ describe("ImageSelector", () => {
   });
 
   it("should hide action buttons in readOnly mode when a filled image is present", () => {
-    watchMock.mockReturnValue("existing-img-id");
-    (useAuthenticatedImage as jest.Mock).mockReturnValue("blob:http://localhostUrl");
+    setupFilledState("existing-img-id", "blob:http://localhostUrl");
 
-    render(<ImageSelector field={mockField} isReadOnly={true} />);
+    renderSelector(mockField, { isReadOnly: true });
     expect(screen.queryByTestId("ImageSelector__editBtn__col-1")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ImageSelector__deleteBtn__col-1")).not.toBeInTheDocument();
   });
 
   // --- Size constraint branch tests ---
 
-  const mockFieldWithConstraints = (action: string, width = 200, height = 100) =>
-    ({
-      ...mockField,
-      column: {
-        imageSizeValuesAction: action,
-        imageWidth: width,
-        imageHeight: height,
-      },
-    }) as any;
-
   // For ALLOWED*/RECOMMENDED*: oldWidth/oldHeight = configured dim (p3/p4), newWidth/newHeight = actual uploaded dim (p5/p6)
 
   it("action ALLOWED + dimensions violated → error modal shown and deleteUploadedImage called", async () => {
-    watchMock.mockReturnValue(null);
-    uploadImageMock.mockResolvedValue({
+    setupConstraintTest("ALLOWED", {
       imageId: "bad-img",
-      action: "ALLOWED",
-      oldWidth: 200, // configured (= configW sent to backend)
-      oldHeight: 100, // configured (= configH sent to backend)
-      newWidth: 300, // actual uploaded image width
-      newHeight: 200, // actual uploaded image height
-    });
-
-    render(<ImageSelector field={mockFieldWithConstraints("ALLOWED", 200, 100)} />);
-
-    const file = new File(["dummy"], "test.png", { type: "image/png" });
-    fireEvent.change(screen.getByTestId("ImageSelector__fileInput__col-1"), {
-      target: { files: [file] },
+      oldWidth: 200,
+      oldHeight: 100,
+      newWidth: 300,
+      newHeight: 200,
     });
 
     await waitFor(() => {
@@ -297,21 +302,12 @@ describe("ImageSelector", () => {
   });
 
   it("action ALLOWED + dimensions compliant → imageId saved silently, no toast.error", async () => {
-    watchMock.mockReturnValue(null);
-    uploadImageMock.mockResolvedValue({
+    setupConstraintTest("ALLOWED", {
       imageId: "good-img",
-      action: "ALLOWED",
-      oldWidth: 200, // configured
-      oldHeight: 100, // configured
-      newWidth: 200, // actual matches configured → no violation
+      oldWidth: 200,
+      oldHeight: 100,
+      newWidth: 200,
       newHeight: 100,
-    });
-
-    render(<ImageSelector field={mockFieldWithConstraints("ALLOWED", 200, 100)} />);
-
-    const file = new File(["dummy"], "test.png", { type: "image/png" });
-    fireEvent.change(screen.getByTestId("ImageSelector__fileInput__col-1"), {
-      target: { files: [file] },
     });
 
     await waitFor(() => {
@@ -322,21 +318,12 @@ describe("ImageSelector", () => {
   });
 
   it("action RECOMMENDED + dimensions violated → ConfirmModal shown", async () => {
-    watchMock.mockReturnValue(null);
-    uploadImageMock.mockResolvedValue({
+    setupConstraintTest("RECOMMENDED", {
       imageId: "warn-img",
-      action: "RECOMMENDED",
-      oldWidth: 200, // configured
-      oldHeight: 100, // configured
-      newWidth: 500, // actual exceeds configured → violated
+      oldWidth: 200,
+      oldHeight: 100,
+      newWidth: 500,
       newHeight: 400,
-    });
-
-    render(<ImageSelector field={mockFieldWithConstraints("RECOMMENDED", 200, 100)} />);
-
-    const file = new File(["dummy"], "test.png", { type: "image/png" });
-    fireEvent.change(screen.getByTestId("ImageSelector__fileInput__col-1"), {
-      target: { files: [file] },
     });
 
     await waitFor(() => {
@@ -347,21 +334,12 @@ describe("ImageSelector", () => {
   });
 
   it("action RESIZE_ASPECTRATIO → ConfirmModal shown (not saved yet)", async () => {
-    watchMock.mockReturnValue(null);
-    uploadImageMock.mockResolvedValue({
+    setupConstraintTest("RESIZE_ASPECTRATIO", {
       imageId: "resized-img",
-      action: "RESIZE_ASPECTRATIO",
-      oldWidth: 800, // original image dims
+      oldWidth: 800,
       oldHeight: 600,
-      newWidth: 200, // resized result dims
+      newWidth: 200,
       newHeight: 150,
-    });
-
-    render(<ImageSelector field={mockFieldWithConstraints("RESIZE_ASPECTRATIO", 200, 100)} />);
-
-    const file = new File(["dummy"], "test.png", { type: "image/png" });
-    fireEvent.change(screen.getByTestId("ImageSelector__fileInput__col-1"), {
-      target: { files: [file] },
     });
 
     await waitFor(() => {
@@ -372,21 +350,12 @@ describe("ImageSelector", () => {
   });
 
   it("action RESIZE_ASPECTRATIO, confirm accepted → imageId saved", async () => {
-    watchMock.mockReturnValue(null);
-    uploadImageMock.mockResolvedValue({
+    setupConstraintTest("RESIZE_ASPECTRATIO", {
       imageId: "resized-img",
-      action: "RESIZE_ASPECTRATIO",
       oldWidth: 800,
       oldHeight: 600,
       newWidth: 200,
       newHeight: 150,
-    });
-
-    render(<ImageSelector field={mockFieldWithConstraints("RESIZE_ASPECTRATIO", 200, 100)} />);
-
-    const file = new File(["dummy"], "test.png", { type: "image/png" });
-    fireEvent.change(screen.getByTestId("ImageSelector__fileInput__col-1"), {
-      target: { files: [file] },
     });
 
     await waitFor(() => screen.getByTestId("ConfirmModal__confirm"));
@@ -398,21 +367,12 @@ describe("ImageSelector", () => {
   });
 
   it("action RESIZE_ASPECTRATIO, confirm cancelled → deleteUploadedImage called, imageId NOT saved", async () => {
-    watchMock.mockReturnValue(null);
-    uploadImageMock.mockResolvedValue({
+    setupConstraintTest("RESIZE_ASPECTRATIO", {
       imageId: "resized-img",
-      action: "RESIZE_ASPECTRATIO",
       oldWidth: 800,
       oldHeight: 600,
       newWidth: 200,
       newHeight: 150,
-    });
-
-    render(<ImageSelector field={mockFieldWithConstraints("RESIZE_ASPECTRATIO", 200, 100)} />);
-
-    const file = new File(["dummy"], "test.png", { type: "image/png" });
-    fireEvent.change(screen.getByTestId("ImageSelector__fileInput__col-1"), {
-      target: { files: [file] },
     });
 
     await waitFor(() => screen.getByTestId("ConfirmModal__cancel"));
@@ -425,22 +385,7 @@ describe("ImageSelector", () => {
   });
 
   it("action WRONGFORMAT → error modal shown and imageId NOT saved", async () => {
-    watchMock.mockReturnValue(null);
-    uploadImageMock.mockResolvedValue({
-      imageId: "fmt-img",
-      action: "WRONGFORMAT",
-      oldWidth: 0,
-      oldHeight: 0,
-      newWidth: 0,
-      newHeight: 0,
-    });
-
-    render(<ImageSelector field={mockField} />);
-
-    const file = new File(["dummy"], "test.png", { type: "image/png" });
-    fireEvent.change(screen.getByTestId("ImageSelector__fileInput__col-1"), {
-      target: { files: [file] },
-    });
+    setupConstraintTest("WRONGFORMAT", { imageId: "fmt-img" });
 
     await waitFor(() => {
       expect(screen.getByTestId("ErrorModal")).toBeInTheDocument();
