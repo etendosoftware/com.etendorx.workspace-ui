@@ -377,8 +377,12 @@ export default function useTableSelection(
     // 5. Synchronize to Context
     // ONLY do this if the selected IDs have actually changed. If only content changed,
     // skip overriding the Window context to avoid race conditions with actions like Clone.
+    // Also only update the URL from a VISIBLE table's selection. When the table is hidden
+    // (form view), its rowSelection can be stale and must not override the URL that was
+    // set by the form navigation — doing so would navigate away from the current record.
     if (hasSelectionIdChanged) {
       if (selectedRecords.length === 1 && isTableVisible) {
+        // Case A: Single Record Selected (table must be visible to update URL)
         const recordId = String(selectedRecords[0].id);
         if (fromKeyboard) {
           // Keyboard auto-repeat path: coalesce expensive side effects (URL + session sync
