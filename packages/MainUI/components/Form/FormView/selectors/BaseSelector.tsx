@@ -25,6 +25,7 @@ import { buildPayloadByInputName, parseDynamicExpression } from "@/utils";
 import { logger } from "@/utils/logger";
 import { createSmartContext } from "@/utils/expressions";
 import { isDebugCallouts } from "@/utils/debug";
+import { deriveStandardInputName } from "@/utils/form/extensionFieldUtils";
 import { type Field, type FormInitializationResponse, FormMode } from "@workspaceui/api-client/src/api/types";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import { useParams } from "next/navigation";
@@ -176,15 +177,10 @@ const BaseSelectorComp = ({
   // CHANGED_COLUMN so the backend executes the standard callout chain.
   // e.g. em_etcrm_c_bpartner_id → inpcBpartnerId triggers SL_Order_BPartner instead of
   // the CRM-specific callout that returns empty columnValues.
-  const standardChangedColumn = useMemo(() => {
-    const inputName = field.inputName;
-    if (!inputName?.startsWith("inpem")) return undefined;
-    const columnName = field.columnName?.toLowerCase();
-    if (!columnName) return undefined;
-    const match = columnName.match(/^em_[a-z]+_(.+)$/);
-    if (!match) return undefined;
-    return "inp" + match[1].replace(/_([a-z0-9])/g, (_: string, c: string) => c.toUpperCase());
-  }, [field.inputName, field.columnName]);
+  const standardChangedColumn = useMemo(
+    () => deriveStandardInputName(field.inputName, field.columnName ?? ""),
+    [field.inputName, field.columnName]
+  );
 
   const executeCalloutBase = useCallout({
     field,

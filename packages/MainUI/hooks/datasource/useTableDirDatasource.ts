@@ -32,6 +32,7 @@ import {
   COMBO_TABLE_SELECTOR_DEFAULTS,
 } from "./constants";
 import { transformValueToClassicFormat } from "@/utils/datasourceUtils";
+import { deriveStandardInputName } from "@/utils/form/extensionFieldUtils";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 const FALLBACK_RESULT: Record<string, EntityValue> = {} as Record<string, EntityValue>;
@@ -46,7 +47,7 @@ const HQL_PARAM_PATTERN = /@([^@]+)@/g;
  * When HQL is available, only params referenced via @param@ placeholders are included.
  * Otherwise, falls back to inp* fields and process parameter raw keys.
  */
-const buildSelectorContextFormValues = (
+export const buildSelectorContextFormValues = (
   hqlSources: string,
   formValues: Record<string, EntityValue>
 ): Record<string, unknown> => {
@@ -193,20 +194,11 @@ export const useTableDirDatasource = ({
         if (!tab?.fields) return body;
 
         for (const fieldDef of Object.values(tab.fields)) {
-          const inputName = fieldDef.inputName;
+          const { inputName, columnName } = fieldDef;
           if (!inputName?.startsWith("inpem") || !body[inputName]) continue;
 
-          const columnName = fieldDef.columnName?.toLowerCase();
-          if (!columnName) continue;
-
-          // Strip module prefix: em_etcrm_c_bpartner_id → c_bpartner_id
-          const match = columnName.match(/^em_[a-z]+_(.+)$/);
-          if (!match) continue;
-
-          // c_bpartner_id → inpcBpartnerId
-          const standardInputName = "inp" + match[1].replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
-
-          if (!body[standardInputName]) {
+          const standardInputName = deriveStandardInputName(inputName, columnName ?? "");
+          if (standardInputName && !body[standardInputName]) {
             body[standardInputName] = body[inputName];
           }
         }
