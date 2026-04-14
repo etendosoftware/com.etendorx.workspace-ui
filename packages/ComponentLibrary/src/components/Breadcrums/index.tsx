@@ -21,14 +21,17 @@ import NavigateNextIcon from "../../assets/icons/chevron-right.svg";
 import Menu from "../Menu";
 import ToggleChip from "../Toggle/ToggleChip";
 import { useStyle } from "./styles";
-import type { BreadcrumbAction, BreadcrumbProps } from "./types";
+import type { BreadcrumbAction, BreadcrumbItem, BreadcrumbProps } from "./types";
 import BreadcrumbList from "./BreadcrumbList/index";
 
 const Breadcrumb: FC<BreadcrumbProps> = ({ items, separator, onHomeClick, onBackClick }) => {
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-
   const [currentActions, setCurrentActions] = useState<BreadcrumbAction[]>([]);
   const [toggleStates, setToggleStates] = useState<Record<string, boolean>>({});
+
+  const [collapseAnchorEl, setCollapseAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [collapsedItems, setCollapsedItems] = useState<BreadcrumbItem[]>([]);
+
   const theme = useTheme();
   const { sx } = useStyle();
 
@@ -58,6 +61,18 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, separator, onHomeClick, onBack
     }));
   }, []);
 
+  const handleCollapseMenuOpen = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>, hiddenItems: BreadcrumbItem[]) => {
+      setCollapseAnchorEl(event.currentTarget);
+      setCollapsedItems(hiddenItems);
+    },
+    []
+  );
+
+  const handleCollapseMenuClose = useCallback(() => {
+    setCollapseAnchorEl(null);
+  }, []);
+
   const activeSeparator = separator ?? defaultSeparator;
 
   return (
@@ -66,12 +81,19 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, separator, onHomeClick, onBack
         items={items}
         handleActionMenuOpen={handleActionMenuOpen}
         handleHomeNavigation={onHomeClick}
+        onCollapseMenuOpen={handleCollapseMenuOpen}
         onBackClick={onBackClick}
         separator={activeSeparator}
       />
       <Menu anchorEl={anchorEl} onClose={handleActionMenuClose}>
         {currentActions.map((action) => (
-          <MenuItem key={action.id} onClick={() => {}} sx={sx.menuItem}>
+          <MenuItem
+            key={action.id}
+            onClick={() => {
+              action.onClick?.();
+              handleActionMenuClose();
+            }}
+            sx={sx.menuItem}>
             <Box sx={sx.iconBox}>
               {action.icon}
               <span>{action.label}</span>
@@ -81,6 +103,19 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, separator, onHomeClick, onBack
                 <ToggleChip isActive={toggleStates[action.id] ?? false} onToggle={() => handleToggle(action.id)} />
               </Box>
             )}
+          </MenuItem>
+        ))}
+      </Menu>
+      <Menu anchorEl={collapseAnchorEl} onClose={handleCollapseMenuClose}>
+        {collapsedItems.map((item) => (
+          <MenuItem
+            key={item.id}
+            onClick={() => {
+              item.onClick?.();
+              handleCollapseMenuClose();
+            }}
+            sx={sx.menuItem}>
+            {item.label}
           </MenuItem>
         ))}
       </Menu>

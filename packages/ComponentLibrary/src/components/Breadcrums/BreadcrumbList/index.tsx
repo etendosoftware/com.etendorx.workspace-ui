@@ -15,28 +15,64 @@
  *************************************************************************
  */
 
-import { Breadcrumbs } from "@mui/material";
-import type { FC } from "react";
+import { Breadcrumbs, Button } from "@mui/material";
+import { type FC, useRef } from "react";
 import { useStyle } from "../styles";
 import type { BreadcrumbListProps } from "../types";
+import { useBreadcrumbOverflow } from "../useBreadcrumbOverflow";
 import BreadcrumbItem from "../BreadcrumbItem/index";
 
 const BreadcrumbList: FC<BreadcrumbListProps> = ({
   items,
   handleActionMenuOpen,
   handleHomeNavigation,
+  onCollapseMenuOpen,
   onBackClick,
   separator,
 }) => {
   const { sx } = useStyle();
+  const containerRef = useRef<HTMLElement | null>(null);
+  const { visibleItemsWithIndex, collapsedItems, isCollapsed } = useBreadcrumbOverflow({
+    containerRef,
+    items,
+  });
+
+  if (visibleItemsWithIndex.length === 0) {
+    return null;
+  }
+
+  const [firstEntry, ...restEntries] = visibleItemsWithIndex;
 
   return (
-    <Breadcrumbs separator={separator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
-      {items.map((item, index) => (
+    <Breadcrumbs ref={containerRef} separator={separator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
+      {/* First item is always visible */}
+      <BreadcrumbItem
+        key={firstEntry.item.id}
+        item={firstEntry.item}
+        position={firstEntry.originalIndex}
+        breadcrumbsSize={items.length}
+        handleActionMenuOpen={handleActionMenuOpen}
+        handleHomeNavigation={handleHomeNavigation}
+        onBackClick={onBackClick}
+      />
+
+      {/* Ellipsis button as a standalone breadcrumb entry when collapsed */}
+      {isCollapsed && (
+        <Button
+          key="collapse-button"
+          sx={sx.textButton}
+          onClick={(e) => onCollapseMenuOpen?.(e, collapsedItems)}
+          aria-label="Show hidden breadcrumb items">
+          ...
+        </Button>
+      )}
+
+      {/* Middle and last visible items */}
+      {restEntries.map(({ item, originalIndex }) => (
         <BreadcrumbItem
           key={item.id}
           item={item}
-          position={index}
+          position={originalIndex}
           breadcrumbsSize={items.length}
           handleActionMenuOpen={handleActionMenuOpen}
           handleHomeNavigation={handleHomeNavigation}

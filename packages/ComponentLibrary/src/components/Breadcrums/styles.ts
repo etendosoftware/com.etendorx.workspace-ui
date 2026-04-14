@@ -38,6 +38,7 @@ export const useStyle = () => {
           height: "2rem",
           "& .MuiBreadcrumbs-ol": {
             height: "2rem",
+            flexWrap: "nowrap",
             "& .MuiBreadcrumbs-li": {
               height: "2rem",
             },
