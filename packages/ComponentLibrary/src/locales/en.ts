@@ -297,6 +297,7 @@ const en = {
     processError: "Process failed",
     warning: "Warning",
     refreshGrid: "Refresh the grid to see the changes.",
+    selectFile: "Select file...",
   },
   drawer: {
     recentlyViewed: "Recently Viewed",
