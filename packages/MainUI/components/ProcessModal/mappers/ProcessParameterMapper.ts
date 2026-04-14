@@ -186,6 +186,10 @@ export class ProcessParameterMapper {
       // Attribute Set Instance
       PAttribute: FIELD_REFERENCE_CODES.PATTRIBUTE.id,
 
+      // Upload File (process parameters only)
+      "Upload File": FIELD_REFERENCE_CODES.UPLOAD_FILE.id,
+      UploadFile: FIELD_REFERENCE_CODES.UPLOAD_FILE.id,
+
       // String/Text (default)
       String: "10", // Text reference
       Text: "10",
@@ -228,6 +232,8 @@ export class ProcessParameterMapper {
       "Table Directory",
       "Window",
       "PAttribute",
+      "Upload File",
+      "UploadFile",
     ];
 
     return (
@@ -282,6 +288,7 @@ export class ProcessParameterMapper {
     }
     if (reference === FIELD_REFERENCE_CODES.WINDOW.id) return "window";
     if (reference === FIELD_REFERENCE_CODES.PATTRIBUTE.id) return "pattribute";
+    if (reference === FIELD_REFERENCE_CODES.UPLOAD_FILE.id) return "uploadfile";
 
     return "text"; // Default fallback
   }
