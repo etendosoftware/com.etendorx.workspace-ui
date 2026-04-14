@@ -67,15 +67,17 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
     cy.closeToastIfPresent();
     cy.wait(500);
 
-    cy.get("button.toolbar-button-refresh:visible", { timeout: 10000 }).first().should("be.enabled").click();
-    cy.wait(1000);
-
     cy.contains(".MuiChip-label", "Completed", { timeout: 20000 }).should("exist");
 
-    cy.contains("button", "Available Process").click();
-
     cy.intercept("POST", /DefaultsProcessActionHandler/).as("processDefaults");
-    cy.contains("div.cursor-pointer", "Add Payment").should("be.visible").click();
+    cy.contains(".MuiChip-label", "Completed")
+      .closest(".shadow-lg")
+      .find('[data-testid="IconButtonWithText__process-menu"]')
+      .click();
+    cy.wait(500);
+
+    cy.get('[data-testid="ProcessMenuItemBase__541926"]').contains("Add Payment").should("be.visible").click();
+
     cy.wait("@processDefaults", { timeout: 30000 }).its("response.statusCode").should("be.oneOf", [200, 304]);
 
     cy.get("tbody.MuiTableBody-root tr.MuiTableRow-root", { timeout: 30000 }).should("have.length.gte", 1);
