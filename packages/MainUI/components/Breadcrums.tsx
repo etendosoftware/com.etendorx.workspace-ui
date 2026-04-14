@@ -46,11 +46,11 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { t } = useTranslation();
   const pathname = usePathname();
   const { window, windowId, windowIdentifier } = useMetadataContext();
-  const { activeWindow, clearTabFormState, setAllWindowsInactive } = useWindowContext();
+  const { activeWindow, setAllWindowsInactive } = useWindowContext();
   const { graph } = useSelected();
   const { setFocus } = useFocusContext();
 
-  const { setActiveLevel, activeTabsByLevel } = useTableStatePersistenceTab({
+  const { setActiveLevel, activeTabsByLevel, activeLevels } = useTableStatePersistenceTab({
     windowIdentifier: windowIdentifier || "",
     tabId: "",
   });
@@ -126,16 +126,11 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const handleWindowTitleClick = useCallback(() => {
     setActiveLevel(0);
     if (level0TabId) setFocus(level0TabId);
-    if (windowIdentifier && activeTabsByLevel) {
-      for (const tabId of activeTabsByLevel.values()) {
-        clearTabFormState(windowIdentifier, tabId);
-      }
-    }
     if (currentTab && graph) {
       graph.clear(currentTab);
       graph.clearSelected(currentTab);
     }
-  }, [setActiveLevel, setFocus, level0TabId, windowIdentifier, currentTab, clearTabFormState, graph, activeTabsByLevel]);
+  }, [setActiveLevel, setFocus, level0TabId, currentTab, graph]);
 
   const breadcrumbItems = useMemo(() => {
     const items: BreadcrumbItem[] = [];
@@ -175,10 +170,16 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
       if (!displayLabel) continue;
 
       const tabId = tab.id;
+      const levelIndex = i;
       items.push({
         id: `level${i}-${tabId}`,
         label: displayLabel,
-        onClick: () => setFocus(tabId),
+        onClick: () => {
+          setFocus(tabId);
+          if (!activeLevels.includes(levelIndex)) {
+            setActiveLevel(levelIndex + 1, false);
+          }
+        },
       });
     }
 
@@ -198,6 +199,8 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     t,
     handleWindowTitleClick,
     setFocus,
+    activeLevels,
+    setActiveLevel,
   ]);
 
   const handleHomeClick = useCallback(() => {
