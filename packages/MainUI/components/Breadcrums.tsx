@@ -27,7 +27,7 @@ import { useMetadataContext } from "../hooks/useMetadataContext";
 import { useTranslation } from "../hooks/useTranslation";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useSelected } from "@/hooks/useSelected";
-import { NEW_RECORD_ID } from "@/utils/url/constants";
+import { NEW_RECORD_ID, TAB_MODES } from "@/utils/url/constants";
 import { useCurrentRecord } from "@/hooks/useCurrentRecord";
 import { useWindowContext } from "@/contexts/window";
 import { useFocusContext } from "@/contexts/focus";
@@ -46,9 +46,9 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { t } = useTranslation();
   const pathname = usePathname();
   const { window, windowId, windowIdentifier } = useMetadataContext();
-  const { activeWindow, setAllWindowsInactive } = useWindowContext();
+  const { activeWindow, setAllWindowsInactive, getTabFormState, clearTabFormState } = useWindowContext();
   const { graph } = useSelected();
-  const { setFocus } = useFocusContext();
+  const { activeFocusId, setFocus } = useFocusContext();
 
   const { setActiveLevel, activeTabsByLevel, activeLevels } = useTableStatePersistenceTab({
     windowIdentifier: windowIdentifier || "",
@@ -203,13 +203,36 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     setActiveLevel,
   ]);
 
+  const handleBackClick = useCallback(() => {
+    const focusedTab = activeFocusId ? allTabsFormatted.find((t) => t.id === activeFocusId) : undefined;
+    const tabLevel = focusedTab?.tabLevel ?? 0;
+    const tabId = focusedTab?.id;
+
+    if (tabId && windowIdentifier) {
+      const formState = getTabFormState(windowIdentifier, tabId);
+      if (formState?.mode === TAB_MODES.FORM) {
+        clearTabFormState(windowIdentifier, tabId);
+        return;
+      }
+    }
+
+    if (tabLevel === 0) {
+      setAllWindowsInactive();
+    }
+  }, [activeFocusId, allTabsFormatted, windowIdentifier, getTabFormState, clearTabFormState, setAllWindowsInactive]);
+
   const handleHomeClick = useCallback(() => {
     setAllWindowsInactive();
   }, [setAllWindowsInactive]);
 
   return (
     <div className="w-full h-8">
-      <Breadcrumb onHomeClick={handleHomeClick} items={breadcrumbItems || []} data-testid="Breadcrumb__50ef19" />
+      <Breadcrumb
+        onHomeClick={handleHomeClick}
+        onBackClick={handleBackClick}
+        items={breadcrumbItems || []}
+        data-testid="Breadcrumb__50ef19"
+      />
     </div>
   );
 };

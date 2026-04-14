@@ -30,6 +30,7 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
   breadcrumbsSize,
   handleActionMenuOpen,
   handleHomeNavigation,
+  onBackClick,
 }) => {
   const theme = useTheme();
   const { sx } = useStyle();
@@ -40,13 +41,17 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
+      if (onBackClick) {
+        onBackClick();
+        return;
+      }
       if (breadcrumbsSize > 1 && item?.onClick) {
         item.onClick();
         return;
       }
       handleHomeNavigation();
     },
-    [handleHomeNavigation, breadcrumbsSize, item]
+    [onBackClick, handleHomeNavigation, breadcrumbsSize, item]
   );
 
   return (

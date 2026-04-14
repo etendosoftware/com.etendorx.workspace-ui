@@ -24,7 +24,7 @@ import { useStyle } from "./styles";
 import type { BreadcrumbAction, BreadcrumbProps } from "./types";
 import BreadcrumbList from "./BreadcrumbList/index";
 
-const Breadcrumb: FC<BreadcrumbProps> = ({ items, separator, onHomeClick }) => {
+const Breadcrumb: FC<BreadcrumbProps> = ({ items, separator, onHomeClick, onBackClick }) => {
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
   const [currentActions, setCurrentActions] = useState<BreadcrumbAction[]>([]);
@@ -66,6 +66,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, separator, onHomeClick }) => {
         items={items}
         handleActionMenuOpen={handleActionMenuOpen}
         handleHomeNavigation={onHomeClick}
+        onBackClick={onBackClick}
         separator={activeSeparator}
       />
       <Menu anchorEl={anchorEl} onClose={handleActionMenuClose}>

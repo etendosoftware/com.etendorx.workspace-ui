@@ -33,6 +33,7 @@ export interface BreadcrumbItem {
 export interface BreadcrumbProps {
   items: BreadcrumbItem[];
   onHomeClick: () => void;
+  onBackClick?: () => void;
   separator?: React.ReactNode;
 }
 
@@ -40,6 +41,7 @@ export interface BreadcrumbListProps {
   items: BreadcrumbItem[];
   handleActionMenuOpen: (event: React.MouseEvent<HTMLButtonElement>, actions: BreadcrumbAction[]) => void;
   handleHomeNavigation: () => void;
+  onBackClick?: () => void;
   separator?: React.ReactNode;
 }
 
@@ -49,4 +51,5 @@ export interface BreadcrumbItemProps {
   position: number;
   handleActionMenuOpen: (event: React.MouseEvent<HTMLButtonElement>, actions: BreadcrumbAction[]) => void;
   handleHomeNavigation: () => void;
+  onBackClick?: () => void;
 }

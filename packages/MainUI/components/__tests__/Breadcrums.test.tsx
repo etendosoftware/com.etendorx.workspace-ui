@@ -45,6 +45,7 @@ const mockSetAllWindowsInactive = jest.fn();
 const mockSetActiveLevel = jest.fn();
 const mockSetFocus = jest.fn();
 const mockUseWindowContext = jest.fn();
+let mockActiveFocusId: string | null = null;
 
 jest.mock("@/contexts/window", () => ({
   useWindowContext: (...args: any[]) => mockUseWindowContext(...args),
@@ -64,6 +65,7 @@ jest.mock("@/hooks/useTableStatePersistenceTab");
 
 jest.mock("@/contexts/focus", () => ({
   useFocusContext: () => ({
+    activeFocusId: mockActiveFocusId,
     setFocus: mockSetFocus,
   }),
 }));
@@ -74,14 +76,21 @@ jest.mock("@workspaceui/componentlibrary/src/components/Breadcrums", () => ({
   default: ({
     items,
     onHomeClick,
+    onBackClick,
   }: {
     items: { id: string; label: string; onClick?: () => void }[];
     onHomeClick: () => void;
+    onBackClick?: () => void;
   }) => (
     <div data-testid="breadcrumb-lib">
       <button onClick={onHomeClick} data-testid="home-button">
         Home
       </button>
+      {onBackClick && (
+        <button onClick={onBackClick} data-testid="back-button">
+          Back
+        </button>
+      )}
       {items.map((item) => (
         <span key={item.id} onClick={item.onClick} data-testid={`item-${item.id}`}>
           {item.label}
@@ -111,6 +120,8 @@ const buildWindowContextValue = (overrides: Record<string, any> = {}) => ({
   activeWindow: { tabs: {}, windowIdentifier: "test-window-identifier" },
   setAllWindowsInactive: mockSetAllWindowsInactive,
   getNavigationState: jest.fn(() => undefined),
+  getTabFormState: jest.fn(() => undefined),
+  clearTabFormState: jest.fn(),
   ...overrides,
 });
 
@@ -126,6 +137,7 @@ const mockUseCurrentRecordCalls = (recordBySlot: Record<number, any>) => {
 describe("AppBreadcrumb", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockActiveFocusId = null;
 
     mockUseWindowContext.mockReturnValue(buildWindowContextValue());
 
@@ -538,6 +550,110 @@ describe("AppBreadcrumb", () => {
 
     expect(mockSetFocus).toHaveBeenCalledWith("tab-1");
     expect(mockSetActiveLevel).toHaveBeenCalledWith(1, false);
+  });
+
+  describe("Back button", () => {
+    const level1TabId = "tab-level1";
+    const tabsWithLevel1 = [
+      ...mockTabs,
+      [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any],
+    ];
+
+    it("Case 1: clears form state of focused level-1 tab when it is in Form mode", () => {
+      mockActiveFocusId = level1TabId;
+      const mockClearTabFormState = jest.fn();
+      const mockGetTabFormState = jest.fn((_, tabId) =>
+        tabId === level1TabId ? { mode: "form" } : undefined
+      );
+
+      mockUseWindowContext.mockReturnValue(
+        buildWindowContextValue({
+          getTabFormState: mockGetTabFormState,
+          clearTabFormState: mockClearTabFormState,
+        })
+      );
+
+      mockedUseTableStatePersistenceTab.mockReturnValue({
+        setActiveLevel: mockSetActiveLevel,
+        activeTabsByLevel: new Map([[0, "tab-1"], [1, level1TabId]]),
+        activeLevels: [0, 1],
+      } as any);
+
+      renderWithTheme(<AppBreadcrumb allTabs={tabsWithLevel1} />);
+
+      fireEvent.click(screen.getByTestId("back-button"));
+
+      expect(mockClearTabFormState).toHaveBeenCalledWith("test-window-identifier", level1TabId);
+      expect(mockSetAllWindowsInactive).not.toHaveBeenCalled();
+    });
+
+    it("Case 2: clears form state of focused level-0 tab when it is in Form mode", () => {
+      mockActiveFocusId = "tab-1";
+      const mockClearTabFormState = jest.fn();
+      const mockGetTabFormState = jest.fn((_, tabId) =>
+        tabId === "tab-1" ? { mode: "form" } : undefined
+      );
+
+      mockUseWindowContext.mockReturnValue(
+        buildWindowContextValue({
+          getTabFormState: mockGetTabFormState,
+          clearTabFormState: mockClearTabFormState,
+        })
+      );
+
+      renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
+
+      fireEvent.click(screen.getByTestId("back-button"));
+
+      expect(mockClearTabFormState).toHaveBeenCalledWith("test-window-identifier", "tab-1");
+      expect(mockSetAllWindowsInactive).not.toHaveBeenCalled();
+    });
+
+    it("Case 3: calls setAllWindowsInactive when focused tab is level-0 in Grid/Table mode", () => {
+      mockActiveFocusId = "tab-1";
+      const mockClearTabFormState = jest.fn();
+      const mockGetTabFormState = jest.fn(() => ({ mode: "table" }));
+
+      mockUseWindowContext.mockReturnValue(
+        buildWindowContextValue({
+          getTabFormState: mockGetTabFormState,
+          clearTabFormState: mockClearTabFormState,
+        })
+      );
+
+      renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
+
+      fireEvent.click(screen.getByTestId("back-button"));
+
+      expect(mockSetAllWindowsInactive).toHaveBeenCalledTimes(1);
+      expect(mockClearTabFormState).not.toHaveBeenCalled();
+    });
+
+    it("does nothing when focused tab is level > 0 in Grid/Table mode", () => {
+      mockActiveFocusId = level1TabId;
+      const mockClearTabFormState = jest.fn();
+      const mockGetTabFormState = jest.fn(() => ({ mode: "table" }));
+
+      mockUseWindowContext.mockReturnValue(
+        buildWindowContextValue({
+          getTabFormState: mockGetTabFormState,
+          clearTabFormState: mockClearTabFormState,
+        })
+      );
+
+      mockedUseTableStatePersistenceTab.mockReturnValue({
+        setActiveLevel: mockSetActiveLevel,
+        activeTabsByLevel: new Map([[0, "tab-1"], [1, level1TabId]]),
+        activeLevels: [0, 1],
+      } as any);
+
+      renderWithTheme(<AppBreadcrumb allTabs={tabsWithLevel1} />);
+
+      fireEvent.click(screen.getByTestId("back-button"));
+
+      expect(mockClearTabFormState).not.toHaveBeenCalled();
+      expect(mockSetAllWindowsInactive).not.toHaveBeenCalled();
+    });
   });
 
   it("does not call setActiveLevel when clicking a breadcrumb item already in activeLevels", () => {

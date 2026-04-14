@@ -21,7 +21,13 @@ import { useStyle } from "../styles";
 import type { BreadcrumbListProps } from "../types";
 import BreadcrumbItem from "../BreadcrumbItem/index";
 
-const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, handleHomeNavigation, separator }) => {
+const BreadcrumbList: FC<BreadcrumbListProps> = ({
+  items,
+  handleActionMenuOpen,
+  handleHomeNavigation,
+  onBackClick,
+  separator,
+}) => {
   const { sx } = useStyle();
 
   return (
@@ -34,6 +40,7 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, 
           breadcrumbsSize={items.length}
           handleActionMenuOpen={handleActionMenuOpen}
           handleHomeNavigation={handleHomeNavigation}
+          onBackClick={onBackClick}
         />
       ))}
     </Breadcrumbs>
