@@ -7,11 +7,7 @@ describe("Hierarchical Breadcrumb Navigation", () => {
   });
 
   it("verifies multi-level breadcrumb items, Window Title reset, and back button behaviour", () => {
-    cy.loginToEtendo(
-      Cypress.env("defaultUser"),
-      Cypress.env("defaultPassword"),
-      { useSession: false }
-    );
+    cy.loginToEtendo(Cypress.env("defaultUser"), Cypress.env("defaultPassword"), { useSession: false });
     cy.selectRoleOrgWarehouse();
 
     // -------------------------
@@ -62,25 +58,18 @@ describe("Hierarchical Breadcrumb Navigation", () => {
         // Window title item is still present
         cy.contains("Sales Order").should("be.visible");
         // The record identifier for document 50012 should be the second breadcrumb item
-        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li")
-          .should("have.length.gte", 2);
+        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li").should("have.length.gte", 2);
       });
 
     // -------------------------
     // Step 5: Navigate to a Level 1 sub-tab (Lines) to generate a Level 1 breadcrumb item
     // -------------------------
-    cy.contains("button", "Lines", { timeout: 15000 })
-      .scrollIntoView()
-      .should("be.visible")
-      .click();
+    cy.contains("button", "Lines", { timeout: 15000 }).scrollIntoView().should("be.visible").click();
 
     // -------------------------
     // Step 6: Open a Lines record so Level 1 selection is reflected in the breadcrumb
     // -------------------------
-    cy.get('button[data-testid^="form-button-"]', { timeout: 15000 })
-      .first()
-      .scrollIntoView()
-      .click();
+    cy.get('button[data-testid^="form-button-"]', { timeout: 15000 }).first().scrollIntoView().click();
 
     // -------------------------
     // Step 7: With both Level 0 and Level 1 records selected, the breadcrumb should
@@ -89,8 +78,7 @@ describe("Hierarchical Breadcrumb Navigation", () => {
     cy.get('[data-testid="Breadcrumb__50ef19"]', { timeout: 15000 })
       .should("be.visible")
       .within(() => {
-        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li")
-          .should("have.length.gte", 3);
+        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li").should("have.length.gte", 3);
       });
 
     // -------------------------
@@ -99,20 +87,18 @@ describe("Hierarchical Breadcrumb Navigation", () => {
     // After the click the URL should no longer reference a sub-level form and the
     // breadcrumb should revert to displaying only the window title.
     // -------------------------
-    cy.get('[data-testid="Breadcrumb__50ef19"]', { timeout: 10000 })
-      .within(() => {
-        // The window title is rendered as a MUI Button (non-last item) or Typography.
-        // We target it by its known text content.
-        cy.contains("Sales Order").click();
-      });
+    cy.get('[data-testid="Breadcrumb__50ef19"]', { timeout: 10000 }).within(() => {
+      // The window title is rendered as a MUI Button (non-last item) or Typography.
+      // We target it by its known text content.
+      cy.contains("Sales Order").click();
+    });
 
     // After clicking the Window Title the app navigates back to the grid at Level 0.
     // The breadcrumb should now show only the Window Title (one list item).
     cy.get('[data-testid="Breadcrumb__50ef19"]', { timeout: 15000 })
       .should("be.visible")
       .within(() => {
-        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li")
-          .should("have.length", 1);
+        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li").should("have.length", 1);
         cy.contains("Sales Order").should("be.visible");
       });
 
@@ -124,38 +110,28 @@ describe("Hierarchical Breadcrumb Navigation", () => {
       .find('button[data-testid^="form-button-"]')
       .click();
 
-    cy.get('[data-testid="Breadcrumb__50ef19"]', { timeout: 15000 })
-      .within(() => {
-        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li")
-          .should("have.length.gte", 2);
-      });
+    cy.get('[data-testid="Breadcrumb__50ef19"]', { timeout: 15000 }).within(() => {
+      cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li").should("have.length.gte", 2);
+    });
 
     // -------------------------
     // Step 10: Click the back button (ArrowLeft icon, aria-label "Go back") while in FormView.
     // Expected: returns to the grid at Level 0 WITHOUT navigating away from the window.
     // The breadcrumb reverts to one item and the URL still contains "/window".
     // -------------------------
-    cy.get('[aria-label="Go back"]', { timeout: 10000 })
-      .first()
-      .scrollIntoView()
-      .click();
+    cy.get('[aria-label="Go back"]', { timeout: 10000 }).first().scrollIntoView().click();
 
     cy.url({ timeout: 10000 }).should("include", "/window");
-    cy.get('[data-testid="Breadcrumb__50ef19"]', { timeout: 15000 })
-      .within(() => {
-        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li")
-          .should("have.length", 1);
-      });
+    cy.get('[data-testid="Breadcrumb__50ef19"]', { timeout: 15000 }).within(() => {
+      cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li").should("have.length", 1);
+    });
 
     // -------------------------
     // Step 11: Back button from Level 0 grid navigates to Home.
     // At this point the view is already at Level 0 grid, so clicking back again
     // should deactivate the window and land the user on the home/dashboard screen.
     // -------------------------
-    cy.get('[aria-label="Go back"]', { timeout: 10000 })
-      .first()
-      .scrollIntoView()
-      .click();
+    cy.get('[aria-label="Go back"]', { timeout: 10000 }).first().scrollIntoView().click();
 
     // Home/dashboard does not include "/window" in the URL
     cy.url({ timeout: 10000 }).should("not.include", "/window");
@@ -167,11 +143,7 @@ describe("Hierarchical Breadcrumb Navigation", () => {
   // already display the record identifier — without opening the FormView.
   // -------------------------
   it("shows record identifier in breadcrumb when record is selected in Grid mode", () => {
-    cy.loginToEtendo(
-      Cypress.env("defaultUser"),
-      Cypress.env("defaultPassword"),
-      { useSession: false }
-    );
+    cy.loginToEtendo(Cypress.env("defaultUser"), Cypress.env("defaultPassword"), { useSession: false });
     cy.selectRoleOrgWarehouse();
 
     // Navigate to Sales Order window
@@ -194,24 +166,20 @@ describe("Hierarchical Breadcrumb Navigation", () => {
     cy.get('[data-testid="Breadcrumb__50ef19"]', { timeout: 15000 })
       .should("be.visible")
       .within(() => {
-        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li")
-          .should("have.length", 1);
+        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li").should("have.length", 1);
         cy.contains("Sales Order").should("be.visible");
       });
 
     // Select the row in Grid mode (click the row itself, NOT the form-button)
     // This sets selectedRecord on the tab without switching to FormView.
-    cy.contains("tr", "50012", { timeout: 10000 })
-      .should("be.visible")
-      .click();
+    cy.contains("tr", "50012", { timeout: 10000 }).should("be.visible").click();
 
     // The breadcrumb must now show the Level 0 record identifier even though
     // the user is still in Grid mode (Fix 0.1: reads from selectedRecord, not formRecord).
     cy.get('[data-testid="Breadcrumb__50ef19"]', { timeout: 15000 })
       .should("be.visible")
       .within(() => {
-        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li")
-          .should("have.length.gte", 2);
+        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li").should("have.length.gte", 2);
         // Window title remains
         cy.contains("Sales Order").should("be.visible");
       });
@@ -223,11 +191,7 @@ describe("Hierarchical Breadcrumb Navigation", () => {
   // Also validates Fix 0.2: no "..." overflow button — all items are always visible.
   // -------------------------
   it("shows Level 0 and Level 1 breadcrumb items simultaneously without overflow collapse", () => {
-    cy.loginToEtendo(
-      Cypress.env("defaultUser"),
-      Cypress.env("defaultPassword"),
-      { useSession: false }
-    );
+    cy.loginToEtendo(Cypress.env("defaultUser"), Cypress.env("defaultPassword"), { useSession: false });
     cy.selectRoleOrgWarehouse();
 
     // Navigate to Sales Order window
@@ -255,21 +219,14 @@ describe("Hierarchical Breadcrumb Navigation", () => {
     cy.get('[data-testid="Breadcrumb__50ef19"]', { timeout: 15000 })
       .should("be.visible")
       .within(() => {
-        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li")
-          .should("have.length.gte", 2);
+        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li").should("have.length.gte", 2);
       });
 
     // Navigate to Lines sub-tab (Level 1)
-    cy.contains("button", "Lines", { timeout: 15000 })
-      .scrollIntoView()
-      .should("be.visible")
-      .click();
+    cy.contains("button", "Lines", { timeout: 15000 }).scrollIntoView().should("be.visible").click();
 
     // Select a Level 1 record (open FormView for Lines)
-    cy.get('button[data-testid^="form-button-"]', { timeout: 15000 })
-      .first()
-      .scrollIntoView()
-      .click();
+    cy.get('button[data-testid^="form-button-"]', { timeout: 15000 }).first().scrollIntoView().click();
 
     // Breadcrumb must now show 3 items: Window Title / Level 0 record / Level 1 record
     cy.get('[data-testid="Breadcrumb__50ef19"]', { timeout: 15000 })
@@ -294,15 +251,11 @@ describe("Hierarchical Breadcrumb Navigation", () => {
     // and returns the view to Level 0 without losing the window context.
     // The breadcrumb then collapses back to 2 items (Window Title + Level 0 record).
     // -------------------------
-    cy.get('[data-testid="Breadcrumb__50ef19"]', { timeout: 10000 })
-      .within(() => {
-        // The Level 0 record item is the second .MuiBreadcrumbs-li (index 1),
-        // rendered as a MUI Button (non-last item in the list).
-        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li")
-          .eq(1)
-          .find("button")
-          .click();
-      });
+    cy.get('[data-testid="Breadcrumb__50ef19"]', { timeout: 10000 }).within(() => {
+      // The Level 0 record item is the second .MuiBreadcrumbs-li (index 1),
+      // rendered as a MUI Button (non-last item in the list).
+      cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li").eq(1).find("button").click();
+    });
 
     cy.url({ timeout: 10000 }).should("include", "/window");
 
@@ -311,8 +264,7 @@ describe("Hierarchical Breadcrumb Navigation", () => {
     cy.get('[data-testid="Breadcrumb__50ef19"]', { timeout: 15000 })
       .should("be.visible")
       .within(() => {
-        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li")
-          .should("have.length.gte", 2);
+        cy.get(".MuiBreadcrumbs-ol .MuiBreadcrumbs-li").should("have.length.gte", 2);
       });
   });
 });

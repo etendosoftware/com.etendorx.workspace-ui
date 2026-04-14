@@ -94,9 +94,7 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
       }
       // Fallback for levels ≥ 1: find any tab at this level that has a selected record
       if (i > 0 && activeWindow?.tabs) {
-        result.push(
-          allTabsFormatted.find((t) => t.tabLevel === i && Boolean(activeWindow.tabs[t.id]?.selectedRecord))
-        );
+        result.push(allTabsFormatted.find((t) => t.tabLevel === i && Boolean(activeWindow.tabs[t.id]?.selectedRecord)));
       } else {
         result.push(undefined);
       }

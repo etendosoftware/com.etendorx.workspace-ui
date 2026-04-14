@@ -182,14 +182,7 @@ describe("BreadcrumbItem", () => {
 
   describe("single-item breadcrumb (breadcrumbsSize === 1)", () => {
     it("shows both the back arrow and the label when the only item is at position 0", () => {
-      render(
-        <BreadcrumbItem
-          {...baseProps}
-          position={0}
-          breadcrumbsSize={1}
-          item={{ id: "item-1", label: "Home" }}
-        />
-      );
+      render(<BreadcrumbItem {...baseProps} position={0} breadcrumbsSize={1} item={{ id: "item-1", label: "Home" }} />);
       expect(screen.getByRole("button", { name: "Go back" })).toBeInTheDocument();
       expect(screen.getByText("Home")).toBeInTheDocument();
     });

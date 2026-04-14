@@ -197,9 +197,7 @@ describe("AppBreadcrumb", () => {
     // Clicking the window title should only change focus and active level —
     // it must NOT clear form state (which would reset Form→Grid view mode).
     const mockClearTabFormState = jest.fn();
-    mockUseWindowContext.mockReturnValue(
-      buildWindowContextValue({ clearTabFormState: mockClearTabFormState })
-    );
+    mockUseWindowContext.mockReturnValue(buildWindowContextValue({ clearTabFormState: mockClearTabFormState }));
 
     mockedUseTableStatePersistenceTab.mockReturnValue({
       setActiveLevel: mockSetActiveLevel,
@@ -489,10 +487,7 @@ describe("AppBreadcrumb", () => {
       })
     );
 
-    const tabsWithLevel1 = [
-      ...mockTabs,
-      [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any],
-    ];
+    const tabsWithLevel1 = [...mockTabs, [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any]];
 
     mockUseCurrentRecordCalls({ 1: { _identifier: "Auto Level1 Item" } });
 
@@ -554,17 +549,12 @@ describe("AppBreadcrumb", () => {
 
   describe("Back button", () => {
     const level1TabId = "tab-level1";
-    const tabsWithLevel1 = [
-      ...mockTabs,
-      [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any],
-    ];
+    const tabsWithLevel1 = [...mockTabs, [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any]];
 
     it("Case 1: clears form state of focused level-1 tab when it is in Form mode", () => {
       mockActiveFocusId = level1TabId;
       const mockClearTabFormState = jest.fn();
-      const mockGetTabFormState = jest.fn((_, tabId) =>
-        tabId === level1TabId ? { mode: "form" } : undefined
-      );
+      const mockGetTabFormState = jest.fn((_, tabId) => (tabId === level1TabId ? { mode: "form" } : undefined));
 
       mockUseWindowContext.mockReturnValue(
         buildWindowContextValue({
@@ -575,7 +565,10 @@ describe("AppBreadcrumb", () => {
 
       mockedUseTableStatePersistenceTab.mockReturnValue({
         setActiveLevel: mockSetActiveLevel,
-        activeTabsByLevel: new Map([[0, "tab-1"], [1, level1TabId]]),
+        activeTabsByLevel: new Map([
+          [0, "tab-1"],
+          [1, level1TabId],
+        ]),
         activeLevels: [0, 1],
       } as any);
 
@@ -590,9 +583,7 @@ describe("AppBreadcrumb", () => {
     it("Case 2: clears form state of focused level-0 tab when it is in Form mode", () => {
       mockActiveFocusId = "tab-1";
       const mockClearTabFormState = jest.fn();
-      const mockGetTabFormState = jest.fn((_, tabId) =>
-        tabId === "tab-1" ? { mode: "form" } : undefined
-      );
+      const mockGetTabFormState = jest.fn((_, tabId) => (tabId === "tab-1" ? { mode: "form" } : undefined));
 
       mockUseWindowContext.mockReturnValue(
         buildWindowContextValue({
@@ -643,7 +634,10 @@ describe("AppBreadcrumb", () => {
 
       mockedUseTableStatePersistenceTab.mockReturnValue({
         setActiveLevel: mockSetActiveLevel,
-        activeTabsByLevel: new Map([[0, "tab-1"], [1, level1TabId]]),
+        activeTabsByLevel: new Map([
+          [0, "tab-1"],
+          [1, level1TabId],
+        ]),
         activeLevels: [0, 1],
       } as any);
 
