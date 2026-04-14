@@ -36,6 +36,37 @@ import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 const FALLBACK_RESULT: Record<string, EntityValue> = {} as Record<string, EntityValue>;
 
+const SAFE_AD_FIELD_PATTERN = /^inpad[A-Z]/;
+const INP_FIELD_PATTERN = /^inp/;
+const PROCESS_PARAM_KEY_PATTERN = /^[a-z]\w*$/;
+const HQL_PARAM_PATTERN = /@([^@]+)@/g;
+
+/**
+ * Builds the filtered form values to include in a SelectorDataSourceFilter context.
+ * When HQL is available, only params referenced via @param@ placeholders are included.
+ * Otherwise, falls back to inp* fields and process parameter raw keys.
+ */
+const buildSelectorContextFormValues = (
+  hqlSources: string,
+  formValues: Record<string, EntityValue>
+): Record<string, unknown> => {
+  if (hqlSources.length > 0) {
+    const hqlParams = new Set<string>();
+    let match: RegExpExecArray | null;
+    const regex = new RegExp(HQL_PARAM_PATTERN.source, "g");
+    while ((match = regex.exec(hqlSources)) !== null) {
+      hqlParams.add(match[1]);
+    }
+    return Object.fromEntries(
+      Object.entries(formValues).filter(([key]) => SAFE_AD_FIELD_PATTERN.test(key) || hqlParams.has(key))
+    );
+  }
+
+  return Object.fromEntries(
+    Object.entries(formValues).filter(([key]) => INP_FIELD_PATTERN.test(key) || PROCESS_PARAM_KEY_PATTERN.test(key))
+  );
+};
+
 export const useTableDirDatasource = ({
   field,
   pageSize = 75,
@@ -256,58 +287,16 @@ export const useTableDirDatasource = ({
             // Fallback: if no HQL is found in frontend metadata, the backend applies the
             // HQL via _selectorDefinitionId. Send inp* fields + raw process parameter keys
             // (e.g. isConverted: "Y", currentStatus: "UUID") so @param@ placeholders resolve.
-
-            const SAFE_AD_FIELD_PATTERN = /^inpad[A-Z]/;
-            const HQL_PARAM_PATTERN = /@([^@]+)@/g;
-
-            // Collect all HQL strings from the selector metadata ( various possible property names)
             const sel = field.selector as Record<string, unknown>;
             const hqlSources = [sel.hqlWhere, sel.whereClause, sel.hql, sel.filterExpression, sel.hqlFilterExpression]
               .filter((v): v is string => typeof v === "string" && v.length > 0)
               .join(" ");
 
-            let contextFormValues: Record<string, unknown>;
-
-            if (hqlSources.length > 0) {
-              // Extract @paramName@ placeholders from HQL — only those params are needed
-              const hqlParams = new Set<string>();
-              let match: RegExpExecArray | null;
-              const regex = new RegExp(HQL_PARAM_PATTERN.source, "g");
-              while ((match = regex.exec(hqlSources)) !== null) {
-                hqlParams.add(match[1]);
-              }
-              contextFormValues = Object.fromEntries(
-                Object.entries(formValues).filter(([key]) => SAFE_AD_FIELD_PATTERN.test(key) || hqlParams.has(key))
-              );
-            } else {
-              // No HQL available in frontend metadata — the backend applies the HQL filter
-              // via _selectorDefinitionId and substitutes @param@ placeholders from
-              // the request params (e.g. @isConverted@, @currentStatus@).
-              //
-              // Include:
-              //   1. inp* fields — standard Classic-format context
-              //   2. Lowercase camelCase/underscore keys without $ — these are process
-              //      parameter raw keys from DefaultsProcessActionHandler (e.g.
-              //      isConverted: "Y", currentStatus: "UUID"). Classic sends these.
-              //
-              // Exclude: display-name keys with spaces ("Lead Status"), $Element_*,
-              // _processId, UPPERCASE keys — frontend-only constructs or system fields
-              // that the backend doesn't expect as HQL substitution params.
-              const INP_FIELD_PATTERN = /^inp/;
-              // Lowercase camelCase or underscore_case, no $ or spaces — process param raw keys
-              const PROCESS_PARAM_KEY_PATTERN = /^[a-z][a-zA-Z0-9_]*$/;
-              contextFormValues = Object.fromEntries(
-                Object.entries(formValues).filter(
-                  ([key]) => INP_FIELD_PATTERN.test(key) || PROCESS_PARAM_KEY_PATTERN.test(key)
-                )
-              );
-            }
-
             return {
               _textMatchStyle: "substring",
               ...parentData,
               ...invoiceValue,
-              ...contextFormValues,
+              ...buildSelectorContextFormValues(hqlSources, formValues),
             };
           }
 
