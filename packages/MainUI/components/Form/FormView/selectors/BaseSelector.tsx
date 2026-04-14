@@ -172,10 +172,25 @@ const BaseSelectorComp = ({
     return parentIds.length > 0 ? parentIds[0] : "null";
   }, [parentData]);
 
+  // For extension module fields (inputName starts with "inpem"), derive the standard
+  // CHANGED_COLUMN so the backend executes the standard callout chain.
+  // e.g. em_etcrm_c_bpartner_id → inpcBpartnerId triggers SL_Order_BPartner instead of
+  // the CRM-specific callout that returns empty columnValues.
+  const standardChangedColumn = useMemo(() => {
+    const inputName = field.inputName;
+    if (!inputName?.startsWith("inpem")) return undefined;
+    const columnName = field.columnName?.toLowerCase();
+    if (!columnName) return undefined;
+    const match = columnName.match(/^em_[a-z]+_(.+)$/);
+    if (!match) return undefined;
+    return "inp" + match[1].replace(/_([a-z0-9])/g, (_: string, c: string) => c.toUpperCase());
+  }, [field.inputName, field.columnName]);
+
   const executeCalloutBase = useCallout({
     field,
     rowId: recordId,
     parentId: getParentId(),
+    changedColumnOverride: standardChangedColumn,
   });
   const debouncedCallout = useDebounce(executeCalloutBase, 300);
   const value = watch(field.hqlName);
@@ -288,10 +303,15 @@ const BaseSelectorComp = ({
       if (!tab || (!field.column.callout && dependentPropertyFields.length === 0)) return;
 
       try {
-        if (isDebugCallouts())
-          logger.debug(`[Callout] Trigger by user on field: ${field.hqlName} (skipDebounce: ${skipDebounce})`);
         const entityKeyColumn = tab.fields.id.columnName;
-        const payload = buildPayloadByInputName(getValues(), fieldsByHqlName);
+        const payload = buildPayloadByInputName(getValues(), fieldsByHqlName) as Record<string, unknown>;
+
+        // For extension module fields (inpem*), copy the value to the standard inp field
+        // so the standard backend callout (e.g. SL_Order_BPartner) has the correct value.
+        // The standard field may be hidden in the form and carry an empty value.
+        if (standardChangedColumn && payload?.[field.inputName] !== undefined && !payload[standardChangedColumn]) {
+          payload[standardChangedColumn] = payload[field.inputName];
+        }
 
         // Build _gridVisibleProperties so that the FIC in CHANGE mode can identify
         // property fields and compute their values from DB when a related FK field
@@ -376,6 +396,7 @@ const BaseSelectorComp = ({
       applyColumnValues,
       applyAuxiliaryInputValues,
       dependentPropertyFields.length,
+      standardChangedColumn,
     ]
   );
 

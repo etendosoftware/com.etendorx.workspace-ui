@@ -152,6 +152,37 @@ export const useTableDirDatasource = ({
         } as BaseBody;
       };
 
+      /**
+       * Ensures that standard field names are populated from their custom counterparts.
+       * Extension module columns follow the pattern `em_<module>_<standard_column>`
+       * (e.g. em_etcrm_c_bpartner_id → inpcBpartnerId). This mapping is derived
+       * dynamically from the tab's field metadata so it works for any module.
+       */
+      const applyFieldMappings = (body: BaseBody): BaseBody => {
+        if (!tab?.fields) return body;
+
+        for (const fieldDef of Object.values(tab.fields)) {
+          const inputName = fieldDef.inputName;
+          if (!inputName?.startsWith("inpem") || !body[inputName]) continue;
+
+          const columnName = fieldDef.columnName?.toLowerCase();
+          if (!columnName) continue;
+
+          // Strip module prefix: em_etcrm_c_bpartner_id → c_bpartner_id
+          const match = columnName.match(/^em_[a-z]+_(.+)$/);
+          if (!match) continue;
+
+          // c_bpartner_id → inpcBpartnerId
+          const standardInputName = "inp" + match[1].replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
+
+          if (!body[standardInputName]) {
+            body[standardInputName] = body[inputName];
+          }
+        }
+
+        return body;
+      };
+
       const formValues = transformFormValues(getValues());
       const invoiceValue = transformFormValues(invoiceContext);
       const shouldSendOrg = !isProcessModal || selectedRecordsCount === 1;
@@ -229,15 +260,9 @@ export const useTableDirDatasource = ({
             const SAFE_AD_FIELD_PATTERN = /^inpad[A-Z]/;
             const HQL_PARAM_PATTERN = /@([^@]+)@/g;
 
-            // Collect all HQL strings from the selector metadata (various possible property names)
+            // Collect all HQL strings from the selector metadata ( various possible property names)
             const sel = field.selector as Record<string, unknown>;
-            const hqlSources = [
-              sel.hqlWhere,
-              sel.whereClause,
-              sel.hql,
-              sel.filterExpression,
-              sel.hqlFilterExpression,
-            ]
+            const hqlSources = [sel.hqlWhere, sel.whereClause, sel.hql, sel.filterExpression, sel.hqlFilterExpression]
               .filter((v): v is string => typeof v === "string" && v.length > 0)
               .join(" ");
 
@@ -314,6 +339,8 @@ export const useTableDirDatasource = ({
         finalBody = applyProcessModalTransformations(finalBody);
       }
 
+      finalBody = applyFieldMappings(finalBody);
+
       return finalBody;
     },
     [
@@ -327,6 +354,7 @@ export const useTableDirDatasource = ({
       field.column?.table,
       field.hqlName,
       windowId,
+      tab,
       isProductField,
       isProcessModal,
       selectorId,
