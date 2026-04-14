@@ -561,6 +561,22 @@ function handleHtmlContentResponse(data: { htmlContent: Response }): Response {
   const { htmlContent } = data;
   const headers = new Headers(htmlContent.headers);
 
+  // Strip Content-Security-Policy frame-ancestors directives that would block iframe loading.
+  // The backend CSP applies to the Etendo Classic host, not the Next.js proxy host.
+  const csp = headers.get("content-security-policy");
+  if (csp) {
+    const stripped = csp
+      .split(";")
+      .map((d) => d.trim())
+      .filter((d) => !d.toLowerCase().startsWith("frame-ancestors"))
+      .join("; ");
+    if (stripped) {
+      headers.set("Content-Security-Policy", stripped);
+    } else {
+      headers.delete("content-security-policy");
+    }
+  }
+
   // Ensure UTF-8 charset is explicitly set for HTML responses
   const contentType = headers.get("content-type") || "text/html";
   if (!contentType.includes("charset")) {
