@@ -1,20 +1,3 @@
-/*
- *************************************************************************
- * The contents of this file are subject to the Etendo License
- * (the "License"), you may not use this file except in compliance with
- * the License.
- * You may obtain a copy of the License at
- * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
- * Software distributed under the License is distributed on an
- * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
- * implied. See the License for the specific language governing rights
- * and limitations under the License.
- * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
- * All Rights Reserved.
- * Contributor(s): Futit Services S.L.
- *************************************************************************
- */
-
 import { screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import AppBreadcrumb from "../Breadcrums";
@@ -116,6 +99,15 @@ const mockTabs = [
   ],
 ];
 
+const level1TabId = "tab-level1";
+const level2TabId = "tab-level2";
+const sharedTwoLevelTabs = [...mockTabs, [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any]];
+const sharedThreeLevelTabs = [
+  ...mockTabs,
+  [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any],
+  [{ id: level2TabId, window: "test-window-id", tabLevel: 2 } as any],
+];
+
 const buildWindowContextValue = (overrides: Record<string, any> = {}) => ({
   activeWindow: { tabs: {}, windowIdentifier: "test-window-identifier" },
   setAllWindowsInactive: mockSetAllWindowsInactive,
@@ -134,20 +126,42 @@ const mockUseCurrentRecordCalls = (recordBySlot: Record<number, any>) => {
   }
 };
 
+const setupTabsAndWindow = ({
+  activeTabs = [[0, "tab-1"]],
+  activeLevels = [0],
+  tabsContext = {},
+  windowContextOverrides = {},
+}: {
+  activeTabs?: [number, string][];
+  activeLevels?: number[];
+  tabsContext?: Record<string, any>;
+  windowContextOverrides?: Record<string, any>;
+} = {}) => {
+  mockedUseTableStatePersistenceTab.mockReturnValue({
+    setActiveLevel: mockSetActiveLevel,
+    activeTabsByLevel: new Map<number, string>(activeTabs),
+    activeLevels,
+  } as any);
+
+  mockUseWindowContext.mockReturnValue(
+    buildWindowContextValue({
+      activeWindow: {
+        tabs: tabsContext,
+        windowIdentifier: "test-window-identifier",
+      },
+      ...windowContextOverrides,
+    })
+  );
+};
+
 describe("AppBreadcrumb", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockActiveFocusId = null;
 
-    mockUseWindowContext.mockReturnValue(buildWindowContextValue());
+    setupTabsAndWindow();
 
     mockedUseCurrentRecord.mockReturnValue({ record: undefined, loading: false, error: undefined } as any);
-
-    mockedUseTableStatePersistenceTab.mockReturnValue({
-      setActiveLevel: mockSetActiveLevel,
-      activeTabsByLevel: new Map<number, string>(),
-      activeLevels: [0],
-    } as any);
 
     const { usePathname } = require("next/navigation");
     usePathname.mockReturnValue("/window/test-window-id");
@@ -194,16 +208,8 @@ describe("AppBreadcrumb", () => {
   });
 
   it("does not reset tab form state when window title is clicked", () => {
-    // Clicking the window title should only change focus and active level —
-    // it must NOT clear form state (which would reset Form→Grid view mode).
     const mockClearTabFormState = jest.fn();
-    mockUseWindowContext.mockReturnValue(buildWindowContextValue({ clearTabFormState: mockClearTabFormState }));
-
-    mockedUseTableStatePersistenceTab.mockReturnValue({
-      setActiveLevel: mockSetActiveLevel,
-      activeTabsByLevel: new Map<number, string>([[0, "tab-1"]]),
-      activeLevels: [0],
-    } as any);
+    setupTabsAndWindow({ windowContextOverrides: { clearTabFormState: mockClearTabFormState } });
 
     renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
 
@@ -213,7 +219,6 @@ describe("AppBreadcrumb", () => {
   });
 
   it("does not render a record item when no record is selected in the active window", () => {
-    // activeWindow.tabs has no selectedRecord by default (buildWindowContextValue sets tabs: {})
     renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
 
     const items = screen.getAllByTestId(/^item-/);
@@ -222,22 +227,7 @@ describe("AppBreadcrumb", () => {
   });
 
   it("renders a level0 record item when selectedRecord is set and record has identifier", () => {
-    const recordId = "record-abc";
-    mockUseWindowContext.mockReturnValue(
-      buildWindowContextValue({
-        activeWindow: {
-          tabs: { "tab-1": { selectedRecord: recordId } },
-          windowIdentifier: "test-window-identifier",
-        },
-      })
-    );
-
-    mockedUseTableStatePersistenceTab.mockReturnValue({
-      setActiveLevel: mockSetActiveLevel,
-      activeTabsByLevel: new Map<number, string>([[0, "tab-1"]]),
-      activeLevels: [0],
-    } as any);
-
+    setupTabsAndWindow({ tabsContext: { "tab-1": { selectedRecord: "record-abc" } } });
     mockUseCurrentRecordCalls({ 0: { _identifier: "My Record" } });
 
     renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
@@ -247,22 +237,7 @@ describe("AppBreadcrumb", () => {
   });
 
   it("calls setFocus with level0TabId when level0 record item is clicked", () => {
-    const recordId = "record-abc";
-    mockUseWindowContext.mockReturnValue(
-      buildWindowContextValue({
-        activeWindow: {
-          tabs: { "tab-1": { selectedRecord: recordId } },
-          windowIdentifier: "test-window-identifier",
-        },
-      })
-    );
-
-    mockedUseTableStatePersistenceTab.mockReturnValue({
-      setActiveLevel: mockSetActiveLevel,
-      activeTabsByLevel: new Map<number, string>([[0, "tab-1"]]),
-      activeLevels: [0],
-    } as any);
-
+    setupTabsAndWindow({ tabsContext: { "tab-1": { selectedRecord: "record-abc" } } });
     mockUseCurrentRecordCalls({ 0: { _identifier: "My Record" } });
 
     renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
@@ -272,307 +247,152 @@ describe("AppBreadcrumb", () => {
     expect(mockSetFocus).toHaveBeenCalledWith("tab-1");
   });
 
-  it("renders a level1 record item when level1TabId is active and record has identifier", () => {
-    const level1TabId = "tab-level1";
-    const level1RecordId = "level1-record-id";
-
-    mockedUseTableStatePersistenceTab.mockReturnValue({
-      setActiveLevel: mockSetActiveLevel,
-      activeTabsByLevel: new Map<number, string>([
-        [0, "tab-1"],
-        [1, level1TabId],
-      ]),
-      activeLevels: [0, 1],
-    } as any);
-
-    mockUseWindowContext.mockReturnValue(
-      buildWindowContextValue({
-        activeWindow: {
-          tabs: { [level1TabId]: { selectedRecord: level1RecordId } },
-          windowIdentifier: "test-window-identifier",
-        },
-      })
-    );
-
-    // Need level1TabId in allTabs so tabByLevel[1] resolves
-    const tabsWithLevel1 = [...mockTabs, [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any]];
-
-    mockUseCurrentRecordCalls({ 1: { _identifier: "Level1 Item" } });
-
-    renderWithTheme(<AppBreadcrumb allTabs={tabsWithLevel1} />);
-
-    expect(screen.getByTestId(`item-level1-${level1TabId}`)).toBeInTheDocument();
-    expect(screen.getByText("Level1 Item")).toBeInTheDocument();
-  });
-
-  it("calls setFocus with level1TabId when level1 record item is clicked", () => {
-    const level1TabId = "tab-level1";
-    const level1RecordId = "level1-record-id";
-
-    mockedUseTableStatePersistenceTab.mockReturnValue({
-      setActiveLevel: mockSetActiveLevel,
-      activeTabsByLevel: new Map<number, string>([
-        [0, "tab-1"],
-        [1, level1TabId],
-      ]),
-      activeLevels: [0, 1],
-    } as any);
-
-    mockUseWindowContext.mockReturnValue(
-      buildWindowContextValue({
-        activeWindow: {
-          tabs: { [level1TabId]: { selectedRecord: level1RecordId } },
-          windowIdentifier: "test-window-identifier",
-        },
-      })
-    );
-
-    const tabsWithLevel1 = [...mockTabs, [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any]];
-
-    mockUseCurrentRecordCalls({ 1: { _identifier: "Level1 Item" } });
-
-    renderWithTheme(<AppBreadcrumb allTabs={tabsWithLevel1} />);
-
-    fireEvent.click(screen.getByTestId(`item-level1-${level1TabId}`));
-
-    expect(mockSetFocus).toHaveBeenCalledWith(level1TabId);
-  });
-
-  it("does not render level1 item when level1TabId is active but record has no identifier", () => {
-    const level1TabId = "tab-level1";
-    const level1RecordId = "level1-record-id";
-
-    mockedUseTableStatePersistenceTab.mockReturnValue({
-      setActiveLevel: mockSetActiveLevel,
-      activeTabsByLevel: new Map<number, string>([
-        [0, "tab-1"],
-        [1, level1TabId],
-      ]),
-      activeLevels: [0, 1],
-    } as any);
-
-    mockUseWindowContext.mockReturnValue(
-      buildWindowContextValue({
-        activeWindow: {
-          tabs: { [level1TabId]: { selectedRecord: level1RecordId } },
-          windowIdentifier: "test-window-identifier",
-        },
-      })
-    );
-
-    const tabsWithLevel1 = [...mockTabs, [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any]];
-
-    // All 5 calls return no record
-    mockedUseCurrentRecord.mockReturnValue({ record: undefined, loading: false, error: undefined } as any);
-
-    renderWithTheme(<AppBreadcrumb allTabs={tabsWithLevel1} />);
-
-    expect(screen.queryByTestId(`item-level1-${level1TabId}`)).not.toBeInTheDocument();
-  });
-
-  it("renders level0, level1, and level2 record items when all three levels are active with selected records", () => {
-    const level1TabId = "tab-level1";
-    const level2TabId = "tab-level2";
-
-    mockedUseTableStatePersistenceTab.mockReturnValue({
-      setActiveLevel: mockSetActiveLevel,
-      activeTabsByLevel: new Map<number, string>([
-        [0, "tab-1"],
-        [1, level1TabId],
-        [2, level2TabId],
-      ]),
-      activeLevels: [1, 2],
-    } as any);
-
-    mockUseWindowContext.mockReturnValue(
-      buildWindowContextValue({
-        activeWindow: {
-          tabs: {
-            "tab-1": { selectedRecord: "record-0" },
-            [level1TabId]: { selectedRecord: "record-1" },
-            [level2TabId]: { selectedRecord: "record-2" },
-          },
-          windowIdentifier: "test-window-identifier",
-        },
-      })
-    );
-
-    const allTabsThreeLevels = [
-      ...mockTabs,
-      [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any],
-      [{ id: level2TabId, window: "test-window-id", tabLevel: 2 } as any],
-    ];
-
-    mockUseCurrentRecordCalls({
-      0: { _identifier: "Level0 Item" },
-      1: { _identifier: "Level1 Item" },
-      2: { _identifier: "Level2 Item" },
+  describe("Two-level scenarios (Level 0 and Level 1)", () => {
+    beforeEach(() => {
+      setupTabsAndWindow({
+        activeTabs: [
+          [0, "tab-1"],
+          [1, level1TabId],
+        ],
+        activeLevels: [0, 1],
+        tabsContext: { [level1TabId]: { selectedRecord: "level1-record-id" } },
+      });
+      mockUseCurrentRecordCalls({ 1: { _identifier: "Level1 Item" } });
     });
 
-    renderWithTheme(<AppBreadcrumb allTabs={allTabsThreeLevels} />);
-
-    expect(screen.getByTestId("item-level0-tab-1")).toBeInTheDocument();
-    expect(screen.getByText("Level0 Item")).toBeInTheDocument();
-    expect(screen.getByTestId(`item-level1-${level1TabId}`)).toBeInTheDocument();
-    expect(screen.getByText("Level1 Item")).toBeInTheDocument();
-    expect(screen.getByTestId(`item-level2-${level2TabId}`)).toBeInTheDocument();
-    expect(screen.getByText("Level2 Item")).toBeInTheDocument();
-  });
-
-  it("skips levels that have no selectedRecord while rendering levels that do", () => {
-    const level1TabId = "tab-level1";
-    const level2TabId = "tab-level2";
-
-    mockedUseTableStatePersistenceTab.mockReturnValue({
-      setActiveLevel: mockSetActiveLevel,
-      activeTabsByLevel: new Map<number, string>([
-        [0, "tab-1"],
-        [1, level1TabId],
-        [2, level2TabId],
-      ]),
-      activeLevels: [1, 2],
-    } as any);
-
-    // level1TabId has NO selectedRecord — only level0 and level2 have records
-    mockUseWindowContext.mockReturnValue(
-      buildWindowContextValue({
-        activeWindow: {
-          tabs: {
-            "tab-1": { selectedRecord: "record-0" },
-            [level2TabId]: { selectedRecord: "record-2" },
-          },
-          windowIdentifier: "test-window-identifier",
-        },
-      })
-    );
-
-    const allTabsThreeLevels = [
-      ...mockTabs,
-      [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any],
-      [{ id: level2TabId, window: "test-window-id", tabLevel: 2 } as any],
-    ];
-
-    mockUseCurrentRecordCalls({
-      0: { _identifier: "Level0 Item" },
-      2: { _identifier: "Level2 Item" },
+    it("renders a level1 record item when level1TabId is active and record has identifier", () => {
+      renderWithTheme(<AppBreadcrumb allTabs={sharedTwoLevelTabs} />);
+      expect(screen.getByTestId(`item-level1-${level1TabId}`)).toBeInTheDocument();
+      expect(screen.getByText("Level1 Item")).toBeInTheDocument();
     });
 
-    renderWithTheme(<AppBreadcrumb allTabs={allTabsThreeLevels} />);
+    it("calls setFocus with level1TabId when level1 record item is clicked", () => {
+      renderWithTheme(<AppBreadcrumb allTabs={sharedTwoLevelTabs} />);
+      fireEvent.click(screen.getByTestId(`item-level1-${level1TabId}`));
+      expect(mockSetFocus).toHaveBeenCalledWith(level1TabId);
+    });
 
-    expect(screen.getByTestId("item-level0-tab-1")).toBeInTheDocument();
-    expect(screen.queryByTestId(`item-level1-${level1TabId}`)).not.toBeInTheDocument();
-    expect(screen.getByTestId(`item-level2-${level2TabId}`)).toBeInTheDocument();
+    it("does not render level1 item when level1TabId is active but record has no identifier", () => {
+      mockedUseCurrentRecord.mockReset();
+      mockedUseCurrentRecord.mockReturnValue({ record: undefined, loading: false, error: undefined } as any);
+      renderWithTheme(<AppBreadcrumb allTabs={sharedTwoLevelTabs} />);
+      expect(screen.queryByTestId(`item-level1-${level1TabId}`)).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Three-level scenarios (Level 0, Level 1, and Level 2)", () => {
+    beforeEach(() => {
+      setupTabsAndWindow({
+        activeTabs: [
+          [0, "tab-1"],
+          [1, level1TabId],
+          [2, level2TabId],
+        ],
+        activeLevels: [1, 2],
+        tabsContext: {
+          "tab-1": { selectedRecord: "record-0" },
+          [level1TabId]: { selectedRecord: "record-1" },
+          [level2TabId]: { selectedRecord: "record-2" },
+        },
+      });
+      mockUseCurrentRecordCalls({
+        0: { _identifier: "Level0 Item" },
+        1: { _identifier: "Level1 Item" },
+        2: { _identifier: "Level2 Item" },
+      });
+    });
+
+    it("renders level0, level1, and level2 record items when all levels are active with selected records", () => {
+      renderWithTheme(<AppBreadcrumb allTabs={sharedThreeLevelTabs} />);
+      expect(screen.getByTestId("item-level0-tab-1")).toBeInTheDocument();
+      expect(screen.getByText("Level0 Item")).toBeInTheDocument();
+      expect(screen.getByTestId(`item-level1-${level1TabId}`)).toBeInTheDocument();
+      expect(screen.getByText("Level1 Item")).toBeInTheDocument();
+      expect(screen.getByTestId(`item-level2-${level2TabId}`)).toBeInTheDocument();
+      expect(screen.getByText("Level2 Item")).toBeInTheDocument();
+    });
+
+    it("calls setActiveLevel(level+1, false) when clicking a breadcrumb item at a level not currently visible", () => {
+      renderWithTheme(<AppBreadcrumb allTabs={sharedThreeLevelTabs} />);
+      fireEvent.click(screen.getByTestId("item-level0-tab-1"));
+      expect(mockSetFocus).toHaveBeenCalledWith("tab-1");
+      expect(mockSetActiveLevel).toHaveBeenCalledWith(1, false);
+    });
+
+    it("does not call setActiveLevel when clicking a breadcrumb item already in activeLevels", () => {
+      renderWithTheme(<AppBreadcrumb allTabs={sharedThreeLevelTabs} />);
+      fireEvent.click(screen.getByTestId(`item-level1-${level1TabId}`));
+      expect(mockSetFocus).toHaveBeenCalledWith(level1TabId);
+      expect(mockSetActiveLevel).not.toHaveBeenCalledWith(2, false);
+    });
+
+    it("skips levels that have no selectedRecord while rendering levels that do", () => {
+      // Clear mocks to override beforeEach
+      mockedUseCurrentRecord.mockReset();
+      setupTabsAndWindow({
+        activeTabs: [
+          [0, "tab-1"],
+          [1, level1TabId],
+          [2, level2TabId],
+        ],
+        activeLevels: [1, 2],
+        tabsContext: {
+          "tab-1": { selectedRecord: "record-0" },
+          [level2TabId]: { selectedRecord: "record-2" },
+        },
+      });
+      mockUseCurrentRecordCalls({
+        0: { _identifier: "Level0 Item" },
+        2: { _identifier: "Level2 Item" },
+      });
+
+      renderWithTheme(<AppBreadcrumb allTabs={sharedThreeLevelTabs} />);
+      expect(screen.getByTestId("item-level0-tab-1")).toBeInTheDocument();
+      expect(screen.queryByTestId(`item-level1-${level1TabId}`)).not.toBeInTheDocument();
+      expect(screen.getByTestId(`item-level2-${level2TabId}`)).toBeInTheDocument();
+    });
   });
 
   it("renders level1 record item via fallback when level1 tab is not in activeTabsByLevel but has a selectedRecord", () => {
-    const level1TabId = "tab-level1-auto";
-    const level1RecordId = "auto-record-1";
+    const fallbackTabId = "tab-level1-auto";
+    setupTabsAndWindow({
+      tabsContext: {
+        "tab-1": { selectedRecord: "record-0" },
+        [fallbackTabId]: { selectedRecord: "auto-record-1" },
+      },
+    });
 
-    // activeTabsByLevel only has level 0 — level 1 was never explicitly clicked
-    mockedUseTableStatePersistenceTab.mockReturnValue({
-      setActiveLevel: mockSetActiveLevel,
-      activeTabsByLevel: new Map<number, string>([[0, "tab-1"]]),
-      activeLevels: [0],
-    } as any);
+    const fallbackTabs = [...mockTabs, [{ id: fallbackTabId, window: "test-window-id", tabLevel: 1 } as any]];
+    mockUseCurrentRecordCalls({
+      0: { _identifier: "Level0 Item" },
+      1: { _identifier: "Auto Level1 Item" },
+    });
 
-    mockUseWindowContext.mockReturnValue(
-      buildWindowContextValue({
-        activeWindow: {
-          tabs: {
-            "tab-1": { selectedRecord: "record-0" },
-            [level1TabId]: { selectedRecord: level1RecordId },
-          },
-          windowIdentifier: "test-window-identifier",
-        },
-      })
-    );
+    renderWithTheme(<AppBreadcrumb allTabs={fallbackTabs} />);
 
-    const tabsWithLevel1 = [...mockTabs, [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any]];
-
-    mockUseCurrentRecordCalls({ 1: { _identifier: "Auto Level1 Item" } });
-
-    renderWithTheme(<AppBreadcrumb allTabs={tabsWithLevel1} />);
-
-    expect(screen.getByTestId(`item-level1-${level1TabId}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`item-level1-${fallbackTabId}`)).toBeInTheDocument();
     expect(screen.getByText("Auto Level1 Item")).toBeInTheDocument();
   });
 
-  it("calls setActiveLevel(level+1, false) when clicking a breadcrumb item at a level not currently visible", () => {
-    // User is at activeLevels=[1,2] — level 0 is NOT visible.
-    // Clicking the level0 breadcrumb item should call setActiveLevel(1, false) to reveal [0,1].
-    const level1TabId = "tab-level1";
-    const level2TabId = "tab-level2";
-
-    mockedUseTableStatePersistenceTab.mockReturnValue({
-      setActiveLevel: mockSetActiveLevel,
-      activeTabsByLevel: new Map<number, string>([
-        [0, "tab-1"],
-        [1, level1TabId],
-        [2, level2TabId],
-      ]),
-      activeLevels: [1, 2],
-    } as any);
-
-    mockUseWindowContext.mockReturnValue(
-      buildWindowContextValue({
-        activeWindow: {
-          tabs: {
-            "tab-1": { selectedRecord: "record-0" },
-            [level1TabId]: { selectedRecord: "record-1" },
-            [level2TabId]: { selectedRecord: "record-2" },
-          },
-          windowIdentifier: "test-window-identifier",
-        },
-      })
-    );
-
-    const allTabsThreeLevels = [
-      ...mockTabs,
-      [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any],
-      [{ id: level2TabId, window: "test-window-id", tabLevel: 2 } as any],
-    ];
-
-    mockUseCurrentRecordCalls({
-      0: { _identifier: "Level0 Item" },
-      1: { _identifier: "Level1 Item" },
-      2: { _identifier: "Level2 Item" },
-    });
-
-    renderWithTheme(<AppBreadcrumb allTabs={allTabsThreeLevels} />);
-
-    // Click level 0 item (not currently in activeLevels=[1,2])
-    fireEvent.click(screen.getByTestId("item-level0-tab-1"));
-
-    expect(mockSetFocus).toHaveBeenCalledWith("tab-1");
-    expect(mockSetActiveLevel).toHaveBeenCalledWith(1, false);
-  });
-
   describe("Back button", () => {
-    const level1TabId = "tab-level1";
-    const tabsWithLevel1 = [...mockTabs, [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any]];
-
     it("Case 1: clears form state of focused level-1 tab when it is in Form mode", () => {
       mockActiveFocusId = level1TabId;
       const mockClearTabFormState = jest.fn();
       const mockGetTabFormState = jest.fn((_, tabId) => (tabId === level1TabId ? { mode: "form" } : undefined));
 
-      mockUseWindowContext.mockReturnValue(
-        buildWindowContextValue({
-          getTabFormState: mockGetTabFormState,
-          clearTabFormState: mockClearTabFormState,
-        })
-      );
-
-      mockedUseTableStatePersistenceTab.mockReturnValue({
-        setActiveLevel: mockSetActiveLevel,
-        activeTabsByLevel: new Map([
+      setupTabsAndWindow({
+        activeTabs: [
           [0, "tab-1"],
           [1, level1TabId],
-        ]),
+        ],
         activeLevels: [0, 1],
-      } as any);
+        windowContextOverrides: {
+          getTabFormState: mockGetTabFormState,
+          clearTabFormState: mockClearTabFormState,
+        },
+      });
 
-      renderWithTheme(<AppBreadcrumb allTabs={tabsWithLevel1} />);
+      renderWithTheme(<AppBreadcrumb allTabs={sharedTwoLevelTabs} />);
 
       fireEvent.click(screen.getByTestId("back-button"));
 
@@ -585,12 +405,12 @@ describe("AppBreadcrumb", () => {
       const mockClearTabFormState = jest.fn();
       const mockGetTabFormState = jest.fn((_, tabId) => (tabId === "tab-1" ? { mode: "form" } : undefined));
 
-      mockUseWindowContext.mockReturnValue(
-        buildWindowContextValue({
+      setupTabsAndWindow({
+        windowContextOverrides: {
           getTabFormState: mockGetTabFormState,
           clearTabFormState: mockClearTabFormState,
-        })
-      );
+        },
+      });
 
       renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
 
@@ -605,12 +425,12 @@ describe("AppBreadcrumb", () => {
       const mockClearTabFormState = jest.fn();
       const mockGetTabFormState = jest.fn(() => ({ mode: "table" }));
 
-      mockUseWindowContext.mockReturnValue(
-        buildWindowContextValue({
+      setupTabsAndWindow({
+        windowContextOverrides: {
           getTabFormState: mockGetTabFormState,
           clearTabFormState: mockClearTabFormState,
-        })
-      );
+        },
+      });
 
       renderWithTheme(<AppBreadcrumb allTabs={mockTabs} />);
 
@@ -625,79 +445,24 @@ describe("AppBreadcrumb", () => {
       const mockClearTabFormState = jest.fn();
       const mockGetTabFormState = jest.fn(() => ({ mode: "table" }));
 
-      mockUseWindowContext.mockReturnValue(
-        buildWindowContextValue({
-          getTabFormState: mockGetTabFormState,
-          clearTabFormState: mockClearTabFormState,
-        })
-      );
-
-      mockedUseTableStatePersistenceTab.mockReturnValue({
-        setActiveLevel: mockSetActiveLevel,
-        activeTabsByLevel: new Map([
+      setupTabsAndWindow({
+        activeTabs: [
           [0, "tab-1"],
           [1, level1TabId],
-        ]),
+        ],
         activeLevels: [0, 1],
-      } as any);
+        windowContextOverrides: {
+          getTabFormState: mockGetTabFormState,
+          clearTabFormState: mockClearTabFormState,
+        },
+      });
 
-      renderWithTheme(<AppBreadcrumb allTabs={tabsWithLevel1} />);
+      renderWithTheme(<AppBreadcrumb allTabs={sharedTwoLevelTabs} />);
 
       fireEvent.click(screen.getByTestId("back-button"));
 
       expect(mockClearTabFormState).not.toHaveBeenCalled();
       expect(mockSetAllWindowsInactive).not.toHaveBeenCalled();
     });
-  });
-
-  it("does not call setActiveLevel when clicking a breadcrumb item already in activeLevels", () => {
-    // User is at activeLevels=[1,2] — clicking level1 or level2 should not change visible levels.
-    const level1TabId = "tab-level1";
-    const level2TabId = "tab-level2";
-
-    mockedUseTableStatePersistenceTab.mockReturnValue({
-      setActiveLevel: mockSetActiveLevel,
-      activeTabsByLevel: new Map<number, string>([
-        [0, "tab-1"],
-        [1, level1TabId],
-        [2, level2TabId],
-      ]),
-      activeLevels: [1, 2],
-    } as any);
-
-    mockUseWindowContext.mockReturnValue(
-      buildWindowContextValue({
-        activeWindow: {
-          tabs: {
-            "tab-1": { selectedRecord: "record-0" },
-            [level1TabId]: { selectedRecord: "record-1" },
-            [level2TabId]: { selectedRecord: "record-2" },
-          },
-          windowIdentifier: "test-window-identifier",
-        },
-      })
-    );
-
-    const allTabsThreeLevels = [
-      ...mockTabs,
-      [{ id: level1TabId, window: "test-window-id", tabLevel: 1 } as any],
-      [{ id: level2TabId, window: "test-window-id", tabLevel: 2 } as any],
-    ];
-
-    mockUseCurrentRecordCalls({
-      0: { _identifier: "Level0 Item" },
-      1: { _identifier: "Level1 Item" },
-      2: { _identifier: "Level2 Item" },
-    });
-
-    renderWithTheme(<AppBreadcrumb allTabs={allTabsThreeLevels} />);
-
-    // Click level 1 item (IS in activeLevels=[1,2])
-    fireEvent.click(screen.getByTestId(`item-level1-${level1TabId}`));
-
-    expect(mockSetFocus).toHaveBeenCalledWith(level1TabId);
-    // setActiveLevel should NOT have been called for the level item click
-    // (it IS called for the window title render setup, so check it wasn't called with (2, false))
-    expect(mockSetActiveLevel).not.toHaveBeenCalledWith(2, false);
   });
 });
