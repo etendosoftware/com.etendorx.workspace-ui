@@ -60,7 +60,7 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({
       {isCollapsed && (
         <Button
           key="collapse-button"
-          sx={sx.textButton}
+          sx={sx.collapseButton}
           onClick={(e) => onCollapseMenuOpen?.(e, collapsedItems)}
           aria-label="Show hidden breadcrumb items">
           ...

@@ -41,30 +41,31 @@ export function useBreadcrumbOverflow({
   const [collapsedCount, setCollapsedCount] = useState(0);
 
   useLayoutEffect(() => {
-    // Reset stale collapse state whenever items change
-    setCollapsedCount(0);
-
-    // Never collapse when 2 or fewer items — first and last are always visible
     if (items.length <= 2) {
+      setCollapsedCount(0);
       return;
     }
 
     const container = containerRef.current;
     if (!container) {
+      setCollapsedCount(0);
       return;
     }
 
-    const observer = new ResizeObserver(() => {
-      // In JSDOM both values are 0, so 0 <= 0 → never overflows (correct for tests)
-      const maxCollapsible = Math.max(0, items.length - 2);
+    const maxCollapsible = Math.max(0, items.length - 2);
+
+    const measure = () => {
       if (container.scrollWidth > container.clientWidth) {
-        // Collapse all middle items at once — single synchronous decision
         setCollapsedCount(maxCollapsible);
       } else {
         setCollapsedCount(0);
       }
-    });
+    };
 
+    // Compute immediately (synchronous, no intermediate render)
+    measure();
+
+    const observer = new ResizeObserver(measure);
     observer.observe(container);
 
     return () => {
