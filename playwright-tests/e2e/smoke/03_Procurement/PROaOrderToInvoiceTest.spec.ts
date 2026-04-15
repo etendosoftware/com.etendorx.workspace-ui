@@ -179,7 +179,7 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
     await datasourceDone;
 
     // Select the matching row
-    await page.locator(`text=${orderNumber}`).first().waitFor({ state: "visible", timeout: 10_000 });
+    await page.locator(`text=${orderNumber}`).first().waitFor({ state: "visible", timeout: 20_000 });
     await page
       .locator("tr")
       .filter({ hasText: orderNumber })

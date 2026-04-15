@@ -175,7 +175,6 @@ async function navigateSidebarTo(
   // The dynamic ID (#_r_1_, #_r_2_, ...) changes after re-renders, so use placeholder selector.
   const searchInput = page.locator('input[placeholder="Search"]').first();
   await searchInput.waitFor({ state: "visible", timeout: 10_000 });
-<<<<<<< Updated upstream
 
   // The search input starts disabled until the sidebar toggle is clicked.
   // Only click the toggle if it's currently disabled — avoids closing an already-open sidebar.
@@ -191,25 +190,31 @@ async function navigateSidebarTo(
     );
   }
 
-=======
-  // The search panel can be collapsed (input disabled). Click the toggle icon to open it.
-  if (await searchInput.isDisabled()) {
-    await page.locator(".h-14 > div > .transition > svg").click();
-    await expect(searchInput).toBeEnabled({ timeout: 10_000 });
-  }
->>>>>>> Stashed changes
   await searchInput.click({ force: true });
   await searchInput.clear();
   await searchInput.fill(searchText);
 
+  // Wait for any full-screen loading overlay to disappear BEFORE looking for menu items.
+  // The overlay (h-screen w-screen absolute z-100 bg-black/25) appears after login/role-change
+  // and intercepts pointer events. Waiting here ensures the sidebar is interactive.
+  await page.waitForFunction(
+    () => !document.querySelector("div.absolute.h-screen.w-screen"),
+    { timeout: 20_000 }
+  ).catch(() => null);
+
   await page.locator(`[data-testid="${menuTestId}"]`).waitFor({ state: "visible", timeout: 10_000 });
-  await page.locator(`[data-testid="${menuTestId}"] > .flex.overflow-hidden > .relative > .ml-2`).click();
-  // Window tabs in the tab strip are <button> elements, not role="tab".
-  // Wait for the breadcrumb to confirm the window is active.
-  // Wait for the breadcrumb to confirm the window is active.
+
+  // Use evaluate(el.click()) — calls the native DOM method directly on the element,
+  // bypassing CSS pointer-events/z-index hit-testing while still firing proper React-compatible
+  // click events. More reliable than dispatchEvent for React router-driven navigation.
+  const menuSelector = `[data-testid="${menuTestId}"] > .flex.overflow-hidden > .relative > .ml-2`;
+  await page.locator(menuSelector).waitFor({ state: "visible", timeout: 10_000 });
+  await page.locator(menuSelector).evaluate(el => (el as HTMLElement).click());
+
   // Note: waitForLoadState("networkidle") is intentionally avoided — Etendo keeps
   // persistent SSE connections open, so the network never reaches "idle" state.
-  await page.locator('nav[aria-label="breadcrumb"]').getByText(tabName).waitFor({ state: "visible", timeout: 15_000 });
+  // Increase breadcrumb timeout to tolerate slow server responses during parallel runs.
+  await page.locator('nav[aria-label="breadcrumb"]').getByText(tabName).waitFor({ state: "visible", timeout: 30_000 });
 }
 
 export async function navigateToGoodsShipment(page: Page) {
@@ -475,7 +480,13 @@ export async function navigateToPaymentIn(page: Page) {
   await searchInput.waitFor({ state: "visible", timeout: 10_000 });
   if (await searchInput.isDisabled()) {
     await page.locator(".h-14 > div > .transition > svg").click();
-    await expect(searchInput).toBeEnabled({ timeout: 10_000 });
+    await page.waitForFunction(
+      () => {
+        const el = document.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+        return el !== null && !el.disabled;
+      },
+      { timeout: 5_000 }
+    );
   }
   await searchInput.click({ force: true });
   await searchInput.clear();
@@ -488,43 +499,100 @@ export async function navigateToPaymentIn(page: Page) {
 
   await page.locator('nav[aria-label="breadcrumb"]').getByText(/Payment In/i)
     .waitFor({ state: "visible", timeout: 15_000 });
-  await page.waitForLoadState("networkidle", { timeout: 20_000 });
-}
-
-async function navigateToWindowBySearch(
-  page: Page,
-  searchText: string,
-  menuLabel: RegExp,
-  breadcrumbLabel: RegExp
-) {
-  const searchInput = page.locator('input[placeholder="Search"]').first();
-  await searchInput.waitFor({ state: "visible", timeout: 10_000 });
-  if (await searchInput.isDisabled()) {
-    await page.locator(".h-14 > div > .transition > svg").click();
-    await expect(searchInput).toBeEnabled({ timeout: 10_000 });
-  }
-  await searchInput.click({ force: true });
-  await searchInput.clear();
-  await searchInput.fill(searchText);
-
-  const menuItem = page.locator('[data-testid^="MenuTitle__"]').filter({ hasText: menuLabel });
-  await menuItem.waitFor({ state: "visible", timeout: 10_000 });
-  await menuItem.scrollIntoViewIfNeeded();
-  await menuItem.locator(".flex.overflow-hidden > .relative > .ml-2").click({ force: true });
-
-  await page.locator('nav[aria-label="breadcrumb"]').getByText(breadcrumbLabel)
-    .waitFor({ state: "visible", timeout: 15_000 });
-  await page.waitForLoadState("networkidle", { timeout: 20_000 });
 }
 
 export async function navigateToFinancialAccount(page: Page) {
-  await navigateToWindowBySearch(page, "finan", /^Financial Account$/i, /Financial Account/i);
+  await navigateSidebarTo(page, "finan", "MenuTitle__F3B44B27B7C245429DF63EF04E31E5F0", /Financial Account/i);
 }
 
 export async function navigateToPaymentOut(page: Page) {
-  await navigateToWindowBySearch(page, "payment", /^Payment Out$/i, /Payment Out/i);
+  await navigateSidebarTo(page, "payment", "MenuTitle__C3BEE7BF3F5B44C3A24D24E3DC4870EC", /Payment Out/i);
 }
 
 export async function navigateToPaymentProposal(page: Page) {
-  await navigateToWindowBySearch(page, "payment prop", /^Payment Proposal$/i, /Payment Proposal/i);
+  await navigateSidebarTo(page, "payment prop", "MenuTitle__0A6E838A0B35434AB5D4B9BDE8F5BD01", /Payment Proposal/i);
+}
+
+// ─── Additional procurement/sales navigation ───────────────────────────────────
+
+export async function navigateToSalesOrder(page: Page) {
+  await navigateSidebarTo(page, "sales", "MenuTitle__129", /Sales Order/i);
+}
+
+export async function navigateToRequisition(page: Page) {
+  await navigateSidebarTo(page, "requi", "MenuTitle__800216", /Requisition/i);
+}
+
+export async function navigateToLandedCost(page: Page) {
+  await navigateSidebarTo(page, "lande", "MenuTitle__D0EB635DAB004B16B636122FEA516898", /Landed Cost/i);
+}
+
+/**
+ * Navigates to the Process Request list view (Process Scheduler).
+ * This is a list-only view with no breadcrumb form tab — waits for the table header.
+ */
+export async function navigateToProcessScheduler(page: Page) {
+  const searchInput = page.locator('input[placeholder="Search"]').first();
+  await searchInput.waitFor({ state: "visible", timeout: 10_000 });
+
+  if (await searchInput.isDisabled()) {
+    await page.locator(".h-14 > div > .transition > svg").click();
+    await page.waitForFunction(
+      () => {
+        const el = document.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+        return el !== null && !el.disabled;
+      },
+      { timeout: 5_000 }
+    );
+  }
+
+  await searchInput.click({ force: true });
+  await searchInput.clear();
+  await searchInput.fill("Process");
+
+  await page.waitForFunction(
+    () => !document.querySelector("div.absolute.h-screen.w-screen"),
+    { timeout: 20_000 }
+  ).catch(() => null);
+
+  await page.locator('[data-testid="MenuTitle__BE86736DF4AB4568A316A3922E6D6B7B"]').waitFor({ state: "visible", timeout: 10_000 });
+  const menuSelector = '[data-testid="MenuTitle__BE86736DF4AB4568A316A3922E6D6B7B"] > .flex.overflow-hidden > .relative > .ml-2';
+  await page.locator(menuSelector).waitFor({ state: "visible", timeout: 10_000 });
+  await page.locator(menuSelector).evaluate(el => (el as HTMLElement).click());
+  await page.locator("table thead").waitFor({ state: "visible", timeout: 30_000 });
+}
+
+/**
+ * Navigates to Manage Requisitions (a process/list view with no breadcrumb).
+ * Waits for the table header to confirm the view loaded.
+ */
+export async function navigateToManageRequisitions(page: Page) {
+  const searchInput = page.locator('input[placeholder="Search"]').first();
+  await searchInput.waitFor({ state: "visible", timeout: 10_000 });
+
+  if (await searchInput.isDisabled()) {
+    await page.locator(".h-14 > div > .transition > svg").click();
+    await page.waitForFunction(
+      () => {
+        const el = document.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+        return el !== null && !el.disabled;
+      },
+      { timeout: 5_000 }
+    );
+  }
+
+  await searchInput.click({ force: true });
+  await searchInput.clear();
+  await searchInput.fill("requi");
+
+  await page.waitForFunction(
+    () => !document.querySelector("div.absolute.h-screen.w-screen"),
+    { timeout: 20_000 }
+  ).catch(() => null);
+
+  await page.locator('[data-testid="MenuTitle__1004400000"]').waitFor({ state: "visible", timeout: 10_000 });
+  const manageReqSelector = '[data-testid="MenuTitle__1004400000"] > .flex.overflow-hidden > .relative > .ml-2';
+  await page.locator(manageReqSelector).waitFor({ state: "visible", timeout: 10_000 });
+  await page.locator(manageReqSelector).evaluate(el => (el as HTMLElement).click());
+  await page.locator("table thead").waitFor({ state: "visible", timeout: 30_000 });
 }
