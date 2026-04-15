@@ -39,7 +39,11 @@
     "cy:run": "cd cypress-tests && pnpm cy:run",
     "cy:run:smoke": "cd cypress-tests && pnpm cy:run:smoke",
     "cy:run:regression": "cd cypress-tests && pnpm cy:run:regression",
-    "test:e2e": "cd cypress-tests && pnpm test:e2e"
+    "test:e2e": "cd cypress-tests && pnpm test:e2e",
+    "pw:run": "cd playwright-tests && pnpm pw:run",
+    "pw:run:smoke": "cd playwright-tests && pnpm pw:run:smoke",
+    "pw:ui": "cd playwright-tests && pnpm pw:ui",
+    "pw:report": "cd playwright-tests && pnpm pw:report"
   },
   "keywords": [],
   "author": "",

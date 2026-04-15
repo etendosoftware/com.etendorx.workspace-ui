@@ -69,7 +69,8 @@ test.describe("Sales Orders - Create, Complete Shipment and Invoice @smoke", () 
     await page.locator('[data-testid^="OptionItem__"]').first().waitFor({ state: "visible", timeout: 15_000 });
     await page.locator('[data-testid="OptionItem__4028E6C72959682B01295ADC2340023D"]').waitFor({ state: "visible", timeout: 15_000 });
     await page.locator('[data-testid="OptionItem__4028E6C72959682B01295ADC2340023D"] > .truncate').click({ force: true });
-    await page.waitForLoadState("networkidle", { timeout: 30_000 });
+    // Wait for form to re-render with product data (networkidle is avoided — Etendo uses SSE)
+    await page.locator('[data-testid="TextInput__1130"]').waitFor({ state: "visible", timeout: 30_000 });
 
     // Quantity
     await page.locator('[data-testid="TextInput__1130"]').waitFor({ state: "visible" });
@@ -91,7 +92,6 @@ test.describe("Sales Orders - Create, Complete Shipment and Invoice @smoke", () 
       .locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]')
       .last()
       .click();
-    await page.waitForLoadState("networkidle", { timeout: 30_000 });
     await closeToastIfPresent(page);
 
     // ── Step 5: Process Order (Book) ──────────────────────────────────────────
@@ -172,7 +172,7 @@ test.describe("Sales Orders - Create, Complete Shipment and Invoice @smoke", () 
     const locatorPopup = await locatorPopupPromise.catch(() => null);
 
     if (locatorPopup) {
-      await locatorPopup.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => null);
+      await locatorPopup.waitForLoadState("load", { timeout: 15_000 }).catch(() => null);
 
       // Submit the form with Command=SEARCH to load the locator grid
       await locatorPopup.evaluate(() => {
@@ -182,7 +182,7 @@ test.describe("Sales Orders - Create, Complete Shipment and Invoice @smoke", () 
         if (cmd) cmd.value = "SEARCH";
         form.submit();
       });
-      await locatorPopup.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => null);
+      await locatorPopup.waitForLoadState("load", { timeout: 15_000 }).catch(() => null);
 
       // Extract the first locator ID from the result grid's tr[onclick] attributes
       const locatorFromPopup = await locatorPopup.evaluate(() => {

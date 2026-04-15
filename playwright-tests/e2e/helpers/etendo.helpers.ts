@@ -149,8 +149,17 @@ export async function clickOkInLegacyPopup(page: Page, timeout = 10_000) {
 // ─── Navigation ──────────────────────────────────────────────────────────────
 
 export async function typeInGlobalSearch(page: Page, text: string) {
-  const input = page.locator('input[placeholder="Search"]').filter({ hasText: "" }).first();
+  const input = page.locator('input[placeholder="Search"]').first();
   await input.waitFor({ state: "visible", timeout: 10_000 });
+  // Only clear/fill once the input is actually enabled
+  // waitFor doesn't support "editable" state; use page.waitForFunction instead
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+      return el !== null && !el.disabled;
+    },
+    { timeout: 10_000 }
+  );
   await input.click({ force: true });
   await input.clear();
   await input.fill(text);
@@ -166,6 +175,21 @@ async function navigateSidebarTo(
   // The dynamic ID (#_r_1_, #_r_2_, ...) changes after re-renders, so use placeholder selector.
   const searchInput = page.locator('input[placeholder="Search"]').first();
   await searchInput.waitFor({ state: "visible", timeout: 10_000 });
+
+  // The search input starts disabled until the sidebar toggle is clicked.
+  // Only click the toggle if it's currently disabled — avoids closing an already-open sidebar.
+  if (await searchInput.isDisabled()) {
+    await page.locator(".h-14 > div > .transition > svg").click();
+    // Wait up to 5s for the input to become enabled
+    await page.waitForFunction(
+      () => {
+        const el = document.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+        return el !== null && !el.disabled;
+      },
+      { timeout: 5_000 }
+    );
+  }
+
   await searchInput.click({ force: true });
   await searchInput.clear();
   await searchInput.fill(searchText);
@@ -174,8 +198,10 @@ async function navigateSidebarTo(
   await page.locator(`[data-testid="${menuTestId}"] > .flex.overflow-hidden > .relative > .ml-2`).click();
   // Window tabs in the tab strip are <button> elements, not role="tab".
   // Wait for the breadcrumb to confirm the window is active.
+  // Wait for the breadcrumb to confirm the window is active.
+  // Note: waitForLoadState("networkidle") is intentionally avoided — Etendo keeps
+  // persistent SSE connections open, so the network never reaches "idle" state.
   await page.locator('nav[aria-label="breadcrumb"]').getByText(tabName).waitFor({ state: "visible", timeout: 15_000 });
-  await page.waitForLoadState("networkidle", { timeout: 20_000 });
 }
 
 export async function navigateToGoodsShipment(page: Page) {
