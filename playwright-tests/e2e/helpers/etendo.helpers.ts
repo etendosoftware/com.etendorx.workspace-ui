@@ -1,4 +1,4 @@
-import { type Page, type FrameLocator, expect } from "@playwright/test";
+import { type Page, type Frame, type FrameLocator, expect } from "@playwright/test";
 import { DEFAULT_USER, DEFAULT_PASSWORD, IFRAME_URL } from "../../playwright.config";
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
@@ -238,4 +238,138 @@ export async function expectSuccessToast(page: Page) {
   if (await closeBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
     await closeBtn.click();
   }
+}
+
+// ─── Document Number ─────────────────────────────────────────────────────────
+
+/**
+ * Captures the document number (e.g. "800023") from the currently open record's header.
+ * Scans visible MuiTypography-noWrap elements and returns the first one containing digits.
+ */
+export async function captureDocumentNumber(
+  page: Page,
+  selector = "p.MuiTypography-root.MuiTypography-body1.MuiTypography-noWrap"
+): Promise<string> {
+  await page.locator(selector).first().waitFor({ state: "visible", timeout: 20_000 });
+  const elements = await page.locator(selector).all();
+  for (const el of elements) {
+    if (!(await el.isVisible())) continue;
+    const text = (await el.textContent()) ?? "";
+    const match = text.match(/(\d+)/);
+    if (match) return match[1];
+  }
+  throw new Error("captureDocumentNumber: no visible element with a document number found");
+}
+
+// ─── Legacy CreateFrom popup ──────────────────────────────────────────────────
+
+/**
+ * Fills and submits the legacy "Create Lines From" iframe popup used in Goods Receipts.
+ *
+ * Flow:
+ *   1. Polls page.frames() to find the frame containing #inpPurchaseOrder
+ *   2. Selects the last purchase order option and triggers the change event
+ *   3. Sets the storage bin (locator) description field
+ *   4. Checks the last checkbox (data row)
+ *   5. Clicks the OK button inside the frame
+ *
+ * Caller is responsible for closing the outer wrapper modal and handling toasts.
+ */
+export async function fillCreateLinesFromPopup(
+  page: Page,
+  options: { locatorValue?: string; frameTimeout?: number } = {}
+): Promise<void> {
+  const { locatorValue = "L01", frameTimeout = 15_000 } = options;
+
+  // ── 1. Find the CreateFrom frame ─────────────────────────────────────────
+  // page.frames() returns all frames including nested ones — no strict mode.
+  let createFromFrame: Frame | null = null;
+  const deadline = Date.now() + frameTimeout;
+  while (Date.now() < deadline && !createFromFrame) {
+    for (const f of page.frames()) {
+      try {
+        if ((await f.locator("#inpPurchaseOrder").count()) > 0) {
+          createFromFrame = f;
+          break;
+        }
+      } catch {
+        // Frame detached or cross-origin — keep searching
+      }
+    }
+    if (!createFromFrame) await page.waitForTimeout(500);
+  }
+  if (!createFromFrame) throw new Error("fillCreateLinesFromPopup: frame with #inpPurchaseOrder not found");
+
+  // ── 2. Select last purchase order and trigger reload ──────────────────────
+  const orderSelect = createFromFrame.locator("#inpPurchaseOrder");
+  await orderSelect.waitFor({ state: "visible", timeout: 10_000 });
+  // Wait for at least one real option (beyond the empty placeholder)
+  await createFromFrame
+    .locator("#inpPurchaseOrder option")
+    .nth(1)
+    .waitFor({ state: "attached", timeout: 15_000 })
+    .catch(() => null);
+
+  const optionCount = await orderSelect.locator("option").count();
+  if (optionCount > 1) {
+    await createFromFrame.evaluate(() => {
+      const sel = document.getElementById("inpPurchaseOrder") as HTMLSelectElement;
+      if (!sel) return;
+      sel.selectedIndex = sel.options.length - 1;
+      const win = sel.ownerDocument.defaultView!;
+      sel.dispatchEvent(new win.Event("change", { bubbles: true, cancelable: true }));
+      const w = win as unknown as Record<string, unknown>;
+      if (typeof w["submitCommandForm"] === "function") {
+        (w["submitCommandForm"] as (...args: unknown[]) => void)("FIND_PO", false, null, null, "_self");
+      }
+    });
+    await page.waitForTimeout(3_000); // wait for grid to reload with lines
+  }
+
+  // ── 3. Set storage bin description ───────────────────────────────────────
+  await createFromFrame.evaluate((val) => {
+    const descEl = document.getElementById("paramM_Locator_ID_DES") as HTMLInputElement | null;
+    if (!descEl) return;
+    descEl.value = val;
+    const win = descEl.ownerDocument.defaultView!;
+    (["input", "change"] as const).forEach((e) =>
+      descEl.dispatchEvent(new win.Event(e, { bubbles: true, cancelable: true }))
+    );
+    descEl.dispatchEvent(
+      new win.KeyboardEvent("keydown", { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true })
+    );
+    descEl.dispatchEvent(
+      new win.KeyboardEvent("keyup", { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true })
+    );
+  }, locatorValue);
+  await page.waitForTimeout(2_000);
+
+  // ── 4. Check the last data-row checkbox ───────────────────────────────────
+  const checkboxes = createFromFrame.locator('input[type="checkbox"]');
+  await checkboxes.first().waitFor({ state: "visible", timeout: 10_000 }).catch(() => null);
+  const checkCount = await checkboxes.count();
+  if (checkCount > 0) {
+    await checkboxes.nth(checkCount - 1).check({ force: true });
+  }
+
+  // ── 5. Click OK ───────────────────────────────────────────────────────────
+  await createFromFrame
+    .locator("td.Button_text")
+    .filter({ hasText: /^OK$/i })
+    .first()
+    .click();
+}
+
+// ─── Procurement navigation ───────────────────────────────────────────────────
+
+export async function navigateToPurchaseOrder(page: Page) {
+  await navigateSidebarTo(page, "purcha", "MenuTitle__205", /Purchase Order/i);
+}
+
+export async function navigateToGoodsReceipt(page: Page) {
+  await navigateSidebarTo(page, "goods r", "MenuTitle__204", /Goods Receipt/i);
+}
+
+export async function navigateToPurchaseInvoice(page: Page) {
+  await navigateSidebarTo(page, "purcha", "MenuTitle__206", /Purchase Invoice/i);
 }
