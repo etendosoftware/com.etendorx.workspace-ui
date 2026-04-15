@@ -19,7 +19,12 @@ test.skip("Sales Orders - Create, Complete Shipment and Invoice", () => {
   test("should create a sales order with lines, create goods shipment, complete lines from order, create invoice, complete lines from order and post", async ({
     page,
   }) => {
+<<<<<<< Updated upstream
     // ── Login & role ──────────────────────────────────────────────────────────
+=======
+    test.setTimeout(360_000);
+    // ── Login ────────────────────────────────────────────────────────────────
+>>>>>>> Stashed changes
     await loginToEtendo(page);
     await selectRoleOrgWarehouse(page);
     // Wait for the app to stabilize with the new role context before proceeding

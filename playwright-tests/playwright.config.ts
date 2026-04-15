@@ -31,6 +31,11 @@ export default defineConfig({
   outputDir: "./test-results",
   reporter: [["html", { outputFolder: "playwright-report" }], ["list"]],
 
+  // All tests share a single Etendo instance — concurrent admin sessions cause
+  // race conditions, so tests must run one at a time.
+  workers: 1,
+  fullyParallel: false,
+
   use: {
     baseURL: BASE_URL,
     headless: true,
@@ -55,8 +60,9 @@ export default defineConfig({
     },
   ],
 
-  // Global test timeout (process-heavy flows need more time)
-  timeout: 180_000,
+  // Global test timeout — when tests run sequentially the server is slower due
+  // to accumulated data. Individual tests can override with test.setTimeout().
+  timeout: 360_000,
   expect: { timeout: 15_000 },
 });
 

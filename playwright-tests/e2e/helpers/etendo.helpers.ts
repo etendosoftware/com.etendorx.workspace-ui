@@ -175,6 +175,7 @@ async function navigateSidebarTo(
   // The dynamic ID (#_r_1_, #_r_2_, ...) changes after re-renders, so use placeholder selector.
   const searchInput = page.locator('input[placeholder="Search"]').first();
   await searchInput.waitFor({ state: "visible", timeout: 10_000 });
+<<<<<<< Updated upstream
 
   // The search input starts disabled until the sidebar toggle is clicked.
   // Only click the toggle if it's currently disabled — avoids closing an already-open sidebar.
@@ -190,6 +191,13 @@ async function navigateSidebarTo(
     );
   }
 
+=======
+  // The search panel can be collapsed (input disabled). Click the toggle icon to open it.
+  if (await searchInput.isDisabled()) {
+    await page.locator(".h-14 > div > .transition > svg").click();
+    await expect(searchInput).toBeEnabled({ timeout: 10_000 });
+  }
+>>>>>>> Stashed changes
   await searchInput.click({ force: true });
   await searchInput.clear();
   await searchInput.fill(searchText);
@@ -458,4 +466,65 @@ export async function navigateToGoodsReceipt(page: Page) {
 
 export async function navigateToPurchaseInvoice(page: Page) {
   await navigateSidebarTo(page, "purcha", "MenuTitle__206", /Purchase Invoice/i);
+}
+
+// ─── Financial navigation ─────────────────────────────────────────────────────
+
+export async function navigateToPaymentIn(page: Page) {
+  const searchInput = page.locator('input[placeholder="Search"]').first();
+  await searchInput.waitFor({ state: "visible", timeout: 10_000 });
+  if (await searchInput.isDisabled()) {
+    await page.locator(".h-14 > div > .transition > svg").click();
+    await expect(searchInput).toBeEnabled({ timeout: 10_000 });
+  }
+  await searchInput.click({ force: true });
+  await searchInput.clear();
+  await searchInput.fill("payment");
+
+  const menuItem = page.locator('[data-testid^="MenuTitle__"]').filter({ hasText: /^Payment In$/i });
+  await menuItem.waitFor({ state: "visible", timeout: 10_000 });
+  await menuItem.scrollIntoViewIfNeeded();
+  await menuItem.locator(".flex.overflow-hidden > .relative > .ml-2").click({ force: true });
+
+  await page.locator('nav[aria-label="breadcrumb"]').getByText(/Payment In/i)
+    .waitFor({ state: "visible", timeout: 15_000 });
+  await page.waitForLoadState("networkidle", { timeout: 20_000 });
+}
+
+async function navigateToWindowBySearch(
+  page: Page,
+  searchText: string,
+  menuLabel: RegExp,
+  breadcrumbLabel: RegExp
+) {
+  const searchInput = page.locator('input[placeholder="Search"]').first();
+  await searchInput.waitFor({ state: "visible", timeout: 10_000 });
+  if (await searchInput.isDisabled()) {
+    await page.locator(".h-14 > div > .transition > svg").click();
+    await expect(searchInput).toBeEnabled({ timeout: 10_000 });
+  }
+  await searchInput.click({ force: true });
+  await searchInput.clear();
+  await searchInput.fill(searchText);
+
+  const menuItem = page.locator('[data-testid^="MenuTitle__"]').filter({ hasText: menuLabel });
+  await menuItem.waitFor({ state: "visible", timeout: 10_000 });
+  await menuItem.scrollIntoViewIfNeeded();
+  await menuItem.locator(".flex.overflow-hidden > .relative > .ml-2").click({ force: true });
+
+  await page.locator('nav[aria-label="breadcrumb"]').getByText(breadcrumbLabel)
+    .waitFor({ state: "visible", timeout: 15_000 });
+  await page.waitForLoadState("networkidle", { timeout: 20_000 });
+}
+
+export async function navigateToFinancialAccount(page: Page) {
+  await navigateToWindowBySearch(page, "finan", /^Financial Account$/i, /Financial Account/i);
+}
+
+export async function navigateToPaymentOut(page: Page) {
+  await navigateToWindowBySearch(page, "payment", /^Payment Out$/i, /Payment Out/i);
+}
+
+export async function navigateToPaymentProposal(page: Page) {
+  await navigateToWindowBySearch(page, "payment prop", /^Payment Proposal$/i, /Payment Proposal/i);
 }

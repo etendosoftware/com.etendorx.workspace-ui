@@ -18,6 +18,7 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
   });
 
   test("Completes Purchase Order, Goods Receipt and posts the Vendor Invoice", async ({ page }) => {
+    test.setTimeout(360_000);
     // ── Login ────────────────────────────────────────────────────────────────
     await loginToEtendo(page);
     await selectRoleOrgWarehouse(page);
