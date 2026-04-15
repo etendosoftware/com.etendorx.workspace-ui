@@ -208,6 +208,66 @@ export async function navigateToGoodsShipment(page: Page) {
   await navigateSidebarTo(page, "goods S", "MenuTitle__180", /Goods Shipment/i);
 }
 
+/**
+ * Generic navigation: opens the sidebar if needed, types in the global search
+ * and clicks the menu item with the given data-testid. Unlike `navigateSidebarTo`
+ * this does not require a breadcrumb assertion, which is convenient for flows
+ * that navigate through many windows in sequence.
+ */
+export async function navigateByMenuTestId(
+  page: Page,
+  searchText: string,
+  menuTestId: string
+) {
+  const searchInput = page.locator('input[placeholder="Search"]').first();
+  await searchInput.waitFor({ state: "visible", timeout: 10_000 });
+  if (await searchInput.isDisabled()) {
+    await page.locator(".h-14 > div > .transition > svg").click();
+    await page.waitForFunction(
+      () => {
+        const el = document.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+        return el !== null && !el.disabled;
+      },
+      { timeout: 5_000 }
+    );
+  }
+  await searchInput.click({ force: true });
+  await searchInput.clear();
+  await searchInput.fill(searchText);
+
+  const menu = page.locator(`[data-testid="${menuTestId}"]`).first();
+  await menu.waitFor({ state: "visible", timeout: 10_000 });
+  await menu.click();
+}
+
+// ─── Form toolbar helpers ────────────────────────────────────────────────────
+
+export async function clickNewRecord(page: Page) {
+  const btn = page
+    .locator("button")
+    .filter({ hasText: /^New Record$/ })
+    .locator("visible=true")
+    .first();
+  await btn.waitFor({ state: "visible", timeout: 20_000 });
+  await btn.click();
+}
+
+export async function clickSave(page: Page) {
+  const btn = page
+    .locator("button.toolbar-button-save:not([disabled])")
+    .locator("visible=true")
+    .first();
+  await btn.waitFor({ state: "visible", timeout: 60_000 });
+  await btn.click();
+}
+
+export async function typeName(page: Page, text: string) {
+  const input = page.locator('input[aria-label="Name"]').first();
+  await input.waitFor({ state: "visible", timeout: 20_000 });
+  await input.clear();
+  await input.fill(text);
+}
+
 export async function navigateToSalesInvoice(page: Page) {
   await navigateSidebarTo(page, "sales i", "MenuTitle__178", /Sales Invoice/i);
 }
