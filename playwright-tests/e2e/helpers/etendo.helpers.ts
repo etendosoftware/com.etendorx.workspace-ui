@@ -79,90 +79,71 @@ export function legacyFrame(page: Page): FrameLocator {
  * Handles two cases:
  *   1. React modal with a native <button>OK</button> (new-style popups)
  *   2. Legacy iframe popup with td.Button_text / #buttonOK (old-style popups)
+ *
+ * Uses page.frames() directly instead of FrameLocator to avoid strict-mode
+ * violations when multiple iframes match the same selector.
  */
-export async function clickOkInLegacyPopup(page: Page) {
-  // ── Case 1: React modal OK button (visible in the page directly) ──────────
+export async function clickOkInLegacyPopup(page: Page, timeout = 10_000) {
+  // ── 1. React modal OK button ──────────────────────────────────────────────
   const reactOk = page.getByRole("button", { name: /^OK$/i });
-  if (await reactOk.isVisible()) {
+  if (await reactOk.isVisible({ timeout: 1_500 }).catch(() => false)) {
     await reactOk.click();
     return;
   }
 
-  // ── Case 2: Legacy iframe via FrameLocator (handles normal process popups) ─
-  // legacyFrame() works when only one iframe matches the selector (most steps).
-  // Uses ARIA role + text selectors with a proper wait for iframe content to load.
-  const frame = legacyFrame(page);
-  const legacySelectors = [
+  // ── 2. Legacy iframe — poll all frames until the OK button appears ─────────
+  // page.frames() returns concrete Frame objects — no strict-mode, works cross-origin.
+  // For each frame we try:
+  //   a) Playwright locator (proper interactability checks, faster)
+  //   b) frame.evaluate() DOM click as cross-origin fallback
+  const OK_SELECTORS = [
     "td.Button_text.Button_width",
     "td.Button_text",
     "#buttonOK",
     'button[value="OK"]',
     'input[value="OK"]',
     "button",
-  ];
-  for (const sel of legacySelectors) {
-    const locator = frame.locator(sel).filter({ hasText: /^OK$/i });
-    try {
-      if (await locator.first().isVisible({ timeout: 1_000 })) {
-        await locator.first().click();
-        return;
-      }
-    } catch {}
-  }
+  ] as const;
+  const OK_RE = /^OK$/i;
+  const deadline = Date.now() + timeout;
 
-  // ── Case 2.5: frame.evaluate() across all page frames ──────────────────────
-  // Handles cases where multiple iframes cause FrameLocator strict-mode violations.
-  // Directly manipulates DOM in each frame — bypasses Playwright strict mode entirely.
-  for (const f of page.frames()) {
-    try {
-      const clicked = await f.evaluate(() => {
-        const candidates = document.querySelectorAll(
-          "td.Button_text, td.Button_text.Button_width, #buttonOK, button[value='OK'], input[value='OK'], button"
-        );
-        for (const el of candidates) {
-          const text =
-            (el as HTMLElement).textContent?.trim() ||
-            (el as HTMLInputElement).value?.trim() ||
-            "";
-          if (/^OK$/i.test(text) && (el as HTMLElement).offsetParent !== null) {
-            (el as HTMLElement).click();
-            return true;
+  while (Date.now() < deadline) {
+    for (const frame of page.frames()) {
+      // 2a. Playwright locator (isVisible with timeout:0 = instant, no internal retry)
+      for (const sel of OK_SELECTORS) {
+        try {
+          const loc = frame.locator(sel).filter({ hasText: OK_RE }).first();
+          if (await loc.isVisible({ timeout: 0 })) {
+            await loc.click();
+            return;
           }
-        }
-        return false;
-      });
-      if (clicked) return;
-    } catch {}
-  }
-
-  // ── Case 3: evaluate fallback (nested frames) ─────────────────────────────
-  await page.evaluate((iframeUrlFragment) => {
-    const findAndClick = (doc: Document): boolean => {
-      const candidates = doc.querySelectorAll(
-        "td.Button_text, #buttonOK, button[value='OK'], input[value='OK'], button"
-      );
-      for (const el of candidates) {
-        const text = (el as HTMLElement).textContent?.trim() || (el as HTMLInputElement).value?.trim() || "";
-        if (/^OK$/i.test(text) && (el as HTMLElement).offsetParent !== null) {
-          (el as HTMLElement).click();
-          return true;
+        } catch {
+          // Frame detached or cross-origin — fall through to evaluate
         }
       }
-      return false;
-    };
 
-    const outer = document.querySelector<HTMLIFrameElement>(
-      `iframe[src*="${iframeUrlFragment}"], iframe[src*="meta/legacy"], iframe[src*="classic-new-mainui"]`
-    );
-    if (!outer?.contentDocument) return;
-    if (findAndClick(outer.contentDocument)) return;
-    for (const frame of outer.contentDocument.querySelectorAll("frame, iframe")) {
+      // 2b. DOM evaluate fallback (cross-origin frames with --disable-web-security)
       try {
-        const fd = (frame as HTMLIFrameElement).contentDocument;
-        if (fd && findAndClick(fd)) return;
-      } catch {}
+        const clicked = await frame.evaluate(() => {
+          const QUERY = "td.Button_text.Button_width, td.Button_text, #buttonOK, button[value='OK'], input[value='OK'], button";
+          for (const el of document.querySelectorAll(QUERY)) {
+            const text = (el as HTMLElement).textContent?.trim() || (el as HTMLInputElement).value?.trim() || "";
+            if (/^OK$/i.test(text) && (el as HTMLElement).offsetParent !== null) {
+              (el as HTMLElement).click();
+              return true;
+            }
+          }
+          return false;
+        });
+        if (clicked) return;
+      } catch {
+        // Frame detached or cross-origin without access
+      }
     }
-  }, IFRAME_URL);
+    await page.waitForTimeout(300);
+  }
+
+  throw new Error(`clickOkInLegacyPopup: OK button not found in any frame within ${timeout}ms`);
 }
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
