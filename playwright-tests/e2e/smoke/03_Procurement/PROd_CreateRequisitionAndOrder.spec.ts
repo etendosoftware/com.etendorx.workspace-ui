@@ -52,11 +52,14 @@ test.describe("Requisition flow - Create and generate Purchase Order @smoke", ()
     const searchOptions = page.locator('input[aria-label="Search options"]');
     await searchOptions.waitFor({ state: "visible", timeout: 10_000 });
     await searchOptions.scrollIntoViewIfNeeded();
+    // Register the listener before fill so we don't miss fast responses
+    const productSearchDone = page.waitForResponse(/api\/datasource/, { timeout: 15_000 }).catch(() => null);
     await searchOptions.fill("BOM Product");
+    await productSearchDone;
     await page
       .locator('[data-testid^="OptionItem__"]')
       .filter({ hasText: "BOM Product" })
-      .waitFor({ state: "visible", timeout: 10_000 });
+      .waitFor({ state: "visible", timeout: 15_000 });
     // Wait for FormInitializationComponent that fires when BOM products are selected
     const bomFormInit = page.waitForResponse(/FormInitializationComponent/, { timeout: 15_000 }).catch(() => null);
     await page.locator('[data-testid^="OptionItem__"]').filter({ hasText: "BOM Product" }).click({ force: true });
