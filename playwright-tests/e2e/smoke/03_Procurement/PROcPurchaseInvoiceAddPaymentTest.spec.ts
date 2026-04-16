@@ -40,23 +40,21 @@ test.describe("Purchase Invoice with payment registration @smoke", () => {
     await page.getByRole("button", { name: "New Record" }).last().waitFor({ state: "visible", timeout: 10_000 });
     await page.getByRole("button", { name: "New Record" }).last().click();
 
-    // Select Product — search by name to ensure the option loads before clicking
-    await page
-      .locator('[aria-label="Product"]')
-      .locator('div[tabindex="0"]')
-      .waitFor({ state: "visible", timeout: 10_000 });
-    const formInitDone = page.waitForResponse(/FormInitializationComponent/, { timeout: 30_000 }).catch(() => null);
+    // Select Product — open dropdown, optionally search, then click the option
+    await page.locator('[aria-label="Product"]').locator('div[tabindex="0"]').waitFor({ state: "visible", timeout: 10_000 });
     await page.locator('[aria-label="Product"]').locator('div[tabindex="0"]').click();
     const productSearch = page.locator('input[aria-label="Search options"]');
     if (await productSearch.isVisible({ timeout: 2_000 }).catch(() => false)) {
       await productSearch.fill("Raw material");
+      // Wait for the filtered options to reload before clicking
+      await page.waitForTimeout(500);
     }
     await page
       .locator('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"]')
       .waitFor({ state: "visible", timeout: 15_000 });
-    await page
-      .locator('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"] > .truncate')
-      .click({ force: true });
+    // Set up FormInit listener right before the click so we don't catch a stale response
+    const formInitDone = page.waitForResponse(/FormInitializationComponent/, { timeout: 30_000 }).catch(() => null);
+    await page.locator('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"]').click();
     await formInitDone;
 
     // Set Quantity — use evaluate to bypass React-controlled input

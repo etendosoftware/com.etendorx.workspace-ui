@@ -229,8 +229,7 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
     await closeToastIfPresent(page);
 
     // ── Step 13: Post Invoice ─────────────────────────────────────────────────
-    // Navigate back to header via back-navigation icon
-    await page.locator('[data-testid="IconButton__25D1FA357A484AE38A3E2382889198FE"]').first().click();
+    // After Complete, the page is already at the header level — no back-navigation needed
     await page.locator('[data-testid="IconButtonWithText__process-menu"] > span').click();
     await page.locator(".rounded-2xl").getByText("Post", { exact: true }).click();
 
