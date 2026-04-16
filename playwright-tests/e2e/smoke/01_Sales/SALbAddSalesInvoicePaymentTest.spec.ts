@@ -5,7 +5,6 @@ import {
   selectRoleOrgWarehouse,
   clickOkInLegacyPopup,
   closeToastIfPresent,
-  expectSuccessToast,
 } from "../../helpers/etendo.helpers";
 
 test.describe("Sales Order Automation - Complete Flow", () => {
@@ -118,14 +117,11 @@ test.describe("Sales Order Automation - Complete Flow", () => {
     // Book the order
     await clickOkInLegacyPopup(page);
 
-    // Verify success message inside popup or as a toast
-    const successMsg = page.locator(".mb-1").filter({ hasText: "Process completed successfully" });
-    if (await successMsg.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await page.waitForTimeout(500);
-      await page.locator('[data-testid="close-button"]').click();
-    } else {
-      await expectSuccessToast(page);
-    }
+    // Assert the process completed successfully — fails immediately with a clear error if not found
+    await expect(
+      page.locator(".mb-1").filter({ hasText: "Process completed successfully" })
+    ).toBeVisible({ timeout: 60_000 });
+    await page.locator('[data-testid="close-button"]').click();
 
     await closeToastIfPresent(page);
 
