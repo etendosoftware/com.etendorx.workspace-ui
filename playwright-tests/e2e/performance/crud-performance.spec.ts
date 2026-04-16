@@ -247,7 +247,7 @@ test.describe("CRUD Performance Tests", () => {
 
       const start = Date.now();
       await advFiltersBtn.click();
-      await expect(page.getByText("Advanced Filters")).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByRole("menu").getByText("Advanced Filters")).toBeVisible({ timeout: 10_000 });
       assertPerformance(Date.now() - start, "Advanced Filters open", THRESHOLDS.advancedFilters);
     });
 
