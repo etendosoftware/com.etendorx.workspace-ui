@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { loginToEtendo, cleanupEtendo, selectRoleOrgWarehouse, typeInGlobalSearch, disableImplicitFilter } from "../../helpers/etendo.helpers";
+import {
+  loginToEtendo,
+  cleanupEtendo,
+  selectRoleOrgWarehouse,
+  typeInGlobalSearch,
+  disableImplicitFilter,
+} from "../../helpers/etendo.helpers";
 
 test.describe("LinkedItems Navigation @smoke", () => {
   test.beforeEach(async ({ page }) => {
