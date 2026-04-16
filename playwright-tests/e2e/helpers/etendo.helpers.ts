@@ -275,12 +275,12 @@ export async function closeToastIfPresent(page: Page) {
   // Only target toasts that are visible and NOT already removed
   const visibleToast = page.locator("[data-sonner-toast]:not([data-removed='true']) [data-close-button]");
   let attempts = 0;
-  while (attempts < 5 && (await visibleToast.count()) > 0) {
+  while (attempts < 5 && !page.isClosed() && (await visibleToast.count()) > 0) {
     await visibleToast
       .first()
-      .click({ force: true })
+      .click({ force: true, timeout: 2_000 })
       .catch(() => null);
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(400).catch(() => null);
     attempts++;
   }
 }
