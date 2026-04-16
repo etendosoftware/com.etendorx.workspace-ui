@@ -127,8 +127,7 @@ const TabsGroupRenderer = ({
 
       try {
         const compiledExpr = compileExpression(expression);
-        const res = compiledExpr(context, context);
-        return res;
+        return compiledExpr(context, context);
       } catch (error) {
         logger.error(`Error evaluating display logic for tab ${tab.name}:`, error);
         return false;

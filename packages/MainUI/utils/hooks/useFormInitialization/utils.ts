@@ -203,6 +203,27 @@ const isGlobalSessionKey = (key: string): boolean => {
   return key.startsWith("$") || key.startsWith("#") || key.startsWith("_") || key === "adOrgId";
 };
 
+const isEmptySessionValue = (value: unknown): boolean => value === "" || value === null || value === undefined;
+
+const collectGlobalKeys = (prev: ISession): Record<string, unknown> => {
+  const preserved: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(prev)) {
+    if (isGlobalSessionKey(key)) {
+      preserved[key] = value;
+    }
+  }
+  return preserved;
+};
+
+// Keep the previous value when the incoming one is empty and would erase meaningful context.
+// Mirrors the guard used during display-logic evaluation in utils/expressions.ts.
+const resolveMergedValue = (prev: ISession, key: string, newValue: string): unknown => {
+  if (!isEmptySessionValue(newValue)) return newValue;
+  const existing = (prev as Record<string, unknown>)[key];
+  if (isEmptySessionValue(existing)) return newValue;
+  return existing;
+};
+
 /**
  * Merges new session attributes into the existing session while preventing
  * cross-window state pollution.
@@ -216,18 +237,20 @@ const isGlobalSessionKey = (key: string): boolean => {
  * Solution: Instead of blindly merging (`{...prev, ...new}`), this function:
  * 1. Preserves only global session keys (prefixed with $, #, _ or known globals)
  * 2. Discards stale record-specific keys from previous windows/tabs
- * 3. Merges in the fresh attributes returned by the backend
+ * 3. Merges in the fresh attributes returned by the backend, but keeps the previous
+ *    value for a given key when the incoming one is empty (empty string, null or
+ *    undefined): a blank backend value is treated as "no information" and must not
+ *    wipe out context already populated by an earlier call (e.g. a SETSESSION that
+ *    computed the value for the parent tab before an EDIT for a child tab runs).
  *
  * @param prev - The current session state
  * @param newAttributes - Fresh session attributes from the backend
  * @returns A clean session with global keys preserved and record-specific keys replaced
  */
 export const mergeSessionAttributes = (prev: ISession, newAttributes: Record<string, string>): ISession => {
-  const preserved: Record<string, string | number | boolean | null> = {};
-  for (const [key, value] of Object.entries(prev)) {
-    if (isGlobalSessionKey(key)) {
-      preserved[key] = value;
-    }
+  const merged: Record<string, unknown> = collectGlobalKeys(prev);
+  for (const [key, value] of Object.entries(newAttributes)) {
+    merged[key] = resolveMergedValue(prev, key, value);
   }
-  return { ...preserved, ...newAttributes } as ISession;
+  return merged as ISession;
 };
