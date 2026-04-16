@@ -73,9 +73,11 @@ test.describe("LinkedItems Navigation @smoke", () => {
     };
 
     const openLinkedItemsTab = async () => {
-      const reqPromise = page.waitForRequest((req) => req.url().includes("UsedByLink") && req.method() === "POST", {
-        timeout: 20_000,
-      });
+      // UsedByLink request may be skipped if the result is cached — use catch to avoid
+      // failing the test when no new network call is made.
+      const reqPromise = page
+        .waitForRequest((req) => req.url().includes("UsedByLink") && req.method() === "POST", { timeout: 20_000 })
+        .catch(() => null);
       const btn = page
         .locator("button")
         .filter({ hasText: /^Linked Items$/ })

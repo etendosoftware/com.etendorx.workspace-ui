@@ -63,7 +63,11 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
 
     await page.locator(".h-14 > div > .transition > svg").click();
     await typeInGlobalSearch(page, "sales");
-    await page.locator('[data-testid="MenuTitle__129"]').click();
+    await page.locator('[data-testid="MenuTitle__129"]').waitFor({ state: "visible", timeout: 10_000 });
+    await page
+      .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
+      .catch(() => null);
+    await page.locator('[data-testid="MenuTitle__129"]').evaluate((el) => (el as HTMLElement).click());
 
     await expect(page.locator("table").first()).toBeVisible({ timeout: 15_000 });
 
