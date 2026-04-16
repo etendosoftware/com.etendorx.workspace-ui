@@ -235,9 +235,16 @@ export async function navigateByMenuTestId(page: Page, searchText: string, menuT
   await searchInput.clear();
   await searchInput.fill(searchText);
 
+  // Wait for the loading overlay to clear before clicking (same guard as navigateSidebarTo).
+  await page
+    .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
+    .catch(() => null);
+
   const menu = page.locator(`[data-testid="${menuTestId}"]`).first();
   await menu.waitFor({ state: "visible", timeout: 10_000 });
-  await menu.click();
+  // Use native DOM click — bypasses CSS pointer-events/z-index interception from sidebar
+  // accordions and scroll containers, same approach as navigateSidebarTo.
+  await menu.evaluate((el) => (el as HTMLElement).click());
 }
 
 // ─── Form toolbar helpers ────────────────────────────────────────────────────

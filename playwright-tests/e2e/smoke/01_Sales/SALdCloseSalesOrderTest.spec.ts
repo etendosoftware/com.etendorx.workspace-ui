@@ -27,7 +27,12 @@ test.describe("Sales Orders - Create, Complete and Close", () => {
     await drawerInput.click({ force: true });
     await page.keyboard.type("sales");
     await page.locator('[data-testid="MenuTitle__129"]').waitFor({ state: "visible", timeout: 10_000 });
-    await page.locator('[data-testid="MenuTitle__129"] > .flex.overflow-hidden > .relative > .ml-2').click();
+    await page
+      .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
+      .catch(() => null);
+    await page
+      .locator('[data-testid="MenuTitle__129"] > .flex.overflow-hidden > .relative > .ml-2')
+      .evaluate((el) => (el as HTMLElement).click());
     await page
       .locator('nav[aria-label="breadcrumb"]')
       .getByText(/Sales Order/i)

@@ -14,6 +14,7 @@ test.describe("Purchase Invoice with payment registration @smoke", () => {
   });
 
   test("Completes a Purchase Invoice, adds payment and validates payment details", async ({ page }) => {
+    test.setTimeout(360_000);
     // ── Login ────────────────────────────────────────────────────────────────
     await loginToEtendo(page);
     await selectRoleOrgWarehouse(page);

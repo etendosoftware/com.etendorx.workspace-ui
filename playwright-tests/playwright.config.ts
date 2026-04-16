@@ -31,8 +31,9 @@ export default defineConfig({
   outputDir: "./test-results",
   reporter: [["html", { outputFolder: "playwright-report" }], ["list"]],
 
-  // All tests share a single Etendo instance — concurrent admin sessions cause
-  // race conditions, so tests must run one at a time.
+  // All tests share a single Etendo instance. Suites run group-by-group via
+  // project dependencies so no two groups overlap. Within each group, up to 3
+  // workers run spec files in parallel.
   workers: 3,
   fullyParallel: false,
 
@@ -48,14 +49,67 @@ export default defineConfig({
   },
 
   projects: [
+    // ── Shared browser options ───────────────────────────────────────────────
+    // Each suite group below spreads via this use block.
+    // (Playwright requires each project to declare its own browser.)
+
+    // Group 1 — Performance (runs first, alone — stress tests can saturate the server)
     {
-      name: "chromium",
+      name: "suite-00-performance",
+      testMatch: ["**/performance/**"],
       use: {
         ...devices["Desktop Chrome"],
-        // Required for cross-origin iframe access (equivalent to Cypress chromeWebSecurity: false)
-        launchOptions: {
-          args: ["--disable-web-security", "--disable-site-isolation-trials"],
-        },
+        launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
+      },
+    },
+
+    // Group 2 — Login, Masterdata, Filters, LinkedItems (no shared financial state)
+    {
+      name: "suite-01-base",
+      testMatch: [
+        "**/00_Login/**",
+        "**/04_Masterdata/**",
+        "**/06_filters/**",
+        "**/07_LinkedItems/**",
+        "**/PurchaseOrderDisplayLogicTest*",
+      ],
+      dependencies: ["suite-00-performance"],
+      use: {
+        ...devices["Desktop Chrome"],
+        launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
+      },
+    },
+
+    // Group 3 — Sales (starts only after Group 2 finishes)
+    {
+      name: "suite-02-sales",
+      testMatch: ["**/01_Sales/**"],
+      dependencies: ["suite-01-base"],
+      use: {
+        ...devices["Desktop Chrome"],
+        launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
+      },
+    },
+
+    // Group 4 — Procurement (starts only after Sales finishes)
+    {
+      name: "suite-03-procurement",
+      testMatch: ["**/03_Procurement/**"],
+      dependencies: ["suite-02-sales"],
+      use: {
+        ...devices["Desktop Chrome"],
+        launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
+      },
+    },
+
+    // Group 5 — Financial (most fragile — runs last, alone)
+    {
+      name: "suite-04-financial",
+      testMatch: ["**/05_Financial/**"],
+      dependencies: ["suite-03-procurement"],
+      use: {
+        ...devices["Desktop Chrome"],
+        launchOptions: { args: ["--disable-web-security", "--disable-site-isolation-trials"] },
       },
     },
   ],

@@ -28,7 +28,12 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     await drawerInput.click({ force: true });
     await page.keyboard.type("sales");
     await page.locator('[data-testid="MenuTitle__129"]').waitFor({ state: "visible", timeout: 10_000 });
-    await page.locator('[data-testid="MenuTitle__129"] > .flex.overflow-hidden > .relative > .ml-2').click();
+    await page
+      .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
+      .catch(() => null);
+    await page
+      .locator('[data-testid="MenuTitle__129"] > .flex.overflow-hidden > .relative > .ml-2')
+      .evaluate((el) => (el as HTMLElement).click());
 
     // ── Step 2: Create New Sales Order ────────────────────────────────────────
     // The New Record button being enabled is the definitive signal that the window
@@ -79,7 +84,10 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     await page.locator('[aria-label="Product"] > div[tabindex="0"]').waitFor({ state: "visible", timeout: 15_000 });
     await page.locator('[aria-label="Product"] > div[tabindex="0"]').click();
     await page.locator('[data-testid^="OptionItem__"]').first().waitFor({ state: "visible", timeout: 15_000 });
+    // Register FormInit listener before clicking so we don't miss the response
+    const formInitDone = page.waitForResponse(/FormInitializationComponent/, { timeout: 30_000 }).catch(() => null);
     await page.locator('[data-testid="OptionItem__4028E6C72959682B01295ADC2340023D"]').click({ force: true });
+    await formInitDone; // wait for backend to populate price/UOM before setting quantity
     await page.locator('[data-testid="TextInput__1130"]').waitFor({ state: "visible", timeout: 30_000 });
 
     // Set quantity — use native value setter to bypass React's synthetic event handling
@@ -94,7 +102,9 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     await page.waitForTimeout(1_000);
 
     // Save line (index 1 = save button inside the Lines tab toolbar)
+    const lineSaveResponse = page.waitForResponse(/org\.openbravo\.service\.json\.JsonRestServlet/, { timeout: 15_000 }).catch(() => null);
     await page.locator("button.toolbar-button-save").nth(1).click();
+    await lineSaveResponse; // wait for backend to confirm the line was persisted
     await closeToastIfPresent(page);
 
     // ── Step 5: Process Order (Book) ──────────────────────────────────────────
@@ -153,7 +163,9 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     await createInput.fill("");
     await page.keyboard.type("create");
     await page.locator('[data-testid="MenuTitle__346"]').waitFor({ state: "visible", timeout: 10_000 });
-    await page.locator('[data-testid="MenuTitle__346"] > .flex.overflow-hidden > .relative > .ml-2').click();
+    await page
+      .locator('[data-testid="MenuTitle__346"] > .flex.overflow-hidden > .relative > .ml-2')
+      .evaluate((el) => (el as HTMLElement).click());
 
     // The outer legacy iframe loads Menu.html, which in turn loads the actual form
     // (GenerateShipmentsmanual.html or similar) inside a nested iframe. legacyFrame()
@@ -176,13 +188,31 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     }
     if (!processFrame) throw new Error("Create Invoices process frame not found");
 
-    // Set start date far enough back to include the order just created
+    // Set From Date to today — mirrors Cypress setLegacyDate("paramDateFrom") which uses today.
+    // Etendo legacy forms use DD-MM-YYYY with dashes for .value assignment.
+    const today = new Date();
+    const legacyDateStr = `${String(today.getDate()).padStart(2, "0")}-${String(today.getMonth() + 1).padStart(2, "0")}-${today.getFullYear()}`;
     await processFrame.locator("#paramDateFrom").waitFor({ state: "attached", timeout: 10_000 });
-    await processFrame.locator("#paramDateFrom").fill("01/01/2000");
+    await processFrame.evaluate((dateStr) => {
+      const input = document.getElementById("paramDateFrom") as HTMLInputElement | null;
+      if (!input) return;
+      input.value = dateStr;
+      ["input", "change", "blur"].forEach((e) =>
+        input.dispatchEvent(new Event(e, { bubbles: true, cancelable: true }))
+      );
+    }, legacyDateStr);
     await page.waitForTimeout(1_000);
 
-    // Search for matching orders/shipments
-    await processFrame.getByRole("button", { name: /^Search$/i }).click();
+    // Search — Etendo classic renders this as td.Button_text; fall back to getByRole if needed.
+    await processFrame.evaluate(() => {
+      const btns = document.querySelectorAll<HTMLElement>('td.Button_text, button, input[type="button"]');
+      for (const btn of btns) {
+        if (btn.textContent?.trim() === "Search" || (btn as HTMLInputElement).value === "Search") {
+          btn.click();
+          return;
+        }
+      }
+    });
 
     // The form uses a frameset: parameters (#paramDateFrom) and results (inpOrder checkboxes)
     // may be in sibling <frame> elements. Iterate ALL page frames to find the results frame
@@ -213,7 +243,30 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
       checkboxes.slice(0, limit).forEach((cb) => cb.click());
     });
 
-    await resultsFrame.getByRole("button", { name: /^Process$/i }).click();
+    // Etendo classic renders Process as td.Button_text — not a real <button>, so getByRole fails.
+    // Iterate all frames (mirrors Cypress clickLegacyButton) to find and click it.
+    await page.evaluate(() => {
+      const allDocs: Document[] = [document];
+      document.querySelectorAll("iframe").forEach((iframe) => {
+        try {
+          if (iframe.contentDocument) {
+            allDocs.push(iframe.contentDocument);
+            iframe.contentDocument.querySelectorAll("frame").forEach((f) => {
+              if (f.contentDocument) allDocs.push(f.contentDocument);
+            });
+          }
+        } catch { /* cross-origin */ }
+      });
+      for (const doc of allDocs) {
+        const btns = doc.querySelectorAll<HTMLElement>('td.Button_text, button, input[type="button"]');
+        for (const btn of btns) {
+          if (btn.textContent?.trim() === "Process" || (btn as HTMLInputElement).value === "Process") {
+            btn.click();
+            return;
+          }
+        }
+      }
+    });
 
     // Success message: check the results frame first, then fall back to all frames
     // (Cypress verifyLegacySuccessMessage uses .MessageBox_TextTitle#messageBoxIDTitle)
@@ -252,7 +305,9 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     await reportInput.fill("");
     await page.keyboard.type("genera");
     await page.locator('[data-testid="MenuTitle__192"]').waitFor({ state: "visible", timeout: 10_000 });
-    await page.locator('[data-testid="MenuTitle__192"] > .flex.overflow-hidden > .relative > .ml-2').click();
+    await page
+      .locator('[data-testid="MenuTitle__192"] > .flex.overflow-hidden > .relative > .ml-2')
+      .evaluate((el) => (el as HTMLElement).click());
 
     // Wait briefly before executing — avoids known race where the report
     // fires before the previous process result is fully committed.
