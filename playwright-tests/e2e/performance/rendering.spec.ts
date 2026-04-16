@@ -6,12 +6,12 @@ import { loginToEtendo, cleanupEtendo } from "../helpers/etendo.helpers";
 const THRESHOLDS = {
   loginPageLoad: { warning: 2000, failure: 5000 },
   dashboardLoad: { warning: 5000, failure: 10000 },
-  lcp:           { warning: 2500, failure: 4000 },
-  fid:           { warning: 50,   failure: 100 },
-  tti:           { warning: 3000, failure: 5000 },
-  dclTime:       { warning: 3000, failure: 5000 },
-  fullLoad:      { warning: 5000, failure: 10000 },
-  menuRender:    { warning: 5000, failure: 10000 },
+  lcp: { warning: 2500, failure: 4000 },
+  fid: { warning: 50, failure: 100 },
+  tti: { warning: 3000, failure: 5000 },
+  dclTime: { warning: 3000, failure: 5000 },
+  fullLoad: { warning: 5000, failure: 10000 },
+  menuRender: { warning: 5000, failure: 10000 },
   searchResults: { warning: 2000, failure: 5000 },
 };
 
@@ -34,7 +34,7 @@ function assertPerformance(elapsed: number, label: string, threshold: Threshold)
 
 async function openDrawer(page: Page) {
   const drawerInput = page.locator('[data-testid="drawer-search-input"] input');
-  if (!await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false)) {
+  if (!(await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
     await page.locator(".h-14 > div > .transition > svg").click();
     await drawerInput.waitFor({ state: "visible", timeout: 10_000 });
   }
@@ -94,7 +94,7 @@ test.describe("Rendering Performance Tests", () => {
       await page.waitForTimeout(3_000);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const lcp = await page.evaluate(() => (window as any).__LCP__ as number || 0);
+      const lcp = await page.evaluate(() => ((window as any).__LCP__ as number) || 0);
       console.log(`LCP: ${lcp.toFixed(2)}ms`);
       assertPerformance(lcp, "Largest Contentful Paint (LCP)", THRESHOLDS.lcp);
     });
@@ -121,7 +121,7 @@ test.describe("Rendering Performance Tests", () => {
       await page.waitForTimeout(5_000);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const cls = await page.evaluate(() => (window as any).__CLS__ as number || 0);
+      const cls = await page.evaluate(() => ((window as any).__CLS__ as number) || 0);
       console.log(`CLS Score: ${cls.toFixed(4)}`);
       // CLS is a unitless ratio — threshold is 0.25 (Google Web Vitals "poor" boundary).
       expect(cls, "CLS must be under 0.25 (Google Web Vitals threshold)").toBeLessThan(0.25);
@@ -171,9 +171,7 @@ test.describe("Rendering Performance Tests", () => {
 
       const timing = await page.evaluate(() => {
         const nav = (performance.getEntriesByType("navigation") as PerformanceNavigationTiming[])[0];
-        return nav
-          ? { domContentLoadedEventEnd: nav.domContentLoadedEventEnd, startTime: nav.startTime }
-          : null;
+        return nav ? { domContentLoadedEventEnd: nav.domContentLoadedEventEnd, startTime: nav.startTime } : null;
       });
 
       if (timing) {

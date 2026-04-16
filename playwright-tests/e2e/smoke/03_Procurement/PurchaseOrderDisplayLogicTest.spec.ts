@@ -19,17 +19,17 @@ test.describe("Sales Order - Display logic and field visibility @smoke", () => {
     await newBtn.click();
 
     // ── Step 3: Assert required fields are visible ────────────────────────────
-    await expect(
-      page.locator('[aria-describedby="Organization-help"] > .w-1\\/3 > .overflow-hidden')
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[aria-describedby="Organization-help"] > .w-1\\/3 > .overflow-hidden')).toBeVisible({
+      timeout: 10_000,
+    });
 
     await expect(
       page.locator('[aria-describedby="Transaction Document-help"] > .w-1\\/3 > .overflow-hidden')
     ).toBeVisible({ timeout: 10_000 });
 
-    await expect(
-      page.locator('[aria-describedby="Document No.-help"] > .w-1\\/3 > .overflow-hidden')
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[aria-describedby="Document No.-help"] > .w-1\\/3 > .overflow-hidden')).toBeVisible({
+      timeout: 10_000,
+    });
 
     // ── Step 4: Assert Delivery Notes field is hidden per display logic ────────
     await expect(page.locator('[aria-describedby="Delivery Notes-help"]')).not.toBeAttached();

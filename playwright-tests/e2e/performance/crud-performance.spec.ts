@@ -6,15 +6,15 @@ import { loginToEtendo, closeToastIfPresent } from "../helpers/etendo.helpers";
 // warning: where competitive ERPs perform (target).
 // failure: max tolerable — beyond this, users abandon tasks (Nielsen 10s rule).
 const THRESHOLDS = {
-  windowOpen:         { warning: 2000, failure: 5000 },
-  newRecordForm:      { warning: 2000, failure: 5000 },
-  saveRecord:         { warning: 2000, failure: 5000 },
-  saveRecordComplex:  { warning: 3000, failure: 8000 },
-  tableLoad:          { warning: 2000, failure: 5000 },
-  tabNavigation:      { warning: 1000, failure: 3000 },
-  advancedFilters:    { warning: 1000, failure: 3000 },
-  dropdownLoad:       { warning: 1000, failure: 3000 },
-  consecutiveRecord:  { warning: 3000, failure: 8000 },
+  windowOpen: { warning: 2000, failure: 5000 },
+  newRecordForm: { warning: 2000, failure: 5000 },
+  saveRecord: { warning: 2000, failure: 5000 },
+  saveRecordComplex: { warning: 3000, failure: 8000 },
+  tableLoad: { warning: 2000, failure: 5000 },
+  tabNavigation: { warning: 1000, failure: 3000 },
+  advancedFilters: { warning: 1000, failure: 3000 },
+  dropdownLoad: { warning: 1000, failure: 3000 },
+  consecutiveRecord: { warning: 3000, failure: 8000 },
 };
 
 type Threshold = { warning: number; failure: number };
@@ -26,7 +26,9 @@ function assertPerformance(elapsed: number, label: string, threshold: Threshold)
   if (elapsed <= warning) {
     console.log(`✅ ${label}: ${elapsed}ms (GOOD — within industry standard of ${warning}ms)`);
   } else if (elapsed <= failure) {
-    console.log(`⚠️  ${label}: ${elapsed}ms (WARNING — exceeds industry standard of ${warning}ms, max tolerable: ${failure}ms)`);
+    console.log(
+      `⚠️  ${label}: ${elapsed}ms (WARNING — exceeds industry standard of ${warning}ms, max tolerable: ${failure}ms)`
+    );
     console.log(`⚠️  INDUSTRY BENCHMARK: SAP < 2s, Odoo < 2-3s, Nielsen limit: 1s flow / 10s attention`);
   }
   expect(elapsed, `${label} must be under ${failure}ms (max tolerable)`).toBeLessThan(failure);
@@ -44,7 +46,7 @@ function assertPerformance(elapsed: number, label: string, threshold: Threshold)
 async function openWindowBySearch(page: Page, searchText: string, menuTestId: string) {
   const drawerInput = page.locator('[data-testid="drawer-search-input"] input');
 
-  if (!await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false)) {
+  if (!(await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
     await page.locator(".h-14 > div > .transition > svg").click();
     await drawerInput.waitFor({ state: "visible", timeout: 10_000 });
   }
@@ -84,13 +86,16 @@ test.describe("CRUD Performance Tests", () => {
 
     test.skip("should open Business Partner window within acceptable time", async ({ page }) => {
       const drawerInput = page.locator('[data-testid="drawer-search-input"] input');
-      if (!await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false)) {
+      if (!(await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
         await page.locator(".h-14 > div > .transition > svg").click();
         await drawerInput.waitFor({ state: "visible", timeout: 10_000 });
       }
       await drawerInput.click({ force: true });
       await page.keyboard.type("business");
-      await page.locator('[data-testid^="MenuTitle"]').filter({ hasText: "Business Partner" }).first()
+      await page
+        .locator('[data-testid^="MenuTitle"]')
+        .filter({ hasText: "Business Partner" })
+        .first()
         .waitFor({ state: "visible", timeout: 10_000 });
 
       const start = Date.now();
@@ -119,7 +124,10 @@ test.describe("CRUD Performance Tests", () => {
 
       const start = Date.now();
       await page.locator("button.toolbar-button-new:not([disabled])").filter({ hasText: "New Record" }).first().click();
-      await page.locator('input[aria-label="Search Key"]').filter({ visible: true }).first()
+      await page
+        .locator('input[aria-label="Search Key"]')
+        .filter({ visible: true })
+        .first()
         .waitFor({ state: "visible", timeout: 20_000 });
       assertPerformance(Date.now() - start, "New Product form load", THRESHOLDS.newRecordForm);
     });
@@ -135,7 +143,9 @@ test.describe("CRUD Performance Tests", () => {
       await page.locator("button.toolbar-button-new:not([disabled])").filter({ hasText: "New Record" }).first().click();
       await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 20_000 });
 
-      await page.locator('[aria-describedby="Business Partner-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
+      await page
+        .locator('[aria-describedby="Business Partner-help"] > .w-2\\/3 > .relative > .w-full > .text-sm')
+        .click();
       await page.locator('[data-testid="OptionItem__4028E6C72959682B01295F40CFE1031B"] > .truncate').click();
 
       await page.locator('[aria-describedby="Transaction Document-help"] > .w-2\\/3 > .relative > .w-full').click();
@@ -227,8 +237,8 @@ test.describe("CRUD Performance Tests", () => {
 
       const advFiltersBtn = page.locator("button.toolbar-button-advanced-filters").first();
       const isAvailable =
-        await advFiltersBtn.isVisible({ timeout: 10_000 }).catch(() => false) &&
-        await advFiltersBtn.isEnabled().catch(() => false);
+        (await advFiltersBtn.isVisible({ timeout: 10_000 }).catch(() => false)) &&
+        (await advFiltersBtn.isEnabled().catch(() => false));
 
       if (!isAvailable) {
         console.log("Advanced Filters button not available, skipping");
@@ -249,7 +259,9 @@ test.describe("CRUD Performance Tests", () => {
       await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 20_000 });
 
       const start = Date.now();
-      await page.locator('[aria-describedby="Business Partner-help"] > .w-2\\/3 > .relative > .w-full > .text-sm').click();
+      await page
+        .locator('[aria-describedby="Business Partner-help"] > .w-2\\/3 > .relative > .w-full > .text-sm')
+        .click();
       await page.locator('[data-testid^="OptionItem"]').first().waitFor({ state: "visible", timeout: 15_000 });
       assertPerformance(Date.now() - start, "Dropdown options load", THRESHOLDS.dropdownLoad);
     });
@@ -266,11 +278,11 @@ test.describe("CRUD Performance Tests", () => {
 
       for (let i = 0; i < 3; i++) {
         const start = Date.now();
-        await page.locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"]')
+        await page
+          .locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"]')
           .first()
           .click({ force: true });
-        await page.locator('input[aria-label="Search Key"]').first()
-          .waitFor({ state: "visible", timeout: 20_000 });
+        await page.locator('input[aria-label="Search Key"]').first().waitFor({ state: "visible", timeout: 20_000 });
         times.push(Date.now() - start);
 
         const uniqueKey = `PERF_BATCH_${Date.now()}_${i}`;

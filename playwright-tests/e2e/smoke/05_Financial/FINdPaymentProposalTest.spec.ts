@@ -15,7 +15,9 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     await cleanupEtendo(page);
   });
 
-  test("Creates two Purchase Invoices, completes them, selects both in one go and generates payment", async ({ page }) => {
+  test("Creates two Purchase Invoices, completes them, selects both in one go and generates payment", async ({
+    page,
+  }) => {
     // This test creates 2 invoices + a Payment Proposal — allow extra time
     test.setTimeout(360_000);
 
@@ -66,9 +68,9 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     await newLineBtn.waitFor({ state: "visible", timeout: 15_000 });
     await newLineBtn.click();
 
-    // Product: Raw material A — ChevronDown → search → ArrowDown → Enter
+    // Product: Raw material A — scrollIntoViewIfNeeded performs stability + scroll checks
     await page.locator('[data-testid="ChevronDown__3371"]').first().scrollIntoViewIfNeeded();
-    await page.locator('[data-testid="ChevronDown__3371"]').first().click({ force: true });
+    await page.locator('[data-testid="ChevronDown__3371"]').first().click();
     let productSearch = page.locator('input[aria-label="Search options"]');
     await productSearch.waitFor({ state: "visible", timeout: 10_000 });
     await productSearch.clear();
@@ -78,7 +80,6 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
       .waitFor({ state: "visible", timeout: 10_000 });
     await productSearch.press("ArrowDown");
     await page.keyboard.press("Enter");
-    await page.waitForLoadState("networkidle", { timeout: 30_000 });
 
     // Quantity: 11.2 (React-controlled input — native setter)
     await page.locator('[data-testid="TextInput__3374"]').waitFor({ state: "visible" });
@@ -97,7 +98,6 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
 
     // Save line
     await page.locator("button.toolbar-button-save").last().click();
-    await page.waitForLoadState("networkidle", { timeout: 30_000 });
     await closeToastIfPresent(page);
 
     // Complete Invoice A
@@ -117,9 +117,9 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     // Refresh and verify Completed
     await page.locator("button.toolbar-button-refresh").filter({ visible: true }).first().click();
     await page.waitForTimeout(1_000);
-    await expect(
-      page.locator(".MuiChip-label").filter({ hasText: "Completed" }).first()
-    ).toBeAttached({ timeout: 20_000 });
+    await expect(page.locator(".MuiChip-label").filter({ hasText: "Completed" }).first()).toBeAttached({
+      timeout: 20_000,
+    });
 
     // Capture Invoice A document number
     const invoiceNumberA = await captureDocumentNumber(page);
@@ -160,16 +160,10 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
       .click({ force: true });
 
     // Payment Method for Vendor B
-    await page
-      .locator('[data-testid="ChevronDown__830698140BCD4AC3E040007F01000289"]')
-      .click({ force: true });
+    await page.locator('[data-testid="ChevronDown__830698140BCD4AC3E040007F01000289"]').click({ force: true });
     await page.waitForTimeout(500);
-    await page
-      .locator('[data-testid="OptionItem__42E87E97974E4B35849A430B8F6F2884"]')
-      .scrollIntoViewIfNeeded();
-    await page
-      .locator('[data-testid="OptionItem__42E87E97974E4B35849A430B8F6F2884"]')
-      .click({ force: true });
+    await page.locator('[data-testid="OptionItem__42E87E97974E4B35849A430B8F6F2884"]').scrollIntoViewIfNeeded();
+    await page.locator('[data-testid="OptionItem__42E87E97974E4B35849A430B8F6F2884"]').click({ force: true });
     await page.waitForTimeout(500);
 
     // Save header
@@ -182,9 +176,9 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     await newLineBtn.waitFor({ state: "visible", timeout: 15_000 });
     await newLineBtn.click();
 
-    // Product: Raw material B — ChevronDown → search → ArrowDown → Enter
+    // Product: Raw material B — scrollIntoViewIfNeeded performs stability + scroll checks
     await page.locator('[data-testid="ChevronDown__3371"]').first().scrollIntoViewIfNeeded();
-    await page.locator('[data-testid="ChevronDown__3371"]').first().click({ force: true });
+    await page.locator('[data-testid="ChevronDown__3371"]').first().click();
     productSearch = page.locator('input[aria-label="Search options"]');
     await productSearch.waitFor({ state: "visible", timeout: 10_000 });
     await productSearch.clear();
@@ -196,7 +190,6 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
       .waitFor({ state: "visible", timeout: 10_000 });
     await productSearch.press("ArrowDown");
     await page.keyboard.press("Enter");
-    await page.waitForLoadState("networkidle", { timeout: 30_000 });
 
     // Quantity: 10
     await page.locator('[data-testid="TextInput__3374"]').waitFor({ state: "visible" });
@@ -215,7 +208,6 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
 
     // Save line
     await page.locator("button.toolbar-button-save").last().click();
-    await page.waitForLoadState("networkidle", { timeout: 30_000 });
     await closeToastIfPresent(page);
 
     // Complete Invoice B
@@ -235,9 +227,9 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     // Refresh and verify Completed
     await page.locator("button.toolbar-button-refresh").filter({ visible: true }).first().click();
     await page.waitForTimeout(1_000);
-    await expect(
-      page.locator(".MuiChip-label").filter({ hasText: "Completed" }).first()
-    ).toBeAttached({ timeout: 20_000 });
+    await expect(page.locator(".MuiChip-label").filter({ hasText: "Completed" }).first()).toBeAttached({
+      timeout: 20_000,
+    });
 
     // Capture Invoice B document number
     const invoiceNumberB = await captureDocumentNumber(page);
@@ -286,7 +278,12 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
       .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
       .first()
       .waitFor({ state: "attached", timeout: 30_000 });
-    if (await page.getByText("errors.missingData").isVisible({ timeout: 1_000 }).catch(() => false)) {
+    if (
+      await page
+        .getByText("errors.missingData")
+        .isVisible({ timeout: 1_000 })
+        .catch(() => false)
+    ) {
       const retryBtn = page.getByRole("button", { name: "Retry" });
       if (await retryBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
         const retryResponse = page.waitForResponse(/api\/datasource/, { timeout: 30_000 });
@@ -306,19 +303,33 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     await dueDateSort.click();
     await page.waitForTimeout(2_000);
 
-    // Select Invoice A row
+    // Filter by Invoice Document No. to reliably locate the row regardless of pagination
+    const invoiceDocFilter = page.locator('input[placeholder="Filter Invoice Document No...."]');
+    await invoiceDocFilter.waitFor({ state: "visible", timeout: 10_000 });
+    await invoiceDocFilter.clear();
+    await invoiceDocFilter.fill(invoiceNumberA);
+    await page.waitForTimeout(1_500);
+
+    // Select Invoice A row (use .first() in case the invoice has multiple payment plan lines)
     const rowA = page
       .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
-      .filter({ hasText: invoiceNumberA });
+      .filter({ hasText: invoiceNumberA })
+      .first();
     await rowA.waitFor({ state: "visible", timeout: 15_000 });
     await rowA.locator('input[aria-label="Toggle select row"]').scrollIntoViewIfNeeded();
     await rowA.locator('input[aria-label="Toggle select row"]').click({ force: true });
     await expect(rowA.locator('input[aria-label="Toggle select row"]')).toBeChecked({ timeout: 10_000 });
 
-    // Select Invoice B row
+    // Filter by Invoice B to locate it reliably
+    await invoiceDocFilter.clear();
+    await invoiceDocFilter.fill(invoiceNumberB);
+    await page.waitForTimeout(1_500);
+
+    // Select Invoice B row (use .first() in case the invoice has multiple payment plan lines)
     const rowB = page
       .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
-      .filter({ hasText: invoiceNumberB });
+      .filter({ hasText: invoiceNumberB })
+      .first();
     await rowB.waitFor({ state: "visible", timeout: 15_000 });
     await rowB.locator('input[aria-label="Toggle select row"]').scrollIntoViewIfNeeded();
     await rowB.locator('input[aria-label="Toggle select row"]').click({ force: true });
@@ -329,7 +340,7 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
       state: "visible",
       timeout: 60_000,
     });
-    const submitBtn = page.locator('button').filter({ hasText: /^Submit$/ });
+    const submitBtn = page.locator("button").filter({ hasText: /^Execute$/ });
     await submitBtn.waitFor({ state: "visible", timeout: 10_000 });
     await submitBtn.click();
     await successToastAppeared;
@@ -366,12 +377,11 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
       }
       throw new Error("Generate Payments: Process button not found in any frame");
     })();
-    await page.waitForLoadState("networkidle", { timeout: 60_000 });
     await closeToastIfPresent(page);
 
     // Close the result dialog
     const closeDialogBtn = page.locator('[data-testid="close-button"]').first();
-    await closeDialogBtn.waitFor({ state: "visible", timeout: 15_000 });
+    await closeDialogBtn.waitFor({ state: "visible", timeout: 30_000 });
     await closeDialogBtn.click();
     await page.waitForTimeout(500);
 

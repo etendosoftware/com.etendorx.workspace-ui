@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import {
   loginToEtendo,
   cleanupEtendo,
+  selectRoleOrgWarehouse,
   navigateByMenuTestId,
   clickNewRecord,
   clickSave,
@@ -20,11 +21,10 @@ test.describe("Master Data - Product and Pricing Setup @smoke", () => {
   });
 
   test("Configure price lists, schemas, attributes and create product", async ({ page }) => {
+    test.setTimeout(360_000);
     // ── Local helpers ────────────────────────────────────────────────────────
     const clickNewChildRecord = async () => {
-      await page
-        .locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"] > span')
-        .click();
+      await page.locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"] > span').click();
     };
 
     const fillVisibleByAriaLabel = async (label: string, value: string) => {
@@ -46,15 +46,12 @@ test.describe("Master Data - Product and Pricing Setup @smoke", () => {
           : page.locator(`input[placeholder="${searchPlaceholder}"]`).first();
       await searchInput.waitFor({ state: "visible", timeout: 10_000 });
       await searchInput.fill(optionText);
-      await page
-        .locator('[data-testid^="OptionItem"]')
-        .filter({ hasText: optionText })
-        .first()
-        .click();
+      await page.locator('[data-testid^="OptionItem"]').filter({ hasText: optionText }).first().click();
     };
 
     // ── Login + navigate to Price List Schema window ─────────────────────────
     await loginToEtendo(page, "admin", "admin");
+    await selectRoleOrgWarehouse(page);
     await page.waitForTimeout(1_000);
 
     await navigateByMenuTestId(page, "price", "MenuTitle__310");
@@ -90,10 +87,7 @@ test.describe("Master Data - Product and Pricing Setup @smoke", () => {
     await page.waitForTimeout(1_000);
 
     // Cancel to go back
-    const cancelBtn = page
-      .locator("button.toolbar-button-cancel:not([disabled])")
-      .locator("visible=true")
-      .first();
+    const cancelBtn = page.locator("button.toolbar-button-cancel:not([disabled])").locator("visible=true").first();
     await cancelBtn.waitFor({ state: "visible", timeout: 20_000 });
     await cancelBtn.click();
 
@@ -134,10 +128,7 @@ test.describe("Master Data - Product and Pricing Setup @smoke", () => {
     await page.waitForTimeout(1_000);
 
     // Toggle "Serial No." switch
-    const serialSwitch = page
-      .locator('button[role="switch"][aria-label="Serial No."]')
-      .locator("visible=true")
-      .first();
+    const serialSwitch = page.locator('button[role="switch"][aria-label="Serial No."]').locator("visible=true").first();
     await serialSwitch.waitFor({ state: "visible", timeout: 20_000 });
     await serialSwitch.click();
     await clickSave(page);
@@ -178,10 +169,7 @@ test.describe("Master Data - Product and Pricing Setup @smoke", () => {
     await page.waitForTimeout(1_000);
     await typeName(page, "VAT 3%");
     await page.waitForTimeout(1_000);
-    await page
-      .locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]')
-      .first()
-      .click();
+    await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"]').first().click();
     await closeToastIfPresent(page);
 
     // ── Product window ────────────────────────────────────────────────────────

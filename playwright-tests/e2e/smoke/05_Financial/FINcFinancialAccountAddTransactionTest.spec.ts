@@ -15,7 +15,9 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
     await cleanupEtendo(page);
   });
 
-  test("Creates Purchase Invoice, completes it, verifies Payment Out Plan and adds Financial Account transaction", async ({ page }) => {
+  test("Creates Purchase Invoice, completes it, verifies Payment Out Plan and adds Financial Account transaction", async ({
+    page,
+  }) => {
     test.setTimeout(360_000);
     // ── Login ────────────────────────────────────────────────────────────────
     await loginToEtendo(page);
@@ -54,12 +56,8 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
     // ── Step 3: Change Payment Method to PM 4 Spain ───────────────────────────
     await page.locator('[data-testid="ChevronDown__830698140BCD4AC3E040007F01000289"]').click({ force: true });
     await page.waitForTimeout(500);
-    await page
-      .locator('[data-testid="OptionItem__BC79E3E914CF471C91AE183FC5311BE7"]')
-      .scrollIntoViewIfNeeded();
-    await page
-      .locator('[data-testid="OptionItem__BC79E3E914CF471C91AE183FC5311BE7"]')
-      .click({ force: true });
+    await page.locator('[data-testid="OptionItem__BC79E3E914CF471C91AE183FC5311BE7"]').scrollIntoViewIfNeeded();
+    await page.locator('[data-testid="OptionItem__BC79E3E914CF471C91AE183FC5311BE7"]').click({ force: true });
     await page.waitForTimeout(500);
 
     // Save with payment method
@@ -76,7 +74,7 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
     // Product: Raw material A
     // Open dropdown via ChevronDown, search to narrow the list to a single result,
     // then use ArrowDown+Enter (the search input container intercepts pointer clicks on options)
-    await page.locator('[data-testid="ChevronDown__3371"]').first().scrollIntoViewIfNeeded();
+    await page.locator('[data-testid="ChevronDown__3371"]').first().waitFor({ state: "visible", timeout: 10_000 });
     await page.locator('[data-testid="ChevronDown__3371"]').first().click({ force: true });
     const productSearch = page.locator('input[aria-label="Search options"]');
     await productSearch.waitFor({ state: "visible", timeout: 10_000 });
@@ -106,7 +104,6 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
 
     // Save line (last save button = line-level toolbar)
     await page.locator("button.toolbar-button-save").last().click();
-    await page.waitForLoadState("networkidle", { timeout: 30_000 });
     await closeToastIfPresent(page);
 
     // Verify Net Amount: 22.40
@@ -114,10 +111,7 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
 
     // ── Step 5: Complete Purchase Invoice ─────────────────────────────────────
     await page.getByRole("button", { name: "Available Process" }).click();
-    const completeItem = page
-      .locator('[data-testid^="ProcessMenuItemBase__"]')
-      .filter({ hasText: "Complete" })
-      .first();
+    const completeItem = page.locator('[data-testid^="ProcessMenuItemBase__"]').filter({ hasText: "Complete" }).first();
     await completeItem.waitFor({ state: "visible", timeout: 10_000 });
     await completeItem.click();
 
@@ -156,9 +150,9 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
     await page.waitForTimeout(1_000);
 
     // Verify Expected amount: 24.64 (MUI DataGrid virtualizes rows — cell is attached but may be hidden)
-    await expect(
-      page.locator(".MuiTableCell-body").filter({ hasText: "24.64" }).first()
-    ).toBeAttached({ timeout: 10_000 });
+    await expect(page.locator(".MuiTableCell-body").filter({ hasText: "24.64" }).first()).toBeAttached({
+      timeout: 10_000,
+    });
 
     // ── Step 7: Navigate to Financial Account ─────────────────────────────────
     await navigateToFinancialAccount(page);
@@ -187,9 +181,7 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
     await page.waitForTimeout(500);
 
     // Transaction Type: BP Withdrawal
-    await page
-      .locator('[data-testid="ChevronDown__7019E1AFE07B44309AE2F0C6629C1251"]')
-      .click({ force: true });
+    await page.locator('[data-testid="ChevronDown__7019E1AFE07B44309AE2F0C6629C1251"]').click({ force: true });
     await page.waitForTimeout(500);
     await page.locator('[data-testid="OptionItem__BPW"]').scrollIntoViewIfNeeded();
     await page.locator('[data-testid="OptionItem__BPW"]').click({ force: true });
@@ -203,9 +195,7 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
     await paymentSearch.clear();
     await paymentSearch.fill(paymentNumber);
     await page.waitForTimeout(1_000);
-    const paymentOption = page
-      .locator('[data-testid^="OptionItem__"]')
-      .filter({ hasText: paymentNumber });
+    const paymentOption = page.locator('[data-testid^="OptionItem__"]').filter({ hasText: paymentNumber });
     await paymentOption.waitFor({ state: "visible", timeout: 10_000 });
     await paymentOption.click({ force: true });
     await page.waitForTimeout(500);
@@ -232,14 +222,17 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
     await page.waitForTimeout(500);
 
     // Scroll table to reveal status column
-    await page.locator(".MuiTableContainer-root").first().evaluate((el) => {
-      el.scrollLeft = el.scrollWidth;
-    });
+    await page
+      .locator(".MuiTableContainer-root")
+      .first()
+      .evaluate((el) => {
+        el.scrollLeft = el.scrollWidth;
+      });
     await page.waitForTimeout(500);
 
     // Verify "Payment Made" chip
-    await expect(
-      page.locator(".MuiChip-label").filter({ hasText: "Payment Made" }).first()
-    ).toBeAttached({ timeout: 20_000 });
+    await expect(page.locator(".MuiChip-label").filter({ hasText: "Payment Made" }).first()).toBeAttached({
+      timeout: 20_000,
+    });
   });
 });

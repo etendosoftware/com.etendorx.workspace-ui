@@ -21,7 +21,7 @@ test.describe("Sales Orders - Create, Complete and Close", () => {
 
     // ── Step 1: Navigate to Sales Order ──────────────────────────────────────
     const drawerInput = page.locator('[data-testid="drawer-search-input"] input');
-    if (!await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false)) {
+    if (!(await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
       await page.locator(".h-14 > div > .transition > svg").click();
       await drawerInput.waitFor({ state: "visible", timeout: 10_000 });
     }
@@ -29,7 +29,10 @@ test.describe("Sales Orders - Create, Complete and Close", () => {
     await page.keyboard.type("sales");
     await page.locator('[data-testid="MenuTitle__129"]').waitFor({ state: "visible", timeout: 10_000 });
     await page.locator('[data-testid="MenuTitle__129"] > .flex.overflow-hidden > .relative > .ml-2').click();
-    await page.locator('nav[aria-label="breadcrumb"]').getByText(/Sales Order/i).waitFor({ state: "visible", timeout: 15_000 });
+    await page
+      .locator('nav[aria-label="breadcrumb"]')
+      .getByText(/Sales Order/i)
+      .waitFor({ state: "visible", timeout: 15_000 });
 
     // ── Step 2: Create New Sales Order ────────────────────────────────────────
     await page
@@ -38,11 +41,15 @@ test.describe("Sales Orders - Create, Complete and Close", () => {
       .first()
       .waitFor({ state: "visible", timeout: 15_000 });
     await page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first().click();
-    await page.locator('[aria-label="Business Partner"] > div[tabindex="0"]').waitFor({ state: "visible", timeout: 30_000 });
+    await page
+      .locator('[aria-label="Business Partner"] > div[tabindex="0"]')
+      .waitFor({ state: "visible", timeout: 30_000 });
 
     // ── Step 3: Fill header ───────────────────────────────────────────────────
     await page.locator('[aria-label="Business Partner"] > div[tabindex="0"]').click();
-    await page.locator('[data-testid="OptionItem__4028E6C72959682B01295F40CFE1031B"] > .truncate').waitFor({ state: "visible", timeout: 15_000 });
+    await page
+      .locator('[data-testid="OptionItem__4028E6C72959682B01295F40CFE1031B"] > .truncate')
+      .waitFor({ state: "visible", timeout: 15_000 });
     await page.locator('[data-testid="OptionItem__4028E6C72959682B01295F40CFE1031B"] > .truncate').click();
 
     await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').first().click();
@@ -82,10 +89,9 @@ test.describe("Sales Orders - Create, Complete and Close", () => {
     // ── Step 5: Process Order (Book) ──────────────────────────────────────────
     await page.locator('[data-testid="IconButtonWithText__process-menu"]').first().click();
     await page.locator(".rounded-2xl > :nth-child(1)").click();
-    await expect(page.locator(".h-\\[625px\\] > .items-center > .font-semibold")).toHaveText(
-      "Process Order",
-      { timeout: 10_000 }
-    );
+    await expect(page.locator(".h-\\[625px\\] > .items-center > .font-semibold")).toHaveText("Process Order", {
+      timeout: 10_000,
+    });
 
     await clickOkInLegacyPopup(page);
 
@@ -103,12 +109,15 @@ test.describe("Sales Orders - Create, Complete and Close", () => {
     await page.locator('[data-testid="IconButtonWithText__process-menu"] > span').first().click();
 
     // Use text matching instead of positional :nth-child — "Close" is not always the first item
-    await page.locator(".rounded-2xl div").filter({ hasText: /^Close$/ }).first().click();
+    await page
+      .locator(".rounded-2xl div")
+      .filter({ hasText: /^Close$/ })
+      .first()
+      .click();
 
-    await expect(page.locator(".h-\\[625px\\] > .items-center > .font-semibold")).toHaveText(
-      "Process Order",
-      { timeout: 10_000 }
-    );
+    await expect(page.locator(".h-\\[625px\\] > .items-center > .font-semibold")).toHaveText("Process Order", {
+      timeout: 10_000,
+    });
 
     await clickOkInLegacyPopup(page);
 

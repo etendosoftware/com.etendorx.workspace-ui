@@ -48,14 +48,19 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
     await page.getByRole("button", { name: "New Record" }).last().click();
 
     // Select Product — use aria-label (Cypress-equivalent)
-    await page.locator('[aria-label="Product"]').locator('div[tabindex="0"]').waitFor({ state: "visible", timeout: 10_000 });
+    await page
+      .locator('[aria-label="Product"]')
+      .locator('div[tabindex="0"]')
+      .waitFor({ state: "visible", timeout: 10_000 });
     // FormInitializationComponent may or may not fire depending on product configuration;
     // use a non-blocking catch so the test continues either way
     const formInitDone = page.waitForResponse(/FormInitializationComponent/, { timeout: 30_000 }).catch(() => null);
     await page.locator('[aria-label="Product"]').locator('div[tabindex="0"]').click();
     // Wait for the options list to load, then click the specific product
     await page.locator('[data-testid^="OptionItem__"]').first().waitFor({ state: "visible", timeout: 15_000 });
-    await page.locator('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"] > .truncate').click({ force: true });
+    await page
+      .locator('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"] > .truncate')
+      .click({ force: true });
     await formInitDone; // resolves immediately if the response wasn't triggered
 
     // Set Quantity (use evaluate to bypass React-controlled input)
@@ -86,8 +91,14 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
 
     await clickOkInLegacyPopup(page);
     await page.waitForTimeout(500);
-    await page.locator('[data-testid="close-button"]').waitFor({ state: "visible", timeout: 10_000 }).catch(() => null);
-    await page.locator('[data-testid="close-button"]').click({ force: true }).catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .waitFor({ state: "visible", timeout: 10_000 })
+      .catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .click({ force: true })
+      .catch(() => null);
     await closeToastIfPresent(page);
 
     // ── Step 7: Navigate to Goods Receipt ────────────────────────────────────
@@ -116,10 +127,16 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
     await page.locator('[data-testid="IconButtonWithText__process-menu"] > span').click();
     await page.locator(".rounded-2xl > :nth-child(1)").click();
 
-    await fillCreateLinesFromPopup(page, { locatorValue: "L01" });
+    await fillCreateLinesFromPopup(page, { locatorValue: "L01", orderDocNumber: orderNumber });
     // Close the process modal (matching Cypress: cy.get('[data-testid="close-button"]').click())
-    await page.locator('[data-testid="close-button"]').waitFor({ state: "visible", timeout: 10_000 }).catch(() => null);
-    await page.locator('[data-testid="close-button"]').click({ force: true }).catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .waitFor({ state: "visible", timeout: 10_000 })
+      .catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .click({ force: true })
+      .catch(() => null);
     await closeToastIfPresent(page);
 
     // ── Step 9: Complete Goods Receipt ───────────────────────────────────────
@@ -129,8 +146,14 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
     await clickOkInLegacyPopup(page);
     // Close the process modal regardless of success/error (matching Cypress behavior)
     await page.waitForTimeout(500);
-    await page.locator('[data-testid="close-button"]').waitFor({ state: "visible", timeout: 10_000 }).catch(() => null);
-    await page.locator('[data-testid="close-button"]').click({ force: true }).catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .waitFor({ state: "visible", timeout: 10_000 })
+      .catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .click({ force: true })
+      .catch(() => null);
     await closeToastIfPresent(page);
 
     // ── Step 10: Navigate to Purchase Invoice ─────────────────────────────────
@@ -180,15 +203,14 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
 
     // Select the matching row
     await page.locator(`text=${orderNumber}`).first().waitFor({ state: "visible", timeout: 20_000 });
-    await page
-      .locator("tr")
-      .filter({ hasText: orderNumber })
-      .locator('input[type="checkbox"]')
-      .check();
+    await page.locator("tr").filter({ hasText: orderNumber }).locator('input[type="checkbox"]').check();
 
     await page.locator('[data-testid="ExecuteButton__761503"]').click();
     // Wait for the React modal to close
-    await page.locator(".fixed.inset-0").waitFor({ state: "hidden", timeout: 15_000 }).catch(() => null);
+    await page
+      .locator(".fixed.inset-0")
+      .waitFor({ state: "hidden", timeout: 15_000 })
+      .catch(() => null);
 
     // ── Step 12: Complete Purchase Invoice ────────────────────────────────────
     await page.locator('[data-testid="IconButtonWithText__process-menu"] > span').click();
@@ -196,8 +218,14 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
 
     await clickOkInLegacyPopup(page);
     await page.waitForTimeout(500);
-    await page.locator('[data-testid="close-button"]').waitFor({ state: "visible", timeout: 10_000 }).catch(() => null);
-    await page.locator('[data-testid="close-button"]').click({ force: true }).catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .waitFor({ state: "visible", timeout: 10_000 })
+      .catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .click({ force: true })
+      .catch(() => null);
     await closeToastIfPresent(page);
 
     // ── Step 13: Post Invoice ─────────────────────────────────────────────────
@@ -208,8 +236,14 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
 
     await clickOkInLegacyPopup(page);
     await page.waitForTimeout(500);
-    await page.locator('[data-testid="close-button"]').waitFor({ state: "visible", timeout: 10_000 }).catch(() => null);
-    await page.locator('[data-testid="close-button"]').click({ force: true }).catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .waitFor({ state: "visible", timeout: 10_000 })
+      .catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .click({ force: true })
+      .catch(() => null);
     await closeToastIfPresent(page);
   });
 });

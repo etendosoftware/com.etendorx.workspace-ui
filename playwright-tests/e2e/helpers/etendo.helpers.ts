@@ -3,11 +3,7 @@ import { DEFAULT_USER, DEFAULT_PASSWORD, IFRAME_URL } from "../../playwright.con
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
-export async function loginToEtendo(
-  page: Page,
-  username = DEFAULT_USER,
-  password = DEFAULT_PASSWORD
-) {
+export async function loginToEtendo(page: Page, username = DEFAULT_USER, password = DEFAULT_PASSWORD) {
   await page.goto("/");
   await page.locator("#username").waitFor({ state: "visible", timeout: 10_000 });
   await page.locator("#username").clear();
@@ -125,7 +121,8 @@ export async function clickOkInLegacyPopup(page: Page, timeout = 10_000) {
       // 2b. DOM evaluate fallback (cross-origin frames with --disable-web-security)
       try {
         const clicked = await frame.evaluate(() => {
-          const QUERY = "td.Button_text.Button_width, td.Button_text, #buttonOK, button[value='OK'], input[value='OK'], button";
+          const QUERY =
+            "td.Button_text.Button_width, td.Button_text, #buttonOK, button[value='OK'], input[value='OK'], button";
           for (const el of document.querySelectorAll(QUERY)) {
             const text = (el as HTMLElement).textContent?.trim() || (el as HTMLInputElement).value?.trim() || "";
             if (/^OK$/i.test(text) && (el as HTMLElement).offsetParent !== null) {
@@ -165,12 +162,7 @@ export async function typeInGlobalSearch(page: Page, text: string) {
   await input.fill(text);
 }
 
-async function navigateSidebarTo(
-  page: Page,
-  searchText: string,
-  menuTestId: string,
-  tabName: RegExp
-) {
+async function navigateSidebarTo(page: Page, searchText: string, menuTestId: string, tabName: RegExp) {
   // The sidebar/global search input uses placeholder="Search".
   // The dynamic ID (#_r_1_, #_r_2_, ...) changes after re-renders, so use placeholder selector.
   const searchInput = page.locator('input[placeholder="Search"]').first();
@@ -197,10 +189,9 @@ async function navigateSidebarTo(
   // Wait for any full-screen loading overlay to disappear BEFORE looking for menu items.
   // The overlay (h-screen w-screen absolute z-100 bg-black/25) appears after login/role-change
   // and intercepts pointer events. Waiting here ensures the sidebar is interactive.
-  await page.waitForFunction(
-    () => !document.querySelector("div.absolute.h-screen.w-screen"),
-    { timeout: 20_000 }
-  ).catch(() => null);
+  await page
+    .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
+    .catch(() => null);
 
   await page.locator(`[data-testid="${menuTestId}"]`).waitFor({ state: "visible", timeout: 10_000 });
 
@@ -209,7 +200,7 @@ async function navigateSidebarTo(
   // click events. More reliable than dispatchEvent for React router-driven navigation.
   const menuSelector = `[data-testid="${menuTestId}"] > .flex.overflow-hidden > .relative > .ml-2`;
   await page.locator(menuSelector).waitFor({ state: "visible", timeout: 10_000 });
-  await page.locator(menuSelector).evaluate(el => (el as HTMLElement).click());
+  await page.locator(menuSelector).evaluate((el) => (el as HTMLElement).click());
 
   // Note: waitForLoadState("networkidle") is intentionally avoided — Etendo keeps
   // persistent SSE connections open, so the network never reaches "idle" state.
@@ -227,11 +218,7 @@ export async function navigateToGoodsShipment(page: Page) {
  * this does not require a breadcrumb assertion, which is convenient for flows
  * that navigate through many windows in sequence.
  */
-export async function navigateByMenuTestId(
-  page: Page,
-  searchText: string,
-  menuTestId: string
-) {
+export async function navigateByMenuTestId(page: Page, searchText: string, menuTestId: string) {
   const searchInput = page.locator('input[placeholder="Search"]').first();
   await searchInput.waitFor({ state: "visible", timeout: 10_000 });
   if (await searchInput.isDisabled()) {
@@ -266,10 +253,7 @@ export async function clickNewRecord(page: Page) {
 }
 
 export async function clickSave(page: Page) {
-  const btn = page
-    .locator("button.toolbar-button-save:not([disabled])")
-    .locator("visible=true")
-    .first();
+  const btn = page.locator("button.toolbar-button-save:not([disabled])").locator("visible=true").first();
   await btn.waitFor({ state: "visible", timeout: 60_000 });
   await btn.click();
 }
@@ -292,7 +276,10 @@ export async function closeToastIfPresent(page: Page) {
   const visibleToast = page.locator("[data-sonner-toast]:not([data-removed='true']) [data-close-button]");
   let attempts = 0;
   while (attempts < 5 && (await visibleToast.count()) > 0) {
-    await visibleToast.first().click({ force: true }).catch(() => null);
+    await visibleToast
+      .first()
+      .click({ force: true })
+      .catch(() => null);
     await page.waitForTimeout(400);
     attempts++;
   }
@@ -376,9 +363,9 @@ export async function captureDocumentNumber(
  */
 export async function fillCreateLinesFromPopup(
   page: Page,
-  options: { locatorValue?: string; frameTimeout?: number } = {}
+  options: { locatorValue?: string; frameTimeout?: number; orderDocNumber?: string } = {}
 ): Promise<void> {
-  const { locatorValue = "L01", frameTimeout = 15_000 } = options;
+  const { locatorValue = "L01", frameTimeout = 15_000, orderDocNumber } = options;
 
   // ── 1. Find the CreateFrom frame ─────────────────────────────────────────
   // page.frames() returns all frames including nested ones — no strict mode.
@@ -399,7 +386,8 @@ export async function fillCreateLinesFromPopup(
   }
   if (!createFromFrame) throw new Error("fillCreateLinesFromPopup: frame with #inpPurchaseOrder not found");
 
-  // ── 2. Select last purchase order and trigger reload ──────────────────────
+  // ── 2. Select order and trigger reload ───────────────────────────────────
+  // If orderDocNumber is provided, find that specific order; otherwise fall back to the last one.
   const orderSelect = createFromFrame.locator("#inpPurchaseOrder");
   await orderSelect.waitFor({ state: "visible", timeout: 10_000 });
   // Wait for at least one real option (beyond the empty placeholder)
@@ -411,17 +399,24 @@ export async function fillCreateLinesFromPopup(
 
   const optionCount = await orderSelect.locator("option").count();
   if (optionCount > 1) {
-    await createFromFrame.evaluate(() => {
+    await createFromFrame.evaluate((docNumber) => {
       const sel = document.getElementById("inpPurchaseOrder") as HTMLSelectElement;
       if (!sel) return;
-      sel.selectedIndex = sel.options.length - 1;
+      if (docNumber) {
+        const idx = Array.from(sel.options).findIndex(
+          (opt) => opt.text.includes(docNumber) || opt.value.includes(docNumber)
+        );
+        sel.selectedIndex = idx >= 0 ? idx : sel.options.length - 1;
+      } else {
+        sel.selectedIndex = sel.options.length - 1;
+      }
       const win = sel.ownerDocument.defaultView!;
       sel.dispatchEvent(new win.Event("change", { bubbles: true, cancelable: true }));
       const w = win as unknown as Record<string, unknown>;
       if (typeof w["submitCommandForm"] === "function") {
         (w["submitCommandForm"] as (...args: unknown[]) => void)("FIND_PO", false, null, null, "_self");
       }
-    });
+    }, orderDocNumber ?? null);
     await page.waitForTimeout(3_000); // wait for grid to reload with lines
   }
 
@@ -445,18 +440,17 @@ export async function fillCreateLinesFromPopup(
 
   // ── 4. Check the last data-row checkbox ───────────────────────────────────
   const checkboxes = createFromFrame.locator('input[type="checkbox"]');
-  await checkboxes.first().waitFor({ state: "visible", timeout: 10_000 }).catch(() => null);
+  await checkboxes
+    .first()
+    .waitFor({ state: "visible", timeout: 10_000 })
+    .catch(() => null);
   const checkCount = await checkboxes.count();
   if (checkCount > 0) {
     await checkboxes.nth(checkCount - 1).check({ force: true });
   }
 
   // ── 5. Click OK ───────────────────────────────────────────────────────────
-  await createFromFrame
-    .locator("td.Button_text")
-    .filter({ hasText: /^OK$/i })
-    .first()
-    .click();
+  await createFromFrame.locator("td.Button_text").filter({ hasText: /^OK$/i }).first().click();
 }
 
 // ─── Procurement navigation ───────────────────────────────────────────────────
@@ -497,12 +491,51 @@ export async function navigateToPaymentIn(page: Page) {
   await menuItem.scrollIntoViewIfNeeded();
   await menuItem.locator(".flex.overflow-hidden > .relative > .ml-2").click({ force: true });
 
-  await page.locator('nav[aria-label="breadcrumb"]').getByText(/Payment In/i)
+  await page
+    .locator('nav[aria-label="breadcrumb"]')
+    .getByText(/Payment In/i)
     .waitFor({ state: "visible", timeout: 15_000 });
 }
 
+/**
+ * Navigates to a window by searching the sidebar and clicking the menu item by label text.
+ * Unlike navigateSidebarTo, this does NOT require knowing the data-testid of the menu item.
+ * Avoids waitForLoadState("networkidle") — Etendo keeps SSE connections open.
+ */
+async function navigateByMenuLabel(page: Page, searchText: string, menuLabel: RegExp, breadcrumbLabel: RegExp) {
+  const searchInput = page.locator('input[placeholder="Search"]').first();
+  await searchInput.waitFor({ state: "visible", timeout: 10_000 });
+  if (await searchInput.isDisabled()) {
+    await page.locator(".h-14 > div > .transition > svg").click();
+    await page.waitForFunction(
+      () => {
+        const el = document.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+        return el !== null && !el.disabled;
+      },
+      { timeout: 5_000 }
+    );
+  }
+  await searchInput.click({ force: true });
+  await searchInput.clear();
+  await searchInput.fill(searchText);
+
+  await page
+    .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
+    .catch(() => null);
+
+  const menuItem = page.locator('[data-testid^="MenuTitle__"]').filter({ hasText: menuLabel });
+  await menuItem.waitFor({ state: "visible", timeout: 10_000 });
+  await menuItem.scrollIntoViewIfNeeded();
+  await menuItem.locator(".flex.overflow-hidden > .relative > .ml-2").evaluate((el) => (el as HTMLElement).click());
+
+  await page
+    .locator('nav[aria-label="breadcrumb"]')
+    .getByText(breadcrumbLabel)
+    .waitFor({ state: "visible", timeout: 30_000 });
+}
+
 export async function navigateToFinancialAccount(page: Page) {
-  await navigateSidebarTo(page, "finan", "MenuTitle__F3B44B27B7C245429DF63EF04E31E5F0", /Financial Account/i);
+  await navigateByMenuLabel(page, "finan", /^Financial Account$/i, /Financial Account/i);
 }
 
 export async function navigateToPaymentOut(page: Page) {
@@ -510,7 +543,7 @@ export async function navigateToPaymentOut(page: Page) {
 }
 
 export async function navigateToPaymentProposal(page: Page) {
-  await navigateSidebarTo(page, "payment prop", "MenuTitle__0A6E838A0B35434AB5D4B9BDE8F5BD01", /Payment Proposal/i);
+  await navigateByMenuLabel(page, "payment prop", /^Payment Proposal$/i, /Payment Proposal/i);
 }
 
 // ─── Additional procurement/sales navigation ───────────────────────────────────
@@ -550,15 +583,17 @@ export async function navigateToProcessScheduler(page: Page) {
   await searchInput.clear();
   await searchInput.fill("Process");
 
-  await page.waitForFunction(
-    () => !document.querySelector("div.absolute.h-screen.w-screen"),
-    { timeout: 20_000 }
-  ).catch(() => null);
+  await page
+    .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
+    .catch(() => null);
 
-  await page.locator('[data-testid="MenuTitle__BE86736DF4AB4568A316A3922E6D6B7B"]').waitFor({ state: "visible", timeout: 10_000 });
-  const menuSelector = '[data-testid="MenuTitle__BE86736DF4AB4568A316A3922E6D6B7B"] > .flex.overflow-hidden > .relative > .ml-2';
+  await page
+    .locator('[data-testid="MenuTitle__BE86736DF4AB4568A316A3922E6D6B7B"]')
+    .waitFor({ state: "visible", timeout: 10_000 });
+  const menuSelector =
+    '[data-testid="MenuTitle__BE86736DF4AB4568A316A3922E6D6B7B"] > .flex.overflow-hidden > .relative > .ml-2';
   await page.locator(menuSelector).waitFor({ state: "visible", timeout: 10_000 });
-  await page.locator(menuSelector).evaluate(el => (el as HTMLElement).click());
+  await page.locator(menuSelector).evaluate((el) => (el as HTMLElement).click());
   await page.locator("table thead").waitFor({ state: "visible", timeout: 30_000 });
 }
 
@@ -585,14 +620,13 @@ export async function navigateToManageRequisitions(page: Page) {
   await searchInput.clear();
   await searchInput.fill("requi");
 
-  await page.waitForFunction(
-    () => !document.querySelector("div.absolute.h-screen.w-screen"),
-    { timeout: 20_000 }
-  ).catch(() => null);
+  await page
+    .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
+    .catch(() => null);
 
   await page.locator('[data-testid="MenuTitle__1004400000"]').waitFor({ state: "visible", timeout: 10_000 });
   const manageReqSelector = '[data-testid="MenuTitle__1004400000"] > .flex.overflow-hidden > .relative > .ml-2';
   await page.locator(manageReqSelector).waitFor({ state: "visible", timeout: 10_000 });
-  await page.locator(manageReqSelector).evaluate(el => (el as HTMLElement).click());
+  await page.locator(manageReqSelector).evaluate((el) => (el as HTMLElement).click());
   await page.locator("table thead").waitFor({ state: "visible", timeout: 30_000 });
 }

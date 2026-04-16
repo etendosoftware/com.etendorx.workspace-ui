@@ -42,11 +42,16 @@ test.describe.skip("Purchase Order with advance payment flow @smoke", () => {
     await page.getByRole("button", { name: "New Record" }).last().waitFor({ state: "visible", timeout: 10_000 });
     await page.getByRole("button", { name: "New Record" }).last().click();
 
-    await page.locator('[aria-label="Product"]').locator('div[tabindex="0"]').waitFor({ state: "visible", timeout: 10_000 });
+    await page
+      .locator('[aria-label="Product"]')
+      .locator('div[tabindex="0"]')
+      .waitFor({ state: "visible", timeout: 10_000 });
     const formInitDone = page.waitForResponse(/FormInitializationComponent/, { timeout: 30_000 }).catch(() => null);
     await page.locator('[aria-label="Product"]').locator('div[tabindex="0"]').click();
     await page.locator('[data-testid^="OptionItem__"]').first().waitFor({ state: "visible", timeout: 15_000 });
-    await page.locator('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"] > .truncate').click({ force: true });
+    await page
+      .locator('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"] > .truncate')
+      .click({ force: true });
     await formInitDone;
 
     // Set Quantity (use evaluate to bypass React-controlled input)
@@ -77,8 +82,14 @@ test.describe.skip("Purchase Order with advance payment flow @smoke", () => {
 
     await clickOkInLegacyPopup(page);
     await page.waitForTimeout(500);
-    await page.locator('[data-testid="close-button"]').waitFor({ state: "visible", timeout: 10_000 }).catch(() => null);
-    await page.locator('[data-testid="close-button"]').click({ force: true }).catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .waitFor({ state: "visible", timeout: 10_000 })
+      .catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .click({ force: true })
+      .catch(() => null);
     await closeToastIfPresent(page);
 
     // ── Step 7: Navigate to Payment Out ──────────────────────────────────────
@@ -114,7 +125,9 @@ test.describe.skip("Purchase Order with advance payment flow @smoke", () => {
     const actionDropdown = page.locator('[aria-label="Action Regarding Document"]').locator('div[tabindex="0"]');
     await actionDropdown.waitFor({ state: "visible", timeout: 15_000 });
     await actionDropdown.click();
-    await page.locator('[data-testid="OptionItem__DDCDE32A9FC046E694D5074144DD6AFF"]').waitFor({ state: "visible", timeout: 10_000 });
+    await page
+      .locator('[data-testid="OptionItem__DDCDE32A9FC046E694D5074144DD6AFF"]')
+      .waitFor({ state: "visible", timeout: 10_000 });
     await page.locator('[data-testid="OptionItem__DDCDE32A9FC046E694D5074144DD6AFF"]').click();
 
     // ── Step 11: Execute payment ──────────────────────────────────────────────
@@ -126,9 +139,15 @@ test.describe.skip("Purchase Order with advance payment flow @smoke", () => {
     await closeResultBtn.waitFor({ state: "visible", timeout: 10_000 }).catch(() => null);
     await closeResultBtn.click({ force: true }).catch(async () => {
       // Fallback to generic close button
-      await page.locator('[data-testid="close-button"]').click({ force: true }).catch(() => null);
+      await page
+        .locator('[data-testid="close-button"]')
+        .click({ force: true })
+        .catch(() => null);
     });
-    await page.locator(".fixed.inset-0").waitFor({ state: "hidden", timeout: 15_000 }).catch(() => null);
+    await page
+      .locator(".fixed.inset-0")
+      .waitFor({ state: "hidden", timeout: 15_000 })
+      .catch(() => null);
 
     // ── Step 12: Navigate to Purchase Invoice ─────────────────────────────────
     await navigateToPurchaseInvoice(page);
@@ -162,7 +181,10 @@ test.describe.skip("Purchase Order with advance payment flow @smoke", () => {
     await page.locator("tr").filter({ hasText: orderNumber }).locator('input[type="checkbox"]').check();
 
     await page.locator('[data-testid="ExecuteButton__761503"]').click();
-    await page.locator(".fixed.inset-0").waitFor({ state: "hidden", timeout: 15_000 }).catch(() => null);
+    await page
+      .locator(".fixed.inset-0")
+      .waitFor({ state: "hidden", timeout: 15_000 })
+      .catch(() => null);
 
     // ── Step 16: Book Purchase Invoice ────────────────────────────────────────
     await page.locator('[data-testid="IconButtonWithText__process-menu"] > span').click();
@@ -170,8 +192,14 @@ test.describe.skip("Purchase Order with advance payment flow @smoke", () => {
 
     await clickOkInLegacyPopup(page);
     await page.waitForTimeout(500);
-    await page.locator('[data-testid="close-button"]').waitFor({ state: "visible", timeout: 10_000 }).catch(() => null);
-    await page.locator('[data-testid="close-button"]').click({ force: true }).catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .waitFor({ state: "visible", timeout: 10_000 })
+      .catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .click({ force: true })
+      .catch(() => null);
     await closeToastIfPresent(page);
   });
 });

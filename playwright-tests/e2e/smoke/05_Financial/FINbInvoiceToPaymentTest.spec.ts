@@ -195,7 +195,10 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await page.locator('[data-testid="ProcessMenuItemBase__541926"]').click();
 
     // Wait for table to load — MUI DataGrid virtualizes rows so they are attached but may be hidden
-    await page.locator("tbody.MuiTableBody-root tr.MuiTableRow-root").first().waitFor({ state: "attached", timeout: 30_000 });
+    await page
+      .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
+      .first()
+      .waitFor({ state: "attached", timeout: 30_000 });
 
     // Build full invoice reference and filter
     const fullInvoiceNo = `I/${invoiceNumber}`;
@@ -212,9 +215,7 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await page.waitForTimeout(3_000);
 
     // Select the matching row
-    const targetRow = page
-      .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
-      .filter({ hasText: fullInvoiceNo });
+    const targetRow = page.locator("tbody.MuiTableBody-root tr.MuiTableRow-root").filter({ hasText: fullInvoiceNo });
     await targetRow.waitFor({ state: "visible", timeout: 30_000 });
     await targetRow.locator('input[aria-label="Toggle select row"]').scrollIntoViewIfNeeded();
     await targetRow.locator('input[aria-label="Toggle select row"]').click({ force: true });
@@ -226,9 +227,7 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await expect(page.locator('input[name="Expected Payment"]')).not.toHaveValue("0.00", { timeout: 30_000 });
 
     // ── Step 8: Select action and execute payment ─────────────────────────────
-    const actionDropdown = page
-      .locator('div[aria-label="Action Regarding Document"]')
-      .locator('div[tabindex="0"]');
+    const actionDropdown = page.locator('div[aria-label="Action Regarding Document"]').locator('div[tabindex="0"]');
     await actionDropdown.scrollIntoViewIfNeeded();
     const loadActionDefaults = page.waitForResponse(/api\/datasource/, { timeout: 30_000 });
     await actionDropdown.click();
@@ -260,12 +259,13 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     // ── Step 9: Verify final payment state ───────────────────────────────────
     await page.locator("button.toolbar-button-refresh").filter({ visible: true }).first().click();
 
-    await expect(
-      page.locator('[data-testid="status-bar-container"] span[name="status"]')
-    ).toHaveText("Payment Received", { timeout: 20_000 });
+    await expect(page.locator('[data-testid="status-bar-container"] span[name="status"]')).toHaveText(
+      "Payment Received",
+      { timeout: 20_000 }
+    );
 
-    await expect(
-      page.locator('[data-testid="status-bar-container"] span[name="generatedCredit"]')
-    ).toHaveText("1.74", { timeout: 10_000 });
+    await expect(page.locator('[data-testid="status-bar-container"] span[name="generatedCredit"]')).toHaveText("1.74", {
+      timeout: 10_000,
+    });
   });
 });

@@ -27,9 +27,7 @@ test.describe("Master Data - Business Partner Setup @smoke", () => {
     };
 
     const clickSaveHeader = async () => {
-      await page
-        .locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span')
-        .click();
+      await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     };
 
     // ── Login ────────────────────────────────────────────────────────────────
@@ -84,10 +82,7 @@ test.describe("Master Data - Business Partner Setup @smoke", () => {
     await navigateByMenuTestId(page, "invoi", "MenuTitle__133");
     await page.waitForTimeout(500);
 
-    await page
-      .locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"]')
-      .first()
-      .click();
+    await page.locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"]').first().click();
     await page.waitForTimeout(500);
 
     await fillByAriaLabel("Name", "Schedule Weekly");

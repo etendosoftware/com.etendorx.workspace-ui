@@ -1,9 +1,5 @@
 import { test, expect } from "@playwright/test";
-import {
-  loginToEtendo,
-  cleanupEtendo,
-  typeInGlobalSearch,
-} from "../../helpers/etendo.helpers";
+import { loginToEtendo, cleanupEtendo, selectRoleOrgWarehouse, typeInGlobalSearch } from "../../helpers/etendo.helpers";
 
 test.describe("Advanced Filters - Complete Test @smoke", () => {
   test.beforeEach(async ({ page }) => {
@@ -15,13 +11,19 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
     const openAdvancedFilters = async () => {
       await page.locator("button.toolbar-button-advanced-filters").first().click();
       await expect(
-        page.locator("div").filter({ hasText: /^Advanced Filters$/ }).first()
+        page
+          .locator("div")
+          .filter({ hasText: /^Advanced Filters$/ })
+          .first()
       ).toBeVisible({ timeout: 10_000 });
     };
 
     const expectAdvancedFiltersClosed = async () => {
       await expect(
-        page.locator("div").filter({ hasText: /^Advanced Filters$/ }).first()
+        page
+          .locator("div")
+          .filter({ hasText: /^Advanced Filters$/ })
+          .first()
       ).toBeHidden({ timeout: 10_000 });
     };
 
@@ -37,10 +39,7 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
       await parent.click();
     };
 
-    const clickTabIndexZeroWithText = async (
-      text: string | RegExp,
-      which: "first" | "last" = "first"
-    ) => {
+    const clickTabIndexZeroWithText = async (text: string | RegExp, which: "first" | "last" = "first") => {
       const locator = page.locator('div[tabindex="0"]').filter({ hasText: text });
       const target = which === "first" ? locator.first() : locator.last();
       await target.waitFor({ state: "visible", timeout: 10_000 });
@@ -60,6 +59,7 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
 
     // ── Login + navigate to Sales Order ──────────────────────────────────────
     await loginToEtendo(page);
+    await selectRoleOrgWarehouse(page);
 
     await page.locator(".h-14 > div > .transition > svg").click();
     await typeInGlobalSearch(page, "sales");
@@ -78,11 +78,7 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
     await openAdvancedFilters();
 
     await clickTabIndexZeroWithText("Column");
-    await page
-      .locator("span.text-gray-700")
-      .filter({ hasText: "Organization" })
-      .first()
-      .click();
+    await page.locator("span.text-gray-700").filter({ hasText: "Organization" }).first().click();
 
     await page.locator("div[tabindex]").filter({ hasText: "Condition" }).first().click();
     await clickOptionButton("=");
@@ -100,6 +96,13 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
     await expect(page.locator("table tbody").first()).not.toContainText("USA");
     console.log(`TEST 1: ${await page.locator("table tbody tr").count()} rows filtered by Spain`);
 
+    // Capture a document number substring from the Spain-filtered results so TEST 2
+    // uses a value that is guaranteed to exist in the current dataset.
+    const firstSpainRowText = (await page.locator("table tbody tr").first().textContent()) ?? "";
+    const docNoMatch = firstSpainRowText.match(/\b(\d{5,})\b/);
+    const docNoFilter2 = docNoMatch ? docNoMatch[1].slice(-2) : "00";
+    console.log(`TEST 2 will filter Document No. containing: "${docNoFilter2}"`);
+
     // =========================================================================
     // TEST 2: Adding Multiple Conditions (AND)
     // =========================================================================
@@ -110,16 +113,12 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
     await clickOptionButton("Add condition");
 
     await clickTabIndexZeroWithText("Column", "last");
-    await page
-      .locator("span.text-gray-700")
-      .filter({ hasText: "Document No." })
-      .first()
-      .click();
+    await page.locator("span.text-gray-700").filter({ hasText: "Document No." }).first().click();
 
     await clickParentOfSpanWithText("Condition");
     await clickOptionButton(/contains/i);
 
-    await page.locator('input[placeholder="Value"]').first().fill("18");
+    await page.locator('input[placeholder="Value"]').first().fill(docNoFilter2);
 
     await clickOptionButton("Apply filters");
 
@@ -127,9 +126,9 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
     await expectRows();
 
     await expect(page.locator("table tbody").first()).toContainText("Spain");
-    await expect(page.locator("table tbody").first()).toContainText("18");
+    await expect(page.locator("table tbody").first()).toContainText(docNoFilter2);
 
-    console.log("TEST 2: All rows have Spain and Document No. containing 18");
+    console.log(`TEST 2: All rows have Spain and Document No. containing "${docNoFilter2}"`);
 
     // =========================================================================
     // TEST 3: Clear All Filters
@@ -157,11 +156,7 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
     await openAdvancedFilters();
 
     await clickTabIndexZeroWithText("Column");
-    await page
-      .locator("span.text-gray-700")
-      .filter({ hasText: "Document No." })
-      .first()
-      .click();
+    await page.locator("span.text-gray-700").filter({ hasText: "Document No." }).first().click();
 
     await clickParentOfSpanWithText("Condition");
     await clickOptionButton(/contains/i);
@@ -175,11 +170,7 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
     await page.locator("span").filter({ hasText: /^OR$/ }).first().click();
 
     await clickTabIndexZeroWithText("Column", "last");
-    await page
-      .locator("span.text-gray-700")
-      .filter({ hasText: "Total Gross Amount" })
-      .first()
-      .click();
+    await page.locator("span.text-gray-700").filter({ hasText: "Total Gross Amount" }).first().click();
 
     await clickParentOfSpanWithText("Condition");
     await clickOptionButton(/greater than/i);

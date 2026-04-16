@@ -61,9 +61,7 @@ test.describe("User Management - Create user and assign role @smoke", () => {
     await passwordInput.blur();
 
     // Save header
-    await page
-      .locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span')
-      .click();
+    await page.locator('[data-testid="IconButtonWithText__239556F34FE1496199CC12B1974A07C0"] > span').click();
     await page.waitForTimeout(1_000);
     await closeToastIfPresent(page);
     await page.waitForTimeout(1_000);
@@ -73,17 +71,13 @@ test.describe("User Management - Create user and assign role @smoke", () => {
     await page.waitForTimeout(1_000);
 
     // New User Role
-    await page
-      .locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"] > span')
-      .click();
+    await page.locator('[data-testid="IconButtonWithText__33864F5267194AB99C14BD0CE9884FF5"] > span').click();
     await page.waitForTimeout(1_000);
 
     // Select Role
     await page.locator('[aria-label="Role"] > div[tabindex="0"]').click();
     await page.waitForTimeout(1_000);
-    await page
-      .locator('[data-testid="OptionItem__FA057013C10148828D2430F66F42EF1A"] > .truncate')
-      .click();
+    await page.locator('[data-testid="OptionItem__FA057013C10148828D2430F66F42EF1A"] > .truncate').click();
     await page.waitForTimeout(1_000);
 
     // Save line (second save button = line level)
@@ -117,9 +111,7 @@ test.describe("User Management - Create user and assign role @smoke", () => {
     }
 
     await expect(
-      page
-        .locator('[data-testid="MenuTitle__166"] > .flex.overflow-hidden > .relative > .ml-2')
-        .first()
+      page.locator('[data-testid="MenuTitle__166"] > .flex.overflow-hidden > .relative > .ml-2').first()
     ).toBeVisible({ timeout: 15_000 });
   });
 });

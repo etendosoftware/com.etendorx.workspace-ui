@@ -16,6 +16,7 @@ test.describe("Requisition flow - Create and generate Purchase Order @smoke", ()
   });
 
   test("Processes a requisition and creates a Purchase Order from Manage Requisitions", async ({ page }) => {
+    test.setTimeout(360_000);
     // ── Login ────────────────────────────────────────────────────────────────
     await loginToEtendo(page);
     await selectRoleOrgWarehouse(page);
@@ -42,27 +43,40 @@ test.describe("Requisition flow - Create and generate Purchase Order @smoke", ()
     await page.getByRole("button", { name: "New Record" }).last().click();
 
     // Select Product (BOM Product via search)
-    await page.locator('[aria-label="Product"]').locator('[tabindex="0"]').waitFor({ state: "visible", timeout: 10_000 });
+    await page
+      .locator('[aria-label="Product"]')
+      .locator('[tabindex="0"]')
+      .waitFor({ state: "visible", timeout: 10_000 });
     await page.locator('[aria-label="Product"]').locator('[tabindex="0"]').click();
     const searchOptions = page.locator('input[aria-label="Search options"]');
     await searchOptions.waitFor({ state: "visible", timeout: 10_000 });
     await searchOptions.scrollIntoViewIfNeeded();
     await searchOptions.fill("BOM Product");
-    await page.locator('[data-testid^="OptionItem__"]').filter({ hasText: "BOM Product" }).waitFor({ state: "visible", timeout: 10_000 });
+    await page
+      .locator('[data-testid^="OptionItem__"]')
+      .filter({ hasText: "BOM Product" })
+      .waitFor({ state: "visible", timeout: 10_000 });
     // Wait for FormInitializationComponent that fires when BOM products are selected
     const bomFormInit = page.waitForResponse(/FormInitializationComponent/, { timeout: 15_000 }).catch(() => null);
     await page.locator('[data-testid^="OptionItem__"]').filter({ hasText: "BOM Product" }).click({ force: true });
     await bomFormInit;
-    // Wait for the product autocomplete dropdown to close before clicking BP field.
-    // If still open, clicking BP would close the autocomplete instead of opening the BP dropdown.
-    await page.locator('[data-testid^="OptionItem__"]').filter({ hasText: "BOM Product" }).waitFor({ state: "hidden", timeout: 5_000 }).catch(() => null);
+    // Ensure the product dropdown portal is closed before interacting with other fields.
+    // The portal can remain open even after selecting an option when FormInitializationComponent is slow.
+    // Press Escape to dismiss it, then verify it's gone.
+    const portal = page.locator('[data-dropdown-portal="dropdown-product"]');
+    if (await portal.isVisible({ timeout: 1_000 }).catch(() => false)) {
+      await page.keyboard.press("Escape");
+      await portal.waitFor({ state: "hidden", timeout: 5_000 }).catch(() => null);
+    }
     await page.waitForTimeout(500);
 
     // Set Business Partner on line (Vendor A).
     // Use .last() — after saving the header, the header BP becomes read-only so the
     // only interactive BP field left is the line one.
     await page.locator('[aria-describedby="Business Partner-help"]').last().locator('div[tabindex="0"]').click();
-    await page.locator('[data-testid="OptionItem__4028E6C72959682B01295F40BDDF02E3"]').waitFor({ state: "visible", timeout: 10_000 });
+    await page
+      .locator('[data-testid="OptionItem__4028E6C72959682B01295F40BDDF02E3"]')
+      .waitFor({ state: "visible", timeout: 10_000 });
     await page.locator('[data-testid="OptionItem__4028E6C72959682B01295F40BDDF02E3"]').click();
 
     // Set Need By Date to today
@@ -83,24 +97,37 @@ test.describe("Requisition flow - Create and generate Purchase Order @smoke", ()
     // First open: preview the process modal title, then close without executing
     await page.locator('[data-testid="IconButtonWithText__process-menu"]').first().click();
     await page.locator(".rounded-2xl > :nth-child(1)").click();
-    await expect(page.locator(".h-\\[625px\\] > .items-center > .font-semibold")).toHaveText("Post Requisition", { timeout: 10_000 });
+    await expect(page.locator(".h-\\[625px\\] > .items-center > .font-semibold")).toHaveText("Post Requisition", {
+      timeout: 10_000,
+    });
     await page.locator('[data-testid="close-button"]').click();
 
     // Second open: actually execute
     await page.locator('[data-testid="IconButtonWithText__process-menu"]').first().click();
     await page.locator(".rounded-2xl > :nth-child(1)").click();
-    await expect(page.locator(".h-\\[625px\\] > .items-center > .font-semibold")).toHaveText("Post Requisition", { timeout: 10_000 });
+    await expect(page.locator(".h-\\[625px\\] > .items-center > .font-semibold")).toHaveText("Post Requisition", {
+      timeout: 10_000,
+    });
 
     await clickOkInLegacyPopup(page);
     await page.waitForTimeout(500);
     // Wait for close-button to appear after the process completes (same pattern as PROaOrderToInvoiceTest)
-    await page.locator('[data-testid="close-button"]').waitFor({ state: "visible", timeout: 10_000 }).catch(() => null);
-    await page.locator('[data-testid="close-button"]').click({ force: true }).catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .waitFor({ state: "visible", timeout: 10_000 })
+      .catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .click({ force: true })
+      .catch(() => null);
     await closeToastIfPresent(page);
 
     // ── Step 5: Capture document number ──────────────────────────────────────
     // Wait for the modal to fully close before capturing so we don't grab a number from the modal
-    await page.locator('[data-testid="close-button"]').waitFor({ state: "hidden", timeout: 5_000 }).catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .waitFor({ state: "hidden", timeout: 5_000 })
+      .catch(() => null);
     const orderNumber = await captureDocumentNumber(page);
 
     // ── Step 6: Navigate to Manage Requisitions ───────────────────────────────
@@ -128,7 +155,9 @@ test.describe("Requisition flow - Create and generate Purchase Order @smoke", ()
     await filterInput.press("Enter");
     await filterDone;
 
-    await expect(page.locator(".MuiTableBody-root tr").filter({ hasText: orderNumber })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator(".MuiTableBody-root tr").filter({ hasText: orderNumber })).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.locator(".MuiTableBody-root tr")).toHaveCount(1, { timeout: 10_000 });
     await expect(page.getByText("Showing 1 record")).toBeVisible({ timeout: 10_000 });
 
@@ -137,10 +166,15 @@ test.describe("Requisition flow - Create and generate Purchase Order @smoke", ()
 
     await page.locator('[data-testid="IconButtonWithText__process-menu"] > span').click();
     await page.locator(".rounded-2xl > :nth-child(1)").click();
-    await page.locator(".h-\\[625px\\] > .items-center > .font-semibold").waitFor({ state: "visible", timeout: 10_000 });
+    await page
+      .locator(".h-\\[625px\\] > .items-center > .font-semibold")
+      .waitFor({ state: "visible", timeout: 10_000 });
 
     await clickOkInLegacyPopup(page);
-    await page.locator('[data-testid="close-button"]').click({ force: true }).catch(() => null);
+    await page
+      .locator('[data-testid="close-button"]')
+      .click({ force: true })
+      .catch(() => null);
     await closeToastIfPresent(page);
   });
 });

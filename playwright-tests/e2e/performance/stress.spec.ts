@@ -6,7 +6,7 @@ import { loginToEtendo, cleanupEtendo } from "../helpers/etendo.helpers";
 
 async function openDrawer(page: Page) {
   const drawerInput = page.locator('[data-testid="drawer-search-input"] input');
-  if (!await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false)) {
+  if (!(await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
     await page.locator(".h-14 > div > .transition > svg").click();
     await drawerInput.waitFor({ state: "visible", timeout: 10_000 });
   }
@@ -38,8 +38,16 @@ test.describe("Stress Tests", () => {
       await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 10_000 });
 
       const searchTerms = [
-        "sales", "purchase", "product", "business", "invoice",
-        "order", "warehouse", "payment", "goods", "report",
+        "sales",
+        "purchase",
+        "product",
+        "business",
+        "invoice",
+        "order",
+        "warehouse",
+        "payment",
+        "goods",
+        "report",
       ];
 
       await openDrawer(page);

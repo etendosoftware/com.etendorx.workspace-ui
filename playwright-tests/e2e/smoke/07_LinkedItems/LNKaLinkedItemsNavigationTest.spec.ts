@@ -1,10 +1,5 @@
 import { test, expect } from "@playwright/test";
-import {
-  loginToEtendo,
-  cleanupEtendo,
-  selectRoleOrgWarehouse,
-  typeInGlobalSearch,
-} from "../../helpers/etendo.helpers";
+import { loginToEtendo, cleanupEtendo, selectRoleOrgWarehouse, typeInGlobalSearch } from "../../helpers/etendo.helpers";
 
 test.describe("LinkedItems Navigation @smoke", () => {
   test.beforeEach(async ({ page }) => {
@@ -41,10 +36,7 @@ test.describe("LinkedItems Navigation @smoke", () => {
       await ensureDrawerOpen();
       await typeInGlobalSearch(page, searchText);
 
-      const menuItem = page
-        .locator('[data-testid^="MenuTitle__"]')
-        .filter({ hasText: menuText })
-        .first();
+      const menuItem = page.locator('[data-testid^="MenuTitle__"]').filter({ hasText: menuText }).first();
       await menuItem.waitFor({ state: "visible", timeout: 10_000 });
       await menuItem.scrollIntoViewIfNeeded();
       await menuItem.click({ force: true });
@@ -71,10 +63,9 @@ test.describe("LinkedItems Navigation @smoke", () => {
     };
 
     const openLinkedItemsTab = async () => {
-      const reqPromise = page.waitForRequest(
-        (req) => req.url().includes("UsedByLink") && req.method() === "POST",
-        { timeout: 20_000 }
-      );
+      const reqPromise = page.waitForRequest((req) => req.url().includes("UsedByLink") && req.method() === "POST", {
+        timeout: 20_000,
+      });
       const btn = page
         .locator("button")
         .filter({ hasText: /^Linked Items$/ })
@@ -111,10 +102,16 @@ test.describe("LinkedItems Navigation @smoke", () => {
     await clickParagraphWithText(/50012.*Exempt.*VAT/);
 
     await expect(
-      page.locator("span").filter({ hasText: /^Sales Quotation$/ }).first()
+      page
+        .locator("span")
+        .filter({ hasText: /^Sales Quotation$/ })
+        .first()
     ).toBeVisible({ timeout: 15_000 });
     await expect(
-      page.locator("button").filter({ hasText: /^Line Tax$/ }).first()
+      page
+        .locator("button")
+        .filter({ hasText: /^Line Tax$/ })
+        .first()
     ).toBeVisible({ timeout: 10_000 });
 
     // =========================================================================
@@ -141,10 +138,16 @@ test.describe("LinkedItems Navigation @smoke", () => {
     await clickParagraphWithText(/500014.*Customer A.*costing Product 2/);
 
     await expect(
-      page.locator("p").filter({ hasText: /^Goods Shipment$/ }).first()
+      page
+        .locator("p")
+        .filter({ hasText: /^Goods Shipment$/ })
+        .first()
     ).toBeVisible({ timeout: 15_000 });
     await expect(
-      page.locator("button").filter({ hasText: /^Lines$/ }).first()
+      page
+        .locator("button")
+        .filter({ hasText: /^Lines$/ })
+        .first()
     ).toBeVisible({ timeout: 10_000 });
 
     // =========================================================================
@@ -162,10 +165,16 @@ test.describe("LinkedItems Navigation @smoke", () => {
     await clickParagraphWithText("10000017", "p.text-sm.text-blue-600");
 
     await expect(
-      page.locator("p").filter({ hasText: /^Purchase Invoice$/ }).first()
+      page
+        .locator("p")
+        .filter({ hasText: /^Purchase Invoice$/ })
+        .first()
     ).toBeVisible({ timeout: 15_000 });
     await expect(
-      page.locator("button").filter({ hasText: /^Basic Discounts$/ }).first()
+      page
+        .locator("button")
+        .filter({ hasText: /^Basic Discounts$/ })
+        .first()
     ).toBeVisible({ timeout: 10_000 });
   });
 });

@@ -25,7 +25,7 @@ test.describe("Sales Order Automation - Complete Flow", () => {
 
     // ── Step 1: Navigate to Sales Order ──────────────────────────────────────
     const drawerInput = page.locator('[data-testid="drawer-search-input"] input');
-    if (!await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false)) {
+    if (!(await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
       await page.locator(".h-14 > div > .transition > svg").click();
       await drawerInput.waitFor({ state: "visible", timeout: 10_000 });
     }
@@ -33,7 +33,10 @@ test.describe("Sales Order Automation - Complete Flow", () => {
     await page.keyboard.type("sales");
     await page.locator('[data-testid="MenuTitle__129"]').waitFor({ state: "visible", timeout: 10_000 });
     await page.locator('[data-testid="MenuTitle__129"] > .flex.overflow-hidden > .relative > .ml-2').click();
-    await page.locator('nav[aria-label="breadcrumb"]').getByText(/Sales Order/i).waitFor({ state: "visible", timeout: 15_000 });
+    await page
+      .locator('nav[aria-label="breadcrumb"]')
+      .getByText(/Sales Order/i)
+      .waitFor({ state: "visible", timeout: 15_000 });
 
     // ── Step 2: Create New Sales Order ─────────────────────────────────────────
     await page
@@ -44,17 +47,23 @@ test.describe("Sales Order Automation - Complete Flow", () => {
     await page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first().click();
 
     // Wait for the main section form fields to be visible
-    await page.locator('[aria-label="Business Partner"] > div[tabindex="0"]').waitFor({ state: "visible", timeout: 30_000 });
+    await page
+      .locator('[aria-label="Business Partner"] > div[tabindex="0"]')
+      .waitFor({ state: "visible", timeout: 30_000 });
 
     // ── Step 3: Fill Sales Order Header ───────────────────────────────────────
     // Select Business Partner
     await page.locator('[aria-label="Business Partner"] > div[tabindex="0"]').click();
-    await page.locator('[data-testid="OptionItem__4028E6C72959682B01295F40C3CB02EC"] > .truncate').waitFor({ state: 'visible', timeout: 15_000 });
+    await page
+      .locator('[data-testid="OptionItem__4028E6C72959682B01295F40C3CB02EC"] > .truncate')
+      .waitFor({ state: "visible", timeout: 15_000 });
     await page.locator('[data-testid="OptionItem__4028E6C72959682B01295F40C3CB02EC"] > .truncate').click();
 
     // Select Transaction Document
     await page.locator('[aria-label="Transaction Document"] > div[tabindex="0"]').click();
-    await page.locator('[data-testid="OptionItem__FF8080812C2ABFC6012C2B3BDF4D005A"] > .truncate').waitFor({ state: 'visible', timeout: 15_000 });
+    await page
+      .locator('[data-testid="OptionItem__FF8080812C2ABFC6012C2B3BDF4D005A"] > .truncate')
+      .waitFor({ state: "visible", timeout: 15_000 });
     await page.locator('[data-testid="OptionItem__FF8080812C2ABFC6012C2B3BDF4D005A"] > .truncate').click();
 
     // Save header
@@ -63,7 +72,7 @@ test.describe("Sales Order Automation - Complete Flow", () => {
 
     // Select Invoice Terms
     await page.locator('[aria-label="Invoice Terms"] > div[tabindex="0"]').click();
-    await page.locator('[data-testid="OptionItem__I"] > .truncate').waitFor({ state: 'visible', timeout: 15_000 });
+    await page.locator('[data-testid="OptionItem__I"] > .truncate').waitFor({ state: "visible", timeout: 15_000 });
     await page.locator('[data-testid="OptionItem__I"] > .truncate').click();
 
     // Save invoice terms
@@ -75,7 +84,10 @@ test.describe("Sales Order Automation - Complete Flow", () => {
     await page.locator('button[aria-label="Lines"]').click();
 
     // Create new line
-    const linesNewRecordButton = page.locator("button.toolbar-button-new:not([disabled])").filter({ hasText: "New Record" }).last();
+    const linesNewRecordButton = page
+      .locator("button.toolbar-button-new:not([disabled])")
+      .filter({ hasText: "New Record" })
+      .last();
     await linesNewRecordButton.waitFor({ state: "visible", timeout: 15_000 });
     await linesNewRecordButton.click({ force: true });
 
@@ -99,10 +111,9 @@ test.describe("Sales Order Automation - Complete Flow", () => {
     await page.locator(".rounded-2xl > :nth-child(1)").click();
 
     // Verify Process Order popup
-    await expect(page.locator(".h-\\[625px\\] > .items-center > .font-semibold")).toHaveText(
-      "Process Order",
-      { timeout: 10_000 }
-    );
+    await expect(page.locator(".h-\\[625px\\] > .items-center > .font-semibold")).toHaveText("Process Order", {
+      timeout: 10_000,
+    });
 
     // Book the order
     await clickOkInLegacyPopup(page);
@@ -119,7 +130,10 @@ test.describe("Sales Order Automation - Complete Flow", () => {
     await closeToastIfPresent(page);
 
     // Refresh the document
-    const refreshButton = page.locator("button.toolbar-button-refresh").filter({ hasNot: page.locator('[disabled]') }).first();
+    const refreshButton = page
+      .locator("button.toolbar-button-refresh")
+      .filter({ hasNot: page.locator("[disabled]") })
+      .first();
     await refreshButton.waitFor({ state: "visible" });
     await refreshButton.click();
     await page.waitForTimeout(2000);
@@ -128,10 +142,13 @@ test.describe("Sales Order Automation - Complete Flow", () => {
     await page.locator('[data-testid="IconButtonWithText__process-menu"] > span').first().click();
 
     // Click "Add Payment"
-    await page.locator('div.cursor-pointer').filter({ hasText: "Add Payment" }).click();
+    await page.locator("div.cursor-pointer").filter({ hasText: "Add Payment" }).click();
 
     // Wait for payment dialog with rows to appear (rows may be hidden by virtualization)
-    await page.locator("tbody.MuiTableBody-root tr.MuiTableRow-root").first().waitFor({ state: "attached", timeout: 30_000 });
+    await page
+      .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
+      .first()
+      .waitFor({ state: "attached", timeout: 30_000 });
 
     const actionDropdown = page.locator('div[aria-label="Action Regarding Document"]');
     await actionDropdown.waitFor({ state: "visible", timeout: 10000 });
@@ -141,11 +158,15 @@ test.describe("Sales Order Automation - Complete Flow", () => {
     await actionInput.click();
 
     // ── Step 7: Configure Payment Transaction ─────────────────────────────────
-    await page.locator('div[data-dropdown-portal] li[data-testid^="OptionItem__"]').first().waitFor({ state: "visible", timeout: 15_000 });
+    await page
+      .locator('div[data-dropdown-portal] li[data-testid^="OptionItem__"]')
+      .first()
+      .waitFor({ state: "visible", timeout: 15_000 });
 
-    await page.locator('li[data-testid^="OptionItem__"]')
+    await page
+      .locator('li[data-testid^="OptionItem__"]')
       .filter({ hasText: "Process Received Payment(s)" })
-      .locator('span')
+      .locator("span")
       .first()
       .click();
 
