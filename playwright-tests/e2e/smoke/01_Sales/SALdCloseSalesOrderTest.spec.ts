@@ -100,9 +100,9 @@ test.describe("Sales Orders - Create, Complete and Close", () => {
     await clickOkInLegacyPopup(page);
 
     // Assert the process completed successfully — fails immediately with a clear error if not found
-    await expect(
-      page.locator(".mb-1").filter({ hasText: "Process completed successfully" })
-    ).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator(".mb-1").filter({ hasText: "Process completed successfully" })).toBeVisible({
+      timeout: 60_000,
+    });
     await page.locator('[data-testid="close-button"]').click();
     await closeToastIfPresent(page);
 
@@ -124,9 +124,9 @@ test.describe("Sales Orders - Create, Complete and Close", () => {
     await clickOkInLegacyPopup(page);
 
     // Assert the process completed successfully — fails immediately with a clear error if not found
-    await expect(
-      page.locator(".mb-1").filter({ hasText: "Process completed successfully" })
-    ).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator(".mb-1").filter({ hasText: "Process completed successfully" })).toBeVisible({
+      timeout: 60_000,
+    });
     await page.locator('[data-testid="close-button"]').click();
     await closeToastIfPresent(page);
   });

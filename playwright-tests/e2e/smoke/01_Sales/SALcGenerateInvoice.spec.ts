@@ -83,10 +83,11 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
 
     await page.locator('[aria-label="Product"] > div[tabindex="0"]').waitFor({ state: "visible", timeout: 15_000 });
     await page.locator('[aria-label="Product"] > div[tabindex="0"]').click();
+    // Wait for at least one option to load, then pick the first available
     await page.locator('[data-testid^="OptionItem__"]').first().waitFor({ state: "visible", timeout: 15_000 });
     // Register FormInit listener before clicking so we don't miss the response
     const formInitDone = page.waitForResponse(/FormInitializationComponent/, { timeout: 30_000 }).catch(() => null);
-    await page.locator('[data-testid="OptionItem__4028E6C72959682B01295ADC2340023D"]').click({ force: true });
+    await page.locator('[data-testid^="OptionItem__"]').first().click({ force: true });
     await formInitDone; // wait for backend to populate price/UOM before setting quantity
     await page.locator('[data-testid="TextInput__1130"]').waitFor({ state: "visible", timeout: 30_000 });
 
@@ -102,7 +103,9 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     await page.waitForTimeout(1_000);
 
     // Save line (index 1 = save button inside the Lines tab toolbar)
-    const lineSaveResponse = page.waitForResponse(/org\.openbravo\.service\.json\.JsonRestServlet/, { timeout: 15_000 }).catch(() => null);
+    const lineSaveResponse = page
+      .waitForResponse(/org\.openbravo\.service\.json\.JsonRestServlet/, { timeout: 15_000 })
+      .catch(() => null);
     await page.locator("button.toolbar-button-save").nth(1).click();
     await lineSaveResponse; // wait for backend to confirm the line was persisted
     await closeToastIfPresent(page);
@@ -255,7 +258,9 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
               if (f.contentDocument) allDocs.push(f.contentDocument);
             });
           }
-        } catch { /* cross-origin */ }
+        } catch {
+          /* cross-origin */
+        }
       });
       for (const doc of allDocs) {
         const btns = doc.querySelectorAll<HTMLElement>('td.Button_text, button, input[type="button"]');
