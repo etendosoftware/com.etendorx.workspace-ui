@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { loginToEtendo, cleanupEtendo, selectRoleOrgWarehouse, typeInGlobalSearch } from "../../helpers/etendo.helpers";
+import { loginToEtendo, cleanupEtendo, selectRoleOrgWarehouse, typeInGlobalSearch, disableImplicitFilter } from "../../helpers/etendo.helpers";
 
 test.describe("LinkedItems Navigation @smoke", () => {
   test.beforeEach(async ({ page }) => {
@@ -44,6 +44,9 @@ test.describe("LinkedItems Navigation @smoke", () => {
     };
 
     const filterByDocumentNo = async (value: string) => {
+      // Disable implicit filter (e.g. processed='N') before applying our filter
+      await disableImplicitFilter(page);
+
       const filterInput = page
         .locator('input.w-full[placeholder="Filter Document No...."]')
         .locator("visible=true")
@@ -52,7 +55,8 @@ test.describe("LinkedItems Navigation @smoke", () => {
       await filterInput.clear();
       await filterInput.fill(value);
       await filterInput.press("Enter");
-      await page.waitForTimeout(1_000);
+      // Wait for the table to re-render with filtered results before proceeding
+      await page.locator("tr").filter({ hasText: value }).first().waitFor({ state: "visible", timeout: 15_000 });
     };
 
     const openRowFormByText = async (rowText: string | RegExp) => {

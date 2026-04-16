@@ -8,6 +8,7 @@ import {
   captureDocumentNumber,
   navigateToRequisition,
   navigateToManageRequisitions,
+  disableImplicitFilter,
 } from "../../helpers/etendo.helpers";
 
 test.describe("Requisition flow - Create and generate Purchase Order @smoke", () => {
@@ -136,15 +137,8 @@ test.describe("Requisition flow - Create and generate Purchase Order @smoke", ()
     // ── Step 7: Filter by document number and verify single result ────────────
     await page.locator("table thead").waitFor({ state: "visible", timeout: 15_000 });
 
-    // The Manage Requisitions tab has an implicit HQL/SQL filter (e.g. processed='N')
-    // that hides posted requisitions. Disable it before applying our document number filter.
-    // toolbar-button-filter is the implicit-filter toggle; clicking it turns the filter OFF.
-    const filterToggle = page.locator("button.toolbar-button-filter").first();
-    if (await filterToggle.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await filterToggle.click();
-      // Wait for the table to reload without the implicit filter
-      await page.waitForTimeout(1_000);
-    }
+    // Disable the implicit HQL/SQL filter (e.g. processed='N') before applying our filter
+    await disableImplicitFilter(page);
 
     const filterInput = page.locator('input[placeholder*="Document No"]');
     await filterInput.waitFor({ state: "visible", timeout: 10_000 });

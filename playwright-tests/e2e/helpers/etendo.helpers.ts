@@ -598,6 +598,26 @@ export async function navigateToProcessScheduler(page: Page) {
 }
 
 /**
+ * Disables the implicit HQL/SQL filter (e.g. processed='N') on a grid if it is active.
+ * The button is always present in the toolbar; it is "active" only when it has an inline
+ * background-color style (var(--color-dynamic-main)). Clicking it when active turns it off.
+ * Safe to call when the button is absent or the filter is already off (no-op).
+ */
+export async function disableImplicitFilter(page: Page): Promise<void> {
+  const filterToggle = page.locator("button.toolbar-button-filter").first();
+  await filterToggle.waitFor({ state: "visible", timeout: 5_000 }).catch(() => null);
+
+  const isActive = await filterToggle
+    .evaluate((el) => (el as HTMLElement).style.backgroundColor !== "")
+    .catch(() => false);
+
+  if (isActive) {
+    await filterToggle.click();
+    await page.waitForTimeout(1_000);
+  }
+}
+
+/**
  * Navigates to Manage Requisitions (a process/list view with no breadcrumb).
  * Waits for the table header to confirm the view loaded.
  */
