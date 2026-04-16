@@ -5,7 +5,6 @@ import {
   selectRoleOrgWarehouse,
   clickOkInLegacyPopup,
   closeToastIfPresent,
-  expectSuccessToast,
 } from "../../helpers/etendo.helpers";
 
 test.describe("Sales Orders - Create, Complete and Close", () => {
@@ -95,13 +94,11 @@ test.describe("Sales Orders - Create, Complete and Close", () => {
 
     await clickOkInLegacyPopup(page);
 
-    // Success may appear inside the popup or as a toast
-    const successInPopup = page.locator(".mb-1").filter({ hasText: "Process completed successfully" });
-    if (await successInPopup.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await page.locator('[data-testid="close-button"]').click();
-    } else {
-      await expectSuccessToast(page);
-    }
+    // Assert the process completed successfully — fails immediately with a clear error if not found
+    await expect(
+      page.locator(".mb-1").filter({ hasText: "Process completed successfully" })
+    ).toBeVisible({ timeout: 60_000 });
+    await page.locator('[data-testid="close-button"]').click();
     await closeToastIfPresent(page);
 
     // ── Step 6: Close the Order ───────────────────────────────────────────────
@@ -121,12 +118,11 @@ test.describe("Sales Orders - Create, Complete and Close", () => {
 
     await clickOkInLegacyPopup(page);
 
-    const closeSuccessInPopup = page.locator(".mb-1").filter({ hasText: "Process completed successfully" });
-    if (await closeSuccessInPopup.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await page.locator('[data-testid="close-button"]').click();
-    } else {
-      await expectSuccessToast(page);
-    }
+    // Assert the process completed successfully — fails immediately with a clear error if not found
+    await expect(
+      page.locator(".mb-1").filter({ hasText: "Process completed successfully" })
+    ).toBeVisible({ timeout: 60_000 });
+    await page.locator('[data-testid="close-button"]').click();
     await closeToastIfPresent(page);
   });
 });

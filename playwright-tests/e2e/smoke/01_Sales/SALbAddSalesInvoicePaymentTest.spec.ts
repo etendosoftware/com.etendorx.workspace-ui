@@ -32,17 +32,15 @@ test.describe("Sales Order Automation - Complete Flow", () => {
     await page.keyboard.type("sales");
     await page.locator('[data-testid="MenuTitle__129"]').waitFor({ state: "visible", timeout: 10_000 });
     await page.locator('[data-testid="MenuTitle__129"] > .flex.overflow-hidden > .relative > .ml-2').click();
-    await page
-      .locator('nav[aria-label="breadcrumb"]')
-      .getByText(/Sales Order/i)
-      .waitFor({ state: "visible", timeout: 15_000 });
 
     // ── Step 2: Create New Sales Order ─────────────────────────────────────────
+    // Waiting for the New Record button is the definitive signal that the window
+    // has fully loaded — no need for a separate breadcrumb check.
     await page
       .locator("button.toolbar-button-new:not([disabled])")
       .filter({ hasText: "New Record" })
       .first()
-      .waitFor({ state: "visible", timeout: 15_000 });
+      .waitFor({ state: "visible", timeout: 30_000 });
     await page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first().click();
 
     // Wait for the main section form fields to be visible

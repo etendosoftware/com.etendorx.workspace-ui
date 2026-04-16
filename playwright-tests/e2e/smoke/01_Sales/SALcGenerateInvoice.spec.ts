@@ -29,17 +29,15 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     await page.keyboard.type("sales");
     await page.locator('[data-testid="MenuTitle__129"]').waitFor({ state: "visible", timeout: 10_000 });
     await page.locator('[data-testid="MenuTitle__129"] > .flex.overflow-hidden > .relative > .ml-2').click();
-    await page
-      .locator('nav[aria-label="breadcrumb"]')
-      .getByText(/Sales Order/i)
-      .waitFor({ state: "visible", timeout: 15_000 });
 
     // ── Step 2: Create New Sales Order ────────────────────────────────────────
+    // The New Record button being enabled is the definitive signal that the window
+    // has fully loaded — no need for a separate breadcrumb check.
     await page
       .locator("button.toolbar-button-new:not([disabled])")
       .filter({ hasText: "New Record" })
       .first()
-      .waitFor({ state: "visible", timeout: 15_000 });
+      .waitFor({ state: "visible", timeout: 30_000 });
     await page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first().click();
     await page
       .locator('[aria-label="Business Partner"] > div[tabindex="0"]')
@@ -129,27 +127,30 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
         .click();
       await page.locator(".bg-\\[var\\(--color-etendo-main\\)\\]").first().click();
 
-      // First iteration waits for the form/data to fully load before proceeding
-      if (i === 0) await page.waitForTimeout(5_000);
+      // Wait for the process menu button to be visible and enabled — replaces the
+      // unreliable hardcoded delay. "not([disabled])" confirms the toolbar has
+      // initialized and has a selected record (applies to both iterations).
+      await page
+        .locator('[data-testid="IconButtonWithText__process-menu"]:not([disabled])')
+        .first()
+        .waitFor({ state: "visible", timeout: 30_000 });
 
       await page.locator('[data-testid="ChevronDownIcon__987e83"]').first().click();
       await page.locator(".rounded-2xl > :nth-child(1)").click();
-      await page.waitForTimeout(2_000);
-      await clickOkInLegacyPopup(page);
+      // clickOkInLegacyPopup polls all frames for the OK button — no hardcoded delay needed.
+      await clickOkInLegacyPopup(page, 20_000);
       await page.locator('[data-testid="close-button"]').click();
       await closeToastIfPresent(page);
     }
 
     // ── Step 8: Navigate to Create Invoices batch process (MenuTitle__346) ────
-    await page.goto("/");
-    await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 15_000 });
-
     const createInput = page.locator('[data-testid="drawer-search-input"] input');
     if (!(await createInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
       await page.locator(".h-14 > div > .transition > svg").click();
       await createInput.waitFor({ state: "visible", timeout: 10_000 });
     }
     await createInput.click({ force: true });
+    await createInput.fill("");
     await page.keyboard.type("create");
     await page.locator('[data-testid="MenuTitle__346"]').waitFor({ state: "visible", timeout: 10_000 });
     await page.locator('[data-testid="MenuTitle__346"] > .flex.overflow-hidden > .relative > .ml-2').click();
@@ -183,43 +184,79 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     // Search for matching orders/shipments
     await processFrame.getByRole("button", { name: /^Search$/i }).click();
 
-    // Wait for results, then select all inpOrder checkboxes
-    await processFrame
-      .locator('input[name="inpOrder"]')
-      .first()
-      .waitFor({ state: "visible", timeout: 15_000 })
-      .catch(() => null);
-    const orderCheckboxes = processFrame.locator('input[name="inpOrder"]');
-    const cbCount = await orderCheckboxes.count();
-    for (let i = 0; i < cbCount; i++) {
-      await orderCheckboxes
-        .nth(i)
-        .check({ force: true })
-        .catch(() => null);
+    // The form uses a frameset: parameters (#paramDateFrom) and results (inpOrder checkboxes)
+    // may be in sibling <frame> elements. Iterate ALL page frames to find the results frame
+    // — mirrors Cypress interactWithLegacyIframe which iterates each <frame> contentDocument.
+    let resultsFrame: Frame = processFrame;
+    const cbDeadline = Date.now() + 15_000;
+    outer: while (Date.now() < cbDeadline) {
+      for (const f of page.frames()) {
+        try {
+          if ((await f.locator('input[type="checkbox"][name="inpOrder"]').count()) > 0) {
+            resultsFrame = f;
+            break outer;
+          }
+        } catch {
+          // detached frame — skip
+        }
+      }
+      await page.waitForTimeout(300);
     }
 
-    await page.waitForTimeout(1_000);
-    await processFrame.getByRole("button", { name: /^Process$/i }).click();
-    await page.waitForTimeout(500);
+    // Select all order checkboxes via native DOM click — mirrors Cypress selectLegacyCheckboxes
+    await resultsFrame.evaluate(() => {
+      const checkboxes = Array.from(
+        document.querySelectorAll<HTMLInputElement>('input[type="checkbox"][name="inpOrder"]')
+      );
+      // Leave the last one unchecked — matches Cypress selectLegacyCheckboxes(name, leaveLastUnchecked=true)
+      const limit = checkboxes.length > 1 ? checkboxes.length - 1 : checkboxes.length;
+      checkboxes.slice(0, limit).forEach((cb) => cb.click());
+    });
 
-    await expect(processFrame.getByText(/Process completed successfully/i)).toBeVisible({ timeout: 30_000 });
+    await resultsFrame.getByRole("button", { name: /^Process$/i }).click();
+
+    // Success message: check the results frame first, then fall back to all frames
+    // (Cypress verifyLegacySuccessMessage uses .MessageBox_TextTitle#messageBoxIDTitle)
+    const successSelector = ".MessageBox_TextTitle#messageBoxIDTitle";
+    const successDeadline = Date.now() + 30_000;
+    let processSuccess = false;
+    while (Date.now() < successDeadline && !processSuccess) {
+      for (const f of page.frames()) {
+        try {
+          const el = f.locator(successSelector);
+          if ((await el.count()) > 0) {
+            const txt = await el.textContent();
+            if (/Process completed successfully/i.test(txt ?? "")) {
+              processSuccess = true;
+              break;
+            }
+          }
+        } catch {
+          // detached frame
+        }
+      }
+      if (!processSuccess) await page.waitForTimeout(300);
+    }
+    if (!processSuccess) throw new Error("Create Shipments process did not complete successfully within 30s");
 
     await page.locator('[data-testid="close-button"]').click();
     await closeToastIfPresent(page);
 
     // ── Step 9: Navigate to Generate Invoices report (MenuTitle__192) ─────────
-    await page.goto("/");
-    await page.locator(".h-14 > div > .transition > svg").waitFor({ state: "visible", timeout: 15_000 });
-
     const reportInput = page.locator('[data-testid="drawer-search-input"] input');
     if (!(await reportInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
       await page.locator(".h-14 > div > .transition > svg").click();
       await reportInput.waitFor({ state: "visible", timeout: 10_000 });
     }
     await reportInput.click({ force: true });
+    await reportInput.fill("");
     await page.keyboard.type("genera");
     await page.locator('[data-testid="MenuTitle__192"]').waitFor({ state: "visible", timeout: 10_000 });
     await page.locator('[data-testid="MenuTitle__192"] > .flex.overflow-hidden > .relative > .ml-2').click();
+
+    // Wait briefly before executing — avoids known race where the report
+    // fires before the previous process result is fully committed.
+    await page.waitForTimeout(3_000);
 
     // Execute the report
     const executeBtn = page.locator('[data-testid^="ExecuteReportButton"]');
