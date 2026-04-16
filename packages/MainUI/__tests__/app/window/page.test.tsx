@@ -1,10 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import Page from "@/app/(main)/window/page";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowListContext } from "@/contexts/window";
 
 // Mock dependencies
 jest.mock("@/contexts/window", () => ({
   useWindowContext: jest.fn(),
+  useWindowListContext: jest.fn(),
 }));
 
 jest.mock("@/components/NavigationTabs/WindowTabs", () => ({
@@ -33,14 +34,14 @@ jest.mock("@/components/loading", () => ({
 }));
 
 describe("Window Page", () => {
-  const mockUseWindowContext = useWindowContext as jest.Mock;
+  const mockUseWindowListContext = useWindowListContext as jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it("renders Loading when isRecoveryLoading is true and no activeWindow", () => {
-    mockUseWindowContext.mockReturnValue({
+    mockUseWindowListContext.mockReturnValue({
       windows: [],
       activeWindow: null,
       isHomeRoute: false,
@@ -53,7 +54,7 @@ describe("Window Page", () => {
   });
 
   it("renders Home when no activeWindow", () => {
-    mockUseWindowContext.mockReturnValue({
+    mockUseWindowListContext.mockReturnValue({
       windows: [],
       activeWindow: null,
       isHomeRoute: false,
@@ -66,7 +67,7 @@ describe("Window Page", () => {
   });
 
   it("renders Home when isHomeRoute is true", () => {
-    mockUseWindowContext.mockReturnValue({
+    mockUseWindowListContext.mockReturnValue({
       windows: [{ windowIdentifier: "123" }],
       activeWindow: { windowIdentifier: "123" },
       isHomeRoute: true,
@@ -84,7 +85,7 @@ describe("Window Page", () => {
   });
 
   it("renders Window when activeWindow is present and not home route", () => {
-    mockUseWindowContext.mockReturnValue({
+    mockUseWindowListContext.mockReturnValue({
       windows: [{ windowIdentifier: "123" }],
       activeWindow: { windowIdentifier: "123" },
       isHomeRoute: false,
@@ -97,7 +98,7 @@ describe("Window Page", () => {
   });
 
   it("renders WindowTabs when windows exist", () => {
-    mockUseWindowContext.mockReturnValue({
+    mockUseWindowListContext.mockReturnValue({
       windows: [{ windowIdentifier: "123" }],
       activeWindow: { windowIdentifier: "123" },
       isHomeRoute: false,
@@ -110,7 +111,7 @@ describe("Window Page", () => {
   });
 
   it("does not render WindowTabs when no windows exist", () => {
-    mockUseWindowContext.mockReturnValue({
+    mockUseWindowListContext.mockReturnValue({
       windows: [],
       activeWindow: null,
       isHomeRoute: true,

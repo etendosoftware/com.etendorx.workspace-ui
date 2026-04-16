@@ -51,6 +51,7 @@ describe("useToolbarConfig", () => {
     entityName: "TestEntity",
     obuiappCloneChildren: false,
     tabLevel: 0,
+    window: "window1",
   };
 
   const mockActiveWindow = {
@@ -96,6 +97,8 @@ describe("useToolbarConfig", () => {
     });
     (useSelected as jest.Mock).mockReturnValue({
       graph: { clearSelected: jest.fn(), clearSelectedMultiple: jest.fn() },
+      windowIdentifier: mockActiveWindow.windowIdentifier,
+      windowId: mockActiveWindow.windowId,
     });
     (useSearch as jest.Mock).mockReturnValue({ setSearchQuery: jest.fn() });
     (useMetadataContext as jest.Mock).mockReturnValue({ removeRecord: jest.fn() });
@@ -177,6 +180,8 @@ describe("useToolbarConfig", () => {
       const mockClearSelectedMultiple = jest.fn();
       (useSelected as jest.Mock).mockReturnValue({
         graph: { clearSelected: mockClearSelected, clearSelectedMultiple: mockClearSelectedMultiple },
+        windowIdentifier: mockActiveWindow.windowIdentifier,
+        windowId: mockActiveWindow.windowId,
       });
       (useSelectedRecords as jest.Mock).mockReturnValue([{ id: "record1" }]);
       (copyRecordRequest as jest.Mock).mockResolvedValue({ ok: true, data: {} });
@@ -215,6 +220,8 @@ describe("useToolbarConfig", () => {
       const mockClearSelectedMultiple = jest.fn();
       (useSelected as jest.Mock).mockReturnValue({
         graph: { clearSelected: mockClearSelected, clearSelectedMultiple: mockClearSelectedMultiple },
+        windowIdentifier: mockActiveWindow.windowIdentifier,
+        windowId: mockActiveWindow.windowId,
       });
       (useSelectedRecords as jest.Mock).mockReturnValue([{ id: "record1" }, { id: "record2" }]);
       (copyRecordRequest as jest.Mock).mockResolvedValue({ ok: true, data: {} });

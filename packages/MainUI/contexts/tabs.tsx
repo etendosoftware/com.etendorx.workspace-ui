@@ -18,7 +18,7 @@
 "use client";
 
 import { createContext, useContext, useMemo, useRef, useState, useCallback, useEffect } from "react";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowListContext } from "@/contexts/window";
 
 type TabsContextType = {
   containerRef: React.RefObject<HTMLDivElement>;
@@ -50,7 +50,7 @@ export default function TabsProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { activeWindow } = useWindowContext();
+  const { activeWindow } = useWindowListContext();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const windowsContainerRef = useRef<HTMLDivElement>(null);

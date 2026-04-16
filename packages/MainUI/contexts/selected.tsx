@@ -35,6 +35,10 @@ import { useWindowContext } from "@/contexts/window";
 interface SelectedContext {
   /** Graph data structure containing the hierarchical relationship between tabs */
   graph: Graph<Tab>;
+  /** ERP window ID (e.g. "143") — used to match tabs to their owning window */
+  windowId: string;
+  /** Identifier for the specific window instance this context belongs to */
+  windowIdentifier: string;
 }
 
 /**
@@ -72,7 +76,6 @@ const windowGraphCache = new Map<string, Graph<Tab>>();
 export const SelectedProvider = ({
   children,
   tabs,
-  // biome-ignore lint/correctness/noUnusedVariables: Keep windowId for potential metadata operations
   windowId,
   windowIdentifier,
 }: React.PropsWithChildren<{
@@ -207,8 +210,10 @@ export const SelectedProvider = ({
   const value = useMemo<SelectedContext>(
     () => ({
       graph,
+      windowId,
+      windowIdentifier,
     }),
-    [graph]
+    [graph, windowId, windowIdentifier]
   );
 
   return <SelectContext.Provider value={value}>{children}</SelectContext.Provider>;

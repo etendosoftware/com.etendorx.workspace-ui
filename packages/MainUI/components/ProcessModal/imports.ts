@@ -21,7 +21,7 @@
 
 // --- Contexts ---
 export { useTabContext } from "@/contexts/tab";
-export { useWindowContext } from "@/contexts/window";
+export { useWindowContext, useWindowListContext } from "@/contexts/window";
 export { useUserContext } from "@/hooks/useUserContext";
 
 // --- Custom hooks ---

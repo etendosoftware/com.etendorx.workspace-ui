@@ -244,15 +244,12 @@ export default function useTableSelection(
   rowSelection: MRT_RowSelectionState,
   _onSelectionChange?: (recordId: string) => void
 ) {
-  const { graph } = useSelected();
-  const { activeWindow, clearSelectedRecord, getTabFormState, setSelectedRecord, getSelectedRecord } =
-    useWindowContext();
+  const { graph, windowId, windowIdentifier } = useSelected();
+  const { clearSelectedRecord, getTabFormState, setSelectedRecord, getSelectedRecord } = useWindowContext();
   const { setSession, setSessionSyncLoading } = useUserContext();
   const previousSelectionRef = useRef<string[]>([]);
   const previousSingleSelectionRef = useRef<string | undefined>(undefined);
 
-  const windowId = activeWindow?.windowId;
-  const windowIdentifier = activeWindow?.windowIdentifier;
   const currentWindowId = tab.window;
 
   // Initialize previousSingleSelectionRef from URL on mount/remount

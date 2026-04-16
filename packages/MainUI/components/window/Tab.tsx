@@ -110,7 +110,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const { config } = useRuntimeConfig();
   const { window } = useMetadataContext();
   const {
-    activeWindow,
     clearSelectedRecord,
     getTabFormState,
     setSelectedRecord,
@@ -122,7 +121,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     setTableAdvancedCriteria,
   } = useWindowContext();
   const { registerActions, setIsAdvancedFilterApplied } = useToolbarContext();
-  const { graph } = useSelected();
+  const { graph, windowIdentifier } = useSelected();
   const { unregisterRefresh } = useTabRefreshContext();
   const { token } = useUserContext();
   const selectedRecords = useSelectedRecords(tab);
@@ -136,8 +135,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   // Tracks the parentSelectedRecordId for which the SR auto-open was last triggered.
   // This prevents re-opening the form view after the user explicitly closes it.
   const srAutoOpenedForParentRef = useRef<string | undefined>(undefined);
-
-  const windowIdentifier = activeWindow?.windowIdentifier;
 
   const tabFormState = windowIdentifier ? getTabFormState(windowIdentifier, tab.id) : undefined;
   const selectedRecordId = windowIdentifier ? getSelectedRecord(windowIdentifier, tab.id) : undefined;

@@ -24,7 +24,7 @@ import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
 import { SubTabsSwitch } from "@/components/window/SubTabsSwitch";
 import { Tab } from "@/components/window/Tab";
-import { useWindowContext } from "@/contexts/window";
+import { useSelected } from "@/hooks/useSelected";
 import TabContextProvider from "@/contexts/tab";
 import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHandle";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
@@ -63,9 +63,9 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
     }
   }, [initialActiveTab, tabs, current.id]); // dependency on tabs ensures re-eval when filter changes
 
-  const { activeWindow } = useWindowContext();
+  const { windowIdentifier } = useSelected();
   const { activeLevels, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
-    windowIdentifier: activeWindow?.windowIdentifier || "",
+    windowIdentifier,
     tabId: "",
   });
 

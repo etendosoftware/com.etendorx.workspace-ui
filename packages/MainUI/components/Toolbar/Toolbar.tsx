@@ -51,6 +51,7 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { TAB_MODES } from "@/utils/url/constants";
 import { useWindowContext } from "@/contexts/window";
+import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
 import ActionModal from "@workspaceui/componentlibrary/src/components/ActionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 
@@ -66,8 +67,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
   const { buttons, processButtons, loading, refetch: refetchToolbar } = useToolbar(windowId, tab?.id);
   const { saveButtonState, isImplicitFilterApplied, isAdvancedFilterApplied } = useToolbarContext();
-  const { graph } = useSelected();
-  const { activeWindow, getTabFormState, clearChildrenSelections } = useWindowContext();
+  const { graph, windowIdentifier } = useSelected();
+  const { getTabFormState, clearChildrenSelections } = useWindowContext();
+  const { activeLevels, activeTabsByLevel } = useTableStatePersistenceTab({ windowIdentifier, tabId: "" });
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { isSessionSyncLoading, isCopilotInstalled, session } = useUserContext();
@@ -105,11 +107,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   // Check if any child tab is fully expanded
   const isChildTabExpanded = useMemo(() => {
-    if (!activeWindow || !tab?.id) return false;
-    const navigationState = activeWindow.navigation;
+    if (!tab?.id) return false;
     // If we are in a parent tab (level 0) and there is an active tab in level 1, it means a child is expanded/visible
-    return navigationState.activeLevels.includes(1) && navigationState.activeTabsByLevel.has(1);
-  }, [activeWindow, tab?.id]);
+    return activeLevels.includes(1) && activeTabsByLevel.has(1);
+  }, [activeLevels, activeTabsByLevel, tab?.id]);
 
   // Manage temporary filter tooltip visibility
   useEffect(() => {
@@ -216,8 +217,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       const childTabs = graph.getChildren(tab);
       const childTabIdsInFormView: string[] = [];
       const hasChildTabs = childTabs && childTabs.length > 0;
-      const windowIdentifier = activeWindow?.windowIdentifier;
-
       if (hasChildTabs && windowIdentifier) {
         childTabIdsInFormView.push(...processChildTabsInFormView(childTabs, windowIdentifier));
       }
@@ -248,7 +247,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     tab,
     isFormView,
     formViewRefetch,
-    activeWindow,
+    windowIdentifier,
     processChildTabsInFormView,
     clearChildrenSelections,
   ]);

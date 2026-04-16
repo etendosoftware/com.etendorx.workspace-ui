@@ -37,6 +37,29 @@ import {
 import { buildWindowsUrlParams } from "@/utils/url/utils";
 import { useGlobalUrlStateRecovery } from "@/hooks/useGlobalUrlStateRecovery";
 
+/**
+ * WindowListContextI — contains values that change on every window switch.
+ * Only navigation/layout components should subscribe to this context.
+ * Keeping these separate from WindowContextI prevents data-fetching components
+ * (Tab, Table, useTableData) from re-rendering on every window switch.
+ */
+interface WindowListContextI {
+  windows: WindowState[];
+  activeWindow: WindowState | null;
+  isHomeRoute: boolean;
+  isRecoveryLoading: boolean;
+  recoveryError: string | null;
+  triggerRecovery: () => void;
+}
+
+const WindowListContext = createContext<WindowListContextI | undefined>(undefined);
+
+export const useWindowListContext = () => {
+  const context = useContext(WindowListContext);
+  if (!context) throw new Error("useWindowListContext must be used within WindowProvider");
+  return context;
+};
+
 interface WindowContextI {
   // State getters
   getTableState: (windowIdentifier: string, tabId: string) => TableState;
@@ -47,11 +70,6 @@ interface WindowContextI {
   getAllWindows: () => WindowState[];
   getActiveWindow: () => WindowState | null;
   getAllState: () => WindowContextState;
-
-  // Direct access to computed values
-  windows: WindowState[];
-  activeWindow: WindowState | null;
-  isHomeRoute: boolean;
 
   // State setters
   setTableFilters: (
@@ -113,20 +131,6 @@ interface WindowContextI {
   getTabInitializedWithDirectLink: (windowIdentifier: string, tabId: string) => boolean;
   setTabInitializedWithDirectLink: (windowIdentifier: string, tabId: string, initialized: boolean) => void;
 
-  // Recovery state management
-  /** Loading indicator for URL-driven window recovery (true during recovery process) */
-  isRecoveryLoading: boolean;
-  /** Error message if recovery fails, null otherwise */
-  recoveryError: string | null;
-  /**
-   * Triggers the URL recovery system to re-execute.
-   * Resets the internal guard flag, allowing recovery to run again when URL changes.
-   *
-   * Primary use case: Opening new windows from linked items.
-   * Call this before updating the URL with new window parameters.
-   */
-  triggerRecovery: () => void;
-
   // Window management
   cleanupWindow: (windowIdentifier: string) => void;
   cleanState: () => void;
@@ -139,83 +143,93 @@ const WindowContext = createContext<WindowContextI | undefined>(undefined);
 export default function WindowProvider({ children }: React.PropsWithChildren) {
   const [state, setState] = useState<WindowContextState>({});
 
+  /**
+   * Always-current ref to state.
+   * Getter callbacks close over this ref (not over `state` directly),
+   * so their function references never change between renders.
+   * This prevents cascading re-renders and stale effect re-runs in every
+   * consumer whenever any window switches active/inactive status.
+   */
+  const stateRef = useRef<WindowContextState>(state);
+  stateRef.current = state;
+
   const { recoveredWindows, isRecoveryLoading, recoveryError, triggerRecovery } = useGlobalUrlStateRecovery();
 
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Getters
+  // ---------------------------------------------------------------------------
+  // Stable getter callbacks — depend only on stateRef, never on `state`.
+  // Changing which window is active does NOT recreate these functions.
+  // ---------------------------------------------------------------------------
+
+  // Singleton default objects so referential equality is preserved when state
+  // hasn't been initialised for a particular window/tab yet.
+  const DEFAULT_TABLE_STATE = useRef<TableState>({
+    filters: [],
+    visibility: {},
+    sorting: [],
+    order: [],
+    isImplicitFilterApplied: undefined,
+  });
+  const DEFAULT_NAVIGATION_STATE = useRef<NavigationState>({
+    activeLevels: [0],
+    activeTabsByLevel: new Map(),
+    initialized: false,
+  });
+
   const getTableState = useCallback(
     (windowIdentifier: string, tabId: string): TableState => {
-      const defaultTableState: TableState = {
-        filters: [],
-        visibility: {},
-        sorting: [],
-        order: [],
-        isImplicitFilterApplied: undefined,
-      };
-
-      if (!state[windowIdentifier] || !state[windowIdentifier].tabs[tabId]) {
-        return defaultTableState;
+      const s = stateRef.current;
+      if (!s[windowIdentifier] || !s[windowIdentifier].tabs[tabId]) {
+        return DEFAULT_TABLE_STATE.current;
       }
-
-      return state[windowIdentifier].tabs[tabId].table || defaultTableState;
+      return s[windowIdentifier].tabs[tabId].table || DEFAULT_TABLE_STATE.current;
     },
-    [state]
+    [] // stable — reads latest state via ref
   );
 
   const getNavigationState = useCallback(
     (windowIdentifier: string): NavigationState => {
-      const defaultNavigationState: NavigationState = {
-        activeLevels: [0],
-        activeTabsByLevel: new Map(),
-        initialized: false,
-      };
-
-      if (!state[windowIdentifier]) {
-        return defaultNavigationState;
+      const s = stateRef.current;
+      if (!s[windowIdentifier]) {
+        return DEFAULT_NAVIGATION_STATE.current;
       }
-
-      return state[windowIdentifier].navigation || defaultNavigationState;
+      return s[windowIdentifier].navigation || DEFAULT_NAVIGATION_STATE.current;
     },
-    [state]
+    [] // stable
   );
 
   const getActiveWindowIdentifier = useCallback((): string | null => {
-    const allWindows = Object.entries(state);
-    for (const [windowIdentifier, windowState] of allWindows) {
+    for (const [windowIdentifier, windowState] of Object.entries(stateRef.current)) {
       if (windowState.isActive) {
         return windowIdentifier;
       }
     }
     return null;
-  }, [state]);
+  }, []); // stable
 
   const getActiveWindowProperty = useCallback(
     (propertyName: string): string | boolean | object | null => {
-      // Validate that propertyName is not empty
       if (!propertyName || propertyName.trim() === "") {
         return null;
       }
 
-      // Validate that propertyName is valid
       const validProperties = Object.values(WINDOW_PROPERTY_NAMES);
       if (!validProperties.includes(propertyName as WindowPropertyName)) {
         return null;
       }
 
-      // Get the active window identifier
       const activeWindowIdentifier = getActiveWindowIdentifier();
       if (!activeWindowIdentifier) {
         return null;
       }
 
-      const activeWindow = state[activeWindowIdentifier];
+      const activeWindow = stateRef.current[activeWindowIdentifier];
       if (!activeWindow) {
         return null;
       }
 
-      // Return the requested property
       switch (propertyName) {
         case WINDOW_PROPERTY_NAMES.TITLE:
           return activeWindow.title;
@@ -229,25 +243,25 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
           return null;
       }
     },
-    [state, getActiveWindowIdentifier]
+    [getActiveWindowIdentifier]
   );
 
   const getAllWindowsIdentifiers = useCallback((): string[] => {
-    return Object.keys(state);
-  }, [state]);
+    return Object.keys(stateRef.current);
+  }, []); // stable
 
   const getAllState = useCallback((): WindowContextState => {
-    return state;
-  }, [state]);
+    return stateRef.current;
+  }, []); // stable
 
   const getAllWindows = useCallback((): WindowState[] => {
-    return Object.values(state);
-  }, [state]);
+    return Object.values(stateRef.current);
+  }, []); // stable
 
   const getActiveWindow = useCallback((): WindowState | null => {
     const activeWindowIdentifier = getActiveWindowIdentifier();
-    return activeWindowIdentifier ? state[activeWindowIdentifier] : null;
-  }, [state, getActiveWindowIdentifier]);
+    return activeWindowIdentifier ? stateRef.current[activeWindowIdentifier] : null;
+  }, [getActiveWindowIdentifier]); // stable (getActiveWindowIdentifier is also stable)
 
   // Setters
   const setTableFilters = useCallback(
@@ -340,9 +354,10 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       setState((prevState: WindowContextState) => {
         const newState = { ...prevState };
 
-        // Deactivate all windows
+        // Deactivate all windows — only create a new object if isActive was true
+        // so that already-inactive windows keep their existing reference.
         for (const winId of Object.keys(newState)) {
-          if (newState[winId]) {
+          if (newState[winId]?.isActive) {
             newState[winId] = { ...newState[winId], isActive: false };
           }
         }
@@ -399,12 +414,13 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
   const getTabFormState = useCallback(
     (windowIdentifier: string, tabId: string): TabFormState | undefined => {
-      if (!state[windowIdentifier] || !state[windowIdentifier].tabs[tabId]) {
+      const s = stateRef.current;
+      if (!s[windowIdentifier] || !s[windowIdentifier].tabs[tabId]) {
         return undefined;
       }
-      return state[windowIdentifier].tabs[tabId].form;
+      return s[windowIdentifier].tabs[tabId].form;
     },
-    [state]
+    [] // stable
   );
 
   const setTabFormState = useCallback(
@@ -457,12 +473,13 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
   const getSelectedRecord = useCallback(
     (windowIdentifier: string, tabId: string): string | undefined => {
-      if (!state[windowIdentifier] || !state[windowIdentifier].tabs[tabId]) {
+      const s = stateRef.current;
+      if (!s[windowIdentifier] || !s[windowIdentifier].tabs[tabId]) {
         return undefined;
       }
-      return state[windowIdentifier].tabs[tabId].selectedRecord;
+      return s[windowIdentifier].tabs[tabId].selectedRecord;
     },
-    [state]
+    [] // stable
   );
 
   const setSelectedRecord = useCallback((windowIdentifier: string, tabId: string, recordId: string, tabLevel = 0) => {
@@ -610,12 +627,13 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
   const getNavigationInitialized = useCallback(
     (windowIdentifier: string): boolean => {
-      if (!state[windowIdentifier]) {
+      const s = stateRef.current;
+      if (!s[windowIdentifier]) {
         return false;
       }
-      return state[windowIdentifier].navigation?.initialized || false;
+      return s[windowIdentifier].navigation?.initialized || false;
     },
-    [state]
+    [] // stable
   );
 
   const setNavigationInitialized = useCallback((windowIdentifier: string, initialized: boolean) => {
@@ -626,12 +644,13 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
 
   const getTabInitializedWithDirectLink = useCallback(
     (windowIdentifier: string, tabId: string): boolean => {
-      if (!state[windowIdentifier] || !state[windowIdentifier].tabs[tabId]) {
+      const s = stateRef.current;
+      if (!s[windowIdentifier] || !s[windowIdentifier].tabs[tabId]) {
         return false;
       }
-      return state[windowIdentifier].tabs[tabId].initializedWithDirectLink || false;
+      return s[windowIdentifier].tabs[tabId].initializedWithDirectLink || false;
     },
-    [state]
+    [] // stable
   );
 
   const setTabInitializedWithDirectLink = useCallback(
@@ -665,14 +684,18 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     setState({});
   }, []);
 
-  // Computed values using existing helper functions
+  // Computed values — depend directly on `state` so they update on every
+  // state change while the getter helper functions remain stable.
   const windows = useMemo((): WindowState[] => {
-    return getAllWindows();
-  }, [getAllWindows]);
+    return Object.values(state);
+  }, [state]);
 
   const activeWindow = useMemo((): WindowState | null => {
-    return getActiveWindow();
-  }, [getActiveWindow]);
+    for (const windowState of Object.values(state)) {
+      if (windowState.isActive) return windowState;
+    }
+    return null;
+  }, [state]);
 
   const isHomeRoute = useMemo((): boolean => {
     return !activeWindow;
@@ -796,12 +819,25 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     }
   }, [windows, router, searchParams, isRecoveryLoading]);
 
-  const value = useMemo(
+  // WindowListContext value — changes on every window switch.
+  // Only navigation/layout components should subscribe to this context.
+  const windowListValue = useMemo(
     () => ({
       windows,
       activeWindow,
       isHomeRoute,
+      isRecoveryLoading,
+      recoveryError,
+      triggerRecovery,
+    }),
+    [windows, activeWindow, isHomeRoute, isRecoveryLoading, recoveryError, triggerRecovery]
+  );
 
+  // WindowContext value — all stable setters/getters (deps are [] or stateRef).
+  // This value NEVER changes on window switch, preventing unnecessary re-renders
+  // of data-fetching components (Tab, Table, useTableData, useDatasource).
+  const value = useMemo(
+    () => ({
       getTableState,
       getNavigationState,
       getActiveWindowIdentifier,
@@ -831,10 +867,6 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       clearSelectedRecord,
       clearChildrenSelections,
       setSelectedRecordAndClearChildren,
-
-      isRecoveryLoading,
-      recoveryError,
-      triggerRecovery,
 
       getNavigationInitialized,
       setNavigationInitialized,
@@ -846,10 +878,6 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       cleanState,
     }),
     [
-      windows,
-      activeWindow,
-      isHomeRoute,
-
       getTableState,
       getNavigationState,
       getActiveWindowIdentifier,
@@ -880,10 +908,6 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
       clearChildrenSelections,
       setSelectedRecordAndClearChildren,
 
-      isRecoveryLoading,
-      recoveryError,
-      triggerRecovery,
-
       getNavigationInitialized,
       setNavigationInitialized,
 
@@ -892,7 +916,11 @@ export default function WindowProvider({ children }: React.PropsWithChildren) {
     ]
   );
 
-  return <WindowContext.Provider value={value}>{children}</WindowContext.Provider>;
+  return (
+    <WindowListContext.Provider value={windowListValue}>
+      <WindowContext.Provider value={value}>{children}</WindowContext.Provider>
+    </WindowListContext.Provider>
+  );
 }
 
 export const useWindowContext = () => {

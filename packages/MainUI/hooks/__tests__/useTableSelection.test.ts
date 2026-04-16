@@ -57,13 +57,16 @@ describe("useTableSelection", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (useSelected as jest.Mock).mockReturnValue({ graph: mockGraph });
+    (useSelected as jest.Mock).mockReturnValue({
+      graph: mockGraph,
+      windowId: "win1",
+      windowIdentifier: "win_1",
+    });
     (useUserContext as jest.Mock).mockReturnValue({
       setSession: jest.fn(),
       setSessionSyncLoading: jest.fn(),
     });
     (useWindowContext as jest.Mock).mockReturnValue({
-      activeWindow: { windowId: "win1", windowIdentifier: "win_1" },
       setSelectedRecord: mockSetSelectedRecord,
       clearSelectedRecord: mockClearSelectedRecord,
       getSelectedRecord: mockGetSelectedRecord,
@@ -92,11 +95,11 @@ describe("useTableSelection", () => {
   });
 
   it("should do nothing if window is inactive", () => {
-    (useWindowContext as jest.Mock).mockReturnValue({
-      activeWindow: { windowId: "win-different", windowIdentifier: "diff" },
-      setSelectedRecord: mockSetSelectedRecord,
-      clearSelectedRecord: mockClearSelectedRecord,
-      getSelectedRecord: mockGetSelectedRecord,
+    // Simulate a window where the tab's window ("win1") does NOT match the context windowId
+    (useSelected as jest.Mock).mockReturnValue({
+      graph: mockGraph,
+      windowId: "win-different",
+      windowIdentifier: "diff",
     });
 
     const rowSelection = { r1: true };

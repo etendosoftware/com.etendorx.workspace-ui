@@ -22,11 +22,12 @@ import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
 import type { IMetadataContext } from "./types";
 import { useDatasourceContext } from "./datasourceContext";
 import { mapBy } from "@/utils/structures";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowContext, useWindowListContext } from "@/contexts/window";
 import { useMetadataStore } from "./metadataStore";
 
 export const MetadataSynchronizer = () => {
-  const { activeWindow, cleanupWindow } = useWindowContext();
+  const { activeWindow } = useWindowListContext();
+  const { cleanupWindow } = useWindowContext();
   const { loadWindowData, isWindowLoading, windowsData } = useMetadataStore();
 
   useEffect(() => {
@@ -52,7 +53,7 @@ export const MetadataSynchronizer = () => {
 };
 
 export const useMetadataContext = (): IMetadataContext => {
-  const { activeWindow } = useWindowContext();
+  const { activeWindow } = useWindowListContext();
   const { getWindowMetadata, isWindowLoading, getWindowError, loadWindowData, windowsData, loadingWindows, errors } =
     useMetadataStore();
   const { removeRecordFromDatasource } = useDatasourceContext();

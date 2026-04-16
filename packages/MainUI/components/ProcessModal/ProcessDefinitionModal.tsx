@@ -38,6 +38,7 @@ import {
   // Contexts
   useTabContext,
   useWindowContext,
+  useWindowListContext,
   useUserContext,
   // Hooks
   useProcessConfig,
@@ -224,7 +225,7 @@ function ProcessDefinitionModalContent({
   const { session, token, getCsrfToken } = useUserContext();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { triggerRecovery, isRecoveryLoading } = useWindowContext();
+  const { triggerRecovery, isRecoveryLoading } = useWindowListContext();
 
   const [processDefinition, setProcessDefinition] = useState(button.processDefinition);
   const { onProcess, onLoad } = processDefinition;

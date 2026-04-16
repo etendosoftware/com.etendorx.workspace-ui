@@ -15,7 +15,7 @@ import Version from "@workspaceui/componentlibrary/src/components/Version";
 import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
 import { buildEtendoClassicBookmarkUrl } from "@/utils/url/utils";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowContext, useWindowListContext } from "@/contexts/window";
 import ProcessIframeModal from "./ProcessModal/Iframe";
 import type { ProcessIframeModalProps, ProcessDefinitionButton, ProcessType } from "./ProcessModal/types";
 import formsData from "../utils/processes/forms/data.json";
@@ -200,7 +200,8 @@ export default function Sidebar() {
   const { language, prevLanguage } = useLanguage();
   const { translateMenuItem } = useMenuTranslation();
   const menu = useMenu(token, currentRole || undefined, language);
-  const { activeWindow, setWindowActive } = useWindowContext();
+  const { activeWindow } = useWindowListContext();
+  const { setWindowActive } = useWindowContext();
 
   const [searchValue, setSearchValue] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());

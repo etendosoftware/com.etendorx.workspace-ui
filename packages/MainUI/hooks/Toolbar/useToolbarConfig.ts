@@ -97,9 +97,8 @@ export const useToolbarConfig = ({
   }, []);
 
   const { tab } = useTabContext();
-  const { activeWindow, clearSelectedRecord, getSelectedRecord, setSelectedRecord, setTabFormState } =
-    useWindowContext();
-  const { graph } = useSelected();
+  const { clearSelectedRecord, getSelectedRecord, setSelectedRecord, setTabFormState } = useWindowContext();
+  const { graph, windowIdentifier } = useSelected();
 
   const selectedMultiple = useSelectedRecords(tab);
   const selectedRecord = useSelectedRecord(tab);
@@ -107,9 +106,9 @@ export const useToolbarConfig = ({
   const { triggerParentRefreshes } = useTabRefreshContext();
 
   const selectedRecordId = useMemo(() => {
-    if (!activeWindow?.windowIdentifier || !tab) return null;
-    return getSelectedRecord(activeWindow.windowIdentifier, tab.id);
-  }, [activeWindow?.windowIdentifier, tab, getSelectedRecord]);
+    if (!windowIdentifier || !tab) return null;
+    return getSelectedRecord(windowIdentifier, tab.id);
+  }, [windowIdentifier, tab, getSelectedRecord]);
 
   const selectedIds = useMemo(() => {
     if (selectedMultiple.length > 0) {
@@ -153,8 +152,8 @@ export const useToolbarConfig = ({
         onAfterClose: () => {
           setIsDeleting(false);
 
-          if (activeWindow?.windowIdentifier && tab) {
-            clearSelectedRecord(activeWindow.windowIdentifier, tab.id);
+          if (windowIdentifier && tab) {
+            clearSelectedRecord(windowIdentifier, tab.id);
             graph.clearSelected(tab);
             graph.clearSelectedMultiple(tab);
           }
@@ -231,7 +230,7 @@ export const useToolbarConfig = ({
     }
   }, []);
   const handleCopyRecord = useCallback(() => {
-    if (!tab || !activeWindow || isEmptyArray(selectedIds)) return;
+    if (!tab || !windowIdentifier || isEmptyArray(selectedIds)) return;
 
     const isComplexClone = tab.obuiappCloneChildren;
     const title = t("common.confirm");
@@ -239,9 +238,8 @@ export const useToolbarConfig = ({
 
     const handleRequest = async (cloneWithChildren: boolean) => {
       setActionModal((prev) => ({ ...prev, isLoading: true }));
-      const windowIdentifier = activeWindow?.windowIdentifier;
 
-      const { ok, data } = await copyRecordRequest(tab, selectedIds, activeWindow.windowId, cloneWithChildren);
+      const { ok, data } = await copyRecordRequest(tab, selectedIds, tab.window, cloneWithChildren);
 
       setActionModal((prev) => ({ ...prev, isLoading: false, isOpen: false }));
 
@@ -332,7 +330,7 @@ export const useToolbarConfig = ({
   }, [
     tab,
     selectedIds,
-    activeWindow,
+    windowIdentifier,
     t,
     closeActionModal,
     showErrorModal,

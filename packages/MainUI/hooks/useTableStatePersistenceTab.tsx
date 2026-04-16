@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import type { MRT_ColumnFiltersState, MRT_VisibilityState, MRT_SortingState } from "material-react-table";
 import { useWindowContext } from "@/contexts/window";
 import { getNewActiveLevels, getNewActiveTabsByLevel } from "@/utils/table/utils";
@@ -66,25 +66,27 @@ export const useTableStatePersistenceTab = ({
     setNavigationActiveTabsByLevel,
   } = useWindowContext();
 
-  // Get current state values
-  const currentTableState = useMemo(
-    () => getTableState(windowIdentifier, tabId),
-    [windowIdentifier, tabId, getTableState]
-  );
+  // Get current state values — called directly (no useMemo) so we always read
+  // from stateRef on every render.  getTableState / getNavigationState are now
+  // stable callbacks that read through a ref, so the returned object reference
+  // only changes when the underlying data actually changed.  This means:
+  //   • On window switch: same tab-state object → no downstream effect reruns.
+  //   • On filter/sort update: new tab-state object → downstream effects DO rerun.
+  const currentTableState = getTableState(windowIdentifier, tabId);
+  const currentNavigationState = getNavigationState(windowIdentifier);
 
-  const currentNavigationState = useMemo(
-    () => getNavigationState(windowIdentifier),
-    [windowIdentifier, getNavigationState]
-  );
-
-  // Create React-style setters that support both direct values and updater functions
+  // ---------------------------------------------------------------------------
+  // Stable setter callbacks — getTableState / getNavigationState are now stable
+  // (they read through a ref), so they are safe to call inside setters without
+  // being listed as reactive deps.
+  // ---------------------------------------------------------------------------
   const setTableColumnFilters = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
       const currentFilters = getTableState(windowIdentifier, tabId).filters;
       const newFilters = typeof updaterOrValue === "function" ? updaterOrValue(currentFilters) : updaterOrValue;
       setTableFilters(windowIdentifier, tabId, newFilters, tabLevel);
     },
-    [windowIdentifier, tabId, tabLevel, getTableState, setTableFilters]
+    [windowIdentifier, tabId, tabLevel, setTableFilters] // getTableState omitted — stable ref-reader
   );
 
   const setTableColumnVisibility = useCallback(
@@ -93,7 +95,7 @@ export const useTableStatePersistenceTab = ({
       const newVisibility = typeof updaterOrValue === "function" ? updaterOrValue(currentVisibility) : updaterOrValue;
       setTableVisibility(windowIdentifier, tabId, newVisibility, tabLevel);
     },
-    [windowIdentifier, tabId, tabLevel, getTableState, setTableVisibility]
+    [windowIdentifier, tabId, tabLevel, setTableVisibility]
   );
 
   const setTableColumnSorting = useCallback(
@@ -102,7 +104,7 @@ export const useTableStatePersistenceTab = ({
       const newSorting = typeof updaterOrValue === "function" ? updaterOrValue(currentSorting) : updaterOrValue;
       setTableSorting(windowIdentifier, tabId, newSorting, tabLevel);
     },
-    [windowIdentifier, tabId, tabLevel, getTableState, setTableSorting]
+    [windowIdentifier, tabId, tabLevel, setTableSorting]
   );
 
   const setTableColumnOrder = useCallback(
@@ -111,7 +113,7 @@ export const useTableStatePersistenceTab = ({
       const newOrder = typeof updaterOrValue === "function" ? updaterOrValue(currentOrder) : updaterOrValue;
       setTableOrder(windowIdentifier, tabId, newOrder, tabLevel);
     },
-    [windowIdentifier, tabId, tabLevel, getTableState, setTableOrder]
+    [windowIdentifier, tabId, tabLevel, setTableOrder]
   );
 
   const setIsImplicitFilterApplied = useCallback(
@@ -134,7 +136,7 @@ export const useTableStatePersistenceTab = ({
       const newActiveLevels = getNewActiveLevels(currentActiveLevels, level, expand);
       setNavigationActiveLevels(windowIdentifier, newActiveLevels);
     },
-    [windowIdentifier, getNavigationState, setNavigationActiveLevels]
+    [windowIdentifier, setNavigationActiveLevels] // getNavigationState omitted — stable ref-reader
   );
 
   const setActiveTabsByLevel = useCallback(
@@ -147,7 +149,7 @@ export const useTableStatePersistenceTab = ({
       const newActiveTabs = getNewActiveTabsByLevel(currentActiveTabsByLevel, tab.tabLevel, tab.id);
       setNavigationActiveTabsByLevel(windowIdentifier, newActiveTabs);
     },
-    [windowIdentifier, getNavigationState, setNavigationActiveTabsByLevel]
+    [windowIdentifier, setNavigationActiveTabsByLevel]
   );
 
   return {

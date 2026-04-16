@@ -33,6 +33,8 @@ import type { WindowState } from "@/utils/window/constants";
 const mockMetadataContext = {
   error: null,
   loading: false,
+  isWindowLoading: jest.fn().mockReturnValue(false),
+  getWindowError: jest.fn().mockReturnValue(undefined),
   getWindowMetadata: jest.fn().mockReturnValue({
     id: "TestWindow",
     name: "Test Window",
@@ -80,11 +82,9 @@ jest.mock("../../../hooks/useGlobalUrlStateRecovery", () => ({
   }),
 }));
 
-// Mock useWindowContext hook
+// Mock window contexts
 jest.mock("../../../contexts/window", () => ({
   useWindowContext: () => ({
-    activeWindow: null,
-    windows: [],
     setSelectedRecord: jest.fn(),
     clearSelectedRecord: jest.fn(),
     getSelectedRecord: jest.fn(() => undefined),
@@ -104,8 +104,14 @@ jest.mock("../../../contexts/window", () => ({
     getTab: jest.fn(() => undefined),
     setTabFormState: jest.fn(),
     clearTabFormState: jest.fn(),
+  }),
+  useWindowListContext: () => ({
+    activeWindow: null,
+    windows: [],
+    isHomeRoute: false,
     isRecoveryLoading: false,
-    setIsRecoveryLoading: jest.fn(),
+    recoveryError: null,
+    triggerRecovery: jest.fn(),
   }),
 }));
 
@@ -185,6 +191,8 @@ describe("Window Component Multi-Window Instance Support", () => {
     Object.assign(mockMetadataContext, {
       error: null,
       loading: false,
+      isWindowLoading: jest.fn().mockReturnValue(false),
+      getWindowError: jest.fn().mockReturnValue(undefined),
       getWindowMetadata: jest.fn().mockReturnValue({
         id: "TestWindow",
         name: "Test Window",
@@ -281,7 +289,9 @@ describe("Window Component Multi-Window Instance Support", () => {
       // Set loading state
       Object.assign(mockMetadataContext, {
         error: null,
-        loading: true,
+        loading: false,
+        isWindowLoading: jest.fn().mockReturnValue(true),
+        getWindowError: jest.fn().mockReturnValue(undefined),
         getWindowMetadata: jest.fn().mockReturnValue(undefined),
         loadWindowData: jest.fn().mockResolvedValue({}),
       });
@@ -297,8 +307,10 @@ describe("Window Component Multi-Window Instance Support", () => {
 
       // Set error state - but keep windowData available so !windowData doesn't trigger loading
       Object.assign(mockMetadataContext, {
-        error: testError,
+        error: null,
         loading: false,
+        isWindowLoading: jest.fn().mockReturnValue(false),
+        getWindowError: jest.fn().mockReturnValue(testError),
         getWindowMetadata: jest.fn().mockReturnValue({
           id: "TestWindow",
           name: "Test Window",

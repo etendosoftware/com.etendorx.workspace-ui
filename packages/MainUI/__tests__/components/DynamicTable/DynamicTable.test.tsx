@@ -190,6 +190,8 @@ const mockSelectedContext = {
     setRecords: jest.fn(),
     getRecord: jest.fn().mockReturnValue(null),
   },
+  windowId: "test-window-id",
+  windowIdentifier: "test-window-id_123456789",
 };
 
 const mockMultiWindowURL = {

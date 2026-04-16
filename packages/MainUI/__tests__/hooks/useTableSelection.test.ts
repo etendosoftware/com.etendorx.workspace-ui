@@ -146,6 +146,8 @@ beforeEach(() => {
 
   mockUseSelected.mockReturnValue({
     graph: mockGraph,
+    windowId: "window1",
+    windowIdentifier: "window1_123456789",
     activeLevels: [0],
     tabStates: {},
     setActiveLevel: jest.fn(),

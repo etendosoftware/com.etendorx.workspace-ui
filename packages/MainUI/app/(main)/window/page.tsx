@@ -17,18 +17,52 @@
 // @data-testid-ignore
 "use client";
 import WindowTabs from "@/components/NavigationTabs/WindowTabs";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowListContext } from "@/contexts/window";
 import Home from "@/screens/Home";
 import Window from "@/components/window/Window";
 import TabsProvider from "@/contexts/tabs";
 import Loading from "@/components/loading";
+import { useState, useEffect } from "react";
 
 export default function Page() {
-  const { windows, activeWindow, isHomeRoute, isRecoveryLoading } = useWindowContext();
+  const { windows, activeWindow, isHomeRoute, isRecoveryLoading } = useWindowListContext();
+
+  /**
+   * Tracks which windows have been mounted at least once.
+   * Windows are lazily added on first activation and remain mounted (even when inactive)
+   * so their React component tree — and therefore all component-local state — is preserved
+   * across tab switches. Inactive windows are visually hidden with CSS but never unmounted.
+   */
+  const [mountedWindows, setMountedWindows] = useState<Set<string>>(new Set());
+
+  // Mount a window the first time it becomes active
+  useEffect(() => {
+    if (activeWindow && !isHomeRoute) {
+      setMountedWindows((prev) => {
+        if (prev.has(activeWindow.windowIdentifier)) return prev;
+        return new Set(prev).add(activeWindow.windowIdentifier);
+      });
+    }
+  }, [activeWindow, isHomeRoute]);
+
+  // Remove windows from the mounted set when they are closed
+  useEffect(() => {
+    setMountedWindows((prev) => {
+      const openIds = new Set(windows.map((w) => w.windowIdentifier));
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (openIds.has(id)) {
+          next.add(id);
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [windows]);
 
   const shouldShowTabs = windows.length > 0;
-
-  const shouldShowWindow = activeWindow && !isHomeRoute;
 
   if (isRecoveryLoading && !activeWindow) {
     return <Loading data-testid="Loading__Recovery" />;
@@ -41,11 +75,28 @@ export default function Page() {
           <WindowTabs data-testid={`WindowTabs__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
         </TabsProvider>
       )}
-      {shouldShowWindow ? (
-        <Window window={activeWindow} data-testid={`Window__${activeWindow.windowIdentifier}`} />
-      ) : (
+      {(!activeWindow || isHomeRoute) && (
         <Home data-testid={`Home__${activeWindow?.windowIdentifier ?? "351d9c"}`} />
       )}
+      {windows
+        .filter((w) => mountedWindows.has(w.windowIdentifier))
+        .map((w) => {
+          const isVisible = w.isActive && !isHomeRoute;
+          return (
+            <div
+              key={w.windowIdentifier}
+              /**
+               * Use `contents` for the active window so it participates directly in the
+               * outer flex layout (same as the original single-Window render).
+               * Use `hidden` (display:none) for inactive windows to remove them from
+               * layout entirely while keeping the React subtree alive in memory.
+               */
+              className={isVisible ? "contents" : "hidden"}
+            >
+              <Window window={w} data-testid={`Window__${w.windowIdentifier}`} />
+            </div>
+          );
+        })}
     </div>
   );
 }

@@ -26,14 +26,23 @@ import TabsContainer from "@/components/window/TabsContainer";
 import { useState, useEffect, useMemo, useRef } from "react";
 import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import type { WindowState } from "@/utils/window/constants";
-import { useWindowContext } from "@/contexts/window";
+import { useWindowListContext } from "@/contexts/window";
 
 export default function Window({ window }: { window: WindowState }) {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const { windowId, windowIdentifier } = window;
-  const { error, loading, getWindowMetadata } = useMetadataContext();
-  const { isRecoveryLoading, recoveryError } = useWindowContext();
+  const { getWindowMetadata, isWindowLoading, getWindowError } = useMetadataContext();
+  const { isRecoveryLoading, recoveryError } = useWindowListContext();
+
+  /**
+   * Use per-window loading/error state instead of the globally active window's state.
+   * This prevents hidden (background) windows from showing a loading spinner when a
+   * *different* window's metadata is being fetched, which would unmount their inner
+   * component trees and reset all in-flight state.
+   */
+  const loading = isWindowLoading(windowId);
+  const error = getWindowError(windowId);
 
   const { t } = useTranslation();
 

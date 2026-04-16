@@ -38,9 +38,9 @@ interface BreadcrumbProps {
 const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { t } = useTranslation();
   const pathname = usePathname();
-  const { window, windowId, windowIdentifier } = useMetadataContext();
-  const { activeWindow, getTabFormState, clearTabFormState, setAllWindowsInactive } = useWindowContext();
-  const { graph } = useSelected();
+  const { window, windowId } = useMetadataContext();
+  const { getTabFormState, clearTabFormState, setAllWindowsInactive, getSelectedRecord } = useWindowContext();
+  const { graph, windowIdentifier } = useSelected();
 
   const allTabsFormatted = useMemo(() => allTabs.flat(), [allTabs]);
   const currentTab = useMemo(() => {
@@ -62,8 +62,9 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   }, [allTabsFormatted, windowId, window]);
 
   const currentRecordId = useMemo(() => {
-    return activeWindow?.tabs[currentTab?.id || ""]?.selectedRecord;
-  }, [activeWindow, currentTab?.id]);
+    if (!windowIdentifier || !currentTab?.id) return undefined;
+    return getSelectedRecord(windowIdentifier, currentTab.id);
+  }, [windowIdentifier, currentTab?.id, getSelectedRecord]);
 
   const { record } = useCurrentRecord({
     tab: currentTab,

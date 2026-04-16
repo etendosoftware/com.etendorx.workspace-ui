@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { useWindowContext } from "../../../contexts/window";
+import { useWindowContext, useWindowListContext } from "../../../contexts/window";
 import { useTabs } from "../../../contexts/tabs";
 import { useTranslation } from "../../../hooks/useTranslation";
 import WindowTabs from "../../../components/NavigationTabs/WindowTabs";
@@ -61,6 +61,7 @@ jest.mock("@/components/NavigationTabs/MenuTabs", () => ({
 
 jest.mock("@/contexts/window", () => ({
   useWindowContext: jest.fn(),
+  useWindowListContext: jest.fn(),
 }));
 
 jest.mock("@/contexts/tabs", () => ({
@@ -80,6 +81,7 @@ import { useMetadataContext } from "../../../hooks/useMetadataContext";
 
 describe("WindowTabs", () => {
   const mockUseWindowContext = useWindowContext as jest.Mock;
+  const mockUseWindowListContext = useWindowListContext as jest.Mock;
   const mockUseTabs = useTabs as jest.Mock;
   const mockUseTranslation = useTranslation as jest.Mock;
   const mockUseMetadataContext = useMetadataContext as jest.Mock;
@@ -98,11 +100,15 @@ describe("WindowTabs", () => {
     });
 
     mockUseWindowContext.mockReturnValue({
-      windows: [],
-      isHomeRoute: true,
       cleanupWindow: mockCleanupWindow,
       setWindowActive: mockSetWindowActive,
       setAllWindowsInactive: mockSetAllWindowsInactive,
+    });
+
+    mockUseWindowListContext.mockReturnValue({
+      windows: [],
+      isHomeRoute: true,
+      activeWindow: null,
     });
 
     mockUseTabs.mockReturnValue({
@@ -131,8 +137,8 @@ describe("WindowTabs", () => {
   });
 
   it("renders home button correctly when isHomeRoute is false", () => {
-    mockUseWindowContext.mockReturnValue({
-      ...mockUseWindowContext(),
+    mockUseWindowListContext.mockReturnValue({
+      ...mockUseWindowListContext(),
       isHomeRoute: false,
     });
     render(<WindowTabs />);
@@ -152,8 +158,8 @@ describe("WindowTabs", () => {
       { windowIdentifier: "w1", title: "Window 1", isActive: true },
       { windowIdentifier: "w2", title: "Window 2", isActive: false },
     ];
-    mockUseWindowContext.mockReturnValue({
-      ...mockUseWindowContext(),
+    mockUseWindowListContext.mockReturnValue({
+      ...mockUseWindowListContext(),
       windows,
     });
 
@@ -167,8 +173,8 @@ describe("WindowTabs", () => {
 
   it("activates window when tab is clicked", () => {
     const windows = [{ windowIdentifier: "w1", title: "Window 1", isActive: false }];
-    mockUseWindowContext.mockReturnValue({
-      ...mockUseWindowContext(),
+    mockUseWindowListContext.mockReturnValue({
+      ...mockUseWindowListContext(),
       windows,
     });
 
@@ -183,8 +189,8 @@ describe("WindowTabs", () => {
       { windowIdentifier: "w1", title: "Window 1", isActive: true },
       { windowIdentifier: "w2", title: "Window 2", isActive: false },
     ];
-    mockUseWindowContext.mockReturnValue({
-      ...mockUseWindowContext(),
+    mockUseWindowListContext.mockReturnValue({
+      ...mockUseWindowListContext(),
       windows,
     });
 
@@ -198,8 +204,8 @@ describe("WindowTabs", () => {
 
   it("optimistically removes window from view when closed", async () => {
     const windows = [{ windowIdentifier: "w1", title: "Window 1", isActive: true }];
-    mockUseWindowContext.mockReturnValue({
-      ...mockUseWindowContext(),
+    mockUseWindowListContext.mockReturnValue({
+      ...mockUseWindowListContext(),
       windows,
     });
 

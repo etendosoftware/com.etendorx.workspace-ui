@@ -26,6 +26,7 @@ import { logger } from "@/utils/logger";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 import { useWindowContext } from "@/contexts/window";
+import { useSelected } from "@/hooks/useSelected";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 
 interface FormActionsProps {
@@ -41,7 +42,8 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode 
   const formContext = useFormContext();
   const { isDirty } = formContext.formState;
 
-  const { activeWindow, clearTabFormState } = useWindowContext();
+  const { clearTabFormState } = useWindowContext();
+  const { windowIdentifier } = useSelected();
   const { registerActions, setSaveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
   const { isFormInitializing, isSettingInitialValues } = useFormInitializationContext();
@@ -171,12 +173,11 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode 
   }, [refetch, resetFormChanges]);
 
   const handleBack = useCallback(() => {
-    const windowIdentifier = activeWindow?.windowIdentifier;
     if (windowIdentifier) {
       clearTabFormState(windowIdentifier, tab.id);
     }
     resetFormChanges();
-  }, [activeWindow?.windowIdentifier, clearTabFormState, tab, resetFormChanges]);
+  }, [windowIdentifier, clearTabFormState, tab, resetFormChanges]);
 
   const handleNew = useCallback(() => {
     onNew();

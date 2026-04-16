@@ -29,10 +29,10 @@ const mockGetTabFormState = jest.fn();
 
 jest.mock("@/contexts/window", () => ({
   useWindowContext: () => ({
-    activeWindow: { tabs: {} },
     getTabFormState: mockGetTabFormState,
     clearTabFormState: mockClearTabFormState,
     setAllWindowsInactive: mockSetAllWindowsInactive,
+    getSelectedRecord: jest.fn(),
   }),
 }));
 
@@ -42,6 +42,8 @@ jest.mock("@/hooks/useSelected", () => ({
       clear: jest.fn(),
       clearSelected: jest.fn(),
     },
+    windowId: "test-window-id",
+    windowIdentifier: "test-window-identifier",
   }),
 }));
 
