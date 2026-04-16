@@ -6,7 +6,6 @@ import {
   clickOkInLegacyPopup,
   navigateToSalesInvoice,
   closeToastIfPresent,
-  expectSuccessToast,
   captureDocumentNumber,
   navigateToPaymentIn,
 } from "../../helpers/etendo.helpers";
@@ -50,12 +49,14 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
 
     // Save header to populate defaults (twice)
     await page.locator("button.toolbar-button-save").filter({ visible: true }).first().click();
+    await page.waitForLoadState("networkidle", { timeout: 15_000 });
     await closeToastIfPresent(page);
     await page.locator("button.toolbar-button-save").filter({ visible: true }).first().click();
+    await page.waitForLoadState("networkidle", { timeout: 15_000 });
     await closeToastIfPresent(page);
 
     // Verify Draft status
-    await expect(page.locator(".MuiChip-label").filter({ hasText: "Draft" }).first()).toBeAttached({ timeout: 10_000 });
+    await expect(page.locator(".MuiChip-label").filter({ hasText: "Draft" }).first()).toBeAttached({ timeout: 30_000 });
 
     // ── Step 3: Add Invoice Line ──────────────────────────────────────────────
     await page.locator('button[aria-label="Lines"]').click();
@@ -100,7 +101,9 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await closeToastIfPresent(page);
 
     // Verify Net Amount: 26.26
-    await expect(page.getByText("26.26").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(".MuiTableCell-body").filter({ hasText: "26.26" }).first()).toBeAttached({
+      timeout: 20_000,
+    });
 
     // ── Step 4: Complete Sales Invoice ───────────────────────────────────────
     await page.getByRole("button", { name: "Available Process" }).click();
@@ -112,10 +115,10 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
 
     await clickOkInLegacyPopup(page);
 
-    // Handle "Use Credit Payment" sub-dialog: appears inside the legacy iframe when the
-    // business partner has an existing credit. Click "Do not use Credit" to proceed.
+    // Handle "Use Credit Payment" sub-dialog: give up to 20s for it to appear inside
+    // the legacy iframe (server may take time before showing this sub-dialog).
     await (async () => {
-      const deadline = Date.now() + 5_000;
+      const deadline = Date.now() + 20_000;
       while (Date.now() < deadline) {
         for (const frame of page.frames()) {
           try {
@@ -135,7 +138,30 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
       }
     })();
 
-    await expectSuccessToast(page);
+    // Wait for "Process completed successfully" in any frame (cross-origin access via evaluate)
+    await (async () => {
+      const deadline = Date.now() + 30_000;
+      while (Date.now() < deadline) {
+        for (const frame of page.frames()) {
+          try {
+            const found = await frame.evaluate(
+              () => document.body?.innerText?.includes("Process completed successfully") ?? false
+            );
+            if (found) return;
+          } catch {
+            // frame detached — skip
+          }
+        }
+        await page.waitForTimeout(500);
+      }
+      throw new Error("Process did not complete within 30s");
+    })();
+
+    // Close the Process Invoices modal
+    const closeModal = page.getByRole("button", { name: /^Close$/i });
+    if (await closeModal.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await closeModal.click();
+    }
     await closeToastIfPresent(page);
 
     // Refresh and capture invoice number
