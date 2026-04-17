@@ -1,7 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import TabsComponent from "./Tabs";
 import WindowProvider from "@/contexts/window";
-import React from "react";
 
 /**
  * Test helpers
