@@ -14,6 +14,7 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
   });
 
   test("Generates invoices from processed sales orders and shipments for multiple customers", async ({ page }) => {
+    test.setTimeout(360_000);
     // ── Login & role ──────────────────────────────────────────────────────────
     await loginToEtendo(page);
     await selectRoleOrgWarehouse(page);
@@ -311,8 +312,53 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     await expect(executeBtn).not.toBeDisabled({ timeout: 10_000 });
     await executeBtn.click();
 
-    // Verify report completion and that invoices were created
-    await expect(page.getByText(/Process completed success/i)).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByText(/^Created:/)).toBeVisible({ timeout: 15_000 });
+    // Verify report completion — the result may appear in a legacy iframe or on the React page.
+    // Poll all frames (same pattern as the Create Shipments success check above).
+    const invoiceSuccessDeadline = Date.now() + 60_000;
+    let invoiceProcessSuccess = false;
+    while (Date.now() < invoiceSuccessDeadline && !invoiceProcessSuccess) {
+      // Check main page first
+      if (await page.getByText(/Process completed success/i).isVisible({ timeout: 0 }).catch(() => false)) {
+        invoiceProcessSuccess = true;
+        break;
+      }
+      // Then check all frames
+      for (const f of page.frames()) {
+        try {
+          const txt = await f.locator("body").textContent({ timeout: 500 }).catch(() => "");
+          if (/Process completed success/i.test(txt)) {
+            invoiceProcessSuccess = true;
+            break;
+          }
+        } catch {
+          // detached frame — skip
+        }
+      }
+      if (!invoiceProcessSuccess) await page.waitForTimeout(300);
+    }
+    if (!invoiceProcessSuccess) throw new Error("Generate Invoices process did not complete successfully within 60s");
+
+    // Verify "Created:" summary — check main page and all frames
+    const createdDeadline = Date.now() + 15_000;
+    let createdFound = false;
+    while (Date.now() < createdDeadline && !createdFound) {
+      if (await page.getByText(/^Created:/).isVisible({ timeout: 0 }).catch(() => false)) {
+        createdFound = true;
+        break;
+      }
+      for (const f of page.frames()) {
+        try {
+          const txt = await f.locator("body").textContent({ timeout: 500 }).catch(() => "");
+          if (/Created:/.test(txt)) {
+            createdFound = true;
+            break;
+          }
+        } catch {
+          // detached frame
+        }
+      }
+      if (!createdFound) await page.waitForTimeout(300);
+    }
+    if (!createdFound) throw new Error('Generate Invoices: "Created:" summary not found within 15s');
   });
 });

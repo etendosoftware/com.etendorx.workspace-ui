@@ -96,15 +96,11 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
     await page.locator(".rounded-2xl").getByText("Book", { exact: true }).click();
 
     await clickOkInLegacyPopup(page);
-    await page.waitForTimeout(500);
-    await page
-      .locator('[data-testid="close-button"]')
-      .waitFor({ state: "visible", timeout: 10_000 })
-      .catch(() => null);
-    await page
-      .locator('[data-testid="close-button"]')
-      .click({ force: true })
-      .catch(() => null);
+    // Wait up to 30s — no catch so a failed Book is caught here, not silently downstream
+    await page.locator('[data-testid="close-button"]').waitFor({ state: "visible", timeout: 30_000 });
+    await page.locator('[data-testid="close-button"]').click();
+    // Ensure all background requests from Book complete before navigating away
+    await page.waitForLoadState("networkidle", { timeout: 15_000 });
     await closeToastIfPresent(page);
 
     // ── Step 7: Navigate to Goods Receipt ────────────────────────────────────
@@ -150,16 +146,11 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
     await page.locator(".rounded-2xl").getByText("Complete", { exact: true }).click();
 
     await clickOkInLegacyPopup(page);
-    // Close the process modal regardless of success/error (matching Cypress behavior)
-    await page.waitForTimeout(500);
-    await page
-      .locator('[data-testid="close-button"]')
-      .waitFor({ state: "visible", timeout: 10_000 })
-      .catch(() => null);
-    await page
-      .locator('[data-testid="close-button"]')
-      .click({ force: true })
-      .catch(() => null);
+    // Wait up to 30s — no catch so a failed Complete is caught here, not silently downstream
+    await page.locator('[data-testid="close-button"]').waitFor({ state: "visible", timeout: 30_000 });
+    await page.locator('[data-testid="close-button"]').click();
+    // Ensure all background requests from Complete finish before navigating away
+    await page.waitForLoadState("networkidle", { timeout: 15_000 });
     await closeToastIfPresent(page);
 
     // ── Step 10: Navigate to Purchase Invoice ─────────────────────────────────
@@ -197,9 +188,9 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
     await page.locator('[data-testid="IconButtonWithText__process-menu"]').first().click();
     await page.locator(".rounded-2xl").getByText("Create Lines From Order", { exact: true }).click();
 
-    // Filter the table by order number and wait for the datasource response
-    // Use .last() — two inputs render (label + actual input); the last visible one is the active filter
-    const filterInput = page.locator('input.w-full[placeholder="Filter Document No...."]').last();
+    // Filter the table by order number and wait for the datasource response.
+    // Use .filter({ visible: true }).first() — mirrors Cypress .filter(":visible"); avoids selecting a hidden label input.
+    const filterInput = page.locator('input.w-full[placeholder="Filter Document No...."]').filter({ visible: true }).first();
     await filterInput.waitFor({ state: "visible", timeout: 15_000 });
     const datasourceDone = page.waitForResponse(/api\/datasource/, { timeout: 30_000 });
     await filterInput.clear();
@@ -207,9 +198,11 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
     await filterInput.press("Enter");
     await datasourceDone;
 
-    // Select the matching row
-    await page.locator(`text=${orderNumber}`).first().waitFor({ state: "visible", timeout: 20_000 });
-    await page.locator("tr").filter({ hasText: orderNumber }).locator('input[type="checkbox"]').check();
+    // The row may be in the DOM but off-screen (virtualized) — use "attached" then scroll before checking.
+    const orderRow = page.locator("tr").filter({ hasText: orderNumber }).first();
+    await orderRow.waitFor({ state: "attached", timeout: 20_000 });
+    await orderRow.locator('input[type="checkbox"]').scrollIntoViewIfNeeded();
+    await orderRow.locator('input[type="checkbox"]').check({ force: true });
 
     await page.locator('[data-testid="ExecuteButton__761503"]').click();
     // Wait for the React modal to close
@@ -223,32 +216,24 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
     await page.locator(".rounded-2xl").getByText("Complete", { exact: true }).click();
 
     await clickOkInLegacyPopup(page);
-    await page.waitForTimeout(500);
-    await page
-      .locator('[data-testid="close-button"]')
-      .waitFor({ state: "visible", timeout: 10_000 })
-      .catch(() => null);
-    await page
-      .locator('[data-testid="close-button"]')
-      .click({ force: true })
-      .catch(() => null);
+    await page.locator('[data-testid="close-button"]').waitFor({ state: "visible", timeout: 30_000 });
+    await page.locator('[data-testid="close-button"]').click();
+    await page.waitForLoadState("networkidle", { timeout: 15_000 });
     await closeToastIfPresent(page);
 
     // ── Step 13: Post Invoice ─────────────────────────────────────────────────
-    // After Complete, the page is already at the header level — no back-navigation needed
+    // Cypress navigates back to header level via IconButton__25D1FA357A484AE38A3E2382889198FE before Post
+    await page
+      .locator('[data-testid="IconButton__25D1FA357A484AE38A3E2382889198FE"]')
+      .first()
+      .click()
+      .catch(() => null); // button may not exist if already at header level
     await page.locator('[data-testid="IconButtonWithText__process-menu"] > span').click();
     await page.locator(".rounded-2xl").getByText("Post", { exact: true }).click();
 
     await clickOkInLegacyPopup(page);
-    await page.waitForTimeout(500);
-    await page
-      .locator('[data-testid="close-button"]')
-      .waitFor({ state: "visible", timeout: 10_000 })
-      .catch(() => null);
-    await page
-      .locator('[data-testid="close-button"]')
-      .click({ force: true })
-      .catch(() => null);
+    await page.locator('[data-testid="close-button"]').waitFor({ state: "visible", timeout: 30_000 });
+    await page.locator('[data-testid="close-button"]').click();
     await closeToastIfPresent(page);
   });
 });
