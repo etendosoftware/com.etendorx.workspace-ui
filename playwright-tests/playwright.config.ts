@@ -34,7 +34,7 @@ export default defineConfig({
   // All tests share a single Etendo instance. Suites run group-by-group via
   // project dependencies so no two groups overlap. Within each group, up to 3
   // workers run spec files in parallel.
-  workers: 1,
+  workers: 2,
   fullyParallel: false,
 
   use: {
