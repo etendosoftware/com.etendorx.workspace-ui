@@ -87,7 +87,7 @@ test.describe("Sales Orders - Create, Complete and Close", () => {
     await page.waitForTimeout(1_000);
 
     // Save line (index 1 = save button inside the Lines tab toolbar)
-    await page.locator("button.toolbar-button-save").nth(1).click();
+    await page.locator("button.toolbar-button-save").last().click();
     await closeToastIfPresent(page);
 
     // ── Step 5: Process Order (Book) ──────────────────────────────────────────

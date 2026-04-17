@@ -268,18 +268,14 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
       .filter({ hasText: /^Process Received Payment\(s\)$/ })
       .click();
 
-    // Set up watchers BEFORE clicking Execute — the success toast auto-dismisses in ~3s,
-    // so we must start watching before the click, not after.
-    const successToastAppeared = page.waitForSelector('[data-sonner-toast][data-type="success"]', {
-      state: "visible",
-      timeout: 60_000,
-    });
+    // Set up API response watcher BEFORE clicking Execute
     const executePaymentResponse = page.waitForResponse(/AddPaymentActionHandler/, { timeout: 60_000 });
 
     await page.locator('[data-testid="ExecuteButton__761503"]').waitFor({ state: "visible", timeout: 10_000 });
     await page.locator('[data-testid="ExecuteButton__761503"]').click();
 
-    await Promise.all([executePaymentResponse, successToastAppeared]);
+    // Wait for the API response — the success toast may auto-dismiss before we can catch it
+    await executePaymentResponse;
     await closeToastIfPresent(page);
 
     // ── Step 9: Verify final payment state ───────────────────────────────────

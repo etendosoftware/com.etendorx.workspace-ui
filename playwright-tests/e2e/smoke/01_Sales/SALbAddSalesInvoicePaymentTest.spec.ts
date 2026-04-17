@@ -104,8 +104,8 @@ test.describe("Sales Order Automation - Complete Flow", () => {
     // Wait for the form to re-initialize with product data
     await page.waitForTimeout(1_500);
 
-    // Save line (using index 1 as it is the save button of the lines tab)
-    await page.locator("button.toolbar-button-save").nth(1).click();
+    // Save line — .last() targets the Lines toolbar save button (header save is disabled while editing a line)
+    await page.locator("button.toolbar-button-save").last().click();
     await closeToastIfPresent(page);
 
     // ── Step 5: Process the Order (Book) ──────────────────────────────────────

@@ -311,11 +311,12 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     await page.waitForTimeout(1_500);
 
     // Select Invoice A row (use .first() in case the invoice has multiple payment plan lines)
+    // MUI DataGrid virtualizes rows — use "attached" instead of "visible" to avoid flakiness
     const rowA = page
       .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
       .filter({ hasText: invoiceNumberA })
       .first();
-    await rowA.waitFor({ state: "visible", timeout: 15_000 });
+    await rowA.waitFor({ state: "attached", timeout: 15_000 });
     await rowA.locator('input[aria-label="Toggle select row"]').scrollIntoViewIfNeeded();
     await rowA.locator('input[aria-label="Toggle select row"]').click({ force: true });
     await expect(rowA.locator('input[aria-label="Toggle select row"]')).toBeChecked({ timeout: 10_000 });
@@ -330,7 +331,7 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
       .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
       .filter({ hasText: invoiceNumberB })
       .first();
-    await rowB.waitFor({ state: "visible", timeout: 15_000 });
+    await rowB.waitFor({ state: "attached", timeout: 15_000 });
     await rowB.locator('input[aria-label="Toggle select row"]').scrollIntoViewIfNeeded();
     await rowB.locator('input[aria-label="Toggle select row"]').click({ force: true });
     await expect(rowB.locator('input[aria-label="Toggle select row"]')).toBeChecked({ timeout: 10_000 });

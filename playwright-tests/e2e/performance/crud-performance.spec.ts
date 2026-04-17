@@ -55,7 +55,12 @@ async function openWindowBySearch(page: Page, searchText: string, menuTestId: st
   // keyboard.type() writes into the focused element without actionability pre-checks.
   await page.keyboard.type(searchText);
   await page.locator(`[data-testid="${menuTestId}"]`).waitFor({ state: "visible", timeout: 10_000 });
-  await page.locator(`[data-testid="${menuTestId}"] > .flex.overflow-hidden > .relative > .ml-2`).click();
+  await page
+    .waitForFunction(() => !document.querySelector("div.absolute.h-screen.w-screen"), { timeout: 20_000 })
+    .catch(() => null);
+  await page
+    .locator(`[data-testid="${menuTestId}"] > .flex.overflow-hidden > .relative > .ml-2`)
+    .evaluate((el) => (el as HTMLElement).click());
 }
 
 // ─── Suite ────────────────────────────────────────────────────────────────────

@@ -181,11 +181,20 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
     await page.waitForTimeout(500);
 
     // Transaction Type: BP Withdrawal
+    // The dropdown has a search input that intercepts pointer events on options,
+    // so we use keyboard navigation (ArrowDown + Enter) instead of clicking the option directly.
     await page.locator('[data-testid="ChevronDown__7019E1AFE07B44309AE2F0C6629C1251"]').click({ force: true });
-    await page.waitForTimeout(500);
-    await page.locator('[data-testid="OptionItem__BPW"]').scrollIntoViewIfNeeded();
-    await page.locator('[data-testid="OptionItem__BPW"]').click({ force: true });
-    await page.waitForTimeout(500);
+    const txTypeSearch = page.locator('input[aria-label="Search options"]');
+    await txTypeSearch.waitFor({ state: "visible", timeout: 10_000 });
+    await txTypeSearch.fill("BP Withdrawal");
+    await page.locator('[data-testid="OptionItem__BPW"]').waitFor({ state: "visible", timeout: 10_000 });
+    await txTypeSearch.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    // Wait for the transactionType dropdown portal to close before clicking Payment
+    await page
+      .locator('[data-dropdown-portal="dropdown-transactionType"]')
+      .waitFor({ state: "hidden", timeout: 10_000 })
+      .catch(() => null);
 
     // Link with Payment Number from Step 5
     await page.locator('[aria-label="Payment"] > div[tabindex="0"]').click();

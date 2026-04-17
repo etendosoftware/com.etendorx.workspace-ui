@@ -106,7 +106,8 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     const lineSaveResponse = page
       .waitForResponse(/org\.openbravo\.service\.json\.JsonRestServlet/, { timeout: 15_000 })
       .catch(() => null);
-    await page.locator("button.toolbar-button-save").nth(1).click();
+    // .last() targets the Lines toolbar save button (header save is disabled while editing a line)
+    await page.locator("button.toolbar-button-save").last().click();
     await lineSaveResponse; // wait for backend to confirm the line was persisted
     await closeToastIfPresent(page);
 
@@ -217,9 +218,11 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
       }
     });
 
-    // The form uses a frameset: parameters (#paramDateFrom) and results (inpOrder checkboxes)
-    // may be in sibling <frame> elements. Iterate ALL page frames to find the results frame
-    // — mirrors Cypress interactWithLegacyIframe which iterates each <frame> contentDocument.
+    // Wait for results to load after Search click
+    await page.waitForTimeout(2_000);
+
+    // Find the frame that has the inpOrder checkboxes (the results frame in the frameset).
+    // Both checkboxes and Process button live in this same frame.
     let resultsFrame: Frame = processFrame;
     const cbDeadline = Date.now() + 15_000;
     outer: while (Date.now() < cbDeadline) {
@@ -236,39 +239,23 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
       await page.waitForTimeout(300);
     }
 
-    // Select all order checkboxes via native DOM click — mirrors Cypress selectLegacyCheckboxes
+    // Select checkboxes — mirrors Cypress selectLegacyCheckboxes(name, leaveLastUnchecked=true)
     await resultsFrame.evaluate(() => {
       const checkboxes = Array.from(
         document.querySelectorAll<HTMLInputElement>('input[type="checkbox"][name="inpOrder"]')
       );
-      // Leave the last one unchecked — matches Cypress selectLegacyCheckboxes(name, leaveLastUnchecked=true)
       const limit = checkboxes.length > 1 ? checkboxes.length - 1 : checkboxes.length;
       checkboxes.slice(0, limit).forEach((cb) => cb.click());
     });
+    await page.waitForTimeout(500);
 
-    // Etendo classic renders Process as td.Button_text — not a real <button>, so getByRole fails.
-    // Iterate all frames (mirrors Cypress clickLegacyButton) to find and click it.
-    await page.evaluate(() => {
-      const allDocs: Document[] = [document];
-      document.querySelectorAll("iframe").forEach((iframe) => {
-        try {
-          if (iframe.contentDocument) {
-            allDocs.push(iframe.contentDocument);
-            iframe.contentDocument.querySelectorAll("frame").forEach((f) => {
-              if (f.contentDocument) allDocs.push(f.contentDocument);
-            });
-          }
-        } catch {
-          /* cross-origin */
-        }
-      });
-      for (const doc of allDocs) {
-        const btns = doc.querySelectorAll<HTMLElement>('td.Button_text, button, input[type="button"]');
-        for (const btn of btns) {
-          if (btn.textContent?.trim() === "Process" || (btn as HTMLInputElement).value === "Process") {
-            btn.click();
-            return;
-          }
+    // Process button is in the same results frame — mirrors Cypress clickLegacyButton("Process")
+    await resultsFrame.evaluate(() => {
+      const btns = document.querySelectorAll<HTMLElement>('td.Button_text, button, input[type="button"], input[type="submit"]');
+      for (const btn of btns) {
+        if (btn.textContent?.trim() === "Process" || (btn as HTMLInputElement).value === "Process") {
+          btn.click();
+          return;
         }
       }
     });

@@ -46,9 +46,16 @@ test.describe.skip("Purchase Order with advance payment flow @smoke", () => {
       .locator('[aria-label="Product"]')
       .locator('div[tabindex="0"]')
       .waitFor({ state: "visible", timeout: 10_000 });
-    const formInitDone = page.waitForResponse(/FormInitializationComponent/, { timeout: 30_000 }).catch(() => null);
     await page.locator('[aria-label="Product"]').locator('div[tabindex="0"]').click();
-    await page.locator('[data-testid^="OptionItem__"]').first().waitFor({ state: "visible", timeout: 15_000 });
+    const productSearch = page.locator('input[aria-label="Search options"]');
+    if (await productSearch.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await productSearch.fill("Raw material");
+      await page.waitForTimeout(500);
+    }
+    await page
+      .locator('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"]')
+      .waitFor({ state: "visible", timeout: 15_000 });
+    const formInitDone = page.waitForResponse(/FormInitializationComponent/, { timeout: 30_000 }).catch(() => null);
     await page
       .locator('[data-testid="OptionItem__4028E6C72959682B01295ADC1AD40222"] > .truncate')
       .click({ force: true });
