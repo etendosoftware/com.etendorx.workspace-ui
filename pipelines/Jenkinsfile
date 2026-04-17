@@ -237,6 +237,7 @@ OMIT_PATTERNS=(
   "package.json"
   "pnpm-lock.yaml"
   "coverage-merged/"
+  "packages/MainUI/next-env.d.ts"
 )
 
 # Build a regex alternation like: package.json|pnpm-lock.yaml|coverage-merged/
