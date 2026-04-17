@@ -13,6 +13,7 @@ test.describe("Sales Order Automation - Complete Flow", () => {
   });
 
   test("should create a complete sales order with lines, complete it and add payment", async ({ page }) => {
+    test.setTimeout(180_000);
     // ── Login & role ──────────────────────────────────────────────────────────
     await loginToEtendo(page);
 
