@@ -44,6 +44,7 @@ skills-lock.json
 # Nextjs Turbo
 .turbo/
 packages/MainUI/next-env.d.ts.worktrees/
+.worktrees/
 
 # Github
 .github/agents/
