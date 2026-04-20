@@ -590,6 +590,79 @@ const en = {
     cancel: "Cancel",
     close: "Close",
   },
+  image: {
+    upload: {
+      titleNew: "Upload Image",
+      titleReplace: "Replace Image",
+      dropZoneText: "Drag and drop an image here, or click to select",
+      supportedFormats: "Supports JPG, PNG, GIF, SVG, WebP",
+      uploadButton: "Upload",
+      uploading: "Uploading...",
+      success: "Image uploaded successfully",
+      errors: {
+        invalidFile: "Please select an image file",
+        uploadFailed: "Upload failed",
+        parseIdFailed: "Failed to parse image ID from upload response",
+      },
+    },
+    preview: {
+      altText: "Preview",
+      zoomOut: "Zoom out",
+      zoomIn: "Zoom in",
+      resetZoom: "Reset zoom",
+      replaceImage: "Replace image",
+      deleteImage: "Delete image",
+      deleteConfirm: {
+        title: "Delete Image",
+        message: "Are you sure you want to remove this image?",
+      },
+    },
+    selector: {
+      clickToUpload: "Click to upload image",
+      noImage: "No image",
+      viewImage: "View image",
+      removeImage: "Remove image",
+      altText: "Image",
+    },
+    sizeConstraints: {
+      warn: {
+        ALLOWED: "The image size must be exactly {{width}}x{{height}} pixels.",
+        ALLOWED_MINIMUM: "The minimum image size is {{width}}x{{height}} pixels.",
+        ALLOWED_MAXIMUM: "The maximum image size is {{width}}x{{height}} pixels.",
+        RECOMMENDED: "For the best fit, it is recommended to use an image of exactly {{width}}x{{height}} pixels.",
+        RECOMMENDED_MINIMUM:
+          "For the best fit, it is recommended to use an image of at least {{width}}x{{height}} pixels.",
+        RECOMMENDED_MAXIMUM:
+          "For the best fit, it is recommended to use an image equal or smaller than {{width}}x{{height}} pixels.",
+        RESIZE_NOASPECTRATIO:
+          "The image will be resized to {{width}}x{{height}} pixels. To avoid distortion, it is recommended to upload an image with the same aspect ratio.",
+        RESIZE_ASPECTRATIO:
+          "The image will be resized to a maximum size of {{width}}x{{height}} pixels (maintaining the aspect ratio).",
+        RESIZE_ASPECTRATIONL:
+          "The image will be resized to a maximum size of {{width}}x{{height}} pixels (maintaining the aspect ratio) if it has a larger size.",
+      },
+      error: {
+        WRONGFORMAT: "Unsupported file format.\nSupported file formats are JPG, PNG, GIF, BMP and SVG.",
+        ERROR_UPLOADING: "Error uploading image: {{error}}",
+        ALLOWED:
+          "The size of the uploaded image ({{actualWidth}}x{{actualHeight}} pixels) is different than the required size ({{configWidth}}x{{configHeight}} pixels).",
+        ALLOWED_MINIMUM:
+          "The size of the uploaded image ({{actualWidth}}x{{actualHeight}} pixels) is smaller than the required minimum size ({{configWidth}}x{{configHeight}} pixels).",
+        ALLOWED_MAXIMUM:
+          "The size of the uploaded image ({{actualWidth}}x{{actualHeight}} pixels) is larger than the allowed maximum size ({{configWidth}}x{{configHeight}} pixels).",
+      },
+      confirm: {
+        RECOMMENDED:
+          "The uploaded image size ({{actualWidth}}x{{actualHeight}} pixels) has a different size than is recommended ({{configWidth}}x{{configHeight}} pixels).\nThis could result in an unwanted visual effect.\n\nDo you want to continue?",
+        RECOMMENDED_MINIMUM:
+          "The uploaded image size ({{actualWidth}}x{{actualHeight}} pixels) is smaller than is recommended ({{configWidth}}x{{configHeight}} pixels).\nThis could result in an unwanted visual effect.\n\nDo you want to continue?",
+        RECOMMENDED_MAXIMUM:
+          "The uploaded image size ({{actualWidth}}x{{actualHeight}} pixels) is larger than is recommended ({{configWidth}}x{{configHeight}} pixels).\nThis could result in an unwanted visual effect.\n\nDo you want to continue?",
+        RESIZE:
+          "Your {{originalWidth}}x{{originalHeight}} pixels uploaded image is going to be resized automatically to {{targetWidth}}x{{targetHeight}} pixels.\nThis could result in a loss of image quality.\n\nDo you want to continue?",
+      },
+    },
+  },
   packing: {
     title: "Packing Process",
     box: "Boxes",

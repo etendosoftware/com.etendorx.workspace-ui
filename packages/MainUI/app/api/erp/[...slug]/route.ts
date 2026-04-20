@@ -129,6 +129,7 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.startsWith("org.openbravo") ||
     slug.startsWith("etendo/") ||
     slug.startsWith("info/") ||
+    slug.startsWith("utility/ShowImage") ||
     method !== "GET"
   );
 }
