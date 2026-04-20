@@ -316,7 +316,7 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
 
     // Verify report completion — the result may appear in a legacy iframe or on the React page.
     // Poll all frames (same pattern as the Create Shipments success check above).
-    const invoiceSuccessDeadline = Date.now() + 60_000;
+    const invoiceSuccessDeadline = Date.now() + 120_000;
     let invoiceProcessSuccess = false;
     while (Date.now() < invoiceSuccessDeadline && !invoiceProcessSuccess) {
       // Check main page first

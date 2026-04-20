@@ -703,7 +703,13 @@ export function useProcessExecution({
     startTransition(async () => {
       try {
         const formValues = form.getValues();
-        const formParameters = buildProcessParameters(formValues, parameters);
+        const rawParameters = buildProcessParameters(formValues, parameters);
+        // Omit null/undefined values to match Classic UI behavior — sending explicit
+        // nulls to the backend process-execution endpoint causes the pInstance to
+        // never reach a terminal state (isProcessing stays true indefinitely).
+        const formParameters = Object.fromEntries(
+          Object.entries(rawParameters).filter(([, v]) => v !== null && v !== undefined)
+        );
 
         const response = await fetch("/api/process/report-and-process", {
           method: "POST",
@@ -725,7 +731,14 @@ export function useProcessExecution({
 
         const { pInstanceId } = await response.json();
 
+        const pollDeadline = Date.now() + 10 * 60 * 1000;
+
         const pollStatus = async (): Promise<void> => {
+          if (Date.now() > pollDeadline) {
+            setResult({ success: false, error: t("process.executionTimeout") });
+            return;
+          }
+
           const statusRes = await fetch(`/api/process/report-and-process/${pInstanceId}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
