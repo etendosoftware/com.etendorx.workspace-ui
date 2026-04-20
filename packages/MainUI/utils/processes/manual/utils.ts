@@ -43,6 +43,65 @@ import type {
   TargetObject,
   TransformableValue,
 } from "@/utils/processes/manual/types";
+import type { ProcessActionButton } from "@/components/ProcessModal/types";
+import type { ProcessAction } from "@workspaceui/api-client/src/api/types";
+
+/**
+ * Resolves the {@link ProcessActionData} needed to launch a legacy iframe process.
+ *
+ * Resolution order:
+ * 1. Backend params — if the API returned `url`, `command`, `keyColumnName`, and
+ *    `inpkeyColumnId` inside `button.processAction`, use those.
+ * 2. data.json fallback — look up `button.id` in the static mapping.
+ * 3. column-name fallback — search data.json for an entry whose `command` contains
+ *    the button's column name (existing heuristic).
+ * 4. Unresolvable — return `null`; callers should throw {@link LegacyProcessUnresolvedError}.
+ */
+export function resolveLegacyProcessData(
+  button: ProcessActionButton,
+  fallbackData: Record<string, ProcessActionData>
+): ProcessActionData | null {
+  const fromApi = tryResolveFromApi(button.processAction);
+  if (fromApi) {
+    return fromApi;
+  }
+
+  const fromJson = fallbackData[button.id];
+  if (fromJson) {
+    return fromJson;
+  }
+
+  const columnNameMatch = tryFallbackByColumnName(button, fallbackData);
+  if (columnNameMatch) {
+    return columnNameMatch;
+  }
+
+  return null;
+}
+
+function tryResolveFromApi(processAction: ProcessAction | undefined): ProcessActionData | null {
+  if (!processAction) {
+    return null;
+  }
+  const { url, command, keyColumnName, inpkeyColumnId } = processAction;
+  if (url && command && keyColumnName && inpkeyColumnId) {
+    return { url, command, keyColumnName, inpkeyColumnId };
+  }
+  return null;
+}
+
+function tryFallbackByColumnName(
+  button: ProcessActionButton,
+  fallbackData: Record<string, ProcessActionData>
+): ProcessActionData | null {
+  if (!button.columnName) {
+    return null;
+  }
+  const fallbackKey = Object.keys(fallbackData).find(
+    (key) => (fallbackData[key] as ProcessActionData).command?.includes(button.columnName as string)
+  );
+  return fallbackKey ? fallbackData[fallbackKey] : null;
+}
 
 export const getDocumentStatus = (record: Record<string, unknown>) => {
   return extractValue(record, DEFAULT_DOCUMENTS_KEYS, DEFAULT_DOC_STATUS);

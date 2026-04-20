@@ -31,8 +31,10 @@ import { UserContext } from "../../contexts/user";
 import { useRuntimeConfig } from "../../contexts/RuntimeConfigContext";
 import { useMetadataContext } from "../useMetadataContext";
 import type { ExecuteProcessDefinitionParams, ExecuteProcessParams } from "./types";
-import { getParams } from "@/utils/processes/manual/utils";
+import { getParams, resolveLegacyProcessData } from "@/utils/processes/manual/utils";
 import data from "@/utils/processes/manual/data.json";
+import type { ProcessActionData } from "@/utils/processes/manual/types";
+import { LegacyProcessUnresolvedError } from "@/utils/processes/manual/errors";
 import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 
 export function useProcessExecution() {
@@ -124,28 +126,27 @@ export function useProcessExecution() {
             throw new Error("Required data not found");
           }
 
-          let processAction = data[currentButtonId as keyof typeof data];
+          const processAction: ProcessActionData | null = resolveLegacyProcessData(
+            button,
+            data as Record<string, ProcessActionData>
+          );
 
           if (!processAction) {
-            // Fallback: If the exact Button ID (AD_Column_ID) is not mapped, try to find a mapped process
-            // that shares the same column name (e.g. Header button vs Line button for the same process).
-            const fallbackKey = Object.keys(data).find(
-              (key) => button.columnName && (data as any)[key].command?.includes(button.columnName)
-            );
-
-            if (fallbackKey) {
-              logger.warn(
-                `Button ID ${currentButtonId} not in data.json, falling back to ${fallbackKey} for column ${button.columnName}`
-              );
-              processAction = (data as any)[fallbackKey];
-            } else {
-              throw new Error(
-                `Button ID '${currentButtonId}' (${button.columnName}) not found in data.json manually mapped processes`
-              );
-            }
+            const resolveError = new LegacyProcessUnresolvedError(currentButtonId, button.columnName);
+            logger.error("[MANUAL_PROCESS] Cannot resolve legacy process params", {
+              buttonId: currentButtonId,
+              columnName: button.columnName,
+            });
+            throw resolveError;
           }
+
+          if (isDebugManualProcesses()) {
+            const source = button.processAction?.url ? "backend" : "fallback data.json";
+            logger.debug("[MANUAL_PROCESS] Params source", source);
+          }
+
           const baseUrl = `${publicHost}${API_IFRAME_FORWARD_PATH}${processAction.url}`;
-          const isPostedProcess = currentButtonId === "Posted";
+          const isPostedProcess = button.columnName === "Posted";
 
           const params = getParams({
             currentButtonId,

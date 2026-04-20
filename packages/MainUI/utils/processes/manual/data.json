@@ -1,79 +1,7 @@
 {
-  "8B59A07EB4C2475AE040007F010031CA": {
-    "url": "/org.openbravo.advpaymentmngt.ad_actionbutton/ProcessInvoice.html",
-    "command": "DEFAULT",
-    "inpkeyColumnId": "C_Invoice_ID",
-    "keyColumnName": "C_Invoice_ID"
-  },
-  "1083": {
-    "url": "/SalesOrder/Header_Edition.html",
-    "command": "BUTTONDocAction104",
-    "inpkeyColumnId": "C_Order_ID",
-    "keyColumnName": "C_Order_ID"
-  },
-  "B04327AC6B644FCBA9AA805EB59D572F": {
-    "url": "/org.openbravo.erpCommon.ad_actionButton/ProcessGoods.html",
-    "command": "DEFAULT",
-    "inpkeyColumnId": "M_InOut_ID",
-    "keyColumnName": "M_InOut_ID"
-  },
-  "3663": {
-    "url": "/SalesInvoice/Header_Edition.html",
-    "command": "BUTTONPosted",
-    "inpkeyColumnId": "C_Invoice_ID",
-    "keyColumnName": "C_Invoice_ID"
-  },
   "4242": {
     "url": "/ad_actionButton/CreateFrom.html",
     "command": "FIND_PO",
-    "inpkeyColumnId": "M_InOut_ID",
-    "keyColumnName": "M_InOut_ID"
-  },
-  "8B41C09A6C60ECB1E040007F01007817": {
-    "url": "/org.openbravo.advpaymentmngt.ad_actionbutton/ProcessInvoice.html",
-    "command": "DEFAULT",
-    "inpkeyColumnId": "C_Invoice_ID",
-    "keyColumnName": "C_Invoice_ID"
-  },
-  "3426": {
-    "url": "/PurchaseOrder/Header_Edition.html",
-    "command": "BUTTONDocAction104",
-    "inpkeyColumnId": "C_Order_ID",
-    "keyColumnName": "C_Order_ID"
-  },
-  "3670": {
-    "url": "/PurchaseInvoice/Header_Edition.html",
-    "command": "BUTTONPosted",
-    "inpkeyColumnId": "C_Invoice_ID",
-    "keyColumnName": "C_Invoice_ID"
-  },
-  "1004400026": {
-    "url": "/Requisition/Requisition_Edition.html",
-    "command": "BUTTONDocAction1004400003",
-    "inpkeyColumnId": "M_Requisition_ID",
-    "keyColumnName": "M_Requisition_ID"
-  },
-  "1004400045": {
-    "url": "/ManageRequisitions/Header_Edition.html",
-    "command": "BUTTONCreatepo1004400000",
-    "inpkeyColumnId": "M_Requisition_ID",
-    "keyColumnName": "M_Requisition_ID"
-  },
-  "1004400041": {
-    "url": "/ManageRequisitions/Header_Edition.html",
-    "command": "BUTTONDocAction1004400003",
-    "inpkeyColumnId": "M_Requisition_ID",
-    "keyColumnName": "M_Requisition_ID"
-  },
-  "3DE09F050A624C9D9E5477D0A94491A1": {
-    "url": "/org.openbravo.erpCommon.ad_actionButton/ProcessGoods.html",
-    "command": "DEFAULT",
-    "inpkeyColumnId": "M_InOut_ID",
-    "keyColumnName": "M_InOut_ID"
-  },
-  "4248": {
-    "url": "/GoodsReceipt/Header_Edition.html",
-    "command": "BUTTONCreateFrom",
     "inpkeyColumnId": "M_InOut_ID",
     "keyColumnName": "M_InOut_ID"
   },
@@ -95,42 +23,6 @@
     "inpkeyColumnId": "AD_Process_Request_ID",
     "keyColumnName": "AD_Process_Request_ID"
   },
-  "2922": {
-    "url": "/PhysicalInventory/Header_Edition.html",
-    "command": "BUTTONGenerateList105",
-    "inpkeyColumnId": "M_Inventory_ID",
-    "keyColumnName": "M_Inventory_ID"
-  },
-  "2897": {
-    "url": "/PriceList/PriceListVersion_Edition.html",
-    "command": "BUTTONProcCreate103",
-    "inpkeyColumnId": "M_PriceList_Version_ID",
-    "keyColumnName": "M_PriceList_Version_ID"
-  },
-  "2689": {
-    "url": "/PhysicalInventory/Header_Edition.html",
-    "command": "BUTTONProcessing107",
-    "inpkeyColumnId": "M_Inventory_ID",
-    "keyColumnName": "M_Inventory_ID"
-  },
-  "5126": {
-    "url": "/TablesandColumns/Table_Edition.html",
-    "command": "BUTTONImportTable173",
-    "inpkeyColumnId": "AD_Table_ID",
-    "keyColumnName": "AD_Table_ID"
-  },
-  "AF8B0E7A0FA24CF1AA7CE1207B5ACA4E": {
-    "url": "/EndYearClose/EndYearClose_Edition.html",
-    "command": "BUTTONProcessedEFDBF909811544DAAE4E876AA781E5DC",
-    "inpkeyColumnId": "C_Year_Close_V_ID",
-    "keyColumnName": "C_Year_Close_V_ID"
-  },
-  "801863": {
-    "url": "/WorkEffort/WorkEffort_Edition.html",
-    "command": "BUTTONValidating800106",
-    "inpkeyColumnId": "M_Production_ID",
-    "keyColumnName": "M_Production_ID"
-  },
   "A0417A0E9256CA28E040007F01003C18": {
     "url": "/org.openbravo.advpaymentmngt.ad_actionbutton/Reconciliation.html",
     "command": "DEFAULT",
@@ -148,17 +40,5 @@
     "additionalParameters": {
       "inpprocessed": "N"
     }
-  },
-  "A0417A0E9254CA28E040007F01003C18": {
-    "url": "/org.openbravo.advpaymentmngt.ad_actionbutton/ImportBankFile.html",
-    "command": "DEFAULT",
-    "inpkeyColumnId": "Fin_Financial_Account_ID",
-    "keyColumnName": "Fin_Financial_Account_ID"
-  },
-  "7DC34559B40AB45BE040007F0100784A": {
-    "url": "/org.openbravo.advpaymentmngt.ad_actionbutton/ProcessPaymentProposal.html",
-    "command": "DEFAULT",
-    "inpkeyColumnId": "Fin_Payment_Proposal_ID",
-    "keyColumnName": "Fin_Payment_Proposal_ID"
   }
 }

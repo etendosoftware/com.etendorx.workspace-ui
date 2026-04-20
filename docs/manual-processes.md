@@ -1,101 +1,139 @@
-# Manual Processes Mapping (data.json)
+# Legacy (Manual) Processes
 
-This document explains the purpose and use of `packages/MainUI/utils/processes/manual/data.json`, a mapping used to execute legacy/manual processes from Etendo Classic within the new UI.
+This document explains how the new Etendo WorkspaceUI handles **legacy processes** — Classic ERP
+processes that return an HTML document and must be displayed inside an iframe modal.
 
-## Purpose
+## Overview
 
-Some buttons in windows trigger legacy UI processes that are not yet modeled as modern Process Definitions. For those, the Main UI opens the corresponding Classic page inside an iframe and forwards the required parameters. The mapping in `data.json` tells the UI which Classic page to open and how to identify the record.
+Legacy processes include:
+- **Section 2.B.1-2.B.5** — Button columns detected by column name:
+  `DocAction`, `Posted`, `CreateFrom`, `ChangeProjectStatus`, `PaymentRule`.
+- **Section 2.B.6** — Button columns whose linked `AD_Process` has `uipattern = 'M'` (Manual),
+  identified by their Java class name (e.g. APRM, CopyFrom, ProcessGoods).
 
-## File Location
+## Backend resolution (primary path)
 
-- `packages/MainUI/utils/processes/manual/data.json`
+The module `com.etendoerp.metadata` now resolves the parameters needed to open the iframe
+directly from the Application Dictionary. When building the JSON for a Button field,
+`LegacyProcessResolver` inspects the column and its linked `AD_Process` to produce:
 
-## Data Shape
+| Key | Description | Example |
+|-----|-------------|---------|
+| `url` | Relative path to the Classic action page | `/SalesOrder/Header_Edition.html` |
+| `command` | Value for the Classic `Command` parameter | `BUTTONDocAction104` |
+| `keyColumnName` | DB column name of the table PK | `C_Order_ID` |
+| `inpkeyColumnId` | Same as `keyColumnName` (Classic expects both) | `C_Order_ID` |
 
-The file is a JSON object keyed by “process button id” (as exposed by metadata). Each entry contains:
+These four keys are injected into the `processAction` object of the field JSON alongside the
+existing metadata (fieldId, columnId, buttonText, etc.). No manual registration is required.
 
-- `url`: string. Relative path to the Classic action page (forwarded via `/meta/forward`).
-- `command`: string. Value for the `Command` parameter expected by the Classic page.
-- `inpkeyColumnId`: string. Name of the primary key input parameter.
-- `keyColumnName`: string. Database column name of the primary key.
+**URL derivation rules:**
 
-Example:
+| Column / Process type | URL |
+|----------------------|-----|
+| `Posted` or `CreateFrom` (no `AD_Process`) | `/ad_actionButton/<columnName>.html` |
+| `DocAction`, `ChangeProjectStatus`, `PaymentRule` | Tab Edition URL via `Utility.getTabURL()` |
+| `AD_Process` with `uipattern = 'M'` | `/<javaPackage>/<ClassName>.html` from `process.javaClassName` |
+| `AD_Process` with `uipattern = 'S'` (Standard tab button) | Tab Edition URL via `Utility.getTabURL()` |
 
-```
-{
-  "8B59A07EB4C2475AE040007F010031CA": {
-    "url": "/SalesInvoice/Header_Edition.html",
-    "command": "BUTTONDocAction111",
-    "inpkeyColumnId": "C_Invoice_ID",
-    "keyColumnName": "C_Invoice_ID"
-  },
-  "1083": {
-    "url": "/SalesOrder/Header_Edition.html",
-    "command": "BUTTONDocAction104",
-    "inpkeyColumnId": "C_Order_ID",
-    "keyColumnName": "C_Order_ID"
-  }
-}
-```
+**Command derivation rules:**
 
-## How the Mapping Is Used
+| Column / Process type | Command |
+|----------------------|---------|
+| `Posted` / `CreateFrom` without `AD_Process` | `BUTTON<columnName>` |
+| `AD_Process` with `uipattern = 'M'` | `DEFAULT` |
+| Any other button column with `AD_Process` | `BUTTON<columnName><processId>` |
 
-- Hook: `packages/MainUI/hooks/Toolbar/useProcessExecution.ts`
-  - Detects if the clicked button id exists in `data.json`.
-  - Builds a base URL combining the app’s API base and forward path: `API_BASE_URL + "/meta/forward" + url`.
-  - Assembles the query string via `getParams()` from `packages/MainUI/utils/processes/manual/utils.ts`.
-  - Sets this URL in an iframe (`ProcessModal/Iframe`) to show the Classic UI page.
+## Frontend resolution chain
 
-- Params builder: `packages/MainUI/utils/processes/manual/utils.ts`
-  - Reads values from the current record using defaults and key lists in `constants.ts` (document status, processing, client/org, business partner).
-  - Fills required parameters (`IsPopUpCall`, `Command`, `inpKey`, `inpwindowId`, `inpTabId`, `inpTableId`, `inpcBpartnerId`, `inpadClientId`, `inpadOrgId`, `inpkeyColumnId`, `keyColumnName`, etc.).
-  - Sets `inpdocaction` depending on whether the process is a “posted process” and includes a `token` if available.
+`useProcessExecution.executeProcessAction` calls `resolveLegacyProcessData(button, fallbackData)`
+which follows this order:
 
-## Required Parameter Keys
+1. **Backend** — if `button.processAction` contains all four keys (`url`, `command`,
+   `keyColumnName`, `inpkeyColumnId`), use them directly.
+2. **data.json lookup** — check `button.id` in
+   `packages/MainUI/utils/processes/manual/data.json`.
+3. **Column-name fallback** — search `data.json` for an entry whose `command` contains
+   `button.columnName` (handles Header vs Lines tab variants of the same process).
+4. **Unresolvable** — throws `LegacyProcessUnresolvedError`, which triggers an error modal
+   and a `console.error` with the button ID and column name.
 
-See `packages/MainUI/utils/processes/manual/constants.ts`:
+## Static fallback: data.json
 
-- `REQUIRED_PARAMS_KEYS` enumerates all expected keys (e.g., `Command`, `inpwindowId`, `inpTableId`, `keyColumnName`).
-- Default/fallback values and key aliases for record extraction are defined in:
-  - `DEFAULT_DOCUMENTS_KEYS`, `DEFAULT_PROCESS_KEYS`, `DEFAULT_AD_CLIENT_ID_KEYS`, `DEFAULT_AD_ORG_ID_KEYS`, `DEFAULT_BUSINESS_PARTNER_ID_KEYS`.
+`packages/MainUI/utils/processes/manual/data.json` contains only entries that the backend
+cannot fully resolve automatically. Currently 6 entries remain:
 
-## End-to-End Flow
+| FieldId | Process | Reason kept |
+|---------|---------|-------------|
+| `4242` | GoodsShipment — CreateFrom | Uses `FIND_PO` command + direct popup URL instead of the standard tab-servlet path. Backend provides `BUTTONCreateFrom` via tab URL — behavior difference needs E2E verification before removing. |
+| `57A2B365BDC69F57E040007F0100784A` | Reschedule Process | `/ad_process/` URL pattern — uncertain whether `javaClassName` in AD matches; keep until confirmed. |
+| `573FEC1BC12D5E8EE040007F01017CC8` | Unschedule Process | Same as above. |
+| `573FEC1BC12C5E8EE040007F01017CC8` | Schedule Process | Same as above. |
+| `A0417A0E9256CA28E040007F01003C18` | Reconciliation | Has `additionalParameters` (`inpfinFinancialAccountId`); backend does not yet resolve those. |
+| `E5569BAF22C644EF9B5D6846515883F9` | Financial Transaction Processing | Has `additionalParameters` (`inpprocessed: "N"`); backend does not yet resolve those. |
 
-1. User clicks a process button in toolbar.
-2. `useProcessExecution` determines if it’s a manual process by checking `data.json`.
-3. It composes the Classic URL: `API_BASE_URL + /meta/forward + <url from mapping>`.
-4. It calls `getParams` to generate the query string using current record values.
-5. It opens the Classic page in an iframe with the full URL.
+> **Note on `4242`:** the backend detects CreateFrom as a special column and sends its own
+> params first (resolution step 1). The data.json entry is therefore only used if the
+> backend detection is disabled or changes. The FIND_PO command specifically opens the
+> Purchase-Order search grid inside CreateFrom.html — verify this works via the tab-servlet
+> path (BUTTONCreateFrom) before removing.
 
-## Adding a New Manual Process
+If you discover a new legacy process that is not opened automatically:
 
-1. Obtain the button id from metadata (the `ProcessActionButton` id received in `useProcessExecution`).
-2. Add a new entry in `data.json`:
-   - `url`: Classic page path (as used in legacy UI).
-   - `command`: `Command` value expected by that page.
-   - `inpkeyColumnId` and `keyColumnName`: PK input name and PK DB column name for the window entity.
-3. Ensure the record has enough data for `constants.ts` to derive client/org/bpartner/docstatus/processing.
-4. Validate by clicking the button and checking that the iframe opens and the Classic page receives expected params.
+If you discover a new legacy process that is not opened automatically:
 
-## Notes & Considerations
+1. Obtain the button id from the metadata response (`button.id`).
+2. Add an entry in `data.json`:
+   ```json
+   "<buttonId>": {
+     "url": "/path/to/Classic_Edition.html",
+     "command": "BUTTONColumnNameProcessId",
+     "inpkeyColumnId": "Table_ID",
+     "keyColumnName": "Table_ID"
+   }
+   ```
+3. Validate by clicking the button and confirming the iframe opens correctly.
+4. File a follow-up task to implement backend resolution so the entry can later be removed.
 
-- The mapping is intentionally minimal to keep the bridge small and explicit.
-- If a process graduates to a modern Process Definition, remove its entry from `data.json` and migrate to the new flow via `executeProcessDefinition`.
-- “Posted process” detection in code currently toggles `inpdocaction` based on a heuristic; confirm command values and button ids when adding new entries.
+## Params built at runtime
+
+`getParams()` in `packages/MainUI/utils/processes/manual/utils.ts` builds the Classic
+query string from the resolved `ProcessActionData` plus the current record/tab context:
+
+| Parameter | Source |
+|-----------|--------|
+| `Command` | `processAction.command` |
+| `inpKey` | current `recordId` |
+| `inpwindowId` | current `windowId` |
+| `inpTabId` | current `tab.id` |
+| `inpTableId` | current `tab.table` |
+| `inpkeyColumnId` | `processAction.inpkeyColumnId` |
+| `keyColumnName` | `processAction.keyColumnName` |
+| `inpdocstatus` | extracted from record |
+| `inpprocessing` | extracted from record |
+| `inpdocaction` | `"CO"` or `"P"` (Posted processes) |
+| `token` | session token |
 
 ## Debugging
 
-You can enable verbose logs for manual processes (URL, context, and params) using either environment variables or localStorage:
+Enable verbose logs via:
 
-- Env vars: set `NEXT_PUBLIC_DEBUG_MANUAL_PROCESSES=true` (client) or `DEBUG_MANUAL_PROCESSES=true`.
-- Local storage: set `localStorage.DEBUG_MANUAL_PROCESSES = 'true'` in the browser.
+- `NEXT_PUBLIC_DEBUG_MANUAL_PROCESSES=true` (env var)
+- `localStorage.DEBUG_MANUAL_PROCESSES = 'true'` (browser)
 
-When enabled, the hook prints messages prefixed with `[MANUAL_PROCESS]` to the console.
+When enabled the hook logs messages prefixed `[MANUAL_PROCESS]` including the params source
+(`backend` or `fallback data.json`), the full URL, and the parameter map.
 
-## Related Files
+## Related files
 
-- `packages/MainUI/hooks/Toolbar/useProcessExecution.ts`
-- `packages/MainUI/utils/processes/manual/utils.ts`
-- `packages/MainUI/utils/processes/manual/constants.ts`
-- `packages/MainUI/components/ProcessModal/Iframe.tsx`
- - `packages/MainUI/utils/debug.ts` (flag readers)
+| File | Role |
+|------|------|
+| `erp/.../builders/LegacyProcessResolver.java` | Backend: decides if a field is legacy and resolves params |
+| `erp/.../builders/LegacyProcessParams.java` | Backend: DTO for the four resolved params |
+| `erp/.../builders/ProcessActionBuilder.java` | Backend: injects legacy params into `processAction` JSON |
+| `packages/MainUI/utils/processes/manual/utils.ts` | `resolveLegacyProcessData` + `getParams` |
+| `packages/MainUI/utils/processes/manual/errors.ts` | `LegacyProcessUnresolvedError` |
+| `packages/MainUI/utils/processes/manual/data.json` | Static fallback mapping |
+| `packages/MainUI/utils/processes/manual/constants.ts` | Classic param key names and defaults |
+| `packages/MainUI/hooks/Toolbar/useProcessExecution.ts` | Orchestrates the full execution flow |
+| `packages/MainUI/components/ProcessModal/Iframe.tsx` | Renders the iframe modal |
