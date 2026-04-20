@@ -298,6 +298,7 @@ const en = {
     warning: "Warning",
     refreshGrid: "Refresh the grid to see the changes.",
     selectFile: "Select file...",
+    executionTimeout: "Process execution timed out. Please try again.",
   },
   drawer: {
     recentlyViewed: "Recently Viewed",

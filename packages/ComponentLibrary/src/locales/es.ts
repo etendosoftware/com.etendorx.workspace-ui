@@ -300,6 +300,7 @@ const es = {
     processError: "Error mientras se cargaba la informacion del proceso",
     warning: "Advertencia",
     selectFile: "Seleccionar archivo...",
+    executionTimeout: "El tiempo de ejecución del proceso expiró. Por favor intente nuevamente.",
   },
   drawer: {
     recentlyViewed: "Visto recientemente",
