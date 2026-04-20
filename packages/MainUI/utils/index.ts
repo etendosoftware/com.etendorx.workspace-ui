@@ -65,6 +65,8 @@ export const getFieldReference = (reference?: string): FieldType => {
       return FieldType.SELECT;
     case FIELD_REFERENCE_CODES.WINDOW.id:
       return FieldType.WINDOW;
+    case FIELD_REFERENCE_CODES.IMAGE.id:
+      return FieldType.IMAGE;
     default:
       return FieldType.TEXT;
   }

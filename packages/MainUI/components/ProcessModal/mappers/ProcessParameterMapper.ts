@@ -186,6 +186,9 @@ export class ProcessParameterMapper {
       // Attribute Set Instance
       PAttribute: FIELD_REFERENCE_CODES.PATTRIBUTE.id,
 
+      // Image
+      Image: FIELD_REFERENCE_CODES.IMAGE.id,
+
       // Upload File (process parameters only)
       "Upload File": FIELD_REFERENCE_CODES.UPLOAD_FILE.id,
       UploadFile: FIELD_REFERENCE_CODES.UPLOAD_FILE.id,
@@ -232,6 +235,7 @@ export class ProcessParameterMapper {
       "Table Directory",
       "Window",
       "PAttribute",
+      "Image",
       "Upload File",
       "UploadFile",
     ];
@@ -282,6 +286,7 @@ export class ProcessParameterMapper {
     [FIELD_REFERENCE_CODES.LIST_13.id, "list"],
     [FIELD_REFERENCE_CODES.WINDOW.id, "window"],
     [FIELD_REFERENCE_CODES.PATTRIBUTE.id, "pattribute"],
+    [FIELD_REFERENCE_CODES.IMAGE.id, "image"],
     [FIELD_REFERENCE_CODES.UPLOAD_FILE.id, "uploadfile"],
   ]);
 
