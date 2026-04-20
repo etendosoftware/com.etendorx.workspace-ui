@@ -195,17 +195,24 @@ test.describe("Purchase Order to Invoice flow @smoke", () => {
       .filter({ visible: true })
       .first();
     await filterInput.waitFor({ state: "visible", timeout: 15_000 });
-    const datasourceDone = page.waitForResponse(/api\/datasource/, { timeout: 30_000 });
     await filterInput.clear();
+    // Set up the listener AFTER clear() so it captures the filter-triggered response,
+    // not a potential empty-filter response from the clear itself.
+    const datasourceDone = page.waitForResponse(/api\/datasource/, { timeout: 30_000 });
     await filterInput.fill(orderNumber);
     await filterInput.press("Enter");
     await datasourceDone;
 
-    // The row may be in the DOM but off-screen (virtualized) — use "attached" then scroll before checking.
+    // Wait for the row to be visible (not just attached) before interacting with it.
     const orderRow = page.locator("tr").filter({ hasText: orderNumber }).first();
-    await orderRow.waitFor({ state: "attached", timeout: 20_000 });
-    await orderRow.locator('input[type="checkbox"]').scrollIntoViewIfNeeded();
-    await orderRow.locator('input[type="checkbox"]').check({ force: true });
+    await orderRow.waitFor({ state: "visible", timeout: 20_000 });
+    // Retry the checkbox check — MUI checkboxes can be momentarily non-interactive
+    // while the table row is still transitioning after the datasource response.
+    await expect(async () => {
+      await orderRow.locator('input[type="checkbox"]').scrollIntoViewIfNeeded();
+      await orderRow.locator('input[type="checkbox"]').check({ force: true });
+      await expect(orderRow.locator('input[type="checkbox"]')).toBeChecked();
+    }).toPass({ timeout: 10_000 });
 
     await page.locator('[data-testid="ExecuteButton__761503"]').click();
     // Wait for the React modal to close
