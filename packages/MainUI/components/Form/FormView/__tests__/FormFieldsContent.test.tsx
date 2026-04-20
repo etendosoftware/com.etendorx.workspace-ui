@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import React from "react";
+import type React from "react";
 import { render, screen } from "@testing-library/react";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import type { Field, Tab } from "@workspaceui/api-client/src/api/types";

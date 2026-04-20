@@ -43,7 +43,11 @@ function assertPerformance(elapsed: number, label: string, threshold: Threshold)
 // We open it first if needed, then target the specific drawer input to avoid
 // accidentally writing into any other input[placeholder="Search"] on the page.
 
-async function openWindowBySearch(page: Page, searchText: string, menuTestId: string) {
+// readyLocator: optional CSS selector to wait for after clicking the menu item,
+// confirming the window has started rendering before returning to the caller.
+// Without it the function returns immediately after the evaluate() click, which
+// bypasses Playwright's navigation tracking and can cause setup timeouts in CI.
+async function openWindowBySearch(page: Page, searchText: string, menuTestId: string, readyLocator?: string) {
   const drawerInput = page.locator('[data-testid="drawer-search-input"] input');
 
   if (!(await drawerInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
@@ -61,6 +65,10 @@ async function openWindowBySearch(page: Page, searchText: string, menuTestId: st
   await page
     .locator(`[data-testid="${menuTestId}"] > .flex.overflow-hidden > .relative > .ml-2`)
     .evaluate((el) => (el as HTMLElement).click());
+
+  if (readyLocator) {
+    await page.locator(readyLocator).first().waitFor({ state: "visible", timeout: 30_000 });
+  }
 }
 
 // ─── Suite ────────────────────────────────────────────────────────────────────
@@ -237,8 +245,10 @@ test.describe("CRUD Performance Tests", () => {
 
   test.describe("Search and Filter Performance", () => {
     test("should filter table results within acceptable time", async ({ page }) => {
-      await openWindowBySearch(page, "produ", "MenuTitle__126");
-      await page.locator("tr[data-index]").first().waitFor({ state: "visible", timeout: 20_000 });
+      // Pass readyLocator so openWindowBySearch confirms the window toolbar is visible
+      // before returning — prevents CI timeout when the navigate + data-load takes longer.
+      await openWindowBySearch(page, "produ", "MenuTitle__126", "button.toolbar-button-new");
+      await page.locator("tr[data-index]").first().waitFor({ state: "visible", timeout: 30_000 });
 
       const advFiltersBtn = page.locator("button.toolbar-button-advanced-filters").first();
       const isAvailable =
