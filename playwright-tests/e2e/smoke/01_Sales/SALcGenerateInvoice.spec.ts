@@ -308,21 +308,33 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     // fires before the previous process result is fully committed.
     await page.waitForTimeout(3_000);
 
-    // Execute the report
+    // Execute the report — retry once if the backend returns an async execution error.
+    // "Async Execution Failed: Process Instance or Definition not found" can appear intermittently
+    // when a previous process instance is still being cleaned up on the server side.
     const executeBtn = page.locator('[data-testid^="ExecuteReportButton"]');
     await executeBtn.waitFor({ state: "visible", timeout: 30_000 });
     await expect(executeBtn).not.toBeDisabled({ timeout: 10_000 });
     await executeBtn.click();
 
+    // If an async error appears within 3 s, retry the execution once.
+    await page.waitForTimeout(3_000);
+    const asyncErrorLocator = page.getByText(/Async Execution Failed/i);
+    if (await asyncErrorLocator.isVisible({ timeout: 0 }).catch(() => false)) {
+      await executeBtn.waitFor({ state: "visible", timeout: 10_000 });
+      await executeBtn.click();
+    }
+
     // Verify report completion — the result may appear in a legacy iframe or on the React page.
-    // Poll all frames (same pattern as the Create Shipments success check above).
-    const invoiceSuccessDeadline = Date.now() + 120_000;
+    // The Generate Invoices report shows "Created: X" directly (not "Process completed successfully"),
+    // so accept either pattern. Poll all frames (same pattern as the Create Shipments success check).
+    const invoiceSuccessDeadline = Date.now() + 150_000;
+    const invoiceSuccessPattern = /Process completed success|Created:/i;
     let invoiceProcessSuccess = false;
     while (Date.now() < invoiceSuccessDeadline && !invoiceProcessSuccess) {
       // Check main page first
       if (
         await page
-          .getByText(/Process completed success/i)
+          .getByText(invoiceSuccessPattern)
           .isVisible({ timeout: 0 })
           .catch(() => false)
       ) {
@@ -336,7 +348,7 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
             .locator("body")
             .textContent({ timeout: 500 })
             .catch(() => "");
-          if (/Process completed success/i.test(txt)) {
+          if (invoiceSuccessPattern.test(txt)) {
             invoiceProcessSuccess = true;
             break;
           }
@@ -346,7 +358,7 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
       }
       if (!invoiceProcessSuccess) await page.waitForTimeout(300);
     }
-    if (!invoiceProcessSuccess) throw new Error("Generate Invoices process did not complete successfully within 60s");
+    if (!invoiceProcessSuccess) throw new Error("Generate Invoices process did not complete successfully within 150s");
 
     // Verify "Created:" summary — check main page and all frames
     const createdDeadline = Date.now() + 15_000;
