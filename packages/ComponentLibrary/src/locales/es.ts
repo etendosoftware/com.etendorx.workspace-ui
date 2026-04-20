@@ -299,6 +299,7 @@ const es = {
     completedSuccessfully: "Proceso completado exítosamente",
     processError: "Error mientras se cargaba la informacion del proceso",
     warning: "Advertencia",
+    selectFile: "Seleccionar archivo...",
   },
   drawer: {
     recentlyViewed: "Visto recientemente",
