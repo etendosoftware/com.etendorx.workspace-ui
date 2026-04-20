@@ -111,6 +111,44 @@ This document describes how form field callouts run, how results are applied wit
 - After saving, the form applies the server-updated values using a short `isFormInitializing` window to silence callouts during `reset/setValue`. This avoids cascades or refetch loops immediately after a save.
 - A redundant refetch after save is removed; the only refetch happens when `recordId` changes.
 
+## Dirty State Preservation in NEW Mode (ETP-3643)
+
+When the user edits fields on a NEW record before the FIC (Form Initialization Component) response arrives, the form must not overwrite those changes with the server-provided defaults.
+
+**Problem:** The FIC request for a NEW record is asynchronous. If the user types into a field while the request is in-flight and the response arrives afterward, a full `reset({ keepDirty: false })` would silently discard user input.
+
+**Solution:** `FormView` tracks dirty fields via `dirtyFieldsRef` (a ref updated on every render to avoid stale closures). When `availableFormData` is applied in NEW mode and `dirtyFieldsRef.current` is non-empty, the form uses `applyDataRefresh` (per-field `setValue`) instead of `applyFullInitialization` (full `reset`). This merges server defaults into the form without touching fields the user has already modified.
+
+```
+FIC response arrives → currentMode === NEW → dirtyFields non-empty?
+  YES → applyDataRefresh (setValue per changed field, skips user-touched fields)
+  NO  → applyFullInitialization (full reset with server defaults)
+```
+
+This guard is in `packages/MainUI/components/Form/FormView/index.tsx`.
+
+## Cross-Field Default Reference Resolution (ETP-3643)
+
+**Problem:** Some fields define their default value as `@ColumnName@` — a reference to another field's column. The FIC backend cannot resolve these references for NEW records because the request payload carries no existing record data.
+
+**Example:** `Fecha Operación` (transaction date) in Sales Invoice has `defaultValue: "@DateInvoiced@"`. The FIC response leaves it empty; the correct value is the already-resolved `dateInvoiced` field in the same response.
+
+**Solution:** `useFormInitialState` runs a second pass (`resolveDefaultReferences`) after applying all FIC column values. It iterates each field's `column.defaultValue`, matches the `^@(\w+)@$` pattern, and fills the empty slot from the already-resolved value in the accumulator.
+
+```typescript
+// Only fills fields that the FIC left empty/undefined
+const match = /^@(\w+)@$/.exec(field.column.defaultValue);
+if (!match) continue;
+const currentValue = acc[field.hqlName];
+if (currentValue !== undefined && currentValue !== "") continue; // already set by FIC
+const referencedValue = acc[referencedField.hqlName];
+if (referencedValue !== undefined && referencedValue !== "") {
+  acc[field.hqlName] = referencedValue;
+}
+```
+
+This logic is in `packages/MainUI/hooks/useFormInitialState.ts` and runs on every FIC response, but only fills fields that were left empty.
+
 ## APIs and Hooks
 
 - `GlobalCalloutManager`
