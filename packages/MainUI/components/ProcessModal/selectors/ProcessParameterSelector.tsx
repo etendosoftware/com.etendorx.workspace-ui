@@ -23,6 +23,7 @@ import { ProcessParameterMapper } from "../mappers/ProcessParameterMapper";
 
 // Import existing ProcessModal selectors for fallback
 import GenericSelector from "./GenericSelector";
+import { UploadFileSelector } from "./UploadFileSelector";
 
 interface ProcessParameterSelectorProps {
   parameter: ProcessParameter | ExtendedProcessParameter;
@@ -31,6 +32,7 @@ interface ProcessParameterSelectorProps {
   recordValues?: Record<string, unknown>;
   parentFields?: Record<string, Field>;
   selectedRecordsCount?: number;
+  onFileChange?: (paramName: string, file: File | null) => void;
 }
 
 import { createProcessExpressionContext } from "../utils/processExpressionUtils";
@@ -48,6 +50,7 @@ export const ProcessParameterSelector = ({
   recordValues,
   parentFields,
   selectedRecordsCount,
+  onFileChange,
 }: ProcessParameterSelectorProps) => {
   const { session } = useUserContext();
   const { watch, register } = useFormContext();
@@ -248,6 +251,16 @@ export const ProcessParameterSelector = ({
             );
           }
           return <ListSelector field={mappedField} isReadOnly={isReadOnly} data-testid="ListSelector__dac06b" />;
+
+        case "uploadfile":
+          return (
+            <UploadFileSelector
+              field={mappedField}
+              disabled={isReadOnly}
+              onFileChange={onFileChange}
+              data-testid="UploadFileSelector__dac06b"
+            />
+          );
 
         default:
           // Fallback to GenericSelector for text, window references, and unknown types
