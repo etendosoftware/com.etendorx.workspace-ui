@@ -3045,29 +3045,6 @@ const DynamicTable = ({
   const tableRef = useRef(table);
   tableRef.current = table;
 
-  const lastArrowNavTimeRef = useRef(0);
-  const ARROW_NAV_THROTTLE_MS = 120;
-
-  const navigateRow = useCallback(
-    (direction: 1 | -1) => {
-      if (!tableContainerRef.current?.contains(document.activeElement)) return;
-      const now = performance.now();
-      if (now - lastArrowNavTimeRef.current < ARROW_NAV_THROTTLE_MS) return;
-      lastArrowNavTimeRef.current = now;
-      const currentSelection = tableRef.current.getState().rowSelection;
-      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
-      if (selectedIds.length !== 1) return;
-      const currentIndex = effectiveRecords.findIndex((r) => String(r.id) === selectedIds[0]);
-      const nextIndex = currentIndex + direction;
-      if (currentIndex === -1 || nextIndex < 0 || nextIndex >= effectiveRecords.length) return;
-      tableRef.current.setRowSelection({ [String(effectiveRecords[nextIndex].id)]: true });
-    },
-    [effectiveRecords, tableContainerRef]
-  );
-
-  const handleArrowDown = useCallback((_event: KeyboardEvent) => navigateRow(1), [navigateRow]);
-  const handleArrowUp = useCallback((_event: KeyboardEvent) => navigateRow(-1), [navigateRow]);
-
   const handleEnter = useCallback(
     (_event: KeyboardEvent) => {
       if (!tableContainerRef.current?.contains(document.activeElement)) return;
@@ -3104,36 +3081,11 @@ const DynamicTable = ({
 
   useKeyboardShortcuts(
     {
-      ArrowDown: { handler: handleArrowDown },
-      ArrowUp: { handler: handleArrowUp },
       Enter: { handler: handleEnter },
       "ctrl+n": { handler: handleNewWithParentGuard, allowInInputs: true },
     },
     editingRowsCount === 0 && (isFocused ?? true)
   );
-
-  // When the table becomes visible again (e.g. after returning from FormView via Escape),
-  // restore focus to the container if a row is already selected so arrow keys work immediately.
-  // setTimeout(0) runs after all synchronous React effects and FormView unmount focus changes,
-  // ensuring we win any focus race after the transition.
-  useEffect(() => {
-    if (!isVisible) return;
-    const timerId = setTimeout(() => {
-      const rowSelection = tableRef.current.getState().rowSelection;
-      const hasSelection = Object.keys(rowSelection).some((id) => rowSelection[id]);
-      // Only focus if nothing meaningful has captured focus (don't steal from inputs/buttons)
-      const activeEl = document.activeElement;
-      const userFocusedElsewhere =
-        activeEl &&
-        activeEl !== document.body &&
-        activeEl !== document.documentElement &&
-        !tableContainerRef.current?.contains(activeEl);
-      if (hasSelection && tableContainerRef.current && !userFocusedElsewhere) {
-        tableContainerRef.current.focus();
-      }
-    }, 0);
-    return () => clearTimeout(timerId);
-  }, [isVisible]);
 
   // Register attachment action for toolbar to handle interactions from TableView
   useEffect(() => {

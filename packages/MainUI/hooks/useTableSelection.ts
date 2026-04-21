@@ -234,9 +234,6 @@ const validateParentSelection = (
   return true;
 };
 
-// Debounce window for session sync: collapses rapid keyboard navigation (arrow keys)
-// into a single SETSESSION call without suppressing normal click-based selection.
-const SESSION_SYNC_DEBOUNCE_MS = 250;
 
 export default function useTableSelection(
   tab: Tab,
@@ -250,7 +247,6 @@ export default function useTableSelection(
   const { setSession, setSessionSyncLoading } = useUserContext();
   const previousSelectionRef = useRef<string[]>([]);
   const previousSingleSelectionRef = useRef<string | undefined>(undefined);
-  const sessionSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const windowId = activeWindow?.windowId;
   const windowIdentifier = activeWindow?.windowIdentifier;
@@ -342,23 +338,14 @@ export default function useTableSelection(
     // DON'T call onSelectionChange to avoid infinite loop
     updateGraphSelection(graph, tab, lastSelected, selectedRecords);
 
-    // Debounced session sync: fires SETSESSION so the backend computes attributes
-    // (DocStatus, ISSOTRX, etc.) that displayLogic expressions depend on.
-    // The debounce collapses rapid arrow-key navigation into a single request.
     if (selectedRecords.length > 0 && hasSelectionIdChanged) {
-      if (sessionSyncTimerRef.current !== null) {
-        clearTimeout(sessionSyncTimerRef.current);
-      }
-      sessionSyncTimerRef.current = setTimeout(() => {
-        sessionSyncTimerRef.current = null;
-        syncSelectedRecordsToSession({
-          tab,
-          selectedRecords,
-          parentId: tab.parentTabId,
-          setSession,
-          setSessionSyncLoading,
-        });
-      }, SESSION_SYNC_DEBOUNCE_MS);
+      syncSelectedRecordsToSession({
+        tab,
+        selectedRecords,
+        parentId: tab.parentTabId,
+        setSession,
+        setSessionSyncLoading,
+      });
     }
   }, [
     graph,
@@ -375,13 +362,4 @@ export default function useTableSelection(
     setSessionSyncLoading,
     windowId,
   ]);
-
-  useEffect(() => {
-    return () => {
-      if (sessionSyncTimerRef.current !== null) {
-        clearTimeout(sessionSyncTimerRef.current);
-        sessionSyncTimerRef.current = null;
-      }
-    };
-  }, []);
 }
