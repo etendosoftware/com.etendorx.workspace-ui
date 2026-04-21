@@ -17,8 +17,45 @@
 
 "use client";
 
-import type { WidgetInstance, WidgetDataResponse } from "@workspaceui/api-client/src/api/dashboard";
+import type { WidgetInstance, WidgetDataResponse, WidgetType } from "@workspaceui/api-client/src/api/dashboard";
 import WidgetRenderer from "./WidgetRenderer";
+
+interface WidgetTheme {
+  card: string;
+  title: string;
+  icon: string;
+  iconHover: string;
+  skeleton: string;
+}
+
+const DEFAULT_THEME: WidgetTheme = {
+  card: "bg-baseline-10",
+  title: "text-baseline-100",
+  icon: "text-baseline-50 hover:text-baseline-100 hover:bg-transparent-neutral-10",
+  iconHover: "text-baseline-50",
+  skeleton: "bg-transparent-neutral-10",
+};
+
+const WIDGET_THEMES: Partial<Record<WidgetType, WidgetTheme>> = {
+  RECENT_DOCS: {
+    card: "bg-secondary-100",
+    title: "text-baseline-100",
+    icon: "text-baseline-50 hover:text-baseline-100 hover:bg-transparent-neutral-10",
+    iconHover: "text-baseline-50",
+    skeleton: "bg-transparent-neutral-20",
+  },
+  RECENTLY_VIEWED: {
+    card: "bg-[#0A0F1E]",
+    title: "text-white",
+    icon: "text-white/50 hover:text-white hover:bg-white/10",
+    iconHover: "text-white/50",
+    skeleton: "bg-white/10",
+  },
+};
+
+function getTheme(type: WidgetType): WidgetTheme {
+  return WIDGET_THEMES[type] ?? DEFAULT_THEME;
+}
 
 const LockIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -43,18 +80,19 @@ interface WidgetCardProps {
 export default function WidgetCard({ instance, data, error, onRemove }: WidgetCardProps) {
   const isLocked = instance.layer !== "USER";
   const isLoading = data === undefined && error === undefined;
+  const theme = getTheme(instance.type);
 
   return (
     <div
-      className="flex flex-col gap-3 rounded-2xl bg-baseline-10 p-5 h-full min-h-40"
+      className={`flex flex-col gap-3 rounded-2xl ${theme.card} p-5 h-full min-h-40`}
       data-testid={`WidgetCard__${instance.instanceId}`}>
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold text-baseline-100 truncate">{instance.title}</span>
+        <span className={`text-sm font-semibold ${theme.title} truncate`}>{instance.title}</span>
         <div className="flex items-center gap-1 shrink-0">
           {isLocked && (
             <span
-              className="text-baseline-50"
+              className={theme.iconHover}
               title={`Widget del sistema (${instance.layer})`}
               data-testid={`WidgetCard__lock_${instance.instanceId}`}>
               <LockIcon data-testid="LockIcon__cb8729" />
@@ -63,7 +101,7 @@ export default function WidgetCard({ instance, data, error, onRemove }: WidgetCa
           <button
             type="button"
             onClick={() => onRemove(instance.instanceId)}
-            className="text-baseline-50 hover:text-baseline-100 transition-colors cursor-pointer rounded p-0.5 hover:bg-transparent-neutral-10"
+            className={`${theme.icon} transition-colors cursor-pointer rounded p-0.5`}
             title={isLocked ? "Ocultar widget" : "Eliminar widget"}
             data-testid={`WidgetCard__remove_${instance.instanceId}`}>
             <CloseIcon data-testid="CloseIcon__cb8729" />
@@ -73,9 +111,9 @@ export default function WidgetCard({ instance, data, error, onRemove }: WidgetCa
       {/* Content */}
       {isLoading && (
         <div className="flex flex-col gap-2 animate-pulse" data-testid={`WidgetCard__loading_${instance.instanceId}`}>
-          <div className="h-3 rounded bg-transparent-neutral-10 w-3/4" />
-          <div className="h-3 rounded bg-transparent-neutral-10 w-1/2" />
-          <div className="h-3 rounded bg-transparent-neutral-10 w-2/3" />
+          <div className={`h-3 rounded ${theme.skeleton} w-3/4`} />
+          <div className={`h-3 rounded ${theme.skeleton} w-1/2`} />
+          <div className={`h-3 rounded ${theme.skeleton} w-2/3`} />
         </div>
       )}
       {error !== undefined && !isLoading && (
