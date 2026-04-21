@@ -729,7 +729,7 @@ export function useProcessExecution({
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            processId: button.processDefinition.id,
+            processId,
             parameters: formParameters,
           }),
         });
@@ -793,7 +793,7 @@ export function useProcessExecution({
     });
   }, [
     form,
-    button.processDefinition.id,
+    processId,
     token,
     parameters,
     setResult,
