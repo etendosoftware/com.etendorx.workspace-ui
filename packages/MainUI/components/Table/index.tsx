@@ -3602,14 +3602,6 @@ const DynamicTable = ({
         loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
       }`}
       onClick={onFocusAcquire}>
-      <RecordCounterBar
-        totalRecords={totalRecords}
-        loadedRecords={loadedRecords}
-        selectedCount={selectedCount}
-        isLoading={loading}
-        labels={counterLabels}
-        data-testid="RecordCounterBar__8ca888"
-      />
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
         <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
       </div>
