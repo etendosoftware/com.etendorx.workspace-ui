@@ -26,14 +26,25 @@ jest-html-reporters-attach/
 junit.xml
 
 # Claude Code - ignore personal/runtime files, track shared config
+.claude/helpers/
+.claude/agents/
+.claude/CLAUDE.md
 .claude/settings.local.json
 .claude/memory/
 .claude/.ralph-loop.local.md
 .claude-flow
+.agents/
 .idea/
+.playwright-mcp/
+.fyso/
 .env
 app.log
+skills-lock.json
 
 # Nextjs Turbo
 .turbo/
 packages/MainUI/next-env.d.ts.worktrees/
+.worktrees/
+
+# Github
+.github/agents/

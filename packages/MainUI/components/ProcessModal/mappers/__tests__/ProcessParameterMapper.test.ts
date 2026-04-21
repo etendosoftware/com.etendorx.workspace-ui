@@ -50,6 +50,16 @@ describe("ProcessParameterMapper", () => {
       expect(field.columnName).toBe("Test Parameter");
     });
 
+    it("should map Upload File reference to UPLOAD_FILE reference code", () => {
+      const uploadFileParam = { ...mockParameter, reference: "Upload File" };
+      const field = ProcessParameterMapper.mapToField(uploadFileParam);
+      expect(field.column.reference).toBe(FIELD_REFERENCE_CODES.UPLOAD_FILE.id);
+
+      const uploadFileAltParam = { ...mockParameter, reference: "UploadFile" };
+      const fieldAlt = ProcessParameterMapper.mapToField(uploadFileAltParam);
+      expect(fieldAlt.column.reference).toBe(FIELD_REFERENCE_CODES.UPLOAD_FILE.id);
+    });
+
     it("should map reference types correctly", () => {
       const passwordParam = { ...mockParameter, reference: "Password" };
       const passwordField = ProcessParameterMapper.mapToField(passwordParam);
@@ -126,6 +136,8 @@ describe("ProcessParameterMapper", () => {
         "TableDir",
         "Table Directory",
         "Window",
+        "Upload File",
+        "UploadFile",
       ];
 
       supportedTypes.forEach((referenceType) => {
@@ -160,6 +172,8 @@ describe("ProcessParameterMapper", () => {
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Window" })).toBe("window");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "String" })).toBe("text");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Unknown" })).toBe("text");
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Upload File" })).toBe("uploadfile");
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "UploadFile" })).toBe("uploadfile");
     });
 
     it("should default to text for undefined reference", () => {

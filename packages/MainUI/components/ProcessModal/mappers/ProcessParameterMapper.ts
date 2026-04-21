@@ -186,6 +186,10 @@ export class ProcessParameterMapper {
       // Attribute Set Instance
       PAttribute: FIELD_REFERENCE_CODES.PATTRIBUTE.id,
 
+      // Upload File (process parameters only)
+      "Upload File": FIELD_REFERENCE_CODES.UPLOAD_FILE.id,
+      UploadFile: FIELD_REFERENCE_CODES.UPLOAD_FILE.id,
+
       // String/Text (default)
       String: "10", // Text reference
       Text: "10",
@@ -228,6 +232,8 @@ export class ProcessParameterMapper {
       "Table Directory",
       "Window",
       "PAttribute",
+      "Upload File",
+      "UploadFile",
     ];
 
     return (
@@ -245,41 +251,39 @@ export class ProcessParameterMapper {
   static getFieldType(parameter: ProcessParameter | ExtendedProcessParameter): string {
     const reference = ProcessParameterMapper.mapReferenceType(parameter.reference);
 
-    // Check if parameter has selector information - indicates it's a tabledir/selector field
     if (parameter.selector?.datasourceName) {
-      // Special case for Product selector
-      if (
-        parameter.selector.datasourceName === "ProductByPriceAndWarehouse" ||
-        parameter.selector.datasourceName === "Product"
-      ) {
-        return "product";
-      }
-      return "tabledir";
+      return ProcessParameterMapper.getSelectorFieldType(parameter.selector.datasourceName);
     }
 
-    if (reference === FIELD_REFERENCE_CODES.PASSWORD.id) return "password";
-    if (reference === FIELD_REFERENCE_CODES.BOOLEAN.id) return "boolean";
-    if (reference === FIELD_REFERENCE_CODES.DECIMAL.id || reference === FIELD_REFERENCE_CODES.INTEGER.id) {
-      return "numeric";
-    }
-    if (reference === FIELD_REFERENCE_CODES.QUANTITY_29.id || reference === FIELD_REFERENCE_CODES.QUANTITY_22.id) {
-      return "quantity";
-    }
-    if (reference === FIELD_REFERENCE_CODES.DATE.id) return "date";
-    if (reference === FIELD_REFERENCE_CODES.DATETIME.id) return "datetime";
-    if (reference === FIELD_REFERENCE_CODES.SELECT_30.id) return "select";
-    if (reference === FIELD_REFERENCE_CODES.PRODUCT.id) return "product";
-    if (reference === FIELD_REFERENCE_CODES.TABLE_DIR_19.id || reference === FIELD_REFERENCE_CODES.TABLE_DIR_18.id) {
-      return "tabledir";
-    }
-    if (reference === FIELD_REFERENCE_CODES.LIST_17.id || reference === FIELD_REFERENCE_CODES.LIST_13.id) {
-      return "list";
-    }
-    if (reference === FIELD_REFERENCE_CODES.WINDOW.id) return "window";
-    if (reference === FIELD_REFERENCE_CODES.PATTRIBUTE.id) return "pattribute";
-
-    return "text"; // Default fallback
+    return ProcessParameterMapper.REFERENCE_TO_FIELD_TYPE[reference] ?? "text";
   }
+
+  private static getSelectorFieldType(datasourceName: string): string {
+    if (datasourceName === "ProductByPriceAndWarehouse" || datasourceName === "Product") {
+      return "product";
+    }
+    return "tabledir";
+  }
+
+  private static readonly REFERENCE_TO_FIELD_TYPE: Record<string, string> = Object.fromEntries([
+    [FIELD_REFERENCE_CODES.PASSWORD.id, "password"],
+    [FIELD_REFERENCE_CODES.BOOLEAN.id, "boolean"],
+    [FIELD_REFERENCE_CODES.DECIMAL.id, "numeric"],
+    [FIELD_REFERENCE_CODES.INTEGER.id, "numeric"],
+    [FIELD_REFERENCE_CODES.QUANTITY_29.id, "quantity"],
+    [FIELD_REFERENCE_CODES.QUANTITY_22.id, "quantity"],
+    [FIELD_REFERENCE_CODES.DATE.id, "date"],
+    [FIELD_REFERENCE_CODES.DATETIME.id, "datetime"],
+    [FIELD_REFERENCE_CODES.SELECT_30.id, "select"],
+    [FIELD_REFERENCE_CODES.PRODUCT.id, "product"],
+    [FIELD_REFERENCE_CODES.TABLE_DIR_19.id, "tabledir"],
+    [FIELD_REFERENCE_CODES.TABLE_DIR_18.id, "tabledir"],
+    [FIELD_REFERENCE_CODES.LIST_17.id, "list"],
+    [FIELD_REFERENCE_CODES.LIST_13.id, "list"],
+    [FIELD_REFERENCE_CODES.WINDOW.id, "window"],
+    [FIELD_REFERENCE_CODES.PATTRIBUTE.id, "pattribute"],
+    [FIELD_REFERENCE_CODES.UPLOAD_FILE.id, "uploadfile"],
+  ]);
 
   /**
    * Maps DefaultsProcessActionHandler response to parameter-based field names

@@ -268,6 +268,16 @@ function ProcessDefinitionModalContent({
 
   const [gridSelection, setGridSelectionInternal] = useState<GridSelectionStructure>({});
   const [shouldTriggerSuccess, setShouldTriggerSuccess] = useState(false);
+  const [fileParams, setFileParams] = useState<Record<string, File>>({});
+
+  const handleFileChange = useCallback((paramName: string, file: File | null) => {
+    setFileParams((prev) => {
+      if (file) return { ...prev, [paramName]: file };
+      const next = { ...prev };
+      delete next[paramName];
+      return next;
+    });
+  }, []);
 
   // Ref (not state) to store _filterExpressions returned by JS onLoad scripts.
   // Using a ref avoids triggering re-renders that would cause infinite loops.
@@ -749,6 +759,7 @@ function ProcessDefinitionModalContent({
     setShouldTriggerSuccess,
     setGridRefreshKey,
     initialParameters: button.processDefinition.parameters,
+    fileParams,
   });
 
   // -------------------------------------------------------------------------
@@ -1146,6 +1157,7 @@ function ProcessDefinitionModalContent({
             recordValues={recordValues || undefined}
             parentFields={tab?.fields}
             selectedRecordsCount={selectedRecordsCount}
+            onFileChange={handleFileChange}
             data-testid="ProcessParameterSelector__761503"
           />
         );
