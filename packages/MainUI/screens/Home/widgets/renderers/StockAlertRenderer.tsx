@@ -25,7 +25,9 @@ function StockLevelBar({ current, minimum }: { current: number; minimum: number 
   const pct = minimum > 0 ? Math.min((current / minimum) * 100, 100) : 0;
   const barColor = pct <= 30 ? "bg-error-main" : pct <= 60 ? "bg-warning-main" : "bg-success-main";
   return (
-    <div className="w-16 h-1.5 rounded-full bg-transparent-neutral-10 overflow-hidden" data-testid="StockAlertRenderer__bar">
+    <div
+      className="w-16 h-1.5 rounded-full bg-transparent-neutral-10 overflow-hidden"
+      data-testid="StockAlertRenderer__bar">
       <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
     </div>
   );

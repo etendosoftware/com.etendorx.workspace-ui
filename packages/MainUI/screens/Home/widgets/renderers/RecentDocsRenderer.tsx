@@ -34,10 +34,7 @@ export default function RecentDocsRenderer({ data }: RecentDocsRendererProps) {
     <ul className="flex flex-col gap-2" data-testid="RecentDocsRenderer__list">
       {data.items.map((item, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: items have no stable composite key available
-        <li
-          key={i}
-          className="flex items-center justify-between gap-2"
-          data-testid={`RecentDocsRenderer__item_${i}`}>
+        <li key={i} className="flex items-center justify-between gap-2" data-testid={`RecentDocsRenderer__item_${i}`}>
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-medium text-baseline-100 truncate">{item.label}</span>
             <span className="text-xs text-baseline-50">{item.type}</span>

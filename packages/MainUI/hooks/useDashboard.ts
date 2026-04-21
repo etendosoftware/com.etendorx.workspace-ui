@@ -82,12 +82,12 @@ export function useDashboard(): UseDashboardReturn {
         if (instance.refreshInterval > 0) {
           intervalsRef.current[instance.instanceId] = setInterval(
             () => fetchOneWidgetData(instance.instanceId),
-            instance.refreshInterval * 1000,
+            instance.refreshInterval * 1000
           );
         }
       }
     },
-    [clearIntervals, fetchOneWidgetData],
+    [clearIntervals, fetchOneWidgetData]
   );
 
   const loadLayout = useCallback(async () => {
@@ -119,37 +119,40 @@ export function useDashboard(): UseDashboardReturn {
     async (instanceId: string): Promise<void> => {
       await fetchOneWidgetData(instanceId);
     },
-    [fetchOneWidgetData],
+    [fetchOneWidgetData]
   );
 
-  const updateLayout = useCallback(async (widgets: UpdateLayoutWidget[]): Promise<void> => {
-    // Optimistic update
-    setLayout((prev) =>
-      prev.map((instance) => {
-        const update = widgets.find((w) => w.instanceId === instance.instanceId);
-        if (!update) return instance;
-        return {
-          ...instance,
-          position: { col: update.col, row: update.row, width: update.width, height: update.height },
-        };
-      }),
-    );
+  const updateLayout = useCallback(
+    async (widgets: UpdateLayoutWidget[]): Promise<void> => {
+      // Optimistic update
+      setLayout((prev) =>
+        prev.map((instance) => {
+          const update = widgets.find((w) => w.instanceId === instance.instanceId);
+          if (!update) return instance;
+          return {
+            ...instance,
+            position: { col: update.col, row: update.row, width: update.width, height: update.height },
+          };
+        })
+      );
 
-    try {
-      await updateDashboardLayout({ widgets });
-    } catch (err) {
-      logger.warn("[useDashboard] Failed to persist layout update:", err);
-      // Re-fetch to restore server state on failure
-      await loadLayout();
-    }
-  }, [loadLayout]);
+      try {
+        await updateDashboardLayout({ widgets });
+      } catch (err) {
+        logger.warn("[useDashboard] Failed to persist layout update:", err);
+        // Re-fetch to restore server state on failure
+        await loadLayout();
+      }
+    },
+    [loadLayout]
+  );
 
   const addWidget = useCallback(
     async (payload: AddWidgetRequest): Promise<void> => {
       await addDashboardWidget(payload);
       await loadLayout();
     },
-    [loadLayout],
+    [loadLayout]
   );
 
   const removeWidget = useCallback(
@@ -176,7 +179,7 @@ export function useDashboard(): UseDashboardReturn {
         await loadLayout();
       }
     },
-    [loadLayout],
+    [loadLayout]
   );
 
   return {

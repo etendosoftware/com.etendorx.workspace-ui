@@ -34,7 +34,7 @@ export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
       const windowIdentifier = getNewWindowIdentifier(windowId);
       setWindowActive({ windowIdentifier, windowData: { title: label, initialized: true } });
     },
-    [setWindowActive],
+    [setWindowActive]
   );
 
   if (data.items.length === 0) {

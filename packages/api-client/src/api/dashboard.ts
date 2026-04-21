@@ -289,7 +289,10 @@ export async function updateDashboardLayout(payload: UpdateLayoutRequest): Promi
 }
 
 export async function addDashboardWidget(payload: AddWidgetRequest): Promise<AddWidgetResponse> {
-  const response = await Metadata.client.post(`${DASHBOARD_BASE}/dashboard/widget`, payload as unknown as Record<string, unknown>);
+  const response = await Metadata.client.post(
+    `${DASHBOARD_BASE}/dashboard/widget`,
+    payload as unknown as Record<string, unknown>
+  );
   if (!response.ok) {
     throw new Error(`Failed to add widget: ${response.status}`);
   }
@@ -299,7 +302,7 @@ export async function addDashboardWidget(payload: AddWidgetRequest): Promise<Add
 export async function deleteDashboardWidget(instanceId: string): Promise<DeleteWidgetResponse> {
   const response = await Metadata.client.request(
     `${DASHBOARD_BASE}/dashboard/widget/${encodeURIComponent(instanceId)}`,
-    { method: "DELETE" },
+    { method: "DELETE" }
   );
   if (!response.ok) {
     throw new Error(`Failed to delete widget ${instanceId}: ${response.status}`);

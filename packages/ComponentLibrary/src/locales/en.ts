@@ -682,6 +682,9 @@ const en = {
       title: "Recent Documents",
       empty: "No recent documents",
     },
+    noWidgets: "No widgets configured for this dashboard.",
+    loadError: "Could not load the dashboard. Please try again.",
+    retry: "Retry",
   },
   packing: {
     title: "Packing Process",

@@ -22,14 +22,13 @@ interface HtmlRendererProps {
 }
 
 export default function HtmlRenderer({ data }: HtmlRendererProps) {
-  return (
-    // Content originates from the trusted Etendo backend (ETMETA_WIDGET_CLASS.DESCRIPTION)
+  // Content originates from the trusted Etendo backend (ETMETA_WIDGET_CLASS.DESCRIPTION)
+  const htmlProps = {
+    className: "prose prose-sm max-w-none text-baseline-100",
     // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted backend source
-    <div
-      className="prose prose-sm max-w-none text-baseline-100"
-      // eslint-disable-next-line react/no-danger
-      dangerouslySetInnerHTML={{ __html: data.content }}
-      data-testid="HtmlRenderer__content"
-    />
-  );
+    dangerouslySetInnerHTML: { __html: data.content },
+    "data-testid": "HtmlRenderer__content",
+  };
+  // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted backend source
+  return <div {...htmlProps} />;
 }

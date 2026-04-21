@@ -682,6 +682,9 @@ const es = {
       title: "Documentos recientes",
       empty: "No hay documentos recientes",
     },
+    noWidgets: "No hay widgets configurados para este panel.",
+    loadError: "No se pudo cargar el panel. Intente nuevamente.",
+    retry: "Reintentar",
   },
   packing: {
     title: "Proceso de Empaque",
