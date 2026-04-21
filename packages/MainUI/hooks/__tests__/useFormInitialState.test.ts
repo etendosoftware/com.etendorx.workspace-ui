@@ -139,4 +139,55 @@ describe("useFormInitialState", () => {
     const { result } = renderHook(() => useFormInitialState(formInit));
     expect(result.current?.sessionKey).toBe("sessionVal");
   });
+  describe("@ColumnName@ default reference resolution (ETP-3643)", () => {
+    // Simulates: EM_Etsg_Date_Operation has column.defaultValue = "@DateInvoiced@"
+    // but FIC returns empty because DateInvoiced is not in the FIC request context
+    // for NEW records. The fix resolves it using the already-computed value.
+    const tabWithDefaultRef = {
+      id: "tabId",
+      fields: {
+        dateInvoiced: { hqlName: "dateInvoiced", columnName: "DateInvoiced" },
+        etsgDateOperation: {
+          hqlName: "etsgDateOperation",
+          columnName: "EM_Etsg_Date_Operation",
+          column: { defaultValue: "@DateInvoiced@" },
+        },
+      },
+    } as any;
+
+    beforeEach(() => {
+      (useTabContext as jest.Mock).mockReturnValue({ tab: tabWithDefaultRef });
+      (getFieldsByColumnName as jest.Mock).mockReturnValue({
+        DateInvoiced: tabWithDefaultRef.fields.dateInvoiced,
+        EM_Etsg_Date_Operation: tabWithDefaultRef.fields.etsgDateOperation,
+      });
+    });
+
+    it("should resolve empty value using the referenced column's computed value", () => {
+      const formInit = {
+        columnValues: {
+          DateInvoiced: { value: "2026-04-06" },
+          EM_Etsg_Date_Operation: { value: "" }, // FIC returns empty
+        },
+      } as any;
+
+      const { result } = renderHook(() => useFormInitialState(formInit));
+
+      expect(result.current?.etsgDateOperation).toBe("2026-04-06");
+      expect(result.current?.dateInvoiced).toBe("2026-04-06");
+    });
+
+    it("should not overwrite a non-empty FIC value with the reference fallback", () => {
+      const formInit = {
+        columnValues: {
+          DateInvoiced: { value: "2026-04-06" },
+          EM_Etsg_Date_Operation: { value: "2026-03-01" }, // FIC returns an actual value
+        },
+      } as any;
+
+      const { result } = renderHook(() => useFormInitialState(formInit));
+
+      expect(result.current?.etsgDateOperation).toBe("2026-03-01");
+    });
+  });
 });
