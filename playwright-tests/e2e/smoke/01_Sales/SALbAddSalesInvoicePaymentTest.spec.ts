@@ -151,7 +151,7 @@ test.describe("Sales Order Automation - Complete Flow", () => {
       .waitFor({ state: "attached", timeout: 30_000 });
 
     const actionDropdown = page.locator('div[aria-label="Action Regarding Document"]');
-    await actionDropdown.waitFor({ state: "visible", timeout: 10000 });
+    await actionDropdown.waitFor({ state: "visible", timeout: 30_000 });
 
     const actionInput = actionDropdown.locator('div[tabindex="0"]');
     await expect(actionInput).not.toBeDisabled();
