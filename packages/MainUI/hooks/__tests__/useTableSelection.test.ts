@@ -21,6 +21,7 @@ import useTableSelection from "../useTableSelection";
 import { useSelected } from "@/hooks/useSelected";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useWindowContext } from "@/contexts/window";
+import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/sessionSync";
 
 // Mocks
 jest.mock("@/hooks/useSelected");
@@ -37,6 +38,11 @@ jest.mock("@/utils/structures", () => ({
     return map;
   }),
 }));
+
+const SESSION_SYNC_DEBOUNCE_MS = 250;
+const mockSyncSelectedRecordsToSession = syncSelectedRecordsToSession as jest.MockedFunction<
+  typeof syncSelectedRecordsToSession
+>;
 
 describe("useTableSelection", () => {
   const mockTab = { id: "tab1", window: "win1" } as any;
@@ -103,5 +109,44 @@ describe("useTableSelection", () => {
     renderHook(() => useTableSelection(mockTab, mockRecords, rowSelection));
 
     expect(mockSetSelectedRecord).not.toHaveBeenCalled();
+  });
+
+  describe("session sync debounce", () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("should fire session sync once after the debounce window for a single selection change", () => {
+      renderHook(() => useTableSelection(mockTab, mockRecords, { r1: true }));
+
+      expect(mockSyncSelectedRecordsToSession).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(SESSION_SYNC_DEBOUNCE_MS);
+      expect(mockSyncSelectedRecordsToSession).toHaveBeenCalledTimes(1);
+      expect(mockSyncSelectedRecordsToSession).toHaveBeenCalledWith(
+        expect.objectContaining({ selectedRecords: [mockRecords[0]] })
+      );
+    });
+
+    it("should collapse rapid selection changes into a single session sync", () => {
+      const { rerender } = renderHook(({ selection }) => useTableSelection(mockTab, mockRecords, selection), {
+        initialProps: { selection: { r1: true } as Record<string, boolean> },
+      });
+
+      jest.advanceTimersByTime(SESSION_SYNC_DEBOUNCE_MS - 50);
+      rerender({ selection: { r2: true } });
+      jest.advanceTimersByTime(SESSION_SYNC_DEBOUNCE_MS - 50);
+      rerender({ selection: { r1: true } });
+      expect(mockSyncSelectedRecordsToSession).not.toHaveBeenCalled();
+
+      jest.advanceTimersByTime(SESSION_SYNC_DEBOUNCE_MS);
+      expect(mockSyncSelectedRecordsToSession).toHaveBeenCalledTimes(1);
+      expect(mockSyncSelectedRecordsToSession).toHaveBeenCalledWith(
+        expect.objectContaining({ selectedRecords: [mockRecords[0]] })
+      );
+    });
   });
 });

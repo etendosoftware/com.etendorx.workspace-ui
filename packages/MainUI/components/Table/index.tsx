@@ -3039,7 +3039,7 @@ const DynamicTable = ({
     autoResetRowSelection: false,
   });
 
-  useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange, isVisible);
+  useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange);
 
   // Use ref for table to prevent infinite loop of registrations
   const tableRef = useRef(table);

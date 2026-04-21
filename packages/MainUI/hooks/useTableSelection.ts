@@ -234,45 +234,15 @@ const validateParentSelection = (
   return true;
 };
 
-/**
- * Custom React hook for managing table row selection state with comprehensive synchronization capabilities.
- *
- * This hook provides a complete solution for handling table selection in Etendo WorkspaceUI's multi-window,
- * multi-tab environment. It manages the complex interactions between:
- *
- * - Material React Table selection state (UI layer)
- * - URL parameters (navigation and bookmarking)
- * - Global selection graph (application state)
- * - Parent-child tab relationships (hierarchical data)
- *
- * Key Features:
- * - **Bidirectional Sync**: Keeps URL parameters and table selection in sync
- * - **Performance Optimized**: Uses debounced URL updates and change detection
- * - **Multi-Window Support**: Handles selection across multiple browser windows/tabs
- * - **Hierarchical Management**: Automatically clears child tab selections when parent changes
- * - **State Reconciliation**: Resolves conflicts between different selection sources
- * - **Error Handling**: Gracefully handles sync errors and edge cases
- *
- * The hook operates only when the current tab belongs to the active window, preventing
- * cross-window interference while maintaining proper isolation.
- *
- * @param tab - Tab metadata containing window information and hierarchical relationships
- * @param records - Array of EntityData records available for selection in the current table
- * @param rowSelection - Current Material React Table selection state (record ID -> boolean mapping)
- * @param _onSelectionChange - Optional callback function invoked when selection changes, receives the last selected record ID
- *
- * @returns void - This hook manages side effects and doesn't return values
- *
- * @see {@link useSelected} - For global selection graph access
- * @see {@link useStateReconciliation} - For handling selection conflicts
- * @see {@link debounce} - For performance optimization of URL updates
- */
+// Debounce window for session sync: collapses rapid keyboard navigation (arrow keys)
+// into a single SETSESSION call without suppressing normal click-based selection.
+const SESSION_SYNC_DEBOUNCE_MS = 250;
+
 export default function useTableSelection(
   tab: Tab,
   records: EntityData[],
   rowSelection: MRT_RowSelectionState,
-  _onSelectionChange?: (recordId: string) => void,
-  isTableVisible = true
+  _onSelectionChange?: (recordId: string) => void
 ) {
   const { graph } = useSelected();
   const { activeWindow, clearSelectedRecord, getTabFormState, setSelectedRecord, getSelectedRecord } =
@@ -280,6 +250,7 @@ export default function useTableSelection(
   const { setSession, setSessionSyncLoading } = useUserContext();
   const previousSelectionRef = useRef<string[]>([]);
   const previousSingleSelectionRef = useRef<string | undefined>(undefined);
+  const sessionSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const windowId = activeWindow?.windowId;
   const windowIdentifier = activeWindow?.windowIdentifier;
@@ -371,21 +342,23 @@ export default function useTableSelection(
     // DON'T call onSelectionChange to avoid infinite loop
     updateGraphSelection(graph, tab, lastSelected, selectedRecords);
 
-    // Sync to session for backend state — ONLY when:
-    // 1. The selected record IDs have changed, AND
-    // 2. The table is NOT the primary visible view (i.e. FormView is showing).
-    //    When the table is visible (grid navigation mode), session sync is deferred
-    //    because FormView's own EDIT-mode initialization handles session setup when
-    //    it opens. Calling SETSESSION on every arrow-key navigation triggers redundant
-    //    API requests and cascading UserContext re-renders that can cause update depth errors.
-    if (selectedRecords.length > 0 && hasSelectionIdChanged && !isTableVisible) {
-      syncSelectedRecordsToSession({
-        tab,
-        selectedRecords,
-        parentId: tab.parentTabId,
-        setSession,
-        setSessionSyncLoading,
-      });
+    // Debounced session sync: fires SETSESSION so the backend computes attributes
+    // (DocStatus, ISSOTRX, etc.) that displayLogic expressions depend on.
+    // The debounce collapses rapid arrow-key navigation into a single request.
+    if (selectedRecords.length > 0 && hasSelectionIdChanged) {
+      if (sessionSyncTimerRef.current !== null) {
+        clearTimeout(sessionSyncTimerRef.current);
+      }
+      sessionSyncTimerRef.current = setTimeout(() => {
+        sessionSyncTimerRef.current = null;
+        syncSelectedRecordsToSession({
+          tab,
+          selectedRecords,
+          parentId: tab.parentTabId,
+          setSession,
+          setSessionSyncLoading,
+        });
+      }, SESSION_SYNC_DEBOUNCE_MS);
     }
   }, [
     graph,
@@ -401,6 +374,14 @@ export default function useTableSelection(
     setSession,
     setSessionSyncLoading,
     windowId,
-    isTableVisible,
   ]);
+
+  useEffect(() => {
+    return () => {
+      if (sessionSyncTimerRef.current !== null) {
+        clearTimeout(sessionSyncTimerRef.current);
+        sessionSyncTimerRef.current = null;
+      }
+    };
+  }, []);
 }
