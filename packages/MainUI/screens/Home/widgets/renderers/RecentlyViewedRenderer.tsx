@@ -15,36 +15,55 @@
  *************************************************************************
  */
 
-import type { RecentlyViewedWidgetData } from "@workspaceui/api-client/src/api/dashboard";
+"use client";
 
-interface RecentlyViewedRendererProps {
-  data: RecentlyViewedWidgetData;
-}
+import { useCallback } from "react";
+import { useLocalStorage } from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
+import type { RecentItem } from "@workspaceui/componentlibrary/src/components/Drawer/types";
+import { useTranslation } from "@/hooks/useTranslation";
+import { useUserContext } from "@/hooks/useUserContext";
+import { useWindowContext } from "@/contexts/window";
+import { getNewWindowIdentifier } from "@/utils/window/utils";
 
-export default function RecentlyViewedRenderer({ data }: RecentlyViewedRendererProps) {
-  if (data.items.length === 0) {
+export default function RecentlyViewedRenderer() {
+  const { t } = useTranslation();
+  const { currentRole } = useUserContext();
+  const { setWindowActive } = useWindowContext();
+  const [recentlyViewedItems] = useLocalStorage<Record<string, RecentItem[]>>("recentlyViewedItems", {});
+
+  const roleId = currentRole?.id ?? "";
+  const items = roleId ? (recentlyViewedItems[roleId] ?? []) : [];
+
+  const handleClick = useCallback(
+    (item: RecentItem) => {
+      const windowId = item.windowId ?? item.id;
+      if (!windowId) return;
+      const windowIdentifier = getNewWindowIdentifier(windowId);
+      setWindowActive({ windowIdentifier, windowData: { title: item.name, initialized: true } });
+    },
+    [setWindowActive]
+  );
+
+  if (items.length === 0) {
     return (
       <p className="text-sm text-baseline-50" data-testid="RecentlyViewedRenderer__empty">
-        —
+        {t("dashboard.recentlyViewed.empty")}
       </p>
     );
   }
 
   return (
-    <ul className="flex flex-col gap-2" data-testid="RecentlyViewedRenderer__list">
-      {data.items.map((item, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: items have no stable composite key available
-        <li
-          key={i}
-          className="flex items-center justify-between gap-2"
-          data-testid={`RecentlyViewedRenderer__item_${i}`}>
-          <div className="flex flex-col min-w-0">
-            <span className="text-sm font-medium text-baseline-100 truncate">{item.label}</span>
-            <span className="text-xs text-baseline-50">{item.type}</span>
-          </div>
-          <span className="text-xs text-baseline-50 shrink-0">{item.time}</span>
-        </li>
+    <div className="flex flex-wrap gap-2" data-testid="RecentlyViewedRenderer__list">
+      {items.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => handleClick(item)}
+          className="rounded-full px-3 py-1 text-sm font-medium bg-transparent-neutral-5 hover:bg-transparent-neutral-10 text-baseline-100 border border-transparent-neutral-10 transition-colors cursor-pointer"
+          data-testid={`RecentlyViewedRenderer__item_${item.id}`}>
+          {item.name}
+        </button>
       ))}
-    </ul>
+    </div>
   );
 }

@@ -25,8 +25,6 @@ import type {
   NotificationWidgetData,
   StockAlertWidgetData,
   FavoritesWidgetData,
-  RecentDocsWidgetData,
-  RecentlyViewedWidgetData,
   ProcessWidgetData,
 } from "@workspaceui/api-client/src/api/dashboard";
 import KpiRenderer from "./renderers/KpiRenderer";
@@ -63,11 +61,9 @@ export default function WidgetRenderer({ type, data }: WidgetRendererProps) {
     case "FAVORITES":
       return <FavoritesRenderer data={data as FavoritesWidgetData} data-testid="FavoritesRenderer__9fb9f4" />;
     case "RECENT_DOCS":
-      return <RecentDocsRenderer data={data as RecentDocsWidgetData} data-testid="RecentDocsRenderer__9fb9f4" />;
+      return <RecentDocsRenderer data-testid="RecentDocsRenderer__9fb9f4" />;
     case "RECENTLY_VIEWED":
-      return (
-        <RecentlyViewedRenderer data={data as RecentlyViewedWidgetData} data-testid="RecentlyViewedRenderer__9fb9f4" />
-      );
+      return <RecentlyViewedRenderer data-testid="RecentlyViewedRenderer__9fb9f4" />;
     case "PROCESS":
       return <ProcessRenderer data={data as ProcessWidgetData} data-testid="ProcessRenderer__9fb9f4" />;
     default:
