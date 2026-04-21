@@ -102,5 +102,4 @@ describe("useTableSelection", () => {
 
     expect(mockSetSelectedRecord).not.toHaveBeenCalled();
   });
-
 });

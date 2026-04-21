@@ -234,7 +234,6 @@ const validateParentSelection = (
   return true;
 };
 
-
 export default function useTableSelection(
   tab: Tab,
   records: EntityData[],
