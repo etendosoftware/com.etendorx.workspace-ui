@@ -29,6 +29,7 @@ const ConfirmModal = memo(
     onCancel,
     saveLabel = "Confirm",
     secondaryButtonLabel = "Cancel",
+    hideSecondaryButton = false,
     open = true,
   }: ConfirmModalProps) => {
     const theme = useTheme();
@@ -43,7 +44,7 @@ const ConfirmModal = memo(
         open={open}
         showHeader={false}
         saveButtonLabel={saveLabel}
-        secondaryButtonLabel={secondaryButtonLabel}
+        secondaryButtonLabel={hideSecondaryButton ? undefined : secondaryButtonLabel}
         SaveIcon={SaveIcon}
         backgroundGradient={backgroundGradient}
         onSave={onConfirm}

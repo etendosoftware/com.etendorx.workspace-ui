@@ -94,6 +94,9 @@ export const FIELD_REFERENCE_CODES = {
   // Button reference
   BUTTON: { id: "28", calloutTrigger: CALLOUT_TRIGGERS.ON_BLUR },
 
+  // Image reference (AD_Image_ID)
+  IMAGE: { id: "4AA6C3BE9D3B4D84A3B80489505A23E5", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
+
   // Upload File reference (for process parameters)
   UPLOAD_FILE: { id: "715C53D4FEA74B28B74F14AE65BC5C16", calloutTrigger: CALLOUT_TRIGGERS.ON_CHANGE },
 } as const;

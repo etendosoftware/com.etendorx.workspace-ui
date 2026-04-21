@@ -42,6 +42,7 @@ import { TableFilter } from "@workspaceui/componentlibrary/src/components/Advanc
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
 import { parseColumns } from "@/utils/tableColumns";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { ColumnFilterUtils, type FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -499,7 +500,9 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const parsedColumns = useMemo(() => {
     if (!tab.fields) return [];
     // We need to cast to any because Tab.fields is Record<string, unknown> but parseColumns expects Field[]
-    return parseColumns(Object.values(tab.fields) as any[]);
+    return parseColumns(Object.values(tab.fields) as any[]).filter(
+      (col: any) => col.column?.reference !== FIELD_REFERENCE_CODES.IMAGE.id
+    );
   }, [tab.fields]);
 
   const handleLoadOptions = useCallback(
