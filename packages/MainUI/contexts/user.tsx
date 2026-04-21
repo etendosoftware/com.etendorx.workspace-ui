@@ -121,6 +121,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
         ...sessionResponse.attributes,
         "#AD_Org_ID": sessionResponse.currentOrganization.id,
         adOrgId: sessionResponse.currentOrganization.id,
+        "#AD_Client_ID": sessionResponse.currentClient.id,
+        AD_CLIENT_ID: sessionResponse.currentClient.id,
       }));
       updateProfile(currentProfileInfo);
       setUser(sessionResponse.user);

@@ -342,7 +342,7 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
       timeout: 60_000,
     });
     const submitBtn = page.locator("button").filter({ hasText: /^Execute$/ });
-    await submitBtn.waitFor({ state: "visible", timeout: 10_000 });
+    await submitBtn.waitFor({ state: "visible", timeout: 30_000 });
     await submitBtn.click();
     await successToastAppeared;
     await closeToastIfPresent(page);

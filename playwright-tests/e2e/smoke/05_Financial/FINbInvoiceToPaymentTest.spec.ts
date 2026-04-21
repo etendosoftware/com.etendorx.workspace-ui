@@ -276,6 +276,12 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await executePaymentResponse;
     await closeToastIfPresent(page);
 
+    // The Add Details dialog does not auto-close after execution.
+    // Press Escape to close it — avoids ambiguity between dialog and tab-level close buttons.
+    await page.waitForTimeout(2_000);
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(1_000);
+
     // ── Step 9: Verify final payment state ───────────────────────────────────
     await page.locator("button.toolbar-button-refresh").filter({ visible: true }).first().click();
 

@@ -17,6 +17,8 @@
 
 import {
   MaterialReactTable,
+  MRT_ToggleDensePaddingButton,
+  MRT_ToggleFullScreenButton,
   type MRT_Row,
   useMaterialReactTable,
   type MRT_TableBodyRowProps,
@@ -2960,7 +2962,53 @@ const DynamicTable = ({
     enableStickyFooter: false,
     enableColumnVirtualization: true,
     enableRowVirtualization: canUseVirtualScrollingWithEditing(editingRows, effectiveRecords.length),
-    enableTopToolbar: false,
+    enableTopToolbar: true,
+    renderTopToolbar: ({ table: mrtTable }) => {
+      const isFullScreen = mrtTable.getState().isFullScreen;
+
+      if (isFullScreen) {
+        return (
+          <div className="flex justify-end items-center px-2 py-1 bg-white border-b border-gray-100">
+            <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
+            <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
+            <button
+              type="button"
+              onClick={() => mrtTable.setIsFullScreen(false)}
+              className="ml-1 p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-900 text-lg leading-none"
+              aria-label="Exit fullscreen">
+              ✕
+            </button>
+          </div>
+        );
+      }
+
+      const rowSelection = mrtTable.getState().rowSelection;
+      const selCount = Object.keys(rowSelection).filter((id) => rowSelection[id]).length;
+      const loaded = displayRecords.length;
+      const total = hasMoreRecords ? loaded + 1 : loaded;
+      const labels = {
+        showingRecords: t("table.counter.showingRecords"),
+        showingPartialRecords: t("table.counter.showingPartialRecords"),
+        selectedRecords: t("table.counter.selectedRecords"),
+        recordsLoaded: t("table.counter.recordsLoaded"),
+      };
+      return (
+        <RecordCounterBar
+          totalRecords={total}
+          loadedRecords={loaded}
+          selectedCount={selCount}
+          isLoading={loading}
+          labels={labels}
+          actions={
+            <>
+              <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
+              <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
+            </>
+          }
+          data-testid="RecordCounterBar__8ca888"
+        />
+      );
+    },
     enableBottomToolbar: false,
     enableExpanding: shouldUseTreeMode,
     paginateExpandedRows: false,
@@ -3403,11 +3451,11 @@ const DynamicTable = ({
       if (event.key === "Escape") {
         const editingRowIds = editingRowUtils.getEditingRowIds();
 
-        // If there are editing rows, cancel the first one using handleCancelRow
-        // This ensures we use the confirmation modal instead of window.confirm
         if (editingRowIds.length > 0) {
-          const rowId = editingRowIds[0]; // Cancel the first editing row
+          const rowId = editingRowIds[0];
           await handleCancelRow(rowId);
+        } else if (table.getState().isFullScreen) {
+          table.setIsFullScreen(false);
         }
       }
     };
@@ -3416,7 +3464,7 @@ const DynamicTable = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [editingRowUtils, handleCancelRow]);
+  }, [editingRowUtils, handleCancelRow, table]);
 
   useEffect(() => {
     if (removeRecordLocally) {
@@ -3547,20 +3595,6 @@ const DynamicTable = ({
       </div>
     );
   }
-
-  // Calculate counter values
-  const selectedRecords = Object.keys(table.getState().rowSelection).filter((id) => table.getState().rowSelection[id]);
-  const selectedCount = selectedRecords.length;
-  const loadedRecords = displayRecords.length;
-  const totalRecords = hasMoreRecords ? loadedRecords + 1 : loadedRecords; // Approximate total when more records available
-
-  // Prepare labels for RecordCounterBar with translations
-  const counterLabels = {
-    showingRecords: t("table.counter.showingRecords"),
-    showingPartialRecords: t("table.counter.showingPartialRecords"),
-    selectedRecords: t("table.counter.selectedRecords"),
-    recordsLoaded: t("table.counter.recordsLoaded"),
-  };
 
   return (
     <div
