@@ -51,7 +51,11 @@ export default function StockAlertRenderer({ data }: StockAlertRendererProps) {
           data-testid={`StockAlertRenderer__item_${item.productId}`}>
           <span className="text-sm text-baseline-100 truncate flex-1">{item.productName}</span>
           <div className="flex items-center gap-2 shrink-0">
-            <StockLevelBar current={item.currentStock} minimum={item.estimatedStock} />
+            <StockLevelBar
+              current={item.currentStock}
+              minimum={item.estimatedStock}
+              data-testid="StockLevelBar__7d1af5"
+            />
             <span className="text-xs text-baseline-50 tabular-nums">
               {item.currentStock}/{item.estimatedStock} {item.unit}
             </span>

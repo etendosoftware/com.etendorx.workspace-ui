@@ -57,7 +57,7 @@ export default function WidgetCard({ instance, data, error, onRemove }: WidgetCa
               className="text-baseline-50"
               title={`Widget del sistema (${instance.layer})`}
               data-testid={`WidgetCard__lock_${instance.instanceId}`}>
-              <LockIcon />
+              <LockIcon data-testid="LockIcon__cb8729" />
             </span>
           )}
           <button
@@ -66,11 +66,10 @@ export default function WidgetCard({ instance, data, error, onRemove }: WidgetCa
             className="text-baseline-50 hover:text-baseline-100 transition-colors cursor-pointer rounded p-0.5 hover:bg-transparent-neutral-10"
             title={isLocked ? "Ocultar widget" : "Eliminar widget"}
             data-testid={`WidgetCard__remove_${instance.instanceId}`}>
-            <CloseIcon />
+            <CloseIcon data-testid="CloseIcon__cb8729" />
           </button>
         </div>
       </div>
-
       {/* Content */}
       {isLoading && (
         <div className="flex flex-col gap-2 animate-pulse" data-testid={`WidgetCard__loading_${instance.instanceId}`}>
@@ -79,14 +78,14 @@ export default function WidgetCard({ instance, data, error, onRemove }: WidgetCa
           <div className="h-3 rounded bg-transparent-neutral-10 w-2/3" />
         </div>
       )}
-
       {error !== undefined && !isLoading && (
         <p className="text-sm text-error-main" data-testid={`WidgetCard__error_${instance.instanceId}`}>
           {error}
         </p>
       )}
-
-      {data !== undefined && !error && <WidgetRenderer type={instance.type} data={data.data} />}
+      {data !== undefined && !error && (
+        <WidgetRenderer type={instance.type} data={data.data} data-testid="WidgetRenderer__cb8729" />
+      )}
     </div>
   );
 }

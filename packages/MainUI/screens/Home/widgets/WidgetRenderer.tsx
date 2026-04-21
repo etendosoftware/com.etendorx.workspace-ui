@@ -49,26 +49,28 @@ interface WidgetRendererProps {
 export default function WidgetRenderer({ type, data }: WidgetRendererProps) {
   switch (type) {
     case "KPI":
-      return <KpiRenderer data={data as KpiWidgetData} />;
+      return <KpiRenderer data={data as KpiWidgetData} data-testid="KpiRenderer__9fb9f4" />;
     case "QUERY_LIST":
-      return <QueryListRenderer data={data as QueryListWidgetData} />;
+      return <QueryListRenderer data={data as QueryListWidgetData} data-testid="QueryListRenderer__9fb9f4" />;
     case "HTML":
-      return <HtmlRenderer data={data as HtmlWidgetData} />;
+      return <HtmlRenderer data={data as HtmlWidgetData} data-testid="HtmlRenderer__9fb9f4" />;
     case "URL":
-      return <UrlRenderer data={data as UrlWidgetData} />;
+      return <UrlRenderer data={data as UrlWidgetData} data-testid="UrlRenderer__9fb9f4" />;
     case "NOTIFICATION":
-      return <NotificationRenderer data={data as NotificationWidgetData} />;
+      return <NotificationRenderer data={data as NotificationWidgetData} data-testid="NotificationRenderer__9fb9f4" />;
     case "STOCK_ALERT":
-      return <StockAlertRenderer data={data as StockAlertWidgetData} />;
+      return <StockAlertRenderer data={data as StockAlertWidgetData} data-testid="StockAlertRenderer__9fb9f4" />;
     case "FAVORITES":
-      return <FavoritesRenderer data={data as FavoritesWidgetData} />;
+      return <FavoritesRenderer data={data as FavoritesWidgetData} data-testid="FavoritesRenderer__9fb9f4" />;
     case "RECENT_DOCS":
-      return <RecentDocsRenderer data={data as RecentDocsWidgetData} />;
+      return <RecentDocsRenderer data={data as RecentDocsWidgetData} data-testid="RecentDocsRenderer__9fb9f4" />;
     case "RECENTLY_VIEWED":
-      return <RecentlyViewedRenderer data={data as RecentlyViewedWidgetData} />;
+      return (
+        <RecentlyViewedRenderer data={data as RecentlyViewedWidgetData} data-testid="RecentlyViewedRenderer__9fb9f4" />
+      );
     case "PROCESS":
-      return <ProcessRenderer data={data as ProcessWidgetData} />;
+      return <ProcessRenderer data={data as ProcessWidgetData} data-testid="ProcessRenderer__9fb9f4" />;
     default:
-      return <FallbackRenderer type={type} />;
+      return <FallbackRenderer type={type} data-testid="FallbackRenderer__9fb9f4" />;
   }
 }

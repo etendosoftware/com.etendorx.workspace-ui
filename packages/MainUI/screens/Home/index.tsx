@@ -56,9 +56,7 @@ export default function Home() {
   return (
     <div className="flex flex-col gap-4 w-full h-full overflow-y-auto p-4" data-testid="Home__container">
       <CTABanner data-testid="CTABanner__dashboard" />
-
-      {isLoadingLayout && <LoadingSkeleton />}
-
+      {isLoadingLayout && <LoadingSkeleton data-testid="LoadingSkeleton__3ef224" />}
       {layoutError && !isLoadingLayout && (
         <div
           className="rounded-2xl bg-error-contrast-text p-5 text-sm text-error-main"
@@ -66,13 +64,11 @@ export default function Home() {
           {t("dashboard.loadError")}
         </div>
       )}
-
       {!isLoadingLayout && !layoutError && sortedLayout.length === 0 && (
         <p className="text-sm text-baseline-50 p-2" data-testid="Home__no_widgets">
           {t("dashboard.noWidgets")}
         </p>
       )}
-
       {!isLoadingLayout && !layoutError && sortedLayout.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="Home__widget_grid">
           {sortedLayout.map((instance) => (
@@ -85,6 +81,7 @@ export default function Home() {
                 data={widgetData[instance.instanceId]}
                 error={widgetErrors[instance.instanceId]}
                 onRemove={handleRemove}
+                data-testid="WidgetCard__3ef224"
               />
             </div>
           ))}
