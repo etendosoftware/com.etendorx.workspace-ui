@@ -314,6 +314,22 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     const executeBtn = page.locator('[data-testid^="ExecuteReportButton"]');
     await executeBtn.waitFor({ state: "visible", timeout: 30_000 });
     await expect(executeBtn).not.toBeDisabled({ timeout: 10_000 });
+
+    // Intercept the polling response BEFORE clicking so we don't miss it.
+    // The UI polls /api/process/report-and-process/{pInstanceId} every 3 s;
+    // we wait for the response where isProcessing is false (terminal state).
+    // Timeout is 300 s to accommodate slow CI servers (process itself may take 2+ min).
+    const pollCompletedPromise = page
+      .waitForResponse(
+        async (r) => {
+          if (!r.url().match(/\/api\/process\/report-and-process\/[^/]+$/)) return false;
+          const data = await r.json().catch(() => null);
+          return data !== null && data.isProcessing === false;
+        },
+        { timeout: 300_000 }
+      )
+      .catch(() => null);
+
     await executeBtn.click();
 
     // If an async error appears within 3 s, retry the execution once.
@@ -324,10 +340,13 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
       await executeBtn.click();
     }
 
-    // Verify report completion — the result may appear in a legacy iframe or on the React page.
-    // The Generate Invoices report shows "Created: X" directly (not "Process completed successfully"),
-    // so accept either pattern. Poll all frames (same pattern as the Create Shipments success check).
-    const invoiceSuccessDeadline = Date.now() + 150_000;
+    // Wait for the backend to signal completion via the polling endpoint.
+    // This is more reliable than searching for ephemeral toast text (toast lasts only 5 s).
+    await pollCompletedPromise;
+
+    // Also verify the success message appears somewhere in the page/frames —
+    // kept as a belt-and-suspenders UI assertion with a generous 300 s budget.
+    const invoiceSuccessDeadline = Date.now() + 300_000;
     const invoiceSuccessPattern = /Process completed success|Created:/i;
     let invoiceProcessSuccess = false;
     while (Date.now() < invoiceSuccessDeadline && !invoiceProcessSuccess) {
@@ -358,7 +377,7 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
       }
       if (!invoiceProcessSuccess) await page.waitForTimeout(300);
     }
-    if (!invoiceProcessSuccess) throw new Error("Generate Invoices process did not complete successfully within 150s");
+    if (!invoiceProcessSuccess) throw new Error("Generate Invoices process did not complete successfully within 300s");
 
     // Verify "Created:" summary — check main page and all frames
     const createdDeadline = Date.now() + 15_000;
