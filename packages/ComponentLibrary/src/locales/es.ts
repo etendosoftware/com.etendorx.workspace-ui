@@ -300,6 +300,7 @@ const es = {
     processError: "Error mientras se cargaba la informacion del proceso",
     warning: "Advertencia",
     selectFile: "Seleccionar archivo...",
+    executionTimeout: "El tiempo de ejecución del proceso expiró. Por favor intente nuevamente.",
   },
   drawer: {
     recentlyViewed: "Visto recientemente",
@@ -588,6 +589,80 @@ const es = {
     processCompleted: "Proceso completado exitosamente",
     cancel: "Cancelar",
     close: "Cerrar",
+  },
+  image: {
+    upload: {
+      titleNew: "Cargar imagen",
+      titleReplace: "Reemplazar imagen",
+      dropZoneText: "Arrastra y suelta una imagen aquí, o haz clic para seleccionar",
+      supportedFormats: "Admite JPG, PNG, GIF, SVG, WebP",
+      uploadButton: "Cargar",
+      uploading: "Cargando...",
+      success: "Imagen cargada exitosamente",
+      errors: {
+        invalidFile: "Por favor selecciona un archivo de imagen",
+        uploadFailed: "Error al cargar",
+        parseIdFailed: "No se pudo obtener el ID de imagen de la respuesta",
+      },
+    },
+    preview: {
+      altText: "Vista previa",
+      zoomOut: "Alejar",
+      zoomIn: "Acercar",
+      resetZoom: "Restablecer zoom",
+      replaceImage: "Reemplazar imagen",
+      deleteImage: "Eliminar imagen",
+      deleteConfirm: {
+        title: "Eliminar imagen",
+        message: "¿Estás seguro de que deseas eliminar esta imagen?",
+      },
+    },
+    selector: {
+      clickToUpload: "Haz clic para cargar una imagen",
+      noImage: "Sin imagen",
+      viewImage: "Ver imagen",
+      removeImage: "Eliminar imagen",
+      altText: "Imagen",
+    },
+    sizeConstraints: {
+      warn: {
+        ALLOWED: "El tamaño de la imagen debe ser exactamente {{width}}x{{height}} píxeles.",
+        ALLOWED_MINIMUM: "El tamaño mínimo de la imagen es {{width}}x{{height}} píxeles.",
+        ALLOWED_MAXIMUM: "El tamaño máximo de la imagen es {{width}}x{{height}} píxeles.",
+        RECOMMENDED:
+          "Para un mejor resultado, se recomienda usar una imagen de exactamente {{width}}x{{height}} píxeles.",
+        RECOMMENDED_MINIMUM:
+          "Para un mejor resultado, se recomienda usar una imagen de al menos {{width}}x{{height}} píxeles.",
+        RECOMMENDED_MAXIMUM:
+          "Para un mejor resultado, se recomienda usar una imagen de {{width}}x{{height}} píxeles o menos.",
+        RESIZE_NOASPECTRATIO:
+          "La imagen será redimensionada a {{width}}x{{height}} píxeles. Para evitar distorsión, se recomienda subir una imagen con la misma proporción.",
+        RESIZE_ASPECTRATIO:
+          "La imagen será redimensionada a un tamaño máximo de {{width}}x{{height}} píxeles (manteniendo la proporción).",
+        RESIZE_ASPECTRATIONL:
+          "La imagen será redimensionada a un tamaño máximo de {{width}}x{{height}} píxeles (manteniendo la proporción) si tiene un tamaño mayor.",
+      },
+      error: {
+        WRONGFORMAT: "Formato de archivo no compatible.\nLos formatos soportados son JPG, PNG, GIF, BMP y SVG.",
+        ERROR_UPLOADING: "Error al subir la imagen: {{error}}",
+        ALLOWED:
+          "El tamaño de la imagen cargada ({{actualWidth}}x{{actualHeight}} píxeles) no coincide con el tamaño requerido ({{configWidth}}x{{configHeight}} píxeles).",
+        ALLOWED_MINIMUM:
+          "El tamaño de la imagen cargada ({{actualWidth}}x{{actualHeight}} píxeles) es menor que el tamaño mínimo requerido ({{configWidth}}x{{configHeight}} píxeles).",
+        ALLOWED_MAXIMUM:
+          "El tamaño de la imagen cargada ({{actualWidth}}x{{actualHeight}} píxeles) supera el tamaño máximo permitido ({{configWidth}}x{{configHeight}} píxeles).",
+      },
+      confirm: {
+        RECOMMENDED:
+          "El tamaño de la imagen cargada ({{actualWidth}}x{{actualHeight}} píxeles) no coincide con el tamaño recomendado ({{configWidth}}x{{configHeight}} píxeles).\nEsto puede generar un efecto visual no deseado.\n\n¿Desea continuar?",
+        RECOMMENDED_MINIMUM:
+          "El tamaño de la imagen cargada ({{actualWidth}}x{{actualHeight}} píxeles) es menor que el tamaño mínimo recomendado ({{configWidth}}x{{configHeight}} píxeles).\nEsto puede generar un efecto visual no deseado.\n\n¿Desea continuar?",
+        RECOMMENDED_MAXIMUM:
+          "El tamaño de la imagen cargada ({{actualWidth}}x{{actualHeight}} píxeles) supera el tamaño máximo recomendado ({{configWidth}}x{{configHeight}} píxeles).\nEsto puede generar un efecto visual no deseado.\n\n¿Desea continuar?",
+        RESIZE:
+          "La imagen cargada de {{originalWidth}}x{{originalHeight}} píxeles será redimensionada automáticamente a {{targetWidth}}x{{targetHeight}} píxeles.\nEsto puede resultar en una pérdida de calidad de imagen.\n\n¿Desea continuar?",
+      },
+    },
   },
   packing: {
     title: "Proceso de Empaque",

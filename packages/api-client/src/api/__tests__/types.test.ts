@@ -1,4 +1,4 @@
-import { SessionMode, FormMode } from "../types";
+import { SessionMode, FormMode, FieldType } from "../types";
 
 describe("SessionMode", () => {
   it("should include SETSESSION mode", () => {
@@ -39,5 +39,16 @@ describe("FormMode independence", () => {
     for (const formValue of formModeValues) {
       expect(sessionModeValues).not.toContain(formValue);
     }
+  });
+});
+
+describe("FieldType", () => {
+  it("should include all expected field types", () => {
+    expect(FieldType.TEXT).toBe("text");
+    expect(FieldType.NUMBER).toBe("number");
+    expect(FieldType.DATE).toBe("date");
+    expect(FieldType.BOOLEAN).toBe("boolean");
+    expect(FieldType.SELECT).toBe("select");
+    expect(FieldType.IMAGE).toBe("image");
   });
 });
