@@ -37,6 +37,16 @@ function baseProps(overrides: Record<string, unknown> = {}) {
 
 type HookProps = ReturnType<typeof baseProps>;
 
+async function renderAndTrigger(initialProps: HookProps, updatedForm: ReturnType<typeof makeForm>) {
+  const { rerender } = renderHook(({ p }: { p: HookProps }) => useProcessFICCallout(p), {
+    initialProps: { p: initialProps },
+  });
+  await act(async () => jest.advanceTimersByTime(400));
+  rerender({ p: { ...initialProps, form: updatedForm } });
+  await act(async () => jest.advanceTimersByTime(400));
+  return { rerender };
+}
+
 describe("useProcessFICCallout", () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -63,43 +73,19 @@ describe("useProcessFICCallout", () => {
   describe("guard conditions", () => {
     it("does not fire callout when enabled is false", async () => {
       const props = baseProps({ enabled: false, form: makeForm({ field1: "init" }) });
-      const { rerender } = renderHook(({ p }: { p: HookProps }) => useProcessFICCallout(p), {
-        initialProps: { p: props },
-      });
-
-      await act(async () => jest.advanceTimersByTime(400));
-
-      rerender({ p: { ...props, form: makeForm({ field1: "changed" }) } });
-      await act(async () => jest.advanceTimersByTime(400));
-
+      await renderAndTrigger(props, makeForm({ field1: "changed" }));
       expect(mockPost).not.toHaveBeenCalled();
     });
 
     it("does not fire callout when tabId is empty", async () => {
       const props = baseProps({ tabId: "", form: makeForm({ field1: "init" }) });
-      const { rerender } = renderHook(({ p }: { p: HookProps }) => useProcessFICCallout(p), {
-        initialProps: { p: props },
-      });
-
-      await act(async () => jest.advanceTimersByTime(400));
-
-      rerender({ p: { ...props, form: makeForm({ field1: "changed" }) } });
-      await act(async () => jest.advanceTimersByTime(400));
-
+      await renderAndTrigger(props, makeForm({ field1: "changed" }));
       expect(mockPost).not.toHaveBeenCalled();
     });
 
     it("does not fire callout when changed field has no matching parameter", async () => {
       const props = baseProps({ form: makeForm({ unknownField: "init" }) });
-      const { rerender } = renderHook(({ p }: { p: HookProps }) => useProcessFICCallout(p), {
-        initialProps: { p: props },
-      });
-
-      await act(async () => jest.advanceTimersByTime(400));
-
-      rerender({ p: { ...props, form: makeForm({ unknownField: "changed" }) } });
-      await act(async () => jest.advanceTimersByTime(400));
-
+      await renderAndTrigger(props, makeForm({ unknownField: "changed" }));
       expect(mockPost).not.toHaveBeenCalled();
     });
   });
@@ -110,15 +96,7 @@ describe("useProcessFICCallout", () => {
         data: { columnValues: { dbCol1: { value: "new" } }, dynamicCols: [] },
       });
 
-      const props = baseProps({ form: makeForm({ field1: "init" }) });
-      const { rerender } = renderHook(({ p }: { p: HookProps }) => useProcessFICCallout(p), {
-        initialProps: { p: props },
-      });
-
-      await act(async () => jest.advanceTimersByTime(400));
-
-      rerender({ p: { ...props, form: makeForm({ field1: "changed" }) } });
-      await act(async () => jest.advanceTimersByTime(400));
+      await renderAndTrigger(baseProps({ form: makeForm({ field1: "init" }) }), makeForm({ field1: "changed" }));
 
       expect(mockPost).toHaveBeenCalledTimes(1);
     });
@@ -133,14 +111,10 @@ describe("useProcessFICCallout", () => {
         },
       });
 
-      const props = baseProps({ form: makeForm({ field1: "init" }), onCalloutResponse });
-      const { rerender } = renderHook(({ p }: { p: HookProps }) => useProcessFICCallout(p), {
-        initialProps: { p: props },
-      });
-
-      await act(async () => jest.advanceTimersByTime(400));
-      rerender({ p: { ...props, form: makeForm({ field1: "updated" }) } });
-      await act(async () => jest.advanceTimersByTime(400));
+      await renderAndTrigger(
+        baseProps({ form: makeForm({ field1: "init" }), onCalloutResponse }),
+        makeForm({ field1: "updated" })
+      );
 
       expect(onCalloutResponse).toHaveBeenCalledWith({
         columnValues: { col: { value: "v", classicValue: "cv", identifier: "id" } },
@@ -160,14 +134,10 @@ describe("useProcessFICCallout", () => {
         },
       });
 
-      const props = baseProps({ form: makeForm({ field1: "init" }), onCalloutResponse });
-      const { rerender } = renderHook(({ p }: { p: HookProps }) => useProcessFICCallout(p), {
-        initialProps: { p: props },
-      });
-
-      await act(async () => jest.advanceTimersByTime(400));
-      rerender({ p: { ...props, form: makeForm({ field1: "updated" }) } });
-      await act(async () => jest.advanceTimersByTime(400));
+      await renderAndTrigger(
+        baseProps({ form: makeForm({ field1: "init" }), onCalloutResponse }),
+        makeForm({ field1: "updated" })
+      );
 
       expect(onCalloutResponse).toHaveBeenCalledWith({
         columnValues: { col: { value: "v" } },
@@ -180,14 +150,10 @@ describe("useProcessFICCallout", () => {
       const onCalloutResponse = jest.fn();
       mockPost.mockResolvedValue({ data: { someOtherData: true } });
 
-      const props = baseProps({ form: makeForm({ field1: "init" }), onCalloutResponse });
-      const { rerender } = renderHook(({ p }: { p: HookProps }) => useProcessFICCallout(p), {
-        initialProps: { p: props },
-      });
-
-      await act(async () => jest.advanceTimersByTime(400));
-      rerender({ p: { ...props, form: makeForm({ field1: "changed" }) } });
-      await act(async () => jest.advanceTimersByTime(400));
+      await renderAndTrigger(
+        baseProps({ form: makeForm({ field1: "init" }), onCalloutResponse }),
+        makeForm({ field1: "changed" })
+      );
 
       expect(mockPost).toHaveBeenCalled();
       expect(onCalloutResponse).not.toHaveBeenCalled();
@@ -198,14 +164,7 @@ describe("useProcessFICCallout", () => {
       const newForm = makeForm({ field1: "newValue" });
       newForm.getValues = jest.fn(() => changedValues) as any;
 
-      const props = baseProps({ form: makeForm({ field1: "init" }) });
-      const { rerender } = renderHook(({ p }: { p: HookProps }) => useProcessFICCallout(p), {
-        initialProps: { p: props },
-      });
-
-      await act(async () => jest.advanceTimersByTime(400));
-      rerender({ p: { ...props, form: newForm } });
-      await act(async () => jest.advanceTimersByTime(400));
+      await renderAndTrigger(baseProps({ form: makeForm({ field1: "init" }) }), newForm);
 
       expect(mockPost).toHaveBeenCalled();
       const payload = mockPost.mock.calls[0][1] as Record<string, unknown>;
@@ -213,14 +172,10 @@ describe("useProcessFICCallout", () => {
     });
 
     it("includes TAB_ID, CHANGED_COLUMN and MODE=CHANGE in the request URL", async () => {
-      const props = baseProps({ tabId: "my-tab", form: makeForm({ field1: "init" }) });
-      const { rerender } = renderHook(({ p }: { p: HookProps }) => useProcessFICCallout(p), {
-        initialProps: { p: props },
-      });
-
-      await act(async () => jest.advanceTimersByTime(400));
-      rerender({ p: { ...props, form: makeForm({ field1: "updated" }) } });
-      await act(async () => jest.advanceTimersByTime(400));
+      await renderAndTrigger(
+        baseProps({ tabId: "my-tab", form: makeForm({ field1: "init" }) }),
+        makeForm({ field1: "updated" })
+      );
 
       const url = mockPost.mock.calls[0][0] as string;
       expect(url).toContain("TAB_ID=my-tab");
@@ -237,17 +192,10 @@ describe("useProcessFICCallout", () => {
       const newForm = makeForm({ field1: "v1", field2: "v2" });
       newForm.getValues = jest.fn(() => changedValues) as any;
 
-      const props = baseProps({
-        parameters: paramsWithExtra as any,
-        form: makeForm({ field1: "init", field2: "init2" }),
-      });
-      const { rerender } = renderHook(({ p }: { p: HookProps }) => useProcessFICCallout(p), {
-        initialProps: { p: props },
-      });
-
-      await act(async () => jest.advanceTimersByTime(400));
-      rerender({ p: { ...props, form: newForm } });
-      await act(async () => jest.advanceTimersByTime(400));
+      await renderAndTrigger(
+        baseProps({ parameters: paramsWithExtra as any, form: makeForm({ field1: "init", field2: "init2" }) }),
+        newForm
+      );
 
       const payload = mockPost.mock.calls[0][1] as Record<string, unknown>;
       expect(payload).toHaveProperty("inpdbCol1");
@@ -259,15 +207,9 @@ describe("useProcessFICCallout", () => {
     it("handles API errors gracefully without throwing", async () => {
       mockPost.mockRejectedValue(new Error("Network error"));
 
-      const props = baseProps({ form: makeForm({ field1: "init" }) });
-      const { rerender } = renderHook(({ p }: { p: HookProps }) => useProcessFICCallout(p), {
-        initialProps: { p: props },
-      });
-
-      await act(async () => jest.advanceTimersByTime(400));
-      rerender({ p: { ...props, form: makeForm({ field1: "changed" }) } });
-
-      await expect(act(async () => jest.advanceTimersByTime(400))).resolves.not.toThrow();
+      await expect(
+        renderAndTrigger(baseProps({ form: makeForm({ field1: "init" }) }), makeForm({ field1: "changed" }))
+      ).resolves.not.toThrow();
       expect(mockPost).toHaveBeenCalled();
     });
   });
@@ -280,9 +222,7 @@ describe("useProcessFICCallout", () => {
       });
 
       await act(async () => jest.advanceTimersByTime(400));
-
       rerender({ p: { ...props, form: makeForm({ field1: "changed" }) } });
-
       await act(async () => jest.advanceTimersByTime(200));
 
       expect(mockPost).not.toHaveBeenCalled();
