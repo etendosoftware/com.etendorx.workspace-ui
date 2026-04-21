@@ -354,9 +354,12 @@ export default function useTableSelection(
     // 5. Synchronize to Context (Immediate)
     // ONLY do this if the selected IDs have actually changed. If only content changed,
     // skip overriding the Window context to avoid race conditions with actions like Clone.
+    // Also only update the URL from a VISIBLE table's selection. When the table is hidden
+    // (form view), its rowSelection can be stale and must not override the URL that was
+    // set by the form navigation — doing so would navigate away from the current record.
     if (hasSelectionIdChanged) {
-      if (selectedRecords.length === 1) {
-        // Case A: Single Record Selected
+      if (selectedRecords.length === 1 && isTableVisible) {
+        // Case A: Single Record Selected (table must be visible to update URL)
         const recordId = String(selectedRecords[0].id);
         setSelectedRecord(windowIdentifier, tab.id, recordId);
       } else if (selectedRecords.length === 0) {
@@ -373,12 +376,21 @@ export default function useTableSelection(
 
     // Sync to session for backend state — ONLY when:
     // 1. The selected record IDs have changed, AND
-    // 2. The table is NOT the primary visible view (i.e. FormView is showing).
-    //    When the table is visible (grid navigation mode), session sync is deferred
-    //    because FormView's own EDIT-mode initialization handles session setup when
-    //    it opens. Calling SETSESSION on every arrow-key navigation triggers redundant
-    //    API requests and cascading UserContext re-renders that can cause update depth errors.
-    if (selectedRecords.length > 0 && hasSelectionIdChanged && !isTableVisible) {
+    // 2. The table is currently VISIBLE (grid mode). Legacy iframe processes read the
+    //    backend session to determine which record to operate on; session sync must happen
+    //    from the grid view. When the table is hidden (form view) the session was already
+    //    set when navigating to the record from the grid, and spurious syncs from a hidden
+    //    table's stale rowSelection can trigger unwanted navigation via SETSESSION.
+    // 3. No child tab is currently in FormView mode.
+    //    When a child tab (e.g. Lines) is in FormView (e.g. new record mode), background
+    //    data refreshes on the parent table can trigger a spurious selection change and
+    //    fire SETSESSION with the wrong record ID, navigating away from the child form.
+    const hasChildInFormView = graph.getChildren(tab)?.some((child) => {
+      if (!getTabFormState) return false;
+      return getTabFormState(windowIdentifier, child.id)?.mode === "form";
+    });
+
+    if (selectedRecords.length > 0 && hasSelectionIdChanged && isTableVisible && !hasChildInFormView) {
       syncSelectedRecordsToSession({
         tab,
         selectedRecords,

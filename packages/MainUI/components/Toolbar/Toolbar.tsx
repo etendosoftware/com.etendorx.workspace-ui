@@ -41,6 +41,7 @@ import {
   type ProcessResponse,
 } from "../ProcessModal/types";
 import ProcessMenu from "./Menus/ProcessMenu";
+import SaveViewMenu from "./Menus/SaveViewMenu";
 import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar/TopToolbar";
 import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
@@ -53,6 +54,8 @@ import { TAB_MODES } from "@/utils/url/constants";
 import { useWindowContext } from "@/contexts/window";
 import ActionModal from "@workspaceui/componentlibrary/src/components/ActionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
+import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
+import { useAutoApplyDefaultView } from "@/hooks/useAutoApplyDefaultView";
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
@@ -67,18 +70,36 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { buttons, processButtons, loading, refetch: refetchToolbar } = useToolbar(windowId, tab?.id);
   const { saveButtonState, isImplicitFilterApplied, isAdvancedFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
-  const { activeWindow, getTabFormState, clearChildrenSelections } = useWindowContext();
+  const {
+    activeWindow,
+    getTabFormState,
+    clearChildrenSelections,
+    setTableFilters,
+    setTableVisibility,
+    setTableSorting,
+    setTableOrder,
+    setTableImplicitFilterApplied,
+  } = useWindowContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { isSessionSyncLoading, isCopilotInstalled, session } = useUserContext();
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [saveViewAnchorEl, setSaveViewAnchorEl] = useState<HTMLElement | null>(null);
   const [isProcessRefreshing, setIsProcessRefreshing] = useState(false);
 
   const selectedRecord = useSelectedRecord(tab);
   const selectedRecords = useSelectedRecords(tab) || [];
   const hasParentTab = !!tab?.parentTabId;
+
+  // Table state for Save View feature — reads current grid state to persist
+  const windowIdentifier = activeWindow?.windowIdentifier ?? "";
+  const { tableColumnFilters, tableColumnVisibility, tableColumnSorting, tableColumnOrder } =
+    useTableStatePersistenceTab({
+      windowIdentifier,
+      tabId: tab?.id ?? "",
+    });
   const parentId = parentRecord?.id?.toString();
   const isTreeNodeView = tab?.tableTree ? true : undefined;
 
@@ -144,6 +165,55 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const handleMenuClose = useCallback(() => {
     setAnchorEl(null);
   }, []);
+
+  const handleSaveViewMenuToggle = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (!saveViewAnchorEl) {
+        setSaveViewAnchorEl(event.currentTarget);
+      } else {
+        setSaveViewAnchorEl(null);
+      }
+    },
+    [saveViewAnchorEl]
+  );
+
+  const handleSaveViewMenuClose = useCallback(() => {
+    setSaveViewAnchorEl(null);
+  }, []);
+
+  const handleApplyView = useCallback(
+    (state: {
+      filters: typeof tableColumnFilters;
+      visibility: typeof tableColumnVisibility;
+      sorting: typeof tableColumnSorting;
+      order: typeof tableColumnOrder;
+      implicitFilterApplied: boolean;
+    }) => {
+      if (!activeWindow?.windowIdentifier || !tab?.id) return;
+      const wi = activeWindow.windowIdentifier;
+      const ti = tab.id;
+      setTableFilters(wi, ti, state.filters);
+      setTableVisibility(wi, ti, state.visibility);
+      setTableSorting(wi, ti, state.sorting);
+      setTableOrder(wi, ti, state.order);
+      setTableImplicitFilterApplied(wi, ti, state.implicitFilterApplied);
+    },
+    [
+      activeWindow?.windowIdentifier,
+      tab?.id,
+      setTableFilters,
+      setTableVisibility,
+      setTableSorting,
+      setTableOrder,
+      setTableImplicitFilterApplied,
+    ]
+  );
+
+  useAutoApplyDefaultView({
+    tabId: tab?.id ?? "",
+    windowIdentifier,
+    onApplyView: handleApplyView,
+  });
 
   const handleProcessMenuClick = useCallback(
     async (button: ProcessButton) => {
@@ -263,9 +333,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           setShowShareLinkTooltip(false);
         }, 2000);
       }
+      if (action === "SAVE_VIEW") {
+        handleSaveViewMenuToggle(event as React.MouseEvent<HTMLButtonElement>);
+        return;
+      }
       handleAction(action, button, event);
     },
-    [handleAction]
+    [handleAction, handleSaveViewMenuToggle]
   );
 
   const toolbarConfig = useMemo(() => {
@@ -342,6 +416,20 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   return (
     <>
       <TopToolbar {...toolbarConfig} data-testid="TopToolbar__a2dd07" />
+      {!isFormView && tab?.id && (
+        <SaveViewMenu
+          anchorEl={saveViewAnchorEl}
+          onClose={handleSaveViewMenuClose}
+          tabId={tab.id}
+          currentFilters={tableColumnFilters}
+          currentVisibility={tableColumnVisibility}
+          currentSorting={tableColumnSorting}
+          currentOrder={tableColumnOrder}
+          isImplicitFilterApplied={isImplicitFilterApplied}
+          onApplyView={handleApplyView}
+          data-testid="SaveViewMenu__a2dd07"
+        />
+      )}
       {confirmAction && (
         <ConfirmModal
           open={!!confirmAction}
