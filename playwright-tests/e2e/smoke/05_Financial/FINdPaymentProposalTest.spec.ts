@@ -293,25 +293,29 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
       await page.waitForTimeout(3_000);
     }
 
-    // Sort by Due Date descending (2 clicks) to bring new invoices to the top
-    const dueDateSort = page.locator(
-      "th:has(.Mui-TableHeadCell-Content-Wrapper:has-text('Due Date')) .MuiTableSortLabel-root"
-    );
-    await dueDateSort.waitFor({ state: "visible", timeout: 10_000 });
-    await dueDateSort.click();
-    await page.waitForTimeout(1_500);
-    await dueDateSort.click();
+    // Filter by the shared prefix of both invoice document numbers so both rows
+    // appear in the viewport simultaneously. Sequential doc numbers (e.g. 10000134 /
+    // 10000135) share enough characters that one filter shows both. This avoids MUI
+    // DataGrid row virtualization hiding the second invoice when the two invoices have
+    // different due dates (different vendors have different payment terms).
+    let prefixLen = 0;
+    while (
+      prefixLen < invoiceNumberA.length &&
+      prefixLen < invoiceNumberB.length &&
+      invoiceNumberA[prefixLen] === invoiceNumberB[prefixLen]
+    ) {
+      prefixLen++;
+    }
+    const invoiceFilter = prefixLen >= 4 ? invoiceNumberA.slice(0, prefixLen) : invoiceNumberA;
+
+    const invoiceDocFilter = page.locator('input[placeholder="Filter Invoice Document No...."]');
+    await invoiceDocFilter.waitFor({ state: "visible", timeout: 15_000 });
+    const filterResponse = page.waitForResponse(/api\/datasource/, { timeout: 30_000 });
+    await invoiceDocFilter.fill(invoiceFilter);
+    await filterResponse;
     await page.waitForTimeout(2_000);
 
-    // Filter by Invoice Document No. to reliably locate the row regardless of pagination
-    const invoiceDocFilter = page.locator('input[placeholder="Filter Invoice Document No...."]');
-    await invoiceDocFilter.waitFor({ state: "visible", timeout: 10_000 });
-    await invoiceDocFilter.clear();
-    await invoiceDocFilter.fill(invoiceNumberA);
-    await page.waitForTimeout(1_500);
-
-    // Select Invoice A row (use .first() in case the invoice has multiple payment plan lines)
-    // MUI DataGrid virtualizes rows — use "attached" instead of "visible" to avoid flakiness
+    // Both rows now appear simultaneously — select them without changing the filter.
     const rowA = page
       .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
       .filter({ hasText: invoiceNumberA })
@@ -321,12 +325,6 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     await rowA.locator('input[aria-label="Toggle select row"]').check({ force: true });
     await expect(rowA.locator('input[aria-label="Toggle select row"]')).toBeChecked({ timeout: 10_000 });
 
-    // Filter by Invoice B to locate it reliably
-    await invoiceDocFilter.clear();
-    await invoiceDocFilter.fill(invoiceNumberB);
-    await page.waitForTimeout(1_500);
-
-    // Select Invoice B row (use .first() in case the invoice has multiple payment plan lines)
     const rowB = page
       .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
       .filter({ hasText: invoiceNumberB })
@@ -336,12 +334,13 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     await rowB.locator('input[aria-label="Toggle select row"]').check({ force: true });
     await expect(rowB.locator('input[aria-label="Toggle select row"]')).toBeChecked({ timeout: 10_000 });
 
-    // Submit — set up toast watcher BEFORE clicking
+    // Submit — set up toast watcher BEFORE clicking.
+    // The footer button is labelled "Submit" (from the process availableButtons config).
     const successToastAppeared = page.waitForSelector('[data-sonner-toast][data-type="success"]', {
       state: "visible",
       timeout: 60_000,
     });
-    const submitBtn = page.locator("button").filter({ hasText: /^Execute$/ });
+    const submitBtn = page.locator("button").filter({ hasText: /^Submit$/ });
     await submitBtn.waitFor({ state: "visible", timeout: 30_000 });
     await submitBtn.click();
     await successToastAppeared;
