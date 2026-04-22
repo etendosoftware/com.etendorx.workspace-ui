@@ -277,7 +277,12 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     // (isFinalSuccess=true removes it from the DOM). Only press Escape if the modal
     // is still open — pressing Escape on an already-closed modal would close the form.
     await page.waitForTimeout(1_000);
-    if (await page.locator('[data-testid="Modal__761503"]').isVisible({ timeout: 500 }).catch(() => false)) {
+    if (
+      await page
+        .locator('[data-testid="Modal__761503"]')
+        .isVisible({ timeout: 500 })
+        .catch(() => false)
+    ) {
       await page.keyboard.press("Escape");
       await page.waitForTimeout(500);
     }
