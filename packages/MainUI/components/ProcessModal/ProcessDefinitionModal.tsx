@@ -1195,6 +1195,7 @@ function ProcessDefinitionModalContent({
 
   const isActionButtonDisabled =
     isPending ||
+    loadingMetadata ||
     initializationBlocksSubmit ||
     hasMandatoryParametersWithoutValue ||
     isSubmitting ||

@@ -715,11 +715,17 @@ export function useProcessExecution({
       try {
         const formValues = form.getValues();
         const rawParameters = buildProcessParameters(formValues, parameters);
-        // Omit null/undefined values to match Classic UI behavior — sending explicit
-        // nulls to the backend process-execution endpoint causes the pInstance to
-        // never reach a terminal state (isProcessing stays true indefinitely).
+        // Only send parameters that are explicitly defined in the process schema.
+        // Etendo form state may contain internal/meta fields (e.g. responseActions,
+        // refreshParent, _processId) that are not valid process parameters and cause
+        // backend constraint violations (ADParameter.string max 60 chars).
+        const validColumns = new Set(
+          Object.values(parameters)
+            .map((p) => p.dBColumnName)
+            .filter(Boolean)
+        );
         const formParameters = Object.fromEntries(
-          Object.entries(rawParameters).filter(([, v]) => v !== null && v !== undefined)
+          Object.entries(rawParameters).filter(([k, v]) => v !== null && v !== undefined && validColumns.has(k))
         );
 
         const response = await fetch("/api/process/report-and-process", {
