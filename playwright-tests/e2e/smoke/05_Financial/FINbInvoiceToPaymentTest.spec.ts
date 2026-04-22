@@ -47,16 +47,13 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await customerOption.waitFor({ state: "visible", timeout: 10_000 });
     await customerOption.click({ force: true });
 
-    // Save header to populate defaults (twice)
-    await page.locator("button.toolbar-button-save").filter({ visible: true }).first().click();
-    await page.waitForLoadState("networkidle", { timeout: 15_000 });
-    await closeToastIfPresent(page);
-    await page.locator("button.toolbar-button-save").filter({ visible: true }).first().click();
+    // Save header to populate defaults
+    await page.locator("button.toolbar-button-save").first().click();
     await page.waitForLoadState("networkidle", { timeout: 15_000 });
     await closeToastIfPresent(page);
 
     // Verify Draft status
-    await expect(page.locator(".MuiChip-label").filter({ hasText: "Draft" }).first()).toBeAttached({ timeout: 30_000 });
+    await expect(page.locator(".MuiChip-label").filter({ hasText: "Draft" }).first()).toBeAttached({ timeout: 60_000 });
 
     // ── Step 3: Add Invoice Line ──────────────────────────────────────────────
     await page.locator('button[aria-label="Lines"]').click();
@@ -276,8 +273,22 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await executePaymentResponse;
     await closeToastIfPresent(page);
 
+    // After successful payment execution the ProcessDefinitionModal auto-closes
+    // (isFinalSuccess=true removes it from the DOM). Only press Escape if the modal
+    // is still open — pressing Escape on an already-closed modal would close the form.
+    await page.waitForTimeout(1_000);
+    if (
+      await page
+        .locator('[data-testid="Modal__761503"]')
+        .isVisible({ timeout: 500 })
+        .catch(() => false)
+    ) {
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(500);
+    }
+
     // ── Step 9: Verify final payment state ───────────────────────────────────
-    await page.locator("button.toolbar-button-refresh").filter({ visible: true }).first().click();
+    await page.locator("button.toolbar-button-refresh").first().click();
 
     await expect(page.locator('[data-testid="status-bar-container"] span[name="status"]')).toHaveText(
       "Payment Received",

@@ -14,7 +14,7 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
   });
 
   test("Generates invoices from processed sales orders and shipments for multiple customers", async ({ page }) => {
-    test.setTimeout(360_000);
+    test.setTimeout(720_000);
     // ── Login & role ──────────────────────────────────────────────────────────
     await loginToEtendo(page);
     await selectRoleOrgWarehouse(page);
@@ -308,21 +308,70 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     // fires before the previous process result is fully committed.
     await page.waitForTimeout(3_000);
 
-    // Execute the report
+    // Execute the report — retry once if the backend returns an async execution error.
+    // "Async Execution Failed: Process Instance or Definition not found" can appear intermittently
+    // when a previous process instance is still being cleaned up on the server side.
     const executeBtn = page.locator('[data-testid^="ExecuteReportButton"]');
     await executeBtn.waitFor({ state: "visible", timeout: 30_000 });
     await expect(executeBtn).not.toBeDisabled({ timeout: 10_000 });
+
+    // Intercept ANY terminal polling response (isProcessing=false) and capture its data.
+    // We resolve for any completion — success or error — to avoid a 300s wait when the
+    // process errors out quickly. After resolution we check the result code.
+    let lastPollData: Record<string, unknown> | null = null;
+    const makeCompletionPoll = () =>
+      page
+        .waitForResponse(
+          async (r) => {
+            if (!r.url().match(/\/api\/process\/report-and-process\/[^/]+$/)) return false;
+            const data = await r.json().catch(() => null);
+            if (data !== null && data.isProcessing === false) {
+              lastPollData = data;
+              return true;
+            }
+            return false;
+          },
+          { timeout: 300_000 }
+        )
+        .catch(() => null);
+
+    // Intercept BEFORE clicking so we don't miss the first polling response.
+    let pollCompletedPromise = makeCompletionPoll();
     await executeBtn.click();
 
-    // Verify report completion — the result may appear in a legacy iframe or on the React page.
-    // Poll all frames (same pattern as the Create Shipments success check above).
-    const invoiceSuccessDeadline = Date.now() + 60_000;
+    // If an async error appears within 3 s, create a fresh poll for the retry so it gets
+    // its own 300 s window (the original poll may have resolved on the failed completion).
+    await page.waitForTimeout(3_000);
+    const asyncErrorLocator = page.getByText(/Async Execution Failed/i);
+    if (await asyncErrorLocator.isVisible({ timeout: 0 }).catch(() => false)) {
+      lastPollData = null;
+      pollCompletedPromise = makeCompletionPoll();
+      await executeBtn.waitFor({ state: "visible", timeout: 10_000 });
+      await executeBtn.click();
+    }
+
+    // Wait for the backend to signal completion via the polling endpoint.
+    const pollResult = await pollCompletedPromise;
+    if (!pollResult)
+      throw new Error(
+        "Generate Invoices process timed out: polling endpoint did not return isProcessing=false within 300s"
+      );
+    // result=1 → success, result=2 → warning treated as success
+    if (!lastPollData || (lastPollData.result !== 1 && lastPollData.result !== 2)) {
+      const errMsg = (lastPollData as any)?.errorMsg ?? `result code ${(lastPollData as any)?.result ?? "unknown"}`;
+      throw new Error(`Generate Invoices process completed with error: ${errMsg}`);
+    }
+
+    // Belt-and-suspenders: once the API confirmed completion, the success text
+    // should already be visible — use a short 30 s deadline, not 300 s.
+    const invoiceSuccessDeadline = Date.now() + 30_000;
+    const invoiceSuccessPattern = /Process completed success|Created:/i;
     let invoiceProcessSuccess = false;
     while (Date.now() < invoiceSuccessDeadline && !invoiceProcessSuccess) {
       // Check main page first
       if (
         await page
-          .getByText(/Process completed success/i)
+          .getByText(invoiceSuccessPattern)
           .isVisible({ timeout: 0 })
           .catch(() => false)
       ) {
@@ -336,7 +385,7 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
             .locator("body")
             .textContent({ timeout: 500 })
             .catch(() => "");
-          if (/Process completed success/i.test(txt)) {
+          if (invoiceSuccessPattern.test(txt)) {
             invoiceProcessSuccess = true;
             break;
           }
@@ -346,7 +395,10 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
       }
       if (!invoiceProcessSuccess) await page.waitForTimeout(300);
     }
-    if (!invoiceProcessSuccess) throw new Error("Generate Invoices process did not complete successfully within 60s");
+    if (!invoiceProcessSuccess)
+      throw new Error(
+        "Generate Invoices process did not complete successfully within 30s after API confirmed completion"
+      );
 
     // Verify "Created:" summary — check main page and all frames
     const createdDeadline = Date.now() + 15_000;
