@@ -1,3 +1,7 @@
+import { render, screen, fireEvent } from "@testing-library/react";
+import { FormProvider, useForm } from "react-hook-form";
+import { ProcessParameterSelector } from "../ProcessParameterSelector";
+
 // Mock Next.js server dependencies
 jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
@@ -7,10 +11,6 @@ jest.mock("next/cache", () => ({
 jest.mock("@/app/actions/revalidate", () => ({
   revalidateDopoProcess: jest.fn(),
 }));
-
-import { render, screen } from "@testing-library/react";
-import { FormProvider, useForm } from "react-hook-form";
-import { ProcessParameterSelector } from "../ProcessParameterSelector";
 
 // Mock hooks and components
 jest.mock("@/hooks/useUserContext", () => ({
@@ -57,11 +57,28 @@ jest.mock("@/components/Form/FormView/selectors/ListSelector", () => ({
   ListSelector: ({ field }: any) => <select data-testid="list-selector" name={field.hqlName} />,
 }));
 
+jest.mock("@/components/Form/FormView/selectors/ImageSelector", () => ({
+  ImageSelector: ({ field }: any) => <div data-testid="image-selector" title={field.hqlName} />,
+}));
+
 jest.mock("../GenericSelector", () => {
   return function GenericSelector({ parameter }: any) {
     return <input data-testid="generic-selector" name={parameter.name} />;
   };
 });
+
+jest.mock("../UploadFileSelector", () => ({
+  UploadFileSelector: ({ field, onFileChange }: any) => (
+    <div>
+      <input data-testid="upload-file-selector" name={field.hqlName} readOnly />
+      <button
+        type="button"
+        data-testid="upload-file-selector-trigger"
+        onClick={() => onFileChange?.(field.columnName, null)}
+      />
+    </div>
+  ),
+}));
 
 jest.mock("@/components/Label", () => ({
   __esModule: true,
@@ -336,5 +353,56 @@ describe("ProcessParameterSelector", () => {
     );
 
     expect(screen.getByTestId("generic-selector")).toBeInTheDocument();
+  });
+
+  it("should render ImageSelector for image reference", () => {
+    const imageParameter = { ...baseParameter, reference: "Image" };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={imageParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("image-selector")).toBeInTheDocument();
+  });
+
+  it("should render UploadFileSelector for 'Upload File' reference", () => {
+    const uploadParameter = { ...baseParameter, reference: "Upload File" };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={uploadParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("upload-file-selector")).toBeInTheDocument();
+  });
+
+  it("should render UploadFileSelector for 'UploadFile' reference alias", () => {
+    const uploadParameter = { ...baseParameter, reference: "UploadFile" };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={uploadParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("upload-file-selector")).toBeInTheDocument();
+  });
+
+  it("should forward onFileChange to UploadFileSelector", () => {
+    const onFileChange = jest.fn();
+    const uploadParameter = { ...baseParameter, reference: "Upload File" };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={uploadParameter} onFileChange={onFileChange} />
+      </TestWrapper>
+    );
+
+    // Click the trigger button exposed by the mock to simulate an onFileChange call
+    fireEvent.click(screen.getByTestId("upload-file-selector-trigger"));
+    expect(onFileChange).toHaveBeenCalled();
   });
 });

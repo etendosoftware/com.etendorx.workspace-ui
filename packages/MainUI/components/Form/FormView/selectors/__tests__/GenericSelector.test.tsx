@@ -65,6 +65,9 @@ jest.mock("../LocationSelector", () => ({
   __esModule: true,
   default: () => <div data-testid="LocationSelector">LocationSelector</div>,
 }));
+jest.mock("../ImageSelector", () => ({
+  ImageSelector: () => <div data-testid="ImageSelector__mock">ImageSelector</div>,
+}));
 
 jest.mock("../SelectorModal", () => ({
   __esModule: true,
@@ -161,6 +164,11 @@ describe("GenericSelector", () => {
       title: "LIST_17 fields",
       expected: "ListSelector",
       field: { column: { reference: FIELD_REFERENCE_CODES.LIST_17.id } },
+    },
+    {
+      title: "IMAGE fields",
+      expected: "ImageSelector__mock",
+      field: { column: { reference: FIELD_REFERENCE_CODES.IMAGE.id }, id: "img-1" },
     },
   ];
 

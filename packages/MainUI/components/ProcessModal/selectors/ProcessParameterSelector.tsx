@@ -17,12 +17,14 @@ import { SelectSelector } from "@/components/Form/FormView/selectors/SelectSelec
 import { TableDirSelector } from "@/components/Form/FormView/selectors/TableDirSelector";
 import QuantitySelector from "@/components/Form/FormView/selectors/QuantitySelector";
 import { ListSelector } from "@/components/Form/FormView/selectors/ListSelector";
+import { ImageSelector } from "@/components/Form/FormView/selectors/ImageSelector";
 
 // Import mapper
 import { ProcessParameterMapper } from "../mappers/ProcessParameterMapper";
 
 // Import existing ProcessModal selectors for fallback
 import GenericSelector from "./GenericSelector";
+import { UploadFileSelector } from "./UploadFileSelector";
 
 interface ProcessParameterSelectorProps {
   parameter: ProcessParameter | ExtendedProcessParameter;
@@ -31,6 +33,7 @@ interface ProcessParameterSelectorProps {
   recordValues?: Record<string, unknown>;
   parentFields?: Record<string, Field>;
   selectedRecordsCount?: number;
+  onFileChange?: (paramName: string, file: File | null) => void;
 }
 
 import { createProcessExpressionContext } from "../utils/processExpressionUtils";
@@ -48,6 +51,7 @@ export const ProcessParameterSelector = ({
   recordValues,
   parentFields,
   selectedRecordsCount,
+  onFileChange,
 }: ProcessParameterSelectorProps) => {
   const { session } = useUserContext();
   const { watch, register } = useFormContext();
@@ -240,6 +244,9 @@ export const ProcessParameterSelector = ({
         case "quantity":
           return <QuantitySelector allowNegative={true} field={mappedField} data-testid="QuantitySelector__dac06b" />;
 
+        case "image":
+          return <ImageSelector field={mappedField} isReadOnly={isReadOnly} data-testid="ImageSelector__dac06b" />;
+
         case "list":
           if (!mappedField.refList || mappedField.refList.length === 0) {
             logger.warn("List field without options, falling back to GenericSelector:", parameter.name);
@@ -248,6 +255,16 @@ export const ProcessParameterSelector = ({
             );
           }
           return <ListSelector field={mappedField} isReadOnly={isReadOnly} data-testid="ListSelector__dac06b" />;
+
+        case "uploadfile":
+          return (
+            <UploadFileSelector
+              field={mappedField}
+              disabled={isReadOnly}
+              onFileChange={onFileChange}
+              data-testid="UploadFileSelector__dac06b"
+            />
+          );
 
         default:
           // Fallback to GenericSelector for text, window references, and unknown types

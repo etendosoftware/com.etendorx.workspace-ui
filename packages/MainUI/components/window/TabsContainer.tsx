@@ -82,14 +82,14 @@ const TabsGroupRenderer = ({
 
   const isParentVisible = useMemo(() => {
     if (!activeParentTab) return true;
-    const expression = activeParentTab.displayLogicExpression || activeParentTab.displayLogic;
+    const expression = activeParentTab.displayLogic || activeParentTab.displayLogicExpression;
     if (!expression) return true;
 
     // Use createSmartContext for robust evaluation
     const context = createSmartContext({
       values: grandParentRecord || undefined,
       fields: grandParentTab?.fields, // Use grandparent fields for mapping if available
-      context: { ...(grandParentTab || {}), ...session },
+      context: session,
     });
 
     try {
@@ -115,11 +115,11 @@ const TabsGroupRenderer = ({
     const context = createSmartContext({
       values: parentRecord || undefined,
       fields: activeParentTab?.fields,
-      context: { ...(activeParentTab || {}), ...session }, // Include tab metadata in context if needed
+      context: session,
     });
 
     const result = tabs.filter((tab) => {
-      const expression = tab.displayLogicExpression || tab.displayLogic;
+      const expression = tab.displayLogic || tab.displayLogicExpression;
 
       if (!expression) {
         return true;
@@ -127,8 +127,7 @@ const TabsGroupRenderer = ({
 
       try {
         const compiledExpr = compileExpression(expression);
-        const res = compiledExpr(context, context);
-        return res;
+        return compiledExpr(context, context);
       } catch (error) {
         logger.error(`Error evaluating display logic for tab ${tab.name}:`, error);
         return false;
