@@ -39,12 +39,15 @@ import { useSelected } from "@/hooks/useSelected";
 import { mapBy } from "@/utils/structures";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_RowSelectionState } from "material-react-table";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/sessionSync";
 import { useUserContext } from "@/hooks/useUserContext";
 import { logger } from "@/utils/logger";
 import { useWindowContext } from "@/contexts/window";
 import type { TabFormState } from "@/utils/url/constants";
+import { useDebouncedCallback } from "@/components/Table/utils/performanceOptimizations";
+
+const KEYBOARD_NAV_DEBOUNCE_MS = 150;
 
 /**
  * Compares two arrays of strings alphabetically to detect content changes while ignoring order.
@@ -234,11 +237,26 @@ const validateParentSelection = (
   return true;
 };
 
+export interface UseTableSelectionOptions {
+  /**
+   * Returns true when the most recent selection change originated from keyboard
+   * navigation (ArrowUp/ArrowDown). When true, side effects such as URL updates
+   * and session sync are debounced so rapid auto-repeat does not thrash the app.
+   */
+  isKeyboardNavigationSource?: () => boolean;
+  /**
+   * Invoked once selection stabilizes after keyboard navigation. The caller can
+   * use this to perform deferred work (e.g. scroll the final record into view).
+   */
+  onStableSelection?: (recordId: string) => void;
+}
+
 export default function useTableSelection(
   tab: Tab,
   records: EntityData[],
   rowSelection: MRT_RowSelectionState,
-  _onSelectionChange?: (recordId: string) => void
+  _onSelectionChange?: (recordId: string) => void,
+  options?: UseTableSelectionOptions
 ) {
   const { graph } = useSelected();
   const { activeWindow, clearSelectedRecord, getTabFormState, setSelectedRecord, getSelectedRecord } =
@@ -246,6 +264,37 @@ export default function useTableSelection(
   const { setSession, setSessionSyncLoading } = useUserContext();
   const previousSelectionRef = useRef<string[]>([]);
   const previousSingleSelectionRef = useRef<string | undefined>(undefined);
+
+  const isKeyboardNavigationSource = options?.isKeyboardNavigationSource;
+  const onStableSelection = options?.onStableSelection;
+  const optionsRef = useRef({ isKeyboardNavigationSource, onStableSelection });
+  optionsRef.current = { isKeyboardNavigationSource, onStableSelection };
+
+  const persistSelection = useCallback(
+    (payload: {
+      windowIdentifier: string;
+      tabId: string;
+      recordId: string;
+      selectedRecords: EntityData[];
+      parentId: Tab["parentTabId"];
+      tabForSession: Tab;
+    }) => {
+      setSelectedRecord(payload.windowIdentifier, payload.tabId, payload.recordId);
+      if (payload.selectedRecords.length > 0) {
+        syncSelectedRecordsToSession({
+          tab: payload.tabForSession,
+          selectedRecords: payload.selectedRecords,
+          parentId: payload.parentId,
+          setSession,
+          setSessionSyncLoading,
+        });
+      }
+      optionsRef.current.onStableSelection?.(payload.recordId);
+    },
+    [setSelectedRecord, setSession, setSessionSyncLoading]
+  );
+
+  const debouncedPersistSelection = useDebouncedCallback(persistSelection, KEYBOARD_NAV_DEBOUNCE_MS);
 
   const windowId = activeWindow?.windowId;
   const windowIdentifier = activeWindow?.windowIdentifier;
@@ -317,27 +366,43 @@ export default function useTableSelection(
     previousSelectionRef.current = currentSelectionIds;
     previousSelectedRecordsRef.current = selectedRecords;
 
-    // 5. Synchronize to Context (Immediate)
+    const fromKeyboard = optionsRef.current.isKeyboardNavigationSource?.() ?? false;
+
+    // 5. Synchronize to Context
     // ONLY do this if the selected IDs have actually changed. If only content changed,
     // skip overriding the Window context to avoid race conditions with actions like Clone.
     if (hasSelectionIdChanged) {
       if (selectedRecords.length === 1) {
-        // Case A: Single Record Selected
         const recordId = String(selectedRecords[0].id);
-        setSelectedRecord(windowIdentifier, tab.id, recordId);
+        if (fromKeyboard) {
+          // Keyboard auto-repeat path: coalesce expensive side effects (URL + session sync
+          // + deferred scroll) behind a short debounce so each key press does not kick off
+          // a full re-render chain (useCurrentRecord → FIC → Toolbar). The graph is still
+          // updated synchronously below so the visible row highlight never lags.
+          debouncedPersistSelection({
+            windowIdentifier,
+            tabId: tab.id,
+            recordId,
+            selectedRecords,
+            parentId: tab.parentTabId,
+            tabForSession: tab,
+          });
+        } else {
+          debouncedPersistSelection.cancel();
+          setSelectedRecord(windowIdentifier, tab.id, recordId);
+        }
       } else if (selectedRecords.length === 0) {
-        // Case B: No Selection (Deselect All)
-        // If rowSelection has keys but selectedRecords is empty, the selected record
-        // is not in the current page — PRESERVE the global selection.
+        // Deselect all — guard against clearing parent selection while a child tab is in FormView.
+        debouncedPersistSelection.cancel();
         handleDeselectInContext(windowIdentifier, tab, rowSelection, graph, getTabFormState, clearSelectedRecord);
       }
     }
 
-    // 6. Update Graph (Global State)
-    // DON'T call onSelectionChange to avoid infinite loop
+    // 6. Update Graph (Global State) — always synchronous to keep UI responsive
     updateGraphSelection(graph, tab, lastSelected, selectedRecords);
 
-    if (selectedRecords.length > 0 && hasSelectionIdChanged) {
+    if (selectedRecords.length > 0 && hasSelectionIdChanged && !fromKeyboard) {
+      // Non-keyboard path runs session sync immediately (keyboard path runs it via the debounced persist).
       syncSelectedRecordsToSession({
         tab,
         selectedRecords,
@@ -360,5 +425,12 @@ export default function useTableSelection(
     setSession,
     setSessionSyncLoading,
     windowId,
+    debouncedPersistSelection,
   ]);
+
+  useEffect(() => {
+    return () => {
+      debouncedPersistSelection.cancel();
+    };
+  }, [debouncedPersistSelection]);
 }

@@ -47,6 +47,7 @@ import EmptyState from "./EmptyState";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import useTableSelection from "@/hooks/useTableSelection";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useRowKeyboardNavigation } from "./hooks/useRowKeyboardNavigation";
 import { ErrorDisplay } from "../ErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
@@ -3039,11 +3040,39 @@ const DynamicTable = ({
     autoResetRowSelection: false,
   });
 
-  useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange);
-
   // Use ref for table to prevent infinite loop of registrations
   const tableRef = useRef(table);
   tableRef.current = table;
+
+  const { handleArrowUp, handleArrowDown, isKeyboardNavigationSource } = useRowKeyboardNavigation({
+    table,
+    effectiveRecords,
+    containerRef: tableContainerRef,
+    editingRowsCount,
+  });
+
+  const handleStableKeyboardSelection = useCallback(
+    (recordId: string) => {
+      if (!tableContainerRef.current) return;
+      const index = effectiveRecords.findIndex((r) => String(r.id) === recordId);
+      if (index < 0) return;
+      try {
+        // @ts-ignore - rowVirtualizer is available at runtime but missing from MRT types
+        const virtualizer = tableRef.current.rowVirtualizer;
+        if (virtualizer && typeof virtualizer.scrollToIndex === "function") {
+          virtualizer.scrollToIndex(index, { align: "center", behavior: "smooth" });
+        }
+      } catch (error) {
+        logger.error(`[TableScroll] Error scrolling to keyboard-selected record: ${error}`);
+      }
+    },
+    [effectiveRecords]
+  );
+
+  useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange, {
+    isKeyboardNavigationSource,
+    onStableSelection: handleStableKeyboardSelection,
+  });
 
   const handleEnter = useCallback(
     (_event: KeyboardEvent) => {
@@ -3083,6 +3112,8 @@ const DynamicTable = ({
     {
       Enter: { handler: handleEnter },
       "ctrl+n": { handler: handleNewWithParentGuard, allowInInputs: true },
+      ArrowUp: { handler: handleArrowUp },
+      ArrowDown: { handler: handleArrowDown },
     },
     editingRowsCount === 0 && (isFocused ?? true)
   );
