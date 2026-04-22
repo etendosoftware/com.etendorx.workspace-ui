@@ -352,7 +352,10 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
 
     // Wait for the backend to signal completion via the polling endpoint.
     const pollResult = await pollCompletedPromise;
-    if (!pollResult) throw new Error("Generate Invoices process timed out: polling endpoint did not return isProcessing=false within 300s");
+    if (!pollResult)
+      throw new Error(
+        "Generate Invoices process timed out: polling endpoint did not return isProcessing=false within 300s"
+      );
     // result=1 → success, result=2 → warning treated as success
     if (!lastPollData || (lastPollData.result !== 1 && lastPollData.result !== 2)) {
       const errMsg = (lastPollData as any)?.errorMsg ?? `result code ${(lastPollData as any)?.result ?? "unknown"}`;
@@ -392,7 +395,10 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
       }
       if (!invoiceProcessSuccess) await page.waitForTimeout(300);
     }
-    if (!invoiceProcessSuccess) throw new Error("Generate Invoices process did not complete successfully within 30s after API confirmed completion");
+    if (!invoiceProcessSuccess)
+      throw new Error(
+        "Generate Invoices process did not complete successfully within 30s after API confirmed completion"
+      );
 
     // Verify "Created:" summary — check main page and all frames
     const createdDeadline = Date.now() + 15_000;
