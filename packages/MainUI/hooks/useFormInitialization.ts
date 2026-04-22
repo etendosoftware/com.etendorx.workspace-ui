@@ -152,7 +152,8 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       const enrichedData = enrichWithAuditFields(data, record, mode);
       const storedInSessionAttributes = buildSessionAttributes(enrichedData);
 
-      setSession((prev) => mergeSessionAttributes(prev, storedInSessionAttributes));
+      const isRootTabCall = params.get("PARENT_ID") === "null";
+      setSession((prev) => mergeSessionAttributes(prev, storedInSessionAttributes, isRootTabCall));
 
       dispatch({ type: "FETCH_SUCCESS", payload: enrichedData });
       // Restore guard so the main useEffect cannot re-fetch with the same params

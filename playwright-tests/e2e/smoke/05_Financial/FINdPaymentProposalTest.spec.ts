@@ -128,14 +128,10 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     // Invoice B — Vendor B, Raw material B, qty 10
     // ════════════════════════════════════════════════════════════════════════
 
-    // Navigate back to Purchase Invoice to get a clean list view
-    await navigateToPurchaseInvoice(page);
-
-    // New Record
-    newBtn = page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first();
-    await newBtn.waitFor({ state: "visible", timeout: 15_000 });
-    await newBtn.click();
-    await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
+    // Use the toolbar icon button to open a new record without re-navigating to Purchase Invoice
+    await page.locator('[data-testid="IconButton__33864F5267194AB99C14BD0CE9884FF5"]').first().click();
+    await page.waitForTimeout(1_000);
+    await expect(page.getByRole("tab", { name: "Main Section" }).first()).toBeVisible({ timeout: 10_000 });
 
     // Business Partner: Vendor B
     await page
