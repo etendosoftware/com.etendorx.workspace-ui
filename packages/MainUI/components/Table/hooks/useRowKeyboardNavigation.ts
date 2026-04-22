@@ -149,14 +149,8 @@ export const useRowKeyboardNavigation = ({
     [containerRef, scheduleSelection]
   );
 
-  const handleArrowUp = useCallback(
-    (event: KeyboardEvent) => navigate(NAVIGATION_DIRECTION.UP, event),
-    [navigate]
-  );
-  const handleArrowDown = useCallback(
-    (event: KeyboardEvent) => navigate(NAVIGATION_DIRECTION.DOWN, event),
-    [navigate]
-  );
+  const handleArrowUp = useCallback((event: KeyboardEvent) => navigate(NAVIGATION_DIRECTION.UP, event), [navigate]);
+  const handleArrowDown = useCallback((event: KeyboardEvent) => navigate(NAVIGATION_DIRECTION.DOWN, event), [navigate]);
 
   const isKeyboardNavigationSource = useCallback(() => navigationSourceRef.current === NAVIGATION_SOURCE.KEYBOARD, []);
 

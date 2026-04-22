@@ -5,11 +5,7 @@
 import { renderHook, act } from "@testing-library/react";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { MRT_TableInstance, MRT_RowSelectionState } from "material-react-table";
-import {
-  useRowKeyboardNavigation,
-  computeNextIndex,
-  NAVIGATION_DIRECTION,
-} from "../hooks/useRowKeyboardNavigation";
+import { useRowKeyboardNavigation, computeNextIndex, NAVIGATION_DIRECTION } from "../hooks/useRowKeyboardNavigation";
 
 const makeRecord = (id: string): EntityData => ({ id }) as EntityData;
 
