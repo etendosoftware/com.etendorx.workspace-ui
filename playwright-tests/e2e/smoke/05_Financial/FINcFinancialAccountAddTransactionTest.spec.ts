@@ -75,7 +75,8 @@ test.describe("Financial Account - Add Transaction from Purchase Invoice @smoke"
     // Open dropdown via ChevronDown, search to narrow the list to a single result,
     // then use ArrowDown+Enter (the search input container intercepts pointer clicks on options)
     await page.locator('[data-testid="ChevronDown__3371"]').first().waitFor({ state: "visible", timeout: 10_000 });
-    await page.locator('[data-testid="ChevronDown__3371"]').first().click({ force: true });
+    await page.locator('[data-testid="ChevronDown__3371"]').first().scrollIntoViewIfNeeded();
+    await page.locator('[data-testid="ChevronDown__3371"]').first().click();
     const productSearch = page.locator('input[aria-label="Search options"]');
     await productSearch.waitFor({ state: "visible", timeout: 10_000 });
     await productSearch.clear();
