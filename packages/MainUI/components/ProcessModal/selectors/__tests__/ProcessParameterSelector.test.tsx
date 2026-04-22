@@ -57,6 +57,10 @@ jest.mock("@/components/Form/FormView/selectors/ListSelector", () => ({
   ListSelector: ({ field }: any) => <select data-testid="list-selector" name={field.hqlName} />,
 }));
 
+jest.mock("@/components/Form/FormView/selectors/ImageSelector", () => ({
+  ImageSelector: ({ field }: any) => <div data-testid="image-selector" title={field.hqlName} />,
+}));
+
 jest.mock("../GenericSelector", () => {
   return function GenericSelector({ parameter }: any) {
     return <input data-testid="generic-selector" name={parameter.name} />;
@@ -349,6 +353,18 @@ describe("ProcessParameterSelector", () => {
     );
 
     expect(screen.getByTestId("generic-selector")).toBeInTheDocument();
+  });
+
+  it("should render ImageSelector for image reference", () => {
+    const imageParameter = { ...baseParameter, reference: "Image" };
+
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={imageParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("image-selector")).toBeInTheDocument();
   });
 
   it("should render UploadFileSelector for 'Upload File' reference", () => {

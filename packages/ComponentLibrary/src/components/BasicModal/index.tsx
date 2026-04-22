@@ -210,13 +210,14 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
               {buttons ? (
                 <Box style={styles.buttonContainerStyles}>{buttons}</Box>
               ) : (
-                secondaryButtonLabel &&
                 saveButtonLabel &&
                 SaveIcon && (
                   <Box style={styles.buttonContainerStyles}>
-                    <Button sx={sx.cancelButton} onClick={handleCancel}>
-                      {secondaryButtonLabel}
-                    </Button>
+                    {secondaryButtonLabel && (
+                      <Button sx={sx.cancelButton} onClick={handleCancel}>
+                        {secondaryButtonLabel}
+                      </Button>
+                    )}
                     <Button
                       startIcon={
                         <SaveIcon fill={theme.palette.baselineColor.neutral[0]} width={IconSize} height={IconSize} />
