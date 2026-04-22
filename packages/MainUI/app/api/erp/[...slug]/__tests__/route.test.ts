@@ -60,7 +60,6 @@ describe("API: /api/erp/[...slug]/route", () => {
       text: async () => '{"success":true}',
       json: async () => ({ success: true }),
       arrayBuffer: async () => new ArrayBuffer(0),
-      arrayBuffer: async () => new ArrayBuffer(0),
     } as any);
 
     await GET(req, { params: Promise.resolve({ slug: ["utility", "ShowImage"] }) });
