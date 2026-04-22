@@ -171,7 +171,43 @@ describe("useProcessExecution manual processes integration", () => {
 
   it("sets inpdocaction=P for posted heuristic", async () => {
     const userCtx = { token: "tok_abc123" };
-    render(withUser(userCtx, <Harness buttonId="Posted" />));
+
+    function PostedHarness() {
+      const { executeProcess, iframeUrl } = useProcessExecution();
+      const onRun = async () => {
+        const btn: any = {
+          id: "Posted",
+          columnName: "Posted",
+          action: "processAction",
+          buttonText: "Post",
+          processInfo: {
+            parameters: [],
+            _entityName: "",
+            id: "",
+            name: "",
+            javaClassName: "",
+            clientSideValidation: "",
+            loadFunction: "",
+            searchKey: "",
+          },
+          processAction: { id: "PA_POST" },
+        };
+        const recordIdField: any = { value: "R1", type: "string", label: "Record ID", name: "recordId", original: {} };
+        const res = await executeProcess({ button: btn, recordId: recordIdField, params: {} });
+        const out = (res && (res as any).iframeUrl) || "";
+        const target = document.querySelector("#result");
+        if (target) target.textContent = out;
+      };
+      return (
+        <div>
+          <button onClick={onRun}>run</button>
+          <div data-testid="iframeUrl">{iframeUrl}</div>
+          <div id="result" data-testid="result" />
+        </div>
+      );
+    }
+
+    render(withUser(userCtx, <PostedHarness />));
 
     fireEvent.click(screen.getByRole("button", { name: /run/i }));
 
@@ -220,6 +256,73 @@ describe("useProcessExecution manual processes integration", () => {
     fireEvent.click(screen.getByRole("button", { name: /run/i }));
     const errEl = await screen.findByTestId("error");
     await waitFor(() => expect(errEl.textContent).toMatch(/Process execution failed/i));
+  });
+
+  it("uses backend processAction params when present (Reschedule Process scenario)", async () => {
+    const userCtx = { token: "tok_abc123" };
+
+    // Harness where the button carries backend-resolved legacy params — no data.json entry required.
+    function BackendResolvedHarness() {
+      const { executeProcess, iframeUrl } = useProcessExecution();
+      const onRun = async () => {
+        const btn: any = {
+          id: "57A2B365BDC69F57E040007F010171B4",
+          action: "processAction",
+          buttonText: "Reschedule",
+          columnName: "Reschedule",
+          processInfo: {
+            parameters: [],
+            _entityName: "",
+            id: "",
+            name: "",
+            javaClassName: "",
+            clientSideValidation: "",
+            loadFunction: "",
+            searchKey: "",
+          },
+          // Params resolved by LegacyProcessResolver on the backend (AD_MODEL_OBJECT_MAPPING path).
+          processAction: {
+            id: "PA_RESCH",
+            url: "/ad_process/RescheduleProcess.html",
+            command: "DEFAULT",
+            keyColumnName: "AD_Process_Request_ID",
+            inpkeyColumnId: "AD_Process_Request_ID",
+          },
+        };
+        const recordIdField: any = { value: "R1", type: "string", label: "Record ID", name: "recordId", original: {} };
+        const res = await executeProcess({ button: btn, recordId: recordIdField, params: {} });
+        const out = (res && (res as any).iframeUrl) || "";
+        const target = document.querySelector("#result");
+        if (target) target.textContent = out;
+      };
+      return (
+        <div>
+          <button onClick={onRun}>run</button>
+          <div data-testid="iframeUrl">{iframeUrl}</div>
+          <div id="result" data-testid="result" />
+        </div>
+      );
+    }
+
+    render(withUser(userCtx, <BackendResolvedHarness />));
+    fireEvent.click(screen.getByRole("button", { name: /run/i }));
+
+    const resultEl = await screen.findByTestId("result");
+    await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:8080/etendo"));
+
+    const url = new URL(resultEl.textContent || "http://localhost");
+    expect(url.pathname).toContain("/meta/legacy");
+    expect(url.pathname).toContain("/ad_process/RescheduleProcess.html");
+
+    const p = url.searchParams;
+    expect(p.get("Command")).toBe("DEFAULT");
+    expect(p.get("inpkeyColumnId")).toBe("AD_Process_Request_ID");
+    expect(p.get("keyColumnName")).toBe("AD_Process_Request_ID");
+    // Derived from inpkeyColumnId → "inpadProcessRequestId"
+    expect(p.get("inpadProcessRequestId")).toBe("R1");
+    expect(p.get("inpKey")).toBe("R1");
+    expect(p.get("inpwindowId")).toBe("W123");
+    expect(p.get("token")).toBe("tok_abc123");
   });
 
   it("emits debug logs when DEBUG_MANUAL_PROCESSES is enabled", async () => {
