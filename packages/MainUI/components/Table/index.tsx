@@ -3118,6 +3118,28 @@ const DynamicTable = ({
     editingRowsCount === 0 && (isFocused ?? true)
   );
 
+  // When the grid becomes visible again after leaving form view, DOM focus is
+  // on <body>. The row-click handler (line ~2594) focuses the table container,
+  // but nothing does so on mode transition, so ArrowUp/ArrowDown wouldn't fire
+  // until the user clicked a row (event.target === body fails the container
+  // containment guard in useRowKeyboardNavigation). Re-focus the container on
+  // isVisible: false → true to enable keyboard nav without a click.
+  //
+  // The 100ms delay is load-bearing: an ancestor briefly retains
+  // `visibility: hidden` after React commits the className change, and
+  // `.focus()` is a silent no-op while any ancestor has visibility:hidden.
+  // Neither a microtask nor a single rAF is late enough; setTimeout(100) is.
+  const previousIsVisibleRef = useRef(isVisible);
+  useEffect(() => {
+    const prev = previousIsVisibleRef.current;
+    previousIsVisibleRef.current = isVisible;
+    if (prev || !isVisible) return;
+    const timeoutId = setTimeout(() => {
+      tableContainerRef.current?.focus({ preventScroll: true });
+    }, 100);
+    return () => clearTimeout(timeoutId);
+  }, [isVisible]);
+
   // Register attachment action for toolbar to handle interactions from TableView
   useEffect(() => {
     if (registerAttachmentAction && isVisible) {
