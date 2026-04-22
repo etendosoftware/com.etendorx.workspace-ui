@@ -217,7 +217,12 @@ const collectGlobalKeys = (prev: ISession): Record<string, unknown> => {
 
 // Keep the previous value when the incoming one is empty and would erase meaningful context.
 // Mirrors the guard used during display-logic evaluation in utils/expressions.ts.
-const resolveMergedValue = (prev: ISession, key: string, newValue: string): unknown => {
+// When allowEmptyOverwrite is true (root-tab FIC call, PARENT_ID=null), the incoming
+// value is always authoritative — even if empty — because the root tab is the source of
+// truth for its own session attributes (e.g. ETSG_CheckLegalOrg must reset to "" when
+// switching to an org that is not a legal entity).
+const resolveMergedValue = (prev: ISession, key: string, newValue: string, allowEmptyOverwrite: boolean): unknown => {
+  if (allowEmptyOverwrite) return newValue;
   if (!isEmptySessionValue(newValue)) return newValue;
   const existing = (prev as Record<string, unknown>)[key];
   if (isEmptySessionValue(existing)) return newValue;
@@ -245,12 +250,19 @@ const resolveMergedValue = (prev: ISession, key: string, newValue: string): unkn
  *
  * @param prev - The current session state
  * @param newAttributes - Fresh session attributes from the backend
+ * @param isRootTabCall - When true (PARENT_ID=null), empty values ARE authoritative and
+ *   overwrite existing ones. Workaround for backends that return "" for keys they do not
+ *   own (child tabs), while root-tab calls must be able to legitimately reset a key to "".
  * @returns A clean session with global keys preserved and record-specific keys replaced
  */
-export const mergeSessionAttributes = (prev: ISession, newAttributes: Record<string, string>): ISession => {
+export const mergeSessionAttributes = (
+  prev: ISession,
+  newAttributes: Record<string, string>,
+  isRootTabCall = false
+): ISession => {
   const merged: Record<string, unknown> = collectGlobalKeys(prev);
   for (const [key, value] of Object.entries(newAttributes)) {
-    merged[key] = resolveMergedValue(prev, key, value);
+    merged[key] = resolveMergedValue(prev, key, value, isRootTabCall);
   }
   return merged as ISession;
 };
