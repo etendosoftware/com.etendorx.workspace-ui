@@ -129,6 +129,7 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.startsWith("org.openbravo") ||
     slug.startsWith("etendo/") ||
     slug.startsWith("info/") ||
+    slug.startsWith("utility/ShowImage") ||
     method !== "GET"
   );
 }
@@ -162,7 +163,14 @@ function buildErpHeaders(
   let acceptHeader = "application/json";
   if (slug?.includes("copilot")) {
     acceptHeader = "text/event-stream";
-  } else if (slug?.startsWith(SLUGS_CATEGORIES.LEGACY)) {
+  } else if (
+    slug?.startsWith(SLUGS_CATEGORIES.LEGACY) ||
+    slug?.startsWith("ad_forms/") ||
+    slug?.startsWith("web/") ||
+    slug?.startsWith("org.openbravo") ||
+    slug?.startsWith("etendo/") ||
+    slug?.startsWith("info/")
+  ) {
     acceptHeader = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
   }
 

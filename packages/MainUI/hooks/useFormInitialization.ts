@@ -145,14 +145,15 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       const entityKeyColumn = findEntityKeyColumn(tab.fields);
       if (!entityKeyColumn) throw new Error("Missing key column");
 
-      const payload = buildFormInitializationPayload(tab, mode, parentData, entityKeyColumn);
+      const payload = buildFormInitializationPayload(tab, mode, parentData, entityKeyColumn, record);
 
       const data: FormInitializationResponse = await fetchFormInitialization(params, payload);
 
       const enrichedData = enrichWithAuditFields(data, record, mode);
       const storedInSessionAttributes = buildSessionAttributes(enrichedData);
 
-      setSession((prev) => mergeSessionAttributes(prev, storedInSessionAttributes));
+      const isRootTabCall = params.get("PARENT_ID") === "null";
+      setSession((prev) => mergeSessionAttributes(prev, storedInSessionAttributes, isRootTabCall));
 
       dispatch({ type: "FETCH_SUCCESS", payload: enrichedData });
       // Restore guard so the main useEffect cannot re-fetch with the same params
@@ -212,6 +213,15 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
         data.auxiliaryInputValues[fieldName] = { value: String(value) };
       }
       (data as unknown as Record<string, unknown>)[fieldName] = String(value);
+    }
+
+    // Propagate _readOnly from the datasource record into the FIC response.
+    // The datasource marks records as _readOnly: true when the DAL security layer
+    // determines the current role cannot edit this specific record (e.g. system
+    // records with org='0'). If the FIC didn't already set _readOnly, we mirror
+    // the record-level flag so FormView can correctly render in read-only mode.
+    if (record._readOnly === true) {
+      data._readOnly = true;
     }
 
     return data;

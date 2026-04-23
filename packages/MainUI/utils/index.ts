@@ -65,6 +65,8 @@ export const getFieldReference = (reference?: string): FieldType => {
       return FieldType.SELECT;
     case FIELD_REFERENCE_CODES.WINDOW.id:
       return FieldType.WINDOW;
+    case FIELD_REFERENCE_CODES.IMAGE.id:
+      return FieldType.IMAGE;
     default:
       return FieldType.TEXT;
   }
@@ -118,6 +120,9 @@ export const sanitizeValue = (value: unknown, field?: Field) => {
  *
  * ## Transformations:
  * - Maps field values to corresponding `field.inputName` key
+ * - For property fields (those with `column.propertyPath`), uses the
+ *   `inp_propertyField_{columnName}_{propertyPath}` key format that
+ *   FormInitializationComponent expects
  * - Converts `documentAction` → `DocAction`
  * - Sanitizes boolean values to Y/N format
  * - Handles numeric field conversions
@@ -138,6 +143,17 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
     (acc, [key, value]) => {
       const field = fields?.[key];
       let newKey = field?.inputName ?? key;
+
+      // For property fields, override the inputName with the correct format expected by
+      // FormInitializationComponent's setValuesInRequest method.
+      // Property fields read a property from a related entity (e.g. documentType.docBaseType).
+      // The FIC expects the key: inp_propertyField_{columnName}_{propertyPath}
+      //
+      // NOTE: This requires the metadata module to expose `propertyPath` in the field's
+      // `column` object for fields where AD_Column.Property_Path is set.
+      if (field?.column?.propertyPath) {
+        newKey = field.inputName; // "inp_propertyField_type_Type"
+      }
 
       // Transform documentAction to DocAction and inpporeference to POReference
       if (key === "documentAction" || newKey === "documentAction") {

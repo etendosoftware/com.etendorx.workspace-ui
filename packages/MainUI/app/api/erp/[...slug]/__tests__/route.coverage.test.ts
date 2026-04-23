@@ -411,5 +411,53 @@ describe("ERP slug route coverage", () => {
       expect(fetchOptions.body).toBe(readableStream);
       expect(fetchOptions.duplex).toBe("half");
     });
+
+    it("sends Accept: text/html for ad_forms/ slug (About modal)", async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "text/html; charset=utf-8" }),
+        arrayBuffer: async () =>
+          new TextEncoder().encode("<html><head></head><body><p>About Etendo 25.1</p></body></html>").buffer,
+      });
+
+      const req = createMockRequest(
+        "GET",
+        "http://localhost/api/erp/ad_forms/about.html?IsPopUpCall=1&token=test-token",
+        {}
+      );
+
+      const response = await GET(req, { params: Promise.resolve({ slug: ["ad_forms", "about.html"] }) });
+
+      const fetchOptions = (global.fetch as jest.Mock).mock.calls[0][1];
+      expect(fetchOptions.headers["Accept"]).toContain("text/html");
+      expect(response).toBeInstanceOf(Response);
+    });
+
+    it("returns HTML content type for About modal proxy (local and deployed environments)", async () => {
+      const aboutHtml = "<HTML><HEAD><TITLE>About</TITLE></HEAD><BODY><p>Etendo 25.1</p></BODY></HTML>";
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "text/html; charset=utf-8" }),
+        arrayBuffer: async () => new TextEncoder().encode(aboutHtml).buffer,
+      });
+
+      const req = createMockRequest(
+        "GET",
+        "http://localhost/api/erp/ad_forms/about.html?IsPopUpCall=1&token=test-token",
+        {}
+      );
+
+      const response = await GET(req, {
+        params: Promise.resolve({ slug: ["ad_forms", "about.html"] }),
+      });
+
+      expect(response).toBeInstanceOf(Response);
+      const ct = (response as Response).headers.get("Content-Type");
+      expect(ct?.toLowerCase()).toContain("text/html");
+      // Verify no JSON error was returned (would not be a Response instance if it errored)
+      expect(response.status).toBe(200);
+    });
   });
 });

@@ -7,7 +7,6 @@ import { executeWithSessionAndCsrfRetry } from "@/app/api/_utils/sessionRetryWit
 import { getDatasourceUrl } from "../_utils/endpoints";
 import type { DatasourceParams } from "@workspaceui/api-client/src/api/types";
 import type { SmartClientPayload } from "@/app/api/_utils/datasource";
-
 export const runtime = "nodejs";
 
 // Union type for datasource parameters

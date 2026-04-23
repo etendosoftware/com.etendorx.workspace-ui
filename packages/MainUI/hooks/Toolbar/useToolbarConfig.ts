@@ -244,7 +244,6 @@ export const useToolbarConfig = ({
       const { ok, data } = await copyRecordRequest(tab, selectedIds, activeWindow.windowId, cloneWithChildren);
 
       setActionModal((prev) => ({ ...prev, isLoading: false, isOpen: false }));
-      onRefresh?.();
 
       handleCopyRecordResponse({
         ok,
@@ -261,11 +260,24 @@ export const useToolbarConfig = ({
         onSingleRecord: (newRecordId) => {
           const formMode = FORM_MODES.EDIT;
           const newTabFormState = getNewTabFormState(newRecordId, TAB_MODES.FORM, formMode);
+          // 1. Establish new record ID in window context.
           setSelectedRecord(windowIdentifier, tabId, newRecordId);
+          // 2. Navigate to form view of the clone.
           setTabFormState(windowIdentifier, tabId, newTabFormState);
+          // Note: We intentionally do NOT call graph.clearSelected / graph.clearSelectedMultiple
+          // here. Doing so emits "unselected", which causes table.setRowSelection({}) →
+          // useTableSelection → clearSelectedRecord, wiping the newRecordId we just set.
+          // The graph cache is already invalidated by the recordId change in useCurrentRecord
+          // (new paramsKey), and FormView will call graph.setSelected once it loads the clone.
+          // Grid refresh is handled by Table/index.tsx when it becomes visible again
+          // (isVisible false→true via Effect C).
         },
         onMultipleRecords: () => {
           clearSelectedRecord(windowIdentifier, tabId);
+          graph.clearSelected(tab);
+          graph.clearSelectedMultiple(tab);
+          // Refresh grid only on success
+          onRefresh?.();
         },
       });
     };
@@ -330,6 +342,7 @@ export const useToolbarConfig = ({
     triggerParentRefreshes,
     clearSelectedRecord,
     tabId,
+    graph,
   ]);
 
   useEffect(() => {

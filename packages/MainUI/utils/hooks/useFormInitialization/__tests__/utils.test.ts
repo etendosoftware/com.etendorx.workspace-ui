@@ -146,6 +146,8 @@ describe("FormInitialization Utils - SessionMode Support", () => {
         keyColumnName: "test_column",
         _entityName: "TestEntity",
         inpwindowId: "TestWindow",
+        // _gridVisibleProperties is dynamically computed from displayed fields' column names
+        _gridVisibleProperties: ["test_column"],
         additionalField: "additionalValue",
       });
 
@@ -481,6 +483,80 @@ describe("FormInitialization Utils - SessionMode Support", () => {
 
       expect(result).toEqual({ $Global: "val" });
       expect(result.RecordField).toBeUndefined();
+    });
+
+    it("should preserve existing non-empty value when new attribute is empty string", () => {
+      const prevSession = {
+        ETSG_CheckLegalOrg: "1",
+      } as any;
+
+      const result = mergeSessionAttributes(prevSession, {
+        ETSG_CheckLegalOrg: "",
+        IsPeriodControlAllowed: "Y",
+      });
+
+      expect(result.ETSG_CheckLegalOrg).toBe("1");
+      expect(result.IsPeriodControlAllowed).toBe("Y");
+    });
+
+    it("should preserve existing non-empty value when new attribute is null or undefined", () => {
+      const prevSession = {
+        FieldFromNull: "keep-me",
+        FieldFromUndefined: "also-keep-me",
+      } as any;
+
+      const result = mergeSessionAttributes(prevSession, {
+        FieldFromNull: null as unknown as string,
+        FieldFromUndefined: undefined as unknown as string,
+      });
+
+      expect(result.FieldFromNull).toBe("keep-me");
+      expect(result.FieldFromUndefined).toBe("also-keep-me");
+    });
+
+    it("should overwrite existing value when new attribute is non-empty", () => {
+      const prevSession = {
+        RecordField: "old-value",
+      } as any;
+
+      const result = mergeSessionAttributes(prevSession, {
+        RecordField: "new-value",
+      });
+
+      expect(result.RecordField).toBe("new-value");
+    });
+
+    it("should write empty new value when previous value is also empty", () => {
+      const prevSession = {
+        "#Global": "g",
+        RecordField: "",
+      } as any;
+
+      const result = mergeSessionAttributes(prevSession, {
+        RecordField: "",
+        BrandNewField: "",
+      });
+
+      expect(result.RecordField).toBe("");
+      expect(result.BrandNewField).toBe("");
+    });
+
+    it("should still drop stale non-global prev keys that are not in newAttributes", () => {
+      const prevSession = {
+        "#Global": "g",
+        StaleRecordField: "old",
+        ETSG_CheckLegalOrg: "1",
+      } as any;
+
+      const result = mergeSessionAttributes(prevSession, {
+        ETSG_CheckLegalOrg: "",
+      });
+
+      expect(result).toEqual({
+        "#Global": "g",
+        ETSG_CheckLegalOrg: "1",
+      });
+      expect(result.StaleRecordField).toBeUndefined();
     });
   });
 });

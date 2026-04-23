@@ -24,11 +24,10 @@ import {
   type Option,
 } from "@/utils/selectorUtils";
 import { Checkbox, styled } from "@mui/material";
-import Image from "next/image";
 import { memo, useCallback, useMemo, useRef, useState, useEffect } from "react";
 
 import ChevronDown from "../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
-import closeIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/x.svg?url";
+import CloseIcon from "../../../../../../ComponentLibrary/src/assets/icons/x.svg";
 import { useTranslation } from "@/hooks/useTranslation";
 import { DropdownPortal } from "./DropdownPortal";
 import SearchInput from "./Select/SearchInput";
@@ -356,7 +355,7 @@ const MultiSelect = memo(function MultiSelectCmp({
         <div className="flex items-center flex-shrink-0 ml-2">
           {selectedLabels.length > 0 && !isReadOnly && (
             <button type="button" onClick={handleClear} className={`mr-1 ${TEXT_MUTED} ${HOVER_TEXT_COLOR} rounded`}>
-              <Image src={closeIconUrl} alt="Clear" height={16} width={16} data-testid="Image__cb81f7" />
+              <CloseIcon className="w-4 h-4" data-testid="CloseIcon__cb81f7" />
             </button>
           )}
           {!isReadOnly && (

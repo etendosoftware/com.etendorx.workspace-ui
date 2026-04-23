@@ -4,7 +4,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
 import { useWindowContext } from "@/contexts/window";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
-import React from "react";
+import type React from "react";
 
 jest.mock("@/hooks/useTranslation");
 jest.mock("@/contexts/tab");
@@ -68,7 +68,7 @@ describe("ColumnVisibilityMenu", () => {
     expect(screen.getByTestId("item-col1")).toBeInTheDocument();
   });
 
-  it("should filter out mrt- columns and buttons", () => {
+  it("should filter out mrt- columns, buttons, and image columns", () => {
     mockTable.getAllLeafColumns.mockReturnValue([
       {
         id: "mrt-select",
@@ -78,6 +78,11 @@ describe("ColumnVisibilityMenu", () => {
       {
         id: "btn1",
         columnDef: { type: "button", header: "Button" },
+        getIsVisible: () => true,
+      },
+      {
+        id: "img1",
+        columnDef: { type: "image", header: "Image Column" },
         getIsVisible: () => true,
       },
       {
@@ -91,6 +96,7 @@ describe("ColumnVisibilityMenu", () => {
 
     expect(screen.queryByTestId("item-mrt-select")).not.toBeInTheDocument();
     expect(screen.queryByTestId("item-btn1")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("item-img1")).not.toBeInTheDocument();
     expect(screen.getByTestId("item-col1")).toBeInTheDocument();
   });
 

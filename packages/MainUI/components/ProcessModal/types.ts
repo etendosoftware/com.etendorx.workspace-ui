@@ -70,6 +70,11 @@ export interface ProcessResponse {
       msgTitle: string;
       msgText: string;
     };
+    showMsgInView?: {
+      msgType: string;
+      msgTitle: string;
+      msgText: string;
+    };
   }>;
   refreshParent?: boolean;
   showInIframe?: boolean;
@@ -111,6 +116,8 @@ export interface ProcessDefinitionModalProps {
   onError?: () => void;
   type: ProcessType;
   keepOpenOnSuccess?: boolean;
+  /** Optional record override — used when the caller already has the record data (e.g. from form context) and the TabContext may not provide it. */
+  contextRecord?: Record<string, unknown>;
 }
 
 export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {

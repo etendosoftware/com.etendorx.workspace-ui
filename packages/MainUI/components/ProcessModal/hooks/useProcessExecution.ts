@@ -58,6 +58,7 @@ interface ProcessViewMsg {
 
 interface ResponseAction {
   showMsgInProcessView?: ProcessViewMsg;
+  showMsgInView?: ProcessViewMsg;
   smartclientSay?: { message?: string };
 }
 
@@ -122,6 +123,8 @@ export interface UseProcessExecutionParams {
   setGridRefreshKey: (fn: (prev: number) => number) => void;
   /** Original button.processDefinition.parameters — used to reset on close */
   initialParameters: Record<string, ProcessParameter>;
+  /** File objects from Upload File parameters, keyed by parameter dBColumnName */
+  fileParams: Record<string, File>;
 }
 
 export interface UseProcessExecutionReturn {
@@ -179,6 +182,7 @@ export function useProcessExecution({
   setShouldTriggerSuccess,
   setGridRefreshKey,
   initialParameters,
+  fileParams,
 }: UseProcessExecutionParams): UseProcessExecutionReturn {
   const { t } = useTranslation();
 
@@ -196,13 +200,13 @@ export function useProcessExecution({
     let actionWithMsg: ResponseAction | undefined;
     if (Array.isArray(responseActions)) {
       actionWithMsg = responseActions.find(
-        (action: ResponseAction) => action.showMsgInProcessView || action.smartclientSay
+        (action: ResponseAction) => action.showMsgInProcessView || action.showMsgInView || action.smartclientSay
       );
     } else if (typeof responseActions === "object") {
       actionWithMsg = responseActions as ResponseAction;
     }
 
-    const msgView = actionWithMsg?.showMsgInProcessView;
+    const msgView = actionWithMsg?.showMsgInProcessView ?? actionWithMsg?.showMsgInView;
     if (msgView) {
       const rawMsg = msgView.msgText || "";
       const parsed = parseSmartClientMessage(rawMsg);
@@ -385,6 +389,62 @@ export function useProcessExecution({
   // Core Java servlet execution
   // -------------------------------------------------------------------------
 
+  const buildMultipartRequest = useCallback(
+    (apiUrl: string, payload: any): RequestInit => {
+      const formData = new FormData();
+      for (const [paramName, file] of Object.entries(fileParams)) {
+        formData.append(paramName, file, file.name);
+      }
+      formData.append("processId", processId || "");
+      formData.append("reportId", "null");
+      formData.append("windowId", String(tab?.window || ""));
+      if (payload._params) {
+        for (const [paramName, file] of Object.entries(fileParams)) {
+          payload._params[paramName] = `C:\\fakepath\\${(file as File).name}`;
+        }
+      }
+      formData.append("paramValues", JSON.stringify(payload));
+      return {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "X-CSRF-Token": getCsrfToken() },
+        body: formData,
+      };
+    },
+    [fileParams, processId, tab?.window, token, getCsrfToken]
+  );
+
+  const buildJsonRequest = useCallback(
+    (payload: any): RequestInit => ({
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json;charset=UTF-8",
+        Authorization: `Bearer ${token}`,
+        "X-CSRF-Token": getCsrfToken(),
+      },
+      body: JSON.stringify(payload),
+    }),
+    [token, getCsrfToken]
+  );
+
+  const handleJavaProcessResult = useCallback(
+    async (parsedResult: ReturnType<typeof parseProcessResponse>) => {
+      const { messageType, linkTabId, linkRecordId } = parsedResult;
+      if (messageType === "success" || messageType === "warning") {
+        await revalidateDopoProcess();
+        const message =
+          typeof parsedResult.data === "string"
+            ? parsedResult.data
+            : parsedResult.data?.message || parsedResult.data?.msgText || "";
+        showProcessToast({ isSuccess: messageType === "success", message, linkTabId, linkRecordId });
+        setShouldTriggerSuccess(true);
+        handleSuccessClose(true);
+      } else {
+        setResult(parsedResult);
+      }
+    },
+    [revalidateDopoProcess, showProcessToast, setShouldTriggerSuccess, handleSuccessClose, setResult]
+  );
+
   const executeJavaProcess = useCallback(
     async (payload: any, logContext = "process") => {
       try {
@@ -395,17 +455,10 @@ export function useProcessExecution({
         if (javaClassName) queryParams.set("_action", javaClassName);
 
         const apiUrl = `${baseUrl}?${queryParams.toString()}`;
+        const hasFiles = Object.keys(fileParams).length > 0;
+        const requestInit = hasFiles ? buildMultipartRequest(apiUrl, payload) : buildJsonRequest(payload);
 
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json;charset=UTF-8",
-            Authorization: `Bearer ${token}`,
-            "X-CSRF-Token": getCsrfToken(),
-          },
-          body: JSON.stringify(payload),
-        });
-
+        const response = await fetch(apiUrl, requestInit);
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(errorText || "Execution failed");
@@ -416,29 +469,8 @@ export function useProcessExecution({
           resultData = await response.json();
         } catch {}
 
-        const res: ExecuteProcessResult = { success: true, data: resultData };
-        const parsedResult = parseProcessResponse(res);
-        const { messageType, linkTabId, linkRecordId } = parsedResult;
-
-        if (messageType === "success" || messageType === "warning") {
-          await revalidateDopoProcess();
-          const message =
-            typeof parsedResult.data === "string"
-              ? parsedResult.data
-              : parsedResult.data?.message || parsedResult.data?.msgText || "";
-
-          showProcessToast({
-            isSuccess: messageType === "success",
-            message,
-            linkTabId,
-            linkRecordId,
-          });
-
-          setShouldTriggerSuccess(true);
-          handleSuccessClose(true);
-        } else {
-          setResult(parsedResult);
-        }
+        const parsedResult = parseProcessResponse({ success: true, data: resultData });
+        await handleJavaProcessResult(parsedResult);
       } catch (error) {
         logger.warn(`Error executing ${logContext}:`, error);
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
@@ -448,13 +480,12 @@ export function useProcessExecution({
       processId,
       tab?.window,
       javaClassName,
-      token,
-      getCsrfToken,
+      fileParams,
+      buildMultipartRequest,
+      buildJsonRequest,
       parseProcessResponse,
-      setShouldTriggerSuccess,
-      handleSuccessClose,
+      handleJavaProcessResult,
       setResult,
-      showProcessToast,
     ]
   );
 
@@ -554,8 +585,8 @@ export function useProcessExecution({
 
   const extractResponseMessage = useCallback(
     (result: any) => {
-      if (result?.responseActions?.[0]?.showMsgInProcessView) {
-        return result.responseActions[0].showMsgInProcessView;
+      if (result?.responseActions?.[0]?.showMsgInProcessView || result?.responseActions?.[0]?.showMsgInView) {
+        return result.responseActions[0].showMsgInProcessView ?? result.responseActions[0].showMsgInView;
       }
       if (result?.severity) {
         return { msgType: result.severity, msgText: result.text };
@@ -673,7 +704,13 @@ export function useProcessExecution({
     startTransition(async () => {
       try {
         const formValues = form.getValues();
-        const formParameters = buildProcessParameters(formValues, parameters);
+        const rawParameters = buildProcessParameters(formValues, parameters);
+        // Omit null/undefined values to match Classic UI behavior — sending explicit
+        // nulls to the backend process-execution endpoint causes the pInstance to
+        // never reach a terminal state (isProcessing stays true indefinitely).
+        const formParameters = Object.fromEntries(
+          Object.entries(rawParameters).filter(([, v]) => v !== null && v !== undefined)
+        );
 
         const response = await fetch("/api/process/report-and-process", {
           method: "POST",
@@ -695,7 +732,14 @@ export function useProcessExecution({
 
         const { pInstanceId } = await response.json();
 
+        const pollDeadline = Date.now() + 10 * 60 * 1000;
+
         const pollStatus = async (): Promise<void> => {
+          if (Date.now() > pollDeadline) {
+            setResult({ success: false, error: t("process.executionTimeout") });
+            return;
+          }
+
           const statusRes = await fetch(`/api/process/report-and-process/${pInstanceId}`, {
             headers: { Authorization: `Bearer ${token}` },
           });

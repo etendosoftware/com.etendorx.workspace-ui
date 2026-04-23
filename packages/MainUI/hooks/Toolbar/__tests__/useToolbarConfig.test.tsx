@@ -171,6 +171,78 @@ describe("useToolbarConfig", () => {
       );
       expect(handleCopyRecordResponse).toHaveBeenCalled();
     });
+
+    it("sets new record and navigates to form on onSingleRecord callback without clearing graph selection", async () => {
+      const mockClearSelected = jest.fn();
+      const mockClearSelectedMultiple = jest.fn();
+      (useSelected as jest.Mock).mockReturnValue({
+        graph: { clearSelected: mockClearSelected, clearSelectedMultiple: mockClearSelectedMultiple },
+      });
+      (useSelectedRecords as jest.Mock).mockReturnValue([{ id: "record1" }]);
+      (copyRecordRequest as jest.Mock).mockResolvedValue({ ok: true, data: {} });
+      (handleCopyRecordResponse as jest.Mock).mockImplementation(({ onSingleRecord }) => {
+        onSingleRecord("newRecord123");
+      });
+
+      const { result } = renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+
+      act(() => {
+        result.current.actionHandlers.COPY_RECORD();
+      });
+
+      await act(async () => {
+        await result.current.actionModal.buttons[0].onClick();
+      });
+
+      // graph.clearSelected / clearSelectedMultiple must NOT be called in the single-record
+      // clone path. Calling them emits "unselected" → table.setRowSelection({}) →
+      // useTableSelection → clearSelectedRecord, which wipes the newRecordId from the
+      // window context and breaks grid selection on return from form view.
+      expect(mockClearSelected).not.toHaveBeenCalled();
+      expect(mockClearSelectedMultiple).not.toHaveBeenCalled();
+
+      expect(mockSetSelectedRecord).toHaveBeenCalledWith(mockActiveWindow.windowIdentifier, "tab1", "newRecord123");
+      expect(mockSetTabFormState).toHaveBeenCalled();
+
+      // Verify ordering: setSelectedRecord before setTabFormState
+      const setSelectedRecordOrder = mockSetSelectedRecord.mock.invocationCallOrder[0];
+      const setTabFormStateOrder = mockSetTabFormState.mock.invocationCallOrder[0];
+      expect(setSelectedRecordOrder).toBeLessThan(setTabFormStateOrder);
+    });
+
+    it("clears graph selection and clears selected record on onMultipleRecords callback", async () => {
+      const mockClearSelected = jest.fn();
+      const mockClearSelectedMultiple = jest.fn();
+      (useSelected as jest.Mock).mockReturnValue({
+        graph: { clearSelected: mockClearSelected, clearSelectedMultiple: mockClearSelectedMultiple },
+      });
+      (useSelectedRecords as jest.Mock).mockReturnValue([{ id: "record1" }, { id: "record2" }]);
+      (copyRecordRequest as jest.Mock).mockResolvedValue({ ok: true, data: {} });
+      (handleCopyRecordResponse as jest.Mock).mockImplementation(({ onMultipleRecords }) => {
+        onMultipleRecords();
+      });
+
+      const { result } = renderHook(() => useToolbarConfig({ tabId: "tab1", isFormView: false }));
+
+      act(() => {
+        result.current.actionHandlers.COPY_RECORD();
+      });
+
+      await act(async () => {
+        await result.current.actionModal.buttons[0].onClick();
+      });
+
+      // Verify ordering: clearSelectedRecord must come BEFORE graph clears (new correct ordering)
+      const clearSelectedRecordOrder = mockClearSelectedRecord.mock.invocationCallOrder[0];
+      const clearSelectedOrder = mockClearSelected.mock.invocationCallOrder[0];
+      const clearSelectedMultipleOrder = mockClearSelectedMultiple.mock.invocationCallOrder[0];
+      expect(clearSelectedRecordOrder).toBeLessThan(clearSelectedOrder);
+      expect(clearSelectedRecordOrder).toBeLessThan(clearSelectedMultipleOrder);
+
+      expect(mockClearSelected).toHaveBeenCalledWith(mockTab);
+      expect(mockClearSelectedMultiple).toHaveBeenCalledWith(mockTab);
+      expect(mockClearSelectedRecord).toHaveBeenCalledWith(mockActiveWindow.windowIdentifier, "tab1");
+    });
   });
 
   describe("INITIALIZE_RX_SERVICES", () => {

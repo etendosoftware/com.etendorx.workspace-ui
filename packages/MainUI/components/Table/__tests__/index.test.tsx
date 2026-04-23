@@ -28,6 +28,16 @@
  * - tableFeatureIntegration.test.tsx - Feature compatibility and integration
  */
 
+// Mock Next.js server dependencies
+jest.mock("next/cache", () => ({
+  revalidatePath: jest.fn(),
+  revalidateTag: jest.fn(),
+}));
+
+jest.mock("@/app/actions/revalidate", () => ({
+  revalidateDopoProcess: jest.fn(),
+}));
+
 import React from "react";
 import { screen, waitFor } from "@testing-library/react";
 import DynamicTable from "../index";
@@ -316,26 +326,50 @@ jest.mock("@/components/Table/styles", () => ({
   }),
 }));
 
-jest.mock("material-react-table", () => ({
-  MaterialReactTable: () => <div data-testid="MaterialReactTable__8ca888">Table</div>,
-  useMaterialReactTable: () => ({
-    getState: () => ({
-      rowSelection: {},
-      columnFilters: [],
-      columnVisibility: {},
-      columnSizingInfo: {},
-      columnSizing: {},
-      sorting: [],
-      pagination: { pageIndex: 0, pageSize: 10 },
-    }),
-    getVisibleLeafColumns: jest.fn(() => []),
-    setColumnFilters: jest.fn(),
-    setColumnVisibility: jest.fn(),
-    setSorting: jest.fn(),
-    setColumnOrder: jest.fn(),
-    setExpanded: jest.fn(),
-    setRowSelection: jest.fn(),
+const mockTable = {
+  getState: () => ({
+    rowSelection: {},
+    columnFilters: [],
+    columnVisibility: {},
+    columnSizingInfo: {},
+    columnSizing: {},
+    sorting: [],
+    pagination: { pageIndex: 0, pageSize: 10 },
+    isFullScreen: false,
   }),
+  getVisibleLeafColumns: jest.fn(() => []),
+  setColumnFilters: jest.fn(),
+  setColumnVisibility: jest.fn(),
+  setSorting: jest.fn(),
+  setColumnOrder: jest.fn(),
+  setExpanded: jest.fn(),
+  setRowSelection: jest.fn(),
+  setIsFullScreen: jest.fn(),
+};
+
+let capturedRenderTopToolbar: ((args: { table: typeof mockTable }) => React.ReactNode) | undefined;
+
+jest.mock("material-react-table", () => ({
+  MaterialReactTable: () => (
+    <div data-testid="MaterialReactTable__8ca888">
+      {capturedRenderTopToolbar?.({ table: mockTable })}
+      Table
+    </div>
+  ),
+  MRT_ToggleDensePaddingButton: () => (
+    <button type="button" data-testid="MRT_ToggleDensePaddingButton">
+      Density
+    </button>
+  ),
+  MRT_ToggleFullScreenButton: () => (
+    <button type="button" data-testid="MRT_ToggleFullScreenButton">
+      Fullscreen
+    </button>
+  ),
+  useMaterialReactTable: (options: { renderTopToolbar?: (args: { table: typeof mockTable }) => React.ReactNode }) => {
+    capturedRenderTopToolbar = options?.renderTopToolbar;
+    return mockTable;
+  },
 }));
 
 jest.mock("@workspaceui/componentlibrary/src/components", () => ({

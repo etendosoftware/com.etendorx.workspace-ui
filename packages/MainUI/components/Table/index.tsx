@@ -17,6 +17,8 @@
 
 import {
   MaterialReactTable,
+  MRT_ToggleDensePaddingButton,
+  MRT_ToggleFullScreenButton,
   type MRT_Row,
   useMaterialReactTable,
   type MRT_TableBodyRowProps,
@@ -119,6 +121,7 @@ import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatUTCTimeToLocal } from "@/utils/date/utils";
+import { isSrOneToOneExtension } from "@/utils/window/utils";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
@@ -730,7 +733,7 @@ const DynamicTable = ({
   const { confirmationState, confirmDiscardChanges, confirmSaveWithErrors } = useTableConfirmation();
 
   // Status modal for showing save errors and success messages
-  const { statusModal, hideStatusModal, showErrorModal, showSuccessModal } = useStatusModal();
+  const { showErrorModal, showSuccessModal } = useStatusModal();
 
   const {
     registerDatasource,
@@ -784,6 +787,11 @@ const DynamicTable = ({
   const hasScrolledToSelection = useRef<boolean>(false);
   const previousURLSelection = useRef<string | null>(null);
   const hasRestoredSelection = useRef(false);
+  const prevRestorationId = useRef<string | undefined>(undefined);
+  const wasVisibleRef = useRef(isVisible);
+  // Tracks the last parent record id for which the logical-SR auto-open has
+  // fired, so closing the form does not re-trigger for the same parent.
+  const srAutoOpenedForParentRef = useRef<string | undefined>(undefined);
 
   // Use the table data hook
   const {
@@ -813,6 +821,26 @@ const DynamicTable = ({
   } = useTableData({
     isTreeMode,
   });
+
+  // Auto-open FormView for logical SR (Single Record) tabs once the child
+  // records are fetched. This is the counterpart of Tab.tsx's 1:1 auto-open:
+  // when PK and FK are distinct columns (e.g. ETSG_Certificate.organization),
+  // the parent-selected id is not a valid child id, so we wait for the fetched
+  // records to discover the real child id and then open the form.
+  useEffect(() => {
+    if (uIPattern !== UIPatternEnum.EDIT_ONLY) return;
+    if (!tab.defaultEditMode) return;
+    if (isSrOneToOneExtension(tab)) return;
+    if (loading) return;
+    if (displayRecords.length === 0) return;
+
+    const parentKey = parentRecord?.id ? String(parentRecord.id) : undefined;
+    if (!parentKey) return;
+    if (srAutoOpenedForParentRef.current === parentKey) return;
+
+    srAutoOpenedForParentRef.current = parentKey;
+    setRecordId(String(displayRecords[0].id));
+  }, [uIPattern, tab, loading, displayRecords, parentRecord, setRecordId]);
 
   // Summary State
   const [summaryState, setSummaryState] = useState<Record<string, SummaryType>>({});
@@ -2947,7 +2975,53 @@ const DynamicTable = ({
     enableStickyFooter: false,
     enableColumnVirtualization: true,
     enableRowVirtualization: canUseVirtualScrollingWithEditing(editingRows, effectiveRecords.length),
-    enableTopToolbar: false,
+    enableTopToolbar: true,
+    renderTopToolbar: ({ table: mrtTable }) => {
+      const isFullScreen = mrtTable.getState().isFullScreen;
+
+      if (isFullScreen) {
+        return (
+          <div className="flex justify-end items-center px-2 py-1 bg-white border-b border-gray-100">
+            <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
+            <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
+            <button
+              type="button"
+              onClick={() => mrtTable.setIsFullScreen(false)}
+              className="ml-1 p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-900 text-lg leading-none"
+              aria-label="Exit fullscreen">
+              ✕
+            </button>
+          </div>
+        );
+      }
+
+      const rowSelection = mrtTable.getState().rowSelection;
+      const selCount = Object.keys(rowSelection).filter((id) => rowSelection[id]).length;
+      const loaded = displayRecords.length;
+      const total = hasMoreRecords ? loaded + 1 : loaded;
+      const labels = {
+        showingRecords: t("table.counter.showingRecords"),
+        showingPartialRecords: t("table.counter.showingPartialRecords"),
+        selectedRecords: t("table.counter.selectedRecords"),
+        recordsLoaded: t("table.counter.recordsLoaded"),
+      };
+      return (
+        <RecordCounterBar
+          totalRecords={total}
+          loadedRecords={loaded}
+          selectedCount={selCount}
+          isLoading={loading}
+          labels={labels}
+          actions={
+            <>
+              <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
+              <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
+            </>
+          }
+          data-testid="RecordCounterBar__8ca888"
+        />
+      );
+    },
     enableBottomToolbar: false,
     enableExpanding: shouldUseTreeMode,
     paginateExpandedRows: false,
@@ -3188,6 +3262,44 @@ const DynamicTable = ({
     }
   }, [activeWindow, tab.window, records, getSelectedRecord, tab.id]);
 
+  /**
+   * Reset hasRestoredSelection when the target selected record ID changes.
+   * This unblocks the selection restoration effect when a new record is set
+   * (e.g., after cloning a record and navigating to the clone).
+   */
+  useEffect(() => {
+    const windowIdentifier = activeWindow?.windowIdentifier;
+    if (!windowIdentifier) return;
+    const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
+    if (urlSelectedId !== prevRestorationId.current) {
+      prevRestorationId.current = urlSelectedId;
+      hasRestoredSelection.current = false;
+    }
+  }, [activeWindow, getSelectedRecord, tab.id]);
+
+  /**
+   * When the table becomes visible again (user navigates back from form/clone view),
+   * check if the currently selected record exists in the loaded records.
+   * If not, trigger a refetch so the cloned record appears in the grid.
+   */
+  useEffect(() => {
+    const becameVisible = !wasVisibleRef.current && isVisible;
+    wasVisibleRef.current = isVisible;
+
+    if (!becameVisible) return;
+
+    const windowIdentifier = activeWindow?.windowIdentifier;
+    if (!windowIdentifier) return;
+
+    const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
+    if (!urlSelectedId) return;
+
+    const recordExists = records?.some((r: EntityData) => String(r.id) === urlSelectedId);
+    if (!recordExists) {
+      refetch();
+    }
+  }, [isVisible, activeWindow, getSelectedRecord, tab.id, records, refetch]);
+
   useEffect(() => {
     const handleGraphClear = (eventTab: typeof tab) => {
       if (eventTab.id === tabId) {
@@ -3262,11 +3374,11 @@ const DynamicTable = ({
       if (event.key === "Escape") {
         const editingRowIds = editingRowUtils.getEditingRowIds();
 
-        // If there are editing rows, cancel the first one using handleCancelRow
-        // This ensures we use the confirmation modal instead of window.confirm
         if (editingRowIds.length > 0) {
-          const rowId = editingRowIds[0]; // Cancel the first editing row
+          const rowId = editingRowIds[0];
           await handleCancelRow(rowId);
+        } else if (table.getState().isFullScreen) {
+          table.setIsFullScreen(false);
         }
       }
     };
@@ -3275,7 +3387,7 @@ const DynamicTable = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [editingRowUtils, handleCancelRow]);
+  }, [editingRowUtils, handleCancelRow, table]);
 
   useEffect(() => {
     if (removeRecordLocally) {
@@ -3407,33 +3519,11 @@ const DynamicTable = ({
     );
   }
 
-  // Calculate counter values
-  const selectedRecords = Object.keys(table.getState().rowSelection).filter((id) => table.getState().rowSelection[id]);
-  const selectedCount = selectedRecords.length;
-  const loadedRecords = displayRecords.length;
-  const totalRecords = hasMoreRecords ? loadedRecords + 1 : loadedRecords; // Approximate total when more records available
-
-  // Prepare labels for RecordCounterBar with translations
-  const counterLabels = {
-    showingRecords: t("table.counter.showingRecords"),
-    showingPartialRecords: t("table.counter.showingPartialRecords"),
-    selectedRecords: t("table.counter.selectedRecords"),
-    recordsLoaded: t("table.counter.recordsLoaded"),
-  };
-
   return (
     <div
       className={`h-full overflow-hidden rounded-3xl transition-opacity flex flex-col ${
         loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
       }`}>
-      <RecordCounterBar
-        totalRecords={totalRecords}
-        loadedRecords={loadedRecords}
-        selectedCount={selectedCount}
-        isLoading={loading}
-        labels={counterLabels}
-        data-testid="RecordCounterBar__8ca888"
-      />
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
         <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
       </div>

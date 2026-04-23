@@ -64,11 +64,9 @@ describe("RecordCounterBar Component", () => {
     const container = screen.getByTestId("RecordCounterBar");
     expect(container).toBeInTheDocument();
 
-    // Check that it has the expected Tailwind classes
     expect(container).toHaveClass(
       "flex",
-      "justify-start",
-      "gap-4",
+      "justify-between",
       "items-center",
       "px-4",
       "py-2",
@@ -76,10 +74,27 @@ describe("RecordCounterBar Component", () => {
       "bg-white",
       "border-b",
       "border-gray-200",
-      "flex-shrink-0",
-      "flex-col",
-      "sm:flex-row"
+      "flex-shrink-0"
     );
+  });
+
+  it("should render actions when provided", () => {
+    render(
+      <RecordCounterBar
+        totalRecords={100}
+        loadedRecords={50}
+        selectedCount={0}
+        actions={<button type="button">Action</button>}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Action" })).toBeInTheDocument();
+  });
+
+  it("should not render actions container when actions prop is not provided", () => {
+    const { container } = render(<RecordCounterBar totalRecords={100} loadedRecords={50} selectedCount={0} />);
+
+    expect(container.querySelectorAll("button")).toHaveLength(0);
   });
 
   it("should handle large numbers correctly", () => {

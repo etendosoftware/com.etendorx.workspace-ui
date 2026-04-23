@@ -112,6 +112,17 @@ export interface RefListField {
   color?: string;
 }
 
+export interface SelectorColumn {
+  id: string;
+  header: string;
+  accessorKey: string;
+  enableSorting?: boolean;
+  enableFiltering?: boolean;
+  referenceId?: string;
+  sortNo?: number;
+  [key: string]: unknown;
+}
+
 export interface Field {
   hqlName: string;
   inputName: string;
@@ -136,7 +147,12 @@ export interface Field {
   gridProps: GridProps;
   type: string;
   field: unknown[];
-  selector?: Record<string, string>;
+  selector?: {
+    hasTableRelated?: boolean;
+    hasProcessDefinitionRelated?: boolean;
+    gridColumns?: SelectorColumn[];
+    [key: string]: unknown;
+  };
   refList: RefListField[];
   referencedEntity: string;
   referencedWindowId: string;
@@ -179,6 +195,11 @@ export interface Field {
    * When set, the field should be rendered as a navigable link in the grid.
    */
   clientclass?: string | null;
+  /**
+   * When true, the field group (subsection) starts collapsed in the form.
+   * When false or undefined, the field group starts expanded.
+   */
+  fieldGroupCollapsed?: boolean;
 }
 
 export interface Option<T extends string = string> {
@@ -246,6 +267,7 @@ export enum FieldType {
   WINDOW = "window",
   DATETIME = "datetime",
   TIME = "time",
+  IMAGE = "image",
 }
 
 export interface MappedTab {
