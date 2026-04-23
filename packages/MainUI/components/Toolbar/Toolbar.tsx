@@ -50,7 +50,7 @@ import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
 import { getToolbarSections } from "@/utils/toolbar/utils";
 import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
 import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
-import type { ToolbarProps } from "./types";
+import { IconSize, type ToolbarButton, type ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { TAB_MODES } from "@/utils/url/constants";
@@ -443,7 +443,24 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       isAdvancedFilterApplied: isAdvancedFilterApplied,
     });
 
-    if (!SEND_EMAIL_ENTITIES.has(tab?.entityName ?? "")) {
+    if (SEND_EMAIL_ENTITIES.has(tab?.entityName ?? "")) {
+      const hasEmailButton = baseConfig.centerSection.buttons.some(
+        (b) => b.key === "F976807593D147A1A5A0B77668F0054C" || b.key?.startsWith(TOOLBAR_BUTTONS_ACTIONS.SEND_EMAIL)
+      );
+      if (!hasEmailButton) {
+        const syntheticEmailButton: ToolbarButton = {
+          key: "send-email",
+          icon: null,
+          tooltip: t ? t("email.sendEmail") : "Send Email",
+          disabled: !hasSelectedRecord,
+          onClick: () => handleSendEmail(),
+          className: "toolbar-button-send-email",
+          height: IconSize,
+          width: IconSize,
+        };
+        baseConfig.centerSection.buttons.push(syntheticEmailButton);
+      }
+    } else {
       baseConfig.centerSection.buttons = baseConfig.centerSection.buttons.filter(
         (b) => b.key !== "F976807593D147A1A5A0B77668F0054C" && !b.key?.startsWith(TOOLBAR_BUTTONS_ACTIONS.SEND_EMAIL)
       );
