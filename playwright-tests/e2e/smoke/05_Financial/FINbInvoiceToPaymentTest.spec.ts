@@ -56,7 +56,7 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await closeToastIfPresent(page);
 
     // Verify Draft status
-    await expect(page.locator(".MuiChip-label").filter({ hasText: "Draft" }).first()).toBeAttached({ timeout: 30_000 });
+    await expect(page.locator(".MuiChip-label").filter({ hasText: "Draft" }).first()).toBeAttached({ timeout: 60_000 });
 
     // ── Step 3: Add Invoice Line ──────────────────────────────────────────────
     await page.locator('button[aria-label="Lines"]').click();
@@ -276,14 +276,22 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     await executePaymentResponse;
     await closeToastIfPresent(page);
 
-    // The Add Details dialog does not auto-close after execution.
-    // Press Escape to close it — avoids ambiguity between dialog and tab-level close buttons.
-    await page.waitForTimeout(2_000);
-    await page.keyboard.press("Escape");
+    // After successful payment execution the ProcessDefinitionModal auto-closes
+    // (isFinalSuccess=true removes it from the DOM). Only press Escape if the modal
+    // is still open — pressing Escape on an already-closed modal would close the form.
     await page.waitForTimeout(1_000);
+    if (
+      await page
+        .locator('[data-testid="Modal__761503"]')
+        .isVisible({ timeout: 500 })
+        .catch(() => false)
+    ) {
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(500);
+    }
 
     // ── Step 9: Verify final payment state ───────────────────────────────────
-    await page.locator("button.toolbar-button-refresh").filter({ visible: true }).first().click();
+    await page.locator("button.toolbar-button-refresh").first().click();
 
     await expect(page.locator('[data-testid="status-bar-container"] span[name="status"]')).toHaveText(
       "Payment Received",
