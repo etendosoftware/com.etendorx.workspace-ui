@@ -114,10 +114,6 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
       setError(null);
       const data = (await Metadata.getToolbar()) as ToolbarButtonMetadata[];
 
-      console.log(
-        "[useToolbar] ALL button actions:",
-        data?.map((b) => `${b?.action}|${b?.id}`)
-      );
       toolbarCache.set(cacheKey, data);
       setToolbar(data);
     } catch (error) {
@@ -133,7 +129,6 @@ export function useToolbar(windowIdentifier: string, tabId?: string) {
     const windowId = getWindowIdFromIdentifier(windowIdentifier);
     const filteredButtons =
       toolbar?.filter((button) => {
-        if (!button) return false;
         if (!button.windows || button.windows.length === 0) {
           return true;
         }
