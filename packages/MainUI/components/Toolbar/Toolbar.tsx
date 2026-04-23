@@ -49,7 +49,7 @@ import TopToolbar from "./TopToolbar/TopToolbar";
 import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
 import { getToolbarSections } from "@/utils/toolbar/utils";
 import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
-import { IconSize } from "./types";
+import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
@@ -57,7 +57,6 @@ import { TAB_MODES } from "@/utils/url/constants";
 import { useWindowContext } from "@/contexts/window";
 import ActionModal from "@workspaceui/componentlibrary/src/components/ActionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
-import EmailIcon from "@mui/icons-material/Email";
 
 interface EmailConfig {
   to: string;
@@ -279,10 +278,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const handleCloseSearch = useCallback(() => setSearchOpen(false), [setSearchOpen]);
 
-  // entityName in Etendo DAL uses the entity class name, not the table name:
-  // C_Invoice → "Invoice", C_Order → "Order"
-  const showEmailButton = SEND_EMAIL_ENTITIES.has(tab?.entityName ?? "");
-
   const handleCloseEmailModal = useCallback(() => {
     setEmailModalOpen(false);
     setEmailConfig(null);
@@ -415,9 +410,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           setShowShareLinkTooltip(false);
         }, 2000);
       }
+      if (action === TOOLBAR_BUTTONS_ACTIONS.SEND_EMAIL) {
+        handleSendEmail();
+        return;
+      }
       handleAction(action, button, event);
     },
-    [handleAction]
+    [handleAction, handleSendEmail]
   );
 
   const toolbarConfig = useMemo(() => {
@@ -444,19 +443,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       isAdvancedFilterApplied: isAdvancedFilterApplied,
     });
 
-    if (showEmailButton) {
-      baseConfig.centerSection.buttons = [
-        ...baseConfig.centerSection.buttons,
-        {
-          key: "send-email",
-          icon: <EmailIcon sx={{ fontSize: "1rem" }} data-testid="EmailIcon__a2dd07" />,
-          tooltip: t("email.sendEmail"),
-          disabled: !hasSelectedRecord,
-          height: IconSize,
-          width: IconSize,
-          onClick: handleSendEmail,
-        },
-      ];
+    if (!SEND_EMAIL_ENTITIES.has(tab?.entityName ?? "")) {
+      baseConfig.centerSection.buttons = baseConfig.centerSection.buttons.filter(
+        (b) => b.key !== "F976807593D147A1A5A0B77668F0054C" && !b.key?.startsWith(TOOLBAR_BUTTONS_ACTIONS.SEND_EMAIL)
+      );
     }
 
     const config = {
@@ -500,7 +490,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     showShareLinkTooltip,
     isAdvancedFilterApplied,
     isProcessRefreshing,
-    showEmailButton,
     handleSendEmail,
   ]);
 
