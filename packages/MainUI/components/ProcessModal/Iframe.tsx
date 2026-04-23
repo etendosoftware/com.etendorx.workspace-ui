@@ -29,6 +29,7 @@ import CustomModal from "@workspaceui/componentlibrary/src/components/Modal/Cust
 
 const CLOSE_MODAL_ACTION = "closeModal";
 const PROCESS_ORDER_ACTION = "processOrder";
+const SHOW_PROCESS_MESSAGE_ACTION = "showProcessMessage";
 
 const ProcessIframeOpenModal = ({
   isOpen,
@@ -42,11 +43,16 @@ const ProcessIframeOpenModal = ({
   const { t } = useTranslation();
   const [iframeLoading, setIframeLoading] = useState(true);
   const [processMessage, setProcessMessage] = useState<ProcessMessage | null>(null);
+  const processMessageRef = useRef<ProcessMessage | null>(null);
   const { fetchProcessMessage } = useProcessMessage(tabId);
   const [processWasSuccessful, setProcessWasSuccessful] = useState(false);
   const [progressWidth, setProgressWidth] = useState(100);
   const loadCount = useRef<number>(0);
   const [hasNavigated, setHasNavigated] = useState(false);
+
+  useEffect(() => {
+    processMessageRef.current = processMessage;
+  }, [processMessage]);
 
   const handleClose = useCallback(() => {
     if ((processWasSuccessful || hasNavigated) && onProcessSuccess) {
@@ -60,8 +66,8 @@ const ProcessIframeOpenModal = ({
 
   const handleReceivedMessage = useCallback(
     (message: ProcessMessage) => {
-      if (message?.type === "info") return;
-      if (message.text?.toUpperCase().includes("ERROR")) {
+      if (message?.type === "info" && message?.text === "") return;
+      if (message.text?.toUpperCase().includes("ERROR") || message.title?.toUpperCase().includes("ERROR")) {
         setProcessMessage({
           ...message,
           type: "error",
@@ -186,13 +192,22 @@ const ProcessIframeOpenModal = ({
     }
   }, [processMessage]);
 
+  const shouldSuppressAutoClose = useCallback(() => {
+    const current = processMessageRef.current;
+    return current?.type === "error" || current?.type === "warning";
+  }, []);
+
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
       if (event.data?.action === CLOSE_MODAL_ACTION) {
+        if (shouldSuppressAutoClose()) return;
         handleClose();
       }
       if (event.data?.action === PROCESS_ORDER_ACTION) {
         await handleProcessMessage();
+      }
+      if (event.data?.action === SHOW_PROCESS_MESSAGE_ACTION && event.data?.payload) {
+        handleReceivedMessage(event.data.payload as ProcessMessage);
       }
     };
 
@@ -201,7 +216,7 @@ const ProcessIframeOpenModal = ({
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [handleClose, handleProcessMessage]);
+  }, [handleClose, handleProcessMessage, handleReceivedMessage, shouldSuppressAutoClose]);
 
   const messageStyles = useMemo(
     () =>
