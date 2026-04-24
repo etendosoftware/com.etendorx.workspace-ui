@@ -709,6 +709,8 @@ const en = {
     hideFields: "Hide fields",
     noTemplatesAvailable: "No templates available",
     selectTemplate: "Select a template",
+    successMessage: "Email sent successfully",
+    errorMessage: "Failed to send email",
   },
 };
 

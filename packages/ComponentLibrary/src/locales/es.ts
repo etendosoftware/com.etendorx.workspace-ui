@@ -710,6 +710,8 @@ const es = {
     hideFields: "Ocultar campos",
     noTemplatesAvailable: "No hay plantillas disponibles",
     selectTemplate: "Seleccionar plantilla",
+    successMessage: "Email enviado correctamente",
+    errorMessage: "Error al enviar el email",
   },
 };
 
