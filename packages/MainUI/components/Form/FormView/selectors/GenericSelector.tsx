@@ -44,6 +44,7 @@ import LocationSelector from "./LocationSelector";
 import { TimeSelector } from "./TimeSelector";
 import SelectorModal from "./SelectorModal";
 import AttributeSetInstanceSelector from "./AttributeSetInstance";
+import { ImageSelector } from "./ImageSelector";
 import ProcessDefinitionModal from "@/components/ProcessModal/ProcessDefinitionModal";
 import type { ProcessDefinitionButton } from "@/components/ProcessModal/types";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
@@ -217,6 +218,10 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
         );
       case FIELD_REFERENCE_CODES.TEXT_LONG.id:
         return <TextLongSelector field={effectiveField} readOnly={isReadOnly} data-testid="TextLongSelector__6e80fa" />;
+      case FIELD_REFERENCE_CODES.IMAGE.id:
+        return (
+          <ImageSelector field={effectiveField} isReadOnly={isReadOnly} data-testid={`ImageSelector__${field.id}`} />
+        );
       default:
         return <StringSelector field={effectiveField} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;
     }

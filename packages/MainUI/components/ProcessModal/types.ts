@@ -70,6 +70,11 @@ export interface ProcessResponse {
       msgTitle: string;
       msgText: string;
     };
+    showMsgInView?: {
+      msgType: string;
+      msgTitle: string;
+      msgText: string;
+    };
   }>;
   refreshParent?: boolean;
   showInIframe?: boolean;

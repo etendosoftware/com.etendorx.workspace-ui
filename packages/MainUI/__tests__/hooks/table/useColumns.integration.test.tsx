@@ -213,4 +213,23 @@ describe("useColumns integration with custom JS", () => {
 
     expect(result.current).toHaveLength(0);
   });
+
+  it("should filter out image columns", () => {
+    const tabWithImage = {
+      ...mockTab,
+      fields: {
+        normalField: mockTab.fields.normalField,
+        imageField: {
+          ...mockTab.fields.normalField,
+          name: "imageField",
+          column: { reference: "4AA6C3BE9D3B4D84A3B80489505A23E5" } as any,
+        },
+      },
+    };
+
+    const { result } = renderHook(() => useColumns(tabWithImage));
+
+    expect(result.current).toHaveLength(1);
+    expect(result.current[0].name).toBe("normalField");
+  });
 });

@@ -121,15 +121,17 @@ export function useRecentItems(
 
   const handleRecentItemClick = useCallback(
     (item: Menu) => {
-      onClick(item);
-
       const itemId = item.id;
-      if (!itemId || !roleId) return;
+      const menuItem = itemId ? findItemByIdentifier(menuItems, itemId) : null;
 
-      const menuItem = findItemByIdentifier(menuItems, itemId);
+      // Use the full menu item (with formId, correct windowId, etc.) when available,
+      // falling back to the stored recent item only if not found in current menu.
+      onClick(menuItem ?? item);
+
+      if (!itemId || !roleId) return;
       if (!menuItem) return;
 
-      addRecentItem(item);
+      addRecentItem(menuItem);
       setIsExpanded(true);
     },
     [addRecentItem, menuItems, onClick, roleId]
