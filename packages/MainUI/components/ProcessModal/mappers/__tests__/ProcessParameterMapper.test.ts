@@ -72,6 +72,10 @@ describe("ProcessParameterMapper", () => {
       const numericParam = { ...mockParameter, reference: "Amount" };
       const numericField = ProcessParameterMapper.mapToField(numericParam);
       expect(numericField.column.reference).toBe(FIELD_REFERENCE_CODES.DECIMAL.id);
+
+      const imageParam = { ...mockParameter, reference: "Image" };
+      const imageField = ProcessParameterMapper.mapToField(imageParam);
+      expect(imageField.column.reference).toBe(FIELD_REFERENCE_CODES.IMAGE.id);
     });
 
     it("should preserve refList for list fields", () => {
@@ -136,6 +140,7 @@ describe("ProcessParameterMapper", () => {
         "TableDir",
         "Table Directory",
         "Window",
+        "Image",
         "Upload File",
         "UploadFile",
       ];
@@ -172,6 +177,7 @@ describe("ProcessParameterMapper", () => {
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Window" })).toBe("window");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "String" })).toBe("text");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Unknown" })).toBe("text");
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Image" })).toBe("image");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Upload File" })).toBe("uploadfile");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "UploadFile" })).toBe("uploadfile");
     });
@@ -189,7 +195,7 @@ describe("ProcessParameterMapper", () => {
       const field = ProcessParameterMapper.mapToField(productParam);
 
       expect(field.selector).toBeDefined();
-      expect(field.selector.datasourceName).toBe("ProductByPriceAndWarehouse");
+      expect(field.selector?.datasourceName).toBe("ProductByPriceAndWarehouse");
     });
 
     it("should map TableDir reference to ComboTableDatasourceService", () => {
@@ -197,7 +203,7 @@ describe("ProcessParameterMapper", () => {
       const field = ProcessParameterMapper.mapToField(tableDirParam);
 
       expect(field.selector).toBeDefined();
-      expect(field.selector.datasourceName).toBe("ComboTableDatasourceService");
+      expect(field.selector?.datasourceName).toBe("ComboTableDatasourceService");
     });
 
     it("should map Select reference to ComboTableDatasourceService", () => {
@@ -205,7 +211,7 @@ describe("ProcessParameterMapper", () => {
       const field = ProcessParameterMapper.mapToField(selectParam);
 
       expect(field.selector).toBeDefined();
-      expect(field.selector.datasourceName).toBe("ComboTableDatasourceService");
+      expect(field.selector?.datasourceName).toBe("ComboTableDatasourceService");
     });
 
     it("should not map selector for non-datasource field types", () => {
@@ -226,8 +232,8 @@ describe("ProcessParameterMapper", () => {
       };
       const field = ProcessParameterMapper.mapToField(paramWithSelector);
 
-      expect(field.selector.datasourceName).toBe("CustomDatasource");
-      expect(field.selector.customProperty).toBe("test");
+      expect(field.selector?.datasourceName).toBe("CustomDatasource");
+      expect(field.selector?.customProperty).toBe("test");
     });
   });
 
