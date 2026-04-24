@@ -476,12 +476,24 @@ function ProcessDefinitionModalContent({
     }
 
     const basePayload = buildProcessPayload(record, tab, {}, {});
+    // Flatten raw defaults so expressions like @adcs_action@ resolve to a simple
+    // string instead of a { value, identifier } object. Without this, any
+    // defaultValue expression that references an unmapped raw column key (keys
+    // without the "inp" prefix that mapInitializationResponse leaves as-is) would
+    // receive the raw object, causing evaluateParameterDefaults to compute wrong
+    // values and corrupting the form state submitted to the backend.
+    const flatDefaults = Object.fromEntries(
+      Object.entries(processInitialization?.defaults || {}).map(([key, val]) => [
+        key,
+        val && typeof val === "object" && "value" in val ? (val as { value: unknown }).value : val,
+      ])
+    );
     const combined = {
       ...basePayload,
       // Include raw parameter keys from DefaultsProcessActionHandler (e.g. "currentStatus")
       // alongside the display-name-mapped versions (e.g. "Current Status").
       // Selector filters on the backend use @currentStatus@ (the raw key), not the display name.
-      ...(processInitialization?.defaults || {}),
+      ...flatDefaults,
       ...initialState,
       _processId: processId,
     };
