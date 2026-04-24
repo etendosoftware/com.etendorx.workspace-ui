@@ -692,6 +692,24 @@ const en = {
     continue: "Continue",
     close: "Close",
   },
+  email: {
+    title: "Send Email",
+    to: "To",
+    cc: "CC",
+    bcc: "BCC",
+    replyTo: "Reply To",
+    subject: "Subject",
+    body: "Message",
+    template: "Template",
+    attachDocument: "Attachments",
+    addAttachment: "Add Attachment",
+    send: "Send",
+    sending: "Sending...",
+    showMoreFields: "Show more fields",
+    hideFields: "Hide fields",
+    noTemplatesAvailable: "No templates available",
+    selectTemplate: "Select a template",
+  },
 };
 
 export default en;

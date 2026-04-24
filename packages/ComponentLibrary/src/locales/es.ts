@@ -693,6 +693,24 @@ const es = {
     continue: "Continuar",
     close: "Cerrar",
   },
+  email: {
+    title: "Enviar Email",
+    to: "Para",
+    cc: "CC",
+    bcc: "CCO",
+    replyTo: "Responder a",
+    subject: "Asunto",
+    body: "Mensaje",
+    template: "Plantilla",
+    attachDocument: "Adjuntos",
+    addAttachment: "Agregar Adjunto",
+    send: "Enviar",
+    sending: "Enviando...",
+    showMoreFields: "Mostrar más campos",
+    hideFields: "Ocultar campos",
+    noTemplatesAvailable: "No hay plantillas disponibles",
+    selectTemplate: "Seleccionar plantilla",
+  },
 };
 
 export default es;
