@@ -47,7 +47,7 @@ import ProcessMenu from "./Menus/ProcessMenu";
 import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar/TopToolbar";
 import EmailSendModal from "./Modals/EmailSendModal";
-import type { EmailFormData } from "./Modals/EmailSendModal";
+import type { EmailFormData, EmailSendModalProps } from "./Modals/EmailSendModal";
 import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
 import { getToolbarSections } from "@/utils/toolbar/utils";
 import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
@@ -85,7 +85,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
-  const [emailInitialData, setEmailInitialData] = useState<Record<string, unknown> | undefined>(undefined);
+  const [emailInitialData, setEmailInitialData] = useState<EmailSendModalProps["initialData"]>(undefined);
 
   const showEmailButton = isFormView && !!tab?.entityName && EMAIL_ENTITIES.has(tab.entityName);
 
@@ -465,7 +465,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         onClose={() => setIsEmailModalOpen(false)}
         onSend={handleEmailSend}
         loading={emailLoading}
-        initialData={emailInitialData as Parameters<typeof EmailSendModal>[0]["initialData"]}
+        initialData={emailInitialData}
         data-testid="EmailSendModal__a2dd07"
       />
     </>

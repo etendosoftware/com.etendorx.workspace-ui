@@ -27,7 +27,7 @@ interface RecordAttachment {
   name: string;
 }
 
-interface EmailSendModalProps {
+export interface EmailSendModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSend: (data: EmailFormData, files: File[], recordAttachmentIds: string[]) => Promise<void>;
