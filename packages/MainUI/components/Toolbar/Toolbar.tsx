@@ -52,14 +52,14 @@ import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
 import { getToolbarSections } from "@/utils/toolbar/utils";
 import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
-
-const EMAIL_ENTITIES = new Set(["Invoice", "Order"]);
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { TAB_MODES } from "@/utils/url/constants";
 import { useWindowContext } from "@/contexts/window";
 import ActionModal from "@workspaceui/componentlibrary/src/components/ActionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
+
+const EMAIL_ENTITIES = new Set(["Invoice", "Order"]);
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
@@ -269,7 +269,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const handleCloseSearch = useCallback(() => setSearchOpen(false), [setSearchOpen]);
 
   const handleEmailButtonClick = useCallback(async () => {
-    const url = `/api/erp/meta/email/config?tabId=${tab?.id}&recordId=${selectedRecord?.id}&entityName=${tab?.entityName}`;
+    const url = `/api/erp/meta/email/config?tabId=${tab?.id}&recordId=${String(selectedRecord?.id)}&entityName=${tab?.entityName}`;
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
