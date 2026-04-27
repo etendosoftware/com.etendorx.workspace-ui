@@ -18,6 +18,7 @@
 "use client";
 
 import type { WidgetInstance, WidgetDataResponse, WidgetType } from "@workspaceui/api-client/src/api/dashboard";
+import { useTranslation } from "@/hooks/useTranslation";
 import WidgetRenderer from "./WidgetRenderer";
 
 interface WidgetTheme {
@@ -44,7 +45,7 @@ const WIDGET_THEMES: Partial<Record<WidgetType, WidgetTheme>> = {
     iconHover: "text-baseline-50",
     skeleton: "bg-transparent-neutral-20",
   },
-  RECENTLY_VIEWED: {
+  FAVORITES: {
     card: "bg-[#0A0F1E]",
     title: "text-white",
     icon: "text-white/50 hover:text-white hover:bg-white/10",
@@ -56,6 +57,17 @@ const WIDGET_THEMES: Partial<Record<WidgetType, WidgetTheme>> = {
 function getTheme(type: WidgetType): WidgetTheme {
   return WIDGET_THEMES[type] ?? DEFAULT_THEME;
 }
+
+const DragIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <circle cx="9" cy="6" r="1.5" fill="currentColor" />
+    <circle cx="15" cy="6" r="1.5" fill="currentColor" />
+    <circle cx="9" cy="12" r="1.5" fill="currentColor" />
+    <circle cx="15" cy="12" r="1.5" fill="currentColor" />
+    <circle cx="9" cy="18" r="1.5" fill="currentColor" />
+    <circle cx="15" cy="18" r="1.5" fill="currentColor" />
+  </svg>
+);
 
 const LockIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -75,20 +87,32 @@ interface WidgetCardProps {
   data: WidgetDataResponse | undefined;
   error: string | undefined;
   onRemove: (instanceId: string) => void;
+  onFetchPage: (page: number, pageSize: number) => Promise<void>;
 }
 
-export default function WidgetCard({ instance, data, error, onRemove }: WidgetCardProps) {
+export default function WidgetCard({ instance, data, error, onRemove, onFetchPage }: WidgetCardProps) {
+  const { t } = useTranslation();
   const isLocked = instance.layer !== "USER";
-  const isLoading = data === undefined && error === undefined;
+  const isUnavailable = instance.available === false || data?.available === false;
+  const isLoading = data === undefined && error === undefined && !isUnavailable;
   const theme = getTheme(instance.type);
 
   return (
     <div
-      className={`flex flex-col gap-3 rounded-2xl ${theme.card} p-5 h-full min-h-40`}
+      className={`flex flex-col rounded-2xl ${theme.card} p-5 h-full min-h-40 overflow-hidden`}
       data-testid={`WidgetCard__${instance.instanceId}`}>
       {/* Header */}
-      <div className="flex items-center justify-between gap-2">
-        <span className={`text-sm font-semibold ${theme.title} truncate`}>{instance.title}</span>
+      <div className="flex items-center justify-between gap-2 shrink-0 mb-3">
+        {/* Drag handle — only this area initiates drag */}
+        <span
+          className="widget-drag-handle flex items-center gap-2 flex-1 min-w-0 cursor-grab active:cursor-grabbing select-none"
+          title="Arrastrar widget"
+          data-testid={`WidgetCard__drag_${instance.instanceId}`}>
+          <span className={`shrink-0 ${theme.iconHover} opacity-50 hover:opacity-100 transition-opacity`}>
+            <DragIcon />
+          </span>
+          <span className={`text-sm font-semibold ${theme.title} truncate`}>{instance.title}</span>
+        </span>
         <div className="flex items-center gap-1 shrink-0">
           {isLocked && (
             <span
@@ -108,22 +132,36 @@ export default function WidgetCard({ instance, data, error, onRemove }: WidgetCa
           </button>
         </div>
       </div>
-      {/* Content */}
-      {isLoading && (
-        <div className="flex flex-col gap-2 animate-pulse" data-testid={`WidgetCard__loading_${instance.instanceId}`}>
-          <div className={`h-3 rounded ${theme.skeleton} w-3/4`} />
-          <div className={`h-3 rounded ${theme.skeleton} w-1/2`} />
-          <div className={`h-3 rounded ${theme.skeleton} w-2/3`} />
-        </div>
-      )}
-      {error !== undefined && !isLoading && (
-        <p className="text-sm text-error-main" data-testid={`WidgetCard__error_${instance.instanceId}`}>
-          {error}
-        </p>
-      )}
-      {data !== undefined && !error && (
-        <WidgetRenderer type={instance.type} data={data.data} data-testid="WidgetRenderer__cb8729" />
-      )}
+      {/* Content — scrollable area that fills remaining card height */}
+      <div className="flex-1 min-h-0 overflow-y-auto" data-testid={`WidgetCard__body_${instance.instanceId}`}>
+        {isUnavailable && (
+          <p
+            className="text-sm text-baseline-50 italic"
+            data-testid={`WidgetCard__unavailable_${instance.instanceId}`}>
+            {t("home.widget.unavailable")}
+          </p>
+        )}
+        {!isUnavailable && isLoading && (
+          <div className="flex flex-col gap-2 animate-pulse" data-testid={`WidgetCard__loading_${instance.instanceId}`}>
+            <div className={`h-3 rounded ${theme.skeleton} w-3/4`} />
+            <div className={`h-3 rounded ${theme.skeleton} w-1/2`} />
+            <div className={`h-3 rounded ${theme.skeleton} w-2/3`} />
+          </div>
+        )}
+        {!isUnavailable && error !== undefined && !isLoading && (
+          <p className="text-sm text-error-main" data-testid={`WidgetCard__error_${instance.instanceId}`}>
+            {error}
+          </p>
+        )}
+        {!isUnavailable && data !== undefined && !error && data.data !== null && (
+          <WidgetRenderer
+            type={instance.type}
+            data={data.data}
+            onFetchPage={onFetchPage}
+            data-testid="WidgetRenderer__cb8729"
+          />
+        )}
+      </div>
     </div>
   );
 }

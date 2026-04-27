@@ -26,6 +26,7 @@ import type {
   StockAlertWidgetData,
   FavoritesWidgetData,
   ProcessWidgetData,
+  CalendarWidgetData,
 } from "@workspaceui/api-client/src/api/dashboard";
 import KpiRenderer from "./renderers/KpiRenderer";
 import QueryListRenderer from "./renderers/QueryListRenderer";
@@ -37,19 +38,27 @@ import FavoritesRenderer from "./renderers/FavoritesRenderer";
 import RecentDocsRenderer from "./renderers/RecentDocsRenderer";
 import RecentlyViewedRenderer from "./renderers/RecentlyViewedRenderer";
 import ProcessRenderer from "./renderers/ProcessRenderer";
+import CalendarRenderer from "./renderers/CalendarRenderer";
 import FallbackRenderer from "./renderers/FallbackRenderer";
 
 interface WidgetRendererProps {
   type: WidgetType;
   data: WidgetData;
+  onFetchPage: (page: number, pageSize: number) => Promise<void>;
 }
 
-export default function WidgetRenderer({ type, data }: WidgetRendererProps) {
+export default function WidgetRenderer({ type, data, onFetchPage }: WidgetRendererProps) {
   switch (type) {
     case "KPI":
       return <KpiRenderer data={data as KpiWidgetData} data-testid="KpiRenderer__9fb9f4" />;
     case "QUERY_LIST":
-      return <QueryListRenderer data={data as QueryListWidgetData} data-testid="QueryListRenderer__9fb9f4" />;
+      return (
+        <QueryListRenderer
+          data={data as QueryListWidgetData}
+          onFetchPage={onFetchPage}
+          data-testid="QueryListRenderer__9fb9f4"
+        />
+      );
     case "HTML":
       return <HtmlRenderer data={data as HtmlWidgetData} data-testid="HtmlRenderer__9fb9f4" />;
     case "URL":
@@ -66,6 +75,8 @@ export default function WidgetRenderer({ type, data }: WidgetRendererProps) {
       return <RecentlyViewedRenderer data-testid="RecentlyViewedRenderer__9fb9f4" />;
     case "PROCESS":
       return <ProcessRenderer data={data as ProcessWidgetData} data-testid="ProcessRenderer__9fb9f4" />;
+    case "CALENDAR":
+      return <CalendarRenderer data={data as CalendarWidgetData} data-testid="CalendarRenderer__9fb9f4" />;
     default:
       return <FallbackRenderer type={type} data-testid="FallbackRenderer__9fb9f4" />;
   }

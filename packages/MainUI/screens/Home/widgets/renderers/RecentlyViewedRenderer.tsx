@@ -46,7 +46,7 @@ export default function RecentlyViewedRenderer() {
 
   if (items.length === 0) {
     return (
-      <p className="text-sm text-white/50" data-testid="RecentlyViewedRenderer__empty">
+      <p className="text-sm text-baseline-50" data-testid="RecentlyViewedRenderer__empty">
         {t("dashboard.recentlyViewed.empty")}
       </p>
     );
@@ -59,7 +59,7 @@ export default function RecentlyViewedRenderer() {
           key={item.id}
           type="button"
           onClick={() => handleClick(item)}
-          className="rounded-full px-3 py-1 text-sm font-medium bg-white/10 hover:bg-white/15 text-white border border-white/20 transition-colors cursor-pointer"
+          className="rounded-full px-3 py-1 text-sm font-medium bg-transparent-neutral-5 hover:bg-transparent-neutral-10 text-baseline-100 border border-transparent-neutral-10 transition-colors cursor-pointer"
           data-testid={`RecentlyViewedRenderer__item_${item.id}`}>
           {item.name}
         </button>

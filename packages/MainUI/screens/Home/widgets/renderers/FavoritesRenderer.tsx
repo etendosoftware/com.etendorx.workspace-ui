@@ -17,10 +17,11 @@
 
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import type { FavoritesWidgetData } from "@workspaceui/api-client/src/api/dashboard";
 import { useWindowContext } from "@/contexts/window";
 import { getNewWindowIdentifier } from "@/utils/window/utils";
+import { useFavoritesContext } from "@/contexts/favorites";
 
 interface FavoritesRendererProps {
   data: FavoritesWidgetData;
@@ -28,6 +29,11 @@ interface FavoritesRendererProps {
 
 export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
   const { setWindowActive } = useWindowContext();
+  const { seed } = useFavoritesContext();
+
+  useEffect(() => {
+    seed(data.items);
+  }, [seed, data.items]);
 
   const handleClick = useCallback(
     (windowId: string, label: string) => {
@@ -39,7 +45,7 @@ export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
 
   if (data.items.length === 0) {
     return (
-      <p className="text-sm text-baseline-50" data-testid="FavoritesRenderer__empty">
+      <p className="text-sm text-white/50" data-testid="FavoritesRenderer__empty">
         —
       </p>
     );
@@ -52,7 +58,7 @@ export default function FavoritesRenderer({ data }: FavoritesRendererProps) {
           key={item.windowId}
           type="button"
           onClick={() => handleClick(item.windowId, item.label)}
-          className="rounded-full px-3 py-1 text-sm font-medium bg-transparent-neutral-5 hover:bg-transparent-neutral-10 text-baseline-100 border border-transparent-neutral-10 transition-colors cursor-pointer"
+          className="rounded-full px-3 py-1 text-sm font-medium bg-white/10 hover:bg-white/15 text-white border border-white/20 transition-colors cursor-pointer"
           data-testid={`FavoritesRenderer__item_${item.windowId}`}>
           {item.label}
         </button>
