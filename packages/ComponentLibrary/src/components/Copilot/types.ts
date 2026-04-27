@@ -61,9 +61,19 @@ export interface ChatInterfaceProps {
   onFileSelect?: (files: File[]) => void;
   onRemoveFile?: (index: number) => void;
   conversations?: import("@workspaceui/api-client/src/api/copilot").IConversationSummary[];
+  archivedConversations?: import("@workspaceui/api-client/src/api/copilot").IConversationSummary[];
   onSelectConversation?: (conversationId: string) => void;
   onLoadConversations?: () => void;
   conversationsLoading?: boolean;
+  onRenameConversation?: (conversationId: string, title: string) => void;
+  onDeleteConversation?: (conversationId: string) => void;
+  onRestoreConversation?: (conversationId: string) => void;
+  onPermanentDeleteConversation?: (conversationId: string) => void;
+  onToggleArchive?: () => void;
+  archiveExpanded?: boolean;
+  archivedLoading?: boolean;
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
   translations: {
     selectedRegisters: string;
     assistantSelector: AssistantSelectorProps["translations"];
@@ -97,9 +107,19 @@ export interface CopilotPopupProps {
   onFileSelect?: (files: File[]) => void;
   onRemoveFile?: (index: number) => void;
   conversations?: import("@workspaceui/api-client/src/api/copilot").IConversationSummary[];
+  archivedConversations?: import("@workspaceui/api-client/src/api/copilot").IConversationSummary[];
   onSelectConversation?: (conversationId: string) => void;
   onLoadConversations?: () => void;
   conversationsLoading?: boolean;
+  onRenameConversation?: (conversationId: string, title: string) => void;
+  onDeleteConversation?: (conversationId: string) => void;
+  onRestoreConversation?: (conversationId: string) => void;
+  onPermanentDeleteConversation?: (conversationId: string) => void;
+  onToggleArchive?: () => void;
+  archiveExpanded?: boolean;
+  archivedLoading?: boolean;
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
   translations: {
     copilotProfile: string;
     backToSelection: string;
@@ -165,10 +185,20 @@ export interface ContextPreviewProps {
 
 export interface ConversationListProps {
   conversations: import("@workspaceui/api-client/src/api/copilot").IConversationSummary[];
+  archivedConversations?: import("@workspaceui/api-client/src/api/copilot").IConversationSummary[];
   onSelectConversation: (conversationId: string) => void;
   onNewConversation: () => void;
   onCloseSidebar?: () => void;
   isLoading?: boolean;
+  onRenameConversation?: (conversationId: string, title: string) => void;
+  onDeleteConversation?: (conversationId: string) => void;
+  onRestoreConversation?: (conversationId: string) => void;
+  onPermanentDeleteConversation?: (conversationId: string) => void;
+  onToggleArchive?: () => void;
+  archiveExpanded?: boolean;
+  archivedLoading?: boolean;
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
   translations: {
     newConversation: string;
     noConversations: string;
@@ -176,5 +206,12 @@ export interface ConversationListProps {
     loading: string;
     untitledConversation?: string;
     closeSidebar?: string;
+    searchPlaceholder?: string;
+    archivedTitle?: string;
+    noArchivedConversations?: string;
+    renameConversation?: string;
+    deleteConversation?: string;
+    restoreConversation?: string;
+    permanentDeleteConversation?: string;
   };
 }
