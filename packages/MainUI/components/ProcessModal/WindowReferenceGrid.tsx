@@ -2013,6 +2013,7 @@ const WindowReferenceGrid = ({
         showColumnFilters: true,
         sorting,
       },
+      keepNonExistentRowsSelected: true,
       onRowSelectionChange: handleRowSelection,
       onColumnFiltersChange: handleMRTColumnFiltersChange,
       enableEditing: (_row) => {

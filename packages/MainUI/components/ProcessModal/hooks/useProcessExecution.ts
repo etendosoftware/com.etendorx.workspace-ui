@@ -58,6 +58,7 @@ interface ProcessViewMsg {
 
 interface ResponseAction {
   showMsgInProcessView?: ProcessViewMsg;
+  showMsgInView?: ProcessViewMsg;
   smartclientSay?: { message?: string };
 }
 
@@ -199,13 +200,13 @@ export function useProcessExecution({
     let actionWithMsg: ResponseAction | undefined;
     if (Array.isArray(responseActions)) {
       actionWithMsg = responseActions.find(
-        (action: ResponseAction) => action.showMsgInProcessView || action.smartclientSay
+        (action: ResponseAction) => action.showMsgInProcessView || action.showMsgInView || action.smartclientSay
       );
     } else if (typeof responseActions === "object") {
       actionWithMsg = responseActions as ResponseAction;
     }
 
-    const msgView = actionWithMsg?.showMsgInProcessView;
+    const msgView = actionWithMsg?.showMsgInProcessView ?? actionWithMsg?.showMsgInView;
     if (msgView) {
       const rawMsg = msgView.msgText || "";
       const parsed = parseSmartClientMessage(rawMsg);
@@ -584,8 +585,8 @@ export function useProcessExecution({
 
   const extractResponseMessage = useCallback(
     (result: any) => {
-      if (result?.responseActions?.[0]?.showMsgInProcessView) {
-        return result.responseActions[0].showMsgInProcessView;
+      if (result?.responseActions?.[0]?.showMsgInProcessView || result?.responseActions?.[0]?.showMsgInView) {
+        return result.responseActions[0].showMsgInProcessView ?? result.responseActions[0].showMsgInView;
       }
       if (result?.severity) {
         return { msgType: result.severity, msgText: result.text };

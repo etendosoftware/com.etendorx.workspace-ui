@@ -298,6 +298,10 @@ export default function Sidebar() {
         return;
       }
 
+      if (item.type !== "Window") {
+        return;
+      }
+
       const windowId = item.windowId ?? "";
 
       if (!windowId) {

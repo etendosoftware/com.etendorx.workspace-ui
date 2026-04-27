@@ -128,14 +128,10 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     // Invoice B — Vendor B, Raw material B, qty 10
     // ════════════════════════════════════════════════════════════════════════
 
-    // Navigate back to Purchase Invoice to get a clean list view
-    await navigateToPurchaseInvoice(page);
-
-    // New Record
-    newBtn = page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first();
-    await newBtn.waitFor({ state: "visible", timeout: 15_000 });
-    await newBtn.click();
-    await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
+    // Use the toolbar icon button to open a new record without re-navigating to Purchase Invoice
+    await page.locator('[data-testid="IconButton__33864F5267194AB99C14BD0CE9884FF5"]').first().click();
+    await page.waitForTimeout(1_000);
+    await expect(page.getByRole("tab", { name: "Main Section" }).first()).toBeVisible({ timeout: 10_000 });
 
     // Business Partner: Vendor B
     await page
@@ -293,25 +289,17 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
       await page.waitForTimeout(3_000);
     }
 
-    // Sort by Due Date descending (2 clicks) to bring new invoices to the top
-    const dueDateSort = page.locator(
-      "th:has(.Mui-TableHeadCell-Content-Wrapper:has-text('Due Date')) .MuiTableSortLabel-root"
-    );
-    await dueDateSort.waitFor({ state: "visible", timeout: 10_000 });
-    await dueDateSort.click();
-    await page.waitForTimeout(1_500);
-    await dueDateSort.click();
-    await page.waitForTimeout(2_000);
-
-    // Filter by Invoice Document No. to reliably locate the row regardless of pagination
+    // Filter and select each invoice independently. keepNonExistentRowsSelected=true
+    // in the WindowReferenceGrid DataGrid ensures Invoice A stays selected when the
+    // filter changes to show Invoice B (MUI DataGrid default deselects filtered-out rows).
     const invoiceDocFilter = page.locator('input[placeholder="Filter Invoice Document No...."]');
-    await invoiceDocFilter.waitFor({ state: "visible", timeout: 10_000 });
-    await invoiceDocFilter.clear();
+    await invoiceDocFilter.waitFor({ state: "visible", timeout: 15_000 });
+
+    const filterResponseA = page.waitForResponse(/api\/datasource/, { timeout: 30_000 });
     await invoiceDocFilter.fill(invoiceNumberA);
+    await filterResponseA;
     await page.waitForTimeout(1_500);
 
-    // Select Invoice A row (use .first() in case the invoice has multiple payment plan lines)
-    // MUI DataGrid virtualizes rows — use "attached" instead of "visible" to avoid flakiness
     const rowA = page
       .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
       .filter({ hasText: invoiceNumberA })
@@ -321,12 +309,11 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     await rowA.locator('input[aria-label="Toggle select row"]').check({ force: true });
     await expect(rowA.locator('input[aria-label="Toggle select row"]')).toBeChecked({ timeout: 10_000 });
 
-    // Filter by Invoice B to locate it reliably
-    await invoiceDocFilter.clear();
+    const filterResponseB = page.waitForResponse(/api\/datasource/, { timeout: 30_000 });
     await invoiceDocFilter.fill(invoiceNumberB);
+    await filterResponseB;
     await page.waitForTimeout(1_500);
 
-    // Select Invoice B row (use .first() in case the invoice has multiple payment plan lines)
     const rowB = page
       .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
       .filter({ hasText: invoiceNumberB })
@@ -336,12 +323,14 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     await rowB.locator('input[aria-label="Toggle select row"]').check({ force: true });
     await expect(rowB.locator('input[aria-label="Toggle select row"]')).toBeChecked({ timeout: 10_000 });
 
-    // Submit — set up toast watcher BEFORE clicking
+    // Submit — set up toast watcher BEFORE clicking.
+    // The footer button is labelled "Submit" (from the process availableButtons config).
     const successToastAppeared = page.waitForSelector('[data-sonner-toast][data-type="success"]', {
       state: "visible",
       timeout: 60_000,
     });
-    const submitBtn = page.locator("button").filter({ hasText: /^Execute$/ });
+    await page.waitForTimeout(500);
+    const submitBtn = page.locator('[data-testid*="ExecuteButton"][data-testid$="__761503"]').first();
     await submitBtn.waitFor({ state: "visible", timeout: 30_000 });
     await submitBtn.click();
     await successToastAppeared;

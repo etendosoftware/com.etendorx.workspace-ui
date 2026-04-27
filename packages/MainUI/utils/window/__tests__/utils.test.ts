@@ -39,9 +39,12 @@ import {
   createRecoveryWindowState,
   markWindowAsInitialized,
   isWindowReady,
+  getKeyFieldName,
+  isSrOneToOneExtension,
 } from "../utils";
 import { TAB_MODES, FORM_MODES, NEW_RECORD_ID } from "@/utils/url/constants";
 import type { WindowContextState, WindowRecoveryInfo, WindowState } from "@/utils/window/constants";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_ColumnFiltersState, MRT_SortingState, MRT_VisibilityState } from "material-react-table";
 
 describe("getNewTabFormState", () => {
@@ -889,5 +892,96 @@ describe("isWindowReady", () => {
     const result = isWindowReady(windowState);
 
     expect(result).toBe(true);
+  });
+});
+
+describe("getKeyFieldName", () => {
+  const buildTab = (fields: Record<string, unknown>): Tab => ({ fields }) as unknown as Tab;
+
+  it("returns the field key whose column.keyColumn is truthy", () => {
+    const tab = buildTab({
+      client: { column: { keyColumn: true } },
+      name: { column: {} },
+    });
+
+    expect(getKeyFieldName(tab)).toBe("client");
+  });
+
+  it("returns undefined when no field is marked as key column", () => {
+    const tab = buildTab({
+      name: { column: {} },
+      description: { column: { keyColumn: false } },
+    });
+
+    expect(getKeyFieldName(tab)).toBeUndefined();
+  });
+
+  it("returns undefined when fields map is missing", () => {
+    const tab = { fields: undefined } as unknown as Tab;
+
+    expect(getKeyFieldName(tab)).toBeUndefined();
+  });
+});
+
+describe("isSrOneToOneExtension", () => {
+  const buildTab = (overrides: Partial<Tab>): Tab =>
+    ({
+      parentColumns: [],
+      fields: {},
+      ...overrides,
+    }) as unknown as Tab;
+
+  it("returns true when PK column is listed in parentColumns (1:1 extension)", () => {
+    const tab = buildTab({
+      parentColumns: ["client"],
+      fields: {
+        client: { column: { keyColumn: true } },
+        name: { column: {} },
+      } as unknown as Tab["fields"],
+    });
+
+    expect(isSrOneToOneExtension(tab)).toBe(true);
+  });
+
+  it("returns false when PK column is not in parentColumns (logical relation)", () => {
+    const tab = buildTab({
+      parentColumns: ["organization"],
+      fields: {
+        id: { column: { keyColumn: true } },
+        organization: { column: {} },
+      } as unknown as Tab["fields"],
+    });
+
+    expect(isSrOneToOneExtension(tab)).toBe(false);
+  });
+
+  it("returns false when fields are not yet loaded but parentColumns exist", () => {
+    const tab = buildTab({
+      parentColumns: ["organization"],
+      fields: {} as Tab["fields"],
+    });
+
+    expect(isSrOneToOneExtension(tab)).toBe(false);
+  });
+
+  it("returns true when parentColumns is empty (legacy 1:1 by convention)", () => {
+    const tab = buildTab({
+      parentColumns: [],
+      fields: {
+        id: { column: { keyColumn: true } },
+      } as unknown as Tab["fields"],
+    });
+
+    expect(isSrOneToOneExtension(tab)).toBe(true);
+  });
+
+  it("returns true when parentColumns is missing (undefined)", () => {
+    const tab = {
+      fields: {
+        id: { column: { keyColumn: true } },
+      },
+    } as unknown as Tab;
+
+    expect(isSrOneToOneExtension(tab)).toBe(true);
   });
 });

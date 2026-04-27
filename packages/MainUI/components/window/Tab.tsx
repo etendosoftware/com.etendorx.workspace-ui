@@ -31,7 +31,7 @@ import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
-import { getNewTabFormState, isFormView } from "@/utils/window/utils";
+import { getNewTabFormState, isFormView, isSrOneToOneExtension } from "@/utils/window/utils";
 import { useWindowContext } from "@/contexts/window";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
@@ -1096,13 +1096,18 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   ]);
 
   // Auto-open FormView for SR (Single Record) tabs when defaultEditMode is enabled.
-  // SR tabs share the same entity as the parent and always display exactly one record
-  // (the parent record itself). When a new parent record is selected, we navigate
-  // directly to form view using the parent's record ID.
+  // This path only applies to the 1:1 ID-extension variant, where the child's PK column
+  // is also its FK to the parent (e.g. AD_ClientInfo). In that case child.id === parent.id,
+  // so reusing the parent-selected id to open the form is safe.
+  // Logical SR relations (PK and FK are distinct columns, e.g. ETSG_Certificate.organization)
+  // are auto-opened by DynamicTable after the child records are fetched.
   // A ref tracks the last parent ID for which auto-open fired, so closing the form
   // (shouldShowForm → false) does not trigger a re-open for the same parent.
   useEffect(() => {
     if (tab.uIPattern !== UIPattern.EDIT_ONLY || !tab.defaultEditMode) {
+      return;
+    }
+    if (!isSrOneToOneExtension(tab)) {
       return;
     }
     if (!parentSelectedRecordId) {
@@ -1115,7 +1120,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
     srAutoOpenedForParentRef.current = parentSelectedRecordId;
     handleSetRecordId(parentSelectedRecordId);
-  }, [tab.uIPattern, tab.defaultEditMode, parentSelectedRecordId, handleSetRecordId]);
+  }, [tab, parentSelectedRecordId, handleSetRecordId]);
 
   return (
     <div
