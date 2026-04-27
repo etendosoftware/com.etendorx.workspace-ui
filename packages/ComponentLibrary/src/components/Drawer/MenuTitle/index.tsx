@@ -17,13 +17,41 @@
 
 // @data-testid-ignore
 "use client";
-import React from "react";
+import React, { useCallback } from "react";
 import ChevronDown from "../../../assets/icons/chevron-down.svg";
 import type { MenuTitleProps } from "../types";
 import { DEFAULT_B64, PROCESS_B64, REPORT_B64, SUMMARY_B64 } from "./constants";
+import { useFavoritesDrawer } from "../FavoritesDrawerContext";
+
+const StarIcon = ({ filled }: { filled: boolean }) => (
+  <svg
+    width="13"
+    height="13"
+    viewBox="0 0 24 24"
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
 
 export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
   ({ item, onClick, selected, expanded, open, popperOpen, isParentActive }) => {
+    const favoritesCtx = useFavoritesDrawer();
+    const isFav = favoritesCtx && item.windowId ? favoritesCtx.isFavorite(item.windowId) : false;
+
+    const handleFavoriteClick = useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        favoritesCtx?.toggle(item);
+      },
+      [favoritesCtx, item]
+    );
+
     const getIconSrc = () => {
       if (item.icon) return `data:image/svg+xml;base64,${item.icon}`;
       switch (item.type) {
@@ -80,6 +108,19 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
               <span className="ml-2 font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis flex-1 min-w-0">
                 {item.name}
               </span>
+              {favoritesCtx && item.windowId && (
+                <button
+                  type="button"
+                  onClick={handleFavoriteClick}
+                  className={`shrink-0 ml-1 p-0.5 rounded transition-all ${
+                    isFav
+                      ? "text-yellow-400 opacity-100"
+                      : "text-baseline-40 opacity-0 group-hover:opacity-100 hover:text-yellow-400"
+                  }`}
+                  title={isFav ? "Remove from favorites" : "Add to favorites"}>
+                  <StarIcon filled={isFav} />
+                </button>
+              )}
             </div>
           )}
         </div>

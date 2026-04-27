@@ -23,6 +23,8 @@ import { useRuntimeConfig } from "../contexts/RuntimeConfigContext";
 import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 import ProcessDefinitionModal from "./ProcessModal/ProcessDefinitionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
+import { FavoritesDrawerContext } from "@workspaceui/componentlibrary/src/components/Drawer/FavoritesDrawerContext";
+import { useFavoritesContext } from "@/contexts/favorites";
 
 interface ExtendedMenu extends Menu {
   processDefinitionId?: string;
@@ -375,8 +377,35 @@ export default function Sidebar() {
     }
   }, [currentWindowId, pendingWindowId]);
 
+  const { isFavorite, toggle, setMenuMap } = useFavoritesContext();
+
+  // Build windowId→menuId map from the flat menu tree so the breadcrumb
+  // can look up the menuId for the current window without prop drilling.
+  useEffect(() => {
+    function collect(items: Menu[], map: Map<string, string>) {
+      for (const item of items) {
+        if (item.windowId) map.set(item.windowId, item.id);
+        if (item.children?.length) collect(item.children, map);
+      }
+    }
+    const map = new Map<string, string>();
+    collect(menu, map);
+    setMenuMap(map);
+  }, [menu, setMenuMap]);
+
+  const favoritesDrawerValue = useMemo(
+    () => ({
+      isFavorite,
+      toggle: (item: Menu) => {
+        if (item.windowId) toggle(item.id, item.windowId);
+      },
+    }),
+    [isFavorite, toggle]
+  );
+
   return (
-    <>
+    <FavoritesDrawerContext.Provider value={favoritesDrawerValue}>
+      <>
       <Drawer
         windowId={currentWindowId}
         pendingWindowId={pendingWindowId}
@@ -401,6 +430,7 @@ export default function Sidebar() {
         keepOpenOnSuccess
         data-testid="ProcessDefinitionModal__sidebar"
       />
-    </>
+      </>
+    </FavoritesDrawerContext.Provider>
   );
 }
