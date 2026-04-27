@@ -16,15 +16,19 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+
+export const WIDGET_PAGE_SIZE = 10;
 import {
   fetchDashboardLayout,
   fetchWidgetData,
+  fetchWidgetClasses,
   updateDashboardLayout,
   addDashboardWidget,
   deleteDashboardWidget,
 } from "@workspaceui/api-client/src/api/dashboard";
 import type {
   WidgetInstance,
+  WidgetClass,
   WidgetDataResponse,
   UpdateLayoutWidget,
   AddWidgetRequest,
@@ -37,24 +41,32 @@ export interface UseDashboardReturn {
   widgetErrors: Record<string, string>;
   isLoadingLayout: boolean;
   layoutError: string | null;
+  widgetClasses: WidgetClass[];
+  isLoadingClasses: boolean;
+  classesError: string | null;
+  loadWidgetClasses: () => Promise<void>;
   refreshWidget: (instanceId: string) => Promise<void>;
+  fetchWidgetPage: (instanceId: string, page: number, pageSize: number) => Promise<void>;
   updateLayout: (widgets: UpdateLayoutWidget[]) => Promise<void>;
   addWidget: (payload: AddWidgetRequest) => Promise<void>;
   removeWidget: (instanceId: string) => Promise<void>;
 }
 
-export function useDashboard(): UseDashboardReturn {
+export function useDashboard(roleId?: string): UseDashboardReturn {
   const [layout, setLayout] = useState<WidgetInstance[]>([]);
   const [widgetData, setWidgetData] = useState<Record<string, WidgetDataResponse>>({});
   const [widgetErrors, setWidgetErrors] = useState<Record<string, string>>({});
   const [isLoadingLayout, setIsLoadingLayout] = useState(true);
   const [layoutError, setLayoutError] = useState<string | null>(null);
+  const [widgetClasses, setWidgetClasses] = useState<WidgetClass[]>([]);
+  const [isLoadingClasses, setIsLoadingClasses] = useState(false);
+  const [classesError, setClassesError] = useState<string | null>(null);
 
   const intervalsRef = useRef<Record<string, ReturnType<typeof setInterval>>>({});
 
   const fetchOneWidgetData = useCallback(async (instanceId: string): Promise<void> => {
     try {
-      const data = await fetchWidgetData(instanceId);
+      const data = await fetchWidgetData(instanceId, { page: 1, pageSize: WIDGET_PAGE_SIZE });
       setWidgetData((prev) => ({ ...prev, [instanceId]: data }));
       setWidgetErrors((prev) => {
         const next = { ...prev };
@@ -110,10 +122,44 @@ export function useDashboard(): UseDashboardReturn {
     }
   }, [fetchOneWidgetData, setupAutoRefresh]);
 
+  // Silent refresh: updates layout/data without toggling the loading state so the
+  // grid stays mounted. Used after add/remove to avoid an unmount→remount cycle
+  // that can race against backend write propagation.
+  const silentRefreshLayout = useCallback(async () => {
+    try {
+      const response = await fetchDashboardLayout();
+      setLayout(response.widgets);
+      await Promise.allSettled(response.widgets.map((w) => fetchOneWidgetData(w.instanceId)));
+      setupAutoRefresh(response.widgets);
+    } catch (err) {
+      logger.warn("[useDashboard] Failed to silently refresh layout:", err);
+    }
+  }, [fetchOneWidgetData, setupAutoRefresh]);
+
   useEffect(() => {
+    // Reset state before re-fetching for new role
+    setLayout([]);
+    setWidgetData({});
+    setWidgetErrors({});
+    setLayoutError(null);
     loadLayout();
     return clearIntervals;
-  }, [loadLayout, clearIntervals]);
+  }, [roleId, loadLayout, clearIntervals]);
+
+  const loadWidgetClasses = useCallback(async (): Promise<void> => {
+    setIsLoadingClasses(true);
+    setClassesError(null);
+    try {
+      const response = await fetchWidgetClasses();
+      setWidgetClasses(response.classes);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.warn("[useDashboard] Failed to load widget classes:", message);
+      setClassesError(message);
+    } finally {
+      setIsLoadingClasses(false);
+    }
+  }, []);
 
   const refreshWidget = useCallback(
     async (instanceId: string): Promise<void> => {
@@ -122,34 +168,53 @@ export function useDashboard(): UseDashboardReturn {
     [fetchOneWidgetData]
   );
 
-  const updateLayout = useCallback(
-    async (widgets: UpdateLayoutWidget[]): Promise<void> => {
-      // Optimistic update
-      setLayout((prev) =>
-        prev.map((instance) => {
-          const update = widgets.find((w) => w.instanceId === instance.instanceId);
-          if (!update) return instance;
-          return {
-            ...instance,
-            position: { col: update.col, row: update.row, width: update.width, height: update.height },
-          };
-        })
-      );
+  const fetchWidgetPage = useCallback(async (instanceId: string, page: number, pageSize: number): Promise<void> => {
+    try {
+      const data = await fetchWidgetData(instanceId, { page, pageSize });
+      setWidgetData((prev) => ({ ...prev, [instanceId]: data }));
+      setWidgetErrors((prev) => {
+        const next = { ...prev };
+        delete next[instanceId];
+        return next;
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.warn(`[useDashboard] Failed to fetch page for widget ${instanceId}:`, message);
+      setWidgetErrors((prev) => ({ ...prev, [instanceId]: message }));
+    }
+  }, []);
 
-      try {
-        await updateDashboardLayout({ widgets });
-      } catch (err) {
-        logger.warn("[useDashboard] Failed to persist layout update:", err);
-        // Re-fetch to restore server state on failure
-        await loadLayout();
-      }
-    },
-    [loadLayout]
-  );
+  const updateLayout = useCallback(async (widgets: UpdateLayoutWidget[]): Promise<void> => {
+    // Optimistic update
+    setLayout((prev) =>
+      prev.map((instance) => {
+        const update = widgets.find((w) => w.instanceId === instance.instanceId);
+        if (!update) return instance;
+        return {
+          ...instance,
+          position: { col: update.col, row: update.row, width: update.width, height: update.height },
+        };
+      })
+    );
+
+    try {
+      await updateDashboardLayout({ widgets });
+    } catch (err) {
+      // Log the failure but do NOT re-fetch the layout.
+      // Re-fetching would discard any widgets added since the last successful
+      // load (e.g. a widget just added whose positions haven't been saved yet
+      // because the backend PUT is broken). The optimistic local state is
+      // a better UX than reverting to a potentially stale server state.
+      logger.warn("[useDashboard] Failed to persist layout update:", err);
+    }
+  }, []);
 
   const addWidget = useCallback(
     async (payload: AddWidgetRequest): Promise<void> => {
       await addDashboardWidget(payload);
+      // Use loadLayout (full refresh) to guarantee fresh data from the backend.
+      // silentRefreshLayout has a race condition: the GET can arrive before the
+      // backend commits the POST, returning the old layout without the new widget.
       await loadLayout();
     },
     [loadLayout]
@@ -176,10 +241,10 @@ export function useDashboard(): UseDashboardReturn {
       } catch (err) {
         logger.warn("[useDashboard] Failed to delete widget:", err);
         // Re-fetch to restore server state on failure
-        await loadLayout();
+        await silentRefreshLayout();
       }
     },
-    [loadLayout]
+    [silentRefreshLayout]
   );
 
   return {
@@ -188,7 +253,12 @@ export function useDashboard(): UseDashboardReturn {
     widgetErrors,
     isLoadingLayout,
     layoutError,
+    widgetClasses,
+    isLoadingClasses,
+    classesError,
+    loadWidgetClasses,
     refreshWidget,
+    fetchWidgetPage,
     updateLayout,
     addWidget,
     removeWidget,
