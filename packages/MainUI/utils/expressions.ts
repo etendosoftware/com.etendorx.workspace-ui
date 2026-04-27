@@ -193,6 +193,10 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
     return undefined;
   };
 
+  // Tracks which unresolvable keys have already been warned about for this context
+  // instance, so each missing reference is logged at most once per evaluation cycle.
+  const warnedRefs = new Set<string>();
+
   return new Proxy(evalContext, {
     get(target, prop, receiver) {
       if (typeof prop !== "string") {
@@ -215,6 +219,21 @@ export const createEvaluationContext = (options: SmartContextOptions) => {
       // In Classic, unresolved context variables always resolve to '' (empty string).
       // parseDynamicExpression replaces OB.Utilities.getValue(obj, prop) with obj["prop"],
       // removing the null->'' conversion that getValue provided. The Proxy must handle it.
+
+      // Dev-mode warning: surface @field_name@ tokens that cannot be resolved so
+      // developers can spot misconfigured Application Dictionary expressions early.
+      // warnedRefs deduplicates so each missing key is logged at most once per context.
+      if (
+        process.env.NODE_ENV !== "production" &&
+        /^[a-zA-Z_]\w*$/.test(prop) &&
+        !["then", "toJSON", "toString", "valueOf", "constructor", "Symbol"].includes(prop) &&
+        !warnedRefs.has(prop)
+      ) {
+        warnedRefs.add(prop);
+        console.warn(
+          `[DisplayLogic] Unresolvable reference "${prop}" — defaulting to "". Check that the field exists in the Application Dictionary and is included in the form context.`
+        );
+      }
 
       return defaultValue !== undefined ? defaultValue : "";
     },

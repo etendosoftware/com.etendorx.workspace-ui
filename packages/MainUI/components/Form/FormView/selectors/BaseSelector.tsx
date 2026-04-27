@@ -114,10 +114,14 @@ export const compileExpression = (expression: string) => {
 
     // NOSONAR: This dynamic execution is required to evaluate business logic defined in the Application Dictionary.
     // The Input 'expression' comes from the system metadata (trusted source) and is not user-supplied.
+    //
+    // Normalize the expression result to a proper JS boolean so that bare @field@ references
+    // (which yield Etendo 'Y'/'N' strings) behave correctly: 'Y' → true, 'N' → false.
+    // Comparison expressions (==, !=, &&, ||) already return JS booleans and pass through unchanged.
     const compiled = new Function(
       "context",
       "currentValues",
-      `${securityShim} ${obShim} return ${parseDynamicExpression(expression)};`
+      `${securityShim} ${obShim} var __r = (${parseDynamicExpression(expression)}); return __r === 'N' ? false : __r === 'Y' ? true : Boolean(__r);`
     );
     compiledExpressionCache.set(expression, compiled);
     return compiled;
