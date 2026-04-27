@@ -26,12 +26,13 @@ export interface UseCalloutProps {
   field: Field;
   parentId?: string;
   rowId?: string;
+  changedColumnOverride?: string;
 }
 
 const ACTION = "org.openbravo.client.application.window.FormInitializationComponent";
 const MODE = "CHANGE";
 
-export const useCallout = ({ field, parentId = "null", rowId = "null" }: UseCalloutProps) => {
+export const useCallout = ({ field, parentId = "null", rowId = "null", changedColumnOverride }: UseCalloutProps) => {
   const { tab } = useTabContext();
   const tabId = tab?.id ?? "";
 
@@ -41,7 +42,7 @@ export const useCallout = ({ field, parentId = "null", rowId = "null" }: UseCall
         _action: ACTION,
         MODE,
         TAB_ID: tabId,
-        CHANGED_COLUMN: field.inputName,
+        CHANGED_COLUMN: changedColumnOverride ?? field.inputName,
         ROW_ID: rowId,
         PARENT_ID: parentId,
       });
@@ -76,6 +77,6 @@ export const useCallout = ({ field, parentId = "null", rowId = "null" }: UseCall
         logger.warn(`Error executing callout for field "${field.inputName}":`, error);
       }
     },
-    [tabId, field.inputName, parentId, rowId]
+    [tabId, field.inputName, parentId, rowId, changedColumnOverride]
   );
 };
