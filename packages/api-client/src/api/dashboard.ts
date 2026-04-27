@@ -34,7 +34,8 @@ export type WidgetType =
   | "QUERY_LIST"
   | "HTML"
   | "URL"
-  | "PROCESS";
+  | "PROCESS"
+  | "CALENDAR";
 
 export type WidgetLayer = "SYSTEM" | "CLIENT" | "USER";
 
@@ -87,6 +88,7 @@ export interface WidgetInstance {
   type: WidgetType;
   title: string;
   refreshInterval: number;
+  available?: boolean;
 }
 
 export interface DashboardLayoutResponse {
@@ -189,6 +191,22 @@ export interface ProcessWidgetData {
   };
 }
 
+export interface CalendarPeriod {
+  id: string;
+  name: string;
+  start: string;
+  end: string;
+  openClose: "O" | "C";
+  type?: string;
+}
+
+export interface CalendarWidgetData {
+  currentPeriod: CalendarPeriod | null;
+  entries: CalendarPeriod[];
+  dateFrom: string;
+  dateTo: string;
+}
+
 export type WidgetData =
   | KpiWidgetData
   | QueryListWidgetData
@@ -201,7 +219,8 @@ export type WidgetData =
   | RecentDocsWidgetData
   | RecentlyViewedWidgetData
   | CopilotWidgetData
-  | ProcessWidgetData;
+  | ProcessWidgetData
+  | CalendarWidgetData;
 
 export interface WidgetDataMeta {
   lastUpdate: string;
@@ -212,7 +231,8 @@ export interface WidgetDataMeta {
 export interface WidgetDataResponse {
   widgetInstanceId: string;
   type: WidgetType;
-  data: WidgetData;
+  available?: boolean;
+  data: WidgetData | null;
   meta: WidgetDataMeta;
 }
 
@@ -249,6 +269,44 @@ export interface DeleteWidgetResponse {
   status: string;
 }
 
+// ── Serialization helpers ─────────────────────────────────────────────────────
+
+/**
+ * Serializes a layout payload to JSON ensuring integer fields are encoded as
+ * decimal numbers (e.g. "2.0" instead of "2"). This is required because Java's
+ * Jackson parser maps bare JSON integers to java.lang.Integer when deserializing
+ * into a generic Map, and the backend casts those values to BigDecimal — which
+ * throws a ClassCastException. Sending "2.0" forces Jackson to use Double,
+ * which the backend can handle correctly.
+ */
+function serializeLayoutBody(payload: UpdateLayoutRequest): string {
+  const rows = payload.widgets
+    .map((w) => {
+      const col = `${Math.round(w.col)}.0`;
+      const row = `${Math.round(w.row)}.0`;
+      const width = `${Math.max(1, Math.round(w.width))}.0`;
+      const height = `${Math.max(1, Math.round(w.height))}.0`;
+      return `{"instanceId":${JSON.stringify(w.instanceId)},"col":${col},"row":${row},"width":${width},"height":${height},"isVisible":${w.isVisible}}`;
+    })
+    .join(",");
+  return `{"widgets":[${rows}]}`;
+}
+
+function serializeAddWidgetBody(payload: AddWidgetRequest): string {
+  const parts: string[] = [`"widgetClassId":${JSON.stringify(payload.widgetClassId)}`];
+  if (payload.col !== undefined) parts.push(`"col":${Math.round(payload.col)}.0`);
+  if (payload.row !== undefined) parts.push(`"row":${Math.round(payload.row)}.0`);
+  if (payload.width !== undefined) parts.push(`"width":${Math.max(1, Math.round(payload.width))}.0`);
+  if (payload.height !== undefined) parts.push(`"height":${Math.max(1, Math.round(payload.height))}.0`);
+  if (payload.parameters !== undefined) parts.push(`"parameters":${JSON.stringify(payload.parameters)}`);
+  return `{${parts.join(",")}}`;
+}
+
+export interface ToggleFavoriteResponse {
+  action: "added" | "removed";
+  menuId: string;
+}
+
 // ── API functions ─────────────────────────────────────────────────────────────
 
 export async function fetchWidgetClasses(): Promise<WidgetClassesResponse> {
@@ -267,20 +325,30 @@ export async function fetchDashboardLayout(): Promise<DashboardLayoutResponse> {
   return response.data as DashboardLayoutResponse;
 }
 
-export async function fetchWidgetData(instanceId: string): Promise<WidgetDataResponse> {
-  const response = await Metadata.client.request(`${DASHBOARD_BASE}/widget/${encodeURIComponent(instanceId)}/data`, {
-    method: "GET",
-  });
+export async function fetchWidgetData(
+  instanceId: string,
+  params?: { page?: number; pageSize?: number }
+): Promise<WidgetDataResponse> {
+  const query = params
+    ? `?${new URLSearchParams({ ...(params.page !== undefined && { page: String(params.page) }), ...(params.pageSize !== undefined && { pageSize: String(params.pageSize) }) }).toString()}`
+    : "";
+  const response = await Metadata.client.request(
+    `${DASHBOARD_BASE}/widget/${encodeURIComponent(instanceId)}/data${query}`,
+    { method: "GET" }
+  );
   if (!response.ok) {
     throw new Error(`Failed to fetch widget data for ${instanceId}: ${response.status}`);
   }
   return response.data as WidgetDataResponse;
 }
 
+const JSON_HEADERS = { "Content-Type": "application/json" };
+
 export async function updateDashboardLayout(payload: UpdateLayoutRequest): Promise<{ status: string }> {
   const response = await Metadata.client.request(`${DASHBOARD_BASE}/dashboard/layout`, {
     method: "PUT",
-    body: payload as unknown as Record<string, unknown>,
+    body: serializeLayoutBody(payload),
+    headers: JSON_HEADERS,
   });
   if (!response.ok) {
     throw new Error(`Failed to update dashboard layout: ${response.status}`);
@@ -289,14 +357,35 @@ export async function updateDashboardLayout(payload: UpdateLayoutRequest): Promi
 }
 
 export async function addDashboardWidget(payload: AddWidgetRequest): Promise<AddWidgetResponse> {
-  const response = await Metadata.client.post(
-    `${DASHBOARD_BASE}/dashboard/widget`,
-    payload as unknown as Record<string, unknown>
-  );
+  const response = await Metadata.client.request(`${DASHBOARD_BASE}/dashboard/widget`, {
+    method: "POST",
+    body: serializeAddWidgetBody(payload),
+    headers: JSON_HEADERS,
+  });
   if (!response.ok) {
     throw new Error(`Failed to add widget: ${response.status}`);
   }
   return response.data as AddWidgetResponse;
+}
+
+export async function fetchFavorites(): Promise<FavoritesWidgetData> {
+  const response = await Metadata.client.request(`${DASHBOARD_BASE}/favorites`, { method: "GET" });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch favorites: ${response.status}`);
+  }
+  return response.data as FavoritesWidgetData;
+}
+
+export async function toggleFavorite(menuId: string): Promise<ToggleFavoriteResponse> {
+  const response = await Metadata.client.request(`${DASHBOARD_BASE}/favorites/toggle`, {
+    method: "POST",
+    body: JSON.stringify({ menuId }),
+    headers: JSON_HEADERS,
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to toggle favorite: ${response.status}`);
+  }
+  return response.data as ToggleFavoriteResponse;
 }
 
 export async function deleteDashboardWidget(instanceId: string): Promise<DeleteWidgetResponse> {
