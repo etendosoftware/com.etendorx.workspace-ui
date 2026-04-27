@@ -5,5 +5,12 @@
     "noprefs": "true",
     "hideMenu": "true",
     "command": "DEFAULT"
+  },
+  "C09B000F160B47BE938A77FDE3207643": {
+    "url": "/security/Menu.html",
+    "paramUrl": "/ad_forms/UpdateReferenceData.html",
+    "noprefs": "true",
+    "hideMenu": "true",
+    "command": "DEFAULT"
   }
 }

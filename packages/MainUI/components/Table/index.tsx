@@ -123,6 +123,7 @@ import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatUTCTimeToLocal } from "@/utils/date/utils";
+import { isSrOneToOneExtension } from "@/utils/window/utils";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
@@ -794,6 +795,9 @@ const DynamicTable = ({
   const hasRestoredSelection = useRef(false);
   const prevRestorationId = useRef<string | undefined>(undefined);
   const wasVisibleRef = useRef(isVisible);
+  // Tracks the last parent record id for which the logical-SR auto-open has
+  // fired, so closing the form does not re-trigger for the same parent.
+  const srAutoOpenedForParentRef = useRef<string | undefined>(undefined);
 
   // Use the table data hook
   const {
@@ -823,6 +827,26 @@ const DynamicTable = ({
   } = useTableData({
     isTreeMode,
   });
+
+  // Auto-open FormView for logical SR (Single Record) tabs once the child
+  // records are fetched. This is the counterpart of Tab.tsx's 1:1 auto-open:
+  // when PK and FK are distinct columns (e.g. ETSG_Certificate.organization),
+  // the parent-selected id is not a valid child id, so we wait for the fetched
+  // records to discover the real child id and then open the form.
+  useEffect(() => {
+    if (uIPattern !== UIPatternEnum.EDIT_ONLY) return;
+    if (!tab.defaultEditMode) return;
+    if (isSrOneToOneExtension(tab)) return;
+    if (loading) return;
+    if (displayRecords.length === 0) return;
+
+    const parentKey = parentRecord?.id ? String(parentRecord.id) : undefined;
+    if (!parentKey) return;
+    if (srAutoOpenedForParentRef.current === parentKey) return;
+
+    srAutoOpenedForParentRef.current = parentKey;
+    setRecordId(String(displayRecords[0].id));
+  }, [uIPattern, tab, loading, displayRecords, parentRecord, setRecordId]);
 
   // Summary State
   const [summaryState, setSummaryState] = useState<Record<string, SummaryType>>({});

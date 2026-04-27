@@ -32,9 +32,41 @@ import {
   COMBO_TABLE_SELECTOR_DEFAULTS,
 } from "./constants";
 import { transformValueToClassicFormat } from "@/utils/datasourceUtils";
+import { deriveStandardInputName } from "@/utils/form/extensionFieldUtils";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 const FALLBACK_RESULT: Record<string, EntityValue> = {} as Record<string, EntityValue>;
+
+const SAFE_AD_FIELD_PATTERN = /^inpad[A-Z]/;
+const INP_FIELD_PATTERN = /^inp/;
+const PROCESS_PARAM_KEY_PATTERN = /^[a-z]\w*$/;
+const HQL_PARAM_PATTERN = /@([^@]+)@/g;
+
+/**
+ * Builds the filtered form values to include in a SelectorDataSourceFilter context.
+ * When HQL is available, only params referenced via @param@ placeholders are included.
+ * Otherwise, falls back to inp* fields and process parameter raw keys.
+ */
+export const buildSelectorContextFormValues = (
+  hqlSources: string,
+  formValues: Record<string, EntityValue>
+): Record<string, unknown> => {
+  if (hqlSources.length > 0) {
+    const hqlParams = new Set<string>();
+    let match: RegExpExecArray | null;
+    const regex = new RegExp(HQL_PARAM_PATTERN.source, "g");
+    while ((match = regex.exec(hqlSources)) !== null) {
+      hqlParams.add(match[1]);
+    }
+    return Object.fromEntries(
+      Object.entries(formValues).filter(([key]) => SAFE_AD_FIELD_PATTERN.test(key) || hqlParams.has(key))
+    );
+  }
+
+  return Object.fromEntries(
+    Object.entries(formValues).filter(([key]) => INP_FIELD_PATTERN.test(key) || PROCESS_PARAM_KEY_PATTERN.test(key))
+  );
+};
 
 export const useTableDirDatasource = ({
   field,
@@ -152,6 +184,28 @@ export const useTableDirDatasource = ({
         } as BaseBody;
       };
 
+      /**
+       * Ensures that standard field names are populated from their custom counterparts.
+       * Extension module columns follow the pattern `em_<module>_<standard_column>`
+       * (e.g. em_etcrm_c_bpartner_id → inpcBpartnerId). This mapping is derived
+       * dynamically from the tab's field metadata so it works for any module.
+       */
+      const applyFieldMappings = (body: BaseBody): BaseBody => {
+        if (!tab?.fields) return body;
+
+        for (const fieldDef of Object.values(tab.fields)) {
+          const { inputName, columnName } = fieldDef;
+          if (!inputName?.startsWith("inpem") || !body[inputName]) continue;
+
+          const standardInputName = deriveStandardInputName(inputName, columnName ?? "");
+          if (standardInputName && !body[standardInputName]) {
+            body[standardInputName] = body[inputName];
+          }
+        }
+
+        return body;
+      };
+
       const formValues = transformFormValues(getValues());
       const invoiceValue = transformFormValues(invoiceContext);
       const shouldSendOrg = !isProcessModal || selectedRecordsCount === 1;
@@ -187,11 +241,21 @@ export const useTableDirDatasource = ({
         if (isProcessModal) {
           // Datasources using the standard SelectorDataSourceFilter need form context
           // to resolve org/client security and field references.
-          // Custom entity datasources (e.g. ETASK_Task_Priority) break when given
-          // full context — they use lean payload instead.
+          // Custom entity datasources (e.g. ETASK_Task_Priority, ETCRM_LeadStatus) break
+          // when given full context because the backend NPEs on form fields that don't
+          // exist as entity properties. They use lean payload instead.
+          //
+          // Only send full context when:
+          //   1. datasourceName is "ADList" (reference list — explicitly needs form context)
+          //   2. datasourceName is "ComboTableDatasourceService" (standard TableDir combos)
+          //   3. No datasourceName is set but has SelectorDataSourceFilter (standard inline selectors)
+          //
+          // Custom entity datasources (any other datasourceName) always use lean payload.
           const usesStandardFilter =
             field.selector?.datasourceName === "ADList" ||
-            field.selector?.filterClass === "org.openbravo.userinterface.selector.SelectorDataSourceFilter";
+            field.selector?.datasourceName === "ComboTableDatasourceService" ||
+            (!field.selector?.datasourceName &&
+              field.selector?.filterClass === "org.openbravo.userinterface.selector.SelectorDataSourceFilter");
 
           if (usesStandardFilter) {
             return {
@@ -201,6 +265,33 @@ export const useTableDirDatasource = ({
               ...formValues,
             };
           }
+
+          // Custom entity datasources that use SelectorDataSourceFilter need context
+          // from the form to apply their HQL @param@ filters, but must NOT receive entity
+          // fields that don't exist on the selector's target entity — those cause backend
+          // NPE in SelectorDataSourceFilter.addWhereClause() on property.getPrimitiveObjectType().
+          if (field.selector?.filterClass === "org.openbravo.userinterface.selector.SelectorDataSourceFilter") {
+            // Strategy: extract @paramName@ placeholders from the selector's HQL
+            // (stored in selector.hqlWhere / selector.whereClause / selector.hql).
+            // Only send those specific params plus standard AD security fields.
+            // This mirrors Classic's buildExtraContext() which sends only what the HQL needs.
+            //
+            // Fallback: if no HQL is found in frontend metadata, the backend applies the
+            // HQL via _selectorDefinitionId. Send inp* fields + raw process parameter keys
+            // (e.g. isConverted: "Y", currentStatus: "UUID") so @param@ placeholders resolve.
+            const sel = field.selector as Record<string, unknown>;
+            const hqlSources = [sel.hqlWhere, sel.whereClause, sel.hql, sel.filterExpression, sel.hqlFilterExpression]
+              .filter((v): v is string => typeof v === "string" && v.length > 0)
+              .join(" ");
+
+            return {
+              _textMatchStyle: "substring",
+              ...parentData,
+              ...invoiceValue,
+              ...buildSelectorContextFormValues(hqlSources, formValues),
+            };
+          }
+
           return {};
         }
 
@@ -229,6 +320,8 @@ export const useTableDirDatasource = ({
         finalBody = applyProcessModalTransformations(finalBody);
       }
 
+      finalBody = applyFieldMappings(finalBody);
+
       return finalBody;
     },
     [
@@ -242,6 +335,7 @@ export const useTableDirDatasource = ({
       field.column?.table,
       field.hqlName,
       windowId,
+      tab,
       isProductField,
       isProcessModal,
       selectorId,
@@ -479,6 +573,7 @@ export const useTableDirDatasource = ({
 
         const entityName =
           field.selector?.datasourceName || String(field.selector?._entityName ?? "") || COMBO_TABLE_DATASOURCE;
+
         const { data } = await datasource.client.post("/api/datasource", {
           entity: entityName,
           params,
