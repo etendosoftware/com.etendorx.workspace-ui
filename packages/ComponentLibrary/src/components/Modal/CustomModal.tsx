@@ -15,11 +15,13 @@
  *************************************************************************
  */
 
+import type { ReactNode, RefObject } from "react";
+
 interface CustomModalProps {
   isOpen: boolean;
   title: string;
   iframeLoading: boolean;
-  customContent?: React.ReactNode;
+  customContent?: ReactNode;
   url: string;
   handleIframeLoad?: () => void;
   handleClose: () => void;
@@ -30,6 +32,7 @@ interface CustomModalProps {
     closeButton: string;
   };
   customContentClass?: string;
+  iframeRef?: RefObject<HTMLIFrameElement | null>;
 }
 
 const CustomModal = ({
@@ -42,6 +45,7 @@ const CustomModal = ({
   handleClose,
   texts,
   customContentClass,
+  iframeRef,
 }: CustomModalProps) => {
   if (!isOpen) return null;
 
@@ -50,7 +54,7 @@ const CustomModal = ({
       {/* NOTE: sizes inherited from the modal for manual processes from the previous UI */}
       <div
         className={`relative flex h-[625px] w-[900px] flex-col rounded-xl border-4 border-gray-300 bg-white ${customContentClass}`}>
-        <div className="flex items-center justify-between rounded-xl border-gray-200 border-b bg-[var(--color-baseline-10)] p-4">
+        <div className="flex items-center justify-between rounded-xl border-gray-200 border-b bg-[var(--color-baseline-10)] px-4 py-2">
           <h2 className="font-semibold text-lg">{title}</h2>
         </div>
         <div className="relative flex-1 overflow-hidden">
@@ -70,9 +74,15 @@ const CustomModal = ({
               </div>
             </div>
           )}
-          <iframe src={url} onLoad={handleIframeLoad} className="h-full w-full border-0" title={texts.iframeTitle} />
+          <iframe
+            ref={iframeRef}
+            src={url}
+            onLoad={handleIframeLoad}
+            className="h-full w-full border-0"
+            title={texts.iframeTitle}
+          />
         </div>
-        <div className="flex justify-end rounded-xl border-gray-200 border-t bg-[var(--color-baseline-10)] p-4">
+        <div className="flex justify-end rounded-xl border-gray-200 border-t bg-[var(--color-baseline-10)] px-4 py-2">
           <button
             data-testid="close-button"
             type="button"
