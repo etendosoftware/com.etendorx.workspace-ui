@@ -83,4 +83,29 @@ describe("useCallout hook", () => {
 
     expect(response).toBeUndefined();
   });
+
+  it("should use changedColumnOverride as CHANGED_COLUMN when provided", async () => {
+    (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({
+      data: { columnValues: {} },
+    });
+
+    const { result } = renderHook(() => useCallout({ field: mockField, changedColumnOverride: "inpcBpartnerId" }));
+    await result.current({});
+
+    const calledUrl: string = (Metadata.kernelClient.post as jest.Mock).mock.calls[0][0];
+    expect(calledUrl).toContain("CHANGED_COLUMN=inpcBpartnerId");
+    expect(calledUrl).not.toContain("CHANGED_COLUMN=inpField1");
+  });
+
+  it("should use field.inputName as CHANGED_COLUMN when changedColumnOverride is not provided", async () => {
+    (Metadata.kernelClient.post as jest.Mock).mockResolvedValue({
+      data: { columnValues: {} },
+    });
+
+    const { result } = renderHook(() => useCallout({ field: mockField }));
+    await result.current({});
+
+    const calledUrl: string = (Metadata.kernelClient.post as jest.Mock).mock.calls[0][0];
+    expect(calledUrl).toContain("CHANGED_COLUMN=inpField1");
+  });
 });

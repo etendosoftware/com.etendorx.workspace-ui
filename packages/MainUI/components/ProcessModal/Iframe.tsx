@@ -18,7 +18,7 @@
 import { type ProcessMessage, useProcessMessage } from "@/hooks/useProcessMessage";
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
   type MessageStylesType,
   type ProcessIframeModalClosedProps,
@@ -30,6 +30,45 @@ import CustomModal from "@workspaceui/componentlibrary/src/components/Modal/Cust
 const CLOSE_MODAL_ACTION = "closeModal";
 const PROCESS_ORDER_ACTION = "processOrder";
 const SHOW_PROCESS_MESSAGE_ACTION = "showProcessMessage";
+
+/**
+ * Classic forms running inside an iframe use window.innerWidth (the iframe's width)
+ * instead of screen.width when calculating popup positions for window.open() calls.
+ * This causes popups (e.g. Attribute selector) to appear near the left edge of the screen.
+ * We inject a small script that overrides window.open() to recalculate left/top positions
+ * using screen.width/screen.height, centering the popup correctly.
+ */
+const injectPopupPositionFix = (iframeRef: RefObject<HTMLIFrameElement | null>): void => {
+  try {
+    const iframe = iframeRef.current;
+    const doc = iframe?.contentDocument;
+    if (!doc) return;
+
+    const script = doc.createElement("script");
+    script.textContent = `
+      if (!window.__etendoPopupFixApplied) {
+        window.__etendoPopupFixApplied = true;
+        var _origOpen = window.open;
+        window.open = function(url, name, features, replace) {
+          if (features && typeof features === 'string') {
+            var w = 800, h = 600;
+            var mw = features.match(/width=(\\d+)/);
+            var mh = features.match(/height=(\\d+)/);
+            if (mw) w = parseInt(mw[1], 10);
+            if (mh) h = parseInt(mh[1], 10);
+            features = features
+              .replace(/left=-?\\d+/, 'left=' + Math.max(0, Math.round((screen.width - w) / 2)))
+              .replace(/top=-?\\d+/, 'top=' + Math.max(0, Math.round((screen.height - h) / 2)));
+          }
+          return _origOpen.apply(this, arguments);
+        };
+      }
+    `;
+    doc.head.appendChild(script);
+  } catch {
+    // Cross-origin or access error — ignore silently
+  }
+};
 
 const ProcessIframeOpenModal = ({
   isOpen,
@@ -49,6 +88,7 @@ const ProcessIframeOpenModal = ({
   const [progressWidth, setProgressWidth] = useState(100);
   const loadCount = useRef<number>(0);
   const [hasNavigated, setHasNavigated] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     processMessageRef.current = processMessage;
@@ -120,6 +160,7 @@ const ProcessIframeOpenModal = ({
       setHasNavigated(true);
     }
     setIframeLoading(false);
+    injectPopupPositionFix(iframeRef);
   }, []);
 
   const getMessageStyles = useCallback((type: string): MessageStylesType => {
@@ -234,13 +275,14 @@ const ProcessIframeOpenModal = ({
   if (!isOpen) return null;
 
   // Apply larger size for Forms - responsive with max size
-  const sizeClass = size === "large" ? "!w-[90vw] !max-w-[1600px] !h-[85vh] !max-h-[900px]" : "";
+  const sizeClass = size === "large" ? "!w-[90vw] !max-w-[1600px] !h-[92vh] !max-h-[1000px]" : "";
 
   return (
     <CustomModal
       isOpen={isOpen}
       title={title || t("common.processes")}
       iframeLoading={iframeLoading}
+      iframeRef={iframeRef}
       customContentClass={sizeClass}
       customContent={
         processMessage && (

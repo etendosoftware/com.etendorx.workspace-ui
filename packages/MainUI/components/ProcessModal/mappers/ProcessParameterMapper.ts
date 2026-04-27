@@ -255,6 +255,14 @@ export class ProcessParameterMapper {
   static getFieldType(parameter: ProcessParameter | ExtendedProcessParameter): string {
     const reference = ProcessParameterMapper.mapReferenceType(parameter.reference);
 
+    // List types must be checked BEFORE the selector/datasource check,
+    // because the API may return a selector object even for List-type parameters (e.g. Lead Status).
+    // If we let the selector check win, the parameter gets routed to TableDirSelector which
+    // tries to fetch from a datasource and fails.
+    if (reference === FIELD_REFERENCE_CODES.LIST_17.id || reference === FIELD_REFERENCE_CODES.LIST_13.id) {
+      return "list";
+    }
+
     if (parameter.selector?.datasourceName) {
       return ProcessParameterMapper.getSelectorFieldType(parameter.selector.datasourceName);
     }
