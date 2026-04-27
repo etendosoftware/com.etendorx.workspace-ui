@@ -346,6 +346,35 @@ export const buildFormPayload = ({
     return acc;
   }, {} as EntityData);
 
+  // Extension module fields (columnName starts with "em_") wrap a standard column.
+  // e.g. etcrmCBpartner (em_etcrm_c_bpartner_id) wraps businessPartner (c_bpartner_id).
+  // The standard field may be hidden and carry an empty value, but the DB constraint
+  // requires it. Copy the extension value to the standard field when the latter is empty.
+  if (tab?.fields) {
+    const fieldsByColumnName = Object.values(tab.fields).reduce(
+      (acc, f) => {
+        if (f.columnName) acc[f.columnName.toLowerCase()] = f;
+        return acc;
+      },
+      {} as Record<string, Field>
+    );
+
+    for (const field of Object.values(tab.fields)) {
+      const colName = field.columnName?.toLowerCase();
+      if (!colName?.startsWith("em_")) continue;
+      const match = colName.match(/^em_[a-z0-9]+_(.+)$/);
+      if (!match) continue;
+      const standardField = fieldsByColumnName[match[1]];
+      if (!standardField) continue;
+      const extValue = filteredValues[field.hqlName];
+      const stdValue = filteredValues[standardField.hqlName];
+      const stdIsEmpty = stdValue === "" || stdValue === null || stdValue === undefined;
+      if (extValue && stdIsEmpty) {
+        filteredValues[standardField.hqlName] = extValue;
+      }
+    }
+  }
+
   const payload: any = {
     dataSource: "isc_OBViewDataSource_0",
     operationType: mode === FormMode.NEW ? "add" : "update",
