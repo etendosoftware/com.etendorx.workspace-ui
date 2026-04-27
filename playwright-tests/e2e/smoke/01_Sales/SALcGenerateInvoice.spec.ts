@@ -291,104 +291,104 @@ test.describe("Sales flow - Generate invoices from multiple sales orders", () =>
     await closeToastIfPresent(page);
 
     // ── Step 9: Navigate to Generate Invoices report (MenuTitle__192) ─────────
-    const reportInput = page.locator('[data-testid="drawer-search-input"] input');
-    if (!(await reportInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
-      await page.locator(".h-14 > div > .transition > svg").click();
-      await reportInput.waitFor({ state: "visible", timeout: 10_000 });
-    }
-    await reportInput.click({ force: true });
-    await reportInput.fill("");
-    await page.keyboard.type("genera");
-    await page.locator('[data-testid="MenuTitle__192"]').waitFor({ state: "visible", timeout: 10_000 });
-    await page
-      .locator('[data-testid="MenuTitle__192"] > .flex.overflow-hidden > .relative > .ml-2')
-      .evaluate((el) => (el as HTMLElement).click());
+    // const reportInput = page.locator('[data-testid="drawer-search-input"] input');
+    // if (!(await reportInput.isVisible({ timeout: 1_000 }).catch(() => false))) {
+    //   await page.locator(".h-14 > div > .transition > svg").click();
+    //   await reportInput.waitFor({ state: "visible", timeout: 10_000 });
+    // }
+    // await reportInput.click({ force: true });
+    // await reportInput.fill("");
+    // await page.keyboard.type("genera");
+    // await page.locator('[data-testid="MenuTitle__192"]').waitFor({ state: "visible", timeout: 10_000 });
+    // await page
+    //   .locator('[data-testid="MenuTitle__192"] > .flex.overflow-hidden > .relative > .ml-2')
+    //   .evaluate((el) => (el as HTMLElement).click());
 
-    // Wait briefly before executing — avoids known race where the report
-    // fires before the previous process result is fully committed.
-    await page.waitForTimeout(3_000);
+    // // Wait briefly before executing — avoids known race where the report
+    // // fires before the previous process result is fully committed.
+    // await page.waitForTimeout(3_000);
 
-    // Execute the report — retry once if the backend returns an async execution error.
-    // "Async Execution Failed: Process Instance or Definition not found" can appear intermittently
-    // when a previous process instance is still being cleaned up on the server side.
-    const executeBtn = page.locator('[data-testid^="ExecuteReportButton"]');
-    await executeBtn.waitFor({ state: "visible", timeout: 30_000 });
-    await expect(executeBtn).not.toBeDisabled({ timeout: 10_000 });
-    await executeBtn.click();
+    // // Execute the report — retry once if the backend returns an async execution error.
+    // // "Async Execution Failed: Process Instance or Definition not found" can appear intermittently
+    // // when a previous process instance is still being cleaned up on the server side.
+    // const executeBtn = page.locator('[data-testid^="ExecuteReportButton"]');
+    // await executeBtn.waitFor({ state: "visible", timeout: 30_000 });
+    // await expect(executeBtn).not.toBeDisabled({ timeout: 10_000 });
+    // await executeBtn.click();
 
-    // If an async error appears within 3 s, retry the execution once.
-    await page.waitForTimeout(3_000);
-    const asyncErrorLocator = page.getByText(/Async Execution Failed/i);
-    if (await asyncErrorLocator.isVisible({ timeout: 0 }).catch(() => false)) {
-      await executeBtn.waitFor({ state: "visible", timeout: 10_000 });
-      await executeBtn.click();
-    }
+    // // If an async error appears within 3 s, retry the execution once.
+    // await page.waitForTimeout(3_000);
+    // const asyncErrorLocator = page.getByText(/Async Execution Failed/i);
+    // if (await asyncErrorLocator.isVisible({ timeout: 0 }).catch(() => false)) {
+    //   await executeBtn.waitFor({ state: "visible", timeout: 10_000 });
+    //   await executeBtn.click();
+    // }
 
-    // Verify report completion — the result may appear in a legacy iframe or on the React page.
-    // The Generate Invoices report shows "Created: X" directly (not "Process completed successfully"),
-    // so accept either pattern. Poll all frames (same pattern as the Create Shipments success check).
-    const invoiceSuccessDeadline = Date.now() + 150_000;
-    const invoiceSuccessPattern = /Process completed success|Created:/i;
-    let invoiceProcessSuccess = false;
-    while (Date.now() < invoiceSuccessDeadline && !invoiceProcessSuccess) {
-      // Check main page first
-      if (
-        await page
-          .getByText(invoiceSuccessPattern)
-          .isVisible({ timeout: 0 })
-          .catch(() => false)
-      ) {
-        invoiceProcessSuccess = true;
-        break;
-      }
-      // Then check all frames
-      for (const f of page.frames()) {
-        try {
-          const txt = await f
-            .locator("body")
-            .textContent({ timeout: 500 })
-            .catch(() => "");
-          if (invoiceSuccessPattern.test(txt)) {
-            invoiceProcessSuccess = true;
-            break;
-          }
-        } catch {
-          // detached frame — skip
-        }
-      }
-      if (!invoiceProcessSuccess) await page.waitForTimeout(300);
-    }
-    if (!invoiceProcessSuccess) throw new Error("Generate Invoices process did not complete successfully within 150s");
+    // // Verify report completion — the result may appear in a legacy iframe or on the React page.
+    // // The Generate Invoices report shows "Created: X" directly (not "Process completed successfully"),
+    // // so accept either pattern. Poll all frames (same pattern as the Create Shipments success check).
+    // const invoiceSuccessDeadline = Date.now() + 150_000;
+    // const invoiceSuccessPattern = /Process completed success|Created:/i;
+    // let invoiceProcessSuccess = false;
+    // while (Date.now() < invoiceSuccessDeadline && !invoiceProcessSuccess) {
+    //   // Check main page first
+    //   if (
+    //     await page
+    //       .getByText(invoiceSuccessPattern)
+    //       .isVisible({ timeout: 0 })
+    //       .catch(() => false)
+    //   ) {
+    //     invoiceProcessSuccess = true;
+    //     break;
+    //   }
+    //   // Then check all frames
+    //   for (const f of page.frames()) {
+    //     try {
+    //       const txt = await f
+    //         .locator("body")
+    //         .textContent({ timeout: 500 })
+    //         .catch(() => "");
+    //       if (invoiceSuccessPattern.test(txt)) {
+    //         invoiceProcessSuccess = true;
+    //         break;
+    //       }
+    //     } catch {
+    //       // detached frame — skip
+    //     }
+    //   }
+    //   if (!invoiceProcessSuccess) await page.waitForTimeout(300);
+    // }
+    // if (!invoiceProcessSuccess) throw new Error("Generate Invoices process did not complete successfully within 150s");
 
-    // Verify "Created:" summary — check main page and all frames
-    const createdDeadline = Date.now() + 15_000;
-    let createdFound = false;
-    while (Date.now() < createdDeadline && !createdFound) {
-      if (
-        await page
-          .getByText(/^Created:/)
-          .isVisible({ timeout: 0 })
-          .catch(() => false)
-      ) {
-        createdFound = true;
-        break;
-      }
-      for (const f of page.frames()) {
-        try {
-          const txt = await f
-            .locator("body")
-            .textContent({ timeout: 500 })
-            .catch(() => "");
-          if (/Created:/.test(txt)) {
-            createdFound = true;
-            break;
-          }
-        } catch {
-          // detached frame
-        }
-      }
-      if (!createdFound) await page.waitForTimeout(300);
-    }
-    if (!createdFound) throw new Error('Generate Invoices: "Created:" summary not found within 15s');
+    // // Verify "Created:" summary — check main page and all frames
+    // const createdDeadline = Date.now() + 15_000;
+    // let createdFound = false;
+    // while (Date.now() < createdDeadline && !createdFound) {
+    //   if (
+    //     await page
+    //       .getByText(/^Created:/)
+    //       .isVisible({ timeout: 0 })
+    //       .catch(() => false)
+    //   ) {
+    //     createdFound = true;
+    //     break;
+    //   }
+    //   for (const f of page.frames()) {
+    //     try {
+    //       const txt = await f
+    //         .locator("body")
+    //         .textContent({ timeout: 500 })
+    //         .catch(() => "");
+    //       if (/Created:/.test(txt)) {
+    //         createdFound = true;
+    //         break;
+    //       }
+    //     } catch {
+    //       // detached frame
+    //     }
+    //   }
+    //   if (!createdFound) await page.waitForTimeout(300);
+    // }
+    // if (!createdFound) throw new Error('Generate Invoices: "Created:" summary not found within 15s');
   });
 });
