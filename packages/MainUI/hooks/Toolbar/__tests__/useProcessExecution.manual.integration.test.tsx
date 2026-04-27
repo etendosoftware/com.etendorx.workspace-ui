@@ -325,6 +325,79 @@ describe("useProcessExecution manual processes integration", () => {
     expect(p.get("token")).toBe("tok_abc123");
   });
 
+  it("forwards backend additionalParameters and resolves $record.<col> against the record", async () => {
+    const userCtx = { token: "tok_abc123" };
+
+    function AdditionalParamsHarness() {
+      const { executeProcess, iframeUrl } = useProcessExecution();
+      const onRun = async () => {
+        const btn: any = {
+          id: "E5569BAF22C644EF9B5D6846515883F9",
+          action: "processAction",
+          buttonText: "Process",
+          columnName: "EM_Aprm_Processed",
+          processInfo: {
+            parameters: [],
+            _entityName: "",
+            id: "",
+            name: "",
+            javaClassName: "",
+            clientSideValidation: "",
+            loadFunction: "",
+            searchKey: "",
+          },
+          processAction: {
+            id: "PA_FINTRX",
+            url: "/FinancialAccount/Transaction_Edition.html",
+            command: "BUTTONEM_Aprm_Processed",
+            keyColumnName: "Fin_Finacc_Transaction_ID",
+            inpkeyColumnId: "Fin_Finacc_Transaction_ID",
+            // Mix of placeholders the resolver must handle:
+            //   - $record.<col> resolved against the harness record (line 50 of this file)
+            //   - $recordId/$windowId remain backwards-compatible
+            //   - a static literal passes through untouched
+            additionalParameters: {
+              inpadClientId: "$record.AD_Client_ID",
+              inpcBpartnerId: "$record.C_Bpartner_ID",
+              inpwindowId: "$windowId",
+              inpprocessed: "N",
+            },
+          },
+        };
+        const recordIdField: any = { value: "R1", type: "string", label: "Record ID", name: "recordId", original: {} };
+        const res = await executeProcess({ button: btn, recordId: recordIdField, params: {} });
+        const out = (res && (res as any).iframeUrl) || "";
+        const target = document.querySelector("#result");
+        if (target) target.textContent = out;
+      };
+      return (
+        <div>
+          <button onClick={onRun}>run</button>
+          <div data-testid="iframeUrl">{iframeUrl}</div>
+          <div id="result" data-testid="result" />
+        </div>
+      );
+    }
+
+    render(withUser(userCtx, <AdditionalParamsHarness />));
+    fireEvent.click(screen.getByRole("button", { name: /run/i }));
+
+    const resultEl = await screen.findByTestId("result");
+    await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:8080/etendo"));
+
+    const url = new URL(resultEl.textContent || "http://localhost");
+    const p = url.searchParams;
+    // $record.AD_Client_ID resolves to the record's AD_Client_ID value ("CLIENT"); the
+    // backend value wins over the hardcoded one (last-wins via params.set).
+    expect(p.getAll("inpadClientId")).toEqual(["CLIENT"]);
+    // $record.C_Bpartner_ID resolves via the lowercase fallback (record uses c_bpartner_id).
+    expect(p.getAll("inpcBpartnerId")).toEqual(["BP"]);
+    // Existing $windowId placeholder still works.
+    expect(p.get("inpwindowId")).toBe("W123");
+    // Static literals pass through unchanged.
+    expect(p.get("inpprocessed")).toBe("N");
+  });
+
   it("emits debug logs when DEBUG_MANUAL_PROCESSES is enabled", async () => {
     // Enable debug via localStorage flag
     process.env.NEXT_PUBLIC_DEBUG_MANUAL_PROCESSES = "true";

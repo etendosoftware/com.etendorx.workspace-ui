@@ -83,9 +83,9 @@ function tryResolveFromApi(processAction: ProcessAction | undefined): ProcessAct
   if (!processAction) {
     return null;
   }
-  const { url, command, keyColumnName, inpkeyColumnId } = processAction;
+  const { url, command, keyColumnName, inpkeyColumnId, additionalParameters } = processAction;
   if (url && command && keyColumnName && inpkeyColumnId) {
-    return { url, command, keyColumnName, inpkeyColumnId };
+    return { url, command, keyColumnName, inpkeyColumnId, additionalParameters };
   }
   return null;
 }
@@ -145,6 +145,48 @@ export const columnNameToInpKey = (columnName: string): string => {
   return `inp${camel}`;
 };
 
+const RECORD_PLACEHOLDER_PREFIX = "$record.";
+const COERCION_SEPARATOR = "!";
+
+type Coercion = "yn" | "date";
+
+/**
+ * Parses a `$record.<property>[!coercion]` placeholder. Returns the property name and
+ * optional coercion hint emitted by the backend (`!yn` for boolean Y/N columns,
+ * `!date` for pure-date columns). Pass-through everything else.
+ */
+function parseRecordPlaceholder(raw: string): { property: string; coercion?: Coercion } | null {
+  if (!raw.startsWith(RECORD_PLACEHOLDER_PREFIX)) return null;
+  const body = raw.slice(RECORD_PLACEHOLDER_PREFIX.length);
+  const sepIdx = body.indexOf(COERCION_SEPARATOR);
+  if (sepIdx < 0) return { property: body };
+  return { property: body.slice(0, sepIdx), coercion: body.slice(sepIdx + 1) as Coercion };
+}
+
+/**
+ * Coerces a record value into the form Etendo Classic's WAD servlet expects.
+ * Returns {@code null} when no value can be derived — callers MUST treat this as
+ * "leave the previously-set URL param untouched" to avoid wiping hardcoded values.
+ */
+function coerceRecordValue(value: unknown, coercion: Coercion | undefined): string | null {
+  if (value === undefined || value === null) return null;
+  if (coercion === "yn") {
+    if (typeof value === "boolean") return value ? "Y" : "N";
+    if (value === "Y" || value === "N") return value;
+    return null;
+  }
+  if (coercion === "date") {
+    const s = String(value);
+    if (!s) return null;
+    // SmartClient ships dates as "YYYY-MM-DD" or full ISO "YYYY-MM-DDTHH:..."; classic
+    // expects dd-mm-yyyy. Bail out unchanged if no recognisable ISO prefix.
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+    return match ? `${match[3]}-${match[2]}-${match[1]}` : s;
+  }
+  if (value === "") return null;
+  return String(value);
+}
+
 export const getParams = ({
   currentButtonId,
   processAction,
@@ -192,17 +234,28 @@ export const getParams = ({
   params.append(REQUIRED_PARAMS_KEYS.inpposted, isPostedRecord);
 
   if (processActionData.additionalParameters) {
-    const additionalParams = processActionData.additionalParameters;
-    const placeholders: Record<string, string> = {
+    const literalPlaceholders: Record<string, string> = {
       $recordId: recordId,
       $windowId: windowId,
       $tabId: tabId,
       $tableId: tableId,
     };
 
-    for (const [key, value] of Object.entries(additionalParams)) {
-      const resolvedValue = placeholders[value] ?? value;
-      params.append(key, resolvedValue);
+    for (const [key, raw] of Object.entries(processActionData.additionalParameters)) {
+      let resolved: string | null;
+      if (raw in literalPlaceholders) {
+        resolved = literalPlaceholders[raw];
+      } else {
+        const parsed = parseRecordPlaceholder(raw);
+        resolved = parsed
+          ? coerceRecordValue(record[parsed.property], parsed.coercion)
+          : raw;
+      }
+      // Only override when we actually resolved a value. When the placeholder cannot
+      // resolve (record property missing, value null, coercion impossible), preserve
+      // whatever the hardcoded block above already set — that's the correct value
+      // (e.g. inpadClientId, inpfinFinaccTransactionId).
+      if (resolved !== null) params.set(key, resolved);
     }
   }
 

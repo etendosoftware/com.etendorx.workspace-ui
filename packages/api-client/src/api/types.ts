@@ -86,6 +86,13 @@ export interface ProcessAction extends Record<string, unknown> {
   keyColumnName?: string;
   /** Input parameter name for the record ID in the Classic request (same as keyColumnName). Resolved by the backend. */
   inpkeyColumnId?: string;
+  /**
+   * Additional `inp{...}` parameters to send with the legacy request. Values may be literals
+   * or placeholders (`$recordId`, `$windowId`, `$tabId`, `$tableId`, `$record.<DBColumnName>`).
+   * The backend derives one entry per active column of the tab's table, mirroring the hidden
+   * inputs the Classic form would have submitted.
+   */
+  additionalParameters?: Record<string, string>;
 }
 
 export interface GridProps {
