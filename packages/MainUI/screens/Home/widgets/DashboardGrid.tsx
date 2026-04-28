@@ -68,7 +68,9 @@ interface DashboardGridProps {
   instances: WidgetInstance[];
   widgetData: Record<string, WidgetDataResponse>;
   widgetErrors: Record<string, string>;
+  editableClassIds?: Set<string>;
   onRemove: (instanceId: string) => void;
+  onEditParams?: (instanceId: string) => void;
   onFetchPage: (instanceId: string, page: number, pageSize: number) => Promise<void>;
   onUpdateLayout: (widgets: UpdateLayoutWidget[]) => Promise<void>;
 }
@@ -79,7 +81,9 @@ export default function DashboardGrid({
   instances,
   widgetData,
   widgetErrors,
+  editableClassIds,
   onRemove,
+  onEditParams,
   onFetchPage,
   onUpdateLayout,
 }: DashboardGridProps) {
@@ -143,7 +147,9 @@ export default function DashboardGrid({
               instance={instance}
               data={widgetData[instance.instanceId]}
               error={widgetErrors[instance.instanceId]}
+              hasConfigurableParams={editableClassIds?.has(instance.widgetClassId)}
               onRemove={onRemove}
+              onEditParams={onEditParams}
               onFetchPage={(page, pageSize) => onFetchPage(instance.instanceId, page, pageSize)}
             />
           </div>

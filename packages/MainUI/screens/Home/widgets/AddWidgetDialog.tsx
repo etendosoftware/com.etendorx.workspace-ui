@@ -18,9 +18,10 @@
 "use client";
 
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { WidgetClass, WidgetType } from "@workspaceui/api-client/src/api/dashboard";
 import { useTranslation } from "@/hooks/useTranslation";
+import { isSafeUrl, isUrlParam } from "@/utils/urlSafety";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -193,8 +194,9 @@ interface AddWidgetDialogProps {
   classesError: string | null;
   isAdding: boolean;
   addedWidgetClassIds?: Set<string>;
+  submitError?: string | null;
   onClose: () => void;
-  onAdd: (widgetClass: WidgetClass) => void;
+  onAdd: (widgetClass: WidgetClass, parameters: Record<string, string>) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -206,24 +208,66 @@ export default function AddWidgetDialog({
   classesError,
   isAdding,
   addedWidgetClassIds,
+  submitError,
   onClose,
   onAdd,
 }: AddWidgetDialogProps) {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<WidgetClass | null>(null);
+  const [step, setStep] = useState<"select" | "configure">("select");
+  const [paramValues, setParamValues] = useState<Record<string, string>>({});
   const searchRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDialogElement>(null);
+
+  const configurableParams = useMemo(
+    () => selected?.params.filter((p) => !p.fixed) ?? [],
+    [selected]
+  );
+  const hasConfigurableParams = configurableParams.length > 0;
+
+  const urlErrors = useMemo<Record<string, boolean>>(() => {
+    const errors: Record<string, boolean> = {};
+    for (const p of configurableParams) {
+      const val = paramValues[p.name] ?? "";
+      if (p.type === "TEXT" && isUrlParam(p) && val !== "" && !isSafeUrl(val)) {
+        errors[p.name] = true;
+      }
+    }
+    return errors;
+  }, [configurableParams, paramValues]);
+
+  const hasUrlErrors = Object.keys(urlErrors).length > 0;
 
   // Reset state when dialog opens/closes
   useEffect(() => {
     if (open) {
       setSearch("");
       setSelected(null);
+      setStep("select");
+      setParamValues({});
       // Focus search on open (after paint)
       requestAnimationFrame(() => searchRef.current?.focus());
     }
   }, [open]);
+
+  function handlePrimaryClick() {
+    if (!selected) return;
+    if (step === "select" && hasConfigurableParams) {
+      const defaults: Record<string, string> = {};
+      for (const p of configurableParams) {
+        defaults[p.name] = p.defaultValue ?? "";
+      }
+      setParamValues(defaults);
+      setStep("configure");
+    } else {
+      onAdd(selected, paramValues);
+    }
+  }
+
+  function handleBack() {
+    setStep("select");
+  }
 
   // Close on Escape
   const handleKeyDown = useCallback(
@@ -270,9 +314,11 @@ export default function AddWidgetDialog({
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-transparent-neutral-10 shrink-0">
           <div className="flex flex-col gap-0.5">
             <h2 className="text-base font-semibold text-baseline-100" data-testid="AddWidgetDialog__title">
-              {t("dashboard.addWidget.title")}
+              {step === "configure" && selected ? selected.title || selected.name : t("dashboard.addWidget.title")}
             </h2>
-            <p className="text-xs text-baseline-50">{t("dashboard.addWidget.subtitle")}</p>
+            <p className="text-xs text-baseline-50">
+              {step === "configure" ? t("dashboard.addWidget.configureSubtitle") : t("dashboard.addWidget.subtitle")}
+            </p>
           </div>
           <button
             type="button"
@@ -284,8 +330,8 @@ export default function AddWidgetDialog({
           </button>
         </div>
 
-        {/* Search */}
-        <div className="px-6 py-3 shrink-0">
+        {/* Search — only in select step */}
+        {step === "select" && <div className="px-6 py-3 shrink-0">
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-baseline-50 pointer-events-none">
               <SearchIcon />
@@ -300,52 +346,131 @@ export default function AddWidgetDialog({
               data-testid="AddWidgetDialog__search"
             />
           </div>
-        </div>
+        </div>}
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 pb-4" data-testid="AddWidgetDialog__content">
-          {/* Loading */}
-          {isLoadingClasses && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="AddWidgetDialog__skeleton">
-              {Array.from({ length: 6 }).map((_, i) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton, no stable key available
-                <div key={i} className="rounded-xl bg-transparent-neutral-5 p-4 h-24 animate-pulse" />
+          {/* Configure params step */}
+          {step === "configure" && selected && (
+            <div className="flex flex-col gap-4" data-testid="AddWidgetDialog__configure">
+              {selected.description && (
+                <p className="text-xs text-baseline-50 leading-relaxed" data-testid="AddWidgetDialog__configure_desc">
+                  {selected.description}
+                </p>
+              )}
+              {configurableParams.map((param) => (
+                <div key={param.name} className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor={`param-${param.name}`}
+                    className="text-sm font-medium text-baseline-100">
+                    {param.displayName}
+                    {param.required && <span className="text-error-main ml-0.5">*</span>}
+                  </label>
+                  {param.type === "BOOLEAN" ? (
+                    <input
+                      id={`param-${param.name}`}
+                      type="checkbox"
+                      checked={paramValues[param.name] === "true"}
+                      onChange={(e) =>
+                        setParamValues((prev) => ({ ...prev, [param.name]: e.target.checked ? "true" : "false" }))
+                      }
+                      className="w-4 h-4 cursor-pointer"
+                      data-testid={`AddWidgetDialog__param_${param.name}`}
+                    />
+                  ) : param.type === "LIST" && param.listValues ? (
+                    <select
+                      id={`param-${param.name}`}
+                      value={paramValues[param.name] ?? ""}
+                      onChange={(e) => setParamValues((prev) => ({ ...prev, [param.name]: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm rounded-lg bg-transparent-neutral-5 border border-transparent-neutral-10 text-baseline-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                      data-testid={`AddWidgetDialog__param_${param.name}`}>
+                      {param.listValues.map((lv) => (
+                        <option key={lv.value} value={lv.value}>
+                          {lv.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      id={`param-${param.name}`}
+                      type={param.type === "NUMBER" ? "number" : "text"}
+                      value={paramValues[param.name] ?? ""}
+                      onChange={(e) => setParamValues((prev) => ({ ...prev, [param.name]: e.target.value }))}
+                      className={[
+                        "w-full px-3 py-2 text-sm rounded-lg bg-transparent-neutral-5 border text-baseline-100 placeholder:text-baseline-50 focus:outline-none focus:ring-2 transition-colors",
+                        urlErrors[param.name]
+                          ? "border-error-main focus:ring-error-main/40"
+                          : "border-transparent-neutral-10 focus:ring-blue-500/40",
+                      ].join(" ")}
+                      data-testid={`AddWidgetDialog__param_${param.name}`}
+                    />
+                  )}
+                  {urlErrors[param.name] && (
+                    <p className="text-xs text-error-main" data-testid={`AddWidgetDialog__param_error_${param.name}`}>
+                      {t("dashboard.params.urlError")}
+                    </p>
+                  )}
+                  {param.description && (
+                    <p className="text-xs text-baseline-50 leading-snug" data-testid={`AddWidgetDialog__param_hint_${param.name}`}>
+                      {param.description}
+                    </p>
+                  )}
+                </div>
               ))}
+              {submitError && (
+                <p className="text-sm text-error-main mt-2" data-testid="AddWidgetDialog__submit_error">
+                  {t("dashboard.addWidget.submitError")}
+                </p>
+              )}
             </div>
           )}
+          {/* Select widget step */}
+          {step === "select" && (
+            <>
+              {/* Loading */}
+              {isLoadingClasses && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="AddWidgetDialog__skeleton">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton, no stable key available
+                    <div key={i} className="rounded-xl bg-transparent-neutral-5 p-4 h-24 animate-pulse" />
+                  ))}
+                </div>
+              )}
 
-          {/* Error */}
-          {classesError && !isLoadingClasses && (
-            <div
-              role="alert"
-              className="rounded-xl bg-error-contrast-text border border-error-main/20 p-4 text-sm text-error-main"
-              data-testid="AddWidgetDialog__error">
-              {t("dashboard.addWidget.loadError")}
-            </div>
-          )}
+              {/* Error */}
+              {classesError && !isLoadingClasses && (
+                <div
+                  role="alert"
+                  className="rounded-xl bg-error-contrast-text border border-error-main/20 p-4 text-sm text-error-main"
+                  data-testid="AddWidgetDialog__error">
+                  {t("dashboard.addWidget.loadError")}
+                </div>
+              )}
 
-          {/* Empty state */}
-          {!isLoadingClasses && !classesError && filtered.length === 0 && (
-            <p className="text-sm text-baseline-50 py-8 text-center" data-testid="AddWidgetDialog__empty">
-              {t("dashboard.addWidget.noResults")}
-            </p>
-          )}
+              {/* Empty state */}
+              {!isLoadingClasses && !classesError && filtered.length === 0 && (
+                <p className="text-sm text-baseline-50 py-8 text-center" data-testid="AddWidgetDialog__empty">
+                  {t("dashboard.addWidget.noResults")}
+                </p>
+              )}
 
-          {/* Widget grid */}
-          {!isLoadingClasses && !classesError && filtered.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="AddWidgetDialog__grid">
-              {filtered.map((wc) => {
+              {/* Widget grid */}
+              {!isLoadingClasses && !classesError && filtered.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="AddWidgetDialog__grid">
+                  {filtered.map((wc) => {
                 const isSelected = selected?.widgetClassId === wc.widgetClassId;
                 const isAlreadyAdded = addedWidgetClassIds?.has(wc.widgetClassId) ?? false;
+                const isUnavailable = wc.available === false;
+                const isDisabled = isAlreadyAdded || isUnavailable;
                 return (
                   <button
                     key={wc.widgetClassId}
                     type="button"
-                    disabled={isAlreadyAdded}
-                    onClick={() => !isAlreadyAdded && setSelected(isSelected ? null : wc)}
+                    disabled={isDisabled}
+                    onClick={() => !isDisabled && setSelected(isSelected ? null : wc)}
                     className={[
                       "flex items-start gap-3 rounded-xl p-4 text-left border transition-all duration-150 group",
-                      isAlreadyAdded
+                      isDisabled
                         ? "opacity-50 cursor-not-allowed bg-transparent-neutral-5 border-transparent-neutral-10"
                         : isSelected
                           ? "cursor-pointer bg-blue-500/10 border-blue-500/50 ring-2 ring-blue-500/30"
@@ -377,15 +502,23 @@ export default function AddWidgetDialog({
                       </span>
                     </div>
                     {/* Already added badge */}
-                    {isAlreadyAdded && (
+                    {isAlreadyAdded && !isUnavailable && (
                       <div
                         className="shrink-0 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-transparent-neutral-10 text-baseline-50 whitespace-nowrap"
                         aria-label={t("dashboard.addWidget.alreadyAdded")}>
                         {t("dashboard.addWidget.alreadyAdded")}
                       </div>
                     )}
+                    {/* Unavailable badge */}
+                    {isUnavailable && (
+                      <div
+                        className="shrink-0 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-transparent-neutral-10 text-baseline-50 whitespace-nowrap"
+                        aria-label={t("dashboard.addWidget.unavailable")}>
+                        {t("dashboard.addWidget.unavailable")}
+                      </div>
+                    )}
                     {/* Checkmark */}
-                    {!isAlreadyAdded && isSelected && (
+                    {!isDisabled && isSelected && (
                       <div
                         className="shrink-0 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center"
                         aria-hidden="true">
@@ -403,27 +536,43 @@ export default function AddWidgetDialog({
                   </button>
                 );
               })}
-            </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-transparent-neutral-10 shrink-0">
+          {step === "configure" ? (
+            <button
+              type="button"
+              onClick={handleBack}
+              className="px-4 py-2 text-sm font-medium rounded-lg text-baseline-50 hover:text-baseline-100 hover:bg-transparent-neutral-10 transition-colors cursor-pointer"
+              data-testid="AddWidgetDialog__back">
+              {t("dashboard.addWidget.back")}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium rounded-lg text-baseline-50 hover:text-baseline-100 hover:bg-transparent-neutral-10 transition-colors cursor-pointer"
+              data-testid="AddWidgetDialog__cancel">
+              {t("dashboard.addWidget.cancel")}
+            </button>
+          )}
           <button
             type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium rounded-lg text-baseline-50 hover:text-baseline-100 hover:bg-transparent-neutral-10 transition-colors cursor-pointer"
-            data-testid="AddWidgetDialog__cancel">
-            {t("dashboard.addWidget.cancel")}
-          </button>
-          <button
-            type="button"
-            disabled={!selected || isAdding}
-            onClick={() => selected && onAdd(selected)}
+            disabled={!selected || isAdding || (step === "configure" && hasUrlErrors)}
+            onClick={handlePrimaryClick}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-blue-500 hover:bg-blue-400 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors cursor-pointer"
             data-testid="AddWidgetDialog__add">
             {isAdding ? <SpinnerIcon /> : <PlusIcon />}
-            {isAdding ? t("dashboard.addWidget.adding") : t("dashboard.addWidget.add")}
+            {isAdding
+              ? t("dashboard.addWidget.adding")
+              : step === "select" && hasConfigurableParams
+                ? t("dashboard.addWidget.next")
+                : t("dashboard.addWidget.add")}
           </button>
         </div>
       </dialog>

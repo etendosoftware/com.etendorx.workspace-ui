@@ -688,6 +688,13 @@ const en = {
     noWidgets: "No widgets configured for this dashboard.",
     loadError: "Could not load the dashboard. Please try again.",
     retry: "Retry",
+    editParams: {
+      save: "Save",
+      saving: "Saving...",
+    },
+    params: {
+      urlError: "Only public https:// URLs are allowed",
+    },
     addWidget: {
       button: "Add widget",
       title: "Add widget",
@@ -700,6 +707,11 @@ const en = {
       cancel: "Cancel",
       close: "Close",
       alreadyAdded: "Added",
+      unavailable: "Unavailable",
+      next: "Next",
+      back: "Back",
+      configureSubtitle: "Customize the widget settings before adding it to your dashboard",
+      submitError: "The widget could not be added. Please check the values and try again.",
     },
   },
   packing: {

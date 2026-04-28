@@ -688,6 +688,13 @@ const es = {
     noWidgets: "No hay widgets configurados para este panel.",
     loadError: "No se pudo cargar el panel. Intente nuevamente.",
     retry: "Reintentar",
+    editParams: {
+      save: "Guardar",
+      saving: "Guardando...",
+    },
+    params: {
+      urlError: "Solo se permiten URLs públicas con https://",
+    },
     addWidget: {
       button: "Agregar widget",
       title: "Agregar widget",
@@ -700,6 +707,11 @@ const es = {
       cancel: "Cancelar",
       close: "Cerrar",
       alreadyAdded: "Agregado",
+      unavailable: "No disponible",
+      next: "Siguiente",
+      back: "Volver",
+      configureSubtitle: "Personalizá los parámetros del widget antes de agregarlo al panel",
+      submitError: "No se pudo agregar el widget. Revisá los valores e intentá nuevamente.",
     },
   },
   packing: {

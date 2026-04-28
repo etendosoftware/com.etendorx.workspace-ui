@@ -69,10 +69,10 @@ const DragIcon = () => (
   </svg>
 );
 
-const LockIcon = () => (
+const SettingsIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0M12 2v2M12 20v2M2 12h2M20 12h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 );
 
@@ -86,11 +86,13 @@ interface WidgetCardProps {
   instance: WidgetInstance;
   data: WidgetDataResponse | undefined;
   error: string | undefined;
+  hasConfigurableParams?: boolean;
   onRemove: (instanceId: string) => void;
+  onEditParams?: (instanceId: string) => void;
   onFetchPage: (page: number, pageSize: number) => Promise<void>;
 }
 
-export default function WidgetCard({ instance, data, error, onRemove, onFetchPage }: WidgetCardProps) {
+export default function WidgetCard({ instance, data, error, hasConfigurableParams, onRemove, onEditParams, onFetchPage }: WidgetCardProps) {
   const { t } = useTranslation();
   const isLocked = instance.layer !== "USER";
   const isUnavailable = instance.available === false || data?.available === false;
@@ -114,13 +116,15 @@ export default function WidgetCard({ instance, data, error, onRemove, onFetchPag
           <span className={`text-sm font-semibold ${theme.title} truncate`}>{instance.title}</span>
         </span>
         <div className="flex items-center gap-1 shrink-0">
-          {isLocked && (
-            <span
-              className={theme.iconHover}
-              title={`Widget del sistema (${instance.layer})`}
-              data-testid={`WidgetCard__lock_${instance.instanceId}`}>
-              <LockIcon data-testid="LockIcon__cb8729" />
-            </span>
+          {hasConfigurableParams && onEditParams && (
+            <button
+              type="button"
+              onClick={() => onEditParams(instance.instanceId)}
+              className={`${theme.icon} transition-colors cursor-pointer rounded p-0.5`}
+              title="Configure widget"
+              data-testid={`WidgetCard__settings_${instance.instanceId}`}>
+              <SettingsIcon data-testid="SettingsIcon__cb8729" />
+            </button>
           )}
           <button
             type="button"

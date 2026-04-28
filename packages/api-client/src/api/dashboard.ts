@@ -47,6 +47,7 @@ export interface WidgetParamListValue {
 export interface WidgetParam {
   name: string;
   displayName: string;
+  description?: string;
   type: WidgetParamType;
   required: boolean;
   fixed: boolean;
@@ -63,6 +64,7 @@ export interface WidgetClass {
   defaultWidth: number;
   defaultHeight: number;
   refreshInterval: number;
+  available?: boolean;
   params: WidgetParam[];
 }
 
@@ -386,6 +388,24 @@ export async function toggleFavorite(menuId: string): Promise<ToggleFavoriteResp
     throw new Error(`Failed to toggle favorite: ${response.status}`);
   }
   return response.data as ToggleFavoriteResponse;
+}
+
+export async function updateWidgetParams(
+  instanceId: string,
+  parameters: Record<string, string>
+): Promise<{ status: string }> {
+  const response = await Metadata.client.request(
+    `${DASHBOARD_BASE}/dashboard/widget/${encodeURIComponent(instanceId)}/params`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ parameters }),
+      headers: JSON_HEADERS,
+    }
+  );
+  if (!response.ok) {
+    throw new Error(`Failed to update widget params for ${instanceId}: ${response.status}`);
+  }
+  return response.data as { status: string };
 }
 
 export async function deleteDashboardWidget(instanceId: string): Promise<DeleteWidgetResponse> {

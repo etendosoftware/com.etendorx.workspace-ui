@@ -22,9 +22,10 @@ import { useDashboard } from "@/hooks/useDashboard";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useFavoritesContext } from "@/contexts/favorites";
-import type { WidgetClass } from "@workspaceui/api-client/src/api/dashboard";
+import type { WidgetClass, WidgetInstance } from "@workspaceui/api-client/src/api/dashboard";
 import CTABanner from "./widgets/CTABanner";
 import AddWidgetDialog from "./widgets/AddWidgetDialog";
+import EditWidgetParamsDialog from "./widgets/EditWidgetParamsDialog";
 import DashboardGrid from "./widgets/DashboardGrid";
 
 const PlusIcon = () => (
@@ -67,6 +68,7 @@ export default function Home() {
     fetchWidgetPage,
     updateLayout,
     refreshWidget,
+    updateParams,
   } = useDashboard(currentRole?.id);
 
   const { subscribeToToggle } = useFavoritesContext();
@@ -87,6 +89,19 @@ export default function Home() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [editingInstance, setEditingInstance] = useState<WidgetInstance | null>(null);
+  const [isSavingParams, setIsSavingParams] = useState(false);
+
+  const editableClassIds = useMemo(
+    () => new Set(widgetClasses.filter((wc) => wc.params.some((p) => !p.fixed)).map((wc) => wc.widgetClassId)),
+    [widgetClasses]
+  );
+
+  const editingWidgetClass = useMemo(
+    () => (editingInstance ? widgetClasses.find((wc) => wc.widgetClassId === editingInstance.widgetClassId) ?? null : null),
+    [editingInstance, widgetClasses]
+  );
 
   const handleRemove = useCallback(
     (instanceId: string) => {
@@ -102,18 +117,49 @@ export default function Home() {
 
   const handleCloseDialog = useCallback(() => {
     setDialogOpen(false);
+    setAddError(null);
   }, []);
 
+  const handleEditParams = useCallback(
+    (instanceId: string) => {
+      const instance = layout.find((w) => w.instanceId === instanceId) ?? null;
+      setEditingInstance(instance);
+      if (widgetClasses.length === 0) loadWidgetClasses();
+    },
+    [layout, widgetClasses, loadWidgetClasses]
+  );
+
+  const handleCloseEditDialog = useCallback(() => {
+    setEditingInstance(null);
+  }, []);
+
+  const handleSaveParams = useCallback(
+    async (instanceId: string, parameters: Record<string, string>) => {
+      setIsSavingParams(true);
+      try {
+        await updateParams(instanceId, parameters);
+        setEditingInstance(null);
+      } finally {
+        setIsSavingParams(false);
+      }
+    },
+    [updateParams]
+  );
+
   const handleAddWidget = useCallback(
-    async (widgetClass: WidgetClass) => {
+    async (widgetClass: WidgetClass, parameters: Record<string, string>) => {
       setIsAdding(true);
+      setAddError(null);
       try {
         await addWidget({
           widgetClassId: widgetClass.widgetClassId,
           width: widgetClass.defaultWidth,
           height: widgetClass.defaultHeight,
+          parameters: Object.keys(parameters).length > 0 ? parameters : undefined,
         });
         setDialogOpen(false);
+      } catch (err) {
+        setAddError(err instanceof Error ? err.message : "error");
       } finally {
         setIsAdding(false);
       }
@@ -161,13 +207,24 @@ export default function Home() {
           instances={sortedLayout}
           widgetData={widgetData}
           widgetErrors={widgetErrors}
+          editableClassIds={editableClassIds}
           onRemove={handleRemove}
+          onEditParams={handleEditParams}
           onFetchPage={fetchWidgetPage}
           onUpdateLayout={updateLayout}
           data-testid="DashboardGrid__home"
         />
       )}
 
+      <EditWidgetParamsDialog
+        open={editingInstance !== null}
+        instance={editingInstance}
+        widgetClass={editingWidgetClass}
+        isSaving={isSavingParams}
+        onClose={handleCloseEditDialog}
+        onSave={handleSaveParams}
+        data-testid="EditWidgetParamsDialog__home"
+      />
       <AddWidgetDialog
         open={dialogOpen}
         widgetClasses={widgetClasses}
@@ -175,6 +232,7 @@ export default function Home() {
         classesError={classesError}
         isAdding={isAdding}
         addedWidgetClassIds={new Set(layout.map((w) => w.widgetClassId))}
+        submitError={addError}
         onClose={handleCloseDialog}
         onAdd={handleAddWidget}
         data-testid="AddWidgetDialog__home"

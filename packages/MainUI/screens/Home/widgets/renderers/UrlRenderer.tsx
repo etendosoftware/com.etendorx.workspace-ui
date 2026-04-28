@@ -16,17 +16,35 @@
  */
 
 import type { UrlWidgetData } from "@workspaceui/api-client/src/api/dashboard";
+import { isSafeUrl } from "@/utils/urlSafety";
 
 interface UrlRendererProps {
   data: UrlWidgetData;
 }
 
+// Permissions always granted: needed for embedded apps (auth popups, forms, downloads).
+// allow-top-navigation is intentionally excluded to prevent iframes from
+// redirecting the parent page (e.g. Google Calendar auth redirects).
+const SANDBOX_PERMISSIVE = "allow-scripts allow-same-origin allow-popups allow-forms allow-downloads";
+// Restricted mode: no popups, no forms — for untrusted content.
+const SANDBOX_RESTRICTED = "allow-scripts allow-same-origin";
+
 export default function UrlRenderer({ data }: UrlRendererProps) {
+  if (!isSafeUrl(data.url)) {
+    return (
+      <p className="text-sm text-error-main" data-testid="UrlRenderer__blocked">
+        URL not allowed
+      </p>
+    );
+  }
+
   return (
     <iframe
+      key={data.url}
       src={data.url}
-      sandbox={data.sandbox ? "allow-scripts allow-same-origin" : undefined}
-      className="w-full h-48 rounded-lg border-0"
+      sandbox={data.sandbox ? SANDBOX_RESTRICTED : SANDBOX_PERMISSIVE}
+      referrerPolicy="no-referrer"
+      className="w-full h-full rounded-lg border-0"
       title="widget-url-content"
       data-testid="UrlRenderer__iframe"
     />

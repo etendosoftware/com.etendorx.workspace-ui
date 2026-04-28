@@ -25,6 +25,7 @@ import {
   updateDashboardLayout,
   addDashboardWidget,
   deleteDashboardWidget,
+  updateWidgetParams,
 } from "@workspaceui/api-client/src/api/dashboard";
 import type {
   WidgetInstance,
@@ -50,6 +51,7 @@ export interface UseDashboardReturn {
   updateLayout: (widgets: UpdateLayoutWidget[]) => Promise<void>;
   addWidget: (payload: AddWidgetRequest) => Promise<void>;
   removeWidget: (instanceId: string) => Promise<void>;
+  updateParams: (instanceId: string, parameters: Record<string, string>) => Promise<void>;
 }
 
 export function useDashboard(roleId?: string): UseDashboardReturn {
@@ -136,16 +138,6 @@ export function useDashboard(roleId?: string): UseDashboardReturn {
     }
   }, [fetchOneWidgetData, setupAutoRefresh]);
 
-  useEffect(() => {
-    // Reset state before re-fetching for new role
-    setLayout([]);
-    setWidgetData({});
-    setWidgetErrors({});
-    setLayoutError(null);
-    loadLayout();
-    return clearIntervals;
-  }, [roleId, loadLayout, clearIntervals]);
-
   const loadWidgetClasses = useCallback(async (): Promise<void> => {
     setIsLoadingClasses(true);
     setClassesError(null);
@@ -160,6 +152,17 @@ export function useDashboard(roleId?: string): UseDashboardReturn {
       setIsLoadingClasses(false);
     }
   }, []);
+
+  useEffect(() => {
+    // Reset state before re-fetching for new role
+    setLayout([]);
+    setWidgetData({});
+    setWidgetErrors({});
+    setLayoutError(null);
+    loadLayout();
+    loadWidgetClasses();
+    return clearIntervals;
+  }, [roleId, loadLayout, loadWidgetClasses, clearIntervals]);
 
   const refreshWidget = useCallback(
     async (instanceId: string): Promise<void> => {
@@ -220,6 +223,14 @@ export function useDashboard(roleId?: string): UseDashboardReturn {
     [loadLayout]
   );
 
+  const updateParams = useCallback(
+    async (instanceId: string, parameters: Record<string, string>): Promise<void> => {
+      await updateWidgetParams(instanceId, parameters);
+      await refreshWidget(instanceId);
+    },
+    [refreshWidget]
+  );
+
   const removeWidget = useCallback(
     async (instanceId: string): Promise<void> => {
       // Optimistic removal
@@ -262,5 +273,6 @@ export function useDashboard(roleId?: string): UseDashboardReturn {
     updateLayout,
     addWidget,
     removeWidget,
+    updateParams,
   };
 }
