@@ -255,7 +255,7 @@ describe("useProcessExecution manual processes integration", () => {
     render(withUser(userCtx, <ErrorHarness />));
     fireEvent.click(screen.getByRole("button", { name: /run/i }));
     const errEl = await screen.findByTestId("error");
-    await waitFor(() => expect(errEl.textContent).toMatch(/Process execution failed/i));
+    await waitFor(() => expect(errEl.textContent).toMatch(/Process type not supported/i));
   });
 
   it("uses backend processAction params when present (Reschedule Process scenario)", async () => {

@@ -17,6 +17,7 @@
 
 import type { ProcessButton, ProcessResponse } from "@/components/ProcessModal/types";
 import { logger } from "@/utils/logger";
+import { LegacyProcessUnresolvedError } from "@/utils/processes/manual/errors";
 import type { BaseFieldDefinition } from "@workspaceui/api-client/src/api/types";
 import type { FieldType } from "@workspaceui/api-client/src/api/types";
 import type { ExecuteProcessParams } from "./types";
@@ -61,6 +62,10 @@ export const useProcessButton = (
       return result;
     } catch (error) {
       logger.warn("Error executing process", error);
+
+      if (error instanceof LegacyProcessUnresolvedError) {
+        throw error;
+      }
 
       const message = error instanceof Error ? error?.message : "Unknown error occurred";
 

@@ -299,6 +299,10 @@ const en = {
     refreshGrid: "Refresh the grid to see the changes.",
     selectFile: "Select file...",
     executionTimeout: "Process execution timed out. Please try again.",
+    legacyProcessUnresolved: {
+      title: "This process can't be opened",
+      description: "We couldn't load the required parameters. Please contact support.",
+    },
   },
   drawer: {
     recentlyViewed: "Recently Viewed",

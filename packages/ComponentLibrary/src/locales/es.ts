@@ -301,6 +301,10 @@ const es = {
     warning: "Advertencia",
     selectFile: "Seleccionar archivo...",
     executionTimeout: "El tiempo de ejecución del proceso expiró. Por favor intente nuevamente.",
+    legacyProcessUnresolved: {
+      title: "Este proceso no puede abrirse",
+      description: "No pudimos cargar los parámetros necesarios. Contacta con soporte.",
+    },
   },
   drawer: {
     recentlyViewed: "Visto recientemente",

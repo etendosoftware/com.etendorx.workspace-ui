@@ -23,7 +23,6 @@ import {
 } from "@/components/ProcessModal/types";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import { isDebugManualProcesses } from "@/utils/debug";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useParams } from "next/navigation";
 import { useCallback, useContext, useState } from "react";
@@ -132,17 +131,7 @@ export function useProcessExecution() {
           );
 
           if (!processAction) {
-            const resolveError = new LegacyProcessUnresolvedError(currentButtonId, button.columnName);
-            logger.error("[MANUAL_PROCESS] Cannot resolve legacy process params", {
-              buttonId: currentButtonId,
-              columnName: button.columnName,
-            });
-            throw resolveError;
-          }
-
-          if (isDebugManualProcesses()) {
-            const source = button.processAction?.url ? "backend" : "fallback data.json";
-            logger.debug("[MANUAL_PROCESS] Params source", source);
+            throw new LegacyProcessUnresolvedError(currentButtonId, button.columnName);
           }
 
           const baseUrl = `${publicHost}${API_IFRAME_FORWARD_PATH}${processAction.url}`;
@@ -162,23 +151,6 @@ export function useProcessExecution() {
 
           const completeUrl = `${baseUrl}?${params.toString()}`;
 
-          if (isDebugManualProcesses()) {
-            try {
-              const debugParams: Record<string, string> = {};
-              params.forEach((v, k) => {
-                debugParams[k] = v;
-              });
-              logger.debug("[MANUAL_PROCESS] Prepared URL", completeUrl);
-              logger.debug("[MANUAL_PROCESS] Context", {
-                buttonId: currentButtonId,
-                windowId: safeWindowId,
-                tabId: safeTabId,
-                tableId: safeTableId,
-                recordId: safeRecordId,
-              });
-              logger.debug("[MANUAL_PROCESS] Params", debugParams);
-            } catch {}
-          }
           setIframeUrl(completeUrl);
 
           resolve({
@@ -186,8 +158,6 @@ export function useProcessExecution() {
             iframeUrl: completeUrl,
           });
         } catch (error) {
-          logger.warn(error);
-
           const processError = error instanceof Error ? error : new Error("Process execution failed");
           setError(processError);
           reject(processError);
@@ -201,18 +171,13 @@ export function useProcessExecution() {
 
   const executeProcess = useCallback(
     async ({ button, recordId, params = {} }: ExecuteProcessParams): Promise<ProcessResponse> => {
-      try {
-        if (isProcessActionButton(button)) {
-          return await executeProcessAction(button);
-        }
-        if (isProcessDefinitionButton(button)) {
-          return await executeProcessDefinition({ button, recordId, params });
-        }
-        throw new Error("Process type not supported");
-      } catch (error) {
-        console.error(error);
-        throw new Error("Process execution failed");
+      if (isProcessActionButton(button)) {
+        return executeProcessAction(button);
       }
+      if (isProcessDefinitionButton(button)) {
+        return executeProcessDefinition({ button, recordId, params });
+      }
+      throw new Error("Process type not supported");
     },
     [executeProcessAction, executeProcessDefinition]
   );

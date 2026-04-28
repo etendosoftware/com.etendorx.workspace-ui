@@ -28,6 +28,8 @@ export class LegacyProcessUnresolvedError extends Error {
   constructor(buttonId: string, columnName?: string) {
     const message = `Legacy process parameters not found for button '${buttonId}'${columnName ? ` (column: ${columnName})` : ""}. Contact with the support team.`;
     super(message);
+    // Required for ES5-compiled TypeScript classes that extend built-ins
+    Object.setPrototypeOf(this, new.target.prototype);
     this.name = "LegacyProcessUnresolvedError";
     this.buttonId = buttonId;
     this.columnName = columnName;

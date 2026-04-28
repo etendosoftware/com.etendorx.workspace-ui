@@ -188,7 +188,6 @@ function coerceRecordValue(value: unknown, coercion: Coercion | undefined): stri
 }
 
 export const getParams = ({
-  currentButtonId,
   processAction,
   record,
   recordId,
@@ -201,7 +200,6 @@ export const getParams = ({
   const processActionData = processAction;
 
   if (!processActionData) {
-    console.warn(`[ManualProcess] No configuration found for button ID: ${currentButtonId}`);
     return new URLSearchParams();
   }
 
