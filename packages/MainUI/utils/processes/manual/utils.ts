@@ -97,8 +97,8 @@ function tryFallbackByColumnName(
   if (!button.columnName) {
     return null;
   }
-  const fallbackKey = Object.keys(fallbackData).find(
-    (key) => (fallbackData[key] as ProcessActionData).command?.includes(button.columnName as string)
+  const fallbackKey = Object.keys(fallbackData).find((key) =>
+    (fallbackData[key] as ProcessActionData).command?.includes(button.columnName as string)
   );
   return fallbackKey ? fallbackData[fallbackKey] : null;
 }
@@ -245,9 +245,7 @@ export const getParams = ({
         resolved = literalPlaceholders[raw];
       } else {
         const parsed = parseRecordPlaceholder(raw);
-        resolved = parsed
-          ? coerceRecordValue(record[parsed.property], parsed.coercion)
-          : raw;
+        resolved = parsed ? coerceRecordValue(record[parsed.property], parsed.coercion) : raw;
       }
       // Only override when we actually resolved a value. When the placeholder cannot
       // resolve (record property missing, value null, coercion impossible), preserve

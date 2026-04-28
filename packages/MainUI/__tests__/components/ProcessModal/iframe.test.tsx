@@ -88,12 +88,37 @@ describe("ProcessIframeModal", () => {
     await waitFor(() => expect(screen.queryByText("common.loading")).not.toBeInTheDocument());
   });
 
-  it("renders processMessage with success style", () => {
-    // Forcing state via mocking would be required for full coverage here.
-    // Alternatively, expose internal state or extract logic.
-    const { rerender } = render(<ProcessIframeModal {...baseProps} />);
-    rerender(<ProcessIframeModal {...baseProps} />);
-    expect(true).toBe(true);
+  it("auto-closes and calls onProcessSuccess after the success message timer", async () => {
+    jest.useFakeTimers();
+    const onProcessSuccess = jest.fn();
+    const onClose = jest.fn();
+    mockFetchProcessMessage.mockResolvedValueOnce({
+      type: "success",
+      title: "Done",
+      text: "Process completed",
+    });
+
+    try {
+      render(<ProcessIframeModal {...baseProps} onProcessSuccess={onProcessSuccess} onClose={onClose} />);
+
+      act(() => {
+        window.postMessage({ action: "processOrder" }, "*");
+      });
+
+      await waitFor(() => expect(mockFetchProcessMessage).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByText("Process completed")).toBeInTheDocument());
+
+      act(() => {
+        jest.advanceTimersByTime(3000);
+      });
+
+      await waitFor(() => {
+        expect(onProcessSuccess).toHaveBeenCalled();
+        expect(onClose).toHaveBeenCalled();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("handles postMessage: closeModal", async () => {
@@ -207,6 +232,211 @@ describe("ProcessIframeModal", () => {
     await waitFor(() => {
       expect(onProcessSuccess).toHaveBeenCalled();
       expect(onClose).toHaveBeenCalled();
+    });
+  });
+
+  describe("fallback message and loading", () => {
+    it("shows the processing loading text when waiting for the process message", async () => {
+      mockFetchProcessMessage.mockResolvedValueOnce(null);
+      render(<ProcessIframeModal {...baseProps} />);
+
+      const iframe = screen.getByTitle("common.processes");
+      fireEvent.load(iframe);
+      await waitFor(() => expect(screen.queryByText("common.loading")).not.toBeInTheDocument());
+
+      act(() => {
+        window.postMessage({ action: "processOrder" }, "*");
+      });
+
+      await waitFor(() => expect(screen.getByText("process.processingMessage")).toBeInTheDocument());
+    });
+
+    it("shows fallback warning after timeout when no real message arrives", async () => {
+      jest.useFakeTimers();
+      mockFetchProcessMessage.mockResolvedValueOnce(null);
+      try {
+        render(<ProcessIframeModal {...baseProps} />);
+
+        const iframe = screen.getByTitle("common.processes");
+        fireEvent.load(iframe);
+
+        act(() => {
+          window.postMessage({ action: "processOrder" }, "*");
+        });
+
+        await waitFor(() => expect(mockFetchProcessMessage).toHaveBeenCalled());
+
+        act(() => {
+          jest.advanceTimersByTime(5000);
+        });
+
+        await waitFor(() => expect(screen.getByText("process.fallbackMessage.title")).toBeInTheDocument());
+        expect(screen.getByText("process.fallbackMessage.text")).toBeInTheDocument();
+        expect(screen.queryByText("process.processingMessage")).not.toBeInTheDocument();
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("cancels fallback when showProcessMessage arrives before timeout", async () => {
+      jest.useFakeTimers();
+      mockFetchProcessMessage.mockResolvedValueOnce(null);
+      try {
+        render(<ProcessIframeModal {...baseProps} />);
+
+        const iframe = screen.getByTitle("common.processes");
+        fireEvent.load(iframe);
+
+        act(() => {
+          window.postMessage({ action: "processOrder" }, "*");
+        });
+
+        await waitFor(() => expect(mockFetchProcessMessage).toHaveBeenCalled());
+
+        act(() => {
+          window.postMessage(
+            {
+              action: "showProcessMessage",
+              payload: { type: "success", title: "Real success", text: "Real text" },
+            },
+            "*"
+          );
+        });
+
+        await waitFor(() => expect(screen.getByText("Real text")).toBeInTheDocument());
+
+        act(() => {
+          jest.advanceTimersByTime(10000);
+        });
+
+        expect(screen.queryByText("process.fallbackMessage.title")).not.toBeInTheDocument();
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("does not auto-close when fallback warning is showing", async () => {
+      jest.useFakeTimers();
+      const onClose = jest.fn();
+      mockFetchProcessMessage.mockResolvedValueOnce(null);
+      try {
+        render(<ProcessIframeModal {...baseProps} onClose={onClose} />);
+
+        const iframe = screen.getByTitle("common.processes");
+        fireEvent.load(iframe);
+
+        act(() => {
+          window.postMessage({ action: "processOrder" }, "*");
+        });
+
+        await waitFor(() => expect(mockFetchProcessMessage).toHaveBeenCalled());
+
+        act(() => {
+          jest.advanceTimersByTime(5000);
+        });
+
+        await waitFor(() => expect(screen.getByText("process.fallbackMessage.title")).toBeInTheDocument());
+
+        act(() => {
+          window.postMessage({ action: "closeModal" }, "*");
+        });
+
+        // Run pending microtasks/macrotasks so any pending close would fire
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
+
+        expect(onClose).not.toHaveBeenCalled();
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("starts fallback countdown when iframeUnloaded arrives without a prior processOrder", async () => {
+      jest.useFakeTimers();
+      try {
+        render(<ProcessIframeModal {...baseProps} />);
+
+        const iframe = screen.getByTitle("common.processes");
+        fireEvent.load(iframe);
+
+        act(() => {
+          window.postMessage({ action: "iframeUnloaded" }, "*");
+        });
+
+        await waitFor(() => expect(screen.getByText("process.processingMessage")).toBeInTheDocument());
+
+        act(() => {
+          jest.advanceTimersByTime(5000);
+        });
+
+        await waitFor(() => expect(screen.getByText("process.fallbackMessage.title")).toBeInTheDocument());
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("treats an empty fetchProcessMessage response as 'no message' and shows fallback", async () => {
+      jest.useFakeTimers();
+      // Simulate the backend returning an empty payload — fetchProcessMessage
+      // resolves to null (handled in useProcessMessage) so the timer keeps running.
+      mockFetchProcessMessage.mockResolvedValueOnce(null);
+      try {
+        render(<ProcessIframeModal {...baseProps} />);
+
+        const iframe = screen.getByTitle("common.processes");
+        fireEvent.load(iframe);
+
+        act(() => {
+          window.postMessage({ action: "processOrder" }, "*");
+        });
+
+        await waitFor(() => expect(mockFetchProcessMessage).toHaveBeenCalled());
+        await waitFor(() => expect(screen.getByText("process.processingMessage")).toBeInTheDocument());
+
+        act(() => {
+          jest.advanceTimersByTime(5000);
+        });
+
+        await waitFor(() => expect(screen.getByText("process.fallbackMessage.title")).toBeInTheDocument());
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("does not restart the fallback timer when iframeUnloaded arrives mid-countdown", async () => {
+      jest.useFakeTimers();
+      mockFetchProcessMessage.mockResolvedValueOnce(null);
+      try {
+        render(<ProcessIframeModal {...baseProps} />);
+
+        const iframe = screen.getByTitle("common.processes");
+        fireEvent.load(iframe);
+
+        act(() => {
+          window.postMessage({ action: "processOrder" }, "*");
+        });
+
+        await waitFor(() => expect(mockFetchProcessMessage).toHaveBeenCalled());
+
+        // Advance partway through the timer, then dispatch iframeUnloaded.
+        act(() => {
+          jest.advanceTimersByTime(3000);
+        });
+        act(() => {
+          window.postMessage({ action: "iframeUnloaded" }, "*");
+        });
+
+        // Advance the remaining 2s — if the timer was restarted by iframeUnloaded
+        // the fallback would NOT show yet. We expect it TO show.
+        act(() => {
+          jest.advanceTimersByTime(2000);
+        });
+
+        await waitFor(() => expect(screen.getByText("process.fallbackMessage.title")).toBeInTheDocument());
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 });

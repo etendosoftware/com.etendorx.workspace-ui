@@ -303,6 +303,11 @@ const en = {
       title: "This process can't be opened",
       description: "We couldn't load the required parameters. Please contact support.",
     },
+    processingMessage: "Processing...",
+    fallbackMessage: {
+      title: "Could not capture response",
+      text: "Could not capture the process response. Please verify status manually.",
+    },
   },
   drawer: {
     recentlyViewed: "Recently Viewed",

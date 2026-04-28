@@ -305,6 +305,11 @@ const es = {
       title: "Este proceso no puede abrirse",
       description: "No pudimos cargar los parámetros necesarios. Contacta con soporte.",
     },
+    processingMessage: "Procesando...",
+    fallbackMessage: {
+      title: "No se pudo capturar la respuesta",
+      text: "No se pudo capturar la respuesta del proceso. Verifica el estado manualmente.",
+    },
   },
   drawer: {
     recentlyViewed: "Visto recientemente",

@@ -155,7 +155,10 @@ jest.mock("@workspaceui/componentlibrary/src/components/IconButtonWithText", () 
 jest.mock("../Modals/EmailSendModal", () => ({ __esModule: true, default: () => null }));
 jest.mock("../../ProcessModal/ProcessDefinitionModal", () => ({ __esModule: true, default: () => null }));
 jest.mock("../../ProcessModal/Iframe", () => ({ __esModule: true, default: () => null }));
-jest.mock("@workspaceui/componentlibrary/src/components/ActionModal", () => ({ __esModule: true, default: () => null }));
+jest.mock("@workspaceui/componentlibrary/src/components/ActionModal", () => ({
+  __esModule: true,
+  default: () => null,
+}));
 jest.mock("@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal", () => ({
   __esModule: true,
   default: () => null,

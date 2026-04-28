@@ -27,6 +27,16 @@ export interface ProcessMessage {
   title: string;
 }
 
+// Retry policy for fetchProcessMessage. Mitigates the race between
+// sendMessage('processOrder') firing before the legacy servlet finishes the
+// submit and writes the OBError to the session under <tabId>|MESSAGE.
+// With 3 attempts spaced 500 ms apart, total worst-case is ~1 s of extra
+// latency before the fallback timer (5 s) takes over.
+const PROCESS_MESSAGE_FETCH_ATTEMPTS = 3;
+const PROCESS_MESSAGE_RETRY_DELAY_MS = 500;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 export function useProcessMessage(tabId: string) {
   const { t } = useTranslation();
   const { token } = useUserContext();
@@ -90,6 +100,13 @@ export function useProcessMessage(tabId: string) {
         return null;
       }
 
+      // Treat empty payloads ({} or { type: "info", text: "", title: "" }) as
+      // "no message" so the iframe modal keeps the loading + fallback timer
+      // running instead of cancelling them on a meaningless response.
+      if (!data.text && !data.title && !data.type) {
+        return null;
+      }
+
       const messageType = normalizeMessageType(data.type || "info", data.text || "");
 
       return {
@@ -110,7 +127,7 @@ export function useProcessMessage(tabId: string) {
     return null;
   }, []);
 
-  const fetchProcessMessage = useCallback(async (): Promise<ProcessMessage | null> => {
+  const fetchProcessMessageOnce = useCallback(async (): Promise<ProcessMessage | null> => {
     try {
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
       const response: Response & { data?: any } = await fetch(
@@ -133,6 +150,18 @@ export function useProcessMessage(tabId: string) {
       return handleFetchError(error);
     }
   }, [publicHost, token, tabId, processResponseData, handleFetchError]);
+
+  const fetchProcessMessage = useCallback(async (): Promise<ProcessMessage | null> => {
+    for (let attempt = 0; attempt < PROCESS_MESSAGE_FETCH_ATTEMPTS; attempt++) {
+      const message = await fetchProcessMessageOnce();
+      if (message) return message;
+      const isLastAttempt = attempt === PROCESS_MESSAGE_FETCH_ATTEMPTS - 1;
+      if (!isLastAttempt) {
+        await sleep(PROCESS_MESSAGE_RETRY_DELAY_MS);
+      }
+    }
+    return null;
+  }, [fetchProcessMessageOnce]);
 
   const fetchMetadataMessage = useCallback(async (): Promise<ProcessMessage | null> => {
     try {
