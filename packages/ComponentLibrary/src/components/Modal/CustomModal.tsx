@@ -78,7 +78,7 @@ const CustomModal = ({
             ref={iframeRef}
             src={url}
             onLoad={handleIframeLoad}
-            className="h-full w-full border-0"
+            className={`h-full w-full border-0${customContent ? " invisible" : ""}`}
             title={texts.iframeTitle}
           />
         </div>
