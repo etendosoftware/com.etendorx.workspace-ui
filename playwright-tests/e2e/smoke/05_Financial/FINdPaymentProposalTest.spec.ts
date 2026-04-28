@@ -338,17 +338,13 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     await rowB.locator('input[aria-label="Toggle select row"]').check({ force: true });
     await expect(rowB.locator('input[aria-label="Toggle select row"]')).toBeChecked({ timeout: 10_000 });
 
-    // Submit — set up toast watcher BEFORE clicking.
-    // The footer button is labelled "Submit" (from the process availableButtons config).
+    // Execute — set up toast watcher BEFORE clicking.
     const successToastAppeared = page.waitForSelector('[data-sonner-toast][data-type="success"]', {
       state: "visible",
       timeout: 60_000,
     });
     await page.waitForTimeout(500);
-    const submitBtn = page
-      .locator('[data-testid*="ExecuteButton"][data-testid$="__761503"]')
-      .filter({ hasText: /^Submit$/ })
-      .first();
+    const submitBtn = page.locator('[data-testid="ExecuteButton__761503"]');
 
     await submitBtn.waitFor({ state: "visible", timeout: 30_000 });
     await submitBtn.click();
