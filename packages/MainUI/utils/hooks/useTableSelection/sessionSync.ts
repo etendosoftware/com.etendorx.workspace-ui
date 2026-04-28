@@ -20,6 +20,7 @@ import {
   buildFormInitializationPayload,
   buildFormInitializationParams,
   buildSessionAttributes,
+  mergeSessionAttributes,
 } from "@/utils/hooks/useFormInitialization/utils";
 import { SessionMode, type Tab, type EntityData, type ISession } from "@workspaceui/api-client/src/api/types";
 import { logger } from "@/utils/logger";
@@ -80,19 +81,21 @@ export const syncSelectedRecordsToSession = async ({
     // Add multiple row IDs to payload when more than one record is selected
     if (selectedRecords.length > 1) {
       payload[MULTIPLE_ROW_IDS_KEY] = allSelectedIds;
-    } else {
-      const record = buildPayloadByInputName(lastSelectedRecord, tab.fields);
-      Object.assign(payload, record);
     }
+
+    // Always send the last selected record's data so the backend can compute
+    // session context attributes that displayLogic depends on.
+    const record = buildPayloadByInputName(lastSelectedRecord, tab.fields);
+    Object.assign(payload, record);
 
     // Send single request with all selected record information
     const responseData = await fetchFormInitialization(params, payload);
 
-    const sessionAttributes = buildSessionAttributes(responseData);
-    setSession((prev) => ({
-      ...prev,
-      ...sessionAttributes,
-    }));
+    if (tab.tabLevel === 0) {
+      const sessionAttributes = buildSessionAttributes(responseData);
+      const isRootTabCall = params.get("PARENT_ID") === "null";
+      setSession((prev) => mergeSessionAttributes(prev, sessionAttributes, isRootTabCall));
+    }
 
     logger.info(`Successfully synced ${selectedRecords.length} records to session`);
   } catch (error) {

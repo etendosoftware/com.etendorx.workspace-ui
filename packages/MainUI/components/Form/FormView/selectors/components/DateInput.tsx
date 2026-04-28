@@ -43,6 +43,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [displayValue, setDisplayValue] = useState<string>("");
+    const isTypingRef = useRef(false);
 
     const datePlaceholder = useMemo(() => getLocaleDatePlaceholder(), []);
 
@@ -140,27 +141,15 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
 
     // Sync the hidden date input value with the display value
     useEffect(() => {
-      if (hiddenDateInputRef.current) {
-        const isoValue = hiddenDateInputRef.current.value;
-        // Only update display value if it's not currently being edited (focused)
-        // OR if the isoValue corresponds to what is currently displayed (to avoid overwriting user typing)
-        // Actually, we should update if the external value changes.
-        // But we need to be careful not to fight with user typing.
-        // The `value` prop from react-hook-form is passed via `...props` to the hidden input.
-        // So `hiddenDateInputRef.current.value` reflects the form state.
+      // Use the explicitly passed currentValue if available, otherwise fallback to the native input value
+      const isoValue = currentValue || hiddenDateInputRef.current?.value || "";
 
-        if (isoValue) {
-          const formatted = formatClassicDate(isoValue, false);
-          // Only update display value if it differs and we are not focused (or if it's a completely new value)
-          // To keep it simple: if we are not focused, always sync.
-          if (!isFocused) {
-            setDisplayValue(formatted);
-          }
-        } else if (!isFocused) {
-          setDisplayValue("");
-        }
+      if (isoValue && !isFocused) {
+        setDisplayValue(formatClassicDate(isoValue, false));
+      } else if (!isoValue && !isFocused) {
+        setDisplayValue("");
       }
-    }, [currentValue, isFocused]); // props.value should be the controlled value
+    }, [currentValue]);
 
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -220,7 +209,9 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
           // If we have a valid date, update the hidden input
           // This will trigger handleHiddenDateChange -> props.onChange -> callout
           if (hiddenDateInputRef.current && hiddenDateInputRef.current.value !== isoDate) {
+            isTypingRef.current = true;
             setNativeInputValue(isoDate);
+            isTypingRef.current = false;
           }
         }
       },
@@ -230,10 +221,12 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     const handleHiddenDateChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
         props.onChange?.(e);
-        // Also update display value immediately if picked from calendar
-        // But NOT if we are typing (isFocused), to avoid disrupting user input
-        if (e.target.value && !isFocused) {
-          setDisplayValue(formatClassicDate(e.target.value, false));
+        if (!isTypingRef.current) {
+          if (e.target.value) {
+            setDisplayValue(formatClassicDate(e.target.value, false));
+          } else {
+            setDisplayValue("");
+          }
         }
       },
       [props]
@@ -263,6 +256,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
           {/* Hidden date input connected to react-hook-form */}
           <input
             type="date"
+            {...props}
             ref={(node) => {
               hiddenDateInputRef.current = node;
               handleRef(node);
@@ -273,7 +267,6 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             tabIndex={-1}
             readOnly={isReadOnly}
             disabled={isReadOnly}
-            {...props}
           />
           <button type="button" onClick={handleCalendarClick} className={buttonClassNames} disabled={isReadOnly}>
             <CalendarIcon fill={"currentColor"} className="h-5 w-5" data-testid="CalendarIcon__417e7f" />

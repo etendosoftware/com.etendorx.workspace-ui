@@ -17,6 +17,8 @@
 
 import {
   MaterialReactTable,
+  MRT_ToggleDensePaddingButton,
+  MRT_ToggleFullScreenButton,
   type MRT_Row,
   useMaterialReactTable,
   type MRT_TableBodyRowProps,
@@ -44,6 +46,7 @@ import { useDatasourceContext } from "@/contexts/datasourceContext";
 import EmptyState from "./EmptyState";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import useTableSelection from "@/hooks/useTableSelection";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { ErrorDisplay } from "../ErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
@@ -117,7 +120,9 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import "./styles/inlineEditing.css";
 import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
+import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatUTCTimeToLocal } from "@/utils/date/utils";
+import { isSrOneToOneExtension } from "@/utils/window/utils";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
@@ -622,6 +627,8 @@ interface DynamicTableProps {
   isVisible?: boolean;
   areFiltersDisabled?: boolean;
   uIPattern?: UIPattern;
+  isFocused?: boolean;
+  onFocusAcquire?: () => void;
 }
 
 const getExpandIcon = (canExpand: boolean, isExpanded: boolean) => {
@@ -681,6 +688,8 @@ const DynamicTable = ({
   isVisible = true,
   areFiltersDisabled = false,
   uIPattern,
+  isFocused,
+  onFocusAcquire,
 }: DynamicTableProps) => {
   const { sx } = useStyle();
   const { t } = useTranslation();
@@ -729,7 +738,7 @@ const DynamicTable = ({
   const { confirmationState, confirmDiscardChanges, confirmSaveWithErrors } = useTableConfirmation();
 
   // Status modal for showing save errors and success messages
-  const { statusModal, hideStatusModal, showErrorModal, showSuccessModal } = useStatusModal();
+  const { showErrorModal, showSuccessModal } = useStatusModal();
 
   const {
     registerDatasource,
@@ -741,7 +750,7 @@ const DynamicTable = ({
     registerUpdateRecord,
     registerAddRecord,
   } = useDatasourceContext();
-  const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal } = useToolbarContext();
+  const { registerActions, registerAttachmentAction, setShouldOpenAttachmentModal, onNew } = useToolbarContext();
   const { activeWindow, getSelectedRecord, getTabFormState } = useWindowContext();
   const { tab, parentTab, parentRecord } = useTabContext();
   const { registerRefresh } = useTabRefreshContext();
@@ -783,6 +792,11 @@ const DynamicTable = ({
   const hasScrolledToSelection = useRef<boolean>(false);
   const previousURLSelection = useRef<string | null>(null);
   const hasRestoredSelection = useRef(false);
+  const prevRestorationId = useRef<string | undefined>(undefined);
+  const wasVisibleRef = useRef(isVisible);
+  // Tracks the last parent record id for which the logical-SR auto-open has
+  // fired, so closing the form does not re-trigger for the same parent.
+  const srAutoOpenedForParentRef = useRef<string | undefined>(undefined);
 
   // Use the table data hook
   const {
@@ -793,6 +807,8 @@ const DynamicTable = ({
     loading,
     error,
     shouldUseTreeMode,
+    treeEntity,
+    referencedTableId,
     hasMoreRecords,
     handleMRTColumnFiltersChange,
     handleMRTColumnVisibilityChange,
@@ -810,6 +826,26 @@ const DynamicTable = ({
   } = useTableData({
     isTreeMode,
   });
+
+  // Auto-open FormView for logical SR (Single Record) tabs once the child
+  // records are fetched. This is the counterpart of Tab.tsx's 1:1 auto-open:
+  // when PK and FK are distinct columns (e.g. ETSG_Certificate.organization),
+  // the parent-selected id is not a valid child id, so we wait for the fetched
+  // records to discover the real child id and then open the form.
+  useEffect(() => {
+    if (uIPattern !== UIPatternEnum.EDIT_ONLY) return;
+    if (!tab.defaultEditMode) return;
+    if (isSrOneToOneExtension(tab)) return;
+    if (loading) return;
+    if (displayRecords.length === 0) return;
+
+    const parentKey = parentRecord?.id ? String(parentRecord.id) : undefined;
+    if (!parentKey) return;
+    if (srAutoOpenedForParentRef.current === parentKey) return;
+
+    srAutoOpenedForParentRef.current = parentKey;
+    setRecordId(String(displayRecords[0].id));
+  }, [uIPattern, tab, loading, displayRecords, parentRecord, setRecordId]);
 
   // Summary State
   const [summaryState, setSummaryState] = useState<Record<string, SummaryType>>({});
@@ -1008,6 +1044,17 @@ const DynamicTable = ({
   const { getRowDropZoneProps } = useRowDropZone({
     onFileDrop: handleFileDrop,
     onDragStateChange: setDropTargetState,
+  });
+
+  const { dropTarget, draggingRowId, getNodeDragProps, getNodeDropProps } = useTreeNodeDragDrop({
+    shouldUseTreeMode,
+    treeEntity,
+    referencedTableId,
+    tabId: tab.id,
+    displayRecords,
+    refetch,
+    onError: (message) => showErrorModal(message),
+    parentTabRecordId: parentRecord?.id != null ? String(parentRecord.id) : null,
   });
 
   // Optimistic updates state - tracks pending updates for immediate UI feedback
@@ -1800,18 +1847,72 @@ const DynamicTable = ({
 
       editingRowUtils.removeEditingRow(rowId);
 
-      refetch().catch((error: unknown) => {
-        logger.warn("[InlineEditing] Failed to refetch after save:", error);
-      });
-
       const successMessage = editingRowData.isNew ? "Created" : "Saved";
       showSuccessModal(successMessage);
 
       if (screenReaderAnnouncer) {
         screenReaderAnnouncer.announceSaveOperation(rowId, true, editingRowData.isNew);
       }
+
+      // Fetch the updated single record to get color variables and complex fields back
+      (async () => {
+        try {
+          const extraProperties = Object.values(tab.fields || {})
+            .filter((f: any) => f.colorFieldName)
+            .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
+            .join(",");
+
+          const fetchId = editingRowData.isNew ? saveResult.data?.id : rowId;
+          if (!fetchId) {
+            await refetch();
+            return;
+          }
+
+          const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
+          const fullRecordResult = (await datasource.get(tab.entityName, {
+            criteria: [{ fieldName: "id", operator: "equals", value: fetchId }],
+            windowId: tab.window,
+            tabId: tab.id,
+            pageSize: 1,
+            startRow: 0,
+            endRow: 1,
+            ...(extraProperties ? { _extraProperties: extraProperties } : {}),
+          })) as { data: { response?: { data?: EntityData[] } } };
+
+          const completeRecord = fullRecordResult.data?.response?.data?.[0];
+          if (completeRecord) {
+            if (editingRowData.isNew) {
+              addRecordLocally?.(completeRecord);
+              removeRecordLocally?.(rowId);
+            } else {
+              updateRecordLocally?.(rowId, completeRecord);
+            }
+
+            setOptimisticRecords((prev) =>
+              prev.map((r) =>
+                String(r.id) === rowId || String(r.id) === String(completeRecord.id) ? completeRecord : r
+              )
+            );
+          } else {
+            await refetch();
+          }
+        } catch (error: unknown) {
+          logger.warn("[InlineEditing] Failed to fetch updated record after save:", error);
+          await refetch();
+        }
+      })();
     },
-    [editingRowUtils, refetch, showSuccessModal, screenReaderAnnouncer, preserveClientSideIdentifiers]
+    [
+      editingRowUtils,
+      refetch,
+      showSuccessModal,
+      screenReaderAnnouncer,
+      preserveClientSideIdentifiers,
+      tab,
+      updateRecordLocally,
+      addRecordLocally,
+      removeRecordLocally,
+    ]
   );
 
   /**
@@ -2486,6 +2587,13 @@ const DynamicTable = ({
         }
       }
 
+      // Determine drop target overlay styling for drag and drop interactions
+      let dropIndicatorClass = "";
+      if (shouldUseTreeMode && dropTarget?.id === rowId) {
+        dropIndicatorClass =
+          dropTarget.position === "on" ? "drop-target-overlay" : `drop-indicator-${dropTarget.position}`;
+      }
+
       return {
         onClick: (event) => {
           const target = event.target as HTMLElement;
@@ -2503,6 +2611,10 @@ const DynamicTable = ({
           if (isEditing) {
             return;
           }
+
+          // Transfer DOM focus to the table container so keyboard shortcuts work
+          onFocusAcquire?.();
+          tableContainerRef.current?.focus();
 
           // Clear any existing timeout for this row
           const existingTimeout = clickTimeoutsRef.current.get(rowId);
@@ -2576,20 +2688,75 @@ const DynamicTable = ({
           setRecordId(record.id);
         },
 
-        // Merge drag & drop handlers for file attachments
-        ...getRowDropZoneProps(record as EntityData),
+        // File attachment drag & drop props
+        ...(() => {
+          const fileDrop = getRowDropZoneProps(record as EntityData);
+          const nodeDrag = getNodeDragProps(record as EntityData);
+          const nodeDrop = getNodeDropProps(record as EntityData);
+          return {
+            // Make rows draggable in tree mode for node reordering/reparenting
+            draggable: shouldUseTreeMode,
+            onDragStart: nodeDrag.onDragStart,
+            onDragEnd: nodeDrag.onDragEnd,
+            // File drop uses onDragEnter; tree drop does not need it
+            onDragEnter: fileDrop.onDragEnter,
+            // Route onDragOver, onDragLeave, onDrop to the correct handler
+            // based on what is being dragged (tree node vs file)
+            onDragOver: (e: React.DragEvent<HTMLTableRowElement>) => {
+              if (e.dataTransfer.types.includes(TREE_DRAG_TYPE)) {
+                nodeDrop.onDragOver?.(e);
+              } else {
+                fileDrop.onDragOver?.(e);
+              }
+            },
+            onDragLeave: (e: React.DragEvent<HTMLTableRowElement>) => {
+              if (e.dataTransfer.types.includes(TREE_DRAG_TYPE)) {
+                nodeDrop.onDragLeave?.(e);
+              } else {
+                fileDrop.onDragLeave?.(e);
+              }
+            },
+            onDrop: (e: React.DragEvent<HTMLTableRowElement>) => {
+              if (e.dataTransfer.types.includes(TREE_DRAG_TYPE)) {
+                nodeDrop.onDrop?.(e);
+              } else {
+                fileDrop.onDrop?.(e);
+              }
+            },
+          };
+        })(),
 
         sx: {
           ...(isSelected && {
             ...sx.rowSelected,
           }),
         },
-        className: rowClassName,
+        // Apply drag source / drop-target CSS classes via React state so that React's
+        // reconciler manages the className and never overwrites our changes.
+        className: [
+          rowClassName,
+          shouldUseTreeMode && draggingRowId === rowId ? "tree-node-dragging" : "",
+          dropIndicatorClass,
+        ]
+          .filter(Boolean)
+          .join(" "),
         row,
         table,
       };
     },
-    [graph, setRecordId, sx.rowSelected, tab, editingRowUtils, getRowDropZoneProps]
+    [
+      graph,
+      setRecordId,
+      sx.rowSelected,
+      tab,
+      editingRowUtils,
+      getRowDropZoneProps,
+      shouldUseTreeMode,
+      draggingRowId,
+      dropTarget,
+      getNodeDragProps,
+      getNodeDropProps,
+    ]
   );
 
   const renderEmptyRowsFallback = useCallback(
@@ -2634,6 +2801,7 @@ const DynamicTable = ({
 
   // Generate ARIA attributes for the table container
   const editingRowsCount = Object.keys(editingRows).length;
+
   const tableAriaAttributes = useMemo(
     () => generateAriaAttributes.tableContainer(effectiveRecords.length, editingRowsCount),
     [effectiveRecords.length, editingRowsCount]
@@ -2660,7 +2828,8 @@ const DynamicTable = ({
   const muiTableContainerProps = useMemo(
     () => ({
       ref: tableContainerRef,
-      sx: { flex: 1, maxHeight: "100%" },
+      tabIndex: -1,
+      sx: { flex: 1, maxHeight: "100%", outline: "none" },
       onScroll: fetchMoreOnBottomReached,
     }),
     [fetchMoreOnBottomReached]
@@ -2817,7 +2986,53 @@ const DynamicTable = ({
     enableStickyFooter: false,
     enableColumnVirtualization: true,
     enableRowVirtualization: canUseVirtualScrollingWithEditing(editingRows, effectiveRecords.length),
-    enableTopToolbar: false,
+    enableTopToolbar: true,
+    renderTopToolbar: ({ table: mrtTable }) => {
+      const isFullScreen = mrtTable.getState().isFullScreen;
+
+      if (isFullScreen) {
+        return (
+          <div className="flex justify-end items-center px-2 py-1 bg-white border-b border-gray-100">
+            <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
+            <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
+            <button
+              type="button"
+              onClick={() => mrtTable.setIsFullScreen(false)}
+              className="ml-1 p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-900 text-lg leading-none"
+              aria-label="Exit fullscreen">
+              ✕
+            </button>
+          </div>
+        );
+      }
+
+      const rowSelection = mrtTable.getState().rowSelection;
+      const selCount = Object.keys(rowSelection).filter((id) => rowSelection[id]).length;
+      const loaded = displayRecords.length;
+      const total = hasMoreRecords ? loaded + 1 : loaded;
+      const labels = {
+        showingRecords: t("table.counter.showingRecords"),
+        showingPartialRecords: t("table.counter.showingPartialRecords"),
+        selectedRecords: t("table.counter.selectedRecords"),
+        recordsLoaded: t("table.counter.recordsLoaded"),
+      };
+      return (
+        <RecordCounterBar
+          totalRecords={total}
+          loadedRecords={loaded}
+          selectedCount={selCount}
+          isLoading={loading}
+          labels={labels}
+          actions={
+            <>
+              <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
+              <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
+            </>
+          }
+          data-testid="RecordCounterBar__8ca888"
+        />
+      );
+    },
     enableBottomToolbar: false,
     enableExpanding: shouldUseTreeMode,
     paginateExpandedRows: false,
@@ -2848,11 +3063,101 @@ const DynamicTable = ({
     autoResetRowSelection: false,
   });
 
-  useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange);
+  useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange, isVisible);
 
   // Use ref for table to prevent infinite loop of registrations
   const tableRef = useRef(table);
   tableRef.current = table;
+
+  const lastArrowNavTimeRef = useRef(0);
+  const ARROW_NAV_THROTTLE_MS = 120;
+
+  const navigateRow = useCallback(
+    (direction: 1 | -1) => {
+      if (!tableContainerRef.current?.contains(document.activeElement)) return;
+      const now = performance.now();
+      if (now - lastArrowNavTimeRef.current < ARROW_NAV_THROTTLE_MS) return;
+      lastArrowNavTimeRef.current = now;
+      const currentSelection = tableRef.current.getState().rowSelection;
+      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
+      if (selectedIds.length !== 1) return;
+      const currentIndex = effectiveRecords.findIndex((r) => String(r.id) === selectedIds[0]);
+      const nextIndex = currentIndex + direction;
+      if (currentIndex === -1 || nextIndex < 0 || nextIndex >= effectiveRecords.length) return;
+      tableRef.current.setRowSelection({ [String(effectiveRecords[nextIndex].id)]: true });
+    },
+    [effectiveRecords, tableContainerRef]
+  );
+
+  const handleArrowDown = useCallback((_event: KeyboardEvent) => navigateRow(1), [navigateRow]);
+  const handleArrowUp = useCallback((_event: KeyboardEvent) => navigateRow(-1), [navigateRow]);
+
+  const handleEnter = useCallback(
+    (_event: KeyboardEvent) => {
+      if (!tableContainerRef.current?.contains(document.activeElement)) return;
+      const currentSelection = tableRef.current.getState().rowSelection;
+      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
+      if (selectedIds.length !== 1) return;
+      const recordId = selectedIds[0];
+      const record = effectiveRecords.find((r) => String(r.id) === recordId);
+      if (!record) return;
+
+      const parent = graph.getParent(tab);
+      if (parent) {
+        const windowIdentifier = activeWindow?.windowIdentifier;
+        const parentSelectedInURL = windowIdentifier ? getSelectedRecord(windowIdentifier, parent.id) : undefined;
+        if (!parentSelectedInURL) return;
+      }
+
+      const parentSelection = parent ? graph.getSelected(parent) : undefined;
+      graph.setSelected(tab, record);
+      graph.setSelectedMultiple(tab, [record]);
+      if (parent && parentSelection) {
+        setTimeout(() => graph.setSelected(parent, parentSelection), 10);
+      }
+
+      setRecordId(record.id as string);
+    },
+    [effectiveRecords, tableContainerRef, graph, tab, activeWindow, getSelectedRecord, setRecordId]
+  );
+
+  const handleNewWithParentGuard = useCallback(() => {
+    if (parentTab && !parentRecord) return;
+    onNew?.();
+  }, [parentTab, parentRecord, onNew]);
+
+  useKeyboardShortcuts(
+    {
+      ArrowDown: { handler: handleArrowDown },
+      ArrowUp: { handler: handleArrowUp },
+      Enter: { handler: handleEnter },
+      "ctrl+n": { handler: handleNewWithParentGuard, allowInInputs: true },
+    },
+    editingRowsCount === 0 && (isFocused ?? true)
+  );
+
+  // When the table becomes visible again (e.g. after returning from FormView via Escape),
+  // restore focus to the container if a row is already selected so arrow keys work immediately.
+  // setTimeout(0) runs after all synchronous React effects and FormView unmount focus changes,
+  // ensuring we win any focus race after the transition.
+  useEffect(() => {
+    if (!isVisible) return;
+    const timerId = setTimeout(() => {
+      const rowSelection = tableRef.current.getState().rowSelection;
+      const hasSelection = Object.keys(rowSelection).some((id) => rowSelection[id]);
+      // Only focus if nothing meaningful has captured focus (don't steal from inputs/buttons)
+      const activeEl = document.activeElement;
+      const userFocusedElsewhere =
+        activeEl &&
+        activeEl !== document.body &&
+        activeEl !== document.documentElement &&
+        !tableContainerRef.current?.contains(activeEl);
+      if (hasSelection && tableContainerRef.current && !userFocusedElsewhere) {
+        tableContainerRef.current.focus();
+      }
+    }, 0);
+    return () => clearTimeout(timerId);
+  }, [isVisible]);
 
   // Register attachment action for toolbar to handle interactions from TableView
   useEffect(() => {
@@ -3058,6 +3363,44 @@ const DynamicTable = ({
     }
   }, [activeWindow, tab.window, records, getSelectedRecord, tab.id]);
 
+  /**
+   * Reset hasRestoredSelection when the target selected record ID changes.
+   * This unblocks the selection restoration effect when a new record is set
+   * (e.g., after cloning a record and navigating to the clone).
+   */
+  useEffect(() => {
+    const windowIdentifier = activeWindow?.windowIdentifier;
+    if (!windowIdentifier) return;
+    const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
+    if (urlSelectedId !== prevRestorationId.current) {
+      prevRestorationId.current = urlSelectedId;
+      hasRestoredSelection.current = false;
+    }
+  }, [activeWindow, getSelectedRecord, tab.id]);
+
+  /**
+   * When the table becomes visible again (user navigates back from form/clone view),
+   * check if the currently selected record exists in the loaded records.
+   * If not, trigger a refetch so the cloned record appears in the grid.
+   */
+  useEffect(() => {
+    const becameVisible = !wasVisibleRef.current && isVisible;
+    wasVisibleRef.current = isVisible;
+
+    if (!becameVisible) return;
+
+    const windowIdentifier = activeWindow?.windowIdentifier;
+    if (!windowIdentifier) return;
+
+    const urlSelectedId = getSelectedRecord(windowIdentifier, tab.id);
+    if (!urlSelectedId) return;
+
+    const recordExists = records?.some((r: EntityData) => String(r.id) === urlSelectedId);
+    if (!recordExists) {
+      refetch();
+    }
+  }, [isVisible, activeWindow, getSelectedRecord, tab.id, records, refetch]);
+
   useEffect(() => {
     const handleGraphClear = (eventTab: typeof tab) => {
       if (eventTab.id === tabId) {
@@ -3132,11 +3475,11 @@ const DynamicTable = ({
       if (event.key === "Escape") {
         const editingRowIds = editingRowUtils.getEditingRowIds();
 
-        // If there are editing rows, cancel the first one using handleCancelRow
-        // This ensures we use the confirmation modal instead of window.confirm
         if (editingRowIds.length > 0) {
-          const rowId = editingRowIds[0]; // Cancel the first editing row
+          const rowId = editingRowIds[0];
           await handleCancelRow(rowId);
+        } else if (table.getState().isFullScreen) {
+          table.setIsFullScreen(false);
         }
       }
     };
@@ -3145,7 +3488,7 @@ const DynamicTable = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [editingRowUtils, handleCancelRow]);
+  }, [editingRowUtils, handleCancelRow, table]);
 
   useEffect(() => {
     if (removeRecordLocally) {
@@ -3196,7 +3539,7 @@ const DynamicTable = ({
       registerActions({
         refresh: refetch,
         filter: toggleImplicitFilters,
-        save: async () => {},
+        save: async () => false,
         columnFilters: toggleColumnsDropdown,
       });
     }
@@ -3277,33 +3620,12 @@ const DynamicTable = ({
     );
   }
 
-  // Calculate counter values
-  const selectedRecords = Object.keys(table.getState().rowSelection).filter((id) => table.getState().rowSelection[id]);
-  const selectedCount = selectedRecords.length;
-  const loadedRecords = displayRecords.length;
-  const totalRecords = hasMoreRecords ? loadedRecords + 1 : loadedRecords; // Approximate total when more records available
-
-  // Prepare labels for RecordCounterBar with translations
-  const counterLabels = {
-    showingRecords: t("table.counter.showingRecords"),
-    showingPartialRecords: t("table.counter.showingPartialRecords"),
-    selectedRecords: t("table.counter.selectedRecords"),
-    recordsLoaded: t("table.counter.recordsLoaded"),
-  };
-
   return (
     <div
       className={`h-full overflow-hidden rounded-3xl transition-opacity flex flex-col ${
         loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
-      }`}>
-      <RecordCounterBar
-        totalRecords={totalRecords}
-        loadedRecords={loadedRecords}
-        selectedCount={selectedCount}
-        isLoading={loading}
-        labels={counterLabels}
-        data-testid="RecordCounterBar__8ca888"
-      />
+      }`}
+      onClick={onFocusAcquire}>
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
         <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
       </div>
@@ -3352,22 +3674,6 @@ const DynamicTable = ({
         onClose={confirmationState.onCancel}
         isDeleteSuccess={false}
         data-testid="ConfirmationDialog__8ca888"
-      />
-      <StatusModal
-        open={statusModal.open}
-        statusType={statusModal.statusType}
-        statusText={statusModal.statusText}
-        onClose={hideStatusModal}
-        onAfterClose={() => {
-          if ("onAfterClose" in statusModal && typeof statusModal.onAfterClose === "function") {
-            statusModal.onAfterClose();
-          }
-        }}
-        saveLabel={statusModal.saveLabel}
-        secondaryButtonLabel={statusModal.secondaryButtonLabel}
-        errorMessage={statusModal.errorMessage}
-        isDeleteSuccess={statusModal.isDeleteSuccess}
-        data-testid="StatusModal__8ca888"
       />
       <HeaderContextMenu
         anchorEl={headerContextMenuAnchor}

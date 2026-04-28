@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { parseColumns } from "@/utils/tableColumns";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Cell } from "material-react-table";
@@ -23,6 +23,8 @@ import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
 import { getFieldReference } from "@/utils";
+import Tag from "@workspaceui/componentlibrary/src/components/Tag";
+import { isColorString, getContrastTextColor } from "@/utils/color/utils";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
@@ -43,6 +45,8 @@ interface UseColumnsOptions {
   onLoadMoreFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   columnFilterStates?: ColumnFilterState[];
   tableColumnFilters?: Array<{ id: string; value: unknown }>;
+  /** Called after a clientclass-based navigation (e.g. SalesOrderTabLink) so the parent can close itself. */
+  onNavigate?: () => void;
 }
 
 // Columnas booleanas conocidas
@@ -58,9 +62,9 @@ const AUDIT_DATE_COLUMNS_WITH_TIME = ["creationDate", "updated"];
 const shouldFormatDateColumn = (column: Column): boolean => {
   // Check column.column.reference (primary check)
   if (
-    column.column?.reference === FIELD_REFERENCE_CODES.DATE ||
-    column.column?.reference === FIELD_REFERENCE_CODES.DATETIME ||
-    column.column?.reference === FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME
+    column.column?.reference === FIELD_REFERENCE_CODES.DATE.id ||
+    column.column?.reference === FIELD_REFERENCE_CODES.DATETIME.id ||
+    column.column?.reference === FIELD_REFERENCE_CODES.ABSOLUTE_DATETIME.id
   ) {
     return true;
   }
@@ -87,8 +91,72 @@ const shouldFormatDateColumn = (column: Column): boolean => {
   return false;
 };
 
+/**
+ * Extracts the color context (rawColor, finalDisplayValue) for a specific column and record.
+ * Helper function to reduce cognitive complexity of the useColumns hook.
+ */
+const extractColorContext = (recordData: EntityData | undefined, column: Column, cellValue: any) => {
+  if (!recordData || typeof recordData !== "object") {
+    return { rawColor: undefined, finalDisplayValue: "" };
+  }
+
+  let chosenColorKey: string | undefined;
+
+  // 1. Explicit checking based on predefined reference/metadata (highest priority)
+  if (column.colorFieldName) {
+    const explicitKey = `${column.hqlName || column.columnName}$${column.colorFieldName}`;
+    const val = recordData[explicitKey];
+    if (typeof val === "string" && isColorString(val.trim())) {
+      chosenColorKey = explicitKey;
+    }
+  }
+
+  // 2. Fallback: Magical scanning for color-related suffixes in the payload (legacy support / resilience)
+  if (!chosenColorKey) {
+    const allColorKeys = Object.keys(recordData).filter((key) => {
+      const lowerK = key.toLowerCase();
+      if (lowerK.includes("color")) {
+        const val = recordData[key];
+        return typeof val === "string" && isColorString(val.trim());
+      }
+      return false;
+    });
+
+    if (allColorKeys.length > 0) {
+      const potentialPrefixes = [column.columnName, column.name, column.hqlName]
+        .filter(Boolean)
+        .map((p) => String(p).toLowerCase());
+
+      chosenColorKey = allColorKeys.find((ck) => {
+        const prefix = ck.toLowerCase().split("$")[0];
+        return potentialPrefixes.includes(prefix);
+      });
+    }
+  }
+
+  if (!chosenColorKey) {
+    return { rawColor: undefined, finalDisplayValue: "" };
+  }
+
+  const rawColor = String(recordData[chosenColorKey]).trim();
+  const prefixMatch = chosenColorKey.match(/^(.*?)\$(smf)?color/i);
+  const truePrefix = prefixMatch ? prefixMatch[1] : column.columnName;
+  const identifierKey = `${truePrefix}$_identifier`;
+
+  let finalDisplayValue = "";
+  if (recordData[identifierKey] != null && String(recordData[identifierKey]).trim() !== "") {
+    finalDisplayValue = String(recordData[identifierKey]).trim();
+  } else if (cellValue != null && String(cellValue).trim() !== "") {
+    finalDisplayValue = String(cellValue);
+  } else {
+    finalDisplayValue = String(recordData[truePrefix] || "");
+  }
+
+  return { rawColor, finalDisplayValue };
+};
+
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
-  const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
+  const { handleClickRedirect, handleKeyDownRedirect, handleClientclassNavigation } = useRedirect();
   const {
     onColumnFilter,
     onDateTextFilterChange,
@@ -96,12 +164,15 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     onLoadMoreFilterOptions,
     columnFilterStates,
     tableColumnFilters,
+    onNavigate,
   } = options || {};
   const { t } = useTranslation();
 
   const columns = useMemo(() => {
     const fieldsAsArray = Object.values(tab.fields);
-    let originalColumns = parseColumns(fieldsAsArray);
+    let originalColumns = parseColumns(fieldsAsArray).filter(
+      (col: Column) => col.column?.reference !== FIELD_REFERENCE_CODES.IMAGE.id
+    );
 
     // Mark boolean columns automatically
     originalColumns = originalColumns.map((col) => {
@@ -143,7 +214,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         // Include time for audit date columns (creationDate, updated) or datetime type columns
         const includeTime =
           AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName) ||
-          column.column?.reference === FIELD_REFERENCE_CODES.DATETIME;
+          column.column?.reference === FIELD_REFERENCE_CODES.DATETIME.id;
         const isAuditField = AUDIT_DATE_COLUMNS_WITH_TIME.includes(column.columnName);
         columnConfig = {
           ...columnConfig,
@@ -185,39 +256,116 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
             const recordData = row?.original as EntityData;
             const selectedRecordId = recordData?.[column.columnName as keyof EntityData];
             const identifierKey = `${column.columnName}$_identifier`;
-            const displayValue =
-              cell?.getValue() != null
-                ? String(cell.getValue())
+
+            const cellValue = cell?.getValue();
+            let displayNode: React.ReactNode;
+
+            const displayString =
+              cellValue != null && !React.isValidElement(cellValue)
+                ? String(cellValue)
                 : String(
                     recordData?.[identifierKey as keyof EntityData] ||
                       recordData?.[column.columnName as keyof EntityData] ||
                       ""
                   );
 
+            const isAlreadyReactElement = React.isValidElement(cellValue);
+            if (isAlreadyReactElement) {
+              displayNode = cellValue;
+            } else {
+              displayNode = displayString;
+            }
+
+            const usePlainLinkStyle = !isAlreadyReactElement;
+
             return (
               <button
                 type="button"
                 tabIndex={0}
                 aria-label="Navigate to referenced window"
-                className="bg-transparent border-none p-0 text-(--color-dynamic-main) hover:underline text-left"
+                className={`bg-transparent border-none p-0 text-left pointer-events-auto ${
+                  usePlainLinkStyle ? "text-(--color-dynamic-main) hover:underline" : ""
+                }`}
                 onClick={(e) => {
+                  const selectedId = String(selectedRecordId ?? "");
+                  console.debug("[useColumns] Reference cell clicked:", {
+                    columnName: column.columnName,
+                    fieldId: column.fieldId,
+                    referencedWindowId: windowId,
+                    referencedTabId,
+                    selectedRecordId: selectedId,
+                    referencedEntity: column.referencedEntity,
+                    currentWindowId: tab.window,
+                  });
                   handleClickRedirect({
                     e,
                     windowId,
                     windowTitle: columnTitle,
                     referencedTabId,
-                    selectedRecordId: String(selectedRecordId ?? ""),
+                    selectedRecordId: selectedId,
+                    referencedLinkContext:
+                      column.fieldId && column.referencedEntity
+                        ? {
+                            entityName: column.referencedEntity as string,
+                            fieldId: column.fieldId as string,
+                            currentWindowId: tab.window,
+                            columnName: (column.dbColumnName || column.columnName) as string,
+                          }
+                        : undefined,
                   });
                 }}
-                onKeyDown={(e) =>
+                onKeyDown={(e) => {
+                  const selectedId = String(selectedRecordId ?? "");
                   handleKeyDownRedirect({
                     e,
                     windowId,
                     windowTitle: columnTitle,
                     referencedTabId,
-                    selectedRecordId: String(selectedRecordId ?? ""),
-                  })
-                }>
+                    selectedRecordId: selectedId,
+                    referencedLinkContext:
+                      column.fieldId && column.referencedEntity
+                        ? {
+                            entityName: column.referencedEntity as string,
+                            fieldId: column.fieldId as string,
+                            currentWindowId: tab.window,
+                            columnName: (column.dbColumnName || column.columnName) as string,
+                          }
+                        : undefined,
+                  });
+                }}>
+                {displayNode}
+              </button>
+            );
+          },
+        };
+      } else if (column.clientclass) {
+        // clientclass-based link columns (e.g. "SalesOrderTabLink" from Classic SmartClient)
+        const clientclass = column.clientclass as string;
+        columnConfig = {
+          ...columnConfig,
+          Cell: ({ row, cell }: { row: { original: EntityData }; cell: MRT_Cell<EntityData, unknown> }) => {
+            const recordId = String((row.original as Record<string, unknown>).id ?? "");
+            const displayValue = String(cell?.getValue?.() ?? "");
+            return (
+              <button
+                type="button"
+                tabIndex={0}
+                aria-label="Navigate to referenced record"
+                className="bg-transparent border-none p-0 text-left pointer-events-auto text-(--color-dynamic-main) hover:underline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  handleClientclassNavigation({ clientclass, recordId });
+                  onNavigate?.();
+                }}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  if (e.key === "Enter" || e.key === " ") {
+                    handleClientclassNavigation({ clientclass, recordId });
+                    onNavigate?.();
+                  }
+                }}>
                 {displayValue}
               </button>
             );
@@ -277,7 +425,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
               column={column}
               filterValue={currentFilterValue}
               onFilterChange={(filterValue: string) => {
-                onDateTextFilterChange?.(column.columnName, filterValue);
+                onDateTextFilterChange?.(column.id, filterValue);
               }}
               data-testid="DateSelector__46c09c"
             />
@@ -299,13 +447,56 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
               column={column}
               filterValue={currentFilterValue}
               onFilterChange={(filterValue: string) => {
-                onDateTextFilterChange(column.columnName, filterValue);
+                onDateTextFilterChange(column.id, filterValue);
               }}
               data-testid="TextFilter__46c09c"
             />
           ),
           columnFilterModeOptions: ["contains", "startsWith", "endsWith"],
           filterFn: "contains",
+        };
+      }
+
+      // --------------------------------------------------------------------------
+      // GLOBAL COLOR RENDERING
+      // --------------------------------------------------------------------------
+      // This applies to any column. If the backend sent a property that looks like
+      // "columnName$color", "columnName$smfColor", or "columnName$anythingColor",
+      // and its value is a valid CSS color, we render a Tag instead of raw text.
+      {
+        const wrappedCell = columnConfig.Cell;
+        columnConfig = {
+          ...columnConfig,
+          Cell: (cellProps: any) => {
+            const { row, cell, renderedCellValue } = cellProps;
+            const recordData = row?.original as EntityData;
+
+            const { rawColor, finalDisplayValue: deducedValue } = extractColorContext(
+              recordData,
+              column,
+              cell?.getValue?.()
+            );
+
+            if (rawColor) {
+              const normalizedColor = rawColor.toLowerCase();
+              const displayValue = deducedValue || String(cell?.getValue?.() ?? "");
+
+              return (
+                <Tag
+                  label={displayValue}
+                  tagColor={normalizedColor}
+                  textColor={getContrastTextColor(normalizedColor)}
+                  data-testid={`Tag__${column.columnName}`}
+                />
+              );
+            }
+
+            // Fallback to the regular column component (e.g. Reference Button, Date strings, etc.)
+            if (typeof wrappedCell === "function") {
+              return wrappedCell(cellProps);
+            }
+            return <>{renderedCellValue ?? cell?.getValue()}</>;
+          },
         };
       }
 
@@ -324,8 +515,11 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     t,
     handleClickRedirect,
     handleKeyDownRedirect,
+    handleClientclassNavigation,
+    onNavigate,
     onLoadMoreFilterOptions,
     tableColumnFilters,
+    tab.window,
   ]);
 
   return columns;

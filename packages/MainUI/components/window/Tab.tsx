@@ -23,7 +23,9 @@ import { Toolbar } from "../Toolbar/Toolbar";
 import DynamicTable from "../Table";
 import { useMetadataContext } from "../../hooks/useMetadataContext";
 import { FormView } from "@/components/Form/FormView";
-import { FormMode } from "@workspaceui/api-client/src/api/types";
+import { useFocusRegion } from "@/hooks/useFocusRegion";
+import { useTabContext } from "@/contexts/tab";
+import { FormMode, UIPattern } from "@workspaceui/api-client/src/api/types";
 import { AttachmentProvider } from "@/contexts/AttachmentContext";
 import type { TabLevelProps } from "@/components/window/types";
 import { useCallback, useEffect, useState, useRef, useMemo } from "react";
@@ -31,7 +33,7 @@ import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
-import { getNewTabFormState, isFormView } from "@/utils/window/utils";
+import { getNewTabFormState, isFormView, isSrOneToOneExtension } from "@/utils/window/utils";
 import { useWindowContext } from "@/contexts/window";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
@@ -40,6 +42,7 @@ import { TableFilter } from "@workspaceui/componentlibrary/src/components/Advanc
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
 import { parseColumns } from "@/utils/tableColumns";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { ColumnFilterUtils, type FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -90,13 +93,15 @@ const handleEditRecordFormState = (
   const newTabFormState = getNewTabFormState(newValue, TAB_MODES.FORM, formMode);
 
   if (selectedRecordId !== newValue) {
-    // Record selection changed - update selection first, then form state
+    // Record selection changed — call both synchronously so React 18 batches them into
+    // a single state update. Previously setTabFormState was deferred 50ms via setTimeout,
+    // which caused two separate renders and two router.replace() calls (= 2 RSC re-renders
+    // per navigation). With automatic batching in React 18, calling both together produces
+    // a single render and a single URL update.
     setSelectedRecord(windowId, tabId, newValue);
-    setTimeout(() => {
-      setTabFormState(windowId, tabId, newTabFormState);
-    }, 50);
+    setTabFormState(windowId, tabId, newTabFormState);
   } else {
-    // Same record - just open form
+    // Same record — just open form view (selection already set)
     setTabFormState(windowId, tabId, newTabFormState);
   }
 };
@@ -119,7 +124,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     getTableState,
     setTableAdvancedCriteria,
   } = useWindowContext();
-  const { registerActions, setIsAdvancedFilterApplied } = useToolbarContext();
+  const { registerActions, setIsAdvancedFilterApplied, onSave } = useToolbarContext();
+  const { hasFormChanges } = useTabContext();
   const { graph } = useSelected();
   const { unregisterRefresh } = useTabRefreshContext();
   const { token } = useUserContext();
@@ -131,8 +137,26 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const [advancedFilters, setAdvancedFilters] = useState<any[]>([]);
   const { t } = useTranslation();
   const lastParentSelectionRef = useRef<Map<string, string | undefined>>(new Map());
+  // Tracks the parentSelectedRecordId for which the SR auto-open was last triggered.
+  // This prevents re-opening the form view after the user explicitly closes it.
+  const srAutoOpenedForParentRef = useRef<string | undefined>(undefined);
 
   const windowIdentifier = activeWindow?.windowIdentifier;
+
+  const { isFocused, acquire } = useFocusRegion(tab.id, {
+    onBlur: async () => {
+      if (hasFormChanges) {
+        await onSave({ showModal: true });
+      }
+    },
+  });
+
+  // Level-0 tab (header) acquires focus on mount — sets initial focus for the window
+  useEffect(() => {
+    if (tab.tabLevel === 0) {
+      acquire();
+    }
+  }, [tab.tabLevel, acquire]);
 
   const tabFormState = windowIdentifier ? getTabFormState(windowIdentifier, tab.id) : undefined;
   const selectedRecordId = windowIdentifier ? getSelectedRecord(windowIdentifier, tab.id) : undefined;
@@ -476,7 +500,9 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const parsedColumns = useMemo(() => {
     if (!tab.fields) return [];
     // We need to cast to any because Tab.fields is Record<string, unknown> but parseColumns expects Field[]
-    return parseColumns(Object.values(tab.fields) as any[]);
+    return parseColumns(Object.values(tab.fields) as any[]).filter(
+      (col: any) => col.column?.reference !== FIELD_REFERENCE_CODES.IMAGE.id
+    );
   }, [tab.fields]);
 
   const handleLoadOptions = useCallback(
@@ -1087,6 +1113,38 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     tabFormState?.mode,
   ]);
 
+  // Auto-open FormView for SR (Single Record) tabs when defaultEditMode is enabled.
+  // This path only applies to the 1:1 ID-extension variant, where the child's PK column
+  // is also its FK to the parent (e.g. AD_ClientInfo). In that case child.id === parent.id,
+  // so reusing the parent-selected id to open the form is safe.
+  // Logical SR relations (PK and FK are distinct columns, e.g. ETSG_Certificate.organization)
+  // are auto-opened by DynamicTable after the child records are fetched.
+  // A ref tracks the last parent ID for which auto-open fired, so closing the form
+  // (shouldShowForm → false) does not trigger a re-open for the same parent.
+  useEffect(() => {
+    if (tab.uIPattern !== UIPattern.EDIT_ONLY || !tab.defaultEditMode) {
+      return;
+    }
+    if (!isSrOneToOneExtension(tab)) {
+      return;
+    }
+    if (!parentSelectedRecordId) {
+      return;
+    }
+    // Only auto-open when the parent selection is different from the last time we
+    // auto-opened. This lets the user close the form view and stay in grid mode.
+    if (srAutoOpenedForParentRef.current === parentSelectedRecordId) {
+      return;
+    }
+    srAutoOpenedForParentRef.current = parentSelectedRecordId;
+    handleSetRecordId(parentSelectedRecordId);
+  }, [tab, parentSelectedRecordId, handleSetRecordId]);
+
+  const focusBorderColor = isFocused ? "border-l-[var(--color-secondary-500)]" : "border-l-transparent";
+  const tableWrapperClassName = !shouldShowForm
+    ? `flex-1 h-full min-h-0 rounded-l-3xl transition-[border-left-color] duration-200 border-l-4 ${focusBorderColor}`
+    : "absolute top-0 left-0 w-full h-full invisible opacity-0 z-[-1] pointer-events-none";
+
   return (
     <div
       className={`relative bg-(linear-gradient(180deg, #C6CFFF 0%, #FCFCFD 55.65%)) flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${
@@ -1099,7 +1157,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         data-testid="Toolbar__5893c8"
       />
       {shouldShowForm && (
-        <div className="flex-1 h-full min-h-0 relative z-10">
+        <div
+          className={`flex-1 h-full min-h-0 relative z-10 transition-[border-left-color] duration-200 border-l-4 ${isFocused ? "border-l-[var(--color-secondary-500)]" : "border-l-transparent"}`}>
           <FormView
             mode={formMode}
             tab={tab}
@@ -1107,16 +1166,13 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
             recordId={currentRecordId}
             setRecordId={handleSetRecordId}
             uIPattern={tab.uIPattern}
+            isFocused={isFocused}
+            onFocusAcquire={acquire}
             data-testid="FormView__5893c8"
           />
         </div>
       )}
-      <div
-        className={
-          !shouldShowForm
-            ? "flex-1 h-full min-h-0"
-            : "absolute top-0 left-0 w-full h-full invisible opacity-0 z-[-1] pointer-events-none"
-        }>
+      <div className={tableWrapperClassName}>
         <AttachmentProvider data-testid="AttachmentProvider__5893c8">
           <DynamicTable
             isTreeMode={toggle}
@@ -1125,6 +1181,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
             isVisible={!shouldShowForm}
             areFiltersDisabled={advancedFilters.length > 0}
             uIPattern={tab.uIPattern}
+            isFocused={isFocused}
+            onFocusAcquire={acquire}
             data-testid="DynamicTable__5893c8"
           />
         </AttachmentProvider>

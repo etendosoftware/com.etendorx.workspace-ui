@@ -295,7 +295,10 @@ const en = {
     messageTitle: "Process",
     completedSuccessfully: "Process completed successfully",
     processError: "Process failed",
+    warning: "Warning",
     refreshGrid: "Refresh the grid to see the changes.",
+    selectFile: "Select file...",
+    executionTimeout: "Process execution timed out. Please try again.",
   },
   drawer: {
     recentlyViewed: "Recently Viewed",
@@ -564,6 +567,104 @@ const en = {
       or: "OR",
     },
   },
+  pickValidate: {
+    title: "Pick & Validate",
+    quantity: "Quantity",
+    barcode: "Barcode",
+    scanBarcode: "Scan or type barcode...",
+    validateBarcode: "Validate",
+    product: "Product",
+    attributeSet: "Attribute Set",
+    storageBin: "Storage Bin",
+    auom: "Alt. UOM",
+    operativeQty: "Operation Qty",
+    qty: "Quantity",
+    qtyVerified: "Verified",
+    qtyPending: "Pending",
+    status: "Status",
+    noLines: "No lines to display",
+    process: "Process",
+    validationError: "Error while processing",
+    wrongBarcode: "Wrong Barcode",
+    pendingToValidate:
+      "All items must have verified quantities before processing. No line can exceed its original quantity and at least one line must be verified.",
+    processCompleted: "Process completed successfully",
+    cancel: "Cancel",
+    close: "Close",
+  },
+  image: {
+    upload: {
+      titleNew: "Upload Image",
+      titleReplace: "Replace Image",
+      dropZoneText: "Drag and drop an image here, or click to select",
+      supportedFormats: "Supports JPG, PNG, GIF, SVG, WebP",
+      uploadButton: "Upload",
+      uploading: "Uploading...",
+      success: "Image uploaded successfully",
+      errors: {
+        invalidFile: "Please select an image file",
+        uploadFailed: "Upload failed",
+        parseIdFailed: "Failed to parse image ID from upload response",
+      },
+    },
+    preview: {
+      altText: "Preview",
+      zoomOut: "Zoom out",
+      zoomIn: "Zoom in",
+      resetZoom: "Reset zoom",
+      replaceImage: "Replace image",
+      deleteImage: "Delete image",
+      deleteConfirm: {
+        title: "Delete Image",
+        message: "Are you sure you want to remove this image?",
+      },
+    },
+    selector: {
+      clickToUpload: "Click to upload image",
+      noImage: "No image",
+      viewImage: "View image",
+      removeImage: "Remove image",
+      altText: "Image",
+    },
+    sizeConstraints: {
+      warn: {
+        ALLOWED: "The image size must be exactly {{width}}x{{height}} pixels.",
+        ALLOWED_MINIMUM: "The minimum image size is {{width}}x{{height}} pixels.",
+        ALLOWED_MAXIMUM: "The maximum image size is {{width}}x{{height}} pixels.",
+        RECOMMENDED: "For the best fit, it is recommended to use an image of exactly {{width}}x{{height}} pixels.",
+        RECOMMENDED_MINIMUM:
+          "For the best fit, it is recommended to use an image of at least {{width}}x{{height}} pixels.",
+        RECOMMENDED_MAXIMUM:
+          "For the best fit, it is recommended to use an image equal or smaller than {{width}}x{{height}} pixels.",
+        RESIZE_NOASPECTRATIO:
+          "The image will be resized to {{width}}x{{height}} pixels. To avoid distortion, it is recommended to upload an image with the same aspect ratio.",
+        RESIZE_ASPECTRATIO:
+          "The image will be resized to a maximum size of {{width}}x{{height}} pixels (maintaining the aspect ratio).",
+        RESIZE_ASPECTRATIONL:
+          "The image will be resized to a maximum size of {{width}}x{{height}} pixels (maintaining the aspect ratio) if it has a larger size.",
+      },
+      error: {
+        WRONGFORMAT: "Unsupported file format.\nSupported file formats are JPG, PNG, GIF, BMP and SVG.",
+        ERROR_UPLOADING: "Error uploading image: {{error}}",
+        ALLOWED:
+          "The size of the uploaded image ({{actualWidth}}x{{actualHeight}} pixels) is different than the required size ({{configWidth}}x{{configHeight}} pixels).",
+        ALLOWED_MINIMUM:
+          "The size of the uploaded image ({{actualWidth}}x{{actualHeight}} pixels) is smaller than the required minimum size ({{configWidth}}x{{configHeight}} pixels).",
+        ALLOWED_MAXIMUM:
+          "The size of the uploaded image ({{actualWidth}}x{{actualHeight}} pixels) is larger than the allowed maximum size ({{configWidth}}x{{configHeight}} pixels).",
+      },
+      confirm: {
+        RECOMMENDED:
+          "The uploaded image size ({{actualWidth}}x{{actualHeight}} pixels) has a different size than is recommended ({{configWidth}}x{{configHeight}} pixels).\nThis could result in an unwanted visual effect.\n\nDo you want to continue?",
+        RECOMMENDED_MINIMUM:
+          "The uploaded image size ({{actualWidth}}x{{actualHeight}} pixels) is smaller than is recommended ({{configWidth}}x{{configHeight}} pixels).\nThis could result in an unwanted visual effect.\n\nDo you want to continue?",
+        RECOMMENDED_MAXIMUM:
+          "The uploaded image size ({{actualWidth}}x{{actualHeight}} pixels) is larger than is recommended ({{configWidth}}x{{configHeight}} pixels).\nThis could result in an unwanted visual effect.\n\nDo you want to continue?",
+        RESIZE:
+          "Your {{originalWidth}}x{{originalHeight}} pixels uploaded image is going to be resized automatically to {{targetWidth}}x{{targetHeight}} pixels.\nThis could result in a loss of image quality.\n\nDo you want to continue?",
+      },
+    },
+  },
   packing: {
     title: "Packing Process",
     box: "Boxes",
@@ -574,20 +675,43 @@ const en = {
     validateBarcode: "Validate Barcode",
     product: "Product",
     storageBin: "Storage Bin",
+    attributeSetValue: "Attribute Set Value",
     qty: "Quantity",
     qtyPending: "Pending",
+    auom: "Alt. UOM",
+    operativeQty: "Operation Qty",
     status: "Status",
     noLines: "No lines to display",
     calculateWeight: "Calculate Weight",
-    generatePack: "Generate Pack",
+    generatePack: "Pack",
     validationError: "Error while processing",
-    wrongBarcode: "Wrong Barcode",
+    wrongBarcode: "The barcode entered doesn't match any product in the shipment.",
     pendingToPack: "All items must be fully packed before generating. Please complete the pending quantities.",
     checkStatus: "Check status here",
     warning: "Warning",
     cancel: "Cancel",
     continue: "Continue",
     close: "Close",
+  },
+  email: {
+    title: "Send Email",
+    to: "To",
+    cc: "CC",
+    bcc: "BCC",
+    replyTo: "Reply To",
+    subject: "Subject",
+    body: "Message",
+    template: "Template",
+    attachDocument: "Attachments",
+    addAttachment: "Add Attachment",
+    send: "Send",
+    sending: "Sending...",
+    showMoreFields: "Show more fields",
+    hideFields: "Hide fields",
+    noTemplatesAvailable: "No templates available",
+    selectTemplate: "Select a template",
+    successMessage: "Email sent successfully",
+    errorMessage: "Failed to send email",
   },
 };
 

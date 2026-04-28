@@ -19,6 +19,7 @@ import { executeLogic } from "@/payscript";
 import type { PayScriptRules } from "@/payscript";
 import type { ProcessCalloutFunction } from "./processCallouts";
 import { logger } from "@/utils/logger";
+import { getStoredPreferences, createOBShim } from "@/utils/propertyStore";
 /**
  * Registry of PayScript rules by process ID
  * In the future, this will be loaded from the backend dynamically
@@ -73,6 +74,7 @@ export const genericPayScriptCallout: ProcessCalloutFunction = async (formValues
       ...formValues,
       _gridSelection: gridSelection,
       _processId: processId,
+      _preferences: getStoredPreferences(),
     };
 
     // Execute PayScript rules
@@ -167,8 +169,9 @@ export function registerPayScriptDSL(processId: string, dslCode: string): void {
     // SECURITY: This relies on 'dslCode' coming from a trusted backend source.
     // Do not allow end-users to input arbitrary PayScript code here.
     // biome-ignore lint/security/noGlobalEval: Dynamic DSL execution required for PayScript engine
-    const createRules = new Function(`return ${cleanCode}`);
-    const rules = createRules();
+    // Inject OB so DSL functions can call OB.PropertyStore.get() as a bare variable
+    const createRules = new Function("OB", `return ${cleanCode}`);
+    const rules = createRules(createOBShim());
 
     if (rules && typeof rules === "object") {
       // Ensure ID matches

@@ -45,6 +45,7 @@ interface UseProcessCalloutsOptions {
   enabled?: boolean;
   onGridUpdate?: (gridName: string, data: unknown) => void;
   dependencies?: unknown[];
+  selectedRecords?: Record<string, unknown>[];
 }
 
 /**
@@ -59,6 +60,7 @@ export function useProcessCallouts({
   enabled = true,
   onGridUpdate,
   dependencies = [],
+  selectedRecords,
 }: UseProcessCalloutsOptions) {
   const callouts = useMemo(() => {
     const staticCallouts = getProcessCallouts(processId);
@@ -104,7 +106,9 @@ export function useProcessCallouts({
         logger.debug(`Executing callout for field: ${changedField}`);
 
         // Prepare context values (map form parameter names to DB column names)
-        const contextValues = parameters ? mapFormValuesToContext(formValues, parameters) : formValues;
+        const contextValues = parameters ? mapFormValuesToContext(formValues, parameters) : { ...formValues };
+        // Inject selected records from the toolbar into the context so PayScript rules can access them
+        contextValues._selectedRecords = selectedRecords || [];
 
         // Forzamos el tipo solo en este punto, sin usar any
         const updates = await callout.execute(
@@ -122,7 +126,7 @@ export function useProcessCallouts({
           const parameter = parameters && Object.values(parameters).find((p) => p.name === field);
 
           // Check if this field corresponds to a grid parameter
-          const isGridParameter = parameter && parameter.reference === FIELD_REFERENCE_CODES.WINDOW;
+          const isGridParameter = parameter && parameter.reference === FIELD_REFERENCE_CODES.WINDOW.id;
 
           // We also need to handle 'order_invoice' explicitly if mapping missing or specific key usage
           // The most robust way is to check if we have an onGridUpdate handler AND if the value looks like grid data (array)

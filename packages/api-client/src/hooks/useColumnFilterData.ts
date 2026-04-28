@@ -19,21 +19,140 @@ import { useCallback } from "react";
 import { datasource } from "../api/datasource";
 import type { FilterOption } from "../utils/column-filter-utils";
 
+const buildDistinctCriteria = (distinctField: string, searchQuery?: string, extraCriteria?: unknown): object[] => {
+  const criteriaItems: object[] = [];
+
+  if (extraCriteria) {
+    if (Array.isArray(extraCriteria)) {
+      criteriaItems.push(...extraCriteria);
+    } else {
+      criteriaItems.push(extraCriteria as object);
+    }
+  }
+
+  if (searchQuery?.trim()) {
+    criteriaItems.push({
+      fieldName: `${distinctField}$_identifier`,
+      operator: "iContains",
+      value: searchQuery.trim(),
+      _constructor: "AdvancedCriteria",
+    });
+  } else {
+    criteriaItems.push({
+      fieldName: "_dummy",
+      operator: "equals",
+      value: Date.now(),
+      _constructor: "AdvancedCriteria",
+    });
+  }
+
+  return criteriaItems;
+};
+
+const applyDistinctParams = (
+  params: Record<string, unknown>,
+  distinctField: string,
+  tabId: string,
+  searchQuery?: string,
+  extraCriteria?: unknown
+): void => {
+  params._distinct = distinctField;
+  params.tabId = tabId;
+  params.operator = "and";
+  params._constructor = "AdvancedCriteria";
+  params.criteria = buildDistinctCriteria(distinctField, searchQuery, extraCriteria);
+  params._selectedProperties = `id,${distinctField},${distinctField}$_identifier`;
+};
+
+const applySelectorParams = (
+  params: Record<string, unknown>,
+  selectorDefinitionId?: string,
+  searchQuery?: string
+): void => {
+  if (selectorDefinitionId) {
+    params.selectorDefinitionId = selectorDefinitionId;
+    params.filterClass = "org.openbravo.userinterface.selector.SelectorDataSourceFilter";
+  }
+
+  if (searchQuery?.trim()) {
+    params.criteria = JSON.stringify({
+      fieldName: "_identifier",
+      operator: "iContains",
+      value: searchQuery.trim(),
+      _constructor: "AdvancedCriteria",
+    });
+
+    params.operator = "and";
+    params._constructor = "AdvancedCriteria";
+  }
+};
+
+const mergeExtraParams = (params: Record<string, unknown>, extraParams: Record<string, unknown>): void => {
+  for (const [key, value] of Object.entries(extraParams)) {
+    if (key !== "criteria" && key !== "allowOrgParam" && value !== undefined && value !== null) {
+      params[key] = value;
+    }
+  }
+  if (extraParams.ad_org_id && !params._org && extraParams.allowOrgParam !== false) {
+    params._org = extraParams.ad_org_id;
+  }
+};
+
+const formatOptionItem = (item: Record<string, unknown>, distinctField?: string): FilterOption => {
+  if (distinctField) {
+    const fieldValue = item[distinctField];
+    const identifierKey = `${distinctField}$_identifier`;
+    const identifier = String(item[identifierKey] || fieldValue || item._identifier || item.id);
+
+    return {
+      id: String(fieldValue || item.id),
+      label: identifier,
+      value: String(fieldValue || identifier),
+    };
+  }
+
+  const identifier = String(
+    item._identifier ||
+      item.name ||
+      item[Object.keys(item).find((key) => key.endsWith("$_identifier")) || "id"] ||
+      item.id
+  );
+
+  return {
+    id: String(item.id),
+    label: identifier,
+    value: identifier,
+  };
+};
+
+export interface FetchFilterOptionsParams {
+  datasourceId: string;
+  selectorDefinitionId?: string;
+  searchQuery?: string;
+  limit?: number;
+  distinctField?: string;
+  tabId?: string;
+  offset?: number;
+  isImplicitFilterApplied?: boolean;
+  extraParams?: Record<string, unknown>;
+}
+
 /**
  * Hook for fetching column filter data optimized for simple filter queries.
  */
 export const useColumnFilterData = () => {
   const fetchFilterOptions = useCallback(
-    async (
-      datasourceId: string,
-      selectorDefinitionId?: string,
-      searchQuery?: string,
+    async ({
+      datasourceId,
+      selectorDefinitionId,
+      searchQuery,
       limit = 20,
-      distinctField?: string,
-      tabId?: string,
+      distinctField,
+      tabId,
       offset = 0,
-      isImplicitFilterApplied?: boolean
-    ): Promise<FilterOption[]> => {
+      isImplicitFilterApplied,
+      extraParams,
+    }: FetchFilterOptionsParams): Promise<FilterOption[]> => {
       try {
         const params: Record<string, unknown> = {
           startRow: offset,
@@ -48,79 +167,22 @@ export const useColumnFilterData = () => {
         }
 
         if (distinctField && tabId) {
-          params._distinct = distinctField;
-          params.tabId = tabId;
-          params.operator = "and";
-          params._constructor = "AdvancedCriteria";
-
-          if (searchQuery?.trim()) {
-            params.criteria = JSON.stringify({
-              fieldName: `${distinctField}$_identifier`,
-              operator: "iContains",
-              value: searchQuery.trim(),
-              _constructor: "AdvancedCriteria",
-            });
-          } else {
-            params.criteria = JSON.stringify({
-              fieldName: "_dummy",
-              operator: "equals",
-              value: Date.now(),
-              _constructor: "AdvancedCriteria",
-            });
-          }
-
-          // Optimize payload by requesting only necessary fields
-          params._selectedProperties = `id,${distinctField},${distinctField}$_identifier`;
+          applyDistinctParams(params, distinctField, tabId, searchQuery, extraParams?.criteria);
         } else {
-          if (selectorDefinitionId) {
-            params.selectorDefinitionId = selectorDefinitionId;
-            params.filterClass = "org.openbravo.userinterface.selector.SelectorDataSourceFilter";
-          }
-
-          if (searchQuery?.trim()) {
-            params.criteria = JSON.stringify({
-              fieldName: "_identifier",
-              operator: "iContains",
-              value: searchQuery.trim(),
-              _constructor: "AdvancedCriteria",
-            });
-
-            params.operator = "and";
-            params._constructor = "AdvancedCriteria";
-          }
+          applySelectorParams(params, selectorDefinitionId, searchQuery);
         }
 
+        if (extraParams) {
+          mergeExtraParams(params, extraParams);
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const response = (await datasource.get(datasourceId, params)) as any;
 
         if (response.ok && response.data?.response?.data) {
-          const options = response.data.response.data.map((item: Record<string, unknown>) => {
-            if (distinctField) {
-              const fieldValue = item[distinctField];
-              const identifierKey = `${distinctField}$_identifier`;
-              const identifier = String(item[identifierKey] || fieldValue || item._identifier || item.id);
-
-              return {
-                id: String(fieldValue || item.id),
-                label: identifier,
-                value: String(fieldValue || identifier),
-              };
-            }
-
-            const identifier = String(
-              item._identifier ||
-                item.name ||
-                item[Object.keys(item).find((key) => key.endsWith("$_identifier")) || "id"] ||
-                item.id
-            );
-
-            return {
-              id: String(item.id),
-              label: identifier,
-              value: identifier,
-            };
-          });
-
-          return options;
+          return response.data.response.data.map((item: Record<string, unknown>) =>
+            formatOptionItem(item, distinctField)
+          );
         }
 
         return [];

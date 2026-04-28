@@ -26,12 +26,13 @@ export interface UseCalloutProps {
   field: Field;
   parentId?: string;
   rowId?: string;
+  changedColumnOverride?: string;
 }
 
 const ACTION = "org.openbravo.client.application.window.FormInitializationComponent";
 const MODE = "CHANGE";
 
-export const useCallout = ({ field, parentId = "null", rowId = "null" }: UseCalloutProps) => {
+export const useCallout = ({ field, parentId = "null", rowId = "null", changedColumnOverride }: UseCalloutProps) => {
   const { tab } = useTabContext();
   const tabId = tab?.id ?? "";
 
@@ -41,7 +42,7 @@ export const useCallout = ({ field, parentId = "null", rowId = "null" }: UseCall
         _action: ACTION,
         MODE,
         TAB_ID: tabId,
-        CHANGED_COLUMN: field.inputName,
+        CHANGED_COLUMN: changedColumnOverride ?? field.inputName,
         ROW_ID: rowId,
         PARENT_ID: parentId,
       });
@@ -53,11 +54,29 @@ export const useCallout = ({ field, parentId = "null", rowId = "null" }: UseCall
           throw new Error(`No data returned from callout for field "${field.inputName}".`);
         }
 
-        return response.data as FormInitializationResponse;
+        const rawData = response.data;
+
+        // Detect backend errors (status: -1 in response envelope)
+        if (rawData?.response?.status === -1) {
+          const errorMsg = rawData.response.error?.message || "Unknown callout error";
+          logger.warn(`Backend callout error for "${field.inputName}": ${errorMsg}`);
+          return undefined;
+        }
+
+        // CHANGE mode may wrap data in a {response: {...}} envelope.
+        // Unwrap if columnValues are inside the wrapper, otherwise use top-level.
+        // CHANGE mode may wrap data in a {response: {...}} envelope.
+        // Unwrap if columnValues are inside the wrapper, otherwise use top-level.
+        let actualData = rawData;
+        if (rawData.columnValues === undefined && rawData.response?.columnValues !== undefined) {
+          actualData = rawData.response;
+        }
+
+        return actualData as FormInitializationResponse;
       } catch (error) {
         logger.warn(`Error executing callout for field "${field.inputName}":`, error);
       }
     },
-    [tabId, field.inputName, parentId, rowId]
+    [tabId, field.inputName, parentId, rowId, changedColumnOverride]
   );
 };

@@ -524,13 +524,17 @@ export class LegacyColumnFilterUtils {
       operator = "equals";
     }
 
+    // SmartClient sends list/select equals criteria with value as an array (e.g. ["FATAL"]),
+    // even for single selections. Classic datasources like OBPickAndExecuteDataSource require this.
+    const useArrayValue = operator === "equals" && ColumnFilterUtils.isSelectColumn(column);
+
     if (actualValues.length === 1) {
       // Single value - direct criteria (no OR wrapper)
       return [
         {
           fieldName: actualFieldName,
           operator,
-          value: String(actualValues[0]),
+          value: useArrayValue ? [String(actualValues[0])] : String(actualValues[0]),
         },
       ];
     }
@@ -539,7 +543,7 @@ export class LegacyColumnFilterUtils {
     const orCriteria = actualValues.map((value) => ({
       fieldName: actualFieldName,
       operator,
-      value: String(value),
+      value: useArrayValue ? [String(value)] : String(value),
     }));
 
     return [

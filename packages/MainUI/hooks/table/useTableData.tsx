@@ -23,7 +23,7 @@ import type {
   MRT_VisibilityState,
   MRT_SortingState,
 } from "material-react-table";
-import type { DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
+import { type DatasourceOptions, type EntityData, type Column, UIPattern } from "@workspaceui/api-client/src/api/types";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { useSearch } from "../../contexts/searchContext";
@@ -44,6 +44,8 @@ import { mapSummariesToBackend, getSummaryCriteria } from "@/utils/table/utils";
 import { SearchUtils, LegacyColumnFilterUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { buildEtendoContext } from "@/utils/contextUtils";
 import { useSelected } from "../../hooks/useSelected";
+import { DEFAULT_PAGE_SIZE } from "@/utils/table/constants";
+import { buildBaseCriteria, resolveParentFieldName } from "@/utils/criteriaUtils";
 
 interface UseTableDataParams {
   isTreeMode: boolean;
@@ -69,6 +71,8 @@ interface UseTableDataReturn {
 
   // Tree mode
   shouldUseTreeMode: boolean;
+  treeEntity: string;
+  referencedTableId?: string;
 
   // Handlers
   handleMRTColumnFiltersChange: (
@@ -88,7 +92,7 @@ interface UseTableDataReturn {
   // Actions
   toggleImplicitFilters: () => void;
   fetchMore: () => void;
-  refetch: () => Promise<void>;
+  refetch: (options?: { silent?: boolean }) => Promise<void>;
   removeRecordLocally: ((id: string) => void) | null;
   updateRecordLocally: (recordId: string, updatedRecord: EntityData) => void;
   addRecordLocally: (newRecord: EntityData) => void;
@@ -125,8 +129,13 @@ export const useTableData = ({
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
-  const { activeWindow, getTabFormState, getTabInitializedWithDirectLink, setTabInitializedWithDirectLink } =
-    useWindowContext();
+  const {
+    activeWindow,
+    getTabFormState,
+    getTabInitializedWithDirectLink,
+    setTabInitializedWithDirectLink,
+    getSelectedRecord,
+  } = useWindowContext();
   const { setIsImplicitFilterApplied: setToolbarFilterApplied } = useToolbarContext();
   const { graph } = useSelected();
 
@@ -149,7 +158,15 @@ export const useTableData = ({
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
   // Computed values
-  const parentId = String(parentRecord?.id ?? "");
+  // When the graph hasn't been updated yet (e.g. parent cleared its children's selection on
+  // its own selection), fall back to the URL-persisted selected record ID for the parent tab.
+  // This prevents child tabs from showing an empty table while waiting for the graph to sync.
+  const parentIdFromUrl =
+    parentTab && activeWindow?.windowIdentifier
+      ? getSelectedRecord(activeWindow.windowIdentifier, parentTab.id)
+      : undefined;
+  const parentId = String(parentRecord?.id ?? parentIdFromUrl ?? "");
+
   const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
   const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
 
@@ -392,23 +409,23 @@ export const useTableData = ({
   }, [tab]);
 
   // Helper to find parent field name
-  const getParentFieldName = useCallback(() => {
+  const getParentFieldName = useCallback((): { fieldName: string; directReference: boolean } => {
     if (!Array.isArray(tab?.parentColumns) || tab.parentColumns.length === 0) {
-      console.log("No parent columns found");
-      return "_dummy";
+      // SR (Single Record) tabs share the same entity/table as the parent and have
+      // empty parentColumns. Filter by "id" so only the parent's own record is shown.
+      if (tab.uIPattern === UIPattern.EDIT_ONLY && parentTab) {
+        return { fieldName: "id", directReference: true };
+      }
+      return { fieldName: "_dummy", directReference: false };
     }
 
     if (!parentTab) {
-      return tab.parentColumns[0] || "id";
+      return { fieldName: tab.parentColumns[0] || "id", directReference: true };
     }
 
-    const matchingField = tab.parentColumns.find((colName) => {
-      const field = tab.fields[colName];
-      return field?.referencedEntity === parentTab.entityName;
-    });
-
-    return matchingField || tab.parentColumns[0] || "id";
-  }, [tab.parentColumns, tab.fields, parentTab]);
+    const fieldName = resolveParentFieldName(tab, parentTab);
+    return { fieldName, directReference: true };
+  }, [tab, parentTab]);
 
   // Helper to apply sort options to query
   const applySortToOptions = useCallback(
@@ -425,15 +442,24 @@ export const useTableData = ({
   );
 
   const query: DatasourceOptions = useMemo(() => {
-    const fieldName = getParentFieldName();
+    const { fieldName } = getParentFieldName();
     const value = fieldName === "_dummy" ? new Date().getTime() : parentId;
     const operator = "equals";
+
+    const extraProperties = Object.values(tab.fields || {})
+      .filter((f: any) => f.colorFieldName)
+      .map((f: any) => `${f.hqlName || f.columnName}$${f.colorFieldName}`)
+      .join(",");
 
     const options: DatasourceOptions = {
       windowId: tab.window,
       tabId: tab.id,
       isImplicitFilterApplied: isImplicitFilterApplied ?? initialIsFilterApplied,
-      pageSize: 100,
+      pageSize: DEFAULT_PAGE_SIZE,
+      ...(extraProperties ? { _extraProperties: extraProperties } : {}),
+      _className: "OBViewDataSource",
+      Constants_IDENTIFIER: "_identifier",
+      Constants_FIELDSEPARATOR: "$",
     };
 
     // Add Etendo Classic Context Variables
@@ -445,13 +471,35 @@ export const useTableData = ({
       options.language = language;
     }
 
-    if (value && value !== "" && value !== undefined) {
-      options.criteria = [{ fieldName, value, operator }];
+    // Build base criteria (handling Parent-Child or Dummy fallback via disableParentKeyProperty)
+    const baseCriteria = buildBaseCriteria({ tab, parentTab, parentId });
+    if (baseCriteria.length > 0) {
+      options.criteria = baseCriteria.map((c) => ({
+        ...c,
+        _constructor: "AdvancedCriteria",
+      })) as any;
+    } else if (value && value !== "" && value !== undefined && fieldName !== "_dummy") {
+      // Fallback: standard criteria filter
+      options.criteria = [
+        {
+          fieldName,
+          value,
+          operator,
+          _constructor: "AdvancedCriteria",
+        },
+      ] as any;
+    }
 
-      // Add parent context parameter manually as some datasources rely on it (like Process Request)
-      if (parentTab?.entityName) {
-        options[`@${parentTab.entityName}.id@`] = value;
-      }
+    // Set constructor and operator for AdvancedCriteria compatibility
+    options._constructor = "AdvancedCriteria";
+    options.operator = "and";
+
+    if (parentTab?.entityName && parentId) {
+      // Keep existing format for backward compat (e.g. Process Request datasource)
+      options[`@${parentTab.entityName}.id@`] = parentId;
+      // OB Classic context variable format for hqlwhereclause substitution
+      // e.g. ETASK_Task → @ETASK_TASK_ID@
+      options[`@${parentTab.entityName.toUpperCase()}_ID@`] = parentId;
     }
 
     // Apply advanced criteria
@@ -463,8 +511,6 @@ export const useTableData = ({
         // @ts-ignore - advancedCriteria is compatible with Criteria
         options.criteria = [advancedCriteria];
       }
-    } else {
-      console.log("useTableData: No advancedCriteria found");
     }
 
     // Apply sorting
@@ -476,8 +522,7 @@ export const useTableData = ({
 
     return options;
   }, [
-    tab.window,
-    tab.id,
+    tab,
     initialIsFilterApplied,
     isImplicitFilterApplied,
     parentId,
@@ -485,10 +530,10 @@ export const useTableData = ({
     tableColumnSorting,
     advancedCriteria,
     getDefaultSort,
-    getParentFieldName,
     applySortToOptions,
     graph,
     parentTab,
+    getParentFieldName,
   ]);
 
   // Tree options
@@ -507,9 +552,24 @@ export const useTableData = ({
   );
 
   // Skip condition
+  // A child tab should fetch data when:
+  //   - there IS a parent selection (from graph OR from URL state), AND
+  //   - the parent does NOT have multiple records selected simultaneously (ambiguous context).
+  // Using parentIdFromUrl as fallback handles the case where the graph cleared the parent's
+  // child selections (e.g. when a grandparent record was selected) but the URL still holds a
+  // valid parent record ID.
   const skip = useMemo(() => {
-    return parentTab ? Boolean(!parentRecord || (parentRecords && parentRecords.length !== 1)) : false;
-  }, [parentTab, parentRecord, parentRecords]);
+    if (!parentTab) return false;
+    const hasParentSelection = !!parentRecord || !!parentIdFromUrl;
+    if (!hasParentSelection) {
+      return true;
+    }
+    // If the graph has multi-selection active (>1 records), skip to avoid ambiguity.
+    if (parentRecords && parentRecords.length > 1) {
+      return true;
+    }
+    return false;
+  }, [parentTab, parentRecord, parentRecords, parentIdFromUrl, tab.name, parentId]);
 
   // Stable columns for datasource
   const stableDatasourceColumns = useMemo(() => {
@@ -524,7 +584,7 @@ export const useTableData = ({
     updateRecordLocally,
     addRecordLocally,
     error,
-    refetch,
+    refetch: datasourceRefetch,
     loading,
     hasMoreRecords,
   } = useDatasource({
@@ -544,8 +604,8 @@ export const useTableData = ({
 
   // Load child nodes for tree mode
   const loadChildNodes = useCallback(
-    async (parentId: string) => {
-      if (!shouldUseTreeMode || loadedNodes.has(parentId)) {
+    async (parentId: string, force = false) => {
+      if (!shouldUseTreeMode || (!force && loadedNodes.has(parentId))) {
         return;
       }
 
@@ -661,14 +721,14 @@ export const useTableData = ({
       const newExpanded: MRT_ExpandedState = {};
       let hasChanges = false;
 
-      records.forEach((r) => {
+      for (const r of records) {
         const id = String(r.id);
         // If this record's ID is used as a parentId by another record in the list, it's a parent path node.
         if (parentIds.has(id)) {
           newExpanded[id] = true;
           hasChanges = true;
         }
-      });
+      }
 
       if (hasChanges) {
         setExpanded((prev) => {
@@ -993,6 +1053,40 @@ export const useTableData = ({
     }
   }, [tableColumnFilters, advancedColumnFilters, setColumnFilters]);
 
+  const refetch = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const isSilent = options?.silent === true;
+
+      if (shouldUseTreeMode) {
+        const currentExpanded = (expandedRef.current || {}) as Record<string, boolean>;
+        const expandedKeys = Object.keys(currentExpanded).filter((k) => currentExpanded[k]);
+        const expandedSet = new Set(expandedKeys);
+
+        if (!isSilent) {
+          setLoadedNodes((prev) => {
+            const next = new Set<string>();
+            for (const key of prev) if (expandedSet.has(key)) next.add(key);
+            return next;
+          });
+          setChildrenData((prev) => {
+            const next = new Map<string, EntityData[]>();
+            for (const [key, value] of prev.entries()) if (expandedSet.has(key)) next.set(key, value);
+            return next;
+          });
+        }
+
+        await datasourceRefetch({ silent: isSilent });
+
+        if (expandedKeys.length > 0) {
+          await Promise.all(expandedKeys.map((id) => loadChildNodes(id, true)));
+        }
+      } else {
+        await datasourceRefetch({ silent: isSilent });
+      }
+    },
+    [shouldUseTreeMode, datasourceRefetch, loadChildNodes, setLoadedNodes, setChildrenData]
+  );
+
   // Handle tree mode changes
   useEffect(() => {
     // Skip the first render to avoid unnecessary refetch on mount
@@ -1194,6 +1288,8 @@ export const useTableData = ({
 
     // Tree mode
     shouldUseTreeMode,
+    treeEntity,
+    referencedTableId: treeMetadata.referencedTableId,
 
     // Handlers
     handleMRTColumnFiltersChange,

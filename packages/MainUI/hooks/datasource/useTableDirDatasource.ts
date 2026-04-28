@@ -22,16 +22,51 @@ import { useFormContext } from "react-hook-form";
 import { buildPayloadByInputName } from "@/utils";
 import { FieldName, type UseTableDirDatasourceParams } from "../types";
 import useFormParent from "../useFormParent";
+import { useUserContext } from "../useUserContext";
 import {
   REFERENCE_IDS,
   PRODUCT_SELECTOR_DEFAULTS,
   TABLEDIR_SELECTOR_DEFAULTS,
   INVOICE_FIELD_MAPPINGS,
+  COMBO_TABLE_DATASOURCE,
+  COMBO_TABLE_SELECTOR_DEFAULTS,
 } from "./constants";
 import { transformValueToClassicFormat } from "@/utils/datasourceUtils";
+import { deriveStandardInputName } from "@/utils/form/extensionFieldUtils";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 const FALLBACK_RESULT: Record<string, EntityValue> = {} as Record<string, EntityValue>;
+
+const SAFE_AD_FIELD_PATTERN = /^inpad[A-Z]/;
+const INP_FIELD_PATTERN = /^inp/;
+const PROCESS_PARAM_KEY_PATTERN = /^[a-z]\w*$/;
+const HQL_PARAM_PATTERN = /@([^@]+)@/g;
+
+/**
+ * Builds the filtered form values to include in a SelectorDataSourceFilter context.
+ * When HQL is available, only params referenced via @param@ placeholders are included.
+ * Otherwise, falls back to inp* fields and process parameter raw keys.
+ */
+export const buildSelectorContextFormValues = (
+  hqlSources: string,
+  formValues: Record<string, EntityValue>
+): Record<string, unknown> => {
+  if (hqlSources.length > 0) {
+    const hqlParams = new Set<string>();
+    let match: RegExpExecArray | null;
+    const regex = new RegExp(HQL_PARAM_PATTERN.source, "g");
+    while ((match = regex.exec(hqlSources)) !== null) {
+      hqlParams.add(match[1]);
+    }
+    return Object.fromEntries(
+      Object.entries(formValues).filter(([key]) => SAFE_AD_FIELD_PATTERN.test(key) || hqlParams.has(key))
+    );
+  }
+
+  return Object.fromEntries(
+    Object.entries(formValues).filter(([key]) => INP_FIELD_PATTERN.test(key) || PROCESS_PARAM_KEY_PATTERN.test(key))
+  );
+};
 
 export const useTableDirDatasource = ({
   field,
@@ -39,16 +74,18 @@ export const useTableDirDatasource = ({
   initialPageSize = 75,
   isProcessModal = false,
   staticOptions,
+  selectedRecordsCount,
 }: UseTableDirDatasourceParams) => {
   // If static options are provided, use them instead of fetching
   const hasStaticOptions = staticOptions !== undefined;
 
   const { getValues, watch } = useFormContext();
-  const { tab, parentRecord } = useTabContext();
+  const { tab, parentTab, parentRecord } = useTabContext();
   const windowId = tab?.window;
   const [records, setRecords] = useState<Record<string, string>[]>(
     hasStaticOptions ? staticOptions.map((opt) => ({ id: opt.id, _identifier: opt.name })) : []
   );
+  const [columns, setColumns] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();
   const [currentPage, setCurrentPage] = useState(0);
@@ -57,10 +94,23 @@ export const useTableDirDatasource = ({
   const value = watch(field.hqlName);
   const fetchInProgressRef = useRef(false);
 
-  const isProductField = field.column.reference === REFERENCE_IDS.PRODUCT;
+  const isProductField =
+    field.column?.reference === REFERENCE_IDS.PRODUCT ||
+    field.column?.reference === "30" ||
+    field.selector?.datasourceName === "ProductStockView";
+
   const parentData = useFormParent(FieldName.INPUT_NAME);
 
+  const { currentWarehouse } = useUserContext();
+
   const invoiceContext: Record<string, EntityValue> = useMemo(() => {
+    // 1. Generic mapping using parentTab metadata (if available)
+    if (parentTab?.fields && parentRecord) {
+      const genericPayload = buildPayloadByInputName(parentRecord, parentTab.fields);
+      return (genericPayload || FALLBACK_RESULT) as Record<string, EntityValue>;
+    }
+
+    // 2. Legacy fallback mapping for known fields
     if ((!isProductField && !parentRecord) || !tab?.fields) {
       return FALLBACK_RESULT;
     }
@@ -79,7 +129,7 @@ export const useTableDirDatasource = ({
     }
 
     return context;
-  }, [isProductField, parentRecord, tab?.fields]);
+  }, [isProductField, parentRecord, tab?.fields, parentTab?.fields]);
 
   const selectorId =
     field.selector?._selectorDefinitionId ||
@@ -111,13 +161,14 @@ export const useTableDirDatasource = ({
 
   const buildRequestBody = useCallback(
     (startRow: number, endRow: number, currentValue: typeof value) => {
-      const transformPayloadFields = (baseBody: BaseBody): BaseBody => {
-        // Remove fields that will be transformed to avoid duplicates
-        const { inpfinPaymentmethodId, inpissotrx, windowId, ...rest } = baseBody;
-        const depositTo = baseBody["Deposit To"];
-        const salesTransaction = baseBody["Sales Transaction"];
+      /**
+       * Internal helper to transform payload fields for process modals.
+       */
+      const applyProcessModalTransformations = (body: BaseBody): BaseBody => {
+        const { inpfinPaymentmethodId, inpissotrx, windowId, ...rest } = body;
+        const depositTo = body["Deposit To"];
+        const salesTransaction = body["Sales Transaction"];
 
-        // Determine issotrx value from either inpissotrx or Sales Transaction
         let issotrxValue: boolean | undefined;
         if (inpissotrx !== undefined && inpissotrx !== null && inpissotrx !== "") {
           issotrxValue = inpissotrx === "Y";
@@ -125,73 +176,171 @@ export const useTableDirDatasource = ({
           issotrxValue = salesTransaction === "Y";
         }
 
-        const result: BaseBody = {
+        return {
           ...rest,
           ...(inpfinPaymentmethodId && { fin_paymentmethod_id: inpfinPaymentmethodId }),
           ...(depositTo && { fin_financial_account_id: depositTo }),
           ...(issotrxValue !== undefined && { issotrx: issotrxValue }),
-        };
+        } as BaseBody;
+      };
 
-        return result;
+      /**
+       * Ensures that standard field names are populated from their custom counterparts.
+       * Extension module columns follow the pattern `em_<module>_<standard_column>`
+       * (e.g. em_etcrm_c_bpartner_id → inpcBpartnerId). This mapping is derived
+       * dynamically from the tab's field metadata so it works for any module.
+       */
+      const applyFieldMappings = (body: BaseBody): BaseBody => {
+        if (!tab?.fields) return body;
+
+        for (const fieldDef of Object.values(tab.fields)) {
+          const { inputName, columnName } = fieldDef;
+          if (!inputName?.startsWith("inpem") || !body[inputName]) continue;
+
+          const standardInputName = deriveStandardInputName(inputName, columnName ?? "");
+          if (standardInputName && !body[standardInputName]) {
+            body[standardInputName] = body[inputName];
+          }
+        }
+
+        return body;
       };
 
       const formValues = transformFormValues(getValues());
       const invoiceValue = transformFormValues(invoiceContext);
-      let baseBody: BaseBody = {
+      const shouldSendOrg = !isProcessModal || selectedRecordsCount === 1;
+
+      // 1. Build Base Metadata
+      // Use field.tab/field.column.table from metadata; fall back to the current tab
+      // context when those are absent (common for custom-module fields).
+      const effectiveTabId = field.tab || tab?.id || "";
+      const effectiveTableId = field.column?.table || tab?.table || "";
+
+      const effectiveSelector = field.selector ?? { ...COMBO_TABLE_SELECTOR_DEFAULTS, fieldId: field.id };
+
+      const baseBody: BaseBody = {
         _startRow: startRow.toString(),
         _endRow: endRow.toString(),
         _operationType: "fetch",
-        ...field.selector,
+        ...effectiveSelector,
         moduleId: field.module,
         windowId,
-        tabId: field.tab,
-        inpTabId: field.tab,
+        tabId: effectiveTabId,
+        inpTabId: effectiveTabId,
         inpwindowId: windowId,
-        inpTableId: field.column.table,
+        inpTableId: effectiveTableId,
         initiatorField: field.hqlName,
         _constructor: "AdvancedCriteria",
         _OrExpression: "true",
         ...(typeof currentValue !== "undefined" ? { _currentValue: currentValue } : {}),
-        _org: formValues.inpadOrgId || (parentData as any).inpadOrgId || "",
+        ...(shouldSendOrg && { _org: formValues.inpadOrgId || (parentData as any).inpadOrgId || "" }),
       };
 
-      if (isProductField) {
-        Object.assign(baseBody, {
-          _noCount: "true",
-          ...(selectorId && { _selectorDefinitionId: selectorId }),
-          ...formValues,
-          ...invoiceValue,
-        });
-      } else {
-        Object.assign(baseBody, {
+      // 2. Build and Merge Context based on type
+      const getSpecializedContext = (): Partial<BaseBody> => {
+        if (isProcessModal) {
+          // Datasources using the standard SelectorDataSourceFilter need form context
+          // to resolve org/client security and field references.
+          // Custom entity datasources (e.g. ETASK_Task_Priority, ETCRM_LeadStatus) break
+          // when given full context because the backend NPEs on form fields that don't
+          // exist as entity properties. They use lean payload instead.
+          //
+          // Only send full context when:
+          //   1. datasourceName is "ADList" (reference list — explicitly needs form context)
+          //   2. datasourceName is "ComboTableDatasourceService" (standard TableDir combos)
+          //   3. No datasourceName is set but has SelectorDataSourceFilter (standard inline selectors)
+          //
+          // Custom entity datasources (any other datasourceName) always use lean payload.
+          const usesStandardFilter =
+            field.selector?.datasourceName === "ADList" ||
+            field.selector?.datasourceName === "ComboTableDatasourceService" ||
+            (!field.selector?.datasourceName &&
+              field.selector?.filterClass === "org.openbravo.userinterface.selector.SelectorDataSourceFilter");
+
+          if (usesStandardFilter) {
+            return {
+              _textMatchStyle: "substring",
+              ...parentData,
+              ...invoiceValue,
+              ...formValues,
+            };
+          }
+
+          // Custom entity datasources that use SelectorDataSourceFilter need context
+          // from the form to apply their HQL @param@ filters, but must NOT receive entity
+          // fields that don't exist on the selector's target entity — those cause backend
+          // NPE in SelectorDataSourceFilter.addWhereClause() on property.getPrimitiveObjectType().
+          if (field.selector?.filterClass === "org.openbravo.userinterface.selector.SelectorDataSourceFilter") {
+            // Strategy: extract @paramName@ placeholders from the selector's HQL
+            // (stored in selector.hqlWhere / selector.whereClause / selector.hql).
+            // Only send those specific params plus standard AD security fields.
+            // This mirrors Classic's buildExtraContext() which sends only what the HQL needs.
+            //
+            // Fallback: if no HQL is found in frontend metadata, the backend applies the
+            // HQL via _selectorDefinitionId. Send inp* fields + raw process parameter keys
+            // (e.g. isConverted: "Y", currentStatus: "UUID") so @param@ placeholders resolve.
+            const sel = field.selector as Record<string, unknown>;
+            const hqlSources = [sel.hqlWhere, sel.whereClause, sel.hql, sel.filterExpression, sel.hqlFilterExpression]
+              .filter((v): v is string => typeof v === "string" && v.length > 0)
+              .join(" ");
+
+            return {
+              _textMatchStyle: "substring",
+              ...parentData,
+              ...invoiceValue,
+              ...buildSelectorContextFormValues(hqlSources, formValues),
+            };
+          }
+
+          return {};
+        }
+
+        if (isProductField) {
+          return {
+            _noCount: "true",
+            ...(selectorId && { _selectorDefinitionId: selectorId }),
+            ...formValues,
+            ...invoiceValue,
+          };
+        }
+
+        // Standard window context
+        return {
           _textMatchStyle: "substring",
           ...parentData,
           ...invoiceValue,
           ...formValues,
-        });
-      }
+        };
+      };
 
-      // Only apply field transformation when inside process modal
+      let finalBody = { ...baseBody, ...getSpecializedContext() };
+
+      // 3. Post-processing transformations
       if (isProcessModal) {
-        baseBody = transformPayloadFields(baseBody);
+        finalBody = applyProcessModalTransformations(finalBody);
       }
 
-      return baseBody;
+      finalBody = applyFieldMappings(finalBody);
+
+      return finalBody;
     },
     [
       transformFormValues,
       getValues,
       invoiceContext,
+      field.id,
       field.selector,
       field.module,
       field.tab,
-      field.column.table,
+      field.column?.table,
       field.hqlName,
       windowId,
+      tab,
       isProductField,
       isProcessModal,
       selectorId,
       parentData,
+      selectedRecordsCount,
     ]
   );
 
@@ -209,12 +358,14 @@ export const useTableDirDatasource = ({
       const searchFields: string[] = [];
 
       // 1. Prioritize Selector Configuration
-      if (field.selector?.extraSearchFields) {
-        searchFields.push(...field.selector.extraSearchFields.split(",").map((f) => f.trim()));
+      const extraSearchFields = field.selector?.extraSearchFields as string | undefined;
+      if (extraSearchFields) {
+        searchFields.push(...extraSearchFields.split(",").map((f) => f.trim()));
       }
 
-      if (field.selector?.displayField && !searchFields.includes(field.selector.displayField)) {
-        searchFields.push(field.selector.displayField);
+      const displayField = field.selector?.displayField as string | undefined;
+      if (displayField && !searchFields.includes(displayField)) {
+        searchFields.push(displayField);
       }
 
       // 2. Fallbacks if no fields defined in selector
@@ -237,55 +388,138 @@ export const useTableDirDatasource = ({
     [field.selector]
   );
 
-  const applySearchCriteria = useCallback(
-    (body: URLSearchParams, search: string) => {
-      const { dummyId, criteria } = buildSearchCriteria(search, isProductField);
-
-      if (isProductField) {
-        body.set("criteria", JSON.stringify({ fieldName: "_dummy", operator: "equals", value: dummyId }));
-        body.set("operator", "or");
+  const applyCriteria = useCallback(
+    (params: Record<string, unknown>, search: string) => {
+      if (!Array.isArray(params.criteria)) {
+        params.criteria = [];
       }
+      let criteria = params.criteria as string[];
 
-      for (const criterion of criteria) {
-        body.append("criteria", JSON.stringify(criterion));
-      }
+      const applySelectorCriteria = () => {
+        if (!field.selector?.criteria) return;
+        try {
+          const existingCriteria =
+            typeof field.selector.criteria === "string" ? JSON.parse(field.selector.criteria) : field.selector.criteria;
+          const criteriaList = Array.isArray(existingCriteria) ? existingCriteria : [existingCriteria];
+          for (const c of criteriaList) {
+            criteria.push(JSON.stringify(c));
+          }
+        } catch (e) {
+          logger.warn("Failed to parse selector criteria", e);
+        }
+      };
+
+      const applySearchCriteria = () => {
+        if (!search) return;
+        const { dummyId, criteria: searchCriteria } = buildSearchCriteria(search, isProductField);
+
+        if (isProductField) {
+          params.criteria = [JSON.stringify({ fieldName: "_dummy", operator: "equals", value: dummyId })];
+          criteria = params.criteria as string[];
+          params.operator = "or";
+        }
+
+        for (const criterion of searchCriteria) {
+          criteria.push(JSON.stringify(criterion));
+        }
+      };
+
+      const applyWarehouseFilter = () => {
+        if (field.selector?.datasourceName !== "ProductStockView") return;
+
+        // Check if we should skip the warehouse filter (e.g. for Requisition)
+        if (field.selector?.skipWarehouseFilter) return;
+
+        const hasWarehouseInContext =
+          params.inpmWarehouseId !== undefined || params.mWarehouseId !== undefined || params.warehouse !== undefined;
+
+        if (hasWarehouseInContext) {
+          return;
+        }
+
+        let warehouseId = currentWarehouse?.id;
+
+        // Try to get warehouse from parent record if available (e.g. Requisition Header)
+        if (parentRecord) {
+          const parentWarehouse = parentRecord.warehouse || parentRecord.mWarehouseId;
+          if (parentWarehouse) {
+            warehouseId = typeof parentWarehouse === "object" ? (parentWarehouse as any).id : parentWarehouse;
+          }
+        }
+
+        if (warehouseId) {
+          criteria.push(
+            JSON.stringify({
+              fieldName: "storageBin.warehouse",
+              operator: "equals",
+              value: warehouseId,
+            })
+          );
+        }
+      };
+
+      applySelectorCriteria();
+      applySearchCriteria();
+      applyWarehouseFilter();
     },
-    [buildSearchCriteria, isProductField]
+    [
+      buildSearchCriteria,
+      isProductField,
+      field.selector?.criteria,
+      field.selector?.datasourceName,
+      currentWarehouse?.id,
+    ]
   );
 
   const processApiResponse = useCallback(
-    (data: { response?: { data?: Record<string, string>[] } }, reset: boolean) => {
+    (data: { response?: { data?: Record<string, string>[]; metadata?: { fields?: any[] } } }, reset: boolean) => {
       if (!data?.response?.data) {
         throw new Error(JSON.stringify(data));
       }
 
       const responseData = data.response.data;
 
-      if (!responseData.length || responseData.length < pageSize) {
-        setHasMore(false);
-      }
+      const updateColumns = () => {
+        if (data.response?.metadata?.fields) {
+          setColumns(data.response.metadata.fields);
+        }
+      };
 
-      if (reset) {
-        setRecords(responseData);
-      } else {
+      const checkHasMore = () => {
+        if (!responseData.length || responseData.length < pageSize) {
+          setHasMore(false);
+        }
+      };
+
+      const mergeRecords = () => {
+        if (reset) {
+          setRecords(responseData);
+          return;
+        }
+
         const recordMap = new Map();
 
-        for (const record of records) {
+        const addRecordToMap = (record: Record<string, string>) => {
           const recordId = record.id || JSON.stringify(record);
           if (!recordMap.has(recordId)) {
             recordMap.set(recordId, record);
           }
+        };
+
+        for (const record of records) {
+          addRecordToMap(record);
         }
 
         for (const record of responseData) {
-          const recordId = record.id || JSON.stringify(record);
-          if (!recordMap.has(recordId)) {
-            recordMap.set(recordId, record);
-          }
+          addRecordToMap(record);
         }
 
         setRecords(Array.from(recordMap.values()));
-      }
+      };
+
+      updateColumns();
+      checkHasMore();
+      mergeRecords();
 
       if (!reset) {
         setCurrentPage((prev) => prev + 1);
@@ -334,16 +568,15 @@ export const useTableDirDatasource = ({
         const startRow = reset ? 0 : currentPage * pageSize;
         const endRow = reset ? initialPageSize : startRow + pageSize;
 
-        const baseBody = buildRequestBody(startRow, endRow, _currentValue);
-        const body = new URLSearchParams(baseBody as Record<string, string>);
+        const params = buildRequestBody(startRow, endRow, _currentValue);
+        applyCriteria(params, search);
 
-        if (search) {
-          applySearchCriteria(body, search);
-        }
+        const entityName =
+          field.selector?.datasourceName || String(field.selector?._entityName ?? "") || COMBO_TABLE_DATASOURCE;
 
-        const { data } = await datasource.client.request(`/api/datasource/${field.selector?.datasourceName ?? ""}`, {
-          method: "POST",
-          body,
+        const { data } = await datasource.client.post("/api/datasource", {
+          entity: entityName,
+          params,
         });
 
         processApiResponse(data, reset);
@@ -364,7 +597,7 @@ export const useTableDirDatasource = ({
       pageSize,
       initialPageSize,
       buildRequestBody,
-      applySearchCriteria,
+      applyCriteria,
       processApiResponse,
       hasStaticOptions,
       handleStaticOptionsSearch,
@@ -401,5 +634,6 @@ export const useTableDirDatasource = ({
     hasMore,
     search,
     searchTerm,
+    columns,
   };
 };

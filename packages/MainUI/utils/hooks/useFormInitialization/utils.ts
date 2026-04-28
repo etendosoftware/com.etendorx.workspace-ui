@@ -7,11 +7,13 @@ import {
   type Tab,
   type FormInitializationResponse,
   type Field,
+  type ISession,
 } from "@workspaceui/api-client/src/api/types";
 import { ACTION_FORM_INITIALIZATION } from "./constants";
 import { logger } from "@/utils/logger";
 import { getFieldsToAdd } from "@/utils/form/entityConfig";
 import { extractKeyValuePairs } from "@/utils/commons";
+import { buildPayloadByInputName } from "@/utils";
 
 const getRowId = (mode: FormMode | SessionModeType, recordId?: string | null): string => {
   if (mode === FormMode.EDIT || mode === SessionMode.SETSESSION) {
@@ -29,6 +31,8 @@ const getRowId = (mode: FormMode | SessionModeType, recordId?: string | null): s
  * - Entity key information
  * - Additional fields specific to the entity and mode
  * - Window context information
+ * - _gridVisibleProperties: list of column names for all displayed fields, required
+ *   by FormInitializationComponent to process property fields correctly
  *
  * @param tab - Current tab configuration
  * @param mode - Form operation mode (NEW, EDIT, SETSESSION)
@@ -46,14 +50,52 @@ export const buildFormInitializationPayload = (
   tab: Tab,
   mode: FormMode | SessionModeType,
   parentData: Record<string, unknown>,
-  entityKeyColumn: NonNullable<Field>
+  entityKeyColumn: NonNullable<Field>,
+  record?: Record<string, unknown> | null
 ): Record<string, unknown> => {
   const additionalFields =
     mode === SessionMode.SETSESSION
       ? {} // No additional fields needed for session sync
       : getFieldsToAdd(tab.entityName, mode as FormMode);
 
+  // In EDIT mode, include the current record values as inp* fields so the backend
+  // can correctly compute derived fields (e.g. _propertyField_* fields whose value
+  // depends on other field values via callouts or computed columns).
+  // Classic sends all inp{ColumnName} values in its payload; without them the
+  // FormInitializationComponent returns empty values for those derived fields.
+  const recordPayload = mode === FormMode.EDIT && record ? (buildPayloadByInputName(record, tab.fields) ?? {}) : {};
+
+  // Build _gridVisibleProperties from all displayed tab fields.
+  // Classic sends this list so that FormInitializationComponent (FIC) knows which
+  // fields are currently visible in the form. The FIC's setValuesInRequest method
+  // checks this list for property fields:
+  //   - Regular fields:  their columnName is listed (e.g. "Behaviour")
+  //   - Property fields: BOTH their columnName AND the "$"-format property path are
+  //     listed (e.g. "Type" + "etcopFile$type" for column.propertyPath = "etcopFile.type").
+  //     The FIC uses the "$" entry to identify property fields and look up their value
+  //     from the inp_propertyField_* key in the payload, returning it in columnValues.
+  //
+  // Not needed for SETSESSION mode. Entity-specific overrides in entityConfig
+  // (e.g. ADUser) take precedence via the spread of additionalFields below.
+  const computedGridVisibleProperties =
+    mode !== SessionMode.SETSESSION
+      ? Object.values(tab.fields)
+          .filter((f) => f.displayed && f.columnName)
+          .flatMap((f) => {
+            const propertyPath = f.column?.propertyPath;
+            if (propertyPath) {
+              // For property fields, include both the column name and the $-format path.
+              // FormInitializationComponent.setValuesInRequest checks _gridVisibleProperties
+              // for entries in the "entity$property" format to identify property fields and
+              // look up their values from the payload.
+              return [f.columnName, propertyPath.replace(/\./g, "$")];
+            }
+            return [f.columnName];
+          })
+      : undefined;
+
   return {
+    ...recordPayload,
     ...parentData,
     inpKeyName: entityKeyColumn.inputName,
     inpTabId: tab.id,
@@ -62,6 +104,9 @@ export const buildFormInitializationPayload = (
     keyColumnName: entityKeyColumn.columnName,
     _entityName: tab.entityName,
     inpwindowId: tab.window,
+    // Provide computed _gridVisibleProperties; entity-specific configs in additionalFields
+    // (e.g. ADUser with its curated list) will override this via the spread below.
+    ...(computedGridVisibleProperties && { _gridVisibleProperties: computedGridVisibleProperties }),
     ...additionalFields,
   };
 };
@@ -139,4 +184,85 @@ export const buildSessionAttributes = (data: FormInitializationResponse | null):
   }
 
   return result;
+};
+
+/**
+ * Determines if a session key is a global (login/profile-level) attribute
+ * that should be preserved across form initialization calls.
+ *
+ * Global keys use standard prefixes set at login time:
+ * - `$` prefix: Accounting dimension flags (e.g. $Element_OO, $Element_BP)
+ * - `#` prefix: System session attributes (e.g. #AD_Org_ID)
+ * - `_` prefix: Internal metadata (e.g. _attachmentCount, _ShowAcct)
+ * - `adOrgId`: Explicit organization ID set at login
+ *
+ * Record-specific keys (e.g. Processed, DOCSTATUS, HAS_M_INOUTLINES) do NOT
+ * have these prefixes and must be replaced when switching contexts.
+ */
+const isGlobalSessionKey = (key: string): boolean => {
+  return key.startsWith("$") || key.startsWith("#") || key.startsWith("_") || key === "adOrgId";
+};
+
+const isEmptySessionValue = (value: unknown): boolean => value === "" || value === null || value === undefined;
+
+const collectGlobalKeys = (prev: ISession): Record<string, unknown> => {
+  const preserved: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(prev)) {
+    if (isGlobalSessionKey(key)) {
+      preserved[key] = value;
+    }
+  }
+  return preserved;
+};
+
+// Keep the previous value when the incoming one is empty and would erase meaningful context.
+// Mirrors the guard used during display-logic evaluation in utils/expressions.ts.
+// When allowEmptyOverwrite is true (root-tab FIC call, PARENT_ID=null), the incoming
+// value is always authoritative — even if empty — because the root tab is the source of
+// truth for its own session attributes (e.g. ETSG_CheckLegalOrg must reset to "" when
+// switching to an org that is not a legal entity).
+const resolveMergedValue = (prev: ISession, key: string, newValue: string, allowEmptyOverwrite: boolean): unknown => {
+  if (allowEmptyOverwrite) return newValue;
+  if (!isEmptySessionValue(newValue)) return newValue;
+  const existing = (prev as Record<string, unknown>)[key];
+  if (isEmptySessionValue(existing)) return newValue;
+  return existing;
+};
+
+/**
+ * Merges new session attributes into the existing session while preventing
+ * cross-window state pollution.
+ *
+ * Problem: The session is global and shared across all open windows. When a form
+ * initialization runs (e.g. opening a record in Window A), it stores record-specific
+ * attributes like `Processed: "Y"` into the session. If the user then opens Window B
+ * and creates a new record, the stale `Processed: "Y"` persists and incorrectly marks
+ * fields as read-only.
+ *
+ * Solution: Instead of blindly merging (`{...prev, ...new}`), this function:
+ * 1. Preserves only global session keys (prefixed with $, #, _ or known globals)
+ * 2. Discards stale record-specific keys from previous windows/tabs
+ * 3. Merges in the fresh attributes returned by the backend, but keeps the previous
+ *    value for a given key when the incoming one is empty (empty string, null or
+ *    undefined): a blank backend value is treated as "no information" and must not
+ *    wipe out context already populated by an earlier call (e.g. a SETSESSION that
+ *    computed the value for the parent tab before an EDIT for a child tab runs).
+ *
+ * @param prev - The current session state
+ * @param newAttributes - Fresh session attributes from the backend
+ * @param isRootTabCall - When true (PARENT_ID=null), empty values ARE authoritative and
+ *   overwrite existing ones. Workaround for backends that return "" for keys they do not
+ *   own (child tabs), while root-tab calls must be able to legitimately reset a key to "".
+ * @returns A clean session with global keys preserved and record-specific keys replaced
+ */
+export const mergeSessionAttributes = (
+  prev: ISession,
+  newAttributes: Record<string, string>,
+  isRootTabCall = false
+): ISession => {
+  const merged: Record<string, unknown> = collectGlobalKeys(prev);
+  for (const [key, value] of Object.entries(newAttributes)) {
+    merged[key] = resolveMergedValue(prev, key, value, isRootTabCall);
+  }
+  return merged as ISession;
 };

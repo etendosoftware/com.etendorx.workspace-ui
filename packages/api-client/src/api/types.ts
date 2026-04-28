@@ -27,7 +27,7 @@ export interface CacheStore<T> extends Map<string, CachedData<T>> {}
 export interface BaseCriteria {
   fieldName: string;
   operator: string;
-  value: string | number | undefined;
+  value: string | number | string[] | undefined;
 }
 
 export interface CompositeCriteria {
@@ -48,10 +48,11 @@ export interface DatasourceParams {
   startRow?: number;
   endRow?: number;
   sortBy?: string;
-  criteria?: Criteria[];
+  criteria?: Criteria[] | string | Record<string, unknown>;
   operationType?: "fetch" | "add" | "update" | "remove";
   isSorting?: boolean;
   isImplicitFilterApplied?: boolean;
+  isPickAndEdit?: boolean;
   operator?: "and" | "or";
   parentId?: string;
 }
@@ -59,7 +60,7 @@ export interface DatasourceParams {
 export interface DatasourceOptions {
   columns?: string[];
   sortBy?: string;
-  criteria?: Criteria[];
+  criteria?: Criteria[] | string | Record<string, unknown>;
   operationType?: "fetch" | "add" | "update" | "remove";
   isSorting?: boolean;
   isImplicitFilterApplied?: boolean;
@@ -111,6 +112,17 @@ export interface RefListField {
   color?: string;
 }
 
+export interface SelectorColumn {
+  id: string;
+  header: string;
+  accessorKey: string;
+  enableSorting?: boolean;
+  enableFiltering?: boolean;
+  referenceId?: string;
+  sortNo?: number;
+  [key: string]: unknown;
+}
+
 export interface Field {
   hqlName: string;
   inputName: string;
@@ -135,7 +147,12 @@ export interface Field {
   gridProps: GridProps;
   type: string;
   field: unknown[];
-  selector?: Record<string, string>;
+  selector?: {
+    hasTableRelated?: boolean;
+    hasProcessDefinitionRelated?: boolean;
+    gridColumns?: SelectorColumn[];
+    [key: string]: unknown;
+  };
   refList: RefListField[];
   referencedEntity: string;
   referencedWindowId: string;
@@ -166,6 +183,23 @@ export interface Field {
    */
   isReferencedWindowAccessible?: boolean;
   isAuditField?: boolean;
+  /**
+   * The hqlName of the color field in the referenced entity.
+   * When set, the UI will look for `{fieldHqlName}${colorFieldName}` in row data
+   * and render the value as a colored badge/tag.
+   * Only relevant for TABLEDIR/FK fields pointing to entities with a Color reference field.
+   */
+  colorFieldName?: string;
+  /**
+   * SmartClient client-side class name (e.g. "SalesOrderTabLink").
+   * When set, the field should be rendered as a navigable link in the grid.
+   */
+  clientclass?: string | null;
+  /**
+   * When true, the field group (subsection) starts collapsed in the form.
+   * When false or undefined, the field group starts expanded.
+   */
+  fieldGroupCollapsed?: boolean;
 }
 
 export interface Option<T extends string = string> {
@@ -198,6 +232,17 @@ export interface Column {
   referencedTabId: string | null;
   isReferencedWindowAccessible?: boolean;
   isAuditField?: boolean;
+  /**
+   * The hqlName of the color field in the referenced entity.
+   * When set, the cell will render as a colored Tag using the color from
+   * `{columnName}${colorFieldName}` in the row data.
+   */
+  colorFieldName?: string;
+  /**
+   * SmartClient client-side class name (e.g. "SalesOrderTabLink").
+   * When set, the column should be rendered as a navigable link in the grid.
+   */
+  clientclass?: string | null;
 }
 
 export interface MappedField {
@@ -222,6 +267,7 @@ export enum FieldType {
   WINDOW = "window",
   DATETIME = "datetime",
   TIME = "time",
+  IMAGE = "image",
 }
 
 export interface MappedTab {
@@ -268,6 +314,12 @@ export enum UIPattern {
   STANDARD = "STD",
 }
 
+export interface AuxiliaryInput {
+  id: string;
+  name: string;
+  validationCode: string;
+}
+
 export interface Tab {
   uIPattern: UIPattern;
   window: string;
@@ -297,6 +349,9 @@ export interface Tab {
   obuiappCloneChildren?: boolean;
   process?: string;
   process$_identifier?: string;
+  disableParentKeyProperty?: boolean;
+  defaultEditMode?: boolean;
+  auxiliaryInputs?: AuxiliaryInput[];
 }
 
 export interface WindowMetadata {

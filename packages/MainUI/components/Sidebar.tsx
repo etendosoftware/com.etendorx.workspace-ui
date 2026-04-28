@@ -298,6 +298,10 @@ export default function Sidebar() {
         return;
       }
 
+      if (item.type !== "Window") {
+        return;
+      }
+
       const windowId = item.windowId ?? "";
 
       if (!windowId) {
@@ -394,6 +398,7 @@ export default function Sidebar() {
         open={showProcessDefinitionModal}
         onClose={handleCloseProcessDefinitionModal}
         button={selectedProcessDefinitionButton}
+        keepOpenOnSuccess
         data-testid="ProcessDefinitionModal__sidebar"
       />
     </>

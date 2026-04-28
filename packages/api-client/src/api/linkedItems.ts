@@ -40,7 +40,7 @@ export async function fetchLinkedItemCategories(params: FetchCategoriesParams): 
   let responseData: LinkedItemsResponse;
 
   try {
-    const response = (await client.post("meta/utility/UsedByLink.html", body, {
+    const response = (await client.post("meta/legacy/utility/UsedByLink.html", body, {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
@@ -76,7 +76,7 @@ export async function fetchLinkedItems(params: FetchLinkedItemsParams): Promise<
   let responseData: LinkedItemsResponse;
 
   try {
-    const response = (await client.post("meta/utility/UsedByLink.html", body, {
+    const response = (await client.post("meta/legacy/utility/UsedByLink.html", body, {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },

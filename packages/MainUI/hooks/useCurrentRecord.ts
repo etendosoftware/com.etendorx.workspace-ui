@@ -17,7 +17,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
-import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
+import type { EntityData, EntityValue, Field, Tab } from "@workspaceui/api-client/src/api/types";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { useSelected } from "./useSelected";
 
@@ -45,11 +45,46 @@ interface UseCurrentRecordReturn {
 
 export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): UseCurrentRecordReturn => {
   const [record, setRecord] = useState<Record<string, Field>>({});
-  const [loading, setLoading] = useState(false);
+  // Initialize loading=true whenever we have a real record to fetch.
+  // This prevents a race condition where useFormInitialization fires the FIC
+  // on the very first render (before any effect has run) with an empty record,
+  // because React effects run after paint and loading starts false by default.
+  // By starting in loading=true, useFormInitialization will wait until
+  // useCurrentRecord has either resolved from the graph cache or completed
+  // its async datasource fetch before calling the FIC.
+  const [loading, setLoading] = useState(() => Boolean(tab && recordId && recordId !== NEW_RECORD_ID));
   const fetchInProgressRef = useRef(false);
   const lastFetchParamsRef = useRef<string | null>(null);
+  const lastRecordIdentifierRef = useRef<unknown>(null);
 
   const { graph } = useSelected();
+
+  // When the graph emits a "selected" event for this tab and the record's _identifier
+  // has changed (e.g. after a save that updates the identifier), update React state
+  // directly with the new record so the Breadcrumb re-renders immediately.
+  // Resetting refs alone does NOT trigger a re-render or re-run the fetch effect
+  // (because recordId and tab haven't changed), so we must call setRecord here.
+  useEffect(() => {
+    if (!tab) return;
+
+    const handleSelected = (eventTab: Tab, newRecord: EntityData) => {
+      if (eventTab.id !== tab.id) return;
+      if (newRecord._identifier !== lastRecordIdentifierRef.current) {
+        lastRecordIdentifierRef.current = newRecord._identifier ?? null;
+        // Update React state so consumers (e.g. AppBreadcrumb) re-render with
+        // the new _identifier without waiting for a full datasource re-fetch.
+        setRecord(newRecord as unknown as Record<string, Field>);
+        // Also reset fetch guards so the next navigation to this record fetches fresh data.
+        lastFetchParamsRef.current = null;
+        fetchInProgressRef.current = false;
+      }
+    };
+
+    graph.on("selected", handleSelected);
+    return () => {
+      graph.off("selected", handleSelected);
+    };
+  }, [graph, tab]);
 
   useEffect(() => {
     if (!tab || !recordId || recordId === NEW_RECORD_ID) {
@@ -59,12 +94,38 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
       return;
     }
 
-    // Check if record is already in graph (cached)
-    const cachedRecord = graph.getRecord(tab, recordId);
-    if (cachedRecord) {
-      setRecord(cachedRecord as unknown as Record<string, Field>);
-      setLoading(false);
-      return;
+    // Identify displayed property fields early — before the cache check — because
+    // the graph cache is populated by the grid WITHOUT _extraProperties and therefore
+    // lacks property field values (e.g. file.type → file$type = "RF").
+    // If this tab has property fields we must bypass the cache and always fetch
+    // from the datasource so that _extraProperties is included and we get those values.
+    const propertyFieldEntries = Object.values(tab.fields ?? {})
+      .filter((f) => f.displayed && f.column?.propertyPath)
+      .map((f) => ({
+        hqlName: f.hqlName,
+        propertyPath: f.column.propertyPath, // e.g. "file.type"
+        dollarKey: f.column.propertyPath.replace(/\./g, "$"), // e.g. "file$type"
+      }));
+
+    // Build reverse map: datasource response key → field hqlName
+    // e.g. "file$type" → "type"
+    const dollarKeyToHqlName: Record<string, string> = {};
+    for (const { hqlName, dollarKey } of propertyFieldEntries) {
+      dollarKeyToHqlName[dollarKey] = hqlName;
+    }
+
+    const extraProperties = propertyFieldEntries.map((e) => e.propertyPath).join(",");
+
+    // Only use the graph cache when the tab has no property fields.
+    // When there are property fields, the cache is stale (missing those values)
+    // and we must go to the datasource to get a complete record.
+    if (!extraProperties) {
+      const cachedRecord = graph.getRecord(tab, recordId);
+      if (cachedRecord) {
+        setRecord(cachedRecord as unknown as Record<string, Field>);
+        setLoading(false);
+        return;
+      }
     }
 
     // Create unique key for current fetch params
@@ -90,6 +151,11 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
           windowId: tab.window,
           tabId: tab.id,
           pageSize: 1,
+          startRow: 0,
+          endRow: 1,
+          // Request property field values via _extraProperties. The backend returns them
+          // under "$"-format keys (e.g. "file$type").
+          ...(extraProperties && { extraProperties }),
         })) as DatasourceResponse;
 
         if (cancelled) return;
@@ -97,7 +163,26 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
         const responseData = result.data.response?.data;
 
         if (responseData?.length > 0) {
-          setRecord(responseData[0]);
+          const fetchedRecord = responseData[0];
+          setRecord(fetchedRecord);
+          // Ensure the graph knows about this record so components like Process Buttons can read it
+          const entityDataRecord = fetchedRecord as unknown as Record<string, EntityValue>;
+          graph.setSelected(tab, entityDataRecord);
+          graph.setSelectedMultiple(tab, [entityDataRecord]);
+          // Track the identifier so we can detect changes from saves
+          lastRecordIdentifierRef.current = fetchedRecord._identifier ?? null;
+          // Normalize property field keys from "$"-format to hqlName so that
+          // buildPayloadByInputName can look them up in tab.fields (indexed by hqlName).
+          // e.g. { "file$type": "RF" } → { "type": "RF" }
+          const rawRecord = responseData[0] as Record<string, unknown>;
+          const normalizedRecord = Object.entries(rawRecord).reduce(
+            (acc, [k, v]) => {
+              acc[dollarKeyToHqlName[k] ?? k] = v;
+              return acc;
+            },
+            {} as Record<string, unknown>
+          );
+          setRecord(normalizedRecord as Record<string, Field>);
         } else {
           setRecord({});
         }

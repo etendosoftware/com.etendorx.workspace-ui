@@ -20,6 +20,7 @@
 
 import { useCallback, useState, useTransition, useEffect } from "react";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
+import { useFocusContext } from "@/contexts/focus";
 import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
 import { SubTabsSwitch } from "@/components/window/SubTabsSwitch";
@@ -39,7 +40,6 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
   const [current, setCurrent] = useState(initialTab);
   // Visual active tab id updates immediately for instant feedback
   const [activeTabId, setActiveTabId] = useState(initialTab.id);
-  const [expand, setExpanded] = useState(false);
   const [customHeight, setCustomHeight] = useState(50);
   const [isPending, startTransition] = useTransition();
 
@@ -62,9 +62,10 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
         setActiveTabId(tabs[0].id);
       }
     }
-  }, [initialActiveTab, tabs]); // dependency on tabs ensures re-eval when filter changes
+  }, [initialActiveTab, tabs, current.id]); // dependency on tabs ensures re-eval when filter changes
 
   const { activeWindow } = useWindowContext();
+  const { setFocus } = useFocusContext();
   const { activeLevels, setActiveLevel, setActiveTabsByLevel } = useTableStatePersistenceTab({
     windowIdentifier: activeWindow?.windowIdentifier || "",
     tabId: "",
@@ -74,10 +75,22 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
   const isTopExpanded = !collapsed && isTopGroup;
   const showResizeHandle = !isTopExpanded && !collapsed;
 
+  const isExpanded = activeLevels.length === 1 && activeLevels[0] === current.tabLevel && current.tabLevel > 0;
+
   const handleClick = useCallback(
     (tab: TabType) => {
+      // Transfer focus (triggers onBlur/auto-save on the previously focused tab)
+      setFocus(tab.id);
+
       // Immediate visual feedback
       setActiveTabId(tab.id);
+
+      // If clicking the currently active tab, just ensure it's visible without re-triggering heavy updates
+      if (current.id === tab.id) {
+        setActiveLevel(tab.tabLevel);
+        return;
+      }
+
       // Defer heavy content update so the UI responds instantly
       startTransition(() => {
         setCustomHeight(50);
@@ -88,24 +101,24 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
         setActiveTabsByLevel(tab);
       });
     },
-    [setActiveLevel, startTransition, setActiveTabsByLevel]
+    [setActiveLevel, startTransition, setActiveTabsByLevel, current.id, setFocus]
   );
 
   const handleDoubleClick = useCallback(
     (tab: TabType) => {
       setActiveTabId(tab.id);
-      const newExpand = !expand;
+      const currentIsExpanded = activeLevels.length === 1 && activeLevels[0] === tab.tabLevel;
+      const newExpand = !currentIsExpanded;
       // Defer deeper updates to avoid blocking click feedback
       startTransition(() => {
         setCurrent(tab);
-        setExpanded(newExpand);
         setActiveLevel(tab.tabLevel, newExpand);
 
         // Update the active tab mapping for this level
         setActiveTabsByLevel(tab);
       });
     },
-    [expand, setActiveLevel, startTransition, setActiveTabsByLevel]
+    [activeLevels, setActiveLevel, setActiveTabsByLevel]
   );
 
   const handleHeightChange = useCallback((height: number) => {
@@ -127,6 +140,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
         activeTabId={activeTabId}
         tabs={tabs}
         collapsed={collapsed}
+        isExpanded={isExpanded}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         onClose={handleClose}
@@ -158,16 +172,20 @@ export default function TabsComponent({ tabs, isTopGroup = false, initialActiveT
       customHeight={customHeight}
       data-testid="TabContainer__6fa401">
       {renderTabContent()}
-      {isPending ? (
+      {isPending && current.id !== activeTabId ? (
         <div className="p-4 animate-pulse flex-1 flex flex-col gap-4">
           <div className="h-10 w-full bg-(--color-transparent-neutral-10) rounded-md" />
           <div className="h-8 w-3/4 bg-(--color-transparent-neutral-10) rounded-md" />
           <div className="flex-1 bg-(--color-transparent-neutral-10) rounded-md" />
         </div>
       ) : (
-        <TabContextProvider tab={current} data-testid={`TabContextProvider__${current?.id ?? activeTabId ?? "6fa401"}`}>
-          <Tab tab={current} collapsed={collapsed} data-testid={`Tab__${current?.id ?? activeTabId ?? "6fa401"}`} />
-        </TabContextProvider>
+        <div className="flex flex-col flex-1 h-full min-h-0" onClick={() => current?.id && setFocus(current.id)}>
+          <TabContextProvider
+            tab={current}
+            data-testid={`TabContextProvider__${current?.id ?? activeTabId ?? "6fa401"}`}>
+            <Tab tab={current} collapsed={collapsed} data-testid={`Tab__${current?.id ?? activeTabId ?? "6fa401"}`} />
+          </TabContextProvider>
+        </div>
       )}
     </TabContainer>
   );

@@ -47,8 +47,24 @@
 export async function executeStringFunction(code: string, context = {}, ...args: unknown[]) {
   const contextKeys = Object.keys(context);
   const contextValues = Object.values(context);
-  const fn = new Function(...contextKeys, `return ${code}`);
+  // .trim() prevents ASI issues when the string starts with a newline
+  // (e.g. template literals: `\nasync (...) => {}`)
+  const fn = new Function(...contextKeys, `return ${code.trim()}`);
   const evaluatedFn = fn(...contextValues);
+
+  if (typeof evaluatedFn !== "function") {
+    // This usually means the script is stored as an IIFE `(async () => {})()` or as a
+    // plain value instead of a function expression `async () => {}`.
+    // Log the first 120 chars to help identify the format.
+    console.error(
+      `[executeStringFunction] Expected a function but got "${typeof evaluatedFn}". ` +
+        `Code preview: ${code.trim().substring(0, 120)}`
+    );
+    throw new TypeError(
+      `Script did not return a callable function (got ${typeof evaluatedFn}). ` +
+        "Ensure the script is a bare arrow-function expression, not an IIFE or object literal."
+    );
+  }
 
   return await evaluatedFn(...args);
 }

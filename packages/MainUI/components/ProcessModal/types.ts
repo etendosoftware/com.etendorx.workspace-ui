@@ -47,6 +47,7 @@ export interface BaseProcessButton extends BaseButton {
 }
 
 export interface ProcessDefinitionButton extends BaseProcessButton {
+  buttonRefList: RefListField[];
   processDefinition: ProcessDefinition;
 }
 
@@ -65,6 +66,11 @@ export enum ProcessButtonType {
 export interface ProcessResponse {
   responseActions?: Array<{
     showMsgInProcessView?: {
+      msgType: string;
+      msgTitle: string;
+      msgText: string;
+    };
+    showMsgInView?: {
       msgType: string;
       msgTitle: string;
       msgText: string;
@@ -109,6 +115,9 @@ export interface ProcessDefinitionModalProps {
   onSuccess?: () => void;
   onError?: () => void;
   type: ProcessType;
+  keepOpenOnSuccess?: boolean;
+  /** Optional record override — used when the caller already has the record data (e.g. from form context) and the TabContext may not provide it. */
+  contextRecord?: Record<string, unknown>;
 }
 
 export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
@@ -162,8 +171,10 @@ export type RecordValues = { [key: string]: EntityValue };
 export interface WindowReferenceGridProps {
   parameter: ProcessParameter;
   parameters: Record<string, ProcessParameter>; // Added to enable generic parameter mapping
+  selectedRecordsCount?: number;
   onSelectionChange: (selection: GridSelectionUpdater) => void;
   gridSelection: GridSelectionStructure;
+  onClose?: () => void;
   entityName?: EntityValue;
   recordId?: EntityValue;
   tabId: string;
@@ -175,6 +186,7 @@ export interface WindowReferenceGridProps {
   recordValues: RecordValues | null;
   currentValues?: Record<string, unknown>; // Current form values for dynamic filtering
   fields?: Field[]; // Optional fields array for advanced field configuration
+  showTitle?: boolean; // Whether to show the parameter name in the toolbar (default true)
 }
 
 export type RowProps = (props: {

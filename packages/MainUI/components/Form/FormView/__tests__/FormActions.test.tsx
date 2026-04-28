@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, fireEvent, waitFor } from "@testing-library/react";
 import { FormActions } from "../FormActions";
 import { globalCalloutManager } from "../../../../services/callouts";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
@@ -61,6 +61,8 @@ const mockResetFormChanges = jest.fn();
 const mockRegisterActions = jest.fn();
 const mockSetSaveButtonState = jest.fn();
 const mockClearTabFormState = jest.fn();
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const mockUseToolbarContext = jest.fn();
 
 const renderFormActions = (props: ReturnType<typeof createFormActionsProps>) => {
   return render(<FormActions {...props} />);
@@ -83,10 +85,7 @@ jest.mock("react-hook-form", () => ({
 }));
 
 jest.mock("@/contexts/ToolbarContext", () => ({
-  useToolbarContext: () => ({
-    registerActions: mockRegisterActions,
-    setSaveButtonState: mockSetSaveButtonState,
-  }),
+  useToolbarContext: jest.fn(),
 }));
 
 jest.mock("@/contexts/tab", () => ({
@@ -122,6 +121,7 @@ jest.mock("@/services/callouts", () => ({
       queueLength: 0,
       pendingCount: 0,
     })),
+    waitForIdle: jest.fn(() => Promise.resolve()),
   },
 }));
 
@@ -132,6 +132,18 @@ describe("FormActions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setupSearchParams("WIN1");
+    // Default toolbar context — not busy, no errors
+    // biome-ignore lint/suspicious/noExplicitAny: jest require
+    (require("@/contexts/ToolbarContext").useToolbarContext as jest.Mock).mockReturnValue({
+      registerActions: mockRegisterActions,
+      setSaveButtonState: mockSetSaveButtonState,
+      saveButtonState: {
+        isSaving: false,
+        isCalloutLoading: false,
+        hasValidationErrors: false,
+        validationErrors: [],
+      },
+    });
     // Default mock implementations
     (useFormContext as jest.Mock).mockReturnValue({
       formState: { isDirty: false },
@@ -196,5 +208,134 @@ describe("FormActions", () => {
     renderFormActions({ ...props, mode: FormMode.EDIT });
 
     expect(mockMarkFormAsChanged).toHaveBeenCalled();
+  });
+
+  describe("keyboard shortcuts", () => {
+    // biome-ignore lint/suspicious/noExplicitAny: jest require
+    const toolbarContextMock = () => require("@/contexts/ToolbarContext").useToolbarContext as jest.Mock;
+
+    it("Ctrl+S calls onSave with showModal: true", async () => {
+      const mockOnSave = jest.fn().mockResolvedValue(true);
+      renderFormActions({ ...props, onSave: mockOnSave });
+
+      fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+
+      await waitFor(() => expect(mockOnSave).toHaveBeenCalledWith({ showModal: true }));
+    });
+
+    it("Ctrl+S fires even when an input has focus", async () => {
+      const mockOnSave = jest.fn().mockResolvedValue(true);
+      const { container } = renderFormActions({ ...props, onSave: mockOnSave });
+      const input = document.createElement("input");
+      container.appendChild(input);
+
+      fireEvent.keyDown(input, { key: "s", ctrlKey: true });
+
+      await waitFor(() => expect(mockOnSave).toHaveBeenCalled());
+    });
+
+    it("Ctrl+S is a no-op when isSaving is true", async () => {
+      const mockOnSave = jest.fn().mockResolvedValue(true);
+      toolbarContextMock().mockReturnValue({
+        registerActions: mockRegisterActions,
+        setSaveButtonState: mockSetSaveButtonState,
+        saveButtonState: { isSaving: true, isCalloutLoading: false, hasValidationErrors: false, validationErrors: [] },
+      });
+      renderFormActions({ ...props, onSave: mockOnSave });
+
+      fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+
+      await new Promise((r) => setTimeout(r, 0));
+      expect(mockOnSave).not.toHaveBeenCalled();
+    });
+
+    it("Ctrl+S is a no-op when isCalloutLoading is true", async () => {
+      const mockOnSave = jest.fn().mockResolvedValue(true);
+      toolbarContextMock().mockReturnValue({
+        registerActions: mockRegisterActions,
+        setSaveButtonState: mockSetSaveButtonState,
+        saveButtonState: { isSaving: false, isCalloutLoading: true, hasValidationErrors: false, validationErrors: [] },
+      });
+      renderFormActions({ ...props, onSave: mockOnSave });
+
+      fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+
+      await new Promise((r) => setTimeout(r, 0));
+      expect(mockOnSave).not.toHaveBeenCalled();
+    });
+
+    it("Ctrl+N calls onNew", () => {
+      const mockOnNew = jest.fn();
+      renderFormActions({ ...props, onNew: mockOnNew });
+
+      fireEvent.keyDown(document, { key: "n", ctrlKey: true });
+
+      expect(mockOnNew).toHaveBeenCalledTimes(1);
+    });
+
+    it("Escape with clean form calls back (clearTabFormState) without saving", async () => {
+      const mockOnSave = jest.fn().mockResolvedValue(true);
+      renderFormActions({ ...props, onSave: mockOnSave });
+
+      fireEvent.keyDown(document, { key: "Escape" });
+
+      await new Promise((r) => setTimeout(r, 0));
+      expect(mockOnSave).not.toHaveBeenCalled();
+      expect(mockClearTabFormState).toHaveBeenCalledWith("WIN1", "TAB1");
+    });
+
+    it("Escape with dirty form saves then calls back", async () => {
+      (useFormContext as jest.Mock).mockReturnValue({ formState: { isDirty: true } });
+      const mockOnSave = jest.fn().mockResolvedValue(true);
+      renderFormActions({ ...props, onSave: mockOnSave });
+
+      fireEvent.keyDown(document, { key: "Escape" });
+
+      await waitFor(() => expect(mockOnSave).toHaveBeenCalledWith({ showModal: false }));
+      expect(mockClearTabFormState).toHaveBeenCalledWith("WIN1", "TAB1");
+    });
+
+    it("Escape with dirty form does NOT call back when save returns false", async () => {
+      (useFormContext as jest.Mock).mockReturnValue({ formState: { isDirty: true } });
+      const mockOnSave = jest.fn().mockResolvedValue(false);
+      renderFormActions({ ...props, onSave: mockOnSave });
+
+      fireEvent.keyDown(document, { key: "Escape" });
+
+      await waitFor(() => expect(mockOnSave).toHaveBeenCalled());
+      expect(mockClearTabFormState).not.toHaveBeenCalled();
+    });
+
+    it("Escape is a no-op when isSaving is true", async () => {
+      toolbarContextMock().mockReturnValue({
+        registerActions: mockRegisterActions,
+        setSaveButtonState: mockSetSaveButtonState,
+        saveButtonState: { isSaving: true, isCalloutLoading: false, hasValidationErrors: false, validationErrors: [] },
+      });
+      const mockOnSave = jest.fn().mockResolvedValue(true);
+      renderFormActions({ ...props, onSave: mockOnSave });
+
+      fireEvent.keyDown(document, { key: "Escape" });
+
+      await new Promise((r) => setTimeout(r, 0));
+      expect(mockOnSave).not.toHaveBeenCalled();
+      expect(mockClearTabFormState).not.toHaveBeenCalled();
+    });
+
+    it("Escape is a no-op when isCalloutLoading is true", async () => {
+      toolbarContextMock().mockReturnValue({
+        registerActions: mockRegisterActions,
+        setSaveButtonState: mockSetSaveButtonState,
+        saveButtonState: { isSaving: false, isCalloutLoading: true, hasValidationErrors: false, validationErrors: [] },
+      });
+      const mockOnSave = jest.fn().mockResolvedValue(true);
+      renderFormActions({ ...props, onSave: mockOnSave });
+
+      fireEvent.keyDown(document, { key: "Escape" });
+
+      await new Promise((r) => setTimeout(r, 0));
+      expect(mockOnSave).not.toHaveBeenCalled();
+      expect(mockClearTabFormState).not.toHaveBeenCalled();
+    });
   });
 });

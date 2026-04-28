@@ -23,6 +23,7 @@ jest.mock("../../../../services/callouts", () => ({
     getState: jest.fn(),
     on: jest.fn(),
     off: jest.fn(),
+    waitForIdle: jest.fn(() => Promise.resolve()),
   },
 }));
 
@@ -48,7 +49,7 @@ describe("FormView Save Integration Tests", () => {
     expect(mockGlobalCalloutManager.getState).toHaveBeenCalled();
   });
 
-  it("should prevent save when callouts are running", () => {
+  it("should wait for callouts to finish before saving", async () => {
     mockGlobalCalloutManager.getState.mockReturnValue(
       createMockCalloutState({ isRunning: true, queueLength: 1, pendingCount: 1 })
     );
@@ -56,14 +57,11 @@ describe("FormView Save Integration Tests", () => {
     const state = mockGlobalCalloutManager.getState();
 
     // This simulates the logic in FormView handleSave
-    let shouldSave = true;
-    if (state.isRunning) {
-      shouldSave = false;
-      console.warn("Cannot save while callouts are running");
+    if (state.isRunning || state.pendingCount > 0 || state.queueLength > 0) {
+      await mockGlobalCalloutManager.waitForIdle();
     }
 
-    expect(shouldSave).toBe(false);
-    expect(state.isRunning).toBe(true);
+    expect(mockGlobalCalloutManager.waitForIdle).toHaveBeenCalled();
   });
 
   it("should validate integration points exist", () => {

@@ -35,15 +35,14 @@ import {
 import type {
   GetParamsProps,
   KeyMapConfig,
+  MappedValue,
   NestedObject,
-  PrimitiveValue,
   ProcessActionData,
   SelectionItem,
   SourceObject,
   TargetObject,
   TransformableValue,
 } from "@/utils/processes/manual/types";
-import data from "@/utils/processes/manual/data.json";
 
 export const getDocumentStatus = (record: Record<string, unknown>) => {
   return extractValue(record, DEFAULT_DOCUMENTS_KEYS, DEFAULT_DOC_STATUS);
@@ -69,8 +68,27 @@ export const checkIfRecordIsPosted = (record: Record<string, unknown>) => {
   return extractValue(record, DEFAULT_POSTED_KEYS, DEFAULT_POSTED);
 };
 
+/**
+ * Converts a DB column name to Classic's inp* parameter name.
+ * e.g. "Fin_Payment_Proposal_ID" → "inpfinPaymentProposalId"
+ *      "C_Order_ID"              → "inpcOrderId"
+ */
+export const columnNameToInpKey = (columnName: string): string => {
+  const camel = columnName
+    .split("_")
+    .map((segment, i) => {
+      const lower = segment.toLowerCase();
+      if (i === 0) return lower;
+      // Capitalize first letter; keep "id" as "Id"
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join("");
+  return `inp${camel}`;
+};
+
 export const getParams = ({
   currentButtonId,
+  processAction,
   record,
   recordId,
   windowId,
@@ -78,8 +96,8 @@ export const getParams = ({
   tableId,
   token,
   isPostedProcess,
-}: GetParamsProps): URLSearchParams => {
-  const processActionData = (data as Record<string, ProcessActionData>)[currentButtonId];
+}: GetParamsProps & { processAction?: ProcessActionData }): URLSearchParams => {
+  const processActionData = processAction;
 
   if (!processActionData) {
     console.warn(`[ManualProcess] No configuration found for button ID: ${currentButtonId}`);
@@ -98,7 +116,8 @@ export const getParams = ({
 
   params.append(REQUIRED_PARAMS_KEYS.isPopUpCall, DEFAULT_REQUIRED_PARAMS_KEYS.isPopUpCall);
   params.append(REQUIRED_PARAMS_KEYS.command, commandAction);
-  params.append(REQUIRED_PARAMS_KEYS.inpcOrderId, recordId);
+  const inpKeyName = processActionData.inpKeyName ?? columnNameToInpKey(processActionData.inpkeyColumnId);
+  params.append(inpKeyName, recordId);
   params.append(REQUIRED_PARAMS_KEYS.inpKey, recordId);
   params.append(REQUIRED_PARAMS_KEYS.inpWindowId, windowId);
   params.append(REQUIRED_PARAMS_KEYS.inpwindowId, windowId);
@@ -141,71 +160,90 @@ export const getParams = ({
   return params;
 };
 
-export function mapKeysWithDefaults(source: SourceObject): TargetObject {
-  const keyMap: KeyMapConfig = {
-    inpporeference: { target: "POReference", default: "" },
-    inpcCurrencyId: { target: "c_currency_id", default: null },
-    inpcBpartnerId: { target: "received_from", default: null },
-    "Payment Document No": { target: "payment_documentno", default: null },
-    "Payment Document No.": { target: "payment_documentno", default: null },
-    inpfinPaymentmethodId: { target: "fin_paymentmethod_id", default: null },
-    fin_payment_id: { target: "fin_payment_id", default: null },
-    inpgrandtotal: { target: "actual_payment", default: 0 },
-    inpdateacct: { target: "payment_date", default: null },
-    inptotallines: { target: "amount_inv_ords", default: 0 },
-    inpissotrx: { target: "issotrx", default: false },
-    inpcOrderId: { target: "c_order_id", default: null },
-    DOCBASETYPE: { target: "DOCBASETYPE", default: "ARR" },
-    inpadOrgId: { target: "ad_org_id", default: null },
-    converted_amount: { target: "conversion_rate", default: 0 },
-    conversion_rate: { target: "conversion_rate", default: 0 },
-    "Action Regarding Document": { target: "document_action", default: null },
-    reference_no: { target: "reference_no", default: "" },
-    POReference: { target: "POReference", default: "" },
-    "Converted Amount": { target: "converted_amount", default: null },
-    "Deposit To": { target: "fin_financial_account_id", default: null },
-    "Invoice Date": { target: "invoiceDate", default: null },
-    "Lines Include Taxes": { target: "linesIncludeTaxes", default: false },
-    overpayment_action: { target: "overpayment_action", default: null },
-  };
+const KEY_MAP: KeyMapConfig = {
+  inpporeference: { target: "POReference", default: "" },
+  inpcCurrencyId: { target: "c_currency_id", default: null },
+  inpcBpartnerId: { target: "received_from", default: null },
+  "Payment Document No": { target: "payment_documentno", default: null },
+  "Payment Document No.": { target: "payment_documentno", default: null },
+  "Actual Payment": { target: "actual_payment", default: 0 },
+  "Conversion Rate": { target: "conversion_rate", default: 0 },
+  "Overpayment Action": { target: "overpayment_action", default: null },
+  "Received From": { target: "received_from", default: null },
+  "Payment Method": { target: "fin_paymentmethod_id", default: null },
+  Currency: { target: "c_currency_id", default: null },
+  "Sales Transaction": { target: "issotrx", default: false },
+  "Payment Date": { target: "payment_date", default: undefined },
+  inpfinPaymentmethodId: { target: "fin_paymentmethod_id", default: null },
+  fin_payment_id: { target: "fin_payment_id", default: null },
+  inpgrandtotal: { target: "actual_payment", default: 0 },
+  inppaymentdate: { target: "payment_date", default: undefined },
+  inpPaymentDate: { target: "payment_date", default: undefined },
+  inpdateacct: { target: "payment_date", default: undefined },
+  inptotallines: { target: "amount_inv_ords", default: 0 },
+  inpissotrx: { target: "issotrx", default: false },
+  inpcOrderId: { target: "c_order_id", default: null },
+  DOCBASETYPE: { target: "DOCBASETYPE", default: "ARR" },
+  inpadOrgId: { target: "ad_org_id", default: null },
+  converted_amount: { target: "conversion_rate", default: 0 },
+  conversion_rate: { target: "conversion_rate", default: 0 },
+  "Action Regarding Document": { target: "document_action", default: null },
+  reference_no: { target: "reference_no", default: "" },
+  POReference: { target: "POReference", default: "" },
+  "Converted Amount": { target: "converted_amount", default: null },
+  "Deposit To": { target: "fin_financial_account_id", default: null },
+  "Invoice Date": { target: "invoiceDate", default: undefined },
+  "Lines Include Taxes": { target: "linesIncludeTaxes", default: false },
+  overpayment_action: { target: "overpayment_action", default: null },
+};
 
+function resolveRawValue(key: string, value: MappedValue): MappedValue {
+  const resolved = value !== "" && value !== undefined ? value : KEY_MAP[key]?.default;
+  if (resolved === "Y") return true;
+  if (resolved === "N") return false;
+  return resolved;
+}
+
+// Skip date fields that have no valid value — the server cannot parse "" or null as a date
+const DATE_TARGETS = new Set(["payment_date", "invoiceDate"]);
+function isEmptyDateField(target: string, value: MappedValue): boolean {
+  return DATE_TARGETS.has(target) && (value === "" || value === undefined);
+}
+
+function recursiveUpdateSelection(obj: NestedObject, parentActualPayment?: number): void {
+  if (!obj || typeof obj !== "object") return;
+
+  const currentActualPayment = obj.actual_payment ?? parentActualPayment;
+
+  for (const [key, value] of Object.entries(obj)) {
+    if (key === "_selection" && Array.isArray(value)) {
+      obj[key] = value.map((item: SelectionItem) => ({
+        ...item,
+        amount: item.amount ?? currentActualPayment ?? 0,
+      }));
+    } else if (value && typeof value === "object" && !Array.isArray(value)) {
+      recursiveUpdateSelection(value as NestedObject, currentActualPayment);
+    }
+  }
+}
+
+export function mapKeysWithDefaults(source: SourceObject): TargetObject {
   const result: TargetObject = {};
 
   for (const [key, value] of Object.entries(source)) {
-    let mappedValue: PrimitiveValue | NestedObject | SelectionItem[] =
-      value !== "" && value !== undefined ? value : keyMap[key]?.default;
-    if (mappedValue === "Y") {
-      mappedValue = true;
-    } else if (mappedValue === "N") {
-      mappedValue = false;
-    }
-    if (keyMap[key]) {
-      result[keyMap[key].target] = mappedValue;
+    const mappedValue = resolveRawValue(key, value);
+    if (KEY_MAP[key]) {
+      if (!isEmptyDateField(KEY_MAP[key].target, mappedValue)) {
+        result[KEY_MAP[key].target] = mappedValue;
+      }
     } else {
       result[key] = mappedValue;
     }
   }
 
-  for (const { target, default: defaultValue } of Object.values(keyMap)) {
-    if (!(target in result)) {
+  for (const { target, default: defaultValue } of Object.values(KEY_MAP)) {
+    if (!(target in result) && defaultValue !== undefined) {
       result[target] = defaultValue;
-    }
-  }
-
-  function recursiveUpdateSelection(obj: NestedObject, parentActualPayment?: number): void {
-    if (!obj || typeof obj !== "object") return;
-
-    const currentActualPayment = obj.actual_payment ?? parentActualPayment;
-
-    for (const [key, value] of Object.entries(obj)) {
-      if (key === "_selection" && Array.isArray(value)) {
-        obj[key] = value.map((item: SelectionItem) => ({
-          ...item,
-          amount: currentActualPayment ?? 0,
-        }));
-      } else if (value && typeof value === "object" && !Array.isArray(value)) {
-        recursiveUpdateSelection(value as NestedObject, currentActualPayment);
-      }
     }
   }
 
