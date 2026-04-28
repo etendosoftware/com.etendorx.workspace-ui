@@ -50,6 +50,9 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
   onSelectConversation,
   onLoadConversations,
   conversationsLoading = false,
+  showOnlyFeatured,
+  hasFeaturedAssistants,
+  onToggleFeaturedFilter,
   translations,
 }) => {
   if (!open) return null;
@@ -156,6 +159,9 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
             onSelectConversation={onSelectConversation}
             onLoadConversations={onLoadConversations}
             conversationsLoading={conversationsLoading}
+            showOnlyFeatured={showOnlyFeatured}
+            hasFeaturedAssistants={hasFeaturedAssistants}
+            onToggleFeaturedFilter={onToggleFeaturedFilter}
             translations={{
               selectedRegisters: translations.selectedRegisters,
               assistantSelector: translations.assistantSelector,
