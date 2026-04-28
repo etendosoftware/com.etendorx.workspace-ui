@@ -128,14 +128,10 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     // Invoice B — Vendor B, Raw material B, qty 10
     // ════════════════════════════════════════════════════════════════════════
 
-    // Navigate back to Purchase Invoice to get a clean list view
-    await navigateToPurchaseInvoice(page);
-
-    // New Record
-    newBtn = page.locator("button.toolbar-button-new").filter({ hasText: "New Record" }).first();
-    await newBtn.waitFor({ state: "visible", timeout: 15_000 });
-    await newBtn.click();
-    await expect(page.getByRole("tab", { name: "Main Section" })).toBeVisible({ timeout: 10_000 });
+    // Use the toolbar icon button to open a new record without re-navigating to Purchase Invoice
+    await page.locator('[data-testid="IconButton__33864F5267194AB99C14BD0CE9884FF5"]').first().click();
+    await page.waitForTimeout(1_000);
+    await expect(page.getByRole("tab", { name: "Main Section" }).first()).toBeVisible({ timeout: 10_000 });
 
     // Business Partner: Vendor B
     await page
@@ -294,10 +290,12 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     }
 
     // Filter by the shared prefix of both invoice document numbers so both rows
-    // appear in the viewport simultaneously. Sequential doc numbers (e.g. 10000134 /
-    // 10000135) share enough characters that one filter shows both. This avoids MUI
-    // DataGrid row virtualization hiding the second invoice when the two invoices have
+    // appear in the viewport simultaneously if possible (logic from HEAD). Sequential doc numbers
+    // (e.g. 10000134 / 10000135) share enough characters that one filter shows both.
+    // This avoids MUI DataGrid row virtualization hiding the second invoice when the two invoices have
     // different due dates (different vendors have different payment terms).
+    // Additionally, keepNonExistentRowsSelected=true in the WindowReferenceGrid DataGrid
+    // ensures Invoice A stays selected when the filter changes to show Invoice B (logic from Branch).
     let prefixLen = 0;
     while (
       prefixLen < invoiceNumberA.length &&
@@ -310,12 +308,12 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
 
     const invoiceDocFilter = page.locator('input[placeholder="Filter Invoice Document No...."]');
     await invoiceDocFilter.waitFor({ state: "visible", timeout: 15_000 });
-    const filterResponse = page.waitForResponse(/api\/datasource/, { timeout: 30_000 });
+
+    const filterResponseA = page.waitForResponse(/api\/datasource/, { timeout: 30_000 });
     await invoiceDocFilter.fill(invoiceFilter);
-    await filterResponse;
+    await filterResponseA;
     await page.waitForTimeout(2_000);
 
-    // Both rows now appear simultaneously — select them without changing the filter.
     const rowA = page
       .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
       .filter({ hasText: invoiceNumberA })
@@ -324,6 +322,12 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
     await rowA.locator('input[aria-label="Toggle select row"]').scrollIntoViewIfNeeded();
     await rowA.locator('input[aria-label="Toggle select row"]').check({ force: true });
     await expect(rowA.locator('input[aria-label="Toggle select row"]')).toBeChecked({ timeout: 10_000 });
+
+    // Filter for Invoice B specifically to ensure it's visible and clickable (Branch logic).
+    const filterResponseB = page.waitForResponse(/api\/datasource/, { timeout: 30_000 });
+    await invoiceDocFilter.fill(invoiceNumberB);
+    await filterResponseB;
+    await page.waitForTimeout(1_500);
 
     const rowB = page
       .locator("tbody.MuiTableBody-root tr.MuiTableRow-root")
@@ -340,7 +344,12 @@ test.describe("Financial - Payment Proposal - Select Expected Payments @smoke", 
       state: "visible",
       timeout: 60_000,
     });
-    const submitBtn = page.locator("button").filter({ hasText: /^Submit$/ });
+    await page.waitForTimeout(500);
+    const submitBtn = page
+      .locator('[data-testid*="ExecuteButton"][data-testid$="__761503"]')
+      .filter({ hasText: /^Submit$/ })
+      .first();
+
     await submitBtn.waitFor({ state: "visible", timeout: 30_000 });
     await submitBtn.click();
     await successToastAppeared;

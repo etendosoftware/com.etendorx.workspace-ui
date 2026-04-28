@@ -96,15 +96,22 @@ export const buildBaseCriteria = ({ tab, parentTab, parentId }: BaseCriteriaOpti
     return [];
   }
 
-  // Classic sends _dummy for parent-child tab navigation when disableParentKeyProperty is true.
-  // The server uses @EntityName.id@ session variables (set in useTableData) for the actual filtering.
-  if (tab.disableParentKeyProperty && parentId && parentId !== "") {
-    return [{ fieldName: "_dummy", value: Date.now() as EntityValue, operator: "equals" }];
-  }
-
-  const fieldName = resolveParentFieldName(tab, parentTab);
-
   if (parentId && parentId !== "") {
+    // Classic sends _dummy for parent-child tab navigation when disableParentKeyProperty is true.
+    // The server uses @EntityName.id@ session variables (set in useTableData) for the actual filtering.
+    if (tab.disableParentKeyProperty) {
+      return [{ fieldName: "_dummy", value: Date.now() as EntityValue, operator: "equals" }];
+    }
+
+    const fieldName = resolveParentFieldName(tab, parentTab);
+
+    // If resolveParentFieldName fell back to "id" it means no real FK field was found.
+    // Using fieldName="id" would filter the child table by its own primary key (wrong).
+    // Fall back to _dummy so the server uses the @EntityName.id@ session variables instead.
+    if (fieldName === "id") {
+      return [{ fieldName: "_dummy", value: Date.now() as EntityValue, operator: "equals" }];
+    }
+
     return [{ fieldName, value: parentId as EntityValue, operator: "equals" }];
   }
 
