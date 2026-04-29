@@ -227,13 +227,16 @@ export const parseDynamicExpression = (expr: string) => {
 
   // Transform @field_name@ syntax to valid JavaScript references
   // Supports: @fieldName@, @#sessionVar@, @$contextVar@
+  // Use ?? (nullish coalescing) so falsy-but-valid values like 0, false, "" are not
+  // shadowed by the context fallback — only null/undefined fall through.
   let expr0 = exprNormalized.replace(/@([#$]?[a-zA-Z_]\w*)@/g, (_, fieldName) => {
-    return `(currentValues["${fieldName}"] || context["${fieldName}"])`;
+    return `(currentValues["${fieldName}"] ?? context["${fieldName}"])`;
   });
 
   // Transform legacy Etendo/OB '!' comparison to '!=' (e.g., @Col@!'Y' -> ...!='Y')
-  // Covers cases like @Col@!'Y', @Col@!0, @Col@!undefined
-  expr0 = expr0.replace(/!([^=])/g, "!=$1");
+  // Only apply after a closing delimiter (], ), ', ") that follows a field ref or literal.
+  // This avoids corrupting logical negation like !(condition) → invalid !=(condition).
+  expr0 = expr0.replace(/([)'"\]])!([^=])/g, "$1!=$2");
 
   // Transform space-surrounded '!' to '!=' (e.g. @Col@ ! @Col2@)
   expr0 = expr0.replace(/\s!\s/g, " != ");
