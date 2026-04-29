@@ -527,7 +527,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         onSend={handleEmailSend}
         onFetchRecordAttachments={handleFetchEmailAttachments}
         loading={isSendingEmail}
-        initialData={emailConfig as Parameters<typeof EmailSendModal>[0]["initialData"]}
+        initialData={emailConfig ?? undefined}
         data-testid="EmailSendModal__a2dd07"
       />
     </>
