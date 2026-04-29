@@ -36,10 +36,19 @@ import type { ProcessActionData } from "@/utils/processes/manual/types";
 import { LegacyProcessUnresolvedError } from "@/utils/processes/manual/errors";
 import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 
+function paramsToRecord(params: URLSearchParams): Record<string, string> {
+  const record: Record<string, string> = {};
+  params.forEach((value, key) => {
+    record[key] = value;
+  });
+  return record;
+}
+
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [iframeUrl, setIframeUrl] = useState("");
+  const [iframeFormParams, setIframeFormParams] = useState<Record<string, string> | null>(null);
   const { config, loading: configLoading } = useRuntimeConfig();
 
   // Use ETENDO_CLASSIC_HOST for direct browser access to Tomcat
@@ -149,13 +158,15 @@ export function useProcessExecution() {
             isPostedProcess,
           });
 
-          const completeUrl = `${baseUrl}?${params.toString()}`;
+          const formParams = paramsToRecord(params);
 
-          setIframeUrl(completeUrl);
+          setIframeUrl(baseUrl);
+          setIframeFormParams(formParams);
 
           resolve({
             showInIframe: true,
-            iframeUrl: completeUrl,
+            iframeUrl: baseUrl,
+            iframeFormParams: formParams,
           });
         } catch (error) {
           const processError = error instanceof Error ? error : new Error("Process execution failed");
@@ -182,13 +193,17 @@ export function useProcessExecution() {
     [executeProcessAction, executeProcessDefinition]
   );
 
-  const resetIframeUrl = useCallback(() => setIframeUrl(""), []);
+  const resetIframeUrl = useCallback(() => {
+    setIframeUrl("");
+    setIframeFormParams(null);
+  }, []);
 
   return {
     executeProcess,
     loading: loading || configLoading,
     error,
     iframeUrl,
+    iframeFormParams,
     resetIframeUrl,
     currentRecord: record,
     recordsLoaded: !!record,

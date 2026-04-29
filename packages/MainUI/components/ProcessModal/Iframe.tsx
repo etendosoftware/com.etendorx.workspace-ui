@@ -31,6 +31,7 @@ const CLOSE_MODAL_ACTION = "closeModal";
 const PROCESS_ORDER_ACTION = "processOrder";
 const SHOW_PROCESS_MESSAGE_ACTION = "showProcessMessage";
 const IFRAME_UNLOADED_ACTION = "iframeUnloaded";
+const REQUEST_FAILED_ACTION = "requestFailed";
 const MESSAGE_FALLBACK_TIMEOUT_MS = 5000;
 
 /**
@@ -76,6 +77,7 @@ const ProcessIframeOpenModal = ({
   isOpen,
   onClose,
   url,
+  formParams,
   title,
   onProcessSuccess,
   tabId,
@@ -168,6 +170,16 @@ const ProcessIframeOpenModal = ({
     },
     [t]
   );
+
+  const handleRequestFailed = useCallback(() => {
+    clearFallbackTimer();
+    setAwaitingMessage(false);
+    setProcessMessage({
+      type: "error",
+      title: t("process.requestFailed.title"),
+      text: t("process.requestFailed.text"),
+    });
+  }, [t, clearFallbackTimer]);
 
   const handleProcessMessage = useCallback(async () => {
     startFallbackCountdown();
@@ -288,6 +300,9 @@ const ProcessIframeOpenModal = ({
         if (processMessageRef.current) return;
         startFallbackCountdown();
       }
+      if (event.data?.action === REQUEST_FAILED_ACTION) {
+        handleRequestFailed();
+      }
     };
 
     window.addEventListener("message", handleMessage);
@@ -295,7 +310,14 @@ const ProcessIframeOpenModal = ({
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [handleClose, handleProcessMessage, handleReceivedMessage, shouldSuppressAutoClose, startFallbackCountdown]);
+  }, [
+    handleClose,
+    handleProcessMessage,
+    handleReceivedMessage,
+    handleRequestFailed,
+    shouldSuppressAutoClose,
+    startFallbackCountdown,
+  ]);
 
   const messageStyles = useMemo(
     () =>
@@ -357,6 +379,7 @@ const ProcessIframeOpenModal = ({
         )
       }
       url={url || ""}
+      formParams={formParams ?? null}
       handleIframeLoad={handleIframeLoad}
       handleClose={handleClose}
       texts={{

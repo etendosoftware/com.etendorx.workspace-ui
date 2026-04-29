@@ -454,6 +454,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         isOpen={openIframeModal}
         onClose={handleCloseProcess}
         url={processResponse?.iframeUrl}
+        formParams={processResponse?.iframeFormParams ?? null}
         title={selectedProcessActionButton?.name}
         onProcessSuccess={handleCompleteRefresh}
         tabId={tab.id}

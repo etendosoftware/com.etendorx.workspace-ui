@@ -310,6 +310,10 @@ const es = {
       title: "No se pudo capturar la respuesta",
       text: "No se pudo capturar la respuesta del proceso. Verifica el estado manualmente.",
     },
+    requestFailed: {
+      title: "El proceso no pudo ejecutarse",
+      text: "El proceso no pudo ejecutarse. Contacta a soporte.",
+    },
   },
   drawer: {
     recentlyViewed: "Visto recientemente",

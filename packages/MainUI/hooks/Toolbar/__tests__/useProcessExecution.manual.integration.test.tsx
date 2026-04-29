@@ -85,9 +85,11 @@ jest.mock("@/utils/processes/manual/data.json", () => ({
 import { useProcessExecution } from "@/hooks/Toolbar/useProcessExecution";
 import { logger } from "@/utils/logger";
 
-// Minimal harness component exercising the hook
+// Minimal harness component exercising the hook.
+// iframeUrl is the base URL without query params (POST migration).
+// formParams is serialized as JSON in a separate element.
 function Harness({ buttonId }: { buttonId: string }) {
-  const { executeProcess, iframeUrl } = useProcessExecution();
+  const { executeProcess, iframeUrl, iframeFormParams } = useProcessExecution();
   const onRun = async () => {
     const btn: any = {
       id: buttonId,
@@ -109,14 +111,20 @@ function Harness({ buttonId }: { buttonId: string }) {
     const recordIdField: any = { value: "R1", type: "string", label: "Record ID", name: "recordId", original: {} };
     const res = await executeProcess({ button: btn, recordId: recordIdField, params: {} });
     const out = (res && (res as any).iframeUrl) || "";
+    const params = (res && (res as any).iframeFormParams) || null;
     const target = document.querySelector("#result");
     if (target) target.textContent = out;
+    const paramsTarget = document.querySelector("#formParams");
+    if (paramsTarget) paramsTarget.textContent = params ? JSON.stringify(params) : "";
   };
   return (
     <div>
       <button onClick={onRun}>run</button>
       <div data-testid="iframeUrl">{iframeUrl}</div>
       <div id="result" data-testid="result" />
+      <div id="formParams" data-testid="formParams">
+        {iframeFormParams ? JSON.stringify(iframeFormParams) : ""}
+      </div>
     </div>
   );
 }
@@ -132,7 +140,8 @@ describe("useProcessExecution manual processes integration", () => {
       window.localStorage.clear();
     } catch {}
   });
-  it("builds iframe URL with required params for non-posted processes", async () => {
+
+  it("builds POST iframe URL and form params for non-posted processes", async () => {
     const userCtx = { token: "tok_abc123" };
     render(withUser(userCtx, <Harness buttonId="TEST_BUTTON" />));
 
@@ -141,39 +150,44 @@ describe("useProcessExecution manual processes integration", () => {
     const resultEl = await screen.findByTestId("result");
     await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:8080/etendo"));
 
-    const url = new URL(resultEl.textContent || "http://localhost");
-    expect(url.pathname).toContain("/meta/legacy");
-    expect(url.pathname).toContain("/SalesOrder/Header_Edition.html");
+    // URL must be the bare base URL — no query string
+    expect(resultEl.textContent).toContain("/meta/legacy");
+    expect(resultEl.textContent).toContain("/SalesOrder/Header_Edition.html");
+    expect(resultEl.textContent).not.toContain("?");
 
-    const p = url.searchParams;
-    expect(p.get("IsPopUpCall")).toBe("1");
-    expect(p.get("Command")).toBe("BUTTONDocAction104");
-    expect(p.get("inpKey")).toBe("R1");
-    expect(p.get("inpcOrderId")).toBe("R1");
-    expect(p.get("inpwindowId")).toBe("W123");
-    expect(p.get("inpWindowId")).toBe("W123");
-    expect(p.get("inpTabId")).toBe("T10");
-    expect(p.get("inpTableId")).toBe("TB1");
-    expect(p.get("inpadClientId")).toBe("CLIENT");
-    expect(p.get("inpadOrgId")).toBe("ORG");
-    expect(p.get("inpcBpartnerId")).toBe("BP");
-    expect(p.get("inpkeyColumnId")).toBe("C_Order_ID");
-    expect(p.get("keyColumnName")).toBe("C_Order_ID");
-    expect(p.get("inpdocstatus")).toBe("DR");
-    expect(p.get("inpprocessing")).toBe("N");
-    expect(p.get("inpdocaction")).toBe("CO");
-    expect(p.get("token")).toBe("tok_abc123");
+    // All params must now be in iframeFormParams (POST body), not the URL
+    const paramsEl = screen.getByTestId("formParams");
+    await waitFor(() => expect(paramsEl.textContent).not.toBe(""));
+    const p: Record<string, string> = JSON.parse(paramsEl.textContent || "{}");
 
-    // Hook state mirrors the returned url
+    expect(p["IsPopUpCall"]).toBe("1");
+    expect(p["Command"]).toBe("BUTTONDocAction104");
+    expect(p["inpKey"]).toBe("R1");
+    expect(p["inpcOrderId"]).toBe("R1");
+    expect(p["inpwindowId"]).toBe("W123");
+    expect(p["inpWindowId"]).toBe("W123");
+    expect(p["inpTabId"]).toBe("T10");
+    expect(p["inpTableId"]).toBe("TB1");
+    expect(p["inpadClientId"]).toBe("CLIENT");
+    expect(p["inpadOrgId"]).toBe("ORG");
+    expect(p["inpcBpartnerId"]).toBe("BP");
+    expect(p["inpkeyColumnId"]).toBe("C_Order_ID");
+    expect(p["keyColumnName"]).toBe("C_Order_ID");
+    expect(p["inpdocstatus"]).toBe("DR");
+    expect(p["inpprocessing"]).toBe("N");
+    expect(p["inpdocaction"]).toBe("CO");
+    expect(p["token"]).toBe("tok_abc123");
+
+    // Hook state: iframeUrl state must equal the bare base URL (no query string)
     const iframeStateEl = screen.getByTestId("iframeUrl");
     expect(iframeStateEl.textContent).toBe(resultEl.textContent);
   });
 
-  it("sets inpdocaction=P for posted heuristic", async () => {
+  it("sets inpdocaction=P for posted heuristic in form params", async () => {
     const userCtx = { token: "tok_abc123" };
 
     function PostedHarness() {
-      const { executeProcess, iframeUrl } = useProcessExecution();
+      const { executeProcess, iframeUrl, iframeFormParams } = useProcessExecution();
       const onRun = async () => {
         const btn: any = {
           id: "Posted",
@@ -195,14 +209,20 @@ describe("useProcessExecution manual processes integration", () => {
         const recordIdField: any = { value: "R1", type: "string", label: "Record ID", name: "recordId", original: {} };
         const res = await executeProcess({ button: btn, recordId: recordIdField, params: {} });
         const out = (res && (res as any).iframeUrl) || "";
+        const params = (res && (res as any).iframeFormParams) || null;
         const target = document.querySelector("#result");
         if (target) target.textContent = out;
+        const paramsTarget = document.querySelector("#formParams");
+        if (paramsTarget) paramsTarget.textContent = params ? JSON.stringify(params) : "";
       };
       return (
         <div>
           <button onClick={onRun}>run</button>
           <div data-testid="iframeUrl">{iframeUrl}</div>
           <div id="result" data-testid="result" />
+          <div id="formParams" data-testid="formParams">
+            {iframeFormParams ? JSON.stringify(iframeFormParams) : ""}
+          </div>
         </div>
       );
     }
@@ -211,12 +231,10 @@ describe("useProcessExecution manual processes integration", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /run/i }));
 
-    const resultEl = await screen.findByTestId("result");
-    await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:8080/etendo"));
-
-    const url = new URL(resultEl.textContent || "http://localhost");
-    const p = url.searchParams;
-    expect(p.get("inpdocaction")).toBe("P");
+    const paramsEl = await screen.findByTestId("formParams");
+    await waitFor(() => expect(paramsEl.textContent).not.toBe(""));
+    const p: Record<string, string> = JSON.parse(paramsEl.textContent || "{}");
+    expect(p["inpdocaction"]).toBe("P");
   });
 
   it("rejects when button type is not supported", async () => {
@@ -263,7 +281,7 @@ describe("useProcessExecution manual processes integration", () => {
 
     // Harness where the button carries backend-resolved legacy params — no data.json entry required.
     function BackendResolvedHarness() {
-      const { executeProcess, iframeUrl } = useProcessExecution();
+      const { executeProcess, iframeUrl, iframeFormParams } = useProcessExecution();
       const onRun = async () => {
         const btn: any = {
           id: "57A2B365BDC69F57E040007F010171B4",
@@ -292,14 +310,20 @@ describe("useProcessExecution manual processes integration", () => {
         const recordIdField: any = { value: "R1", type: "string", label: "Record ID", name: "recordId", original: {} };
         const res = await executeProcess({ button: btn, recordId: recordIdField, params: {} });
         const out = (res && (res as any).iframeUrl) || "";
+        const params = (res && (res as any).iframeFormParams) || null;
         const target = document.querySelector("#result");
         if (target) target.textContent = out;
+        const paramsTarget = document.querySelector("#formParams");
+        if (paramsTarget) paramsTarget.textContent = params ? JSON.stringify(params) : "";
       };
       return (
         <div>
           <button onClick={onRun}>run</button>
           <div data-testid="iframeUrl">{iframeUrl}</div>
           <div id="result" data-testid="result" />
+          <div id="formParams" data-testid="formParams">
+            {iframeFormParams ? JSON.stringify(iframeFormParams) : ""}
+          </div>
         </div>
       );
     }
@@ -310,26 +334,30 @@ describe("useProcessExecution manual processes integration", () => {
     const resultEl = await screen.findByTestId("result");
     await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:8080/etendo"));
 
-    const url = new URL(resultEl.textContent || "http://localhost");
-    expect(url.pathname).toContain("/meta/legacy");
-    expect(url.pathname).toContain("/ad_process/RescheduleProcess.html");
+    // URL must be bare (no query string)
+    expect(resultEl.textContent).toContain("/meta/legacy");
+    expect(resultEl.textContent).toContain("/ad_process/RescheduleProcess.html");
+    expect(resultEl.textContent).not.toContain("?");
 
-    const p = url.searchParams;
-    expect(p.get("Command")).toBe("DEFAULT");
-    expect(p.get("inpkeyColumnId")).toBe("AD_Process_Request_ID");
-    expect(p.get("keyColumnName")).toBe("AD_Process_Request_ID");
+    const paramsEl = screen.getByTestId("formParams");
+    await waitFor(() => expect(paramsEl.textContent).not.toBe(""));
+    const p: Record<string, string> = JSON.parse(paramsEl.textContent || "{}");
+
+    expect(p["Command"]).toBe("DEFAULT");
+    expect(p["inpkeyColumnId"]).toBe("AD_Process_Request_ID");
+    expect(p["keyColumnName"]).toBe("AD_Process_Request_ID");
     // Derived from inpkeyColumnId → "inpadProcessRequestId"
-    expect(p.get("inpadProcessRequestId")).toBe("R1");
-    expect(p.get("inpKey")).toBe("R1");
-    expect(p.get("inpwindowId")).toBe("W123");
-    expect(p.get("token")).toBe("tok_abc123");
+    expect(p["inpadProcessRequestId"]).toBe("R1");
+    expect(p["inpKey"]).toBe("R1");
+    expect(p["inpwindowId"]).toBe("W123");
+    expect(p["token"]).toBe("tok_abc123");
   });
 
   it("forwards backend additionalParameters and resolves $record.<col> against the record", async () => {
     const userCtx = { token: "tok_abc123" };
 
     function AdditionalParamsHarness() {
-      const { executeProcess, iframeUrl } = useProcessExecution();
+      const { executeProcess, iframeUrl, iframeFormParams } = useProcessExecution();
       const onRun = async () => {
         const btn: any = {
           id: "E5569BAF22C644EF9B5D6846515883F9",
@@ -352,10 +380,6 @@ describe("useProcessExecution manual processes integration", () => {
             command: "BUTTONEM_Aprm_Processed",
             keyColumnName: "Fin_Finacc_Transaction_ID",
             inpkeyColumnId: "Fin_Finacc_Transaction_ID",
-            // Mix of placeholders the resolver must handle:
-            //   - $record.<col> resolved against the harness record (line 50 of this file)
-            //   - $recordId/$windowId remain backwards-compatible
-            //   - a static literal passes through untouched
             additionalParameters: {
               inpadClientId: "$record.AD_Client_ID",
               inpcBpartnerId: "$record.C_Bpartner_ID",
@@ -367,14 +391,20 @@ describe("useProcessExecution manual processes integration", () => {
         const recordIdField: any = { value: "R1", type: "string", label: "Record ID", name: "recordId", original: {} };
         const res = await executeProcess({ button: btn, recordId: recordIdField, params: {} });
         const out = (res && (res as any).iframeUrl) || "";
+        const params = (res && (res as any).iframeFormParams) || null;
         const target = document.querySelector("#result");
         if (target) target.textContent = out;
+        const paramsTarget = document.querySelector("#formParams");
+        if (paramsTarget) paramsTarget.textContent = params ? JSON.stringify(params) : "";
       };
       return (
         <div>
           <button onClick={onRun}>run</button>
           <div data-testid="iframeUrl">{iframeUrl}</div>
           <div id="result" data-testid="result" />
+          <div id="formParams" data-testid="formParams">
+            {iframeFormParams ? JSON.stringify(iframeFormParams) : ""}
+          </div>
         </div>
       );
     }
@@ -382,20 +412,18 @@ describe("useProcessExecution manual processes integration", () => {
     render(withUser(userCtx, <AdditionalParamsHarness />));
     fireEvent.click(screen.getByRole("button", { name: /run/i }));
 
-    const resultEl = await screen.findByTestId("result");
-    await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:8080/etendo"));
+    const paramsEl = await screen.findByTestId("formParams");
+    await waitFor(() => expect(paramsEl.textContent).not.toBe(""));
+    const p: Record<string, string> = JSON.parse(paramsEl.textContent || "{}");
 
-    const url = new URL(resultEl.textContent || "http://localhost");
-    const p = url.searchParams;
-    // $record.AD_Client_ID resolves to the record's AD_Client_ID value ("CLIENT"); the
-    // backend value wins over the hardcoded one (last-wins via params.set).
-    expect(p.getAll("inpadClientId")).toEqual(["CLIENT"]);
-    // $record.C_Bpartner_ID resolves via the lowercase fallback (record uses c_bpartner_id).
-    expect(p.getAll("inpcBpartnerId")).toEqual(["BP"]);
-    // Existing $windowId placeholder still works.
-    expect(p.get("inpwindowId")).toBe("W123");
-    // Static literals pass through unchanged.
-    expect(p.get("inpprocessed")).toBe("N");
+    // $record.AD_Client_ID resolves to the record's AD_Client_ID value ("CLIENT")
+    expect(p["inpadClientId"]).toBe("CLIENT");
+    // $record.C_Bpartner_ID resolves via the lowercase fallback (record uses c_bpartner_id)
+    expect(p["inpcBpartnerId"]).toBe("BP");
+    // Existing $windowId placeholder still works
+    expect(p["inpwindowId"]).toBe("W123");
+    // Static literals pass through unchanged
+    expect(p["inpprocessed"]).toBe("N");
   });
 
   it("emits debug logs when DEBUG_MANUAL_PROCESSES is enabled", async () => {
@@ -417,5 +445,20 @@ describe("useProcessExecution manual processes integration", () => {
     // Note: in some environments console-backed spies may not capture calls reliably.
     // This assertion verifies the flag is enabled and URL was built without errors.
     expect(typeof logger.debug).toBe("function");
+  });
+
+  it("exposes iframeFormParams from hook state after execution", async () => {
+    const userCtx = { token: "tok_abc123" };
+    render(withUser(userCtx, <Harness buttonId="TEST_BUTTON" />));
+
+    fireEvent.click(screen.getByRole("button", { name: /run/i }));
+
+    const stateParamsEl = screen.getByTestId("formParams");
+    await waitFor(() => expect(stateParamsEl.textContent).not.toBe(""));
+
+    const p: Record<string, string> = JSON.parse(stateParamsEl.textContent || "{}");
+    // Spot-check that hook state has the same params as the resolved response
+    expect(p["token"]).toBe("tok_abc123");
+    expect(p["IsPopUpCall"]).toBe("1");
   });
 });

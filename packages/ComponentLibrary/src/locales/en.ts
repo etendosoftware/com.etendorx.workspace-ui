@@ -308,6 +308,10 @@ const en = {
       title: "Could not capture response",
       text: "Could not capture the process response. Please verify status manually.",
     },
+    requestFailed: {
+      title: "The process could not be executed",
+      text: "The process could not be executed. Please contact support.",
+    },
   },
   drawer: {
     recentlyViewed: "Recently Viewed",
