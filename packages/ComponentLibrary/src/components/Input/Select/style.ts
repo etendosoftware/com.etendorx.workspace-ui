@@ -31,9 +31,12 @@ export const useStyle = () => {
             textAlign: "left",
             color: theme.palette.baselineColor.neutral[100],
             borderRadius: "0.75rem 0.75rem 0 0",
+            "&:before": {
+              borderColor: theme.palette.baselineColor.transparentNeutral[20],
+            },
             "&:after": {
-              borderColor: theme.palette.baselineColor.transparentNeutral[10],
-              borderWidth: "0 0 2px",
+              borderColor: theme.palette.baselineColor.transparentNeutral[20],
+              borderWidth: "0 0 1px",
             },
             "&.Mui-disabled": {
               color: theme.palette.baselineColor.transparentNeutral[50],
@@ -62,7 +65,7 @@ export const useStyle = () => {
         },
         labelProps: {
           fontSize: "0.875rem",
-          fontWeight: 500,
+          fontWeight: 600,
           lineHeight: "1.25rem",
           color: theme.palette.baselineColor.neutral[80],
           overflow: "hidden",
@@ -132,8 +135,8 @@ export const useStyle = () => {
           textOverflow: "ellipsis",
         },
         dropdownIcons: {
-          width: "0.938rem",
-          height: "0.938rem",
+          width: "0.875rem",
+          height: "0.875rem",
         },
         checkIcon: {
           width: "0.875rem",

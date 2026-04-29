@@ -78,4 +78,8 @@ export interface IConfigurationModalProps extends Omit<MenuProps, "open" | "titl
   open?: boolean;
   /** Callback function when an option is selected */
   onChangeSelect?: (optionSelected: OptionSelectedProps) => void;
+  /** Callback for the About (system information) button in the modal header */
+  onAboutClick?: () => void;
+  /** Tooltip text for the About button */
+  aboutButtonTooltip?: string;
 }

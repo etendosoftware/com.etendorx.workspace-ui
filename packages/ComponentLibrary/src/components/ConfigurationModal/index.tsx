@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { Link, Tooltip } from "@mui/material";
+import { Tooltip } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import RadioButtonIcon from "../../assets/icons/radio-button.svg";
 import CircleIcon from "../../assets/icons/circle.svg";
@@ -24,6 +24,7 @@ import type { IConfigurationModalProps, ISection } from "./types";
 import "./style.css";
 import IconButton from "../IconButton";
 import Menu from "../Menu";
+import AboutButton from "../About/AboutButton";
 
 const IconRenderer = ({
   icon,
@@ -45,6 +46,8 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
   linkTitle,
   sections = [],
   onChangeSelect,
+  onAboutClick,
+  aboutButtonTooltip = "About",
   ...props
 }) => {
   const [sectionsState, setSectionsState] = useState<ISection[]>(sections);
@@ -109,9 +112,9 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
             )}
             <div className="text-base font-semibold text-[var(--color-baseline-90)]">{title?.label}</div>
           </div>
-          <Link sx={{ visibility: "hidden" }} href={linkTitle?.url}>
-            {linkTitle?.label}
-          </Link>
+          {onAboutClick && (
+            <AboutButton onClick={onAboutClick} tooltip={aboutButtonTooltip} iconButtonClassName="w-8 h-8" />
+          )}
         </div>
         <div className="flex flex-col p-2 gap-2 bg-[var(--color-baseline-10)]">
           {sectionsState.map((section, sectionIndex) => {

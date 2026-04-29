@@ -334,6 +334,7 @@ const es = {
     buttons: {
       submit: "Acceso",
       google: "Continuar con Google",
+      orGoogle: "O continuar con Google",
     },
     errors: {
       csrfToken: {
@@ -676,6 +677,23 @@ const es = {
         RESIZE:
           "La imagen cargada de {{originalWidth}}x{{originalHeight}} píxeles será redimensionada automáticamente a {{targetWidth}}x{{targetHeight}} píxeles.\nEsto puede resultar en una pérdida de calidad de imagen.\n\n¿Desea continuar?",
       },
+    },
+  },
+  dashboard: {
+    title: "Panel",
+    ctaBanner: {
+      badge: "Novedades",
+      title: "Noticias y actualizaciones de Etendo",
+      description: "Descubrí las últimas funcionalidades, mejoras y notas de versión de Etendo.",
+      learnMore: "Leer más",
+    },
+    recentlyViewed: {
+      title: "Vistos recientemente",
+      empty: "No hay elementos vistos recientemente",
+    },
+    recentDocuments: {
+      title: "Documentos recientes",
+      empty: "No hay documentos recientes",
     },
   },
   packing: {

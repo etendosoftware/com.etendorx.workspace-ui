@@ -173,7 +173,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
                 type="button"
                 onClick={() => handleRecentItemClick(recentItem)}
                 className={clsx(
-                  "rounded-full px-4 py-1 text-sm font-medium border",
+                  "rounded-full px-2 py-1 text-sm font-medium border text-baseline-80",
                   "bg-[#00030D0D] text-gray-800 border-gray-300 hover:bg-gray-200 transition"
                 )}>
                 {recentItem.name}
