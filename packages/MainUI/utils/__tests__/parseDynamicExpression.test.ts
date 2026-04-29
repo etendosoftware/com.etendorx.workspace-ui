@@ -20,8 +20,14 @@ import { parseDynamicExpression } from "../index";
 // Compile a parsed expression into a callable function for testing.
 // Uses no shims — plain objects as context/currentValues.
 function compile(expr: string): (ctx: Record<string, unknown>, vals: Record<string, unknown>) => unknown {
+  // NOSONAR: The dynamic execution here is intentionally safe.
+  // `expr` is a hardcoded test-fixture string defined in this file, never derived from user input.
+  // `parseDynamicExpression` only transforms @token@ syntax into JavaScript property-access
+  // expressions using a fixed regex — it does not evaluate arbitrary code.
+  // This pattern mirrors the production `compileExpression` function, which carries the same
+  // justification and is reviewed in BaseSelector.tsx.
   // biome-ignore lint/complexity/noBannedTypes: test helper using new Function intentionally
-  return new Function("context", "currentValues", `return ${parseDynamicExpression(expr)};`) as (
+  return new Function("context", "currentValues", `return ${parseDynamicExpression(expr)};`) as ( // NOSONAR
     ctx: Record<string, unknown>,
     vals: Record<string, unknown>
   ) => unknown;
