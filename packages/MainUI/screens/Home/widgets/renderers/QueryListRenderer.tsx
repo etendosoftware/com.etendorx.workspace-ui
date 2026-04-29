@@ -94,7 +94,6 @@ export default function QueryListRenderer({ data, onFetchPage }: QueryListRender
           </tbody>
         </table>
       </div>
-
       {totalPages > 1 && (
         <div
           className="flex items-center justify-between pt-1 border-t border-transparent-neutral-10"

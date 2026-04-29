@@ -19,10 +19,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type React from "react";
-import {
-  toggleFavorite as toggleFavoriteApi,
-  fetchFavorites,
-} from "@workspaceui/api-client/src/api/dashboard";
+import { toggleFavorite as toggleFavoriteApi, fetchFavorites } from "@workspaceui/api-client/src/api/dashboard";
 import type { FavoriteItem } from "@workspaceui/api-client/src/api/dashboard";
 import { logger } from "@/utils/logger";
 import { useUserContext } from "@/hooks/useUserContext";
@@ -77,10 +74,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       });
   }, [roleId]);
 
-  const isFavorite = useCallback(
-    (windowId: string) => favoriteWindowIds.has(windowId),
-    [favoriteWindowIds]
-  );
+  const isFavorite = useCallback((windowId: string) => favoriteWindowIds.has(windowId), [favoriteWindowIds]);
 
   const subscribeToToggle = useCallback((fn: () => void) => {
     toggleListenersRef.current.add(fn);
@@ -138,8 +132,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <FavoritesContext.Provider
-      value={{ isFavorite, toggle, seed, setMenuMap, menuIdByWindowId, subscribeToToggle }}>
+    <FavoritesContext.Provider value={{ isFavorite, toggle, seed, setMenuMap, menuIdByWindowId, subscribeToToggle }}>
       {children}
     </FavoritesContext.Provider>
   );

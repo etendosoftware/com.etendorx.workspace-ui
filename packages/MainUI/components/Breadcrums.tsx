@@ -182,13 +182,11 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
           type="button"
           onClick={handleFavToggle}
           className={`shrink-0 p-1 rounded transition-all ${
-            isCurWindowFav
-              ? "text-yellow-400"
-              : "text-baseline-40 hover:text-yellow-400"
+            isCurWindowFav ? "text-yellow-400" : "text-baseline-40 hover:text-yellow-400"
           }`}
           title={isCurWindowFav ? "Remove from favorites" : "Add to favorites"}
           data-testid="Breadcrumb__favorite_toggle">
-          <StarIcon filled={isCurWindowFav} />
+          <StarIcon filled={isCurWindowFav} data-testid="StarIcon__50ef19" />
         </button>
       )}
     </div>

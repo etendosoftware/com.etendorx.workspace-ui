@@ -58,9 +58,7 @@ export default function CalendarRenderer({ data }: CalendarRendererProps) {
           className="flex items-center justify-between gap-2 rounded-lg bg-transparent-neutral-5 px-3 py-2"
           data-testid="CalendarRenderer__current">
           <div className="flex flex-col min-w-0">
-            <span className="text-xs text-baseline-50 uppercase tracking-wide leading-none mb-0.5">
-              Current period
-            </span>
+            <span className="text-xs text-baseline-50 uppercase tracking-wide leading-none mb-0.5">Current period</span>
             <span className="text-sm font-semibold text-baseline-100 truncate">{data.currentPeriod.name}</span>
             <span className="text-xs text-baseline-50">
               {formatDate(data.currentPeriod.start)} – {formatDate(data.currentPeriod.end)}
@@ -73,7 +71,6 @@ export default function CalendarRenderer({ data }: CalendarRendererProps) {
           </span>
         </div>
       )}
-
       {/* Period entries */}
       {data.entries.length > 0 && (
         <ul className="flex flex-col gap-1" data-testid="CalendarRenderer__entries">

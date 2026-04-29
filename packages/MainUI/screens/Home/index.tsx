@@ -99,7 +99,8 @@ export default function Home() {
   );
 
   const editingWidgetClass = useMemo(
-    () => (editingInstance ? widgetClasses.find((wc) => wc.widgetClassId === editingInstance.widgetClassId) ?? null : null),
+    () =>
+      editingInstance ? (widgetClasses.find((wc) => wc.widgetClassId === editingInstance.widgetClassId) ?? null) : null,
     [editingInstance, widgetClasses]
   );
 
@@ -191,12 +192,11 @@ export default function Home() {
             onClick={handleOpenDialog}
             className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-transparent-neutral-5 hover:bg-transparent-neutral-10 border border-transparent-neutral-10 text-baseline-100 transition-colors cursor-pointer"
             data-testid="Home__add_widget_btn">
-            <PlusIcon />
+            <PlusIcon data-testid="PlusIcon__3ef224" />
             {t("dashboard.addWidget.button")}
           </button>
         </div>
       )}
-
       {!isLoadingLayout && !layoutError && sortedLayout.length === 0 && (
         <p className="text-sm text-baseline-50 p-2" data-testid="Home__no_widgets">
           {t("dashboard.noWidgets")}
@@ -215,7 +215,6 @@ export default function Home() {
           data-testid="DashboardGrid__home"
         />
       )}
-
       <EditWidgetParamsDialog
         open={editingInstance !== null}
         instance={editingInstance}

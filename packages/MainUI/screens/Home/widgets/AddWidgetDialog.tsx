@@ -220,10 +220,7 @@ export default function AddWidgetDialog({
   const searchRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDialogElement>(null);
 
-  const configurableParams = useMemo(
-    () => selected?.params.filter((p) => !p.fixed) ?? [],
-    [selected]
-  );
+  const configurableParams = useMemo(() => selected?.params.filter((p) => !p.fixed) ?? [], [selected]);
   const hasConfigurableParams = configurableParams.length > 0;
 
   const urlErrors = useMemo<Record<string, boolean>>(() => {
@@ -326,27 +323,29 @@ export default function AddWidgetDialog({
             aria-label={t("dashboard.addWidget.close")}
             className="flex items-center justify-center w-8 h-8 rounded-lg text-baseline-50 hover:text-baseline-100 hover:bg-transparent-neutral-10 transition-colors cursor-pointer"
             data-testid="AddWidgetDialog__close">
-            <CloseIcon />
+            <CloseIcon data-testid="CloseIcon__18a9ac" />
           </button>
         </div>
 
         {/* Search — only in select step */}
-        {step === "select" && <div className="px-6 py-3 shrink-0">
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-baseline-50 pointer-events-none">
-              <SearchIcon />
-            </span>
-            <input
-              ref={searchRef}
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("dashboard.addWidget.search")}
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-transparent-neutral-5 border border-transparent-neutral-10 text-baseline-100 placeholder:text-baseline-50 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition-colors"
-              data-testid="AddWidgetDialog__search"
-            />
+        {step === "select" && (
+          <div className="px-6 py-3 shrink-0">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-baseline-50 pointer-events-none">
+                <SearchIcon data-testid="SearchIcon__18a9ac" />
+              </span>
+              <input
+                ref={searchRef}
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t("dashboard.addWidget.search")}
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-transparent-neutral-5 border border-transparent-neutral-10 text-baseline-100 placeholder:text-baseline-50 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition-colors"
+                data-testid="AddWidgetDialog__search"
+              />
+            </div>
           </div>
-        </div>}
+        )}
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 pb-4" data-testid="AddWidgetDialog__content">
@@ -360,9 +359,7 @@ export default function AddWidgetDialog({
               )}
               {configurableParams.map((param) => (
                 <div key={param.name} className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor={`param-${param.name}`}
-                    className="text-sm font-medium text-baseline-100">
+                  <label htmlFor={`param-${param.name}`} className="text-sm font-medium text-baseline-100">
                     {param.displayName}
                     {param.required && <span className="text-error-main ml-0.5">*</span>}
                   </label>
@@ -411,7 +408,9 @@ export default function AddWidgetDialog({
                     </p>
                   )}
                   {param.description && (
-                    <p className="text-xs text-baseline-50 leading-snug" data-testid={`AddWidgetDialog__param_hint_${param.name}`}>
+                    <p
+                      className="text-xs text-baseline-50 leading-snug"
+                      data-testid={`AddWidgetDialog__param_hint_${param.name}`}>
                       {param.description}
                     </p>
                   )}
@@ -458,84 +457,84 @@ export default function AddWidgetDialog({
               {!isLoadingClasses && !classesError && filtered.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="AddWidgetDialog__grid">
                   {filtered.map((wc) => {
-                const isSelected = selected?.widgetClassId === wc.widgetClassId;
-                const isAlreadyAdded = addedWidgetClassIds?.has(wc.widgetClassId) ?? false;
-                const isUnavailable = wc.available === false;
-                const isDisabled = isAlreadyAdded || isUnavailable;
-                return (
-                  <button
-                    key={wc.widgetClassId}
-                    type="button"
-                    disabled={isDisabled}
-                    onClick={() => !isDisabled && setSelected(isSelected ? null : wc)}
-                    className={[
-                      "flex items-start gap-3 rounded-xl p-4 text-left border transition-all duration-150 group",
-                      isDisabled
-                        ? "opacity-50 cursor-not-allowed bg-transparent-neutral-5 border-transparent-neutral-10"
-                        : isSelected
-                          ? "cursor-pointer bg-blue-500/10 border-blue-500/50 ring-2 ring-blue-500/30"
-                          : "cursor-pointer bg-transparent-neutral-5 border-transparent-neutral-10 hover:bg-transparent-neutral-10 hover:border-transparent-neutral-20",
-                    ].join(" ")}
-                    data-testid={`AddWidgetDialog__card_${wc.widgetClassId}`}>
-                    {/* Icon */}
-                    <div
-                      className={[
-                        "shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
-                        TYPE_COLOR[wc.type] ?? "bg-baseline-10 text-baseline-50",
-                      ].join(" ")}>
-                      {WIDGET_TYPE_ICONS[wc.type] ?? WIDGET_TYPE_ICONS.PROCESS}
-                    </div>
-                    {/* Text */}
-                    <div className="flex flex-col gap-1 min-w-0 flex-1">
-                      <span className="text-sm font-medium text-baseline-100 leading-snug truncate">
-                        {wc.title || wc.name}
-                      </span>
-                      {wc.description && (
-                        <span className="text-xs text-baseline-50 leading-snug line-clamp-2">{wc.description}</span>
-                      )}
-                      <span
+                    const isSelected = selected?.widgetClassId === wc.widgetClassId;
+                    const isAlreadyAdded = addedWidgetClassIds?.has(wc.widgetClassId) ?? false;
+                    const isUnavailable = wc.available === false;
+                    const isDisabled = isAlreadyAdded || isUnavailable;
+                    return (
+                      <button
+                        key={wc.widgetClassId}
+                        type="button"
+                        disabled={isDisabled}
+                        onClick={() => !isDisabled && setSelected(isSelected ? null : wc)}
                         className={[
-                          "mt-1 inline-block self-start text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded",
-                          TYPE_COLOR[wc.type] ?? "bg-baseline-10 text-baseline-50",
-                        ].join(" ")}>
-                        {wc.type.replace("_", " ")}
-                      </span>
-                    </div>
-                    {/* Already added badge */}
-                    {isAlreadyAdded && !isUnavailable && (
-                      <div
-                        className="shrink-0 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-transparent-neutral-10 text-baseline-50 whitespace-nowrap"
-                        aria-label={t("dashboard.addWidget.alreadyAdded")}>
-                        {t("dashboard.addWidget.alreadyAdded")}
-                      </div>
-                    )}
-                    {/* Unavailable badge */}
-                    {isUnavailable && (
-                      <div
-                        className="shrink-0 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-transparent-neutral-10 text-baseline-50 whitespace-nowrap"
-                        aria-label={t("dashboard.addWidget.unavailable")}>
-                        {t("dashboard.addWidget.unavailable")}
-                      </div>
-                    )}
-                    {/* Checkmark */}
-                    {!isDisabled && isSelected && (
-                      <div
-                        className="shrink-0 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center"
-                        aria-hidden="true">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                          <path
-                            d="M20 6 9 17l-5-5"
-                            stroke="white"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
+                          "flex items-start gap-3 rounded-xl p-4 text-left border transition-all duration-150 group",
+                          isDisabled
+                            ? "opacity-50 cursor-not-allowed bg-transparent-neutral-5 border-transparent-neutral-10"
+                            : isSelected
+                              ? "cursor-pointer bg-blue-500/10 border-blue-500/50 ring-2 ring-blue-500/30"
+                              : "cursor-pointer bg-transparent-neutral-5 border-transparent-neutral-10 hover:bg-transparent-neutral-10 hover:border-transparent-neutral-20",
+                        ].join(" ")}
+                        data-testid={`AddWidgetDialog__card_${wc.widgetClassId}`}>
+                        {/* Icon */}
+                        <div
+                          className={[
+                            "shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+                            TYPE_COLOR[wc.type] ?? "bg-baseline-10 text-baseline-50",
+                          ].join(" ")}>
+                          {WIDGET_TYPE_ICONS[wc.type] ?? WIDGET_TYPE_ICONS.PROCESS}
+                        </div>
+                        {/* Text */}
+                        <div className="flex flex-col gap-1 min-w-0 flex-1">
+                          <span className="text-sm font-medium text-baseline-100 leading-snug truncate">
+                            {wc.title || wc.name}
+                          </span>
+                          {wc.description && (
+                            <span className="text-xs text-baseline-50 leading-snug line-clamp-2">{wc.description}</span>
+                          )}
+                          <span
+                            className={[
+                              "mt-1 inline-block self-start text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded",
+                              TYPE_COLOR[wc.type] ?? "bg-baseline-10 text-baseline-50",
+                            ].join(" ")}>
+                            {wc.type.replace("_", " ")}
+                          </span>
+                        </div>
+                        {/* Already added badge */}
+                        {isAlreadyAdded && !isUnavailable && (
+                          <div
+                            className="shrink-0 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-transparent-neutral-10 text-baseline-50 whitespace-nowrap"
+                            aria-label={t("dashboard.addWidget.alreadyAdded")}>
+                            {t("dashboard.addWidget.alreadyAdded")}
+                          </div>
+                        )}
+                        {/* Unavailable badge */}
+                        {isUnavailable && (
+                          <div
+                            className="shrink-0 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-transparent-neutral-10 text-baseline-50 whitespace-nowrap"
+                            aria-label={t("dashboard.addWidget.unavailable")}>
+                            {t("dashboard.addWidget.unavailable")}
+                          </div>
+                        )}
+                        {/* Checkmark */}
+                        {!isDisabled && isSelected && (
+                          <div
+                            className="shrink-0 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center"
+                            aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                              <path
+                                d="M20 6 9 17l-5-5"
+                                stroke="white"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </>
@@ -567,7 +566,7 @@ export default function AddWidgetDialog({
             onClick={handlePrimaryClick}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-blue-500 hover:bg-blue-400 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors cursor-pointer"
             data-testid="AddWidgetDialog__add">
-            {isAdding ? <SpinnerIcon /> : <PlusIcon />}
+            {isAdding ? <SpinnerIcon data-testid="SpinnerIcon__18a9ac" /> : <PlusIcon data-testid="PlusIcon__18a9ac" />}
             {isAdding
               ? t("dashboard.addWidget.adding")
               : step === "select" && hasConfigurableParams

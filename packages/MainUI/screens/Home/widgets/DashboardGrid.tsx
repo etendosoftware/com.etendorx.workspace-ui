@@ -140,7 +140,8 @@ export default function DashboardGrid({
         }}
         onDragStop={handleInteractionEnd}
         onResizeStop={handleInteractionEnd}
-        autoSize>
+        autoSize
+        data-testid="GridLayout__e6b441">
         {instances.map((instance) => (
           <div key={instance.instanceId} className="h-full" data-testid={`DashboardGrid__cell_${instance.instanceId}`}>
             <WidgetCard
@@ -151,6 +152,7 @@ export default function DashboardGrid({
               onRemove={onRemove}
               onEditParams={onEditParams}
               onFetchPage={(page, pageSize) => onFetchPage(instance.instanceId, page, pageSize)}
+              data-testid="WidgetCard__e6b441"
             />
           </div>
         ))}

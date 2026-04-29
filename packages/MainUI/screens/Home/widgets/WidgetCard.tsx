@@ -72,7 +72,12 @@ const DragIcon = () => (
 const SettingsIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0M12 2v2M12 20v2M2 12h2M20 12h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path
+      d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0M12 2v2M12 20v2M2 12h2M20 12h2"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
   </svg>
 );
 
@@ -92,7 +97,15 @@ interface WidgetCardProps {
   onFetchPage: (page: number, pageSize: number) => Promise<void>;
 }
 
-export default function WidgetCard({ instance, data, error, hasConfigurableParams, onRemove, onEditParams, onFetchPage }: WidgetCardProps) {
+export default function WidgetCard({
+  instance,
+  data,
+  error,
+  hasConfigurableParams,
+  onRemove,
+  onEditParams,
+  onFetchPage,
+}: WidgetCardProps) {
   const { t } = useTranslation();
   const isLocked = instance.layer !== "USER";
   const isUnavailable = instance.available === false || data?.available === false;
@@ -111,7 +124,7 @@ export default function WidgetCard({ instance, data, error, hasConfigurableParam
           title="Arrastrar widget"
           data-testid={`WidgetCard__drag_${instance.instanceId}`}>
           <span className={`shrink-0 ${theme.iconHover} opacity-50 hover:opacity-100 transition-opacity`}>
-            <DragIcon />
+            <DragIcon data-testid="DragIcon__cb8729" />
           </span>
           <span className={`text-sm font-semibold ${theme.title} truncate`}>{instance.title}</span>
         </span>
@@ -139,9 +152,7 @@ export default function WidgetCard({ instance, data, error, hasConfigurableParam
       {/* Content — scrollable area that fills remaining card height */}
       <div className="flex-1 min-h-0 overflow-y-auto" data-testid={`WidgetCard__body_${instance.instanceId}`}>
         {isUnavailable && (
-          <p
-            className="text-sm text-baseline-50 italic"
-            data-testid={`WidgetCard__unavailable_${instance.instanceId}`}>
+          <p className="text-sm text-baseline-50 italic" data-testid={`WidgetCard__unavailable_${instance.instanceId}`}>
             {t("home.widget.unavailable")}
           </p>
         )}

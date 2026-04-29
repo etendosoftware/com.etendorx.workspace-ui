@@ -37,8 +37,20 @@ const SpinnerIcon = () => (
 
 const SaveIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M17 21v-8H7v8M7 3v5h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path
+      d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M17 21v-8H7v8M7 3v5h8"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
@@ -133,7 +145,7 @@ export default function EditWidgetParamsDialog({
             aria-label={t("dashboard.addWidget.close")}
             className="flex items-center justify-center w-8 h-8 rounded-lg text-baseline-50 hover:text-baseline-100 hover:bg-transparent-neutral-10 transition-colors cursor-pointer"
             data-testid="EditWidgetParamsDialog__close">
-            <CloseIcon />
+            <CloseIcon data-testid="CloseIcon__c6f8aa" />
           </button>
         </div>
 
@@ -188,12 +200,16 @@ export default function EditWidgetParamsDialog({
                 />
               )}
               {urlErrors[param.name] && (
-                <p className="text-xs text-error-main" data-testid={`EditWidgetParamsDialog__param_error_${param.name}`}>
+                <p
+                  className="text-xs text-error-main"
+                  data-testid={`EditWidgetParamsDialog__param_error_${param.name}`}>
                   {t("dashboard.params.urlError")}
                 </p>
               )}
               {param.description && (
-                <p className="text-xs text-baseline-50 leading-snug" data-testid={`EditWidgetParamsDialog__param_hint_${param.name}`}>
+                <p
+                  className="text-xs text-baseline-50 leading-snug"
+                  data-testid={`EditWidgetParamsDialog__param_hint_${param.name}`}>
                   {param.description}
                 </p>
               )}
@@ -216,7 +232,7 @@ export default function EditWidgetParamsDialog({
             onClick={() => onSave(instance.instanceId, paramValues)}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-blue-500 hover:bg-blue-400 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors cursor-pointer"
             data-testid="EditWidgetParamsDialog__save">
-            {isSaving ? <SpinnerIcon /> : <SaveIcon />}
+            {isSaving ? <SpinnerIcon data-testid="SpinnerIcon__c6f8aa" /> : <SaveIcon data-testid="SaveIcon__c6f8aa" />}
             {isSaving ? t("dashboard.editParams.saving") : t("dashboard.editParams.save")}
           </button>
         </div>

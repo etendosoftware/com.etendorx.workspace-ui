@@ -406,30 +406,30 @@ export default function Sidebar() {
   return (
     <FavoritesDrawerContext.Provider value={favoritesDrawerValue}>
       <>
-      <Drawer
-        windowId={currentWindowId}
-        pendingWindowId={pendingWindowId}
-        logo={EtendoLogotype.src}
-        title={t("common.etendo")}
-        items={menu}
-        onClick={handleClick}
-        onReportClick={handleClick}
-        onProcessClick={handleClick}
-        getTranslatedName={getTranslatedName}
-        RecentlyViewedComponent={RecentlyViewed}
-        VersionComponent={VersionComponent}
-        searchContext={searchContext}
-        data-testid="Drawer__6c6035"
-      />
-      <ProcessIframeModal {...processIframeModal} data-testid="ProcessIframeModal__sidebar" />
-      <ProcessDefinitionModal
-        type={processType}
-        open={showProcessDefinitionModal}
-        onClose={handleCloseProcessDefinitionModal}
-        button={selectedProcessDefinitionButton}
-        keepOpenOnSuccess
-        data-testid="ProcessDefinitionModal__sidebar"
-      />
+        <Drawer
+          windowId={currentWindowId}
+          pendingWindowId={pendingWindowId}
+          logo={EtendoLogotype.src}
+          title={t("common.etendo")}
+          items={menu}
+          onClick={handleClick}
+          onReportClick={handleClick}
+          onProcessClick={handleClick}
+          getTranslatedName={getTranslatedName}
+          RecentlyViewedComponent={RecentlyViewed}
+          VersionComponent={VersionComponent}
+          searchContext={searchContext}
+          data-testid="Drawer__6c6035"
+        />
+        <ProcessIframeModal {...processIframeModal} data-testid="ProcessIframeModal__sidebar" />
+        <ProcessDefinitionModal
+          type={processType}
+          open={showProcessDefinitionModal}
+          onClose={handleCloseProcessDefinitionModal}
+          button={selectedProcessDefinitionButton}
+          keepOpenOnSuccess
+          data-testid="ProcessDefinitionModal__sidebar"
+        />
       </>
     </FavoritesDrawerContext.Provider>
   );
