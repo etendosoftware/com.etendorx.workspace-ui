@@ -39,8 +39,8 @@ const LOADING_SKELETON_COUNT = 4;
 function LoadingSkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="Home__loading_skeleton">
-      {Array.from({ length: LOADING_SKELETON_COUNT }).map((_, i) => (
-        <div key={i} className="rounded-2xl bg-baseline-10 p-5 h-40 animate-pulse">
+      {Array.from({ length: LOADING_SKELETON_COUNT }, (_, i) => `skeleton-${i}`).map((id) => (
+        <div key={id} className="rounded-2xl bg-baseline-10 p-5 h-40 animate-pulse">
           <div className="h-3 rounded bg-transparent-neutral-10 w-1/3 mb-4" />
           <div className="h-3 rounded bg-transparent-neutral-10 w-3/4 mb-2" />
           <div className="h-3 rounded bg-transparent-neutral-10 w-1/2" />

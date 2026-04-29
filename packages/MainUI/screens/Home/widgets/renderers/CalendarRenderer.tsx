@@ -77,9 +77,8 @@ export default function CalendarRenderer({ data }: CalendarRendererProps) {
           {data.entries.map((entry, i) => {
             const status = getStatus(entry.openClose);
             return (
-              // biome-ignore lint/suspicious/noArrayIndexKey: calendar entries have no stable display key
               <li
-                key={i}
+                key={`${entry.name}-${entry.start}`}
                 className="flex items-center justify-between gap-2 py-1 border-t border-transparent-neutral-10"
                 data-testid={`CalendarRenderer__entry_${i}`}>
                 <div className="flex flex-col min-w-0">

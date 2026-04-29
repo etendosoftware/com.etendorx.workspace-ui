@@ -160,45 +160,56 @@ export default function EditWidgetParamsDialog({
                 {param.displayName}
                 {param.required && <span className="text-error-main ml-0.5">*</span>}
               </label>
-              {param.type === "BOOLEAN" ? (
-                <input
-                  id={`edit-param-${param.name}`}
-                  type="checkbox"
-                  checked={paramValues[param.name] === "true"}
-                  onChange={(e) =>
-                    setParamValues((prev) => ({ ...prev, [param.name]: e.target.checked ? "true" : "false" }))
-                  }
-                  className="w-4 h-4 cursor-pointer"
-                  data-testid={`EditWidgetParamsDialog__param_${param.name}`}
-                />
-              ) : param.type === "LIST" && param.listValues ? (
-                <select
-                  id={`edit-param-${param.name}`}
-                  value={paramValues[param.name] ?? ""}
-                  onChange={(e) => setParamValues((prev) => ({ ...prev, [param.name]: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-transparent-neutral-5 border border-transparent-neutral-10 text-baseline-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-                  data-testid={`EditWidgetParamsDialog__param_${param.name}`}>
-                  {param.listValues.map((lv) => (
-                    <option key={lv.value} value={lv.value}>
-                      {lv.label}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  id={`edit-param-${param.name}`}
-                  type={param.type === "NUMBER" ? "number" : "text"}
-                  value={paramValues[param.name] ?? ""}
-                  onChange={(e) => setParamValues((prev) => ({ ...prev, [param.name]: e.target.value }))}
-                  className={[
-                    "w-full px-3 py-2 text-sm rounded-lg bg-transparent-neutral-5 border text-baseline-100 placeholder:text-baseline-50 focus:outline-none focus:ring-2 transition-colors",
-                    urlErrors[param.name]
-                      ? "border-error-main focus:ring-error-main/40"
-                      : "border-transparent-neutral-10 focus:ring-blue-500/40",
-                  ].join(" ")}
-                  data-testid={`EditWidgetParamsDialog__param_${param.name}`}
-                />
-              )}
+              {(() => {
+                if (param.type === "BOOLEAN") {
+                  return (
+                    <input
+                      id={`edit-param-${param.name}`}
+                      type="checkbox"
+                      checked={paramValues[param.name] === "true"}
+                      onChange={(e) =>
+                        setParamValues((prev) => ({
+                          ...prev,
+                          [param.name]: e.target.checked ? "true" : "false",
+                        }))
+                      }
+                      className="w-4 h-4 cursor-pointer"
+                      data-testid={`EditWidgetParamsDialog__param_${param.name}`}
+                    />
+                  );
+                }
+                if (param.type === "LIST" && param.listValues) {
+                  return (
+                    <select
+                      id={`edit-param-${param.name}`}
+                      value={paramValues[param.name] ?? ""}
+                      onChange={(e) => setParamValues((prev) => ({ ...prev, [param.name]: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm rounded-lg bg-transparent-neutral-5 border border-transparent-neutral-10 text-baseline-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                      data-testid={`EditWidgetParamsDialog__param_${param.name}`}>
+                      {param.listValues.map((lv) => (
+                        <option key={lv.value} value={lv.value}>
+                          {lv.label}
+                        </option>
+                      ))}
+                    </select>
+                  );
+                }
+                return (
+                  <input
+                    id={`edit-param-${param.name}`}
+                    type={param.type === "NUMBER" ? "number" : "text"}
+                    value={paramValues[param.name] ?? ""}
+                    onChange={(e) => setParamValues((prev) => ({ ...prev, [param.name]: e.target.value }))}
+                    className={[
+                      "w-full px-3 py-2 text-sm rounded-lg bg-transparent-neutral-5 border text-baseline-100 placeholder:text-baseline-50 focus:outline-none focus:ring-2 transition-colors",
+                      urlErrors[param.name]
+                        ? "border-error-main focus:ring-error-main/40"
+                        : "border-transparent-neutral-10 focus:ring-blue-500/40",
+                    ].join(" ")}
+                    data-testid={`EditWidgetParamsDialog__param_${param.name}`}
+                  />
+                );
+              })()}
               {urlErrors[param.name] && (
                 <p
                   className="text-xs text-error-main"

@@ -153,7 +153,7 @@ export default function WidgetCard({
       <div className="flex-1 min-h-0 overflow-y-auto" data-testid={`WidgetCard__body_${instance.instanceId}`}>
         {isUnavailable && (
           <p className="text-sm text-baseline-50 italic" data-testid={`WidgetCard__unavailable_${instance.instanceId}`}>
-            {t("home.widget.unavailable")}
+            {t("dashboard.widget.unavailable")}
           </p>
         )}
         {!isUnavailable && isLoading && (

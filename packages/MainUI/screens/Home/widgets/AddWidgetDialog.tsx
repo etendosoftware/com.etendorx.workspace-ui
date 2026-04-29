@@ -169,6 +169,12 @@ const WIDGET_TYPE_ICONS: Record<WidgetType, React.ReactElement> = {
       />
     </svg>
   ),
+  CALENDAR: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  ),
 };
 
 const TYPE_COLOR: Record<WidgetType, string> = {
@@ -183,6 +189,7 @@ const TYPE_COLOR: Record<WidgetType, string> = {
   HTML: "bg-zinc-500/15 text-zinc-600",
   URL: "bg-teal-500/15 text-teal-600",
   PROCESS: "bg-slate-500/15 text-slate-600",
+  CALENDAR: "bg-blue-500/15 text-blue-600",
 };
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -363,45 +370,56 @@ export default function AddWidgetDialog({
                     {param.displayName}
                     {param.required && <span className="text-error-main ml-0.5">*</span>}
                   </label>
-                  {param.type === "BOOLEAN" ? (
-                    <input
-                      id={`param-${param.name}`}
-                      type="checkbox"
-                      checked={paramValues[param.name] === "true"}
-                      onChange={(e) =>
-                        setParamValues((prev) => ({ ...prev, [param.name]: e.target.checked ? "true" : "false" }))
-                      }
-                      className="w-4 h-4 cursor-pointer"
-                      data-testid={`AddWidgetDialog__param_${param.name}`}
-                    />
-                  ) : param.type === "LIST" && param.listValues ? (
-                    <select
-                      id={`param-${param.name}`}
-                      value={paramValues[param.name] ?? ""}
-                      onChange={(e) => setParamValues((prev) => ({ ...prev, [param.name]: e.target.value }))}
-                      className="w-full px-3 py-2 text-sm rounded-lg bg-transparent-neutral-5 border border-transparent-neutral-10 text-baseline-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-                      data-testid={`AddWidgetDialog__param_${param.name}`}>
-                      {param.listValues.map((lv) => (
-                        <option key={lv.value} value={lv.value}>
-                          {lv.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      id={`param-${param.name}`}
-                      type={param.type === "NUMBER" ? "number" : "text"}
-                      value={paramValues[param.name] ?? ""}
-                      onChange={(e) => setParamValues((prev) => ({ ...prev, [param.name]: e.target.value }))}
-                      className={[
-                        "w-full px-3 py-2 text-sm rounded-lg bg-transparent-neutral-5 border text-baseline-100 placeholder:text-baseline-50 focus:outline-none focus:ring-2 transition-colors",
-                        urlErrors[param.name]
-                          ? "border-error-main focus:ring-error-main/40"
-                          : "border-transparent-neutral-10 focus:ring-blue-500/40",
-                      ].join(" ")}
-                      data-testid={`AddWidgetDialog__param_${param.name}`}
-                    />
-                  )}
+                  {(() => {
+                    if (param.type === "BOOLEAN") {
+                      return (
+                        <input
+                          id={`param-${param.name}`}
+                          type="checkbox"
+                          checked={paramValues[param.name] === "true"}
+                          onChange={(e) =>
+                            setParamValues((prev) => ({
+                              ...prev,
+                              [param.name]: e.target.checked ? "true" : "false",
+                            }))
+                          }
+                          className="w-4 h-4 cursor-pointer"
+                          data-testid={`AddWidgetDialog__param_${param.name}`}
+                        />
+                      );
+                    }
+                    if (param.type === "LIST" && param.listValues) {
+                      return (
+                        <select
+                          id={`param-${param.name}`}
+                          value={paramValues[param.name] ?? ""}
+                          onChange={(e) => setParamValues((prev) => ({ ...prev, [param.name]: e.target.value }))}
+                          className="w-full px-3 py-2 text-sm rounded-lg bg-transparent-neutral-5 border border-transparent-neutral-10 text-baseline-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                          data-testid={`AddWidgetDialog__param_${param.name}`}>
+                          {param.listValues.map((lv) => (
+                            <option key={lv.value} value={lv.value}>
+                              {lv.label}
+                            </option>
+                          ))}
+                        </select>
+                      );
+                    }
+                    return (
+                      <input
+                        id={`param-${param.name}`}
+                        type={param.type === "NUMBER" ? "number" : "text"}
+                        value={paramValues[param.name] ?? ""}
+                        onChange={(e) => setParamValues((prev) => ({ ...prev, [param.name]: e.target.value }))}
+                        className={[
+                          "w-full px-3 py-2 text-sm rounded-lg bg-transparent-neutral-5 border text-baseline-100 placeholder:text-baseline-50 focus:outline-none focus:ring-2 transition-colors",
+                          urlErrors[param.name]
+                            ? "border-error-main focus:ring-error-main/40"
+                            : "border-transparent-neutral-10 focus:ring-blue-500/40",
+                        ].join(" ")}
+                        data-testid={`AddWidgetDialog__param_${param.name}`}
+                      />
+                    );
+                  })()}
                   {urlErrors[param.name] && (
                     <p className="text-xs text-error-main" data-testid={`AddWidgetDialog__param_error_${param.name}`}>
                       {t("dashboard.params.urlError")}
@@ -429,9 +447,8 @@ export default function AddWidgetDialog({
               {/* Loading */}
               {isLoadingClasses && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="AddWidgetDialog__skeleton">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton, no stable key available
-                    <div key={i} className="rounded-xl bg-transparent-neutral-5 p-4 h-24 animate-pulse" />
+                  {Array.from({ length: 6 }, (_, i) => `skeleton-${i}`).map((id) => (
+                    <div key={id} className="rounded-xl bg-transparent-neutral-5 p-4 h-24 animate-pulse" />
                   ))}
                 </div>
               )}
@@ -469,11 +486,13 @@ export default function AddWidgetDialog({
                         onClick={() => !isDisabled && setSelected(isSelected ? null : wc)}
                         className={[
                           "flex items-start gap-3 rounded-xl p-4 text-left border transition-all duration-150 group",
-                          isDisabled
-                            ? "opacity-50 cursor-not-allowed bg-transparent-neutral-5 border-transparent-neutral-10"
-                            : isSelected
-                              ? "cursor-pointer bg-blue-500/10 border-blue-500/50 ring-2 ring-blue-500/30"
-                              : "cursor-pointer bg-transparent-neutral-5 border-transparent-neutral-10 hover:bg-transparent-neutral-10 hover:border-transparent-neutral-20",
+                          (() => {
+                            if (isDisabled)
+                              return "opacity-50 cursor-not-allowed bg-transparent-neutral-5 border-transparent-neutral-10";
+                            if (isSelected)
+                              return "cursor-pointer bg-blue-500/10 border-blue-500/50 ring-2 ring-blue-500/30";
+                            return "cursor-pointer bg-transparent-neutral-5 border-transparent-neutral-10 hover:bg-transparent-neutral-10 hover:border-transparent-neutral-20";
+                          })(),
                         ].join(" ")}
                         data-testid={`AddWidgetDialog__card_${wc.widgetClassId}`}>
                         {/* Icon */}
@@ -567,11 +586,11 @@ export default function AddWidgetDialog({
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-blue-500 hover:bg-blue-400 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors cursor-pointer"
             data-testid="AddWidgetDialog__add">
             {isAdding ? <SpinnerIcon data-testid="SpinnerIcon__18a9ac" /> : <PlusIcon data-testid="PlusIcon__18a9ac" />}
-            {isAdding
-              ? t("dashboard.addWidget.adding")
-              : step === "select" && hasConfigurableParams
-                ? t("dashboard.addWidget.next")
-                : t("dashboard.addWidget.add")}
+            {(() => {
+              if (isAdding) return t("dashboard.addWidget.adding");
+              if (step === "select" && hasConfigurableParams) return t("dashboard.addWidget.next");
+              return t("dashboard.addWidget.add");
+            })()}
           </button>
         </div>
       </dialog>

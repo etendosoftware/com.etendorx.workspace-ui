@@ -79,8 +79,9 @@ export default function QueryListRenderer({ data, onFetchPage }: QueryListRender
           </thead>
           <tbody className={isPending ? "opacity-50" : ""}>
             {data.rows.map((row, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: rows have no stable id
-              <tr key={i} className="border-t border-transparent-neutral-10">
+              <tr
+                key={columns.map((col) => String(row[col.name] ?? "")).join("|")}
+                className="border-t border-transparent-neutral-10">
                 {columns.map((col) => (
                   <td
                     key={col.name}

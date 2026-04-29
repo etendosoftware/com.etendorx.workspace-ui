@@ -22,12 +22,11 @@ interface KpiRendererProps {
 }
 
 export default function KpiRenderer({ data }: KpiRendererProps) {
-  const trendColor =
-    data.trend == null
-      ? ""
-      : data.trend.startsWith("+") || data.trend.toLowerCase() === "up"
-        ? "text-success-main"
-        : "text-error-main";
+  let trendColor = "";
+  if (data.trend != null) {
+    trendColor =
+      data.trend.startsWith("+") || data.trend.toLowerCase() === "up" ? "text-success-main" : "text-error-main";
+  }
 
   return (
     <div className="flex flex-col gap-1" data-testid="KpiRenderer__content">

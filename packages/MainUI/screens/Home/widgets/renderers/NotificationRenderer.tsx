@@ -39,8 +39,10 @@ export default function NotificationRenderer({ data }: NotificationRendererProps
   return (
     <ul className="flex flex-col gap-2" data-testid="NotificationRenderer__list">
       {data.items.map((item, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: notifications have no stable id
-        <li key={i} className="flex items-start gap-2" data-testid={`NotificationRenderer__item_${i}`}>
+        <li
+          key={`${item.priority}-${item.text}-${item.time}`}
+          className="flex items-start gap-2"
+          data-testid={`NotificationRenderer__item_${i}`}>
           <span
             className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_STYLES[item.priority]}`}
             data-testid={`NotificationRenderer__badge_${i}`}>
