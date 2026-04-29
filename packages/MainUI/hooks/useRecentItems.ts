@@ -122,7 +122,10 @@ export function useRecentItems(
   const handleRecentItemClick = useCallback(
     (item: Menu) => {
       const itemId = item.id;
-      const menuItem = itemId ? findItemByIdentifier(menuItems, itemId) : null;
+      // findItemByIdentifier matches Window items by windowId, not by menu item id.
+      // For non-Window types (Process, Report) it matches by id.
+      const lookupId = item.type === "Window" ? (item.windowId ?? item.id) : item.id;
+      const menuItem = lookupId ? findItemByIdentifier(menuItems, lookupId) : null;
 
       // Use the full menu item (with formId, correct windowId, etc.) when available,
       // falling back to the stored recent item only if not found in current menu.
@@ -132,7 +135,6 @@ export function useRecentItems(
       if (!menuItem) return;
 
       addRecentItem(menuItem);
-      setIsExpanded(true);
     },
     [addRecentItem, menuItems, onClick, roleId]
   );

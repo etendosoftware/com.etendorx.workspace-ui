@@ -218,13 +218,6 @@ export function useDatasource({
       noActiveFilter: true,
     };
 
-    console.log("[ImplicitFilter][useDatasource]", {
-      entity: stableParams.tabId,
-      hasUserFilters,
-      isImplicitFilterAppliedReceived: isImplicitFilterApplied,
-      isImplicitFilterAppliedSent: isImplicitFilterApplied,
-    });
-
     return finalParams;
   }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, activeColumnFilters]);
 

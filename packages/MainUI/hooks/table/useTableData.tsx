@@ -920,19 +920,7 @@ export const useTableData = ({
     if (!hasInitializedDirectLink.current) {
       const windowIdentifier = activeWindow?.windowIdentifier;
 
-      console.log("[ImplicitFilter][init]", {
-        tabId: tab.id,
-        tabName: tab.name,
-        hasInitialized: hasInitializedDirectLink.current,
-        isImplicitFilterApplied,
-        initialIsFilterApplied,
-        hasSelectedRecord,
-        formMode: tabFormState?.mode,
-        recordId: tabFormState?.recordId,
-      });
-
       const initializeDirectLink = () => {
-        console.log("[ImplicitFilter][initDirectLink] → false");
         if (isImplicitFilterApplied !== false) {
           setIsImplicitFilterApplied(false);
         }
@@ -948,7 +936,6 @@ export const useTableData = ({
       };
 
       const initializeDefault = () => {
-        console.log("[ImplicitFilter][initDefault] →", initialIsFilterApplied);
         setIsImplicitFilterApplied(initialIsFilterApplied);
         hasInitializedDirectLink.current = true;
       };
@@ -957,12 +944,6 @@ export const useTableData = ({
         initializeDirectLink();
       } else if (isImplicitFilterApplied === undefined) {
         initializeDefault();
-      } else {
-        console.log("[ImplicitFilter][skip] ya inicializado o condición no cumplida", {
-          isImplicitFilterApplied,
-          hasSelectedRecord,
-          formMode: tabFormState?.mode,
-        });
       }
     }
   }, [
