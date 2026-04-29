@@ -27,7 +27,8 @@ function compile(expr: string): (ctx: Record<string, unknown>, vals: Record<stri
   // This pattern mirrors the production `compileExpression` function, which carries the same
   // justification and is reviewed in BaseSelector.tsx.
   // biome-ignore lint/complexity/noBannedTypes: test helper using new Function intentionally
-  return new Function("context", "currentValues", `return ${parseDynamicExpression(expr)};`) as ( // NOSONAR
+  return new Function("context", "currentValues", `return ${parseDynamicExpression(expr)};`) as (
+    // NOSONAR
     ctx: Record<string, unknown>,
     vals: Record<string, unknown>
   ) => unknown;
