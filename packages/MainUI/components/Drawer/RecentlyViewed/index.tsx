@@ -96,7 +96,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
       if (localRecentItems.length > 0) {
         setExpanded(true);
       }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleWindowAccess = useCallback(

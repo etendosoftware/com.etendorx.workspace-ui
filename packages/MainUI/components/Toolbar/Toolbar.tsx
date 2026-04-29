@@ -270,10 +270,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const handleOpenEmailModal = useCallback(async () => {
     if (!selectedRecord?.id || !tab?.id) return;
     try {
-      const response = await fetch(
-        `/api/erp/meta/email/config?recordId=${String(selectedRecord.id)}&tabId=${tab.id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await fetch(`/api/erp/meta/email/config?recordId=${String(selectedRecord.id)}&tabId=${tab.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const configResult = await response.json();
       if (!response.ok || configResult.success === false) {
         toast.error(t("process.processError"), {
@@ -333,7 +332,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         const result = await response.json();
         if (!response.ok || result.success === false) {
           toast.error(t("process.processError"), {
-            description: <ToastContent message={result.message || result.error || ""} data-testid="ToastContent__a2dd07" />,
+            description: (
+              <ToastContent message={result.message || result.error || ""} data-testid="ToastContent__a2dd07" />
+            ),
           });
           return;
         }
@@ -341,7 +342,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         handleCloseEmailModal();
       } catch (e) {
         toast.error(t("errors.internalServerError.title"), {
-          description: <ToastContent message={e instanceof Error ? e.message : ""} data-testid="ToastContent__a2dd07" />,
+          description: (
+            <ToastContent message={e instanceof Error ? e.message : ""} data-testid="ToastContent__a2dd07" />
+          ),
         });
       } finally {
         setIsSendingEmail(false);
