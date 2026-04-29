@@ -31,8 +31,8 @@ export const useStyle = () => {
       padding: "0rem 1rem 1rem 1rem",
     },
     formStyle: {
-      margin: "0rem 0rem 1rem 0rem",
-      gap: "1rem",
+      margin: "0rem 0rem 0.75rem 0rem",
+      gap: "0.75rem",
     },
     labelStyles: {
       color: theme.palette.baselineColor.neutral[80],
