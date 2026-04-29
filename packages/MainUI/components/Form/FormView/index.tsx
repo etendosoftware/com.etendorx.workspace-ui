@@ -57,6 +57,7 @@ import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
 import { useWindowContext } from "@/contexts/window";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
+import { useRecentDocuments } from "@/hooks/useRecentDocuments";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
@@ -399,6 +400,21 @@ export function FormView({
 
     return null;
   }, [activeWindow?.windowIdentifier, getSelectedRecord, tab, currentRecordId, graph, graphVersion]);
+
+  const { addRecentDocument } = useRecentDocuments();
+
+  useEffect(() => {
+    const identifier = record?._identifier;
+    if (!currentRecordId || currentRecordId === NEW_RECORD_ID || !identifier || !windowMetadata) return;
+    addRecentDocument({
+      id: currentRecordId,
+      identifier: String(identifier),
+      windowId: windowMetadata.id,
+      windowTitle: windowMetadata.name,
+      tabId: tab.id,
+      tabLevel: tab.tabLevel ?? 0,
+    });
+  }, [record?._identifier, currentRecordId, windowMetadata, tab.id, tab.tabLevel, addRecentDocument]);
 
   /**
    * Merges record data with form initialization data to create complete form state.

@@ -319,6 +319,7 @@ const en = {
     buttons: {
       submit: "Log In",
       google: "Continue with Google",
+      orGoogle: "Or continue with Google",
     },
     errors: {
       csrfToken: {
@@ -663,6 +664,23 @@ const en = {
         RESIZE:
           "Your {{originalWidth}}x{{originalHeight}} pixels uploaded image is going to be resized automatically to {{targetWidth}}x{{targetHeight}} pixels.\nThis could result in a loss of image quality.\n\nDo you want to continue?",
       },
+    },
+  },
+  dashboard: {
+    title: "Dashboard",
+    ctaBanner: {
+      badge: "What's New",
+      title: "Etendo News & Updates",
+      description: "Discover the latest features, improvements, and release notes from Etendo.",
+      learnMore: "Read more",
+    },
+    recentlyViewed: {
+      title: "Recently Viewed",
+      empty: "No recently viewed items",
+    },
+    recentDocuments: {
+      title: "Recent Documents",
+      empty: "No recent documents",
     },
   },
   packing: {

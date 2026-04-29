@@ -21,12 +21,10 @@ import useTableSelection from "../useTableSelection";
 import { useSelected } from "@/hooks/useSelected";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useWindowContext } from "@/contexts/window";
-
 // Mocks
 jest.mock("@/hooks/useSelected");
 jest.mock("@/hooks/useUserContext");
 jest.mock("@/contexts/window");
-jest.mock("@/utils/hooks/useTableSelection/sessionSync");
 jest.mock("@/utils/logger");
 jest.mock("@/utils/structures", () => ({
   mapBy: jest.fn((arr, key) => {

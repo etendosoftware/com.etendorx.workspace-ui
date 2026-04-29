@@ -74,7 +74,7 @@ const IconButton = ({
   disabled:text-(--color-transparent-neutral-30)
   disabled:cursor-not-allowed
   rounded-full
-  text-(--color-baseline-80)
+  text-(--color-baseline-70)
   bg-(--color-baseline-0)
   hover:text-(--color-baseline-0)
   hover:bg-(--color-dynamic-main)

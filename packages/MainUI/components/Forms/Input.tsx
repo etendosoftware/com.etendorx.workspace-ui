@@ -41,8 +41,8 @@ const Input: FC<InputProps> = ({
     return "pr-3";
   };
 
-  const baseClassName = `w-full ${Icon ? "pl-10" : "pl-3"} ${getRightPadding()} rounded-t tracking-normal h-8 border-0 border-b bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 
-    focus:border-b-2 focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none 
+  const baseClassName = `w-full ${Icon ? "pl-10" : "pl-3"} ${getRightPadding()} rounded-t tracking-normal h-8 border-0 border-b bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5
+    focus:border-b-2 focus:border-(--color-etendo-main) focus:text-(--color-etendo-main) focus:bg-(--color-etendo-contrast-text) focus:outline-none
     hover:border-(--color-transparent-neutral-100) hover:border-b-2 hover:bg-(--color-transparent-neutral-10)
   `;
 
@@ -78,7 +78,7 @@ const Input: FC<InputProps> = ({
         <label
           htmlFor={inputId}
           className={`flex items-center gap-1 font-medium text-sm leading-5 tracking-normal transition-colors ${
-            isFocused ? "text-(--color-baseline-100)" : "text-(--color-baseline-80)"
+            isFocused ? "text-(--color-etendo-main)" : "text-(--color-baseline-80)"
           }`}>
           {label}{" "}
           {required && <Asterisk className="h-3 w-3 fill-(--color-error-main)" data-testid="Asterisk__ce3099" />}
@@ -89,7 +89,7 @@ const Input: FC<InputProps> = ({
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Icon
               className={`h-4 w-4 transition-colors ${
-                isFocused ? "fill-(--color-baseline-100)" : "fill-(--color-transparent-neutral-60)"
+                isFocused ? "fill-(--color-etendo-main)" : "fill-(--color-transparent-neutral-60)"
               }`}
               data-testid="Icon__ce3099"
               tabIndex={-1}
@@ -115,7 +115,7 @@ const Input: FC<InputProps> = ({
             className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors">
             <X
               className={`h-4 w-4 transition-colors ${
-                isFocused ? "fill-(--color-baseline-100)" : "fill-(--color-transparent-neutral-60)"
+                isFocused ? "fill-(--color-etendo-main)" : "fill-(--color-transparent-neutral-60)"
               }`}
               data-testid="X__ce3099"
             />
@@ -130,14 +130,14 @@ const Input: FC<InputProps> = ({
             {showPassword ? (
               <EyeOff
                 className={`h-4 w-4 transition-colors ${
-                  isFocused ? "fill-(--color-baseline-100)" : "fill-(--color-transparent-neutral-60)"
+                  isFocused ? "fill-(--color-etendo-main)" : "fill-(--color-transparent-neutral-60)"
                 }`}
                 data-testid="EyeOff__ce3099"
               />
             ) : (
               <Eye
                 className={`h-4 w-4 transition-colors ${
-                  isFocused ? "fill-(--color-baseline-100)" : "fill-(--color-transparent-neutral-60)"
+                  isFocused ? "fill-(--color-etendo-main)" : "fill-(--color-transparent-neutral-60)"
                 }`}
                 data-testid="Eye__ce3099"
               />
