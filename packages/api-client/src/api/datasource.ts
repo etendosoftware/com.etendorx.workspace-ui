@@ -120,6 +120,12 @@ export class Datasource {
   }
 
   private buildParams(options: DatasourceParams) {
+    console.log("[ImplicitFilter][buildParams]", {
+      tabId: options.tabId,
+      raw: options.isImplicitFilterApplied,
+      sent: options.isImplicitFilterApplied ? "true" : "false",
+      noActiveFilter: options.noActiveFilter,
+    });
     const params: Record<string, unknown> = {
       _noCount: "true",
       _operationType: "fetch",

@@ -208,19 +208,22 @@ export function useDatasource({
     const hasIdFilter = Boolean(filterById);
     const idParams = hasIdFilter ? { targetRecordId: filterById?.value, directNavigation: true } : {};
 
-    // Only tell the backend to apply the implicit filter wrapper when the user has active
-    // column/search filters. Without user filters the backend generates invalid HQL
-    // `((tabFilter) and ())` — the empty `()` represents the missing column criteria.
-    // The tab's HQL filter clause is always applied server-side regardless of this flag.
     const hasUserFilters = searchCriteriaArray.length > 0 || columnFilterCriteria.length > 0;
 
     const finalParams: any = {
       ...stableParams,
       ...idParams,
       ...(allCriteria.length > 0 ? { criteria: allCriteria.length === 1 ? allCriteria[0] : allCriteria } : {}),
-      isImplicitFilterApplied: hasUserFilters ? isImplicitFilterApplied : false,
+      isImplicitFilterApplied: isImplicitFilterApplied,
       noActiveFilter: true,
     };
+
+    console.log("[ImplicitFilter][useDatasource]", {
+      entity: stableParams.tabId,
+      hasUserFilters,
+      isImplicitFilterAppliedReceived: isImplicitFilterApplied,
+      isImplicitFilterAppliedSent: isImplicitFilterApplied,
+    });
 
     return finalParams;
   }, [stableParams, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, activeColumnFilters]);
