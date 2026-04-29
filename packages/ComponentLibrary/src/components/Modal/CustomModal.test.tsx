@@ -152,7 +152,9 @@ describe("CustomModal", () => {
 
       const inputs = document.querySelectorAll<HTMLInputElement>('input[type="hidden"]');
       const map: Record<string, string> = {};
-      inputs.forEach((i) => { map[i.name] = i.value; });
+      inputs.forEach((i) => {
+        map[i.name] = i.value;
+      });
 
       expect(map["inpKey"]).toBe("R1");
       expect(map["token"]).toBe("tok123");
