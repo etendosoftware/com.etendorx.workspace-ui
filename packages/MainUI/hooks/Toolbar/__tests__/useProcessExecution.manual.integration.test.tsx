@@ -85,31 +85,38 @@ jest.mock("@/utils/processes/manual/data.json", () => ({
 import { useProcessExecution } from "@/hooks/Toolbar/useProcessExecution";
 import { logger } from "@/utils/logger";
 
-// Minimal harness component exercising the hook.
+// ─── Shared test fixtures ────────────────────────────────────────────────────
+
+const DEFAULT_PROCESS_INFO = {
+  parameters: [],
+  _entityName: "",
+  id: "",
+  name: "",
+  javaClassName: "",
+  clientSideValidation: "",
+  loadFunction: "",
+  searchKey: "",
+};
+
+const DEFAULT_RECORD_ID_FIELD: any = {
+  value: "R1",
+  type: "string",
+  label: "Record ID",
+  name: "recordId",
+  original: {},
+};
+
+const USER_CTX = { token: "tok_abc123" };
+
+// ─── Harness components ──────────────────────────────────────────────────────
+
+// Generic harness: renders the hook output into #result / #formParams.
 // iframeUrl is the base URL without query params (POST migration).
 // formParams is serialized as JSON in a separate element.
-function Harness({ buttonId }: { buttonId: string }) {
+function Harness({ button }: { button: any }) {
   const { executeProcess, iframeUrl, iframeFormParams } = useProcessExecution();
   const onRun = async () => {
-    const btn: any = {
-      id: buttonId,
-      action: "processAction",
-      buttonText: "Execute",
-      processInfo: {
-        parameters: [],
-        _entityName: "",
-        id: "",
-        name: "",
-        javaClassName: "",
-        clientSideValidation: "",
-        loadFunction: "",
-        searchKey: "",
-      },
-      processAction: { id: "PA1" },
-    };
-
-    const recordIdField: any = { value: "R1", type: "string", label: "Record ID", name: "recordId", original: {} };
-    const res = await executeProcess({ button: btn, recordId: recordIdField, params: {} });
+    const res = await executeProcess({ button, recordId: DEFAULT_RECORD_ID_FIELD, params: {} });
     const out = (res && (res as any).iframeUrl) || "";
     const params = (res && (res as any).iframeFormParams) || null;
     const target = document.querySelector("#result");
@@ -129,9 +136,55 @@ function Harness({ buttonId }: { buttonId: string }) {
   );
 }
 
+// Harness that captures thrown errors into #error instead of rendering iframe state.
+function ErrorHarness({ button }: { button: any }) {
+  const { executeProcess } = useProcessExecution();
+  const onRun = async () => {
+    try {
+      console.log("About to execute process with button:", button.id, "action:", button.action);
+      await executeProcess({ button, recordId: DEFAULT_RECORD_ID_FIELD, params: {} });
+      console.log("Process executed successfully - this should not happen");
+    } catch (e: any) {
+      console.log("Caught error:", e?.message || String(e));
+      const target = document.querySelector("#error");
+      if (target) target.textContent = e?.message || String(e);
+    }
+  };
+  return (
+    <div>
+      <button onClick={onRun}>run</button>
+      <div id="error" data-testid="error" />
+    </div>
+  );
+}
+
 function withUser(ctxValue: any, ui: React.ReactElement) {
   return <UserContext.Provider value={ctxValue}>{ui}</UserContext.Provider>;
 }
+
+// ─── Test helpers ─────────────────────────────────────────────────────────────
+
+function renderAndRun(button: any) {
+  render(withUser(USER_CTX, <Harness button={button} />));
+  fireEvent.click(screen.getByRole("button", { name: /run/i }));
+}
+
+async function assertBareIframeUrl(urlPath: string): Promise<HTMLElement> {
+  const resultEl = await screen.findByTestId("result");
+  await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:8080/etendo"));
+  expect(resultEl.textContent).toContain("/meta/legacy");
+  expect(resultEl.textContent).toContain(urlPath);
+  expect(resultEl.textContent).not.toContain("?");
+  return resultEl;
+}
+
+async function parseFormParams(): Promise<Record<string, string>> {
+  const paramsEl = await screen.findByTestId("formParams");
+  await waitFor(() => expect(paramsEl.textContent).not.toBe(""));
+  return JSON.parse(paramsEl.textContent || "{}");
+}
+
+// ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe("useProcessExecution manual processes integration", () => {
   beforeEach(() => {
@@ -142,23 +195,20 @@ describe("useProcessExecution manual processes integration", () => {
   });
 
   it("builds POST iframe URL and form params for non-posted processes", async () => {
-    const userCtx = { token: "tok_abc123" };
-    render(withUser(userCtx, <Harness buttonId="TEST_BUTTON" />));
-
-    fireEvent.click(screen.getByRole("button", { name: /run/i }));
-
-    const resultEl = await screen.findByTestId("result");
-    await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:8080/etendo"));
+    const button: any = {
+      id: "TEST_BUTTON",
+      action: "processAction",
+      buttonText: "Execute",
+      processInfo: DEFAULT_PROCESS_INFO,
+      processAction: { id: "PA1" },
+    };
+    renderAndRun(button);
 
     // URL must be the bare base URL — no query string
-    expect(resultEl.textContent).toContain("/meta/legacy");
-    expect(resultEl.textContent).toContain("/SalesOrder/Header_Edition.html");
-    expect(resultEl.textContent).not.toContain("?");
+    const resultEl = await assertBareIframeUrl("/SalesOrder/Header_Edition.html");
 
     // All params must now be in iframeFormParams (POST body), not the URL
-    const paramsEl = screen.getByTestId("formParams");
-    await waitFor(() => expect(paramsEl.textContent).not.toBe(""));
-    const p: Record<string, string> = JSON.parse(paramsEl.textContent || "{}");
+    const p = await parseFormParams();
 
     expect(p["IsPopUpCall"]).toBe("1");
     expect(p["Command"]).toBe("BUTTONDocAction104");
@@ -184,164 +234,57 @@ describe("useProcessExecution manual processes integration", () => {
   });
 
   it("sets inpdocaction=P for posted heuristic in form params", async () => {
-    const userCtx = { token: "tok_abc123" };
+    const button: any = {
+      id: "Posted",
+      columnName: "Posted",
+      action: "processAction",
+      buttonText: "Post",
+      processInfo: DEFAULT_PROCESS_INFO,
+      processAction: { id: "PA_POST" },
+    };
+    renderAndRun(button);
 
-    function PostedHarness() {
-      const { executeProcess, iframeUrl, iframeFormParams } = useProcessExecution();
-      const onRun = async () => {
-        const btn: any = {
-          id: "Posted",
-          columnName: "Posted",
-          action: "processAction",
-          buttonText: "Post",
-          processInfo: {
-            parameters: [],
-            _entityName: "",
-            id: "",
-            name: "",
-            javaClassName: "",
-            clientSideValidation: "",
-            loadFunction: "",
-            searchKey: "",
-          },
-          processAction: { id: "PA_POST" },
-        };
-        const recordIdField: any = { value: "R1", type: "string", label: "Record ID", name: "recordId", original: {} };
-        const res = await executeProcess({ button: btn, recordId: recordIdField, params: {} });
-        const out = (res && (res as any).iframeUrl) || "";
-        const params = (res && (res as any).iframeFormParams) || null;
-        const target = document.querySelector("#result");
-        if (target) target.textContent = out;
-        const paramsTarget = document.querySelector("#formParams");
-        if (paramsTarget) paramsTarget.textContent = params ? JSON.stringify(params) : "";
-      };
-      return (
-        <div>
-          <button onClick={onRun}>run</button>
-          <div data-testid="iframeUrl">{iframeUrl}</div>
-          <div id="result" data-testid="result" />
-          <div id="formParams" data-testid="formParams">
-            {iframeFormParams ? JSON.stringify(iframeFormParams) : ""}
-          </div>
-        </div>
-      );
-    }
-
-    render(withUser(userCtx, <PostedHarness />));
-
-    fireEvent.click(screen.getByRole("button", { name: /run/i }));
-
-    const paramsEl = await screen.findByTestId("formParams");
-    await waitFor(() => expect(paramsEl.textContent).not.toBe(""));
-    const p: Record<string, string> = JSON.parse(paramsEl.textContent || "{}");
+    const p = await parseFormParams();
     expect(p["inpdocaction"]).toBe("P");
   });
 
   it("rejects when button type is not supported", async () => {
-    const userCtx = { token: "tok_abc123" };
+    const badButton: any = {
+      id: "TEST_BUTTON", // Valid ID
+      action: "unsupportedAction", // Invalid action type
+      buttonText: "Execute",
+      // Remove processAction and processDefinition to make it unrecognized
+      someOtherProperty: { id: "OTHER" },
+    };
 
-    // Create a harness that captures errors
-    function ErrorHarness() {
-      const { executeProcess } = useProcessExecution();
-      const onRun = async () => {
-        const badBtn: any = {
-          id: "TEST_BUTTON", // Valid ID
-          action: "unsupportedAction", // Invalid action type
-          buttonText: "Execute",
-          // Remove processAction and processDefinition to make it unrecognized
-          someOtherProperty: { id: "OTHER" },
-        };
-        const recordIdField: any = { value: "R1", type: "string", label: "Record ID", name: "recordId", original: {} };
-        try {
-          console.log("About to execute process with button:", badBtn.id, "action:", badBtn.action);
-          await executeProcess({ button: badBtn, recordId: recordIdField, params: {} });
-          console.log("Process executed successfully - this should not happen");
-        } catch (e: any) {
-          console.log("Caught error:", e?.message || String(e));
-          const target = document.querySelector("#error");
-          if (target) target.textContent = e?.message || String(e);
-        }
-      };
-      return (
-        <div>
-          <button onClick={onRun}>run</button>
-          <div id="error" data-testid="error" />
-        </div>
-      );
-    }
-
-    render(withUser(userCtx, <ErrorHarness />));
+    render(withUser(USER_CTX, <ErrorHarness button={badButton} />));
     fireEvent.click(screen.getByRole("button", { name: /run/i }));
     const errEl = await screen.findByTestId("error");
     await waitFor(() => expect(errEl.textContent).toMatch(/Process type not supported/i));
   });
 
   it("uses backend processAction params when present (Reschedule Process scenario)", async () => {
-    const userCtx = { token: "tok_abc123" };
-
-    // Harness where the button carries backend-resolved legacy params — no data.json entry required.
-    function BackendResolvedHarness() {
-      const { executeProcess, iframeUrl, iframeFormParams } = useProcessExecution();
-      const onRun = async () => {
-        const btn: any = {
-          id: "57A2B365BDC69F57E040007F010171B4",
-          action: "processAction",
-          buttonText: "Reschedule",
-          columnName: "Reschedule",
-          processInfo: {
-            parameters: [],
-            _entityName: "",
-            id: "",
-            name: "",
-            javaClassName: "",
-            clientSideValidation: "",
-            loadFunction: "",
-            searchKey: "",
-          },
-          // Params resolved by LegacyProcessResolver on the backend (AD_MODEL_OBJECT_MAPPING path).
-          processAction: {
-            id: "PA_RESCH",
-            url: "/ad_process/RescheduleProcess.html",
-            command: "DEFAULT",
-            keyColumnName: "AD_Process_Request_ID",
-            inpkeyColumnId: "AD_Process_Request_ID",
-          },
-        };
-        const recordIdField: any = { value: "R1", type: "string", label: "Record ID", name: "recordId", original: {} };
-        const res = await executeProcess({ button: btn, recordId: recordIdField, params: {} });
-        const out = (res && (res as any).iframeUrl) || "";
-        const params = (res && (res as any).iframeFormParams) || null;
-        const target = document.querySelector("#result");
-        if (target) target.textContent = out;
-        const paramsTarget = document.querySelector("#formParams");
-        if (paramsTarget) paramsTarget.textContent = params ? JSON.stringify(params) : "";
-      };
-      return (
-        <div>
-          <button onClick={onRun}>run</button>
-          <div data-testid="iframeUrl">{iframeUrl}</div>
-          <div id="result" data-testid="result" />
-          <div id="formParams" data-testid="formParams">
-            {iframeFormParams ? JSON.stringify(iframeFormParams) : ""}
-          </div>
-        </div>
-      );
-    }
-
-    render(withUser(userCtx, <BackendResolvedHarness />));
-    fireEvent.click(screen.getByRole("button", { name: /run/i }));
-
-    const resultEl = await screen.findByTestId("result");
-    await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:8080/etendo"));
+    const button: any = {
+      id: "57A2B365BDC69F57E040007F010171B4",
+      action: "processAction",
+      buttonText: "Reschedule",
+      columnName: "Reschedule",
+      processInfo: DEFAULT_PROCESS_INFO,
+      // Params resolved by LegacyProcessResolver on the backend (AD_MODEL_OBJECT_MAPPING path).
+      processAction: {
+        id: "PA_RESCH",
+        url: "/ad_process/RescheduleProcess.html",
+        command: "DEFAULT",
+        keyColumnName: "AD_Process_Request_ID",
+        inpkeyColumnId: "AD_Process_Request_ID",
+      },
+    };
+    renderAndRun(button);
 
     // URL must be bare (no query string)
-    expect(resultEl.textContent).toContain("/meta/legacy");
-    expect(resultEl.textContent).toContain("/ad_process/RescheduleProcess.html");
-    expect(resultEl.textContent).not.toContain("?");
+    await assertBareIframeUrl("/ad_process/RescheduleProcess.html");
 
-    const paramsEl = screen.getByTestId("formParams");
-    await waitFor(() => expect(paramsEl.textContent).not.toBe(""));
-    const p: Record<string, string> = JSON.parse(paramsEl.textContent || "{}");
+    const p = await parseFormParams();
 
     expect(p["Command"]).toBe("DEFAULT");
     expect(p["inpkeyColumnId"]).toBe("AD_Process_Request_ID");
@@ -354,67 +297,29 @@ describe("useProcessExecution manual processes integration", () => {
   });
 
   it("forwards backend additionalParameters and resolves $record.<col> against the record", async () => {
-    const userCtx = { token: "tok_abc123" };
+    const button: any = {
+      id: "E5569BAF22C644EF9B5D6846515883F9",
+      action: "processAction",
+      buttonText: "Process",
+      columnName: "EM_Aprm_Processed",
+      processInfo: DEFAULT_PROCESS_INFO,
+      processAction: {
+        id: "PA_FINTRX",
+        url: "/FinancialAccount/Transaction_Edition.html",
+        command: "BUTTONEM_Aprm_Processed",
+        keyColumnName: "Fin_Finacc_Transaction_ID",
+        inpkeyColumnId: "Fin_Finacc_Transaction_ID",
+        additionalParameters: {
+          inpadClientId: "$record.AD_Client_ID",
+          inpcBpartnerId: "$record.C_Bpartner_ID",
+          inpwindowId: "$windowId",
+          inpprocessed: "N",
+        },
+      },
+    };
+    renderAndRun(button);
 
-    function AdditionalParamsHarness() {
-      const { executeProcess, iframeUrl, iframeFormParams } = useProcessExecution();
-      const onRun = async () => {
-        const btn: any = {
-          id: "E5569BAF22C644EF9B5D6846515883F9",
-          action: "processAction",
-          buttonText: "Process",
-          columnName: "EM_Aprm_Processed",
-          processInfo: {
-            parameters: [],
-            _entityName: "",
-            id: "",
-            name: "",
-            javaClassName: "",
-            clientSideValidation: "",
-            loadFunction: "",
-            searchKey: "",
-          },
-          processAction: {
-            id: "PA_FINTRX",
-            url: "/FinancialAccount/Transaction_Edition.html",
-            command: "BUTTONEM_Aprm_Processed",
-            keyColumnName: "Fin_Finacc_Transaction_ID",
-            inpkeyColumnId: "Fin_Finacc_Transaction_ID",
-            additionalParameters: {
-              inpadClientId: "$record.AD_Client_ID",
-              inpcBpartnerId: "$record.C_Bpartner_ID",
-              inpwindowId: "$windowId",
-              inpprocessed: "N",
-            },
-          },
-        };
-        const recordIdField: any = { value: "R1", type: "string", label: "Record ID", name: "recordId", original: {} };
-        const res = await executeProcess({ button: btn, recordId: recordIdField, params: {} });
-        const out = (res && (res as any).iframeUrl) || "";
-        const params = (res && (res as any).iframeFormParams) || null;
-        const target = document.querySelector("#result");
-        if (target) target.textContent = out;
-        const paramsTarget = document.querySelector("#formParams");
-        if (paramsTarget) paramsTarget.textContent = params ? JSON.stringify(params) : "";
-      };
-      return (
-        <div>
-          <button onClick={onRun}>run</button>
-          <div data-testid="iframeUrl">{iframeUrl}</div>
-          <div id="result" data-testid="result" />
-          <div id="formParams" data-testid="formParams">
-            {iframeFormParams ? JSON.stringify(iframeFormParams) : ""}
-          </div>
-        </div>
-      );
-    }
-
-    render(withUser(userCtx, <AdditionalParamsHarness />));
-    fireEvent.click(screen.getByRole("button", { name: /run/i }));
-
-    const paramsEl = await screen.findByTestId("formParams");
-    await waitFor(() => expect(paramsEl.textContent).not.toBe(""));
-    const p: Record<string, string> = JSON.parse(paramsEl.textContent || "{}");
+    const p = await parseFormParams();
 
     // $record.AD_Client_ID resolves to the record's AD_Client_ID value ("CLIENT")
     expect(p["inpadClientId"]).toBe("CLIENT");
@@ -433,13 +338,16 @@ describe("useProcessExecution manual processes integration", () => {
       window.localStorage.setItem("DEBUG_MANUAL_PROCESSES", "true");
     } catch {}
 
-    const userCtx = { token: "tok_abc123" };
-    render(withUser(userCtx, <Harness buttonId="TEST_BUTTON" />));
+    const button: any = {
+      id: "TEST_BUTTON",
+      action: "processAction",
+      buttonText: "Execute",
+      processInfo: DEFAULT_PROCESS_INFO,
+      processAction: { id: "PA1" },
+    };
+    renderAndRun(button);
 
-    fireEvent.click(screen.getByRole("button", { name: /run/i }));
-
-    const resultEl = await screen.findByTestId("result");
-    await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:8080/etendo"));
+    await assertBareIframeUrl("/SalesOrder/Header_Edition.html");
     const dbg = require("@/utils/debug");
     expect(dbg.isDebugManualProcesses()).toBe(true);
     // Note: in some environments console-backed spies may not capture calls reliably.
@@ -448,15 +356,16 @@ describe("useProcessExecution manual processes integration", () => {
   });
 
   it("exposes iframeFormParams from hook state after execution", async () => {
-    const userCtx = { token: "tok_abc123" };
-    render(withUser(userCtx, <Harness buttonId="TEST_BUTTON" />));
+    const button: any = {
+      id: "TEST_BUTTON",
+      action: "processAction",
+      buttonText: "Execute",
+      processInfo: DEFAULT_PROCESS_INFO,
+      processAction: { id: "PA1" },
+    };
+    renderAndRun(button);
 
-    fireEvent.click(screen.getByRole("button", { name: /run/i }));
-
-    const stateParamsEl = screen.getByTestId("formParams");
-    await waitFor(() => expect(stateParamsEl.textContent).not.toBe(""));
-
-    const p: Record<string, string> = JSON.parse(stateParamsEl.textContent || "{}");
+    const p = await parseFormParams();
     // Spot-check that hook state has the same params as the resolved response
     expect(p["token"]).toBe("tok_abc123");
     expect(p["IsPopUpCall"]).toBe("1");

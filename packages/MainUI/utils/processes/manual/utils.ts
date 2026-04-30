@@ -98,7 +98,7 @@ function tryFallbackByColumnName(
     return null;
   }
   const fallbackKey = Object.keys(fallbackData).find((key) =>
-    (fallbackData[key] as ProcessActionData).command?.includes(button.columnName as string)
+    fallbackData[key].command?.includes(button.columnName as string)
   );
   return fallbackKey ? fallbackData[fallbackKey] : null;
 }

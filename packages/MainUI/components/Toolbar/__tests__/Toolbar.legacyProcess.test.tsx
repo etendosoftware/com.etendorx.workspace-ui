@@ -15,7 +15,6 @@
  *************************************************************************
  */
 
-import React from "react";
 import { render, act } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { toast } from "sonner";
@@ -23,7 +22,7 @@ import { LegacyProcessUnresolvedError } from "@/utils/processes/manual/errors";
 import type { ProcessButton } from "@/components/ProcessModal/types";
 
 // Capture the onProcessClick prop from ProcessMenu so tests can invoke it directly
-let capturedOnProcessClick: ((button: ProcessButton) => void) | undefined;
+let capturedOnProcessClick: ((button: ProcessButton) => Promise<void> | void) | undefined;
 
 jest.mock("../Menus/ProcessMenu", () => ({
   __esModule: true,
@@ -59,16 +58,8 @@ jest.mock("@/contexts/ToolbarContext", () => ({
     formViewRefetch: null,
   }),
 }));
-jest.mock("@/hooks/useSelected", () => ({
-  useSelected: () => ({ graph: { getChildren: () => [] } }),
-}));
-jest.mock("@/contexts/window", () => ({
-  useWindowContext: () => ({
-    activeWindow: { navigation: { activeLevels: [], activeTabsByLevel: new Map() } },
-    getTabFormState: jest.fn(),
-    clearChildrenSelections: jest.fn(),
-  }),
-}));
+jest.mock("@/hooks/useSelected", () => require("../__testUtils__/toolbarMocks").UseSelectedMock);
+jest.mock("@/contexts/window", () => require("../__testUtils__/toolbarMocks").WindowContextMock);
 jest.mock("@/hooks/Toolbar/useProcessExecution", () => ({
   useProcessExecution: () => ({ executeProcess: jest.fn(), iframeUrl: "" }),
 }));
@@ -136,22 +127,14 @@ jest.mock("@/hooks/Toolbar/useProcessButton", () => ({
   useProcessButton: () => ({ handleProcessClick: mockHandleProcessClick }),
 }));
 
-jest.mock("@workspaceui/componentlibrary/src/components/IconButton", () => ({
-  __esModule: true,
-  default: ({ children, onClick, disabled, "data-testid": testId }: any) => (
-    <button onClick={onClick} disabled={disabled} data-testid={testId}>
-      {children}
-    </button>
-  ),
-}));
-jest.mock("@workspaceui/componentlibrary/src/components/IconButtonWithText", () => ({
-  __esModule: true,
-  default: ({ text, onClick, disabled, "data-testid": testId }: any) => (
-    <button onClick={onClick} disabled={disabled} data-testid={testId}>
-      {text}
-    </button>
-  ),
-}));
+jest.mock(
+  "@workspaceui/componentlibrary/src/components/IconButton",
+  () => require("../__testUtils__/toolbarMocks").IconButtonMock
+);
+jest.mock(
+  "@workspaceui/componentlibrary/src/components/IconButtonWithText",
+  () => require("../__testUtils__/toolbarMocks").IconButtonWithTextMock
+);
 jest.mock("../Modals/EmailSendModal", () => ({ __esModule: true, default: () => null }));
 jest.mock("../../ProcessModal/ProcessDefinitionModal", () => ({ __esModule: true, default: () => null }));
 jest.mock("../../ProcessModal/Iframe", () => ({ __esModule: true, default: () => null }));
