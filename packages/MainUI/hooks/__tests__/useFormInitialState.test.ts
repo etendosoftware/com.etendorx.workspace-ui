@@ -190,4 +190,56 @@ describe("useFormInitialState", () => {
       expect(result.current?.etsgDateOperation).toBe("2026-03-01");
     });
   });
+
+  describe("static defaultValue fallback (ETP-3749)", () => {
+    const tabWithStaticDefault = {
+      id: "tabId",
+      fields: {
+        isActive: {
+          hqlName: "active",
+          columnName: "IsActive",
+          column: { defaultValue: "Y", reference: "20" },
+        },
+      },
+    } as any;
+
+    beforeEach(() => {
+      (useTabContext as jest.Mock).mockReturnValue({ tab: tabWithStaticDefault });
+      (getFieldsByColumnName as jest.Mock).mockReturnValue({
+        IsActive: tabWithStaticDefault.fields.isActive,
+      });
+    });
+
+    it("applies static default when FIC returns empty", () => {
+      const formInit = {
+        columnValues: { IsActive: { value: "" } },
+      } as any;
+      const { result } = renderHook(() => useFormInitialState(formInit));
+      expect(result.current?.active).toBe(true);
+    });
+
+    it("does not overwrite a non-empty FIC value with the static default", () => {
+      const formInit = {
+        columnValues: { IsActive: { value: "N" } },
+      } as any;
+      const { result } = renderHook(() => useFormInitialState(formInit));
+      expect(result.current?.active).toBe("N");
+    });
+
+    it("does not apply @SQL= or @ColumnName@ patterns as static defaults", () => {
+      const tabWithSQLDefault = {
+        id: "tabId",
+        fields: {
+          qty: { hqlName: "qty", columnName: "Qty", column: { defaultValue: "@SQL=SELECT 1@" } },
+          ref: { hqlName: "ref", columnName: "Ref", column: { defaultValue: "@OtherCol@" } },
+        },
+      } as any;
+      (useTabContext as jest.Mock).mockReturnValue({ tab: tabWithSQLDefault });
+      (getFieldsByColumnName as jest.Mock).mockReturnValue({});
+      const formInit = { columnValues: {} } as any;
+      const { result } = renderHook(() => useFormInitialState(formInit));
+      expect(result.current?.qty).toBeUndefined();
+      expect(result.current?.ref).toBeUndefined();
+    });
+  });
 });
