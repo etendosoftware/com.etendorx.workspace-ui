@@ -41,7 +41,7 @@ describe("form/constants", () => {
 
   describe("getPasswordFieldNames", () => {
     it("should return empty set for undefined tab", () => {
-      const result = getPasswordFieldNames(undefined);
+      const result = getPasswordFieldNames();
       expect(result.size).toBe(0);
     });
 

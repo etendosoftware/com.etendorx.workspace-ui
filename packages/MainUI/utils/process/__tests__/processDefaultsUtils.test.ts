@@ -43,7 +43,7 @@ describe("processDefaultsUtils", () => {
 
   describe("createParameterMap", () => {
     it("should return empty map for undefined parameters", () => {
-      const map = createParameterMap(undefined);
+      const map = createParameterMap();
       expect(map.size).toBe(0);
     });
 
@@ -70,7 +70,7 @@ describe("processDefaultsUtils", () => {
 
   describe("createParameterNameMap", () => {
     it("should return empty object for undefined parameters", () => {
-      expect(createParameterNameMap(undefined)).toEqual({});
+      expect(createParameterNameMap()).toEqual({});
     });
 
     it("should map by name and dBColumnName", () => {

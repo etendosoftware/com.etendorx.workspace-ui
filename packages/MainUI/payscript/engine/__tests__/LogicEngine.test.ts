@@ -1,5 +1,4 @@
-import BigNumber from "bignumber.js";
-import { executeLogic, type PayScriptRules, type ExecutionResult } from "../LogicEngine";
+import { executeLogic, type PayScriptRules } from "../LogicEngine";
 
 describe("LogicEngine", () => {
   describe("executeLogic", () => {

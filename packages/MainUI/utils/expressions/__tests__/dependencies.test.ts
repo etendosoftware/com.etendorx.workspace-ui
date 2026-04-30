@@ -12,7 +12,7 @@ const makeField = (overrides: Partial<Field>): Field =>
 
 describe("extractDependenciesFromExpression", () => {
   it("should return empty array for undefined/null/empty expression", () => {
-    expect(extractDependenciesFromExpression(undefined)).toEqual([]);
+    expect(extractDependenciesFromExpression()).toEqual([]);
     expect(extractDependenciesFromExpression("")).toEqual([]);
   });
 

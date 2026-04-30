@@ -15,7 +15,7 @@ describe("processes/definition/constants", () => {
     });
 
     it("should have required fields for each process definition", () => {
-      for (const [id, definition] of Object.entries(PROCESS_DEFINITION_DATA)) {
+      for (const [, definition] of Object.entries(PROCESS_DEFINITION_DATA)) {
         expect(definition).toHaveProperty("inpColumnId");
         expect(definition).toHaveProperty("inpPrimaryKeyColumnId");
         expect(definition).toHaveProperty("defaultKeys");

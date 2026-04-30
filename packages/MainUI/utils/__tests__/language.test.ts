@@ -51,8 +51,6 @@ describe("language", () => {
   });
 
   describe("getLanguage", () => {
-    const originalLocalStorage = window.localStorage;
-
     afterEach(() => {
       try {
         window.localStorage.removeItem("currentLanguage");
