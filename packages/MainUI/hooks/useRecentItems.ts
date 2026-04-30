@@ -46,8 +46,11 @@ const updateItemsWithTranslations = (
   getTranslatedName?: (item: Menu) => string
 ): RecentItem[] => {
   return items.map((storedItem) => {
-    const menuItem = findItemByIdentifier(menuItems, storedItem.windowId);
-    if (!menuItem) return storedItem;
+    // For Window items use windowId as lookup key; for Process/Report/etc. use id.
+    // This prevents a Window with the same windowId as a Process's id from overwriting the name.
+    const lookupId = storedItem.type === "Window" ? storedItem.windowId : storedItem.id;
+    const menuItem = findItemByIdentifier(menuItems, lookupId);
+    if (menuItem?.type !== storedItem.type) return storedItem;
 
     return {
       ...storedItem,
@@ -97,11 +100,12 @@ export function useRecentItems(
       const recentItem = createRecentItem(item, getTranslatedName);
       setLocalRecentItems((prev) => {
         const currentItems = prev[roleId] || [];
-        const existing = currentItems.find((v) => v.id === item.id);
+        const isExisting = currentItems.some((v) => v.id === item.id);
 
-        if (existing) {
+        if (isExisting) {
           const newItems = { ...prev };
-          newItems[roleId] = [existing, ...newItems[roleId].filter((v) => v.id !== item.id)];
+          // Use recentItem (fresh data) instead of the stale entry to update name/type on re-access.
+          newItems[roleId] = [recentItem, ...newItems[roleId].filter((v) => v.id !== item.id)];
 
           return newItems;
         }
@@ -127,14 +131,17 @@ export function useRecentItems(
       const lookupId = item.type === "Window" ? (item.windowId ?? item.id) : item.id;
       const menuItem = lookupId ? findItemByIdentifier(menuItems, lookupId) : null;
 
-      // Use the full menu item (with formId, correct windowId, etc.) when available,
-      // falling back to the stored recent item only if not found in current menu.
-      onClick(menuItem ?? item);
+      // Validate type match: a Window with the same windowId as a Process's id must not
+      // be used to navigate — it would open the wrong item (e.g. BP Category instead of Generate Invoices).
+      const validMenuItem = menuItem?.type === item.type ? menuItem : null;
+
+      // Use the full menu item when available and type-valid, falling back to the stored item.
+      onClick(validMenuItem ?? item);
 
       if (!itemId || !roleId) return;
-      if (!menuItem) return;
+      if (!validMenuItem) return;
 
-      addRecentItem(menuItem);
+      addRecentItem(validMenuItem);
     },
     [addRecentItem, menuItems, onClick, roleId]
   );

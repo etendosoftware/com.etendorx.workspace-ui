@@ -55,11 +55,9 @@ import { TAB_MODES } from "@/utils/url/constants";
 import { useWindowContext } from "@/contexts/window";
 import ActionModal from "@workspaceui/componentlibrary/src/components/ActionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
-import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
+import { TOOLBAR_BUTTONS_ACTIONS, EMAIL_SUPPORTED_ENTITIES } from "@/utils/toolbar/constants";
 import { toast } from "sonner";
 import { ToastContent } from "@/components/ToastContent";
-
-const EMAIL_SUPPORTED_ENTITIES = ["Invoice", "Order"];
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
