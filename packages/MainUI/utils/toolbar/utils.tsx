@@ -57,6 +57,7 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.COPY_RECORD]: "toolbar-button-copy-record",
   [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: "toolbar-button-print-record",
   [TOOLBAR_BUTTONS_ACTIONS.ADVANCED_FILTERS]: "toolbar-button-advanced-filters",
+  [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: "toolbar-button-send-mail",
 } as const;
 
 export const DefaultIcon = () => (
@@ -258,6 +259,7 @@ export const createButtonByType = ({
         return buildDisableConfig(!isCloneEnabled || !isSingleSelection || patternDisabled);
       },
       [TOOLBAR_BUTTONS_ACTIONS.PRINT_RECORD]: () => buildDisableConfig(!hasSelectedRecord),
+      [TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL]: () => buildDisableConfig(!hasSelectedRecord),
     };
 
     const handler = actionHandlers[button.action];
