@@ -40,6 +40,7 @@ import {
   type ProcessDefinitionButton,
   type ProcessResponse,
 } from "../ProcessModal/types";
+import EmailIcon from "@mui/icons-material/Email";
 import EmailSendModal, { type EmailFormData } from "./Modals/EmailSendModal";
 import ProcessMenu from "./Menus/ProcessMenu";
 import SearchPortal from "./SearchPortal";
@@ -57,6 +58,8 @@ import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
 import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
 import { toast } from "sonner";
 import { ToastContent } from "@/components/ToastContent";
+
+const EMAIL_SUPPORTED_ENTITIES = ["Invoice", "Order"];
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
@@ -338,7 +341,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           });
           return;
         }
-        toast.success(t("process.completedSuccessfully"));
+        toast.success(t("email.successMessage"));
         handleCloseEmailModal();
       } catch (e) {
         toast.error(t("errors.internalServerError.title"), {
@@ -408,8 +411,25 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       isAdvancedFilterApplied: isAdvancedFilterApplied,
     });
 
+    const emailButton =
+      isFormView && tab?.entityName && EMAIL_SUPPORTED_ENTITIES.includes(tab.entityName)
+        ? {
+            key: "send-email",
+            icon: <EmailIcon data-testid="EmailIcon__a2dd07" />,
+            tooltip: t ? t("email.send") : undefined,
+            disabled: !hasSelectedRecord,
+            onClick: () => {
+              handleOpenEmailModal();
+            },
+          }
+        : null;
+
     const config = {
       ...baseConfig,
+      rightSection: {
+        ...baseConfig.rightSection,
+        buttons: emailButton ? [...baseConfig.rightSection.buttons, emailButton] : baseConfig.rightSection.buttons,
+      },
       isItemSelected: hasSelectedRecord,
       processButton:
         processButtons.length > 0
@@ -436,6 +456,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     t,
     handleActionWithTooltip,
     handleMenuToggle,
+    handleOpenEmailModal,
     anchorEl,
     hasParentTab,
     selectedParentItems,
