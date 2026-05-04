@@ -117,11 +117,28 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
       [favoritesCtx, item]
     );
 
+    const handleTitleKeyDown = useCallback(
+      (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          onClick(e);
+        }
+      },
+      [onClick]
+    );
+
+    const handleFavoriteKeyDown = useCallback((e: React.KeyboardEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+    }, []);
+
     return (
-      <button
+      <div
         data-testid={`MenuTitle__${item.id ?? (item.name ? item.name.replace(/\s+/g, "-").toLowerCase() : "menu-title")}`}
-        type="button"
+        role="button"
+        tabIndex={0}
         onClick={onClick}
+        onKeyDown={handleTitleKeyDown}
         className={getMenuButtonClassName(open, selected, isParentActive)}>
         <div className={`flex items-center ${open ? "overflow-hidden" : ""}`}>
           <div className={`${open ? "w-8" : "w-full h-full"} flex justify-center items-center`}>
@@ -150,6 +167,7 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
                 <button
                   type="button"
                   onClick={handleFavoriteClick}
+                  onKeyDown={handleFavoriteKeyDown}
                   className={`shrink-0 ml-1 p-0.5 rounded transition-all ${
                     isFav
                       ? "text-yellow-400 opacity-100"
@@ -167,7 +185,7 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
             <ChevronDown />
           </div>
         )}
-      </button>
+      </div>
     );
   }
 );
