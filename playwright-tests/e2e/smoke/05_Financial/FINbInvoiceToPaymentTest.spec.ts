@@ -266,8 +266,10 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
     // Set up API response watcher BEFORE clicking Execute
     const executePaymentResponse = page.waitForResponse(/AddPaymentActionHandler/, { timeout: 60_000 });
 
-    await page.locator('[data-testid="ExecuteButton__761503"]').waitFor({ state: "visible", timeout: 10_000 });
-    await page.locator('[data-testid="ExecuteButton__761503"]').click();
+    await page
+      .locator('[data-testid^="ExecuteButton"][data-testid$="__761503"]')
+      .waitFor({ state: "visible", timeout: 10_000 });
+    await page.locator('[data-testid^="ExecuteButton"][data-testid$="__761503"]').click();
 
     // Wait for the API response — the success toast may auto-dismiss before we can catch it
     await executePaymentResponse;

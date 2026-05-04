@@ -82,6 +82,26 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
               <span className="ml-2 font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis flex-1 min-w-0">
                 {item.name}
               </span>
+              {favoritesCtx && item.windowId && (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={handleFavoriteClick}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleFavoriteClick(e as unknown as React.MouseEvent);
+                    }
+                  }}
+                  className={`shrink-0 ml-1 p-0.5 rounded transition-all ${
+                    isFav
+                      ? "text-yellow-400 opacity-100"
+                      : "text-baseline-40 opacity-0 group-hover:opacity-100 hover:text-yellow-400"
+                  }`}
+                  title={isFav ? "Remove from favorites" : "Add to favorites"}>
+                  <StarIcon filled={isFav} />
+                </span>
+              )}
             </div>
           )}
         </div>
