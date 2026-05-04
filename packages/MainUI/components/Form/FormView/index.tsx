@@ -58,6 +58,7 @@ import { useWindowContext } from "@/contexts/window";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
 import { useRecentDocuments } from "@/hooks/useRecentDocuments";
+import { useDefaultValueReaction } from "@/hooks/useDefaultValueReaction";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
@@ -463,6 +464,8 @@ export function FormView({
 
   const formMethods = useForm({ defaultValues: availableFormData as EntityData });
   const { reset, setValue, formState, ...form } = formMethods;
+
+  useDefaultValueReaction({ tab, formMethods, isFormInitializing });
 
   const resetRef = useRef(reset);
   resetRef.current = reset;
