@@ -71,7 +71,7 @@ export function useDefaultValueReaction({ tab, formMethods, isFormInitializing }
 
       for (const depHqlName of dependents) {
         if (dirtyRef.current[depHqlName as keyof typeof dirtyRef.current]) continue;
-        setValue(depHqlName as keyof EntityData, newValue as EntityData[keyof EntityData], {
+        setValue(depHqlName, newValue as EntityData[keyof EntityData], {
           shouldDirty: false,
         });
       }
