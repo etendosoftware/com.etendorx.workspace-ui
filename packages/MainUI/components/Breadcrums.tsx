@@ -32,6 +32,7 @@ import { useCurrentRecord } from "@/hooks/useCurrentRecord";
 import { useWindowContext } from "@/contexts/window";
 import { useFocusContext } from "@/contexts/focus";
 import { useTableStatePersistenceTab } from "@/hooks/useTableStatePersistenceTab";
+import { useFavoritesContext } from "@/contexts/favorites";
 
 interface BreadcrumbProps {
   allTabs: Tab[][];
@@ -41,12 +42,28 @@ interface BreadcrumbProps {
 // React hooks must be called the same number of times every render,
 // so we pre-allocate this many useCurrentRecord calls.
 const MAX_BREADCRUMB_LEVELS = 5;
+const StarIcon = ({ filled, ...props }: React.SVGProps<SVGSVGElement> & { filled: boolean }) => (
+  <svg
+    width="13"
+    height="13"
+    viewBox="0 0 24 24"
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...props}>
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
 
 const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { t } = useTranslation();
   const pathname = usePathname();
   const { window, windowId, windowIdentifier } = useMetadataContext();
-  const { activeWindow, setAllWindowsInactive, getTabFormState, clearTabFormState } = useWindowContext();
+  const { activeWindow, getTabFormState, clearTabFormState, setAllWindowsInactive } = useWindowContext();
+  const { isFavorite, toggle, menuIdByWindowId } = useFavoritesContext();
   const { graph } = useSelected();
   const { activeFocusId, setFocus } = useFocusContext();
 
@@ -223,14 +240,33 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     setAllWindowsInactive();
   }, [setAllWindowsInactive]);
 
+  const windowMenuId = windowId ? menuIdByWindowId.get(windowId) : undefined;
+  const isCurWindowFav = windowId ? isFavorite(windowId) : false;
+
+  const handleFavToggle = useCallback(() => {
+    if (windowMenuId && windowId) toggle(windowMenuId, windowId);
+  }, [windowMenuId, windowId, toggle]);
+
   return (
-    <div className="w-full h-8">
+    <div className="flex items-center gap-1 w-full h-8">
       <Breadcrumb
         onHomeClick={handleHomeClick}
         onBackClick={handleBackClick}
         items={breadcrumbItems || []}
         data-testid="Breadcrumb__50ef19"
       />
+      {windowMenuId && (
+        <button
+          type="button"
+          onClick={handleFavToggle}
+          className={`shrink-0 p-1 rounded transition-all ${
+            isCurWindowFav ? "text-yellow-400" : "text-baseline-40 hover:text-yellow-400"
+          }`}
+          title={isCurWindowFav ? "Remove from favorites" : "Add to favorites"}
+          data-testid="Breadcrumb__favorite_toggle">
+          <StarIcon filled={isCurWindowFav} data-testid="StarIcon__50ef19" />
+        </button>
+      )}
     </div>
   );
 };

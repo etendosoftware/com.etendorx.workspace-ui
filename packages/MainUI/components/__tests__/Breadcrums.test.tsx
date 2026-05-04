@@ -54,6 +54,15 @@ jest.mock("@/contexts/focus", () => ({
 }));
 
 // Mock Component Library Breadcrumb to simplify assertions
+jest.mock("@/contexts/favorites", () => ({
+  useFavoritesContext: () => ({
+    isFavorite: jest.fn(() => false),
+    toggle: jest.fn(),
+    menuIdByWindowId: new Map(),
+  }),
+}));
+
+// Mock Component Library Breadcrumb
 jest.mock("@workspaceui/componentlibrary/src/components/Breadcrums", () => ({
   __esModule: true,
   default: ({

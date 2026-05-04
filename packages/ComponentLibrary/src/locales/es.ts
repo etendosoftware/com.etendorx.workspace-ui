@@ -321,6 +321,7 @@ const es = {
     buttons: {
       submit: "Acceso",
       google: "Continuar con Google",
+      orGoogle: "O continuar con Google",
     },
     errors: {
       csrfToken: {
@@ -663,6 +664,54 @@ const es = {
         RESIZE:
           "La imagen cargada de {{originalWidth}}x{{originalHeight}} píxeles será redimensionada automáticamente a {{targetWidth}}x{{targetHeight}} píxeles.\nEsto puede resultar en una pérdida de calidad de imagen.\n\n¿Desea continuar?",
       },
+    },
+  },
+  dashboard: {
+    title: "Panel",
+    ctaBanner: {
+      badge: "Novedades",
+      title: "Noticias y actualizaciones de Etendo",
+      description: "Descubrí las últimas funcionalidades, mejoras y notas de versión de Etendo.",
+      learnMore: "Leer más",
+    },
+    recentlyViewed: {
+      title: "Vistos recientemente",
+      empty: "No hay elementos vistos recientemente",
+    },
+    recentDocuments: {
+      title: "Documentos recientes",
+      empty: "No hay documentos recientes",
+    },
+    widget: {
+      unavailable: "Módulo no instalado",
+    },
+    noWidgets: "No hay widgets configurados para este panel.",
+    loadError: "No se pudo cargar el panel. Intente nuevamente.",
+    retry: "Reintentar",
+    editParams: {
+      save: "Guardar",
+      saving: "Guardando...",
+    },
+    params: {
+      urlError: "Solo se permiten URLs públicas con https://",
+    },
+    addWidget: {
+      button: "Agregar widget",
+      title: "Agregar widget",
+      subtitle: "Elegí un widget para agregar a tu panel",
+      search: "Buscar widgets...",
+      noResults: "No hay widgets que coincidan con la búsqueda",
+      loadError: "No se pudieron cargar los widgets disponibles. Intente nuevamente.",
+      add: "Agregar",
+      adding: "Agregando...",
+      cancel: "Cancelar",
+      close: "Cerrar",
+      alreadyAdded: "Agregado",
+      unavailable: "No disponible",
+      next: "Siguiente",
+      back: "Volver",
+      configureSubtitle: "Personalizá los parámetros del widget antes de agregarlo al panel",
+      submitError: "No se pudo agregar el widget. Revisá los valores e intentá nuevamente.",
     },
   },
   packing: {

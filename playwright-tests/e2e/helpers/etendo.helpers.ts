@@ -45,11 +45,7 @@ export async function selectRoleOrgWarehouse(
   await page.locator('[data-testid="PersonIcon__120cc9"]').click();
 
   // Open role dropdown
-  await page
-    .locator(
-      ':nth-child(1) > .MuiFormControl-root > .MuiInputBase-root > [style="display: flex; align-items: center;"] > .MuiAutocomplete-endAdornment > .MuiAutocomplete-popupIndicator > [data-testid="ExpandMoreIcon"]'
-    )
-    .click();
+  await page.locator("#role-select").click();
 
   await page.locator(`${roleOptionId} > .MuiTypography-root`).click();
   await page.locator("#organization-select").click();

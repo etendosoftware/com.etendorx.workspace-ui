@@ -47,6 +47,7 @@ import EmptyState from "./EmptyState";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import useTableSelection from "@/hooks/useTableSelection";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useRowKeyboardNavigation } from "./hooks/useRowKeyboardNavigation";
 import { ErrorDisplay } from "../ErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
@@ -3063,34 +3064,39 @@ const DynamicTable = ({
     autoResetRowSelection: false,
   });
 
-  useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange, isVisible);
-
   // Use ref for table to prevent infinite loop of registrations
   const tableRef = useRef(table);
   tableRef.current = table;
 
-  const lastArrowNavTimeRef = useRef(0);
-  const ARROW_NAV_THROTTLE_MS = 120;
+  const { handleArrowUp, handleArrowDown, isKeyboardNavigationSource } = useRowKeyboardNavigation({
+    table,
+    effectiveRecords,
+    containerRef: tableContainerRef,
+    editingRowsCount,
+  });
 
-  const navigateRow = useCallback(
-    (direction: 1 | -1) => {
-      if (!tableContainerRef.current?.contains(document.activeElement)) return;
-      const now = performance.now();
-      if (now - lastArrowNavTimeRef.current < ARROW_NAV_THROTTLE_MS) return;
-      lastArrowNavTimeRef.current = now;
-      const currentSelection = tableRef.current.getState().rowSelection;
-      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
-      if (selectedIds.length !== 1) return;
-      const currentIndex = effectiveRecords.findIndex((r) => String(r.id) === selectedIds[0]);
-      const nextIndex = currentIndex + direction;
-      if (currentIndex === -1 || nextIndex < 0 || nextIndex >= effectiveRecords.length) return;
-      tableRef.current.setRowSelection({ [String(effectiveRecords[nextIndex].id)]: true });
+  const handleStableKeyboardSelection = useCallback(
+    (recordId: string) => {
+      if (!tableContainerRef.current) return;
+      const index = effectiveRecords.findIndex((r) => String(r.id) === recordId);
+      if (index < 0) return;
+      try {
+        // @ts-ignore - rowVirtualizer is available at runtime but missing from MRT types
+        const virtualizer = tableRef.current.rowVirtualizer;
+        if (virtualizer && typeof virtualizer.scrollToIndex === "function") {
+          virtualizer.scrollToIndex(index, { align: "center", behavior: "smooth" });
+        }
+      } catch (error) {
+        logger.error(`[TableScroll] Error scrolling to keyboard-selected record: ${error}`);
+      }
     },
-    [effectiveRecords, tableContainerRef]
+    [effectiveRecords]
   );
 
-  const handleArrowDown = useCallback((_event: KeyboardEvent) => navigateRow(1), [navigateRow]);
-  const handleArrowUp = useCallback((_event: KeyboardEvent) => navigateRow(-1), [navigateRow]);
+  useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange, {
+    isKeyboardNavigationSource,
+    onStableSelection: handleStableKeyboardSelection,
+  });
 
   const handleEnter = useCallback(
     (_event: KeyboardEvent) => {
@@ -3128,35 +3134,34 @@ const DynamicTable = ({
 
   useKeyboardShortcuts(
     {
-      ArrowDown: { handler: handleArrowDown },
-      ArrowUp: { handler: handleArrowUp },
       Enter: { handler: handleEnter },
       "ctrl+n": { handler: handleNewWithParentGuard, allowInInputs: true },
+      ArrowUp: { handler: handleArrowUp },
+      ArrowDown: { handler: handleArrowDown },
     },
     editingRowsCount === 0 && (isFocused ?? true)
   );
 
-  // When the table becomes visible again (e.g. after returning from FormView via Escape),
-  // restore focus to the container if a row is already selected so arrow keys work immediately.
-  // setTimeout(0) runs after all synchronous React effects and FormView unmount focus changes,
-  // ensuring we win any focus race after the transition.
+  // When the grid becomes visible again after leaving form view, DOM focus is
+  // on <body>. The row-click handler (line ~2594) focuses the table container,
+  // but nothing does so on mode transition, so ArrowUp/ArrowDown wouldn't fire
+  // until the user clicked a row (event.target === body fails the container
+  // containment guard in useRowKeyboardNavigation). Re-focus the container on
+  // isVisible: false → true to enable keyboard nav without a click.
+  //
+  // The 100ms delay is load-bearing: an ancestor briefly retains
+  // `visibility: hidden` after React commits the className change, and
+  // `.focus()` is a silent no-op while any ancestor has visibility:hidden.
+  // Neither a microtask nor a single rAF is late enough; setTimeout(100) is.
+  const previousIsVisibleRef = useRef(isVisible);
   useEffect(() => {
-    if (!isVisible) return;
-    const timerId = setTimeout(() => {
-      const rowSelection = tableRef.current.getState().rowSelection;
-      const hasSelection = Object.keys(rowSelection).some((id) => rowSelection[id]);
-      // Only focus if nothing meaningful has captured focus (don't steal from inputs/buttons)
-      const activeEl = document.activeElement;
-      const userFocusedElsewhere =
-        activeEl &&
-        activeEl !== document.body &&
-        activeEl !== document.documentElement &&
-        !tableContainerRef.current?.contains(activeEl);
-      if (hasSelection && tableContainerRef.current && !userFocusedElsewhere) {
-        tableContainerRef.current.focus();
-      }
-    }, 0);
-    return () => clearTimeout(timerId);
+    const prev = previousIsVisibleRef.current;
+    previousIsVisibleRef.current = isVisible;
+    if (prev || !isVisible) return;
+    const timeoutId = setTimeout(() => {
+      tableContainerRef.current?.focus({ preventScroll: true });
+    }, 100);
+    return () => clearTimeout(timeoutId);
   }, [isVisible]);
 
   // Register attachment action for toolbar to handle interactions from TableView
