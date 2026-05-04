@@ -40,38 +40,42 @@ export function useBreadcrumbOverflow({
 }: UseBreadcrumbOverflowParams): UseBreadcrumbOverflowResult {
   const [collapsedCount, setCollapsedCount] = useState(0);
 
+  // Reset to uncollapsed when items change so the measurement below
+  // always starts from the natural (uncollapsed) rendered state.
+  useLayoutEffect(() => {
+    setCollapsedCount(0);
+  }, [items]);
+
   useLayoutEffect(() => {
     if (items.length <= 2) {
-      setCollapsedCount(0);
       return;
     }
 
     const container = containerRef.current;
     if (!container) {
-      setCollapsedCount(0);
       return;
     }
 
     const maxCollapsible = Math.max(0, items.length - 2);
 
-    const measure = () => {
+    const checkOverflow = () => {
       if (container.scrollWidth > container.clientWidth) {
         setCollapsedCount(maxCollapsible);
-      } else {
-        setCollapsedCount(0);
       }
+      // Never uncollapse here: collapsing shrinks the container, which
+      // would re-trigger this callback and create an infinite oscillation.
+      // Uncollapsing is handled exclusively by the reset effect above.
     };
 
-    // Compute immediately (synchronous, no intermediate render)
-    measure();
+    checkOverflow();
 
-    const observer = new ResizeObserver(measure);
+    const observer = new ResizeObserver(checkOverflow);
     observer.observe(container);
 
     return () => {
       observer.disconnect();
     };
-  }, [containerRef, items]);
+  }, [containerRef, items, collapsedCount]);
 
   const isCollapsed = collapsedCount > 0;
 
