@@ -223,7 +223,8 @@ captured body before flushing it. Five injections happen, in order:
    - Pages with `</FORM>` (action-button forms): inject `POST_MESSAGE_SCRIPT`
      after `</FORM>`. The script exposes `window.sendMessage(action)` and
      guarantees a final `iframeUnloaded` notification on `pagehide` /
-     `beforeunload` if no terminal action was emitted.
+     `beforeunload` if no terminal action was emitted — **with the
+     exception of refresh submits** (see Section 3.8 below).
    - Pop-up message pages (template marker `id="messageBoxIDMessage"`):
      inject `SHOW_PROCESS_MESSAGE_SCRIPT` before `</HEAD>` to forward the
      parsed `{type, title, text}` payload to the parent and close the modal
@@ -301,11 +302,60 @@ generic enough.
 | `Constants.LEGACY_URL`, `LEGACY_COMMAND`, `LEGACY_KEY_COLUMN_NAME`, `LEGACY_INP_KEY_COLUMN_ID`, `LEGACY_ADDITIONAL_PARAMETERS` | `com.etendoerp.metadata.utils.Constants` | `LegacyProcessParams.toJson` writes them; the client reads them in `tryResolveFromApi` (`utils/processes/manual/utils.ts`). |
 | `LegacyMessageProtocol.MESSAGE_TYPE = "fromForm"` | `com.etendoerp.metadata.http.LegacyMessageProtocol` | Outer envelope of every `postMessage` call. Mirrored by `LEGACY_MESSAGE_TYPE` in `client/.../ProcessModal/legacyMessageProtocol.ts`. |
 | `LegacyMessageProtocol.ACTION_*` | same | Action names: `closeModal`, `processOrder`, `showProcessMessage`, `iframeUnloaded`, `requestFailed`. Mirrored by `LEGACY_ACTIONS.*`. |
+| `PROCESS_COMMAND_PREFIX = "PROCESS"` | `LegacyProcessServlet` | Prefix that identifies popup-process `Command` values (e.g. `PROCESS_UI`). Used by `isProcessCommandPopup` for the short-circuit path (Section 3.4 item 5). |
+| `REFRESH_COMMAND_PREFIXES_JS = "['FIND','REFRESH','DEFAULT']"` | `LegacyProcessServlet` | JS array literal embedded in `POST_MESSAGE_SCRIPT`. Identifies `Command` values that are form refreshes, not process executions. The injected `isRefreshCommand` helper compares `document.forms[0].Command.value` against these prefixes at unload time. See Section 3.8. |
 | `LEGACY_PATHS` and `MUTABLE_SESSION_ATTRIBUTES` | `com.etendoerp.metadata.utils.LegacyUtils` | Used by other module code to whitelist a tiny set of "safe to mutate" session keys for compatibility with Classic flows that race the new UI. |
 
 > **Single source of truth:** the postMessage protocol lives in two mirrored
 > files — `LegacyMessageProtocol.java` and `legacyMessageProtocol.ts`. Adding
-> a new action requires updating both files and updating Section 4.4 below.
+> a new action requires updating both files and updating Section 5.6 below.
+
+### 3.8 Refresh-command guard in `notifyUnload`
+
+**Background.** Some legacy forms contain combo boxes that trigger a form re-submit when the user changes the selected value. The re-submit reloads the iframe with filtered content (e.g. the grid of purchase-order lines for the chosen PO in *CreateFrom*). Because the iframe unloads during this navigation, `notifyUnload` would fire `iframeUnloaded` without this guard — causing the parent to start the 5-second fallback countdown and eventually display a spurious "no message found" warning even though no process was ever executed.
+
+**Mechanism.** The legacy framework stores the action being submitted in `document.forms[0].Command.value` immediately before calling `form.submit()`. `POST_MESSAGE_SCRIPT` reads that value at unload time via `getSubmittedCommand()` and checks it against the deny-list via `isRefreshCommand()`:
+
+```js
+function getSubmittedCommand() {
+  var f = document.forms && document.forms[0];
+  if (!f || !f.Command) return null;
+  return f.Command.value || null;
+}
+
+function isRefreshCommand(cmd) {
+  if (!cmd) return false;
+  var upper = String(cmd).toUpperCase();
+  for (var i = 0; i < REFRESH_COMMAND_PREFIXES.length; i++) {
+    if (upper.indexOf(REFRESH_COMMAND_PREFIXES[i]) === 0) return true;
+  }
+  return false;
+}
+
+function notifyUnload() {
+  if (sent || window.__etendoMessageSent) return;
+  if (isRefreshCommand(getSubmittedCommand())) return; // ← refresh guard
+  // ...emit iframeUnloaded
+}
+```
+
+**Deny-list rationale.** The list `['FIND', 'REFRESH', 'DEFAULT']` is a deny-list (suppress when matched) rather than a whitelist (allow only known process commands) for two reasons:
+
+1. Process commands are **open-ended**: `SAVE`, `GENERATE`, `USECREDITPAYMENTS`, `SAVE_PHYSICALINVENTORY`, `SAVE_BUTTONDocAction<id>`, `SAVE_BUTTONChangeProjectStatus<id>`, and any command a custom module might add. A whitelist would silently lose the safety net for unknown future commands.
+2. Refresh commands are **closed and well-bounded**: an exhaustive audit of all 27 HTML templates in `erp/src/org/openbravo/erpCommon/ad_actionButton/` — the only templates served by `LegacyProcessServlet` — found exactly `FIND`, `FIND_PO`, `FIND_INVOICE`, `FIND2`, `REFRESH_INVOICES`, `DEFAULT`, and `DEFAULT_COMPARATIVE`. All match the three prefixes. AJAX commands (`CMB*`, `CURRENCY`, `LEDGER`, etc.) use `submitXmlHttpRequest` and never trigger an unload, so they are irrelevant here. Report commands (`DIRECT`, `EXCEL`, `PDF`, etc.) live in `ad_reports/` / `ad_process/` and are not routed through `LegacyProcessServlet`.
+
+**Coverage matrix (all 27 templates, condensed):**
+
+| Command | Suppressed? | Correct |
+|---|---|---|
+| `FIND`, `FIND_PO`, `FIND_INVOICE`, `FIND2` | yes | yes — filter refresh |
+| `REFRESH_INVOICES` | yes | yes — filter refresh |
+| `DEFAULT`, `DEFAULT_COMPARATIVE` | yes | yes — re-submit response page |
+| `SAVE`, `SAVE_BUTTONDocAction*`, `SAVE_BUTTONChangeProjectStatus*` | no | no — process execution |
+| `SAVE_PHYSICALINVENTORY`, `CANCEL_PHYSICALINVENTORY` | no | no — process execution |
+| `GENERATE`, `USECREDITPAYMENTS`, `CANCEL_USECREDITPAYMENTS` | no | no — process execution |
+
+Any `Command` not in the deny-list causes `iframeUnloaded` to fire as before, which is the conservative default: the fallback warning may appear for unknown custom commands, but the safety net is preserved.
 
 ---
 
@@ -637,7 +687,7 @@ The iframe and the parent communicate exclusively through
 | `processOrder` | `POST_MESSAGE_SCRIPT` after `submitThisPage(...)` | `Iframe.tsx` → `handleProcessMessage` | Triggers `useProcessMessage.fetchProcessMessage` polling. |
 | `showProcessMessage` | `SHOW_PROCESS_MESSAGE_SCRIPT` (popup pages) and `MINIMAL_FORWARDER_HTML` | `Iframe.tsx` → `handleReceivedMessage` | Renders the message overlay using `payload = {type, title, text}`. |
 | `closeModal` | `POST_MESSAGE_SCRIPT` after `closePage()` / 150 ms after `showProcessMessage` | `Iframe.tsx` → `handleClose` (skipped if current message is error/warning) | Closes the modal and triggers `onProcessSuccess` if a success was previously seen. |
-| `iframeUnloaded` | `POST_MESSAGE_SCRIPT` on `pagehide` / `beforeunload` if no terminal action was emitted yet | `Iframe.tsx` → `startFallbackCountdown` | Starts the 5 s fallback timer that shows the "no message captured" warning. |
+| `iframeUnloaded` | `POST_MESSAGE_SCRIPT` on `pagehide` / `beforeunload` if no terminal action was emitted **and** the submitted `Command` is not a refresh command (see Section 3.8) | `Iframe.tsx` → `startFallbackCountdown` | Starts the 5 s fallback timer that shows the "no message captured" warning. Refresh submits (`FIND*`, `REFRESH*`, `DEFAULT*`) suppress this event so the fallback never triggers for non-process navigations. |
 | `requestFailed` | `REQUEST_FAILED_FORWARDER_HTML` (servlet error path) | `Iframe.tsx` → `handleRequestFailed` | Shows the error overlay with `process.requestFailed.{title,text}`. |
 
 > **Origin policy.** The listener intentionally does **not** validate
@@ -685,7 +735,7 @@ flows and is not used by the legacy pipeline today.
 |---|---|---|
 | Resolution fails (no backend, no `data.json`) | `executeProcessAction` throws `LegacyProcessUnresolvedError` | Toolbar (`Toolbar.tsx`) shows a `toast.error` with `process.legacyProcessUnresolved.{title,description}` and logs the offending button id and column name. |
 | Servlet error / unresolvable target path | `writeRequestFailedForwarder` returns the `requestFailed` page | `Iframe.tsx` → `handleRequestFailed` shows `process.requestFailed.{title,text}`. |
-| Iframe unloads without emitting a terminal action within 5 s | `iframeUnloaded` triggers `startFallbackCountdown` → `MESSAGE_FALLBACK_TIMEOUT_MS` (5 s) | Modal stays open; `process.fallbackMessage.{title,text}` is rendered as a warning. |
+| Process execution submit unloads the iframe and no process message arrives within 5 s | `iframeUnloaded` (only for non-refresh `Command` values) triggers `startFallbackCountdown` → `MESSAGE_FALLBACK_TIMEOUT_MS` (5 s) | Modal stays open; `process.fallbackMessage.{title,text}` is rendered as a warning. Refresh submits (`FIND*`, `REFRESH*`, `DEFAULT*`) never emit `iframeUnloaded`, so this timer does not start for them. |
 | Process succeeded but server reports an `ERROR` substring in title/text | `Iframe.handleReceivedMessage` upgrades the message type to `error` | Auto-close is suppressed (`shouldSuppressAutoClose`). |
 
 ---
