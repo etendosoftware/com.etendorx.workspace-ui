@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { Toolbar } from "../Toolbar";
 import { useTabContext } from "@/contexts/tab";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
+import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useToolbar } from "@/hooks/Toolbar/useToolbar";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -45,7 +46,7 @@ jest.mock("@/hooks/useSelectedRecord", () => ({
   useSelectedRecord: jest.fn(),
 }));
 jest.mock("@/hooks/useSelectedRecords", () => ({
-  useSelectedRecords: () => [],
+  useSelectedRecords: jest.fn(),
 }));
 jest.mock("@/hooks/Toolbar/useToolbar", () => ({
   useToolbar: jest.fn(),
@@ -108,12 +109,6 @@ jest.mock("@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal
   default: () => <div data-testid="confirm-modal" />,
 }));
 
-// Mock Icons
-jest.mock("@mui/icons-material/Email", () => ({
-  __esModule: true,
-  default: (props: any) => <svg {...props} />,
-}));
-
 // Mock sonner
 jest.mock("sonner", () => ({
   toast: {
@@ -121,6 +116,17 @@ jest.mock("sonner", () => ({
     error: jest.fn(),
   },
 }));
+
+// The email button as it comes from the backend for Invoice/Order entities
+const mockEmailButton = {
+  id: "send-email",
+  action: "SEND_MAIL",
+  name: "Send Email",
+  section: "right" as const,
+  buttonType: "ACTION" as const,
+  active: true,
+  windows: [],
+};
 
 describe("Toolbar - Email Integration", () => {
   const mockToken = "test-token";
@@ -131,10 +137,11 @@ describe("Toolbar - Email Integration", () => {
     jest.clearAllMocks();
     (useTranslation as jest.Mock).mockReturnValue({ t: (k: string) => k });
     (useUserContext as jest.Mock).mockReturnValue({ token: mockToken, session: {} });
-    (useTabContext as jest.Mock).mockReturnValue({ tab: mockTab, graph: { getChildren: () => [] } });
+    (useTabContext as jest.Mock).mockReturnValue({ tab: mockTab });
     (useSelectedRecord as jest.Mock).mockReturnValue(mockRecord);
+    (useSelectedRecords as jest.Mock).mockReturnValue([mockRecord]);
     (useToolbar as jest.Mock).mockReturnValue({
-      buttons: [],
+      buttons: [mockEmailButton],
       processButtons: [],
       loading: false,
       refetch: jest.fn(),
@@ -150,6 +157,12 @@ describe("Toolbar - Email Integration", () => {
 
   it("does not render email button when entity is not Invoice/Order", () => {
     (useTabContext as jest.Mock).mockReturnValue({ tab: { id: "tab-id", entityName: "Product" } });
+    (useToolbar as jest.Mock).mockReturnValue({
+      buttons: [],
+      processButtons: [],
+      loading: false,
+      refetch: jest.fn(),
+    });
     render(<Toolbar windowId="win-id" isFormView={true} />);
     expect(screen.queryByTestId("IconButton__send-email")).not.toBeInTheDocument();
   });
