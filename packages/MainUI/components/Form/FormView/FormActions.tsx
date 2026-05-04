@@ -121,7 +121,6 @@ export function FormActions({ tab, onNew, refetch, onSave, showErrorModal, mode,
     hasValidatedInitialLoad,
     validateRequiredFields,
     requiredValues,
-    mode,
   ]);
 
   // Reset validation flag when form is re-initialized (e.g., navigating to a different record)
