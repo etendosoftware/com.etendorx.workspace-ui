@@ -58,23 +58,30 @@ export function useDefaultValueReaction({ tab, formMethods, isFormInitializing }
   const isInitializingRef = useRef(isFormInitializing);
   isInitializingRef.current = isFormInitializing;
 
+  // Tracks which fields are currently being propagated in the current call chain.
+  // Prevents infinite recursion when the dependency map contains cycles (A→B→A).
+  const processingFieldsRef = useRef(new Set<string>());
+
   useEffect(() => {
     if (dependencyMap.size === 0) return;
 
     const subscription = watch((values, { name: changedField }) => {
       if (!changedField || isInitializingRef.current) return;
+      if (processingFieldsRef.current.has(changedField)) return;
       const dependents = dependencyMap.get(changedField);
       if (!dependents?.length) return;
 
       const newValue = (values as Record<string, unknown>)[changedField];
       if (newValue === undefined || newValue === "") return;
 
+      processingFieldsRef.current.add(changedField);
       for (const depHqlName of dependents) {
         if (dirtyRef.current[depHqlName as keyof typeof dirtyRef.current]) continue;
         setValue(depHqlName, newValue as EntityData[keyof EntityData], {
           shouldDirty: false,
         });
       }
+      processingFieldsRef.current.delete(changedField);
     });
 
     return () => subscription.unsubscribe();
