@@ -130,6 +130,11 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.startsWith("etendo/") ||
     slug.startsWith("info/") ||
     slug.startsWith("utility/ShowImage") ||
+    // Dashboard, widget and favorites data are user/role-specific and change on every
+    // interaction — never serve them from the Next.js Data Cache.
+    slug.includes("meta/dashboard/") ||
+    slug.includes("meta/widget/") ||
+    slug.includes("meta/favorites") ||
     method !== "GET"
   );
 }

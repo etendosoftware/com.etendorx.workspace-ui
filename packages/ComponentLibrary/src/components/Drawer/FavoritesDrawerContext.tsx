@@ -15,15 +15,16 @@
  *************************************************************************
  */
 
-export * from "./api/metadata";
-export * from "./api/client";
-export * from "./api/copilot/index";
-export * from "./api/types";
-export * from "./api/linkedItems";
-export * from "./api/getPreferences";
-export * from "./api/dashboard";
+import { createContext, useContext } from "react";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
 
-// Export column filter utilities and hooks
-export * from "./utils/column-filter-utils";
-export * from "./hooks/useColumnFilters";
-export * from "./hooks/useTableSearch";
+export interface FavoritesDrawerContextType {
+  isFavorite: (windowId: string) => boolean;
+  toggle: (item: Menu) => void;
+}
+
+export const FavoritesDrawerContext = createContext<FavoritesDrawerContextType | undefined>(undefined);
+
+export function useFavoritesDrawer(): FavoritesDrawerContextType | undefined {
+  return useContext(FavoritesDrawerContext);
+}
