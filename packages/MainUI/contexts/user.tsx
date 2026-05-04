@@ -186,6 +186,11 @@ export default function UserProvider(props: React.PropsWithChildren) {
       try {
         const response = await doChangeProfile(params);
 
+        // Persist the new role BEFORE calling setToken so the verifySession
+        // useEffect does not see a mismatch and revert the role change.
+        if (params.role) {
+          localStorage.setItem("currentRoleId", params.role);
+        }
         localStorage.setItem("token", response.token);
         setToken(response.token);
 
@@ -302,9 +307,32 @@ export default function UserProvider(props: React.PropsWithChildren) {
       try {
         if (token) {
           setIsVerifyingSession(true);
-          Metadata.setToken(token);
-          datasource.setToken(token);
-          CopilotClient.setToken(token);
+          let activeToken = token;
+
+          // If the stored token was issued for a different role than the user's last
+          // session (e.g. initial login token has role "0" but the user previously
+          // switched to a specific role), re-authenticate with the saved role so that
+          // every subsequent request — including the dashboard layout GET — uses a
+          // role-scoped token and sees the correct data.
+          const savedRoleId = localStorage.getItem("currentRoleId");
+          if (savedRoleId) {
+            try {
+              const [, payloadB64] = token.split(".");
+              const payload = JSON.parse(atob(payloadB64));
+              if (payload.role !== savedRoleId) {
+                const refreshed = await doChangeProfile({ role: savedRoleId });
+                activeToken = refreshed.token;
+                localStorage.setItem("token", activeToken);
+                setToken(activeToken);
+              }
+            } catch {
+              // JWT decode or changeProfile failed — proceed with the stored token
+            }
+          }
+
+          Metadata.setToken(activeToken);
+          datasource.setToken(activeToken);
+          CopilotClient.setToken(activeToken);
           const sessionData = await getSession();
           await updateSessionInfo(sessionData);
         }
@@ -329,7 +357,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
           response.url.includes("api/datasource") ||
           response.url.includes("org.openbravo.client.kernel") ||
           response.url.includes("meta/labels") ||
-          response.url.includes("utility/ReferencedLink"));
+          response.url.includes("utility/ReferencedLink") ||
+          // Dashboard widget errors should not log the user out
+          response.url.includes("meta/widget") ||
+          response.url.includes("meta/dashboard"));
 
       if (
         (response.status === HTTP_CODES.UNAUTHORIZED || response.status === HTTP_CODES.INTERNAL_SERVER_ERROR) &&

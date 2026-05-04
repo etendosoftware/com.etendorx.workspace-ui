@@ -15,15 +15,14 @@
  *************************************************************************
  */
 
-export * from "./api/metadata";
-export * from "./api/client";
-export * from "./api/copilot/index";
-export * from "./api/types";
-export * from "./api/linkedItems";
-export * from "./api/getPreferences";
-export * from "./api/dashboard";
+interface FallbackRendererProps {
+  type: string;
+}
 
-// Export column filter utilities and hooks
-export * from "./utils/column-filter-utils";
-export * from "./hooks/useColumnFilters";
-export * from "./hooks/useTableSearch";
+export default function FallbackRenderer({ type }: FallbackRendererProps) {
+  return (
+    <p className="text-sm text-baseline-50" data-testid={`FallbackRenderer__${type}`}>
+      {type}
+    </p>
+  );
+}

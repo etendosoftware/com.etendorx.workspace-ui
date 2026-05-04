@@ -15,15 +15,20 @@
  *************************************************************************
  */
 
-export * from "./api/metadata";
-export * from "./api/client";
-export * from "./api/copilot/index";
-export * from "./api/types";
-export * from "./api/linkedItems";
-export * from "./api/getPreferences";
-export * from "./api/dashboard";
+import type { HtmlWidgetData } from "@workspaceui/api-client/src/api/dashboard";
 
-// Export column filter utilities and hooks
-export * from "./utils/column-filter-utils";
-export * from "./hooks/useColumnFilters";
-export * from "./hooks/useTableSearch";
+interface HtmlRendererProps {
+  data: HtmlWidgetData;
+}
+
+export default function HtmlRenderer({ data }: HtmlRendererProps) {
+  // Content originates from the trusted Etendo backend (ETMETA_WIDGET_CLASS.DESCRIPTION)
+  const htmlProps = {
+    className: "prose prose-sm max-w-none text-baseline-100",
+    // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted backend source
+    dangerouslySetInnerHTML: { __html: data.content },
+    "data-testid": "HtmlRenderer__content",
+  };
+  // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted backend source
+  return <div {...htmlProps} />;
+}

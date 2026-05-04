@@ -48,7 +48,7 @@ export default function CTABanner() {
   const { t } = useTranslation();
 
   return (
-    <div className="w-full rounded-2xl bg-[#1E293B] text-white flex items-center gap-5 px-6 py-5 relative overflow-hidden">
+    <div className="w-full shrink-0 rounded-2xl bg-[#1E293B] text-white flex items-center gap-5 px-6 py-5 relative overflow-hidden">
       {/* Subtle decorative gradient */}
       <div
         className="absolute inset-0 opacity-20 pointer-events-none"
