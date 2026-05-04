@@ -31,11 +31,7 @@ import {
   NotificationButton,
   NotificationModal,
   Waterfall,
-  AboutButton,
-  AboutModal,
 } from "@workspaceui/componentlibrary/src/components";
-import useAboutModalOpen from "@workspaceui/componentlibrary/src/components/About/hooks/useAboutModalOpen";
-import { useAboutModal } from "@/hooks/about/useAboutModal";
 import type { Item } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
 import Nav from "@workspaceui/componentlibrary/src/components/Nav/Nav";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -79,10 +75,16 @@ const Navigation: React.FC = () => {
   const [pendingContextString, setPendingContextString] = useState<string | null>(null);
   const [pendingContextItems, setPendingContextItems] = useState<ContextItem[]>([]);
 
-  const { isOpen: aboutModalOpen, openModal: openAboutModal, closeModal: closeAboutModal } = useAboutModalOpen();
-  const { aboutUrl } = useAboutModal();
-
-  const { assistants, getAssistants, invalidateCache, isLoading: isLoadingAssistants } = useAssistants();
+  const {
+    filteredAssistants,
+    hasFeaturedAssistants,
+    showOnlyFeatured,
+    resetFeaturedFilter,
+    toggleFeaturedFilter,
+    getAssistants,
+    invalidateCache,
+    isLoading: isLoadingAssistants,
+  } = useAssistants();
   const { labels, getLabels } = useCopilotLabels();
 
   const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,17 +93,19 @@ const Navigation: React.FC = () => {
 
   const handleCopilotOpen = useCallback(() => {
     setCopilotOpen(true);
+    resetFeaturedFilter();
     getAssistants();
-  }, [getAssistants]);
+  }, [getAssistants, resetFeaturedFilter]);
 
   const handleCopilotOpenWithContext = useCallback(
     (contextString: string, contextItems: ContextItem[]) => {
       setPendingContextString(contextString);
       setPendingContextItems(contextItems);
       setCopilotOpen(true);
+      resetFeaturedFilter();
       getAssistants();
     },
-    [getAssistants]
+    [getAssistants, resetFeaturedFilter]
   );
 
   const handleCopilotClose = useCallback(() => {
@@ -223,38 +227,20 @@ const Navigation: React.FC = () => {
           buttonText={t("navigation.waterfall.buttons")}
           customizeText={t("navigation.waterfall.customize")}
           items={item}
-          icon={<AddIcon data-testid="AddIcon__120cc9" />}
+          icon={<AddIcon className="w-5 h-5" data-testid="AddIcon__120cc9" />}
           setItems={() => {}}
           data-testid="Waterfall__120cc9"
         />
-        <ConfigurationSection data-testid="ConfigurationSection__120cc9" />
-        {isCopilotInstalled && (
-          <CopilotButton
-            onClick={handleCopilotOpen}
-            disabled={!isCopilotInstalled}
-            tooltip="Copilot"
-            data-testid="CopilotButton__120cc9"
-          />
-        )}
-        <AboutButton onClick={openAboutModal} tooltip={t("common.about")} data-testid="AboutButton__120cc9" />
-        <AboutModal
-          aboutUrl={aboutUrl}
-          title={t("common.about")}
-          isOpen={aboutModalOpen}
-          onClose={closeAboutModal}
-          closeButtonText={t("common.close")}
-          data-testid="AboutModal__120cc9"
-        />
         <NotificationButton
           notifications={NOTIFICATIONS}
-          icon={<NotificationIcon data-testid="NotificationIcon__120cc9" />}
+          icon={<NotificationIcon className="w-5 h-5" data-testid="NotificationIcon__120cc9" />}
           data-testid="NotificationButton__120cc9">
           <NotificationModal
             notifications={NOTIFICATIONS}
             anchorEl={anchorEl}
             onClose={handleClose}
             title={{
-              icon: <NotificationIcon fill="#2E365C" data-testid="NotificationIcon__120cc9" />,
+              icon: <NotificationIcon className="w-5 h-5" fill="#2E365C" data-testid="NotificationIcon__120cc9" />,
               label: t("navigation.notificationModal.title"),
             }}
             linkTitle={{
@@ -268,8 +254,18 @@ const Navigation: React.FC = () => {
             data-testid="NotificationModal__120cc9"
           />
         </NotificationButton>
+        {isCopilotInstalled && (
+          <CopilotButton
+            onClick={handleCopilotOpen}
+            disabled={!isCopilotInstalled}
+            tooltip="Copilot"
+            className="[&>svg]:w-5 [&>svg]:h-5"
+            data-testid="CopilotButton__120cc9"
+          />
+        )}
+        <ConfigurationSection data-testid="ConfigurationSection__120cc9" />
         <ProfileModal
-          icon={<PersonIcon data-testid="PersonIcon__120cc9" />}
+          icon={<PersonIcon className="w-5 h-5" data-testid="PersonIcon__120cc9" />}
           sections={sections}
           section={""}
           translations={{
@@ -298,7 +294,7 @@ const Navigation: React.FC = () => {
       <CopilotPopup
         open={copilotOpen && isCopilotInstalled}
         onClose={handleCopilotClose}
-        assistants={assistants}
+        assistants={filteredAssistants}
         labels={labels}
         isExpanded={copilotExpanded}
         onToggleExpanded={handleCopilotToggleExpanded}
@@ -319,6 +315,9 @@ const Navigation: React.FC = () => {
         onSelectConversation={handleSelectConversation}
         onLoadConversations={loadConversations}
         conversationsLoading={conversationsLoading}
+        showOnlyFeatured={showOnlyFeatured}
+        hasFeaturedAssistants={hasFeaturedAssistants}
+        onToggleFeaturedFilter={toggleFeaturedFilter}
         translations={{
           copilotProfile: t("copilot.copilotProfile"),
           backToSelection: t("copilot.backToSelection"),
@@ -335,6 +334,7 @@ const Navigation: React.FC = () => {
             profilesTitle: t("copilot.assistantSelector.profilesTitle"),
             learnMoreText: t("copilot.assistantSelector.learnMoreText"),
             filterPlaceholder: t("copilot.assistantSelector.filterPlaceholder"),
+            toggleFeaturedFilter: t("copilot.assistantSelector.toggleFeaturedFilter"),
           },
           messageInput: {
             placeholder: t("copilot.messageInput.placeholder"),

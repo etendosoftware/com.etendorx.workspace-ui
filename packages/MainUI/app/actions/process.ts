@@ -13,6 +13,7 @@ export interface ExecuteProcessResult<T = any> {
   messageType?: string; // e.g. "success" | "warning" | "error"
   linkTabId?: string; // Tab ID for openDirectTab navigation links
   linkRecordId?: string; // Record ID for openDirectTab navigation links
+  keepOpen?: boolean; // Keep modal open after success (retryExecution response action)
 }
 
 /**

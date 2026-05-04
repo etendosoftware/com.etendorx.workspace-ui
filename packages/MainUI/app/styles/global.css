@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "react-grid-layout/css/styles.css";
+@import "react-resizable/css/styles.css";
 @source "../../../ComponentLibrary/src";
 
 @theme {
@@ -105,7 +107,8 @@
 .toolbar-button-print-record .icon-base64,
 .toolbar-button-share-link .icon-base64,
 .toolbar-button-copy-record .icon-base64,
-.toolbar-button-advanced-filters .icon-base64 {
+.toolbar-button-advanced-filters .icon-base64,
+.toolbar-button-send-mail .icon-base64 {
   opacity: 1;
 }
 
@@ -121,7 +124,8 @@
 .toolbar-button-print-record:hover .icon-base64,
 .toolbar-button-share-link:hover .icon-base64,
 .toolbar-button-copy-record:hover .icon-base64,
-.toolbar-button-advanced-filters:hover .icon-base64 {
+.toolbar-button-advanced-filters:hover .icon-base64,
+.toolbar-button-send-mail:hover .icon-base64 {
   filter: brightness(0) invert(1);
   opacity: 1;
 }
@@ -134,7 +138,8 @@
 .toolbar-button-delete:disabled,
 .toolbar-button-attachment:disabled,
 .toolbar-button-print-record:disabled,
-.toolbar-button-copy-record:disabled {
+.toolbar-button-copy-record:disabled,
+.toolbar-button-send-mail:disabled {
   cursor: default;
   pointer-events: none;
 }
@@ -149,7 +154,8 @@
 .toolbar-button-print-record:disabled .icon-base64,
 .toolbar-button-share-link:disabled .icon-base64,
 .toolbar-button-copy-record:disabled .icon-base64,
-.toolbar-button-advanced-filters:disabled .icon-base64 {
+.toolbar-button-advanced-filters:disabled .icon-base64,
+.toolbar-button-send-mail:disabled .icon-base64 {
   filter: grayscale(100%);
   opacity: 0.3;
 }
@@ -237,9 +243,9 @@ select:-webkit-autofill,
 select:-webkit-autofill:hover,
 select:-webkit-autofill:focus {
   border: none;
-  -webkit-text-fill-color: black;
-  -webkit-box-shadow: none;
-  box-shadow: none;
+  -webkit-text-fill-color: var(--color-transparent-neutral-80);
+  -webkit-box-shadow: 0 0 0 1000px var(--color-baseline-10) inset !important;
+  box-shadow: 0 0 0 1000px var(--color-baseline-10) inset !important;
   transition: background-color 200ms ease-in-out;
 }
 

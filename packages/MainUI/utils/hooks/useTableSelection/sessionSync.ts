@@ -93,7 +93,8 @@ export const syncSelectedRecordsToSession = async ({
 
     if (tab.tabLevel === 0) {
       const sessionAttributes = buildSessionAttributes(responseData);
-      setSession((prev) => mergeSessionAttributes(prev, sessionAttributes));
+      const isRootTabCall = params.get("PARENT_ID") === "null";
+      setSession((prev) => mergeSessionAttributes(prev, sessionAttributes, isRootTabCall));
     }
 
     logger.info(`Successfully synced ${selectedRecords.length} records to session`);

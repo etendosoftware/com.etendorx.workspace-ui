@@ -40,6 +40,7 @@ import {
   type ProcessDefinitionButton,
   type ProcessResponse,
 } from "../ProcessModal/types";
+import EmailSendModal, { type EmailFormData } from "./Modals/EmailSendModal";
 import ProcessMenu from "./Menus/ProcessMenu";
 import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar/TopToolbar";
@@ -53,6 +54,9 @@ import { TAB_MODES } from "@/utils/url/constants";
 import { useWindowContext } from "@/contexts/window";
 import ActionModal from "@workspaceui/componentlibrary/src/components/ActionModal";
 import { PROCESS_TYPES } from "@/utils/processes/definition/constants";
+import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
+import { toast } from "sonner";
+import { ToastContent } from "@/components/ToastContent";
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
@@ -61,6 +65,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const [selectedProcessActionButton, setSelectedProcessActionButton] = useState<ProcessButton | null>(null);
   const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
     useState<ProcessDefinitionButton | null>(null);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailConfig, setEmailConfig] = useState<Record<string, unknown> | null>(null);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
@@ -70,7 +77,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { activeWindow, getTabFormState, clearChildrenSelections } = useWindowContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
-  const { isSessionSyncLoading, isCopilotInstalled, session } = useUserContext();
+  const { isSessionSyncLoading, isCopilotInstalled, session, token } = useUserContext();
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -255,6 +262,111 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const handleCloseSearch = useCallback(() => setSearchOpen(false), [setSearchOpen]);
 
+  const handleCloseEmailModal = useCallback(() => {
+    setEmailModalOpen(false);
+    setEmailConfig(null);
+  }, []);
+
+  const handleOpenEmailModal = useCallback(async () => {
+    if (!selectedRecord?.id || !tab?.id) return;
+    try {
+      const response = await fetch(`/api/erp/meta/email/config?recordId=${String(selectedRecord.id)}&tabId=${tab.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const configResult = await response.json();
+      if (!response.ok || configResult.success === false) {
+        toast.error(t("process.processError"), {
+          description: (
+            <ToastContent
+              message={configResult.message || configResult.error || t("errors.internalServerError.title")}
+              data-testid="ToastContent__a2dd07"
+            />
+          ),
+        });
+        return;
+      }
+      setEmailConfig(configResult);
+      setEmailModalOpen(true);
+    } catch (e) {
+      toast.error(t("errors.internalServerError.title"), {
+        description: (
+          <ToastContent
+            message={e instanceof Error ? e.message : t("errors.internalServerError.title")}
+            data-testid="ToastContent__a2dd07"
+          />
+        ),
+      });
+    }
+  }, [tab, selectedRecord, token, t]);
+
+  const handleEmailSend = useCallback(
+    async (data: EmailFormData, files: File[], recordAttachmentIds: string[]) => {
+      if (!selectedRecord?.id || !tab?.id) return;
+      setIsSendingEmail(true);
+      try {
+        const params = new URLSearchParams({
+          recordId: String(selectedRecord.id),
+          tabId: tab.id,
+          to: data.to,
+          cc: data.cc ?? "",
+          bcc: data.bcc ?? "",
+          replyTo: data.replyTo ?? "",
+          subject: data.subject,
+          notes: data.body ?? "",
+          archive: data.archive ? "Y" : "N",
+          templateId: data.templateId ?? "",
+        });
+        for (const attId of recordAttachmentIds) {
+          params.append("recordAttachmentIds", attId);
+        }
+        const formData = new FormData();
+        formData.append("params", params.toString());
+        for (const file of files) {
+          formData.append("files", file);
+        }
+        const response = await fetch("/api/erp/meta/email/send", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        const result = await response.json();
+        if (!response.ok || result.success === false) {
+          toast.error(t("process.processError"), {
+            description: (
+              <ToastContent message={result.message || result.error || ""} data-testid="ToastContent__a2dd07" />
+            ),
+          });
+          return;
+        }
+        toast.success(t("email.successMessage"));
+        handleCloseEmailModal();
+      } catch (e) {
+        toast.error(t("errors.internalServerError.title"), {
+          description: (
+            <ToastContent message={e instanceof Error ? e.message : ""} data-testid="ToastContent__a2dd07" />
+          ),
+        });
+      } finally {
+        setIsSendingEmail(false);
+      }
+    },
+    [selectedRecord, tab, token, t, handleCloseEmailModal]
+  );
+
+  const handleFetchEmailAttachments = useCallback(async () => {
+    if (!selectedRecord?.id || !tab?.id) return [];
+    try {
+      const response = await fetch(
+        `/api/erp/meta/email/attachments?recordId=${String(selectedRecord.id)}&tabId=${tab.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      return (data.attachments ?? []) as { id: string; name: string }[];
+    } catch {
+      return [];
+    }
+  }, [selectedRecord, tab, token]);
+
   const handleActionWithTooltip = useCallback(
     (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => {
       if (action === "SHARE_LINK") {
@@ -263,9 +375,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           setShowShareLinkTooltip(false);
         }, 2000);
       }
+      if (action === TOOLBAR_BUTTONS_ACTIONS.SEND_MAIL) {
+        handleOpenEmailModal();
+        return;
+      }
       handleAction(action, button, event);
     },
-    [handleAction]
+    [handleAction, handleOpenEmailModal]
   );
 
   const toolbarConfig = useMemo(() => {
@@ -405,6 +521,15 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           data-testid="ActionModal__a2dd07"
         />
       )}
+      <EmailSendModal
+        isOpen={emailModalOpen}
+        onClose={handleCloseEmailModal}
+        onSend={handleEmailSend}
+        onFetchRecordAttachments={handleFetchEmailAttachments}
+        loading={isSendingEmail}
+        initialData={emailConfig ?? undefined}
+        data-testid="EmailSendModal__a2dd07"
+      />
     </>
   );
 };

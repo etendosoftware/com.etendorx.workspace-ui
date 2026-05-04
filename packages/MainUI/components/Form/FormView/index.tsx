@@ -57,6 +57,8 @@ import { useFormViewNavigation } from "@/hooks/useFormViewNavigation";
 import { useWindowContext } from "@/contexts/window";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 import { REFRESH_TYPES } from "@/utils/toolbar/constants";
+import { useRecentDocuments } from "@/hooks/useRecentDocuments";
+import { useDefaultValueReaction } from "@/hooks/useDefaultValueReaction";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
@@ -161,8 +163,7 @@ export function FormView({
   const { resetFormChanges, parentTab, setAuxiliaryInputs } = useTabContext();
   const { registerFormViewRefetch, registerAttachmentAction, shouldOpenAttachmentModal, setShouldOpenAttachmentModal } =
     useToolbarContext();
-  const { refetchDatasource, registerRefetchFunction, updateRecordInDatasource, addRecordToDatasource } =
-    useDatasourceContext();
+  const { registerRefetchFunction, updateRecordInDatasource, addRecordToDatasource } = useDatasourceContext();
   const { registerRefresh } = useTabRefreshContext();
 
   // Sync currentMode and currentRecordId with props when they change (e.g., navigating to a different record)
@@ -401,6 +402,21 @@ export function FormView({
     return null;
   }, [activeWindow?.windowIdentifier, getSelectedRecord, tab, currentRecordId, graph, graphVersion]);
 
+  const { addRecentDocument } = useRecentDocuments();
+
+  useEffect(() => {
+    const identifier = record?._identifier;
+    if (!currentRecordId || currentRecordId === NEW_RECORD_ID || !identifier || !windowMetadata) return;
+    addRecentDocument({
+      id: currentRecordId,
+      identifier: String(identifier),
+      windowId: windowMetadata.id,
+      windowTitle: windowMetadata.name,
+      tabId: tab.id,
+      tabLevel: tab.tabLevel ?? 0,
+    });
+  }, [record?._identifier, currentRecordId, windowMetadata, tab.id, tab.tabLevel, addRecentDocument]);
+
   /**
    * Merges record data with form initialization data to create complete form state.
    * Combines existing record values with server-provided initial values,
@@ -449,8 +465,13 @@ export function FormView({
   const formMethods = useForm({ defaultValues: availableFormData as EntityData });
   const { reset, setValue, formState, ...form } = formMethods;
 
+  useDefaultValueReaction({ tab, formMethods, isFormInitializing });
+
   const resetRef = useRef(reset);
   resetRef.current = reset;
+
+  const dirtyFieldsRef = useRef(formState.dirtyFields);
+  dirtyFieldsRef.current = formState.dirtyFields;
 
   /**
    * Creates a stable reference to the form reset function to prevent infinite loops.
@@ -610,6 +631,13 @@ export function FormView({
         // not in processedData don't cause a defaultValues/currentValues mismatch.
         stableReset(formMethods.getValues(), { keepValues: true, keepDirty: false });
       }
+      return;
+    }
+
+    // If the user has already interacted with a NEW-mode form before the FIC response arrived,
+    // use applyDataRefresh to avoid wiping dirty state with stableReset({ keepDirty: false }).
+    if (currentMode === FormMode.NEW && Object.keys(dirtyFieldsRef.current).length > 0) {
+      applyDataRefresh(processedData);
       return;
     }
 
@@ -925,8 +953,6 @@ export function FormView({
     },
     [save]
   );
-
-  const isLoading = loading || loadingFormInitialization;
 
   /**
    * Get navigation records from DatasourceContext

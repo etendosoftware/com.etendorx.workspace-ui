@@ -17,6 +17,8 @@
 
 import {
   MaterialReactTable,
+  MRT_ToggleDensePaddingButton,
+  MRT_ToggleFullScreenButton,
   type MRT_Row,
   useMaterialReactTable,
   type MRT_TableBodyRowProps,
@@ -45,6 +47,7 @@ import EmptyState from "./EmptyState";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import useTableSelection from "@/hooks/useTableSelection";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useRowKeyboardNavigation } from "./hooks/useRowKeyboardNavigation";
 import { ErrorDisplay } from "../ErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
@@ -120,6 +123,7 @@ import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import { useRowDropZone } from "@/hooks/table/useRowDropZone";
 import { useTreeNodeDragDrop, TREE_DRAG_TYPE } from "@/hooks/table/useTreeNodeDragDrop";
 import { formatUTCTimeToLocal } from "@/utils/date/utils";
+import { isSrOneToOneExtension } from "@/utils/window/utils";
 
 // Lazy load CellEditorFactory once at module level to avoid recreating on every render
 const CellEditorFactory = React.lazy(() => import("./CellEditors/CellEditorFactory"));
@@ -791,6 +795,9 @@ const DynamicTable = ({
   const hasRestoredSelection = useRef(false);
   const prevRestorationId = useRef<string | undefined>(undefined);
   const wasVisibleRef = useRef(isVisible);
+  // Tracks the last parent record id for which the logical-SR auto-open has
+  // fired, so closing the form does not re-trigger for the same parent.
+  const srAutoOpenedForParentRef = useRef<string | undefined>(undefined);
 
   // Use the table data hook
   const {
@@ -820,6 +827,26 @@ const DynamicTable = ({
   } = useTableData({
     isTreeMode,
   });
+
+  // Auto-open FormView for logical SR (Single Record) tabs once the child
+  // records are fetched. This is the counterpart of Tab.tsx's 1:1 auto-open:
+  // when PK and FK are distinct columns (e.g. ETSG_Certificate.organization),
+  // the parent-selected id is not a valid child id, so we wait for the fetched
+  // records to discover the real child id and then open the form.
+  useEffect(() => {
+    if (uIPattern !== UIPatternEnum.EDIT_ONLY) return;
+    if (!tab.defaultEditMode) return;
+    if (isSrOneToOneExtension(tab)) return;
+    if (loading) return;
+    if (displayRecords.length === 0) return;
+
+    const parentKey = parentRecord?.id ? String(parentRecord.id) : undefined;
+    if (!parentKey) return;
+    if (srAutoOpenedForParentRef.current === parentKey) return;
+
+    srAutoOpenedForParentRef.current = parentKey;
+    setRecordId(String(displayRecords[0].id));
+  }, [uIPattern, tab, loading, displayRecords, parentRecord, setRecordId]);
 
   // Summary State
   const [summaryState, setSummaryState] = useState<Record<string, SummaryType>>({});
@@ -2960,7 +2987,53 @@ const DynamicTable = ({
     enableStickyFooter: false,
     enableColumnVirtualization: true,
     enableRowVirtualization: canUseVirtualScrollingWithEditing(editingRows, effectiveRecords.length),
-    enableTopToolbar: false,
+    enableTopToolbar: true,
+    renderTopToolbar: ({ table: mrtTable }) => {
+      const isFullScreen = mrtTable.getState().isFullScreen;
+
+      if (isFullScreen) {
+        return (
+          <div className="flex justify-end items-center px-2 py-1 bg-white border-b border-gray-100">
+            <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
+            <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
+            <button
+              type="button"
+              onClick={() => mrtTable.setIsFullScreen(false)}
+              className="ml-1 p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-900 text-lg leading-none"
+              aria-label="Exit fullscreen">
+              ✕
+            </button>
+          </div>
+        );
+      }
+
+      const rowSelection = mrtTable.getState().rowSelection;
+      const selCount = Object.keys(rowSelection).filter((id) => rowSelection[id]).length;
+      const loaded = displayRecords.length;
+      const total = hasMoreRecords ? loaded + 1 : loaded;
+      const labels = {
+        showingRecords: t("table.counter.showingRecords"),
+        showingPartialRecords: t("table.counter.showingPartialRecords"),
+        selectedRecords: t("table.counter.selectedRecords"),
+        recordsLoaded: t("table.counter.recordsLoaded"),
+      };
+      return (
+        <RecordCounterBar
+          totalRecords={total}
+          loadedRecords={loaded}
+          selectedCount={selCount}
+          isLoading={loading}
+          labels={labels}
+          actions={
+            <>
+              <MRT_ToggleDensePaddingButton table={mrtTable} data-testid="MRT_ToggleDensePaddingButton__8ca888" />
+              <MRT_ToggleFullScreenButton table={mrtTable} data-testid="MRT_ToggleFullScreenButton__8ca888" />
+            </>
+          }
+          data-testid="RecordCounterBar__8ca888"
+        />
+      );
+    },
     enableBottomToolbar: false,
     enableExpanding: shouldUseTreeMode,
     paginateExpandedRows: false,
@@ -2991,34 +3064,39 @@ const DynamicTable = ({
     autoResetRowSelection: false,
   });
 
-  useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange, isVisible);
-
   // Use ref for table to prevent infinite loop of registrations
   const tableRef = useRef(table);
   tableRef.current = table;
 
-  const lastArrowNavTimeRef = useRef(0);
-  const ARROW_NAV_THROTTLE_MS = 120;
+  const { handleArrowUp, handleArrowDown, isKeyboardNavigationSource } = useRowKeyboardNavigation({
+    table,
+    effectiveRecords,
+    containerRef: tableContainerRef,
+    editingRowsCount,
+  });
 
-  const navigateRow = useCallback(
-    (direction: 1 | -1) => {
-      if (!tableContainerRef.current?.contains(document.activeElement)) return;
-      const now = performance.now();
-      if (now - lastArrowNavTimeRef.current < ARROW_NAV_THROTTLE_MS) return;
-      lastArrowNavTimeRef.current = now;
-      const currentSelection = tableRef.current.getState().rowSelection;
-      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
-      if (selectedIds.length !== 1) return;
-      const currentIndex = effectiveRecords.findIndex((r) => String(r.id) === selectedIds[0]);
-      const nextIndex = currentIndex + direction;
-      if (currentIndex === -1 || nextIndex < 0 || nextIndex >= effectiveRecords.length) return;
-      tableRef.current.setRowSelection({ [String(effectiveRecords[nextIndex].id)]: true });
+  const handleStableKeyboardSelection = useCallback(
+    (recordId: string) => {
+      if (!tableContainerRef.current) return;
+      const index = effectiveRecords.findIndex((r) => String(r.id) === recordId);
+      if (index < 0) return;
+      try {
+        // @ts-ignore - rowVirtualizer is available at runtime but missing from MRT types
+        const virtualizer = tableRef.current.rowVirtualizer;
+        if (virtualizer && typeof virtualizer.scrollToIndex === "function") {
+          virtualizer.scrollToIndex(index, { align: "center", behavior: "smooth" });
+        }
+      } catch (error) {
+        logger.error(`[TableScroll] Error scrolling to keyboard-selected record: ${error}`);
+      }
     },
-    [effectiveRecords, tableContainerRef]
+    [effectiveRecords]
   );
 
-  const handleArrowDown = useCallback((_event: KeyboardEvent) => navigateRow(1), [navigateRow]);
-  const handleArrowUp = useCallback((_event: KeyboardEvent) => navigateRow(-1), [navigateRow]);
+  useTableSelection(tab, effectiveRecords, table.getState().rowSelection, handleTableSelectionChange, {
+    isKeyboardNavigationSource,
+    onStableSelection: handleStableKeyboardSelection,
+  });
 
   const handleEnter = useCallback(
     (_event: KeyboardEvent) => {
@@ -3056,35 +3134,34 @@ const DynamicTable = ({
 
   useKeyboardShortcuts(
     {
-      ArrowDown: { handler: handleArrowDown },
-      ArrowUp: { handler: handleArrowUp },
       Enter: { handler: handleEnter },
       "ctrl+n": { handler: handleNewWithParentGuard, allowInInputs: true },
+      ArrowUp: { handler: handleArrowUp },
+      ArrowDown: { handler: handleArrowDown },
     },
     editingRowsCount === 0 && (isFocused ?? true)
   );
 
-  // When the table becomes visible again (e.g. after returning from FormView via Escape),
-  // restore focus to the container if a row is already selected so arrow keys work immediately.
-  // setTimeout(0) runs after all synchronous React effects and FormView unmount focus changes,
-  // ensuring we win any focus race after the transition.
+  // When the grid becomes visible again after leaving form view, DOM focus is
+  // on <body>. The row-click handler (line ~2594) focuses the table container,
+  // but nothing does so on mode transition, so ArrowUp/ArrowDown wouldn't fire
+  // until the user clicked a row (event.target === body fails the container
+  // containment guard in useRowKeyboardNavigation). Re-focus the container on
+  // isVisible: false → true to enable keyboard nav without a click.
+  //
+  // The 100ms delay is load-bearing: an ancestor briefly retains
+  // `visibility: hidden` after React commits the className change, and
+  // `.focus()` is a silent no-op while any ancestor has visibility:hidden.
+  // Neither a microtask nor a single rAF is late enough; setTimeout(100) is.
+  const previousIsVisibleRef = useRef(isVisible);
   useEffect(() => {
-    if (!isVisible) return;
-    const timerId = setTimeout(() => {
-      const rowSelection = tableRef.current.getState().rowSelection;
-      const hasSelection = Object.keys(rowSelection).some((id) => rowSelection[id]);
-      // Only focus if nothing meaningful has captured focus (don't steal from inputs/buttons)
-      const activeEl = document.activeElement;
-      const userFocusedElsewhere =
-        activeEl &&
-        activeEl !== document.body &&
-        activeEl !== document.documentElement &&
-        !tableContainerRef.current?.contains(activeEl);
-      if (hasSelection && tableContainerRef.current && !userFocusedElsewhere) {
-        tableContainerRef.current.focus();
-      }
-    }, 0);
-    return () => clearTimeout(timerId);
+    const prev = previousIsVisibleRef.current;
+    previousIsVisibleRef.current = isVisible;
+    if (prev || !isVisible) return;
+    const timeoutId = setTimeout(() => {
+      tableContainerRef.current?.focus({ preventScroll: true });
+    }, 100);
+    return () => clearTimeout(timeoutId);
   }, [isVisible]);
 
   // Register attachment action for toolbar to handle interactions from TableView
@@ -3403,11 +3480,11 @@ const DynamicTable = ({
       if (event.key === "Escape") {
         const editingRowIds = editingRowUtils.getEditingRowIds();
 
-        // If there are editing rows, cancel the first one using handleCancelRow
-        // This ensures we use the confirmation modal instead of window.confirm
         if (editingRowIds.length > 0) {
-          const rowId = editingRowIds[0]; // Cancel the first editing row
+          const rowId = editingRowIds[0];
           await handleCancelRow(rowId);
+        } else if (table.getState().isFullScreen) {
+          table.setIsFullScreen(false);
         }
       }
     };
@@ -3416,7 +3493,7 @@ const DynamicTable = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [editingRowUtils, handleCancelRow]);
+  }, [editingRowUtils, handleCancelRow, table]);
 
   useEffect(() => {
     if (removeRecordLocally) {
@@ -3548,34 +3625,12 @@ const DynamicTable = ({
     );
   }
 
-  // Calculate counter values
-  const selectedRecords = Object.keys(table.getState().rowSelection).filter((id) => table.getState().rowSelection[id]);
-  const selectedCount = selectedRecords.length;
-  const loadedRecords = displayRecords.length;
-  const totalRecords = hasMoreRecords ? loadedRecords + 1 : loadedRecords; // Approximate total when more records available
-
-  // Prepare labels for RecordCounterBar with translations
-  const counterLabels = {
-    showingRecords: t("table.counter.showingRecords"),
-    showingPartialRecords: t("table.counter.showingPartialRecords"),
-    selectedRecords: t("table.counter.selectedRecords"),
-    recordsLoaded: t("table.counter.recordsLoaded"),
-  };
-
   return (
     <div
       className={`h-full overflow-hidden rounded-3xl transition-opacity flex flex-col ${
         loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
       }`}
       onClick={onFocusAcquire}>
-      <RecordCounterBar
-        totalRecords={totalRecords}
-        loadedRecords={loadedRecords}
-        selectedCount={selectedCount}
-        isLoading={loading}
-        labels={counterLabels}
-        data-testid="RecordCounterBar__8ca888"
-      />
       <div className="flex-1 min-h-0" onContextMenu={handleTableBodyContextMenu}>
         <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
       </div>
