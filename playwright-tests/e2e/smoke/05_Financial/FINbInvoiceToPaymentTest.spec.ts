@@ -153,7 +153,10 @@ test.describe("Financial Test 2 - Sales Invoice to Payment In @smoke", () => {
 
     // The legacy iframe modal now auto-closes after showing the success message.
     // Accept either the visible success banner or the modal closing by itself.
-    const processSuccessMessage = page.locator(".mb-1").filter({ hasText: /Process completed successfully/i }).first();
+    const processSuccessMessage = page
+      .locator(".mb-1")
+      .filter({ hasText: /Process completed successfully/i })
+      .first();
     const processModalTitle = page.locator("h2").filter({ hasText: "Process Invoices" }).first();
     const processCompleted = await Promise.race([
       processSuccessMessage
