@@ -137,14 +137,18 @@ export const useCopilot = () => {
 
   const handleSSEMessage = useCallback(
     (data: Record<string, unknown>) => {
-      const answer = data?.answer as { conversation_id?: string; response?: string; role?: string };
+      const answer = data?.answer as { conversation_id?: string; response?: unknown; role?: string };
       if (answer?.conversation_id) {
         dispatch({ type: "SET_CONVERSATION_ID", conversationId: answer.conversation_id });
       }
 
       if (answer?.response) {
         if (answer.role !== "debug") {
-          addMessage("bot", answer.response, answer.role);
+          const text =
+            typeof answer.response === "string"
+              ? answer.response
+              : `\`\`\`json\n${JSON.stringify(answer.response, null, 2)}\n\`\`\``;
+          addMessage("bot", text, answer.role);
         }
       }
     },
