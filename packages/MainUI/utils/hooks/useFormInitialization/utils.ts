@@ -80,7 +80,7 @@ export const buildFormInitializationPayload = (
   const computedGridVisibleProperties =
     mode !== SessionMode.SETSESSION
       ? Object.values(tab.fields)
-          .filter((f) => f.displayed && f.columnName)
+          .filter((f) => (f.displayed || f.column?.defaultValue?.startsWith("@SQL=")) && f.columnName)
           .flatMap((f) => {
             const propertyPath = f.column?.propertyPath;
             if (propertyPath) {
@@ -203,6 +203,32 @@ const isGlobalSessionKey = (key: string): boolean => {
   return key.startsWith("$") || key.startsWith("#") || key.startsWith("_") || key === "adOrgId";
 };
 
+const isEmptySessionValue = (value: unknown): boolean => value === "" || value === null || value === undefined;
+
+const collectGlobalKeys = (prev: ISession): Record<string, unknown> => {
+  const preserved: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(prev)) {
+    if (isGlobalSessionKey(key)) {
+      preserved[key] = value;
+    }
+  }
+  return preserved;
+};
+
+// Keep the previous value when the incoming one is empty and would erase meaningful context.
+// Mirrors the guard used during display-logic evaluation in utils/expressions.ts.
+// When allowEmptyOverwrite is true (root-tab FIC call, PARENT_ID=null), the incoming
+// value is always authoritative — even if empty — because the root tab is the source of
+// truth for its own session attributes (e.g. ETSG_CheckLegalOrg must reset to "" when
+// switching to an org that is not a legal entity).
+const resolveMergedValue = (prev: ISession, key: string, newValue: string, allowEmptyOverwrite: boolean): unknown => {
+  if (allowEmptyOverwrite) return newValue;
+  if (!isEmptySessionValue(newValue)) return newValue;
+  const existing = (prev as Record<string, unknown>)[key];
+  if (isEmptySessionValue(existing)) return newValue;
+  return existing;
+};
+
 /**
  * Merges new session attributes into the existing session while preventing
  * cross-window state pollution.
@@ -216,18 +242,27 @@ const isGlobalSessionKey = (key: string): boolean => {
  * Solution: Instead of blindly merging (`{...prev, ...new}`), this function:
  * 1. Preserves only global session keys (prefixed with $, #, _ or known globals)
  * 2. Discards stale record-specific keys from previous windows/tabs
- * 3. Merges in the fresh attributes returned by the backend
+ * 3. Merges in the fresh attributes returned by the backend, but keeps the previous
+ *    value for a given key when the incoming one is empty (empty string, null or
+ *    undefined): a blank backend value is treated as "no information" and must not
+ *    wipe out context already populated by an earlier call (e.g. a SETSESSION that
+ *    computed the value for the parent tab before an EDIT for a child tab runs).
  *
  * @param prev - The current session state
  * @param newAttributes - Fresh session attributes from the backend
+ * @param isRootTabCall - When true (PARENT_ID=null), empty values ARE authoritative and
+ *   overwrite existing ones. Workaround for backends that return "" for keys they do not
+ *   own (child tabs), while root-tab calls must be able to legitimately reset a key to "".
  * @returns A clean session with global keys preserved and record-specific keys replaced
  */
-export const mergeSessionAttributes = (prev: ISession, newAttributes: Record<string, string>): ISession => {
-  const preserved: Record<string, string | number | boolean | null> = {};
-  for (const [key, value] of Object.entries(prev)) {
-    if (isGlobalSessionKey(key)) {
-      preserved[key] = value;
-    }
+export const mergeSessionAttributes = (
+  prev: ISession,
+  newAttributes: Record<string, string>,
+  isRootTabCall = false
+): ISession => {
+  const merged: Record<string, unknown> = collectGlobalKeys(prev);
+  for (const [key, value] of Object.entries(newAttributes)) {
+    merged[key] = resolveMergedValue(prev, key, value, isRootTabCall);
   }
-  return { ...preserved, ...newAttributes } as ISession;
+  return merged as ISession;
 };

@@ -32,7 +32,7 @@ export const MetadataSynchronizer = () => {
   useEffect(() => {
     if (activeWindow?.windowId && !windowsData[activeWindow.windowId] && !isWindowLoading(activeWindow.windowId)) {
       loadWindowData(activeWindow.windowId).catch((error) => {
-        if (error.message === "Window not found") {
+        if (error.message?.toLowerCase().includes("not found")) {
           cleanupWindow(activeWindow.windowIdentifier);
         } else {
           console.error(error);

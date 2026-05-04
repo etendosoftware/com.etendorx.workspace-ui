@@ -33,7 +33,7 @@ import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
 import { NEW_RECORD_ID, FORM_MODES, TAB_MODES, type TabFormState } from "@/utils/url/constants";
 import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
-import { getNewTabFormState, isFormView } from "@/utils/window/utils";
+import { getNewTabFormState, isFormView, isSrOneToOneExtension } from "@/utils/window/utils";
 import { useWindowContext } from "@/contexts/window";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
@@ -42,6 +42,7 @@ import { TableFilter } from "@workspaceui/componentlibrary/src/components/Advanc
 import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
 import { loadSelectFilterOptions, loadTableDirFilterOptions } from "@/utils/columnFilterHelpers";
 import { parseColumns } from "@/utils/tableColumns";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { ColumnFilterUtils, type FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -499,7 +500,9 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const parsedColumns = useMemo(() => {
     if (!tab.fields) return [];
     // We need to cast to any because Tab.fields is Record<string, unknown> but parseColumns expects Field[]
-    return parseColumns(Object.values(tab.fields) as any[]);
+    return parseColumns(Object.values(tab.fields) as any[]).filter(
+      (col: any) => col.column?.reference !== FIELD_REFERENCE_CODES.IMAGE.id
+    );
   }, [tab.fields]);
 
   const handleLoadOptions = useCallback(
@@ -1111,13 +1114,18 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   ]);
 
   // Auto-open FormView for SR (Single Record) tabs when defaultEditMode is enabled.
-  // SR tabs share the same entity as the parent and always display exactly one record
-  // (the parent record itself). When a new parent record is selected, we navigate
-  // directly to form view using the parent's record ID.
+  // This path only applies to the 1:1 ID-extension variant, where the child's PK column
+  // is also its FK to the parent (e.g. AD_ClientInfo). In that case child.id === parent.id,
+  // so reusing the parent-selected id to open the form is safe.
+  // Logical SR relations (PK and FK are distinct columns, e.g. ETSG_Certificate.organization)
+  // are auto-opened by DynamicTable after the child records are fetched.
   // A ref tracks the last parent ID for which auto-open fired, so closing the form
   // (shouldShowForm → false) does not trigger a re-open for the same parent.
   useEffect(() => {
     if (tab.uIPattern !== UIPattern.EDIT_ONLY || !tab.defaultEditMode) {
+      return;
+    }
+    if (!isSrOneToOneExtension(tab)) {
       return;
     }
     if (!parentSelectedRecordId) {
@@ -1130,7 +1138,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
     srAutoOpenedForParentRef.current = parentSelectedRecordId;
     handleSetRecordId(parentSelectedRecordId);
-  }, [tab.uIPattern, tab.defaultEditMode, parentSelectedRecordId, handleSetRecordId]);
+  }, [tab, parentSelectedRecordId, handleSetRecordId]);
 
   const focusBorderColor = isFocused ? "border-l-[var(--color-secondary-500)]" : "border-l-transparent";
   const tableWrapperClassName = !shouldShowForm

@@ -170,7 +170,9 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
   const columns = useMemo(() => {
     const fieldsAsArray = Object.values(tab.fields);
-    let originalColumns = parseColumns(fieldsAsArray);
+    let originalColumns = parseColumns(fieldsAsArray).filter(
+      (col: Column) => col.column?.reference !== FIELD_REFERENCE_CODES.IMAGE.id
+    );
 
     // Mark boolean columns automatically
     originalColumns = originalColumns.map((col) => {

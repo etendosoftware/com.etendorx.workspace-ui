@@ -72,10 +72,15 @@ describe("Procurement flow - Purchase Invoice with payment registration", () => 
 
     cy.contains(".MuiChip-label", "Completed", { timeout: 20000 }).should("exist");
 
-    cy.contains("button", "Available Process").click();
+    // Navigate back to invoice header to ensure the header's Available Process is clicked
+    cy.contains("button", "Main Section").first().click();
+    cy.wait(500);
 
     cy.intercept("POST", /DefaultsProcessActionHandler/).as("processDefaults");
-    cy.contains("div.cursor-pointer", "Add Payment").should("be.visible").click();
+    cy.contains("button", "Available Process").click();
+    cy.wait(500);
+
+    cy.get(".rounded-2xl").contains(".cursor-pointer", "Add Payment").should("be.visible").click();
     cy.wait("@processDefaults", { timeout: 30000 }).its("response.statusCode").should("be.oneOf", [200, 304]);
 
     cy.get("tbody.MuiTableBody-root tr.MuiTableRow-root", { timeout: 30000 }).should("have.length.gte", 1);

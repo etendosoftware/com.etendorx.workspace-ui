@@ -51,7 +51,7 @@ describe("criteriaUtils", () => {
       expect(result).toEqual([]);
     });
 
-    it("should fallback to 'id' if parentColumns is empty", () => {
+    it("should fallback to '_dummy' if parentColumns is empty (no FK field resolved)", () => {
       const tabNoColumns = { ...childTab, parentColumns: [] };
       const result = buildBaseCriteria({
         tab: tabNoColumns,
@@ -59,7 +59,10 @@ describe("criteriaUtils", () => {
         parentId: "123",
       });
 
-      expect(result[0].fieldName).toBe("id");
+      // When no FK field can be resolved, _dummy is used so the server
+      // falls back to @EntityName.id@ session variables for filtering.
+      expect(result[0].fieldName).toBe("_dummy");
+      expect(result[0].operator).toBe("equals");
     });
   });
 });

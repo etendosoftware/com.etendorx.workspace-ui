@@ -65,6 +65,8 @@ export const getFieldReference = (reference?: string): FieldType => {
       return FieldType.SELECT;
     case FIELD_REFERENCE_CODES.WINDOW.id:
       return FieldType.WINDOW;
+    case FIELD_REFERENCE_CODES.IMAGE.id:
+      return FieldType.IMAGE;
     default:
       return FieldType.TEXT;
   }
@@ -225,13 +227,16 @@ export const parseDynamicExpression = (expr: string) => {
 
   // Transform @field_name@ syntax to valid JavaScript references
   // Supports: @fieldName@, @#sessionVar@, @$contextVar@
+  // Use ?? (nullish coalescing) so falsy-but-valid values like 0, false, "" are not
+  // shadowed by the context fallback — only null/undefined fall through.
   let expr0 = exprNormalized.replace(/@([#$]?[a-zA-Z_]\w*)@/g, (_, fieldName) => {
-    return `(currentValues["${fieldName}"] || context["${fieldName}"])`;
+    return `(currentValues["${fieldName}"] ?? context["${fieldName}"])`;
   });
 
   // Transform legacy Etendo/OB '!' comparison to '!=' (e.g., @Col@!'Y' -> ...!='Y')
-  // Covers cases like @Col@!'Y', @Col@!0, @Col@!undefined
-  expr0 = expr0.replace(/!([^=])/g, "!=$1");
+  // Only apply after a closing delimiter (], ), ', ") that follows a field ref or literal.
+  // This avoids corrupting logical negation like !(condition) → invalid !=(condition).
+  expr0 = expr0.replace(/([)'"\]])!([^=])/g, "$1!=$2");
 
   // Transform space-surrounded '!' to '!=' (e.g. @Col@ ! @Col2@)
   expr0 = expr0.replace(/\s!\s/g, " != ");
@@ -304,6 +309,35 @@ export const buildQueryString = ({
   });
 };
 
+// Extension module fields (columnName starts with "em_") wrap a standard column.
+// e.g. etcrmCBpartner (em_etcrm_c_bpartner_id) wraps businessPartner (c_bpartner_id).
+// The standard field may be hidden and carry an empty value, but the DB constraint
+// requires it. Copy the extension value to the standard field when the latter is empty.
+const applyExtensionFieldMappings = (filteredValues: EntityData, fields: Record<string, Field>): void => {
+  const fieldsByColumnName = Object.values(fields).reduce(
+    (acc, f) => {
+      if (f.columnName) acc[f.columnName.toLowerCase()] = f;
+      return acc;
+    },
+    {} as Record<string, Field>
+  );
+
+  for (const field of Object.values(fields)) {
+    const colName = field.columnName?.toLowerCase();
+    if (!colName?.startsWith("em_")) continue;
+    const match = colName.match(/^em_[a-z0-9]+_(.+)$/);
+    if (!match) continue;
+    const standardField = fieldsByColumnName[match[1]];
+    if (!standardField) continue;
+    const extValue = filteredValues[field.hqlName];
+    const stdValue = filteredValues[standardField.hqlName];
+    const stdIsEmpty = stdValue === "" || stdValue === null || stdValue === undefined;
+    if (extValue && stdIsEmpty) {
+      filteredValues[standardField.hqlName] = extValue;
+    }
+  }
+};
+
 export const buildFormPayload = ({
   values,
   oldValues,
@@ -317,32 +351,27 @@ export const buildFormPayload = ({
   csrfToken: string;
   tab?: Tab;
 }) => {
-  // Fields that should be excluded from the payload
   const auditFields = ["creationDate", "createdBy", "updated", "updatedBy"];
-
-  // When creating a new record (add operation), exclude the id field as well
   const excludedFields = mode === FormMode.NEW ? [...auditFields, "id"] : auditFields;
-
-  // Get password field names to handle them specially
   const passwordFields = getPasswordFieldNames(tab);
   const isNewRecord = mode === FormMode.NEW;
 
   const filteredValues = Object.entries(values).reduce((acc, [key, value]) => {
     if (!excludedFields.includes(key)) {
-      // Skip password fields that contain the placeholder value (not modified by user)
-      // This prevents overwriting the actual password when editing other fields
       if (shouldExcludePasswordField(key, value, passwordFields, isNewRecord)) {
         return acc;
       }
-
       acc[key] = value;
-      // If this is a password field with a real value (not placeholder), also add password_cleartext
       if (passwordFields.has(key) && value && value !== PASSWORD_PLACEHOLDER) {
         acc[`${key}_cleartext`] = value;
       }
     }
     return acc;
   }, {} as EntityData);
+
+  if (tab?.fields) {
+    applyExtensionFieldMappings(filteredValues, tab.fields);
+  }
 
   const payload: any = {
     dataSource: "isc_OBViewDataSource_0",

@@ -208,11 +208,13 @@ export function useDatasource({
     const hasIdFilter = Boolean(filterById);
     const idParams = hasIdFilter ? { targetRecordId: filterById?.value, directNavigation: true } : {};
 
+    const hasUserFilters = searchCriteriaArray.length > 0 || columnFilterCriteria.length > 0;
+
     const finalParams: any = {
       ...stableParams,
       ...idParams,
       ...(allCriteria.length > 0 ? { criteria: allCriteria.length === 1 ? allCriteria[0] : allCriteria } : {}),
-      isImplicitFilterApplied,
+      isImplicitFilterApplied: isImplicitFilterApplied,
       noActiveFilter: true,
     };
 

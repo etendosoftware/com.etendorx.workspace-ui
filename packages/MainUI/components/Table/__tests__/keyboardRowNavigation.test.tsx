@@ -1,68 +1,90 @@
 /**
  * Tests for keyboard row navigation (ArrowUp/ArrowDown) in Table grid view.
- * Tests the handler logic in isolation — the full Table component is too complex to mount in unit tests.
+ * Exercises the real `useRowKeyboardNavigation` hook via a minimal mock table instance.
  */
 import { renderHook, act } from "@testing-library/react";
-import { useCallback } from "react";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import type { MRT_TableInstance, MRT_RowSelectionState } from "material-react-table";
+import { useRowKeyboardNavigation, computeNextIndex, NAVIGATION_DIRECTION } from "../hooks/useRowKeyboardNavigation";
 
-// Helper to build a minimal EntityData record
 const makeRecord = (id: string): EntityData => ({ id }) as EntityData;
 
-// We test the row navigation logic by extracting it into a testable form.
-// The actual Table component wires these handlers into useKeyboardShortcuts.
-function useRowNavigation(
-  effectiveRecords: EntityData[],
-  getRowSelection: () => Record<string, boolean>,
-  setRowSelection: (s: Record<string, boolean>) => void,
-  containerRef: React.RefObject<HTMLDivElement>,
-  editingRowsCount: number
-) {
-  const navigate = useCallback(
-    (direction: "up" | "down", event: KeyboardEvent) => {
-      if (editingRowsCount > 0) return;
-      if (!containerRef.current?.contains(event.target as Node)) return;
-
-      const currentSelection = getRowSelection();
-      const selectedIds = Object.keys(currentSelection).filter((id) => currentSelection[id]);
-      if (selectedIds.length !== 1) return;
-
-      const currentId = selectedIds[0];
-      const currentIndex = effectiveRecords.findIndex((r) => String(r.id) === currentId);
-      if (currentIndex === -1) return;
-
-      if (direction === "down") {
-        if (currentIndex === effectiveRecords.length - 1) return;
-        setRowSelection({ [String(effectiveRecords[currentIndex + 1].id)]: true });
-      } else {
-        if (currentIndex === 0) return;
-        setRowSelection({ [String(effectiveRecords[currentIndex - 1].id)]: true });
-      }
-    },
-    [effectiveRecords, getRowSelection, setRowSelection, containerRef, editingRowsCount]
-  );
-
-  return navigate;
+interface MockTable {
+  instance: MRT_TableInstance<EntityData>;
+  setRowSelection: jest.Mock;
+  getSelection: () => MRT_RowSelectionState;
 }
 
-describe("keyboard row navigation", () => {
+const makeTable = (initial: MRT_RowSelectionState): MockTable => {
+  let selection: MRT_RowSelectionState = initial;
+  const setRowSelection = jest.fn((next: MRT_RowSelectionState) => {
+    selection = next;
+  });
+  const instance = {
+    getState: () => ({ rowSelection: selection }),
+    setRowSelection,
+  } as unknown as MRT_TableInstance<EntityData>;
+  return { instance, setRowSelection, getSelection: () => selection };
+};
+
+describe("computeNextIndex", () => {
+  it("returns next index inside bounds", () => {
+    expect(computeNextIndex(0, NAVIGATION_DIRECTION.DOWN, 3)).toBe(1);
+    expect(computeNextIndex(1, NAVIGATION_DIRECTION.UP, 3)).toBe(0);
+  });
+
+  it("returns null at top boundary", () => {
+    expect(computeNextIndex(0, NAVIGATION_DIRECTION.UP, 3)).toBeNull();
+  });
+
+  it("returns null at bottom boundary", () => {
+    expect(computeNextIndex(2, NAVIGATION_DIRECTION.DOWN, 3)).toBeNull();
+  });
+
+  it("returns null for empty list", () => {
+    expect(computeNextIndex(0, NAVIGATION_DIRECTION.DOWN, 0)).toBeNull();
+  });
+});
+
+describe("useRowKeyboardNavigation", () => {
   const records = [makeRecord("1"), makeRecord("2"), makeRecord("3")];
   let containerDiv: HTMLDivElement;
   let containerRef: React.RefObject<HTMLDivElement>;
   let insideElement: HTMLDivElement;
+  let rafCallbacks: Array<FrameRequestCallback>;
+  let originalRaf: typeof requestAnimationFrame;
+  let originalCaf: typeof cancelAnimationFrame;
 
   beforeEach(() => {
     containerDiv = document.createElement("div");
     document.body.appendChild(containerDiv);
     insideElement = document.createElement("div");
     containerDiv.appendChild(insideElement);
-    // Cast to avoid React 19 readonly `current` type issue
     containerRef = { current: containerDiv } as React.RefObject<HTMLDivElement>;
+
+    rafCallbacks = [];
+    originalRaf = global.requestAnimationFrame;
+    originalCaf = global.cancelAnimationFrame;
+    global.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      rafCallbacks.push(cb);
+      return rafCallbacks.length;
+    }) as typeof requestAnimationFrame;
+    global.cancelAnimationFrame = ((id: number) => {
+      rafCallbacks[id - 1] = () => undefined;
+    }) as typeof cancelAnimationFrame;
   });
 
   afterEach(() => {
     document.body.removeChild(containerDiv);
+    global.requestAnimationFrame = originalRaf;
+    global.cancelAnimationFrame = originalCaf;
   });
+
+  const flushRaf = () => {
+    const callbacks = rafCallbacks;
+    rafCallbacks = [];
+    for (const cb of callbacks) cb(performance.now());
+  };
 
   const makeEvent = (target: EventTarget) => {
     const event = new KeyboardEvent("keydown");
@@ -70,56 +92,108 @@ describe("keyboard row navigation", () => {
     return event;
   };
 
-  const setupHook = (getRowSelection: () => Record<string, boolean>, editingRowsCount = 0) => {
-    const setRowSelection = jest.fn();
+  const setupHook = (initialSelection: MRT_RowSelectionState, editingRowsCount = 0) => {
+    const table = makeTable(initialSelection);
     const { result } = renderHook(() =>
-      useRowNavigation(records, getRowSelection, setRowSelection, containerRef, editingRowsCount)
+      useRowKeyboardNavigation({
+        table: table.instance,
+        effectiveRecords: records,
+        containerRef,
+        editingRowsCount,
+      })
     );
-    return { result, setRowSelection };
+    return { result, table };
   };
 
-  it("ArrowDown selects the next record", () => {
-    const { result, setRowSelection } = setupHook(() => ({ "1": true }));
-    act(() => result.current("down", makeEvent(insideElement)));
-    expect(setRowSelection).toHaveBeenCalledWith({ "2": true });
+  it("ArrowDown selects the next record after rAF flush", () => {
+    const { result, table } = setupHook({ "1": true });
+    act(() => result.current.handleArrowDown(makeEvent(insideElement)));
+    expect(table.setRowSelection).not.toHaveBeenCalled();
+    act(() => flushRaf());
+    expect(table.setRowSelection).toHaveBeenCalledWith({ "2": true });
   });
 
-  it("ArrowUp selects the previous record", () => {
-    const { result, setRowSelection } = setupHook(() => ({ "2": true }));
-    act(() => result.current("up", makeEvent(insideElement)));
-    expect(setRowSelection).toHaveBeenCalledWith({ "1": true });
+  it("ArrowUp selects the previous record after rAF flush", () => {
+    const { result, table } = setupHook({ "2": true });
+    act(() => result.current.handleArrowUp(makeEvent(insideElement)));
+    act(() => flushRaf());
+    expect(table.setRowSelection).toHaveBeenCalledWith({ "1": true });
   });
 
   it("ArrowDown on last record does nothing", () => {
-    const { result, setRowSelection } = setupHook(() => ({ "3": true }));
-    act(() => result.current("down", makeEvent(insideElement)));
-    expect(setRowSelection).not.toHaveBeenCalled();
+    const { result, table } = setupHook({ "3": true });
+    act(() => result.current.handleArrowDown(makeEvent(insideElement)));
+    act(() => flushRaf());
+    expect(table.setRowSelection).not.toHaveBeenCalled();
   });
 
   it("ArrowUp on first record does nothing", () => {
-    const { result, setRowSelection } = setupHook(() => ({ "1": true }));
-    act(() => result.current("up", makeEvent(insideElement)));
-    expect(setRowSelection).not.toHaveBeenCalled();
+    const { result, table } = setupHook({ "1": true });
+    act(() => result.current.handleArrowUp(makeEvent(insideElement)));
+    act(() => flushRaf());
+    expect(table.setRowSelection).not.toHaveBeenCalled();
   });
 
   it("does nothing when no row is selected", () => {
-    const { result, setRowSelection } = setupHook(() => ({}));
-    act(() => result.current("down", makeEvent(insideElement)));
-    expect(setRowSelection).not.toHaveBeenCalled();
+    const { result, table } = setupHook({});
+    act(() => result.current.handleArrowDown(makeEvent(insideElement)));
+    act(() => flushRaf());
+    expect(table.setRowSelection).not.toHaveBeenCalled();
   });
 
   it("does nothing when in inline edit mode (editingRowsCount > 0)", () => {
-    const { result, setRowSelection } = setupHook(() => ({ "1": true }), 1);
-    act(() => result.current("down", makeEvent(insideElement)));
-    expect(setRowSelection).not.toHaveBeenCalled();
+    const { result, table } = setupHook({ "1": true }, 1);
+    act(() => result.current.handleArrowDown(makeEvent(insideElement)));
+    act(() => flushRaf());
+    expect(table.setRowSelection).not.toHaveBeenCalled();
   });
 
   it("does nothing when event.target is outside the table container", () => {
     const outsideElement = document.createElement("div");
     document.body.appendChild(outsideElement);
-    const { result, setRowSelection } = setupHook(() => ({ "1": true }));
-    act(() => result.current("down", makeEvent(outsideElement)));
-    expect(setRowSelection).not.toHaveBeenCalled();
+    const { result, table } = setupHook({ "1": true });
+    act(() => result.current.handleArrowDown(makeEvent(outsideElement)));
+    act(() => flushRaf());
+    expect(table.setRowSelection).not.toHaveBeenCalled();
     document.body.removeChild(outsideElement);
+  });
+
+  it("coalesces rapid sync ArrowDown events into one setRowSelection per frame", () => {
+    const manyRecords = Array.from({ length: 50 }, (_, i) => makeRecord(String(i + 1)));
+    const table = makeTable({ "1": true });
+    const { result } = renderHook(() =>
+      useRowKeyboardNavigation({
+        table: table.instance,
+        effectiveRecords: manyRecords,
+        containerRef,
+        editingRowsCount: 0,
+      })
+    );
+
+    act(() => {
+      for (let i = 0; i < 20; i++) {
+        result.current.handleArrowDown(makeEvent(insideElement));
+      }
+    });
+    expect(table.setRowSelection).not.toHaveBeenCalled();
+
+    act(() => flushRaf());
+    expect(table.setRowSelection).toHaveBeenCalledTimes(1);
+    // After one rAF flush, the pending index advances by 20 steps from the initial index 0.
+    expect(table.setRowSelection).toHaveBeenCalledWith({ "21": true });
+  });
+
+  it("flags source as keyboard during navigation and resets on keyup", () => {
+    const { result } = setupHook({ "1": true });
+    expect(result.current.isKeyboardNavigationSource()).toBe(false);
+
+    act(() => result.current.handleArrowDown(makeEvent(insideElement)));
+    act(() => flushRaf());
+    expect(result.current.isKeyboardNavigationSource()).toBe(true);
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent("keyup", { key: "ArrowDown" }));
+    });
+    expect(result.current.isKeyboardNavigationSource()).toBe(false);
   });
 });

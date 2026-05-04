@@ -60,6 +60,9 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
   archivedLoading = false,
   searchQuery = "",
   onSearchQueryChange,
+  showOnlyFeatured,
+  hasFeaturedAssistants,
+  onToggleFeaturedFilter,
   translations,
 }) => {
   if (!open) return null;
@@ -176,6 +179,9 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
             archivedLoading={archivedLoading}
             searchQuery={searchQuery}
             onSearchQueryChange={onSearchQueryChange}
+            showOnlyFeatured={showOnlyFeatured}
+            hasFeaturedAssistants={hasFeaturedAssistants}
+            onToggleFeaturedFilter={onToggleFeaturedFilter}
             translations={{
               selectedRegisters: translations.selectedRegisters,
               assistantSelector: translations.assistantSelector,

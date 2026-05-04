@@ -68,7 +68,7 @@ describe("ColumnVisibilityMenu", () => {
     expect(screen.getByTestId("item-col1")).toBeInTheDocument();
   });
 
-  it("should filter out mrt- columns and buttons", () => {
+  it("should filter out mrt- columns, buttons, and image columns", () => {
     mockTable.getAllLeafColumns.mockReturnValue([
       {
         id: "mrt-select",
@@ -78,6 +78,11 @@ describe("ColumnVisibilityMenu", () => {
       {
         id: "btn1",
         columnDef: { type: "button", header: "Button" },
+        getIsVisible: () => true,
+      },
+      {
+        id: "img1",
+        columnDef: { type: "image", header: "Image Column" },
         getIsVisible: () => true,
       },
       {
@@ -91,7 +96,72 @@ describe("ColumnVisibilityMenu", () => {
 
     expect(screen.queryByTestId("item-mrt-select")).not.toBeInTheDocument();
     expect(screen.queryByTestId("item-btn1")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("item-img1")).not.toBeInTheDocument();
     expect(screen.getByTestId("item-col1")).toBeInTheDocument();
+  });
+
+  it("should include audit fields and shownInStatusBar columns, and exclude displayed=false columns", () => {
+    mockTable.getAllLeafColumns.mockReturnValue([
+      {
+        id: "audit1",
+        columnDef: { isAuditField: true, header: "Audit Field" },
+        getIsVisible: () => true,
+      },
+      {
+        id: "status1",
+        columnDef: { shownInStatusBar: true, header: "Status Bar Field" },
+        getIsVisible: () => true,
+      },
+      {
+        id: "hidden1",
+        columnDef: { displayed: false, showInGridView: false, header: "Hidden Field" },
+        getIsVisible: () => false,
+      },
+      {
+        id: "col1",
+        columnDef: { header: "Visible Column" },
+        getIsVisible: () => true,
+      },
+    ]);
+
+    render(<ColumnVisibilityMenu anchorEl={document.createElement("div")} onClose={jest.fn()} table={mockTable} />);
+
+    expect(screen.getByTestId("item-audit1")).toBeInTheDocument();
+    expect(screen.getByTestId("item-status1")).toBeInTheDocument();
+    expect(screen.queryByTestId("item-hidden1")).not.toBeInTheDocument();
+    expect(screen.getByTestId("item-col1")).toBeInTheDocument();
+  });
+
+  it("should render no items when tableColumnVisibility is empty", () => {
+    (useTableStatePersistenceTab as jest.Mock).mockReturnValue({
+      tableColumnVisibility: {},
+    });
+    mockTable.getAllLeafColumns.mockReturnValue([
+      {
+        id: "col1",
+        columnDef: { header: "Column 1" },
+        getIsVisible: () => true,
+      },
+    ]);
+
+    render(<ColumnVisibilityMenu anchorEl={document.createElement("div")} onClose={jest.fn()} table={mockTable} />);
+
+    expect(screen.queryByTestId("item-col1")).not.toBeInTheDocument();
+  });
+
+  it("should use column id as label when header is not a string", () => {
+    mockTable.getAllLeafColumns.mockReturnValue([
+      {
+        id: "col-no-header",
+        columnDef: { header: () => "React Header" },
+        getIsVisible: () => true,
+      },
+    ]);
+
+    render(<ColumnVisibilityMenu anchorEl={document.createElement("div")} onClose={jest.fn()} table={mockTable} />);
+
+    expect(screen.getByTestId("item-col-no-header")).toBeInTheDocument();
+    expect(screen.getByTestId("item-col-no-header").textContent).toBe("col-no-header");
   });
 
   it("should sort items by label", () => {

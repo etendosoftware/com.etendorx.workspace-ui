@@ -45,7 +45,7 @@ describe("ERP slug route coverage", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: "http://erp.example", ETENDO_CLASSIC_HOST: "http://erp.example" };
+    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: "https://erp.example", ETENDO_CLASSIC_HOST: "https://erp.example" };
 
     originalFetch = global.fetch;
     (global as any).fetch = jest.fn().mockResolvedValue({
@@ -87,7 +87,7 @@ describe("ERP slug route coverage", () => {
   describe("Authentication", () => {
     it("returns 401 Unauthorized if token is missing", async () => {
       mockedExtractToken.mockReturnValue(null);
-      const req = createMockRequest("GET", "http://localhost/api/erp/test");
+      const req = createMockRequest("GET", "https://localhost/api/erp/test");
 
       const response: any = await GET(req, { params: Promise.resolve({ slug: ["test"] }) });
 
@@ -98,7 +98,7 @@ describe("ERP slug route coverage", () => {
 
   describe("HTTP Methods Coverage", () => {
     it("handles PATCH requests", async () => {
-      const req = createMockRequest("PATCH", "http://localhost/api/erp/test", {}, { val: 1 });
+      const req = createMockRequest("PATCH", "https://localhost/api/erp/test", {}, { val: 1 });
       await PATCH(req, { params: Promise.resolve({ slug: ["test"] }) });
 
       expect(global.fetch).toHaveBeenCalledWith(
@@ -117,7 +117,7 @@ describe("ERP slug route coverage", () => {
         text: async () => "Backend crashed",
       });
 
-      const req = createMockRequest("POST", "http://localhost/api/erp/test", {}, { val: 1 });
+      const req = createMockRequest("POST", "https://localhost/api/erp/test", {}, { val: 1 });
       const response: any = await POST(req, { params: Promise.resolve({ slug: ["test"] }) });
 
       expect(response.status).toBe(500);
@@ -135,7 +135,7 @@ describe("ERP slug route coverage", () => {
         throw new Error("Unexpected error");
       });
 
-      const req = createMockRequest("GET", "http://localhost/api/erp/test");
+      const req = createMockRequest("GET", "https://localhost/api/erp/test");
       const response: any = await GET(req, { params: Promise.resolve({ slug: ["test"] }) });
 
       expect(response.status).toBe(500);
@@ -145,52 +145,55 @@ describe("ERP slug route coverage", () => {
 
   describe("URL Building logic (buildErpUrl / buildCachedErpUrl)", () => {
     it("handles copilot slug", async () => {
-      const req = createMockRequest("GET", "http://localhost/api/erp/copilot/chat");
+      const req = createMockRequest("GET", "https://localhost/api/erp/copilot/chat");
       await GET(req, { params: Promise.resolve({ slug: ["copilot", "chat"] }) });
 
-      expect(global.fetch).toHaveBeenCalledWith("http://erp.example/sws/copilot/chat", expect.any(Object));
+      expect(global.fetch).toHaveBeenCalledWith("https://erp.example/sws/copilot/chat", expect.any(Object));
     });
 
     it("handles attachments slug", async () => {
-      const req = createMockRequest("POST", "http://localhost/api/erp/attachments/upload", {}, { f: 1 });
+      const req = createMockRequest("POST", "https://localhost/api/erp/attachments/upload", {}, { f: 1 });
       await POST(req, { params: Promise.resolve({ slug: ["attachments", "upload"] }) });
 
-      expect(global.fetch).toHaveBeenCalledWith("http://erp.example/attachments/upload", expect.any(Object));
+      expect(global.fetch).toHaveBeenCalledWith("https://erp.example/attachments/upload", expect.any(Object));
     });
 
     it("handles legacy slug", async () => {
-      const req = createMockRequest("GET", "http://localhost/api/erp/meta/legacy/ad_forms/x");
+      const req = createMockRequest("GET", "https://localhost/api/erp/meta/legacy/ad_forms/x");
       await GET(req, { params: Promise.resolve({ slug: ["meta", "legacy", "ad_forms", "x"] }) });
 
-      expect(global.fetch).toHaveBeenCalledWith("http://erp.example/meta/legacy/ad_forms/x", expect.any(Object));
+      expect(global.fetch).toHaveBeenCalledWith("https://erp.example/meta/legacy/ad_forms/x", expect.any(Object));
     });
 
     it("handles Openbravo kernel slug", async () => {
-      const req = createMockRequest("GET", "http://localhost/api/erp/org.openbravo.client.kernel/x");
+      const req = createMockRequest("GET", "https://localhost/api/erp/org.openbravo.client.kernel/x");
       await GET(req, { params: Promise.resolve({ slug: ["org.openbravo.client.kernel", "x"] }) });
 
-      expect(global.fetch).toHaveBeenCalledWith("http://erp.example/org.openbravo.client.kernel/x", expect.any(Object));
+      expect(global.fetch).toHaveBeenCalledWith(
+        "https://erp.example/org.openbravo.client.kernel/x",
+        expect.any(Object)
+      );
     });
 
     it("handles static resources slug web/...", async () => {
-      const req = createMockRequest("GET", "http://localhost/api/erp/web/js/x.js");
+      const req = createMockRequest("GET", "https://localhost/api/erp/web/js/x.js");
       await GET(req, { params: Promise.resolve({ slug: ["web", "js", "x.js"] }) });
 
-      expect(global.fetch).toHaveBeenCalledWith("http://erp.example/web/js/x.js", expect.any(Object));
+      expect(global.fetch).toHaveBeenCalledWith("https://erp.example/web/js/x.js", expect.any(Object));
     });
 
     it("handles utility slug", async () => {
-      const req = createMockRequest("GET", "http://localhost/api/erp/utility/x");
+      const req = createMockRequest("GET", "https://localhost/api/erp/utility/x");
       await GET(req, { params: Promise.resolve({ slug: ["utility", "x"] }) });
 
-      expect(global.fetch).toHaveBeenCalledWith("http://erp.example/utility/x", expect.any(Object));
+      expect(global.fetch).toHaveBeenCalledWith("https://erp.example/utility/x", expect.any(Object));
     });
 
     it("handles POST to das/ bypassing cache", async () => {
-      const req = createMockRequest("POST", "http://localhost/api/erp/das/x", {}, { val: 1 });
+      const req = createMockRequest("POST", "https://localhost/api/erp/das/x", {}, { val: 1 });
       await POST(req, { params: Promise.resolve({ slug: ["das", "x"] }) });
 
-      expect(global.fetch).toHaveBeenCalledWith("http://erp.example/das/x", expect.any(Object));
+      expect(global.fetch).toHaveBeenCalledWith("https://erp.example/das/x", expect.any(Object));
     });
   });
 
@@ -203,7 +206,7 @@ describe("ERP slug route coverage", () => {
         arrayBuffer: async () => new TextEncoder().encode("<html><head></head><body></body></html>").buffer,
       });
 
-      const req = createMockRequest("POST", "http://localhost/api/erp/test", {}, { val: 1 });
+      const req = createMockRequest("POST", "https://localhost/api/erp/test", {}, { val: 1 });
       const response: any = await POST(req, { params: Promise.resolve({ slug: ["test"] }) });
 
       // response should be the one from `handleHtmlContentResponse`
@@ -224,7 +227,7 @@ describe("ERP slug route coverage", () => {
         arrayBuffer: async () => new TextEncoder().encode("<html></html>").buffer,
       });
 
-      const req = createMockRequest("POST", "http://localhost/api/erp/test", {}, { val: 1 });
+      const req = createMockRequest("POST", "https://localhost/api/erp/test", {}, { val: 1 });
       const response = await POST(req, { params: Promise.resolve({ slug: ["test"] }) });
       expect((response as Response).headers.get("Set-Cookie")).toBe("test=123");
     });
@@ -239,7 +242,7 @@ describe("ERP slug route coverage", () => {
       });
 
       // Copilot mutation requests aren't cached
-      const req = createMockRequest("POST", "http://localhost/api/erp/copilot/chat", {}, { val: 1 });
+      const req = createMockRequest("POST", "https://localhost/api/erp/copilot/chat", {}, { val: 1 });
       const response: any = await POST(req, { params: Promise.resolve({ slug: ["copilot", "chat"] }) });
 
       expect(response).toBeInstanceOf(Response);
@@ -266,7 +269,7 @@ describe("ERP slug route coverage", () => {
         body: "binary-data",
       });
 
-      const req = createMockRequest("POST", "http://localhost/api/erp/test/download", {}, { val: 1 });
+      const req = createMockRequest("POST", "https://localhost/api/erp/test/download", {}, { val: 1 });
       const response: any = await POST(req, { params: Promise.resolve({ slug: ["test", "download"] }) });
 
       expect(response).toBeInstanceOf(Response);
@@ -286,7 +289,7 @@ describe("ERP slug route coverage", () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         status: 302,
-        headers: new Headers({ location: "http://erp.example/redirected" }),
+        headers: new Headers({ location: "https://erp.example/redirected" }),
       });
       // 2nd config for the redirect
       (global.fetch as jest.Mock).mockResolvedValueOnce({
@@ -300,12 +303,12 @@ describe("ERP slug route coverage", () => {
         text: async () => JSON.stringify({ redirected: true }),
       });
 
-      const req = createMockRequest("POST", "http://localhost/api/erp/test", {}, { val: 1 });
+      const req = createMockRequest("POST", "https://localhost/api/erp/test", {}, { val: 1 });
       await POST(req, { params: Promise.resolve({ slug: ["test"] }) });
 
       // fetch should have been called twice
       expect(global.fetch).toHaveBeenCalledTimes(2);
-      expect(global.fetch).toHaveBeenNthCalledWith(2, "http://erp.example/redirected", expect.any(Object));
+      expect(global.fetch).toHaveBeenNthCalledWith(2, "https://erp.example/redirected", expect.any(Object));
       expect(NextResponse.json).toHaveBeenCalledWith({ redirected: true });
     });
 
@@ -321,7 +324,7 @@ describe("ERP slug route coverage", () => {
           new TextEncoder().encode("OB.KernelUtilities.handleSystemException('A custom exception');").buffer,
       });
 
-      const req = createMockRequest("POST", "http://localhost/api/erp/test", {}, { val: 1 });
+      const req = createMockRequest("POST", "https://localhost/api/erp/test", {}, { val: 1 });
 
       const response: any = await POST(req, { params: Promise.resolve({ slug: ["test"] }) });
 
@@ -340,7 +343,7 @@ describe("ERP slug route coverage", () => {
         arrayBuffer: async () => new TextEncoder().encode("this is not json").buffer,
       });
 
-      const req = createMockRequest("POST", "http://localhost/api/erp/test", {}, { val: 1 });
+      const req = createMockRequest("POST", "https://localhost/api/erp/test", {}, { val: 1 });
 
       const response: any = await POST(req, { params: Promise.resolve({ slug: ["test"] }) });
 
@@ -361,7 +364,7 @@ describe("ERP slug route coverage", () => {
         text: async () => "Not Installed",
       });
 
-      const req = createMockRequest("GET", "http://localhost/api/erp/copilot/test");
+      const req = createMockRequest("GET", "https://localhost/api/erp/copilot/test");
       const response: any = await GET(req, { params: Promise.resolve({ slug: ["copilot", "test"] }) });
 
       // The status should default to 404 because slugContainsCopilot is true inside `getCachedErpData`.
@@ -376,10 +379,10 @@ describe("ERP slug route coverage", () => {
     it("builds correct headers with spoofed referer for meta window request", async () => {
       const req = createMockRequest(
         "POST",
-        "http://localhost/api/erp/meta/window/123",
+        "https://localhost/api/erp/meta/window/123",
         {
           "X-CSRF-Token": "test-csrf",
-          referer: "http://localhost/other",
+          referer: "https://localhost/other",
         },
         { val: 1 }
       );
@@ -388,21 +391,19 @@ describe("ERP slug route coverage", () => {
 
       // Look at the second call to fetch since it's a mutation
       const fetchOptions = (global.fetch as jest.Mock).mock.calls[0][1];
-      expect(fetchOptions.headers["referer"]).toBe("http://localhost/window?wi_0=123");
+      expect(fetchOptions.headers["referer"]).toBe("https://localhost/window?wi_0=123");
     });
 
     it("preserves stream body on mutation requests", async () => {
       const readableStream = new ReadableStream();
       const req = createMockRequest(
         "POST",
-        "http://localhost/api/erp/test",
+        "https://localhost/api/erp/test",
         {
-          "Content-Type": "multipart/form-data",
+          "Content-Type": "application/octet-stream",
         },
         readableStream
       );
-
-      req.body = readableStream as any;
 
       await POST(req, { params: Promise.resolve({ slug: ["test"] }) });
 

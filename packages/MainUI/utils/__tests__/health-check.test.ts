@@ -77,7 +77,7 @@ describe("health-check", () => {
         headers: new Headers(),
       });
 
-      const response = await performCopilotHealthCheck("http://erp.example", "mock-token");
+      const response = await performCopilotHealthCheck("https://erp.example", "mock-token");
       expect(response).toEqual({ success: true, data: "success data", status: 200 });
       expect(global.fetch).toHaveBeenCalledWith(
         expect.any(String),
@@ -97,14 +97,14 @@ describe("health-check", () => {
         headers: new Headers(),
       });
 
-      const response = await performCopilotHealthCheck("http://erp.example", "");
+      const response = await performCopilotHealthCheck("https://erp.example", "");
       expect(response).toEqual({ success: false, error: "Internal Server Error", status: 500 });
     });
 
     it("should handle thrown errors", async () => {
       global.fetch = jest.fn().mockRejectedValue(new Error("Network Failure"));
 
-      const response = await performCopilotHealthCheck("http://erp.example", "mock-token");
+      const response = await performCopilotHealthCheck("https://erp.example", "mock-token");
       expect(response).toEqual({ success: false, error: "Network Failure" });
     });
   });

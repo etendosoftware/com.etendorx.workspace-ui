@@ -27,6 +27,7 @@ export interface IAssistant {
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  featured?: "Y" | "N";
 }
 
 /**

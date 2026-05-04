@@ -5,7 +5,7 @@ import { getErpAuthHeaders } from "../../_utils/forwardConfig";
 import { SLUGS_CATEGORIES, SLUGS_METHODS, URL_MUTATION } from "@/app/api/_utils/slug/constants";
 import { detectCharset, isBinaryContentType, createHtmlResponse, rewriteHtmlResourceUrls } from "./route.helpers";
 
-type requestBody = string | ReadableStream<Uint8Array> | undefined;
+type RequestBody = string | ReadableStream<Uint8Array> | Uint8Array | undefined;
 // Custom error class for ERP requests
 class ErpRequestError extends Error {
   public readonly status: number;
@@ -129,6 +129,12 @@ function isMutationRoute(slug: string, method: string): boolean {
     slug.startsWith("org.openbravo") ||
     slug.startsWith("etendo/") ||
     slug.startsWith("info/") ||
+    slug.startsWith("utility/ShowImage") ||
+    // Dashboard, widget and favorites data are user/role-specific and change on every
+    // interaction — never serve them from the Next.js Data Cache.
+    slug.includes("meta/dashboard/") ||
+    slug.includes("meta/widget/") ||
+    slug.includes("meta/favorites") ||
     method !== "GET"
   );
 }
@@ -154,7 +160,7 @@ function buildErpHeaders(
   userToken: string,
   request: Request,
   method: string,
-  requestBody: requestBody,
+  requestBody: RequestBody,
   contentType: string,
   slug?: string
 ): Record<string, string> {
@@ -236,7 +242,7 @@ async function followRedirects(
   erpUrl: string,
   method: string,
   headers: Record<string, string>,
-  requestBody: requestBody
+  requestBody: RequestBody
 ): Promise<Response> {
   const location = response.headers.get("location")!;
   const redirectUrl = location.startsWith("http") ? location : new URL(location, erpUrl).toString();
@@ -254,9 +260,15 @@ async function followRedirects(
   const nextFetchOptions: RequestInit = {
     method: nextMethod,
     headers: nextHeaders,
-    body: isPostToGet ? undefined : requestBody,
+    body: (isPostToGet ? undefined : requestBody) as any,
     redirect: "manual",
   };
+
+  if (!isPostToGet && typeof ReadableStream !== "undefined" && requestBody instanceof ReadableStream) {
+    // duplex is required for streaming bodies in Node.js fetch
+    // @ts-expect-error - duplex is required for streaming but not in types yet
+    nextFetchOptions.duplex = "half";
+  }
 
   return await fetch(redirectUrl, nextFetchOptions);
 }
@@ -331,16 +343,17 @@ async function handleMutationRequest(
   erpUrl: string,
   method: string,
   headers: Record<string, string>,
-  requestBody: requestBody
+  requestBody: RequestBody
 ): Promise<unknown> {
   const fetchOptions: RequestInit = {
     method,
     headers,
-    body: requestBody,
+    body: requestBody as any,
     redirect: "manual",
   };
 
   if (typeof ReadableStream !== "undefined" && requestBody instanceof ReadableStream) {
+    // duplex is required for streaming bodies in Node.js fetch
     // @ts-expect-error - duplex is required for streaming but not in types yet
     fetchOptions.duplex = "half";
   }
@@ -455,18 +468,22 @@ function buildErpUrl(slug: string, requestUrl: string): string {
 }
 
 // Helper: Get request body (preserves binary data for multipart/form-data)
-async function getRequestBody(
-  request: Request,
-  method: string
-): Promise<string | ReadableStream<Uint8Array> | undefined> {
+async function getRequestBody(request: Request, method: string): Promise<RequestBody> {
   if (method === "GET") {
     return undefined;
   }
 
   const contentType = request.headers.get("Content-Type") || "";
 
-  // For multipart/form-data (file uploads), preserve the binary stream
+  // For multipart/form-data, buffer the entire body to prevent ReadableStream
+  // locking issues when the stream is forwarded through the Next.js proxy.
   if (contentType.includes("multipart/form-data")) {
+    const buffer = await request.arrayBuffer();
+    return new Uint8Array(buffer);
+  }
+
+  // For octet-stream, return the raw stream
+  if (contentType.includes("application/octet-stream")) {
     return request.body || undefined;
   }
 
@@ -494,7 +511,7 @@ async function fetchErpData({
   userToken: string;
   erpUrl: string;
   request: Request;
-  requestBody: string | ReadableStream<Uint8Array> | undefined;
+  requestBody: RequestBody;
   contentType: string;
 }): Promise<unknown> {
   if (isMutationRoute(slug, method) || isMutationUrl(erpUrl)) {
@@ -548,6 +565,22 @@ function handleBinaryFileResponse(data: { binaryFile: Response }): Response {
 function handleHtmlContentResponse(data: { htmlContent: Response }): Response {
   const { htmlContent } = data;
   const headers = new Headers(htmlContent.headers);
+
+  // Strip Content-Security-Policy frame-ancestors directives that would block iframe loading.
+  // The backend CSP applies to the Etendo Classic host, not the Next.js proxy host.
+  const csp = headers.get("content-security-policy");
+  if (csp) {
+    const stripped = csp
+      .split(";")
+      .map((d) => d.trim())
+      .filter((d) => !d.toLowerCase().startsWith("frame-ancestors"))
+      .join("; ");
+    if (stripped) {
+      headers.set("Content-Security-Policy", stripped);
+    } else {
+      headers.delete("content-security-policy");
+    }
+  }
 
   // Ensure UTF-8 charset is explicitly set for HTML responses
   const contentType = headers.get("content-type") || "text/html";
