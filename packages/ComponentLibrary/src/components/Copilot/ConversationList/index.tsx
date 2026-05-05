@@ -16,15 +16,15 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import ArchiveIcon from "../../../assets/icons/archive.svg?react";
-import ChevronDownIcon from "../../../assets/icons/chevron-down.svg?react";
-import EditIcon from "../../../assets/icons/edit-3.svg?react";
-import MessageSquareIcon from "../../../assets/icons/message-square.svg?react";
-import PlusIcon from "../../../assets/icons/plus.svg?react";
-import RestoreIcon from "../../../assets/icons/rotate-ccw.svg?react";
-import SearchIcon from "../../../assets/icons/search.svg?react";
-import SidebarIcon from "../../../assets/icons/sidebar.svg?react";
-import TrashIcon from "../../../assets/icons/trash.svg?react";
+import ArchiveIcon from "../../../assets/icons/archive.svg";
+import ChevronDownIcon from "../../../assets/icons/chevron-down.svg";
+import EditIcon from "../../../assets/icons/edit-3.svg";
+import MessageSquareIcon from "../../../assets/icons/message-square.svg";
+import PlusIcon from "../../../assets/icons/plus.svg";
+import RestoreIcon from "../../../assets/icons/rotate-ccw.svg";
+import SearchIcon from "../../../assets/icons/search.svg";
+import SidebarIcon from "../../../assets/icons/sidebar.svg";
+import TrashIcon from "../../../assets/icons/trash.svg";
 import IconButton from "../../IconButton";
 import type { ConversationListProps } from "../types";
 
