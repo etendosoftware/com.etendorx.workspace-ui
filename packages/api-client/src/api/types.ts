@@ -378,6 +378,7 @@ export interface Menu {
   id: string;
   name: string;
   windowId?: string;
+  windowType?: `${WindowType}`;
   recordId?: string;
   tableId?: string;
   window?: Window | null;
@@ -413,6 +414,7 @@ export enum WindowType {
   M = "M",
   Q = "Q",
   T = "T",
+  PICK_AND_EXECUTE = "OBUIAPP_PickAndExecute",
 }
 
 export interface LoginResponse {
