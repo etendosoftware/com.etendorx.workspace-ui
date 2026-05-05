@@ -489,7 +489,10 @@ export const useCopilot = () => {
         }
 
         if (archiveExpanded) {
-          setArchivedConversations((prev) => [conversationToDelete, ...prev.filter((conv) => conv.id !== conversationId)]);
+          setArchivedConversations((prev) => [
+            conversationToDelete,
+            ...prev.filter((conv) => conv.id !== conversationId),
+          ]);
         }
 
         return conversationToDelete;

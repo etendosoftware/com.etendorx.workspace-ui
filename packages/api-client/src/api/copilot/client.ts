@@ -528,10 +528,7 @@ export class CopilotClient {
     }
   }
 
-  public static async renameConversation(
-    conversationId: string,
-    title: string
-  ): Promise<ConversationMutationResponse> {
+  public static async renameConversation(conversationId: string, title: string): Promise<ConversationMutationResponse> {
     try {
       const { data, ok } = await CopilotClient.request(COPILOT_ENDPOINTS.RENAME_CONVERSATION, {
         method: COPILOT_METHODS.POST,

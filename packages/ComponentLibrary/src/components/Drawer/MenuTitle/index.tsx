@@ -39,24 +39,26 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
       }
     };
 
+    let stateClasses: string;
+    if (open) {
+      const selectedClasses = selected
+        ? "bg-dynamic-main text-white [&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)]"
+        : "text-baseline-80 hover:text-dynamic-main";
+      stateClasses = `rounded-lg text-xl justify-between p-1 ${selectedClasses} w-full`;
+    } else {
+      const parentActiveClasses = isParentActive
+        ? "bg-dynamic-main [&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)]"
+        : "";
+      stateClasses = `p-2.5 rounded-full hover:bg-dynamic-main hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)] "  ${parentActiveClasses}`;
+    }
+
     return (
       <button
         data-testid={`MenuTitle__${item.id ?? (item.name ? item.name.replace(/\s+/g, "-").toLowerCase() : "menu-title")}`}
         type="button"
         onClick={onClick}
         className={`${open && "hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(18%)_sepia(40%)_saturate(7101%)_hue-rotate(215deg)_brightness(91%)_contrast(102%)]"}
- relative flex items-center transition-colors duration-300 cursor-pointer hover:${selected ? "bg-dynamic-main text-white hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)]" : "bg-dynamic-contrast-text"} ${isParentActive && open && "[&_img]:filter-[brightness(0)_saturate(100%)_invert(18%)_sepia(40%)_saturate(7101%)_hue-rotate(215deg)_brightness(91%)_contrast(102%)] text-dynamic-main"}  ${
-   open
-     ? `rounded-lg text-xl justify-between p-1 ${
-         selected
-           ? "bg-dynamic-main text-white [&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)]"
-           : "text-baseline-80 hover:text-dynamic-main"
-       } w-full`
-     : `p-2.5 rounded-full hover:bg-dynamic-main hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)] "  ${
-         isParentActive &&
-         "bg-dynamic-main [&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)]"
-       }`
- }`}>
+ relative flex items-center transition-colors duration-300 cursor-pointer hover:${selected ? "bg-dynamic-main text-white hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(100%)_sepia(45%)_saturate(0%)_hue-rotate(45deg)_brightness(113%)_contrast(100%)]" : "bg-dynamic-contrast-text"} ${isParentActive && open && "[&_img]:filter-[brightness(0)_saturate(100%)_invert(18%)_sepia(40%)_saturate(7101%)_hue-rotate(215deg)_brightness(91%)_contrast(102%)] text-dynamic-main"}  ${stateClasses}`}>
         <div className={`flex items-center ${open ? "overflow-hidden" : ""}`}>
           <div className={`${open ? "w-8" : "w-full h-full"} flex justify-center items-center`}>
             {item.icon ? (

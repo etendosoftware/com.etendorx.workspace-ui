@@ -83,6 +83,54 @@ const ConversationList: React.FC<ConversationListProps> = ({
     );
   }
 
+  let archivedContent: React.ReactNode;
+  if (archivedLoading) {
+    archivedContent = <div className="p-4 text-sm text-(--color-transparent-neutral-60)">{translations.loading}</div>;
+  } else if (archivedConversations.length === 0) {
+    archivedContent = (
+      <div className="p-4 text-sm text-(--color-transparent-neutral-50)">
+        {translations.noArchivedConversations || "No archived conversations"}
+      </div>
+    );
+  } else {
+    archivedContent = (
+      <div className="p-2">
+        {archivedConversations.map((conversation) => (
+          <div
+            key={conversation.id}
+            className="w-full flex items-start gap-3 p-3 mb-2 rounded-lg hover:bg-white transition-colors text-left group">
+            <ArchiveIcon className="w-5 h-5 flex-shrink-0 mt-0.5 text-(--color-transparent-neutral-50)" />
+            <div className="flex-1 min-w-0">
+              <p className="text-(--color-transparent-neutral-70) font-medium truncate">
+                {conversation.title || translations.untitledConversation || "Untitled Conversation"}
+              </p>
+            </div>
+            <div className="hidden group-hover:flex items-center gap-1">
+              {onRestoreConversation && (
+                <button
+                  type="button"
+                  onClick={() => onRestoreConversation(conversation.id)}
+                  title={translations.restoreConversation || "Restore conversation"}
+                  className="p-1 rounded-md border border-(--color-transparent-neutral-20) bg-white text-(--color-transparent-neutral-80) hover:text-green-600 hover:border-green-300 transition-colors">
+                  <RestoreIcon className="w-4 h-4" />
+                </button>
+              )}
+              {onPermanentDeleteConversation && (
+                <button
+                  type="button"
+                  onClick={() => onPermanentDeleteConversation(conversation.id)}
+                  title={translations.permanentDeleteConversation || "Delete permanently"}
+                  className="p-1 rounded-md border border-(--color-transparent-neutral-20) bg-white text-(--color-transparent-neutral-80) hover:text-red-600 hover:border-red-300 transition-colors">
+                  <TrashIcon className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-(--color-transparent-neutral-20) flex items-center gap-2">
@@ -105,7 +153,10 @@ const ConversationList: React.FC<ConversationListProps> = ({
 
       <div className="px-4 py-3 border-b border-(--color-transparent-neutral-20)">
         <div className="relative">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" fill="var(--color-transparent-neutral-50)" />
+          <SearchIcon
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+            fill="var(--color-transparent-neutral-50)"
+          />
           <input
             type="text"
             value={searchQuery}
@@ -203,48 +254,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
 
         {archiveExpanded && (
           <div className="max-h-56 overflow-y-auto border-t border-(--color-transparent-neutral-20) bg-(--color-transparent-neutral-5)">
-            {archivedLoading ? (
-              <div className="p-4 text-sm text-(--color-transparent-neutral-60)">{translations.loading}</div>
-            ) : archivedConversations.length === 0 ? (
-              <div className="p-4 text-sm text-(--color-transparent-neutral-50)">
-                {translations.noArchivedConversations || "No archived conversations"}
-              </div>
-            ) : (
-              <div className="p-2">
-                {archivedConversations.map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    className="w-full flex items-start gap-3 p-3 mb-2 rounded-lg hover:bg-white transition-colors text-left group">
-                    <ArchiveIcon className="w-5 h-5 flex-shrink-0 mt-0.5 text-(--color-transparent-neutral-50)" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-(--color-transparent-neutral-70) font-medium truncate">
-                        {conversation.title || translations.untitledConversation || "Untitled Conversation"}
-                      </p>
-                    </div>
-                    <div className="hidden group-hover:flex items-center gap-1">
-                      {onRestoreConversation && (
-                        <button
-                          type="button"
-                          onClick={() => onRestoreConversation(conversation.id)}
-                          title={translations.restoreConversation || "Restore conversation"}
-                          className="p-1 rounded-md border border-(--color-transparent-neutral-20) bg-white text-(--color-transparent-neutral-80) hover:text-green-600 hover:border-green-300 transition-colors">
-                          <RestoreIcon className="w-4 h-4" />
-                        </button>
-                      )}
-                      {onPermanentDeleteConversation && (
-                        <button
-                          type="button"
-                          onClick={() => onPermanentDeleteConversation(conversation.id)}
-                          title={translations.permanentDeleteConversation || "Delete permanently"}
-                          className="p-1 rounded-md border border-(--color-transparent-neutral-20) bg-white text-(--color-transparent-neutral-80) hover:text-red-600 hover:border-red-300 transition-colors">
-                          <TrashIcon className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            {archivedContent}
           </div>
         )}
       </div>
