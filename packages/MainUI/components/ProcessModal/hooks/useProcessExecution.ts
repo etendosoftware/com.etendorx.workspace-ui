@@ -45,6 +45,7 @@ import type { Tab, ProcessParameter, EntityData } from "@workspaceui/api-client/
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { createOBShim } from "@/utils/propertyStore";
 import { normalizeGridValues } from "@/utils/process/gridNormalization";
+import { shouldRefreshAfterProcess, shouldRetryAfterProcess } from "../utils/processResponseFlags";
 
 // ---------------------------------------------------------------------------
 // Internal types for response action shapes
@@ -469,19 +470,21 @@ export function useProcessExecution({
           resultData = await response.json();
         } catch {}
 
-        const hasRetryExecution =
-          resultData?.retryExecution === true ||
-          resultData?.response?.retryExecution === true ||
-          resultData?.response?.data?.retryExecution === true;
+        const hasRetryExecution = shouldRetryAfterProcess(resultData);
+        const refreshGrid = shouldRefreshAfterProcess(resultData);
 
         const parsedResult = parseProcessResponse({ success: true, data: resultData });
 
         if (hasRetryExecution) {
           setShouldTriggerSuccess(true);
           setResult({ ...parsedResult, keepOpen: true });
-        } else {
-          await handleJavaProcessResult(parsedResult);
+          if (refreshGrid) {
+            setGridRefreshKey((prev) => prev + 1);
+          }
+          return;
         }
+
+        await handleJavaProcessResult(parsedResult);
       } catch (error) {
         logger.warn(`Error executing ${logContext}:`, error);
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
@@ -497,6 +500,8 @@ export function useProcessExecution({
       parseProcessResponse,
       handleJavaProcessResult,
       setResult,
+      setShouldTriggerSuccess,
+      setGridRefreshKey,
     ]
   );
 

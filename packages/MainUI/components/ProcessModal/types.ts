@@ -76,7 +76,10 @@ export interface ProcessResponse {
       msgText: string;
     };
   }>;
+  /** Default true when absent. Triggers a parent grid refresh in Etendo Classic. */
   refreshParent?: boolean;
+  /** Default false when absent. Keeps the popup open so the user can re-execute. */
+  retryExecution?: boolean;
   showInIframe?: boolean;
   iframeUrl?: string;
 }

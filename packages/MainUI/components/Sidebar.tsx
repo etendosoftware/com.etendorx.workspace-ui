@@ -365,7 +365,6 @@ export default function Sidebar() {
           open={showProcessDefinitionModal}
           onClose={handleCloseProcessDefinitionModal}
           button={selectedProcessDefinitionButton}
-          keepOpenOnSuccess
           data-testid="ProcessDefinitionModal__sidebar"
         />
       </>
