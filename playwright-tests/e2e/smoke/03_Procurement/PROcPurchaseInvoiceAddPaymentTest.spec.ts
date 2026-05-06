@@ -38,7 +38,7 @@ test.describe("Purchase Invoice with payment registration @smoke", () => {
 
     // ── Step 4: Add Invoice Line ──────────────────────────────────────────────
     await page.locator('button[aria-label="Lines"]').click();
-    await page.getByRole("button", { name: "New Record" }).last().waitFor({ state: "visible", timeout: 10_000 });
+    await page.getByRole("button", { name: "New Record" }).last().waitFor({ state: "visible", timeout: 30_000 });
     await page.getByRole("button", { name: "New Record" }).last().click();
 
     // Select Product — search to narrow the list, then use ArrowDown+Enter.

@@ -15,85 +15,70 @@
  *************************************************************************
  */
 
-import { Box, Breadcrumbs, MenuItem, useTheme } from "@mui/material";
-import { type FC, useCallback, useMemo, useState } from "react";
-import MoreHorizIcon from "../../../assets/icons/more-horizontal.svg";
-import IconButton from "../../IconButton";
-import Menu from "../../Menu";
+import { Breadcrumbs, Button } from "@mui/material";
+import { type FC, useRef } from "react";
 import { useStyle } from "../styles";
 import type { BreadcrumbListProps } from "../types";
+import { useBreadcrumbOverflow } from "../useBreadcrumbOverflow";
 import BreadcrumbItem from "../BreadcrumbItem/index";
 
-const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, handleHomeNavigation, separator }) => {
-  const [middleAnchorEl, setMiddleAnchorEl] = useState<HTMLButtonElement | null>(null);
-  const theme = useTheme();
+const BreadcrumbList: FC<BreadcrumbListProps> = ({
+  items,
+  handleActionMenuOpen,
+  handleHomeNavigation,
+  onCollapseMenuOpen,
+  onBackClick,
+  separator,
+}) => {
   const { sx } = useStyle();
+  const containerRef = useRef<HTMLElement | null>(null);
+  const { visibleItemsWithIndex, collapsedItems, isCollapsed } = useBreadcrumbOverflow({
+    containerRef,
+    items,
+  });
 
-  const handleMiddleMenuOpen = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    setMiddleAnchorEl(event.currentTarget);
-  }, []);
-
-  const handleMiddleMenuClose = useCallback(() => {
-    setMiddleAnchorEl(null);
-  }, []);
-
-  const firstItem = useMemo(() => items[0], [items]);
-  const lastItem = useMemo(() => items[items.length - 1], [items]);
-  const middleItems = useMemo(() => items.slice(1, -1), [items]);
-
-  if (items.length <= 2) {
-    return (
-      <Breadcrumbs separator={separator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
-        {items.map((item, index) => (
-          <BreadcrumbItem
-            key={item.id}
-            item={item}
-            position={index}
-            breadcrumbsSize={items.length}
-            handleActionMenuOpen={handleActionMenuOpen}
-            handleHomeNavigation={handleHomeNavigation}
-          />
-        ))}
-      </Breadcrumbs>
-    );
+  if (visibleItemsWithIndex.length === 0) {
+    return null;
   }
 
+  const [firstEntry, ...restEntries] = visibleItemsWithIndex;
+
   return (
-    <Breadcrumbs separator={separator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
+    <Breadcrumbs ref={containerRef} separator={separator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
+      {/* First item is always visible */}
       <BreadcrumbItem
-        item={firstItem}
-        position={0}
+        key={firstEntry.item.id}
+        item={firstEntry.item}
+        position={firstEntry.originalIndex}
         breadcrumbsSize={items.length}
         handleActionMenuOpen={handleActionMenuOpen}
         handleHomeNavigation={handleHomeNavigation}
+        onBackClick={onBackClick}
       />
-      {middleItems.length > 0 && (
-        <Box sx={sx.breadcrumbItem}>
-          <IconButton onClick={handleMiddleMenuOpen}>
-            <MoreHorizIcon fill={theme.palette.baselineColor.neutral[80]} />
-          </IconButton>
-          <Menu anchorEl={middleAnchorEl} onClose={handleMiddleMenuClose}>
-            {middleItems.map((item) => (
-              <MenuItem
-                key={item.id}
-                onClick={() => {
-                  item.onClick?.();
-                  handleMiddleMenuClose();
-                }}
-                sx={sx.menuItem}>
-                {item.label}
-              </MenuItem>
-            ))}
-          </Menu>
-        </Box>
+
+      {/* Ellipsis button as a standalone breadcrumb entry when collapsed */}
+      {isCollapsed && (
+        <Button
+          key="collapse-button"
+          sx={sx.collapseButton}
+          onClick={(e) => onCollapseMenuOpen?.(e, collapsedItems)}
+          aria-label="Show hidden breadcrumb items">
+          ...
+        </Button>
       )}
-      <BreadcrumbItem
-        item={lastItem}
-        position={items.length - 1}
-        breadcrumbsSize={items.length}
-        handleActionMenuOpen={handleActionMenuOpen}
-        handleHomeNavigation={handleHomeNavigation}
-      />
+
+      {/* Middle and last visible items */}
+      {restEntries.map(({ item, originalIndex }) => (
+        <BreadcrumbItem
+          key={item.id}
+          item={item}
+          position={originalIndex}
+          breadcrumbsSize={items.length}
+          handleActionMenuOpen={handleActionMenuOpen}
+          handleHomeNavigation={handleHomeNavigation}
+          onBackClick={onBackClick}
+        />
+      ))}
     </Breadcrumbs>
   );
 };

@@ -169,9 +169,15 @@ test.describe("Advanced Filters - Complete Test @smoke", () => {
 
     await clickOptionButton("Add condition");
 
-    // Switch the AND connector to OR
-    await clickParentOfSpanWithText("AND");
-    await page.locator("span").filter({ hasText: /^OR$/ }).first().click();
+    // Switch the AND connector to OR (retry in case the dropdown closes on first click)
+    const orSpan = page.locator("span").filter({ hasText: /^OR$/ }).first();
+    await expect(async () => {
+      if (!(await orSpan.isVisible())) {
+        await clickParentOfSpanWithText(/^AND$/);
+      }
+      await expect(orSpan).toBeVisible();
+    }).toPass({ timeout: 10_000 });
+    await orSpan.click();
 
     await clickTabIndexZeroWithText("Column", "last");
     await page.locator("span.text-gray-700").filter({ hasText: "Total Gross Amount" }).first().click();
